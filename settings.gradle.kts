@@ -24,3 +24,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "tjyg"
 include(":app")
+include(":feature:sample")
+include(":data")
+include(":core:ui")
+include(":core:util")
+include(":domain")
