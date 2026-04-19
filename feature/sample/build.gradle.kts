@@ -1,12 +1,10 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.tjyg"
+    namespace = "com.tjgy.feature.sample"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -14,13 +12,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tjyg"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -42,14 +37,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:sample"))
     implementation(project(":domain"))
     implementation(project(":core:ui"))
     implementation(project(":core:util"))
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
