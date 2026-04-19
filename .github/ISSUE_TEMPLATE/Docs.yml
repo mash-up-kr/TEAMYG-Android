@@ -1,0 +1,52 @@
+name: 문서화
+description: 개발 생산성을 위한 문서화 작업입니다.
+title: "[Docs]: "
+labels: ["문서화"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        문서화 작업을 위한 이슈입니다.
+  - type: checkboxes
+    id: duplicated-check
+    attributes:
+      label: 이미 등록된 이슈인가요?
+      description: 중복된 이슈가 없는지 먼저 확인해주세요!
+      options:
+        - label: 중복 이슈가 있는지 확인했습니다.
+          required: true
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: 문서화 종류
+      description: 어떤 종류의 문서화 작업인가요?
+      options:
+        - 신규 작성
+        - 기존 문서 수정
+        - 기존 문서 삭제
+        - 오타/오류 수정
+    validations:
+      required: true
+  - type: textarea
+    id: what-to-document
+    attributes:
+      label: 어떤 내용을 문서화하나요?
+      description: 문서화할 내용이나 수정할 내용을 작성해주세요.
+      placeholder: 문서화 대상에 대해 설명해주세요!
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 문서화가 필요한가요?
+      description: 문서화를 통해 얻고자 하는 목적을 작성해주세요.
+      placeholder: 목적에 대해 설명해주세요!
+    validations:
+      required: false
+  - type: textarea
+    id: references
+    attributes:
+      label: 참고 사항
+      description: 관련 링크, 참고 문서 등.
+    validations:
+      required: false
