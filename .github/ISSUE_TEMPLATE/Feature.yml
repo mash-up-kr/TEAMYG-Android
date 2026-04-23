@@ -16,27 +16,6 @@ body:
     validations:
       required: true
   - type: textarea
-    id: background
-    attributes:
-      label: 제안 배경
-      description: 이 기능이 왜 필요한지, 어떤 문제를 해결하는지 작성해주세요.
-      placeholder: |
-        - 배경:
-        - 해결하려는 문제:
-    validations:
-      required: false
-  - type: textarea
-    id: acceptance-criteria
-    attributes:
-      label: 완료 조건
-      description: 이 기능이 완료되었다고 판단할 수 있는 조건을 체크리스트로 작성해주세요.
-      value: |
-        - [ ] 
-        - [ ] 
-        - [ ]
-    validations:
-      required: false
-  - type: textarea
     id: references
     attributes:
       label: 참고 사항
