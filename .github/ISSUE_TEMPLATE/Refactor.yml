@@ -7,14 +7,6 @@ body:
     attributes:
       value: |
         리팩토링 제안을 위한 이슈입니다.
-  - type: checkboxes
-    id: duplicated-check
-    attributes:
-      label: 이미 등록된 제안인가요?
-      description: 중복된 이슈가 없는지 먼저 확인해주세요!
-      options:
-        - label: 중복 이슈가 있는지 확인했습니다.
-          required: true
   - type: textarea
     id: whats-problem
     attributes:

@@ -7,14 +7,6 @@ body:
     attributes:
       value: |
         빌드 환경 관련 작업을 위한 이슈입니다.
-  - type: checkboxes
-    id: duplicated-check
-    attributes:
-      label: 이미 등록된 이슈인가요?
-      description: 중복된 이슈가 없는지 먼저 확인해주세요!
-      options:
-        - label: 중복 이슈가 있는지 확인했습니다.
-          required: true
   - type: dropdown
     id: build-type
     attributes:

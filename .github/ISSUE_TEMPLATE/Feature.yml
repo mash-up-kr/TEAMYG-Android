@@ -7,14 +7,6 @@ body:
     attributes:
       value: |
         새로운 기능 또는 요청 사항에 대해 설명해주세요.
-  - type: checkboxes
-    id: duplicated-check
-    attributes:
-      label: 이미 등록된 기능 요청인가요?
-      description: 중복된 이슈가 없는지 먼저 확인해주세요!
-      options:
-        - label: 중복 이슈가 있는지 확인했습니다.
-          required: true
   - type: textarea
     id: feature-description
     attributes:
