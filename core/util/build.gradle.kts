@@ -5,13 +5,13 @@ plugins {
 android {
     namespace = "com.tjyg.core.util"
     compileSdk {
-        version = release(36) {
+        version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1
         }
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")

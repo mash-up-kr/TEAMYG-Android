@@ -1,4 +1,11 @@
 [versions]
+#Project Settings
+compileSdk = "36"
+targetSdk = "36"
+minSdk = "26"
+versionCode = "1"
+versionName = "1.0.0"
+
 #Android & Kotlin
 agp = "9.1.1"
 kotlin = "2.3.21"
