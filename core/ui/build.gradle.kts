@@ -34,4 +34,8 @@ android {
 
 dependencies {
     implementation(project(":core:util"))
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.androidx.compose)
+    implementation(libs.coil.compose)
 }
