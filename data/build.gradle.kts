@@ -35,8 +35,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation(project(":core:util"))
+    implementation(projects.domain)
+    implementation(projects.core.util)
 
     implementation(libs.bundles.network)
     implementation(libs.kotlin.serialization)

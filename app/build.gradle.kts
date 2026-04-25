@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -42,10 +40,10 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:sample"))
-    implementation(project(":domain"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:util"))
+    implementation(projects.feature.sample)
+    implementation(projects.domain)
+    implementation(projects.core.ui)
+    implementation(projects.core.util)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
