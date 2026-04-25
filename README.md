@@ -1,2 +1,2 @@
-# TJYG-Android
+# TEAMYG-Android
 팀장은연경이팀 안드로이드인데요. 아직 이름을 안정해서 이건 임시제목입니다

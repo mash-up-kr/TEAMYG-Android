@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tjgy.feature.sample"
+    namespace = "com.teamyg.feature.sample"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1

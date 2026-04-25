@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tjyg"
+    namespace = "com.teamyg"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tjyg"
+        applicationId = "com.teamyg"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

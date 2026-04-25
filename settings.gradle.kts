@@ -22,7 +22,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "tjyg"
+rootProject.name = "teamyg"
 include(":app")
 include(":feature:sample")
 include(":data")

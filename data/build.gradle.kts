@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tjyg.data"
+    namespace = "com.teamyg.data"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1

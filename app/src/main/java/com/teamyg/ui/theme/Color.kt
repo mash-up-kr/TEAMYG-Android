@@ -1,4 +1,4 @@
-package com.tjyg.ui.theme
+package com.teamyg.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
