@@ -1,17 +1,19 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "com.tjyg.data"
     compileSdk {
-        version = release(36) {
+        version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1
         }
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -35,4 +37,7 @@ android {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":core:util"))
+
+    implementation(libs.bundles.network)
+    implementation(libs.kotlin.serialization)
 }
