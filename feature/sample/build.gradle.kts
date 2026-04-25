@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tjgy.feature.sample"
+    namespace = "com.teamyg.feature.sample"
     compileSdk {
         version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1

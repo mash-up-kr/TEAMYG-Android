@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tjyg.core.ui"
+    namespace = "com.teamyg.core.ui"
     compileSdk {
         version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1

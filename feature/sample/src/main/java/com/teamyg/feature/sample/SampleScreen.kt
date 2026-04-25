@@ -1,4 +1,4 @@
-package com.tjgy.feature.sample
+package com.teamyg.feature.sample
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
