@@ -1,0 +1,52 @@
+name: 배포
+description: 배포 또는 배포 환경 변경 작업입니다.
+title: "[Deploy]: "
+labels: ["배포"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        배포 관련 작업을 위한 이슈입니다.
+  - type: dropdown
+    id: deploy-type
+    attributes:
+      label: 작업 종류
+      description: 어떤 배포 작업인가요?
+      options:
+        - 신규 배포
+        - 재배포
+        - 배포 환경 변경
+        - 배포 스크립트/설정 변경
+        - 롤백
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 작업 내용
+      description: 어떤 배포 작업을 하는지 구체적으로 작성해주세요.
+      placeholder: 배포 작업에 대해 설명해주세요!
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 배포 환경
+      description: 대상 환경 정보를 작성해주세요.
+      value: |
+        - 환경 (dev/staging/prod):
+        - 버전:
+        - 기타:
+    validations:
+      required: true
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 체크리스트
+      description: 배포 전/후 확인해야 할 항목을 작성해주세요.
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ]
+    validations:
+      required: false

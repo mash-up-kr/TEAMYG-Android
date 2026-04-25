@@ -1,0 +1,54 @@
+name: 버그 제보
+description: 발생한 버그 또는 문제를 제보합니다.
+title: "[Bug]: "
+labels: ["버그"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        버그 제보를 해주세요.
+  - type: textarea
+    id: summary
+    attributes:
+      label: 요약
+      description: 발생 중인 현상을 한 줄로 요약해주세요.
+      placeholder: 예) 홈 화면 진입 시 앱이 즉시 종료됨
+    validations:
+      required: true
+  - type: textarea
+    id: history
+    attributes:
+      label: 재현 절차
+      description: 언제·어떤 행동에서 발생했는지 시간순으로 기술해주세요.
+      placeholder: |
+        1. 
+        2. 
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      description: 버그가 고쳐졌을 때 어떤 모습이어야 하는지 적어주세요.
+      placeholder: 정상적으로 기대되는 동작을 작성해주세요!
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 실행 환경
+      description: Device, OS 버전, 앱 버전 등 재현 환경 정보를 적어주세요.
+      value: |
+        - Device:
+        - OS 버전:
+        - 앱 버전:
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: 추가 설명
+      description: 스크린샷, 로그, 기타 참고 정보를 첨부해주세요.
+    validations:
+      required: false

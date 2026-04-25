@@ -5,13 +5,13 @@ plugins {
 android {
     namespace = "com.teamyg.core.ui"
     compileSdk {
-        version = release(36) {
+        version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1
         }
     }
 
     defaultConfig {
-        minSdk = 26
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -34,4 +34,8 @@ android {
 
 dependencies {
     implementation(project(":core:util"))
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.bundles.androidx.compose)
+    implementation(libs.coil.compose)
 }
