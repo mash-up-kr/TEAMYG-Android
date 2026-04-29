@@ -39,9 +39,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:util"))
+    implementation(projects.domain)
+    implementation(projects.core.ui)
+    implementation(projects.core.util)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
