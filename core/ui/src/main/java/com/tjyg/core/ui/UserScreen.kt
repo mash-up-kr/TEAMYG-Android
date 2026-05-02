@@ -12,10 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
-fun UserScreen(viewModel: UserViewModel = viewModel()){
+fun UserScreen(viewModel: UserViewModel = hiltViewModel()){
     val state = viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 

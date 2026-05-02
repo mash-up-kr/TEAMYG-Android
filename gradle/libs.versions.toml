@@ -63,6 +63,7 @@ retrofit-kotlin-serialization-converter = { group = "com.squareup.retrofit2", na
 hilt-navigation = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "daggerHiltNavigationCompose" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "daggerHilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", name = "hilt-compiler", version.ref = "daggerHilt" }
+hilt-viewmodel = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "daggerHiltNavigationCompose" }
 
 #Kotlin Serialization
 kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
