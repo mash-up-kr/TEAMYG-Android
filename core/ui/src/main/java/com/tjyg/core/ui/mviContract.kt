@@ -10,11 +10,11 @@ data class UserState(
     val error: String? = null
 ) : UiState
 
-sealed class UserIntent: UiIntent{
+sealed class UserIntent : UiIntent {
     object LoadUser : UserIntent()
     data class UpdateName(val name: String) : UserIntent()
 }
 
-sealed class UserSideEffect: UiSideEffect{
+sealed class UserSideEffect : UiSideEffect {
     data class showToast(val message: String) : UserSideEffect()
 }

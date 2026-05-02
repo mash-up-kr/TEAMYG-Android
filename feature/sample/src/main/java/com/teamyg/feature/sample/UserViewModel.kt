@@ -12,14 +12,15 @@ import javax.inject.Inject
 @HiltViewModel
 class UserViewModel @Inject constructor() : BaseViewModel<UserState, UserIntent, UserSideEffect>(
     UserState()
-){
+) {
     override fun processIntent(intent: UserIntent) {
-        when(intent){
+        when (intent) {
             is UserIntent.LoadUser -> loadUser()
             is UserIntent.UpdateName -> updateState { copy(userName = intent.name) }
         }
     }
-    private fun loadUser(){
+
+    private fun loadUser() {
         viewModelScope.launch {
             updateState { copy(isLoading = true) }
             updateState { copy(isLoading = false, userName = "TEAM YG") }
