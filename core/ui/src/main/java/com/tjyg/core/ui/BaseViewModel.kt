@@ -2,10 +2,9 @@ package com.tjyg.core.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 
@@ -16,8 +15,8 @@ abstract class BaseViewModel<S: UiState, I: UiIntent, E: UiSideEffect>(
     private val _state = MutableStateFlow(initialState)
     val state = _state.asStateFlow()
 
-    private val _effect = Channel<E>()
-    val effect = _effect.receiveAsFlow()
+    private val _effect = MutableSharedFlow<E>()
+    val effect : MutableSharedFlow<E> = _effect
 
     abstract fun processIntent(intent: I)
 
@@ -26,6 +25,6 @@ abstract class BaseViewModel<S: UiState, I: UiIntent, E: UiSideEffect>(
     }
 
     protected fun postSideEffect(effect: E){
-        viewModelScope.launch { _effect.send(effect) }
+        viewModelScope.launch { _effect.emit(effect) }
     }
 }
