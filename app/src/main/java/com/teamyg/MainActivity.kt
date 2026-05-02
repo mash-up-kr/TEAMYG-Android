@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.teamyg.ui.theme.TeamYGTheme
-import com.tjyg.core.ui.UserScreen
+import com.teamyg.feature.sample.UserScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

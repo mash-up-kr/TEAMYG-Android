@@ -1,9 +1,16 @@
-package com.tjyg.core.ui
+package com.teamyg.feature.sample
 
 import androidx.lifecycle.viewModelScope
+import com.tjyg.core.ui.BaseViewModel
+import com.tjyg.core.ui.UserIntent
+import com.tjyg.core.ui.UserSideEffect
+import com.tjyg.core.ui.UserState
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class UserViewModel : BaseViewModel<UserState, UserIntent, UserSideEffect>(
+@HiltViewModel
+class UserViewModel @Inject constructor() : BaseViewModel<UserState, UserIntent, UserSideEffect>(
     UserState()
 ){
     override fun processIntent(intent: UserIntent) {

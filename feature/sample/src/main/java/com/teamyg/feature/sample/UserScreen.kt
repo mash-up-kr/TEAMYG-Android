@@ -1,4 +1,4 @@
-package com.tjyg.core.ui
+package com.teamyg.feature.sample
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -13,6 +13,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.tjyg.core.ui.UserIntent
+import com.tjyg.core.ui.UserSideEffect
+
 
 @Composable
 fun UserScreen(viewModel: UserViewModel = hiltViewModel()){
