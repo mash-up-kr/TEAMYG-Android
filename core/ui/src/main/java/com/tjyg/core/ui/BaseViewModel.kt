@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(
     initialState: S
 ) : ViewModel() {

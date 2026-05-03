@@ -17,7 +17,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.tjyg.core.ui.UserIntent
 import com.tjyg.core.ui.UserSideEffect
 
-
 @Composable
 fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
