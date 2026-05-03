@@ -14,8 +14,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.tjyg.core.ui.UserIntent
-import com.tjyg.core.ui.UserSideEffect
 
 @Composable
 fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
@@ -25,7 +23,7 @@ fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is UserSideEffect.showToast -> Toast.makeText(
+                is UserSideEffect.ShowToast -> Toast.makeText(
                     context,
                     effect.message,
                     Toast.LENGTH_SHORT
