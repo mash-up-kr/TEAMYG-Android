@@ -1,4 +1,4 @@
-name: 빌드
+name: 빌드 이슈
 description: 빌드 환경 변경 작업입니다.
 title: "[Build]: "
 labels: ["빌드"]

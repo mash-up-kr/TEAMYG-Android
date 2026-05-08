@@ -1,4 +1,4 @@
-name: 버그 제보
+name: 버그 이슈
 description: 발생한 버그 또는 문제를 제보합니다.
 title: "[Bug]: "
 labels: ["버그"]
