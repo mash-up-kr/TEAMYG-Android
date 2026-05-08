@@ -25,3 +25,13 @@ gradlePlugin {
         // TODO register plugins
     }
 }
+
+private fun NamedDomainObjectContainer<PluginDeclaration>.pluginRegister(
+    pluginName: String,
+    className: String,
+) {
+    register(pluginName) {
+        id = "com.teamyg.plugin.$pluginName"
+        implementationClass = "${className}ConventionPlugin"
+    }
+}
