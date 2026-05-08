@@ -24,7 +24,10 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        // TODO register plugins
+        pluginRegister(
+            pluginName = "android.application",
+            className = "AndroidApplication",
+        )
     }
 }
 

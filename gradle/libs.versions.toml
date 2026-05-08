@@ -106,3 +106,6 @@ jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrai
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "daggerHilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+
+#Custom Plugin
+teamyg-android-application = { id = "com.teamyg.plugin.android.application", version = "unspecified" }
