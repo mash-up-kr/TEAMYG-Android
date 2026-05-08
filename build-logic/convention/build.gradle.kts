@@ -18,6 +18,8 @@ dependencies {
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.compose.gradle.plugin)
     compileOnly(libs.ksp.gradle.plugin)
+
+    compileOnly(files((libs as Any).javaClass.superclass.protectionDomain.codeSource.location))
 }
 
 gradlePlugin {
