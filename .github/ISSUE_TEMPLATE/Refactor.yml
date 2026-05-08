@@ -1,4 +1,4 @@
-name: 리팩토링 제안
+name: 리팩토링 이슈
 description: 코드 전체 구조 변경 또는 재설계를 제안합니다.
 title: "[Refactoring]: "
 labels: ["리팩터링"]
