@@ -5,15 +5,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.teamyg.ui.theme.TeamYGTheme
-import com.teamyg.feature.sample.SampleScreen
+import com.teamyg.feature.sample.UserScreen
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             TeamYGTheme() {
-                SampleScreen()
+                UserScreen()
             }
         }
     }
