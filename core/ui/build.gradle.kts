@@ -36,6 +36,7 @@ android {
 
 dependencies {
     implementation(projects.core.util)
+    implementation(projects.core.ygds)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
