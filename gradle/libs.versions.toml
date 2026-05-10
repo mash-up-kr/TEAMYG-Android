@@ -108,4 +108,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 #Custom Plugin
-teamyg-android-application = { id = "com.teamyg.plugin.android.application", version = "unspecified" }
+teamyg-android-application = { id = "com.teamyg.plugin.android.application" }
