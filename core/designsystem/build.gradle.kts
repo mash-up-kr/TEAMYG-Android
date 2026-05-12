@@ -1,11 +1,9 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.ksp)
 }
 
 android {
-    namespace = "com.teamyg.core.ui"
+    namespace = "com.teamyg.designsystem"
     compileSdk {
         version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1
@@ -36,10 +34,8 @@ android {
 
 dependencies {
     implementation(projects.core.util)
-    implementation(projects.core.designsystem)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)
     implementation(libs.coil.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
 }
