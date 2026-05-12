@@ -42,7 +42,7 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)
-    implementation(projects.core.ygds)
+    implementation(projects.core.designsystem)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.bundles.androidx.compose)

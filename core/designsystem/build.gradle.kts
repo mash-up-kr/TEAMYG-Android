@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.ygds"
+    namespace = "com.teamyg.designsystem"
     compileSdk {
         version = release(libs.versions.compileSdk.get().toInt()) {
             minorApiLevel = 1

@@ -46,7 +46,7 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)
-    implementation(projects.core.ygds)
+    implementation(projects.core.designsystem)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
