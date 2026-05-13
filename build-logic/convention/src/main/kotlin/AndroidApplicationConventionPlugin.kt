@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationExtension
 import com.teamyg.buildlogic.setConfigAndroidApplication
+import com.teamyg.buildlogic.setConfigKotlinAndroid
 import com.teamyg.buildlogic.utils.extensions.libs
 import org.gradle.kotlin.dsl.configure
 
@@ -10,5 +11,6 @@ class AndroidApplicationConventionPlugin : BaseConventionPlugin({
 
     extensions.configure<ApplicationExtension> {
         setConfigAndroidApplication(this)
+        setConfigKotlinAndroid()
     }
 })

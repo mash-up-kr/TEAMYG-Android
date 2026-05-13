@@ -28,6 +28,26 @@ gradlePlugin {
             pluginName = "android.application",
             className = "AndroidApplication",
         )
+        pluginRegister(
+            pluginName = "android.library",
+            className = "AndroidLibrary",
+        )
+        pluginRegister(
+            pluginName = "dagger.hilt",
+            className = "DaggerHilt",
+        )
+        pluginRegister(
+            pluginName = "dagger.hilt.compose",
+            className = "DaggerHiltCompose",
+        )
+        pluginRegister(
+            pluginName = "jetpack.compose",
+            className = "JetpackCompose",
+        )
+        pluginRegister(
+            pluginName = "module.feature",
+            className = "ModuleFeature",
+        )
     }
 }
 
