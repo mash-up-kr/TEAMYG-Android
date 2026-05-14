@@ -32,11 +32,14 @@ include(
     ":core:designsystem",
     ":core:ui",
     ":core:util",
+    ":core:navigation",
 )
 include(":data")
 include(":domain")
-include(":feature:sample")
-include(":feature:login:api")
-include(":feature:login:impl")
-include(":feature:grouphome:api")
-include(":feature:grouphome:impl")
+include(
+    ":feature:sample",
+    ":feature:login:api",
+    ":feature:login:impl",
+    ":feature:grouphome:api",
+    ":feature:grouphome:impl",
+)
