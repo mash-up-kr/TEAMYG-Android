@@ -36,6 +36,8 @@ ksp = "2.3.6"
 retrofit = "3.0.0"
 okhttp = "5.3.2"
 
+#Navigation
+navigation = "2.9.8"
 
 [libraries]
 #gradle plugin
@@ -77,6 +79,9 @@ kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serial
 
 #Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+
+#Navigation
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 
 [bundles]
 hilt = [
