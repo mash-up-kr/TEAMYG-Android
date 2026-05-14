@@ -25,6 +25,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.core.util)
     implementation(projects.core.designsystem)
+    implementation(projects.core.navigation)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
