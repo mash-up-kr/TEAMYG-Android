@@ -8,5 +8,5 @@ android {
 }
 
 dependencies {
-    implementation(libs.navigation.compose)
+    implementation(libs.bundles.navigation)
 }
