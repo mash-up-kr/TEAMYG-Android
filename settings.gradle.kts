@@ -1,6 +1,8 @@
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
+    includeBuild("build-logic")
+
     repositories {
         google {
             content {
@@ -26,9 +28,11 @@ dependencyResolutionManagement {
 
 rootProject.name = "teamyg"
 include(":app")
-include(":feature:sample")
+include(
+    ":core:designsystem",
+    ":core:ui",
+    ":core:util",
+)
 include(":data")
-include(":core:ui")
-include(":core:util")
 include(":domain")
-include(":core:designsystem")
+include(":feature:sample")
