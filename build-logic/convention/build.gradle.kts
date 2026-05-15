@@ -48,6 +48,10 @@ gradlePlugin {
             pluginName = "module.feature.impl",
             className = "ModuleFeatureImpl",
         )
+        pluginRegister(
+            pluginName = "module.feature.api",
+            className = "ModuleFeatureApi",
+        )
     }
 }
 
