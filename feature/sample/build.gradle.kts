@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.teamyg.module.feature)
+    alias(libs.plugins.teamyg.module.feature.impl)
 }
 
 android {
