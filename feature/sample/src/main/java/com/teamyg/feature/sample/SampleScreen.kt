@@ -6,7 +6,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.tjyg.core.ui.preview.PreviewComponent
+import com.tjyg.core.ui.preview.YGPreview
 
 @Composable
 fun SampleScreen() {
@@ -26,8 +27,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
-@Preview
+@YGPreview
 @Composable
-private fun SampleScreenPreview() {
+private fun SampleScreenPreview() = PreviewComponent {
     SampleScreen()
 }
