@@ -1,8 +1,7 @@
 plugins {
     alias(libs.plugins.teamyg.android.application)
     alias(libs.plugins.teamyg.jetpack.compose)
-    alias(libs.plugins.dagger.hilt)
-    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.teamyg.dagger.hilt)
 }
 
 android {
@@ -20,15 +19,15 @@ android {
 }
 
 dependencies {
-    implementation(projects.feature.sample)
-    implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)
     implementation(projects.core.designsystem)
 
+    implementation(projects.domain)
+
+    implementation(projects.feature.sample)
+    implementation(projects.feature.segmentation)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 }
