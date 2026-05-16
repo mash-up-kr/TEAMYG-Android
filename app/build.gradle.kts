@@ -21,6 +21,11 @@ android {
 
 dependencies {
     implementation(projects.feature.sample)
+    implementation(projects.feature.grouphome.api)
+    implementation(projects.feature.grouphome.impl)
+    implementation(projects.feature.login.api)
+    implementation(projects.feature.login.impl)
+    
     implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)

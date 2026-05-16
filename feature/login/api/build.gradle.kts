@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.login.api"
 }
+
+dependencies {
+    implementation(libs.bundles.navigation)
+}

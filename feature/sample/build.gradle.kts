@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.feature.sample"
 }
+
+dependencies {
+    implementation(libs.bundles.navigation)
+}
