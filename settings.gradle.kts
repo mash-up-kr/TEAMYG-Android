@@ -35,4 +35,7 @@ include(
 )
 include(":data")
 include(":domain")
-include(":feature:sample")
+include(
+    ":feature:sample",
+    ":feature:segmentation",
+)
