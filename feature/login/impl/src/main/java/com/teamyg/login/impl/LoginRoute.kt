@@ -1,4 +1,4 @@
-package com.teamyg.grouphome.impl
+package com.teamyg.login.impl
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import com.teamyg.navigation.Navigator
 
 @Composable
-fun GroupHomeRoute(
+fun LoginRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
@@ -18,7 +18,7 @@ fun GroupHomeRoute(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "group home",
+            text = "login",
         )
     }
 }
