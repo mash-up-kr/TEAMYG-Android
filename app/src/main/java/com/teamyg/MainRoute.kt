@@ -19,11 +19,13 @@ fun MainRoute(
 ) {
     NavDisplay(
         entryDecorators = listOf(
-            // Add the default decorators for managing scenes and saving state
+            // NavEntry Lifecycle 동안 유효한 SaveableState 를 만드는 Decorator
             rememberSaveableStateHolderNavEntryDecorator(),
-            // Then add the view model store decorator
+            // NavEntry Lifecycle 동안 유효한 ViewModel 를 만드는 Decorator
             rememberViewModelStoreNavEntryDecorator(),
-            // Use EventBus For Get Returning Result
+            // NavEntry 범위마다 공통 ReturnEventBus 객체를 CompositionLocal 로 제공하는 Decorator
+            // Returning Result 를 위해 사용하는 EventBus 를 feature impl 모듈들의 Composable 에서
+            // LocalResultEventBus.current 로 가져올 수 있게 됨
             rememberResultEventBusNavEntryDecorator(),
         ),
         backStack = navigator.backStack,
