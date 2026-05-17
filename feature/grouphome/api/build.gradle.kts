@@ -5,7 +5,3 @@ plugins {
 android {
     namespace = "com.teamyg.grouphome.api"
 }
-
-dependencies {
-    implementation(libs.bundles.navigation)
-}

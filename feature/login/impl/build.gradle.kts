@@ -8,5 +8,4 @@ android {
 
 dependencies {
     implementation(projects.feature.login.api)
-    implementation(libs.bundles.navigation)
 }

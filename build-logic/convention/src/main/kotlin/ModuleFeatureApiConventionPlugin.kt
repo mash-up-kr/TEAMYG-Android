@@ -10,5 +10,6 @@ class ModuleFeatureApiConventionPlugin : BaseConventionPlugin({
 
     dependencies {
         implementation(libs.kotlin.serialization)
+        implementation(libs.bundles.navigation)
     }
 })

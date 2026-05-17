@@ -8,5 +8,4 @@ android {
 
 dependencies {
     implementation(projects.feature.grouphome.api)
-    implementation(libs.bundles.navigation)
 }
