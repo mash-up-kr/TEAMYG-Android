@@ -1,23 +1,10 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&height=150&color=0:111111,100:444444&text=TEAM-YG&fontColor=ffffff&fontAlignY=40&desc=TEAMYG%20Android%20Squad&descAlignY=60"/>
-
-<br/>
-
-```text
-　　 ／＞　 フ     ┌───────────────────────────────────────┐
-　　| 　_　_|      │             잠          수            │
-　／` ミ＿xノ      |                                       |
-/　　　　 |        │             탈          주            │
-/　 ヽ　　 ﾉ       |                                       |
-│　　|　|　|       │             감 정 적  대 응            │
-／￣|　　 |　|     |                                       |
-(￣ヽ＿_ヽ_)__)    │             금          지            │
-＼二)              └───────────────────────────────────────┘
-                                                                *ヽ(◕ヮ◕ヽ)    
-```
+<img width="1016" height="1100" alt="image" src="https://github.com/user-attachments/assets/7d5a8757-e73c-40a4-a7e0-bde2bf511e2a" />
 
 </div>
+
+<br />
 
 <div align="center">
 
