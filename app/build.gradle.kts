@@ -25,7 +25,7 @@ dependencies {
     implementation(projects.feature.grouphome.impl)
     implementation(projects.feature.login.api)
     implementation(projects.feature.login.impl)
-    
+
     implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)
@@ -39,4 +39,8 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.bundles.navigation)
+
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
