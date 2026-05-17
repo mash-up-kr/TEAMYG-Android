@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.teamyg.designsystem.theme.TempTeamYGMaterialTheme
+import com.teamyg.designsystem.theme.TempYGMaterialTheme
 import com.teamyg.feature.sample.UserScreen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            TempTeamYGMaterialTheme {
+            TempYGMaterialTheme {
                 UserScreen()
             }
         }

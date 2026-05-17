@@ -23,7 +23,7 @@ private val TempLightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun TempTeamYGMaterialTheme(
+fun TempYGMaterialTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
