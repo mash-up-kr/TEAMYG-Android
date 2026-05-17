@@ -12,8 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
@@ -41,9 +41,10 @@ fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
         Column {
             Spacer(modifier = Modifier.height(100.dp))
             Button(
-                onClick = { viewModel.processIntent(UserIntent.LoadUser) }) {
+                onClick = { viewModel.processIntent(UserIntent.LoadUser) }
+            ) {
                 Text(
-                    text = "불러오기",
+                    text = "불러오기"
                 )
             }
             Text(

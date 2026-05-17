@@ -3,13 +3,14 @@ package com.teamyg.feature.sample
 import androidx.lifecycle.viewModelScope
 import com.tjyg.core.ui.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-class UserViewModel @Inject constructor() : BaseViewModel<UserState, UserIntent, UserSideEffect>(
-    UserState()
-) {
+class UserViewModel @Inject constructor() :
+    BaseViewModel<UserState, UserIntent, UserSideEffect>(
+        UserState()
+    ) {
     override fun processIntent(intent: UserIntent) {
         when (intent) {
             is UserIntent.LoadUser -> loadUser()
