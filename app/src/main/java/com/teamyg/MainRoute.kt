@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.teamyg.navigation.Navigator
 
@@ -22,6 +23,8 @@ fun MainRoute(
             rememberSaveableStateHolderNavEntryDecorator(),
             // Then add the view model store decorator
             rememberViewModelStoreNavEntryDecorator(),
+            // Use EventBus For Get Returning Result
+            rememberResultEventBusNavEntryDecorator(),
         ),
         backStack = navigator.backStack,
         onBack = navigator::onBack,
