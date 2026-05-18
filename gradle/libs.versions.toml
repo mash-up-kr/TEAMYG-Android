@@ -106,4 +106,5 @@ teamyg-android-library = { id = "com.teamyg.plugin.android.library" }
 teamyg-dagger-hilt = { id = "com.teamyg.plugin.dagger.hilt" }
 teamyg-dagger-hilt-compose = { id = "com.teamyg.plugin.dagger.hilt.compose" }
 teamyg-jetpack-compose = { id = "com.teamyg.plugin.jetpack.compose" }
-teamyg-module-feature = { id = "com.teamyg.plugin.module.feature" }
+teamyg-module-feature-impl = { id = "com.teamyg.plugin.module.feature.impl" }
+teamyg-module-feature-api = { id = "com.teamyg.plugin.module.feature.api" }

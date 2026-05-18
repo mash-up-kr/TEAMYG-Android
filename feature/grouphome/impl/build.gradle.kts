@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.feature.sample"
+    namespace = "com.teamyg.grouphome.impl"
 }

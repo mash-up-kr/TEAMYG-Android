@@ -45,8 +45,12 @@ gradlePlugin {
             className = "JetpackCompose",
         )
         pluginRegister(
-            pluginName = "module.feature",
-            className = "ModuleFeature",
+            pluginName = "module.feature.impl",
+            className = "ModuleFeatureImpl",
+        )
+        pluginRegister(
+            pluginName = "module.feature.api",
+            className = "ModuleFeatureApi",
         )
     }
 }

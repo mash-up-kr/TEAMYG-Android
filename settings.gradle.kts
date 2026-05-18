@@ -36,3 +36,7 @@ include(
 include(":data")
 include(":domain")
 include(":feature:sample")
+include(":feature:login:api")
+include(":feature:login:impl")
+include(":feature:grouphome:api")
+include(":feature:grouphome:impl")

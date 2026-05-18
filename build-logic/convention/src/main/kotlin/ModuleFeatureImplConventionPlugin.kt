@@ -2,7 +2,7 @@ import com.teamyg.buildlogic.utils.extensions.implementation
 import com.teamyg.buildlogic.utils.extensions.libs
 import org.gradle.kotlin.dsl.dependencies
 
-class ModuleFeatureConventionPlugin : BaseConventionPlugin({
+class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
     with(plugins) {
         apply(libs.plugins.teamyg.android.library.get().pluginId)
         apply(libs.plugins.teamyg.jetpack.compose.get().pluginId)
