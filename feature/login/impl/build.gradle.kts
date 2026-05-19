@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.login.impl"
 }
+
+dependencies {
+    implementation(projects.feature.login.api)
+}

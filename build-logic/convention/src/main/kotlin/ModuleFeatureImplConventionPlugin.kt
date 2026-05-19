@@ -13,7 +13,10 @@ class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
         implementation(project(":core:designsystem"))
         implementation(project(":core:ui"))
         implementation(project(":core:util"))
+        implementation(project(":core:navigation"))
 
         implementation(project(":domain"))
+
+        implementation(libs.bundles.navigation)
     }
 })

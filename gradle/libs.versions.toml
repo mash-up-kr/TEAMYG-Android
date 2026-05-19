@@ -36,6 +36,8 @@ ksp = "2.3.6"
 retrofit = "3.0.0"
 okhttp = "5.3.2"
 
+#Navigation
+navigation = "1.1.1"
 
 [libraries]
 #gradle plugin
@@ -50,6 +52,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 #Lifecycle
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-navigation-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycleRuntimeKtx" }
 
 #Compose
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -78,6 +81,10 @@ kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serial
 #Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 
+#Navigation
+navigation-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation" }
+navigation-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation" }
+
 [bundles]
 hilt = [
     "hilt-navigation",
@@ -89,6 +96,12 @@ network = [
     "okhttp-logging-interceptor",
     "retrofit",
     "retrofit-kotlin-serialization-converter",
+]
+
+navigation = [
+    "androidx-lifecycle-navigation-viewmodel",
+    "navigation-runtime",
+    "navigation-ui",
 ]
 
 [plugins]

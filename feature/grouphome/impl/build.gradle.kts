@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.grouphome.impl"
 }
+
+dependencies {
+    implementation(projects.feature.grouphome.api)
+}
