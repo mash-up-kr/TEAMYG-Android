@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import com.teamyg.ui.theme.TeamYGTheme
+import com.teamyg.designsystem.theme.TempYGMaterialTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            TeamYGTheme {
+            TempYGMaterialTheme {
                 MainRoute(
                     modifier = Modifier.fillMaxSize(),
                 )
