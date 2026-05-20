@@ -10,7 +10,9 @@ android {
 
     defaultConfig {
         applicationId = "com.teamyg"
-        versionCode = libs.versions.versionCode.get().toInt()
+        versionCode = libs.versions.versionCode
+            .get()
+            .toInt()
         versionName = libs.versions.versionName.get()
     }
 
