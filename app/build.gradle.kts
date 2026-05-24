@@ -41,8 +41,4 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.bundles.navigation)
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.androidx.test.espresso.core)
 }

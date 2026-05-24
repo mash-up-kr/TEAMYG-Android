@@ -42,11 +42,6 @@ navigation = "1.1.1"
 #ktlint
 ktlint = "14.2.0"
 
-#Test
-junit = "4.13.2"
-androidxTestExtJunit = "1.2.1"
-espresso = "3.6.1"
-
 [libraries]
 #gradle plugin
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -92,11 +87,6 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 #Navigation
 navigation-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation" }
 navigation-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation" }
-
-#Test
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
-androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 
 [bundles]
 hilt = [
