@@ -10,6 +10,6 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)
 }
 apply(from = "gradle/projectDependencyGraph.gradle")
