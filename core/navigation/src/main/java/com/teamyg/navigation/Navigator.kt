@@ -8,12 +8,13 @@ import dagger.hilt.android.scopes.ActivityRetainedScoped
 @ActivityRetainedScoped
 class Navigator(initialNavigationKey: NavKey) {
 
-    val backStack: SnapshotStateList<NavKey> = mutableStateListOf(initialNavigationKey)
+    private val _backStack: SnapshotStateList<NavKey> = mutableStateListOf(initialNavigationKey)
+    val backStack: List<NavKey> get() = _backStack
 
     fun goTo(destination: NavKey){
-        backStack.add(destination)
+        _backStack.add(destination)
     }
     fun onBack() {
-        backStack.removeLastOrNull()
+        _backStack.removeLastOrNull()
     }
 }
