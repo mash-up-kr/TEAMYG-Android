@@ -12,7 +12,6 @@ import dagger.multibindings.IntoSet
 @Module
 @InstallIn(ActivityRetainedComponent::class)
 object NavigationModule {
-
     @IntoSet
     @Provides
     fun provideFeatureGroupHomeEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {

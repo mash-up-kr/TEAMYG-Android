@@ -9,8 +9,7 @@ import dagger.hilt.android.scopes.ActivityRetainedScoped
 @Module
 @InstallIn(ActivityRetainedComponent::class)
 object NavigationModule {
-
     @Provides
     @ActivityRetainedScoped
-    fun provideNavigator() : Navigator = Navigator(NavigatorConst.INITIAL_NAVIGATION_KEY)
+    fun provideNavigator(): Navigator = Navigator(NavigatorConst.INITIAL_NAVIGATION_KEY)
 }

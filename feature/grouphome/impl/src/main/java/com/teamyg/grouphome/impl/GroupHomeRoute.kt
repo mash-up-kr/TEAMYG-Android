@@ -27,7 +27,7 @@ fun GroupHomeRoute(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround
+        verticalArrangement = Arrangement.SpaceAround,
     ) {
         Text(
             text = "group home // groupId: ${key.groupId}",
@@ -46,4 +46,3 @@ fun GroupHomeRoute(
         }
     }
 }
-

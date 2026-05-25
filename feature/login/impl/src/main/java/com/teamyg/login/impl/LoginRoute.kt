@@ -31,7 +31,7 @@ fun LoginRoute(
             text = "login",
             modifier = Modifier.clickable {
                 navigator.goTo(NavKeyGroupHome(groupId = 1231))
-            }
+            },
         )
     }
 }
