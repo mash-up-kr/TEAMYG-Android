@@ -8,4 +8,5 @@ android {
 
 dependencies {
     implementation(projects.feature.login.api)
+    implementation(projects.feature.grouphome.api)
 }
