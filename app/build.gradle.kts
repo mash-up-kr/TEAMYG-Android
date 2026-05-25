@@ -27,6 +27,12 @@ dependencies {
     implementation(projects.feature.grouphome.impl)
     implementation(projects.feature.login.api)
     implementation(projects.feature.login.impl)
+    implementation(projects.feature.segmentation.api)
+    implementation(projects.feature.segmentation.impl)
+    implementation(projects.feature.camera.api)
+    implementation(projects.feature.camera.impl)
+    implementation(projects.feature.gallery.api)
+    implementation(projects.feature.gallery.impl)
 
     implementation(projects.domain)
     implementation(projects.core.ui)
