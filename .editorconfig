@@ -49,7 +49,7 @@ ktlint_standard_class-signature = disabled
 trim_trailing_whitespace = false
 
 [*.{yml,yaml}]
-indent_size = 4
+indent_size = 2
 
 [*.xml]
 indent_size = 4
