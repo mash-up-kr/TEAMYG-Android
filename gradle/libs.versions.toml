@@ -37,7 +37,7 @@ retrofit = "3.0.0"
 okhttp = "5.3.2"
 
 #Navigation
-navigation = "1.1.1"
+navigation = "1.2.0-alpha02" # Result Return 을 위한 ResultEventBusNavEntryDecorator 가 1.2.0-alpha02 부터 지원하여, stable 이 아님에도 선택하였습니다
 
 #ktlint
 ktlint = "14.2.0"
