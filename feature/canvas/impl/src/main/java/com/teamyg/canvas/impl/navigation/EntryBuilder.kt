@@ -1,4 +1,4 @@
-package com.teamyg.segmentation.impl.navigation
+package com.teamyg.canvas.impl.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -6,16 +6,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.canvas.api.NavKeyCanvasImageAdd
+import com.teamyg.canvas.impl.route.CanvasImageAddRoute
 import com.teamyg.navigation.Navigator
-import com.teamyg.segmentation.api.NavKeySegmentation
-import com.teamyg.segmentation.impl.route.SegmentationRoute
 
-fun EntryProviderScope<NavKey>.featureSegmentationEntryBuilder(navigator: Navigator) {
-    entry<NavKeySegmentation> { key ->
+fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
+    entry<NavKeyCanvasImageAdd> {
         Scaffold { innerPadding ->
-            SegmentationRoute(
+            CanvasImageAddRoute(
                 navigator = navigator,
-                key = key,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),

@@ -1,13 +1,13 @@
-package com.teamyg.segmentation.impl.route
+package com.teamyg.canvas.impl.route
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.camera.api.NavKeyCameraCapture
+import com.teamyg.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.gallery.api.NavKeyGalleryPicker
 import com.teamyg.navigation.Navigator
 import com.teamyg.segmentation.api.NavKeySegmentation
-import com.teamyg.segmentation.impl.screen.CanvasImageAddScreen
 
 @Composable
 internal fun CanvasImageAddRoute(

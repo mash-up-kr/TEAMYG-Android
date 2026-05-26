@@ -9,6 +9,7 @@ android {
 
 dependencies {
     implementation(projects.feature.camera.api)
+    implementation(projects.feature.canvas.api)
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.login.api)
     implementation(projects.feature.grouphome.api)

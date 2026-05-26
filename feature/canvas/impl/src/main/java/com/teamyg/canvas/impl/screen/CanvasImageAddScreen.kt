@@ -1,4 +1,4 @@
-package com.teamyg.segmentation.impl.screen
+package com.teamyg.canvas.impl.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

@@ -48,4 +48,6 @@ include(
     ":feature:camera:impl",
     ":feature:gallery:api",
     ":feature:gallery:impl",
+    ":feature:canvas:api",
+    ":feature:canvas:impl",
 )

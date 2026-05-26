@@ -33,6 +33,8 @@ dependencies {
     implementation(projects.feature.camera.impl)
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.gallery.impl)
+    implementation(projects.feature.canvas.api)
+    implementation(projects.feature.canvas.impl)
 
     implementation(projects.domain)
     implementation(projects.core.ui)
