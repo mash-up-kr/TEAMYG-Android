@@ -13,8 +13,8 @@ import com.tjyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun GalleryPickerScreen(
-    modifier: Modifier = Modifier,
     onClickConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
@@ -34,7 +34,7 @@ internal fun GalleryPickerScreen(
 @Composable
 private fun PreviewGalleryPickerScreen() = PreviewBox {
     GalleryPickerScreen(
-        modifier = Modifier.fillMaxSize(),
         onClickConfirm = {},
+        modifier = Modifier.fillMaxSize(),
     )
 }

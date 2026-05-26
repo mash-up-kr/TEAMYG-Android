@@ -13,9 +13,9 @@ import com.tjyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CanvasImageAddScreen(
-    modifier: Modifier = Modifier,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
@@ -42,8 +42,8 @@ internal fun CanvasImageAddScreen(
 @Composable
 private fun PreviewCanvasImageAddScreen() = PreviewBox {
     CanvasImageAddScreen(
-        modifier = Modifier.fillMaxSize(),
         onClickCamera = {},
         onClickGallery = {},
+        modifier = Modifier.fillMaxSize(),
     )
 }

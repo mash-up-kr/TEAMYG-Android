@@ -14,8 +14,8 @@ import com.tjyg.core.ui.preview.YGPreview
 @Composable
 internal fun SegmentationScreen(
     sourceImageUri: String,
-    modifier: Modifier = Modifier,
     onClickBack: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
@@ -37,7 +37,7 @@ internal fun SegmentationScreen(
 private fun PreviewSegmentationScreen() = PreviewBox {
     SegmentationScreen(
         sourceImageUri = "sourceImageUri",
-        modifier = Modifier.fillMaxSize(),
         onClickBack = {},
+        modifier = Modifier.fillMaxSize(),
     )
 }

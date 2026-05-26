@@ -13,8 +13,8 @@ import com.tjyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CameraCaptureScreen(
-    modifier: Modifier = Modifier,
     onClickConfirm: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
@@ -35,7 +35,7 @@ internal fun CameraCaptureScreen(
 @Composable
 private fun PreviewCameraCaptureScreen() = PreviewBox {
     CameraCaptureScreen(
-        modifier = Modifier.fillMaxSize(),
         onClickConfirm = {},
+        modifier = Modifier.fillMaxSize(),
     )
 }
