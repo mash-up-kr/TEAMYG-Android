@@ -7,6 +7,9 @@ plugins {
     alias(libs.plugins.kotlin.ksp) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.dagger.hilt) apply false
+    alias(libs.plugins.ktlint) apply false
 }
-
+subprojects {
+    apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)
+}
 apply(from = "gradle/projectDependencyGraph.gradle")

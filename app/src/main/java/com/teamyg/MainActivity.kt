@@ -8,15 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.login.api.NavKeyLoginHome
+import com.teamyg.designsystem.theme.TempYGMaterialTheme
 import com.teamyg.navigation.Navigator
-import com.teamyg.ui.theme.TeamYGTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject
     lateinit var entryBuilders: Set<@JvmSuppressWildcards EntryProviderScope<NavKey>.(Navigator) -> Unit>
 
@@ -27,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            TeamYGTheme {
+            TempYGMaterialTheme {
                 MainRoute(
                     navigator = navigator,
                     entryBuilders = entryBuilders,

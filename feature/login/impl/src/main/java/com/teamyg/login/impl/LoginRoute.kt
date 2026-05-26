@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.result.ResultEffect
-import com.teamyg.grouphome.api.NavKeyGroupHome
+import com.teamyg.grouphome.api.NavigationKey
 import com.teamyg.navigation.Navigator
 
 @Composable
@@ -30,8 +30,8 @@ fun LoginRoute(
         Text(
             text = "login",
             modifier = Modifier.clickable {
-                navigator.goTo(NavKeyGroupHome(groupId = 1231))
-            }
+                navigator.goTo(NavigationKey(groupId = 1231))
+            },
         )
     }
 }

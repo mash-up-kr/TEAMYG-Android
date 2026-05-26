@@ -6,11 +6,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.grouphome.api.NavKeyGroupHome
+import com.teamyg.grouphome.api.NavigationKey
 import com.teamyg.navigation.Navigator
 
 fun EntryProviderScope<NavKey>.featureGroupHomeEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupHome> { key ->
+    entry<NavigationKey> { key ->
         Scaffold { innerPadding ->
             GroupHomeRoute(
                 navigator = navigator,

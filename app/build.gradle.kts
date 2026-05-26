@@ -10,7 +10,9 @@ android {
 
     defaultConfig {
         applicationId = "com.teamyg"
-        versionCode = libs.versions.versionCode.get().toInt()
+        versionCode = libs.versions.versionCode
+            .get()
+            .toInt()
         versionName = libs.versions.versionName.get()
     }
 
@@ -25,7 +27,7 @@ dependencies {
     implementation(projects.feature.grouphome.impl)
     implementation(projects.feature.login.api)
     implementation(projects.feature.login.impl)
-    
+
     implementation(projects.domain)
     implementation(projects.core.ui)
     implementation(projects.core.util)

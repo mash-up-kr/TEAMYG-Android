@@ -12,8 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
@@ -23,11 +23,13 @@ fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is UserSideEffect.ShowToast -> Toast.makeText(
-                    context,
-                    effect.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                is UserSideEffect.ShowToast ->
+                    Toast
+                        .makeText(
+                            context,
+                            effect.message,
+                            Toast.LENGTH_SHORT,
+                        ).show()
             }
         }
     }
@@ -35,20 +37,21 @@ fun UserScreen(viewModel: UserViewModel = hiltViewModel()) {
     if (state.isLoading) {
         Text(
             modifier = Modifier.height(100.dp),
-            text = "로딩중입니다~"
+            text = "로딩중입니다~",
         )
     } else {
         Column {
             Spacer(modifier = Modifier.height(100.dp))
             Button(
-                onClick = { viewModel.processIntent(UserIntent.LoadUser) }) {
+                onClick = { viewModel.processIntent(UserIntent.LoadUser) },
+            ) {
                 Text(
                     text = "불러오기",
                 )
             }
             Text(
                 modifier = Modifier.height(100.dp),
-                text = state.userName
+                text = state.userName,
             )
         }
     }
