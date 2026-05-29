@@ -42,4 +42,12 @@ include(
     ":feature:login:impl",
     ":feature:grouphome:api",
     ":feature:grouphome:impl",
+    ":feature:segmentation:api",
+    ":feature:segmentation:impl",
+    ":feature:camera:api",
+    ":feature:camera:impl",
+    ":feature:gallery:api",
+    ":feature:gallery:impl",
+    ":feature:canvas:api",
+    ":feature:canvas:impl",
 )
