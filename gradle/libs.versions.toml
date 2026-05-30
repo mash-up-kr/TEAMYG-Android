@@ -39,6 +39,9 @@ okhttp = "5.3.2"
 #Navigation
 navigation = "1.2.0-alpha02" # Result Return 을 위한 ResultEventBusNavEntryDecorator 가 1.2.0-alpha02 부터 지원하여, stable 이 아님에도 선택하였습니다
 
+#CameraX
+cameraX = "1.4.1"
+
 #ktlint
 ktlint = "14.2.0"
 
@@ -56,6 +59,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-navigation-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycleRuntimeKtx" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 
 #Compose
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -65,6 +69,7 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
 #Retrofit
 okhttp = { module = "com.squareup.okhttp3:okhttp" }
@@ -88,6 +93,12 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 navigation-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation" }
 navigation-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation" }
 
+#CameraX
+camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraX" }
+camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
+camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
+camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+
 [bundles]
 hilt = [
     "hilt-navigation",
@@ -105,6 +116,13 @@ navigation = [
     "androidx-lifecycle-navigation-viewmodel",
     "navigation-runtime",
     "navigation-ui",
+]
+
+camerax = [
+    "camerax-core",
+    "camerax-camera2",
+    "camerax-lifecycle",
+    "camerax-view",
 ]
 
 [plugins]
