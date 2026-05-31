@@ -10,6 +10,7 @@ class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
+        implementation(project(":core:analytics"))
         implementation(project(":core:designsystem"))
         implementation(project(":core:ui"))
         implementation(project(":core:util"))
