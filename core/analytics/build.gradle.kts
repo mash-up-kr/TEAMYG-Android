@@ -8,4 +8,6 @@ android {
 
 dependencies {
     implementation(projects.core.util)
+
+    implementation(libs.logger.timber)
 }
