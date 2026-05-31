@@ -81,18 +81,19 @@ fun createBitmap(
     val canvas = Canvas(bitmap)
     canvas.drawColor(backgroundColor)
 
-    Paint().apply {
-        this.color = textColor
-        this.textSize = textSize
-        this.textAlign = Paint.Align.CENTER
-    }.also { paint ->
-        canvas.drawText(
-            "Preview Image",
-            width / 2f,
-            height / 2f,
-            paint,
-        )
-    }
+    Paint()
+        .apply {
+            this.color = textColor
+            this.textSize = textSize
+            this.textAlign = Paint.Align.CENTER
+        }.also { paint ->
+            canvas.drawText(
+                "Preview Image",
+                width / 2f,
+                height / 2f,
+                paint,
+            )
+        }
 
     return bitmap.asImage()
 }
