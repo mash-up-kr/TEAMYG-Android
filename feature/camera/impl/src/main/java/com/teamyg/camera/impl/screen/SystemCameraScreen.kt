@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.teamyg.camera.impl.vm.SystemCameraState
+import com.teamyg.camera.impl.viewmodel.SystemCameraState
 import com.tjyg.core.ui.preview.PreviewBox
 import com.tjyg.core.ui.preview.YGPreview
 

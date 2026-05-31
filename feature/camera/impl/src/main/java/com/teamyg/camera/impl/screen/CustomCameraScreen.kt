@@ -16,7 +16,7 @@ import com.teamyg.camera.impl.component.CameraControlComponent
 import com.teamyg.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.camera.impl.component.CameraPreviewComponent
 import com.teamyg.camera.impl.component.CameraZoomIndicatorComponent
-import com.teamyg.camera.impl.vm.CustomCameraState
+import com.teamyg.camera.impl.viewmodel.CustomCameraState
 import com.tjyg.core.ui.preview.PreviewBox
 import com.tjyg.core.ui.preview.YGPreview
 

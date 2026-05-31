@@ -1,4 +1,4 @@
-package com.teamyg.camera.impl.vm
+package com.teamyg.camera.impl.viewmodel
 
 import com.tjyg.core.ui.BaseViewModel
 import com.tjyg.core.ui.UiIntent

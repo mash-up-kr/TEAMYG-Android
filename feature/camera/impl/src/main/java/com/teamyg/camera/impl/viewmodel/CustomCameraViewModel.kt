@@ -1,4 +1,4 @@
-package com.teamyg.camera.impl.vm
+package com.teamyg.camera.impl.viewmodel
 
 import androidx.camera.core.CameraSelector
 import com.tjyg.core.ui.BaseViewModel

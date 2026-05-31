@@ -23,9 +23,9 @@ import com.teamyg.camera.impl.screen.CustomCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
 import com.teamyg.camera.impl.util.CameraPermissionUtil
 import com.teamyg.camera.impl.util.findActivity
-import com.teamyg.camera.impl.vm.CustomCameraEffect
-import com.teamyg.camera.impl.vm.CustomCameraIntent
-import com.teamyg.camera.impl.vm.CustomCameraViewModel
+import com.teamyg.camera.impl.viewmodel.CustomCameraEffect
+import com.teamyg.camera.impl.viewmodel.CustomCameraIntent
+import com.teamyg.camera.impl.viewmodel.CustomCameraViewModel
 import com.teamyg.navigation.Navigator
 
 @Composable

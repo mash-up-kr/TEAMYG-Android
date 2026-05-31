@@ -10,5 +10,4 @@ dependencies {
     implementation(projects.feature.camera.api)
 
     implementation(libs.bundles.camerax)
-    implementation(libs.androidx.lifecycle.runtime.compose)
 }

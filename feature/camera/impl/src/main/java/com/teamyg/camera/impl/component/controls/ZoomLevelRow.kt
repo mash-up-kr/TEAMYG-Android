@@ -32,20 +32,18 @@ internal fun ZoomLevelRow(
 ) {
     val availableLevels = DefaultZoomLevels.filter { it in zoomRange }
 
-    when {
-        availableLevels.isNotEmpty() -> {
-            Row(
-                modifier = modifier,
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                availableLevels.forEach { level ->
-                    ZoomLevelChip(
-                        level = level,
-                        isSelected = isSameZoom(zoomRatio, level),
-                        onClick = { onClickZoomLevel(level) },
-                    )
-                }
+    if (availableLevels.isNotEmpty()) {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            availableLevels.forEach { level ->
+                ZoomLevelChip(
+                    level = level,
+                    isSelected = isSameZoom(zoomRatio, level),
+                    onClick = { onClickZoomLevel(level) },
+                )
             }
         }
     }

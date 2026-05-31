@@ -22,10 +22,10 @@ import com.teamyg.camera.impl.screen.SystemCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
 import com.teamyg.camera.impl.util.CameraPermissionUtil
 import com.teamyg.camera.impl.util.findActivity
-import com.teamyg.camera.impl.vm.SystemCameraEffect
-import com.teamyg.camera.impl.vm.SystemCameraIntent
-import com.teamyg.camera.impl.vm.SystemCameraState
-import com.teamyg.camera.impl.vm.SystemCameraViewModel
+import com.teamyg.camera.impl.viewmodel.SystemCameraEffect
+import com.teamyg.camera.impl.viewmodel.SystemCameraIntent
+import com.teamyg.camera.impl.viewmodel.SystemCameraState
+import com.teamyg.camera.impl.viewmodel.SystemCameraViewModel
 import com.teamyg.navigation.Navigator
 
 @Composable
