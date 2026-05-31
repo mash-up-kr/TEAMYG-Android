@@ -14,9 +14,7 @@ sealed interface SystemCameraEffect : UiSideEffect {
 
     data object LaunchCamera : SystemCameraEffect
 
-    data class ReturnResult(val uri: String) : SystemCameraEffect
-
-    data object NavigateToBack : SystemCameraEffect
+    data class ReturnResult(val uri: String?) : SystemCameraEffect
 }
 
 sealed interface SystemCameraIntent : UiIntent {
@@ -139,6 +137,6 @@ class SystemCameraViewModel
         }
 
         private fun handleOnCancel() {
-            postSideEffect(SystemCameraEffect.NavigateToBack)
+            postSideEffect(SystemCameraEffect.ReturnResult(uri = null))
         }
     }

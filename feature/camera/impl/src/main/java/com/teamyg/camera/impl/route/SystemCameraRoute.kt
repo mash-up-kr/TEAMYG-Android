@@ -90,8 +90,6 @@ internal fun SystemCameraRoute(
                     resultEventBus.sendResult(effect.uri)
                     navigator.onBack()
                 }
-
-                is SystemCameraEffect.NavigateToBack -> navigator.onBack()
             }
         }
     }

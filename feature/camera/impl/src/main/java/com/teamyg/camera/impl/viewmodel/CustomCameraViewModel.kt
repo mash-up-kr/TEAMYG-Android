@@ -16,10 +16,8 @@ sealed interface CustomCameraEffect : UiSideEffect {
     data object CaptureImage : CustomCameraEffect
 
     data class ReturnResult(
-        val uri: String,
+        val uri: String?,
     ) : CustomCameraEffect
-
-    data object NavigateToBack : CustomCameraEffect
 }
 
 sealed interface CustomCameraIntent : UiIntent {
@@ -143,14 +141,14 @@ class CustomCameraViewModel
         }
 
         private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
-            postSideEffect(CustomCameraEffect.ReturnResult(intent.uri))
+            postSideEffect(CustomCameraEffect.ReturnResult(uri = intent.uri))
         }
 
         private fun handleOnCaptureFailed() {
-            postSideEffect(CustomCameraEffect.NavigateToBack)
+            postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
         }
 
         private fun handleOnCancel() {
-            postSideEffect(CustomCameraEffect.NavigateToBack)
+            postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
         }
     }

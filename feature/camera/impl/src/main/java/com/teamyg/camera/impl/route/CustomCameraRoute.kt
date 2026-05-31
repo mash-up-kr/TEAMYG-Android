@@ -59,15 +59,15 @@ internal fun CustomCameraRoute(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                CustomCameraEffect.RequestPermission -> {
+                is CustomCameraEffect.RequestPermission -> {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
 
-                CustomCameraEffect.OpenAppSettings -> {
+                is CustomCameraEffect.OpenAppSettings -> {
                     CameraPermissionUtil.openAppSettings(context)
                 }
 
-                CustomCameraEffect.CaptureImage -> {
+                is CustomCameraEffect.CaptureImage -> {
                     val capture = imageCapture ?: run {
                         viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
                         return@collect
@@ -97,8 +97,6 @@ internal fun CustomCameraRoute(
                     resultEventBus.sendResult(effect.uri)
                     navigator.onBack()
                 }
-
-                CustomCameraEffect.NavigateToBack -> navigator.onBack()
             }
         }
     }
