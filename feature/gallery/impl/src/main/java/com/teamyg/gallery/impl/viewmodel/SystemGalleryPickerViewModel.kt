@@ -1,6 +1,5 @@
 package com.teamyg.gallery.impl.viewmodel
 
-import android.net.Uri
 import com.tjyg.core.ui.BaseViewModel
 import com.tjyg.core.ui.UiIntent
 import com.tjyg.core.ui.UiSideEffect
