@@ -40,7 +40,7 @@ okhttp = "5.3.2"
 navigation = "1.2.0-alpha02" # Result Return 을 위한 ResultEventBusNavEntryDecorator 가 1.2.0-alpha02 부터 지원하여, stable 이 아님에도 선택하였습니다
 
 #CameraX
-cameraX = "1.4.1"
+cameraX = "1.6.1"
 
 #ktlint
 ktlint = "14.2.0"
@@ -68,7 +68,6 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 
 #Retrofit
 okhttp = { module = "com.squareup.okhttp3:okhttp" }
