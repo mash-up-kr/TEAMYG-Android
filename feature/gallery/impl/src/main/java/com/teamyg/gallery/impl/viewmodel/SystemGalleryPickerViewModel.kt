@@ -13,8 +13,9 @@ data class SystemGalleryState(
 ) : UiState
 
 sealed interface SystemGalleryIntent : UiIntent {
-    data class PickPhoto(val imageUri: Uri?): SystemGalleryIntent
-    data class ConfirmPhoto(val imageUri: Uri?): SystemGalleryIntent
+    data class PickPhoto(val imageUri: Uri?) : SystemGalleryIntent
+
+    data class ConfirmPhoto(val imageUri: Uri?) : SystemGalleryIntent
 }
 
 sealed interface SystemGallerySideEffect : UiSideEffect {
@@ -26,8 +27,8 @@ class SystemGalleryPickerViewModel
     @Inject
     constructor() :
     BaseViewModel<SystemGalleryState, SystemGalleryIntent, SystemGallerySideEffect>(
-        initialState = SystemGalleryState(),
-    ) {
+            initialState = SystemGalleryState(),
+        ) {
         override fun processIntent(intent: SystemGalleryIntent) {
             when (intent) {
                 is SystemGalleryIntent.PickPhoto -> {

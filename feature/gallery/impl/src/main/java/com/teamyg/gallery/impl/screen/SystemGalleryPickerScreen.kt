@@ -31,7 +31,7 @@ internal fun SystemGalleryPickerScreen(
             model = state.imageUri,
             contentDescription = null,
             contentScale = ContentScale.Fit,
-            modifier = Modifier.size(150.dp)
+            modifier = Modifier.size(150.dp),
         )
         Text(text = "커스텀 갤러리 (구현 예정)")
         Button(

@@ -20,12 +20,12 @@ import com.teamyg.navigation.Navigator
 internal fun SystemGalleryPickerRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: SystemGalleryPickerViewModel = hiltViewModel()
+    viewModel: SystemGalleryPickerViewModel = hiltViewModel(),
 ) {
     val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val photoPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
+        ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
         viewModel.processIntent(SystemGalleryIntent.PickPhoto(uri))
     }
