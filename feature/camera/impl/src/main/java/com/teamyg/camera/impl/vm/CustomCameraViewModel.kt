@@ -11,6 +11,8 @@ import javax.inject.Inject
 sealed interface CustomCameraEffect : UiSideEffect {
     data object RequestPermission : CustomCameraEffect
 
+    data object OpenAppSettings : CustomCameraEffect
+
     data object CaptureImage : CustomCameraEffect
 
     data class ReturnResult(
@@ -25,7 +27,14 @@ sealed interface CustomCameraIntent : UiIntent {
         val granted: Boolean,
     ) : CustomCameraIntent
 
+    data class OnPermissionRequestResult(
+        val granted: Boolean,
+        val shouldShowRationale: Boolean,
+    ) : CustomCameraIntent
+
     data object OnRequestPermission : CustomCameraIntent
+
+    data object OnOpenAppSettings : CustomCameraIntent
 
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
@@ -49,7 +58,9 @@ sealed interface CustomCameraIntent : UiIntent {
 }
 
 data class CustomCameraState(
+    val isInit: Boolean = false,
     val hasPermission: Boolean = false,
+    val permanentlyDenied: Boolean = false,
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val zoomRatio: Float = 1f,
     val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
@@ -63,7 +74,9 @@ class CustomCameraViewModel
         override fun processIntent(intent: CustomCameraIntent) {
             when (intent) {
                 is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
+                is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
                 is CustomCameraIntent.OnRequestPermission -> handleOnRequestPermission()
+                is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
                 is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
                 is CustomCameraIntent.OnClickZoomLevel -> handleOnClickZoomLevel(intent)
                 is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
@@ -75,11 +88,30 @@ class CustomCameraViewModel
         }
 
         private fun handleOnPermissionResult(intent: CustomCameraIntent.OnPermissionResult) {
-            updateState { copy(hasPermission = intent.granted) }
+            updateState {
+                copy(
+                    isInit = true,
+                    hasPermission = intent.granted,
+                    permanentlyDenied = if (intent.granted) false else permanentlyDenied,
+                )
+            }
+        }
+
+        private fun handleOnPermissionRequestResult(intent: CustomCameraIntent.OnPermissionRequestResult) {
+            updateState {
+                copy(
+                    hasPermission = intent.granted,
+                    permanentlyDenied = !intent.granted && !intent.shouldShowRationale,
+                )
+            }
         }
 
         private fun handleOnRequestPermission() {
             postSideEffect(CustomCameraEffect.RequestPermission)
+        }
+
+        private fun handleOnOpenAppSettings() {
+            postSideEffect(CustomCameraEffect.OpenAppSettings)
         }
 
         private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {

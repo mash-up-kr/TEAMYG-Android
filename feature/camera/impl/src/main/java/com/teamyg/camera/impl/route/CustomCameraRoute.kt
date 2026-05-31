@@ -16,10 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.camera.impl.screen.CustomCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
+import com.teamyg.camera.impl.util.CameraPermissionUtil
+import com.teamyg.camera.impl.util.findActivity
 import com.teamyg.camera.impl.vm.CustomCameraEffect
 import com.teamyg.camera.impl.vm.CustomCameraIntent
 import com.teamyg.camera.impl.vm.CustomCameraViewModel
@@ -40,10 +43,15 @@ internal fun CustomCameraRoute(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted))
-        if (!granted) {
-            navigator.onBack()
-        }
+        viewModel.processIntent(
+            CustomCameraIntent.OnPermissionRequestResult(
+                granted = granted,
+                shouldShowRationale = CameraPermissionUtil.shouldShowRationale(
+                    activity = context.findActivity(),
+                    permission = Manifest.permission.CAMERA,
+                ),
+            ),
+        )
     }
 
     LaunchedEffect(viewModel) {
@@ -51,6 +59,10 @@ internal fun CustomCameraRoute(
             when (effect) {
                 CustomCameraEffect.RequestPermission -> {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+
+                CustomCameraEffect.OpenAppSettings -> {
+                    CameraPermissionUtil.openAppSettings(context)
                 }
 
                 CustomCameraEffect.CaptureImage -> {
@@ -89,18 +101,20 @@ internal fun CustomCameraRoute(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LifecycleResumeEffect(Unit) {
         val granted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA,
         ) == PackageManager.PERMISSION_GRANTED
 
         viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted))
+        onPauseOrDispose { }
     }
 
     CustomCameraScreen(
         state = state,
         onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
+        onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
         onImageCaptureReady = { imageCapture = it },
         onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
         onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },

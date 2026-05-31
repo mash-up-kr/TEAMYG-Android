@@ -24,6 +24,7 @@ import com.tjyg.core.ui.preview.YGPreview
 internal fun CustomCameraScreen(
     state: CustomCameraState,
     onClickGrantPermission: () -> Unit,
+    onClickOpenAppSettings: () -> Unit,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (ClosedFloatingPointRange<Float>) -> Unit,
     onClickZoomLevel: (Float) -> Unit,
@@ -52,7 +53,10 @@ internal fun CustomCameraScreen(
         }
 
         false -> CameraPermissionRequestComponent(
+            isInit = state.isInit,
+            permanentlyDenied = state.permanentlyDenied,
             onClickGrantPermission = onClickGrantPermission,
+            onClickOpenAppSettings = onClickOpenAppSettings,
             modifier = modifier,
         )
     }
@@ -100,8 +104,33 @@ private fun CameraContent(
 @Composable
 private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
     CustomCameraScreen(
-        state = CustomCameraState(hasPermission = false),
+        state = CustomCameraState(
+            isInit = true,
+            hasPermission = false,
+        ),
         onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
+        onImageCaptureReady = {},
+        onZoomRangeReady = {},
+        onClickZoomLevel = {},
+        onClickShutter = {},
+        onClickFlip = {},
+        onClickCancel = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox {
+    CustomCameraScreen(
+        state = CustomCameraState(
+            isInit = true,
+            hasPermission = false,
+            permanentlyDenied = true,
+        ),
+        onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
         onImageCaptureReady = {},
         onZoomRangeReady = {},
         onClickZoomLevel = {},

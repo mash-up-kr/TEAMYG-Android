@@ -18,7 +18,10 @@ import com.tjyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CameraPermissionRequestComponent(
+    isInit: Boolean,
+    permanentlyDenied: Boolean,
     onClickGrantPermission: () -> Unit,
+    onClickOpenAppSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -28,12 +31,28 @@ internal fun CameraPermissionRequestComponent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(
-            text = "카메라 권한이 필요합니다.",
-            color = Color.White,
-        )
-        Button(onClick = onClickGrantPermission) {
-            Text(text = "권한 요청")
+        if (isInit) {
+            when (permanentlyDenied) {
+                true -> {
+                    Text(
+                        text = "카메라 권한이 거부되어 있습니다.\n설정에서 권한을 허용해주세요.",
+                        color = Color.White,
+                    )
+                    Button(onClick = onClickOpenAppSettings) {
+                        Text(text = "설정 열기")
+                    }
+                }
+
+                false -> {
+                    Text(
+                        text = "카메라 권한이 필요합니다.",
+                        color = Color.White,
+                    )
+                    Button(onClick = onClickGrantPermission) {
+                        Text(text = "권한 요청")
+                    }
+                }
+            }
         }
     }
 }
@@ -42,7 +61,22 @@ internal fun CameraPermissionRequestComponent(
 @Composable
 private fun PreviewCameraPermissionRequestComponent() = PreviewBox {
     CameraPermissionRequestComponent(
+        isInit = true,
+        permanentlyDenied = false,
         onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCameraPermissionRequestComponentPermanentlyDenied() = PreviewBox {
+    CameraPermissionRequestComponent(
+        isInit = true,
+        permanentlyDenied = true,
+        onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

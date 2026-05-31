@@ -15,12 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.camera.impl.screen.SystemCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
+import com.teamyg.camera.impl.util.CameraPermissionUtil
+import com.teamyg.camera.impl.util.findActivity
 import com.teamyg.camera.impl.vm.SystemCameraEffect
 import com.teamyg.camera.impl.vm.SystemCameraIntent
+import com.teamyg.camera.impl.vm.SystemCameraState
 import com.teamyg.camera.impl.vm.SystemCameraViewModel
 import com.teamyg.navigation.Navigator
 
@@ -53,17 +57,29 @@ internal fun SystemCameraRoute(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        viewModel.processIntent(SystemCameraIntent.OnPermissionResult(granted))
+        viewModel.processIntent(
+            SystemCameraIntent.OnPermissionRequestResult(
+                granted = granted,
+                shouldShowRationale = CameraPermissionUtil.shouldShowRationale(
+                    activity = context.findActivity(),
+                    permission = Manifest.permission.CAMERA,
+                ),
+            ),
+        )
     }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                SystemCameraEffect.RequestPermission -> {
+                is SystemCameraEffect.RequestPermission -> {
                     permissionLauncher.launch(Manifest.permission.CAMERA)
                 }
 
-                SystemCameraEffect.LaunchCamera -> {
+                is SystemCameraEffect.OpenAppSettings -> {
+                    CameraPermissionUtil.openAppSettings(context)
+                }
+
+                is SystemCameraEffect.LaunchCamera -> {
                     val uri = CameraFileProvider.createImageUri(context)
                     pendingUri = uri
                     takePictureLauncher.launch(uri)
@@ -75,23 +91,32 @@ internal fun SystemCameraRoute(
                     navigator.onBack()
                 }
 
-                SystemCameraEffect.Back -> navigator.onBack()
+                is SystemCameraEffect.NavigateToBack -> navigator.onBack()
             }
         }
     }
 
-    LaunchedEffect(Unit) {
+    LifecycleResumeEffect(Unit) {
         val granted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA,
         ) == PackageManager.PERMISSION_GRANTED
 
-        viewModel.processIntent(SystemCameraIntent.OnPermissionResult(granted))
+        when (state) {
+            is SystemCameraState.Init,
+            is SystemCameraState.RequestingPermission,
+            -> viewModel.processIntent(SystemCameraIntent.OnPermissionResult(granted))
+
+            else -> Unit
+        }
+
+        onPauseOrDispose {}
     }
 
     SystemCameraScreen(
         state = state,
         onClickGrantPermission = { viewModel.processIntent(SystemCameraIntent.OnRequestPermission) },
+        onClickOpenAppSettings = { viewModel.processIntent(SystemCameraIntent.OnOpenAppSettings) },
         onClickRetry = { viewModel.processIntent(SystemCameraIntent.OnRetry) },
         onClickCancel = { viewModel.processIntent(SystemCameraIntent.OnCancel) },
         modifier = modifier,

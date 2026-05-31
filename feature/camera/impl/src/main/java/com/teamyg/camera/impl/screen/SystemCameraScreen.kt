@@ -19,6 +19,7 @@ import com.tjyg.core.ui.preview.YGPreview
 internal fun SystemCameraScreen(
     state: SystemCameraState,
     onClickGrantPermission: () -> Unit,
+    onClickOpenAppSettings: () -> Unit,
     onClickRetry: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -36,10 +37,21 @@ internal fun SystemCameraScreen(
                 Text(text = "카메라를 여는 중입니다…")
             }
 
-            SystemCameraState.RequestingPermission -> {
-                Text(text = "카메라 권한이 필요합니다.")
-                Button(onClick = onClickGrantPermission) {
-                    Text(text = "권한 요청")
+            is SystemCameraState.RequestingPermission -> {
+                when (state.permanentlyDenied) {
+                    true -> {
+                        Text(text = "카메라 권한이 거부되어 있습니다.\n설정에서 권한을 허용해주세요.")
+                        Button(onClick = onClickOpenAppSettings) {
+                            Text(text = "설정 열기")
+                        }
+                    }
+
+                    false -> {
+                        Text(text = "카메라 권한이 필요합니다.")
+                        Button(onClick = onClickGrantPermission) {
+                            Text(text = "권한 요청")
+                        }
+                    }
                 }
             }
 
@@ -65,8 +77,22 @@ internal fun SystemCameraScreen(
 @Composable
 private fun PreviewSystemCameraScreen() = PreviewBox {
     SystemCameraScreen(
-        state = SystemCameraState.RequestingPermission,
+        state = SystemCameraState.RequestingPermission(),
         onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
+        onClickRetry = {},
+        onClickCancel = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewSystemCameraScreenPermanentlyDenied() = PreviewBox {
+    SystemCameraScreen(
+        state = SystemCameraState.RequestingPermission(permanentlyDenied = true),
+        onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
         onClickRetry = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
