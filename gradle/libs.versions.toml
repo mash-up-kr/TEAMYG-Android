@@ -48,6 +48,9 @@ cameraX = "1.6.1"
 #ktlint
 ktlint = "14.2.0"
 
+# timber
+timber = "5.0.1"
+
 [libraries]
 #gradle plugin
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -100,6 +103,9 @@ camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = 
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+
+# Timber
+logger-timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 
 [bundles]
 hilt = [
