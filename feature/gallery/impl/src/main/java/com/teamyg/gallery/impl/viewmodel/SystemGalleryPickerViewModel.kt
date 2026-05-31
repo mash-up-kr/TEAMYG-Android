@@ -9,17 +9,17 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 data class SystemGalleryState(
-    val imageUri: Uri? = null,
+    val imageUri: String? = null,
 ) : UiState
 
 sealed interface SystemGalleryIntent : UiIntent {
-    data class PickPhoto(val imageUri: Uri?) : SystemGalleryIntent
+    data class PickPhoto(val imageUri: String?) : SystemGalleryIntent
 
-    data class ConfirmPhoto(val imageUri: Uri?) : SystemGalleryIntent
+    data class ConfirmPhoto(val imageUri: String?) : SystemGalleryIntent
 }
 
 sealed interface SystemGallerySideEffect : UiSideEffect {
-    data class NavigateToBack(val imageUri: Uri?) : SystemGallerySideEffect
+    data class NavigateToBack(val imageUri: String?) : SystemGallerySideEffect
 }
 
 @HiltViewModel

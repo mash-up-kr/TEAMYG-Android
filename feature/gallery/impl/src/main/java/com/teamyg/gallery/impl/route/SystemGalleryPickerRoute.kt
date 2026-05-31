@@ -14,6 +14,7 @@ import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.gallery.impl.screen.SystemGalleryPickerScreen
 import com.teamyg.gallery.impl.viewmodel.SystemGalleryIntent
 import com.teamyg.gallery.impl.viewmodel.SystemGalleryPickerViewModel
+import com.teamyg.gallery.impl.viewmodel.SystemGallerySideEffect
 import com.teamyg.navigation.Navigator
 
 @Composable
@@ -27,7 +28,7 @@ internal fun SystemGalleryPickerRoute(
     val photoPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
-        viewModel.processIntent(SystemGalleryIntent.PickPhoto(uri))
+        viewModel.processIntent(SystemGalleryIntent.PickPhoto(uri.toString()))
     }
 
     LaunchedEffect(Unit) {
@@ -36,12 +37,24 @@ internal fun SystemGalleryPickerRoute(
         )
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SystemGallerySideEffect.NavigateToBack -> {
+                    if (effect.imageUri != null) {
+                        resultEventBus.sendResult(effect.imageUri)
+                    }
+                    navigator.onBack()
+                }
+            }
+        }
+    }
+
     SystemGalleryPickerScreen(
         state = state,
         modifier = modifier,
         onClickConfirm = {
-            resultEventBus.sendResult(state.imageUri)
-            navigator.onBack()
+            viewModel.processIntent(SystemGalleryIntent.ConfirmPhoto(state.imageUri))
         },
     )
 }
