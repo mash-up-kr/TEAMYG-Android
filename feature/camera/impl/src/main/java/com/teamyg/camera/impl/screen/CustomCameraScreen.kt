@@ -1,6 +1,5 @@
 package com.teamyg.camera.impl.screen
 
-import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.teamyg.camera.impl.component.CameraControlComponent
 import com.teamyg.camera.impl.component.CameraPermissionRequestComponent
-import com.teamyg.camera.impl.component.CameraPreviewComponent
 import com.teamyg.camera.impl.component.CameraZoomIndicatorComponent
 import com.teamyg.camera.impl.viewmodel.CustomCameraState
 import com.tjyg.core.ui.preview.PreviewBox
@@ -25,13 +23,12 @@ internal fun CustomCameraScreen(
     state: CustomCameraState,
     onClickGrantPermission: () -> Unit,
     onClickOpenAppSettings: () -> Unit,
-    onImageCaptureReady: (ImageCapture) -> Unit,
-    onZoomRangeReady: (ClosedFloatingPointRange<Float>) -> Unit,
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    cameraPreview: @Composable () -> Unit,
 ) {
     when (state.hasPermission) {
         true -> CameraContent(
@@ -42,15 +39,8 @@ internal fun CustomCameraScreen(
             onClickFlip = onClickFlip,
             onClickCancel = onClickCancel,
             modifier = modifier,
-        ) {
-            CameraPreviewComponent(
-                lensFacing = state.lensFacing,
-                zoomRatio = state.zoomRatio,
-                onImageCaptureReady = onImageCaptureReady,
-                onZoomRangeReady = onZoomRangeReady,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+            cameraPreview = cameraPreview,
+        )
 
         false -> CameraPermissionRequestComponent(
             isInit = state.isInit,
@@ -110,13 +100,12 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
         ),
         onClickGrantPermission = {},
         onClickOpenAppSettings = {},
-        onImageCaptureReady = {},
-        onZoomRangeReady = {},
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
+        cameraPreview = @Composable {},
     )
 }
 
@@ -131,12 +120,31 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
         ),
         onClickGrantPermission = {},
         onClickOpenAppSettings = {},
-        onImageCaptureReady = {},
-        onZoomRangeReady = {},
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
+        cameraPreview = @Composable {},
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
+    CustomCameraScreen(
+        state = CustomCameraState(
+            isInit = true,
+            hasPermission = true,
+            permanentlyDenied = false,
+        ),
+        onClickGrantPermission = {},
+        onClickOpenAppSettings = {},
+        onClickZoomLevel = {},
+        onClickShutter = {},
+        onClickFlip = {},
+        onClickCancel = {},
+        modifier = Modifier.fillMaxSize(),
+        cameraPreview = @Composable {},
     )
 }

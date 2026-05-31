@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.camera.impl.component.CameraPreviewComponent
 import com.teamyg.camera.impl.screen.CustomCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
 import com.teamyg.camera.impl.util.CameraPermissionUtil
@@ -115,12 +117,18 @@ internal fun CustomCameraRoute(
         state = state,
         onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
         onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
-        onImageCaptureReady = { imageCapture = it },
-        onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
         onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },
         onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
         onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
         onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
         modifier = modifier,
-    )
+    ) {
+        CameraPreviewComponent(
+            lensFacing = state.lensFacing,
+            zoomRatio = state.zoomRatio,
+            onImageCaptureReady = { imageCapture = it },
+            onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
