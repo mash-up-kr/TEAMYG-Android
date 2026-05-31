@@ -11,7 +11,9 @@ class TimberLogger(private val defaultTag: String?) : Logger {
         throwable: Throwable?,
         message: () -> String,
     ) {
-        if (priority < TimberUtils.minPriority) return  // 평가 전 가드 (protected 안 건드림)
+        if (priority < TimberUtils.minPriority) {
+            return
+        }
 
         val injectTag = tag ?: defaultTag
         val tree = if (injectTag != null) Timber.tag(injectTag) else Timber
