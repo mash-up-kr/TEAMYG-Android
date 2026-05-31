@@ -62,36 +62,24 @@ private fun ZoomLevelChip(
         modifier = modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(
-                when {
-                    isSelected -> ChipBackgroundColor
-                    else -> Color.Transparent
-                },
-            ).clickable(onClick = onClick),
+            .background(color = if (isSelected) ChipBackgroundColor else Color.Transparent)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = formatZoomLabel(level),
-            color = when {
-                isSelected -> AccentZoomColor
-                else -> Color.White
-            },
-            fontSize = when {
-                isSelected -> 14.sp
-                else -> 13.sp
-            },
-            fontWeight = when {
-                isSelected -> FontWeight.Bold
-                else -> FontWeight.Normal
-            },
+            color = if (isSelected) AccentZoomColor else Color.White,
+            fontSize = if (isSelected) 14.sp else 13.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
         )
     }
 }
 
 private fun formatZoomLabel(level: Float): String =
-    when {
-        level >= 1f -> level.toInt().toString()
-        else -> ".${(level * 10).toInt()}"
+    if (level >= 1f) {
+        level.toInt().toString()
+    } else {
+        ".${(level * 10).toInt()}"
     }
 
 private fun isSameZoom(

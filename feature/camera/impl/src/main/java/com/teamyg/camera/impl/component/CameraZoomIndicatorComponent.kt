@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tjyg.core.ui.preview.PreviewBox
 import com.tjyg.core.ui.preview.YGPreview
-import java.util.Locale
 
 private val AccentZoomColor = Color(0xFFFFC107)
 
@@ -33,7 +32,7 @@ internal fun CameraZoomIndicatorComponent(
             ),
     ) {
         Text(
-            text = String.format(Locale.US, "%.1f×", zoomRatio),
+            text = String.format("%.1f×", zoomRatio),
             color = AccentZoomColor,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
