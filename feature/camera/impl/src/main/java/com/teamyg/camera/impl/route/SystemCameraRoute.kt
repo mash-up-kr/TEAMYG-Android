@@ -3,6 +3,7 @@ package com.teamyg.camera.impl.route
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -21,7 +22,6 @@ import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.camera.impl.screen.SystemCameraScreen
 import com.teamyg.camera.impl.util.CameraFileProvider
 import com.teamyg.camera.impl.util.CameraPermissionUtil
-import com.teamyg.camera.impl.util.findActivity
 import com.teamyg.camera.impl.viewmodel.SystemCameraEffect
 import com.teamyg.camera.impl.viewmodel.SystemCameraIntent
 import com.teamyg.camera.impl.viewmodel.SystemCameraState
@@ -35,6 +35,8 @@ internal fun SystemCameraRoute(
     viewModel: SystemCameraViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
+
     val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -61,7 +63,7 @@ internal fun SystemCameraRoute(
             SystemCameraIntent.OnPermissionRequestResult(
                 granted = granted,
                 shouldShowRationale = CameraPermissionUtil.shouldShowRationale(
-                    activity = context.findActivity(),
+                    activity = activity,
                     permission = Manifest.permission.CAMERA,
                 ),
             ),
