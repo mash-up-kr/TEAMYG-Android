@@ -2,9 +2,11 @@ package com.teamyg.buildlogic
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.teamyg.buildlogic.utils.extensions.implementation
 import com.teamyg.buildlogic.utils.extensions.libs
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import kotlin.text.toInt
@@ -59,6 +61,10 @@ internal fun Project.setConfigKotlinAndroid() {
         jvmToolchain(17)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+        }
+
+        dependencies {
+            implementation(libs.kotlinx.datetime)
         }
     }
 }
