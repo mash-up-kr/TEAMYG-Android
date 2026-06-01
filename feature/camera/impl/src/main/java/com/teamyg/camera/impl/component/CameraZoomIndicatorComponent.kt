@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLocale
 import com.tjyg.core.ui.preview.PreviewBox
 import com.tjyg.core.ui.preview.YGPreview
 
@@ -22,6 +23,8 @@ internal fun CameraZoomIndicatorComponent(
     zoomRatio: Float,
     modifier: Modifier = Modifier,
 ) {
+    val localLocale = LocalLocale.current.platformLocale
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(50))
@@ -32,7 +35,11 @@ internal fun CameraZoomIndicatorComponent(
             ),
     ) {
         Text(
-            text = String.format("%.1f×", zoomRatio),
+            text = String.format(
+                localLocale,
+                "%.1f×",
+                zoomRatio,
+            ),
             color = AccentZoomColor,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
