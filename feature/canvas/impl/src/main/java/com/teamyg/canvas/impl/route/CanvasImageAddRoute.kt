@@ -21,7 +21,7 @@ internal fun CanvasImageAddRoute(
 
     CanvasImageAddScreen(
         modifier = modifier,
-        onClickCamera = { navigator.goTo(NavKeyCameraCapture) },
+        onClickCamera = { navigator.goTo(NavKeyCameraSystem) },
         onClickGallery = { navigator.goTo(NavKeySystemGalleryPicker) },
     )
 }
