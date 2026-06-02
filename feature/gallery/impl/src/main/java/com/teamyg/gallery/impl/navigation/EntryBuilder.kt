@@ -6,14 +6,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.gallery.api.NavKeyGalleryPicker
-import com.teamyg.gallery.impl.route.GalleryPickerRoute
+import com.teamyg.gallery.api.NavKeySystemGalleryPicker
+import com.teamyg.gallery.impl.route.SystemGalleryPickerRoute
 import com.teamyg.navigation.Navigator
 
-fun EntryProviderScope<NavKey>.featureGalleryEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGalleryPicker> {
+fun EntryProviderScope<NavKey>.featureSystemGalleryEntryBuilder(navigator: Navigator) {
+    entry<NavKeySystemGalleryPicker> {
         Scaffold { innerPadding ->
-            GalleryPickerRoute(
+            SystemGalleryPickerRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
