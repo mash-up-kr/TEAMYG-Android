@@ -8,4 +8,6 @@ android {
 
 dependencies {
     implementation(projects.feature.camera.api)
+
+    implementation(libs.bundles.camerax)
 }

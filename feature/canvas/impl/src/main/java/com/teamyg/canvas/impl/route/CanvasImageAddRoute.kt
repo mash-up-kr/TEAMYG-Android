@@ -3,7 +3,7 @@ package com.teamyg.canvas.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.ResultEffect
-import com.teamyg.camera.api.NavKeyCameraCapture
+import com.teamyg.camera.api.NavKeyCameraSystem
 import com.teamyg.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.gallery.api.NavKeyGalleryPicker
 import com.teamyg.navigation.Navigator
@@ -21,7 +21,7 @@ internal fun CanvasImageAddRoute(
 
     CanvasImageAddScreen(
         modifier = modifier,
-        onClickCamera = { navigator.goTo(NavKeyCameraCapture) },
+        onClickCamera = { navigator.goTo(NavKeyCameraSystem) },
         onClickGallery = { navigator.goTo(NavKeyGalleryPicker) },
     )
 }
