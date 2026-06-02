@@ -6,14 +6,26 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.camera.api.NavKeyCameraCapture
-import com.teamyg.camera.impl.route.CameraCaptureRoute
+import com.teamyg.camera.api.NavKeyCameraCustom
+import com.teamyg.camera.api.NavKeyCameraSystem
+import com.teamyg.camera.impl.route.CustomCameraRoute
+import com.teamyg.camera.impl.route.SystemCameraRoute
 import com.teamyg.navigation.Navigator
 
 fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
-    entry<NavKeyCameraCapture> {
+    entry<NavKeyCameraCustom> {
         Scaffold { innerPadding ->
-            CameraCaptureRoute(
+            CustomCameraRoute(
+                navigator = navigator,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+    }
+    entry<NavKeyCameraSystem> {
+        Scaffold { innerPadding ->
+            SystemCameraRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
