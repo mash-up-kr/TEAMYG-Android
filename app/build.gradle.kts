@@ -49,4 +49,6 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.bundles.navigation)
+
+    implementation(libs.kakao.sdk.user)
 }

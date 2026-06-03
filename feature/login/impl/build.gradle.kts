@@ -9,4 +9,6 @@ android {
 dependencies {
     implementation(projects.feature.login.api)
     implementation(projects.feature.grouphome.api)
+
+    implementation(libs.kakao.sdk.user)
 }
