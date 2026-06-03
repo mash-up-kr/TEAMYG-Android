@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.teamyg.android.library)
+    alias(libs.plugins.teamyg.dagger.hilt)
     alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -14,4 +15,6 @@ dependencies {
 
     implementation(libs.bundles.network)
     implementation(libs.kotlin.serialization)
+
+    implementation(libs.kakao.sdk.user)
 }

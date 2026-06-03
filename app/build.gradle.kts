@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").inputStream().use { load(it) }
+}
+
 plugins {
     alias(libs.plugins.teamyg.android.application)
     alias(libs.plugins.teamyg.jetpack.compose)
@@ -14,9 +20,19 @@ android {
             .get()
             .toInt()
         versionName = libs.versions.versionName.get()
+
+        manifestPlaceholders["SCHEME_KAKAO_NATIVE_APP_KEY"] =
+            "kakao${localProperties.getProperty("kakao.native.app.key")}"
+
+        buildConfigField(
+            "String",
+            "KAKAO_NATIVE_APP_KEY",
+            "\"${localProperties.getProperty("kakao.native.app.key")}\"",
+        )
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
