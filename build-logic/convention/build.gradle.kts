@@ -45,6 +45,10 @@ gradlePlugin {
             className = "JetpackCompose",
         )
         pluginRegister(
+            pluginName = "kotlin.jvm",
+            className = "KotlinJvm",
+        )
+        pluginRegister(
             pluginName = "module.feature.impl",
             className = "ModuleFeatureImpl",
         )
