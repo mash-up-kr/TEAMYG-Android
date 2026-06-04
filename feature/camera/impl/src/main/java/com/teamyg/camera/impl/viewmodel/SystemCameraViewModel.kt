@@ -1,5 +1,7 @@
 package com.teamyg.camera.impl.viewmodel
 
+import com.teamyg.analytics.AnalyticsHelper
+import com.teamyg.model.qualifier.ViewModelQualifier
 import com.tjyg.core.ui.base.BaseViewModel
 import com.tjyg.core.ui.mvi.UiIntent
 import com.tjyg.core.ui.mvi.UiSideEffect
@@ -58,8 +60,17 @@ sealed interface SystemCameraState : UiState {
 @HiltViewModel
 class SystemCameraViewModel
     @Inject
-    constructor() :
-    BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(initialState = SystemCameraState.Init) {
+    constructor(
+        @ViewModelQualifier analyticsHelper: AnalyticsHelper,
+    ) :
+    BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(
+            analyticsHelper = analyticsHelper,
+            initialState = SystemCameraState.Init,
+        ) {
+        init {
+            analyticsHelper.d { "SystemCameraViewModel::init" }
+        }
+
         override fun processIntent(intent: SystemCameraIntent) {
             when (intent) {
                 is SystemCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)

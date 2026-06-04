@@ -1,5 +1,7 @@
 package com.teamyg.gallery.impl.viewmodel
 
+import com.teamyg.analytics.AnalyticsHelper
+import com.teamyg.model.qualifier.ViewModelQualifier
 import com.tjyg.core.ui.base.BaseViewModel
 import com.tjyg.core.ui.mvi.UiIntent
 import com.tjyg.core.ui.mvi.UiSideEffect
@@ -24,10 +26,17 @@ sealed interface SystemGallerySideEffect : UiSideEffect {
 @HiltViewModel
 class SystemGalleryPickerViewModel
     @Inject
-    constructor() :
+    constructor(
+        @ViewModelQualifier analyticsHelper: AnalyticsHelper,
+    ) :
     BaseViewModel<SystemGalleryState, SystemGalleryIntent, SystemGallerySideEffect>(
+            analyticsHelper = analyticsHelper,
             initialState = SystemGalleryState(),
         ) {
+        init {
+            analyticsHelper.d { "SystemGalleryPickerViewModel::init" }
+        }
+
         override fun processIntent(intent: SystemGalleryIntent) {
             when (intent) {
                 is SystemGalleryIntent.PickPhoto -> {

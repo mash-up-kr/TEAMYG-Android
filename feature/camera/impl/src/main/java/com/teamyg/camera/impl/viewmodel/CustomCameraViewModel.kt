@@ -1,6 +1,8 @@
 package com.teamyg.camera.impl.viewmodel
 
 import androidx.camera.core.CameraSelector
+import com.teamyg.analytics.AnalyticsHelper
+import com.teamyg.model.qualifier.ViewModelQualifier
 import com.tjyg.core.ui.base.BaseViewModel
 import com.tjyg.core.ui.mvi.UiIntent
 import com.tjyg.core.ui.mvi.UiSideEffect
@@ -67,8 +69,17 @@ data class CustomCameraState(
 @HiltViewModel
 class CustomCameraViewModel
     @Inject
-    constructor() :
-    BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(initialState = CustomCameraState()) {
+    constructor(
+        @ViewModelQualifier analyticsHelper: AnalyticsHelper,
+    ) :
+    BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
+            analyticsHelper = analyticsHelper,
+            initialState = CustomCameraState(),
+        ) {
+        init {
+            analyticsHelper.d { "CustomCameraViewModel::init" }
+        }
+
         override fun processIntent(intent: CustomCameraIntent) {
             when (intent) {
                 is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)

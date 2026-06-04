@@ -2,6 +2,7 @@ package com.tjyg.core.ui.base
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teamyg.analytics.AnalyticsHelper
 import com.tjyg.core.ui.mvi.UiIntent
 import com.tjyg.core.ui.mvi.UiSideEffect
 import com.tjyg.core.ui.mvi.UiState
@@ -12,7 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initialState: S) : ViewModel() {
+abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(
+    protected val analyticsHelper: AnalyticsHelper,
+    initialState: S,
+) : ViewModel() {
     private val _state = MutableStateFlow(initialState)
     val state = _state.asStateFlow()
 
