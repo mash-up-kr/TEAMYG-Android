@@ -22,7 +22,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.feature.sample)
     implementation(projects.feature.grouphome.api)
     implementation(projects.feature.grouphome.impl)
     implementation(projects.feature.login.api)

@@ -37,7 +37,6 @@ include(
 include(":data")
 include(":domain")
 include(
-    ":feature:sample",
     ":feature:login:api",
     ":feature:login:impl",
     ":feature:grouphome:api",
