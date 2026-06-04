@@ -11,7 +11,7 @@ class TimberLogger(private val defaultTag: String?) : Logger {
         throwable: Throwable?,
         message: () -> String,
     ) {
-        if (priority < TimberUtils.minPriority) {
+        if (TimberUtils.isDebug.not()) {
             return
         }
 
