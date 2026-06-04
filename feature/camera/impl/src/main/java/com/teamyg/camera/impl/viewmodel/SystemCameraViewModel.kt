@@ -1,9 +1,9 @@
 package com.teamyg.camera.impl.viewmodel
 
-import com.tjyg.core.ui.BaseViewModel
-import com.tjyg.core.ui.UiIntent
-import com.tjyg.core.ui.UiSideEffect
-import com.tjyg.core.ui.UiState
+import com.tjyg.core.ui.base.BaseViewModel
+import com.tjyg.core.ui.mvi.UiIntent
+import com.tjyg.core.ui.mvi.UiSideEffect
+import com.tjyg.core.ui.mvi.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 

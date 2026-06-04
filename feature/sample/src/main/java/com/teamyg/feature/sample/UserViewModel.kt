@@ -1,7 +1,7 @@
 package com.teamyg.feature.sample
 
 import androidx.lifecycle.viewModelScope
-import com.tjyg.core.ui.BaseViewModel
+import com.tjyg.core.ui.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
