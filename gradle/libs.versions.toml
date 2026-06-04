@@ -6,6 +6,9 @@ minSdk = "26"
 versionCode = "1"
 versionName = "1.0.0"
 
+# Java
+javaxInject = "1"
+
 #Android & Kotlin
 agp = "9.1.1"
 kotlin = "2.3.21"
@@ -57,6 +60,9 @@ android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", ve
 kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+
+# Java
+javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 
 #Android
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -149,5 +155,6 @@ teamyg-android-library = { id = "com.teamyg.plugin.android.library" }
 teamyg-dagger-hilt = { id = "com.teamyg.plugin.dagger.hilt" }
 teamyg-dagger-hilt-compose = { id = "com.teamyg.plugin.dagger.hilt.compose" }
 teamyg-jetpack-compose = { id = "com.teamyg.plugin.jetpack.compose" }
+teamyg-kotlin-jvm = { id = "com.teamyg.plugin.kotlin.jvm" }
 teamyg-module-feature-impl = { id = "com.teamyg.plugin.module.feature.impl" }
 teamyg-module-feature-api = { id = "com.teamyg.plugin.module.feature.api" }

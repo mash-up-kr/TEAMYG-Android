@@ -31,6 +31,7 @@ include(":app")
 include(
     ":core:analytics",
     ":core:designsystem",
+    ":core:model",
     ":core:ui",
     ":core:util",
     ":core:navigation",
