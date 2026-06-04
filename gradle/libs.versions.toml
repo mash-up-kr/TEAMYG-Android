@@ -8,8 +8,7 @@ versionName = "1.0.0"
 
 #Android & Kotlin
 agp = "9.1.1"
-kotlin = "2.3.21"
-jetbrainsKotlinJvm = "2.3.21"
+kotlin = "2.4.0"
 coreKtx = "1.18.0"
 
 #Lifecycle
@@ -131,7 +130,7 @@ camerax = [
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
+jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "daggerHilt" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
