@@ -64,6 +64,8 @@ internal fun Project.setConfigKotlinAndroid() {
         }
 
         dependencies {
+            implementation(project(":core:model"))
+
             implementation(libs.kotlinx.datetime)
         }
     }
