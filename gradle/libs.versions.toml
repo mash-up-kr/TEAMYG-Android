@@ -9,7 +9,7 @@ versionName = "1.0.0"
 #Android & Kotlin
 agp = "9.1.1"
 kotlin = "2.4.0"
-coreKtx = "1.18.0"
+coreKtx = "1.19.0"
 
 #Lifecycle
 lifecycleRuntimeKtx = "2.10.0"
