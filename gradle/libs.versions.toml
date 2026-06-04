@@ -16,7 +16,7 @@ lifecycleRuntimeKtx = "2.10.0"
 
 #Compose
 activityCompose = "1.13.0"
-composeBom = "2026.04.01"
+composeBom = "2026.05.01"
 
 #Coil
 coil = "3.4.0"
