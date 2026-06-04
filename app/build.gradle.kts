@@ -53,6 +53,7 @@ dependencies {
     implementation(projects.feature.canvas.impl)
 
     implementation(projects.domain)
+    implementation(projects.data)
     implementation(projects.core.ui)
     implementation(projects.core.util)
     implementation(projects.core.designsystem)
