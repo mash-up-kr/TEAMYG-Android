@@ -24,33 +24,33 @@ sealed interface LoginSideEffect : UiSideEffect
 
 @HiltViewModel
 class LoginViewModel
-@Inject
-constructor(
-    private val loginWithKakaoUseCase: LoginWithKakaoUseCase,
-) :
+    @Inject
+    constructor(
+        private val loginWithKakaoUseCase: LoginWithKakaoUseCase,
+    ) :
     BaseViewModel<LoginState, LoginIntent, LoginSideEffect>(initialState = LoginState()) {
-    override fun processIntent(intent: LoginIntent) {
-        when (intent) {
-            LoginIntent.LoginWithKakao -> {
-                viewModelScope.launch {
-                    when (val result = loginWithKakaoUseCase()) {
-                        is KakaoLoginResult.Success -> {
-                            updateState { copy(token = result.token) }
-                            Log.i(TAG, "카카오 계정으로 로그인 성공 : ${result.token}")
-                        }
+        override fun processIntent(intent: LoginIntent) {
+            when (intent) {
+                LoginIntent.LoginWithKakao -> {
+                    viewModelScope.launch {
+                        when (val result = loginWithKakaoUseCase()) {
+                            is KakaoLoginResult.Success -> {
+                                updateState { copy(token = result.token) }
+                                Log.i(TAG, "카카오 계정으로 로그인 성공 : ${result.token}")
+                            }
 
-                        is KakaoLoginResult.Failure -> {
-                            Log.e(TAG, "카카오 계정으로 로그인 실패 : ${result.throwable}")
-                        }
+                            is KakaoLoginResult.Failure -> {
+                                Log.e(TAG, "카카오 계정으로 로그인 실패 : ${result.throwable}")
+                            }
 
-                        is KakaoLoginResult.Cancel -> Unit
+                            is KakaoLoginResult.Cancel -> Unit
+                        }
                     }
                 }
             }
         }
-    }
 
-    companion object {
-        const val TAG = "LoginViewModel"
+        companion object {
+            const val TAG = "LoginViewModel"
+        }
     }
-}

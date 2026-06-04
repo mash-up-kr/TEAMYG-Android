@@ -4,11 +4,12 @@ import com.teamyg.domain.entity.KakaoLoginResult
 import com.teamyg.domain.repository.KakaoUserRepository
 import javax.inject.Inject
 
-class LoginWithKakaoUseCase @Inject constructor(
-    private val kakaoUserRepository: KakaoUserRepository,
-) {
-    suspend operator fun invoke(): KakaoLoginResult {
-        return if (kakaoUserRepository.isKakaoTalkLoginAvailable()) {
+class LoginWithKakaoUseCase
+    @Inject
+    constructor(
+        private val kakaoUserRepository: KakaoUserRepository,
+    ) {
+        suspend operator fun invoke(): KakaoLoginResult = if (kakaoUserRepository.isKakaoTalkLoginAvailable()) {
             when (val result = kakaoUserRepository.loginWithKakaoTalk()) {
                 is KakaoLoginResult.Success -> result
                 is KakaoLoginResult.Cancel -> result
@@ -18,4 +19,3 @@ class LoginWithKakaoUseCase @Inject constructor(
             kakaoUserRepository.loginWithKakaoAccount()
         }
     }
-}
