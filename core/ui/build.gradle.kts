@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.teamyg.android.library)
     alias(libs.plugins.teamyg.jetpack.compose)
-    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.teamyg.dagger.hilt.compose)
 }
 
 android {
@@ -9,6 +9,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.util)
+    implementation(projects.core.analytics)
     implementation(projects.core.designsystem)
+    implementation(projects.core.util)
 }
