@@ -22,7 +22,7 @@ class KakaoUserRepositoryImpl
 
         override suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
             userApiClient.loginWithKakaoTalk(
-                context,
+                context = context,
                 callback = { token, error ->
                     if (error != null) {
                         // 사용자가 카카오톡 설치 후 디바이스 권한 요청 화면에서 로그인을 취소한 경우,
@@ -55,13 +55,20 @@ class KakaoUserRepositoryImpl
 
         override suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
             userApiClient.loginWithKakaoAccount(
-                context,
+                context = context,
                 callback = { token, error ->
                     if (error != null) {
-                        continuation.resume(
-                            value = KakaoLoginResult.Failure(throwable = error),
-                            onCancellation = null,
-                        )
+                        if (error is ClientError && error.reason == ClientErrorCause.Cancelled) {
+                            continuation.resume(
+                                value = KakaoLoginResult.Cancel(throwable = error),
+                                onCancellation = null,
+                            )
+                        } else {
+                            continuation.resume(
+                                value = KakaoLoginResult.Failure(throwable = error),
+                                onCancellation = null,
+                            )
+                        }
                     } else if (token != null) {
                         continuation.resume(
                             value = KakaoLoginResult.Success(token = token.accessToken),
