@@ -1,6 +1,6 @@
 package com.teamyg.domain.usecase
 
-import com.teamyg.domain.entity.KakaoLoginResult
+import com.teamyg.domain.model.KakaoLoginResult
 import com.teamyg.domain.repository.KakaoUserRepository
 import javax.inject.Inject
 
