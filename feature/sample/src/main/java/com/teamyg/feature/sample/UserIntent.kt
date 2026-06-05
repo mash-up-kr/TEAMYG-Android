@@ -1,6 +1,6 @@
 package com.teamyg.feature.sample
 
-import com.tjyg.core.ui.UiIntent
+import com.teamyg.core.ui.UiIntent
 
 sealed interface UserIntent : UiIntent {
     object LoadUser : UserIntent

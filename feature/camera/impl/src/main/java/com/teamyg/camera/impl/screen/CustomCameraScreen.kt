@@ -15,8 +15,8 @@ import com.teamyg.camera.impl.component.CameraControlComponent
 import com.teamyg.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.camera.impl.component.CameraZoomIndicatorComponent
 import com.teamyg.camera.impl.viewmodel.CustomCameraState
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.core.ui.preview.PreviewBox
+import com.teamyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CustomCameraScreen(

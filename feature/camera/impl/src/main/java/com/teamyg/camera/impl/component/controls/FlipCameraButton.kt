@@ -12,8 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.core.ui.preview.PreviewBox
+import com.teamyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun FlipCameraButton(

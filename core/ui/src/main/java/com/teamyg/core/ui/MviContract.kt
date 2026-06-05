@@ -1,4 +1,4 @@
-package com.tjyg.core.ui
+package com.teamyg.core.ui
 
 interface UiState
 

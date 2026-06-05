@@ -6,8 +6,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.core.ui.preview.PreviewBox
+import com.teamyg.core.ui.preview.YGPreview
 
 @Composable
 fun SampleScreen() {

@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.camera.impl.component.controls.FlipCameraButton
 import com.teamyg.camera.impl.component.controls.ShutterButton
 import com.teamyg.camera.impl.component.controls.ZoomLevelRow
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.core.ui.preview.PreviewBox
+import com.teamyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CameraControlComponent(

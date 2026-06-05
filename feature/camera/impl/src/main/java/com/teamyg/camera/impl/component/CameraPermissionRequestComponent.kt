@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.core.ui.preview.PreviewBox
+import com.teamyg.core.ui.preview.YGPreview
 
 @Composable
 internal fun CameraPermissionRequestComponent(
