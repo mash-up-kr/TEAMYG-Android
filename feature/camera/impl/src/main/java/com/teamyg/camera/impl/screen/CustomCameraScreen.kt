@@ -92,59 +92,62 @@ private fun CameraContent(
 
 @YGPreview
 @Composable
-private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
-    CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = false,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
-    )
-}
+private fun PreviewCustomCameraScreenPermissionDenied() =
+    PreviewBox {
+        CustomCameraScreen(
+            state = CustomCameraState(
+                isInit = true,
+                hasPermission = false,
+            ),
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            onClickZoomLevel = {},
+            onClickShutter = {},
+            onClickFlip = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxSize(),
+            cameraPreview = @Composable {},
+        )
+    }
 
 @YGPreview
 @Composable
-private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox {
-    CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = false,
-            permanentlyDenied = true,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
-    )
-}
+private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() =
+    PreviewBox {
+        CustomCameraScreen(
+            state = CustomCameraState(
+                isInit = true,
+                hasPermission = false,
+                permanentlyDenied = true,
+            ),
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            onClickZoomLevel = {},
+            onClickShutter = {},
+            onClickFlip = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxSize(),
+            cameraPreview = @Composable {},
+        )
+    }
 
 @YGPreview
 @Composable
-private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
-    CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = true,
-            permanentlyDenied = false,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
-    )
-}
+private fun PreviewCustomCameraScreenPermissionGranted() =
+    PreviewBox {
+        CustomCameraScreen(
+            state = CustomCameraState(
+                isInit = true,
+                hasPermission = true,
+                permanentlyDenied = false,
+            ),
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            onClickZoomLevel = {},
+            onClickShutter = {},
+            onClickFlip = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxSize(),
+            cameraPreview = @Composable {},
+        )
+    }

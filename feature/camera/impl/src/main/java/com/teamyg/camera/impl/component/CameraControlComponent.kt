@@ -78,14 +78,15 @@ internal fun CameraControlComponent(
 
 @YGPreview
 @Composable
-private fun PreviewCameraControlComponent() = PreviewBox {
-    CameraControlComponent(
-        zoomRatio = 1f,
-        zoomRange = 0.5f..10f,
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
+private fun PreviewCameraControlComponent() =
+    PreviewBox {
+        CameraControlComponent(
+            zoomRatio = 1f,
+            zoomRange = 0.5f..10f,
+            onClickZoomLevel = {},
+            onClickShutter = {},
+            onClickFlip = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }

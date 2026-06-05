@@ -14,7 +14,8 @@ import dagger.multibindings.IntoSet
 object NavigationModule {
     @IntoSet
     @Provides
-    fun provideFeatureLoginEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
-        featureLoginEntryBuilder(navigator = it)
-    }
+    fun provideFeatureLoginEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit =
+        {
+            featureLoginEntryBuilder(navigator = it)
+        }
 }

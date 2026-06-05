@@ -49,6 +49,7 @@ internal fun CameraZoomIndicatorComponent(
 
 @YGPreview
 @Composable
-private fun PreviewCameraZoomIndicatorComponent() = PreviewBox {
-    CameraZoomIndicatorComponent(zoomRatio = 1f)
-}
+private fun PreviewCameraZoomIndicatorComponent() =
+    PreviewBox {
+        CameraZoomIndicatorComponent(zoomRatio = 1f)
+    }

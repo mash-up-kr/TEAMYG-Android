@@ -40,10 +40,11 @@ internal fun CanvasImageAddScreen(
 
 @YGPreview
 @Composable
-private fun PreviewCanvasImageAddScreen() = PreviewBox {
-    CanvasImageAddScreen(
-        onClickCamera = {},
-        onClickGallery = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
+private fun PreviewCanvasImageAddScreen() =
+    PreviewBox {
+        CanvasImageAddScreen(
+            onClickCamera = {},
+            onClickGallery = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }

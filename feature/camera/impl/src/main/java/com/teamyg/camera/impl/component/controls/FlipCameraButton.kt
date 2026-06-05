@@ -38,8 +38,9 @@ internal fun FlipCameraButton(
 
 @YGPreview
 @Composable
-private fun PreviewFlipCameraButton() = PreviewBox {
-    FlipCameraButton(
-        onClick = {},
-    )
-}
+private fun PreviewFlipCameraButton() =
+    PreviewBox {
+        FlipCameraButton(
+            onClick = {},
+        )
+    }

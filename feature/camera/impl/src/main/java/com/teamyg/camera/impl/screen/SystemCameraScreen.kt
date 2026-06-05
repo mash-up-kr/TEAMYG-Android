@@ -75,26 +75,28 @@ internal fun SystemCameraScreen(
 
 @YGPreview
 @Composable
-private fun PreviewSystemCameraScreen() = PreviewBox {
-    SystemCameraScreen(
-        state = SystemCameraState.RequestingPermission(),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickRetry = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
+private fun PreviewSystemCameraScreen() =
+    PreviewBox {
+        SystemCameraScreen(
+            state = SystemCameraState.RequestingPermission(),
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            onClickRetry = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 
 @YGPreview
 @Composable
-private fun PreviewSystemCameraScreenPermanentlyDenied() = PreviewBox {
-    SystemCameraScreen(
-        state = SystemCameraState.RequestingPermission(permanentlyDenied = true),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickRetry = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
+private fun PreviewSystemCameraScreenPermanentlyDenied() =
+    PreviewBox {
+        SystemCameraScreen(
+            state = SystemCameraState.RequestingPermission(permanentlyDenied = true),
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            onClickRetry = {},
+            onClickCancel = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }

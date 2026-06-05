@@ -59,24 +59,26 @@ internal fun CameraPermissionRequestComponent(
 
 @YGPreview
 @Composable
-private fun PreviewCameraPermissionRequestComponent() = PreviewBox {
-    CameraPermissionRequestComponent(
-        isInit = true,
-        permanentlyDenied = false,
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
+private fun PreviewCameraPermissionRequestComponent() =
+    PreviewBox {
+        CameraPermissionRequestComponent(
+            isInit = true,
+            permanentlyDenied = false,
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 
 @YGPreview
 @Composable
-private fun PreviewCameraPermissionRequestComponentPermanentlyDenied() = PreviewBox {
-    CameraPermissionRequestComponent(
-        isInit = true,
-        permanentlyDenied = true,
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
+private fun PreviewCameraPermissionRequestComponentPermanentlyDenied() =
+    PreviewBox {
+        CameraPermissionRequestComponent(
+            isInit = true,
+            permanentlyDenied = true,
+            onClickGrantPermission = {},
+            onClickOpenAppSettings = {},
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
