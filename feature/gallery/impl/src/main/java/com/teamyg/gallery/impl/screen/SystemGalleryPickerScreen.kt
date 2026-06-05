@@ -12,9 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.teamyg.gallery.impl.viewmodel.SystemGalleryState
 import com.teamyg.core.ui.preview.PreviewBox
 import com.teamyg.core.ui.preview.YGPreview
+import com.teamyg.gallery.impl.viewmodel.SystemGalleryState
 
 @Composable
 internal fun SystemGalleryPickerScreen(
