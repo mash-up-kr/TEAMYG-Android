@@ -60,7 +60,7 @@ ktlint_standard_function-type-modifier-spacing = enabled
 ktlint_standard_if-else-bracing = enabled
 
 # import 정렬 순서
-ktlint_standard_import-ordering = enabled
+ktlint_standard_import-ordering = disabled
 
 # 들여쓰기 검사
 ktlint_standard_indent = enabled
