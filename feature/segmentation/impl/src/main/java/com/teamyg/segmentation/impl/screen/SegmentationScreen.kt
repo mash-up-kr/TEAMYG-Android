@@ -34,11 +34,10 @@ internal fun SegmentationScreen(
 
 @YGPreview
 @Composable
-private fun PreviewSegmentationScreen() =
-    PreviewBox {
-        SegmentationScreen(
-            sourceImageUri = "sourceImageUri",
-            onClickBack = {},
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+private fun PreviewSegmentationScreen() = PreviewBox {
+    SegmentationScreen(
+        sourceImageUri = "sourceImageUri",
+        onClickBack = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}

@@ -44,11 +44,10 @@ internal fun SystemGalleryPickerScreen(
 
 @YGPreview
 @Composable
-private fun PreviewSystemGalleryPickerScreen() =
-    PreviewBox {
-        SystemGalleryPickerScreen(
-            state = SystemGalleryState(),
-            onClickConfirm = {},
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+private fun PreviewSystemGalleryPickerScreen() = PreviewBox {
+    SystemGalleryPickerScreen(
+        state = SystemGalleryState(),
+        onClickConfirm = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}

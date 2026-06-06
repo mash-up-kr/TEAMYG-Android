@@ -34,9 +34,8 @@ internal fun ShutterButton(
 
 @YGPreview
 @Composable
-private fun PreviewShutterButton() =
-    PreviewBox {
-        ShutterButton(
-            onClick = {},
-        )
-    }
+private fun PreviewShutterButton() = PreviewBox {
+    ShutterButton(
+        onClick = {},
+    )
+}

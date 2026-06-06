@@ -37,16 +37,14 @@ internal object CameraFileProvider {
     fun toContentUri(
         context: Context,
         file: File,
-    ): Uri =
-        FileProvider.getUriForFile(
-            context,
-            context.packageName + AUTHORITY_SUFFIX,
-            file,
-        )
+    ): Uri = FileProvider.getUriForFile(
+        context,
+        context.packageName + AUTHORITY_SUFFIX,
+        file,
+    )
 
-    fun createImageUri(context: Context): Uri =
-        toContentUri(
-            context = context,
-            file = createImageFile(context),
-        )
+    fun createImageUri(context: Context): Uri = toContentUri(
+        context = context,
+        file = createImageFile(context),
+    )
 }

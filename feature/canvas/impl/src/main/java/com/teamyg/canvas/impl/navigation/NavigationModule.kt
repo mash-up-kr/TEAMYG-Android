@@ -14,8 +14,7 @@ import dagger.multibindings.IntoSet
 object NavigationModule {
     @IntoSet
     @Provides
-    fun provideFeatureCanvasEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit =
-        {
-            featureCanvasEntryBuilder(navigator = it)
-        }
+    fun provideFeatureCanvasEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureCanvasEntryBuilder(navigator = it)
+    }
 }
