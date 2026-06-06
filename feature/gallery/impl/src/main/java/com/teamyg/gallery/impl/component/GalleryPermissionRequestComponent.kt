@@ -51,7 +51,6 @@ internal fun GalleryPermissionRequestComponent(
             }
         }
     }
-
 }
 
 @YGPreview

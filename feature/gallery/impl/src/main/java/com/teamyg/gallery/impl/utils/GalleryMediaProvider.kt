@@ -106,7 +106,7 @@ object GalleryMediaProvider {
      * 대신 당일 새벽 3시 부터 익일 새벽 2시 59분까지
      * e.g. 6일 03:00 ~ 7일 02:59
      */
-    fun loadImageGroupsByYG(context: Context): List<GalleryImageGroup>  {
+    fun loadImageGroupsByYG(context: Context): List<GalleryImageGroup> {
         val uri = collectionUri ?: return emptyList()
 
         val resolver = context.contentResolver

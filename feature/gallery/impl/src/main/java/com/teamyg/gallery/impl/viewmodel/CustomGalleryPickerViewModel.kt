@@ -65,9 +65,7 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 @HiltViewModel
 class CustomGalleryPickerViewModel
 @Inject
-constructor(
-
-) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
+constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
     override fun processIntent(intent: CustomGalleryPickerIntent) {
