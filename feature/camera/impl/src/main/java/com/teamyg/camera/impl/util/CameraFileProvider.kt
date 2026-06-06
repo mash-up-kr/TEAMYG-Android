@@ -3,14 +3,14 @@ package com.teamyg.camera.impl.util
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import java.io.File
+import kotlin.time.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.format.byUnicodePattern
 import kotlinx.datetime.toLocalDateTime
-import java.io.File
-import kotlin.time.Clock
 
 internal object CameraFileProvider {
     private const val AUTHORITY_SUFFIX = ".camera.fileprovider"
@@ -37,16 +37,14 @@ internal object CameraFileProvider {
     fun toContentUri(
         context: Context,
         file: File,
-    ): Uri =
-        FileProvider.getUriForFile(
-            context,
-            context.packageName + AUTHORITY_SUFFIX,
-            file,
-        )
+    ): Uri = FileProvider.getUriForFile(
+        context,
+        context.packageName + AUTHORITY_SUFFIX,
+        file,
+    )
 
-    fun createImageUri(context: Context): Uri =
-        toContentUri(
-            context = context,
-            file = createImageFile(context),
-        )
+    fun createImageUri(context: Context): Uri = toContentUri(
+        context = context,
+        file = createImageFile(context),
+    )
 }

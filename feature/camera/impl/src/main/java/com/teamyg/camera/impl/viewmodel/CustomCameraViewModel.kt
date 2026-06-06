@@ -66,89 +66,90 @@ data class CustomCameraState(
 
 @HiltViewModel
 class CustomCameraViewModel
-    @Inject
-    constructor() :
-    BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(initialState = CustomCameraState()) {
-        override fun processIntent(intent: CustomCameraIntent) {
-            when (intent) {
-                is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
-                is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
-                is CustomCameraIntent.OnRequestPermission -> handleOnRequestPermission()
-                is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
-                is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
-                is CustomCameraIntent.OnClickZoomLevel -> handleOnClickZoomLevel(intent)
-                is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
-                is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
-                is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
-                is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
-                is CustomCameraIntent.OnCancel -> handleOnCancel()
-            }
-        }
-
-        private fun handleOnPermissionResult(intent: CustomCameraIntent.OnPermissionResult) {
-            updateState {
-                copy(
-                    isInit = true,
-                    hasPermission = intent.granted,
-                    permanentlyDenied = if (intent.granted) false else permanentlyDenied,
-                )
-            }
-        }
-
-        private fun handleOnPermissionRequestResult(intent: CustomCameraIntent.OnPermissionRequestResult) {
-            updateState {
-                copy(
-                    hasPermission = intent.granted,
-                    permanentlyDenied = !intent.granted && !intent.shouldShowRationale,
-                )
-            }
-        }
-
-        private fun handleOnRequestPermission() {
-            postSideEffect(CustomCameraEffect.RequestPermission)
-        }
-
-        private fun handleOnOpenAppSettings() {
-            postSideEffect(CustomCameraEffect.OpenAppSettings)
-        }
-
-        private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
-            updateState {
-                copy(
-                    zoomRange = intent.range,
-                    zoomRatio = zoomRatio.coerceIn(intent.range),
-                )
-            }
-        }
-
-        private fun handleOnClickZoomLevel(intent: CustomCameraIntent.OnClickZoomLevel) {
-            updateState { copy(zoomRatio = intent.level.coerceIn(zoomRange)) }
-        }
-
-        private fun handleOnClickFlip() {
-            updateState {
-                copy(
-                    lensFacing = when (lensFacing) {
-                        CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
-                        else -> CameraSelector.LENS_FACING_BACK
-                    },
-                )
-            }
-        }
-
-        private fun handleOnClickShutter() {
-            postSideEffect(CustomCameraEffect.CaptureImage)
-        }
-
-        private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
-            postSideEffect(CustomCameraEffect.ReturnResult(uri = intent.uri))
-        }
-
-        private fun handleOnCaptureFailed() {
-            postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
-        }
-
-        private fun handleOnCancel() {
-            postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
+@Inject
+constructor() : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
+    initialState = CustomCameraState(),
+) {
+    override fun processIntent(intent: CustomCameraIntent) {
+        when (intent) {
+            is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
+            is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
+            is CustomCameraIntent.OnRequestPermission -> handleOnRequestPermission()
+            is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
+            is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
+            is CustomCameraIntent.OnClickZoomLevel -> handleOnClickZoomLevel(intent)
+            is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
+            is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
+            is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
+            is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
+            is CustomCameraIntent.OnCancel -> handleOnCancel()
         }
     }
+
+    private fun handleOnPermissionResult(intent: CustomCameraIntent.OnPermissionResult) {
+        updateState {
+            copy(
+                isInit = true,
+                hasPermission = intent.granted,
+                permanentlyDenied = if (intent.granted) false else permanentlyDenied,
+            )
+        }
+    }
+
+    private fun handleOnPermissionRequestResult(intent: CustomCameraIntent.OnPermissionRequestResult) {
+        updateState {
+            copy(
+                hasPermission = intent.granted,
+                permanentlyDenied = !intent.granted && !intent.shouldShowRationale,
+            )
+        }
+    }
+
+    private fun handleOnRequestPermission() {
+        postSideEffect(CustomCameraEffect.RequestPermission)
+    }
+
+    private fun handleOnOpenAppSettings() {
+        postSideEffect(CustomCameraEffect.OpenAppSettings)
+    }
+
+    private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
+        updateState {
+            copy(
+                zoomRange = intent.range,
+                zoomRatio = zoomRatio.coerceIn(intent.range),
+            )
+        }
+    }
+
+    private fun handleOnClickZoomLevel(intent: CustomCameraIntent.OnClickZoomLevel) {
+        updateState { copy(zoomRatio = intent.level.coerceIn(zoomRange)) }
+    }
+
+    private fun handleOnClickFlip() {
+        updateState {
+            copy(
+                lensFacing = when (lensFacing) {
+                    CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
+                    else -> CameraSelector.LENS_FACING_BACK
+                },
+            )
+        }
+    }
+
+    private fun handleOnClickShutter() {
+        postSideEffect(CustomCameraEffect.CaptureImage)
+    }
+
+    private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
+        postSideEffect(CustomCameraEffect.ReturnResult(uri = intent.uri))
+    }
+
+    private fun handleOnCaptureFailed() {
+        postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
+    }
+
+    private fun handleOnCancel() {
+        postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
+    }
+}

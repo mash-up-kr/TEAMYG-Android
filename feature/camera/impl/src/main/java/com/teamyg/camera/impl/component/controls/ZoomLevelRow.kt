@@ -73,14 +73,12 @@ private fun ZoomLevelChip(
     }
 }
 
-private fun formatZoomLabel(level: Float): String =
-    String.format(
-        if (level >= 1f) "%d" else "%s",
-        if (level >= 1f) level.toInt() else level.toString().removePrefix("0"),
-    )
+private fun formatZoomLabel(level: Float): String = String.format(
+    if (level >= 1f) "%d" else "%s",
+    if (level >= 1f) level.toInt() else level.toString().removePrefix("0"),
+)
 
 private fun isSameZoom(
     a: Float,
     b: Float,
-): Boolean =
-    abs(a - b) < ZOOM_EPSILON
+): Boolean = abs(a - b) < ZOOM_EPSILON

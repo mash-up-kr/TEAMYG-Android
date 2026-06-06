@@ -11,9 +11,8 @@ internal object CameraPermissionUtil {
     fun shouldShowRationale(
         activity: Activity?,
         permission: String,
-    ): Boolean =
-        activity != null &&
-            ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+    ): Boolean = activity != null &&
+        ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
 
     fun openAppSettings(context: Context) {
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {

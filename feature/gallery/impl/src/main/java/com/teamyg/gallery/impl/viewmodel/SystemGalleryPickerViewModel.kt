@@ -23,23 +23,23 @@ sealed interface SystemGallerySideEffect : UiSideEffect {
 
 @HiltViewModel
 class SystemGalleryPickerViewModel
-    @Inject
-    constructor() :
-    BaseViewModel<SystemGalleryState, SystemGalleryIntent, SystemGallerySideEffect>(
-            initialState = SystemGalleryState(),
-        ) {
-        override fun processIntent(intent: SystemGalleryIntent) {
-            when (intent) {
-                is SystemGalleryIntent.PickPhoto -> {
-                    if (intent.imageUri != null) {
-                        updateState { copy(imageUri = intent.imageUri) }
-                    } else {
-                        // 이미지 가져오기 실패
-                    }
+@Inject
+constructor() : BaseViewModel<SystemGalleryState, SystemGalleryIntent, SystemGallerySideEffect>(
+    initialState = SystemGalleryState(),
+) {
+    override fun processIntent(intent: SystemGalleryIntent) {
+        when (intent) {
+            is SystemGalleryIntent.PickPhoto -> {
+                if (intent.imageUri != null) {
+                    updateState { copy(imageUri = intent.imageUri) }
+                } else {
+                    // 이미지 가져오기 실패
                 }
-                is SystemGalleryIntent.ConfirmPhoto -> {
-                    postSideEffect(SystemGallerySideEffect.NavigateToBack(imageUri = intent.imageUri))
-                }
+            }
+
+            is SystemGalleryIntent.ConfirmPhoto -> {
+                postSideEffect(SystemGallerySideEffect.NavigateToBack(imageUri = intent.imageUri))
             }
         }
     }
+}

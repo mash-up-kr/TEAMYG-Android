@@ -57,86 +57,87 @@ sealed interface SystemCameraState : UiState {
 
 @HiltViewModel
 class SystemCameraViewModel
-    @Inject
-    constructor() :
-    BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(initialState = SystemCameraState.Init) {
-        override fun processIntent(intent: SystemCameraIntent) {
-            when (intent) {
-                is SystemCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
-                is SystemCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
-                is SystemCameraIntent.OnRequestPermission -> handleOnRequestPermission()
-                is SystemCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
-                is SystemCameraIntent.OnCaptureLaunched -> handleOnCaptureLaunched()
-                is SystemCameraIntent.OnCaptureResult -> handleOnCaptureResult(intent)
-                is SystemCameraIntent.OnRetry -> handleOnRetry()
-                is SystemCameraIntent.OnCancel -> handleOnCancel()
-            }
-        }
-
-        private fun handleOnPermissionResult(intent: SystemCameraIntent.OnPermissionResult) {
-            if (intent.granted.not()) {
-                val current = state.value
-                val permanentlyDenied: Boolean = (current as? SystemCameraState.RequestingPermission)
-                    ?.permanentlyDenied
-                    ?: false
-
-                updateState { SystemCameraState.RequestingPermission(permanentlyDenied = permanentlyDenied) }
-                return
-            }
-
-            updateState { SystemCameraState.Launching }
-            postSideEffect(SystemCameraEffect.LaunchCamera)
-        }
-
-        private fun handleOnPermissionRequestResult(intent: SystemCameraIntent.OnPermissionRequestResult) {
-            if (intent.granted.not()) {
-                updateState {
-                    SystemCameraState.RequestingPermission(
-                        permanentlyDenied = !intent.shouldShowRationale,
-                    )
-                }
-                return
-            }
-
-            updateState { SystemCameraState.Launching }
-            postSideEffect(SystemCameraEffect.LaunchCamera)
-        }
-
-        private fun handleOnRequestPermission() {
-            postSideEffect(SystemCameraEffect.RequestPermission)
-        }
-
-        private fun handleOnOpenAppSettings() {
-            postSideEffect(SystemCameraEffect.OpenAppSettings)
-        }
-
-        private fun handleOnCaptureLaunched() {
-            updateState { SystemCameraState.Capturing }
-        }
-
-        private fun handleOnCaptureResult(intent: SystemCameraIntent.OnCaptureResult) {
-            val success: Boolean = intent.success
-            val uri: String? = intent.uri
-
-            if (success.not()) {
-                updateState { SystemCameraState.Failed }
-                return
-            }
-
-            if (uri == null) {
-                updateState { SystemCameraState.Failed }
-                return
-            }
-
-            postSideEffect(SystemCameraEffect.ReturnResult(uri))
-        }
-
-        private fun handleOnRetry() {
-            updateState { SystemCameraState.Launching }
-            postSideEffect(SystemCameraEffect.LaunchCamera)
-        }
-
-        private fun handleOnCancel() {
-            postSideEffect(SystemCameraEffect.ReturnResult(uri = null))
+@Inject
+constructor() : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(
+    initialState = SystemCameraState.Init,
+) {
+    override fun processIntent(intent: SystemCameraIntent) {
+        when (intent) {
+            is SystemCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
+            is SystemCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
+            is SystemCameraIntent.OnRequestPermission -> handleOnRequestPermission()
+            is SystemCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
+            is SystemCameraIntent.OnCaptureLaunched -> handleOnCaptureLaunched()
+            is SystemCameraIntent.OnCaptureResult -> handleOnCaptureResult(intent)
+            is SystemCameraIntent.OnRetry -> handleOnRetry()
+            is SystemCameraIntent.OnCancel -> handleOnCancel()
         }
     }
+
+    private fun handleOnPermissionResult(intent: SystemCameraIntent.OnPermissionResult) {
+        if (intent.granted.not()) {
+            val current = state.value
+            val permanentlyDenied: Boolean = (current as? SystemCameraState.RequestingPermission)
+                ?.permanentlyDenied
+                ?: false
+
+            updateState { SystemCameraState.RequestingPermission(permanentlyDenied = permanentlyDenied) }
+            return
+        }
+
+        updateState { SystemCameraState.Launching }
+        postSideEffect(SystemCameraEffect.LaunchCamera)
+    }
+
+    private fun handleOnPermissionRequestResult(intent: SystemCameraIntent.OnPermissionRequestResult) {
+        if (intent.granted.not()) {
+            updateState {
+                SystemCameraState.RequestingPermission(
+                    permanentlyDenied = !intent.shouldShowRationale,
+                )
+            }
+            return
+        }
+
+        updateState { SystemCameraState.Launching }
+        postSideEffect(SystemCameraEffect.LaunchCamera)
+    }
+
+    private fun handleOnRequestPermission() {
+        postSideEffect(SystemCameraEffect.RequestPermission)
+    }
+
+    private fun handleOnOpenAppSettings() {
+        postSideEffect(SystemCameraEffect.OpenAppSettings)
+    }
+
+    private fun handleOnCaptureLaunched() {
+        updateState { SystemCameraState.Capturing }
+    }
+
+    private fun handleOnCaptureResult(intent: SystemCameraIntent.OnCaptureResult) {
+        val success: Boolean = intent.success
+        val uri: String? = intent.uri
+
+        if (success.not()) {
+            updateState { SystemCameraState.Failed }
+            return
+        }
+
+        if (uri == null) {
+            updateState { SystemCameraState.Failed }
+            return
+        }
+
+        postSideEffect(SystemCameraEffect.ReturnResult(uri))
+    }
+
+    private fun handleOnRetry() {
+        updateState { SystemCameraState.Launching }
+        postSideEffect(SystemCameraEffect.LaunchCamera)
+    }
+
+    private fun handleOnCancel() {
+        postSideEffect(SystemCameraEffect.ReturnResult(uri = null))
+    }
+}
