@@ -59,7 +59,7 @@ internal fun CustomGalleryPickerRoute(
 
                 is CustomGalleryPickerEffect.LoadImages -> {
                     val groups = withContext(Dispatchers.IO) {
-                        GalleryMediaProvider.loadImageGroups(context)
+                        GalleryMediaProvider.loadImageGroupsByYG(context)
                     }
                     viewModel.processIntent(CustomGalleryPickerIntent.OnImagesLoaded(groups))
                 }
