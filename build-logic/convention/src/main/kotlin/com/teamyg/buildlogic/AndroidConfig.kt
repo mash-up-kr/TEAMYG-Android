@@ -2,6 +2,7 @@ package com.teamyg.buildlogic
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.teamyg.buildlogic.utils.PropertySettingManager
 import com.teamyg.buildlogic.utils.extensions.implementation
 import com.teamyg.buildlogic.utils.extensions.libs
 import org.gradle.api.JavaVersion
@@ -65,6 +66,37 @@ internal fun Project.setConfigKotlinAndroid() {
 
         dependencies {
             implementation(libs.kotlinx.datetime)
+        }
+    }
+}
+
+internal fun Project.setSigningConfig(extension: ApplicationExtension) {
+    extension.signingConfigs {
+        val releaseName = "release"
+        val debugName = "debug"
+
+        val releaseKey = PropertySettingManager.loadReleaseKey(
+            project = project,
+            rootProject = rootProject,
+        )
+
+        val debugKey = PropertySettingManager.loadDebugKey(
+            project = project,
+            rootProject = rootProject,
+        )
+
+        create(releaseName) {
+            storeFile = file(releaseKey.storeFile)
+            storePassword = releaseKey.storePassword
+            keyAlias = releaseKey.keyAlias
+            keyPassword = releaseKey.keyPassword
+        }
+
+        getByName(debugName) {
+            storeFile = file(debugKey.storeFile)
+            storePassword = debugKey.storePassword
+            keyAlias = debugKey.keyAlias
+            keyPassword = debugKey.keyPassword
         }
     }
 }

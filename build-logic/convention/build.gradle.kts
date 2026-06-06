@@ -29,6 +29,10 @@ gradlePlugin {
             className = "AndroidApplication",
         )
         pluginRegister(
+            pluginName = "android.application.signing",
+            className = "AndroidApplicationSigning",
+        )
+        pluginRegister(
             pluginName = "android.library",
             className = "AndroidLibrary",
         )
