@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.teamyg.android.application)
+    alias(libs.plugins.teamyg.android.application.signing)
     alias(libs.plugins.teamyg.jetpack.compose)
     alias(libs.plugins.dagger.hilt)
     alias(libs.plugins.kotlin.ksp)
