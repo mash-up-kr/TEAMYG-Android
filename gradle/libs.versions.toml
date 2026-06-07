@@ -152,9 +152,11 @@ ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 #Custom Plugin
 teamyg-android-application = { id = "com.teamyg.plugin.android.application" }
 teamyg-android-library = { id = "com.teamyg.plugin.android.library" }
-teamyg-dagger-hilt = { id = "com.teamyg.plugin.dagger.hilt" }
+teamyg-dagger-hilt-core = { id = "com.teamyg.plugin.dagger.hilt.core" }
 teamyg-dagger-hilt-compose = { id = "com.teamyg.plugin.dagger.hilt.compose" }
 teamyg-jetpack-compose = { id = "com.teamyg.plugin.jetpack.compose" }
 teamyg-kotlin-jvm = { id = "com.teamyg.plugin.kotlin.jvm" }
+teamyg-module-data = { id = "com.teamyg.plugin.module.data" }
+teamyg-module-domain = { id = "com.teamyg.plugin.module.domain" }
 teamyg-module-feature-impl = { id = "com.teamyg.plugin.module.feature.impl" }
 teamyg-module-feature-api = { id = "com.teamyg.plugin.module.feature.api" }

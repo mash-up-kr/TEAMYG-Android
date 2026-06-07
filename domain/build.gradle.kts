@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.teamyg.kotlin.jvm)
+    alias(libs.plugins.teamyg.module.domain)
 }
 dependencies {
     implementation(libs.javax.inject)

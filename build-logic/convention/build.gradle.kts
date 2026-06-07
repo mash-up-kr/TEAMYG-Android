@@ -33,8 +33,8 @@ gradlePlugin {
             className = "AndroidLibrary",
         )
         pluginRegister(
-            pluginName = "dagger.hilt",
-            className = "DaggerHilt",
+            pluginName = "dagger.hilt.core",
+            className = "DaggerHiltCore",
         )
         pluginRegister(
             pluginName = "dagger.hilt.compose",
@@ -47,6 +47,14 @@ gradlePlugin {
         pluginRegister(
             pluginName = "kotlin.jvm",
             className = "KotlinJvm",
+        )
+        pluginRegister(
+            pluginName = "module.data",
+            className = "ModuleData",
+        )
+        pluginRegister(
+            pluginName = "module.domain",
+            className = "ModuleDomain",
         )
         pluginRegister(
             pluginName = "module.feature.impl",
