@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.teamyg.android.library)
+    alias(libs.plugins.teamyg.dagger.hilt.core)
 }
 
 android {
@@ -8,4 +9,9 @@ android {
 
 dependencies {
     implementation(projects.core.util)
+
+    implementation(libs.androidx.datastore.preferences)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
