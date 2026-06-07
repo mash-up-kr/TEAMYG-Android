@@ -9,7 +9,6 @@ versionName = "1.0.0"
 #Android & Kotlin
 agp = "9.1.1"
 kotlin = "2.3.21"
-jetbrainsKotlinJvm = "2.3.21"
 coreKtx = "1.18.0"
 
 #Lifecycle
@@ -27,7 +26,7 @@ daggerHilt = "2.59.2"
 daggerHiltNavigationCompose = "1.3.0"
 
 #Kotlin Serialization
-kotlinSerialization = "1.11.0"
+kotlinxSerialization = "1.11.0"
 
 # kotlin datetime
 kotlinxDatetime = "0.8.0"
@@ -61,6 +60,10 @@ kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-p
 compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 
+# Kotlin
+kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
+
 #Android
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 
@@ -89,10 +92,6 @@ hilt-navigation = { group = "androidx.hilt", name = "hilt-navigation-compose", v
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "daggerHilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", name = "hilt-compiler", version.ref = "daggerHilt" }
 hilt-viewmodel = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "daggerHiltNavigationCompose" }
-
-#Kotlin Serialization
-kotlin-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinSerialization" }
-kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
 
 #Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
@@ -138,13 +137,16 @@ camerax = [
 ]
 
 [plugins]
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
-dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "daggerHilt" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+
+google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google-dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "daggerHilt" }
+
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 
 #Custom Plugin

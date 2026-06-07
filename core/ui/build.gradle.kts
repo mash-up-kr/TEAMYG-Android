@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.teamyg.android.library)
     alias(libs.plugins.teamyg.jetpack.compose)
-    alias(libs.plugins.kotlin.ksp)
+    alias(libs.plugins.google.ksp)
 }
 
 android {

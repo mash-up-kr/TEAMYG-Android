@@ -3,8 +3,8 @@ import com.teamyg.buildlogic.utils.extensions.libs
 
 class DaggerHiltComposeConventionPlugin : BaseConventionPlugin({
     with(plugins) {
-        apply(libs.plugins.dagger.hilt.get().pluginId)
-        apply(libs.plugins.kotlin.ksp.get().pluginId)
+        apply(libs.plugins.google.dagger.hilt.get().pluginId)
+        apply(libs.plugins.google.ksp.get().pluginId)
     }
 
     setConfigDaggerHilt(useCompose = true)
