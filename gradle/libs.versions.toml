@@ -25,6 +25,9 @@ coil = "3.4.0"
 daggerHilt = "2.59.2"
 daggerHiltNavigationCompose = "1.3.0"
 
+#Kotlin Coroutines
+kotlinxCoroutines = "1.11.0"
+
 #Kotlin Serialization
 kotlinxSerialization = "1.11.0"
 
@@ -61,6 +64,8 @@ compose-gradle-plugin = { group = "org.jetbrains.kotlin", name = "compose-compil
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 
 # Kotlin
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
 

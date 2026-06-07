@@ -24,6 +24,7 @@ internal fun Project.setConfigKotlinJvm() {
     }
 
     dependencies {
+        implementation(libs.kotlinx.coroutines.core)
         implementation(libs.kotlinx.datetime)
     }
 }
