@@ -32,6 +32,7 @@ dependencyResolutionManagement {
 rootProject.name = "teamyg"
 include(":app")
 include(
+    ":core:datastore",
     ":core:designsystem",
     ":core:ui",
     ":core:util",
