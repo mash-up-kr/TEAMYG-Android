@@ -10,7 +10,9 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
-        implementation(libs.bundles.network)
         implementation(libs.kotlinx.serialization)
+
+        implementation(libs.bundles.network)
+        implementation(libs.kakao.sdk.user)
     }
 })
