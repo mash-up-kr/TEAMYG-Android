@@ -48,6 +48,12 @@ cameraX = "1.6.1"
 #ktlint
 ktlint = "14.2.0"
 
+#Kakao Login
+kakao-user = "2.23.2"
+
+#java
+javaxInject = "1"
+
 [libraries]
 #gradle plugin
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -94,12 +100,16 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 #Navigation
 navigation-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation" }
 navigation-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation" }
+kakao-sdk-user = { module = "com.kakao.sdk:v2-user", version.ref = "kakao-user" }
 
 #CameraX
 camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraX" }
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+
+#Java
+javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
 
 [bundles]
 hilt = [
