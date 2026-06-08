@@ -1,5 +1,7 @@
 package com.teamyg.gallery.impl.route
 
+import android.app.Activity
+import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,8 +35,9 @@ internal fun CustomGalleryPickerRoute(
     modifier: Modifier = Modifier,
     viewModel: CustomGalleryPickerViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
-    val activity = LocalActivity.current
+    val activity: Activity? = LocalActivity.current
+    val context: Context = activity ?: LocalContext.current
+
     val lifecycleOwner = LocalLifecycleOwner.current
     val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
