@@ -35,9 +35,9 @@ internal fun CustomGalleryPickerScreen(
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when (state.hasPermission) {
+    when (state.access.hasPermission) {
         true -> GalleryContent(
-            isPartial = state.access == GalleryAccessLevel.PARTIAL,
+            isPartial = state.access.isPartial,
             isLoading = state.isLoading,
             isEmpty = state.isEmpty,
             groups = state.groups,
@@ -49,7 +49,7 @@ internal fun CustomGalleryPickerScreen(
 
         false -> GalleryPermissionRequestComponent(
             isInit = state.access == GalleryAccessLevel.INITIAL,
-            isDeniedPermission = state.isDeniedPermission,
+            isDeniedPermission = state.access.isDeniedPermission,
             onClickGrantPermission = onClickGrantPermission,
             onClickOpenSettings = onClickOpenSettings,
             modifier = modifier,

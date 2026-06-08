@@ -16,12 +16,6 @@ data class CustomGalleryPickerState(
     val access: GalleryAccessLevel = GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
 ) : UiState {
-    val hasPermission: Boolean
-        get() = access == GalleryAccessLevel.PARTIAL || access == GalleryAccessLevel.FULL
-
-    val isDeniedPermission: Boolean
-        get() = access == GalleryAccessLevel.DENIED || access == GalleryAccessLevel.PERMANENTLY_DENIED
-
     val isEmpty: Boolean
         get() = groups.all { it.images.isEmpty() }
 }
