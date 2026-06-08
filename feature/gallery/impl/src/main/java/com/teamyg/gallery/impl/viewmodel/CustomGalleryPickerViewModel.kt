@@ -75,13 +75,25 @@ constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerInten
     }
 
     private fun handleOnPermissionResult(intent: CustomGalleryPickerIntent.OnPermissionResult) {
-        val access: GalleryAccessLevel = intent.access
+        when (intent.access.hasPermission) {
+            true -> {
+                updateState {
+                    copy(
+                        isLoading = true,
+                        access = access,
+                    )
+                }
 
-        updateState { copy(access = access) }
+                postSideEffect(CustomGalleryPickerEffect.LoadImages)
+            }
 
-        if (access == GalleryAccessLevel.PARTIAL || access == GalleryAccessLevel.FULL) {
-            updateState { copy(isLoading = true) }
-            postSideEffect(CustomGalleryPickerEffect.LoadImages)
+            false -> {
+                updateState {
+                    copy(
+                        access = access,
+                    )
+                }
+            }
         }
     }
 
