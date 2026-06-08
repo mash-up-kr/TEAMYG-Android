@@ -17,7 +17,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.gallery.impl.utils.GalleryMediaProvider
 import com.teamyg.gallery.impl.utils.GalleryPermissionManager
@@ -45,7 +44,7 @@ internal fun CustomGalleryPickerRoute(
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) {
-        val access = GalleryAccessLevel.resolveAccessLevelAfterRequest(context, activity)
+        val access = GalleryPermissionManager.resolveAccessLevelAfterRequest(context, activity)
         viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(access))
     }
 
@@ -82,7 +81,7 @@ internal fun CustomGalleryPickerRoute(
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.processIntent(
                     CustomGalleryPickerIntent.OnPermissionResult(
-                        access = GalleryAccessLevel.resolveAccessLevelOnEnter(context),
+                        access = GalleryPermissionManager.resolveAccessLevelOnEnter(context),
                     ),
                 )
             }

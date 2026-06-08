@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.teamyg.gallery.impl.model.GalleryAccessLevel
 
 internal object GalleryPermissionManager {
     private val primaryPermission: String = when {
@@ -57,6 +58,29 @@ internal object GalleryPermissionManager {
         activity,
         primaryPermission,
     )
+
+    fun resolveAccessLevelOnEnter(context: Context): GalleryAccessLevel = when {
+        hasFullAccess(context) -> GalleryAccessLevel.FULL
+        hasPartialAccess(context) -> GalleryAccessLevel.PARTIAL
+        else -> GalleryAccessLevel.DENIED
+    }
+
+    fun resolveAccessLevelAfterRequest(
+        context: Context,
+        activity: Activity?,
+    ): GalleryAccessLevel {
+        if (hasFullAccess(context)) {
+            return GalleryAccessLevel.FULL
+        }
+
+        if (hasPartialAccess(context)) {
+            return GalleryAccessLevel.PARTIAL
+        }
+
+        val canRetry = activity?.let { shouldShowRationale(it) } ?: true
+
+        return if (canRetry) GalleryAccessLevel.DENIED else GalleryAccessLevel.PERMANENTLY_DENIED
+    }
 
     private fun isGranted(
         context: Context,
