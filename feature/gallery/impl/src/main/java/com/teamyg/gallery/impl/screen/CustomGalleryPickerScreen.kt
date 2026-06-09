@@ -15,11 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.gallery.impl.component.GalleryImageGridComponent
 import com.teamyg.gallery.impl.component.GalleryPartialAccessBanner
 import com.teamyg.gallery.impl.component.GalleryPermissionRequestComponent
 import com.teamyg.gallery.impl.model.GalleryAccessLevel
+import com.teamyg.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
 import com.teamyg.gallery.impl.model.GalleryImageGroup
 import com.teamyg.gallery.impl.viewmodel.CustomGalleryPickerState
 import com.tjyg.core.ui.preview.PreviewBox
@@ -113,58 +115,12 @@ private fun GalleryContent(
 
 @YGPreview
 @Composable
-private fun PreviewCustomGalleryPickerScreenPermissionDenied() = PreviewBox {
+private fun PreviewCustomGalleryPickerScreen(
+    @PreviewParameter(GalleryAccessLevelPreviewParameterProvider::class) access: GalleryAccessLevel,
+) = PreviewBox {
     CustomGalleryPickerScreen(
         state = CustomGalleryPickerState(
-            access = GalleryAccessLevel.DENIED,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenSettings = {},
-        onClickManageMedia = {},
-        onClickImage = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@YGPreview
-@Composable
-private fun PreviewCustomGalleryPickerScreenPermissionPermanentlyDenied() = PreviewBox {
-    CustomGalleryPickerScreen(
-        state = CustomGalleryPickerState(
-            access = GalleryAccessLevel.PERMANENTLY_DENIED,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenSettings = {},
-        onClickManageMedia = {},
-        onClickImage = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@YGPreview
-@Composable
-private fun PreviewCustomGalleryPickerScreenPermissionPartial() = PreviewBox {
-    CustomGalleryPickerScreen(
-        state = CustomGalleryPickerState(
-            access = GalleryAccessLevel.PARTIAL,
-        ),
-        onClickGrantPermission = {},
-        onClickOpenSettings = {},
-        onClickManageMedia = {},
-        onClickImage = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@YGPreview
-@Composable
-private fun PreviewCustomGalleryPickerScreenEmpty() = PreviewBox {
-    CustomGalleryPickerScreen(
-        state = CustomGalleryPickerState(
-            access = GalleryAccessLevel.FULL,
+            access = access,
         ),
         onClickGrantPermission = {},
         onClickOpenSettings = {},
