@@ -1,4 +1,4 @@
-package com.teamyg.data.di
+package com.teamyg.parfait.data.di
 
 import com.kakao.sdk.user.UserApiClient
 import dagger.Module

@@ -1,4 +1,4 @@
-package com.teamyg.data.repository
+package com.teamyg.parfait.data.repository
 
 import android.content.Context
 import com.kakao.sdk.common.model.ClientError
