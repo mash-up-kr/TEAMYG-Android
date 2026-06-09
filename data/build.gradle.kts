@@ -8,7 +8,5 @@ android {
 
 dependencies {
     implementation(projects.domain)
-
-    implementation(projects.core.datastore)
     implementation(projects.core.util)
 }

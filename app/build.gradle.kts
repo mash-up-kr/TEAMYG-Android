@@ -56,7 +56,6 @@ dependencies {
     implementation(projects.data)
     implementation(projects.core.ui)
     implementation(projects.core.util)
-    implementation(projects.core.datastore)
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)
 
