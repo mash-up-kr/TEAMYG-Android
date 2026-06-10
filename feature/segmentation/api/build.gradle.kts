@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.segmentation.api"
+    namespace = "com.teamyg.parfait.feature.segmentation.api"
 }

@@ -1,4 +1,4 @@
-package com.teamyg.segmentation.impl.navigation
+package com.teamyg.parfait.feature.segmentation.impl.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.navigation.Navigator
-import com.teamyg.segmentation.api.NavKeySegmentation
-import com.teamyg.segmentation.impl.route.SegmentationRoute
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
+import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationRoute
 
 fun EntryProviderScope<NavKey>.featureSegmentationEntryBuilder(navigator: Navigator) {
     entry<NavKeySegmentation> { key ->

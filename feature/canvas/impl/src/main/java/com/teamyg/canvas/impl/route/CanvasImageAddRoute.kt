@@ -7,7 +7,7 @@ import com.teamyg.camera.api.NavKeyCameraSystem
 import com.teamyg.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.navigation.Navigator
-import com.teamyg.segmentation.api.NavKeySegmentation
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
 internal fun CanvasImageAddRoute(

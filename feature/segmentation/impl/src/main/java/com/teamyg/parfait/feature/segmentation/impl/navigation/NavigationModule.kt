@@ -1,4 +1,4 @@
-package com.teamyg.segmentation.impl.navigation
+package com.teamyg.parfait.feature.segmentation.impl.navigation
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey

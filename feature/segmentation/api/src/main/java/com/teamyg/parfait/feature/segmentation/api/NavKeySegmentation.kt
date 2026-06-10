@@ -1,4 +1,4 @@
-package com.teamyg.segmentation.api
+package com.teamyg.parfait.feature.segmentation.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

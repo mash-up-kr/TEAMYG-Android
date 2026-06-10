@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.segmentation.impl"
+    namespace = "com.teamyg.parfait.feature.segmentation.impl"
 }
 
 dependencies {
