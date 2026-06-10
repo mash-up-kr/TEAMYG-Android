@@ -1,5 +1,5 @@
-import com.teamyg.buildlogic.setConfigKotlinJvm
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.setConfigKotlinJvm
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 
 class KotlinJvmConventionPlugin : BaseConventionPlugin({
     with(plugins) {

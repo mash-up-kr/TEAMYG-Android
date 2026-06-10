@@ -1,4 +1,4 @@
-package com.teamyg.buildlogic.model
+package com.teamyg.parfait.buildlogic.model
 
 data class Key(
     val storeFile: String,

@@ -1,7 +1,7 @@
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
-import com.teamyg.buildlogic.setConfigCompose
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.setConfigCompose
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import org.gradle.kotlin.dsl.findByType
 
 class JetpackComposeConventionPlugin : BaseConventionPlugin({

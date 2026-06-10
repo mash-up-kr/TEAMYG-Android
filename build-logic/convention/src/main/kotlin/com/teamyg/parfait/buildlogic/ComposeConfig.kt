@@ -1,10 +1,10 @@
-package com.teamyg.buildlogic
+package com.teamyg.parfait.buildlogic
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
-import com.teamyg.buildlogic.utils.extensions.debugImplementation
-import com.teamyg.buildlogic.utils.extensions.implementation
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.utils.extensions.debugImplementation
+import com.teamyg.parfait.buildlogic.utils.extensions.implementation
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
 

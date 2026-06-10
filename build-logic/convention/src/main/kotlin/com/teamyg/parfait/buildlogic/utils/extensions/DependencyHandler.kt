@@ -1,4 +1,4 @@
-package com.teamyg.buildlogic.utils.extensions
+package com.teamyg.parfait.buildlogic.utils.extensions
 
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.dsl.DependencyHandler

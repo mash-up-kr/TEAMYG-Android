@@ -1,7 +1,7 @@
-package com.teamyg.buildlogic
+package com.teamyg.parfait.buildlogic
 
-import com.teamyg.buildlogic.utils.extensions.implementation
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.utils.extensions.implementation
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension

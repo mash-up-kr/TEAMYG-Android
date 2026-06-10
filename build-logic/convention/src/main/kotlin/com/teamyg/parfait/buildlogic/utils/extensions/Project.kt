@@ -1,4 +1,4 @@
-package com.teamyg.buildlogic.utils.extensions
+package com.teamyg.parfait.buildlogic.utils.extensions
 
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.Project

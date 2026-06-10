@@ -1,6 +1,6 @@
-package com.teamyg.buildlogic.utils
+package com.teamyg.parfait.buildlogic.utils
 
-import com.teamyg.buildlogic.model.Key
+import com.teamyg.parfait.buildlogic.model.Key
 import org.gradle.api.Project
 import java.util.Properties
 

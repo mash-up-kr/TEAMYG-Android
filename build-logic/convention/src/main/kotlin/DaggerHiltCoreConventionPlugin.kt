@@ -1,5 +1,5 @@
-import com.teamyg.buildlogic.setConfigDaggerHilt
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.setConfigDaggerHilt
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 
 class DaggerHiltCoreConventionPlugin : BaseConventionPlugin({
     with(plugins) {

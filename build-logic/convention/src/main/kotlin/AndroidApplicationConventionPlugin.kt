@@ -1,7 +1,7 @@
 import com.android.build.api.dsl.ApplicationExtension
-import com.teamyg.buildlogic.setConfigAndroidApplication
-import com.teamyg.buildlogic.setConfigKotlinAndroid
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.setConfigAndroidApplication
+import com.teamyg.parfait.buildlogic.setConfigKotlinAndroid
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import org.gradle.kotlin.dsl.configure
 
 class AndroidApplicationConventionPlugin : BaseConventionPlugin({
