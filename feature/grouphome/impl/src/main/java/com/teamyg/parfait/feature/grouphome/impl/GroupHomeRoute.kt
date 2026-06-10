@@ -1,4 +1,4 @@
-package com.teamyg.grouphome.impl
+package com.teamyg.parfait.feature.grouphome.impl
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.grouphome.api.NavigationKey
+import com.teamyg.parfait.feature.grouphome.api.NavigationKey
 import com.teamyg.navigation.Navigator
 
 @Composable

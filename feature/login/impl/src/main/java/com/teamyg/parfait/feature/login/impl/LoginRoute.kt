@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
-import com.teamyg.grouphome.api.NavigationKey
+import com.teamyg.parfait.feature.grouphome.api.NavigationKey
 import com.teamyg.navigation.Navigator
 
 @Composable

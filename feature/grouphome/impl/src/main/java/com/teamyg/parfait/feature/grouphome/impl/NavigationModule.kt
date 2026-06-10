@@ -1,4 +1,4 @@
-package com.teamyg.grouphome.impl
+package com.teamyg.parfait.feature.grouphome.impl
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey

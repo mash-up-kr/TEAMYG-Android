@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.grouphome.impl"
+    namespace = "com.teamyg.parfait.feature.grouphome.impl"
 }
 
 dependencies {

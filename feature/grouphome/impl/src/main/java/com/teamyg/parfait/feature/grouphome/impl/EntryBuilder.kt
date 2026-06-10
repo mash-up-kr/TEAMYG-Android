@@ -1,4 +1,4 @@
-package com.teamyg.grouphome.impl
+package com.teamyg.parfait.feature.grouphome.impl
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -6,7 +6,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.grouphome.api.NavigationKey
+import com.teamyg.parfait.feature.grouphome.api.NavigationKey
 import com.teamyg.navigation.Navigator
 
 fun EntryProviderScope<NavKey>.featureGroupHomeEntryBuilder(navigator: Navigator) {

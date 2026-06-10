@@ -1,4 +1,4 @@
-package com.teamyg.grouphome.api
+package com.teamyg.parfait.feature.grouphome.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

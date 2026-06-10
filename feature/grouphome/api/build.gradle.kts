@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.grouphome.api"
+    namespace = "com.teamyg.parfait.feature.grouphome.api"
 }
