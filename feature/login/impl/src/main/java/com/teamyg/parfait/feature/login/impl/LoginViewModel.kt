@@ -1,4 +1,4 @@
-package com.teamyg.login.impl
+package com.teamyg.parfait.feature.login.impl
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope

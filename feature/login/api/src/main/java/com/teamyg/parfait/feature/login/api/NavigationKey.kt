@@ -1,4 +1,4 @@
-package com.teamyg.login.api
+package com.teamyg.parfait.feature.login.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

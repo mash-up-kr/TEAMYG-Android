@@ -1,4 +1,4 @@
-package com.teamyg.login.impl
+package com.teamyg.parfait.feature.login.impl
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

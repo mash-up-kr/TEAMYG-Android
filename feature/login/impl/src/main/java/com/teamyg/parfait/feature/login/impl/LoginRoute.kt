@@ -1,4 +1,4 @@
-package com.teamyg.login.impl
+package com.teamyg.parfait.feature.login.impl
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable

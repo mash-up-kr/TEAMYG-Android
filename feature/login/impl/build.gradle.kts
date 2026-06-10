@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.login.impl"
+    namespace = "com.teamyg.parfait.feature.login.impl"
 }
 
 dependencies {

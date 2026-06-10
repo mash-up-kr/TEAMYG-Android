@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.login.api"
+    namespace = "com.teamyg.parfait.feature.login.api"
 }

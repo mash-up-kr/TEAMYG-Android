@@ -1,4 +1,4 @@
-package com.teamyg.login.impl
+package com.teamyg.parfait.feature.login.impl
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
