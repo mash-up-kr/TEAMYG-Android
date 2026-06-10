@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
-import com.teamyg.parfait.feature.grouphome.api.NavigationKey
+import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
 import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
@@ -23,7 +23,7 @@ fun LoginRoute(
 
     LoginScreen(
         onClickLoginButton = {
-            navigator.goTo(NavigationKey(groupId = 1231))
+            navigator.goTo(NavKeyGroupHome(groupId = 1231))
         },
         onClickKakaoButton = {
             viewModel.processIntent(LoginIntent.LoginWithKakao)

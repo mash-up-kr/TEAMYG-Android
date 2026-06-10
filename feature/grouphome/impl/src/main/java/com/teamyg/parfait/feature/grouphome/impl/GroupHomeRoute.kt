@@ -13,13 +13,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.parfait.feature.grouphome.api.NavigationKey
+import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
 import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 fun GroupHomeRoute(
     navigator: Navigator,
-    key: NavigationKey,
+    key: NavKeyGroupHome,
     modifier: Modifier = Modifier,
 ) {
     val resultEventBus = LocalResultEventBus.current

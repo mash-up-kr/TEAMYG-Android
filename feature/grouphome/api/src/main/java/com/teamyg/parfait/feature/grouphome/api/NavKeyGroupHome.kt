@@ -4,4 +4,4 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NavigationKey(val groupId: Int) : NavKey
+data class NavKeyGroupHome(val groupId: Int) : NavKey
