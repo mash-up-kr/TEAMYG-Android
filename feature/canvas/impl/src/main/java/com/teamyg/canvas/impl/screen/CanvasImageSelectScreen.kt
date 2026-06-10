@@ -23,8 +23,7 @@ internal fun CanvasImageSelectScreen(
     val animatedContentScope = LocalNavAnimatedContentScope.current
 
     Box(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
         with(sharedTransitionScope) {

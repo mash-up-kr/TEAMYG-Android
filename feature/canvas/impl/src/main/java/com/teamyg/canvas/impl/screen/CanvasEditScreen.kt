@@ -27,7 +27,6 @@ internal fun CanvasEditScreen(
 
     Box(
         modifier = modifier
-            .fillMaxSize()
             .background(color = Color(0xffc9c9c9)),
     ) {
         with(sharedTransitionScope) {
