@@ -17,7 +17,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.utils.GalleryMediaProvider
 import com.teamyg.parfait.feature.gallery.impl.utils.GalleryPermissionManager

@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.grouphome.api.NavigationKey
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 fun EntryProviderScope<NavKey>.featureGroupHomeEntryBuilder(navigator: Navigator) {
     entry<NavigationKey> { key ->

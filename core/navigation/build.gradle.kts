@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.navigation"
+    namespace = "com.teamyg.parfait.core.navigation"
 }
 
 dependencies {

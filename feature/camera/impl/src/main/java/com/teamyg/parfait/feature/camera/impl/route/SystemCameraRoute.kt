@@ -26,7 +26,7 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraState
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraViewModel
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 internal fun SystemCameraRoute(

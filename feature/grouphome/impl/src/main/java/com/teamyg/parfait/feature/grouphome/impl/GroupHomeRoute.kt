@@ -14,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.feature.grouphome.api.NavigationKey
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 fun GroupHomeRoute(

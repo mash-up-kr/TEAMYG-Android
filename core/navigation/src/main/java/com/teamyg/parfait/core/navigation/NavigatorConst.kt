@@ -1,4 +1,4 @@
-package com.teamyg.navigation
+package com.teamyg.parfait.core.navigation
 
 import com.teamyg.parfait.feature.login.api.NavigationKey
 

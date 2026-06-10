@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasEdit
 import com.teamyg.parfait.feature.canvas.impl.screen.CanvasImageSelectScreen
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 internal fun CanvasImageSelectRoute(

@@ -6,7 +6,7 @@ import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.feature.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable

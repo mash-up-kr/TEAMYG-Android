@@ -8,7 +8,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.impl.route.CustomCameraRoute
 import com.teamyg.parfait.feature.camera.impl.route.SystemCameraRoute
 

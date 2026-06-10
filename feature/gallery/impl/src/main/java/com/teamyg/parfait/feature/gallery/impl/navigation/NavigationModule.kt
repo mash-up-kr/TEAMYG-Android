@@ -2,7 +2,7 @@ package com.teamyg.parfait.feature.gallery.impl.navigation
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

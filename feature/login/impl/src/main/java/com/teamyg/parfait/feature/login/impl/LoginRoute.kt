@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.feature.grouphome.api.NavigationKey
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 fun LoginRoute(

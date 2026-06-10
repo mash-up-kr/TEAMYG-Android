@@ -12,7 +12,7 @@ import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasImageSelect
 import com.teamyg.parfait.feature.canvas.impl.route.CanvasEditRoute
 import com.teamyg.parfait.feature.canvas.impl.route.CanvasImageAddRoute
 import com.teamyg.parfait.feature.canvas.impl.route.CanvasImageSelectRoute
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasImageAdd> {

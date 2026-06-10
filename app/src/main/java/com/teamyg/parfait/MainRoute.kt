@@ -11,7 +11,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import com.tjyg.core.ui.LocalSharedTransitionScope
 
 @Composable

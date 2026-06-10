@@ -8,7 +8,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.gallery.impl.route.CustomGalleryPickerRoute
 import com.teamyg.parfait.feature.gallery.impl.route.SystemGalleryPickerRoute
 

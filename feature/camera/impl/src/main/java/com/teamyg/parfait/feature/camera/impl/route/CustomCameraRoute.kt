@@ -28,7 +28,7 @@ import com.teamyg.parfait.feature.camera.impl.util.CameraPermissionUtil
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 internal fun CustomCameraRoute(

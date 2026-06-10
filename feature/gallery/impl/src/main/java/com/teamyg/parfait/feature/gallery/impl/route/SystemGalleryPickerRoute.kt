@@ -15,7 +15,7 @@ import com.teamyg.parfait.feature.gallery.impl.screen.SystemGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.SystemGalleryIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.SystemGalleryPickerViewModel
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.SystemGallerySideEffect
-import com.teamyg.navigation.Navigator
+import com.teamyg.parfait.core.navigation.Navigator
 
 @Composable
 internal fun SystemGalleryPickerRoute(
