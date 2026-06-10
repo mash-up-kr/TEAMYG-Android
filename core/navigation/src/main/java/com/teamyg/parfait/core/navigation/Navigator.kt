@@ -15,6 +15,11 @@ class Navigator(initialNavigationKey: NavKey) {
     }
 
     fun onBack() {
+        if (_backStack.size <= 1) {
+            // ResultEffect 발동 상황에서 사이즈가 1인 경우 크래시 발생
+            return
+        }
+
         _backStack.removeLastOrNull()
     }
 
