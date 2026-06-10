@@ -47,6 +47,9 @@ navigation = "1.2.0-alpha02" # Result Return 을 위한 ResultEventBusNavEntryDe
 #CameraX
 cameraX = "1.6.1"
 
+#DataStore
+datastore = "1.1.7"
+
 #ktlint
 ktlint = "14.2.0"
 
@@ -111,6 +114,9 @@ camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = 
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+
+#DataStore
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 #Java
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }

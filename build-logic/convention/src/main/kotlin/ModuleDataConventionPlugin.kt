@@ -12,6 +12,8 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
     dependencies {
         implementation(libs.kotlinx.serialization)
 
+        implementation(libs.androidx.datastore.preferences)
+
         implementation(libs.bundles.network)
         implementation(libs.kakao.sdk.user)
     }
