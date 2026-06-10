@@ -24,7 +24,7 @@ internal fun CanvasImageSelectScreen(
 
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.TopEnd,
     ) {
         with(sharedTransitionScope) {
             Image(
