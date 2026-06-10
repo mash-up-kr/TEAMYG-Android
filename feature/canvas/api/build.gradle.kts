@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.canvas.api"
+    namespace = "com.teamyg.parfait.feature.canvas.api"
 }

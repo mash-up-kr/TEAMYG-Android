@@ -1,4 +1,4 @@
-package com.teamyg.canvas.impl.screen
+package com.teamyg.parfait.feature.canvas.impl.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
-import com.teamyg.canvas.impl.R
+import com.teamyg.parfait.feature.canvas.impl.R
 import com.tjyg.core.ui.LocalSharedTransitionScope
 
 @Composable

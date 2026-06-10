@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.canvas.impl"
+    namespace = "com.teamyg.parfait.feature.canvas.impl"
 }
 
 dependencies {
