@@ -43,6 +43,7 @@ internal fun CustomGalleryPickerScreen(
             isLoading = state.isLoading,
             isEmpty = state.isEmpty,
             groups = state.groups,
+            recentImages = state.recentImages,
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
             onClickCancel = onClickCancel,
@@ -50,7 +51,7 @@ internal fun CustomGalleryPickerScreen(
         )
 
         false -> GalleryPermissionRequestComponent(
-            isInit = state.access == GalleryAccessLevel.INITIAL,
+            isInit = state.access.isInit,
             isDeniedPermission = state.access.isDeniedPermission,
             onClickGrantPermission = onClickGrantPermission,
             onClickOpenSettings = onClickOpenSettings,
@@ -65,6 +66,7 @@ private fun GalleryContent(
     isLoading: Boolean,
     isEmpty: Boolean,
     groups: List<GalleryImageGroup>,
+    recentImages: List<String>,
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
@@ -93,6 +95,7 @@ private fun GalleryContent(
 
                 else -> GalleryImageGridComponent(
                     groups = groups,
+                    recentImages = recentImages,
                     onClickImage = onClickImage,
                     modifier = Modifier.fillMaxSize(),
                 )

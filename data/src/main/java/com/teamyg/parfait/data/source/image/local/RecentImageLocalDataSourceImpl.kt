@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RecentImageLocalDataSourceImpl
+class RecentImageLocalDataSourceImpl
 @Inject
 constructor(
     private val dataStore: DataStore<Preferences>,

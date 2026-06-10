@@ -8,7 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class RecentImageRepositoryImpl
+class RecentImageRepositoryImpl
 @Inject
 constructor(
     private val recentImageLocalDataSource: RecentImageLocalDataSource,

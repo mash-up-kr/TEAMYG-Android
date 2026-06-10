@@ -1,6 +1,8 @@
 package com.teamyg.parfait.feature.gallery.impl.viewmodel
 
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.viewModelScope
+import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import com.teamyg.parfait.core.ui.BaseViewModel
@@ -8,6 +10,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @Immutable
@@ -15,9 +18,10 @@ data class CustomGalleryPickerState(
     val isLoading: Boolean = false,
     val access: GalleryAccessLevel = GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
+    val recentImages: List<String> = emptyList(),
 ) : UiState {
     val isEmpty: Boolean
-        get() = groups.all { it.images.isEmpty() }
+        get() = groups.all { it.images.isEmpty() } && recentImages.isEmpty()
 }
 
 sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
@@ -59,9 +63,17 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 @HiltViewModel
 class CustomGalleryPickerViewModel
 @Inject
-constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
+constructor(
+    private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
+) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
+    init {
+        viewModelScope.launch {
+            collectRecentCacheImages()
+        }
+    }
+
     override fun processIntent(intent: CustomGalleryPickerIntent) {
         when (intent) {
             is CustomGalleryPickerIntent.OnPermissionResult -> handleOnPermissionResult(intent)
@@ -80,7 +92,7 @@ constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerInten
                 updateState {
                     copy(
                         isLoading = true,
-                        access = access,
+                        access = intent.access,
                     )
                 }
 
@@ -90,7 +102,7 @@ constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerInten
             false -> {
                 updateState {
                     copy(
-                        access = access,
+                        access = intent.access,
                     )
                 }
             }
@@ -124,5 +136,9 @@ constructor() : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerInten
 
     private fun handleOnCancel() {
         postSideEffect(CustomGalleryPickerEffect.NavigateToBack)
+    }
+
+    private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { uris ->
+        updateState { copy(recentImages = uris) }
     }
 }
