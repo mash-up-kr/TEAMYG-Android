@@ -12,7 +12,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.core.navigation.Navigator
-import com.tjyg.core.ui.LocalSharedTransitionScope
+import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 
 @Composable
 fun MainRoute(

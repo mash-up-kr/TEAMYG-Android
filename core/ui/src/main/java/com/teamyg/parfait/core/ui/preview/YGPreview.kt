@@ -1,4 +1,4 @@
-package com.tjyg.core.ui.preview
+package com.teamyg.parfait.core.ui.preview
 
 import androidx.compose.ui.tooling.preview.AndroidUiModes
 import androidx.compose.ui.tooling.preview.Preview

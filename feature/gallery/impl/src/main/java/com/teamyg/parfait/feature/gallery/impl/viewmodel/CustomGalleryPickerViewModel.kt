@@ -3,10 +3,10 @@ package com.teamyg.parfait.feature.gallery.impl.viewmodel
 import androidx.compose.runtime.Immutable
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
-import com.tjyg.core.ui.BaseViewModel
-import com.tjyg.core.ui.UiIntent
-import com.tjyg.core.ui.UiSideEffect
-import com.tjyg.core.ui.UiState
+import com.teamyg.parfait.core.ui.BaseViewModel
+import com.teamyg.parfait.core.ui.UiIntent
+import com.teamyg.parfait.core.ui.UiSideEffect
+import com.teamyg.parfait.core.ui.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package com.tjyg.core.ui
+package com.teamyg.parfait.core.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

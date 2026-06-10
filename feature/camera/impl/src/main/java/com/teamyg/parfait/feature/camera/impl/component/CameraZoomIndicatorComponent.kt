@@ -13,8 +13,8 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.ui.preview.PreviewBox
+import com.teamyg.parfait.core.ui.preview.YGPreview
 
 private val AccentZoomColor = Color(0xFFFFC107)
 

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.core.ui"
+    namespace = "com.teamyg.parfait.core.ui"
 }
 
 dependencies {

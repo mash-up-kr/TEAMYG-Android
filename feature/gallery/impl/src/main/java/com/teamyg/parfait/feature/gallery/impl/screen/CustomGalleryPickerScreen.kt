@@ -24,8 +24,8 @@ import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerState
-import com.tjyg.core.ui.preview.PreviewBox
-import com.tjyg.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.ui.preview.PreviewBox
+import com.teamyg.parfait.core.ui.preview.YGPreview
 
 @Composable
 internal fun CustomGalleryPickerScreen(

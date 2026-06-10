@@ -11,7 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.teamyg.parfait.feature.canvas.impl.R
-import com.tjyg.core.ui.LocalSharedTransitionScope
+import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 
 @Composable
 internal fun CanvasImageSelectScreen(
