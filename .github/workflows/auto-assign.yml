@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      issues: write
 
     steps:
       - name: set assign
@@ -24,3 +25,32 @@ jobs:
               issue_number: pr_number,
               assignees: [author],
             });
+
+      - name: auto label
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const labelMap = {
+              '[Feature]': 'feature',
+              '[Fix]': 'fix',
+              '[Refactoring]': 'refactoring',
+              '[Build]': 'build',
+              '[Docs]': 'docs',
+              '[Chore]': 'chore',
+            };
+
+            const pr_number = context.payload.pull_request.number;
+            const title = context.payload.pull_request.title;
+
+            const label = Object.entries(labelMap).find(([prefix]) => title.startsWith(prefix))?.[1];
+            if (label) {
+              await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels',{
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr_number,
+                labels: [label],
+            });
+            } else {
+              console.log(`pr제목 ${title}과 label이 매치되지 않습니다`);
+            }
+
