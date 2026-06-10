@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.gallery.impl"
+    namespace = "com.teamyg.parfait.feature.gallery.impl"
 }
 
 dependencies {

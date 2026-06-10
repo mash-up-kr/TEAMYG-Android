@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.gallery.api"
+    namespace = "com.teamyg.parfait.feature.gallery.api"
 }
