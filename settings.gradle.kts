@@ -29,7 +29,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "teamyg"
+rootProject.name = "parfait"
 include(":app")
 include(
     ":core:designsystem",

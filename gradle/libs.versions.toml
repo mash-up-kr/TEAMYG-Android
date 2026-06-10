@@ -161,14 +161,14 @@ google-dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "dag
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 
 #Custom Plugin
-teamyg-android-application = { id = "com.teamyg.plugin.android.application" }
-teamyg-android-application-signing = { id = "com.teamyg.plugin.android.application.signing" }
-teamyg-android-library = { id = "com.teamyg.plugin.android.library" }
-teamyg-dagger-hilt-core = { id = "com.teamyg.plugin.dagger.hilt.core" }
-teamyg-dagger-hilt-compose = { id = "com.teamyg.plugin.dagger.hilt.compose" }
-teamyg-jetpack-compose = { id = "com.teamyg.plugin.jetpack.compose" }
-teamyg-kotlin-jvm = { id = "com.teamyg.plugin.kotlin.jvm" }
-teamyg-module-data = { id = "com.teamyg.plugin.module.data" }
-teamyg-module-domain = { id = "com.teamyg.plugin.module.domain" }
-teamyg-module-feature-impl = { id = "com.teamyg.plugin.module.feature.impl" }
-teamyg-module-feature-api = { id = "com.teamyg.plugin.module.feature.api" }
+parfait-android-application = { id = "com.teamyg.parfait.plugin.android.application" }
+parfait-android-application-signing = { id = "com.teamyg.parfait.plugin.android.application.signing" }
+parfait-android-library = { id = "com.teamyg.parfait.plugin.android.library" }
+parfait-dagger-hilt-core = { id = "com.teamyg.parfait.plugin.dagger.hilt.core" }
+parfait-dagger-hilt-compose = { id = "com.teamyg.parfait.plugin.dagger.hilt.compose" }
+parfait-jetpack-compose = { id = "com.teamyg.parfait.plugin.jetpack.compose" }
+parfait-kotlin-jvm = { id = "com.teamyg.parfait.plugin.kotlin.jvm" }
+parfait-module-data = { id = "com.teamyg.parfait.plugin.module.data" }
+parfait-module-domain = { id = "com.teamyg.parfait.plugin.module.domain" }
+parfait-module-feature-impl = { id = "com.teamyg.parfait.plugin.module.feature.impl" }
+parfait-module-feature-api = { id = "com.teamyg.parfait.plugin.module.feature.api" }

@@ -1,9 +1,9 @@
 plugins {
-    alias(libs.plugins.teamyg.module.feature.impl)
+    alias(libs.plugins.parfait.module.feature.impl)
 }
 
 android {
-    namespace = "com.teamyg.segmentation.impl"
+    namespace = "com.teamyg.parfait.feature.segmentation.impl"
 }
 
 dependencies {

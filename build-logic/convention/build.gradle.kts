@@ -2,7 +2,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.teamyg.buildlogic"
+group = "com.teamyg.parfait.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -76,7 +76,7 @@ private fun NamedDomainObjectContainer<PluginDeclaration>.pluginRegister(
     className: String,
 ) {
     register(pluginName) {
-        id = "com.teamyg.plugin.$pluginName"
+        id = "com.teamyg.parfait.plugin.$pluginName"
         implementationClass = "${className}ConventionPlugin"
     }
 }

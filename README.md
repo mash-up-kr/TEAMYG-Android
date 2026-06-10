@@ -52,7 +52,7 @@
 　　　⊂　  ノ 　　　・゜+.
 　　　 しーＪ　　　°。+ *´¨)
 　　　　　　　　　.· ´¸.·*´¨) ¸.·*¨)
-　　　　　　　　　(¸.·´ (¸.·'*    com.teamyg.app
+　　　　　　　　　(¸.·´ (¸.·'*    com.teamyg.parfait.app
                                  ├── build-logic
                                  ├── core
                                  │   ├── designsystem

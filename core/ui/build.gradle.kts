@@ -1,11 +1,11 @@
 plugins {
-    alias(libs.plugins.teamyg.android.library)
-    alias(libs.plugins.teamyg.jetpack.compose)
+    alias(libs.plugins.parfait.android.library)
+    alias(libs.plugins.parfait.jetpack.compose)
     alias(libs.plugins.google.ksp)
 }
 
 android {
-    namespace = "com.teamyg.core.ui"
+    namespace = "com.teamyg.parfait.core.ui"
 }
 
 dependencies {

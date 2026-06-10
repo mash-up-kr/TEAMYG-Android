@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.repository.KakaoUserRepositoryImpl
-import com.teamyg.domain.repository.KakaoUserRepository
+import com.teamyg.parfait.domain.repository.KakaoUserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

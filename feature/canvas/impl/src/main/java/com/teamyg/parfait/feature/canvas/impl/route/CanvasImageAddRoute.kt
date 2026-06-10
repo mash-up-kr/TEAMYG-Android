@@ -1,0 +1,27 @@
+package com.teamyg.parfait.feature.canvas.impl.route
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation3.runtime.result.ResultEffect
+import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
+import com.teamyg.parfait.feature.canvas.impl.screen.CanvasImageAddScreen
+import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
+import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
+
+@Composable
+internal fun CanvasImageAddRoute(
+    navigator: Navigator,
+    modifier: Modifier = Modifier,
+) {
+    ResultEffect<String> { imageUri ->
+        // 카메라/갤러리에서 돌아온 이미지 URI를 받아 누끼 화면으로 분기
+        navigator.goTo(NavKeySegmentation(sourceImageUri = imageUri))
+    }
+
+    CanvasImageAddScreen(
+        modifier = modifier,
+        onClickCamera = { navigator.goTo(NavKeyCameraSystem) },
+        onClickGallery = { navigator.goTo(NavKeySystemGalleryPicker) },
+    )
+}

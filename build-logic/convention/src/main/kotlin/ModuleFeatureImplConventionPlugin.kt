@@ -1,12 +1,12 @@
-import com.teamyg.buildlogic.utils.extensions.implementation
-import com.teamyg.buildlogic.utils.extensions.libs
+import com.teamyg.parfait.buildlogic.utils.extensions.implementation
+import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import org.gradle.kotlin.dsl.dependencies
 
 class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
     with(plugins) {
-        apply(libs.plugins.teamyg.android.library.get().pluginId)
-        apply(libs.plugins.teamyg.jetpack.compose.get().pluginId)
-        apply(libs.plugins.teamyg.dagger.hilt.compose.get().pluginId)
+        apply(libs.plugins.parfait.android.library.get().pluginId)
+        apply(libs.plugins.parfait.jetpack.compose.get().pluginId)
+        apply(libs.plugins.parfait.dagger.hilt.compose.get().pluginId)
     }
 
     dependencies {
