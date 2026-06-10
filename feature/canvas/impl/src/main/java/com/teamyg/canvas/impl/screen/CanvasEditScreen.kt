@@ -18,7 +18,7 @@ import com.teamyg.canvas.impl.R
 import com.tjyg.core.ui.LocalSharedTransitionScope
 
 @Composable
-fun CanvasEditScreen(
+internal fun CanvasEditScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
