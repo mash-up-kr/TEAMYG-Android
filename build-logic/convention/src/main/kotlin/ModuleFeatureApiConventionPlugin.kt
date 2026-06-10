@@ -4,7 +4,7 @@ import org.gradle.kotlin.dsl.dependencies
 
 class ModuleFeatureApiConventionPlugin : BaseConventionPlugin({
     with(plugins) {
-        apply(libs.plugins.teamyg.android.library.get().pluginId)
+        apply(libs.plugins.parfait.android.library.get().pluginId)
         apply(libs.plugins.kotlin.serialization.get().pluginId)
     }
 

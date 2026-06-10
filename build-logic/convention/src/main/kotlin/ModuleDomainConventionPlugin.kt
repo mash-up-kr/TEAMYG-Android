@@ -4,7 +4,7 @@ import org.gradle.kotlin.dsl.dependencies
 
 class ModuleDomainConventionPlugin : BaseConventionPlugin({
     with(plugins) {
-        apply(libs.plugins.teamyg.kotlin.jvm.get().pluginId)
+        apply(libs.plugins.parfait.kotlin.jvm.get().pluginId)
     }
 
     dependencies {

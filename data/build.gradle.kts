@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.teamyg.module.data)
+    alias(libs.plugins.parfait.module.data)
 }
 
 android {

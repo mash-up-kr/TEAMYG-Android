@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.teamyg.android.library)
+    alias(libs.plugins.parfait.android.library)
 }
 
 android {

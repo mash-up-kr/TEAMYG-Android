@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.teamyg.android.library)
-    alias(libs.plugins.teamyg.dagger.hilt.compose)
+    alias(libs.plugins.parfait.android.library)
+    alias(libs.plugins.parfait.dagger.hilt.compose)
 }
 
 android {

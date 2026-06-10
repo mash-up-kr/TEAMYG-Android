@@ -5,9 +5,9 @@ val localProperties = Properties().apply {
 }
 
 plugins {
-    alias(libs.plugins.teamyg.android.application)
-    alias(libs.plugins.teamyg.android.application.signing)
-    alias(libs.plugins.teamyg.jetpack.compose)
+    alias(libs.plugins.parfait.android.application)
+    alias(libs.plugins.parfait.android.application.signing)
+    alias(libs.plugins.parfait.jetpack.compose)
     alias(libs.plugins.google.dagger.hilt)
     alias(libs.plugins.google.ksp)
 }
