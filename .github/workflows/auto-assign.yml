@@ -53,4 +53,3 @@ jobs:
             } else {
               console.log(`pr제목 ${title}과 label이 매치되지 않습니다`);
             }
-

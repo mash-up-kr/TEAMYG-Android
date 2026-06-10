@@ -17,4 +17,10 @@ object NavigationModule {
     fun provideFeatureSystemGalleryEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
         featureSystemGalleryEntryBuilder(navigator = it)
     }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureCustomGalleryEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureCustomGalleryEntryBuilder(navigator = it)
+    }
 }
