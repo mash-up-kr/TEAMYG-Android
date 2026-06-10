@@ -34,6 +34,7 @@ jobs:
               '[Feature]': 'feature',
               '[Fix]': 'fix',
               '[Refactoring]': 'refactoring',
+              '[Refactor]': 'refactoring',
               '[Build]': 'build',
               '[Docs]': 'docs',
               '[Chore]': 'chore',
