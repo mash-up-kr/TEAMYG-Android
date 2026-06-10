@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.designsystem"
+    namespace = "com.teamyg.parfait.core.designsystem"
 }
 
 dependencies {

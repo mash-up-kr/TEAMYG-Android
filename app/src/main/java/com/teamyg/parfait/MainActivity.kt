@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.designsystem.theme.TempYGMaterialTheme
+import com.teamyg.parfait.core.designsystem.theme.TempYGMaterialTheme
 import com.teamyg.navigation.Navigator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject

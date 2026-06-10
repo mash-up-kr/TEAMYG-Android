@@ -1,4 +1,4 @@
-package com.teamyg.designsystem.theme
+package com.teamyg.parfait.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 

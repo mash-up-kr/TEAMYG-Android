@@ -1,6 +1,7 @@
-package com.teamyg.designsystem.theme
+package com.teamyg.parfait.core.designsystem.theme
 
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -55,8 +56,8 @@ fun TempYGMaterialTheme(
             createBitmap(
                 width = 300,
                 height = 300,
-                backgroundColor = android.graphics.Color.LTGRAY,
-                textColor = android.graphics.Color.BLACK,
+                backgroundColor = Color.LTGRAY,
+                textColor = Color.BLACK,
                 textSize = 30f,
             )
         },
