@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.data"
+    namespace = "com.teamyg.parfait.data"
 }
 
 dependencies {
