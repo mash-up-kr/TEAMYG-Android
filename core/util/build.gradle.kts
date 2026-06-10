@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.core.util"
+    namespace = "com.teamyg.parfait.core.util"
 }
