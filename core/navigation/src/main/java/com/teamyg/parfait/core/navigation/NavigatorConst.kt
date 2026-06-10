@@ -1,7 +1,7 @@
 package com.teamyg.parfait.core.navigation
 
-import com.teamyg.parfait.feature.login.api.NavigationKey
+import com.teamyg.parfait.feature.login.api.NavKeyLogin
 
 object NavigatorConst {
-    val INITIAL_NAVIGATION_KEY = NavigationKey
+    val INITIAL_NAVIGATION_KEY = NavKeyLogin
 }
