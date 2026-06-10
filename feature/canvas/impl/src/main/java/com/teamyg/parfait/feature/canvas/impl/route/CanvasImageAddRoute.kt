@@ -3,7 +3,7 @@ package com.teamyg.parfait.feature.canvas.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.ResultEffect
-import com.teamyg.camera.api.NavKeyCameraSystem
+import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.feature.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.navigation.Navigator

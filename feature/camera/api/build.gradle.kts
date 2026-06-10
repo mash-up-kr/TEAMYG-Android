@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.camera.api"
+    namespace = "com.teamyg.parfait.feature.camera.api"
 }

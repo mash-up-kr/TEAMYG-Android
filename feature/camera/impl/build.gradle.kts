@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.camera.impl"
+    namespace = "com.teamyg.parfait.feature.camera.impl"
 }
 
 dependencies {
