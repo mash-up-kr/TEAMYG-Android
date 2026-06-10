@@ -4,8 +4,8 @@ import android.content.Context
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
-import com.teamyg.domain.model.KakaoLoginResult
-import com.teamyg.domain.repository.KakaoUserRepository
+import com.teamyg.parfait.domain.model.KakaoLoginResult
+import com.teamyg.parfait.domain.repository.KakaoUserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine

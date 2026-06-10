@@ -1,7 +1,7 @@
-package com.teamyg.domain.usecase
+package com.teamyg.parfait.domain.usecase
 
-import com.teamyg.domain.model.KakaoLoginResult
-import com.teamyg.domain.repository.KakaoUserRepository
+import com.teamyg.parfait.domain.model.KakaoLoginResult
+import com.teamyg.parfait.domain.repository.KakaoUserRepository
 import javax.inject.Inject
 
 class LoginWithKakaoUseCase

@@ -1,6 +1,6 @@
-package com.teamyg.domain.repository
+package com.teamyg.parfait.domain.repository
 
-import com.teamyg.domain.model.KakaoLoginResult
+import com.teamyg.parfait.domain.model.KakaoLoginResult
 
 interface KakaoUserRepository {
     fun isKakaoTalkLoginAvailable(): Boolean

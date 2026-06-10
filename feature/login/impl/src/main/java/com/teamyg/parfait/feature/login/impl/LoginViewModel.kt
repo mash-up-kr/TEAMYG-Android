@@ -2,8 +2,8 @@ package com.teamyg.parfait.feature.login.impl
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
-import com.teamyg.domain.model.KakaoLoginResult
-import com.teamyg.domain.usecase.LoginWithKakaoUseCase
+import com.teamyg.parfait.domain.model.KakaoLoginResult
+import com.teamyg.parfait.domain.usecase.LoginWithKakaoUseCase
 import com.tjyg.core.ui.BaseViewModel
 import com.tjyg.core.ui.UiIntent
 import com.tjyg.core.ui.UiSideEffect

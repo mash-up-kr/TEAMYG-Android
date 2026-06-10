@@ -1,4 +1,4 @@
-package com.teamyg.domain.model
+package com.teamyg.parfait.domain.model
 
 sealed interface KakaoLoginResult {
     data class Success(val token: String) : KakaoLoginResult
