@@ -13,10 +13,10 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg"
+    namespace = "com.teamyg.parfait"
 
     defaultConfig {
-        applicationId = "com.teamyg"
+        applicationId = "com.teamyg.parfait"
         versionCode = libs.versions.versionCode
             .get()
             .toInt()

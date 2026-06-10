@@ -1,4 +1,4 @@
-package com.teamyg
+package com.teamyg.parfait
 
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable

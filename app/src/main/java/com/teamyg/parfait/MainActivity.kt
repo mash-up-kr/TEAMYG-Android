@@ -1,4 +1,4 @@
-package com.teamyg
+package com.teamyg.parfait
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

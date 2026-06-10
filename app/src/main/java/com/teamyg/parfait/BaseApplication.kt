@@ -1,4 +1,4 @@
-package com.teamyg
+package com.teamyg.parfait
 
 import android.app.Application
 import com.kakao.sdk.common.KakaoSdk
