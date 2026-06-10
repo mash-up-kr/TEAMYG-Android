@@ -1,0 +1,9 @@
+package com.teamyg.parfait.data.source.image.local
+
+import kotlinx.coroutines.flow.Flow
+
+interface RecentImageLocalDataSource {
+    val values: Flow<List<String>>
+
+    suspend fun add(value: String)
+}
