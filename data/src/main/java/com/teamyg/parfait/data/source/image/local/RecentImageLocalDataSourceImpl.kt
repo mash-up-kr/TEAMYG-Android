@@ -21,13 +21,18 @@ constructor(
         get() = dataStore.data
             .map { prefs -> decode(prefs[KEY]) }
 
-    override suspend fun add(value: String) {
+    override suspend fun addAndGetEvicted(value: String): List<String> {
+        var evicted: List<String> = emptyList()
+
         dataStore.edit { prefs ->
             val current: List<String> = decode(prefs[KEY])
             val updated: List<String> = (listOf(value) + current.filterNot { it == value }).take(MAX_SIZE)
 
+            evicted = current.filterNot { it in updated }
             prefs[KEY] = json.encodeToString(updated)
         }
+
+        return evicted
     }
 
     private fun decode(raw: String?): List<String> {

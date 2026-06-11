@@ -5,5 +5,5 @@ import kotlinx.coroutines.flow.Flow
 interface RecentImageLocalDataSource {
     val values: Flow<List<String>>
 
-    suspend fun add(value: String)
+    suspend fun addAndGetEvicted(value: String): List<String>
 }
