@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.source.image.local
 
 import android.content.Context
 import androidx.core.content.FileProvider
-import com.teamyg.parfait.core.util.sha256
+import com.teamyg.parfait.core.util.extensions.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
@@ -26,17 +26,21 @@ constructor(
         }
 
     override suspend fun copy(sourceUri: String): String = withContext(Dispatchers.IO) {
-        val target = File(dir, fileName(sourceUri))
+        val bytes = context.contentResolver
+            .openInputStream(sourceUri.toUri())
+            .use { input ->
+                requireNotNull(input) { "Cannot open input stream for $sourceUri" }
+
+                input.readBytes()
+            }
+
+        val target = File(dir, fileName(bytes))
 
         if (!target.exists()) {
-            context.contentResolver
-                .openInputStream(sourceUri.toUri())
-                .use { input ->
-                    requireNotNull(input) { "Cannot open input stream for $sourceUri" }
-
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
+            target.outputStream().use { output -> output.write(bytes) }
         }
+
+        target.setLastModified(System.currentTimeMillis())
 
         val uri = FileProvider.getUriForFile(
             context,
@@ -60,7 +64,20 @@ constructor(
         }
     }
 
-    private fun fileName(sourceUri: String): String = sourceUri.sha256() + FILE_EXTENSION
+    override suspend fun lastModified(cachedUri: String): Long = withContext(Dispatchers.IO) {
+        runCatching {
+            val name = cachedUri.toUri().lastPathSegment ?: return@runCatching 0L
+
+            File(dir, name).let { file ->
+                when (file.exists()) {
+                    true -> file.lastModified()
+                    false -> 0L
+                }
+            }
+        }.getOrDefault(0L)
+    }
+
+    private fun fileName(bytes: ByteArray): String = bytes.sha256() + FILE_EXTENSION
 
     companion object {
         private const val DIR_NAME = "recent_images"

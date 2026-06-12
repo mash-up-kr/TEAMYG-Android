@@ -5,25 +5,18 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
+import com.teamyg.parfait.core.util.model.DayWindow
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
-import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.format
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
-import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
 object GalleryMediaProvider {
-    private const val DAY_BOUNDARY_HOUR = 3
-
     private val collectionUri: Uri? = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
     private val projection: Array<String> = arrayOf(
@@ -112,23 +105,11 @@ object GalleryMediaProvider {
         val resolver = context.contentResolver
         val timeZone = TimeZone.currentSystemDefault()
 
-        val now: LocalDateTime = Clock.System.now().toLocalDateTime(timeZone)
-        val anchorDate: LocalDate = when (now.time >= LocalTime(DAY_BOUNDARY_HOUR, 0)) {
-            true -> now.date
-            false -> now.date.minus(1, DateTimeUnit.DAY)
-        }
-
-        val startInstant: Instant = anchorDate
-            .atStartOfDayIn(timeZone)
-            .plus(DAY_BOUNDARY_HOUR.hours)
-        val endInstant: Instant = startInstant.plus(24.hours)
-
-        val startMs: Long = startInstant.toEpochMilliseconds()
-        val endMs: Long = endInstant.toEpochMilliseconds()
+        val window: DayWindow = DayWindow.current(timeZone)
 
         val selectionArgs: Array<String> = arrayOf(
-            startMs.toString(),
-            endMs.toString(),
+            window.startMs.toString(),
+            window.endMs.toString(),
         )
 
         val grouped = linkedMapOf<String, MutableList<String>>()
@@ -154,13 +135,13 @@ object GalleryMediaProvider {
                         addedColumn = addedColumn,
                     )
 
-                    if (timestampMs !in startMs..<endMs) {
+                    if (timestampMs !in window) {
                         continue
                     }
 
                     val dateKey: String = Instant
                         .fromEpochMilliseconds(timestampMs)
-                        .minus(DAY_BOUNDARY_HOUR.hours)
+                        .minus(DayWindow.DAY_BOUNDARY_HOUR.hours)
                         .toLocalDateTime(timeZone)
                         .format(dateFormat)
 

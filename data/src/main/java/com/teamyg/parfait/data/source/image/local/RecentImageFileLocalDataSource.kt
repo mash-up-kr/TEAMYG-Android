@@ -4,4 +4,6 @@ interface RecentImageFileLocalDataSource {
     suspend fun copy(sourceUri: String): String
 
     suspend fun delete(cachedUri: String)
+
+    suspend fun lastModified(cachedUri: String): Long
 }

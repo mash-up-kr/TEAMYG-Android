@@ -35,6 +35,19 @@ constructor(
         return evicted
     }
 
+    override suspend fun remove(values: List<String>) {
+        if (values.isEmpty()) {
+            return
+        }
+
+        dataStore.edit { prefs ->
+            val current: List<String> = decode(prefs[KEY])
+            val updated: List<String> = current.filterNot { it in values }
+
+            prefs[KEY] = json.encodeToString(updated)
+        }
+    }
+
     private fun decode(raw: String?): List<String> {
         if (raw.isNullOrBlank()) {
             return emptyList()
