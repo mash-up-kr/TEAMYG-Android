@@ -58,7 +58,7 @@ constructor(
     }
 
     companion object {
-        private const val MAX_SIZE: Int = 10
+        private const val MAX_SIZE: Int = 9
 
         private val KEY = stringPreferencesKey("recent_image_uris")
     }
