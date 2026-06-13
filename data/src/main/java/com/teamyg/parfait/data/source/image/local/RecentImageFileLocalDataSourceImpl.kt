@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.source.image.local
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.FileProvider
 import com.teamyg.parfait.core.util.extensions.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -75,7 +76,9 @@ constructor(
                     false -> null
                 }
             }
-        }.getOrDefault(null)
+        }.getOrNull()
+
+        // TODO Failure 로깅
     }
 
     private fun fileName(bytes: ByteArray): String = bytes.sha256() + FILE_EXTENSION
