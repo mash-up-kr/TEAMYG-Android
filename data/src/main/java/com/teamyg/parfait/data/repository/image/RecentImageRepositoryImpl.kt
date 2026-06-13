@@ -38,7 +38,9 @@ constructor(
         val current: List<String> = recentImageLocalDataSource.values.first()
 
         val outdated: List<String> = current.filterNot { uri ->
-            recentImageFileLocalDataSource.getLastModified(uri) in window
+            val lastModified = recentImageFileLocalDataSource.getLastModified(uri) ?: 0L
+
+            lastModified in window
         }
 
         if (outdated.isEmpty()) {

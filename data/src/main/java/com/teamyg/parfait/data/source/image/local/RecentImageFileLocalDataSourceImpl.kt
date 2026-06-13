@@ -65,17 +65,17 @@ constructor(
         }
     }
 
-    override suspend fun getLastModified(cachedUri: String): Long = withContext(Dispatchers.IO) {
+    override suspend fun getLastModified(cachedUri: String): Long? = withContext(Dispatchers.IO) {
         runCatching {
-            val name = cachedUri.toUri().lastPathSegment ?: return@runCatching 0L
+            val name = cachedUri.toUri().lastPathSegment ?: return@runCatching null
 
             File(dir, name).let { file ->
                 when (file.exists()) {
                     true -> file.lastModified()
-                    false -> 0L
+                    false -> null
                 }
             }
-        }.getOrDefault(0L)
+        }.getOrDefault(null)
     }
 
     private fun fileName(bytes: ByteArray): String = bytes.sha256() + FILE_EXTENSION

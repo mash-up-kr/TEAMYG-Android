@@ -5,5 +5,5 @@ interface RecentImageFileLocalDataSource {
 
     suspend fun delete(cachedUri: String)
 
-    suspend fun getLastModified(cachedUri: String): Long
+    suspend fun getLastModified(cachedUri: String): Long?
 }
