@@ -17,9 +17,8 @@ constructor(
     private val dataStore: DataStore<Preferences>,
     private val json: Json,
 ) : RecentImageLocalDataSource {
-    override val values: Flow<List<String>>
-        get() = dataStore.data
-            .map { prefs -> decode(prefs[KEY]) }
+    override val values: Flow<List<String>> = dataStore.data
+        .map { prefs -> decode(prefs[KEY]) }
 
     override suspend fun addAndGetEvicted(value: String): List<String> {
         var evicted: List<String> = emptyList()
