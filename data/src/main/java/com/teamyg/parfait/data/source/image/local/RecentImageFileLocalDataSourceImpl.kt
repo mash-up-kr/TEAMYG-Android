@@ -65,7 +65,7 @@ constructor(
         }
     }
 
-    override suspend fun lastModified(cachedUri: String): Long = withContext(Dispatchers.IO) {
+    override suspend fun getLastModified(cachedUri: String): Long = withContext(Dispatchers.IO) {
         runCatching {
             val name = cachedUri.toUri().lastPathSegment ?: return@runCatching 0L
 
