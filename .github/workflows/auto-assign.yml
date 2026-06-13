@@ -32,13 +32,13 @@ jobs:
           script: |
             const labelMap = {
               '[Feature]': '기능',
-              '[Fix]': '수정',
               '[Refactoring]': '리펙터링',
               '[Refactor]': '리펙터링',
               '[Build]': '빌드',
-              '[Docs]': '문서',
+              '[Docs]': '문서화',
               '[Chore]': '기타',
               '[Bug]': '버그',
+              '[Deploy]': '배포'
             };
 
             const pr_number = context.payload.pull_request.number;
