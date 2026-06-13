@@ -18,17 +18,17 @@ constructor(
     private val json: Json,
 ) : RecentImageLocalDataSource {
     override val values: Flow<List<String>> = dataStore.data
-        .map { prefs -> decode(prefs[KEY]) }
+        .map { prefs -> decode(prefs[RECENT_IMAGE_URIS_KEY]) }
 
     override suspend fun addAndGetEvicted(value: String): List<String> {
         var evicted: List<String> = emptyList()
 
         dataStore.edit { prefs ->
-            val current: List<String> = decode(prefs[KEY])
+            val current: List<String> = decode(prefs[RECENT_IMAGE_URIS_KEY])
             val updated: List<String> = (listOf(value) + current.filterNot { it == value }).take(MAX_SIZE)
 
             evicted = current.filterNot { it in updated }
-            prefs[KEY] = json.encodeToString(updated)
+            prefs[RECENT_IMAGE_URIS_KEY] = json.encodeToString(updated)
         }
 
         return evicted
@@ -40,10 +40,10 @@ constructor(
         }
 
         dataStore.edit { prefs ->
-            val current: List<String> = decode(prefs[KEY])
+            val current: List<String> = decode(prefs[RECENT_IMAGE_URIS_KEY])
             val updated: List<String> = current.filterNot { it in values }
 
-            prefs[KEY] = json.encodeToString(updated)
+            prefs[RECENT_IMAGE_URIS_KEY] = json.encodeToString(updated)
         }
     }
 
@@ -59,6 +59,6 @@ constructor(
     companion object {
         private const val MAX_SIZE: Int = 9
 
-        private val KEY = stringPreferencesKey("recent_image_uris")
+        private val RECENT_IMAGE_URIS_KEY = stringPreferencesKey("recent_image_uris")
     }
 }
