@@ -1,9 +1,16 @@
 package com.teamyg.parfait.data.source.image.local
 
+import android.net.Uri
+import java.io.File
+
 interface RecentImageFileLocalDataSource {
-    suspend fun store(sourceUri: String): String
+    fun mkdirs(): Boolean
 
-    suspend fun delete(cachedUri: String)
+    fun readBytes(sourceUri: String): ByteArray
 
-    suspend fun getLastModified(cachedUri: String): Long?
+    fun getTargetFile(name: String): File
+
+    fun getTargetFile(bytes: ByteArray): File
+
+    fun getUriForFile(target: File): Uri
 }

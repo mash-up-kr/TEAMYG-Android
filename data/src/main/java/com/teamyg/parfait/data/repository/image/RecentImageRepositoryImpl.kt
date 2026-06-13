@@ -1,15 +1,17 @@
 package com.teamyg.parfait.data.repository.image
 
-import com.teamyg.parfait.core.util.model.DayWindow
+import android.net.Uri
+import androidx.core.net.toUri
 import com.teamyg.parfait.data.source.image.local.RecentImageFileLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Clock
 
 @Singleton
 class RecentImageRepositoryImpl
@@ -19,42 +21,72 @@ constructor(
     private val recentImageFileLocalDataSource: RecentImageFileLocalDataSource,
 ) : RecentImageRepository {
     override val recentCacheImages: Flow<List<String>> = recentImageLocalDataSource.values
-        .onStart { clearOutsideDayWindow() }
-        .distinctUntilChanged()
 
-    /**
-     * 데이 윈도우(당일 03:00 ~ 익일 02:59)를 벗어난 캐시 이미지를 메타데이터와 파일에서 모두 제거
-     * 갤러리 조회와 동일한 윈도우 기준을 사용
-     */
-    private suspend fun clearOutsideDayWindow() {
-        val window: DayWindow = DayWindow.current()
-        val current: List<String> = recentImageLocalDataSource.values.first()
+    override suspend fun addAndGetEvictedCacheFileName(value: String): List<String> {
+        var evicted: List<String> = emptyList()
 
-        val outdated: List<String> = current.filterNot { uri ->
-            val lastModified = recentImageFileLocalDataSource.getLastModified(uri) ?: 0L
+        recentImageLocalDataSource.edit { prefs ->
+            val current: List<String> = recentImageLocalDataSource.decodeValue(prefs.get())
+            val updated: List<String> = (current.filterNot { it == value } + listOf(value)).takeLast(MAX_SIZE)
 
-            lastModified in window
+            evicted = current.filterNot { it in updated }
+            prefs.set(recentImageLocalDataSource.encodeValue(updated))
         }
 
-        if (outdated.isEmpty()) {
+        return evicted
+    }
+
+    override suspend fun removeCacheFileName(values: List<String>) {
+        if (values.isEmpty()) {
             return
         }
 
-        recentImageLocalDataSource.remove(outdated)
-        outdated.forEach {
-            recentImageFileLocalDataSource.delete(it)
+        recentImageLocalDataSource.edit { prefs ->
+            val current: List<String> = recentImageLocalDataSource.decodeValue(prefs.get())
+            val updated: List<String> = current.filterNot { it in values }
+
+            prefs.set(recentImageLocalDataSource.encodeValue(updated))
         }
     }
 
-    override suspend fun addRecentImage(uri: String) {
-        val stableUri: String = runCatching { recentImageFileLocalDataSource.store(uri) }
-            .getOrNull()
-            ?: return
+    override suspend fun storeRecentImageInInternalStorage(sourceUri: String): String = withContext(Dispatchers.IO) {
+        recentImageFileLocalDataSource.mkdirs()
 
-        val evicted: List<String> = recentImageLocalDataSource.addAndGetEvicted(stableUri)
+        val bytes: ByteArray = recentImageFileLocalDataSource.readBytes(sourceUri)
+        val target: File = recentImageFileLocalDataSource.getTargetFile(bytes)
 
-        evicted.forEach {
-            recentImageFileLocalDataSource.delete(it)
+        if (target.exists().not()) {
+            target
+                .outputStream()
+                .use { output -> output.write(bytes) }
         }
+
+        target.setLastModified(Clock.System.now().toEpochMilliseconds())
+
+        val uri: Uri = recentImageFileLocalDataSource.getUriForFile(target)
+
+        return@withContext uri.toString()
+    }
+
+    override suspend fun deleteRecentImageInInternalStorage(sourceUri: String): Boolean = withContext(Dispatchers.IO) {
+        val name = sourceUri.toUri().lastPathSegment ?: return@withContext false
+
+        val file: File = recentImageFileLocalDataSource.getTargetFile(name)
+
+        return@withContext file.delete()
+    }
+
+    override suspend fun getLastModifiedCacheFile(sourceUri: String): Long? = withContext(Dispatchers.IO) {
+        val name = sourceUri.toUri().lastPathSegment ?: return@withContext null
+        val file: File = recentImageFileLocalDataSource.getTargetFile(name)
+
+        return@withContext when (file.exists()) {
+            true -> file.lastModified()
+            false -> null
+        }
+    }
+
+    companion object {
+        private const val MAX_SIZE: Int = 9
     }
 }

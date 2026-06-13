@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.util.model
+package com.teamyg.parfait.core.jvmutil.model
 
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate

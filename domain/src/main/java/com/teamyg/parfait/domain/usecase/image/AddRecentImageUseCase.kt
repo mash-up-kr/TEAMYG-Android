@@ -9,6 +9,14 @@ constructor(
     private val recentImageRepository: RecentImageRepository,
 ) {
     suspend operator fun invoke(uri: String) {
-        recentImageRepository.addRecentImage(uri)
+        val stableUri: String = runCatching { recentImageRepository.storeRecentImageInInternalStorage(uri) }
+            .getOrNull()
+            ?: return
+
+        val evicted: List<String> = recentImageRepository.addAndGetEvictedCacheFileName(stableUri)
+
+        evicted.forEach {
+            recentImageRepository.deleteRecentImageInInternalStorage(it)
+        }
     }
 }

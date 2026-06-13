@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.source.image.local
 
 import android.content.Context
+import android.net.Uri
 import androidx.core.content.FileProvider
 import com.teamyg.parfait.core.util.extensions.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -8,8 +9,6 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Singleton
 class RecentImageFileLocalDataSourceImpl
@@ -24,61 +23,33 @@ constructor(
         )
     }
 
-    override suspend fun store(sourceUri: String): String = withContext(Dispatchers.IO) {
-        dir.mkdirs()
+    private val authority: String = context.packageName + AUTHORITY_SUFFIX
 
-        val bytes = context.contentResolver
-            .openInputStream(sourceUri.toUri())
-            .use { input ->
-                requireNotNull(input) { "Cannot open input stream for $sourceUri" }
+    override fun mkdirs(): Boolean = dir.mkdirs()
 
-                input.readBytes()
-            }
+    override fun readBytes(sourceUri: String): ByteArray = context.contentResolver
+        .openInputStream(sourceUri.toUri())
+        .use { input ->
+            requireNotNull(input) { "Cannot open input stream for $sourceUri" }
 
-        val target = File(dir, fileName(bytes))
-
-        if (!target.exists()) {
-            target.outputStream().use { output -> output.write(bytes) }
+            input.readBytes()
         }
 
-        target.setLastModified(System.currentTimeMillis())
+    override fun getTargetFile(name: String): File = File(
+        dir,
+        name,
+    )
 
-        val uri = FileProvider.getUriForFile(
-            context,
-            context.packageName + AUTHORITY_SUFFIX,
-            target,
-        )
+    override fun getTargetFile(bytes: ByteArray): File = File(
+        dir,
+        fileName(bytes),
+    )
 
-        return@withContext uri.toString()
-    }
-
-    override suspend fun delete(cachedUri: String) {
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val name = cachedUri.toUri().lastPathSegment ?: return@runCatching
-
-                File(
-                    dir,
-                    name,
-                ).delete()
-            }
-        }
-    }
-
-    override suspend fun getLastModified(cachedUri: String): Long? = withContext(Dispatchers.IO) {
-        runCatching {
-            val name = cachedUri.toUri().lastPathSegment ?: return@runCatching null
-
-            File(dir, name).let { file ->
-                when (file.exists()) {
-                    true -> file.lastModified()
-                    false -> null
-                }
-            }
-        }.getOrNull()
-
-        // TODO Failure 로깅
-    }
+    override fun getUriForFile(target: File): Uri = FileProvider.getUriForFile(
+        context,
+        authority,
+        target,
+    )
 
     private fun fileName(bytes: ByteArray): String = bytes.sha256() + FILE_EXTENSION
 

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.teamyg.parfait.data.datastore.RecentImageEditor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -20,18 +21,29 @@ constructor(
     override val values: Flow<List<String>> = dataStore.data
         .map { prefs -> decode(prefs[RECENT_IMAGE_URIS_KEY]) }
 
-    override suspend fun addAndGetEvicted(value: String): List<String> {
-        var evicted: List<String> = emptyList()
+    override fun encodeValue(value: List<String>): String = json.encodeToString(value)
 
-        dataStore.edit { prefs ->
-            val current: List<String> = decode(prefs[RECENT_IMAGE_URIS_KEY])
-            val updated: List<String> = (listOf(value) + current.filterNot { it == value }).take(MAX_SIZE)
-
-            evicted = current.filterNot { it in updated }
-            prefs[RECENT_IMAGE_URIS_KEY] = json.encodeToString(updated)
+    override fun decodeValue(raw: String?): List<String> {
+        if (raw.isNullOrBlank()) {
+            return emptyList()
         }
 
-        return evicted
+        return runCatching { json.decodeFromString<List<String>>(raw) }
+            .getOrDefault(emptyList())
+    }
+
+    override suspend fun edit(transform: suspend (RecentImageEditor) -> Unit) {
+        dataStore.edit { prefs ->
+            transform(
+                object : RecentImageEditor {
+                    override fun get(): String? = prefs[RECENT_IMAGE_URIS_KEY]
+
+                    override fun set(value: String) {
+                        prefs[RECENT_IMAGE_URIS_KEY] = value
+                    }
+                },
+            )
+        }
     }
 
     override suspend fun remove(values: List<String>) {
@@ -57,8 +69,6 @@ constructor(
     }
 
     companion object {
-        private const val MAX_SIZE: Int = 9
-
         private val RECENT_IMAGE_URIS_KEY = stringPreferencesKey("recent_image_uris")
     }
 }

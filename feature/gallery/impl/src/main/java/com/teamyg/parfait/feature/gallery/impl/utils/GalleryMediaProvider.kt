@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
-import com.teamyg.parfait.core.util.model.DayWindow
+import com.teamyg.parfait.core.jvmutil.model.DayWindow
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
