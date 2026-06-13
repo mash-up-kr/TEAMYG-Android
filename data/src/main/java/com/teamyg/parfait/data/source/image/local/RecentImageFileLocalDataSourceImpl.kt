@@ -1,7 +1,6 @@
 package com.teamyg.parfait.data.source.image.local
 
 import android.content.Context
-import android.util.Log
 import androidx.core.content.FileProvider
 import com.teamyg.parfait.core.util.extensions.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
