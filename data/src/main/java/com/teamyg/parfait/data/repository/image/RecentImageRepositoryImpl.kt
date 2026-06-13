@@ -6,9 +6,8 @@ import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,15 +18,9 @@ constructor(
     private val recentImageLocalDataSource: RecentImageLocalDataSource,
     private val recentImageFileLocalDataSource: RecentImageFileLocalDataSource,
 ) : RecentImageRepository {
-    override val recentCacheImages: Flow<List<String>>
-        get() = flow {
-            clearOutsideDayWindow()
-
-            emitAll(
-                recentImageLocalDataSource.values
-                    .distinctUntilChanged(),
-            )
-        }
+    override val recentCacheImages: Flow<List<String>> = recentImageLocalDataSource.values
+        .onStart { clearOutsideDayWindow() }
+        .distinctUntilChanged()
 
     /**
      * 데이 윈도우(당일 03:00 ~ 익일 02:59)를 벗어난 캐시 이미지를 메타데이터와 파일에서 모두 제거
