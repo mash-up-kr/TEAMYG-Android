@@ -30,5 +30,7 @@ object DataStoreModule {
     @Singleton
     fun provideDataStoreJsonParser(): Json = Json {
         ignoreUnknownKeys = true
+        coerceInputValues = true
+        encodeDefaults = true
     }
 }
