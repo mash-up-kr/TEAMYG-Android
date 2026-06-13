@@ -17,15 +17,16 @@ class RecentImageFileLocalDataSourceImpl
 constructor(
     @ApplicationContext private val context: Context,
 ) : RecentImageFileLocalDataSource {
-    private val dir: File
-        get() = File(
+    private val dir: File by lazy {
+        File(
             context.filesDir,
             DIR_NAME,
-        ).apply {
-            mkdirs()
-        }
+        )
+    }
 
     override suspend fun copy(sourceUri: String): String = withContext(Dispatchers.IO) {
+        dir.mkdirs()
+
         val bytes = context.contentResolver
             .openInputStream(sourceUri.toUri())
             .use { input ->
