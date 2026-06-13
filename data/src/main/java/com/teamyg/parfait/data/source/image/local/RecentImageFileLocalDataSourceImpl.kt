@@ -24,7 +24,7 @@ constructor(
         )
     }
 
-    override suspend fun copy(sourceUri: String): String = withContext(Dispatchers.IO) {
+    override suspend fun store(sourceUri: String): String = withContext(Dispatchers.IO) {
         dir.mkdirs()
 
         val bytes = context.contentResolver

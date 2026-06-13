@@ -52,7 +52,7 @@ constructor(
     }
 
     override suspend fun addRecentImage(uri: String) {
-        val stableUri: String = runCatching { recentImageFileLocalDataSource.copy(uri) }
+        val stableUri: String = runCatching { recentImageFileLocalDataSource.store(uri) }
             .getOrNull()
             ?: return
 
