@@ -51,6 +51,8 @@ dependencies {
     implementation(projects.feature.gallery.impl)
     implementation(projects.feature.canvas.api)
     implementation(projects.feature.canvas.impl)
+    implementation(projects.feature.splash.api)
+    implementation(projects.feature.splash.impl)
 
     implementation(projects.domain)
     implementation(projects.data)
