@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.usecase.splash.SplashInitialUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -14,7 +15,7 @@ data class SplashState(
 ) : UiState
 
 enum class LoadingStatus {
-    Loading, Success, Failure
+    Loading, Success
 }
 
 sealed interface SplashIntent : UiIntent
@@ -25,11 +26,13 @@ sealed interface SplashSideEffect : UiSideEffect
 class SplashViewModel
 @Inject
 constructor(
+    splashInitialUseCase: SplashInitialUseCase,
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState()) {
 
     init {
         viewModelScope.launch {
-            // 스플래시 관련 작업
+            splashInitialUseCase()
+            updateState { copy(loadingStatus = LoadingStatus.Success) }
         }
     }
 

@@ -8,4 +8,5 @@ android {
 
 dependencies {
     implementation(projects.feature.splash.api)
+    implementation(projects.feature.login.api)
 }
