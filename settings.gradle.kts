@@ -52,4 +52,6 @@ include(
     ":feature:gallery:impl",
     ":feature:canvas:api",
     ":feature:canvas:impl",
+    ":feature:splash:api",
+    ":feature:splash:impl",
 )
