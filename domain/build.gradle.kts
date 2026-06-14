@@ -1,3 +1,3 @@
 plugins {
-    alias(libs.plugins.teamyg.module.domain)
+    alias(libs.plugins.parfait.module.domain)
 }

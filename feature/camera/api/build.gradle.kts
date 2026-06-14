@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.teamyg.module.feature.api)
+    alias(libs.plugins.parfait.module.feature.api)
 }
 
 android {
-    namespace = "com.teamyg.camera.api"
+    namespace = "com.teamyg.parfait.feature.camera.api"
 }

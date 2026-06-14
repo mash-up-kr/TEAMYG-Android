@@ -1,9 +1,9 @@
 plugins {
-    alias(libs.plugins.teamyg.module.data)
+    alias(libs.plugins.parfait.module.data)
 }
 
 android {
-    namespace = "com.teamyg.data"
+    namespace = "com.teamyg.parfait.data"
 }
 
 dependencies {

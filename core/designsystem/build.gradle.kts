@@ -1,10 +1,10 @@
 plugins {
-    alias(libs.plugins.teamyg.android.library)
-    alias(libs.plugins.teamyg.jetpack.compose)
+    alias(libs.plugins.parfait.android.library)
+    alias(libs.plugins.parfait.jetpack.compose)
 }
 
 android {
-    namespace = "com.teamyg.designsystem"
+    namespace = "com.teamyg.parfait.core.designsystem"
 }
 
 dependencies {
