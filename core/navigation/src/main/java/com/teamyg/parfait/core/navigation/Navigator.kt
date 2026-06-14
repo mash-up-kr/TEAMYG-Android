@@ -17,4 +17,8 @@ class Navigator(initialNavigationKey: NavKey) {
     fun onBack() {
         _backStack.removeLastOrNull()
     }
+
+    fun clearBackStack() {
+        _backStack.clear()
+    }
 }
