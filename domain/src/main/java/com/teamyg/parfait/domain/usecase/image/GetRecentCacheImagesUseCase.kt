@@ -1,6 +1,6 @@
 package com.teamyg.parfait.domain.usecase.image
 
-import com.teamyg.parfait.core.jvmutil.model.DayWindow
+import com.teamyg.parfait.domain.model.DayWindow
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged

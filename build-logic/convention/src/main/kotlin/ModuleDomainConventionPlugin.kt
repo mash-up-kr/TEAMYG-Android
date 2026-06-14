@@ -8,8 +8,6 @@ class ModuleDomainConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
-        implementation(project(":core:jvmutil"))
-
         implementation(libs.javax.inject)
     }
 })

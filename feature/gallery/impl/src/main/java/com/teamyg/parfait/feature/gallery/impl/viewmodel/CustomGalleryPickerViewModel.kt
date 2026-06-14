@@ -4,11 +4,12 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,8 +30,6 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
 
     data object OpenAppSettings : CustomGalleryPickerEffect()
 
-    data object LoadImages : CustomGalleryPickerEffect()
-
     data class ReturnResult(
         val uri: String,
     ) : CustomGalleryPickerEffect()
@@ -49,10 +48,6 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 
     data object OnRequestManageMedia : CustomGalleryPickerIntent()
 
-    data class OnImagesLoaded(
-        val groups: List<GalleryImageGroup>,
-    ) : CustomGalleryPickerIntent()
-
     data class OnClickImage(
         val uri: String,
     ) : CustomGalleryPickerIntent()
@@ -65,6 +60,7 @@ class CustomGalleryPickerViewModel
 @Inject
 constructor(
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
+    private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
@@ -80,7 +76,6 @@ constructor(
             is CustomGalleryPickerIntent.OnRequestPermission -> handleOnRequestPermission()
             is CustomGalleryPickerIntent.OnRequestOpenSettings -> handleOnRequestOpenSettings()
             is CustomGalleryPickerIntent.OnRequestManageMedia -> handleOnRequestManageMedia()
-            is CustomGalleryPickerIntent.OnImagesLoaded -> handleOnImagesLoaded(intent)
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
             is CustomGalleryPickerIntent.OnCancel -> handleOnCancel()
         }
@@ -96,7 +91,16 @@ constructor(
                     )
                 }
 
-                postSideEffect(CustomGalleryPickerEffect.LoadImages)
+                viewModelScope.launch {
+                    val images = loadFilterYGGalleryImageGroupsUseCase()
+
+                    updateState {
+                        copy(
+                            isLoading = false,
+                            groups = images,
+                        )
+                    }
+                }
             }
 
             false -> {
@@ -119,15 +123,6 @@ constructor(
 
     private fun handleOnRequestManageMedia() {
         postSideEffect(CustomGalleryPickerEffect.RequestPermission)
-    }
-
-    private fun handleOnImagesLoaded(intent: CustomGalleryPickerIntent.OnImagesLoaded) {
-        updateState {
-            copy(
-                isLoading = false,
-                groups = intent.groups,
-            )
-        }
     }
 
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {

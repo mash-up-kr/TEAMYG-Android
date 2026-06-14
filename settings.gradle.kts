@@ -33,7 +33,6 @@ rootProject.name = "parfait"
 include(":app")
 include(
     ":core:designsystem",
-    ":core:jvmutil",
     ":core:ui",
     ":core:util",
     ":core:navigation",

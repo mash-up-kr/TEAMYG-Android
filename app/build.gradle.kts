@@ -55,7 +55,6 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.data)
     implementation(projects.core.ui)
-    implementation(projects.core.jvmutil)
     implementation(projects.core.util)
     implementation(projects.core.designsystem)
     implementation(projects.core.navigation)

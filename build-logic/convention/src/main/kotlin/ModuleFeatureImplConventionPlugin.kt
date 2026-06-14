@@ -11,7 +11,6 @@ class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
 
     dependencies {
         implementation(project(":core:designsystem"))
-        implementation(project(":core:jvmutil"))
         implementation(project(":core:ui"))
         implementation(project(":core:util"))
         implementation(project(":core:navigation"))
