@@ -19,14 +19,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
-import com.teamyg.parfait.feature.gallery.impl.utils.GalleryMediaProvider
 import com.teamyg.parfait.feature.gallery.impl.utils.GalleryPermissionManager
 import com.teamyg.parfait.feature.gallery.impl.utils.extension.buildAppSettingsIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -57,13 +54,6 @@ internal fun CustomGalleryPickerRoute(
 
                 is CustomGalleryPickerEffect.OpenAppSettings -> {
                     context.startActivity(context.buildAppSettingsIntent())
-                }
-
-                is CustomGalleryPickerEffect.LoadImages -> {
-                    val groups = withContext(Dispatchers.IO) {
-                        GalleryMediaProvider.loadImageGroupsByYG(context)
-                    }
-                    viewModel.processIntent(CustomGalleryPickerIntent.OnImagesLoaded(groups))
                 }
 
                 is CustomGalleryPickerEffect.ReturnResult -> {
