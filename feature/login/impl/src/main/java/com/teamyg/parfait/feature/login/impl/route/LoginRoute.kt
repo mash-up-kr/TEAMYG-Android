@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.login.impl
+package com.teamyg.parfait.feature.login.impl.route
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -8,6 +8,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
+import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
+import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
 
 @Composable
 fun LoginRoute(
