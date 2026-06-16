@@ -1,31 +1,44 @@
 package com.teamyg.parfait.feature.login.impl.screen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.ui.preview.PreviewBox
+import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.feature.login.impl.component.KakaoSignInButton
 
 @Composable
-fun LoginScreen(
-    onClickLoginButton: () -> Unit,
+internal fun LoginScreen(
     onClickKakaoButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.SpaceEvenly,
+        modifier = modifier
+            .padding(all = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = "login",
-            modifier = Modifier.clickable { onClickLoginButton() },
-        )
-        Text(
-            text = "kakao login",
-            modifier = Modifier.clickable { onClickKakaoButton() },
+        // TODO Horizontal Pager
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        KakaoSignInButton(
+            onClick = onClickKakaoButton,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
+}
+
+@YGPreview
+@Composable
+private fun PreviewLoginScreen() = PreviewBox {
+    LoginScreen(
+        onClickKakaoButton = {},
+        modifier = Modifier.fillMaxSize(),
+    )
 }
