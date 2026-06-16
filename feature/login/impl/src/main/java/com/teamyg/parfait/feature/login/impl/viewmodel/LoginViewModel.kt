@@ -20,7 +20,9 @@ sealed interface LoginIntent : UiIntent {
     object LoginWithKakao : LoginIntent
 }
 
-sealed interface LoginSideEffect : UiSideEffect
+sealed interface LoginSideEffect : UiSideEffect {
+    class NavigateToNext : LoginSideEffect
+}
 
 @HiltViewModel
 class LoginViewModel
