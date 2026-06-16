@@ -10,8 +10,13 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
+        implementation(project(":core:util"))
+
+        implementation(project(":domain"))
+
         implementation(libs.kotlinx.serialization)
 
+        implementation(libs.androidx.core.ktx)
         implementation(libs.androidx.datastore.preferences)
 
         implementation(libs.bundles.network)

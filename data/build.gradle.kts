@@ -5,8 +5,3 @@ plugins {
 android {
     namespace = "com.teamyg.parfait.data"
 }
-
-dependencies {
-    implementation(projects.domain)
-    implementation(projects.core.util)
-}

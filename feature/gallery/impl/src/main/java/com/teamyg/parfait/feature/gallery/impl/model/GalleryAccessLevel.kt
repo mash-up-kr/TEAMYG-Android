@@ -8,11 +8,11 @@ enum class GalleryAccessLevel {
     FULL,
     ;
 
+    val isInit: Boolean
+        get() = this == INITIAL
+
     val isPartial: Boolean
-        get() = when (this) {
-            PARTIAL -> true
-            else -> false
-        }
+        get() = this == PARTIAL
 
     val hasPermission: Boolean
         get() = when (this) {
