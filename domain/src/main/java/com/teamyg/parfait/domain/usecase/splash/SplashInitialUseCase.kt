@@ -5,8 +5,7 @@ import javax.inject.Inject
 
 class SplashInitialUseCase
 @Inject
-constructor(
-) {
+constructor() {
     suspend operator fun invoke() {
         delay(1000L)
     }

@@ -15,7 +15,8 @@ data class SplashState(
 ) : UiState
 
 enum class LoadingStatus {
-    Loading, Success
+    Loading,
+    Success,
 }
 
 sealed interface SplashIntent : UiIntent
@@ -28,7 +29,6 @@ class SplashViewModel
 constructor(
     splashInitialUseCase: SplashInitialUseCase,
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState()) {
-
     init {
         viewModelScope.launch {
             splashInitialUseCase()
