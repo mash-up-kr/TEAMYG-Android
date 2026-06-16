@@ -12,7 +12,7 @@ import com.teamyg.parfait.core.ui.preview.YGPreview
 import com.teamyg.parfait.core.ui.R as CoreUiR
 
 @Composable
-fun SplashScreen(modifier: Modifier = Modifier) {
+internal fun SplashScreen(modifier: Modifier = Modifier) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier,
