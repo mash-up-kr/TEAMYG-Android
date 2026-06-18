@@ -48,8 +48,8 @@ internal fun OnboardingPager(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
-        ) { page ->
-            OnboardingPageContent(page = pages[page])
+        ) { index ->
+            OnboardingPageContent(page = pages[index])
         }
 
         Spacer(modifier = Modifier.height(44.dp))
