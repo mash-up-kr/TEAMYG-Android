@@ -14,6 +14,7 @@ dependencies {
     implementation(projects.feature.login.api)
     implementation(projects.feature.grouphome.api)
     implementation(projects.feature.segmentation.api)
+    implementation(projects.feature.splash.api)
 
     implementation(libs.bundles.navigation)
 }
