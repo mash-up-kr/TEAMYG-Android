@@ -1,6 +1,8 @@
 package com.teamyg.parfait.feature.camera.impl.route
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.LocalActivity
@@ -21,12 +23,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.feature.camera.impl.screen.SystemCameraScreen
 import com.teamyg.parfait.feature.camera.impl.util.CameraFileProvider
-import com.teamyg.parfait.feature.camera.impl.util.CameraPermissionUtil
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraState
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraViewModel
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.extensions.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.extensions.shouldShowRationale
 
 @Composable
 internal fun SystemCameraRoute(
@@ -34,8 +37,8 @@ internal fun SystemCameraRoute(
     modifier: Modifier = Modifier,
     viewModel: SystemCameraViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
-    val activity = LocalActivity.current
+    val activity: Activity? = LocalActivity.current
+    val context: Context = activity ?: LocalContext.current
 
     val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -62,10 +65,7 @@ internal fun SystemCameraRoute(
         viewModel.processIntent(
             SystemCameraIntent.OnPermissionRequestResult(
                 granted = granted,
-                shouldShowRationale = CameraPermissionUtil.shouldShowRationale(
-                    activity = activity,
-                    permission = Manifest.permission.CAMERA,
-                ),
+                shouldShowRationale = activity?.shouldShowRationale(Manifest.permission.CAMERA) == true,
             ),
         )
     }
@@ -78,7 +78,7 @@ internal fun SystemCameraRoute(
                 }
 
                 is SystemCameraEffect.OpenAppSettings -> {
-                    CameraPermissionUtil.openAppSettings(context)
+                    context.startActivity(context.buildAppSettingsIntent())
                 }
 
                 is SystemCameraEffect.LaunchCamera -> {

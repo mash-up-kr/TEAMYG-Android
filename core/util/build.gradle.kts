@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.parfait.core.util"
 }
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+}

@@ -3,10 +3,9 @@ package com.teamyg.parfait.feature.gallery.impl.utils
 import android.Manifest
 import android.app.Activity
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import com.teamyg.parfait.core.util.extensions.isGrantedPermission
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 
 internal object GalleryPermissionManager {
@@ -32,27 +31,15 @@ internal object GalleryPermissionManager {
 
     fun hasFullAccess(context: Context): Boolean = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-            isGranted(
-                context = context,
-                permission = Manifest.permission.READ_MEDIA_IMAGES,
-            )
+            context.isGrantedPermission(permission = Manifest.permission.READ_MEDIA_IMAGES)
 
         else ->
-            isGranted(
-                context = context,
-                permission = Manifest.permission.READ_EXTERNAL_STORAGE,
-            )
+            context.isGrantedPermission(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 
     fun hasPartialAccess(context: Context): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
-        isGranted(
-            context = context,
-            permission = Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
-        ) &&
-        !isGranted(
-            context = context,
-            permission = Manifest.permission.READ_MEDIA_IMAGES,
-        )
+        context.isGrantedPermission(permission = Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) &&
+        !context.isGrantedPermission(permission = Manifest.permission.READ_MEDIA_IMAGES)
 
     fun shouldShowRationale(activity: Activity): Boolean = ActivityCompat.shouldShowRequestPermissionRationale(
         activity,
@@ -81,9 +68,4 @@ internal object GalleryPermissionManager {
 
         return if (canRetry) GalleryAccessLevel.DENIED else GalleryAccessLevel.PERMANENTLY_DENIED
     }
-
-    private fun isGranted(
-        context: Context,
-        permission: String,
-    ): Boolean = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 }
