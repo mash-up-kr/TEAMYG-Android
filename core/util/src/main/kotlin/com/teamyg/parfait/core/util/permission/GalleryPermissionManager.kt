@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.gallery.impl.utils
+package com.teamyg.parfait.core.util.permission
 
 import android.Manifest
 import android.app.Activity
@@ -6,9 +6,41 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import com.teamyg.parfait.core.util.extensions.isGrantedPermission
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 
-internal object GalleryPermissionManager {
+object GalleryPermissionManager {
+    enum class GalleryAccessLevel {
+        INITIAL,
+        DENIED,
+        PERMANENTLY_DENIED,
+        PARTIAL,
+        FULL,
+        ;
+
+        val isInit: Boolean
+            get() = this == INITIAL
+
+        val isPartial: Boolean
+            get() = this == PARTIAL
+
+        val hasPermission: Boolean
+            get() = when (this) {
+                PARTIAL,
+                FULL,
+                -> true
+
+                else -> false
+            }
+
+        val isDeniedPermission: Boolean
+            get() = when (this) {
+                DENIED,
+                PERMANENTLY_DENIED,
+                -> true
+
+                else -> false
+            }
+    }
+
     private val primaryPermission: String = when {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> Manifest.permission.READ_MEDIA_IMAGES
         else -> Manifest.permission.READ_EXTERNAL_STORAGE
@@ -30,11 +62,13 @@ internal object GalleryPermissionManager {
     }
 
     fun hasFullAccess(context: Context): Boolean = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-            context.isGrantedPermission(permission = Manifest.permission.READ_MEDIA_IMAGES)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> context.isGrantedPermission(
+            permission = Manifest.permission.READ_MEDIA_IMAGES,
+        )
 
-        else ->
-            context.isGrantedPermission(permission = Manifest.permission.READ_EXTERNAL_STORAGE)
+        else -> context.isGrantedPermission(
+            permission = Manifest.permission.READ_EXTERNAL_STORAGE,
+        )
     }
 
     fun hasPartialAccess(context: Context): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&

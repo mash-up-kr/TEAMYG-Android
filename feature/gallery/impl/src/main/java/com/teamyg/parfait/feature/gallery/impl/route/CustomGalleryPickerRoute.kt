@@ -19,8 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.extensions.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
-import com.teamyg.parfait.feature.gallery.impl.utils.GalleryPermissionManager
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
