@@ -6,8 +6,7 @@ import javax.inject.Inject
 
 class CheckInviteCodeValidUseCase
 @Inject
-constructor(
-) {
+constructor() {
     suspend operator fun invoke(): InviteCodeResult {
         delay(100)
         return InviteCodeResult(

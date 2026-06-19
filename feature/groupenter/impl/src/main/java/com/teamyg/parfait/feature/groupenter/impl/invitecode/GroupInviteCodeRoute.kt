@@ -20,7 +20,10 @@ fun GroupInviteCodeRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                GroupInviteCodeSideEffect.NavigateToBack -> { navigator.onBack() }
+                GroupInviteCodeSideEffect.NavigateToBack -> {
+                    navigator.onBack()
+                }
+
                 GroupInviteCodeSideEffect.NavigateToNext -> { /* navigate to next */ }
             }
         }

@@ -96,7 +96,8 @@ private class InviteCodeInputFieldElementPreviewParameterProvider :
 @YGPreview
 @Composable
 private fun InviteCodeInputFieldElementPreview(
-    @PreviewParameter(InviteCodeInputFieldElementPreviewParameterProvider::class) param: InviteCodeInputFieldElementParam,
+    @PreviewParameter(InviteCodeInputFieldElementPreviewParameterProvider::class) param:
+    InviteCodeInputFieldElementParam,
 ) = PreviewBox {
     InviteCodeInputFieldElement(
         word = param.word,

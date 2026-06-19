@@ -49,7 +49,7 @@ internal fun GroupInviteCodeScreen(
                 contentDescription = "뒤로가기",
                 modifier = Modifier
                     .padding(top = 12.dp, end = 12.dp, bottom = 12.dp)
-                    .clickable { onClickBackButton() }
+                    .clickable { onClickBackButton() },
             )
         }
         LazyColumn(
@@ -130,7 +130,8 @@ internal fun GroupInviteCodeScreen(
     }
 }
 
-private class GroupInviteCodeScreenPreviewParameterProvider : PreviewParameterProvider<InviteCodeInputFieldElementParam> {
+private class GroupInviteCodeScreenPreviewParameterProvider :
+    PreviewParameterProvider<InviteCodeInputFieldElementParam> {
     override val values: Sequence<InviteCodeInputFieldElementParam>
         get() = sequenceOf(
             InviteCodeInputFieldElementParam(""),

@@ -20,18 +20,23 @@ data class InviteCodeInputFieldElementParam(
 }
 
 enum class InputMode {
-    ADD, EDIT
+    ADD,
+    EDIT,
 }
 
 sealed interface GroupInviteCodeIntent : UiIntent {
     data object ClickNextButton : GroupInviteCodeIntent
+
     data object ClickBackButton : GroupInviteCodeIntent
+
     data class InputWord(val index: Int, val word: String) : GroupInviteCodeIntent
+
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
     data object NavigateToBack : GroupInviteCodeSideEffect
+
     data object NavigateToNext : GroupInviteCodeSideEffect
 }
 
@@ -40,10 +45,13 @@ class GroupInviteCodeViewModel
 @Inject
 constructor(
     private val checkInviteCodeValidUseCase: CheckInviteCodeValidUseCase,
-) : BaseViewModel<InviteCodeInputFieldElementParam, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(initialState = InviteCodeInputFieldElementParam()) {
+) : BaseViewModel<InviteCodeInputFieldElementParam, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
+    initialState = InviteCodeInputFieldElementParam(),
+) {
     override fun processIntent(intent: GroupInviteCodeIntent) {
         when (intent) {
             GroupInviteCodeIntent.ClickBackButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToBack)
+
             GroupInviteCodeIntent.ClickNextButton -> {
                 viewModelScope.launch {
                     val result = checkInviteCodeValidUseCase()
