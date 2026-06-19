@@ -1,10 +1,13 @@
 package com.teamyg.parfait.feature.groupenter.impl.invitecode
 
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.usecase.group.CheckInviteCodeValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class InviteCodeInputFieldElementParam(
@@ -36,11 +39,26 @@ sealed interface GroupInviteCodeSideEffect : UiSideEffect {
 class GroupInviteCodeViewModel
 @Inject
 constructor(
+    private val checkInviteCodeValidUseCase: CheckInviteCodeValidUseCase,
 ) : BaseViewModel<InviteCodeInputFieldElementParam, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(initialState = InviteCodeInputFieldElementParam()) {
     override fun processIntent(intent: GroupInviteCodeIntent) {
         when (intent) {
             GroupInviteCodeIntent.ClickBackButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToBack)
-            GroupInviteCodeIntent.ClickNextButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
+            GroupInviteCodeIntent.ClickNextButton -> {
+                viewModelScope.launch {
+                    val result = checkInviteCodeValidUseCase()
+                    if (result.isSuccess) {
+                        postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
+                    } else {
+                        updateState {
+                            InviteCodeInputFieldElementParam(
+                                errorText = result.errorMessage,
+                            )
+                        }
+                    }
+                }
+            }
+
             is GroupInviteCodeIntent.InputWord -> {
                 updateState {
                     val addedWord = when (inputMode) {
