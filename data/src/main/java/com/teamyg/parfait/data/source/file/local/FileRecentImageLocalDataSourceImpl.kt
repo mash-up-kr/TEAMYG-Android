@@ -1,21 +1,21 @@
-package com.teamyg.parfait.data.source.image.local
+package com.teamyg.parfait.data.source.file.local
 
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.teamyg.parfait.core.util.extensions.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.core.net.toUri
 
 @Singleton
-class RecentImageFileLocalDataSourceImpl
+class FileRecentImageLocalDataSourceImpl
 @Inject
 constructor(
     @ApplicationContext private val context: Context,
-) : RecentImageFileLocalDataSource {
+) : FileRecentImageLocalDataSource {
     private val dir: File by lazy {
         File(
             context.filesDir,
