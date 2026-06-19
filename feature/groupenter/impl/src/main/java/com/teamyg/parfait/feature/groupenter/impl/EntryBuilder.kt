@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groupenter.api.NavKeyGroupInviteCode
+import com.teamyg.parfait.feature.groupenter.impl.invitecode.GroupInviteCodeRoute
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupInviteCode> { key ->
