@@ -135,7 +135,7 @@ private fun PagerIndicator(
                 label = "indicatorColor",
             )
 
-            Box(
+            Spacer(
                 modifier = Modifier
                     .size(dotSize)
                     .clip(CircleShape)
