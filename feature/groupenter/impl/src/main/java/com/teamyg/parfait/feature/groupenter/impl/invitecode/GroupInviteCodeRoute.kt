@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groupenter.impl.invitecode
 
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -15,6 +16,15 @@ fun GroupInviteCodeRoute(
     viewModel: GroupInviteCodeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                GroupInviteCodeSideEffect.NavigateToBack -> { navigator.onBack() }
+                GroupInviteCodeSideEffect.NavigateToNext -> { /* navigate to next */ }
+            }
+        }
+    }
 
     GroupInviteCodeScreen(
         uiState = uiState,
