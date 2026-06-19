@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.login.impl
+package com.teamyg.parfait.feature.login.impl.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
@@ -20,7 +20,9 @@ sealed interface LoginIntent : UiIntent {
     object LoginWithKakao : LoginIntent
 }
 
-sealed interface LoginSideEffect : UiSideEffect
+sealed interface LoginSideEffect : UiSideEffect {
+    class NavigateToNext : LoginSideEffect
+}
 
 @HiltViewModel
 class LoginViewModel
@@ -36,6 +38,7 @@ constructor(
                         is KakaoLoginResult.Success -> {
                             updateState { copy(token = result.token) }
                             Log.i(TAG, "카카오 계정으로 로그인 성공 : ${result.token}")
+                            postSideEffect(LoginSideEffect.NavigateToNext())
                         }
 
                         is KakaoLoginResult.Failure -> {
