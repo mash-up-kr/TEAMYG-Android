@@ -53,6 +53,8 @@ dependencies {
     implementation(projects.feature.canvas.impl)
     implementation(projects.feature.splash.api)
     implementation(projects.feature.splash.impl)
+    implementation(projects.feature.groupenter.api)
+    implementation(projects.feature.groupenter.impl)
 
     implementation(projects.domain)
     implementation(projects.data)
