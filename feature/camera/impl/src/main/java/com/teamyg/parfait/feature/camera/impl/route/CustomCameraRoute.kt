@@ -24,7 +24,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
-import com.teamyg.parfait.feature.camera.impl.util.CameraFileProvider
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
@@ -74,7 +73,7 @@ internal fun CustomCameraRoute(
                         viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
                         return@collect
                     }
-                    val file = CameraFileProvider.createImageFile(context)
+                    val file = effect.file
                     val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
 
                     capture.takePicture(
@@ -82,10 +81,7 @@ internal fun CustomCameraRoute(
                         ContextCompat.getMainExecutor(context),
                         object : ImageCapture.OnImageSavedCallback {
                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                val contentUri = CameraFileProvider.toContentUri(context, file)
-                                viewModel.processIntent(
-                                    CustomCameraIntent.OnCaptureSaved(contentUri.toString()),
-                                )
+                                viewModel.processIntent(CustomCameraIntent.OnCaptureSaved(file))
                             }
 
                             override fun onError(exception: ImageCaptureException) {

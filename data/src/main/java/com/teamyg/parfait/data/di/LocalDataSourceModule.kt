@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.di
 
+import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
+import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSourceImpl
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
@@ -13,6 +15,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 interface LocalDataSourceModule {
+    @Binds
+    @Singleton
+    fun bindFileCameraCacheLocalDataSource(
+        fileCameraCacheLocalDataSourceImpl: FileCameraCacheLocalDataSourceImpl,
+    ): FileCameraCacheLocalDataSource
+
     @Binds
     @Singleton
     fun bindFileRecentImageLocalDataSource(

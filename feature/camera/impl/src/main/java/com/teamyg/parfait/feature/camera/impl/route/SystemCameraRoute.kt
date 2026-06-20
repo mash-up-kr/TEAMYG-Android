@@ -17,12 +17,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.feature.camera.impl.screen.SystemCameraScreen
-import com.teamyg.parfait.feature.camera.impl.util.CameraFileProvider
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraState
@@ -82,7 +82,7 @@ internal fun SystemCameraRoute(
                 }
 
                 is SystemCameraEffect.LaunchCamera -> {
-                    val uri = CameraFileProvider.createImageUri(context)
+                    val uri = effect.uri.toUri()
                     pendingUri = uri
                     takePictureLauncher.launch(uri)
                     viewModel.processIntent(SystemCameraIntent.OnCaptureLaunched)
