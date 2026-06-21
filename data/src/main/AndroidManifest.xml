@@ -11,6 +11,16 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/recent_image_file_paths" />
         </provider>
+
+        <provider
+            android:name="com.teamyg.parfait.data.utils.CameraCacheFileProvider"
+            android:authorities="${applicationId}.camera.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/camera_file_paths" />
+        </provider>
     </application>
 
 </manifest>

@@ -3,11 +3,11 @@ package com.teamyg.parfait.feature.gallery.impl.viewmodel
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +17,7 @@ import javax.inject.Inject
 @Immutable
 data class CustomGalleryPickerState(
     val isLoading: Boolean = false,
-    val access: GalleryAccessLevel = GalleryAccessLevel.INITIAL,
+    val access: GalleryPermissionManager.GalleryAccessLevel = GalleryPermissionManager.GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
     val recentImages: List<String> = emptyList(),
 ) : UiState {
@@ -39,7 +39,7 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
 
 sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
     data class OnPermissionResult(
-        val access: GalleryAccessLevel,
+        val access: GalleryPermissionManager.GalleryAccessLevel,
     ) : CustomGalleryPickerIntent()
 
     data object OnRequestPermission : CustomGalleryPickerIntent()

@@ -20,11 +20,11 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryImageGridComponent
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPartialAccessBanner
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPermissionRequestComponent
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerState
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 
 @Composable
@@ -119,7 +119,8 @@ private fun GalleryContent(
 @YGPreview
 @Composable
 private fun PreviewCustomGalleryPickerScreen(
-    @PreviewParameter(GalleryAccessLevelPreviewParameterProvider::class) access: GalleryAccessLevel,
+    @PreviewParameter(GalleryAccessLevelPreviewParameterProvider::class)
+    access: GalleryPermissionManager.GalleryAccessLevel,
 ) = PreviewBox {
     CustomGalleryPickerScreen(
         state = CustomGalleryPickerState(
