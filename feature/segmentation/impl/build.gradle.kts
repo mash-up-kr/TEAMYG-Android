@@ -8,4 +8,6 @@ android {
 
 dependencies {
     implementation(projects.feature.segmentation.api)
+    implementation(libs.google.mlkit.subject.segmentation)
+    implementation(projects.feature.canvas.api)
 }
