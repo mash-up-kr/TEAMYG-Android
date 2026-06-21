@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
+import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasMove
 
 @Composable
 internal fun SegmentationRoute(
@@ -16,5 +17,6 @@ internal fun SegmentationRoute(
         sourceImageUri = key.sourceImageUri,
         modifier = modifier,
         onClickBack = { navigator.onBack() },
+        onClickOk = { uri -> navigator.goTo(NavKeyCanvasMove(imageUri = uri)) },
     )
 }
