@@ -36,7 +36,7 @@ import com.teamyg.parfait.feature.groupenter.impl.invitecode.component.InviteCod
 
 @Composable
 internal fun GroupInviteCodeScreen(
-    uiState: InviteCodeInputFieldElementParam,
+    uiState: GroupInviteCodeUiState,
     onValueChanged: (index: Int, word: String) -> Unit,
     onClickTextFieldElement: (index: Int) -> Unit,
     onClickNextButton: () -> Unit,
@@ -138,20 +138,20 @@ internal fun GroupInviteCodeScreen(
 }
 
 private class GroupInviteCodeScreenPreviewParameterProvider :
-    PreviewParameterProvider<InviteCodeInputFieldElementParam> {
-    override val values: Sequence<InviteCodeInputFieldElementParam>
+    PreviewParameterProvider<GroupInviteCodeUiState> {
+    override val values: Sequence<GroupInviteCodeUiState>
         get() = sequenceOf(
-            InviteCodeInputFieldElementParam(""),
-            InviteCodeInputFieldElementParam(text = "he"),
-            InviteCodeInputFieldElementParam(text = "hello"),
-            InviteCodeInputFieldElementParam(text = "", errorText = "이미 최대 인원이 모두 참여한 그룹이에요"),
+            GroupInviteCodeUiState(""),
+            GroupInviteCodeUiState(text = "he"),
+            GroupInviteCodeUiState(text = "hello"),
+            GroupInviteCodeUiState(text = "", errorText = "이미 최대 인원이 모두 참여한 그룹이에요"),
         )
 }
 
 @YGPreview
 @Composable
 private fun GroupInviteCodeScreenPreview(
-    @PreviewParameter(GroupInviteCodeScreenPreviewParameterProvider::class) uiState: InviteCodeInputFieldElementParam,
+    @PreviewParameter(GroupInviteCodeScreenPreviewParameterProvider::class) uiState: GroupInviteCodeUiState,
 ) = PreviewBox {
     GroupInviteCodeScreen(
         uiState = uiState,

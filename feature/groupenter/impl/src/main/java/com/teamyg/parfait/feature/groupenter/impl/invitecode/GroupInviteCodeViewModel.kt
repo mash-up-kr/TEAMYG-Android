@@ -10,7 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class InviteCodeInputFieldElementParam(
+data class GroupInviteCodeUiState(
     val text: String = "",
     val focusedIndex: Int? = null,
     val inputMode: InputMode = InputMode.ADD,
@@ -47,8 +47,8 @@ class GroupInviteCodeViewModel
 @Inject
 constructor(
     private val checkInviteCodeValidUseCase: CheckInviteCodeValidUseCase,
-) : BaseViewModel<InviteCodeInputFieldElementParam, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
-    initialState = InviteCodeInputFieldElementParam(),
+) : BaseViewModel<GroupInviteCodeUiState, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
+    initialState = GroupInviteCodeUiState(),
 ) {
     override fun processIntent(intent: GroupInviteCodeIntent) {
         when (intent) {
@@ -61,7 +61,7 @@ constructor(
                         postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
                     } else {
                         updateState {
-                            InviteCodeInputFieldElementParam(
+                            GroupInviteCodeUiState(
                                 errorText = result.errorMessage,
                             )
                         }
