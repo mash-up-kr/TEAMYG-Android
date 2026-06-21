@@ -4,8 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
@@ -60,54 +60,54 @@ class SegmentationViewModel
 
             is SegmentationIntent.ChangeImage -> {
                 viewModelScope.launch {
-                    if (inputImage != null) {
-                        val image = inputImage!!
-                        // 전경 신뢰도 마스크
-                        val options = SubjectSegmenterOptions
-                            .Builder()
-                            .enableForegroundConfidenceMask()
-                            .build()
-                        // 주체 세그테이터 만들기
-                        val segmenter = SubjectSegmentation.getClient(options)
-                        // 이미지 처리
-                        segmenter
-                            .process(image)
-                            .addOnSuccessListener { subject ->
-                                // 분할 결과 가져오기
-                                val foregroundMask = subject.foregroundConfidenceMask!!
-                                val overlayColors = IntArray(image.width * image.height)
-                                val subjectColors = IntArray(image.width * image.height)
+                    val image = inputImage ?: return@launch
 
-                                for (i in 0 until image.width * image.height) {
-                                    if (foregroundMask[i] > 0.5f) {
-                                        overlayColors[i] = Color.argb(128, 255, 0, 255)
-                                        subjectColors[i] =
-                                            state.value.originBitmap!!.getPixel(i % image.width, i / image.width)
-                                    }
-                                }
-                                updateState {
-                                    copy(
-                                        overlayBitmap = Bitmap.createBitmap(
-                                            overlayColors,
-                                            image.width,
-                                            image.height,
-                                            Bitmap.Config.ARGB_8888,
-                                        ),
-                                    )
-                                }
-                                val subjectBitmap = Bitmap.createBitmap(
-                                    subjectColors,
+                    // 전경 신뢰도 마스크
+                    val options = SubjectSegmenterOptions
+                        .Builder()
+                        .enableForegroundConfidenceMask()
+                        .build()
+                    // 주체 세그테이터 만들기
+                    val segmenter = SubjectSegmentation.getClient(options)
+
+                    val result = withContext(Dispatchers.IO) {
+                        Tasks.await(segmenter.process(image))
+                    }
+                    withContext(Dispatchers.Default) {
+                        // 분할 결과 가져오기
+                        val foregroundMask = result.foregroundConfidenceMask!!
+                        val overlayColors = IntArray(image.width * image.height)
+                        val subjectColors = IntArray(image.width * image.height)
+
+                        for (i in 0 until image.width * image.height) {
+                            if (foregroundMask[i] > 0.5f) {
+                                overlayColors[i] = Color.argb(128, 255, 0, 255)
+                                subjectColors[i] =
+                                    state.value.originBitmap!!.getPixel(i % image.width, i / image.width)
+                            }
+                        }
+                        updateState {
+                            copy(
+                                overlayBitmap = Bitmap.createBitmap(
+                                    overlayColors,
                                     image.width,
                                     image.height,
                                     Bitmap.Config.ARGB_8888,
-                                )
+                                ),
+                            )
+                        }
+                        val subjectBitmap = Bitmap.createBitmap(
+                            subjectColors,
+                            image.width,
+                            image.height,
+                            Bitmap.Config.ARGB_8888,
+                        )
 
-                                val file = File(context.cacheDir, "subject.png")
-                                file.outputStream().use { subjectBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                                updateState { copy(subjectImagePath = file.absolutePath) }
-                            }.addOnFailureListener { e ->
-                                Log.d("Segmentation", "error: $e")
-                            }
+                        val file = File(context.cacheDir, "subject.png")
+                        withContext(Dispatchers.IO) {
+                            file.outputStream().use { subjectBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                        }
+                        updateState { copy(subjectImagePath = file.absolutePath) }
                     }
                 }
             }
