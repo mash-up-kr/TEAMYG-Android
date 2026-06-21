@@ -32,6 +32,7 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data class InputWord(val index: Int, val word: String) : GroupInviteCodeIntent
 
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
+    data object HideKeyboard : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
@@ -104,6 +105,10 @@ constructor(
                         inputMode = if (focusedIndex == text.trim().length) InputMode.ADD else InputMode.EDIT,
                     )
                 }
+            }
+
+            is GroupInviteCodeIntent.HideKeyboard -> {
+                updateState { copy(focusedIndex = null) }
             }
         }
     }
