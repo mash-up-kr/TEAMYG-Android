@@ -72,11 +72,14 @@ constructor(
             is GroupInviteCodeIntent.InputWord -> {
                 updateState {
                     val addedWord = when (inputMode) {
-                        InputMode.ADD -> intent.word
-                        InputMode.EDIT -> intent.word.drop(1)
+                        InputMode.ADD -> intent.word.trim()
+                        InputMode.EDIT -> intent.word.drop(1).trim()
                     }
                     val newFocusedIndex = intent.index.plus(addedWord.length).takeIf { it < codeLength }
                     val newText = (text.take(intent.index) + addedWord).take(codeLength)
+                    if (text == newText) {
+                        return@updateState this
+                    }
 
                     when (inputMode) {
                         InputMode.ADD -> {
