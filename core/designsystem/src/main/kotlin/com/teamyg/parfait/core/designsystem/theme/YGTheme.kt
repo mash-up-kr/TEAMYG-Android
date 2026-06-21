@@ -19,6 +19,7 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 private val TempDarkColorScheme = darkColorScheme(
     primary = YGAtomicColors.TempPurple80,

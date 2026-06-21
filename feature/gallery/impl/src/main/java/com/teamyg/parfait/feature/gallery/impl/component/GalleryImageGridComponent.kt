@@ -19,13 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.domain.model.GalleryImageGroup
 
 @Composable
 internal fun GalleryImageGridComponent(
     groups: List<GalleryImageGroup>,
+    recentImages: List<String>,
     onClickImage: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -35,6 +36,25 @@ internal fun GalleryImageGridComponent(
             .background(Color.Black)
             .padding(horizontal = 2.dp),
     ) {
+        if (recentImages.isNotEmpty()) {
+            item(
+                key = "header-recent",
+                span = { GridItemSpan(maxLineSpan) },
+            ) {
+                GalleryDateHeader(date = "최근")
+            }
+
+            items(
+                items = recentImages,
+                key = { "recent-$it" },
+            ) { uri ->
+                GalleryImageCell(
+                    uri = uri,
+                    onClickImage = onClickImage,
+                )
+            }
+        }
+
         groups.forEach { group ->
             item(
                 key = "header-${group.date}",
@@ -47,21 +67,30 @@ internal fun GalleryImageGridComponent(
                 items = group.images,
                 key = { it },
             ) { uri ->
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .padding(2.dp)
-                        .clickable { onClickImage(uri) },
-                ) {
-                    AsyncImage(
-                        model = uri,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+                GalleryImageCell(uri = uri, onClickImage = onClickImage)
             }
         }
+    }
+}
+
+@Composable
+private fun GalleryImageCell(
+    uri: String,
+    onClickImage: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .padding(2.dp)
+            .clickable { onClickImage(uri) },
+    ) {
+        AsyncImage(
+            model = uri,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -102,6 +131,10 @@ private fun PreviewGalleryImageGridComponent() = PreviewBox {
                     "test4",
                 ),
             ),
+        ),
+        recentImages = listOf(
+            "test1",
+            "test3",
         ),
         onClickImage = {},
     )

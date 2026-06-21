@@ -20,12 +20,12 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryImageGridComponent
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPartialAccessBanner
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPermissionRequestComponent
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevel
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
-import com.teamyg.parfait.feature.gallery.impl.model.GalleryImageGroup
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerState
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
+import com.teamyg.parfait.domain.model.GalleryImageGroup
 
 @Composable
 internal fun CustomGalleryPickerScreen(
@@ -43,6 +43,7 @@ internal fun CustomGalleryPickerScreen(
             isLoading = state.isLoading,
             isEmpty = state.isEmpty,
             groups = state.groups,
+            recentImages = state.recentImages,
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
             onClickCancel = onClickCancel,
@@ -50,7 +51,7 @@ internal fun CustomGalleryPickerScreen(
         )
 
         false -> GalleryPermissionRequestComponent(
-            isInit = state.access == GalleryAccessLevel.INITIAL,
+            isInit = state.access.isInit,
             isDeniedPermission = state.access.isDeniedPermission,
             onClickGrantPermission = onClickGrantPermission,
             onClickOpenSettings = onClickOpenSettings,
@@ -65,6 +66,7 @@ private fun GalleryContent(
     isLoading: Boolean,
     isEmpty: Boolean,
     groups: List<GalleryImageGroup>,
+    recentImages: List<String>,
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
@@ -93,6 +95,7 @@ private fun GalleryContent(
 
                 else -> GalleryImageGridComponent(
                     groups = groups,
+                    recentImages = recentImages,
                     onClickImage = onClickImage,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -116,7 +119,8 @@ private fun GalleryContent(
 @YGPreview
 @Composable
 private fun PreviewCustomGalleryPickerScreen(
-    @PreviewParameter(GalleryAccessLevelPreviewParameterProvider::class) access: GalleryAccessLevel,
+    @PreviewParameter(GalleryAccessLevelPreviewParameterProvider::class)
+    access: GalleryPermissionManager.GalleryAccessLevel,
 ) = PreviewBox {
     CustomGalleryPickerScreen(
         state = CustomGalleryPickerState(
