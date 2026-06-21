@@ -12,12 +12,12 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -43,77 +43,79 @@ internal fun GroupInviteCodeScreen(
     onClickBackButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        Box(modifier = Modifier.padding(all = 21.dp)) {
-            Image(
-                painter = painterResource(R.drawable.ic_chevron_left),
-                contentDescription = "뒤로가기",
+    Box(modifier = modifier) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.padding(all = 21.dp)) {
+                Image(
+                    painter = painterResource(R.drawable.ic_chevron_left),
+                    contentDescription = "뒤로가기",
+                    modifier = Modifier
+                        .padding(top = 12.dp, end = 12.dp, bottom = 12.dp)
+                        .clickable { onClickBackButton() },
+                )
+            }
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 21.dp),
                 modifier = Modifier
-                    .padding(top = 12.dp, end = 12.dp, bottom = 12.dp)
-                    .clickable { onClickBackButton() },
-            )
-        }
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 21.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        ) {
-            item {
-                Text(
-                    text = "2/3",
-                    color = Color(0x80333333),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "기존 그룹에 참여하기 위해\n초대코드를 입력해 주세요",
-                    color = Color(0xFF333333),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "초대코드는 그룹원에게 직접 받을 수 있어요",
-                    color = Color(0xFF737373),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                )
-            }
-            item {
-                Spacer(modifier = Modifier.height(40.dp))
-                InviteCodeInputField(
-                    text = uiState.text,
-                    maxLength = uiState.codeLength,
-                    horizontalSpace = 6.dp,
-                    modifier = Modifier.fillMaxWidth(),
-                    elementContent = { word, index ->
-                        InviteCodeInputFieldElement(
-                            word = word,
-                            isFocus = index == uiState.focusedIndex,
-                            onValueChanged = { changed -> onValueChanged(index, changed) },
-                            onClickTextFieldElement = { onClickTextFieldElement(index) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(62 / 76f),
-                        )
-                    },
-                )
-            }
-            if (uiState.errorText != null) {
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
                 item {
-                    Spacer(modifier = Modifier.height(40.dp))
                     Text(
-                        text = uiState.errorText,
-                        color = Color(0xFFFF0000),
-                        fontSize = 14.sp,
+                        text = "2/3",
+                        color = Color(0x80333333),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "기존 그룹에 참여하기 위해\n초대코드를 입력해 주세요",
+                        color = Color(0xFF333333),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "초대코드는 그룹원에게 직접 받을 수 있어요",
+                        color = Color(0xFF737373),
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Normal,
                     )
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.height(100.dp))
+                item {
+                    Spacer(modifier = Modifier.height(40.dp))
+                    InviteCodeInputField(
+                        text = uiState.text,
+                        maxLength = uiState.codeLength,
+                        horizontalSpace = 6.dp,
+                        modifier = Modifier.fillMaxWidth(),
+                        elementContent = { word, index ->
+                            InviteCodeInputFieldElement(
+                                word = word,
+                                isFocus = index == uiState.focusedIndex,
+                                onValueChanged = { changed -> onValueChanged(index, changed) },
+                                onClickTextFieldElement = { onClickTextFieldElement(index) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(62 / 76f),
+                            )
+                        },
+                    )
+                }
+                if (uiState.errorText != null) {
+                    item {
+                        Spacer(modifier = Modifier.height(40.dp))
+                        Text(
+                            text = uiState.errorText,
+                            color = Color(0xFFFF0000),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                        )
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
             }
         }
         Text(
@@ -129,7 +131,8 @@ internal fun GroupInviteCodeScreen(
                 .border(width = 1.dp, color = Color(0xFFDFDFDF), shape = RoundedCornerShape(8.dp))
                 .clip(shape = RoundedCornerShape(8.dp))
                 .clickable(enabled = true) { onClickNextButton() }
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .align(Alignment.BottomCenter),
         )
     }
 }
