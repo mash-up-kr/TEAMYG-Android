@@ -7,12 +7,11 @@ import javax.inject.Inject
 class CreateCameraCacheUriUseCase
 @Inject
 constructor(
+    private val createCameraCacheFileUseCase: CreateCameraCacheFileUseCase,
     private val cameraCacheFileRepository: CameraCacheFileRepository,
 ) {
     operator fun invoke(): String {
-        cameraCacheFileRepository.makeCameraCacheFileDirs()
-
-        val file = cameraCacheFileRepository.createCameraCacheFile()
+        val file = createCameraCacheFileUseCase()
 
         return cameraCacheFileRepository.getCameraCacheUri(file)
     }
