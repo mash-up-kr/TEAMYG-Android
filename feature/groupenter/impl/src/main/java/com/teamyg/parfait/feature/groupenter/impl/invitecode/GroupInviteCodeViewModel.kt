@@ -32,6 +32,7 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data class InputWord(val index: Int, val word: String) : GroupInviteCodeIntent
 
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
+
     data object HideKeyboard : GroupInviteCodeIntent
 }
 

@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groupenter.impl.invitecode
 
-import android.util.Log
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
