@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.vmLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -27,6 +28,10 @@ class SystemGalleryPickerViewModel
 constructor() : BaseViewModel<SystemGalleryState, SystemGalleryIntent, SystemGallerySideEffect>(
     initialState = SystemGalleryState(),
 ) {
+    init {
+        vmLogger.i { "SystemGalleryPickerViewModel::init" }
+    }
+
     override fun processIntent(intent: SystemGalleryIntent) {
         when (intent) {
             is SystemGalleryIntent.PickPhoto -> {

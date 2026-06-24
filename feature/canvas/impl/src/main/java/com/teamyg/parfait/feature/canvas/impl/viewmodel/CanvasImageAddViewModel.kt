@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.vmLogger
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -40,6 +41,10 @@ constructor(
 ) : BaseViewModel<CanvasImageAddState, CanvasImageAddIntent, CanvasImageAddEffect>(
     initialState = CanvasImageAddState(),
 ) {
+    init {
+        vmLogger.i { "CanvasImageAddViewModel::init" }
+    }
+
     override fun processIntent(intent: CanvasImageAddIntent) {
         when (intent) {
             is CanvasImageAddIntent.CacheImage -> handleCacheImage(intent)

@@ -7,6 +7,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.vmLogger
 import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
@@ -65,6 +66,8 @@ constructor(
     initialState = CustomGalleryPickerState(),
 ) {
     init {
+        vmLogger.i { "CustomGalleryPickerViewModel::init" }
+
         viewModelScope.launch {
             collectRecentCacheImages()
         }
