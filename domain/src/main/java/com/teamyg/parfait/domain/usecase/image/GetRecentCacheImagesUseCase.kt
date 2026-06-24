@@ -39,8 +39,7 @@ constructor(
                 val lastModified = recentImageRepository.getLastModifiedCacheFile(uri) ?: 0L
 
                 lastModified in window
-            }
-            .also { outdated ->
+            }.also { outdated ->
                 useCaseLogger.d { "clearOutsideDayWindow - outdated.size: ${outdated.size}" }
             }
 
