@@ -2,16 +2,15 @@ package com.teamyg.parfait.feature.login.impl.route
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.ui.mvi.extension.collectSideEffect
 import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
-import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
@@ -44,16 +43,14 @@ fun LoginRoute(
         )
     }
 
-    LaunchedEffect(viewModel) {
-        viewModel.effect.collect { effect ->
-            when (effect) {
-                is LoginSideEffect.NavigateToNext -> {
-                    navigator.goTo(
-                        destination = NavKeyGroupHome(
-                            groupId = 1231,
-                        ),
-                    )
-                }
+    viewModel.collectSideEffect { effect ->
+        when (effect) {
+            is LoginSideEffect.NavigateToNext -> {
+                navigator.goTo(
+                    destination = NavKeyGroupHome(
+                        groupId = 1231,
+                    ),
+                )
             }
         }
     }
@@ -65,7 +62,7 @@ fun LoginRoute(
     LoginScreen(
         pages = tempPages,
         onClickKakaoButton = {
-            viewModel.processIntent(LoginIntent.LoginWithKakao)
+            viewModel.loginKakao()
         },
         modifier = modifier,
     )
