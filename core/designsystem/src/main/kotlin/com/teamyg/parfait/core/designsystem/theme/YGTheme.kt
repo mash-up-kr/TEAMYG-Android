@@ -19,23 +19,23 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.colors.YGSemanticColors
 
-private val TempDarkColorScheme = darkColorScheme(
-    primary = YGAtomicColors.TempPurple80,
-    secondary = YGAtomicColors.TempPurpleGrey80,
-    tertiary = YGAtomicColors.TempPink80,
+private val YGDarkColorScheme = darkColorScheme(
+    primary = YGSemanticColors.Primary,
+    secondary = YGSemanticColors.Secondary,
+    tertiary = YGSemanticColors.Tertiary,
 )
 
-private val TempLightColorScheme = lightColorScheme(
-    primary = YGAtomicColors.TempPurple40,
-    secondary = YGAtomicColors.TempPurpleGrey40,
-    tertiary = YGAtomicColors.TempPink40,
+private val YGLightColorScheme = lightColorScheme(
+    primary = YGSemanticColors.Primary,
+    secondary = YGSemanticColors.Secondary,
+    tertiary = YGSemanticColors.Tertiary,
 )
 
 @OptIn(ExperimentalCoilApi::class)
 @Composable
-fun TempYGMaterialTheme(
+fun YGMaterialTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
@@ -47,9 +47,9 @@ fun TempYGMaterialTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> TempDarkColorScheme
+        darkTheme -> YGDarkColorScheme
 
-        else -> TempLightColorScheme
+        else -> YGLightColorScheme
     }
 
     CompositionLocalProvider(
