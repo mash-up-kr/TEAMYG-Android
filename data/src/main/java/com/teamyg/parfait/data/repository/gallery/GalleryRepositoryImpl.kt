@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.teamyg.parfait.domain.model.DayWindow
 import com.teamyg.parfait.data.utils.GalleryMediaProvider
+import com.teamyg.parfait.data.utils.repoLogger
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,6 +21,10 @@ class GalleryRepositoryImpl
 constructor(
     private val galleryMediaProvider: GalleryMediaProvider,
 ) : GalleryRepository {
+    init {
+        repoLogger.i { "GalleryRepositoryImpl::init" }
+    }
+
     override suspend fun loadAllGalleryImages(): LinkedHashMap<String, MutableList<String>> =
         withContext(Dispatchers.IO) {
             val uri: Uri = galleryMediaProvider
