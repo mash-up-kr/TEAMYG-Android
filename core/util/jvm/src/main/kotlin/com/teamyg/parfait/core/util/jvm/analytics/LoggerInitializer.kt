@@ -7,8 +7,4 @@ object LoggerInitializer {
     fun setupDebug() {
         Logger.setLogWriters(platformLogWriter())
     }
-
-    fun setupRelease() {
-        // TODO Crashlytics Writer
-    }
 }
