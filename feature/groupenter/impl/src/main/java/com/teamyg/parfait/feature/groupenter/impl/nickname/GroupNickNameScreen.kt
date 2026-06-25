@@ -99,6 +99,7 @@ internal fun GroupNickNameScreen(
                         onValueChange = { value -> onValueChanged(value) },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(color = Color(0xFFFFFFFF), shape = RoundedCornerShape(8.dp))
                             .border(width = 1.dp, color = Color(0xFFDFDFDF), shape = RoundedCornerShape(8.dp))
                             .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 11.dp),
                     )
