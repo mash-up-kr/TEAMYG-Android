@@ -1,9 +1,8 @@
 package com.teamyg.parfait
 
 import android.app.Application
-import co.touchlab.kermit.Logger
-import co.touchlab.kermit.platformLogWriter
 import com.kakao.sdk.common.KakaoSdk
+import com.teamyg.parfait.core.util.jvm.analytics.LoggerInitializer
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -12,7 +11,7 @@ class BaseApplication : Application() {
         super.onCreate()
 
         if (BuildConfig.DEBUG) {
-            Logger.setLogWriters(listOf(platformLogWriter()))
+            LoggerInitializer.setupDebug()
         }
 
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)

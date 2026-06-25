@@ -1,7 +1,8 @@
 package com.teamyg.parfait.domain.model
 
-import co.touchlab.kermit.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 
 internal val useCaseLogger: Logger by lazy {
-    Logger.withTag("UseCase")
+    Loggers.create("UseCase")
 }

@@ -1,11 +1,12 @@
 package com.teamyg.parfait.core.ui
 
-import co.touchlab.kermit.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 
 val vmLogger: Logger by lazy {
-    Logger.withTag("ViewModel")
+    Loggers.create("ViewModel")
 }
 
 val screenLogger: Logger by lazy {
-    Logger.withTag("Screen")
+    Loggers.create("Screen")
 }

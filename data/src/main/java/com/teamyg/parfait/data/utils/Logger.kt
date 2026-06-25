@@ -1,11 +1,12 @@
 package com.teamyg.parfait.data.utils
 
-import co.touchlab.kermit.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Logger
+import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 
 internal val repoLogger: Logger by lazy {
-    Logger.withTag("Repository")
+    Loggers.create("Repository")
 }
 
 internal val sourceLogger: Logger by lazy {
-    Logger.withTag("Source")
+    Loggers.create("Source")
 }
