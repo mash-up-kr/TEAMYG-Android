@@ -2,12 +2,11 @@ package com.teamyg.parfait.data.repository.camera
 
 import android.net.Uri
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
-import com.teamyg.parfait.data.utils.repoLogger
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.toString
 
 @Singleton
 class CameraCacheFileRepositoryImpl
@@ -16,7 +15,7 @@ constructor(
     private val fileCameraCacheLocalDataSource: FileCameraCacheLocalDataSource,
 ) : CameraCacheFileRepository {
     init {
-        repoLogger.i { "CameraCacheFileRepositoryImpl::init" }
+        repositoryLogger.i { "CameraCacheFileRepositoryImpl::init" }
     }
 
     override fun makeCameraCacheFileDirs(): Boolean = fileCameraCacheLocalDataSource.mkdirs()

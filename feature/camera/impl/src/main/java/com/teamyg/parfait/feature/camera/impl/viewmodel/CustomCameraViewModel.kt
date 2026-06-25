@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.ui.vmLogger
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -80,7 +80,7 @@ constructor(
     initialState = CustomCameraState(),
 ) {
     init {
-        vmLogger.i { "CustomCameraViewModel::init" }
+        viewModelLogger.i { "CustomCameraViewModel::init" }
     }
 
     override fun processIntent(intent: CustomCameraIntent) {

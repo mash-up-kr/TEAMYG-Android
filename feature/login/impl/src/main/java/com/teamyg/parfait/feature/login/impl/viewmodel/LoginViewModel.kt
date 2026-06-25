@@ -7,7 +7,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.ui.vmLogger
+import com.teamyg.parfait.core.ui.viewModelLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,7 +31,7 @@ constructor(
     private val loginWithKakaoUseCase: LoginWithKakaoUseCase,
 ) : BaseViewModel<LoginState, LoginIntent, LoginSideEffect>(initialState = LoginState()) {
     init {
-        vmLogger.i { "LoginViewModel::init" }
+        viewModelLogger.i { "LoginViewModel::init" }
     }
 
     override fun processIntent(intent: LoginIntent) {
@@ -41,12 +41,12 @@ constructor(
                     when (val result = loginWithKakaoUseCase()) {
                         is KakaoLoginResult.Success -> {
                             updateState { copy(token = result.token) }
-                            vmLogger.d { "카카오 계정으로 로그인 성공 : ${result.token}" }
+                            viewModelLogger.d { "카카오 계정으로 로그인 성공 : ${result.token}" }
                             postSideEffect(LoginSideEffect.NavigateToNext())
                         }
 
                         is KakaoLoginResult.Failure -> {
-                            vmLogger.e(result.throwable) { "카카오 계정으로 로그인 실패 : ${result.throwable}" }
+                            viewModelLogger.e(result.throwable) { "카카오 계정으로 로그인 실패 : ${result.throwable}" }
                         }
 
                         is KakaoLoginResult.Cancel -> Unit
