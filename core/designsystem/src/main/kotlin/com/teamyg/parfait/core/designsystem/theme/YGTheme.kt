@@ -20,7 +20,6 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.teamyg.parfait.core.designsystem.theme.colors.YGSemanticColors
-import com.teamyg.parfait.core.designsystem.theme.typography.YGTypography
 
 private val YGDarkColorScheme = darkColorScheme(
     primary = YGSemanticColors.Primary,
