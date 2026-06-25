@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.ui.vmLogger
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.splash.SplashInitialUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -31,7 +31,7 @@ constructor(
     splashInitialUseCase: SplashInitialUseCase,
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState()) {
     init {
-        vmLogger.i { "SplashViewModel::init" }
+        viewModelLogger.i { "SplashViewModel::init" }
 
         viewModelScope.launch {
             splashInitialUseCase()

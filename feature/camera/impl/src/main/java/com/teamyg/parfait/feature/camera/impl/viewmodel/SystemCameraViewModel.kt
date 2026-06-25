@@ -4,7 +4,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.ui.vmLogger
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -66,7 +66,7 @@ constructor(
     initialState = SystemCameraState.Init,
 ) {
     init {
-        vmLogger.i { "SystemCameraViewModel::init" }
+        viewModelLogger.i { "SystemCameraViewModel::init" }
     }
 
     override fun processIntent(intent: SystemCameraIntent) {

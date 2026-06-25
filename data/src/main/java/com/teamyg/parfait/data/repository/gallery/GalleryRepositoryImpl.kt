@@ -5,7 +5,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.teamyg.parfait.domain.model.DayWindow
 import com.teamyg.parfait.data.utils.GalleryMediaProvider
-import com.teamyg.parfait.data.utils.repoLogger
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +22,7 @@ constructor(
     private val galleryMediaProvider: GalleryMediaProvider,
 ) : GalleryRepository {
     init {
-        repoLogger.i { "GalleryRepositoryImpl::init" }
+        repositoryLogger.i { "GalleryRepositoryImpl::init" }
     }
 
     override suspend fun loadAllGalleryImages(): LinkedHashMap<String, MutableList<String>> =

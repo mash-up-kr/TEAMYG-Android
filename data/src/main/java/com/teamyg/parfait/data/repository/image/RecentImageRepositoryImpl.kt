@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
-import com.teamyg.parfait.data.utils.repoLogger
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +22,7 @@ constructor(
     private val fileRecentImageLocalDataSource: FileRecentImageLocalDataSource,
 ) : RecentImageRepository {
     init {
-        repoLogger.i { "RecentImageRepositoryImpl::init" }
+        repositoryLogger.i { "RecentImageRepositoryImpl::init" }
     }
 
     override val recentCacheImages: Flow<List<String>> = recentImageLocalDataSource.values

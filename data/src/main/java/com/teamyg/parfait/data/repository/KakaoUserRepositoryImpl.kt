@@ -4,7 +4,7 @@ import android.content.Context
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
-import com.teamyg.parfait.data.utils.repoLogger
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.domain.repository.KakaoUserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,7 +20,7 @@ constructor(
     private val userApiClient: UserApiClient,
 ) : KakaoUserRepository {
     init {
-        repoLogger.i { "KakaoUserRepositoryImpl::init" }
+        repositoryLogger.i { "KakaoUserRepositoryImpl::init" }
     }
 
     override fun isKakaoTalkLoginAvailable(): Boolean = userApiClient.isKakaoTalkLoginAvailable(context)
