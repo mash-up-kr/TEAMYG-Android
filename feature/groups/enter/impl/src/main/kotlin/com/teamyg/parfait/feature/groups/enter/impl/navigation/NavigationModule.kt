@@ -17,4 +17,10 @@ object NavigationModule {
     fun provideFeatureGroupInviteCodeEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
         featureGroupInviteCodeEntryBuilder(navigator = it)
     }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureGroupNickNameEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureGroupNickNameEntryBuilder(navigator = it)
+    }
 }
