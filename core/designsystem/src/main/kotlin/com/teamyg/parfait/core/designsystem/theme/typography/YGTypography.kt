@@ -1,16 +1,11 @@
 package com.teamyg.parfait.core.designsystem.theme.typography
 
-import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 
 object YGTypography {
-    internal val YGTypography = Typography(
-        bodyLarge = Body.B01_B,
-    )
-
     object Title {
         val T01_B = TextStyle(
             fontFamily = YGFontFamily.suitFontFamily,

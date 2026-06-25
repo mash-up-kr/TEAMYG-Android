@@ -66,7 +66,6 @@ fun YGMaterialTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = YGTypography.YGTypography,
             content = content,
         )
     }
