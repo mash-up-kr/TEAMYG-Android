@@ -31,3 +31,21 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
         }
     }
 }
+
+fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navigator) {
+    entry<NavKeyGroupNickName> { _ ->
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) { innerPadding ->
+            GroupNickNameRoute(
+                navigator = navigator,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+                    .navigationBarsAndImePadding(),
+            )
+        }
+    }
+}
