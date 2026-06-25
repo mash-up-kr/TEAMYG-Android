@@ -28,7 +28,6 @@ object YGAtomicColors {
         val Cherry300: Color = Color(0xFFFA91A2)
         val Cherry400: Color = Color(0xFFF86078)
         val Cherry500: Color = Color(0xFFF63050)
-        val Cherry600: Color = Color(0xFFF40B31)
         val Cherry700: Color = Color(0xFFCF092A)
     }
 
