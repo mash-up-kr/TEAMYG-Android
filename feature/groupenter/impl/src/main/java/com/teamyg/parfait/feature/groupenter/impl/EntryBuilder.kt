@@ -12,7 +12,9 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.feature.groupenter.api.NavKeyGroupInviteCode
+import com.teamyg.parfait.feature.groupenter.api.NavKeyGroupNickName
 import com.teamyg.parfait.feature.groupenter.impl.invitecode.GroupInviteCodeRoute
+import com.teamyg.parfait.feature.groupenter.impl.nickname.GroupNickNameRoute
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupInviteCode> { _ ->
@@ -21,6 +23,24 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             GroupInviteCodeRoute(
+                navigator = navigator,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+                    .navigationBarsAndImePadding(),
+            )
+        }
+    }
+}
+
+fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navigator) {
+    entry<NavKeyGroupNickName> { _ ->
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) { innerPadding ->
+            GroupNickNameRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
