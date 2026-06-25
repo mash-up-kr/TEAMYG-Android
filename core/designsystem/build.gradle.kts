@@ -8,5 +8,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.util)
+    implementation(projects.core.util.android)
+    implementation(projects.core.util.jvm)
 }

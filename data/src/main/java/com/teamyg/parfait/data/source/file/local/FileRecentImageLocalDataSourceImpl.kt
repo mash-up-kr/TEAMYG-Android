@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import com.teamyg.parfait.core.util.extensions.sha256
+import com.teamyg.parfait.core.util.jvm.extension.sha256
 import com.teamyg.parfait.data.utils.sourceLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
