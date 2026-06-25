@@ -1,11 +1,13 @@
 package com.teamyg.parfait.feature.groups.enter.impl.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
@@ -24,6 +26,7 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(Color(0xFFFFFFFF))
                     .padding(innerPadding)
                     .statusBarsPadding()
                     .navigationBarsAndImePadding(),
@@ -42,6 +45,7 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(Color(0xFFFFFFFF))
                     .padding(innerPadding)
                     .statusBarsPadding()
                     .navigationBarsAndImePadding(),
