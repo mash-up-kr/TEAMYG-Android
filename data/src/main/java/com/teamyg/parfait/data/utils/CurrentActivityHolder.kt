@@ -14,17 +14,17 @@ import javax.inject.Singleton
 class CurrentActivityHolder
 @Inject
 constructor() : Application.ActivityLifecycleCallbacks {
-    private var currentActivity: WeakReference<Activity>? = null
-
-    fun current(): Activity? = currentActivity?.get()
+    private var _currentActivity: WeakReference<Activity>? = null
+    val currentActivity: Activity?
+        get() = _currentActivity?.get()
 
     override fun onActivityResumed(activity: Activity) {
-        currentActivity = WeakReference(activity)
+        _currentActivity = WeakReference(activity)
     }
 
     override fun onActivityPaused(activity: Activity) {
-        if (currentActivity?.get() === activity) {
-            currentActivity = null
+        if (_currentActivity?.get() === activity) {
+            _currentActivity = null
         }
     }
 
