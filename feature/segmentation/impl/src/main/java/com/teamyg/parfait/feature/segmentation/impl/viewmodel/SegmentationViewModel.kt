@@ -7,9 +7,11 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.feature.segmentation.impl.repository.ImageSegmentationRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class SegmentationState(
     val originBitmap: Bitmap? = null,
@@ -23,30 +25,32 @@ sealed interface SegmentationIntent : UiIntent {
 
 sealed interface SegmentationEffect : UiSideEffect
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
 class SegmentationViewModel
-@Inject constructor(
+@AssistedInject constructor(
+    @Assisted private val sourceImageUri: String,
     private val repository: ImageSegmentationRepository,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
-    override fun processIntent(intent: SegmentationIntent) {
-        when (intent) {
-            is SegmentationIntent.LoadImage -> {
-                val uri = intent.imageUri ?: return
 
-                viewModelScope.launch {
-                    val bitmap = repository.decodeImage(uri)
-                    updateState { copy(originBitmap = bitmap) }
-                    val result = repository.segmentImage(bitmap)
-                    updateState {
-                        copy(
-                            overlayBitmap = result.overlayBitmap,
-                            subjectImagePath = result.subjectImagePath,
-                        )
-                    }
-                }
+    init {
+        viewModelScope.launch {
+            val bitmap = repository.decodeImage(sourceImageUri)
+            updateState { copy(originBitmap = bitmap) }
+            val result = repository.segmentImage(bitmap)
+            updateState {
+                copy(
+                    overlayBitmap = result.overlayBitmap,
+                    subjectImagePath = result.subjectImagePath,
+                )
             }
         }
     }
+    @AssistedFactory
+    interface Factory {
+        fun create(sourceImageUri: String): SegmentationViewModel
+    }
+
+    override fun processIntent(intent: SegmentationIntent) {}
 }

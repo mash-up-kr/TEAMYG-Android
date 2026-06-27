@@ -8,25 +8,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
 
 @Composable
 internal fun SegmentationScreen(
-    sourceImageUri: String,
+    viewModel: SegmentationViewModel,
     onClickBack: () -> Unit,
     onClickOk: (file: String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SegmentationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -42,21 +39,17 @@ internal fun SegmentationScreen(
             Text("완료")
         }
 
-        // 이미지 -> input image로 변경
-        LaunchedEffect(sourceImageUri) {
-            viewModel.processIntent(SegmentationIntent.LoadImage(sourceImageUri))
-        }
-
         Box(modifier = Modifier.fillMaxSize()) {
             // 원본 이미지
             state.originBitmap?.let { originBitmap ->
                 Image(
                     bitmap = originBitmap.asImageBitmap(),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),)
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
             // 오버레이 이미지
-            state.overlayBitmap?.let {overlayBitmap ->
+            state.overlayBitmap?.let { overlayBitmap ->
                 Image(
                     bitmap = overlayBitmap.asImageBitmap(),
                     contentDescription = null,
@@ -77,7 +70,7 @@ internal fun SegmentationScreen(
 @Composable
 private fun PreviewSegmentationScreen() = PreviewBox {
     SegmentationScreen(
-        sourceImageUri = "sourceImageUri",
+        viewModel = viewModel(),
         onClickBack = {},
         modifier = Modifier.fillMaxSize(),
         onClickOk = {},
