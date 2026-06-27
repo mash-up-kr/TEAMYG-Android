@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.login.impl.viewmodel
 
-import android.content.Context
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
@@ -11,6 +11,7 @@ import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelperFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 import javax.inject.Inject
 
 data class LoginState(
@@ -18,7 +19,7 @@ data class LoginState(
 ) : UiState
 
 sealed interface LoginIntent : UiIntent {
-    data class LoginWithKakao(val context: Context) : LoginIntent
+    data class LoginWithKakao(val activity: WeakReference<Activity>) : LoginIntent
 }
 
 sealed interface LoginSideEffect : UiSideEffect {
@@ -35,7 +36,7 @@ constructor(
         when (intent) {
             is LoginIntent.LoginWithKakao -> {
                 viewModelScope.launch {
-                    val kakaoLoginHelper = kakaoLoginHelperFactory.create(intent.context)
+                    val kakaoLoginHelper = kakaoLoginHelperFactory.create(intent.activity)
                     val result = if (kakaoLoginHelper.isKakaoTalkLoginAvailable()) {
                         when (val result = kakaoLoginHelper.loginWithKakaoTalk()) {
                             is KakaoLoginResult.Success -> result

@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.login.impl.util
 
-import android.content.Context
+import android.app.Activity
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
@@ -10,19 +10,34 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.lang.ref.WeakReference
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class KakaoLoginHelper
 @AssistedInject
 constructor(
-    @Assisted private val context: Context, // do not use applicationContext
+    @Assisted private val activity: WeakReference<Activity>,
     private val userApiClient: UserApiClient,
 ) {
-    fun isKakaoTalkLoginAvailable(): Boolean = userApiClient.isKakaoTalkLoginAvailable(context)
+    fun isKakaoTalkLoginAvailable(): Boolean {
+        val activity = activity.get() ?: return false
+
+        return userApiClient.isKakaoTalkLoginAvailable(activity)
+    }
 
     suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+        val activity = activity.get()
+
+        if (activity == null) {
+            continuation.resume(
+                value = KakaoLoginResult.Failure(throwable = IllegalStateException("activity is null")),
+                onCancellation = null,
+            )
+            return@suspendCancellableCoroutine
+        }
+
         userApiClient.loginWithKakaoTalk(
-            context = context,
+            context = activity,
             callback = { token, error ->
                 when {
                     token != null -> {
@@ -58,8 +73,18 @@ constructor(
     }
 
     suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+        val activity = activity.get()
+
+        if (activity == null) {
+            continuation.resume(
+                value = KakaoLoginResult.Failure(throwable = IllegalStateException("activity is null")),
+                onCancellation = null,
+            )
+            return@suspendCancellableCoroutine
+        }
+
         userApiClient.loginWithKakaoAccount(
-            context = context,
+            context = activity,
             callback = { token, error ->
                 when {
                     token != null -> {
@@ -97,5 +122,5 @@ constructor(
 
 @AssistedFactory
 interface KakaoLoginHelperFactory {
-    fun create(context: Context): KakaoLoginHelper
+    fun create(activity: WeakReference<Activity>): KakaoLoginHelper
 }

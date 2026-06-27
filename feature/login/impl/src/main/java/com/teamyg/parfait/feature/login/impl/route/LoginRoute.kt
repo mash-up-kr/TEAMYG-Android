@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.login.impl.route
 
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -15,6 +16,7 @@ import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
+import java.lang.ref.WeakReference
 
 @Composable
 fun LoginRoute(
@@ -22,7 +24,7 @@ fun LoginRoute(
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
+    val activity = LocalActivity.current
 
     val tempPages: List<OnboardingPage> = remember {
         listOf(
@@ -59,13 +61,13 @@ fun LoginRoute(
     }
 
     ResultEffect<String> { returnText ->
-        Toast.makeText(context, returnText, Toast.LENGTH_LONG).show()
+        Toast.makeText(activity, returnText, Toast.LENGTH_LONG).show()
     }
 
     LoginScreen(
         pages = tempPages,
         onClickKakaoButton = {
-            viewModel.processIntent(LoginIntent.LoginWithKakao(context))
+            viewModel.processIntent(LoginIntent.LoginWithKakao(WeakReference(activity)))
         },
         modifier = modifier,
     )
