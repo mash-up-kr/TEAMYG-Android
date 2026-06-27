@@ -33,7 +33,6 @@ class SegmentationViewModel
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
-
     init {
         viewModelScope.launch {
             val bitmap = repository.decodeImage(sourceImageUri)
@@ -47,6 +46,7 @@ class SegmentationViewModel
             }
         }
     }
+
     @AssistedFactory
     interface Factory {
         fun create(sourceImageUri: String): SegmentationViewModel

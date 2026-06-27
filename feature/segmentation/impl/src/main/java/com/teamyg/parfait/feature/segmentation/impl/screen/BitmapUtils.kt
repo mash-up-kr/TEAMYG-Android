@@ -1,12 +1,10 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
 import android.content.ContentResolver
-import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.provider.MediaStore
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size

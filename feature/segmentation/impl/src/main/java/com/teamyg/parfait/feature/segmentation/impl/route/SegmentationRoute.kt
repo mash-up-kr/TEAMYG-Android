@@ -16,7 +16,7 @@ internal fun SegmentationRoute(
     modifier: Modifier = Modifier,
 ) {
     val viewModel = hiltViewModel<SegmentationViewModel, SegmentationViewModel.Factory>(
-        creationCallback = { factory -> factory.create(key.sourceImageUri) }
+        creationCallback = { factory -> factory.create(key.sourceImageUri) },
     )
     SegmentationScreen(
         viewModel = viewModel,
