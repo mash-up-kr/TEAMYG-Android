@@ -69,19 +69,3 @@ internal fun decodeUriToBitmap(
     @Suppress("DEPRECATION")
     MediaStore.Images.Media.getBitmap(contentResolver, uri)
 }
-
-internal fun saveBitmapToGallery(
-    contentResolver: ContentResolver,
-    bitmap: Bitmap,
-): Uri? {
-    val values = ContentValues().apply {
-        put(MediaStore.Images.Media.DISPLAY_NAME, "parfait_${System.currentTimeMillis()}.png")
-        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
-        }
-    }
-    val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
-    contentResolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    return uri
-}
