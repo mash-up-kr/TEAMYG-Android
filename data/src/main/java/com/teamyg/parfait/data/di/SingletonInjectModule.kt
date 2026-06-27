@@ -12,7 +12,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object SingletonInjectModule {
-
     @Provides
     @Singleton
     fun provideGalleryMediaProvider(

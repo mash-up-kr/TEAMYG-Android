@@ -8,7 +8,6 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.KakaoLoginResult
-import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelperFactory
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
