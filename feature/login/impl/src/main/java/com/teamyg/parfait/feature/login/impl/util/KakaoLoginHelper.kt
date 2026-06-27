@@ -19,13 +19,25 @@ constructor(
     @Assisted private val activity: WeakReference<Activity>,
     private val userApiClient: UserApiClient,
 ) {
-    fun isKakaoTalkLoginAvailable(): Boolean {
+    suspend fun login(): KakaoLoginResult {
+        return if (isKakaoTalkLoginAvailable()) {
+            when (val result = loginWithKakaoTalk()) {
+                is KakaoLoginResult.Success -> result
+                is KakaoLoginResult.Cancel -> result
+                is KakaoLoginResult.Failure -> loginWithKakaoAccount()
+            }
+        } else {
+            loginWithKakaoAccount()
+        }
+    }
+
+    private fun isKakaoTalkLoginAvailable(): Boolean {
         val activity = activity.get() ?: return false
 
         return userApiClient.isKakaoTalkLoginAvailable(activity)
     }
 
-    suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+    private suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
         val activity = activity.get()
 
         if (activity == null) {
@@ -72,7 +84,7 @@ constructor(
         )
     }
 
-    suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+    private suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
         val activity = activity.get()
 
         if (activity == null) {

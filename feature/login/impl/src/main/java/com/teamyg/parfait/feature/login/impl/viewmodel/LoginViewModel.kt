@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.login.impl.viewmodel
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import coil3.util.CoilUtils.result
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -36,18 +37,9 @@ constructor(
         when (intent) {
             is LoginIntent.LoginWithKakao -> {
                 viewModelScope.launch {
-                    val kakaoLoginHelper = kakaoLoginHelperFactory.create(intent.activity)
-                    val result = if (kakaoLoginHelper.isKakaoTalkLoginAvailable()) {
-                        when (val result = kakaoLoginHelper.loginWithKakaoTalk()) {
-                            is KakaoLoginResult.Success -> result
-                            is KakaoLoginResult.Cancel -> result
-                            is KakaoLoginResult.Failure -> kakaoLoginHelper.loginWithKakaoAccount()
-                        }
-                    } else {
-                        kakaoLoginHelper.loginWithKakaoAccount()
-                    }
+                    val kakaoLoginHelper = kakaoLoginHelperFactory.create(activity = intent.activity)
 
-                    when (result) {
+                    when (val result = kakaoLoginHelper.login()) {
                         is KakaoLoginResult.Success -> {
                             updateState { copy(token = result.token) }
                             Log.i(TAG, "카카오 계정으로 로그인 성공 : ${result.token}")
