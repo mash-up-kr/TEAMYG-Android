@@ -1,9 +1,11 @@
 package com.teamyg.parfait.data.repository
 
+import android.app.Activity
 import android.content.Context
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
+import com.teamyg.parfait.data.utils.CurrentActivityHolder
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.domain.repository.KakaoUserRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -16,13 +18,24 @@ class KakaoUserRepositoryImpl
 @Inject
 constructor(
     @ApplicationContext private val context: Context,
+    private val activityHolder: CurrentActivityHolder,
     private val userApiClient: UserApiClient,
 ) : KakaoUserRepository {
     override fun isKakaoTalkLoginAvailable(): Boolean = userApiClient.isKakaoTalkLoginAvailable(context)
 
     override suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+        val activity: Activity? = activityHolder.currentActivity
+
+        if (activity == null) {
+            continuation.resume(
+                value = KakaoLoginResult.Failure(throwable = IllegalStateException("no active Activity")),
+                onCancellation = null,
+            )
+            return@suspendCancellableCoroutine
+        }
+
         userApiClient.loginWithKakaoTalk(
-            context = context,
+            context = activity,
             callback = { token, error ->
                 when {
                     token != null -> {
