@@ -1,26 +1,26 @@
-package com.teamyg.parfait.data.repository
+package com.teamyg.parfait.feature.login.impl.util
 
 import android.content.Context
 import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
 import com.teamyg.parfait.domain.model.KakaoLoginResult
-import com.teamyg.parfait.domain.repository.KakaoUserRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
-import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class KakaoUserRepositoryImpl
-@Inject
+class KakaoLoginHelper
+@AssistedInject
 constructor(
-    @ApplicationContext private val context: Context,
+    @Assisted private val context: Context, // do not use applicationContext
     private val userApiClient: UserApiClient,
-) : KakaoUserRepository {
-    override fun isKakaoTalkLoginAvailable(): Boolean = userApiClient.isKakaoTalkLoginAvailable(context)
+) {
+    fun isKakaoTalkLoginAvailable(): Boolean = userApiClient.isKakaoTalkLoginAvailable(context)
 
-    override suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+    suspend fun loginWithKakaoTalk(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
         userApiClient.loginWithKakaoTalk(
             context = context,
             callback = { token, error ->
@@ -57,7 +57,7 @@ constructor(
         )
     }
 
-    override suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
+    suspend fun loginWithKakaoAccount(): KakaoLoginResult = suspendCancellableCoroutine { continuation ->
         userApiClient.loginWithKakaoAccount(
             context = context,
             callback = { token, error ->
@@ -93,4 +93,9 @@ constructor(
             },
         )
     }
+}
+
+@AssistedFactory
+interface KakaoLoginHelperFactory {
+    fun create(context: Context): KakaoLoginHelper
 }

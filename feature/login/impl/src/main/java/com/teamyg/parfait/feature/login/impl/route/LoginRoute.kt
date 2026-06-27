@@ -65,7 +65,7 @@ fun LoginRoute(
     LoginScreen(
         pages = tempPages,
         onClickKakaoButton = {
-            viewModel.processIntent(LoginIntent.LoginWithKakao)
+            viewModel.processIntent(LoginIntent.LoginWithKakao(context))
         },
         modifier = modifier,
     )
