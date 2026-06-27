@@ -9,8 +9,8 @@ import coil3.compose.AsyncImage
 
 @Composable
 internal fun CanvasMoveScreen(
-    modifier: Modifier = Modifier,
     image: String,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
