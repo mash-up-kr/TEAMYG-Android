@@ -26,8 +26,8 @@ import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewMo
 internal fun SegmentationScreen(
     sourceImageUri: String,
     onClickBack: () -> Unit,
-    modifier: Modifier = Modifier,
     onClickOk: (file: String) -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: SegmentationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
