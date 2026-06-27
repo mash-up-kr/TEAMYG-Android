@@ -21,16 +21,14 @@ constructor(
     @Assisted private val activity: WeakReference<Activity>,
     private val userApiClient: UserApiClient,
 ) {
-    suspend fun login(): KakaoLoginResult {
-        return if (isKakaoTalkLoginAvailable()) {
-            when (val result = loginWithKakaoTalk()) {
-                is KakaoLoginResult.Success -> result
-                is KakaoLoginResult.Cancel -> result
-                is KakaoLoginResult.Failure -> loginWithKakaoAccount()
-            }
-        } else {
-            loginWithKakaoAccount()
+    suspend fun login(): KakaoLoginResult = if (isKakaoTalkLoginAvailable()) {
+        when (val result = loginWithKakaoTalk()) {
+            is KakaoLoginResult.Success -> result
+            is KakaoLoginResult.Cancel -> result
+            is KakaoLoginResult.Failure -> loginWithKakaoAccount()
         }
+    } else {
+        loginWithKakaoAccount()
     }
 
     private fun isKakaoTalkLoginAvailable(): Boolean {
