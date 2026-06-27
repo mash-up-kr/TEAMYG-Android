@@ -12,11 +12,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
@@ -49,22 +47,21 @@ internal fun SegmentationScreen(
             viewModel.processIntent(SegmentationIntent.LoadImage(sourceImageUri))
         }
 
-        if (state.originBitmap != null) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // 원본 이미지
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 원본 이미지
+            state.originBitmap?.let { originBitmap ->
                 Image(
-                    bitmap = state.originBitmap!!.asImageBitmap(),
+                    bitmap = originBitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),)
+            }
+            // 오버레이 이미지
+            state.overlayBitmap?.let {overlayBitmap ->
+                Image(
+                    bitmap = overlayBitmap.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                 )
-                // 오버레이 이미지
-                state.overlayBitmap?.let {
-                    Image(
-                        bitmap = it.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
             }
         }
 
