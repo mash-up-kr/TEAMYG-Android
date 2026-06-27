@@ -16,6 +16,8 @@ import java.lang.ref.WeakReference
 class KakaoLoginHelper
 @AssistedInject
 constructor(
+    // Kakao SDK의 loginWithKakaoTalk/loginWithKakaoAccount 는 내부적으로 startActivity()를 호출하므로
+    // Activity context가 필요합니다. ApplicationContext를 넘기면 FLAG_ACTIVITY_NEW_TASK 누락으로 크래시.
     @Assisted private val activity: WeakReference<Activity>,
     private val userApiClient: UserApiClient,
 ) {
