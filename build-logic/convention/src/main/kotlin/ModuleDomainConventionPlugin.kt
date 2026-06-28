@@ -8,6 +8,8 @@ class ModuleDomainConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
+        implementation(project(":core:util:jvm"))
+
         implementation(libs.javax.inject)
     }
 })

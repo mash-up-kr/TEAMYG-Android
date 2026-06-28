@@ -1,11 +1,11 @@
-package com.teamyg.parfait.core.util.permission
+package com.teamyg.parfait.core.util.android.permission
 
 import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.os.Build
 import androidx.core.app.ActivityCompat
-import com.teamyg.parfait.core.util.extensions.isGrantedPermission
+import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 
 object GalleryPermissionManager {
     enum class GalleryAccessLevel {

@@ -34,7 +34,8 @@ include(":app")
 include(
     ":core:designsystem",
     ":core:ui",
-    ":core:util",
+    ":core:util:android",
+    ":core:util:jvm",
     ":core:navigation",
 )
 include(":data")

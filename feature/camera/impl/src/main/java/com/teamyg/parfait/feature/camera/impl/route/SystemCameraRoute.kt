@@ -28,8 +28,8 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraState
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraViewModel
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.util.extensions.buildAppSettingsIntent
-import com.teamyg.parfait.core.util.extensions.shouldShowRationale
+import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 
 @Composable
 internal fun SystemCameraRoute(

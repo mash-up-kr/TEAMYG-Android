@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.util.extensions
+package com.teamyg.parfait.core.util.android.extension
 
 import android.app.Activity
 import androidx.core.app.ActivityCompat

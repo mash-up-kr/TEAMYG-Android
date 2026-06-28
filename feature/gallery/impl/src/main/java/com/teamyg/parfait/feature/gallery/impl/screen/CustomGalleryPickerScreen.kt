@@ -24,7 +24,7 @@ import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewPa
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerState
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
-import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 
 @Composable

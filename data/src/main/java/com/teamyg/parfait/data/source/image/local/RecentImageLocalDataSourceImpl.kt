@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.datastore.RecentImageEditor
+import com.teamyg.parfait.data.utils.sourceLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -18,6 +19,10 @@ constructor(
     private val dataStore: DataStore<Preferences>,
     private val json: Json,
 ) : RecentImageLocalDataSource {
+    init {
+        sourceLogger.i { "RecentImageLocalDataSourceImpl::init" }
+    }
+
     override val values: Flow<List<String>> = dataStore.data
         .map { prefs -> decode(prefs[RECENT_IMAGE_URIS_KEY]) }
 
