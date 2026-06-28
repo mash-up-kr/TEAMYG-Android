@@ -8,7 +8,7 @@ import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
-import com.teamyg.parfait.feature.segmentation.impl.screen.decodeUriToBitmap
+import com.teamyg.parfait.core.util.extensions.decodeUriToBitmap
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,7 +25,7 @@ class ImageSegmentationRepository
     @ApplicationContext private val context: Context,
 ) {
     suspend fun decodeImage(uri: String): Bitmap = withContext(Dispatchers.IO) {
-        decodeUriToBitmap(context.contentResolver, Uri.parse(uri))
+        context.contentResolver.decodeUriToBitmap(Uri.parse(uri))
     }
 
     suspend fun segmentImage(bitmap: Bitmap): SegmentationResult {

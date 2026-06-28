@@ -1,11 +1,5 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
-import android.content.ContentResolver
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 
@@ -52,18 +46,3 @@ internal fun mapViewToBitmapFloat(
     x = (point.x - mapping.offsetX) / mapping.scale,
     y = (point.y - mapping.offsetY) / mapping.scale,
 )
-
-internal fun decodeUriToBitmap(
-    contentResolver: ContentResolver,
-    uri: Uri,
-): Bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-    val source = ImageDecoder.createSource(contentResolver, uri)
-    ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-        decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-        decoder.isMutableRequired = true
-        decoder.setTargetSize(info.size.width, info.size.height)
-    }
-} else {
-    @Suppress("DEPRECATION")
-    MediaStore.Images.Media.getBitmap(contentResolver, uri)
-}
