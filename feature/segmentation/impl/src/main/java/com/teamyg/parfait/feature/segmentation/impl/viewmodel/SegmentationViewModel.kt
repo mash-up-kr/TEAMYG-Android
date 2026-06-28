@@ -19,9 +19,7 @@ data class SegmentationState(
     val subjectImagePath: String? = null,
 ) : UiState
 
-sealed interface SegmentationIntent : UiIntent {
-    data class LoadImage(val imageUri: String?) : SegmentationIntent
-}
+sealed interface SegmentationIntent : UiIntent
 
 sealed interface SegmentationEffect : UiSideEffect
 
