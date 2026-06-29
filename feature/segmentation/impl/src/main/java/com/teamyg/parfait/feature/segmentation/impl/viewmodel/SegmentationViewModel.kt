@@ -35,13 +35,18 @@ class SegmentationViewModel
         viewModelScope.launch {
             val bitmap = repository.decodeImage(sourceImageUri)
             updateState { copy(originBitmap = bitmap) }
-            val result = repository.segmentImage(bitmap)
-            updateState {
-                copy(
-                    overlayBitmap = result.overlayBitmap,
-                    subjectImagePath = result.subjectImagePath,
-                )
-            }
+            runCatching { repository.segmentImage(bitmap) }
+                .onSuccess { result ->
+                    updateState {
+                        copy(
+                            overlayBitmap = result.overlayBitmap,
+                            subjectImagePath = result.subjectImagePath,
+                        )
+                    }
+                }
+                .onFailure {
+                }
+
         }
     }
 
