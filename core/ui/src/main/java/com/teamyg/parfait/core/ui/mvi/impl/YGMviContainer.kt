@@ -80,10 +80,9 @@ internal class YGMviContainer<STATE, EFFECT>(
         }
     }
 
-    override fun intent(block: suspend IntentScope<STATE, EFFECT>.() -> Unit): Job {
+    override fun intent(block: suspend IntentScope<STATE, EFFECT>.() -> Unit) {
         initializeIfNeeded()
         intentChannel.trySend(block)
-        return Job()
     }
 
     private fun initializeIfNeeded() {
@@ -100,7 +99,7 @@ internal class YGMviContainer<STATE, EFFECT>(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun repeatOnSubscription(block: suspend CoroutineScope.() -> Unit): Job = scope.launch {
+    override fun repeatOnSubscription(block: suspend CoroutineScope.() -> Unit): Job = scope.launch {
         var previous = false
 
         combinedSubscription()
