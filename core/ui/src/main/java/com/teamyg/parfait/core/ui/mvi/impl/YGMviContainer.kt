@@ -1,16 +1,16 @@
 package com.teamyg.parfait.core.ui.mvi.impl
 
 import com.teamyg.parfait.core.ui.mvi.MviContainer
-import com.teamyg.parfait.core.ui.mvi.SideEffectProvider
-import com.teamyg.parfait.core.ui.mvi.setting.MviSettings
 import com.teamyg.parfait.core.ui.mvi.scope.IntentScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,20 +22,25 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalAtomicApi::class)
+@OptIn(
+    ExperimentalAtomicApi::class,
+    ExperimentalCoroutinesApi::class,
+)
 internal class YGMviContainer<STATE, EFFECT>(
     initialState: STATE,
     private val scope: CoroutineScope,
-    private val settings: MviSettings,
     private val onCreate: (suspend IntentScope<STATE, EFFECT>.() -> Unit)?,
 ) : MviContainer<STATE, EFFECT> {
     private val _state = MutableStateFlow(initialState)
     override val state: StateFlow<STATE> = _state.asStateFlow()
 
     private val subscribedCounter: SubscribedCounter = SubscribedCounter()
-    private val sideEffectProvider: SideEffectProvider<EFFECT> = SideEffectProvider.create(settings)
 
-    override val effect: Flow<EFFECT> = countingFlow(sideEffectProvider.effectFlow, subscribedCounter)
+    private val _effect = MutableSharedFlow<EFFECT>(
+        replay = SIDE_EFFECT_BUFFER_SIZE,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+    )
+    override val effect: Flow<EFFECT> = countingFlow(_effect, subscribedCounter)
 
     private val intentChannel: Channel<suspend IntentScope<STATE, EFFECT>.() -> Unit> =
         Channel<suspend IntentScope<STATE, EFFECT>.() -> Unit>(
@@ -49,14 +54,20 @@ internal class YGMviContainer<STATE, EFFECT>(
 
         override fun reduce(reducer: STATE.() -> STATE) = _state.update { it.reducer() }
 
-        override suspend fun postSideEffect(effect: EFFECT) = sideEffectProvider.post(effect)
+        override suspend fun postSideEffect(effect: EFFECT) = _effect.emit(effect)
     }
 
     init {
-        sideEffectProvider.initialise(
-            scope = scope,
-            counter = subscribedCounter,
-        )
+        scope.launch {
+            var previous = false
+            subscribedCounter.subscribed.collect { subscribed ->
+                if (!previous && subscribed) {
+                    delay(REPLAY_CLEAR_DELAY_MILLIS.milliseconds)
+                    _effect.resetReplayCache()
+                }
+                previous = subscribed
+            }
+        }
 
         scope.launch {
             for (block in intentChannel) {
@@ -95,7 +106,7 @@ internal class YGMviContainer<STATE, EFFECT>(
         combinedSubscription()
             .mapLatest { subscribed ->
                 if (!subscribed && previous) {
-                    delay(settings.subscriptionStopTimeoutMillis.milliseconds)
+                    delay(SUBSCRIPTION_STOP_TIMEOUT_MILLIS.milliseconds)
                 }
                 previous = subscribed
                 subscribed
@@ -118,5 +129,11 @@ internal class YGMviContainer<STATE, EFFECT>(
                 counter.decrement()
             }
         }
+    }
+
+    private companion object {
+        const val SIDE_EFFECT_BUFFER_SIZE = 64
+        const val REPLAY_CLEAR_DELAY_MILLIS = 100L
+        const val SUBSCRIPTION_STOP_TIMEOUT_MILLIS = 5_000L
     }
 }
