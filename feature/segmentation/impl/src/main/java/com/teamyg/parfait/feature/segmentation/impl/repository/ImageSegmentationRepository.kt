@@ -42,7 +42,7 @@ class ImageSegmentationRepository
         }
 
         return withContext(Dispatchers.Default) {
-            val foregroundMask = result.foregroundConfidenceMask!!
+            val foregroundMask = result.foregroundConfidenceMask ?: error("foregroundConfidenceMask가 null입니다.")
             val overlayColors = IntArray(image.width * image.height)
             val subjectColors = IntArray(image.width * image.height)
 
