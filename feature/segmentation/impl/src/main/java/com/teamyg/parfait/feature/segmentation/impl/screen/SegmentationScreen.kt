@@ -1,32 +1,27 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
 @Composable
 internal fun SegmentationScreen(
-    viewModel: SegmentationViewModel,
+    state: SegmentationState,
     onClickBack: () -> Unit,
     onClickOk: (file: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -70,9 +65,9 @@ internal fun SegmentationScreen(
 @Composable
 private fun PreviewSegmentationScreen() = PreviewBox {
     SegmentationScreen(
-        viewModel = viewModel(),
+        state = SegmentationState(),
         onClickBack = {},
-        modifier = Modifier.fillMaxSize(),
         onClickOk = {},
+        modifier = Modifier.fillMaxSize(),
     )
 }
