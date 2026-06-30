@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.util.extensions
+package com.teamyg.parfait.core.util.jvm.extension
 
 import java.security.MessageDigest
 

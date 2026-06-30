@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.parfait.core.util"
+    namespace = "com.teamyg.parfait.core.util.android"
 }
 
 dependencies {

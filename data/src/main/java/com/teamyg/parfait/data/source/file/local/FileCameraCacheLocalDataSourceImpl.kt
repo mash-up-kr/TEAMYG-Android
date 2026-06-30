@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.source.file.local
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import com.teamyg.parfait.data.utils.sourceLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -21,6 +22,10 @@ class FileCameraCacheLocalDataSourceImpl
 constructor(
     @ApplicationContext private val context: Context,
 ) : FileCameraCacheLocalDataSource {
+    init {
+        sourceLogger.i { "FileCameraCacheLocalDataSourceImpl::init" }
+    }
+
     private val dir: File by lazy {
         File(
             context.cacheDir,

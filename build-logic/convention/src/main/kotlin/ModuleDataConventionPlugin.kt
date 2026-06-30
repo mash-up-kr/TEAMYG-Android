@@ -10,7 +10,8 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
     }
 
     dependencies {
-        implementation(project(":core:util"))
+        implementation(project(":core:util:android"))
+        implementation(project(":core:util:jvm"))
 
         implementation(project(":domain"))
 
