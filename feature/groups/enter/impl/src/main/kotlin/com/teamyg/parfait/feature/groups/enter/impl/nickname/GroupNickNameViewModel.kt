@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groupenter.impl.nickname
+package com.teamyg.parfait.feature.groups.enter.impl.nickname
 
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
