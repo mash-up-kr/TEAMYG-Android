@@ -55,4 +55,6 @@ include(
     ":feature:canvas:impl",
     ":feature:splash:api",
     ":feature:splash:impl",
+    ":feature:groupenter:api",
+    ":feature:groupenter:impl",
 )
