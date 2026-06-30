@@ -7,7 +7,8 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -65,6 +66,8 @@ constructor(
     initialState = CustomGalleryPickerState(),
 ) {
     init {
+        viewModelLogger.i { "CustomGalleryPickerViewModel::init" }
+
         viewModelScope.launch {
             collectRecentCacheImages()
         }

@@ -28,9 +28,9 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.util.extensions.buildAppSettingsIntent
-import com.teamyg.parfait.core.util.extensions.isGrantedPermission
-import com.teamyg.parfait.core.util.extensions.shouldShowRationale
+import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
+import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 
 @Composable
 internal fun CustomCameraRoute(

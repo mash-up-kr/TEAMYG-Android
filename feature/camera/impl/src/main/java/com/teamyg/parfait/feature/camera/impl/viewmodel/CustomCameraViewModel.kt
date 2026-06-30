@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,6 +79,10 @@ constructor(
 ) : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
     initialState = CustomCameraState(),
 ) {
+    init {
+        viewModelLogger.i { "CustomCameraViewModel::init" }
+    }
+
     override fun processIntent(intent: CustomCameraIntent) {
         when (intent) {
             is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)

@@ -1,7 +1,7 @@
 package com.teamyg.parfait.feature.gallery.impl.model
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.teamyg.parfait.core.util.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 
 internal class GalleryAccessLevelPreviewParameterProvider :
     PreviewParameterProvider<GalleryPermissionManager.GalleryAccessLevel> {
