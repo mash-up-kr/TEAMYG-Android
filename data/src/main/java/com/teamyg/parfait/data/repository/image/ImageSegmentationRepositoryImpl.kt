@@ -1,34 +1,43 @@
-package com.teamyg.parfait.feature.segmentation.impl.repository
+package com.teamyg.parfait.data.repository.image
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.net.Uri
+import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
+import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.domain.model.SegmentationResult
+import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import androidx.core.net.toUri
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
-import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
+import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import javax.inject.Inject
 
-data class SegmentationResult(
-    val overlayBitmap: Bitmap,
-    val subjectImagePath: String,
-)
-
-class ImageSegmentationRepository
-@Inject constructor(
+@Singleton
+class ImageSegmentationRepositoryImpl
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
-) {
-    suspend fun decodeImage(uri: String): Bitmap = withContext(Dispatchers.IO) {
-        context.contentResolver.decodeUriToBitmap(Uri.parse(uri))
+) : ImageSegmentationRepository {
+    override suspend fun decodeImage(uri: String): BitmapWrapper {
+        val bitmap: Bitmap = context.contentResolver.decodeUriToBitmap(uri.toUri())
+
+        return bitmap.toAndroidBitmap()
     }
 
-    suspend fun segmentImage(bitmap: Bitmap): SegmentationResult {
+    override suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<SegmentationResult> {
+        val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData() ?: return Result.failure(
+            exception = NullPointerException("bitmap is null"),
+        )
+
         val image = InputImage.fromBitmap(bitmap, 0)
 
         val options = SubjectSegmenterOptions
@@ -38,10 +47,8 @@ class ImageSegmentationRepository
 
         val segmenter = SubjectSegmentation.getClient(options)
         val result = withContext(Dispatchers.IO) {
-            try {
+            segmenter.use { segmenter ->
                 Tasks.await(segmenter.process(image))
-            } finally {
-                segmenter.close()
             }
         }
 
@@ -66,10 +73,12 @@ class ImageSegmentationRepository
             }
             subjectBitmap.recycle()
 
-            SegmentationResult(
-                overlayBitmap = overlayBitmap,
+            val result = SegmentationResult(
+                bitmap = overlayBitmap.toAndroidBitmap(),
                 subjectImagePath = file.absolutePath,
             )
+
+            return@withContext Result.success(result)
         }
     }
 }

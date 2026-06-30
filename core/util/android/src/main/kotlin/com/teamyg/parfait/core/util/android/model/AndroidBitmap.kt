@@ -9,4 +9,6 @@ internal constructor(
     private val delegate: Bitmap,
 ) : BitmapWrapper {
     // TODO delegate 사용하도록 수정
+
+    fun getRawData(): Bitmap = this.delegate
 }

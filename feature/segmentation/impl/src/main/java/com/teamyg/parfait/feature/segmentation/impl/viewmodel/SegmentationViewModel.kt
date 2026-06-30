@@ -6,7 +6,6 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.feature.segmentation.impl.repository.ImageSegmentationRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -27,24 +26,25 @@ sealed interface SegmentationEffect : UiSideEffect
 class SegmentationViewModel
 @AssistedInject constructor(
     @Assisted private val sourceImageUri: String,
-    private val repository: ImageSegmentationRepository,
+    // TODO UseCase
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
     init {
         viewModelScope.launch {
-            val bitmap = repository.decodeImage(sourceImageUri)
-            updateState { copy(originBitmap = bitmap) }
-            runCatching { repository.segmentImage(bitmap) }
-                .onSuccess { result ->
-                    updateState {
-                        copy(
-                            overlayBitmap = result.overlayBitmap,
-                            subjectImagePath = result.subjectImagePath,
-                        )
-                    }
-                }.onFailure {
-                }
+            // TODO Using UseCase
+//            val bitmap = repository.decodeImage(sourceImageUri)
+//            updateState { copy(originBitmap = bitmap) }
+//            runCatching { repository.segmentImage(bitmap) }
+//                .onSuccess { result ->
+//                    updateState {
+//                        copy(
+//                            overlayBitmap = result.overlayBitmap,
+//                            subjectImagePath = result.subjectImagePath,
+//                        )
+//                    }
+//                }.onFailure {
+//                }
         }
     }
 
