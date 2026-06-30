@@ -35,10 +35,14 @@ class ImageSegmentationRepository
             .Builder()
             .enableForegroundConfidenceMask()
             .build()
-        val segmenter = SubjectSegmentation.getClient(options)
 
+        val segmenter = SubjectSegmentation.getClient(options)
         val result = withContext(Dispatchers.IO) {
-            Tasks.await(segmenter.process(image))
+            try {
+                Tasks.await(segmenter.process(image))
+            }finally {
+                segmenter.close()
+            }
         }
 
         return withContext(Dispatchers.Default) {
