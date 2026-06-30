@@ -14,21 +14,24 @@ data class LoginState(
 
 sealed interface LoginIntent : UiIntent {
     data object LoginWithKakao : LoginIntent
+
     data class LoginWithKakaoSuccess(val token: String) : LoginIntent
+
     data class LoginWithKakaoFailure(val throwable: Throwable?) : LoginIntent
+
     data object LoginWithKakaoCancel : LoginIntent
 }
 
 sealed interface LoginSideEffect : UiSideEffect {
     class NavigateToNext : LoginSideEffect
+
     data object RequestLoginWithKakao : LoginSideEffect
 }
 
 @HiltViewModel
 class LoginViewModel
 @Inject
-constructor(
-) : BaseViewModel<LoginState, LoginIntent, LoginSideEffect>(initialState = LoginState()) {
+constructor() : BaseViewModel<LoginState, LoginIntent, LoginSideEffect>(initialState = LoginState()) {
     init {
         viewModelLogger.i { "LoginViewModel::init" }
     }
@@ -43,7 +46,6 @@ constructor(
                 updateState { copy(token = intent.token) }
                 viewModelLogger.d { "카카오 계정으로 로그인 성공 : ${intent.token}" }
                 postSideEffect(LoginSideEffect.NavigateToNext())
-
             }
 
             is LoginIntent.LoginWithKakaoFailure -> {

@@ -11,7 +11,10 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.login.impl.route.LoginRoute
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
 
-fun EntryProviderScope<NavKey>.featureLoginEntryBuilder(navigator: Navigator, kakaoLoginHelper: KakaoLoginHelper) {
+fun EntryProviderScope<NavKey>.featureLoginEntryBuilder(
+    navigator: Navigator,
+    kakaoLoginHelper: KakaoLoginHelper,
+) {
     entry<NavKeyLogin> {
         Scaffold { innerPadding ->
             LoginRoute(

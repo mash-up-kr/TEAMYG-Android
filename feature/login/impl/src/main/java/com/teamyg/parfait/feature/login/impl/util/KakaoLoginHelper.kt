@@ -27,9 +27,8 @@ constructor(
         loginWithKakaoAccount(activity)
     }
 
-    private fun isKakaoTalkLoginAvailable(activity: Activity): Boolean {
-        return userApiClient.isKakaoTalkLoginAvailable(activity)
-    }
+    private fun isKakaoTalkLoginAvailable(activity: Activity): Boolean =
+        userApiClient.isKakaoTalkLoginAvailable(activity)
 
     private suspend fun loginWithKakaoTalk(activity: Activity): KakaoLoginResult =
         suspendCancellableCoroutine { continuation ->
