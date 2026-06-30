@@ -37,6 +37,7 @@ constructor(
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
             GroupNickNameIntent.ClickNextButton -> {
+                // Todo : 닉네임 판단로직 추가하기
                 postSideEffect(GroupNickNameSideEffect.NavigateToNext)
             }
 
