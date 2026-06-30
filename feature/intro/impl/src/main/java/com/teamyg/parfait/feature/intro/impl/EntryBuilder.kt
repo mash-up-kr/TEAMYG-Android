@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.intro.impl.splash.SplashRoute
 
 fun EntryProviderScope<NavKey>.featureSplashEntryBuilder(navigator: Navigator) {
     entry<NavKeySplash> {

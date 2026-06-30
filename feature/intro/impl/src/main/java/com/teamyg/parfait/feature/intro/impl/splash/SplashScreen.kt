@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.intro.impl
+package com.teamyg.parfait.feature.intro.impl.splash
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
