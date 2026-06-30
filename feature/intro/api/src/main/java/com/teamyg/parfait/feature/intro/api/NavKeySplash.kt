@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.splash.api
+package com.teamyg.parfait.feature.intro.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

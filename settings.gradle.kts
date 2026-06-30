@@ -53,8 +53,8 @@ include(
     ":feature:gallery:impl",
     ":feature:canvas:api",
     ":feature:canvas:impl",
-    ":feature:splash:api",
-    ":feature:splash:impl",
+    ":feature:intro:api",
+    ":feature:intro:impl",
     ":feature:groupenter:api",
     ":feature:groupenter:impl",
 )

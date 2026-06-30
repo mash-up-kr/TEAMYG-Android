@@ -51,8 +51,8 @@ dependencies {
     implementation(projects.feature.gallery.impl)
     implementation(projects.feature.canvas.api)
     implementation(projects.feature.canvas.impl)
-    implementation(projects.feature.splash.api)
-    implementation(projects.feature.splash.impl)
+    implementation(projects.feature.intro.api)
+    implementation(projects.feature.intro.impl)
     implementation(projects.feature.groupenter.api)
     implementation(projects.feature.groupenter.impl)
 
