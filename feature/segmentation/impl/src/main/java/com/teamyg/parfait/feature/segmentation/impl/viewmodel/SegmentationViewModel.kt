@@ -43,10 +43,8 @@ class SegmentationViewModel
                             subjectImagePath = result.subjectImagePath,
                         )
                     }
+                }.onFailure {
                 }
-                .onFailure {
-                }
-
         }
     }
 

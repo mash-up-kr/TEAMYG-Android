@@ -40,7 +40,7 @@ class ImageSegmentationRepository
         val result = withContext(Dispatchers.IO) {
             try {
                 Tasks.await(segmenter.process(image))
-            }finally {
+            } finally {
                 segmenter.close()
             }
         }
