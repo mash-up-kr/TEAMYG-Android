@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamyg.parfait.core.ui.preview.PreviewBox
@@ -40,7 +41,11 @@ internal fun TermAgreeScreen(
 ) {
     Column(modifier) {
         // Todo : topbar component 로 변경
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+        ) {
             // Todo : ic_caret_right 아이콘으로 교체
             Spacer(
                 modifier = Modifier
@@ -58,8 +63,8 @@ internal fun TermAgreeScreen(
             item {
                 Text(
                     text = "서비스 이용 약관에\n동의해 주세요",
-                    color = Color(if (state.isAvailable) 0xFFFAFAFA else 0xFF7A7D82),
-                    fontSize = 16.sp,
+                    color = Color(0xFF7A7D82),
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
             }
@@ -72,6 +77,7 @@ internal fun TermAgreeScreen(
                         .fillMaxWidth()
                         .background(color = Color(0xFFECECEE), shape = RoundedCornerShape(4.dp))
                         .clip(shape = RoundedCornerShape(4.dp))
+                        .padding(8.dp)
                         .clickable { onClickAgreeAllTerm(state.isAllSelected.not()) },
                 ) {
                     // Todo : ic_check_button 아이콘으로 교체
@@ -116,7 +122,7 @@ internal fun TermAgreeScreen(
                             .weight(1f)
                             .clickable { onClickTermAgree(index, state.selectedList[index].not()) },
 
-                    )
+                        )
                     // Todo : ic_caret_right 아이콘으로 교체
                     Spacer(
                         modifier = Modifier
@@ -131,16 +137,19 @@ internal fun TermAgreeScreen(
         // Todo : large button component 로 변경
         Text(
             text = "확인",
+            textAlign = TextAlign.Center,
             color = Color(if (state.isAvailable) 0xFFFAFAFA else 0xFF7A7D82),
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(start = 20.dp, end = 20.dp, bottom = 2.dp)
                 .background(
                     color = Color(if (state.isAvailable) 0xFF29292C else 0xFFDDDEE0),
                     shape = RoundedCornerShape(99.dp),
                 )
                 .clip(shape = RoundedCornerShape(99.dp))
+                .padding(vertical = 12.dp)
                 .clickable { onClickNextButton() },
         )
     }
