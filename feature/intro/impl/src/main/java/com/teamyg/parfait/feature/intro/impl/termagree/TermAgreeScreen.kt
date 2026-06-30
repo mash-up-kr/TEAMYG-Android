@@ -9,6 +9,11 @@ import com.teamyg.parfait.core.ui.preview.YGPreview
 @Composable
 internal fun TermAgreeScreen(
     state: TermAgreeState,
+    onClickTermAgree: (index: Int, newSelected: Boolean) -> Unit,
+    onClickTermLandingUrl: (landingUrl: String?) -> Unit,
+    onClickAgreeAllTerm: (newSelected: Boolean) -> Unit,
+    onClickNextButton: () -> Unit,
+    onClickBackButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
 }
@@ -17,6 +22,12 @@ internal fun TermAgreeScreen(
 @Composable
 private fun TermAgreeScreenPreview() = PreviewBox {
     TermAgreeScreen(
+        state = TermAgreeState(),
+        onClickTermAgree = { _, _ -> },
+        onClickTermLandingUrl = {},
+        onClickAgreeAllTerm = {},
+        onClickNextButton = {},
+        onClickBackButton = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
