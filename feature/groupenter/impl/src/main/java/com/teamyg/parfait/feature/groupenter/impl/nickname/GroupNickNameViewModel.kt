@@ -1,12 +1,10 @@
 package com.teamyg.parfait.feature.groupenter.impl.nickname
 
-import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class GroupNickNameUiState(val nickName: String = "") : UiState
@@ -28,8 +26,7 @@ sealed interface GroupNickNameSideEffect : UiSideEffect {
 @HiltViewModel
 class GroupNickNameViewModel
 @Inject
-constructor(
-) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
+constructor() : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(),
 ) {
     override fun processIntent(intent: GroupNickNameIntent) {
