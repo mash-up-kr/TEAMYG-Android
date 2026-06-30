@@ -2,8 +2,9 @@ package com.teamyg.parfait.data.repository.image
 
 import android.net.Uri
 import androidx.core.net.toUri
-import com.teamyg.parfait.data.source.image.local.RecentImageFileLocalDataSource
+import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -18,8 +19,12 @@ class RecentImageRepositoryImpl
 @Inject
 constructor(
     private val recentImageLocalDataSource: RecentImageLocalDataSource,
-    private val recentImageFileLocalDataSource: RecentImageFileLocalDataSource,
+    private val fileRecentImageLocalDataSource: FileRecentImageLocalDataSource,
 ) : RecentImageRepository {
+    init {
+        repositoryLogger.i { "RecentImageRepositoryImpl::init" }
+    }
+
     override val recentCacheImages: Flow<List<String>> = recentImageLocalDataSource.values
 
     override suspend fun addAndGetEvictedCacheFileName(value: String): List<String> {
@@ -50,10 +55,10 @@ constructor(
     }
 
     override suspend fun storeRecentImageInInternalStorage(sourceUri: String): String = withContext(Dispatchers.IO) {
-        recentImageFileLocalDataSource.mkdirs()
+        fileRecentImageLocalDataSource.mkdirs()
 
-        val bytes: ByteArray = recentImageFileLocalDataSource.readBytes(sourceUri)
-        val target: File = recentImageFileLocalDataSource.getTargetFile(bytes)
+        val bytes: ByteArray = fileRecentImageLocalDataSource.readBytes(sourceUri)
+        val target: File = fileRecentImageLocalDataSource.getTargetFile(bytes)
 
         if (target.exists().not()) {
             target
@@ -63,7 +68,7 @@ constructor(
 
         target.setLastModified(Clock.System.now().toEpochMilliseconds())
 
-        val uri: Uri = recentImageFileLocalDataSource.getUriForFile(target)
+        val uri: Uri = fileRecentImageLocalDataSource.getUriForFile(target)
 
         return@withContext uri.toString()
     }
@@ -71,14 +76,14 @@ constructor(
     override suspend fun deleteRecentImageInInternalStorage(sourceUri: String): Boolean = withContext(Dispatchers.IO) {
         val name = sourceUri.toUri().lastPathSegment ?: return@withContext false
 
-        val file: File = recentImageFileLocalDataSource.getTargetFile(name)
+        val file: File = fileRecentImageLocalDataSource.getTargetFile(name)
 
         return@withContext file.delete()
     }
 
     override suspend fun getLastModifiedCacheFile(sourceUri: String): Long? = withContext(Dispatchers.IO) {
         val name = sourceUri.toUri().lastPathSegment ?: return@withContext null
-        val file: File = recentImageFileLocalDataSource.getTargetFile(name)
+        val file: File = fileRecentImageLocalDataSource.getTargetFile(name)
 
         return@withContext when (file.exists()) {
             true -> file.lastModified()

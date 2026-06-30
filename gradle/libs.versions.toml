@@ -1,28 +1,28 @@
 [versions]
 #Project Settings
-compileSdk = "36"
+compileSdk = "37"
 targetSdk = "36"
 minSdk = "26"
 versionCode = "1"
 versionName = "1.0.0"
 
 #Android & Kotlin
-agp = "9.1.1"
-kotlin = "2.3.21"
-coreKtx = "1.18.0"
+agp = "9.2.1"
+kotlin = "2.4.0"
+coreKtx = "1.19.0"
 
 #Lifecycle
-lifecycleRuntimeKtx = "2.10.0"
+lifecycleRuntimeKtx = "2.11.0"
 
 #Compose
 activityCompose = "1.13.0"
-composeBom = "2026.04.01"
+composeBom = "2026.06.00"
 
 #Coil
-coil = "3.4.0"
+coil = "3.5.0"
 
 #Hilt
-daggerHilt = "2.59.2"
+daggerHilt = "2.60"
 daggerHiltNavigationCompose = "1.3.0"
 
 #Kotlin Coroutines
@@ -35,20 +35,20 @@ kotlinxSerialization = "1.11.0"
 kotlinxDatetime = "0.8.0"
 
 #Ksp
-ksp = "2.3.6"
+ksp = "2.3.7"
 
 #Network
 retrofit = "3.0.0"
-okhttp = "5.3.2"
+okhttp = "5.4.0"
 
 #Navigation
-navigation = "1.2.0-alpha02" # Result Return 을 위한 ResultEventBusNavEntryDecorator 가 1.2.0-alpha02 부터 지원하여, stable 이 아님에도 선택하였습니다
+navigation = "1.2.0-alpha04" # Result Return 을 위한 ResultEventBusNavEntryDecorator 가 1.2.0-alpha02 부터 지원하여, stable 이 아님에도 선택하였습니다
 
 #CameraX
 cameraX = "1.6.1"
 
 #DataStore
-datastore = "1.1.7"
+datastore = "1.2.1"
 
 #ktlint
 ktlint = "14.2.0"
@@ -58,6 +58,9 @@ kakao-user = "2.23.2"
 
 #java
 javaxInject = "1"
+
+# Logger
+kermit = "2.0.4"
 
 [libraries]
 #gradle plugin
@@ -120,6 +123,9 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 
 #Java
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
+
+# Logger
+kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 
 [bundles]
 hilt = [

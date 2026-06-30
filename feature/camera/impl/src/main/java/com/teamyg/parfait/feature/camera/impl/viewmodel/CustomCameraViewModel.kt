@@ -5,7 +5,11 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
+import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
 import javax.inject.Inject
 
 sealed interface CustomCameraEffect : UiSideEffect {
@@ -13,7 +17,9 @@ sealed interface CustomCameraEffect : UiSideEffect {
 
     data object OpenAppSettings : CustomCameraEffect
 
-    data object CaptureImage : CustomCameraEffect
+    data class CaptureImage(
+        val file: File,
+    ) : CustomCameraEffect
 
     data class ReturnResult(
         val uri: String?,
@@ -47,7 +53,7 @@ sealed interface CustomCameraIntent : UiIntent {
     data object OnClickShutter : CustomCameraIntent
 
     data class OnCaptureSaved(
-        val uri: String,
+        val file: File,
     ) : CustomCameraIntent
 
     data object OnCaptureFailed : CustomCameraIntent
@@ -67,9 +73,16 @@ data class CustomCameraState(
 @HiltViewModel
 class CustomCameraViewModel
 @Inject
-constructor() : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
+constructor(
+    private val createCameraCacheFileUseCase: CreateCameraCacheFileUseCase,
+    private val createCameraCacheUriUseCase: CreateCameraCacheUriUseCase,
+) : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
     initialState = CustomCameraState(),
 ) {
+    init {
+        viewModelLogger.i { "CustomCameraViewModel::init" }
+    }
+
     override fun processIntent(intent: CustomCameraIntent) {
         when (intent) {
             is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
@@ -138,11 +151,12 @@ constructor() : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCamer
     }
 
     private fun handleOnClickShutter() {
-        postSideEffect(CustomCameraEffect.CaptureImage)
+        postSideEffect(CustomCameraEffect.CaptureImage(file = createCameraCacheFileUseCase()))
     }
 
     private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
-        postSideEffect(CustomCameraEffect.ReturnResult(uri = intent.uri))
+        val uri = createCameraCacheUriUseCase(file = intent.file)
+        postSideEffect(CustomCameraEffect.ReturnResult(uri = uri))
     }
 
     private fun handleOnCaptureFailed() {

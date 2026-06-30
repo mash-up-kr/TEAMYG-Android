@@ -4,6 +4,8 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -12,7 +14,7 @@ sealed interface SystemCameraEffect : UiSideEffect {
 
     data object OpenAppSettings : SystemCameraEffect
 
-    data object LaunchCamera : SystemCameraEffect
+    data class LaunchCamera(val uri: String) : SystemCameraEffect
 
     data class ReturnResult(val uri: String?) : SystemCameraEffect
 }
@@ -58,9 +60,15 @@ sealed interface SystemCameraState : UiState {
 @HiltViewModel
 class SystemCameraViewModel
 @Inject
-constructor() : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(
+constructor(
+    private val createCameraCacheUriUseCase: CreateCameraCacheUriUseCase,
+) : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCameraEffect>(
     initialState = SystemCameraState.Init,
 ) {
+    init {
+        viewModelLogger.i { "SystemCameraViewModel::init" }
+    }
+
     override fun processIntent(intent: SystemCameraIntent) {
         when (intent) {
             is SystemCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
@@ -86,7 +94,11 @@ constructor() : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCamer
         }
 
         updateState { SystemCameraState.Launching }
-        postSideEffect(SystemCameraEffect.LaunchCamera)
+        postSideEffect(
+            SystemCameraEffect.LaunchCamera(
+                uri = createCameraCacheUriUseCase(),
+            ),
+        )
     }
 
     private fun handleOnPermissionRequestResult(intent: SystemCameraIntent.OnPermissionRequestResult) {
@@ -100,7 +112,11 @@ constructor() : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCamer
         }
 
         updateState { SystemCameraState.Launching }
-        postSideEffect(SystemCameraEffect.LaunchCamera)
+        postSideEffect(
+            SystemCameraEffect.LaunchCamera(
+                uri = createCameraCacheUriUseCase(),
+            ),
+        )
     }
 
     private fun handleOnRequestPermission() {
@@ -134,7 +150,11 @@ constructor() : BaseViewModel<SystemCameraState, SystemCameraIntent, SystemCamer
 
     private fun handleOnRetry() {
         updateState { SystemCameraState.Launching }
-        postSideEffect(SystemCameraEffect.LaunchCamera)
+        postSideEffect(
+            SystemCameraEffect.LaunchCamera(
+                uri = createCameraCacheUriUseCase(),
+            ),
+        )
     }
 
     private fun handleOnCancel() {
