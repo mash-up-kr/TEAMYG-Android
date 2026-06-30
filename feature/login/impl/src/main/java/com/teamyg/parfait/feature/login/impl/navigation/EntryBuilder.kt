@@ -9,12 +9,14 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.login.impl.route.LoginRoute
+import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
 
-fun EntryProviderScope<NavKey>.featureLoginEntryBuilder(navigator: Navigator) {
+fun EntryProviderScope<NavKey>.featureLoginEntryBuilder(navigator: Navigator, kakaoLoginHelper: KakaoLoginHelper) {
     entry<NavKeyLogin> {
         Scaffold { innerPadding ->
             LoginRoute(
                 navigator = navigator,
+                kakaoLoginHelper = kakaoLoginHelper,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
