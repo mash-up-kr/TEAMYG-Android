@@ -39,8 +39,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.feature.grouphome.api)
-    implementation(projects.feature.grouphome.impl)
     implementation(projects.feature.login.api)
     implementation(projects.feature.login.impl)
     implementation(projects.feature.segmentation.api)
@@ -53,8 +51,13 @@ dependencies {
     implementation(projects.feature.canvas.impl)
     implementation(projects.feature.splash.api)
     implementation(projects.feature.splash.impl)
-    implementation(projects.feature.groupenter.api)
-    implementation(projects.feature.groupenter.impl)
+
+    implementation(projects.feature.groups.enter.api)
+    implementation(projects.feature.groups.enter.impl)
+    implementation(projects.feature.groups.home.api)
+    implementation(projects.feature.groups.home.impl)
+    implementation(projects.feature.groups.list.api)
+    implementation(projects.feature.groups.list.impl)
 
     implementation(projects.domain)
     implementation(projects.data)

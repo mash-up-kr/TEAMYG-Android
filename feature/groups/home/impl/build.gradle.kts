@@ -3,10 +3,9 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.parfait.feature.login.impl"
+    namespace = "com.teamyg.parfait.feature.groups.home.impl"
 }
 
 dependencies {
-    implementation(projects.feature.login.api)
     implementation(projects.feature.groups.home.api)
 }
