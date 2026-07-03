@@ -49,17 +49,24 @@ include(
     ":feature:camera:impl",
     ":feature:gallery:api",
     ":feature:gallery:impl",
-    ":feature:canvas:api",
-    ":feature:canvas:impl",
     ":feature:splash:api",
     ":feature:splash:impl",
 )
 
 include(
+    ":feature:app:setting:api",
+    ":feature:app:setting:impl",
+)
+
+include(
+    ":feature:groups:canvas:api",
+    ":feature:groups:canvas:impl",
     ":feature:groups:enter:api",
     ":feature:groups:enter:impl",
     ":feature:groups:home:api",
     ":feature:groups:home:impl",
     ":feature:groups:list:api",
     ":feature:groups:list:impl",
+    ":feature:groups:setting:api",
+    ":feature:groups:setting:impl",
 )

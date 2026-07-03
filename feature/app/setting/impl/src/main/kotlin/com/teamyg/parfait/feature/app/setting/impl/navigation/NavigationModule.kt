@@ -1,0 +1,20 @@
+package com.teamyg.parfait.feature.app.setting.impl.navigation
+
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.navigation.Navigator
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityRetainedComponent
+import dagger.multibindings.IntoSet
+
+@Module
+@InstallIn(ActivityRetainedComponent::class)
+object NavigationModule {
+    @IntoSet
+    @Provides
+    fun provideFeatureAppSettingEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureAppSettingEntryBuilder(navigator = it)
+    }
+}
