@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
+import com.teamyg.parfait.feature.groups.home.api.NavKeyGroupHome
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
