@@ -12,7 +12,7 @@ dependencies {
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.login.api)
     implementation(projects.feature.segmentation.api)
-    implementation(projects.feature.splash.api)
+    implementation(projects.feature.intro.api)
 
     implementation(projects.feature.app.setting.api)
 

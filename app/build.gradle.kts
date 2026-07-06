@@ -47,8 +47,8 @@ dependencies {
     implementation(projects.feature.camera.impl)
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.gallery.impl)
-    implementation(projects.feature.splash.api)
-    implementation(projects.feature.splash.impl)
+    implementation(projects.feature.intro.api)
+    implementation(projects.feature.intro.impl)
 
     implementation(projects.feature.app.setting.api)
     implementation(projects.feature.app.setting.impl)
