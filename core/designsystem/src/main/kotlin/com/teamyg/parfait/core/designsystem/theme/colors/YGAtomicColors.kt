@@ -7,6 +7,7 @@ object YGAtomicColors {
         val White: Color = Color(0xFFFAFAFA)
         val Black: Color = Color(0xFF0E0E0E)
 
+        val Gray50: Color = Color(0xFFF6F6F9)
         val Gray100: Color = Color(0xFFECECEE)
         val Gray200: Color = Color(0xFFDDDEE0)
         val Gray300: Color = Color(0xFFAAACB2)
@@ -23,6 +24,7 @@ object YGAtomicColors {
     object Cherry {
         val Cherry: Color = Color(0xFFF40B31)
 
+        val Cherry50: Color = Color(0xFFFFF6F8)
         val Cherry100: Color = Color(0xFFFEE6EA)
         val Cherry200: Color = Color(0xFFFCC2CC)
         val Cherry300: Color = Color(0xFFFA91A2)
