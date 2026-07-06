@@ -1,6 +1,5 @@
 package com.teamyg.parfait.core.designsystem.component.preview
 
-import androidx.annotation.IdRes
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.YGButtonType
 

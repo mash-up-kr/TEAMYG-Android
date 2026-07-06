@@ -61,16 +61,14 @@ fun YGButton(
                     isPressed = isPressed,
                 ),
                 shape = buttonType.radius,
-            )
-            .border(
+            ).border(
                 width = 1.dp,
                 color = buttonType.colors.borderColor(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
                 shape = buttonType.radius,
-            )
-            .clip(shape = buttonType.radius)
+            ).clip(shape = buttonType.radius)
             .clickable(onClick = onClick)
             .semantics { role = Role.Button }
             .padding(
@@ -131,8 +129,8 @@ sealed interface YGButtonType {
 
     val colors: YgButtonColors
 
-    //font style
-    //radius
+    // font style
+    // radius
 
     // Todo : 뭔가 Design Token 이 규칙이 조금 이상한 것 같아서 컴포넌트 완성시점에 문의 예정.
     //  일단 작업을 위해 mock 으로 두었습니다.
@@ -300,7 +298,6 @@ sealed interface YGButtonType {
                 pressedIconColor = YGAtomicColors.Gray.Gray500,
             )
         }
-
     }
 
     object Large : YGButtonType {
@@ -341,7 +338,6 @@ class YgButtonColors(
     val enabledBorderColor: Color,
     val disabledBorderColor: Color,
     val pressedBorderColor: Color,
-
     // Todo
     //  icon color 랑 foregroundColor 가 따라가야할 것 같은데 분리되어있어서 일단 분리하였음
     //  이 또한 문의 예정
@@ -349,25 +345,37 @@ class YgButtonColors(
     val disabledIconColor: Color,
     val pressedIconColor: Color,
 ) {
-    fun foregroundColor(isEnabled: Boolean, isPressed: Boolean) = when {
+    fun foregroundColor(
+        isEnabled: Boolean,
+        isPressed: Boolean,
+    ) = when {
         isEnabled.not() -> disabledForegroundColor
         isPressed -> pressedForegroundColor
         else -> enabledForegroundColor
     }
 
-    fun backgroundColor(isEnabled: Boolean, isPressed: Boolean) = when {
+    fun backgroundColor(
+        isEnabled: Boolean,
+        isPressed: Boolean,
+    ) = when {
         isEnabled.not() -> disabledBackgroundColor
         isPressed -> pressedBackgroundColor
         else -> enabledBackgroundColor
     }
 
-    fun borderColor(isEnabled: Boolean, isPressed: Boolean) = when {
+    fun borderColor(
+        isEnabled: Boolean,
+        isPressed: Boolean,
+    ) = when {
         isEnabled.not() -> disabledBorderColor
         isPressed -> pressedBorderColor
         else -> enabledBorderColor
     }
 
-    fun iconColor(isEnabled: Boolean, isPressed: Boolean) = when {
+    fun iconColor(
+        isEnabled: Boolean,
+        isPressed: Boolean,
+    ) = when {
         isEnabled.not() -> disabledIconColor
         isPressed -> pressedIconColor
         else -> enabledIconColor
