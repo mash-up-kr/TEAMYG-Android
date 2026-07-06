@@ -21,6 +21,5 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
         implementation(libs.androidx.datastore.preferences)
 
         implementation(libs.bundles.network)
-        implementation(libs.kakao.sdk.user)
     }
 })
