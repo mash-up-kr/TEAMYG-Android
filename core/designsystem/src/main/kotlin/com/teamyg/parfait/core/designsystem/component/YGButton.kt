@@ -366,3 +366,54 @@ class YgButtonColors(
         else -> enabledIconColor
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+private fun YGButtonPreview(
+    @PreviewParameter(YGButtonPreviewParameterProvider::class)
+    data: YGButtonPreviewData,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(16.dp),
+    ) {
+        Text(data.name)
+        YGButton(
+            text = "Button Enabled",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            isPressed = false,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGButton(
+            text = "Button Pressed",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            isPressed = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGButton(
+            text = "Button Disabled",
+            buttonType = data.buttonType,
+            isEnabled = false,
+            isPressed = false,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGButton(
+            text = "Button Start",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            isPressed = false,
+            startIconResource = R.drawable.ic_plus,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGButton(
+            text = "Button End",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            isPressed = false,
+            endIconResource = R.drawable.ic_plus,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
