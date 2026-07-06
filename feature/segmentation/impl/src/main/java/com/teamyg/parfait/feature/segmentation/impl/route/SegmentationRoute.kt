@@ -29,7 +29,7 @@ internal fun SegmentationRoute(
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
-            when (effect){
+            when (effect) {
                 is SegmentationEffect.SegmentationFailed -> {
                     Toast.makeText(context, "객체 감지 실패", Toast.LENGTH_SHORT).show()
                     navigator.onBack()

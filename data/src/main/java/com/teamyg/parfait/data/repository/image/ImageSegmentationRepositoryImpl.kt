@@ -17,6 +17,7 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.domain.exception.SegmentationGetClientException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -45,7 +46,9 @@ constructor(
             .enableForegroundConfidenceMask()
             .build()
 
-        val segmenter = SubjectSegmentation.getClient(options)
+        val segmenter = runCatching { SubjectSegmentation.getClient(options) }
+            .getOrElse { return Result.failure(SegmentationGetClientException()) }
+
         val result = withContext(Dispatchers.IO) {
             segmenter.use { segmenter ->
                 Tasks.await(segmenter.process(image))
