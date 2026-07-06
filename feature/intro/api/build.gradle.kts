@@ -3,5 +3,5 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.parfait.feature.splash.api"
+    namespace = "com.teamyg.parfait.feature.intro.api"
 }

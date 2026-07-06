@@ -3,10 +3,10 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.parfait.feature.splash.impl"
+    namespace = "com.teamyg.parfait.feature.intro.impl"
 }
 
 dependencies {
-    implementation(projects.feature.splash.api)
+    implementation(projects.feature.intro.api)
     implementation(projects.feature.login.api)
 }

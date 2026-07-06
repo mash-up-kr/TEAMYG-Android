@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.splash.impl
+package com.teamyg.parfait.feature.intro.impl.splash
 
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel

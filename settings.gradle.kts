@@ -49,8 +49,8 @@ include(
     ":feature:camera:impl",
     ":feature:gallery:api",
     ":feature:gallery:impl",
-    ":feature:splash:api",
-    ":feature:splash:impl",
+    ":feature:intro:api",
+    ":feature:intro:impl",
 )
 
 include(

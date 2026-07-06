@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.splash.impl
+package com.teamyg.parfait.feature.intro.impl
 
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
