@@ -12,9 +12,7 @@ import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
 
 @Composable
-internal fun MainScreen(
-    modifier: Modifier = Modifier,
-) {
+internal fun MainScreen(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .background(color = Color.White),
