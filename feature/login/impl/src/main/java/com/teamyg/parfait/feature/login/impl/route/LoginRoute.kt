@@ -1,28 +1,31 @@
 package com.teamyg.parfait.feature.login.impl.route
 
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.grouphome.api.NavKeyGroupHome
+import com.teamyg.parfait.domain.model.KakaoLoginResult
+import com.teamyg.parfait.feature.groups.home.api.NavKeyGroupHome
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
-import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
+import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
+import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
 
 @Composable
 fun LoginRoute(
     navigator: Navigator,
+    kakaoLoginHelper: KakaoLoginHelper,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
+    val activity = LocalActivity.current
 
     val tempPages: List<OnboardingPage> = remember {
         listOf(
@@ -54,12 +57,27 @@ fun LoginRoute(
                         ),
                     )
                 }
+
+                is LoginSideEffect.RequestLoginWithKakao -> {
+                    activity?.let {
+                        when (val result = kakaoLoginHelper.login(activity)) {
+                            is KakaoLoginResult.Success ->
+                                viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(result.token))
+
+                            is KakaoLoginResult.Failure ->
+                                viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(result.throwable))
+
+                            is KakaoLoginResult.Cancel ->
+                                viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+                        }
+                    }
+                }
             }
         }
     }
 
     ResultEffect<String> { returnText ->
-        Toast.makeText(context, returnText, Toast.LENGTH_LONG).show()
+        Toast.makeText(activity, returnText, Toast.LENGTH_LONG).show()
     }
 
     LoginScreen(

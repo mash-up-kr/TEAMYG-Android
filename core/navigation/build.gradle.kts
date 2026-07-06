@@ -9,13 +9,18 @@ android {
 
 dependencies {
     implementation(projects.feature.camera.api)
-    implementation(projects.feature.canvas.api)
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.login.api)
-    implementation(projects.feature.grouphome.api)
     implementation(projects.feature.segmentation.api)
-    implementation(projects.feature.splash.api)
-    implementation(projects.feature.groupenter.api)
+    implementation(projects.feature.intro.api)
+
+    implementation(projects.feature.app.setting.api)
+
+    implementation(projects.feature.groups.canvas.api)
+    implementation(projects.feature.groups.enter.api)
+    implementation(projects.feature.groups.home.api)
+    implementation(projects.feature.groups.list.api)
+    implementation(projects.feature.groups.setting.api)
 
     implementation(libs.bundles.navigation)
 }
