@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +46,7 @@ fun YGButton(
     buttonType: YGButtonType,
     isPressed: Boolean,
     isEnabled: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     @DrawableRes startIconResource: Int? = null,
     @DrawableRes endIconResource: Int? = null,
@@ -66,6 +71,8 @@ fun YGButton(
                 shape = buttonType.radius,
             )
             .clip(shape = buttonType.radius)
+            .clickable(onClick = onClick)
+            .semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding.size.dp,
                 end = buttonType.endPadding.size.dp,
@@ -82,7 +89,7 @@ fun YGButton(
                         isEnabled = isEnabled,
                         isPressed = isPressed,
                     ),
-                )
+                ),
             )
             Spacer(modifier = Modifier.width(buttonType.iconGapSize.size.dp))
         }
@@ -384,6 +391,7 @@ private fun YGButtonPreview(
             isEnabled = true,
             isPressed = false,
             modifier = Modifier.fillMaxWidth(),
+            onClick = {},
         )
         YGButton(
             text = "Button Pressed",
@@ -391,6 +399,7 @@ private fun YGButtonPreview(
             isEnabled = true,
             isPressed = true,
             modifier = Modifier.fillMaxWidth(),
+            onClick = {},
         )
         YGButton(
             text = "Button Disabled",
@@ -398,6 +407,7 @@ private fun YGButtonPreview(
             isEnabled = false,
             isPressed = false,
             modifier = Modifier.fillMaxWidth(),
+            onClick = {},
         )
         YGButton(
             text = "Button Start",
@@ -406,6 +416,7 @@ private fun YGButtonPreview(
             isPressed = false,
             startIconResource = R.drawable.ic_plus,
             modifier = Modifier.fillMaxWidth(),
+            onClick = {},
         )
         YGButton(
             text = "Button End",
@@ -414,6 +425,7 @@ private fun YGButtonPreview(
             isPressed = false,
             endIconResource = R.drawable.ic_plus,
             modifier = Modifier.fillMaxWidth(),
+            onClick = {},
         )
     }
 }
