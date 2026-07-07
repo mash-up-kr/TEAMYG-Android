@@ -29,7 +29,7 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFFFFFFF))
+                    .background(YGAtomicColors.Gray.White)
                     .padding(innerPadding)
                     .statusBarsPadding()
                     .navigationBarsAndImePadding(),
