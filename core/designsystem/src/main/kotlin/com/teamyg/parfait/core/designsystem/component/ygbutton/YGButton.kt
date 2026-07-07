@@ -20,26 +20,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.designsystem.theme.token.GapTokens
-import com.teamyg.parfait.core.designsystem.theme.token.PaddingTokens
-import com.teamyg.parfait.core.designsystem.theme.token.ShapeTokens
-import com.teamyg.parfait.core.designsystem.theme.token.SizeToken
-import com.teamyg.parfait.core.designsystem.theme.token.SizeTokens
-import com.teamyg.parfait.core.designsystem.theme.typography.YGTypography
 
 @Composable
 fun YGButton(
