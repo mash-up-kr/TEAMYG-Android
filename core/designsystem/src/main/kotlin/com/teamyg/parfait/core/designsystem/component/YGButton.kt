@@ -78,9 +78,9 @@ fun YGButton(
             .semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding.size.dp,
+                top = buttonType.topPadding.size.dp,
                 end = buttonType.endPadding.size.dp,
                 bottom = buttonType.bottomPadding.size.dp,
-                top = buttonType.topPadding.size.dp,
             ),
     ) {
         startIconResource?.let { resource ->
