@@ -30,9 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamyg.parfait.core.ui.preview.PreviewBox
 import com.teamyg.parfait.core.ui.preview.YGPreview
-import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupInviteCodeScreen(
@@ -47,7 +47,7 @@ internal fun GroupInviteCodeScreen(
         Column(modifier = Modifier.fillMaxWidth()) {
             Box(modifier = Modifier.padding(all = 21.dp)) {
                 Image(
-                    painter = painterResource(R.drawable.ic_chevron_left),
+                    painter = painterResource(DesignSystemR.drawable.ic_caret_left),
                     contentDescription = "뒤로가기",
                     modifier = Modifier
                         .padding(top = 12.dp, end = 12.dp, bottom = 12.dp)
