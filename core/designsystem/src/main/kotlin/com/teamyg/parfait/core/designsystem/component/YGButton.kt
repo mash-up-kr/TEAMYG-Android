@@ -132,7 +132,7 @@ sealed interface YGButtonType {
     val endPadding: SizeToken
     val bottomPadding: SizeToken
 
-    val colors: YgButtonColors
+    val colors: YGButtonColors
 
     // font style
     // radius
@@ -150,7 +150,7 @@ sealed interface YGButtonType {
         override val endPadding: SizeToken = PaddingTokens.Padding5
         override val bottomPadding: SizeToken = PaddingTokens.Padding2
 
-        override val colors: YgButtonColors = YgButtonColors(
+        override val colors: YGButtonColors = YGButtonColors(
             enabledForegroundColor = YGAtomicColors.Gray.Gray600,
             disabledForegroundColor = YGAtomicColors.Gray.Gray600,
             pressedForegroundColor = YGAtomicColors.Gray.Gray700,
@@ -179,7 +179,7 @@ sealed interface YGButtonType {
         override val endPadding: SizeToken = PaddingTokens.Padding5
         override val bottomPadding: SizeToken = PaddingTokens.Padding3
 
-        override val colors: YgButtonColors = YgButtonColors(
+        override val colors: YGButtonColors = YGButtonColors(
             enabledForegroundColor = YGAtomicColors.Gray.Gray600,
             disabledForegroundColor = YGAtomicColors.Gray.Gray600,
             pressedForegroundColor = YGAtomicColors.Gray.Gray700,
@@ -206,7 +206,7 @@ sealed interface YGButtonType {
         override val endPadding: SizeToken = PaddingTokens.Padding4
         override val bottomPadding: SizeToken = PaddingTokens.Padding3
 
-        override val colors: YgButtonColors = YgButtonColors(
+        override val colors: YGButtonColors = YGButtonColors(
             enabledForegroundColor = YGAtomicColors.Gray.Gray600,
             disabledForegroundColor = YGAtomicColors.Gray.Gray600,
             pressedForegroundColor = YGAtomicColors.Gray.Gray700,
@@ -234,7 +234,7 @@ sealed interface YGButtonType {
             override val endPadding: SizeToken = PaddingTokens.Padding4
             override val bottomPadding: SizeToken = PaddingTokens.Padding5
 
-            override val colors: YgButtonColors = YgButtonColors(
+            override val colors: YGButtonColors = YGButtonColors(
                 enabledForegroundColor = YGAtomicColors.Gray.White,
                 disabledForegroundColor = YGAtomicColors.Gray.White,
                 pressedForegroundColor = YGAtomicColors.Gray.Gray500,
@@ -261,7 +261,7 @@ sealed interface YGButtonType {
             override val endPadding: SizeToken = PaddingTokens.Padding4
             override val bottomPadding: SizeToken = PaddingTokens.Padding5
 
-            override val colors: YgButtonColors = YgButtonColors(
+            override val colors: YGButtonColors = YGButtonColors(
                 enabledForegroundColor = YGAtomicColors.Gray.Gray900,
                 disabledForegroundColor = YGAtomicColors.Gray.Gray900,
                 pressedForegroundColor = YGAtomicColors.Gray.Gray500,
@@ -288,7 +288,7 @@ sealed interface YGButtonType {
             override val endPadding: SizeToken = PaddingTokens.Padding4
             override val bottomPadding: SizeToken = PaddingTokens.Padding5
 
-            override val colors: YgButtonColors = YgButtonColors(
+            override val colors: YGButtonColors = YGButtonColors(
                 enabledForegroundColor = YGAtomicColors.Gray.Gray900,
                 disabledForegroundColor = YGAtomicColors.Gray.Gray900,
                 pressedForegroundColor = YGAtomicColors.Gray.Gray500,
@@ -316,7 +316,7 @@ sealed interface YGButtonType {
         override val endPadding: SizeToken = PaddingTokens.Padding4
         override val bottomPadding: SizeToken = PaddingTokens.Padding5
 
-        override val colors: YgButtonColors = YgButtonColors(
+        override val colors: YGButtonColors = YGButtonColors(
             enabledForegroundColor = YGAtomicColors.Gray.White,
             disabledForegroundColor = YGAtomicColors.Gray.White,
             pressedForegroundColor = YGAtomicColors.Gray.Gray500,
@@ -333,7 +333,7 @@ sealed interface YGButtonType {
     }
 }
 
-class YgButtonColors(
+class YGButtonColors(
     val enabledForegroundColor: Color,
     val disabledForegroundColor: Color,
     val pressedForegroundColor: Color,
