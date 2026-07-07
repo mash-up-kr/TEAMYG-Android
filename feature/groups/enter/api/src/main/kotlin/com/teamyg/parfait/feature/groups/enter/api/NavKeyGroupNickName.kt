@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groupenter.api
+package com.teamyg.parfait.feature.groups.enter.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
