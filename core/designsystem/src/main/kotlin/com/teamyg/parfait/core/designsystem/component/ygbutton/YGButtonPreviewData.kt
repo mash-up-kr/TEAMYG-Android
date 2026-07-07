@@ -1,7 +1,6 @@
-package com.teamyg.parfait.core.designsystem.component.preview
+package com.teamyg.parfait.core.designsystem.component.ygbutton
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.teamyg.parfait.core.designsystem.component.YGButtonType
 
 data class YGButtonPreviewData(
     val name: String,
