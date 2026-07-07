@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.feature.groupenter.api.NavKeyGroupNickName
@@ -47,7 +48,7 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFFFFFFF))
+                    .background(YGAtomicColors.Gray.White)
                     .padding(innerPadding)
                     .statusBarsPadding()
                     .navigationBarsAndImePadding(),
