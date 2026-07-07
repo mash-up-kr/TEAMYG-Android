@@ -69,7 +69,7 @@ fun YGButton(
                 ),
                 shape = buttonType.radius,
             ).clip(shape = buttonType.radius)
-            .clickable(onClick = onClick)
+            .clickable(enabled = isEnabled, onClick = onClick)
             .semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding.size.dp,
