@@ -64,8 +64,13 @@ fun YGCustomTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme: YGColorScheme = if (darkTheme) YGSemanticColorDefaults.YGDarkColorScheme else YGSemanticColorDefaults.YGLightColorScheme
-    val asyncImagePreviewHandler: AsyncImagePreviewHandler = remember { AsyncImagePreviewHandler { createPreviewBitmap() } }
+    val colorScheme: YGColorScheme = when (darkTheme) {
+        true -> YGSemanticColorDefaults.YGDarkColorScheme
+        false -> YGSemanticColorDefaults.YGLightColorScheme
+    }
+    val asyncImagePreviewHandler: AsyncImagePreviewHandler = remember {
+        AsyncImagePreviewHandler { createPreviewBitmap() }
+    }
 
     CompositionLocalProvider(
         LocalAsyncImagePreviewHandler provides asyncImagePreviewHandler,
