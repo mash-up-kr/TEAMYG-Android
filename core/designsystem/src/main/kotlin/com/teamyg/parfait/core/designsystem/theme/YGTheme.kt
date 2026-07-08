@@ -12,10 +12,16 @@ import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.teamyg.parfait.core.designsystem.theme.colors.YGColorScheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGSemanticColorDefaults
+import com.teamyg.parfait.core.designsystem.theme.typography.YGTypography
+import com.teamyg.parfait.core.designsystem.theme.typography.YGTypographyDefaults
 import com.teamyg.parfait.core.designsystem.utils.createPreviewBitmap
 
 internal val LocalYGColorScheme: ProvidableCompositionLocal<YGColorScheme> = staticCompositionLocalOf {
     error("Not Init ColorScheme")
+}
+
+internal val LocalYGTypography: ProvidableCompositionLocal<YGTypography> = staticCompositionLocalOf {
+    error("Not Init Typography")
 }
 
 object YGTheme {
@@ -23,6 +29,11 @@ object YGTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalYGColorScheme.current
+
+    val typography: YGTypography
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalYGTypography.current
 }
 
 @OptIn(ExperimentalCoilApi::class)
@@ -37,6 +48,7 @@ fun YGCustomTheme(
     CompositionLocalProvider(
         LocalAsyncImagePreviewHandler provides asyncImagePreviewHandler,
         LocalYGColorScheme provides colorScheme,
+        LocalYGTypography provides YGTypographyDefaults.YGDefaultTypography,
         content = content,
     )
 }

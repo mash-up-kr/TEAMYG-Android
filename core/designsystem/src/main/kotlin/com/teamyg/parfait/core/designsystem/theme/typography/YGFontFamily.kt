@@ -5,7 +5,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.teamyg.parfait.core.designsystem.R
 
-object YGFontFamily {
+internal object YGFontFamily {
     val suitFontFamily: FontFamily = FontFamily(
         Font(R.font.suit_regular, FontWeight.Normal),
         Font(R.font.suit_medium, FontWeight.Medium),
