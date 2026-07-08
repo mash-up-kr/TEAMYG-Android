@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "774115496627",
+    "project_id": "parfait-5934b",
+    "storage_bucket": "parfait-5934b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774115496627:android:e4744e0590f563216716c6",
+        "android_client_info": {
+          "package_name": "com.teamyg.parfait"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnl9sBf3TDdDvIDsI-NmejUG3BcCNRRMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

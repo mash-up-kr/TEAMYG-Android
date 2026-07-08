@@ -11,6 +11,9 @@ plugins {
     alias(libs.plugins.google.dagger.hilt) apply false
 
     alias(libs.plugins.ktlint) apply false
+
+    alias(libs.plugins.google.firebase) apply false
+    alias(libs.plugins.google.firebase.crashlytics) apply false
 }
 subprojects {
     apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)

@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.parfait.jetpack.compose)
     alias(libs.plugins.google.dagger.hilt)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.google.firebase)
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
@@ -81,4 +83,9 @@ dependencies {
     implementation(libs.bundles.navigation)
 
     implementation(libs.kakao.sdk.user)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.crashlytics)
 }
