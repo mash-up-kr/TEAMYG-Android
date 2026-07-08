@@ -16,15 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.google.firebase.Firebase
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.messaging.messaging
 import com.teamyg.parfait.core.designsystem.theme.YGMaterialTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 private const val TAG = "MainActivity_Token"
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject
@@ -42,12 +41,13 @@ class MainActivity : ComponentActivity() {
             // 알람거절
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Log.d(TAG, "Token: ${task.result}")
-            } else{
+            } else {
                 Log.d(TAG, "Token Failed: ${task.exception}")
             }
         }
@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
     private fun askNotificationPermission() {
         // This is only necessary for API level >= 33 (TIRAMISU)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -74,7 +75,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    private fun createNotification(){
+
+    private fun createNotification() {
         val channel = NotificationChannel(
             "fcm_default_channel",
             "파르페알림",

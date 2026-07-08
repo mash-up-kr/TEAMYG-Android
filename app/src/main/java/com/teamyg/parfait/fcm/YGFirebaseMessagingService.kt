@@ -10,8 +10,8 @@ import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.R
 
 private const val TAG = "YGFirebaseMessagingService"
-class YGFirebaseMessagingService : FirebaseMessagingService() {
 
+class YGFirebaseMessagingService : FirebaseMessagingService() {
     override fun onRegistered(token: String) {
         super.onRegistered(token)
         Log.d(TAG, "FCM Token: $token")
@@ -21,7 +21,8 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val notification = NotificationCompat.Builder(this, "fcm_default_channel")
+        val notification = NotificationCompat
+            .Builder(this, "fcm_default_channel")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(remoteMessage.notification?.title)
             .setContentText(remoteMessage.notification?.body)
