@@ -3,7 +3,7 @@ package com.teamyg.parfait.core.designsystem.theme.shapes
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
-import com.teamyg.parfait.core.designsystem.theme.token.SizeTokens
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 
 internal object YGShapesDefaults {
     //region radius
