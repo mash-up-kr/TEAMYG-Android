@@ -65,6 +65,11 @@ javaxInject = "1"
 # Logger
 kermit = "2.0.4"
 
+# Firebase
+firebase = "4.5.0"
+firebase-bom = "34.15.0"
+firebase-crashlytics = "3.0.6"
+
 [libraries]
 #gradle plugin
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -133,6 +138,12 @@ google-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "
 # Logger
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 
+#Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
+firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+
 [bundles]
 hilt = [
     "hilt-navigation",
@@ -171,6 +182,9 @@ google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 google-dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "daggerHilt" }
 
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+
+google-firebase = { id = "com.google.gms.google-services", version.ref = "firebase"}
+google-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics" }
 
 #Custom Plugin
 parfait-android-application = { id = "com.teamyg.parfait.plugin.android.application" }
