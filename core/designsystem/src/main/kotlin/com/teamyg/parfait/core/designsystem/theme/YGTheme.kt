@@ -40,6 +40,11 @@ object YGTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalYGTypography.current
+
+    val shapes: YGShapes
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalYGShapes.current
 }
 
 @OptIn(ExperimentalCoilApi::class)
