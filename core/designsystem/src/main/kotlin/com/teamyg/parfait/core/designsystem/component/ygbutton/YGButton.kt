@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,7 +41,7 @@ fun YGButton(
     modifier: Modifier = Modifier,
     @DrawableRes startIconResource: Int? = null,
     @DrawableRes endIconResource: Int? = null,
-    interactionSource: MutableInteractionSource = MutableInteractionSource(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
@@ -54,14 +55,16 @@ fun YGButton(
                     isPressed = isPressed,
                 ),
                 shape = buttonType.radius,
-            ).border(
+            )
+            .border(
                 width = 1.dp,
                 color = buttonType.colors.borderColor(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
                 shape = buttonType.radius,
-            ).clip(shape = buttonType.radius)
+            )
+            .clip(shape = buttonType.radius)
             .clickable(enabled = isEnabled, onClick = onClick)
             .semantics { role = Role.Button }
             .padding(
