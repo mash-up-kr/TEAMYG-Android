@@ -38,17 +38,17 @@ fun YGInputNumber(
         number = number,
         isSelected = isSelected,
         isPressed = isPressed,
-        onClick = onClick,
-        modifier = modifier,
+        modifier = modifier
+            .clickable(onClick = onClick, interactionSource = interactionSource)
+            .semantics { role = Role.Button },
     )
 }
 
 @Composable
-fun YGInputNumber(
+private fun YGInputNumber(
     number: Int,
     isSelected: Boolean,
     isPressed: Boolean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -68,9 +68,7 @@ fun YGInputNumber(
                 shape = YGTheme.shapes.radius.xSmall,
             ).clip(
                 shape = YGTheme.shapes.radius.xSmall,
-            ).clickable(
-                onClick = onClick,
-            ).semantics { role = Role.Button },
+            ),
     ) {
         Text(
             text = number.toString(),
@@ -92,7 +90,6 @@ private fun YGInputNumberPreview(
                 number = 3,
                 isSelected = data.isSelected,
                 isPressed = data.isPressed,
-                onClick = {},
             )
         }
     }
