@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,28 +25,24 @@ fun YGActionItem(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    interactionSource: MutableInteractionSource = MutableInteractionSource(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     YGActionItem(
         text = text,
         isPressed = isPressed,
-        onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick, interactionSource = interactionSource),
     )
 }
 
 @Composable
-fun YGActionItem(
+private fun YGActionItem(
     text: String,
     isPressed: Boolean,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 16.dp),
+        modifier = modifier.padding(vertical = 12.dp, horizontal = 16.dp),
     ) {
         Text(
             text = text,
@@ -68,7 +65,6 @@ fun YGActionItemPreview(
             YGActionItem(
                 text = "그룹 나가기",
                 isPressed = data.isPressed,
-                onClick = {},
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White),
