@@ -51,13 +51,11 @@ fun YGInputNumber(
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
-            )
-            .border(
+            ).border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            )
-            .clip(shape = YGTheme.shapes.radius.xSmall),
+            ).clip(shape = YGTheme.shapes.radius.xSmall),
     ) {
         Text(
             text = number.toString(),
