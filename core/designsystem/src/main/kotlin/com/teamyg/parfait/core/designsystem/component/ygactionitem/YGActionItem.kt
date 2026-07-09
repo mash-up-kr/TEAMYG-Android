@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygactionitem
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -10,8 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
@@ -23,6 +27,21 @@ fun YGActionItem(
     interactionSource: MutableInteractionSource = MutableInteractionSource(),
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
+    YGActionItem(
+        text = text,
+        isPressed = isPressed,
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun YGActionItem(
+    text: String,
+    isPressed: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .clickable(onClick = onClick)
@@ -38,11 +57,22 @@ fun YGActionItem(
 
 @Preview
 @Composable
-fun YGActionItemPreview() {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        YGActionItem(
-            text = "그룹 나가기",
-            onClick = {},
-        )
+fun YGActionItemPreview(
+    @PreviewParameter(YGActionItemPreviewParameterProvider::class)
+    data: YGActionItemPreviewData,
+) {
+    YGCustomTheme {
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            YGActionItem(
+                text = "그룹 나가기",
+                isPressed = data.isPressed,
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White),
+            )
+        }
     }
 }
