@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,13 +15,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
 fun YGButtonIcon(
     @DrawableRes iconResource: Int,
     size: YGButtonIconSize,
-    contentDescription: String,
+    contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
@@ -41,7 +46,7 @@ fun YGButtonIcon(
     @DrawableRes iconResource: Int,
     size: YGButtonIconSize,
     isPressed: Boolean,
-    contentDescription: String,
+    contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -57,3 +62,20 @@ fun YGButtonIcon(
     }
 }
 
+@Preview
+@Composable
+private fun YGButtonIconPreview(
+    @PreviewParameter(YGButtonIconPreviewParameterProvider::class)
+    data: YGButtonIconPreviewData,
+) {
+    YGCustomTheme {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            YGButtonIcon(
+                iconResource = R.drawable.ic_close_round,
+                size = data.buttonIconSize,
+                isPressed = data.isPressed,
+                contentDescription = null,
+            )
+        }
+    }
+}
