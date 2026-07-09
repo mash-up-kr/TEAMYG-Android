@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
@@ -42,6 +44,7 @@ fun YGInputNumber(
     modifier: Modifier = Modifier,
 ) {
     Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(50.dp) // 디자인가이드상 50x50 고정
             .background(
@@ -71,11 +74,13 @@ private fun YGInputNumberPreview(
     @PreviewParameter(YGInputNumberPreviewParameterProvider::class)
     data: YGInputNumberPreviewData,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        YGInputNumber(
-            number = 3,
-            isSelected = data.isSelected,
-            isPressed = data.isPressed,
-        )
+    YGCustomTheme {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            YGInputNumber(
+                number = 3,
+                isSelected = data.isSelected,
+                isPressed = data.isPressed,
+            )
+        }
     }
 }
