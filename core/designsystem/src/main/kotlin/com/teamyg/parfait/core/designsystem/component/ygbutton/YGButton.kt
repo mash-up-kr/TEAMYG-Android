@@ -65,10 +65,10 @@ fun YGButton(
             .clickable(enabled = isEnabled, onClick = onClick)
             .semantics { role = Role.Button }
             .padding(
-                start = buttonType.startPadding.size.dp,
-                top = buttonType.topPadding.size.dp,
-                end = buttonType.endPadding.size.dp,
-                bottom = buttonType.bottomPadding.size.dp,
+                start = buttonType.startPadding,
+                top = buttonType.topPadding,
+                end = buttonType.endPadding,
+                bottom = buttonType.bottomPadding,
             ),
     ) {
         startIconResource?.let { resource ->
@@ -82,7 +82,7 @@ fun YGButton(
                     ),
                 ),
             )
-            Spacer(modifier = Modifier.width(buttonType.iconGapSize.size.dp))
+            Spacer(modifier = Modifier.width(buttonType.iconGapSize))
         }
         Text(
             text = text,
@@ -94,7 +94,7 @@ fun YGButton(
             textAlign = TextAlign.Center,
         )
         endIconResource?.let { resource ->
-            Spacer(modifier = Modifier.width(buttonType.iconGapSize.size.dp))
+            Spacer(modifier = Modifier.width(buttonType.iconGapSize))
             Image(
                 painter = painterResource(id = resource),
                 contentDescription = null,

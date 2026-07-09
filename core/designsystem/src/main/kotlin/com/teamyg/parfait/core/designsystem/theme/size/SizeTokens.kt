@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.theme.token
+package com.teamyg.parfait.core.designsystem.theme.size
 
 import androidx.compose.ui.unit.dp
 

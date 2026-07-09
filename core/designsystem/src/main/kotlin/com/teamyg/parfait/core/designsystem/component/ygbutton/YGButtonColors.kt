@@ -1,8 +1,10 @@
 package com.teamyg.parfait.core.designsystem.component.ygbutton
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-class YGButtonColors(
+@Immutable
+data class YGButtonColors(
     val enabledForegroundColor: Color,
     val disabledForegroundColor: Color,
     val pressedForegroundColor: Color,
