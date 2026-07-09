@@ -13,6 +13,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -31,7 +34,9 @@ fun YGActionItem(
     YGActionItem(
         text = text,
         isPressed = isPressed,
-        modifier = modifier.clickable(onClick = onClick, interactionSource = interactionSource),
+        modifier = modifier
+            .clickable(onClick = onClick, interactionSource = interactionSource)
+            .semantics { role = Role.Button },
     )
 }
 
