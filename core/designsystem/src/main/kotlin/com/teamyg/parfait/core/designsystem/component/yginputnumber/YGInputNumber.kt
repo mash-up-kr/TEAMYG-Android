@@ -2,6 +2,7 @@ package com.teamyg.parfait.core.designsystem.component.yginputnumber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 fun YGInputNumber(
     number: Int,
     isSelected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
@@ -33,6 +35,7 @@ fun YGInputNumber(
         number = number,
         isSelected = isSelected,
         isPressed = isPressed,
+        onClick = onClick,
         modifier = modifier,
     )
 }
@@ -42,6 +45,7 @@ fun YGInputNumber(
     number: Int,
     isSelected: Boolean,
     isPressed: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -59,7 +63,9 @@ fun YGInputNumber(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            ).clip(shape = YGTheme.shapes.radius.xSmall),
+            ).clip(
+                shape = YGTheme.shapes.radius.xSmall
+            ).clickable(onClick = onClick),
     ) {
         Text(
             text = number.toString(),
@@ -81,6 +87,7 @@ private fun YGInputNumberPreview(
                 number = 3,
                 isSelected = data.isSelected,
                 isPressed = data.isPressed,
+                onClick = {},
             )
         }
     }
