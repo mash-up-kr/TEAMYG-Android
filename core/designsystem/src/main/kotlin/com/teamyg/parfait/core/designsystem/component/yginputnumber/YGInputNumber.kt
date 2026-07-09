@@ -62,19 +62,15 @@ fun YGInputNumber(
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
-            )
-            .border(
+            ).border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            )
-            .clip(
+            ).clip(
                 shape = YGTheme.shapes.radius.xSmall,
-            )
-            .clickable(
+            ).clickable(
                 onClick = onClick,
-            )
-            .semantics { role = Role.Button },
+            ).semantics { role = Role.Button },
     ) {
         Text(
             text = number.toString(),
