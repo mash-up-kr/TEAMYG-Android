@@ -37,7 +37,10 @@ fun YGButtonIcon(
         size = size,
         isPressed = isPressed,
         contentDescription = contentDescription,
-        modifier = modifier.clickable(onClick = onClick, interactionSource = interactionSource),
+        modifier = modifier.clickable(
+            onClick = onClick,
+            interactionSource = interactionSource,
+        ),
     )
 }
 
