@@ -26,7 +26,21 @@ fun YGInputNumber(
     interactionSource: MutableInteractionSource = MutableInteractionSource(),
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
+    YGInputNumber(
+        number = number,
+        isSelected = isSelected,
+        isPressed = isPressed,
+        modifier = modifier,
+    )
+}
 
+@Composable
+fun YGInputNumber(
+    number: Int,
+    isSelected: Boolean,
+    isPressed: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .size(50.dp) // 디자인가이드상 50x50 고정
@@ -37,11 +51,13 @@ fun YGInputNumber(
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
-            ).border(
+            )
+            .border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            ).clip(shape = YGTheme.shapes.radius.xSmall),
+            )
+            .clip(shape = YGTheme.shapes.radius.xSmall),
     ) {
         Text(
             text = number.toString(),
@@ -61,6 +77,7 @@ private fun YGInputNumberPreview(
         YGInputNumber(
             number = 3,
             isSelected = data.isSelected,
+            isPressed = data.isPressed,
         )
     }
 }
