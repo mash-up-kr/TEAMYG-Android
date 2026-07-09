@@ -55,7 +55,9 @@ fun YGButtonIcon(
     ) {
         Image(
             painter = painterResource(iconResource),
-            colorFilter = ColorFilter.tint(color = if (isPressed) YGAtomicColors.Gray.Gray400 else YGAtomicColors.Gray.Gray300),
+            colorFilter = ColorFilter.tint(
+                color = if (isPressed) YGAtomicColors.Gray.Gray400 else YGAtomicColors.Gray.Gray300,
+            ),
             contentDescription = contentDescription,
             modifier = Modifier.size(size.iconSize),
         )
