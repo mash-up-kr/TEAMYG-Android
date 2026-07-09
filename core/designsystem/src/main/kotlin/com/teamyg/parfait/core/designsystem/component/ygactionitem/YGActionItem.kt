@@ -18,7 +18,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -47,7 +46,10 @@ private fun YGActionItem(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+        modifier = modifier.padding(
+            vertical = YGTheme.layout.padding.padding5,
+            horizontal = YGTheme.layout.padding.padding6,
+        ),
     ) {
         Text(
             text = text,
