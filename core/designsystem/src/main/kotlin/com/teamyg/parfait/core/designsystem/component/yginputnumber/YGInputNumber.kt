@@ -15,6 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -59,13 +62,19 @@ fun YGInputNumber(
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
-            ).border(
+            )
+            .border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            ).clip(
-                shape = YGTheme.shapes.radius.xSmall
-            ).clickable(onClick = onClick),
+            )
+            .clip(
+                shape = YGTheme.shapes.radius.xSmall,
+            )
+            .clickable(
+                onClick = onClick,
+            )
+            .semantics { role = Role.Button },
     ) {
         Text(
             text = number.toString(),
