@@ -31,6 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 
 @Composable
 fun YGButton(
@@ -45,6 +46,29 @@ fun YGButton(
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
+    YGButton(
+        text = text,
+        buttonType = buttonType,
+        isEnabled = isEnabled,
+        isPressed = isPressed,
+        modifier = modifier
+            .clickable(enabled = isEnabled, onClick = onClick, interactionSource = interactionSource)
+            .semantics { role = Role.Button },
+        startIconResource = startIconResource,
+        endIconResource = endIconResource,
+    )
+}
+
+@Composable
+private fun YGButton(
+    text: String,
+    buttonType: YGButtonType,
+    isEnabled: Boolean,
+    isPressed: Boolean,
+    modifier: Modifier = Modifier,
+    @DrawableRes startIconResource: Int? = null,
+    @DrawableRes endIconResource: Int? = null,
+) {
     Row(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -63,8 +87,6 @@ fun YGButton(
                 ),
                 shape = buttonType.radius,
             ).clip(shape = buttonType.radius)
-            .clickable(enabled = isEnabled, onClick = onClick)
-            .semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding,
                 top = buttonType.topPadding,
@@ -116,47 +138,49 @@ private fun YGButtonPreview(
     @PreviewParameter(YGButtonPreviewParameterProvider::class)
     data: YGButtonPreviewData,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(16.dp),
-    ) {
-        Text(data.name)
-        YGButton(
-            text = "Button Enabled",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Pressed",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Disabled",
-            buttonType = data.buttonType,
-            isEnabled = false,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Start",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            startIconResource = R.drawable.ic_plus,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button End",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            endIconResource = R.drawable.ic_plus,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
+    YGCustomTheme {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(data.name)
+            YGButton(
+                text = "Button Enabled",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                isPressed = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            YGButton(
+                text = "Button Pressed",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                isPressed = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            YGButton(
+                text = "Button Disabled",
+                buttonType = data.buttonType,
+                isEnabled = false,
+                isPressed = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            YGButton(
+                text = "Button Start",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                isPressed = false,
+                startIconResource = R.drawable.ic_plus,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            YGButton(
+                text = "Button End",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                isPressed = false,
+                endIconResource = R.drawable.ic_plus,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
