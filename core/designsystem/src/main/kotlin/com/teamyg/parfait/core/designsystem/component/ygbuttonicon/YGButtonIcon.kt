@@ -45,7 +45,7 @@ fun YGButtonIcon(
 }
 
 @Composable
-fun YGButtonIcon(
+private fun YGButtonIcon(
     @DrawableRes iconResource: Int,
     size: YGButtonIconSize,
     isPressed: Boolean,
