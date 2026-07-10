@@ -22,7 +22,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
-fun YGButtonIcon(
+fun YGIconButton(
     @DrawableRes iconResource: Int,
     size: YGButtonIconSize,
     contentDescription: String?,
@@ -32,7 +32,7 @@ fun YGButtonIcon(
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
-    YGButtonIcon(
+    YGIconButton(
         iconResource = iconResource,
         size = size,
         isPressed = isPressed,
@@ -45,7 +45,7 @@ fun YGButtonIcon(
 }
 
 @Composable
-private fun YGButtonIcon(
+private fun YGIconButton(
     @DrawableRes iconResource: Int,
     size: YGButtonIconSize,
     isPressed: Boolean,
@@ -69,13 +69,13 @@ private fun YGButtonIcon(
 
 @Preview
 @Composable
-private fun YGButtonIconPreview(
+private fun YGIconButtonPreview(
     @PreviewParameter(YGButtonIconPreviewParameterProvider::class)
     data: YGButtonIconPreviewData,
 ) {
     YGCustomTheme {
         Box(modifier = Modifier.fillMaxWidth()) {
-            YGButtonIcon(
+            YGIconButton(
                 iconResource = R.drawable.ic_close_round,
                 size = data.buttonIconSize,
                 isPressed = data.isPressed,
