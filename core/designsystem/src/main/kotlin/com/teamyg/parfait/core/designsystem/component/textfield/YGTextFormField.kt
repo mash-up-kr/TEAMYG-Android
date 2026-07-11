@@ -22,7 +22,7 @@ fun YGTextFormField(
     isError: Boolean = false,
     maxLength: Int? = null,
     description: String? = null,
-    colors: YGTextFieldColors = YGTextFieldDefaults.colors(),
+    colors: YGTextFormFieldColors = YGTextFormFieldDefaults.colors(),
 ) {
     Column(
         modifier = modifier,
@@ -36,13 +36,13 @@ fun YGTextFormField(
             enabled = enabled,
             isError = isError,
             maxLength = maxLength,
-            colors = colors,
+            colors = colors.textFieldColors,
         )
         if (description != null) {
             Text(
                 text = description,
                 style = YGTheme.typography.caption.c01R,
-                color = colors.counterColor(isError = isError),
+                color = colors.descriptionColor(isError = isError),
             )
         }
     }
