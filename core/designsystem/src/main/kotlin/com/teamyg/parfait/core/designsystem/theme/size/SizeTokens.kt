@@ -8,6 +8,7 @@ value class SizeToken(val size: Int) {
 }
 
 object SizeTokens {
+    val Size1: SizeToken = SizeToken(1)
     val Size2: SizeToken = SizeToken(2)
     val Size4: SizeToken = SizeToken(4)
     val Size6: SizeToken = SizeToken(6)
@@ -19,6 +20,7 @@ object SizeTokens {
     val Size24: SizeToken = SizeToken(24)
     val Size32: SizeToken = SizeToken(32)
     val Size40: SizeToken = SizeToken(40)
+    val Size44: SizeToken = SizeToken(44)
     val Size48: SizeToken = SizeToken(48)
     val Size64: SizeToken = SizeToken(64)
     val Size80: SizeToken = SizeToken(80)
