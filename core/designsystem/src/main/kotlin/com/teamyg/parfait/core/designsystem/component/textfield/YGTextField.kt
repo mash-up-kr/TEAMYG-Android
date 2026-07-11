@@ -76,7 +76,7 @@ internal fun YGTextFieldImpl(
     val commonShape: Shape = YGTheme.shapes.radius.small
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .background(
@@ -125,28 +125,32 @@ internal fun YGTextFieldImpl(
             )
         }
 
-        if (showCounter) {
-            Text(
-                text = "${value.length}/$maxLength",
-                style = if (isError) YGTheme.typography.body.b02SB else YGTheme.typography.body.b02R,
-                color = colors.counterColor(isError = isError),
-            )
-        }
+        if (showCounter || showClear) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showCounter) {
+                    Text(
+                        text = "${value.length}/$maxLength",
+                        style = if (isError) YGTheme.typography.body.b02SB else YGTheme.typography.body.b02R,
+                        color = colors.counterColor(isError = isError),
+                    )
+                }
 
-        if (showClear) {
-            // TODO Change IconButton
-            Box(
-                modifier = Modifier
-                    .clickable(role = Role.Button) { onValueChange("") }
-                    .size(SizeTokens.Size44.getDp()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_close_round),
-                    contentDescription = "clear",
-                    colorFilter = ColorFilter.tint(colors.clearIconTint),
-                    modifier = Modifier.size(SizeTokens.Size24.getDp()),
-                )
+                if (showClear) {
+                    // TODO Change IconButton
+                    Box(
+                        modifier = Modifier
+                            .clickable(role = Role.Button) { onValueChange("") }
+                            .size(SizeTokens.Size44.getDp()),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_close_round),
+                            contentDescription = "clear",
+                            colorFilter = ColorFilter.tint(colors.clearIconTint),
+                            modifier = Modifier.size(SizeTokens.Size24.getDp()),
+                        )
+                    }
+                }
             }
         }
     }
