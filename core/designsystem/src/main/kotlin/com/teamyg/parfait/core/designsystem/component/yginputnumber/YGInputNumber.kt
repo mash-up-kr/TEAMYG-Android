@@ -31,15 +31,12 @@ fun YGInputNumber(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
-    val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     YGInputNumber(
         number = number,
         isSelected = isSelected,
-        isPressed = isPressed,
         modifier = modifier
-            .clickable(onClick = onClick, interactionSource = interactionSource)
+            .clickable(onClick = onClick)
             .semantics { role = Role.Button },
     )
 }
@@ -48,7 +45,6 @@ fun YGInputNumber(
 private fun YGInputNumber(
     number: Int,
     isSelected: Boolean,
-    isPressed: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -58,7 +54,6 @@ private fun YGInputNumber(
             .background(
                 color = when {
                     isSelected -> YGAtomicColors.Gray.Gray900
-                    isPressed -> YGAtomicColors.Gray.Gray50
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
@@ -89,7 +84,6 @@ private fun YGInputNumberPreview(
             YGInputNumber(
                 number = 3,
                 isSelected = data.isSelected,
-                isPressed = data.isPressed,
             )
         }
     }
