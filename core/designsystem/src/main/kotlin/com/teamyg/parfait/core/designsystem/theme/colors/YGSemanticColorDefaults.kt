@@ -1,7 +1,5 @@
 package com.teamyg.parfait.core.designsystem.theme.colors
 
-import androidx.compose.ui.graphics.Color
-
 internal object YGSemanticColorDefaults {
     private val DefaultYGGrayScale: YGColorGrayScale = YGColorGrayScale(
         transparent = YGAtomicColors.Gray.Transparent,
@@ -9,15 +7,26 @@ internal object YGSemanticColorDefaults {
         black = YGAtomicColors.Gray.Black,
     )
 
+    private val DefaultYGTransparency: YGColorTransparency = YGColorTransparency(
+        white25 = YGAtomicColors.Transparency.White25,
+        white50 = YGAtomicColors.Transparency.White50,
+        white75 = YGAtomicColors.Transparency.White75,
+        black5 = YGAtomicColors.Transparency.Black5,
+        black25 = YGAtomicColors.Transparency.Black25,
+        black50 = YGAtomicColors.Transparency.Black50,
+        black75 = YGAtomicColors.Transparency.Black75,
+    )
+
     internal val YGLightColorScheme: YGColorScheme = YGColorScheme(
         primary = YGAtomicColors.Cherry.Cherry,
-        secondary = YGAtomicColors.Melon.Melon,
-        tertiary = YGAtomicColors.Pudding.Pudding,
-        danger = Color(0xFFFF3A3D), // TODO Atomic 적용 필요
-        warning = Color(0xFFFFFF32), // TODO Atomic 적용 필요
-        success = Color(0xFF2AE6AE), // TODO Atomic 적용 필요
-        info = Color(0xFF2B9BE7), // TODO Atomic 적용 필요
+        secondary = YGAtomicColors.Melon.Melon500,
+        tertiary = YGAtomicColors.Pudding.Pudding500,
+        danger = YGAtomicColors.Cherry.Cherry600,
+        warning = YGAtomicColors.Pudding.Pudding600,
+        success = YGAtomicColors.Melon.Melon600,
+        info = YGAtomicColors.Soda.Soda500,
         grayScale = DefaultYGGrayScale,
+        transparency = DefaultYGTransparency,
     )
 
     // TODO 나중에 다크모드 추가할거면 변경 필요
