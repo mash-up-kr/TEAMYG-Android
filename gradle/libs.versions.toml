@@ -56,6 +56,9 @@ ktlint = "14.2.0"
 #Kakao Login
 kakao-user = "2.23.2"
 
+#ML Kit
+mlkitSubjectSegmentation = "16.0.0-beta1"
+
 #java
 javaxInject = "1"
 
@@ -123,6 +126,9 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 
 #Java
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
+
+#ML Kit
+google-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "mlkitSubjectSegmentation" }
 
 # Logger
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
