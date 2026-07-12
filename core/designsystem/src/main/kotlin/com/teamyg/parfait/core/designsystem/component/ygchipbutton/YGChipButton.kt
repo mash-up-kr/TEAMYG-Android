@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 
 @Composable
 fun YGChipButton(
@@ -80,7 +81,7 @@ fun YGChipButton(
                 colorFilter = ColorFilter.tint(
                     color = colors.foregroundColor(isPressed),
                 ),
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(SizeTokens.Size16.size.dp),
             )
         }
         Text(
@@ -95,7 +96,7 @@ fun YGChipButton(
                 colorFilter = ColorFilter.tint(
                     color = colors.foregroundColor(isPressed),
                 ),
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(SizeTokens.Size16.size.dp),
             )
         }
     }
