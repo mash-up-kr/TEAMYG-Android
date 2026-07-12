@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.component.ygbuttonicon
+package com.teamyg.parfait.core.designsystem.component.ygiconbutton
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -24,7 +24,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 @Composable
 fun YGIconButton(
     @DrawableRes iconResource: Int,
-    size: YGButtonIconSize,
+    size: YGIconButtonSize,
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,8 +60,8 @@ fun YGIconButton(
 @Preview
 @Composable
 private fun YGIconButtonPreview(
-    @PreviewParameter(YGButtonIconPreviewParameterProvider::class)
-    data: YGButtonIconPreviewData,
+    @PreviewParameter(YGIconButtonPreviewParameterProvider::class)
+    data: YGIconButtonPreviewData,
 ) {
     YGCustomTheme {
         Box(modifier = Modifier.fillMaxWidth()) {
