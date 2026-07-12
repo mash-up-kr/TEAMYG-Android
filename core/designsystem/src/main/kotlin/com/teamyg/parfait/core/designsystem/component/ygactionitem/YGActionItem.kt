@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -17,7 +18,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -30,26 +30,15 @@ fun YGActionItem(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
-    YGActionItem(
-        text = text,
-        isPressed = isPressed,
+
+    Box(
         modifier = modifier
             .clickable(onClick = onClick, interactionSource = interactionSource)
-            .semantics { role = Role.Button },
-    )
-}
-
-@Composable
-private fun YGActionItem(
-    text: String,
-    isPressed: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.padding(
-            vertical = YGTheme.layout.padding.padding5,
-            horizontal = YGTheme.layout.padding.padding6,
-        ),
+            .semantics { role = Role.Button }
+            .padding(
+                vertical = YGTheme.layout.padding.padding5,
+                horizontal = YGTheme.layout.padding.padding6,
+            ),
     ) {
         Text(
             text = text,
@@ -61,17 +50,14 @@ private fun YGActionItem(
 
 @Preview
 @Composable
-fun YGActionItemPreview(
-    @PreviewParameter(YGActionItemPreviewParameterProvider::class)
-    data: YGActionItemPreviewData,
-) {
+fun YGActionItemPreview() {
     YGCustomTheme {
         Box(
             modifier = Modifier.fillMaxWidth(),
         ) {
             YGActionItem(
                 text = "그룹 나가기",
-                isPressed = data.isPressed,
+                onClick = {},
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White),
