@@ -32,7 +32,7 @@ fun YGActionItem(
 
     Box(
         modifier = modifier
-            .clickable(onClick = onClick, interactionSource = interactionSource)
+            .clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
             .semantics { role = Role.Button }
             .padding(
                 vertical = YGTheme.layout.padding.padding5,
