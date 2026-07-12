@@ -12,6 +12,7 @@ import com.teamyg.parfait.R
 private const val TAG = "YGFirebaseMessagingService"
 
 class YGFirebaseMessagingService : FirebaseMessagingService() {
+
     override fun onRegistered(token: String) {
         super.onRegistered(token)
         Log.d(TAG, "FCM Token: $token")
@@ -21,13 +22,16 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val notification = NotificationCompat
-            .Builder(this, "fcm_default_channel")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(remoteMessage.notification?.title)
-            .setContentText(remoteMessage.notification?.body)
-            .build()
+        if(NotificationManagerCompat.from(this).areNotificationsEnabled()) {
 
-        NotificationManagerCompat.from(this).notify(0, notification)
+            val notification = NotificationCompat
+                .Builder(this, "fcm_default_channel")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle(remoteMessage.notification?.title)
+                .setContentText(remoteMessage.notification?.body)
+                .build()
+
+            NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
+        }
     }
 }
