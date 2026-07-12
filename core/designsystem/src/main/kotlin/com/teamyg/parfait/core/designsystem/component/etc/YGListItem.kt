@@ -1,28 +1,22 @@
 package com.teamyg.parfait.core.designsystem.component.etc
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -34,7 +28,6 @@ fun YGListItem(
     @DrawableRes trailingIcon: Int? = null,
     textColor: Color = YGAtomicColors.Gray.Gray800,
     subTextColor: Color = YGAtomicColors.Gray.Gray400,
-    trailingIconColor: Color = YGAtomicColors.Gray.Gray300,
     onClick: () -> Unit = {},
 ) {
     Row(
@@ -63,20 +56,12 @@ fun YGListItem(
         }
 
         trailingIcon?.let {
-            // TODO IconButton 컴포넌트
-            Box(
-                modifier = Modifier
-                    .clickable(role = Role.Button) { onClick() }
-                    .size(SizeTokens.Size44.getDp()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(id = trailingIcon),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(trailingIconColor),
-                    modifier = Modifier.size(SizeTokens.Size24.getDp()),
-                )
-            }
+            YGIconButton(
+                iconResource = trailingIcon,
+                size = YGIconButtonSize.SIZE_44,
+                contentDescription = null,
+                onClick = onClick,
+            )
         }
     }
 }
