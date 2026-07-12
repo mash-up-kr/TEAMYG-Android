@@ -8,5 +8,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.util.jvm)
+
     implementation(libs.androidx.core.ktx)
 }

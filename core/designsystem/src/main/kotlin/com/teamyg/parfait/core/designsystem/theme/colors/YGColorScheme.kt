@@ -13,4 +13,5 @@ data class YGColorScheme(
     val success: Color,
     val info: Color,
     val grayScale: YGColorGrayScale,
+    val transparency: YGColorTransparency,
 )

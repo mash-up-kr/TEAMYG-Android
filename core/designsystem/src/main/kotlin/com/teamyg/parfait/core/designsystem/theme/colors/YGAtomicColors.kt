@@ -31,14 +31,34 @@ internal object YGAtomicColors {
         val Cherry300: Color = Color(0xFFFA91A2)
         val Cherry400: Color = Color(0xFFF86078)
         val Cherry500: Color = Color(0xFFF63050)
+        val Cherry600: Color = Color(0xFFDC0A2C)
         val Cherry700: Color = Color(0xFFCF092A)
     }
 
     object Melon {
-        val Melon: Color = Color(0xFF2FFFC1)
+        val Melon500: Color = Color(0xFF2FFFC1)
+        val Melon600: Color = Color(0xFF2AE6AE)
     }
 
     object Pudding {
-        val Pudding: Color = Color(0xFFFFFF93)
+        val Pudding500: Color = Color(0xFFFFFF93)
+        val Pudding600: Color = Color(0xFFFFFF32)
+    }
+
+    object Soda {
+        val Soda500: Color = Color(0xFF2B9BE7)
+    }
+
+    object Transparency {
+        private val GeneralWhite = Color(0xFFFFFFFF)
+
+        val White25 = GeneralWhite.copy(alpha = 0.25f)
+        val White50 = GeneralWhite.copy(alpha = 0.5f)
+        val White75 = GeneralWhite.copy(alpha = 0.75f)
+
+        val Black5 = Gray.Black.copy(alpha = 0.05f)
+        val Black25 = Gray.Black.copy(alpha = 0.25f)
+        val Black50 = Gray.Black.copy(alpha = 0.5f)
+        val Black75 = Gray.Black.copy(alpha = 0.75f)
     }
 }
