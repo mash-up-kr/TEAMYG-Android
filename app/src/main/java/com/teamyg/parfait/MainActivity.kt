@@ -19,6 +19,7 @@ import androidx.navigation3.runtime.NavKey
 import com.google.firebase.messaging.FirebaseMessaging
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.fcm.YGFirebaseMessagingService.Companion.CHANNEL_ID
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
 
     private fun createNotification() {
         val channel = NotificationChannel(
-            "fcm_default_channel",
+            CHANNEL_ID,
             "파르페알림",
             NotificationManager.IMPORTANCE_DEFAULT,
         )
