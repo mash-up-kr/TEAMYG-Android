@@ -10,14 +10,6 @@ data class YGButtonPreviewData(
 class YGButtonPreviewParameterProvider : PreviewParameterProvider<YGButtonPreviewData> {
     override val values = sequenceOf(
         YGButtonPreviewData(
-            name = "XSmall",
-            buttonType = YGButtonType.XSmall,
-        ),
-        YGButtonPreviewData(
-            name = "Small",
-            buttonType = YGButtonType.Small,
-        ),
-        YGButtonPreviewData(
             name = "SmallSquare",
             buttonType = YGButtonType.SmallSquare,
         ),

@@ -3,7 +3,6 @@ package com.teamyg.parfait.core.designsystem.component.ygbutton
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -17,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 
 @Composable
 fun YGButton(
@@ -40,7 +41,7 @@ fun YGButton(
     modifier: Modifier = Modifier,
     @DrawableRes startIconResource: Int? = null,
     @DrawableRes endIconResource: Int? = null,
-    interactionSource: MutableInteractionSource = MutableInteractionSource(),
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
@@ -54,16 +55,13 @@ fun YGButton(
                     isPressed = isPressed,
                 ),
                 shape = buttonType.radius,
-            ).border(
-                width = 1.dp,
-                color = buttonType.colors.borderColor(
-                    isEnabled = isEnabled,
-                    isPressed = isPressed,
-                ),
-                shape = buttonType.radius,
             ).clip(shape = buttonType.radius)
-            .clickable(enabled = isEnabled, onClick = onClick)
-            .semantics { role = Role.Button }
+            .clickable(
+                enabled = isEnabled,
+                indication = null,
+                interactionSource = interactionSource,
+                onClick = onClick,
+            ).semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding,
                 top = buttonType.topPadding,
@@ -76,7 +74,7 @@ fun YGButton(
                 painter = painterResource(resource),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(
-                    color = buttonType.colors.iconColor(
+                    color = buttonType.colors.foregroundColor(
                         isEnabled = isEnabled,
                         isPressed = isPressed,
                     ),
@@ -99,7 +97,7 @@ fun YGButton(
                 painter = painterResource(id = resource),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(
-                    color = buttonType.colors.iconColor(
+                    color = buttonType.colors.foregroundColor(
                         isEnabled = isEnabled,
                         isPressed = isPressed,
                     ),
@@ -115,47 +113,42 @@ private fun YGButtonPreview(
     @PreviewParameter(YGButtonPreviewParameterProvider::class)
     data: YGButtonPreviewData,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.padding(16.dp),
-    ) {
-        Text(data.name)
-        YGButton(
-            text = "Button Enabled",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Pressed",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Disabled",
-            buttonType = data.buttonType,
-            isEnabled = false,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button Start",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            startIconResource = R.drawable.ic_plus,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
-        YGButton(
-            text = "Button End",
-            buttonType = data.buttonType,
-            isEnabled = true,
-            endIconResource = R.drawable.ic_plus,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {},
-        )
+    YGCustomTheme {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(data.name)
+            YGButton(
+                text = "Button Enabled",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {},
+            )
+            YGButton(
+                text = "Button Disabled",
+                buttonType = data.buttonType,
+                isEnabled = false,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {},
+            )
+            YGButton(
+                text = "Button Start",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                startIconResource = R.drawable.ic_plus,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {},
+            )
+            YGButton(
+                text = "Button End",
+                buttonType = data.buttonType,
+                isEnabled = true,
+                endIconResource = R.drawable.ic_plus,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {},
+            )
+        }
     }
 }
