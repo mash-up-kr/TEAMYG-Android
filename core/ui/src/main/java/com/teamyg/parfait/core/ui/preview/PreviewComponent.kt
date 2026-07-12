@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.teamyg.parfait.core.designsystem.theme.YGMaterialTheme
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 
 @Composable
 fun PreviewBox(content: @Composable BoxScope.() -> Unit) {
-    YGMaterialTheme {
+    YGCustomTheme {
         Box(
             modifier = Modifier.fillMaxSize(),
             content = content,
