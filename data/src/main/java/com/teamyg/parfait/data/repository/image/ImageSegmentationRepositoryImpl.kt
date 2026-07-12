@@ -17,7 +17,7 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
-import com.teamyg.parfait.domain.exception.SegmentationGetClientException
+import com.teamyg.parfait.domain.exception.SegmentationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -36,7 +36,7 @@ constructor(
 
     override suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<SegmentationResult> {
         val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData() ?: return Result.failure(
-            exception = NullPointerException("bitmap is null"),
+            SegmentationException.ImageNotFound(null),
         )
 
         val image = InputImage.fromBitmap(bitmap, 0)
@@ -47,7 +47,7 @@ constructor(
             .build()
 
         val segmenter = runCatching { SubjectSegmentation.getClient(options) }
-            .getOrElse { return Result.failure(SegmentationGetClientException()) }
+            .getOrElse { return Result.failure(SegmentationException.ClientInit(it)) }
 
         val result = withContext(Dispatchers.IO) {
             segmenter.use { segmenter ->

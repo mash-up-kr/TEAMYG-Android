@@ -7,7 +7,6 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
-import com.teamyg.parfait.domain.exception.SegmentationGetClientException
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
@@ -52,11 +51,7 @@ class SegmentationViewModel
                             subjectImagePath = result.subjectImagePath,
                         )
                     }
-                }.onFailure { throwable ->
-                    when (throwable) {
-                        is SegmentationGetClientException -> postSideEffect(SegmentationEffect.SegmentationFailed)
-                    }
-                }
+                }.onFailure { postSideEffect(SegmentationEffect.SegmentationFailed) }
         }
     }
 
