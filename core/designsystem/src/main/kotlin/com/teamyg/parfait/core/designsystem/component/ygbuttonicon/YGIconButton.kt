@@ -29,6 +29,7 @@ fun YGIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    isEnabled: Boolean = true,
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
@@ -44,7 +45,11 @@ fun YGIconButton(
         Image(
             painter = painterResource(iconResource),
             colorFilter = ColorFilter.tint(
-                color = if (isPressed) YGAtomicColors.Gray.Gray400 else YGAtomicColors.Gray.Gray300,
+                color = when {
+                    isEnabled.not() -> YGAtomicColors.Gray.Gray200
+                    isPressed -> YGAtomicColors.Gray.Gray400
+                    else -> YGAtomicColors.Gray.Gray300
+                },
             ),
             contentDescription = contentDescription,
             modifier = Modifier.size(size.iconSize),
@@ -65,6 +70,7 @@ private fun YGIconButtonPreview(
                 size = data.buttonIconSize,
                 onClick = {},
                 contentDescription = null,
+                isEnabled = data.isEnabled,
             )
         }
     }
