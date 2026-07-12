@@ -21,7 +21,7 @@ fun YGTextFormField(
     enabled: Boolean = true,
     isError: Boolean = false,
     maxLength: Int? = null,
-    description: String? = null,
+    errorDescription: String? = null,
     colors: YGTextFormFieldColors = YGTextFormFieldDefaults.colors(),
 ) {
     Column(
@@ -38,11 +38,11 @@ fun YGTextFormField(
             maxLength = maxLength,
             colors = colors.textFieldColors,
         )
-        if (description != null) {
+        if (errorDescription != null) {
             Text(
-                text = description,
+                text = errorDescription,
                 style = YGTheme.typography.caption.c01R,
-                color = colors.descriptionColor(isError = isError),
+                color = colors.errorDescriptionColor,
             )
         }
     }
@@ -60,7 +60,7 @@ private fun YGTextFormFieldPreview() = PreviewBox {
             value = "Text",
             onValueChange = {},
             maxLength = 15,
-            description = "닉네임은 15자까지만 입력 가능해요",
+            errorDescription = "닉네임은 15자까지만 입력 가능해요",
             modifier = Modifier.fillMaxWidth(),
         )
         Text("error with description")
@@ -69,7 +69,7 @@ private fun YGTextFormFieldPreview() = PreviewBox {
             onValueChange = {},
             isError = true,
             maxLength = 15,
-            description = "닉네임은 15자까지만 입력 가능해요",
+            errorDescription = "닉네임은 15자까지만 입력 가능해요",
             modifier = Modifier.fillMaxWidth(),
         )
         Text("no description")
