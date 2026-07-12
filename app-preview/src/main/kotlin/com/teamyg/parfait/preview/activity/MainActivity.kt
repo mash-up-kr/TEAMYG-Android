@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.parfait.core.designsystem.theme.YGMaterialTheme
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.preview.route.RootRoute
 import com.teamyg.parfait.preview.navigation.key.NavKeyMain
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            YGMaterialTheme {
+            YGCustomTheme {
                 RootRoute(
                     navigator = navigator,
                     entryBuilders = entryBuilders,
