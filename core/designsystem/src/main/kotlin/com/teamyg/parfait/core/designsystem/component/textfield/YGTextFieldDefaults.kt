@@ -21,7 +21,6 @@ object YGTextFieldDefaults {
         cursorColor: Color = YGAtomicColors.Gray.Gray900,
         counterColor: Color = YGAtomicColors.Gray.Gray400,
         errorCounterColor: Color = YGTheme.colorScheme.danger,
-        clearIconTint: Color = YGAtomicColors.Gray.Gray300,
     ): YGTextFieldColors = YGTextFieldColors(
         backgroundColor = backgroundColor,
         disabledBackgroundColor = disabledBackgroundColor,
@@ -34,6 +33,5 @@ object YGTextFieldDefaults {
         cursorColor = cursorColor,
         counterColor = counterColor,
         errorCounterColor = errorCounterColor,
-        clearIconTint = clearIconTint,
     )
 }

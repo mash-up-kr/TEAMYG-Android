@@ -16,7 +16,6 @@ data class YGTextFieldColors(
     val cursorColor: Color,
     val counterColor: Color,
     val errorCounterColor: Color,
-    val clearIconTint: Color,
 ) {
     fun backgroundColor(isEnabled: Boolean): Color = if (isEnabled) backgroundColor else disabledBackgroundColor
 

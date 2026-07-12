@@ -1,16 +1,12 @@
 package com.teamyg.parfait.core.designsystem.component.textfield
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,12 +15,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 
@@ -109,20 +104,12 @@ internal fun YGTextFieldImpl(
                 }
 
                 if (showClear) {
-                    // TODO Change IconButton
-                    Box(
-                        modifier = Modifier
-                            .clickable(role = Role.Button) { onValueChange("") }
-                            .size(SizeTokens.Size44.getDp()),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_close_round),
-                            contentDescription = "clear",
-                            colorFilter = ColorFilter.tint(colors.clearIconTint),
-                            modifier = Modifier.size(SizeTokens.Size24.getDp()),
-                        )
-                    }
+                    YGIconButton(
+                        iconResource = R.drawable.ic_close_round,
+                        size = YGIconButtonSize.SIZE_44,
+                        contentDescription = "clear",
+                        onClick = { onValueChange("") },
+                    )
                 }
             }
         }
