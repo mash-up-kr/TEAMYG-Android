@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.google.firebase.messaging.FirebaseMessaging
-import com.teamyg.parfait.core.designsystem.theme.YGMaterialTheme
+import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
         createNotification()
         enableEdgeToEdge()
         setContent {
-            YGMaterialTheme {
+            YGCustomTheme {
                 MainRoute(
                     navigator = navigator,
                     entryBuilders = entryBuilders,
