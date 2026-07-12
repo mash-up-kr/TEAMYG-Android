@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
@@ -72,31 +71,32 @@ internal fun YGTextFieldImpl(
                 bottom = if (showClear) YGTheme.layout.padding.padding1 else YGTheme.layout.padding.padding5,
             ),
     ) {
-        Box(modifier = Modifier.weight(1f)) {
-            if (value.isEmpty()) {
-                Text(
-                    text = placeholder,
-                    style = YGTheme.typography.body.b01R,
-                    color = colors.placeholderColor,
-                )
-            }
-            BasicTextField(
-                value = value,
-                onValueChange = { newValue ->
-                    if (maxLength == null || newValue.length <= maxLength) {
-                        onValueChange(newValue)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = enabled,
-                textStyle = YGTheme.typography.body.b01R.copy(
-                    color = colors.textColor(isEnabled = enabled),
-                ),
-                cursorBrush = SolidColor(colors.cursorColor),
-                singleLine = true,
-                interactionSource = interactionSource,
-            )
-        }
+        BasicTextField(
+            value = value,
+            onValueChange = { newValue ->
+                if (maxLength == null || newValue.length <= maxLength) {
+                    onValueChange(newValue)
+                }
+            },
+            modifier = Modifier.weight(1f),
+            enabled = enabled,
+            textStyle = YGTheme.typography.body.b01R.copy(
+                color = colors.textColor(isEnabled = enabled),
+            ),
+            cursorBrush = SolidColor(colors.cursorColor),
+            singleLine = true,
+            interactionSource = interactionSource,
+            decorationBox = { innerTextField ->
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = YGTheme.typography.body.b01R,
+                        color = colors.placeholderColor,
+                    )
+                }
+                innerTextField()
+            },
+        )
 
         if (showCounter || showClear) {
             Row(verticalAlignment = Alignment.CenterVertically) {
