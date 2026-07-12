@@ -32,29 +32,14 @@ fun YGIconButton(
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
 
-    YGIconButton(
-        iconResource = iconResource,
-        size = size,
-        isPressed = isPressed,
-        contentDescription = contentDescription,
-        modifier = modifier.clickable(
-            onClick = onClick,
-            interactionSource = interactionSource,
-        ),
-    )
-}
-
-@Composable
-private fun YGIconButton(
-    @DrawableRes iconResource: Int,
-    size: YGButtonIconSize,
-    isPressed: Boolean,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier.size(size.containerSize),
+        modifier = modifier
+            .size(size.containerSize)
+            .clickable(
+                onClick = onClick,
+                interactionSource = interactionSource,
+            ),
     ) {
         Image(
             painter = painterResource(iconResource),
@@ -78,7 +63,7 @@ private fun YGIconButtonPreview(
             YGIconButton(
                 iconResource = R.drawable.ic_close_round,
                 size = data.buttonIconSize,
-                isPressed = data.isPressed,
+                onClick = {},
                 contentDescription = null,
             )
         }
