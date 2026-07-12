@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,21 +28,6 @@ fun YGInputNumber(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    YGInputNumber(
-        number = number,
-        isSelected = isSelected,
-        modifier = modifier
-            .clickable(onClick = onClick)
-            .semantics { role = Role.Button },
-    )
-}
-
-@Composable
-private fun YGInputNumber(
-    number: Int,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -54,13 +38,14 @@ private fun YGInputNumber(
                     else -> YGAtomicColors.Gray.White
                 },
                 shape = YGTheme.shapes.radius.xSmall,
-            ).border(
+            ).clip(
+                shape = YGTheme.shapes.radius.xSmall,
+            ).clickable(onClick = onClick)
+            .border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
                 shape = YGTheme.shapes.radius.xSmall,
-            ).clip(
-                shape = YGTheme.shapes.radius.xSmall,
-            ),
+            ).semantics { role = Role.Button },
     ) {
         Text(
             text = number.toString(),
@@ -81,6 +66,7 @@ private fun YGInputNumberPreview(
             YGInputNumber(
                 number = 3,
                 isSelected = data.isSelected,
+                onClick = {},
             )
         }
     }
