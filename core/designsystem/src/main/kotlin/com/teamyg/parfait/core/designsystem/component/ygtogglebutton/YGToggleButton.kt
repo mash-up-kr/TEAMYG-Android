@@ -45,8 +45,7 @@ fun YGToggleButton(
             .background(
                 color = if (isSelected) YGAtomicColors.Gray.White else YGAtomicColors.Gray.Transparent,
                 shape = YGTheme.shapes.radius.round,
-            )
-            .clip(shape = YGTheme.shapes.radius.round)
+            ).clip(shape = YGTheme.shapes.radius.round)
             .clickable(onClick = onClick, indication = null, interactionSource = interactionSource)
             .semantics { role = Role.Button }
             .padding(
