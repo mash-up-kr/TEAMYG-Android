@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.utils.clickable
+package com.teamyg.parfait.core.util.android.clickable
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing

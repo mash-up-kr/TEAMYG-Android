@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.utils.clickable
+package com.teamyg.parfait.core.util.android.clickable
 
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationNodeFactory

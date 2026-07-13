@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.utils.clickable
+package com.teamyg.parfait.core.util.android.clickable
 
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.interaction.InteractionSource
@@ -10,7 +10,6 @@ import androidx.compose.ui.node.CompositionLocalConsumerModifierNode
 import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DelegatingNode
 import androidx.compose.ui.unit.Dp
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 val YGDimRippleAlpha: RippleAlpha = RippleAlpha(
     pressedAlpha = 0.15f,
@@ -19,11 +18,13 @@ val YGDimRippleAlpha: RippleAlpha = RippleAlpha(
     hoveredAlpha = 0.15f,
 )
 
+val YGDimRippleColor: Color = Color(0xFF29292C)
+
 @Stable
 fun ygDimRipple(
     bounded: Boolean = true,
     radius: Dp = Dp.Unspecified,
-    color: Color = YGAtomicColors.Gray.Gray900,
+    color: Color = YGDimRippleColor,
     rippleAlpha: RippleAlpha = YGDimRippleAlpha,
 ): IndicationNodeFactory = YGDimRippleNodeFactory(
     bounded = bounded,
