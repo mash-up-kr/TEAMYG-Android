@@ -106,7 +106,7 @@ internal fun Modifier.clickableYGThrottle(
     onClick = onClick,
 )
 
-private data class ClickableYGElement(
+private class ClickableYGElement(
     val interactionSource: MutableInteractionSource?,
     val indications: List<Indication>,
     val enabled: Boolean,
@@ -143,6 +143,48 @@ private data class ClickableYGElement(
         properties["windowMillis"] = windowMillis
         properties["role"] = role
         properties["onClickLabel"] = onClickLabel
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (other !is ClickableYGElement) {
+            return false
+        }
+        if (enabled != other.enabled) {
+            return false
+        }
+        if (windowMillis != other.windowMillis) {
+            return false
+        }
+        if (onClickLabel != other.onClickLabel) {
+            return false
+        }
+        if (role != other.role) {
+            return false
+        }
+        if (interactionSource != other.interactionSource) {
+            return false
+        }
+        if (indications != other.indications) {
+            return false
+        }
+        if (onClick !== other.onClick) {
+            return false
+        }
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = interactionSource?.hashCode() ?: 0
+        result = 31 * result + indications.hashCode()
+        result = 31 * result + enabled.hashCode()
+        result = 31 * result + (onClickLabel?.hashCode() ?: 0)
+        result = 31 * result + (role?.hashCode() ?: 0)
+        result = 31 * result + windowMillis.hashCode()
+        result = 31 * result + onClick.hashCode()
+        return result
     }
 }
 
