@@ -23,7 +23,74 @@ import kotlin.time.TimeSource
 
 fun Modifier.clickableYG(
     interactionSource: MutableInteractionSource? = null,
-    indication: Indication? = ygDimRipple(),
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    windowMillis: Long = 300L,
+    onClick: () -> Unit,
+): Modifier = clickableYGDimRipple(
+    interactionSource = interactionSource,
+    enabled = enabled,
+    onClickLabel = onClickLabel,
+    role = role,
+    windowMillis = windowMillis,
+    onClick = onClick,
+)
+
+fun Modifier.clickableYGDimRipple(
+    interactionSource: MutableInteractionSource? = null,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    windowMillis: Long = 300L,
+    onClick: () -> Unit,
+): Modifier = clickableYGThrottle(
+    interactionSource = interactionSource,
+    indications = listOf(ygDimRipple()),
+    enabled = enabled,
+    onClickLabel = onClickLabel,
+    role = role,
+    windowMillis = windowMillis,
+    onClick = onClick,
+)
+
+fun Modifier.clickableYGScaleRipple(
+    interactionSource: MutableInteractionSource? = null,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    windowMillis: Long = 300L,
+    onClick: () -> Unit,
+): Modifier = clickableYGThrottle(
+    interactionSource = interactionSource,
+    indications = listOf(ygScaleRipple()),
+    enabled = enabled,
+    onClickLabel = onClickLabel,
+    role = role,
+    windowMillis = windowMillis,
+    onClick = onClick,
+)
+
+fun Modifier.clickableYGMergeRipple(
+    interactionSource: MutableInteractionSource? = null,
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    windowMillis: Long = 300L,
+    onClick: () -> Unit,
+): Modifier = clickableYGThrottle(
+    interactionSource = interactionSource,
+    indications = listOf(ygDimRipple(), ygScaleRipple()),
+    enabled = enabled,
+    onClickLabel = onClickLabel,
+    role = role,
+    windowMillis = windowMillis,
+    onClick = onClick,
+)
+
+internal fun Modifier.clickableYGThrottle(
+    interactionSource: MutableInteractionSource? = null,
+    indications: List<Indication>,
     enabled: Boolean = true,
     onClickLabel: String? = null,
     role: Role? = null,
@@ -31,7 +98,7 @@ fun Modifier.clickableYG(
     onClick: () -> Unit,
 ): Modifier = this then ClickableYGElement(
     interactionSource = interactionSource,
-    indication = indication,
+    indications = indications,
     enabled = enabled,
     onClickLabel = onClickLabel,
     role = role,
@@ -41,7 +108,7 @@ fun Modifier.clickableYG(
 
 private data class ClickableYGElement(
     val interactionSource: MutableInteractionSource?,
-    val indication: Indication?,
+    val indications: List<Indication>,
     val enabled: Boolean,
     val onClickLabel: String?,
     val role: Role?,
@@ -50,7 +117,7 @@ private data class ClickableYGElement(
 ) : ModifierNodeElement<ClickableYGNode>() {
     override fun create(): ClickableYGNode = ClickableYGNode(
         interactionSource = interactionSource,
-        indication = indication,
+        indications = indications,
         enabled = enabled,
         onClickLabel = onClickLabel,
         role = role,
@@ -61,7 +128,7 @@ private data class ClickableYGElement(
     override fun update(node: ClickableYGNode) {
         node.update(
             interactionSource = interactionSource,
-            indication = indication,
+            indications = indications,
             enabled = enabled,
             onClickLabel = onClickLabel,
             role = role,
@@ -81,7 +148,7 @@ private data class ClickableYGElement(
 
 private class ClickableYGNode(
     private var interactionSource: MutableInteractionSource?,
-    private var indication: Indication?,
+    private var indications: List<Indication>,
     private var enabled: Boolean,
     private var onClickLabel: String?,
     private var role: Role?,
@@ -94,7 +161,7 @@ private class ClickableYGNode(
     private val source: MutableInteractionSource
         get() = interactionSource ?: ownSource ?: MutableInteractionSource().also { ownSource = it }
 
-    private var indicationNode: DelegatableNode? = null
+    private val indicationNodes = mutableListOf<DelegatableNode>()
 
     init {
         delegate(
@@ -104,10 +171,8 @@ private class ClickableYGNode(
                         if (!enabled) {
                             return@detectTapGestures
                         }
-
                         val press = PressInteraction.Press(offset)
                         source.emit(press)
-
                         val released = tryAwaitRelease()
                         source.emit(
                             if (released) PressInteraction.Release(press) else PressInteraction.Cancel(press),
@@ -120,18 +185,16 @@ private class ClickableYGNode(
     }
 
     override fun onAttach() {
-        attachIndication()
+        attachIndications()
     }
 
-    private fun attachIndication() {
-        val current = indicationNode
-        if (current != null) {
-            undelegate(current)
-            indicationNode = null
-        }
-        val ind = indication
-        if (ind is IndicationNodeFactory) {
-            indicationNode = delegate(ind.create(source))
+    private fun attachIndications() {
+        indicationNodes.forEach { undelegate(it) }
+        indicationNodes.clear()
+        indications.forEach { indication ->
+            if (indication is IndicationNodeFactory) {
+                indicationNodes += delegate(indication.create(source))
+            }
         }
     }
 
@@ -139,9 +202,7 @@ private class ClickableYGNode(
         if (!enabled) {
             return
         }
-
         val mark = lastMark
-
         if (mark == null || mark.elapsedNow() >= windowMillis.milliseconds) {
             lastMark = TimeSource.Monotonic.markNow()
             onClick()
@@ -150,12 +211,10 @@ private class ClickableYGNode(
 
     override fun SemanticsPropertyReceiver.applySemantics() {
         this@ClickableYGNode.role?.let { role = it }
-
         onClick(label = onClickLabel) {
             performClick()
             true
         }
-
         if (!enabled) {
             disabled()
         }
@@ -163,26 +222,26 @@ private class ClickableYGNode(
 
     fun update(
         interactionSource: MutableInteractionSource?,
-        indication: Indication?,
+        indications: List<Indication>,
         enabled: Boolean,
         onClickLabel: String?,
         role: Role?,
         windowMillis: Long,
         onClick: () -> Unit,
     ) {
-        val indicationChanged = this.indication != indication || this.interactionSource != interactionSource
+        val indicationsChanged = this.indications != indications || this.interactionSource != interactionSource
         val semanticsChanged = this.enabled != enabled || this.role != role || this.onClickLabel != onClickLabel
 
         this.interactionSource = interactionSource
-        this.indication = indication
+        this.indications = indications
         this.enabled = enabled
         this.onClickLabel = onClickLabel
         this.role = role
         this.windowMillis = windowMillis
         this.onClick = onClick
 
-        if (indicationChanged) {
-            attachIndication()
+        if (indicationsChanged) {
+            attachIndications()
         }
         if (semanticsChanged) {
             invalidateSemantics()
