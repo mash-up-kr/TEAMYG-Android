@@ -15,8 +15,8 @@ import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.parfait.feature.camera.impl.component.CameraZoomIndicatorComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
-import com.teamyg.parfait.core.ui.preview.PreviewBox
-import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 internal fun CustomCameraScreen(

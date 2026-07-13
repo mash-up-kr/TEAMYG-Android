@@ -15,8 +15,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.KakaoDesignGuideColors
-import com.teamyg.parfait.core.ui.preview.PreviewBox
-import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.login.impl.R
 
 @Composable

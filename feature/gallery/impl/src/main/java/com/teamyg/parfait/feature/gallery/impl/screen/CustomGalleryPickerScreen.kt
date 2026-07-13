@@ -22,8 +22,8 @@ import com.teamyg.parfait.feature.gallery.impl.component.GalleryPartialAccessBan
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPermissionRequestComponent
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerState
-import com.teamyg.parfait.core.ui.preview.PreviewBox
-import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 
