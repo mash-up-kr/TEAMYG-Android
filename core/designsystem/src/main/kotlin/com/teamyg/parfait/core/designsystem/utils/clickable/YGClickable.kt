@@ -233,11 +233,9 @@ private class ClickableYGNode(
     private fun attachIndications() {
         indicationNodes.forEach { undelegate(it) }
         indicationNodes.clear()
-        indications.forEach { indication ->
-            if (indication is IndicationNodeFactory) {
-                indicationNodes += delegate(indication.create(source))
-            }
-        }
+        indicationNodes += indications
+            .filterIsInstance<IndicationNodeFactory>()
+            .map { delegate(it.create(source)) }
     }
 
     private fun performClick() {
