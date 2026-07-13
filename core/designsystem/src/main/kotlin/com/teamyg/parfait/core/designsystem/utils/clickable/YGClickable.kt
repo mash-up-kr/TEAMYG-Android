@@ -140,9 +140,12 @@ private class ClickableYGElement(
     override fun InspectorInfo.inspectableProperties() {
         name = "clickableYG"
         properties["enabled"] = enabled
-        properties["windowMillis"] = windowMillis
-        properties["role"] = role
+        properties["onClick"] = onClick
         properties["onClickLabel"] = onClickLabel
+        properties["role"] = role
+        properties["interactionSource"] = interactionSource
+        properties["indications"] = indications
+        properties["windowMillis"] = windowMillis
     }
 
     override fun equals(other: Any?): Boolean {
