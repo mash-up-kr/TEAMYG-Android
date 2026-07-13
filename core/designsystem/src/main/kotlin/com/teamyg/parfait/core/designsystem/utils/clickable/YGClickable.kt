@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.ui.utils.extensions
+package com.teamyg.parfait.core.designsystem.utils.clickable
 
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationNodeFactory
@@ -23,7 +23,7 @@ import kotlin.time.TimeSource
 
 fun Modifier.clickableYG(
     interactionSource: MutableInteractionSource? = null,
-    indication: Indication? = null,
+    indication: Indication? = ygDimRipple(),
     enabled: Boolean = true,
     onClickLabel: String? = null,
     role: Role? = null,
