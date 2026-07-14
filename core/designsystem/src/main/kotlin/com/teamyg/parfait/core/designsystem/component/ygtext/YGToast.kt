@@ -20,7 +20,6 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 sealed interface YGToastType {
-    // data object
     data class InviteCode(val text: String) : YGToastType
 
     data class Edit(val text: String) : YGToastType
