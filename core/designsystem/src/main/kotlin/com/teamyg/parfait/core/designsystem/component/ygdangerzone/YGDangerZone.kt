@@ -54,7 +54,6 @@ private fun YGDangerZonePreview() {
     YGCustomTheme {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
                 .background(Color.Black),
         ) {
             YGDangerZone(
@@ -62,17 +61,16 @@ private fun YGDangerZonePreview() {
                     YGActionItem(
                         text = "로그아웃",
                         onClick = {},
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 },
                 bottomZone = {
                     YGActionItem(
                         text = "서비스 탈퇴하기",
                         onClick = {},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier,
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier,
             )
         }
     }
