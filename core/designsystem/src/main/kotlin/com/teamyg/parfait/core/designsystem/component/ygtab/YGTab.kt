@@ -19,8 +19,8 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
 fun YGTab(
-    leftLayout: @Composable () -> Unit,
-    rightLayout: @Composable () -> Unit,
+    startLayout: @Composable () -> Unit,
+    endLayout: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -34,8 +34,8 @@ fun YGTab(
                 shape = YGTheme.shapes.radius.round,
             ).padding(all = YGTheme.layout.padding.padding2),
     ) {
-        leftLayout()
-        rightLayout()
+        startLayout()
+        endLayout()
     }
 }
 
@@ -48,7 +48,7 @@ fun YGTabPreview() {
             modifier = Modifier.fillMaxWidth(),
         ) {
             YGTab(
-                leftLayout = {
+                startLayout = {
                     YGToggleButton(
                         text = "Parfait",
                         isSelected = true,
@@ -56,7 +56,7 @@ fun YGTabPreview() {
                         iconResource = R.drawable.ic_plus,
                     )
                 },
-                rightLayout = {
+                endLayout = {
                     YGToggleButton(
                         text = "Parfait",
                         isSelected = false,
@@ -66,7 +66,7 @@ fun YGTabPreview() {
             )
 
             YGTab(
-                leftLayout = {
+                startLayout = {
                     YGToggleButton(
                         text = "Parfait",
                         isSelected = false,
@@ -74,7 +74,7 @@ fun YGTabPreview() {
                         iconResource = R.drawable.ic_plus,
                     )
                 },
-                rightLayout = {
+                endLayout = {
                     YGToggleButton(
                         text = "Parfait",
                         isSelected = true,
