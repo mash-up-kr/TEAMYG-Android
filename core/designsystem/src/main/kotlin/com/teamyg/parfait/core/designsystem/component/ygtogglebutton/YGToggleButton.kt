@@ -59,7 +59,7 @@ fun YGToggleButton(
                 start = if (iconResource != null) YGTheme.layout.padding.padding3 else YGTheme.layout.padding.padding5,
             ),
     ) {
-        iconResource?.let {
+        if (iconResource != null) {
             Image(
                 painter = painterResource(id = it),
                 contentDescription = null,
@@ -68,7 +68,7 @@ fun YGToggleButton(
                 ),
                 modifier = Modifier.size(24.dp),
             )
-        } ?: run {
+        } else {
             Spacer(modifier = Modifier.height(24.dp))
         }
         Text(
