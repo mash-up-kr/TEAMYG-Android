@@ -87,20 +87,18 @@ fun Modifier.clickableYGMergeRipple(
 
 @Composable
 internal fun Modifier.clickableYGThrottle(
-    interactionSource: MutableInteractionSource? = null,
     indications: List<Indication>,
     enabled: Boolean = true,
     onClickLabel: String? = null,
     role: Role? = null,
     windowMillis: Long = 300L,
+    interactionSource: MutableInteractionSource? = remember { MutableInteractionSource() },
     onClick: () -> Unit,
 ): Modifier {
-    val fallbackSource = remember { MutableInteractionSource() }
-    val source = interactionSource ?: fallbackSource
     val gate = remember { YGClickThrottleGate() }
     val indication = remember(indications) { indications.toYGIndication() }
     return this.clickable(
-        interactionSource = source,
+        interactionSource = interactionSource,
         indication = indication,
         enabled = enabled,
         onClickLabel = onClickLabel,
