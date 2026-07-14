@@ -61,7 +61,7 @@ fun YGToggleButton(
     ) {
         if (iconResource != null) {
             Image(
-                painter = painterResource(id = it),
+                painter = painterResource(id = iconResource),
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(
                     color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Transparency.Black50,
