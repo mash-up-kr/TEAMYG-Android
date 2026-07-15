@@ -34,4 +34,9 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
             NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
         }
     }
+
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        TODO("서버에 FCM 토큰 전송")
+    }
 }
