@@ -1,15 +1,13 @@
 package com.teamyg.parfait.fcm
 
 import android.Manifest
-import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.R
-
-private const val TAG = "YGFirebaseMessagingService"
+import com.teamyg.parfait.fcmLogger
 
 class YGFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
@@ -18,7 +16,7 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onRegistered(token: String) {
         super.onRegistered(token)
-        Log.d(TAG, "FCM Token: $token")
+        fcmLogger.d { "FCM Token: $token" }
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)

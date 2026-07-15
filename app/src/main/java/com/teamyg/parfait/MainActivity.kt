@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,8 +21,6 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.fcm.YGFirebaseMessagingService.Companion.CHANNEL_ID
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-
-private const val TAG = "MainActivity_Token"
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -47,9 +44,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                Log.d(TAG, "Token: ${task.result}")
+                tokenLogger.d { "Token: ${task.result}" }
             } else {
-                Log.d(TAG, "Token Failed: ${task.exception}")
+                tokenLogger.d { "Token Failed: ${task.exception}" }
             }
         }
         askNotificationPermission()
