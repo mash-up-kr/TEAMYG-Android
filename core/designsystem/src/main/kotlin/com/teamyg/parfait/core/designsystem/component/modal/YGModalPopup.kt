@@ -114,7 +114,7 @@ private fun YGModalPopupContent(
                 Text(
                     text = title,
                     style = YGTheme.typography.title.t03SB,
-                    color = Color(0xFF333333), // TODO Atomic 컬러
+                    color = YGAtomicColors.Gray.Gray900,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
