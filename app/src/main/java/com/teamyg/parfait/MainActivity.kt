@@ -34,9 +34,9 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission(),
     ) { isGranted: Boolean ->
         if (isGranted) {
-            // 알람승인
+            TODO("알람승인")
         } else {
-            // 알람거절
+            TODO("알람거절")
         }
     }
 
