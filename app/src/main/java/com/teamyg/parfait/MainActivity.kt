@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         askNotificationPermission()
-        createNotification()
+        createNotificationChannel()
         enableEdgeToEdge()
         setContent {
             YGCustomTheme {
@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun createNotification() {
+    private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
             "파르페알림",
