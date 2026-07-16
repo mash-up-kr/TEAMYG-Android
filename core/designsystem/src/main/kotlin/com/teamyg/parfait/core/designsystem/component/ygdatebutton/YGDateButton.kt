@@ -16,6 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,8 +42,10 @@ fun YGDateButton(
             .clickable(
                 onClick = onClick,
                 indication = null,
+                enabled = isEnabled,
                 interactionSource = remember { MutableInteractionSource() },
-            ).padding(SizeTokens.Size6.getDp())
+            ).semantics { role = Role.Button }
+            .padding(SizeTokens.Size6.getDp())
             .background(
                 color = when {
                     isEnabled.not() -> YGAtomicColors.Gray.Transparent
