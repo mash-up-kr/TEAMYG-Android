@@ -35,14 +35,13 @@ fun YGModalPopup(
     title: String,
     body: String,
     @DrawableRes iconRes: Int,
-    confirmText: String,
-    onConfirm: () -> Unit,
-    cancelText: String,
-    onCancel: () -> Unit,
+    secondaryText: String,
+    onSecondaryClick: () -> Unit,
+    primaryText: String,
+    onPrimaryClick: () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    confirmEnabled: Boolean = true,
-    cancelEnabled: Boolean = true,
+    isEnabledButton: Boolean = true,
     iconTint: Color = YGAtomicColors.Cherry.Cherry600,
     properties: DialogProperties = DialogProperties(),
 ) {
@@ -54,13 +53,12 @@ fun YGModalPopup(
             title = title,
             body = body,
             iconRes = iconRes,
-            confirmText = confirmText,
-            onConfirm = onConfirm,
-            cancelText = cancelText,
-            onCancel = onCancel,
+            secondaryText = secondaryText,
+            onSecondaryClick = onSecondaryClick,
+            primaryText = primaryText,
+            onPrimaryClick = onPrimaryClick,
             modifier = modifier,
-            confirmEnabled = confirmEnabled,
-            cancelEnabled = cancelEnabled,
+            isEnabledButton = isEnabledButton,
             iconTint = iconTint,
         )
     }
@@ -71,13 +69,12 @@ private fun YGModalPopupContent(
     title: String,
     body: String,
     @DrawableRes iconRes: Int,
-    confirmText: String,
-    onConfirm: () -> Unit,
-    cancelText: String,
-    onCancel: () -> Unit,
+    secondaryText: String,
+    onSecondaryClick: () -> Unit,
+    primaryText: String,
+    onPrimaryClick: () -> Unit,
     modifier: Modifier = Modifier,
-    confirmEnabled: Boolean = true,
-    cancelEnabled: Boolean = true,
+    isEnabledButton: Boolean = true,
     iconTint: Color = YGAtomicColors.Cherry.Cherry600,
 ) {
     Column(
@@ -141,18 +138,18 @@ private fun YGModalPopupContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             YGButton(
-                text = confirmText,
+                text = secondaryText,
                 buttonType = YGButtonType.Medium.Secondary,
-                isEnabled = confirmEnabled,
-                onClick = onConfirm,
+                isEnabled = isEnabledButton,
+                onClick = onSecondaryClick,
                 modifier = Modifier.weight(1f),
             )
 
             YGButton(
-                text = cancelText,
+                text = primaryText,
                 buttonType = YGButtonType.Medium.Primary,
-                isEnabled = cancelEnabled,
-                onClick = onCancel,
+                isEnabled = isEnabledButton,
+                onClick = onPrimaryClick,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -166,10 +163,10 @@ private fun PreviewYGModalPopup() = PreviewBox {
         title = "그룹에서 나갈까요?",
         body = "그룹에서 나가도\n그룹에 올렸던 사진은 지워지지 않아요",
         iconRes = R.drawable.ic_warning_round,
-        confirmText = "나가기",
-        onConfirm = {},
-        cancelText = "취소",
-        onCancel = {},
+        secondaryText = "나가기",
+        onSecondaryClick = {},
+        primaryText = "취소",
+        onPrimaryClick = {},
         onDismissRequest = {},
     )
 }
