@@ -71,6 +71,7 @@ fun YGInviteCard(
                 style = YGTheme.typography.body.b02R,
                 color = YGAtomicColors.Gray.Gray400,
             )
+
             Text(
                 text = subText,
                 style = YGTheme.typography.body.b02R,
@@ -93,6 +94,7 @@ fun YGInviteCard(
                     .weight(1f)
                     .fillMaxHeight(),
             )
+
             YGButton(
                 text = copyButtonText,
                 buttonType = YGButtonType.SmallSquare,
@@ -118,13 +120,14 @@ private fun InviteCodeBox(
         YGInviteCardStatus.Active -> YGAtomicColors.Gray.Gray900
         YGInviteCardStatus.Invalid -> YGAtomicColors.Gray.Gray500
     }
+
     Box(
         modifier = modifier
             .clip(YGTheme.shapes.radius.small)
             .background(backgroundColor)
             .padding(
-                horizontal = YGTheme.layout.gap.gap7,
-                vertical = YGTheme.layout.gap.gap3,
+                horizontal = YGTheme.layout.padding.padding8,
+                vertical = YGTheme.layout.padding.padding3,
             ),
         contentAlignment = Alignment.Center,
     ) {
