@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -97,15 +98,21 @@ private fun YGModalPopupContent(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding2),
+            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Image(
-                painter = painterResource(id = iconRes),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(iconTint),
+            Box(
                 modifier = Modifier.size(SizeTokens.Size48.getDp()),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    colorFilter = ColorFilter.tint(iconTint),
+                    modifier = Modifier.size(SizeTokens.Size32.getDp()),
+                )
+            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
