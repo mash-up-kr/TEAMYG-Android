@@ -23,12 +23,48 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 @Composable
 fun YGListItem(
     text: String,
+    @DrawableRes trailingIcon: Int,
+    onClickTrailingIcon: () -> Unit,
     modifier: Modifier = Modifier,
-    subText: String? = null,
-    @DrawableRes trailingIcon: Int? = null,
+    textColor: Color = YGAtomicColors.Gray.Gray800,
+) = YGListItemImpl(
+    text = text,
+    textColor = textColor,
+    modifier = modifier,
+) {
+    YGIconButton(
+        iconResource = trailingIcon,
+        size = YGIconButtonSize.SIZE_44,
+        contentDescription = null,
+        onClick = onClickTrailingIcon,
+    )
+}
+
+@Composable
+fun YGListItem(
+    text: String,
+    subText: String,
+    modifier: Modifier = Modifier,
     textColor: Color = YGAtomicColors.Gray.Gray800,
     subTextColor: Color = YGAtomicColors.Gray.Gray400,
-    onClick: () -> Unit = {},
+) = YGListItemImpl(
+    text = text,
+    textColor = textColor,
+    modifier = modifier,
+) {
+    Text(
+        text = subText,
+        style = YGTheme.typography.body.b02SB,
+        color = subTextColor,
+    )
+}
+
+@Composable
+private fun YGListItemImpl(
+    text: String,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit,
 ) {
     Row(
         modifier = modifier
@@ -47,22 +83,7 @@ fun YGListItem(
             modifier = Modifier.weight(1f),
         )
 
-        subText?.let {
-            Text(
-                text = subText,
-                style = YGTheme.typography.body.b02SB,
-                color = subTextColor,
-            )
-        }
-
-        trailingIcon?.let {
-            YGIconButton(
-                iconResource = trailingIcon,
-                size = YGIconButtonSize.SIZE_44,
-                contentDescription = null,
-                onClick = onClick,
-            )
-        }
+        trailing()
     }
 }
 
@@ -73,12 +94,12 @@ private fun YGListItemPreview() = PreviewBox {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        Text("trailingIcon + no sub")
+        Text("trailingIcon")
 
         YGListItem(
             text = "서비스 이용약관",
             trailingIcon = R.drawable.ic_caret_right,
-            onClick = {},
+            onClickTrailingIcon = {},
         )
 
         Text("sub")
@@ -86,14 +107,6 @@ private fun YGListItemPreview() = PreviewBox {
         YGListItem(
             text = "서비스 이용약관",
             subText = "부가 설명 텍스트",
-            onClick = {},
-        )
-
-        Text("no trailingIcon")
-
-        YGListItem(
-            text = "서비스 이용약관",
-            onClick = {},
         )
     }
 }
