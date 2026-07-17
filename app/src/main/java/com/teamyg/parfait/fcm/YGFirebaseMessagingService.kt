@@ -11,7 +11,6 @@ import com.teamyg.parfait.fcmLogger
 import kotlin.time.Clock
 
 class YGFirebaseMessagingService : FirebaseMessagingService() {
-
     override fun onRegistered(token: String) {
         super.onRegistered(token)
         fcmLogger.d { "FCM Token: $token" }
@@ -29,7 +28,13 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
                 .setContentText(remoteMessage.notification?.body)
                 .build()
 
-            NotificationManagerCompat.from(this).notify(Clock.System.now().toEpochMilliseconds().toInt(), notification)
+            NotificationManagerCompat.from(this).notify(
+                Clock.System
+                    .now()
+                    .toEpochMilliseconds()
+                    .toInt(),
+                notification,
+            )
         }
     }
 
@@ -41,5 +46,4 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
         const val CHANNEL_ID = "fcm_default_channel"
     }
-
 }
