@@ -20,7 +20,11 @@ fun TermAgreeRoute(
         viewModel.effect.collect {
             when (it) {
                 is TermAgreeSideEffect.NavigateToUrl -> { /* navigate to url */ }
-                is TermAgreeSideEffect.NavigateToBack -> { navigator.onBack() }
+
+                is TermAgreeSideEffect.NavigateToBack -> {
+                    navigator.onBack()
+                }
+
                 is TermAgreeSideEffect.NavigateToNext -> { /* navigate to next */ }
             }
         }

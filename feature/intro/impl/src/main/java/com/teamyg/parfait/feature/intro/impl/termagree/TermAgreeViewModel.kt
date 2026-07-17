@@ -18,28 +18,33 @@ data class TermAgreeState(
     val isAllSelected: Boolean = selectedList.all { it }
     val isAvailable: Boolean = termContentList
         .withIndex()
-        .all { it.value.isRequired && selectedList.getOrNull(it.index) == true }
+        .none { it.value.isRequired && selectedList.getOrNull(it.index) == false }
 }
 
 sealed interface TermAgreeIntent : UiIntent {
     data class ClickTermAgree(val index: Int, val newSelected: Boolean) : TermAgreeIntent
+
     data class ClickTermLandingUrl(val landingUrl: String?) : TermAgreeIntent
+
     data class ClickAgreeAllTerm(val newSelected: Boolean) : TermAgreeIntent
+
     data object ClickNextButton : TermAgreeIntent
+
     data object ClickBackButton : TermAgreeIntent
 }
 
 sealed interface TermAgreeSideEffect : UiSideEffect {
     data class NavigateToUrl(val landingUrl: String) : TermAgreeSideEffect
+
     data object NavigateToBack : TermAgreeSideEffect
+
     data object NavigateToNext : TermAgreeSideEffect
 }
 
 @HiltViewModel
 class TermAgreeViewModel
 @Inject
-constructor(
-) : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffect>(initialState = TermAgreeState()) {
+constructor() : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffect>(initialState = TermAgreeState()) {
     init {
         viewModelLogger.i { "TermAgreeViewModel::init" }
     }
@@ -51,7 +56,19 @@ constructor(
             }
 
             is TermAgreeIntent.ClickTermAgree -> {
-                updateState { copy(selectedList = selectedList.mapIndexed { index, selected -> if (index == intent.index) intent.newSelected else selected }) }
+                updateState {
+                    copy(
+                        selectedList = selectedList.mapIndexed { index, selected ->
+                            if (index ==
+                                intent.index
+                            ) {
+                                intent.newSelected
+                            } else {
+                                selected
+                            }
+                        },
+                    )
+                }
             }
 
             is TermAgreeIntent.ClickTermLandingUrl -> {

@@ -27,7 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
+import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -45,7 +45,7 @@ internal fun TermAgreeScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
-        YGTopBarEmpty(
+        YGTopBarBack(
             onIconClick = onClickBackButton,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -82,6 +82,13 @@ internal fun TermAgreeScreen(
                     Image(
                         painter = painterResource(DesignSystemR.drawable.ic_check_round),
                         contentDescription = null,
+                        colorFilter = ColorFilter.tint(
+                            color = if (state.isAllSelected) {
+                                YGAtomicColors.Gray.Black
+                            } else {
+                                YGAtomicColors.Gray.Gray200
+                            },
+                        ),
                         modifier = Modifier.size(36.dp),
                     )
                     Text(
@@ -93,6 +100,7 @@ internal fun TermAgreeScreen(
             }
 
             itemsIndexed(state.termContentList) { index, termContent ->
+                val isSelected = state.selectedList[index]
                 if (index == 0) {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                 }
@@ -102,22 +110,25 @@ internal fun TermAgreeScreen(
                         .fillMaxWidth()
                         .padding(horizontal = YGTheme.layout.gap.gap5, vertical = YGTheme.layout.gap.gap3),
                 ) {
-                    Image(
-                        painter = painterResource(DesignSystemR.drawable.ic_check),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Black),
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
-                    Text(
-                        text = termContent.visibleText,
-                        color = YGAtomicColors.Gray.Gray800,
-                        style = YGTheme.typography.body.b02R,
+                    Row(
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onClickTermAgree(index, state.selectedList[index].not()) },
-
+                            .clickable { onClickTermAgree(index, isSelected.not()) },
+                    ) {
+                        Image(
+                            painter = painterResource(DesignSystemR.drawable.ic_check),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Black),
+                            modifier = Modifier.size(18.dp),
                         )
+                        Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
+                        Text(
+                            text = termContent.visibleText,
+                            color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
+                            style = YGTheme.typography.body.b02R,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                     Image(
                         painter = painterResource(DesignSystemR.drawable.ic_caret_right),
@@ -136,7 +147,13 @@ internal fun TermAgreeScreen(
             buttonType = YGButtonType.Large,
             isEnabled = state.isAvailable,
             onClick = onClickNextButton,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    bottom = YGTheme.layout.padding.padding1,
+                ),
         )
     }
 }
