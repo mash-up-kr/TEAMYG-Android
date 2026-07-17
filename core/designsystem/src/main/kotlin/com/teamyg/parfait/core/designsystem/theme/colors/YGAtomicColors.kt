@@ -2,7 +2,7 @@ package com.teamyg.parfait.core.designsystem.theme.colors
 
 import androidx.compose.ui.graphics.Color
 
-internal object YGAtomicColors {
+object YGAtomicColors {
     object Gray {
         val White: Color = Color(0xFFFAFAFA)
         val Black: Color = Color(0xFF0E0E0E)
