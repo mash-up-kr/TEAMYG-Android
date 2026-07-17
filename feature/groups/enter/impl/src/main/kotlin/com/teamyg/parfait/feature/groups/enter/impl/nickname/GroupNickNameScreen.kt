@@ -70,9 +70,9 @@ internal fun GroupNickNameScreen(
                     onValueChange = { value -> onValueChanged(value) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = "닉네임을 입력해주세요", // Todo : placeholder 물어보기
-                    isError = false, // Todo : 작업 필요
+                    isError = uiState.errorMessage != null,
                     maxLength = NICKNAME_MAX_LENGTH,
-                    errorDescription = "", // Todo : 작업 필요
+                    errorDescription = uiState.errorMessage,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }

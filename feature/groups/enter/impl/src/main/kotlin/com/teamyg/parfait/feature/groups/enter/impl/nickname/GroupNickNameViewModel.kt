@@ -4,13 +4,17 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
-data class GroupNickNameUiState(val nickName: String = "") : UiState
+data class GroupNickNameUiState(
+    val nickName: String = "",
+    val errorMessage: String? = null,
+) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
-    data object ClickNextButton : GroupNickNameIntent
+    data class ClickNextButton(val nickName: String) : GroupNickNameIntent
 
     data object ClickBackButton : GroupNickNameIntent
 
@@ -26,16 +30,27 @@ sealed interface GroupNickNameSideEffect : UiSideEffect {
 @HiltViewModel
 class GroupNickNameViewModel
 @Inject
-constructor() : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
+constructor(
+    private val checkNickNameValid: CheckNameValidUseCase,
+) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(),
 ) {
     override fun processIntent(intent: GroupNickNameIntent) {
         when (intent) {
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
-            GroupNickNameIntent.ClickNextButton -> {
-                // Todo : 닉네임 판단로직 추가하기
-                postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+            is GroupNickNameIntent.ClickNextButton -> {
+                val result = checkNickNameValid(intent.nickName)
+                if (result.isSuccess) {
+                    updateState {
+                        copy(errorMessage = null)
+                    }
+                    postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+                } else {
+                    updateState {
+                        copy(errorMessage = result.errorMessage)
+                    }
+                }
             }
 
             is GroupNickNameIntent.InputWord -> {
