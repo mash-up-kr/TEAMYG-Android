@@ -30,7 +30,10 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "parfait"
-include(":app")
+include(
+    ":app",
+    ":app-preview",
+)
 include(
     ":core:designsystem",
     ":core:ui",

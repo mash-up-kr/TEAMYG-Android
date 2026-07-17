@@ -74,7 +74,7 @@ fun YGToggleButton(
         Text(
             text = text,
             color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Transparency.Black50,
-            style = YGTheme.typography.body.b01SB,
+            style = if (isSelected) YGTheme.typography.body.b01SB else YGTheme.typography.body.b01R,
         )
     }
 }
