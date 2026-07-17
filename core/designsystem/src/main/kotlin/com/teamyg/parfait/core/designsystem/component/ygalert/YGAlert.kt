@@ -33,17 +33,17 @@ fun YGAlert(
             .background(YGAtomicColors.Transparency.Black75)
             .padding(
                 vertical = YGTheme.layout.padding.padding5,
-                horizontal = YGTheme.layout.padding.padding7
+                horizontal = YGTheme.layout.padding.padding7,
             ),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         ) {
             Text(text = title, style = YGTheme.typography.body.b02SB, color = YGAtomicColors.Cherry.Cherry200)
             Text(text = sub, style = YGTheme.typography.body.b02R, color = YGAtomicColors.Transparency.White75)
         }
-        if(buttonText != null){
+        if (buttonText != null) {
             YGChipButton(
                 text = buttonText,
                 colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,

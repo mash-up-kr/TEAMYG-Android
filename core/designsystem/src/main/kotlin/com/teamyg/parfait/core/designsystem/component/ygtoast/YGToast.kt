@@ -38,7 +38,7 @@ fun YGToast(
             .background(color = YGAtomicColors.Transparency.Black75)
             .padding(
                 vertical = YGTheme.layout.padding.padding6,
-                horizontal = YGTheme.layout.padding.padding4
+                horizontal = YGTheme.layout.padding.padding4,
             ),
     ) {
         when (type) {

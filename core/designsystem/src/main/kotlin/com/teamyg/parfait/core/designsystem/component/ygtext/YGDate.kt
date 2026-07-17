@@ -5,11 +5,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-
 
 @Composable
 fun YGDate(
@@ -22,7 +20,7 @@ fun YGDate(
         color = YGAtomicColors.Gray.Gray600,
         modifier = modifier.padding(
             vertical = YGTheme.layout.padding.padding5,
-            horizontal = YGTheme.layout.padding.padding3
+            horizontal = YGTheme.layout.padding.padding3,
         ),
     )
 }
