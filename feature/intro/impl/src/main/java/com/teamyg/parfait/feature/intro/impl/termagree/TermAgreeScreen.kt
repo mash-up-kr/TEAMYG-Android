@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.intro.impl.termagree
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,19 +16,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.teamyg.parfait.core.ui.preview.PreviewBox
-import com.teamyg.parfait.core.ui.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
+import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun TermAgreeScreen(
@@ -40,22 +45,16 @@ internal fun TermAgreeScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
-        // Todo : topbar component 로 변경
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
-        ) {
-            // Todo : ic_caret_right 아이콘으로 교체
-            Spacer(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(Color.Red)
-                    .clickable { onClickBackButton() },
-            )
-        }
+        YGTopBarEmpty(
+            onIconClick = onClickBackButton,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 33.dp),
+            contentPadding = PaddingValues(
+                horizontal = YGTheme.layout.padding.padding7,
+                vertical = YGTheme.layout.padding.padding10,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
@@ -63,94 +62,81 @@ internal fun TermAgreeScreen(
             item {
                 Text(
                     text = "서비스 이용 약관에\n동의해 주세요",
-                    color = Color(0xFF7A7D82),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = YGTheme.typography.title.t01B,
+                    color = Color(0xFF333333), // Todo : 색상 컬러토큰으로 변경 문의
                 )
             }
+
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap9))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(color = Color(0xFFECECEE), shape = RoundedCornerShape(4.dp))
-                        .clip(shape = RoundedCornerShape(4.dp))
-                        .padding(8.dp)
+                        .background(color = YGAtomicColors.Gray.Gray100, shape = YGTheme.shapes.radius.small)
+                        .clip(shape = YGTheme.shapes.radius.small)
+                        .padding(YGTheme.layout.padding.padding3)
                         .clickable { onClickAgreeAllTerm(state.isAllSelected.not()) },
                 ) {
-                    // Todo : ic_check_button 아이콘으로 교체
-                    Spacer(
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(24.dp)
-                            .background(Color.Red),
+                    Image(
+                        painter = painterResource(DesignSystemR.drawable.ic_check_round),
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
                     )
                     Text(
                         text = "모두 동의하기",
-                        color = Color(0xFF29292C),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = YGTheme.typography.body.b01B,
+                        color = YGAtomicColors.Gray.Gray900,
                     )
                 }
             }
+
             itemsIndexed(state.termContentList) { index, termContent ->
                 if (index == 0) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = YGTheme.layout.gap.gap5, vertical = YGTheme.layout.gap.gap3),
                 ) {
-                    // Todo : ic_check 아이콘으로 교체
-                    Spacer(
-                        modifier = Modifier
-                            .size(18.dp)
-                            .background(Color.Red)
-                            .clickable { onClickTermAgree(index, state.selectedList[index].not()) },
+                    Image(
+                        painter = painterResource(DesignSystemR.drawable.ic_check),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Black),
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                     Text(
                         text = termContent.visibleText,
-                        color = Color(0xFF7A7D82),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
+                        color = YGAtomicColors.Gray.Gray800,
+                        style = YGTheme.typography.body.b02R,
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onClickTermAgree(index, state.selectedList[index].not()) },
 
                         )
-                    // Todo : ic_caret_right 아이콘으로 교체
-                    Spacer(
+                    Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
+                    Image(
+                        painter = painterResource(DesignSystemR.drawable.ic_caret_right),
+                        contentDescription = null,
+                        colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Gray500),
                         modifier = Modifier
                             .size(18.dp)
-                            .background(Color.Red)
                             .clickable { onClickTermLandingUrl(termContent.landingUrl) },
                     )
                 }
             }
         }
 
-        // Todo : large button component 로 변경
-        Text(
+        YGButton(
             text = "확인",
-            textAlign = TextAlign.Center,
-            color = Color(if (state.isAvailable) 0xFFFAFAFA else 0xFF7A7D82),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, bottom = 2.dp)
-                .background(
-                    color = Color(if (state.isAvailable) 0xFF29292C else 0xFFDDDEE0),
-                    shape = RoundedCornerShape(99.dp),
-                )
-                .clip(shape = RoundedCornerShape(99.dp))
-                .padding(vertical = 12.dp)
-                .clickable { onClickNextButton() },
+            buttonType = YGButtonType.Large,
+            isEnabled = state.isAvailable,
+            onClick = onClickNextButton,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
