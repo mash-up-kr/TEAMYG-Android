@@ -19,10 +19,10 @@ android {
 
     defaultConfig {
         applicationId = "com.teamyg.parfait"
-        versionCode = libs.versions.versionCode
+        versionCode = libs.versions.appVersionCode
             .get()
             .toInt()
-        versionName = libs.versions.versionName.get()
+        versionName = libs.versions.appVersionName.get()
 
         manifestPlaceholders["SCHEME_KAKAO_NATIVE_APP_KEY"] =
             "kakao${localProperties.getProperty("kakao.native.app.key")}"
