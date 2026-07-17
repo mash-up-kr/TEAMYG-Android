@@ -1,11 +1,10 @@
-package com.teamyg.parfait.core.designsystem.component.ygtext
+package com.teamyg.parfait.core.designsystem.component.ygtoast
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,9 +35,11 @@ fun YGToast(
         contentAlignment = Alignment.CenterStart,
         modifier = modifier
             .fillMaxWidth()
-            .height(41.dp)
             .background(color = YGAtomicColors.Transparency.Black75)
-            .padding(start = 16.dp),
+            .padding(
+                vertical = YGTheme.layout.padding.padding6,
+                horizontal = YGTheme.layout.padding.padding4
+            ),
     ) {
         when (type) {
             is YGToastType.InviteCode -> Text(
