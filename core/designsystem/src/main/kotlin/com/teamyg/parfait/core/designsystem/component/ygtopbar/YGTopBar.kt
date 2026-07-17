@@ -66,8 +66,8 @@ fun YGTopBarEmpty(
     modifier: Modifier = Modifier,
 ) {
     YGTopBarContent(
-        iconResource = R.drawable.ic_caret_left,
-        contentDescription = "뒤로가기",
+        iconResource = R.drawable.ic_hamburger,
+        contentDescription = "메뉴",
         onIconClick = onIconClick,
         modifier = modifier,
         titleContent = {
@@ -86,8 +86,8 @@ fun YGTopBarDefault(
     modifier: Modifier = Modifier,
 ) {
     YGTopBarContent(
-        iconResource = R.drawable.ic_caret_left,
-        contentDescription = "뒤로가기",
+        iconResource = R.drawable.ic_hamburger,
+        contentDescription = "메뉴",
         onIconClick = onIconClick,
         modifier = modifier,
         titleContent = {
@@ -146,7 +146,11 @@ private fun YGTopBarContent(
 @Composable
 fun YGTopBarPreview() {
     YGCustomTheme {
-        Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White),
+        ) {
             YGTopBarBack(onIconClick = { }, modifier = Modifier.fillMaxWidth())
             YGTopBarDetail(title = "그룹이름", onIconClick = { }, modifier = Modifier.fillMaxWidth())
             YGTopBarEmpty(onIconClick = { }, modifier = Modifier.fillMaxWidth())
