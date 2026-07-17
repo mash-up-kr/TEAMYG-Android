@@ -8,11 +8,9 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.R
 import com.teamyg.parfait.fcmLogger
+import kotlin.time.Clock
 
 class YGFirebaseMessagingService : FirebaseMessagingService() {
-    companion object {
-        const val CHANNEL_ID = "fcm_default_channel"
-    }
 
     override fun onRegistered(token: String) {
         super.onRegistered(token)
@@ -31,12 +29,17 @@ class YGFirebaseMessagingService : FirebaseMessagingService() {
                 .setContentText(remoteMessage.notification?.body)
                 .build()
 
-            NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
+            NotificationManagerCompat.from(this).notify(Clock.System.now().toEpochMilliseconds().toInt(), notification)
         }
     }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        TODO("서버에 FCM 토큰 전송")
+        // TODO("서버에 FCM 토큰 전송")
     }
+
+    companion object {
+        const val CHANNEL_ID = "fcm_default_channel"
+    }
+
 }
