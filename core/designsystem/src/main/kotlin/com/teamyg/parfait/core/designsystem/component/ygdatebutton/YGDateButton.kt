@@ -73,7 +73,7 @@ fun YGDateButton(
                 isToday -> YGAtomicColors.Gray.Gray950
                 else -> YGAtomicColors.Gray.Gray800
             },
-            style = YGTheme.typography.body.b02SB,
+            style = if (isSelected) YGTheme.typography.body.b02SB else YGTheme.typography.body.b02R,
             textAlign = TextAlign.Center,
         )
     }
