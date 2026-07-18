@@ -116,11 +116,11 @@ sealed interface YGButtonType {
                 @Composable
                 get() = YGButtonColors(
                     enabledForegroundColor = YGAtomicColors.Gray.White,
-                    disabledForegroundColor = YGAtomicColors.Gray.White,
-                    pressedForegroundColor = YGAtomicColors.Gray.Gray500,
+                    disabledForegroundColor = YGAtomicColors.Gray.Gray500,
+                    pressedForegroundColor = YGAtomicColors.Gray.White,
                     enabledBackgroundColor = YGAtomicColors.Gray.Gray900,
-                    disabledBackgroundColor = YGAtomicColors.Gray.Gray950,
-                    pressedBackgroundColor = YGAtomicColors.Gray.Gray200,
+                    disabledBackgroundColor = YGAtomicColors.Gray.Gray200,
+                    pressedBackgroundColor = YGAtomicColors.Gray.Gray950,
                 )
         }
 
@@ -160,8 +160,8 @@ sealed interface YGButtonType {
                 @Composable
                 get() = YGButtonColors(
                     enabledForegroundColor = YGAtomicColors.Gray.Gray900,
-                    disabledForegroundColor = YGAtomicColors.Gray.Gray900,
-                    pressedForegroundColor = YGAtomicColors.Gray.Gray500,
+                    disabledForegroundColor = YGAtomicColors.Gray.Gray500,
+                    pressedForegroundColor = YGAtomicColors.Gray.Gray900,
                     enabledBackgroundColor = YGAtomicColors.Gray.Gray100,
                     disabledBackgroundColor = YGAtomicColors.Gray.Gray200,
                     pressedBackgroundColor = YGAtomicColors.Gray.Gray200,
@@ -204,11 +204,11 @@ sealed interface YGButtonType {
                 @Composable
                 get() = YGButtonColors(
                     enabledForegroundColor = YGAtomicColors.Gray.Gray900,
-                    disabledForegroundColor = YGAtomicColors.Gray.Gray900,
-                    pressedForegroundColor = YGAtomicColors.Gray.Gray500,
+                    disabledForegroundColor = YGAtomicColors.Gray.Gray500,
+                    pressedForegroundColor = YGAtomicColors.Gray.Gray900,
                     enabledBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.5f),
-                    disabledBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.9f),
-                    pressedBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.5f),
+                    disabledBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.5f),
+                    pressedBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.9f),
                 )
         }
     }
