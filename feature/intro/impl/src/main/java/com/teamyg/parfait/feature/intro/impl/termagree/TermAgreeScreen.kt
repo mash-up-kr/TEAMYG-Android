@@ -63,7 +63,7 @@ internal fun TermAgreeScreen(
                 Text(
                     text = "서비스 이용 약관에\n동의해 주세요",
                     style = YGTheme.typography.title.t01B,
-                    color = Color(0xFF333333), // Todo : 색상 컬러토큰으로 변경 문의
+                    color = YGAtomicColors.Gray.Gray900,
                 )
             }
 
