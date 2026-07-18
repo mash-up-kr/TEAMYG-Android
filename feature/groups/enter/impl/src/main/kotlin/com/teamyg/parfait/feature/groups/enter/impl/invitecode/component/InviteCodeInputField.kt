@@ -61,6 +61,7 @@ private fun InviteCodeInputFieldPreview(
             InviteCodeInputFieldElement(
                 word = word,
                 isFocus = index == 0,
+                isError = false,
                 onValueChanged = { },
                 onClickTextFieldElement = { },
                 modifier = Modifier

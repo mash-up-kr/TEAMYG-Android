@@ -16,7 +16,7 @@ data class GroupInviteCodeUiState(
     val inputMode: InputMode = InputMode.ADD,
     val errorText: String? = null,
 ) : UiState {
-    val codeLength = 5
+    val codeLength = 6
 }
 
 enum class InputMode {
