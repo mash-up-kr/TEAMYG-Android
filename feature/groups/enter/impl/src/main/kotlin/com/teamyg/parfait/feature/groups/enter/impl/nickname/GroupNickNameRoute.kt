@@ -31,7 +31,7 @@ fun GroupNickNameRoute(
     GroupNickNameScreen(
         uiState = uiState,
         onValueChanged = { word -> viewModel.processIntent(GroupNickNameIntent.InputWord(word)) },
-        onClickNextButton = { viewModel.processIntent(GroupNickNameIntent.ClickNextButton(uiState.nickName)) },
+        onClickNextButton = { viewModel.processIntent(GroupNickNameIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupNickNameIntent.ClickBackButton) },
         modifier = modifier,
     )
