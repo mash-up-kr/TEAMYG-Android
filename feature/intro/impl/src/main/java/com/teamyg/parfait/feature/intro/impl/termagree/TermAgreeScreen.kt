@@ -37,7 +37,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 internal fun TermAgreeScreen(
     state: TermAgreeState,
     onClickTermAgree: (index: Int, newSelected: Boolean) -> Unit,
-    onClickTermLandingUrl: (landingUrl: String?) -> Unit,
+    onClickTermLandingUrl: (landingUrl: String) -> Unit,
     onClickAgreeAllTerm: (newSelected: Boolean) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
