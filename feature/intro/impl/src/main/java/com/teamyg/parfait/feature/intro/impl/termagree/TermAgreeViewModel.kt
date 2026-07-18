@@ -5,7 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.*
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToBack
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToNext
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToUrl
 import com.teamyg.parfait.feature.intro.impl.termagree.model.TERM_CONTENT_LIST
 import com.teamyg.parfait.feature.intro.impl.termagree.model.TermContent
 import dagger.hilt.android.lifecycle.HiltViewModel
