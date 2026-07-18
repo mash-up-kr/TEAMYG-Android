@@ -14,7 +14,7 @@ data class GroupNickNameUiState(
 ) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
-    data class ClickNextButton(val nickName: String) : GroupNickNameIntent
+    data object ClickNextButton : GroupNickNameIntent
 
     data object ClickBackButton : GroupNickNameIntent
 
@@ -40,7 +40,7 @@ constructor(
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
             is GroupNickNameIntent.ClickNextButton -> {
-                val result = checkNickNameValid(intent.nickName)
+                val result = checkNickNameValid(state.value.nickName)
                 if (result.isSuccess) {
                     updateState {
                         copy(errorMessage = null)
