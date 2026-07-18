@@ -24,7 +24,7 @@ data class TermAgreeState(
 sealed interface TermAgreeIntent : UiIntent {
     data class ClickTermAgree(val index: Int, val newSelected: Boolean) : TermAgreeIntent
 
-    data class ClickTermLandingUrl(val landingUrl: String?) : TermAgreeIntent
+    data class ClickTermLandingUrl(val landingUrl: String) : TermAgreeIntent
 
     data class ClickAgreeAllTerm(val newSelected: Boolean) : TermAgreeIntent
 
@@ -72,9 +72,7 @@ constructor() : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffe
             }
 
             is TermAgreeIntent.ClickTermLandingUrl -> {
-                intent.landingUrl?.let { landingUrl ->
-                    postSideEffect(NavigateToUrl(landingUrl))
-                }
+                postSideEffect(NavigateToUrl(intent.landingUrl))
             }
 
             TermAgreeIntent.ClickBackButton -> {
@@ -82,6 +80,7 @@ constructor() : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffe
             }
 
             TermAgreeIntent.ClickNextButton -> {
+                // Todo : TermAgree 저장 관련 로직 구현 예정 서버 or 앱내 논의 후 적용
                 postSideEffect(NavigateToNext)
             }
         }
