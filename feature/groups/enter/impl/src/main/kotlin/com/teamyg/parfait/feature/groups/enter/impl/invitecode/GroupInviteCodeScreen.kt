@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -35,82 +34,80 @@ internal fun GroupInviteCodeScreen(
     onClickBackButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            YGTopBarDetail(
-                title = "그룹 참여하기",
-                onIconClick = onClickBackButton,
-                modifier = Modifier.fillMaxWidth(),
-            )
+    Column(modifier = modifier) {
+        YGTopBarDetail(
+            title = "그룹 참여하기",
+            onIconClick = onClickBackButton,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    horizontal = YGTheme.layout.padding.padding7,
-                    vertical = YGTheme.layout.padding.padding10,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) {
-                item {
-                    Text(
-                        text = "초대코드를 입력해 주세요",
-                        color = YGAtomicColors.Gray.Gray900,
-                        style = YGTheme.typography.title.t02B,
-                    )
-                    Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
-                    Text(
-                        text = "초대코드는 그룹원에게 직접 받을 수 있어요",
-                        color = YGAtomicColors.Gray.Gray500,
-                        style = YGTheme.typography.body.b02R,
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(69.dp))
-                    InviteCodeInputField(
-                        text = uiState.text,
-                        maxLength = uiState.codeLength,
-                        horizontalSpace = YGTheme.layout.gap.gap3,
-                        modifier = Modifier.fillMaxWidth(),
-                        elementContent = { word, index ->
-                            InviteCodeInputFieldElement(
-                                word = word,
-                                isFocus = index == uiState.focusedIndex,
-                                isError = uiState.errorText != null,
-                                onValueChanged = { changed -> onValueChanged(index, changed) },
-                                onClickTextFieldElement = { onClickTextFieldElement(index) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(7 / 8f),
-                            )
-                        },
-                    )
-                }
-                if (uiState.errorText != null) {
-                    item {
-                        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
-                        Text(
-                            text = uiState.errorText,
-                            color = YGAtomicColors.Cherry.Cherry600,
-                            style = YGTheme.typography.caption.c01R,
+        LazyColumn(
+            contentPadding = PaddingValues(
+                horizontal = YGTheme.layout.padding.padding7,
+                vertical = YGTheme.layout.padding.padding10,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        ) {
+            item {
+                Text(
+                    text = "초대코드를 입력해 주세요",
+                    color = YGAtomicColors.Gray.Gray900,
+                    style = YGTheme.typography.title.t02B,
+                )
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
+                Text(
+                    text = "초대코드는 그룹원에게 직접 받을 수 있어요",
+                    color = YGAtomicColors.Gray.Gray500,
+                    style = YGTheme.typography.body.b02R,
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(69.dp))
+                InviteCodeInputField(
+                    text = uiState.text,
+                    maxLength = uiState.codeLength,
+                    horizontalSpace = YGTheme.layout.gap.gap3,
+                    modifier = Modifier.fillMaxWidth(),
+                    elementContent = { word, index ->
+                        InviteCodeInputFieldElement(
+                            word = word,
+                            isFocus = index == uiState.focusedIndex,
+                            isError = uiState.errorText != null,
+                            onValueChanged = { changed -> onValueChanged(index, changed) },
+                            onClickTextFieldElement = { onClickTextFieldElement(index) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .aspectRatio(7 / 8f),
                         )
-                    }
-                }
+                    },
+                )
+            }
+            if (uiState.errorText != null) {
                 item {
-                    Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap12))
+                    Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
+                    Text(
+                        text = uiState.errorText,
+                        color = YGAtomicColors.Cherry.Cherry600,
+                        style = YGTheme.typography.caption.c01R,
+                    )
                 }
             }
-
-            YGButton(
-                text = "확인",
-                buttonType = YGButtonType.Large,
-                isEnabled = uiState.text.length == uiState.codeLength,
-                onClick = onClickNextButton,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = YGTheme.layout.padding.padding7),
-            )
+            item {
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap12))
+            }
         }
+
+        YGButton(
+            text = "확인",
+            buttonType = YGButtonType.Large,
+            isEnabled = uiState.text.length == uiState.codeLength,
+            onClick = onClickNextButton,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(all = YGTheme.layout.padding.padding7),
+        )
     }
 }
 
