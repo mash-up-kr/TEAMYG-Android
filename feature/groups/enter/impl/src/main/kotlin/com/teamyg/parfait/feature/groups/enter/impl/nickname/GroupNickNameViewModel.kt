@@ -55,7 +55,10 @@ constructor(
 
             is GroupNickNameIntent.InputWord -> {
                 updateState {
-                    copy(nickName = intent.nickName)
+                    copy(
+                        nickName = intent.nickName,
+                        errorMessage = null,
+                    )
                 }
             }
         }
