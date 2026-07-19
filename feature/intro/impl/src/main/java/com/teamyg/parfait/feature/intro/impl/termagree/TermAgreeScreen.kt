@@ -107,7 +107,10 @@ internal fun TermAgreeScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = YGTheme.layout.gap.gap5, vertical = YGTheme.layout.gap.gap3),
+                        .padding(
+                            horizontal = YGTheme.layout.padding.padding6,
+                            vertical = YGTheme.layout.padding.padding3,
+                        ),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
