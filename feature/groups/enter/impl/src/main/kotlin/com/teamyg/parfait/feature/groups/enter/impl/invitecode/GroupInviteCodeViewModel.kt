@@ -87,7 +87,6 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = InputMode.ADD,
-                                errorText = null,
                             )
                         }
 
@@ -96,7 +95,6 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = if (newFocusedIndex == newText.length) InputMode.ADD else InputMode.EDIT,
-                                errorText = null,
                             )
                         }
                     }
