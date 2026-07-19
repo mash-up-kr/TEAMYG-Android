@@ -110,6 +110,7 @@ internal fun TermAgreeScreen(
                         .padding(horizontal = YGTheme.layout.gap.gap5, vertical = YGTheme.layout.gap.gap3),
                 ) {
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onClickTermAgree(index, isSelected.not()) },
