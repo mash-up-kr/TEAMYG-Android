@@ -61,9 +61,7 @@ constructor() : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffe
                 updateState {
                     copy(
                         selectedList = selectedList.mapIndexed { index, selected ->
-                            if (index ==
-                                intent.index
-                            ) {
+                            if (index == intent.index) {
                                 intent.newSelected
                             } else {
                                 selected
