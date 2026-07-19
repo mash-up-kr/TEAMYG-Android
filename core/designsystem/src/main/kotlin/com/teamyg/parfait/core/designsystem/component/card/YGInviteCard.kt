@@ -53,7 +53,7 @@ fun YGInviteCard(
                 width = SizeTokens.Size1.getDp(),
                 color = borderColor,
                 shape = YGTheme.shapes.radius.none,
-            ).clip(YGTheme.shapes.radius.medium1)
+            ).clip(YGTheme.shapes.radius.none)
             .background(YGAtomicColors.Gray.White)
             .padding(
                 horizontal = YGTheme.layout.padding.padding6,
