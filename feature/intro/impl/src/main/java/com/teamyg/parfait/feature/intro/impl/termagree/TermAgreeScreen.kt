@@ -125,8 +125,16 @@ internal fun TermAgreeScreen(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
+                        if (termContent.isRequired) {
+                            Text(
+                                text = "(필수)",
+                                color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
+                                style = YGTheme.typography.body.b02R,
+                            )
+                            Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
+                        }
                         Text(
-                            text = termContent.visibleText,
+                            text = termContent.title,
                             color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
                             style = YGTheme.typography.body.b02R,
                             modifier = Modifier.weight(1f),

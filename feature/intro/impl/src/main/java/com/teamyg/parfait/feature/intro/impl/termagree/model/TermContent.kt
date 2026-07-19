@@ -4,9 +4,7 @@ data class TermContent(
     val isRequired: Boolean,
     val title: String,
     val landingUrl: String,
-) {
-    val visibleText: String = (if (isRequired) "(필수) " else "") + title
-}
+)
 
 internal val TERM_CONTENT_LIST = listOf(
     TermContent(
