@@ -69,7 +69,7 @@ internal fun GroupNickNameScreen(
                     value = uiState.nickName,
                     onValueChange = { value -> onValueChanged(value) },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = "닉네임을 입력해주세요", // Todo : placeholder 물어보기
+                    placeholder = "그룹에서 사용할 닉네임을 입력해 주세요",
                     isError = uiState.errorMessage != null,
                     maxLength = NICKNAME_MAX_LENGTH,
                     errorDescription = uiState.errorMessage,
