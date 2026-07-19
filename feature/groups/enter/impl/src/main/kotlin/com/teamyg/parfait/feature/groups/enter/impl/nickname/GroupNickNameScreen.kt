@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
@@ -33,6 +37,12 @@ internal fun GroupNickNameScreen(
     onClickBackButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Column(modifier = modifier) {
         YGTopBarDetail(
             title = "그룹 참여하기",
@@ -68,7 +78,9 @@ internal fun GroupNickNameScreen(
                 YGTextFormField(
                     value = uiState.nickName,
                     onValueChange = { value -> onValueChanged(value) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                     placeholder = "그룹에서 사용할 닉네임을 입력해 주세요",
                     isError = uiState.errorMessage != null,
                     maxLength = NICKNAME_MAX_LENGTH,
