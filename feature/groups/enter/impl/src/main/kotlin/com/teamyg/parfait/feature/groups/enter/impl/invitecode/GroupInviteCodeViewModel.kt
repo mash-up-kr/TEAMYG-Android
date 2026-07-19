@@ -34,6 +34,8 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
 
     data object HideKeyboard : GroupInviteCodeIntent
+
+    data object FocusedFirstIndex : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
@@ -115,6 +117,10 @@ constructor(
 
             is GroupInviteCodeIntent.HideKeyboard -> {
                 updateState { copy(focusedIndex = null) }
+            }
+
+            is GroupInviteCodeIntent.FocusedFirstIndex -> {
+                updateState { copy(focusedIndex = 0) }
             }
         }
     }

@@ -44,6 +44,10 @@ fun GroupInviteCodeRoute(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.processIntent(GroupInviteCodeIntent.FocusedFirstIndex)
+    }
+
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.focusedIndex == null) {
             keyboardController?.hide()
