@@ -5,6 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -33,13 +36,14 @@ sealed interface GroupCreateSideEffect : UiSideEffect {
     data object NavigateToNext : GroupCreateSideEffect
 }
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = GroupCreateViewModel.Factory::class)
 class GroupCreateViewModel
-@Inject
+@AssistedInject
 constructor(
+    @Assisted nickName: String,
     private val checkNameValid: CheckNameValidUseCase,
 ) : BaseViewModel<GroupCreateUiState, GroupCreateIntent, GroupCreateSideEffect>(
-    initialState = GroupCreateUiState(),
+    initialState = GroupCreateUiState(nickName = nickName),
 ) {
     override fun processIntent(intent: GroupCreateIntent) {
         when (intent) {
@@ -67,5 +71,10 @@ constructor(
                 }
             }
         }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(nickName: String): GroupCreateViewModel
     }
 }
