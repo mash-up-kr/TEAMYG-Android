@@ -14,7 +14,8 @@ import com.teamyg.parfait.feature.app.setting.api.NavKeyPrivacyPolicy
 import com.teamyg.parfait.feature.app.setting.api.NavKeyServiceTerms
 import com.teamyg.parfait.feature.app.setting.impl.route.AccountInfoRoute
 import com.teamyg.parfait.feature.app.setting.impl.route.AppSettingRoute
-import com.teamyg.parfait.feature.app.setting.impl.route.TermsRoute
+import com.teamyg.parfait.feature.app.setting.impl.route.PrivacyPolicyRoute
+import com.teamyg.parfait.feature.app.setting.impl.route.ServiceTermsRoute
 
 fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigator) {
     entry<NavKeyAppSetting> {
@@ -41,7 +42,7 @@ fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigato
 
     entry<NavKeyServiceTerms> {
         Scaffold { innerPadding ->
-            TermsRoute(
+            ServiceTermsRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
@@ -52,7 +53,7 @@ fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigato
 
     entry<NavKeyPrivacyPolicy> {
         Scaffold { innerPadding ->
-            TermsRoute(
+            PrivacyPolicyRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
