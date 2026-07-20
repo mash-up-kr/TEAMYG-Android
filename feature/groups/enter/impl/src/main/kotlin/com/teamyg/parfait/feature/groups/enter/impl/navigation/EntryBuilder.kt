@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.screen.YGScaffold
@@ -14,8 +15,10 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateRoute
+import com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateViewModel
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.GroupInviteCodeRoute
 import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameRoute
 
@@ -58,13 +61,18 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
 }
 
 fun EntryProviderScope<NavKey>.featureGroupCreateEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupInviteCode> { _ ->
+    entry<NavKeyGroupCreate> { navKey ->
+        val viewModel = hiltViewModel<GroupCreateViewModel, GroupCreateViewModel.Factory>(
+            creationCallback = { factory -> factory.create(navKey.nickName) },
+        )
+
         YGScaffold(
             contentWindowInsets = WindowInsets(0.dp),
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             GroupCreateRoute(
                 navigator = navigator,
+                viewModel = viewModel,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
