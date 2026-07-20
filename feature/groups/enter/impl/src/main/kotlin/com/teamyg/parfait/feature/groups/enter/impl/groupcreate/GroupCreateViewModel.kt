@@ -9,7 +9,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 
 data class GroupCreateUiState(
     val groupName: String = "",
@@ -17,7 +16,7 @@ data class GroupCreateUiState(
     val groupNumber: Int? = null,
     val groupNameErrorText: String? = null,
 ) : UiState {
-    val isValid = groupName.isEmpty() && nickName.isNotEmpty() && groupNumber != null
+    val isValid = groupName.isNotEmpty() && nickName.isNotEmpty() && groupNumber != null
 }
 
 sealed interface GroupCreateIntent : UiIntent {
@@ -54,11 +53,16 @@ constructor(
             }
 
             is GroupCreateIntent.InputGroupName -> {
-                updateState { copy(groupName = intent.newGroupName) }
+                updateState {
+                    copy(
+                        groupName = intent.newGroupName,
+                        groupNameErrorText = null,
+                    )
+                }
             }
 
             GroupCreateIntent.ClickNextButton -> {
-                val result = checkNameValid(state.value.nickName)
+                val result = checkNameValid(state.value.groupName)
                 if (result.isSuccess) {
                     updateState {
                         copy(groupNameErrorText = null)

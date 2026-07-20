@@ -35,7 +35,7 @@ fun GroupCreateRoute(
         uiState = uiState,
         onClickNextButton = { viewModel.processIntent(GroupCreateIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupCreateIntent.ClickBackButton) },
-        onGroupNameChanged = { viewModel.processIntent(GroupCreateIntent.InputGroupName(it) )},
+        onGroupNameChanged = { viewModel.processIntent(GroupCreateIntent.InputGroupName(it)) },
         onClickGroupNumber = { viewModel.processIntent(GroupCreateIntent.ClickGroupNumber(it)) },
         modifier = modifier.imePadding(),
     )

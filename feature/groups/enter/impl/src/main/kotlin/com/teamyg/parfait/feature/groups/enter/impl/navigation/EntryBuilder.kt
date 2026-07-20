@@ -67,6 +67,7 @@ fun EntryProviderScope<NavKey>.featureGroupCreateEntryBuilder(navigator: Navigat
         )
 
         YGScaffold(
+            containerColor = YGAtomicColors.Gray.White,
             contentWindowInsets = WindowInsets(0.dp),
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
