@@ -16,10 +16,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGActionItem(
@@ -32,7 +32,7 @@ fun YGActionItem(
 
     Box(
         modifier = modifier
-            .clickable(onClick = onClick, interactionSource = interactionSource)
+            .clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
             .semantics { role = Role.Button }
             .padding(
                 vertical = YGTheme.layout.padding.padding5,
@@ -47,20 +47,18 @@ fun YGActionItem(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
-fun YGActionItemPreview() {
-    YGCustomTheme {
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            YGActionItem(
-                text = "그룹 나가기",
-                onClick = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White),
-            )
-        }
+fun YGActionItemPreview() = PreviewBox {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        YGActionItem(
+            text = "그룹 나가기",
+            onClick = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White),
+        )
     }
 }
