@@ -89,7 +89,7 @@ internal fun GroupCreateScreen(
                     onValueChange = {}, // no-op
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = "그룹명을 입력해 주세요",
-                    enabled = true,
+                    enabled = false,
                     maxLength = NICKNAME_MAX_LENGTH,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
