@@ -82,9 +82,15 @@ internal fun NotionWebView(
                         }
                     }
                     webViewRef = this
-                    loadUrl(url)
                 }
             },
+            update = { webView ->
+                if (webView.tag != url) {
+                    webView.tag = url
+                    webView.loadUrl(url)
+                }
+            },
+            onRelease = { webView -> webView.destroy() },
             modifier = Modifier.fillMaxSize(),
         )
 
