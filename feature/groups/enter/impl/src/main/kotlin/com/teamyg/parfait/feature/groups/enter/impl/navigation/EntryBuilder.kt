@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
+import com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateRoute
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.GroupInviteCodeRoute
 import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameRoute
 
@@ -48,6 +49,24 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
                 modifier = Modifier
                     .fillMaxSize()
                     .background(YGAtomicColors.Gray.White)
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+                    .navigationBarsAndImePadding(),
+            )
+        }
+    }
+}
+
+fun EntryProviderScope<NavKey>.featureGroupCreateEntryBuilder(navigator: Navigator) {
+    entry<NavKeyGroupInviteCode> { _ ->
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) { innerPadding ->
+            GroupCreateRoute(
+                navigator = navigator,
+                modifier = Modifier
+                    .fillMaxSize()
                     .padding(innerPadding)
                     .statusBarsPadding()
                     .navigationBarsAndImePadding(),
