@@ -20,7 +20,7 @@ import com.teamyg.parfait.feature.groups.enter.impl.invitecode.GroupInviteCodeRo
 import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameRoute
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupInviteCode> { _ ->
+    entry<NavKeyGroupInviteCode> {
         YGScaffold(
             contentWindowInsets = WindowInsets(0.dp),
             modifier = Modifier.fillMaxSize(),
@@ -59,7 +59,7 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
 
 fun EntryProviderScope<NavKey>.featureGroupCreateEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupInviteCode> { _ ->
-        Scaffold(
+        YGScaffold(
             contentWindowInsets = WindowInsets(0.dp),
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
