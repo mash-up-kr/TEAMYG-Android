@@ -37,6 +37,8 @@ internal fun GroupCreateScreen(
     uiState: GroupCreateUiState,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
+    onGroupNameChanged: (newGroupName: String) -> Unit,
+    onClickGroupNumber: (newSelectedNumber: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -65,13 +67,13 @@ internal fun GroupCreateScreen(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                 YGTextFormField(
                     value = uiState.groupName,
-                    onValueChange = {}, // Todo : 구현
+                    onValueChange = onGroupNameChanged,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = "그룹명을 입력해 주세요",
                     enabled = true,
-                    isError = false, // Todo : 구현
+                    isError = uiState.groupNameErrorText != null,
                     maxLength = GROUP_NAME_MAX_LENGTH,
-                    errorDescription = "", // Todo : 구현
+                    errorDescription = uiState.groupNameErrorText,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -108,11 +110,11 @@ internal fun GroupCreateScreen(
                     verticalPadding = 6.dp,
                     horizontalPadding = 7.dp,
                     modifier = Modifier.fillMaxWidth(),
-                ) { number ->
+                ) { selectedNumber ->
                     YGInputNumber(
-                        number = number,
-                        isSelected = uiState.groupNumber == number,
-                        onClick = { }, // Todo : 구현
+                        number = selectedNumber,
+                        isSelected = uiState.groupNumber == selectedNumber,
+                        onClick = { onClickGroupNumber(selectedNumber) },
                     )
                 }
 
@@ -161,6 +163,8 @@ private fun GroupCreateScreenPreview(
         uiState = uiState,
         onClickNextButton = {},
         onClickBackButton = {},
+        onGroupNameChanged = {},
+        onClickGroupNumber = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

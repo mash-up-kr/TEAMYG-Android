@@ -1,9 +1,7 @@
 package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,7 +18,6 @@ fun GroupCreateRoute(
     viewModel: GroupCreateViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
-    val imeVisible = WindowInsets.isImeVisible
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -34,16 +31,12 @@ fun GroupCreateRoute(
         }
     }
 
-    LaunchedEffect(imeVisible) {
-        if (imeVisible.not()) {
-            viewModel.processIntent(GroupCreateIntent.HideKeyboard)
-        }
-    }
-
     GroupCreateScreen(
         uiState = uiState,
         onClickNextButton = { viewModel.processIntent(GroupCreateIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupCreateIntent.ClickBackButton) },
+        onGroupNameChanged = { viewModel.processIntent(GroupCreateIntent.InputGroupName(it) )},
+        onClickGroupNumber = { viewModel.processIntent(GroupCreateIntent.ClickGroupNumber(it)) },
         modifier = modifier.imePadding(),
     )
 }
