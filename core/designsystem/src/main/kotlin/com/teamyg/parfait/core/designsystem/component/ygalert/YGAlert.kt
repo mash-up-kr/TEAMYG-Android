@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
@@ -47,6 +48,7 @@ fun YGAlert(
             YGChipButton(
                 text = buttonText,
                 colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                endIconResource = R.drawable.ic_caret_right,
                 onClick = onButtonClick ?: {},
             )
         }
