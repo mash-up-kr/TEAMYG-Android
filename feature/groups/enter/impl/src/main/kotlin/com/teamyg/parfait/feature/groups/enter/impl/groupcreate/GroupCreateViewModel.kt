@@ -8,12 +8,25 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 data class GroupCreateUiState(
-    val text: String = "",
-) : UiState
+    val groupName: String = "",
+    val nickName: String = "",
+    val groupNumber: Int? = null,
+) : UiState {
+    val isValid = groupName.isEmpty() && nickName.isNotEmpty() && groupNumber != null
+}
+
 sealed interface GroupCreateIntent : UiIntent {
+    data object ClickNextButton : GroupCreateIntent
+
+    data object ClickBackButton : GroupCreateIntent
+
+    data object HideKeyboard : GroupCreateIntent
 }
 
 sealed interface GroupCreateSideEffect : UiSideEffect {
+    data object NavigateToBack : GroupCreateSideEffect
+
+    data object NavigateToNext : GroupCreateSideEffect
 }
 
 @HiltViewModel
