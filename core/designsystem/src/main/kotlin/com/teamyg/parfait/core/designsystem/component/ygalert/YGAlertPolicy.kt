@@ -44,7 +44,10 @@ class YGAlertPolicy {
         sub: String,
     ) {
         alert = YGAlertItem(
-            id = Clock.System.now().toEpochMilliseconds().toString(),
+            id = Clock.System
+                .now()
+                .toEpochMilliseconds()
+                .toString(),
             title = title,
             sub = sub,
         )

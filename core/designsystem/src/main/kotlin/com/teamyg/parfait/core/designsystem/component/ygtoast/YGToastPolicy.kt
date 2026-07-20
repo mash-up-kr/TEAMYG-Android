@@ -44,7 +44,10 @@ class YGToastPolicy {
         toasts.add(
             0,
             YGToast(
-                id = Clock.System.now().toEpochMilliseconds().toString(),
+                id = Clock.System
+                    .now()
+                    .toEpochMilliseconds()
+                    .toString(),
                 type = type,
             ),
         )
