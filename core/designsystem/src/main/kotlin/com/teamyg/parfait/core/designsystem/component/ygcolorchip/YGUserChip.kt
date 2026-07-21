@@ -19,13 +19,12 @@ import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
-
-sealed interface YGUserNameStyle{
+sealed interface YGUserNameStyle {
     val textStyle: TextStyle
         @Composable get
     val textColor: Color
 
-    data object StyleMedium: YGUserNameStyle{
+    data object StyleMedium : YGUserNameStyle {
         override val textStyle: TextStyle
             @Composable
             get() = YGTheme.typography.body.b02R
@@ -33,7 +32,7 @@ sealed interface YGUserNameStyle{
             get() = YGAtomicColors.Gray.Gray800
     }
 
-    data object StyleBold: YGUserNameStyle{
+    data object StyleBold : YGUserNameStyle {
         override val textStyle: TextStyle
             @Composable
             get() = YGTheme.typography.body.b02SB
@@ -53,7 +52,7 @@ fun YGUserChip(
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         YGColorChip(
             colorChipType = colorChipType,
@@ -64,10 +63,9 @@ fun YGUserChip(
         Text(
             text = userName,
             color = userStyle.textColor,
-            style = userStyle.textStyle
+            style = userStyle.textStyle,
         )
     }
-
 }
 
 @Preview
@@ -95,4 +93,3 @@ private fun YGUserChipPreview() {
         }
     }
 }
-

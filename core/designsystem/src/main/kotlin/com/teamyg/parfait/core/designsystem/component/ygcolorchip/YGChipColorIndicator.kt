@@ -12,19 +12,17 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
-fun YGChipColorIndicator(
-    modifier: Modifier = Modifier
-){
+fun YGChipColorIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(4.dp)
             .clip(CircleShape)
-            .background(YGAtomicColors.Cherry.Cherry)
+            .background(YGAtomicColors.Cherry.Cherry),
     )
 }
 
 @Preview
 @Composable
-private fun YGChipColorIndicatorPreview(){
+private fun YGChipColorIndicatorPreview() {
     YGChipColorIndicator()
 }
