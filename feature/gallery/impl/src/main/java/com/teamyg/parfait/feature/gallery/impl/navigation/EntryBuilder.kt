@@ -2,10 +2,10 @@ package com.teamyg.parfait.feature.gallery.impl.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.core.navigation.Navigator
