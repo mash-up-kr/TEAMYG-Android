@@ -30,7 +30,7 @@ private const val ANIMATION_DURATION = 300
 private const val SWIPE_DISMISS_THRESHOLD = -100f
 private const val FLING_DISMISS_VELOCITY = -500f
 
-data class YGToast(
+data class YGToastItem(
     val id: String,
     val type: YGToastType,
     val visible: Boolean = true,
@@ -38,12 +38,12 @@ data class YGToast(
 
 @Stable
 class YGToastPolicy {
-    val toasts = mutableStateListOf<YGToast>()
+    val toasts = mutableStateListOf<YGToastItem>()
 
     fun show(type: YGToastType) {
         toasts.add(
             0,
-            YGToast(
+            YGToastItem(
                 id = Clock.System
                     .now()
                     .toEpochMilliseconds()
