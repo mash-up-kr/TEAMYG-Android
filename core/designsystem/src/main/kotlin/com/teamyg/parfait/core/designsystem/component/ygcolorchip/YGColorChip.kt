@@ -16,13 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 sealed interface YGColorChipStyle {
     val colorChipSize: Dp
@@ -72,16 +72,15 @@ fun YGColorChip(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
 private fun YGChipPreview(
     @PreviewParameter(YGColorChipPreviewParameterProvider::class)
     data: YGChipPreviewData,
-) {
-    YGCustomTheme {
-        Column {
-            Text(data.name)
-            Spacer(modifier = Modifier.height(5.dp))
+) = PreviewBox {
+    Column {
+        Text(data.name)
+        Spacer(modifier = Modifier.height(5.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 YGColorChip(

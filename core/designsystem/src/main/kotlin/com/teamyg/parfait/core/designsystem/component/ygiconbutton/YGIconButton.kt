@@ -15,11 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGIconButton(
@@ -57,21 +57,19 @@ fun YGIconButton(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
 private fun YGIconButtonPreview(
     @PreviewParameter(YGIconButtonPreviewParameterProvider::class)
     data: YGIconButtonPreviewData,
-) {
-    YGCustomTheme {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            YGIconButton(
-                iconResource = R.drawable.ic_close_round,
-                size = data.buttonIconSize,
-                onClick = {},
-                contentDescription = null,
-                isEnabled = data.isEnabled,
-            )
-        }
+) = PreviewBox {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        YGIconButton(
+            iconResource = R.drawable.ic_close_round,
+            size = data.buttonIconSize,
+            onClick = {},
+            contentDescription = null,
+            isEnabled = data.isEnabled,
+        )
     }
 }

@@ -15,15 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGTopBarBack(
@@ -142,19 +142,17 @@ private fun YGTopBarContent(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
-fun YGTopBarPreview() {
-    YGCustomTheme {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White),
-        ) {
-            YGTopBarBack(onIconClick = { }, modifier = Modifier.fillMaxWidth())
-            YGTopBarDetail(title = "그룹이름", onIconClick = { }, modifier = Modifier.fillMaxWidth())
-            YGTopBarEmpty(onIconClick = { }, modifier = Modifier.fillMaxWidth())
-            YGTopBarDefault(onChipClick = { }, onIconClick = { }, modifier = Modifier.fillMaxWidth())
-        }
+fun YGTopBarPreview() = PreviewBox {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White),
+    ) {
+        YGTopBarBack(onIconClick = { }, modifier = Modifier.fillMaxWidth())
+        YGTopBarDetail(title = "그룹이름", onIconClick = { }, modifier = Modifier.fillMaxWidth())
+        YGTopBarEmpty(onIconClick = { }, modifier = Modifier.fillMaxWidth())
+        YGTopBarDefault(onChipClick = { }, onIconClick = { }, modifier = Modifier.fillMaxWidth())
     }
 }
