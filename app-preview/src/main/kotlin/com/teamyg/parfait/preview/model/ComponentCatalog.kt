@@ -1,0 +1,122 @@
+package com.teamyg.parfait.preview.model
+
+import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGHorizontalDivider
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGIconButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGInviteCard
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGLabel
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGToggleButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
+
+enum class ComponentCategory(val label: String) {
+    BUTTON("Button"),
+    INPUT("Input"),
+    TEXT("Text"),
+    CONTAINER("Container"),
+    BAR("Bar"),
+}
+
+data class ComponentEntry(
+    val category: ComponentCategory,
+    val label: String,
+    val navKey: NavKey,
+)
+
+val componentCatalog: List<ComponentEntry> = listOf(
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGButton",
+        navKey = NavKeyYGButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGChipButton",
+        navKey = NavKeyYGChipButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGToggleButton",
+        navKey = NavKeyYGToggleButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGIconButton",
+        navKey = NavKeyYGIconButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGDateButton",
+        navKey = NavKeyYGDateButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGInputNumber",
+        navKey = NavKeyYGInputNumber,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.INPUT,
+        label = "YGTextField",
+        navKey = NavKeyYGTextField,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.INPUT,
+        label = "YGTextFormField",
+        navKey = NavKeyYGTextFormField,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGLabel",
+        navKey = NavKeyYGLabel,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGDate",
+        navKey = NavKeyYGDate,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGActionItem",
+        navKey = NavKeyYGActionItem,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGModalPopup",
+        navKey = NavKeyYGModalPopup,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGInviteCard",
+        navKey = NavKeyYGInviteCard,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGDangerZone",
+        navKey = NavKeyYGDangerZone,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGListItem",
+        navKey = NavKeyYGListItem,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGHorizontalDivider",
+        navKey = NavKeyYGHorizontalDivider,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BAR,
+        label = "YGTopBar",
+        navKey = NavKeyYGTopBar,
+    ),
+)
