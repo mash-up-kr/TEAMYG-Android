@@ -48,7 +48,7 @@ sealed interface YGColorChipStyle {
 @Composable
 fun YGColorChip(
     colorChipType: YGColorChipType,
-    text: String,
+    userFirstName: String,
     chip: YGColorChipStyle,
     modifier: Modifier = Modifier,
 ) {
@@ -65,7 +65,7 @@ fun YGColorChip(
             ),
     ) {
         Text(
-            text = text,
+            text = userFirstName,
             color = colorChipType.textColor,
             style = chip.textStyle,
         )
@@ -86,12 +86,12 @@ private fun YGChipPreview(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 YGColorChip(
                     colorChipType = data.colorChipType,
-                    text = "문",
+                    userFirstName = "문",
                     chip = YGColorChipStyle.Style28,
                 )
                 YGColorChip(
                     colorChipType = data.colorChipType,
-                    text = "문",
+                    userFirstName = "문",
                     chip = YGColorChipStyle.Style40,
                 )
             }
