@@ -82,18 +82,17 @@ private fun YGChipPreview(
         Text(data.name)
         Spacer(modifier = Modifier.height(5.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                YGColorChip(
-                    colorChipType = data.colorChipType,
-                    userFirstName = "문",
-                    chip = YGColorChipStyle.Style28,
-                )
-                YGColorChip(
-                    colorChipType = data.colorChipType,
-                    userFirstName = "문",
-                    chip = YGColorChipStyle.Style40,
-                )
-            }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            YGColorChip(
+                colorChipType = data.colorChipType,
+                userFirstName = "문",
+                chip = YGColorChipStyle.Style28,
+            )
+            YGColorChip(
+                colorChipType = data.colorChipType,
+                userFirstName = "문",
+                chip = YGColorChipStyle.Style40,
+            )
         }
     }
 }
