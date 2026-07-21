@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
+import java.util.UUID
 
 private const val DISMISS_DELAY = 2500L
 private const val ANIMATION_DURATION = 300
@@ -44,10 +44,7 @@ class YGAlertPolicy {
         sub: String,
     ) {
         alert = YGAlertItem(
-            id = Clock.System
-                .now()
-                .toEpochMilliseconds()
-                .toString(),
+            id = UUID.randomUUID().toString(),
             title = title,
             sub = sub,
         )

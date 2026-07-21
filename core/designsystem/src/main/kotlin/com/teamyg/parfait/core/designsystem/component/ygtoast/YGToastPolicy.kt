@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
+import java.util.UUID
 
 private const val DISMISS_DELAY = 2000L
 private const val ANIMATION_DURATION = 300
@@ -44,10 +44,7 @@ class YGToastPolicy {
         toasts.add(
             0,
             YGToastItem(
-                id = Clock.System
-                    .now()
-                    .toEpochMilliseconds()
-                    .toString(),
+                id = UUID.randomUUID().toString(),
                 type = type,
             ),
         )
