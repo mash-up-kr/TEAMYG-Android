@@ -3,10 +3,9 @@ plugins {
 }
 
 android {
-    namespace = "com.teamyg.parfait.feature.app.setting.impl"
+    namespace = "com.teamyg.parfait.feature.common.terms.impl"
 }
 
 dependencies {
-    implementation(projects.feature.app.setting.api)
     implementation(projects.feature.common.terms.api)
 }

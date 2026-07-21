@@ -5,6 +5,4 @@
     <string name="setting_item_service_terms">서비스 이용약관</string>
     <string name="setting_item_privacy_policy">개인정보 처리 방침</string>
     <string name="setting_item_version">버전 정보</string>
-    <string name="setting_webview_error_message">페이지를 불러오지 못했어요</string>
-    <string name="setting_webview_retry">다시 시도</string>
 </resources>

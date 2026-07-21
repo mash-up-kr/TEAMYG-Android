@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.app.setting.impl.component
+package com.teamyg.parfait.feature.common.terms.impl.component
 
 import android.graphics.Bitmap
 import android.view.ViewGroup
@@ -27,7 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.feature.app.setting.impl.R
+import com.teamyg.parfait.feature.common.terms.impl.R
 
 @Composable
 internal fun NotionWebView(
@@ -151,12 +151,12 @@ private fun NotionWebViewError(
         modifier = modifier,
     ) {
         Text(
-            text = stringResource(R.string.setting_webview_error_message),
+            text = stringResource(R.string.terms_webview_error_message),
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray500,
         )
         Text(
-            text = stringResource(R.string.setting_webview_retry),
+            text = stringResource(R.string.terms_webview_retry),
             style = YGTheme.typography.body.b01R,
             color = YGAtomicColors.Cherry.Cherry600,
             modifier = Modifier.clickable(onClick = onRetry),

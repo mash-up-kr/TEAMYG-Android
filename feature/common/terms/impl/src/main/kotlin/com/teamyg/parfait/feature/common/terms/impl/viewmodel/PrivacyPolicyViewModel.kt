@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.app.setting.impl.viewmodel
+package com.teamyg.parfait.feature.common.terms.impl.viewmodel
 
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent

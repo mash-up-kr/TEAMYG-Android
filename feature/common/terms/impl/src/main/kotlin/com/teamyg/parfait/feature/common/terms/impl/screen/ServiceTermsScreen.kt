@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.app.setting.impl.screen
+package com.teamyg.parfait.feature.common.terms.impl.screen
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,8 +9,8 @@ import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.app.setting.impl.R
-import com.teamyg.parfait.feature.app.setting.impl.component.NotionWebView
+import com.teamyg.parfait.feature.common.terms.impl.R
+import com.teamyg.parfait.feature.common.terms.impl.component.NotionWebView
 
 @Composable
 internal fun ServiceTermsScreen(
@@ -20,7 +20,7 @@ internal fun ServiceTermsScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         YGTopBarDetail(
-            title = stringResource(R.string.setting_item_service_terms),
+            title = stringResource(R.string.terms_service_title),
             onIconClick = onClickBack,
             modifier = Modifier.fillMaxWidth(),
         )
