@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -31,7 +32,9 @@ fun GroupInviteCodeRoute(
                     navigator.onBack()
                 }
 
-                GroupInviteCodeSideEffect.NavigateToNext -> { /* navigate to next */ }
+                GroupInviteCodeSideEffect.NavigateToNext -> {
+                    navigator.goTo(NavKeyGroupNickName)
+                }
             }
         }
     }
