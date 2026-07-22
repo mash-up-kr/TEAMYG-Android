@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
@@ -26,6 +27,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.groups.enter.impl.R
 
 private const val NICKNAME_MAX_LENGTH = 15
 
@@ -45,7 +47,7 @@ internal fun GroupNickNameScreen(
 
     Column(modifier = modifier) {
         YGTopBarDetail(
-            title = "그룹 참여하기",
+            title = stringResource(R.string.group_enter),
             onIconClick = onClickBackButton,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -61,13 +63,13 @@ internal fun GroupNickNameScreen(
         ) {
             item {
                 Text(
-                    text = "그룹이름에서 사용할\n닉네임을 입력해 주세요",
+                    text = stringResource(R.string.group_nickname_title),
                     color = YGAtomicColors.Gray.Gray900,
                     style = YGTheme.typography.title.t02B,
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
                 Text(
-                    text = "그룹이름에서만 공유되는 닉네임이에요",
+                    text = stringResource(R.string.group_nickname_description),
                     color = YGAtomicColors.Gray.Gray500,
                     style = YGTheme.typography.body.b02R,
                 )
@@ -81,7 +83,7 @@ internal fun GroupNickNameScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
-                    placeholder = "그룹에서 사용할 닉네임을 입력해 주세요",
+                    placeholder = stringResource(R.string.group_nickname_placeholder),
                     isError = uiState.errorMessage != null,
                     maxLength = NICKNAME_MAX_LENGTH,
                     errorDescription = uiState.errorMessage,
@@ -91,7 +93,7 @@ internal fun GroupNickNameScreen(
         }
 
         YGButton(
-            text = "확인",
+            text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
             isEnabled = uiState.nickName.isNotEmpty(),
             onClick = onClickNextButton,

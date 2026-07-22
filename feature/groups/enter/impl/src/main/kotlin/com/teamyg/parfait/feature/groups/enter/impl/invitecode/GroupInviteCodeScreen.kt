@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
 
@@ -36,7 +38,7 @@ internal fun GroupInviteCodeScreen(
 ) {
     Column(modifier = modifier) {
         YGTopBarDetail(
-            title = "그룹 참여하기",
+            title = stringResource(R.string.group_enter),
             onIconClick = onClickBackButton,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -52,13 +54,13 @@ internal fun GroupInviteCodeScreen(
         ) {
             item {
                 Text(
-                    text = "초대코드를 입력해 주세요",
+                    text = stringResource(R.string.group_invite_title),
                     color = YGAtomicColors.Gray.Gray900,
                     style = YGTheme.typography.title.t02B,
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
                 Text(
-                    text = "초대코드는 그룹원에게 직접 받을 수 있어요",
+                    text = stringResource(R.string.group_invite_description),
                     color = YGAtomicColors.Gray.Gray500,
                     style = YGTheme.typography.body.b02R,
                 )
@@ -100,7 +102,7 @@ internal fun GroupInviteCodeScreen(
         }
 
         YGButton(
-            text = "확인",
+            text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
             isEnabled = uiState.text.length == uiState.codeLength,
             onClick = onClickNextButton,
