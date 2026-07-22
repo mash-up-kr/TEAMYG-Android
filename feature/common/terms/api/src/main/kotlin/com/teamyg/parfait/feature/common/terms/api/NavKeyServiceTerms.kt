@@ -1,7 +1,7 @@
-package com.teamyg.parfait.feature.app.setting.api
+package com.teamyg.parfait.feature.common.terms.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object NavKeyPrivacyPolicy : NavKey
+data object NavKeyServiceTerms : NavKey

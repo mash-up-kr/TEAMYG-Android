@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.app.setting.impl.navigation
+package com.teamyg.parfait.feature.common.terms.impl.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -6,17 +6,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
-import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
-import com.teamyg.parfait.feature.app.setting.impl.route.AccountInfoRoute
-import com.teamyg.parfait.feature.app.setting.impl.route.AppSettingRoute
+import com.teamyg.parfait.feature.common.terms.api.NavKeyPrivacyPolicy
+import com.teamyg.parfait.feature.common.terms.api.NavKeyServiceTerms
+import com.teamyg.parfait.feature.common.terms.impl.route.PrivacyPolicyRoute
+import com.teamyg.parfait.feature.common.terms.impl.route.ServiceTermsRoute
 
-fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigator) {
-    entry<NavKeyAppSetting> {
-        Scaffold(containerColor = YGAtomicColors.Gray.White) { innerPadding ->
-            AppSettingRoute(
+fun EntryProviderScope<NavKey>.featureCommonTermsEntryBuilder(navigator: Navigator) {
+    entry<NavKeyServiceTerms> {
+        Scaffold { innerPadding ->
+            ServiceTermsRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
@@ -25,9 +24,9 @@ fun EntryProviderScope<NavKey>.featureAppSettingEntryBuilder(navigator: Navigato
         }
     }
 
-    entry<NavKeyAccountInfo> {
+    entry<NavKeyPrivacyPolicy> {
         Scaffold { innerPadding ->
-            AccountInfoRoute(
+            PrivacyPolicyRoute(
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
