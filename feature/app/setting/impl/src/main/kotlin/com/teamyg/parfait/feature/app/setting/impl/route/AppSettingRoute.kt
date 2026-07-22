@@ -8,8 +8,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
-import com.teamyg.parfait.feature.app.setting.api.NavKeyPrivacyPolicy
-import com.teamyg.parfait.feature.app.setting.api.NavKeyServiceTerms
+import com.teamyg.parfait.feature.common.terms.api.NavKeyPrivacyPolicy
+import com.teamyg.parfait.feature.common.terms.api.NavKeyServiceTerms
 import com.teamyg.parfait.feature.app.setting.impl.screen.AppSettingScreen
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingIntent
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingSideEffect

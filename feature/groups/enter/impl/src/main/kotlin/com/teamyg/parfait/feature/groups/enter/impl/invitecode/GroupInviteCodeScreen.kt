@@ -24,6 +24,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupInviteCodeScreen(

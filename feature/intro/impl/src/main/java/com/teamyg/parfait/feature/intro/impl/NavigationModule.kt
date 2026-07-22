@@ -17,4 +17,10 @@ object NavigationModule {
     fun provideFeatureSplashEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
         featureSplashEntryBuilder(navigator = it)
     }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureTermAgreeEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureTermAgreeEntryBuilder(navigator = it)
+    }
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
+import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -28,53 +29,57 @@ internal fun AppSettingScreen(
     onClickPrivacy: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        YGTopBarBack(
-            onIconClick = onClickBack,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    paddingValues = PaddingValues(
-                        top = YGTheme.layout.padding.padding8,
-                    ),
-                ),
-        ) {
-            ProfileCard(
-                nickname = state.nickname,
-                loginProvider = state.loginProvider,
-                modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
+    YGScreen(modifier = modifier) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            YGTopBarBack(
+                onIconClick = onClickBack,
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
-                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        paddingValues = PaddingValues(
+                            top = YGTheme.layout.padding.padding8,
+                        ),
+                    ),
             ) {
-                YGListItem(
-                    text = stringResource(R.string.setting_item_account),
-                    trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                    onClickTrailingIcon = onClickAccount,
+                ProfileCard(
+                    nickname = state.nickname,
+                    loginProvider = state.loginProvider,
+                    modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                 )
-                YGListItem(
-                    text = stringResource(R.string.setting_item_service_terms),
-                    trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                    onClickTrailingIcon = onClickTerms,
-                )
-                YGListItem(
-                    text = stringResource(R.string.setting_item_privacy_policy),
-                    trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                    onClickTrailingIcon = onClickPrivacy,
-                )
-                YGListItem(
-                    text = stringResource(R.string.setting_item_version),
-                    subText = state.version,
-                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_account),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickAccount,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_service_terms),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickTerms,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_privacy_policy),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickPrivacy,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_version),
+                        subText = state.version,
+                    )
+                }
             }
         }
+
+        OnBack { onClickBack() }
     }
 }
 

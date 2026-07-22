@@ -2,10 +2,10 @@ package com.teamyg.parfait.feature.groups.canvas.impl.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSelect
@@ -18,7 +18,7 @@ import com.teamyg.parfait.feature.canvas.impl.route.CanvasMoveRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasImageAdd> {
-        Scaffold { innerPadding ->
+        YGScaffold { innerPadding ->
             CanvasImageAddRoute(
                 navigator = navigator,
                 modifier = Modifier
@@ -28,7 +28,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         }
     }
     entry<NavKeyCanvasEdit> { navKey ->
-        Scaffold { innerPadding ->
+        YGScaffold { innerPadding ->
             CanvasEditRoute(
                 imageUri = navKey.imageUri,
                 navigator = navigator,
@@ -40,7 +40,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     }
 
     entry<NavKeyCanvasImageSelect> {
-        Scaffold { innerPadding ->
+        YGScaffold { innerPadding ->
             CanvasImageSelectRoute(
                 navigator = navigator,
                 modifier = Modifier
@@ -51,7 +51,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     }
 
     entry<NavKeyCanvasMove> {
-        Scaffold { innerPadding ->
+        YGScaffold { innerPadding ->
             CanvasMoveRoute(
                 image = it.imageUri,
                 navigator = navigator,

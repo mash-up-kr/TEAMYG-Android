@@ -62,6 +62,11 @@ include(
 )
 
 include(
+    ":feature:common:terms:api",
+    ":feature:common:terms:impl",
+)
+
+include(
     ":feature:groups:canvas:api",
     ":feature:groups:canvas:impl",
     ":feature:groups:enter:api",
