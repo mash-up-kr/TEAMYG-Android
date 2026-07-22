@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
+import com.teamyg.parfait.feature.groups.enter.impl.R
 
 private const val GROUP_NAME_MAX_LENGTH = 10
 private const val NICKNAME_MAX_LENGTH = 10
@@ -43,7 +45,7 @@ internal fun GroupCreateScreen(
 ) {
     Column(modifier = modifier) {
         YGTopBarDetail(
-            title = "그룹 만들기",
+            title = stringResource(R.string.group_create),
             onIconClick = onClickBackButton,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -61,7 +63,7 @@ internal fun GroupCreateScreen(
         ) {
             item {
                 YGLabel(
-                    text = "그룹명",
+                    text = stringResource(R.string.group_name_label),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
@@ -69,7 +71,7 @@ internal fun GroupCreateScreen(
                     value = uiState.groupName,
                     onValueChange = onGroupNameChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = "그룹명을 입력해 주세요",
+                    placeholder = stringResource(R.string.group_name_placeholder),
                     enabled = true,
                     isError = uiState.groupNameErrorText != null,
                     maxLength = GROUP_NAME_MAX_LENGTH,
@@ -80,7 +82,7 @@ internal fun GroupCreateScreen(
             item {
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap8))
                 YGLabel(
-                    text = "그룹 속 내 닉네임",
+                    text = stringResource(R.string.group_nickname_label),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
@@ -88,7 +90,7 @@ internal fun GroupCreateScreen(
                     value = uiState.nickName,
                     onValueChange = {}, // no-op
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = "그룹명을 입력해 주세요",
+                    placeholder = stringResource(R.string.group_nickname_placeholder),
                     enabled = false,
                     maxLength = NICKNAME_MAX_LENGTH,
                     colors = YGTextFormFieldDefaults.colors(),
@@ -98,7 +100,7 @@ internal fun GroupCreateScreen(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap8))
 
                 YGLabel(
-                    text = "그룹 인원",
+                    text = stringResource(R.string.group_count_label),
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -121,7 +123,7 @@ internal fun GroupCreateScreen(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
                 Text(
-                    text = "그룹명과 인원수는 추후 변경할 수 없어요",
+                    text = stringResource(R.string.group_count_description),
                     style = YGTheme.typography.caption.c01R,
                     color = YGAtomicColors.Gray.Gray300,
                 )
@@ -129,7 +131,7 @@ internal fun GroupCreateScreen(
         }
 
         YGButton(
-            text = "확인",
+            text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
             isEnabled = uiState.isValid,
             onClick = onClickNextButton,
