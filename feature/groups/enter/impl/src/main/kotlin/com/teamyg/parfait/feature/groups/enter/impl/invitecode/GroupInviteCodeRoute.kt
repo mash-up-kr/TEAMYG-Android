@@ -25,6 +25,8 @@ fun GroupInviteCodeRoute(
     val imeVisible = WindowInsets.isImeVisible
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // Todo : 클립보드 확인 후 자동복붙하는 기능은 추후 추가 예정
+
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -43,6 +45,10 @@ fun GroupInviteCodeRoute(
         if (imeVisible.not()) {
             viewModel.processIntent(GroupInviteCodeIntent.HideKeyboard)
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.processIntent(GroupInviteCodeIntent.FocusedFirstIndex)
     }
 
     LaunchedEffect(uiState.focusedIndex) {
