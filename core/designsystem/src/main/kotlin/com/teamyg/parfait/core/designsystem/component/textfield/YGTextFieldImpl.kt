@@ -40,7 +40,7 @@ internal fun YGTextFieldImpl(
     val showCounter = maxLength != null && value.isNotEmpty()
     val showClear = enabled && value.isNotEmpty()
 
-    val commonShape: Shape = YGTheme.shapes.radius.small
+    val commonShape: Shape = YGTheme.shapes.radius.none
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap5),
