@@ -1,51 +1,52 @@
 package com.teamyg.parfait.domain.usecase.group
 
 import com.teamyg.parfait.core.util.jvm.extension.isKorean
-import com.teamyg.parfait.domain.model.NickNameResult
+import com.teamyg.parfait.domain.model.NicknameResult
 import javax.inject.Inject
 
 class CheckNameValidUseCase
 @Inject
 constructor() {
-    operator fun invoke(nickName: String): NickNameResult {
+    operator fun invoke(nickName: String): NicknameResult {
         NameValidation.entries.forEach { validation ->
             if (validation.isValid(nickName).not()) {
-                return NickNameResult(
-                    isSuccess = false,
-                    errorMessage = validation.errorMessage,
-                )
+                return validation.error
             }
         }
 
-        return NickNameResult(
-            isSuccess = true,
-            errorMessage = null,
-        )
+        return NicknameResult.Success
     }
 }
 
 private enum class NameValidation(
     val isValid: (String) -> Boolean,
-    val errorMessage: String,
+    val error: NicknameResult.Error,
 ) {
-    CheckSpaceStartOrEnd(
-        isValid = { nickName ->
-            nickName.startsWith(" ").not() && nickName.endsWith(" ").not()
+    CheckEmpty(
+        isValid = { nickname ->
+            nickname.isNotEmpty()
         },
-        errorMessage = "닉네임의 처음과 끝에는 공백을 사용할 수 없어요",
+        error = NicknameResult.Error.Empty,
+    ),
+
+    CheckSpaceStartOrEnd(
+        isValid = { nickname ->
+            nickname.startsWith(" ").not() && nickname.endsWith(" ").not()
+        },
+        error = NicknameResult.Error.SpaceAtEdge,
     ),
 
     CheckDuplicatedSpace(
-        isValid = { nickName ->
-            nickName.indexOf("  ") == -1
+        isValid = { nickname ->
+            nickname.indexOf("  ") == -1
         },
-        errorMessage = "공백은 글자 사이에 1칸만 사용할 수 있어요",
+        error = NicknameResult.Error.DuplicatedSpace,
     ),
 
     CheckValidCharacter(
-        isValid = { nickName ->
-            nickName.all { it.isWhitespace() || it.isDigit() || it.isLetter() || it.isKorean() }
+        isValid = { nickname ->
+            nickname.all { it.isWhitespace() || it.isDigit() || it.isLetter() || it.isKorean() }
         },
-        errorMessage = "한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요",
+        error = NicknameResult.Error.InvalidCharacter,
     ),
 }

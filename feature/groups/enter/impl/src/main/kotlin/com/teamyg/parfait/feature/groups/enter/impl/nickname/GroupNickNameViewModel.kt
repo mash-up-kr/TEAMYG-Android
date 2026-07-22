@@ -4,13 +4,14 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.model.NicknameResult
 import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 data class GroupNickNameUiState(
     val nickName: String = "",
-    val errorMessage: String? = null,
+    val nickNameError: NicknameResult.Error? = null,
 ) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
@@ -40,15 +41,18 @@ constructor(
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
             is GroupNickNameIntent.ClickNextButton -> {
-                val result = checkNickNameValid(state.value.nickName)
-                if (result.isSuccess) {
-                    updateState {
-                        copy(errorMessage = null)
+                when (val result = checkNickNameValid(state.value.nickName)) {
+                    is NicknameResult.Success -> {
+                        updateState {
+                            copy(nickNameError = null)
+                        }
+                        postSideEffect(GroupNickNameSideEffect.NavigateToNext)
                     }
-                    postSideEffect(GroupNickNameSideEffect.NavigateToNext)
-                } else {
-                    updateState {
-                        copy(errorMessage = result.errorMessage)
+
+                    is NicknameResult.Error -> {
+                        updateState {
+                            copy(nickNameError = result)
+                        }
                     }
                 }
             }
@@ -57,7 +61,7 @@ constructor(
                 updateState {
                     copy(
                         nickName = intent.nickName,
-                        errorMessage = null,
+                        nickNameError = null,
                     )
                 }
             }

@@ -26,6 +26,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.text.toStringResource
 
 private const val NICKNAME_MAX_LENGTH = 15
 
@@ -82,9 +83,9 @@ internal fun GroupNickNameScreen(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = "그룹에서 사용할 닉네임을 입력해 주세요",
-                    isError = uiState.errorMessage != null,
+                    isError = uiState.nickNameError != null,
                     maxLength = NICKNAME_MAX_LENGTH,
-                    errorDescription = uiState.errorMessage,
+                    errorDescription = uiState.nickNameError?.toStringResource(),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }

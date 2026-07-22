@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nickname_error_empty">닉네임은 비워둘 수 없어요</string>
+    <string name="nickname_error_space_at_edge">닉네임의 처음과 끝에는 공백을 사용할 수 없어요</string>
+    <string name="nickname_error_duplicated_space">공백은 글자 사이에 1칸만 사용할 수 있어요</string>
+    <string name="nickname_error_invalid_character">한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요</string>
+</resources>
