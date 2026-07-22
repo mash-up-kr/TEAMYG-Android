@@ -3,10 +3,10 @@ package com.teamyg.parfait.core.designsystem.component.ygtext
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGLabel(
@@ -21,10 +21,8 @@ fun YGLabel(
     )
 }
 
-@Preview
+@YGPreview
 @Composable
-private fun YGLabelPreview() {
-    YGCustomTheme {
-        YGLabel(text = "레이블")
-    }
+private fun YGLabelPreview() = PreviewBox {
+    YGLabel(text = "레이블")
 }

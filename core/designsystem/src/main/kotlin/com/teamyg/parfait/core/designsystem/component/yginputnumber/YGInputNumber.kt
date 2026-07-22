@@ -14,11 +14,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
@@ -55,19 +55,17 @@ fun YGInputNumber(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
 private fun YGInputNumberPreview(
     @PreviewParameter(YGInputNumberPreviewParameterProvider::class)
     data: YGInputNumberPreviewData,
-) {
-    YGCustomTheme {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            YGInputNumber(
-                number = 3,
-                isSelected = data.isSelected,
-                onClick = {},
-            )
-        }
+) = PreviewBox {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        YGInputNumber(
+            number = 3,
+            isSelected = data.isSelected,
+            onClick = {},
+        )
     }
 }

@@ -25,11 +25,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 
 @Composable
@@ -102,21 +102,19 @@ fun YGChipButton(
     }
 }
 
-@Preview(showBackground = true)
+@YGPreview
 @Composable
 private fun YGChipButtonPreview(
     @PreviewParameter(YGChipButtonPreviewParameterProvider::class)
     data: YGChipButtonPreviewData,
-) {
-    YGCustomTheme {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            YGChipButton(
-                text = "Parfait",
-                onClick = {},
-                startIconResource = data.startIconResource,
-                colors = data.colors,
-                endIconResource = data.endIconResource,
-            )
-        }
+) = PreviewBox {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        YGChipButton(
+            text = "Parfait",
+            onClick = {},
+            startIconResource = data.startIconResource,
+            colors = data.colors,
+            endIconResource = data.endIconResource,
+        )
     }
 }

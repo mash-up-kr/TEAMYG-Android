@@ -20,11 +20,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 
 @Composable
@@ -79,48 +79,46 @@ fun YGDateButton(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
-private fun YGDateButtonPreview() {
-    YGCustomTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = Color.White),
-        ) {
-            YGDateButton(
-                text = "31",
-                isSelected = false,
-                isToday = false,
-                isEnabled = true,
-                onClick = {},
-                modifier = Modifier.size(44.dp),
-            )
-            YGDateButton(
-                text = "31",
-                isSelected = true,
-                isToday = false,
-                isEnabled = true,
-                onClick = {},
-                modifier = Modifier.size(44.dp),
-            )
-            YGDateButton(
-                text = "31",
-                isSelected = false,
-                isToday = true,
-                isEnabled = true,
-                onClick = {},
-                modifier = Modifier.size(44.dp),
-            )
-            YGDateButton(
-                text = "31",
-                isSelected = false,
-                isToday = false,
-                isEnabled = false,
-                onClick = {},
-                modifier = Modifier.size(44.dp),
-            )
-        }
+private fun YGDateButtonPreview() = PreviewBox {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = Color.White),
+    ) {
+        YGDateButton(
+            text = "31",
+            isSelected = false,
+            isToday = false,
+            isEnabled = true,
+            onClick = {},
+            modifier = Modifier.size(44.dp),
+        )
+        YGDateButton(
+            text = "31",
+            isSelected = true,
+            isToday = false,
+            isEnabled = true,
+            onClick = {},
+            modifier = Modifier.size(44.dp),
+        )
+        YGDateButton(
+            text = "31",
+            isSelected = false,
+            isToday = true,
+            isEnabled = true,
+            onClick = {},
+            modifier = Modifier.size(44.dp),
+        )
+        YGDateButton(
+            text = "31",
+            isSelected = false,
+            isToday = false,
+            isEnabled = false,
+            onClick = {},
+            modifier = Modifier.size(44.dp),
+        )
     }
 }

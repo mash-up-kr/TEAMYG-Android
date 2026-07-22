@@ -26,11 +26,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGButton(
@@ -107,48 +107,46 @@ fun YGButton(
     }
 }
 
-@Preview(showBackground = true)
+@YGPreview
 @Composable
 private fun YGButtonPreview(
     @PreviewParameter(YGButtonPreviewParameterProvider::class)
     data: YGButtonPreviewData,
-) {
-    YGCustomTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Text(data.name)
-            YGButton(
-                text = "Button Enabled",
-                buttonType = data.buttonType,
-                isEnabled = true,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {},
-            )
-            YGButton(
-                text = "Button Disabled",
-                buttonType = data.buttonType,
-                isEnabled = false,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {},
-            )
-            YGButton(
-                text = "Button Start",
-                buttonType = data.buttonType,
-                isEnabled = true,
-                startIconResource = R.drawable.ic_plus,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {},
-            )
-            YGButton(
-                text = "Button End",
-                buttonType = data.buttonType,
-                isEnabled = true,
-                endIconResource = R.drawable.ic_plus,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {},
-            )
-        }
+) = PreviewBox {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(16.dp),
+    ) {
+        Text(data.name)
+        YGButton(
+            text = "Button Enabled",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {},
+        )
+        YGButton(
+            text = "Button Disabled",
+            buttonType = data.buttonType,
+            isEnabled = false,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {},
+        )
+        YGButton(
+            text = "Button Start",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            startIconResource = R.drawable.ic_plus,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {},
+        )
+        YGButton(
+            text = "Button End",
+            buttonType = data.buttonType,
+            isEnabled = true,
+            endIconResource = R.drawable.ic_plus,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {},
+        )
     }
 }
