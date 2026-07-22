@@ -14,6 +14,7 @@ internal fun MainRoute(
     val toastPolicy = rememberYGToastPolicy()
     MainScreen(
         toast = toastPolicy,
+        onComponentClick = navigator::goTo,
         modifier = modifier,
     )
 }
