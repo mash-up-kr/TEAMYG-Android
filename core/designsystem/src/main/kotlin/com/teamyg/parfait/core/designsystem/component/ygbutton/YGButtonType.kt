@@ -42,7 +42,7 @@ sealed interface YGButtonType {
 
         override val radius: Shape
             @Composable
-            get() = YGTheme.shapes.radius.small
+            get() = YGTheme.shapes.radius.none
 
         override val textStyle: TextStyle
             @Composable

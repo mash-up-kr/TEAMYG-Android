@@ -10,7 +10,7 @@ object YGTextFieldDefaults {
     @Composable
     @ReadOnlyComposable
     fun colors(
-        backgroundColor: Color = YGTheme.colorScheme.transparency.white75,
+        backgroundColor: Color = YGTheme.colorScheme.grayScale.white,
         disabledBackgroundColor: Color = backgroundColor,
         borderColor: Color = YGAtomicColors.Gray.Gray100,
         focusedBorderColor: Color = YGAtomicColors.Cherry.Cherry200,

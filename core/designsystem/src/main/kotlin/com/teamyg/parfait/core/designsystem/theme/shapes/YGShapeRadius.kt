@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Shape
 
 @Immutable
 data class YGShapeRadius(
+    val none: Shape,
     val xSmall: Shape,
     val small: Shape,
     val medium1: Shape,

@@ -20,11 +20,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
@@ -75,24 +75,22 @@ fun YGToggleButton(
     }
 }
 
-@Preview(showBackground = true)
+@YGPreview
 @Composable
 private fun YGToggleButtonPreview(
     @PreviewParameter(YGToggleButtonPreviewParameterProvider::class)
     data: YGToggleButtonPreviewData,
-) {
-    YGCustomTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(YGAtomicColors.Cherry.Cherry50),
-        ) {
-            YGToggleButton(
-                text = "Parfait",
-                isSelected = data.isSelected,
-                onClick = {},
-                iconResource = data.iconResource,
-            )
-        }
+) = PreviewBox {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(YGAtomicColors.Cherry.Cherry50),
+    ) {
+        YGToggleButton(
+            text = "Parfait",
+            isSelected = data.isSelected,
+            onClick = {},
+            iconResource = data.iconResource,
+        )
     }
 }
