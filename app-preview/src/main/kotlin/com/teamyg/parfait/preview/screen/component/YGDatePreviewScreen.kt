@@ -27,7 +27,7 @@ internal fun YGDatePreviewScreen(
         ) {
             item {
                 PreviewSection("date") {
-                    YGDate(text = "2026.07.21")
+                    YGDate(date = "2026.07.21", day = "Thu")
                 }
             }
         }
