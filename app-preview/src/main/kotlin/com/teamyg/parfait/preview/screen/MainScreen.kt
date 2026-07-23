@@ -3,7 +3,6 @@ package com.teamyg.parfait.preview.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,11 +10,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
-import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
@@ -29,23 +23,6 @@ import com.teamyg.parfait.preview.model.componentCatalog
 
 @Composable
 internal fun MainScreen(
-    toast: YGToastPolicy,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier.background(color = Color.White),
-        contentAlignment = Alignment.Center,
-    ) {
-        Button(onClick = {
-            toast.show(YGToastType.Edit("토스트 테스트"))
-            toast.show(YGToastType.InviteCode("토스트 테스트22"))
-        }) {
-            Text("토스트 띄우기")
-        }
-        YGToastHost(
-            policy = toast,
-            modifier = Modifier.align(Alignment.TopCenter),
-        )
     onComponentClick: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,8 +68,6 @@ internal fun MainScreen(
 @Composable
 private fun PreviewMainScreen() = PreviewBox {
     MainScreen(
-        toast = rememberYGToastPolicy(),
-        modifier = Modifier.fillMaxSize(),
         onComponentClick = {},
     )
 }
