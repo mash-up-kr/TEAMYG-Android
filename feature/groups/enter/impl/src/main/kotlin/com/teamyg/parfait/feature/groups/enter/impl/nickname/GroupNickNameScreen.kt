@@ -83,9 +83,9 @@ internal fun GroupNickNameScreen(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
-                    isError = uiState.errorMessage != null,
+                    isError = uiState.errorMessageResId != null,
                     maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                    errorDescription = uiState.errorMessage,
+                    errorDescription = uiState.errorMessageResId?.let { stringResource(it) },
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
