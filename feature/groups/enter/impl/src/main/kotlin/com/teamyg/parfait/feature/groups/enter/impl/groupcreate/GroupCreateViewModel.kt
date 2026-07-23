@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.NameValidResult
-import com.teamyg.parfait.domain.usecase.group.CheckGroupNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -42,7 +42,7 @@ class GroupCreateViewModel
 @AssistedInject
 constructor(
     @Assisted nickName: String,
-    private val checkNameValid: CheckGroupNameValidUseCase,
+    private val checkNameValid: CheckNameValidUseCase,
 ) : BaseViewModel<GroupCreateUiState, GroupCreateIntent, GroupCreateSideEffect>(
     initialState = GroupCreateUiState(nickName = nickName),
 ) {
