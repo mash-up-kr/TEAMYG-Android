@@ -11,6 +11,7 @@ internal fun MainRoute(
     modifier: Modifier = Modifier,
 ) {
     MainScreen(
+        onComponentClick = navigator::goTo,
         modifier = modifier,
     )
 }

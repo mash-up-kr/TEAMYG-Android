@@ -16,7 +16,7 @@ data class GroupInviteCodeUiState(
     val inputMode: InputMode = InputMode.ADD,
     val errorText: String? = null,
 ) : UiState {
-    val codeLength = 5
+    val codeLength = 6
 }
 
 enum class InputMode {
@@ -34,6 +34,8 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
 
     data object HideKeyboard : GroupInviteCodeIntent
+
+    data object FocusedFirstIndex : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
@@ -87,6 +89,7 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = InputMode.ADD,
+                                errorText = null,
                             )
                         }
 
@@ -95,6 +98,7 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = if (newFocusedIndex == newText.length) InputMode.ADD else InputMode.EDIT,
+                                errorText = null,
                             )
                         }
                     }
@@ -113,6 +117,10 @@ constructor(
 
             is GroupInviteCodeIntent.HideKeyboard -> {
                 updateState { copy(focusedIndex = null) }
+            }
+
+            is GroupInviteCodeIntent.FocusedFirstIndex -> {
+                updateState { copy(focusedIndex = 0) }
             }
         }
     }

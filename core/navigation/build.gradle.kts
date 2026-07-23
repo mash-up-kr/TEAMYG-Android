@@ -16,6 +16,8 @@ dependencies {
 
     implementation(projects.feature.app.setting.api)
 
+    implementation(projects.feature.common.terms.api)
+
     implementation(projects.feature.groups.canvas.api)
     implementation(projects.feature.groups.enter.api)
     implementation(projects.feature.groups.home.api)

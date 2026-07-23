@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -24,6 +25,8 @@ fun GroupInviteCodeRoute(
     val imeVisible = WindowInsets.isImeVisible
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    // Todo : 클립보드 확인 후 자동복붙하는 기능은 추후 추가 예정
+
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -31,7 +34,9 @@ fun GroupInviteCodeRoute(
                     navigator.onBack()
                 }
 
-                GroupInviteCodeSideEffect.NavigateToNext -> { /* navigate to next */ }
+                GroupInviteCodeSideEffect.NavigateToNext -> {
+                    navigator.goTo(NavKeyGroupNickName)
+                }
             }
         }
     }
@@ -40,6 +45,10 @@ fun GroupInviteCodeRoute(
         if (imeVisible.not()) {
             viewModel.processIntent(GroupInviteCodeIntent.HideKeyboard)
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.processIntent(GroupInviteCodeIntent.FocusedFirstIndex)
     }
 
     LaunchedEffect(uiState.focusedIndex) {

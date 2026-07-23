@@ -8,4 +8,5 @@ android {
 
 dependencies {
     implementation(projects.feature.app.setting.api)
+    implementation(projects.feature.common.terms.api)
 }

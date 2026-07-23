@@ -1,0 +1,88 @@
+package com.teamyg.parfait.feature.intro.impl.termagree
+
+import com.teamyg.parfait.core.ui.BaseViewModel
+import com.teamyg.parfait.core.ui.UiIntent
+import com.teamyg.parfait.core.ui.UiSideEffect
+import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToBack
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToNext
+import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeSideEffect.NavigateToUrl
+import com.teamyg.parfait.feature.intro.impl.termagree.model.TERM_CONTENT_LIST
+import com.teamyg.parfait.feature.intro.impl.termagree.model.TermContent
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+
+data class TermAgreeState(
+    val termContentList: List<TermContent> = TERM_CONTENT_LIST,
+    val selectedList: List<Boolean> = List(termContentList.size) { false },
+) : UiState {
+    val isAllSelected: Boolean = selectedList.all { it }
+    val isAvailable: Boolean = termContentList
+        .withIndex()
+        .none { it.value.isRequired && selectedList.getOrNull(it.index) == false }
+}
+
+sealed interface TermAgreeIntent : UiIntent {
+    data class ClickTermAgree(val index: Int, val newSelected: Boolean) : TermAgreeIntent
+
+    data class ClickTermLandingUrl(val landingUrl: String) : TermAgreeIntent
+
+    data class ClickAgreeAllTerm(val newSelected: Boolean) : TermAgreeIntent
+
+    data object ClickNextButton : TermAgreeIntent
+
+    data object ClickBackButton : TermAgreeIntent
+}
+
+sealed interface TermAgreeSideEffect : UiSideEffect {
+    data class NavigateToUrl(val landingUrl: String) : TermAgreeSideEffect
+
+    data object NavigateToBack : TermAgreeSideEffect
+
+    data object NavigateToNext : TermAgreeSideEffect
+}
+
+@HiltViewModel
+class TermAgreeViewModel
+@Inject
+constructor() : BaseViewModel<TermAgreeState, TermAgreeIntent, TermAgreeSideEffect>(initialState = TermAgreeState()) {
+    init {
+        viewModelLogger.i { "TermAgreeViewModel::init" }
+    }
+
+    override fun processIntent(intent: TermAgreeIntent) {
+        when (intent) {
+            is TermAgreeIntent.ClickAgreeAllTerm -> {
+                updateState { copy(selectedList = List(termContentList.size) { intent.newSelected }) }
+            }
+
+            is TermAgreeIntent.ClickTermAgree -> {
+                updateState {
+                    copy(
+                        selectedList = selectedList.mapIndexed { index, selected ->
+                            if (index == intent.index) {
+                                intent.newSelected
+                            } else {
+                                selected
+                            }
+                        },
+                    )
+                }
+            }
+
+            is TermAgreeIntent.ClickTermLandingUrl -> {
+                postSideEffect(NavigateToUrl(intent.landingUrl))
+            }
+
+            TermAgreeIntent.ClickBackButton -> {
+                postSideEffect(NavigateToBack)
+            }
+
+            TermAgreeIntent.ClickNextButton -> {
+                // Todo : TermAgree 저장 관련 로직 구현 예정 서버 or 앱내 논의 후 적용
+                postSideEffect(NavigateToNext)
+            }
+        }
+    }
+}
