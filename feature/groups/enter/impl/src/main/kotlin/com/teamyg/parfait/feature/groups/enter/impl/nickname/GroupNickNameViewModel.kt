@@ -64,7 +64,7 @@ constructor(
 
                     NameValidResult.Error.SpaceAtEdge -> {
                         updateState {
-                            copy(errorMessage = "닉네임의 처음과 끝에는 공백을 사용할 수 없어요")
+                            copy(errorMessage = "그룹명의 처음과 끝에는 공백을 사용할 수 없어요")
                         }
                     }
                 }
