@@ -1,10 +1,10 @@
 package com.teamyg.parfait.domain.model
 
-sealed interface NicknameResult {
+sealed interface NameValidResult {
 
-    data object Success : NicknameResult
+    data object Success : NameValidResult
 
-    sealed interface Error : NicknameResult {
+    sealed interface Error : NameValidResult {
         data object SpaceAtEdge : Error
 
         data object DuplicatedSpace : Error
