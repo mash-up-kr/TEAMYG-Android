@@ -104,7 +104,7 @@ internal fun GroupCreateScreen(
 
                 VerticalGridLayout(
                     items = GroupCreateConfig.GROUP_COUNT_LIST,
-                    rowCount = GroupCreateConfig.GROUP_ROW_COUNT,
+                    columnCount = GroupCreateConfig.GROUP_COLUMN_COUNT,
                     verticalPadding = 6.dp,
                     horizontalPadding = 7.dp,
                     modifier = Modifier.fillMaxWidth(),

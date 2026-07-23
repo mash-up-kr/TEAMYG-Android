@@ -22,15 +22,15 @@ import kotlin.random.Random
 @Composable
 fun <T> VerticalGridLayout(
     items: List<T>,
-    rowCount: Int,
+    columnCount: Int,
     verticalPadding: Dp,
     horizontalPadding: Dp,
     modifier: Modifier = Modifier,
     content: @Composable (item: T) -> Unit,
 ) {
-    val columnCount = ((items.size - 1) / rowCount) + 1
+    val rowCount = ((items.size - 1) / columnCount) + 1
     Column(modifier = modifier) {
-        repeat(columnCount) { columnIndex ->
+        repeat(rowCount) { columnIndex ->
             if (columnIndex != 0) {
                 Spacer(modifier = Modifier.height(verticalPadding))
             }
@@ -39,11 +39,11 @@ fun <T> VerticalGridLayout(
                     .fillMaxWidth()
                     .height(IntrinsicSize.Max),
             ) {
-                repeat(rowCount) { rowIndex ->
+                repeat(columnCount) { rowIndex ->
                     if (rowIndex != 0) {
                         Spacer(modifier = Modifier.width(horizontalPadding))
                     }
-                    val item = items.getOrNull(columnIndex * rowCount + rowIndex)
+                    val item = items.getOrNull(columnIndex * columnCount + rowIndex)
                     if (item != null) {
                         Box(modifier = Modifier.weight(1f)) {
                             content(item)
@@ -70,7 +70,7 @@ fun VerticalGridLayoutPreview() {
                 "hello",
                 "hello",
             ),
-            rowCount = 5,
+            columnCount = 5,
             verticalPadding = 5.dp,
             horizontalPadding = 10.dp,
             modifier = Modifier.fillMaxWidth(),
