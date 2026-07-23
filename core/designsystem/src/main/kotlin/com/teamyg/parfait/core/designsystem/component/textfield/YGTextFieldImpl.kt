@@ -38,7 +38,7 @@ internal fun YGTextFieldImpl(
     val isFocused: Boolean by interactionSource.collectIsFocusedAsState()
 
     val showCounter = maxLength != null && value.isNotEmpty()
-    val showClear = enabled && value.isNotEmpty()
+    val showClear = enabled && value.isNotEmpty() && (isFocused || isError)
 
     val commonShape: Shape = YGTheme.shapes.radius.none
 
