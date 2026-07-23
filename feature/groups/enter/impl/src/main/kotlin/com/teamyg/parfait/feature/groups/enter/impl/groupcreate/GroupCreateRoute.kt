@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
