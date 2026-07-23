@@ -27,9 +27,8 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
-
-private const val NICKNAME_MAX_LENGTH = 15
 
 @Composable
 internal fun GroupNickNameScreen(
@@ -85,7 +84,7 @@ internal fun GroupNickNameScreen(
                         .focusRequester(focusRequester),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
                     isError = uiState.errorMessage != null,
-                    maxLength = NICKNAME_MAX_LENGTH,
+                    maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
                     errorDescription = uiState.errorMessage,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
