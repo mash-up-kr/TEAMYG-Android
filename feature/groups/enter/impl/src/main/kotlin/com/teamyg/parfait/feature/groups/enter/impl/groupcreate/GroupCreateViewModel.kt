@@ -10,12 +10,13 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupCreateUiState(
     val groupName: String = "",
     val nickName: String = "",
     val groupNumber: Int? = null,
-    val groupNameErrorText: String? = null,
+    val groupNameErrorTextResId: Int? = null,
 ) : UiState {
     val isValid = groupName.isNotEmpty() && nickName.isNotEmpty() && groupNumber != null
 }
@@ -57,7 +58,7 @@ constructor(
                 updateState {
                     copy(
                         groupName = intent.newGroupName,
-                        groupNameErrorText = null,
+                        groupNameErrorTextResId = null,
                     )
                 }
             }
@@ -67,23 +68,23 @@ constructor(
                 when (result) {
                     NameValidResult.Success -> {
                         updateState {
-                            copy(groupNameErrorText = null)
+                            copy(groupNameErrorTextResId = null)
                         }
                         postSideEffect(GroupCreateSideEffect.NavigateToNext)
                     }
                     NameValidResult.Error.DuplicatedSpace -> {
                         updateState {
-                            copy(groupNameErrorText = "공백은 글자 사이에 1칸만 사용할 수 있어요")
+                            copy(groupNameErrorTextResId = CoreR.string.error_duplicated_space)
                         }
                     }
                     NameValidResult.Error.InvalidCharacter -> {
                         updateState {
-                            copy(groupNameErrorText = "한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요")
+                            copy(groupNameErrorTextResId = CoreR.string.error_invalid_character)
                         }
                     }
                     NameValidResult.Error.SpaceAtEdge -> {
                         updateState {
-                            copy(groupNameErrorText = "그룹명의 처음과 끝에는 공백을 사용할 수 없어요")
+                            copy(groupNameErrorTextResId = CoreR.string.error_space_at_edge_groupname)
                         }
                     }
                 }

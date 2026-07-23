@@ -69,9 +69,9 @@ internal fun GroupCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = stringResource(R.string.group_name_placeholder),
                     enabled = true,
-                    isError = uiState.groupNameErrorText != null,
+                    isError = uiState.groupNameErrorTextResId != null,
                     maxLength = GroupCreateConfig.GROUP_NAME_MAX_LENGTH,
-                    errorDescription = uiState.groupNameErrorText,
+                    errorDescription = uiState.groupNameErrorTextResId?.let { stringResource(it) },
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }

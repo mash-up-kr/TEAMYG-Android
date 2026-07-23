@@ -8,10 +8,11 @@ import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.group.CheckNickNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupNickNameUiState(
     val nickName: String = "",
-    val errorMessage: String? = null,
+    val errorMessageResId: Int? = null,
 ) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
@@ -45,26 +46,26 @@ constructor(
                 when (result) {
                     NameValidResult.Success -> {
                         updateState {
-                            copy(errorMessage = null)
+                            copy(errorMessageResId = null)
                         }
                         postSideEffect(GroupNickNameSideEffect.NavigateToNext)
                     }
 
                     NameValidResult.Error.DuplicatedSpace -> {
                         updateState {
-                            copy(errorMessage = "공백은 글자 사이에 1칸만 사용할 수 있어요")
+                            copy(errorMessageResId = CoreR.string.error_duplicated_space)
                         }
                     }
 
                     NameValidResult.Error.InvalidCharacter -> {
                         updateState {
-                            copy(errorMessage = "한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요")
+                            copy(errorMessageResId = CoreR.string.error_invalid_character)
                         }
                     }
 
                     NameValidResult.Error.SpaceAtEdge -> {
                         updateState {
-                            copy(errorMessage = "그룹명의 처음과 끝에는 공백을 사용할 수 없어요")
+                            copy(errorMessageResId = CoreR.string.error_space_at_edge_nickname)
                         }
                     }
                 }
@@ -74,7 +75,7 @@ constructor(
                 updateState {
                     copy(
                         nickName = intent.nickName,
-                        errorMessage = null,
+                        errorMessageResId = null,
                     )
                 }
             }

@@ -1,7 +1,6 @@
 package com.teamyg.parfait.domain.model
 
 sealed interface NameValidResult {
-
     data object Success : NameValidResult
 
     sealed interface Error : NameValidResult {
