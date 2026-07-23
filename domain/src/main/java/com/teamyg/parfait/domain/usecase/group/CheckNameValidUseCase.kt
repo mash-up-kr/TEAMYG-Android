@@ -3,7 +3,7 @@ package com.teamyg.parfait.domain.usecase.group
 import com.teamyg.parfait.domain.model.NameValidResult
 import javax.inject.Inject
 
-class CheckNickNameValidUseCase
+class CheckNameValidUseCase
 @Inject
 constructor() {
     operator fun invoke(nickName: String): NameValidResult {

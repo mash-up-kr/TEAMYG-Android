@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.NameValidResult
-import com.teamyg.parfait.domain.usecase.group.CheckNickNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import com.teamyg.parfait.core.ui.R as CoreR
@@ -33,7 +33,7 @@ sealed interface GroupNickNameSideEffect : UiSideEffect {
 class GroupNickNameViewModel
 @Inject
 constructor(
-    private val checkNickNameValid: CheckNickNameValidUseCase,
+    private val checkNickNameValid: CheckNameValidUseCase,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(),
 ) {
