@@ -1,22 +1,22 @@
 package com.teamyg.parfait.domain.usecase.group
 
-import com.teamyg.parfait.domain.model.NickNameResult
+import com.teamyg.parfait.domain.model.NameValidationResult
 import javax.inject.Inject
 
 class CheckNickNameValidUseCase
 @Inject
 constructor() {
-    operator fun invoke(nickName: String): NickNameResult {
+    operator fun invoke(nickName: String): NameValidationResult {
         NameValidation.entries.forEach { validation ->
             if (validation.isValid(nickName).not()) {
-                return NickNameResult(
+                return NameValidationResult(
                     isSuccess = false,
                     errorMessage = mapErrorMessage(validation),
                 )
             }
         }
 
-        return NickNameResult(
+        return NameValidationResult(
             isSuccess = true,
             errorMessage = null,
         )
