@@ -1,6 +1,14 @@
 package com.teamyg.parfait.domain.model
 
-data class NameValidationResult(
-    val isSuccess: Boolean,
-    val errorMessage: String?,
-)
+sealed interface NicknameResult {
+
+    data object Success : NicknameResult
+
+    sealed interface Error : NicknameResult {
+        data object SpaceAtEdge : Error
+
+        data object DuplicatedSpace : Error
+
+        data object InvalidCharacter : Error
+    }
+}
