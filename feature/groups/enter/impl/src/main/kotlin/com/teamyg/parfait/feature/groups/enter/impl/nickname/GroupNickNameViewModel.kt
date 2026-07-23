@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.model.NicknameResult
 import com.teamyg.parfait.domain.usecase.group.CheckNickNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -41,14 +42,30 @@ constructor(
 
             is GroupNickNameIntent.ClickNextButton -> {
                 val result = checkNickNameValid(state.value.nickName)
-                if (result.isSuccess) {
-                    updateState {
-                        copy(errorMessage = null)
+                when (result) {
+                    NicknameResult.Success -> {
+                        updateState {
+                            copy(errorMessage = null)
+                        }
+                        postSideEffect(GroupNickNameSideEffect.NavigateToNext)
                     }
-                    postSideEffect(GroupNickNameSideEffect.NavigateToNext)
-                } else {
-                    updateState {
-                        copy(errorMessage = result.errorMessage)
+
+                    NicknameResult.Error.DuplicatedSpace -> {
+                        updateState {
+                            copy(errorMessage = "공백은 글자 사이에 1칸만 사용할 수 있어요")
+                        }
+                    }
+
+                    NicknameResult.Error.InvalidCharacter -> {
+                        updateState {
+                            copy(errorMessage = "한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요")
+                        }
+                    }
+
+                    NicknameResult.Error.SpaceAtEdge -> {
+                        updateState {
+                            copy(errorMessage = "닉네임의 처음과 끝에는 공백을 사용할 수 없어요")
+                        }
                     }
                 }
             }
