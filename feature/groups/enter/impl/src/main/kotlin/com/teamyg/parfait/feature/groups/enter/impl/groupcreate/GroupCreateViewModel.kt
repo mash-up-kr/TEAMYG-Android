@@ -4,7 +4,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.domain.model.NicknameResult
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.group.CheckGroupNameValidUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -65,23 +65,23 @@ constructor(
             GroupCreateIntent.ClickNextButton -> {
                 val result = checkNameValid(state.value.groupName)
                 when (result) {
-                    NicknameResult.Success -> {
+                    NameValidResult.Success -> {
                         updateState {
                             copy(groupNameErrorText = null)
                         }
                         postSideEffect(GroupCreateSideEffect.NavigateToNext)
                     }
-                    NicknameResult.Error.DuplicatedSpace -> {
+                    NameValidResult.Error.DuplicatedSpace -> {
                         updateState {
                             copy(groupNameErrorText = "공백은 글자 사이에 1칸만 사용할 수 있어요")
                         }
                     }
-                    NicknameResult.Error.InvalidCharacter -> {
+                    NameValidResult.Error.InvalidCharacter -> {
                         updateState {
                             copy(groupNameErrorText = "한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요")
                         }
                     }
-                    NicknameResult.Error.SpaceAtEdge -> {
+                    NameValidResult.Error.SpaceAtEdge -> {
                         updateState {
                             copy(groupNameErrorText = "그룹명의 처음과 끝에는 공백을 사용할 수 없어요")
                         }
