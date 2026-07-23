@@ -27,12 +27,8 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
+import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
-
-private const val GROUP_NAME_MAX_LENGTH = 10
-private const val NICKNAME_MAX_LENGTH = 10
-private const val GROUP_ROW_COUNT = 6
-private val GROUP_COUNT_LIST = (1..12).toList()
 
 @Composable
 internal fun GroupCreateScreen(
@@ -74,7 +70,7 @@ internal fun GroupCreateScreen(
                     placeholder = stringResource(R.string.group_name_placeholder),
                     enabled = true,
                     isError = uiState.groupNameErrorText != null,
-                    maxLength = GROUP_NAME_MAX_LENGTH,
+                    maxLength = GroupCreateConfig.GROUP_NAME_MAX_LENGTH,
                     errorDescription = uiState.groupNameErrorText,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
@@ -92,7 +88,7 @@ internal fun GroupCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
                     enabled = false,
-                    maxLength = NICKNAME_MAX_LENGTH,
+                    maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -107,8 +103,8 @@ internal fun GroupCreateScreen(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
                 VerticalGridLayout(
-                    items = GROUP_COUNT_LIST,
-                    rowCount = GROUP_ROW_COUNT,
+                    items = GroupCreateConfig.GROUP_COUNT_LIST,
+                    rowCount = GroupCreateConfig.GROUP_ROW_COUNT,
                     verticalPadding = 6.dp,
                     horizontalPadding = 7.dp,
                     modifier = Modifier.fillMaxWidth(),
