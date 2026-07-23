@@ -62,6 +62,7 @@ internal fun AccountInfoScreen(
                     verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    // TODO Design System Label 변환
                     Text(
                         text = stringResource(R.string.account_info_nickname_label),
                         style = YGTheme.typography.body.b02R,
