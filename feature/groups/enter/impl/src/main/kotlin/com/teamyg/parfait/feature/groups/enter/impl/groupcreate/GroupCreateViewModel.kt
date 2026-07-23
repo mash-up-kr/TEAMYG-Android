@@ -72,16 +72,19 @@ constructor(
                         }
                         postSideEffect(GroupCreateSideEffect.NavigateToNext)
                     }
+
                     NameValidResult.Error.DuplicatedSpace -> {
                         updateState {
                             copy(groupNameErrorTextResId = CoreR.string.error_duplicated_space)
                         }
                     }
+
                     NameValidResult.Error.InvalidCharacter -> {
                         updateState {
                             copy(groupNameErrorTextResId = CoreR.string.error_invalid_character)
                         }
                     }
+
                     NameValidResult.Error.SpaceAtEdge -> {
                         updateState {
                             copy(groupNameErrorTextResId = CoreR.string.error_space_at_edge_groupname)
