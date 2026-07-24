@@ -5,13 +5,36 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DayOfWeekNames
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
+import kotlin.time.Clock
 
 data class GroupListUiState(
     val groupList: List<String> = emptyList(), // Todo : 임시로 String 으로 설정하였습니다
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
-) : UiState
+) : UiState {
+    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+    val dateString = today.format(
+        LocalDate.Format {
+            monthName(MonthNames.ENGLISH_FULL)
+            char(' ')
+            day()
+        },
+    )
+    val dayOfWeekString = today.format(
+        LocalDate.Format {
+            dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
+        },
+    )
+}
 
 sealed interface GroupListIntent : UiIntent {
     data object ClickTopBarChip : GroupListIntent

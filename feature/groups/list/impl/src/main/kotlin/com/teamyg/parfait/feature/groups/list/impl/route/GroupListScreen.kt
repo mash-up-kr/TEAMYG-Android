@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDefault
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 
 @Composable
 fun GroupListScreen(
@@ -26,6 +27,12 @@ fun GroupListScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                item {
+                    YGDate(
+                        date = uiState.dateString,
+                        day = uiState.dayOfWeekString,
+                    )
+                }
             }
         }
     }
