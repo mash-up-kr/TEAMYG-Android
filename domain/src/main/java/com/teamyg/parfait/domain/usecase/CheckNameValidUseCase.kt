@@ -1,4 +1,4 @@
-package com.teamyg.parfait.domain.usecase.group
+package com.teamyg.parfait.domain.usecase
 
 import com.teamyg.parfait.core.util.jvm.extension.isKorean
 import com.teamyg.parfait.domain.model.NameValidResult
