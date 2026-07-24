@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.NameValidResult
-import com.teamyg.parfait.domain.usecase.group.CheckNameValidUseCase
+import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import com.teamyg.parfait.core.ui.R as CoreR
