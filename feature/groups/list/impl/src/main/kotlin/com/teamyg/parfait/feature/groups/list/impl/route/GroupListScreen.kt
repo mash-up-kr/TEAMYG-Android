@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,9 +11,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -25,6 +34,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupListScreen(
     uiState: GroupListUiState,
@@ -35,17 +45,41 @@ fun GroupListScreen(
     onClickTopping: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tooltipState = rememberTooltipState(
+        initialIsVisible = false,
+        isPersistent = true,
+    )
+
+    LaunchedEffect(Unit) {
+        tooltipState.show()
+    }
+
     Box(modifier = modifier) {
         Column {
             YGTopBarEmpty(
-                onIconClick = {},
+                onIconClick = onClickSideMenu,
                 rightContent = {
-                    YGChipButton(
-                        text = "그룹 추가하기",
-                        colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
-                        onClick = {},
-                        startIconResource = DesignSystemR.drawable.ic_plus,
-                    )
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            positioning = TooltipAnchorPosition.Below,
+                            spacingBetweenTooltipAndAnchor = 15.dp,
+                        ),
+                        tooltip = {
+                            Box(modifier = Modifier.background(color = Color.Red)) {
+                                Text("툴팁입니다") // Todo : 툴팁 UI 구현
+                            }
+                        },
+                        state = tooltipState,
+                        onDismissRequest = { tooltipState.dismiss() },
+                        focusable = true,
+                    ) {
+                        YGChipButton(
+                            text = "그룹 추가하기", // Todo : core:ui 에 string resource 로 분리
+                            colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                            onClick = onClickChip,
+                            startIconResource = DesignSystemR.drawable.ic_plus,
+                        )
+                    }
                 },
             )
 
@@ -93,7 +127,7 @@ fun GroupListScreen(
                             contentScale = ContentScale.FillWidth,
                             modifier = Modifier
                                 .width(241.dp)
-                                .offset(y = (-40-44).dp)
+                                .offset(y = (-40 - 44).dp)
                                 .zIndex(-1f),
                         )
                         Image(
@@ -102,7 +136,7 @@ fun GroupListScreen(
                             contentScale = ContentScale.FillWidth,
                             modifier = Modifier
                                 .width(241.dp)
-                                .offset(y = (-40-44-66).dp)
+                                .offset(y = (-40 - 44 - 66).dp)
                                 .zIndex(-2f),
                         )
                         Image(
@@ -111,7 +145,7 @@ fun GroupListScreen(
                             contentScale = ContentScale.FillWidth,
                             modifier = Modifier
                                 .width(241.dp)
-                                .offset(y = (-40-44-66-66).dp)
+                                .offset(y = (-40 - 44 - 66 - 66).dp)
                                 .zIndex(-3f),
                         )
                         Image(
@@ -120,7 +154,7 @@ fun GroupListScreen(
                             contentScale = ContentScale.FillWidth,
                             modifier = Modifier
                                 .width(324.dp)
-                                .offset(y = (-40-44-66-66-32).dp)
+                                .offset(y = (-40 - 44 - 66 - 66 - 32).dp)
                                 .zIndex(0f),
                         )
                     }
