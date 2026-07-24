@@ -42,4 +42,11 @@ private enum class NameValidation(
         },
         errorType = NameValidResult.Error.InvalidCharacter,
     ),
+
+    CheckEmptyString(
+        isValid = { nickName ->
+            nickName.isNotEmpty()
+        },
+        errorType = NameValidResult.Error.EmptyString,
+    ),
 }
