@@ -4,4 +4,6 @@
     <string name="error_invalid_character">한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요</string>
     <string name="error_space_at_edge_nickname">닉네임의 처음과 끝에는 공백을 사용할 수 없어요</string>
     <string name="error_space_at_edge_groupname">그룹명의 처음과 끝에는 공백을 사용할 수 없어요</string>
+    <string name="error_empty_space_nickname">닉네임은 비워둘 수 없어요</string>
+    <string name="error_empty_space_groupname">그룹명은 비워둘 수 없어요</string>
 </resources>

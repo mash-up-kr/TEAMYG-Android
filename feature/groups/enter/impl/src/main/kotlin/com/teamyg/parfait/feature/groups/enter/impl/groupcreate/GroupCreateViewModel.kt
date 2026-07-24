@@ -90,6 +90,12 @@ constructor(
                             copy(groupNameErrorTextResId = CoreR.string.error_space_at_edge_groupname)
                         }
                     }
+
+                    NameValidResult.Error.EmptyString -> {
+                        updateState {
+                            copy(groupNameErrorTextResId = CoreR.string.error_empty_space_groupname)
+                        }
+                    }
                 }
             }
         }

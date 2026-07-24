@@ -68,6 +68,12 @@ constructor(
                             copy(errorMessageResId = CoreR.string.error_space_at_edge_nickname)
                         }
                     }
+
+                    NameValidResult.Error.EmptyString -> {
+                        updateState {
+                            copy(errorMessageResId = CoreR.string.error_empty_space_nickname)
+                        }
+                    }
                 }
             }
 
