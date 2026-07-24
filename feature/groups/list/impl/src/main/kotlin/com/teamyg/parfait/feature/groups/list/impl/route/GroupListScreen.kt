@@ -68,6 +68,7 @@ fun GroupListScreen(
                             }
                         },
                         state = tooltipState,
+                        enableUserInput = false,
                         onDismissRequest = { tooltipState.dismiss() },
                         focusable = true,
                     ) {
