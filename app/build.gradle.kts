@@ -8,8 +8,7 @@ plugins {
     alias(libs.plugins.parfait.android.application)
     alias(libs.plugins.parfait.android.application.signing)
     alias(libs.plugins.parfait.jetpack.compose)
-    alias(libs.plugins.google.dagger.hilt)
-    alias(libs.plugins.google.ksp)
+    alias(libs.plugins.parfait.dagger.hilt.compose)
     alias(libs.plugins.google.firebase)
     alias(libs.plugins.google.firebase.crashlytics)
 }
@@ -79,9 +78,6 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     implementation(libs.bundles.navigation)
 

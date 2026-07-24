@@ -6,6 +6,8 @@ import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSourceImpl
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSourceImpl
+import com.teamyg.parfait.data.source.ui.local.LoadingLocalDataSource
+import com.teamyg.parfait.data.source.ui.local.LoadingLocalDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -32,4 +34,10 @@ interface LocalDataSourceModule {
     fun bindRecentImageLocalDataSource(
         recentImageLocalDataSourceImpl: RecentImageLocalDataSourceImpl,
     ): RecentImageLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindLoadingLocalDataSource(
+        loadingLocalDataSourceImpl: LoadingLocalDataSourceImpl,
+    ): LoadingLocalDataSource
 }
