@@ -43,6 +43,8 @@ internal fun GroupListRoute(
         }
     }
 
+    // Todo : Error 화면 추가
+
     YGScaffold(containerColor = YGAtomicColors.Gray.Transparent) { innerPadding ->
         GroupListScreen(
             uiState = uiState,
