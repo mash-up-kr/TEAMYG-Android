@@ -39,8 +39,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 fun GroupListScreen(
     uiState: GroupListUiState,
     onClickChip: () -> Unit,
-    onClickCreateNewGroup: () -> Unit,
-    onClickEnterNewGroup: () -> Unit,
     onClickSideMenu: () -> Unit,
     onClickTopping: () -> Unit,
     modifier: Modifier = Modifier,

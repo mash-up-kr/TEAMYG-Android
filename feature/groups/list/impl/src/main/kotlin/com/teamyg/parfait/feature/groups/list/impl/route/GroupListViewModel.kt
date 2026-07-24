@@ -38,6 +38,7 @@ data class GroupListUiState(
 
 sealed interface GroupListIntent : UiIntent {
     data object ClickTopBarChip : GroupListIntent
+    data object DismissedTopBarChip : GroupListIntent
     data object ClickCreateNewGroup : GroupListIntent
     data object ClickEnterNewGroup : GroupListIntent
     data object ClickSideMenu : GroupListIntent
@@ -61,6 +62,10 @@ constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEf
         when (intent) {
             GroupListIntent.ClickTopBarChip -> {
                 updateState { copy(groupAddButtonSelected = true) }
+            }
+
+            GroupListIntent.DismissedTopBarChip -> {
+                updateState { copy(groupAddButtonSelected = false) }
             }
 
             GroupListIntent.ClickSideMenu -> {
