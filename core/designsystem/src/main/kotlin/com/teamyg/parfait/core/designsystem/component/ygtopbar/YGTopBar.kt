@@ -64,26 +64,7 @@ fun YGTopBarDetail(
 fun YGTopBarEmpty(
     onIconClick: () -> Unit,
     modifier: Modifier = Modifier,
-) {
-    YGTopBarContent(
-        iconResource = R.drawable.ic_hamburger,
-        contentDescription = "메뉴",
-        onIconClick = onIconClick,
-        modifier = modifier,
-        titleContent = {
-            Image(
-                painter = painterResource(R.drawable.ic_plus), // todo : parfait logo 로 변경 예정
-                contentDescription = null,
-            )
-        },
-    )
-}
-
-@Composable
-fun YGTopBarDefault(
-    onIconClick: () -> Unit,
-    onChipClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    rightContent: @Composable () -> Unit = {},
 ) {
     YGTopBarContent(
         iconResource = R.drawable.ic_hamburger,
@@ -100,12 +81,7 @@ fun YGTopBarDefault(
                     contentDescription = null,
                 )
             }
-            YGChipButton(
-                text = "새 그룹",
-                colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
-                onClick = onChipClick,
-                startIconResource = R.drawable.ic_plus,
-            )
+            rightContent()
         },
     )
 }
@@ -153,6 +129,16 @@ fun YGTopBarPreview() = PreviewBox {
         YGTopBarBack(onIconClick = { }, modifier = Modifier.fillMaxWidth())
         YGTopBarDetail(title = "그룹이름", onIconClick = { }, modifier = Modifier.fillMaxWidth())
         YGTopBarEmpty(onIconClick = { }, modifier = Modifier.fillMaxWidth())
-        YGTopBarDefault(onChipClick = { }, onIconClick = { }, modifier = Modifier.fillMaxWidth())
+        YGTopBarEmpty(
+            onIconClick = {},
+            rightContent = {
+                YGChipButton(
+                    text = "그룹 추가하기",
+                    colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                    onClick = {},
+                    startIconResource = R.drawable.ic_plus,
+                )
+            }
+        )
     }
 }
