@@ -7,9 +7,9 @@ import javax.inject.Inject
 class CheckNameValidUseCase
 @Inject
 constructor() {
-    operator fun invoke(nickName: String): NameValidResult {
+    operator fun invoke(name: String): NameValidResult {
         NameValidation.entries.forEach { validation ->
-            if (validation.isValid(nickName).not()) {
+            if (validation.isValid(name).not()) {
                 return validation.errorType
             }
         }
@@ -23,29 +23,29 @@ private enum class NameValidation(
     val errorType: NameValidResult.Error,
 ) {
     CheckSpaceStartOrEnd(
-        isValid = { nickName ->
-            nickName.startsWith(" ").not() && nickName.endsWith(" ").not()
+        isValid = { name ->
+            name.startsWith(" ").not() && name.endsWith(" ").not()
         },
         errorType = NameValidResult.Error.SpaceAtEdge,
     ),
 
     CheckDuplicatedSpace(
-        isValid = { nickName ->
-            nickName.indexOf("  ") == -1
+        isValid = { name ->
+            name.indexOf("  ") == -1
         },
         errorType = NameValidResult.Error.DuplicatedSpace,
     ),
 
     CheckValidCharacter(
-        isValid = { nickName ->
-            nickName.all { it.isWhitespace() || it.isDigit() || it.isLetter() || it.isKorean() }
+        isValid = { name ->
+            name.all { it.isWhitespace() || it.isDigit() || it.isLetter() || it.isKorean() }
         },
         errorType = NameValidResult.Error.InvalidCharacter,
     ),
 
     CheckEmptyString(
-        isValid = { nickName ->
-            nickName.isNotEmpty()
+        isValid = { name ->
+            name.isNotEmpty()
         },
         errorType = NameValidResult.Error.EmptyString,
     ),
