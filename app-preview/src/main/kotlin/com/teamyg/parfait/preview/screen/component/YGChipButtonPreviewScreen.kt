@@ -31,7 +31,7 @@ internal fun YGChipButtonPreviewScreen(
                 PreviewSection("CherryBorderPressed") {
                     YGChipButton(
                         text = "칩",
-                        colors = YGChipButtonColorsDefaults.CherryBorderPressed,
+                        colors = YGChipButtonColorsDefaults.Cherry50BackgroundPressed,
                         onClick = {},
                     )
                 }

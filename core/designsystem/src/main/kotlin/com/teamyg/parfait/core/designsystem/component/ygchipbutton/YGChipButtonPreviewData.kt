@@ -19,7 +19,7 @@ class YGChipButtonPreviewParameterProvider : PreviewParameterProvider<YGChipButt
         YGChipButtonPreviewData(
             startIconResource = R.drawable.ic_plus,
             endIconResource = null,
-            colors = YGChipButtonColorsDefaults.CherryBorderPressed,
+            colors = YGChipButtonColorsDefaults.Cherry50BackgroundPressed,
         ),
         YGChipButtonPreviewData(
             startIconResource = null,
