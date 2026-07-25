@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -56,14 +55,15 @@ fun GroupListAddGroupScreen(
                 )
                 .padding(horizontal = YGTheme.layout.padding.padding5),
         ) {
-            // Todo@문의 : 기존 디자인시스템 컴포넌트 업데이트가 필요하다고 공유하기
             YGActionItem(
                 text = "그룹 만들기", // Todo : core:ui 에 string resource 로 분리
+                iconResource = DesignSystemR.drawable.ic_new_group,
                 onClick = onClickCreateNewGroup,
             )
             YGHorizontalDivider(modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding2))
             YGActionItem(
                 text = "그룹 들어가기", // Todo : core:ui 에 string resource 로 분리
+                iconResource = DesignSystemR.drawable.ic_enter,
                 onClick = onClickEnterNewGroup,
             )
         }
