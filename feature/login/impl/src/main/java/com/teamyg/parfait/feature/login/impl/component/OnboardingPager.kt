@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.login.impl.component
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -23,12 +26,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
@@ -44,20 +51,18 @@ internal fun OnboardingPager(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxWidth(),
-        ) { index ->
-            OnboardingPageContent(page = pages[index])
-        }
-
-        Spacer(modifier = Modifier.height(44.dp))
-
         PagerIndicator(
             pageCount = pages.size,
             currentPage = pagerState.currentPage,
         )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().weight(1f),
+        ) { index ->
+            OnboardingPageContent(page = pages[index],modifier = Modifier.fillMaxSize())
+        }
     }
 }
 
@@ -67,9 +72,7 @@ private fun OnboardingPageContent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         when (page.painterResourceId) {
@@ -87,31 +90,33 @@ private fun OnboardingPageContent(
                 )
             }
 
-            else -> {
-                // TODO impl
-            }
+            else ->
+                Image(
+                    painter = painterResource(page.painterResourceId),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentScale = ContentScale.Fit,
+                )
+            // TODO impl
         }
+        Spacer(modifier = Modifier.height(30.dp))
 
-        Spacer(modifier = Modifier.height(56.dp))
-
-        Text(
-            text = page.title,
-            color = Color(0xFF333333),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            lineHeight = (1.2).em,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
+//        Text(
+//            text = page.title,
+//            color = Color(0xFF333333),
+//            fontSize = 24.sp,
+//            fontWeight = FontWeight.Bold,
+//            lineHeight = (1.2).em,
+//        )
 
         Text(
             text = page.description,
-            color = Color(0xFF737373),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = (1.4).em,
+            style = YGTheme.typography.caption.c01R,
+            color = YGAtomicColors.Gray.Gray300,
         )
     }
+
+
 }
 
 @Composable
