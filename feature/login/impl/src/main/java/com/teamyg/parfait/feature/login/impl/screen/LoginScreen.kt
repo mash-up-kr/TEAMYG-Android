@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.login.impl.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.login.impl.component.AppleSignInButton
 import com.teamyg.parfait.feature.login.impl.component.KakaoSignInButton
 import com.teamyg.parfait.feature.login.impl.component.OnboardingPager
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
@@ -26,10 +28,10 @@ internal fun LoginScreen(
 ) {
     Column(
         modifier = modifier
-            .padding(all = 20.dp),
+            .padding(all = 30.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(45.dp))
 
         OnboardingPager(
             pages = pages,
@@ -38,9 +40,16 @@ internal fun LoginScreen(
                 .weight(1f),
         )
 
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(30.dp))
 
         KakaoSignInButton(
+            onClick = onClickKakaoButton,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AppleSignInButton(
             onClick = onClickKakaoButton,
             modifier = Modifier.fillMaxWidth(),
         )
