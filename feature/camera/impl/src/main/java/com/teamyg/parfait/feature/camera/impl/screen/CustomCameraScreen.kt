@@ -1,19 +1,22 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
-import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
-import com.teamyg.parfait.feature.camera.impl.component.CameraZoomIndicatorComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -26,9 +29,11 @@ internal fun CustomCameraScreen(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
-    cameraPreview: @Composable () -> Unit,
+    cameraBackground: @Composable () -> Unit,
+    cameraViewfinder: @Composable () -> Unit,
 ) {
     when (state.hasPermission) {
         true -> CameraContent(
@@ -37,18 +42,33 @@ internal fun CustomCameraScreen(
             onClickZoomLevel = onClickZoomLevel,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
+            onClickFlash = onClickFlash,
             onClickCancel = onClickCancel,
             modifier = modifier,
-            cameraPreview = cameraPreview,
+            cameraBackground = cameraBackground,
+            cameraViewfinder = cameraViewfinder,
         )
 
-        false -> CameraPermissionRequestComponent(
-            isInit = state.isInit,
-            permanentlyDenied = state.permanentlyDenied,
-            onClickGrantPermission = onClickGrantPermission,
-            onClickOpenAppSettings = onClickOpenAppSettings,
+        false -> CameraContent(
+            zoomRatio = state.zoomRatio,
+            zoomRange = state.zoomRange,
+            onClickZoomLevel = onClickZoomLevel,
+            onClickShutter = onClickShutter,
+            onClickFlip = onClickFlip,
+            onClickFlash = onClickFlash,
+            onClickCancel = onClickCancel,
             modifier = modifier,
+            cameraBackground = cameraBackground,
+            cameraViewfinder = cameraViewfinder,
         )
+//        false -> CameraPermissionRequestComponent(
+//            isInit = state.isInit,
+//            permanentlyDenied = state.permanentlyDenied,
+//            onClickGrantPermission = onClickGrantPermission,
+//            onClickOpenAppSettings = onClickOpenAppSettings,
+//            onClickCancel = onClickCancel,
+//            modifier = modifier,
+//        )
     }
 }
 
@@ -59,34 +79,55 @@ private fun CameraContent(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
-    cameraPreview: @Composable () -> Unit,
+    cameraBackground: @Composable () -> Unit,
+    cameraViewfinder: @Composable () -> Unit,
 ) {
-    Column(modifier = modifier.background(Color.Black)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            cameraPreview()
+    Box(modifier = modifier.fillMaxSize()) {
+        cameraBackground()
 
-            CameraZoomIndicatorComponent(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
+        ) {
+            Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding6))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                YGDate("dad", "asd")
+                YGIconButton(
+                    iconResource = R.drawable.ic_close,
+                    size = YGIconButtonSize.SIZE_44,
+                    contentDescription = null,
+                    onClick = onClickCancel,
+                    isEnabled = true,
+                )
+            }
+            Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding3))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                cameraViewfinder()
+            }
+            Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
+
+            CameraControlComponent(
                 zoomRatio = zoomRatio,
-                modifier = Modifier.padding(bottom = 16.dp),
+                zoomRange = zoomRange,
+                onClickZoomLevel = onClickZoomLevel,
+                onClickShutter = onClickShutter,
+                onClickFlip = onClickFlip,
+                onClickFlash = onClickFlash,
+                onClickCancel = onClickCancel,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
-
-        CameraControlComponent(
-            zoomRatio = zoomRatio,
-            zoomRange = zoomRange,
-            onClickZoomLevel = onClickZoomLevel,
-            onClickShutter = onClickShutter,
-            onClickFlip = onClickFlip,
-            onClickCancel = onClickCancel,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -103,9 +144,11 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
+        onClickFlash = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraBackground = @Composable {},
+        cameraViewfinder = @Composable {},
     )
 }
 
@@ -124,8 +167,10 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
+        onClickFlash = {},
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraBackground = @Composable {},
+        cameraViewfinder = @Composable {},
     )
 }
 
@@ -144,7 +189,9 @@ private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
+        onClickFlash = {},
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraBackground = @Composable {},
+        cameraViewfinder = @Composable {},
     )
 }
