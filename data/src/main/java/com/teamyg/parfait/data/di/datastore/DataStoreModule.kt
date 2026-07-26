@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.di
+package com.teamyg.parfait.data.di.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -9,7 +9,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
 private const val PARFAIT_PREFERENCES_NAME = "parfait_preferences"
@@ -25,12 +24,4 @@ object DataStoreModule {
     @Singleton
     fun provideParfaitPreferencesDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         context.parfaitPreferencesDataStore
-
-    @Provides
-    @Singleton
-    fun provideDataStoreJsonParser(): Json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-        encodeDefaults = true
-    }
 }

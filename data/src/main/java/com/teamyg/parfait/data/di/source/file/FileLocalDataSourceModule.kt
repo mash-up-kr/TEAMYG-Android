@@ -1,11 +1,9 @@
-package com.teamyg.parfait.data.di
+package com.teamyg.parfait.data.di.source.file
 
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSourceImpl
-import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
-import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -14,7 +12,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface LocalDataSourceModule {
+interface FileLocalDataSourceModule {
     @Binds
     @Singleton
     fun bindFileCameraCacheLocalDataSource(
@@ -26,10 +24,4 @@ interface LocalDataSourceModule {
     fun bindFileRecentImageLocalDataSource(
         fileRecentImageLocalDataSourceImpl: FileRecentImageLocalDataSourceImpl,
     ): FileRecentImageLocalDataSource
-
-    @Binds
-    @Singleton
-    fun bindRecentImageLocalDataSource(
-        recentImageLocalDataSourceImpl: RecentImageLocalDataSourceImpl,
-    ): RecentImageLocalDataSource
 }
