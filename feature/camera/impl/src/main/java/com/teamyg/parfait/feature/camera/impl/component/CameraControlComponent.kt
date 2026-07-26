@@ -7,16 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.feature.camera.impl.component.controls.FlipCameraButton
+import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
+import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
-import com.teamyg.parfait.feature.camera.impl.component.controls.ZoomLevelRow
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -27,21 +26,21 @@ internal fun CameraControlComponent(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
-            .background(Color.Black)
             .padding(top = 16.dp, bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        ZoomLevelRow(
-            zoomRatio = zoomRatio,
-            zoomRange = zoomRange,
-            onClickZoomLevel = onClickZoomLevel,
-        )
+//        ZoomLevelRow(
+//            zoomRatio = zoomRatio,
+//            zoomRange = zoomRange,
+//            onClickZoomLevel = onClickZoomLevel,
+//        )
 
         Row(
             modifier = Modifier
@@ -53,12 +52,13 @@ internal fun CameraControlComponent(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
-                TextButton(onClick = onClickCancel) {
-                    Text(
-                        text = "취소",
-                        color = Color.White,
-                    )
-                }
+                YGIconButton(
+                    iconResource = R.drawable.ic_reverse,
+                    size = YGIconButtonSize.SIZE_44,
+                    contentDescription = null,
+                    onClick = onClickFlip,
+                    isEnabled = true,
+                )
             }
             Box(
                 modifier = Modifier.weight(1f),
@@ -70,7 +70,13 @@ internal fun CameraControlComponent(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center,
             ) {
-                FlipCameraButton(onClick = onClickFlip)
+                YGIconButton(
+                    iconResource = R.drawable.ic_lightning,
+                    size = YGIconButtonSize.SIZE_44,
+                    contentDescription = null,
+                    onClick = onClickFlash,
+                    isEnabled = true,
+                )
             }
         }
     }
@@ -85,6 +91,7 @@ private fun PreviewCameraControlComponent() = PreviewBox {
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
+        onClickFlash = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxWidth(),
     )
