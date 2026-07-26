@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -146,8 +145,7 @@ internal fun CameraViewfinderPreview(
         modifier = modifier
             .onSizeChanged { size ->
                 previewView.layoutParams = ViewGroup.LayoutParams(size.width, size.height)
-            }
-            .pointerInput(camera) {
+            }.pointerInput(camera) {
                 detectTapGestures { offset ->
                     val cam = camera ?: return@detectTapGestures
 

@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.camera.impl.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
