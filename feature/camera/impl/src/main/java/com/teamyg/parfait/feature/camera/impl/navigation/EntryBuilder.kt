@@ -16,12 +16,12 @@ import com.teamyg.parfait.feature.camera.impl.route.SystemCameraRoute
 
 fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
     entry<NavKeyCameraCustom> {
-        YGScaffold { innerPadding ->
+        // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
+        // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
+        YGScaffold {
             CustomCameraRoute(
                 navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }

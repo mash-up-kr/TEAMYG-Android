@@ -6,26 +6,30 @@ import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.parfait.feature.camera.impl.component.CameraBackgroundPreview
-import com.teamyg.parfait.feature.camera.impl.component.CameraViewfinderPreview
+import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
+import com.teamyg.parfait.feature.camera.impl.util.saveViewfinderCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
@@ -34,6 +38,9 @@ import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 internal fun CustomCameraRoute(
@@ -48,6 +55,9 @@ internal fun CustomCameraRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var viewfinderRect by remember { mutableStateOf<Rect?>(null) }
+    var feedRect by remember { mutableStateOf<Rect?>(null) }
+    val captureScope = rememberCoroutineScope()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -77,14 +87,37 @@ internal fun CustomCameraRoute(
                         return@collect
                     }
                     val file = effect.file
-                    val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+                    val isFrontFacing = state.lensFacing == CameraSelector.LENS_FACING_FRONT
 
                     capture.takePicture(
-                        outputOptions,
                         ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageSavedCallback {
-                            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                viewModel.processIntent(CustomCameraIntent.OnCaptureSaved(file))
+                        object : ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(image: ImageProxy) {
+                                val rotation = image.imageInfo.rotationDegrees
+                                val captured = image.use { it.toBitmap() }
+
+                                captureScope.launch {
+                                    val saved = runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            saveViewfinderCapture(
+                                                captured = captured,
+                                                rotationDegrees = rotation,
+                                                viewfinderRect = viewfinderRect,
+                                                feedRect = feedRect,
+                                                isFrontFacing = isFrontFacing,
+                                                file = file,
+                                            )
+                                        }
+                                    }.isSuccess
+
+                                    viewModel.processIntent(
+                                        if (saved) {
+                                            CustomCameraIntent.OnCaptureSaved(file)
+                                        } else {
+                                            CustomCameraIntent.OnCaptureFailed
+                                        },
+                                    )
+                                }
                             }
 
                             override fun onError(exception: ImageCaptureException) {
@@ -113,7 +146,7 @@ internal fun CustomCameraRoute(
         onPauseOrDispose { }
     }
 
-    val cameraPreviewViews = CameraPreviewViewComponent(
+    val cameraPreviewHandle = CameraPreviewViewComponent(
         lensFacing = state.lensFacing,
         zoomRatio = state.zoomRatio,
         onImageCaptureReady = { imageCapture = it },
@@ -130,16 +163,13 @@ internal fun CustomCameraRoute(
         onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
         onClickFlash = {},
         modifier = modifier,
-        cameraBackground = {
-            CameraBackgroundPreview(
-                previewView = cameraPreviewViews.backgroundPreviewView,
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-        cameraViewfinder = {
-            CameraViewfinderPreview(
-                previewView = cameraPreviewViews.foregroundPreviewView,
-                camera = cameraPreviewViews.camera.value,
+        onViewfinderRectChange = { viewfinderRect = it },
+        cameraFeed = {
+            CameraFeedLayer(
+                previewView = cameraPreviewHandle.previewView,
+                camera = cameraPreviewHandle.camera.value,
+                viewfinderRect = { viewfinderRect },
+                onFeedRectChange = { feedRect = it },
                 modifier = Modifier.fillMaxSize(),
             )
         },
