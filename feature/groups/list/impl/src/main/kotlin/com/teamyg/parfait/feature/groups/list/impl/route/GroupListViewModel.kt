@@ -20,7 +20,10 @@ data class GroupListUiState(
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
 ) : UiState {
-    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    val today = Clock.System
+        .now()
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+        .date
 
     val dateString = today.format(
         LocalDate.Format {
@@ -38,17 +41,25 @@ data class GroupListUiState(
 
 sealed interface GroupListIntent : UiIntent {
     data object ClickTopBarChip : GroupListIntent
+
     data object DismissedTopBarChip : GroupListIntent
+
     data object ClickCreateNewGroup : GroupListIntent
+
     data object ClickEnterNewGroup : GroupListIntent
+
     data object ClickSideMenu : GroupListIntent
+
     data object ClickTopping : GroupListIntent
 }
 
 sealed interface GroupListSideEffect : UiSideEffect {
     data object NavigateToAppSideMenu : GroupListSideEffect
+
     data object NavigateToCanvas : GroupListSideEffect
+
     data object NavigateToCreateGroup : GroupListSideEffect
+
     data object NavigateToInviteCode : GroupListSideEffect
 }
 

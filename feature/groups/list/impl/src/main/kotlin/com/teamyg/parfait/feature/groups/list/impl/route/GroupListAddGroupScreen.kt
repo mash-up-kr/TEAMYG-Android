@@ -52,8 +52,7 @@ fun GroupListAddGroupScreen(
                 .background(
                     color = YGAtomicColors.Cherry.Cherry50,
                     shape = YGTheme.shapes.radius.medium1,
-                )
-                .padding(horizontal = YGTheme.layout.padding.padding5),
+                ).padding(horizontal = YGTheme.layout.padding.padding5),
         ) {
             YGActionItem(
                 text = "그룹 만들기", // Todo : core:ui 에 string resource 로 분리

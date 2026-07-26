@@ -138,7 +138,7 @@ fun YGTopBarPreview() = PreviewBox {
                     onClick = {},
                     startIconResource = R.drawable.ic_plus,
                 )
-            }
+            },
         )
     }
 }

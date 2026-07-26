@@ -54,7 +54,9 @@ fun YGActionItem(
             Image(
                 painter = painterResource(it),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(color = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500),
+                colorFilter = ColorFilter.tint(
+                    color = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500,
+                ),
                 modifier = Modifier.size(SizeTokens.Size24.size.dp),
             )
         }
