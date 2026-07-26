@@ -46,7 +46,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupListScreen(
+internal fun GroupListScreen(
     uiState: GroupListUiState,
     onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
@@ -168,52 +168,6 @@ fun GroupListScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun GroupListTooltip(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .padding(top = 16.dp)
-            .background(color = YGAtomicColors.Gray.White)
-            .drawTooltipCornerTopRight(
-                borderColor = YGAtomicColors.Melon.Melon500,
-                backgroundColor = YGAtomicColors.Gray.White,
-                cornerWidth = 17.dp,
-                cornerHeight = 16.dp,
-                endPadding = 45.dp,
-                borderWidth = (1.25).dp,
-            ).border(
-                width = (1.25).dp,
-                color = YGAtomicColors.Melon.Melon500,
-            ).padding(
-                vertical = YGTheme.layout.padding.padding6,
-                horizontal = YGTheme.layout.padding.padding9,
-            ),
-    ) {
-        Text(
-            text = buildAnnotatedString {
-                append("여기를 눌러 ")
-                withStyle(
-                    textStyle = YGTheme.typography.body.b02B
-                        .copy(color = YGAtomicColors.Melon.Melon600),
-                ) {
-                    append("새 그룹")
-                }
-                append("을 만들거나,\n친구에게 받은 초대코드로 ")
-                withStyle(
-                    textStyle = YGTheme.typography.body.b02B
-                        .copy(color = YGAtomicColors.Melon.Melon600),
-                ) {
-                    append("그룹에 참여")
-                }
-                append("해 보세요.")
-            },
-            style = YGTheme.typography.body.b02R,
-            color = YGAtomicColors.Gray.Black,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
