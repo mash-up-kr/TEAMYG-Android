@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,9 +23,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
@@ -31,6 +39,9 @@ import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonC
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.util.android.extension.drawTooltipCornerTopRight
+import com.teamyg.parfait.core.util.android.extension.withStyle
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -63,9 +74,7 @@ fun GroupListScreen(
                             spacingBetweenTooltipAndAnchor = 15.dp,
                         ),
                         tooltip = {
-                            Box(modifier = Modifier.background(color = Color.Red)) {
-                                Text("툴팁입니다") // Todo : 툴팁 UI 구현
-                            }
+                            GroupListTooltip()
                         },
                         state = tooltipState,
                         enableUserInput = false,
@@ -160,5 +169,48 @@ fun GroupListScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GroupListTooltip(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .padding(top = 16.dp)
+            .background(color = YGAtomicColors.Gray.White)
+            .drawTooltipCornerTopRight(
+                borderColor = YGAtomicColors.Melon.Melon500,
+                backgroundColor = YGAtomicColors.Gray.White,
+                cornerWidth = 17.dp,
+                cornerHeight = 16.dp,
+                endPadding = 45.dp,
+            )
+            .border(
+                width = (1.25).dp,
+                color = YGAtomicColors.Melon.Melon500,
+            )
+            .padding(
+                vertical = YGTheme.layout.padding.padding6,
+                horizontal = YGTheme.layout.padding.padding9,
+            ),
+    ) {
+        Text(
+            text = buildAnnotatedString {
+                append("여기를 눌러 ")
+                withStyle(textStyle = YGTheme.typography.body.b02B.copy(color = YGAtomicColors.Melon.Melon600)) {
+                    append("새 그룹")
+                }
+                append("을 만들거나,\n친구에게 받은 초대코드로 ")
+                withStyle(textStyle = YGTheme.typography.body.b02B.copy(color = YGAtomicColors.Melon.Melon600)) {
+                    append("그룹에 참여")
+                }
+                append("해 보세요.")
+            },
+            style = YGTheme.typography.body.b02R,
+            color = YGAtomicColors.Gray.Black,
+            textAlign = TextAlign.Center,
+        )
     }
 }
