@@ -9,7 +9,9 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.impl.route.CustomCameraRoute
+import com.teamyg.parfait.feature.camera.impl.route.PictureConfirmRoute
 import com.teamyg.parfait.feature.camera.impl.route.SystemCameraRoute
 
 fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
@@ -26,6 +28,17 @@ fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
     entry<NavKeyCameraSystem> {
         YGScaffold { innerPadding ->
             SystemCameraRoute(
+                navigator = navigator,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+    }
+    entry<NavKeyPictureConfirm> { navKey ->
+        YGScaffold { innerPadding ->
+            PictureConfirmRoute(
+                uri = navKey.uri,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
