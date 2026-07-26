@@ -85,84 +85,88 @@ internal fun GroupListScreen(
                 },
             )
 
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    start = YGTheme.layout.padding.padding7,
-                    end = YGTheme.layout.padding.padding7,
-                    bottom = YGTheme.layout.padding.padding6,
-                ),
-                modifier = Modifier.fillMaxWidth(),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                        bottom = YGTheme.layout.padding.padding6,
+                    ),
             ) {
-                item {
-                    YGDate(
-                        date = uiState.dateString,
-                        day = uiState.dayOfWeekString,
-                    )
-                }
-                item {
-                    // Todo : 임시코드
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cherry),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(83.dp)
-                                .zIndex(0f),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cream_top),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(210.dp)
-                                .offset(y = (-40).dp)
-                                .zIndex(0f),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cream_default),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(241.dp)
-                                .offset(y = (-40 - 44).dp)
-                                .zIndex(-1f),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cream_default),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(241.dp)
-                                .offset(y = (-40 - 44 - 66).dp)
-                                .zIndex(-2f),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cream_default),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(241.dp)
-                                .offset(y = (-40 - 44 - 66 - 66).dp)
-                                .zIndex(-3f),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.parfait_cup),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .width(324.dp)
-                                .offset(y = (-40 - 44 - 66 - 66 - 32).dp)
-                                .zIndex(0f),
-                        )
-                    }
-                }
+                YGDate(
+                    date = uiState.dateString,
+                    day = uiState.dayOfWeekString,
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                GroupListContent()
             }
         }
+    }
+}
+
+@Composable
+fun GroupListContent(modifier: Modifier = Modifier) {
+    // Todo : 임시코드
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.parfait_cherry),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(83.dp)
+                .zIndex(0f),
+        )
+        Image(
+            painter = painterResource(R.drawable.parfait_cream_top),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(210.dp)
+                .offset(y = (-40).dp)
+                .zIndex(0f),
+        )
+        Image(
+            painter = painterResource(R.drawable.parfait_cream_default),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(241.dp)
+                .offset(y = (-40 - 44).dp)
+                .zIndex(-1f),
+        )
+        Image(
+            painter = painterResource(R.drawable.parfait_cream_default),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(241.dp)
+                .offset(y = (-40 - 44 - 66).dp)
+                .zIndex(-2f),
+        )
+        Image(
+            painter = painterResource(R.drawable.parfait_cream_default),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(241.dp)
+                .offset(y = (-40 - 44 - 66 - 66).dp)
+                .zIndex(-3f),
+        )
+        Image(
+            painter = painterResource(R.drawable.parfait_cup),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .width(324.dp)
+                .offset(y = (-40 - 44 - 66 - 66 - 32).dp)
+                .zIndex(0f),
+        )
     }
 }
 
