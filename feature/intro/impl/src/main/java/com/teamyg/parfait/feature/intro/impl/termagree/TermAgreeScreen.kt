@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -31,6 +32,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.intro.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -60,7 +62,7 @@ internal fun TermAgreeScreen(
         ) {
             item {
                 Text(
-                    text = "서비스 이용 약관에\n동의해 주세요",
+                    text = stringResource(R.string.title_term_agree),
                     style = YGTheme.typography.title.t01B,
                     color = YGAtomicColors.Gray.Gray900,
                 )
@@ -91,7 +93,7 @@ internal fun TermAgreeScreen(
                         modifier = Modifier.size(36.dp),
                     )
                     Text(
-                        text = "모두 동의하기",
+                        text = stringResource(R.string.agree_all),
                         style = YGTheme.typography.body.b01B,
                         color = YGAtomicColors.Gray.Gray900,
                     )
@@ -127,7 +129,7 @@ internal fun TermAgreeScreen(
                         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                         if (termContent.isRequired) {
                             Text(
-                                text = "(필수)",
+                                text = stringResource(R.string.prefix_required),
                                 color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
                                 style = YGTheme.typography.body.b02R,
                             )
@@ -154,7 +156,7 @@ internal fun TermAgreeScreen(
         }
 
         YGButton(
-            text = "확인",
+            text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
             isEnabled = state.isAvailable,
             onClick = onClickNextButton,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_term_agree">서비스 이용 약관에\n동의해 주세요</string>
+    <string name="agree_all">모두 동의하기</string>
+    <string name="prefix_required">(필수)</string>
+    <string name="submit">확인</string>
+</resources>
