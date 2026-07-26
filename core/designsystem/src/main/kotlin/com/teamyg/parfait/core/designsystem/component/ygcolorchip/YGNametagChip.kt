@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.component.ygchip
+package com.teamyg.parfait.core.designsystem.component.ygcolorchip
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,25 +19,24 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
-sealed interface YGColorChipStyle {
+sealed interface YGNametagChipStyle {
     val colorChipSize: Dp
     val colorChipWidth: Dp
     val textStyle: TextStyle
         @Composable get
 
-    data object Style28 : YGColorChipStyle {
+    data object Style28 : YGNametagChipStyle {
         override val colorChipSize = 28.dp
         override val colorChipWidth = 0.75.dp
         override val textStyle: TextStyle
             @Composable get() = YGTheme.typography.caption.c01R
     }
 
-    data object Style40 : YGColorChipStyle {
+    data object Style40 : YGNametagChipStyle {
         override val colorChipSize = 40.dp
         override val colorChipWidth = 1.dp
         override val textStyle: TextStyle
@@ -46,10 +45,10 @@ sealed interface YGColorChipStyle {
 }
 
 @Composable
-fun YGColorChip(
+fun YGNametagChip(
     colorChipType: YGColorChipType,
     userFirstName: String,
-    chip: YGColorChipStyle,
+    chip: YGNametagChipStyle,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -74,8 +73,8 @@ fun YGColorChip(
 
 @YGPreview
 @Composable
-private fun YGChipPreview(
-    @PreviewParameter(YGColorChipPreviewParameterProvider::class)
+private fun YGNametagChipPreview(
+    @PreviewParameter(YGNametagChipPreviewParameterProvider::class)
     data: YGChipPreviewData,
 ) = PreviewBox {
     Column {
@@ -83,15 +82,15 @@ private fun YGChipPreview(
         Spacer(modifier = Modifier.height(5.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            YGColorChip(
+            YGNametagChip(
                 colorChipType = data.colorChipType,
                 userFirstName = "문",
-                chip = YGColorChipStyle.Style28,
+                chip = YGNametagChipStyle.Style28,
             )
-            YGColorChip(
+            YGNametagChip(
                 colorChipType = data.colorChipType,
                 userFirstName = "문",
-                chip = YGColorChipStyle.Style40,
+                chip = YGNametagChipStyle.Style40,
             )
         }
     }

@@ -13,8 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.component.ygchip.YGColorChip
-import com.teamyg.parfait.core.designsystem.component.ygchip.YGColorChipStyle
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -45,7 +43,7 @@ sealed interface YGUserNameStyle {
 fun YGUserChip(
     colorChipType: YGColorChipType,
     userFirstName: String,
-    chip: YGColorChipStyle,
+    chip: YGNametagChipStyle,
     userName: String,
     userStyle: YGUserNameStyle,
     modifier: Modifier = Modifier,
@@ -54,7 +52,7 @@ fun YGUserChip(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        YGColorChip(
+        YGNametagChip(
             colorChipType = colorChipType,
             userFirstName = userFirstName,
             chip = chip,
@@ -76,7 +74,7 @@ private fun YGUserChipPreview() {
             YGUserChip(
                 colorChipType = YGColorChipType.NametagChip1,
                 userFirstName = "문",
-                chip = YGColorChipStyle.Style28,
+                chip = YGNametagChipStyle.Style28,
                 userName = "안녕하세요 문설빈입니다",
                 userStyle = YGUserNameStyle.StyleMedium,
             )
@@ -86,7 +84,7 @@ private fun YGUserChipPreview() {
             YGUserChip(
                 colorChipType = YGColorChipType.NametagChip1,
                 userFirstName = "문",
-                chip = YGColorChipStyle.Style40,
+                chip = YGNametagChipStyle.Style40,
                 userName = "안녕하세요 문설빈입니다",
                 userStyle = YGUserNameStyle.StyleBold,
             )

@@ -1,14 +1,13 @@
-package com.teamyg.parfait.core.designsystem.component.ygchip
+package com.teamyg.parfait.core.designsystem.component.ygcolorchip
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 
 data class YGChipPreviewData(
     val name: String,
     val colorChipType: YGColorChipType,
 )
 
-class YGColorChipPreviewParameterProvider : PreviewParameterProvider<YGChipPreviewData> {
+class YGNametagChipPreviewParameterProvider : PreviewParameterProvider<YGChipPreviewData> {
     override val values = sequenceOf(
         YGChipPreviewData(
             name = "NametagChip1",
