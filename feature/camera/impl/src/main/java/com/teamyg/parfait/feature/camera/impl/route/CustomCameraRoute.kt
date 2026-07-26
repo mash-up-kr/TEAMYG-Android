@@ -22,12 +22,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewComponent
+import com.teamyg.parfait.feature.camera.impl.component.CameraBackgroundPreview
+import com.teamyg.parfait.feature.camera.impl.component.CameraViewfinderPreview
+import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
@@ -95,6 +98,10 @@ internal fun CustomCameraRoute(
                     resultEventBus.sendResult(effect.uri)
                     navigator.onBack()
                 }
+
+                is CustomCameraEffect.NavigateToConfirm -> {
+                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
+                }
             }
         }
     }
@@ -106,6 +113,13 @@ internal fun CustomCameraRoute(
         onPauseOrDispose { }
     }
 
+    val cameraPreviewViews = CameraPreviewViewComponent(
+        lensFacing = state.lensFacing,
+        zoomRatio = state.zoomRatio,
+        onImageCaptureReady = { imageCapture = it },
+        onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
+    )
+
     CustomCameraScreen(
         state = state,
         onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
@@ -114,14 +128,20 @@ internal fun CustomCameraRoute(
         onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
         onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
         onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
+        onClickFlash = {},
         modifier = modifier,
-    ) {
-        CameraPreviewComponent(
-            lensFacing = state.lensFacing,
-            zoomRatio = state.zoomRatio,
-            onImageCaptureReady = { imageCapture = it },
-            onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+        cameraBackground = {
+            CameraBackgroundPreview(
+                previewView = cameraPreviewViews.backgroundPreviewView,
+                modifier = Modifier.fillMaxSize(),
+            )
+        },
+        cameraViewfinder = {
+            CameraViewfinderPreview(
+                previewView = cameraPreviewViews.foregroundPreviewView,
+                camera = cameraPreviewViews.camera.value,
+                modifier = Modifier.fillMaxSize(),
+            )
+        },
+    )
 }

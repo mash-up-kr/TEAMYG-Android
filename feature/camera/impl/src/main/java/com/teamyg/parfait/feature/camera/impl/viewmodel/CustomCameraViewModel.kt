@@ -24,6 +24,10 @@ sealed interface CustomCameraEffect : UiSideEffect {
     data class ReturnResult(
         val uri: String?,
     ) : CustomCameraEffect
+
+    data class NavigateToConfirm(
+        val uri: String,
+    ) : CustomCameraEffect
 }
 
 sealed interface CustomCameraIntent : UiIntent {
@@ -156,7 +160,7 @@ constructor(
 
     private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
         val uri = createCameraCacheUriUseCase(file = intent.file)
-        postSideEffect(CustomCameraEffect.ReturnResult(uri = uri))
+        postSideEffect(CustomCameraEffect.NavigateToConfirm(uri = uri))
     }
 
     private fun handleOnCaptureFailed() {
