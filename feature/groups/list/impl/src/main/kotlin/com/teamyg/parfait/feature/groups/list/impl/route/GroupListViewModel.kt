@@ -19,25 +19,9 @@ data class GroupListUiState(
     val groupList: List<String> = emptyList(), // Todo : 임시로 String 으로 설정하였습니다
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
-) : UiState {
-    val today = Clock.System
-        .now()
-        .toLocalDateTime(TimeZone.currentSystemDefault())
-        .date
-
-    val dateString = today.format(
-        LocalDate.Format {
-            monthName(MonthNames.ENGLISH_FULL)
-            char(' ')
-            day()
-        },
-    )
-    val dayOfWeekString = today.format(
-        LocalDate.Format {
-            dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
-        },
-    )
-}
+    val dateString: String = "",
+    val dayOfWeekString: String = "",
+) : UiState
 
 sealed interface GroupListIntent : UiIntent {
     data object ClickTopBarChip : GroupListIntent
@@ -69,6 +53,29 @@ class GroupListViewModel
 constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
+    init {
+        val today = Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+        updateState {
+            copy(
+                dateString = today.format(
+                    LocalDate.Format {
+                        monthName(MonthNames.ENGLISH_FULL)
+                        char(' ')
+                        day()
+                    },
+                ),
+                dayOfWeekString = today.format(
+                    LocalDate.Format {
+                        dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
+                    },
+                ),
+            )
+        }
+    }
+
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
             GroupListIntent.ClickTopBarChip -> {
