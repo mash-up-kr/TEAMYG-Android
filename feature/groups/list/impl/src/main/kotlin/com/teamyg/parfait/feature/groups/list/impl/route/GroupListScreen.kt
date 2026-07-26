@@ -23,15 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
@@ -40,6 +37,8 @@ import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.drawTooltipCornerTopRight
 import com.teamyg.parfait.core.util.android.extension.withStyle
 import com.teamyg.parfait.feature.groups.list.impl.R
@@ -173,9 +172,7 @@ fun GroupListScreen(
 }
 
 @Composable
-private fun GroupListTooltip(
-    modifier: Modifier = Modifier,
-) {
+private fun GroupListTooltip(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .padding(top = 16.dp)
@@ -186,12 +183,10 @@ private fun GroupListTooltip(
                 cornerWidth = 17.dp,
                 cornerHeight = 16.dp,
                 endPadding = 45.dp,
-            )
-            .border(
+            ).border(
                 width = (1.25).dp,
                 color = YGAtomicColors.Melon.Melon500,
-            )
-            .padding(
+            ).padding(
                 vertical = YGTheme.layout.padding.padding6,
                 horizontal = YGTheme.layout.padding.padding9,
             ),
@@ -199,11 +194,17 @@ private fun GroupListTooltip(
         Text(
             text = buildAnnotatedString {
                 append("여기를 눌러 ")
-                withStyle(textStyle = YGTheme.typography.body.b02B.copy(color = YGAtomicColors.Melon.Melon600)) {
+                withStyle(
+                    textStyle = YGTheme.typography.body.b02B
+                        .copy(color = YGAtomicColors.Melon.Melon600),
+                ) {
                     append("새 그룹")
                 }
                 append("을 만들거나,\n친구에게 받은 초대코드로 ")
-                withStyle(textStyle = YGTheme.typography.body.b02B.copy(color = YGAtomicColors.Melon.Melon600)) {
+                withStyle(
+                    textStyle = YGTheme.typography.body.b02B
+                        .copy(color = YGAtomicColors.Melon.Melon600),
+                ) {
                     append("그룹에 참여")
                 }
                 append("해 보세요.")
@@ -213,4 +214,42 @@ private fun GroupListTooltip(
             textAlign = TextAlign.Center,
         )
     }
+}
+
+private class GroupListScreenPreviewParameterProvider :
+    PreviewParameterProvider<GroupListUiState> {
+    override val values: Sequence<GroupListUiState>
+        get() = sequenceOf(
+            GroupListUiState(
+                groupAddButtonSelected = false,
+                isTooltipVisible = false,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+            GroupListUiState(
+                groupAddButtonSelected = true,
+                isTooltipVisible = false,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+            GroupListUiState(
+                groupAddButtonSelected = false,
+                isTooltipVisible = true,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+        )
+}
+
+@YGPreview
+@Composable
+private fun GroupListScreenPreview(
+    @PreviewParameter(GroupListScreenPreviewParameterProvider::class) uiState: GroupListUiState,
+) = PreviewBox {
+    GroupListScreen(
+        uiState = uiState,
+        onClickChip = {},
+        onClickSideMenu = {},
+        onClickTopping = {},
+    )
 }

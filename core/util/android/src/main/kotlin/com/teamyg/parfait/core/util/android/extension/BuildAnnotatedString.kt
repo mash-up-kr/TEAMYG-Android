@@ -5,7 +5,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.withStyle
 
-inline fun <R : Any> Builder.withStyle(textStyle: TextStyle, block: Builder.() -> R): R = withStyle(
+inline fun <R : Any> Builder.withStyle(
+    textStyle: TextStyle,
+    block: Builder.() -> R,
+): R = withStyle(
     style = SpanStyle(
         color = textStyle.color,
         fontSize = textStyle.fontSize,
