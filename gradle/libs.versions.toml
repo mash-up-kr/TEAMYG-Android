@@ -195,6 +195,7 @@ google-firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.
 parfait-android-application = { id = "com.teamyg.parfait.plugin.android.application" }
 parfait-android-application-signing = { id = "com.teamyg.parfait.plugin.android.application.signing" }
 parfait-android-library = { id = "com.teamyg.parfait.plugin.android.library" }
+parfait-android-network = { id = "com.teamyg.parfait.plugin.android.network" }
 parfait-dagger-hilt-core = { id = "com.teamyg.parfait.plugin.dagger.hilt.core" }
 parfait-dagger-hilt-compose = { id = "com.teamyg.parfait.plugin.dagger.hilt.compose" }
 parfait-jetpack-compose = { id = "com.teamyg.parfait.plugin.jetpack.compose" }

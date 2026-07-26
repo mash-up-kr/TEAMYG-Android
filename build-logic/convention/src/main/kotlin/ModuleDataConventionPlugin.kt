@@ -6,7 +6,7 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
     with(plugins) {
         apply(libs.plugins.parfait.android.library.get().pluginId)
         apply(libs.plugins.parfait.dagger.hilt.core.get().pluginId)
-        apply(libs.plugins.kotlin.serialization.get().pluginId)
+        apply(libs.plugins.parfait.android.network.get().pluginId)
     }
 
     dependencies {
@@ -15,12 +15,9 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
 
         implementation(project(":domain"))
 
-        implementation(libs.kotlinx.serialization)
-
         implementation(libs.androidx.core.ktx)
         implementation(libs.androidx.datastore.preferences)
 
-        implementation(libs.bundles.network)
         implementation(libs.kakao.sdk.user)
 
         implementation(libs.google.mlkit.subject.segmentation)
