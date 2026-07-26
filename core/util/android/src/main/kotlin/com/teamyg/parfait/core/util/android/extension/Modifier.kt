@@ -102,12 +102,6 @@ private fun getTrianglePath(
 ): Path = Path().apply {
     moveTo(startPoint.x, startPoint.y)
     lineTo(trianglePoint.x, trianglePoint.y)
-    quadraticTo(
-        trianglePoint.x,
-        trianglePoint.y,
-        trianglePoint.x,
-        trianglePoint.y,
-    )
     lineTo(endPoint.x, endPoint.y)
     close()
 }
