@@ -10,6 +10,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
 fun YGChipColorIndicator(modifier: Modifier = Modifier) {
@@ -21,8 +23,8 @@ fun YGChipColorIndicator(modifier: Modifier = Modifier) {
     )
 }
 
-@Preview
+@YGPreview
 @Composable
-private fun YGChipColorIndicatorPreview() {
+private fun YGChipColorIndicatorPreview() = PreviewBox {
     YGChipColorIndicator()
 }
