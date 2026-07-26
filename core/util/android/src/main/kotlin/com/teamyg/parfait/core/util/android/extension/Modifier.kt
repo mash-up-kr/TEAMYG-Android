@@ -49,7 +49,7 @@ fun Modifier.drawTooltipCornerTopRight(
     cornerWidth: Dp,
     cornerHeight: Dp,
     endPadding: Dp,
-    borderWidth: Dp = 1.25.dp,
+    borderWidth: Dp,
 ) = drawWithContent {
     drawContent()
     val triangleStart = Offset(

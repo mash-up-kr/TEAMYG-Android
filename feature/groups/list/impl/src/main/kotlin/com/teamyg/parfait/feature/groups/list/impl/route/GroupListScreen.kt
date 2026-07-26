@@ -183,6 +183,7 @@ private fun GroupListTooltip(modifier: Modifier = Modifier) {
                 cornerWidth = 17.dp,
                 cornerHeight = 16.dp,
                 endPadding = 45.dp,
+                borderWidth = (1.25).dp,
             ).border(
                 width = (1.25).dp,
                 color = YGAtomicColors.Melon.Melon500,
