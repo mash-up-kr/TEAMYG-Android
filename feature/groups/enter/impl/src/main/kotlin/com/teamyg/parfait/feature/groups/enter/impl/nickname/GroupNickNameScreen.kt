@@ -29,7 +29,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.enter.impl.R
 
-private const val NICKNAME_MAX_LENGTH = 15
+private const val NICKNAME_MAX_LENGTH = 10
 
 @Composable
 internal fun GroupNickNameScreen(
