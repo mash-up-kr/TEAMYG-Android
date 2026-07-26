@@ -9,21 +9,6 @@ inline fun <R : Any> Builder.withStyle(
     textStyle: TextStyle,
     block: Builder.() -> R,
 ): R = withStyle(
-    style = SpanStyle(
-        color = textStyle.color,
-        fontSize = textStyle.fontSize,
-        fontWeight = textStyle.fontWeight,
-        fontStyle = textStyle.fontStyle,
-        fontSynthesis = textStyle.fontSynthesis,
-        fontFamily = textStyle.fontFamily,
-        fontFeatureSettings = textStyle.fontFeatureSettings,
-        letterSpacing = textStyle.letterSpacing,
-        baselineShift = textStyle.baselineShift,
-        textGeometricTransform = textStyle.textGeometricTransform,
-        localeList = textStyle.localeList,
-        background = textStyle.background,
-        textDecoration = textStyle.textDecoration,
-        shadow = textStyle.shadow,
-    ),
+    style = textStyle.toSpanStyle(),
     block = block,
 )
