@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygtext
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ fun YGDate(
     Row(
         modifier = Modifier
             .border(width = 0.75.dp, color = YGAtomicColors.Gray.Gray800)
+            .background(color = YGAtomicColors.Gray.White)
             .padding(
                 vertical = YGTheme.layout.padding.padding3,
                 horizontal = YGTheme.layout.padding.padding4,
