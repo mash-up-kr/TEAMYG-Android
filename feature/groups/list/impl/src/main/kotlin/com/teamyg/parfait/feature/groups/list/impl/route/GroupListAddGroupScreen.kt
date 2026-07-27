@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
@@ -18,7 +17,6 @@ import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.util.android.clickable.clickableYG
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -69,14 +67,4 @@ fun GroupListAddGroupScreen(
             )
         }
     }
-}
-
-@Preview
-@Composable
-private fun GroupListAddGroupScreenPreview() = PreviewBox {
-    GroupListAddGroupScreen(
-        onClickCreateNewGroup = {},
-        onClickEnterNewGroup = {},
-        onDismissed = {},
-    )
 }
