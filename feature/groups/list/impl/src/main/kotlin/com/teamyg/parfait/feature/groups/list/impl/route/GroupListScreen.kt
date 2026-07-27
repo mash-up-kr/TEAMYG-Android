@@ -143,7 +143,9 @@ internal fun GroupListContent(modifier: Modifier = Modifier) {
             )
         },
         modifier = modifier.fillMaxWidth(),
-    )
+    ) {
+        // Todo : Left / Right 타입에 맞게 보여주기
+    }
 }
 
 private class GroupListScreenPreviewParameterProvider :
