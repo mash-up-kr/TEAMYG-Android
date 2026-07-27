@@ -31,7 +31,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @OptIn(ExperimentalMaterial3Api::class)
