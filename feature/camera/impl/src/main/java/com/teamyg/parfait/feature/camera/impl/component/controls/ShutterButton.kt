@@ -25,6 +25,7 @@ internal fun ShutterButton(
         modifier = modifier
             .size(56.dp)
             .clip(CircleShape)
+            .background(color = YGAtomicColors.Gray.White)
             .border(width = 1.dp, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
