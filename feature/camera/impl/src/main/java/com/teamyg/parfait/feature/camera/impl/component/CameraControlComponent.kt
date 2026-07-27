@@ -30,52 +30,31 @@ internal fun CameraControlComponent(
 ) {
     Column(
         modifier = modifier
-            .padding(top = 16.dp, bottom = 24.dp),
+            .padding(bottom = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-//        ZoomLevelRow(
-//            zoomRatio = zoomRatio,
-//            zoomRange = zoomRange,
-//            onClickZoomLevel = onClickZoomLevel,
-//        )
 
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Absolute.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                YGIconButton(
-                    iconResource = R.drawable.ic_reverse,
-                    size = YGIconButtonSize.SIZE_44,
-                    contentDescription = null,
-                    onClick = onClickFlip,
-                    isEnabled = true,
-                )
-            }
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                ShutterButton(onClick = onClickShutter)
-            }
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                YGIconButton(
-                    iconResource = R.drawable.ic_lightning,
-                    size = YGIconButtonSize.SIZE_44,
-                    contentDescription = null,
-                    onClick = onClickFlash,
-                    isEnabled = true,
-                )
-            }
+            YGRoundIconButton(
+                iconResource = R.drawable.ic_lightning,
+                size = YGIconButtonSize.SIZE_44,
+                contentDescription = null,
+                onClick = onClickFlash,
+                isEnabled = true,
+            )
+            ShutterButton(onClick = onClickShutter)
+            YGRoundIconButton(
+                iconResource = R.drawable.ic_reverse,
+                size = YGIconButtonSize.SIZE_44,
+                contentDescription = null,
+                onClick = onClickFlip,
+            )
         }
     }
 }
