@@ -1,13 +1,22 @@
 package com.teamyg.parfait.feature.groups.list.impl.route.component
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.SubcomposeMeasureScope
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.feature.groups.list.impl.R
 
 /**
  * 파르페를 cherry - top - middle* - bottom 순서로 가운데 정렬해 세로로 쌓는 Layout.
@@ -155,4 +164,86 @@ private fun Placeable.PlacementScope.placeCentered(
         y = y,
         zIndex = zIndex,
     )
+}
+
+@Preview
+@Composable
+private fun GroupListParfaitLayoutShortPreview() {
+    GroupListParfaitLayout(
+        cherrySection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cherry),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(83.dp),
+            )
+        },
+        topSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cream_top),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(210.dp),
+            )
+        },
+        middleSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cream_default),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(241.dp),
+            )
+        },
+        bottomSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cup),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(324.dp),
+            )
+        },
+    ) {
+        Spacer(modifier = Modifier.height(100.dp))
+    }
+}
+
+@Preview
+@Composable
+private fun GroupListParfaitLayoutLongPreview() {
+    GroupListParfaitLayout(
+        cherrySection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cherry),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(83.dp),
+            )
+        },
+        topSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cream_top),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(210.dp),
+            )
+        },
+        middleSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cream_default),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(241.dp),
+            )
+        },
+        bottomSection = {
+            Image(
+                painter = painterResource(R.drawable.parfait_cup),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(324.dp),
+            )
+        },
+    ) {
+        Spacer(modifier = Modifier.height(800.dp))
+    }
 }
