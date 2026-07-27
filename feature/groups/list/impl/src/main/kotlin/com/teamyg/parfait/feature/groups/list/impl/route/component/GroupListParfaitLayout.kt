@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.list.impl.route
+package com.teamyg.parfait.feature.groups.list.impl.route.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
