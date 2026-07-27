@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.groups.list.impl.route.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
