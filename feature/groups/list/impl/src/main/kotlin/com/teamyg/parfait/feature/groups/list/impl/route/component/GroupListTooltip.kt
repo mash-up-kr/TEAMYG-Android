@@ -21,7 +21,6 @@ import com.teamyg.parfait.core.util.android.extension.withStyle
 internal fun GroupListTooltip(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .padding(top = 16.dp)
             .background(color = YGAtomicColors.Gray.White)
             .drawTooltipCornerTopRight(
                 borderColor = YGAtomicColors.Melon.Melon500,
