@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -60,18 +61,8 @@ constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEf
             .date
         updateState {
             copy(
-                dateString = today.format(
-                    LocalDate.Format {
-                        monthName(MonthNames.ENGLISH_FULL)
-                        char(' ')
-                        day()
-                    },
-                ),
-                dayOfWeekString = today.format(
-                    LocalDate.Format {
-                        dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
-                    },
-                ),
+                dateString = today.format(DateFormat.FullMonthWithDay),
+                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
             )
         }
     }
