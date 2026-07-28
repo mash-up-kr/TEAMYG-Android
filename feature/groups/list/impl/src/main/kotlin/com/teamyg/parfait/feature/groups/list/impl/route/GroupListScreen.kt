@@ -67,7 +67,7 @@ internal fun GroupListScreen(
                         ),
                         tooltip = {
                             GroupListTooltip(
-                                modifier = Modifier.padding(top = 16.dp)
+                                modifier = Modifier.padding(top = 16.dp),
                             )
                         },
                         state = tooltipState,

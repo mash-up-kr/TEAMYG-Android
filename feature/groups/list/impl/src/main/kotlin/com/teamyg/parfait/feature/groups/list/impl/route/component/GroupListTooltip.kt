@@ -29,12 +29,10 @@ internal fun GroupListTooltip(modifier: Modifier = Modifier) {
                 cornerHeight = 16.dp,
                 endPadding = 45.dp,
                 borderWidth = (1.25).dp,
-            )
-            .border(
+            ).border(
                 width = (1.25).dp,
                 color = YGAtomicColors.Melon.Melon500,
-            )
-            .padding(
+            ).padding(
                 vertical = YGTheme.layout.padding.padding6,
                 horizontal = YGTheme.layout.padding.padding9,
             ),
