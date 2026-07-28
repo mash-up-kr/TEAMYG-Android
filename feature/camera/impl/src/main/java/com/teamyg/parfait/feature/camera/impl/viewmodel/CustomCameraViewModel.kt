@@ -56,6 +56,8 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnClickShutter : CustomCameraIntent
 
+    data object OnClickFlash : CustomCameraIntent
+
     data class OnCaptureSaved(
         val file: File,
     ) : CustomCameraIntent
@@ -72,6 +74,7 @@ data class CustomCameraState(
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val zoomRatio: Float = 1f,
     val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
+    val flashMode: FlashMode = FlashMode.OFF,
 ) : UiState
 
 @HiltViewModel
@@ -100,6 +103,7 @@ constructor(
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
             is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
             is CustomCameraIntent.OnCancel -> handleOnCancel()
+            is CustomCameraIntent.OnClickFlash -> handleOnClickFlash()
         }
     }
 
@@ -154,6 +158,17 @@ constructor(
         }
     }
 
+    private fun handleOnClickFlash() {
+        updateState {
+            copy(
+                flashMode = when (flashMode) {
+                    FlashMode.ON -> FlashMode.OFF
+                    FlashMode.OFF -> FlashMode.ON
+                },
+            )
+        }
+    }
+
     private fun handleOnClickShutter() {
         postSideEffect(CustomCameraEffect.CaptureImage(file = createCameraCacheFileUseCase()))
     }
@@ -170,4 +185,9 @@ constructor(
     private fun handleOnCancel() {
         postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
     }
+}
+
+enum class FlashMode {
+    OFF,
+    ON,
 }

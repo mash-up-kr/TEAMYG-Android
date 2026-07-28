@@ -38,6 +38,7 @@ import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
+import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -146,6 +147,13 @@ internal fun CustomCameraRoute(
         onPauseOrDispose { }
     }
 
+    LaunchedEffect(state.flashMode, imageCapture) {
+        imageCapture?.flashMode = when (state.flashMode) {
+            FlashMode.OFF -> ImageCapture.FLASH_MODE_OFF
+            FlashMode.ON -> ImageCapture.FLASH_MODE_ON
+        }
+    }
+
     val cameraPreviewHandle = CameraPreviewViewComponent(
         lensFacing = state.lensFacing,
         zoomRatio = state.zoomRatio,
@@ -161,7 +169,7 @@ internal fun CustomCameraRoute(
         onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
         onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
         onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
-        onClickFlash = {},
+        onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
         modifier = modifier,
         onViewfinderRectChange = { viewfinderRect = it },
         cameraFeed = {
