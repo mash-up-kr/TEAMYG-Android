@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.camera.core.Camera
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -94,11 +93,15 @@ internal fun CameraFeedLayer(
                         Offset(frameRect.right - cornerLength, frameRect.top) to Offset(frameRect.right, frameRect.top),
                         Offset(frameRect.right, frameRect.top) to Offset(frameRect.right, frameRect.top + cornerLength),
                         // bottomLeft
-                        Offset(frameRect.left, frameRect.bottom) to Offset(frameRect.left + cornerLength, frameRect.bottom),
-                        Offset(frameRect.left, frameRect.bottom - cornerLength) to Offset(frameRect.left, frameRect.bottom),
+                        Offset(frameRect.left, frameRect.bottom) to
+                            Offset(frameRect.left + cornerLength, frameRect.bottom),
+                        Offset(frameRect.left, frameRect.bottom - cornerLength) to
+                            Offset(frameRect.left, frameRect.bottom),
                         // bottomRight
-                        Offset(frameRect.right - cornerLength, frameRect.bottom) to Offset(frameRect.right, frameRect.bottom),
-                        Offset(frameRect.right, frameRect.bottom - cornerLength) to Offset(frameRect.right, frameRect.bottom),
+                        Offset(frameRect.right - cornerLength, frameRect.bottom) to
+                            Offset(frameRect.right, frameRect.bottom),
+                        Offset(frameRect.right, frameRect.bottom - cornerLength) to
+                            Offset(frameRect.right, frameRect.bottom),
                     ).forEach { (start, end) ->
                         drawLine(
                             color = YGAtomicColors.Gray.Gray500,
