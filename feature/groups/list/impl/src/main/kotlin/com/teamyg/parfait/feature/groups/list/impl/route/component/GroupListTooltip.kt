@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
-import com.teamyg.parfait.core.util.android.extension.drawTooltipCornerTopRight
+import com.teamyg.parfait.core.util.android.extension.drawTooltipCornerTop
 import com.teamyg.parfait.core.util.android.extension.withStyle
 
 @Composable
@@ -22,12 +22,12 @@ internal fun GroupListTooltip(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .background(color = YGAtomicColors.Gray.White)
-            .drawTooltipCornerTopRight(
+            .drawTooltipCornerTop(
                 borderColor = YGAtomicColors.Melon.Melon500,
                 backgroundColor = YGAtomicColors.Gray.White,
                 cornerWidth = 17.dp,
                 cornerHeight = 16.dp,
-                endPadding = 45.dp,
+                arrowCenterX = { size.width - 45.dp.toPx() },
                 borderWidth = (1.25).dp,
             ).border(
                 width = (1.25).dp,

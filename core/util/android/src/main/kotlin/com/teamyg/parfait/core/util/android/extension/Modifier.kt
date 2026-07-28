@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
@@ -42,25 +43,32 @@ fun Modifier.navigationBarsAndImePadding(): Modifier {
     return windowInsetsPadding(insets)
 }
 
-fun Modifier.drawTooltipCornerTopRight(
+fun Modifier.drawTooltipCornerTop(
     borderColor: Color,
     backgroundColor: Color,
     cornerWidth: Dp,
     cornerHeight: Dp,
-    endPadding: Dp,
     borderWidth: Dp,
+    arrowCenterX: DrawScope.() -> Float,
 ) = drawWithContent {
     drawContent()
+
+    val halfCornerWidth = cornerWidth.toPx() / 2
+    val centerX = arrowCenterX().coerceIn(
+        minimumValue = halfCornerWidth,
+        maximumValue = (size.width - halfCornerWidth).coerceAtLeast(halfCornerWidth),
+    )
+
     val triangleStart = Offset(
-        x = size.width - cornerWidth.toPx() - endPadding.toPx(),
+        x = centerX - halfCornerWidth,
         y = borderWidth.toPx(),
     )
     val triangleEnd = Offset(
-        x = size.width - endPadding.toPx(),
+        x = centerX + halfCornerWidth,
         y = borderWidth.toPx(),
     )
     val trianglePoint = Offset(
-        x = size.width - (cornerWidth.toPx() / 2) - endPadding.toPx(),
+        x = centerX,
         y = 0f - cornerHeight.toPx(),
     )
 
