@@ -38,7 +38,7 @@ internal fun CameraPermissionRequestComponent(
         modifier = modifier
             .background(YGAtomicColors.Gray.White),
     ) {
-        if (isInit && !permanentlyDenied) {
+        if (isInit) {
             YGIconButton(
                 iconResource = R.drawable.ic_close,
                 size = YGIconButtonSize.SIZE_44,
@@ -74,36 +74,12 @@ internal fun CameraPermissionRequestComponent(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
                 YGButton(
                     text = "설정으로 이동",
-                    buttonType = YGButtonType.SmallSquare,
+                    buttonType = YGButtonType.Medium.Primary,
                     isEnabled = true,
                     onClick = onClickOpenAppSettings,
                 )
             }
         }
-
-//        if (isInit) {
-//            when (permanentlyDenied) {
-//                true -> {
-//                    Text(
-//                        text = "카메라 권한이 거부되어 있습니다.\n설정에서 권한을 허용해주세요.",
-//                        color = Color.White,
-//                    )
-//                    Button(onClick = onClickOpenAppSettings) {
-//                        Text(text = "설정 열기")
-//                    }
-//                }
-//
-//                false -> {
-//                    Text(
-//                        text = "카메라 권한이 필요합니다.",
-//                        color = Color.White,
-//                    )
-//                    Button(onClick = onClickGrantPermission) {
-//                        Text(text = "권한 요청")
-//                    }
-//                }
-//            }
-//        }
     }
 }
 
