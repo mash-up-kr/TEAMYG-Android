@@ -9,6 +9,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
@@ -23,9 +24,11 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToggleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
 import com.teamyg.parfait.preview.screen.component.YGActionItemPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGAlertPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGChipButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDangerZonePreviewScreen
@@ -40,6 +43,7 @@ import com.teamyg.parfait.preview.screen.component.YGListItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGModalPopupPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFieldPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFormFieldPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGToastPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGToggleButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTopBarPreviewScreen
 
@@ -127,6 +131,22 @@ internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Naviga
     entry<NavKeyYGActionItem> {
         ScreenScaffold { modifier ->
             YGActionItemPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGToast> {
+        ScreenScaffold { modifier ->
+            YGToastPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGAlert> {
+        ScreenScaffold { modifier ->
+            YGAlertPreviewScreen(
                 onBack = navigator::onBack,
                 modifier = modifier,
             )

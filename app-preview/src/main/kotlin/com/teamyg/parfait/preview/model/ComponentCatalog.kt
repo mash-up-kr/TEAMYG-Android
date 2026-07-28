@@ -2,6 +2,7 @@ package com.teamyg.parfait.preview.model
 
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
@@ -16,6 +17,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToggleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
 
@@ -88,6 +90,16 @@ val componentCatalog: List<ComponentEntry> = listOf(
         category = ComponentCategory.TEXT,
         label = "YGActionItem",
         navKey = NavKeyYGActionItem,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGToast",
+        navKey = NavKeyYGToast,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGAlert",
+        navKey = NavKeyYGAlert,
     ),
     ComponentEntry(
         category = ComponentCategory.CONTAINER,
