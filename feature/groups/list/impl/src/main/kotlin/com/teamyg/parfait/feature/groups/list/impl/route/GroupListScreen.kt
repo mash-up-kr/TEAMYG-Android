@@ -3,11 +3,13 @@ package com.teamyg.parfait.feature.groups.list.impl.route
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
@@ -80,23 +82,26 @@ internal fun GroupListScreen(
                 },
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                        bottom = YGTheme.layout.padding.padding6,
-                    ),
+            LazyColumn(
+                contentPadding = PaddingValues(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    bottom = YGTheme.layout.padding.padding6,
+                ),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                YGDate(
-                    date = uiState.dateString,
-                    day = uiState.dayOfWeekString,
-                )
+                item {
+                    YGDate(
+                        date = uiState.dateString,
+                        day = uiState.dayOfWeekString,
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                GroupListContent()
+                    GroupListContent()
+                }
             }
         }
     }
