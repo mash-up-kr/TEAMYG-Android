@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -54,9 +53,7 @@ fun YGButton(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
-                shape = buttonType.radius,
-            ).clip(shape = buttonType.radius)
-            .clickable(
+            ).clickable(
                 enabled = isEnabled,
                 onClick = onClick,
                 interactionSource = interactionSource,
