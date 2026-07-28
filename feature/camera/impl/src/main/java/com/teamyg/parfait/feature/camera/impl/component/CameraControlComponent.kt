@@ -41,7 +41,13 @@ internal fun CameraControlComponent(
             horizontalArrangement = Arrangement.Absolute.SpaceBetween,
         ) {
             YGRoundIconButton(
-                iconResource = if (flashMode == FlashMode.ON) R.drawable.ic_lightning_active else R.drawable.ic_lightning,
+                iconResource = if (flashMode ==
+                    FlashMode.ON
+                ) {
+                    R.drawable.ic_lightning_active
+                } else {
+                    R.drawable.ic_lightning
+                },
                 size = YGIconButtonSize.SIZE_44,
                 contentDescription = null,
                 onClick = onClickFlash,

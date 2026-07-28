@@ -108,7 +108,7 @@ private fun CameraContent(
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
-    flashMode: FlashMode
+    flashMode: FlashMode,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         val toastPolicy = rememberYGToastPolicy()
