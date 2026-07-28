@@ -14,6 +14,7 @@ import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonS
 import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 
 @Composable
 internal fun CameraControlComponent(
@@ -24,6 +25,7 @@ internal fun CameraControlComponent(
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
+    flashMode: FlashMode,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -39,12 +41,12 @@ internal fun CameraControlComponent(
             horizontalArrangement = Arrangement.Absolute.SpaceBetween,
         ) {
             YGRoundIconButton(
-                iconResource = R.drawable.ic_lightning,
+                iconResource = if (flashMode == FlashMode.ON) R.drawable.ic_lightning_active else R.drawable.ic_lightning,
                 size = YGIconButtonSize.SIZE_44,
                 contentDescription = null,
                 onClick = onClickFlash,
-                isEnabled = true,
             )
+
             ShutterButton(onClick = onClickShutter)
             YGRoundIconButton(
                 iconResource = R.drawable.ic_reverse,
@@ -67,6 +69,7 @@ private fun PreviewCameraControlComponent() = PreviewBox {
         onClickFlip = {},
         onClickFlash = {},
         onClickCancel = {},
+        flashMode = FlashMode.OFF,
         modifier = Modifier.fillMaxWidth(),
     )
 }
