@@ -11,21 +11,50 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.DayOfWeekNames
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.todayIn
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
+import com.teamyg.parfait.feature.camera.impl.component.YGRoundIconButton
+import kotlinx.datetime.format
+import kotlin.time.Clock
+
+private val MonthDayFormat = LocalDate.Format {
+    monthName(MonthNames.ENGLISH_ABBREVIATED)
+    chars(" ")
+    day(padding = Padding.NONE)
+}
+
+private val WeekdayFormat = LocalDate.Format {
+    dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
+}
 
 @Composable
 internal fun CustomCameraScreen(
@@ -55,26 +84,14 @@ internal fun CustomCameraScreen(
             cameraFeed = cameraFeed,
         )
 
-        false -> CameraContent(
-            zoomRatio = state.zoomRatio,
-            zoomRange = state.zoomRange,
-            onClickZoomLevel = onClickZoomLevel,
-            onClickShutter = onClickShutter,
-            onClickFlip = onClickFlip,
-            onClickFlash = onClickFlash,
+        false -> CameraPermissionRequestComponent(
+            isInit = state.isInit,
+            permanentlyDenied = state.permanentlyDenied,
+            onClickGrantPermission = onClickGrantPermission,
+            onClickOpenAppSettings = onClickOpenAppSettings,
             onClickCancel = onClickCancel,
-            onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
-            cameraFeed = cameraFeed,
         )
-//        false -> CameraPermissionRequestComponent(
-//            isInit = state.isInit,
-//            permanentlyDenied = state.permanentlyDenied,
-//            onClickGrantPermission = onClickGrantPermission,
-//            onClickOpenAppSettings = onClickOpenAppSettings,
-//            onClickCancel = onClickCancel,
-//            modifier = modifier,
-//        )
     }
 }
 
@@ -92,6 +109,12 @@ private fun CameraContent(
     cameraFeed: @Composable () -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
+        val toastPolicy = rememberYGToastPolicy()
+
+        LaunchedEffect(Unit) {
+            toastPolicy.show(YGToastType.Edit("대상이 배경과 선명하게 구분될수록 깔끔하게 선택돼요"))
+        }
+
         cameraFeed()
 
         Column(
@@ -105,8 +128,12 @@ private fun CameraContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                YGDate("dad", "asd")
-                YGIconButton(
+                val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+                YGDate(
+                    date = today.format(MonthDayFormat),
+                    day = today.format(WeekdayFormat),
+                )
+                YGRoundIconButton(
                     iconResource = R.drawable.ic_close,
                     size = YGIconButtonSize.SIZE_44,
                     contentDescription = null,
@@ -123,7 +150,15 @@ private fun CameraContent(
                     .onGloballyPositioned { coordinates ->
                         onViewfinderRectChange(coordinates.boundsInRoot())
                     },
-            )
+            ) {
+                YGToastHost(
+                    policy = toastPolicy,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .requiredWidth(LocalConfiguration.current.screenWidthDp.dp)
+                        .windowInsetsPadding(WindowInsets.systemBars),
+                )
+            }
             Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
 
             CameraControlComponent(
