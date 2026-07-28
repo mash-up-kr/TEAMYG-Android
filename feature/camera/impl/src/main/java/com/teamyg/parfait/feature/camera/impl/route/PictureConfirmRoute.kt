@@ -13,7 +13,8 @@ internal fun PictureConfirmRoute(
 ) {
     PictureConfirmScreen(
         uri = uri,
-        onClickConfirm = { navigator.onBack() },
+        onClickReCapture = { navigator.onBack() },
+        onClickConfirm = { navigator.onBack() }, // 로딩페이지로 넘어가야댐
         modifier = modifier,
     )
 }

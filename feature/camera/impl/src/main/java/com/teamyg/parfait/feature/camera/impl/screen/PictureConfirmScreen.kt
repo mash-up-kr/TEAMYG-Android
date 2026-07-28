@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
@@ -23,10 +25,12 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 @Composable
 internal fun PictureConfirmScreen(
     uri: String,
+    onClickReCapture: () -> Unit,
     onClickConfirm: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -46,7 +50,7 @@ internal fun PictureConfirmScreen(
         Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
         val painter = rememberAsyncImagePainter(model = uri)
 
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().border(width = 1.dp, color = YGAtomicColors.Gray.Gray500)) {
             Image(
                 painter = painter,
                 contentDescription = null,
@@ -62,14 +66,14 @@ internal fun PictureConfirmScreen(
         ) {
             YGButton(
                 text = "다시찍기",
-                buttonType = YGButtonType.SmallSquare,
-                isEnabled = false,
-                onClick = onClickConfirm,
+                buttonType = YGButtonType.Medium.Secondary,
+                isEnabled = true,
+                onClick = onClickReCapture,
                 modifier = Modifier.weight(1f),
             )
             YGButton(
                 text = "다음",
-                buttonType = YGButtonType.SmallSquare,
+                buttonType = YGButtonType.Medium.Primary,
                 isEnabled = true,
                 onClick = onClickConfirm,
                 modifier = Modifier.weight(1f),
@@ -84,6 +88,7 @@ internal fun PictureConfirmScreen(
 private fun PreviewPictureConfirmScreen() = PreviewBox {
     PictureConfirmScreen(
         uri = "",
+        onClickReCapture = {},
         onClickConfirm = {},
     )
 }
