@@ -54,14 +54,14 @@ fun GroupListAddGroupScreen(
                 .background(
                     color = YGAtomicColors.Cherry.Cherry50,
                     shape = YGTheme.shapes.radius.medium1,
-                ).padding(horizontal = YGTheme.layout.padding.padding5),
+                ),
         ) {
             YGActionItem(
                 text = "그룹 만들기", // Todo : core:ui 에 string resource 로 분리
                 iconResource = DesignSystemR.drawable.ic_new_group,
                 onClick = onClickCreateNewGroup,
             )
-            YGHorizontalDivider(modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding2))
+            YGHorizontalDivider(modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding6))
             YGActionItem(
                 text = "그룹 들어가기", // Todo : core:ui 에 string resource 로 분리
                 iconResource = DesignSystemR.drawable.ic_enter,
