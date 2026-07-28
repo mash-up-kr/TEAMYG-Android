@@ -42,6 +42,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.parfait.feature.camera.impl.component.YGRoundIconButton
+import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.datetime.format
 import kotlin.time.Clock
 
@@ -81,6 +82,7 @@ internal fun CustomCameraScreen(
             onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
             cameraFeed = cameraFeed,
+            flashMode = state.flashMode,
         )
 
         false -> CameraPermissionRequestComponent(
@@ -106,6 +108,7 @@ private fun CameraContent(
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
+    flashMode: FlashMode
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         val toastPolicy = rememberYGToastPolicy()
@@ -137,7 +140,6 @@ private fun CameraContent(
                     size = YGIconButtonSize.SIZE_44,
                     contentDescription = null,
                     onClick = onClickCancel,
-                    isEnabled = true,
                 )
             }
             Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding3))
@@ -168,6 +170,7 @@ private fun CameraContent(
                 onClickFlip = onClickFlip,
                 onClickFlash = onClickFlash,
                 onClickCancel = onClickCancel,
+                flashMode = flashMode,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
