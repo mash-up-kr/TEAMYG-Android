@@ -5,7 +5,6 @@ import kotlinx.datetime.format.DayOfWeekNames
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.char
 
-
 object DateFormat {
     val FullMonthWithDay = LocalDate.Format {
         monthName(MonthNames.ENGLISH_FULL)
