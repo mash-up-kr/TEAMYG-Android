@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.camera.impl.component
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -34,12 +32,11 @@ internal fun CameraControlComponent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Absolute.SpaceBetween
+            horizontalArrangement = Arrangement.Absolute.SpaceBetween,
         ) {
             YGRoundIconButton(
                 iconResource = R.drawable.ic_lightning,
