@@ -21,6 +21,7 @@ import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGroupTagChip
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.feature.groups.list.impl.R
 
 private const val TOPPING_FRAME_SIZE = 160
 private const val TOPPING_IMAGE_SIZE = 96
@@ -87,6 +88,7 @@ private fun ToppingContent(
             model = imageUrl,
             contentDescription = null,
             placeholder = painterResource(templateType.resId),
+            error = painterResource(R.drawable.topping_template_error),
             modifier = modifier,
         )
     }
