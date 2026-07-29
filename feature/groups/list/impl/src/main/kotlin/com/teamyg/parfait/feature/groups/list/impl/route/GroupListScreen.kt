@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEachIndexed
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
@@ -33,7 +34,13 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
+import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingGroup
+import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingGroupType
+import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingTemplateType
+import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+private const val SPECIAL_RULE_THRESHOLD = 3
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +108,10 @@ internal fun GroupListScreen(
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    GroupListContent()
+                    GroupListContent(
+                        groupList = uiState.groupList,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
@@ -109,7 +119,10 @@ internal fun GroupListScreen(
 }
 
 @Composable
-internal fun GroupListContent(modifier: Modifier = Modifier) {
+internal fun GroupListContent(
+    groupList: List<MockToppingGroup>,
+    modifier: Modifier = Modifier,
+) {
     GroupListParfaitLayout(
         cherrySection = {
             Image(
@@ -143,9 +156,27 @@ internal fun GroupListContent(modifier: Modifier = Modifier) {
                 modifier = Modifier.width(324.dp),
             )
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
-        // Todo : Left / Right 타입에 맞게 보여주기
+        ToppingLayout(
+            contentPadding = PaddingValues(
+                top = if (groupList.size <= SPECIAL_RULE_THRESHOLD) 108.dp else 96.dp,
+                end = YGTheme.layout.padding.padding2,
+                start = YGTheme.layout.padding.padding2,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            groupList.fastForEachIndexed { index, toppingGroup ->
+                ToppingGroup(
+                    name = toppingGroup.name,
+                    uploadTime = toppingGroup.lastModify,
+                    imageUrl = toppingGroup.imageUrl,
+                    chipColorType = toppingGroup.colorChipType,
+                    templateType = ToppingTemplateType.entries[index % ToppingTemplateType.entries.size],
+                    groupType = ToppingGroupType.entries[index % ToppingGroupType.entries.size],
+                )
+            }
+        }
     }
 }
 
