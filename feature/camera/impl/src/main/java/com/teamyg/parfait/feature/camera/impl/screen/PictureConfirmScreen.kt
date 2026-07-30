@@ -34,17 +34,24 @@ internal fun PictureConfirmScreen(
     uri: String,
     onClickReCapture: () -> Unit,
     onClickConfirm: () -> Unit,
+    onClickClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = YGTheme.layout.padding.padding7),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(
+                start = YGTheme.layout.padding.padding7,
+                end = YGTheme.layout.padding.padding7,
+                top = YGTheme.layout.padding.padding6,
+                bottom = YGTheme.layout.padding.padding1
+            ),
     ) {
-        Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding6))
         YGIconButton(
             iconResource = DesignSystemR.drawable.ic_close,
             size = YGIconButtonSize.SIZE_44,
             contentDescription = null,
-            onClick = {},
+            onClick = onClickClose,
             modifier = Modifier
                 .align(Alignment.End),
             isEnabled = true,
@@ -61,7 +68,7 @@ internal fun PictureConfirmScreen(
                     .fillMaxWidth(),
             )
         }
-        Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding6))
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
@@ -81,7 +88,6 @@ internal fun PictureConfirmScreen(
                 modifier = Modifier.weight(1f),
             )
         }
-        Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding9))
     }
 }
 
@@ -92,5 +98,6 @@ private fun PreviewPictureConfirmScreen() = PreviewBox {
         uri = "",
         onClickReCapture = {},
         onClickConfirm = {},
+        onClickClose = {}
     )
 }
