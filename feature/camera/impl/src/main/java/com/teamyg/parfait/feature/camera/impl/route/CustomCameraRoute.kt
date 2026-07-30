@@ -21,11 +21,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
@@ -38,6 +42,7 @@ import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
+import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -70,6 +75,9 @@ internal fun CustomCameraRoute(
             ),
         )
     }
+
+    val toastPolicy = rememberYGToastPolicy()
+    val guideToastMessage = stringResource(R.string.camera_custom_guide_toast)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -135,6 +143,9 @@ internal fun CustomCameraRoute(
 
                 is CustomCameraEffect.NavigateToConfirm -> {
                     navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
+                }
+                is CustomCameraEffect.ShowGuideToast -> {
+                    toastPolicy.show(YGToastType.Edit(guideToastMessage))
                 }
             }
         }
