@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.di.network
+package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.BuildConfig
 import com.teamyg.parfait.data.model.qualifier.RemoteJson

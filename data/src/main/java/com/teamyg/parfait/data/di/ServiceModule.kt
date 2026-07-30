@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.di.service.temp
+package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.service.TempService
 import dagger.Module
@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object TempServiceModule {
+object ServiceModule {
     @Provides
     @Singleton
     fun provideTempService(retrofit: Retrofit): TempService = retrofit.create(TempService::class.java)

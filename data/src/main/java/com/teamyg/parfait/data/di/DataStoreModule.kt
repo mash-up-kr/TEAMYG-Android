@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.di.datastore
+package com.teamyg.parfait.data.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
