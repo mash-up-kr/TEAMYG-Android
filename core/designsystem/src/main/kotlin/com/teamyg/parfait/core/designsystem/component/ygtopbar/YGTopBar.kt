@@ -102,7 +102,7 @@ fun YGTopBarDefault(
             }
             YGChipButton(
                 text = "새 그룹",
-                colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                colors = YGChipButtonColorsDefaults.CherrySolid,
                 onClick = onChipClick,
                 startIconResource = R.drawable.ic_plus,
             )
