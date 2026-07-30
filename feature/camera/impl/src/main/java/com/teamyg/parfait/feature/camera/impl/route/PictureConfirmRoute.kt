@@ -14,7 +14,8 @@ internal fun PictureConfirmRoute(
     PictureConfirmScreen(
         uri = uri,
         onClickReCapture = { navigator.onBack() },
-        onClickConfirm = { navigator.onBack() }, // 로딩페이지로 넘어가야댐
+        onClickConfirm = { }, // TODO("c103-로딩페이지로 넘어가야함")
+        onClickClose = {}, // TODO("c001-캔버스메인으로 넘어가야함")
         modifier = modifier,
     )
 }
