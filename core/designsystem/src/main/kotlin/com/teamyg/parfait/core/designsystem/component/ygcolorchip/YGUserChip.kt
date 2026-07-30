@@ -49,6 +49,7 @@ fun YGUserChip(
     modifier: Modifier = Modifier,
 ) {
     Row(
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -56,7 +57,6 @@ fun YGUserChip(
             colorChipType = colorChipType,
             userFirstName = userFirstName,
             chip = chip,
-            modifier = modifier,
         )
         Text(
             text = userName,
