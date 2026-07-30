@@ -169,10 +169,7 @@ constructor(
     private fun handleOnClickFlash() {
         updateState {
             copy(
-                flashMode = when (flashMode) {
-                    FlashMode.ON -> FlashMode.OFF
-                    FlashMode.OFF -> FlashMode.ON
-                },
+                flashMode = !flashMode
             )
         }
     }
@@ -198,4 +195,6 @@ constructor(
 enum class FlashMode {
     OFF,
     ON,
+    ;
+    operator fun not(): FlashMode = if (this == ON) OFF else ON
 }
