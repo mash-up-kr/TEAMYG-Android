@@ -11,6 +11,9 @@ data class YGButtonColors(
     val enabledBackgroundColor: Color,
     val disabledBackgroundColor: Color,
     val pressedBackgroundColor: Color,
+    val enabledBorderColor: Color = Color.Transparent,
+    val disabledBorderColor: Color = Color.Transparent,
+    val pressedBorderColor: Color = Color.Transparent,
 ) {
     fun foregroundColor(
         isEnabled: Boolean,
@@ -28,5 +31,14 @@ data class YGButtonColors(
         isEnabled.not() -> disabledBackgroundColor
         isPressed -> pressedBackgroundColor
         else -> enabledBackgroundColor
+    }
+
+    fun borderColor(
+        isEnabled: Boolean,
+        isPressed: Boolean,
+    ) = when {
+        isEnabled.not() -> disabledBorderColor
+        isPressed -> pressedBorderColor
+        else -> enabledBorderColor
     }
 }

@@ -47,7 +47,7 @@ fun YGAlert(
         if (buttonText != null) {
             YGChipButton(
                 text = buttonText,
-                colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                colors = YGChipButtonColorsDefaults.CherrySolid,
                 endIconResource = R.drawable.ic_caret_right,
                 onClick = onButtonClick ?: {},
             )
