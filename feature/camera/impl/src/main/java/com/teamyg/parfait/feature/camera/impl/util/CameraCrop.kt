@@ -36,7 +36,6 @@ internal fun computeCropRect(
         feedRect.width / imageSize.width,
         feedRect.height / imageSize.height,
     )
-    if (scale <= 0f) return null
 
     // 이미지가 피드 영역 안에서 차지하는 사각형의 좌상단(중앙 정렬이라 음수일 수 있다)
     val imageOriginX = feedRect.left + (feedRect.width - imageSize.width * scale) / 2f
