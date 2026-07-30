@@ -21,6 +21,8 @@ import kotlin.math.roundToInt
  * @param isFrontFacing 전면 카메라 여부. 프리뷰만 좌우 반전되므로 이미지 좌표에서 되돌린다.
  * @return 촬영 이미지에서 잘라낼 영역. 계산이 불가능하면 null.
  */
+private const val JPEG_QUALITY = 95
+
 internal fun computeCropRect(
     viewfinderRect: Rect,
     feedRect: Rect,
@@ -113,4 +115,3 @@ internal fun saveViewfinderCapture(
     }
 }
 
-private const val JPEG_QUALITY = 95
