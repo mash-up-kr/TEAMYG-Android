@@ -6,11 +6,21 @@ import retrofit2.HttpException
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
-suspend fun <T> safeApiCall(block: suspend () -> ApiResponse<T>): Result<T> = try {
+suspend fun <T : Any> safeApiCall(block: suspend () -> ApiResponse<T>): Result<T> = runCatchingApi(block) { response ->
+    response.data?.let { Result.success(it) }
+        ?: Result.failure(ApiException.EmptyBody(response.code, response.message))
+}
+
+suspend fun safeApiCallWithoutData(block: suspend () -> ApiResponse<Unit>): Result<Unit> =
+    runCatchingApi(block) { Result.success(Unit) }
+
+private suspend fun <T, R> runCatchingApi(
+    block: suspend () -> ApiResponse<T>,
+    onSuccessCode: (ApiResponse<T>) -> Result<R>,
+): Result<R> = try {
     val response = block()
-    val data = response.data
-    if (response.isSuccess && data != null) {
-        Result.success(data)
+    if (response.isSuccess) {
+        onSuccessCode(response)
     } else {
         Result.failure(ApiException.Business(response.code, response.message))
     }

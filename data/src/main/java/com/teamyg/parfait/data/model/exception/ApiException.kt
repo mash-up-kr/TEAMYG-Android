@@ -12,6 +12,11 @@ sealed class ApiException(
         val serverMessage: String,
     ) : ApiException(serverMessage, null)
 
+    data class EmptyBody(
+        val code: String,
+        val serverMessage: String,
+    ) : ApiException(serverMessage, null)
+
     data class Http(
         val statusCode: Int,
         override val cause: HttpException,
