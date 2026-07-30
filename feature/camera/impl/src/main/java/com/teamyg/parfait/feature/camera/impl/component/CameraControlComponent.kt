@@ -44,7 +44,7 @@ internal fun CameraControlComponent(
                 iconResource = if (flashMode ==
                     FlashMode.ON
                 ) {
-                    R.drawable.ic_lightning_active
+                    R.drawable.ic_lightning_fill
                 } else {
                     R.drawable.ic_lightning
                 },

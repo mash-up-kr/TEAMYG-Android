@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -29,7 +30,6 @@ import kotlinx.datetime.format.DayOfWeekNames
 import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.todayIn
-import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
@@ -43,6 +43,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.parfait.feature.camera.impl.component.YGRoundIconButton
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
+import com.teamyg.parfait.feature.camera.impl.R
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import kotlinx.datetime.format
 import kotlin.time.Clock
 
@@ -112,9 +114,10 @@ private fun CameraContent(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         val toastPolicy = rememberYGToastPolicy()
+        val guideToastMessage = stringResource(R.string.camera_custom_guide_toast)
 
         LaunchedEffect(Unit) {
-            toastPolicy.show(YGToastType.Edit("대상이 배경과 선명하게 구분될수록 깔끔하게 선택돼요"))
+            toastPolicy.show(YGToastType.Edit(guideToastMessage))
         }
 
         cameraFeed()
@@ -136,7 +139,7 @@ private fun CameraContent(
                     day = today.format(WeekdayFormat),
                 )
                 YGRoundIconButton(
-                    iconResource = R.drawable.ic_close,
+                    iconResource = DesignSystemR.drawable.ic_close,
                     size = YGIconButtonSize.SIZE_44,
                     contentDescription = null,
                     onClick = onClickCancel,

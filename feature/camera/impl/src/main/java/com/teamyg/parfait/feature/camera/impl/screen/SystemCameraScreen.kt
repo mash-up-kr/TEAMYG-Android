@@ -10,7 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -34,22 +36,22 @@ internal fun SystemCameraScreen(
             SystemCameraState.Launching,
             -> {
                 CircularProgressIndicator()
-                Text(text = "카메라를 여는 중입니다…")
+                Text(text = stringResource(R.string.camera_opening))
             }
 
             is SystemCameraState.RequestingPermission -> {
                 when (state.permanentlyDenied) {
                     true -> {
-                        Text(text = "카메라 권한이 거부되어 있습니다.\n설정에서 권한을 허용해주세요.")
+                        Text(text = stringResource(R.string.camera_permission_permanently_denied_message))
                         Button(onClick = onClickOpenAppSettings) {
-                            Text(text = "설정 열기")
+                            Text(text = stringResource(R.string.camera_open_settings))
                         }
                     }
 
                     false -> {
-                        Text(text = "카메라 권한이 필요합니다.")
+                        Text(text = stringResource(R.string.camera_permission_required_message))
                         Button(onClick = onClickGrantPermission) {
-                            Text(text = "권한 요청")
+                            Text(text = stringResource(R.string.camera_request_permission))
                         }
                     }
                 }
@@ -57,16 +59,16 @@ internal fun SystemCameraScreen(
 
             SystemCameraState.Capturing -> {
                 CircularProgressIndicator()
-                Text(text = "촬영 중…")
+                Text(text = stringResource(R.string.camera_capturing))
             }
 
             SystemCameraState.Failed -> {
-                Text(text = "촬영에 실패했습니다.")
+                Text(text = stringResource(R.string.camera_capture_failed))
                 Button(onClick = onClickRetry) {
-                    Text(text = "다시 시도")
+                    Text(text = stringResource(R.string.camera_retry))
                 }
                 Button(onClick = onClickCancel) {
-                    Text(text = "취소")
+                    Text(text = stringResource(R.string.camera_cancel))
                 }
             }
         }

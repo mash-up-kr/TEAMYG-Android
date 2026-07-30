@@ -15,9 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -26,6 +26,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.feature.camera.impl.R
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun PictureConfirmScreen(
@@ -39,7 +41,7 @@ internal fun PictureConfirmScreen(
     ) {
         Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding6))
         YGIconButton(
-            iconResource = R.drawable.ic_close,
+            iconResource = DesignSystemR.drawable.ic_close,
             size = YGIconButtonSize.SIZE_44,
             contentDescription = null,
             onClick = {},
@@ -65,14 +67,14 @@ internal fun PictureConfirmScreen(
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
         ) {
             YGButton(
-                text = "다시찍기",
+                text = stringResource(R.string.camera_picture_confirm_retake),
                 buttonType = YGButtonType.Medium.Secondary,
                 isEnabled = true,
                 onClick = onClickReCapture,
                 modifier = Modifier.weight(1f),
             )
             YGButton(
-                text = "다음",
+                text = stringResource(R.string.camera_picture_confirm_next),
                 buttonType = YGButtonType.Medium.Primary,
                 isEnabled = true,
                 onClick = onClickConfirm,
