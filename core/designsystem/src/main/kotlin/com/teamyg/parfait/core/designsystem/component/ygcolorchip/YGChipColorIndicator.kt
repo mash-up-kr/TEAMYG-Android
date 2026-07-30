@@ -15,8 +15,11 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
-fun YGChipColorIndicator(modifier: Modifier = Modifier, isChecked: Boolean) {
-    val color = if(isChecked) YGAtomicColors.Cherry.Cherry else Color.Transparent
+fun YGChipColorIndicator(
+    modifier: Modifier = Modifier,
+    isChecked: Boolean,
+) {
+    val color = if (isChecked) YGAtomicColors.Cherry.Cherry else Color.Transparent
     Box(
         modifier = modifier
             .size(4.dp)
@@ -28,9 +31,8 @@ fun YGChipColorIndicator(modifier: Modifier = Modifier, isChecked: Boolean) {
 @YGPreview
 @Composable
 private fun YGChipColorIndicatorPreview() = PreviewBox {
-    Column() {
+    Column {
         YGChipColorIndicator(isChecked = true)
         YGChipColorIndicator(isChecked = false)
     }
-
 }
