@@ -4,8 +4,13 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCameraShutter
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCircleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditActionButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditTabButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGHorizontalDivider
@@ -18,7 +23,6 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
-import com.teamyg.parfait.preview.navigation.key.NavKeyYGToggleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
 
 enum class ComponentCategory(val label: String) {
@@ -48,8 +52,28 @@ val componentCatalog: List<ComponentEntry> = listOf(
     ),
     ComponentEntry(
         category = ComponentCategory.BUTTON,
-        label = "YGToggleButton",
-        navKey = NavKeyYGToggleButton,
+        label = "YGCircleButton",
+        navKey = NavKeyYGCircleButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGEditActionButton",
+        navKey = NavKeyYGEditActionButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGCameraShutter",
+        navKey = NavKeyYGCameraShutter,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGEditButton",
+        navKey = NavKeyYGEditButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGEditTabButton",
+        navKey = NavKeyYGEditTabButton,
     ),
     ComponentEntry(
         category = ComponentCategory.BUTTON,

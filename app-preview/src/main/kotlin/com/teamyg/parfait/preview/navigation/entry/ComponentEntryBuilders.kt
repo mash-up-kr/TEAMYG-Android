@@ -11,8 +11,13 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCameraShutter
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCircleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditActionButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditTabButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGHorizontalDivider
@@ -25,13 +30,17 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
-import com.teamyg.parfait.preview.navigation.key.NavKeyYGToggleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
 import com.teamyg.parfait.preview.screen.component.YGActionItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGAlertPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGCameraShutterPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGChipButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGCircleButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDangerZonePreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGEditActionButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGEditButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGEditTabButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDatePreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDateButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGHorizontalDividerPreviewScreen
@@ -44,7 +53,6 @@ import com.teamyg.parfait.preview.screen.component.YGModalPopupPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFieldPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFormFieldPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGToastPreviewScreen
-import com.teamyg.parfait.preview.screen.component.YGToggleButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTopBarPreviewScreen
 
 internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Navigator) {
@@ -64,9 +72,41 @@ internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Naviga
             )
         }
     }
-    entry<NavKeyYGToggleButton> {
+    entry<NavKeyYGCircleButton> {
         ScreenScaffold { modifier ->
-            YGToggleButtonPreviewScreen(
+            YGCircleButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGEditActionButton> {
+        ScreenScaffold { modifier ->
+            YGEditActionButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGCameraShutter> {
+        ScreenScaffold { modifier ->
+            YGCameraShutterPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGEditButton> {
+        ScreenScaffold { modifier ->
+            YGEditButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGEditTabButton> {
+        ScreenScaffold { modifier ->
+            YGEditTabButtonPreviewScreen(
                 onBack = navigator::onBack,
                 modifier = modifier,
             )
