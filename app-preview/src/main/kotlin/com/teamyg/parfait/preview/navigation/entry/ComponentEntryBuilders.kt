@@ -12,6 +12,9 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGCameraShutter
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvas
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvasDateSelectButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvasMenu
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGCircleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
@@ -26,7 +29,9 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInviteCard
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGLabel
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGMenuItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGStrokeButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
@@ -35,6 +40,9 @@ import com.teamyg.parfait.preview.screen.component.YGActionItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGAlertPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGCameraShutterPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGCanvasDateSelectButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGCanvasMenuPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGCanvasPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGChipButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGCircleButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDangerZonePreviewScreen
@@ -49,7 +57,9 @@ import com.teamyg.parfait.preview.screen.component.YGInputNumberPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGInviteCardPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGLabelPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGListItemPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGMenuItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGModalPopupPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGStrokeButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFieldPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGTextFormFieldPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGToastPreviewScreen
@@ -235,6 +245,46 @@ internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Naviga
     entry<NavKeyYGTopBar> {
         ScreenScaffold { modifier ->
             YGTopBarPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGStrokeButton> {
+        ScreenScaffold { modifier ->
+            YGStrokeButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGMenuItem> {
+        ScreenScaffold { modifier ->
+            YGMenuItemPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGCanvasMenu> {
+        ScreenScaffold { modifier ->
+            YGCanvasMenuPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGCanvasDateSelectButton> {
+        ScreenScaffold { modifier ->
+            YGCanvasDateSelectButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGCanvas> {
+        ScreenScaffold { modifier ->
+            YGCanvasPreviewScreen(
                 onBack = navigator::onBack,
                 modifier = modifier,
             )

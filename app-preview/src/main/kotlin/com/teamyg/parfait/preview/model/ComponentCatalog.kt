@@ -5,6 +5,9 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGActionItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGAlert
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGCameraShutter
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvas
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvasDateSelectButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGCanvasMenu
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGChipButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGCircleButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
@@ -19,7 +22,9 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInviteCard
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGLabel
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGMenuItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGStrokeButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
@@ -91,6 +96,21 @@ val componentCatalog: List<ComponentEntry> = listOf(
         navKey = NavKeyYGInputNumber,
     ),
     ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGStrokeButton",
+        navKey = NavKeyYGStrokeButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGMenuItem",
+        navKey = NavKeyYGMenuItem,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGCanvasDateSelectButton",
+        navKey = NavKeyYGCanvasDateSelectButton,
+    ),
+    ComponentEntry(
         category = ComponentCategory.INPUT,
         label = "YGTextField",
         navKey = NavKeyYGTextField,
@@ -149,6 +169,16 @@ val componentCatalog: List<ComponentEntry> = listOf(
         category = ComponentCategory.CONTAINER,
         label = "YGHorizontalDivider",
         navKey = NavKeyYGHorizontalDivider,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGCanvasMenu",
+        navKey = NavKeyYGCanvasMenu,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGCanvas",
+        navKey = NavKeyYGCanvas,
     ),
     ComponentEntry(
         category = ComponentCategory.BAR,
