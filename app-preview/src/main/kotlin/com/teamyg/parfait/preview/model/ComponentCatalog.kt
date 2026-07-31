@@ -16,6 +16,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditTabButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGGrouptagChip
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGHorizontalDivider
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGIconButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
@@ -29,6 +30,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTextFormField
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGToast
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGTopBar
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGToppingGroup
 
 enum class ComponentCategory(val label: String) {
     BUTTON("Button"),
@@ -146,6 +148,11 @@ val componentCatalog: List<ComponentEntry> = listOf(
         navKey = NavKeyYGAlert,
     ),
     ComponentEntry(
+        category = ComponentCategory.TEXT,
+        label = "YGGrouptagChip",
+        navKey = NavKeyYGGrouptagChip,
+    ),
+    ComponentEntry(
         category = ComponentCategory.CONTAINER,
         label = "YGModalPopup",
         navKey = NavKeyYGModalPopup,
@@ -179,6 +186,11 @@ val componentCatalog: List<ComponentEntry> = listOf(
         category = ComponentCategory.CONTAINER,
         label = "YGCanvas",
         navKey = NavKeyYGCanvas,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.CONTAINER,
+        label = "YGToppingGroup",
+        navKey = NavKeyYGToppingGroup,
     ),
     ComponentEntry(
         category = ComponentCategory.BAR,
