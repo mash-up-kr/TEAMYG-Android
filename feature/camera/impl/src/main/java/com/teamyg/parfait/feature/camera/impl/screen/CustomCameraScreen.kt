@@ -24,11 +24,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format.DayOfWeekNames
-import kotlinx.datetime.format.MonthNames
-import kotlinx.datetime.format.Padding
 import kotlinx.datetime.todayIn
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
@@ -45,18 +41,9 @@ import com.teamyg.parfait.feature.camera.impl.component.YGRoundIconButton
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import kotlinx.datetime.format
 import kotlin.time.Clock
-
-private val MonthDayFormat = LocalDate.Format {
-    monthName(MonthNames.ENGLISH_ABBREVIATED)
-    chars(" ")
-    day(padding = Padding.NONE)
-}
-
-private val WeekdayFormat = LocalDate.Format {
-    dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED)
-}
 
 @Composable
 internal fun CustomCameraScreen(
@@ -135,8 +122,8 @@ private fun CameraContent(
             ) {
                 val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
                 YGDate(
-                    date = today.format(MonthDayFormat),
-                    day = today.format(WeekdayFormat),
+                    date = today.format(DateTextFormat.monthDayFormat),
+                    day = today.format(DateTextFormat.weekdayFormat),
                 )
                 YGRoundIconButton(
                     iconResource = DesignSystemR.drawable.ic_close,
