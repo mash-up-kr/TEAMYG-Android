@@ -181,6 +181,7 @@ internal fun CustomCameraRoute(
         onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
         onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
         onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
+        toastPolicy = toastPolicy,
         modifier = modifier,
         onViewfinderRectChange = { viewfinderRect = it },
         cameraFeed = {

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import kotlinx.datetime.todayIn
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -55,6 +57,7 @@ internal fun CustomCameraScreen(
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
+    toastPolicy: YGToastPolicy,
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
@@ -68,6 +71,7 @@ internal fun CustomCameraScreen(
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
             onClickCancel = onClickCancel,
+            toastPolicy = toastPolicy,
             onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
             cameraFeed = cameraFeed,
@@ -95,18 +99,12 @@ private fun CameraContent(
     onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
     onViewfinderRectChange: (Rect) -> Unit,
+    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
     flashMode: FlashMode,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        val toastPolicy = rememberYGToastPolicy()
-        val guideToastMessage = stringResource(R.string.camera_custom_guide_toast)
-
-        LaunchedEffect(Unit) {
-            toastPolicy.show(YGToastType.Edit(guideToastMessage))
-        }
-
         cameraFeed()
 
         Column(
@@ -183,6 +181,7 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
         onClickFlash = {},
         onClickCancel = {},
         onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )
@@ -205,6 +204,7 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
         onClickCancel = {},
         onClickFlash = {},
         onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )
@@ -227,6 +227,7 @@ private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
         onClickCancel = {},
         onClickFlash = {},
         onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )
