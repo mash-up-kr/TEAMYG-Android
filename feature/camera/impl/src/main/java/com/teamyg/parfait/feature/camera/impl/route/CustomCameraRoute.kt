@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
@@ -78,6 +79,14 @@ internal fun CustomCameraRoute(
 
     val toastPolicy = rememberYGToastPolicy()
     val guideToastMessage = stringResource(R.string.camera_custom_guide_toast)
+    var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!hasShownGuideToast) {
+            toastPolicy.show(YGToastType.Edit(guideToastMessage))
+            hasShownGuideToast = true
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -143,9 +152,6 @@ internal fun CustomCameraRoute(
 
                 is CustomCameraEffect.NavigateToConfirm -> {
                     navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
-                }
-                is CustomCameraEffect.ShowGuideToast -> {
-                    toastPolicy.show(YGToastType.Edit(guideToastMessage))
                 }
             }
         }

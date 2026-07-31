@@ -1,9 +1,6 @@
 package com.teamyg.parfait.feature.camera.impl.viewmodel
 
 import androidx.camera.core.CameraSelector
-import androidx.compose.ui.res.stringResource
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
-import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -11,7 +8,6 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
-import com.teamyg.parfait.feature.camera.impl.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -32,9 +28,6 @@ sealed interface CustomCameraEffect : UiSideEffect {
     data class NavigateToConfirm(
         val uri: String,
     ) : CustomCameraEffect
-
-    data object ShowGuideToast : CustomCameraEffect
-
 }
 
 sealed interface CustomCameraIntent : UiIntent {
@@ -95,7 +88,6 @@ constructor(
 ) {
     init {
         viewModelLogger.i { "CustomCameraViewModel::init" }
-        postSideEffect(CustomCameraEffect.ShowGuideToast)
     }
 
     override fun processIntent(intent: CustomCameraIntent) {
