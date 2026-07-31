@@ -23,4 +23,10 @@ object NavigationModule {
     fun provideFeatureGroupNickNameEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
         featureGroupNickNameEntryBuilder(navigator = it)
     }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureGroupCreateEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureGroupCreateEntryBuilder(navigator = it)
+    }
 }

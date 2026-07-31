@@ -12,18 +12,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 sealed interface YGToastType {
+    /**
+     * Figma Type Success
+     */
     data class InviteCode(val text: String) : YGToastType
 
+    /**
+     * Figma Type Warning
+     */
     data class Edit(val text: String) : YGToastType
 
+    /**
+     * Figma Type Alert
+     */
     data class Record(val userName: String, val time: String) : YGToastType
+
+    /**
+     * Figma Type Error
+     */
+    data class Fail(val text: String) : YGToastType
 }
 
 @Composable
@@ -37,8 +51,8 @@ fun YGToast(
             .fillMaxWidth()
             .background(color = YGAtomicColors.Transparency.Black75)
             .padding(
-                vertical = YGTheme.layout.padding.padding6,
-                horizontal = YGTheme.layout.padding.padding4,
+                vertical = YGTheme.layout.padding.padding5,
+                horizontal = YGTheme.layout.padding.padding6,
             ),
     ) {
         when (type) {
@@ -52,6 +66,12 @@ fun YGToast(
                 text = type.text,
                 style = YGTheme.typography.body.b02SB,
                 color = YGAtomicColors.Pudding.Pudding600,
+            )
+
+            is YGToastType.Fail -> Text(
+                text = type.text,
+                style = YGTheme.typography.body.b02SB,
+                color = YGAtomicColors.Cherry.Cherry500,
             )
 
             is YGToastType.Record -> {
@@ -72,22 +92,15 @@ fun YGToast(
     }
 }
 
-@Preview
+@YGPreview
 @Composable
-private fun YGToastPreview() {
-    YGCustomTheme {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            YGToast(
-                type = YGToastType.Record("파르페", "12분"),
-            )
-            YGToast(
-                type = YGToastType.Edit("내 토핑만 편집할 수 있어요"),
-            )
-            YGToast(
-                type = YGToastType.InviteCode("초대 코드를 복사했어요"),
-            )
-        }
+private fun YGToastPreview() = PreviewBox {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        YGToast(type = YGToastType.Record(userName = "WWWWWWWWWW", time = "59분"))
+        YGToast(type = YGToastType.Edit("내 토핑만 편집할 수 있어요"))
+        YGToast(type = YGToastType.InviteCode("초대 코드를 복사했어요"))
+        YGToast(type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."))
     }
 }

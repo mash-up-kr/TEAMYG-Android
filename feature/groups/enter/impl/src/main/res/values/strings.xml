@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="submit">확인</string>
+
+    <string name="group_enter">그룹 참여하기</string>
+    <string name="group_invite_title">초대코드를 입력해 주세요</string>
+    <string name="group_invite_description">초대코드는 그룹원에게 직접 받을 수 있어요</string>
+    <string name="group_nickname_title">그룹이름에서 사용할\n닉네임을 입력해 주세요</string>
+    <string name="group_nickname_description">그룹이름에서만 공유되는 닉네임이에요</string>
+    <string name="group_nickname_placeholder">그룹에서 사용할 닉네임을 입력해 주세요</string>
+    <string name="group_create">그룹 만들기</string>
+    <string name="group_name_label">그룹명</string>
+    <string name="group_nickname_label">그룹 속 내 닉네임</string>
+    <string name="group_name_placeholder">그룹명을 입력해 주세요</string>
+    <string name="group_count_label">그룹 인원</string>
+    <string name="group_count_description">그룹명과 인원수는 추후 변경할 수 없어요</string>
+</resources>

@@ -7,7 +7,10 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +22,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -32,6 +38,8 @@ data class YGAlertItem(
     val id: String,
     val title: String,
     val sub: String,
+    val buttonText: String? = null,
+    val onButtonClick: (() -> Unit)? = null,
     val visible: Boolean = true,
 )
 
@@ -42,11 +50,15 @@ class YGAlertPolicy {
     fun show(
         title: String,
         sub: String,
+        buttonText: String? = null,
+        onButtonClick: (() -> Unit)? = null,
     ) {
         alert = YGAlertItem(
             id = UUID.randomUUID().toString(),
             title = title,
             sub = sub,
+            buttonText = buttonText,
+            onButtonClick = onButtonClick,
         )
     }
 
@@ -81,6 +93,8 @@ fun YGAlertHost(
                 YGAlert(
                     title = alert.title,
                     sub = alert.sub,
+                    buttonText = alert.buttonText,
+                    onButtonClick = alert.onButtonClick,
                     modifier = Modifier
                         .draggable(
                             orientation = Orientation.Vertical,
@@ -101,5 +115,41 @@ fun YGAlertHost(
                 )
             }
         }
+    }
+}
+
+@YGPreview
+@Composable
+private fun YGAlertHostPreview() = PreviewBox {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        val withButtonPolicy = remember {
+            YGAlertPolicy().apply {
+                show(
+                    title = "Title",
+                    sub = "Sub",
+                    buttonText = "Text",
+                    onButtonClick = {},
+                )
+            }
+        }
+        val textOnlyPolicy = remember {
+            YGAlertPolicy().apply {
+                show(
+                    title = "Title",
+                    sub = "Sub",
+                )
+            }
+        }
+
+        YGAlertHost(
+            policy = withButtonPolicy,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGAlertHost(
+            policy = textOnlyPolicy,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
