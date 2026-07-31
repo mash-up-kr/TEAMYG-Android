@@ -113,4 +113,3 @@ internal fun saveViewfinderCapture(
         rotated.crop(cropRect).compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)
     }
 }
-

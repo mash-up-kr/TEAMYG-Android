@@ -44,7 +44,7 @@ internal fun PictureConfirmScreen(
                 start = YGTheme.layout.padding.padding7,
                 end = YGTheme.layout.padding.padding7,
                 top = YGTheme.layout.padding.padding6,
-                bottom = YGTheme.layout.padding.padding1
+                bottom = YGTheme.layout.padding.padding1,
             ),
     ) {
         YGIconButton(
@@ -98,6 +98,6 @@ private fun PreviewPictureConfirmScreen() = PreviewBox {
         uri = "",
         onClickReCapture = {},
         onClickConfirm = {},
-        onClickClose = {}
+        onClickClose = {},
     )
 }
