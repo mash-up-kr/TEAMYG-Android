@@ -86,6 +86,7 @@ sealed interface YGColorChipType {
         override val textColor = YGAtomicColors.Cherry.Cherry300
     }
 
+    // 5명이상 시 + 컬러칩 타입
     data object NametagChipPlus : YGColorChipType {
         override val fillColor = YGAtomicColors.Gray.White
         override val strokeColor = YGAtomicColors.Gray.Gray100
