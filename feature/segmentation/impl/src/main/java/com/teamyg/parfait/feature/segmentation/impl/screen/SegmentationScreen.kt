@@ -15,9 +15,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -67,7 +67,13 @@ private fun SegmentationContent(
             type = YGCircleButtonType.Default,
             contentDescription = "뒤로가기",
             onClick = onClickBack,
-            modifier = Modifier.align(Alignment.Start),
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.padding.padding6,
+                ),
         )
 
         Column(
@@ -75,13 +81,13 @@ private fun SegmentationContent(
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(
-                    start = 20.dp,
-                    top = 16.dp,
-                    end = 20.dp,
-                    bottom = 16.dp,
+                    start = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.padding.padding6,
+                    end = YGTheme.layout.padding.padding7,
+                    bottom = YGTheme.layout.padding.padding6,
                 ),
         ) {
-            GuideBanner()
+            GuideBanner(modifier = Modifier.fillMaxWidth())
 
             SegmentationResultImage(
                 originBitmap = state.originBitmap,

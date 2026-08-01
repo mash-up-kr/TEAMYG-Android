@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,9 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -31,10 +30,11 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .fillMaxWidth()
-            .height(GuideBannerDefaults.Height)
             .background(YGAtomicColors.Gray.Gray850)
-            .padding(horizontal = GuideBannerDefaults.HorizontalPadding),
+            .padding(
+                horizontal = YGTheme.layout.padding.padding5,
+                vertical = YGTheme.layout.padding.padding3,
+            ),
     ) {
         Image(
             painter = painterResource(DesignSystemR.drawable.ic_info_round),
@@ -43,7 +43,7 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
             modifier = Modifier.size(GuideBannerDefaults.IconSize),
         )
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
 
         Text(
             text = "토핑으로 사용할 대상을 하나 선택해 주세요", // TODO: string resource 분리 필요
@@ -54,13 +54,11 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
 }
 
 internal object GuideBannerDefaults {
-    val Height: Dp = 44.dp
-    val IconSize: Dp = 28.dp
-    val HorizontalPadding: Dp = 12.dp
+    val IconSize: Dp = SizeTokens.Size28.getDp()
 }
 
 @YGPreview
 @Composable
 private fun GuideBannerPreview() = PreviewBox {
-    GuideBanner()
+    GuideBanner(modifier = Modifier.fillMaxWidth())
 }
