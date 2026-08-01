@@ -62,9 +62,9 @@ fun YGChipButton(
                 indication = null,
             ).semantics { role = Role.Button }
             .padding(
-                top = YGTheme.layout.padding.padding3,
+                top = YGTheme.layout.padding.padding2,
                 end = if (endIconResource != null) YGTheme.layout.padding.padding3 else YGTheme.layout.padding.padding5,
-                bottom = YGTheme.layout.padding.padding3,
+                bottom = YGTheme.layout.padding.padding2,
                 start = if (startIconResource !=
                     null
                 ) {

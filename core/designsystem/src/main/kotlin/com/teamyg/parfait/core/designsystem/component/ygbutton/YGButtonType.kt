@@ -87,14 +87,14 @@ sealed interface YGButtonType {
 
             override val radius: Shape
                 @Composable
-                get() = YGTheme.shapes.radius.round
+                get() = YGTheme.shapes.radius.none
 
             override val textStyle: TextStyle
                 @Composable
                 get() = YGTheme.typography.body.b01SB
 
             override val iconSize: Dp
-                get() = SizeTokens.Size24.getDp()
+                get() = SizeTokens.Size20.getDp()
 
             override val startPadding: Dp
                 @Composable
@@ -131,14 +131,14 @@ sealed interface YGButtonType {
 
             override val radius: Shape
                 @Composable
-                get() = YGTheme.shapes.radius.round
+                get() = YGTheme.shapes.radius.none
 
             override val textStyle: TextStyle
                 @Composable
                 get() = YGTheme.typography.body.b01SB
 
             override val iconSize: Dp
-                get() = SizeTokens.Size24.getDp()
+                get() = SizeTokens.Size20.getDp()
 
             override val startPadding: Dp
                 @Composable
@@ -165,6 +165,9 @@ sealed interface YGButtonType {
                     enabledBackgroundColor = YGAtomicColors.Gray.Gray100,
                     disabledBackgroundColor = YGAtomicColors.Gray.Gray200,
                     pressedBackgroundColor = YGAtomicColors.Gray.Gray200,
+                    enabledBorderColor = YGAtomicColors.Gray.Gray500,
+                    disabledBorderColor = YGAtomicColors.Gray.Gray300,
+                    pressedBorderColor = YGAtomicColors.Gray.Gray500,
                 )
         }
 
@@ -175,14 +178,14 @@ sealed interface YGButtonType {
 
             override val radius: Shape
                 @Composable
-                get() = YGTheme.shapes.radius.round
+                get() = YGTheme.shapes.radius.none
 
             override val textStyle: TextStyle
                 @Composable
                 get() = YGTheme.typography.body.b01SB
 
             override val iconSize: Dp
-                get() = SizeTokens.Size24.getDp()
+                get() = SizeTokens.Size20.getDp()
 
             override val startPadding: Dp
                 @Composable
@@ -206,8 +209,8 @@ sealed interface YGButtonType {
                     enabledForegroundColor = YGAtomicColors.Gray.Gray900,
                     disabledForegroundColor = YGAtomicColors.Gray.Gray500,
                     pressedForegroundColor = YGAtomicColors.Gray.Gray900,
-                    enabledBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.5f),
-                    disabledBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.5f),
+                    enabledBackgroundColor = YGAtomicColors.Transparency.White50,
+                    disabledBackgroundColor = YGAtomicColors.Transparency.White50,
                     pressedBackgroundColor = YGAtomicColors.Gray.White.copy(alpha = 0.9f),
                 )
         }
@@ -220,14 +223,14 @@ sealed interface YGButtonType {
 
         override val radius: Shape
             @Composable
-            get() = YGTheme.shapes.radius.round
+            get() = YGTheme.shapes.radius.none
 
         override val textStyle: TextStyle
             @Composable
             get() = YGTheme.typography.body.b01SB
 
         override val iconSize: Dp
-            get() = SizeTokens.Size24.getDp()
+            get() = SizeTokens.Size20.getDp()
 
         override val startPadding: Dp
             @Composable

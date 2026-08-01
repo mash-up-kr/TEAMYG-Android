@@ -7,6 +7,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -114,6 +120,31 @@ fun YGToastHost(
                     )
                 }
             }
+        }
+    }
+}
+
+@YGPreview
+@Composable
+private fun YGToastHostPreview() = PreviewBox {
+    val previewTypes = listOf(
+        YGToastType.Record(userName = "WWWWWWWWWW", time = "59분"),
+        YGToastType.Edit("내 토핑만 편집할 수 있어요"),
+        YGToastType.InviteCode("초대 코드를 복사했어요"),
+        YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."),
+    )
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        previewTypes.forEach { type ->
+            val policy = remember(type) {
+                YGToastPolicy().apply { show(type) }
+            }
+            YGToastHost(
+                policy = policy,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

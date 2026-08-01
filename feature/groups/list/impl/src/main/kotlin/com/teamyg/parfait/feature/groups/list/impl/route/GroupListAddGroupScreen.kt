@@ -42,7 +42,7 @@ fun GroupListAddGroupScreen(
     ) {
         YGChipButton(
             text = "그룹 추가하기", // Todo : core:ui 에 string resource 로 분리
-            colors = YGChipButtonColorsDefaults.Cherry50BackgroundPressed,
+            colors = YGChipButtonColorsDefaults.CherrySubtle,
             onClick = {},
             startIconResource = DesignSystemR.drawable.ic_plus,
         )

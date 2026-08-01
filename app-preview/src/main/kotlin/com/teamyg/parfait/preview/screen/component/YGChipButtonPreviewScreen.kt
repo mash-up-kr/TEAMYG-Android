@@ -28,19 +28,19 @@ internal fun YGChipButtonPreviewScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                PreviewSection("CherryBorderPressed") {
+                PreviewSection("CherrySubtle") {
                     YGChipButton(
                         text = "칩",
-                        colors = YGChipButtonColorsDefaults.Cherry50BackgroundPressed,
+                        colors = YGChipButtonColorsDefaults.CherrySubtle,
                         onClick = {},
                     )
                 }
             }
             item {
-                PreviewSection("CherryBackgroundPressed") {
+                PreviewSection("CherrySolid") {
                     YGChipButton(
                         text = "칩",
-                        colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                        colors = YGChipButtonColorsDefaults.CherrySolid,
                         onClick = {},
                     )
                 }
@@ -49,7 +49,7 @@ internal fun YGChipButtonPreviewScreen(
                 PreviewSection("with start icon") {
                     YGChipButton(
                         text = "추가",
-                        colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                        colors = YGChipButtonColorsDefaults.CherrySolid,
                         onClick = {},
                         startIconResource = R.drawable.ic_plus,
                     )

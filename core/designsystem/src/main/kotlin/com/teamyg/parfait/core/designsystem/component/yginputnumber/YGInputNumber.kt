@@ -37,14 +37,14 @@ fun YGInputNumber(
                     isSelected -> YGAtomicColors.Gray.Gray900
                     else -> YGAtomicColors.Gray.White
                 },
-                shape = YGTheme.shapes.radius.xSmall,
+                shape = YGTheme.shapes.radius.none,
             ).clip(
-                shape = YGTheme.shapes.radius.xSmall,
+                shape = YGTheme.shapes.radius.none,
             ).clickable(onClick = onClick)
             .border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
-                shape = YGTheme.shapes.radius.xSmall,
+                shape = YGTheme.shapes.radius.none,
             ).semantics { role = Role.Button },
     ) {
         Text(

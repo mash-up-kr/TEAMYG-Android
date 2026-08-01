@@ -54,7 +54,7 @@ internal fun YGTopBarPreviewScreen(
                         rightContent = {
                             YGChipButton(
                                 text = "그룹 추가하기",
-                                colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+                                colors = YGChipButtonColorsDefaults.CherrySolid,
                                 onClick = {},
                                 startIconResource = R.drawable.ic_plus,
                             )

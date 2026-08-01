@@ -7,7 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,7 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -36,14 +36,15 @@ fun YGActionItem(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     @DrawableRes iconResource: Int? = null,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
+    val contentColor = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500
 
     Row(
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
             .semantics { role = Role.Button }
@@ -52,20 +53,18 @@ fun YGActionItem(
                 horizontal = YGTheme.layout.padding.padding6,
             ),
     ) {
-        iconResource?.let {
+        iconResource?.let { resource ->
             Image(
-                painter = painterResource(it),
+                painter = painterResource(id = resource),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(
-                    color = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500,
-                ),
-                modifier = Modifier.size(SizeTokens.Size24.size.dp),
+                colorFilter = ColorFilter.tint(color = contentColor),
+                modifier = Modifier.size(SizeTokens.Size24.getDp()),
             )
         }
         Text(
             text = text,
             style = YGTheme.typography.body.b02R,
-            color = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500,
+            color = contentColor,
         )
     }
 }
@@ -73,15 +72,22 @@ fun YGActionItem(
 @YGPreview
 @Composable
 fun YGActionItemPreview() = PreviewBox {
-    Box(
-        modifier = Modifier.fillMaxWidth(),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White),
     ) {
         YGActionItem(
             text = "그룹 나가기",
             onClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGActionItem(
+            text = "새 그룹 만들기",
+            onClick = {},
+            iconResource = R.drawable.ic_plus,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
