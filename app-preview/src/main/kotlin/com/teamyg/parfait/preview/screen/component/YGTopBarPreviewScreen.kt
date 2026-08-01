@@ -8,8 +8,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
+import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
-import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDefault
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -47,9 +49,16 @@ internal fun YGTopBarPreviewScreen(
             }
             item {
                 PreviewSection("YGTopBarDefault") {
-                    YGTopBarDefault(
+                    YGTopBarEmpty(
                         onIconClick = {},
-                        onChipClick = {},
+                        rightContent = {
+                            YGChipButton(
+                                text = "그룹 추가하기",
+                                colors = YGChipButtonColorsDefaults.CherrySolid,
+                                onClick = {},
+                                startIconResource = R.drawable.ic_plus,
+                            )
+                        },
                     )
                 }
             }
