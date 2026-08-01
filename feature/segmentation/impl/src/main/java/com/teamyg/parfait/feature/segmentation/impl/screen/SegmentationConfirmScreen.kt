@@ -64,7 +64,7 @@ internal fun SegmentationConfirmScreen(
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
