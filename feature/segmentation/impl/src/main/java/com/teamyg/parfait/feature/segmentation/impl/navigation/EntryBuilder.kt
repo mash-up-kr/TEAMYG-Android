@@ -9,8 +9,10 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
-import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationRoute
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationEdit
 import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationConfirmRoute
+import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationEditRoute
+import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationRoute
 
 fun EntryProviderScope<NavKey>.featureSegmentationEntryBuilder(navigator: Navigator) {
     entry<NavKeySegmentation> { key ->
@@ -28,6 +30,18 @@ fun EntryProviderScope<NavKey>.featureSegmentationEntryBuilder(navigator: Naviga
     entry<NavKeySegmentationConfirm> { key ->
         YGScaffold { innerPadding ->
             SegmentationConfirmRoute(
+                navigator = navigator,
+                key = key,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+    }
+
+    entry<NavKeySegmentationEdit> { key ->
+        YGScaffold { innerPadding ->
+            SegmentationEditRoute(
                 navigator = navigator,
                 key = key,
                 modifier = Modifier
