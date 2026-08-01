@@ -24,7 +24,7 @@ sealed interface YGCircleButtonType {
         override val backgroundColor: Color = YGAtomicColors.Gray.White
         override val pressedBackgroundColor: Color = YGAtomicColors.Gray.Gray100
         override val borderColor: Color = YGAtomicColors.Transparency.Black5
-        override val iconTint: Color = YGAtomicColors.Gray.Gray900
+        override val iconTint: Color = YGAtomicColors.Gray.Gray850
         override val iconSize: Dp = SizeTokens.Size28.getDp()
         override val paintsOuterCircle: Boolean = true
     }
@@ -42,7 +42,7 @@ sealed interface YGCircleButtonType {
         override val backgroundColor: Color = YGAtomicColors.Gray.White
         override val pressedBackgroundColor: Color = YGAtomicColors.Gray.Gray100
         override val borderColor: Color = YGAtomicColors.Transparency.Black5
-        override val iconTint: Color = YGAtomicColors.Gray.Gray900
+        override val iconTint: Color = YGAtomicColors.Gray.Gray850
         override val iconSize: Dp = SizeTokens.Size18.getDp()
         override val paintsOuterCircle: Boolean = false
     }
