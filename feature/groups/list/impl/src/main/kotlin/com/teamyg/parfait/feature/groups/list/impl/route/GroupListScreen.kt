@@ -116,7 +116,7 @@ internal fun GroupListScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(40.dp))
 
                     GroupListContent(
                         groupList = uiState.groupList,
