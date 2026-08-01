@@ -53,18 +53,15 @@ fun ToppingLayout(
                 constraints.copy(
                     minWidth = 0,
                     minHeight = 0,
-                )
+                ),
             )
         }
-
 
         // 시작 위치 차이 적용
         var leftY = paddingTop
         var rightY = paddingTop + alternateOffsetYPx
 
-
         val positions = mutableListOf<Pair<Int, Int>>()
-
 
         placeables.forEachIndexed { index, placeable ->
 
@@ -73,7 +70,6 @@ fun ToppingLayout(
                 positions += paddingLeft to leftY
 
                 leftY += placeable.height - overlapPx
-
             } else {
                 // 오른쪽
                 positions += (
@@ -86,12 +82,10 @@ fun ToppingLayout(
             }
         }
 
-
         layout(
             width = constraints.maxWidth,
             height = maxOf(leftY, rightY) + paddingBottom,
         ) {
-
             placeables.forEachIndexed { index, placeable ->
 
                 val (x, y) = positions[index]
