@@ -24,6 +24,7 @@ composeBom = "2026.06.00"
 
 #Coil
 coil = "3.5.0"
+haze = "1.7.2"
 
 #Hilt
 daggerHilt = "2.60.1"
@@ -119,6 +120,7 @@ hilt-viewmodel = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-com
 #Coil
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 
 #Navigation
 navigation-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation" }

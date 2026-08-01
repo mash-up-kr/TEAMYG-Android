@@ -44,5 +44,6 @@ private fun Project.setComposeDependencies() {
 
         implementation(libs.coil.compose)
         implementation(libs.coil.network.okhttp)
+        implementation(libs.haze)
     }
 }
