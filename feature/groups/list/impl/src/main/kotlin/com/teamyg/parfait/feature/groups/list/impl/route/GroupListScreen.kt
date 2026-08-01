@@ -56,9 +56,8 @@ internal fun GroupListScreen(
     Box(modifier = modifier) {
         Column {
             YGTopBarEmpty(
-                // TODO: 실제 날짜 데이터 결선
-                date = "December 31",
-                day = "Wed",
+                date = uiState.dateString,
+                day = uiState.dayOfWeekString,
                 onIconClick = onClickSideMenu,
                 rightContent = {
                     TooltipBox(

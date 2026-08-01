@@ -18,6 +18,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 /**
  * Figma List-Date
+ *
+ * Button-Date 가 Disabled 면 Chip-Indicator 는 항상 False (C-201 캘린더 정책 예외 규칙)
  */
 @Composable
 fun YGListDate(
@@ -42,7 +44,7 @@ fun YGListDate(
             onClick = onClick,
             modifier = Modifier.size(SizeTokens.Size44.getDp()),
         )
-        YGChipColorIndicator(isChecked = isUploaded)
+        YGChipColorIndicator(isChecked = isEnabled && isUploaded)
     }
 }
 
