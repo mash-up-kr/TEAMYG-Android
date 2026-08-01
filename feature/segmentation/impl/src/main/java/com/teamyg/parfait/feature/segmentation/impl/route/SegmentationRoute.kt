@@ -9,7 +9,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
@@ -43,7 +42,6 @@ internal fun SegmentationRoute(
         state = state,
         modifier = modifier,
         onClickBack = { navigator.onBack() },
-        onClickOk = { uri -> navigator.goTo(NavKeyCanvasMove(imageUri = uri)) },
         // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
         onClickSubject = {
             state.subjectImagePath?.let { path ->

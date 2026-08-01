@@ -1,12 +1,13 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,31 +15,39 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.feature.segmentation.impl.component.GuideBanner
 import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun SegmentationScreen(
     state: SegmentationState,
     onClickBack: () -> Unit,
-    onClickOk: (file: String) -> Unit,
     onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
-        state.isLoading -> SegmentationLoadingScreen(modifier = modifier)
+        state.isLoading -> SegmentationLoadingScreen(
+            onClickClose = onClickBack,
+            modifier = modifier,
+        )
 
         state.isError -> SegmentationErrorScreen(
-            onClickBack = onClickBack,
+            onClickClose = onClickBack,
             modifier = modifier,
         )
 
         else -> SegmentationContent(
             state = state,
             onClickBack = onClickBack,
-            onClickOk = onClickOk,
             onClickSubject = onClickSubject,
             modifier = modifier,
         )
@@ -49,50 +58,71 @@ internal fun SegmentationScreen(
 private fun SegmentationContent(
     state: SegmentationState,
     onClickBack: () -> Unit,
-    onClickOk: (file: String) -> Unit,
     onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceAround,
-    ) {
-        Button(
-            onClick = { state.subjectImagePath?.let { onClickOk(it) } },
-            enabled = state.subjectImagePath != null,
-        ) {
-            Text("완료")
-        }
+    Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
+        YGCircleButton(
+            iconResource = DesignSystemR.drawable.ic_caret_left,
+            type = YGCircleButtonType.Default,
+            contentDescription = "뒤로가기",
+            onClick = onClickBack,
+            modifier = Modifier.align(Alignment.Start),
+        )
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 원본 이미지
-            state.originBitmap?.let { originBitmap ->
-                Image(
-                    bitmap = originBitmap.asImageBitmap(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-            // 감지된 객체를 dashed Rectangle 로 표시하고 바깥을 어둡게 덮는다
-            val originBitmap = state.originBitmap
-            val subjectBounds = state.subjectBounds
-            if (originBitmap != null && subjectBounds != null) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(
+                    start = 20.dp,
+                    top = 16.dp,
+                    end = 20.dp,
+                    bottom = 16.dp,
+                ),
+        ) {
+            GuideBanner()
+
+            SegmentationResultImage(
+                originBitmap = state.originBitmap,
+                subjectBounds = state.subjectBounds,
+                onClickSubject = onClickSubject,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * 촬영한 원본 이미지 위에 세그멘테이션 결과(딤 + dashed Rectangle)를 겹쳐 보여준다.
+ */
+@Composable
+private fun SegmentationResultImage(
+    originBitmap: Bitmap?,
+    subjectBounds: SegmentationBounds?,
+    onClickSubject: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        originBitmap?.let { bitmap ->
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (subjectBounds != null) {
                 SegmentationSubjectHighlight(
                     bounds = subjectBounds,
-                    imageWidth = originBitmap.width,
-                    imageHeight = originBitmap.height,
+                    imageWidth = bitmap.width,
+                    imageHeight = bitmap.height,
                     onClickSubject = onClickSubject,
                     modifier = Modifier.matchParentSize(),
                 )
             }
-        }
-
-        Button(
-            onClick = onClickBack,
-        ) {
-            Text(text = "뒤로")
         }
     }
 }
@@ -115,7 +145,6 @@ private fun PreviewSegmentationScreen(
     SegmentationScreen(
         state = state,
         onClickBack = {},
-        onClickOk = {},
         onClickSubject = {},
         modifier = Modifier.fillMaxSize(),
     )
