@@ -16,6 +16,7 @@ internal fun SegmentationConfirmRoute(
     SegmentationConfirmScreen(
         subjectImagePath = key.subjectImagePath,
         onClickBack = { navigator.onBack() },
+        onClickClose = { }, // TODO: 편집 플로우 종료 후 이동할 화면 연결 필요
         onClickEditPhoto = { }, // TODO: 사진 편집 화면 연결 필요
         onClickNext = { navigator.goTo(NavKeyCanvasMove(imageUri = key.subjectImagePath)) },
         modifier = modifier,

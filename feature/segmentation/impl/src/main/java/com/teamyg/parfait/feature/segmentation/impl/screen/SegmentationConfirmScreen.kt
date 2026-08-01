@@ -16,11 +16,13 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /**
  * 세그멘테이션으로 분리된 객체 이미지를 크게 확인하는 화면.
@@ -31,6 +33,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 internal fun SegmentationConfirmScreen(
     subjectImagePath: String,
     onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
     onClickEditPhoto: () -> Unit,
     onClickNext: () -> Unit,
     modifier: Modifier = Modifier,
@@ -40,9 +43,9 @@ internal fun SegmentationConfirmScreen(
             .fillMaxSize()
             .background(YGAtomicColors.Gray.White),
     ) {
-        YGTopBarBack(
-            onIconClick = onClickBack,
-            modifier = Modifier.fillMaxWidth(),
+        SegmentationConfirmTopBar(
+            onClickBack = onClickBack,
+            onClickClose = onClickClose,
         )
 
         Box(
@@ -89,12 +92,45 @@ internal fun SegmentationConfirmScreen(
     }
 }
 
+@Composable
+private fun SegmentationConfirmTopBar(
+    onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(
+                start = YGTheme.layout.padding.padding7,
+                end = YGTheme.layout.padding.padding7,
+                top = YGTheme.layout.padding.padding6,
+            ),
+    ) {
+        YGCircleButton(
+            iconResource = DesignSystemR.drawable.ic_caret_left,
+            type = YGCircleButtonType.Default,
+            contentDescription = "뒤로가기",
+            onClick = onClickBack,
+        )
+        YGCircleButton(
+            iconResource = DesignSystemR.drawable.ic_close,
+            type = YGCircleButtonType.Default,
+            contentDescription = "닫기",
+            onClick = onClickClose,
+        )
+    }
+}
+
 @YGPreview
 @Composable
 private fun SegmentationConfirmScreenPreview() = PreviewBox {
     SegmentationConfirmScreen(
         subjectImagePath = "",
         onClickBack = {},
+        onClickClose = {},
         onClickEditPhoto = {},
         onClickNext = {},
     )
