@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildEditedBitmap
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -27,6 +28,7 @@ private const val MAX_BRUSH_WIDTH_RATIO = 0.15f
 data class SegmentationEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
+    val tab: SegmentationEditTab = SegmentationEditTab.AREA,
     val mode: SegmentationEditMode = SegmentationEditMode.ERASE,
     val brushWidth: Float = 0f,
     val strokes: List<SegmentationEditStroke> = emptyList(),
@@ -50,6 +52,8 @@ data class SegmentationEditState(
 }
 
 sealed interface SegmentationEditIntent : UiIntent {
+    data class ChangeTab(val tab: SegmentationEditTab) : SegmentationEditIntent
+
     data class ChangeMode(val mode: SegmentationEditMode) : SegmentationEditIntent
 
     data class ChangeBrushWidth(val width: Float) : SegmentationEditIntent
@@ -87,6 +91,10 @@ class SegmentationEditViewModel
 
     override fun processIntent(intent: SegmentationEditIntent) {
         when (intent) {
+            is SegmentationEditIntent.ChangeTab -> {
+                updateState { copy(tab = intent.tab) }
+            }
+
             is SegmentationEditIntent.ChangeMode -> {
                 updateState { copy(mode = intent.mode) }
             }

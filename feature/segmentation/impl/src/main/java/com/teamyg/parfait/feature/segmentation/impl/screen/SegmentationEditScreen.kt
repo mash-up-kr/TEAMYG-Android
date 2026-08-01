@@ -15,6 +15,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +46,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditState
 import kotlin.math.roundToInt
 
@@ -53,6 +56,7 @@ private const val REMOVED_AREA_ALPHA = 0.25f
 @Composable
 internal fun SegmentationEditScreen(
     state: SegmentationEditState,
+    onChangeTab: (SegmentationEditTab) -> Unit,
     onChangeMode: (SegmentationEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onAddStroke: (SegmentationEditStroke) -> Unit,
@@ -70,13 +74,15 @@ internal fun SegmentationEditScreen(
                 .fillMaxWidth()
                 .weight(1f),
         ) {
-            val originBitmap = state.originBitmap
-            val segmentationBitmap = state.segmentationBitmap
+            when {
+                state.isLoading -> CircularProgressIndicator()
 
-            if (originBitmap == null || segmentationBitmap == null) {
-                CircularProgressIndicator()
-            } else {
-                SegmentationEditCanvas(
+                state.tab == SegmentationEditTab.BORDER -> SegmentationBorderEditScreen(
+                    state = state,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                else -> SegmentationEditCanvas(
                     state = state,
                     onAddStroke = onAddStroke,
                     modifier = Modifier.fillMaxSize(),
@@ -84,20 +90,73 @@ internal fun SegmentationEditScreen(
             }
         }
 
-        SegmentationEditControls(
-            state = state,
-            onChangeMode = onChangeMode,
-            onChangeBrushWidth = onChangeBrushWidth,
-            onClickUndo = onClickUndo,
-            onClickRedo = onClickRedo,
-            onClickReset = onClickReset,
-            onClickDone = onClickDone,
-            onClickBack = onClickBack,
+        SegmentationEditTabRow(
+            selectedTab = state.tab,
+            onChangeTab = onChangeTab,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 탭마다 만지는 대상이 달라 컨트롤도 갈리지만, 완료와 뒤로는 화면 전체에 하나씩만 둔다
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-        )
+        ) {
+            when (state.tab) {
+                SegmentationEditTab.AREA -> SegmentationAreaControls(
+                    state = state,
+                    onChangeMode = onChangeMode,
+                    onChangeBrushWidth = onChangeBrushWidth,
+                    onClickUndo = onClickUndo,
+                    onClickRedo = onClickRedo,
+                    onClickReset = onClickReset,
+                )
+
+                // Todo : 테두리 굵기/색 컨트롤 자리
+                SegmentationEditTab.BORDER -> Unit
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onClickBack) {
+                    Text("뒤로") // Todo : core:ui 에 string resource 로 분리
+                }
+                Button(
+                    onClick = onClickDone,
+                    enabled = !state.isLoading && !state.isSaving,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("완료") // Todo : core:ui 에 string resource 로 분리
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun SegmentationEditTabRow(
+    selectedTab: SegmentationEditTab,
+    onChangeTab: (SegmentationEditTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TabRow(
+        selectedTabIndex = selectedTab.ordinal,
+        modifier = modifier,
+    ) {
+        SegmentationEditTab.entries.forEach { tab ->
+            Tab(
+                selected = tab == selectedTab,
+                onClick = { onChangeTab(tab) },
+                text = { Text(tab.label()) },
+            )
+        }
+    }
+}
+
+// Todo : core:ui 에 string resource 로 분리
+private fun SegmentationEditTab.label(): String = when (this) {
+    SegmentationEditTab.AREA -> "영역"
+    SegmentationEditTab.BORDER -> "테두리"
 }
 
 @Composable
@@ -244,15 +303,13 @@ private fun viewMapping(
 )
 
 @Composable
-private fun SegmentationEditControls(
+private fun SegmentationAreaControls(
     state: SegmentationEditState,
     onChangeMode: (SegmentationEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onClickUndo: () -> Unit,
     onClickRedo: () -> Unit,
     onClickReset: () -> Unit,
-    onClickDone: () -> Unit,
-    onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -284,26 +341,13 @@ private fun SegmentationEditControls(
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onClickUndo, enabled = state.canUndo) {
-                Text("실행 취소")
+                Text("실행 취소") // Todo : core:ui 에 string resource 로 분리
             }
             OutlinedButton(onClick = onClickRedo, enabled = state.canRedo) {
-                Text("다시 실행")
+                Text("다시 실행") // Todo : core:ui 에 string resource 로 분리
             }
             OutlinedButton(onClick = onClickReset, enabled = state.canUndo) {
-                Text("초기화")
-            }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onClickBack) {
-                Text("뒤로")
-            }
-            Button(
-                onClick = onClickDone,
-                enabled = !state.isLoading && !state.isSaving,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("완료")
+                Text("초기화") // Todo : core:ui 에 string resource 로 분리
             }
         }
     }
@@ -314,6 +358,7 @@ private fun SegmentationEditControls(
 private fun PreviewSegmentationEditScreen() = PreviewBox {
     SegmentationEditScreen(
         state = SegmentationEditState(),
+        onChangeTab = {},
         onChangeMode = {},
         onChangeBrushWidth = {},
         onAddStroke = {},

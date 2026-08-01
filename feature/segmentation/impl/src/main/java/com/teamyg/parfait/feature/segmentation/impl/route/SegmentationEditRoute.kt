@@ -50,6 +50,7 @@ internal fun SegmentationEditRoute(
 
     SegmentationEditScreen(
         state = state,
+        onChangeTab = { tab -> viewModel.processIntent(SegmentationEditIntent.ChangeTab(tab)) },
         onChangeMode = { mode -> viewModel.processIntent(SegmentationEditIntent.ChangeMode(mode)) },
         onChangeBrushWidth = { width -> viewModel.processIntent(SegmentationEditIntent.ChangeBrushWidth(width)) },
         onAddStroke = { stroke -> viewModel.processIntent(SegmentationEditIntent.AddStroke(stroke)) },

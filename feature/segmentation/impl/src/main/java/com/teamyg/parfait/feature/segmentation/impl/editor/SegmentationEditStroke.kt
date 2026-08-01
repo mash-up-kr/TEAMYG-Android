@@ -3,7 +3,18 @@ package com.teamyg.parfait.feature.segmentation.impl.editor
 import androidx.compose.ui.geometry.Offset
 
 /**
- * 편집 모드. 마스크를 넓히거나 좁히는 두 방향만 존재한다.
+ * 편집 화면의 하단 탭. 탭마다 만지는 대상이 다르다.
+ */
+enum class SegmentationEditTab {
+    /** 잘라낼 영역 자체를 지우거나 되살린다 */
+    AREA,
+
+    /** 잘라낸 결과에 두를 테두리를 다듬는다 */
+    BORDER,
+}
+
+/**
+ * 영역 탭의 편집 모드. 마스크를 넓히거나 좁히는 두 방향만 존재한다.
  */
 enum class SegmentationEditMode {
     /** 원본에서 픽셀을 되살려 영역을 넓힌다 */
