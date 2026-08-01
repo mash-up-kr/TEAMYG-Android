@@ -24,6 +24,7 @@ internal fun SegmentationScreen(
     state: SegmentationState,
     onClickBack: () -> Unit,
     onClickOk: (file: String) -> Unit,
+    onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -38,6 +39,7 @@ internal fun SegmentationScreen(
             state = state,
             onClickBack = onClickBack,
             onClickOk = onClickOk,
+            onClickSubject = onClickSubject,
             modifier = modifier,
         )
     }
@@ -48,6 +50,7 @@ private fun SegmentationContent(
     state: SegmentationState,
     onClickBack: () -> Unit,
     onClickOk: (file: String) -> Unit,
+    onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -80,6 +83,7 @@ private fun SegmentationContent(
                     bounds = subjectBounds,
                     imageWidth = originBitmap.width,
                     imageHeight = originBitmap.height,
+                    onClickSubject = onClickSubject,
                     modifier = Modifier.matchParentSize(),
                 )
             }
@@ -112,6 +116,7 @@ private fun PreviewSegmentationScreen(
         state = state,
         onClickBack = {},
         onClickOk = {},
+        onClickSubject = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
