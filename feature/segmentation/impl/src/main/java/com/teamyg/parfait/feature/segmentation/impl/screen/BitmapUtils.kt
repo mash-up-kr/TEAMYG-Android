@@ -46,3 +46,11 @@ internal fun mapViewToBitmapFloat(
     x = (point.x - mapping.offsetX) / mapping.scale,
     y = (point.y - mapping.offsetY) / mapping.scale,
 )
+
+internal fun mapBitmapToViewFloat(
+    point: Offset,
+    mapping: BitmapViewMapping,
+): Offset = Offset(
+    x = point.x * mapping.scale + mapping.offsetX,
+    y = point.y * mapping.scale + mapping.offsetY,
+)
