@@ -14,12 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /**
@@ -46,7 +48,7 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
 
         Text(
-            text = "토핑으로 사용할 대상을 하나 선택해 주세요", // TODO: string resource 분리 필요
+            text = stringResource(R.string.segmentation_guide_banner),
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.White,
         )

@@ -15,12 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /**
@@ -59,7 +61,7 @@ internal fun SegmentationErrorScreen(
             Spacer(modifier = Modifier.height(11.dp))
 
             Text(
-                text = "사진 편집에 실패했어요", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_error_title),
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray900,
             )
@@ -67,7 +69,7 @@ internal fun SegmentationErrorScreen(
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "잠시 후 다시 시도해 주세요", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_error_description),
                 style = YGTheme.typography.body.b02R,
                 color = YGAtomicColors.Gray.Gray500,
             )

@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -21,6 +22,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
  * 세그멘테이션으로 분리된 객체 이미지를 크게 확인하는 화면.
@@ -74,14 +76,14 @@ internal fun SegmentationConfirmScreen(
                 ),
         ) {
             YGButton(
-                text = "사진 편집", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_confirm_edit_photo),
                 buttonType = YGButtonType.Medium.Secondary,
                 isEnabled = true,
                 onClick = onClickEditPhoto,
                 modifier = Modifier.weight(1f),
             )
             YGButton(
-                text = "다음", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_confirm_next),
                 buttonType = YGButtonType.Medium.Primary,
                 isEnabled = true,
                 onClick = onClickNext,

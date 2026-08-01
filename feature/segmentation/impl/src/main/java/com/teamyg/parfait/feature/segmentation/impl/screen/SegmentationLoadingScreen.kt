@@ -13,12 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
  * 세그멘테이션이 끝날 때까지 보여주는 로딩 화면.
@@ -52,7 +54,7 @@ internal fun SegmentationLoadingScreen(
             Spacer(modifier = Modifier.height(11.dp))
 
             Text(
-                text = "사진을 편집하고 있어요", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_loading_title),
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray900,
             )
@@ -60,7 +62,7 @@ internal fun SegmentationLoadingScreen(
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "잠시만 기다려주세요...", // TODO: string resource 분리 필요
+                text = stringResource(R.string.segmentation_loading_description),
                 style = YGTheme.typography.body.b02R,
                 color = YGAtomicColors.Gray.Gray500,
             )
