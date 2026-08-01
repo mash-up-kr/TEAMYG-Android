@@ -1,13 +1,30 @@
 package com.teamyg.parfait.feature.groups.list.impl.route.component
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.AnimationVector2D
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
+import kotlinx.coroutines.launch
 
 @Composable
 fun ToppingLayout(
@@ -102,4 +119,45 @@ fun ToppingLayout(
             }
         }
     }
+}
+
+/**
+ * 목록 중간에 항목이 추가되거나 빠져서 자리가 밀릴 때, 새 자리로 순간이동하는 대신 애니메이션으로 이동시킨다.
+ *
+ * [ToppingLayout] 은 index 로 좌우와 y 를 정하므로 앞에 하나만 추가돼도 뒤 항목이 전부 반대편으로 옮겨간다.
+ * 항목이 이동한 것으로 인식되려면 호출부에서 각 항목을 안정적인 key 로 감싸야 한다.
+ */
+@Composable
+fun Modifier.animateToppingPlacement(
+    animationSpec: AnimationSpec<IntOffset> = ToppingLayoutDefaults.PlacementAnimationSpec,
+): Modifier {
+    val scope = rememberCoroutineScope()
+    // 아직 한 번도 배치되지 않았으면 null. 처음 자리를 잡을 때는 애니메이션 없이 그대로 둬야 한다
+    var targetOffset by remember { mutableStateOf<IntOffset?>(null) }
+    var animatable by remember { mutableStateOf<Animatable<IntOffset, AnimationVector2D>?>(null) }
+
+    // onPlaced 를 offset 바깥에 둬야 offset 이 반영되기 전의, 부모가 정해준 원래 자리를 읽는다
+    return this
+        .onPlaced { targetOffset = it.positionInParent().round() }
+        .offset {
+            val target = targetOffset
+            if (target == null) {
+                IntOffset.Zero
+            } else {
+                val current = animatable
+                    ?: Animatable(target, IntOffset.VectorConverter).also { animatable = it }
+                if (current.targetValue != target) {
+                    scope.launch { current.animateTo(target, animationSpec) }
+                }
+                // 부모가 이미 새 자리에 배치했으므로, 아직 못 따라온 만큼을 되돌려 그린다
+                current.value - target
+            }
+        }
+}
+
+object ToppingLayoutDefaults {
+    val PlacementAnimationSpec: AnimationSpec<IntOffset> = tween(
+        durationMillis = 400,
+        easing = FastOutSlowInEasing,
+    )
 }
