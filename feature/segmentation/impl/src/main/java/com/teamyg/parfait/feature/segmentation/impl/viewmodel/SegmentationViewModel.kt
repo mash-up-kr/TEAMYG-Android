@@ -7,6 +7,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
@@ -17,9 +18,10 @@ import kotlinx.coroutines.launch
 
 data class SegmentationState(
     val isLoading: Boolean = true,
+    val isError: Boolean = false,
     val originBitmap: Bitmap? = null,
-    val overlayBitmap: Bitmap? = null,
     val subjectImagePath: String? = null,
+    val subjectBounds: SegmentationBounds? = null,
 ) : UiState
 
 sealed interface SegmentationIntent : UiIntent
@@ -45,14 +47,16 @@ class SegmentationViewModel
 
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { result ->
-                    val overlayBitmap = (result.bitmap as? AndroidBitmap)?.getRawData()
                     updateState {
                         copy(
-                            overlayBitmap = overlayBitmap,
                             subjectImagePath = result.subjectImagePath,
+                            subjectBounds = result.subjectBounds,
                         )
                     }
-                }.onFailure { postSideEffect(SegmentationEffect.SegmentationFailed) }
+                }.onFailure {
+                    updateState { copy(isError = true) }
+                    postSideEffect(SegmentationEffect.SegmentationFailed)
+                }
 
             // 실패해도 로딩 화면에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }

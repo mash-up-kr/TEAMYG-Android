@@ -30,9 +30,9 @@ internal fun SegmentationRoute(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
+                // 실패는 SegmentationErrorScreen 이 보여주므로 여기서 화면을 벗어나지 않는다
                 is SegmentationEffect.SegmentationFailed -> {
                     Toast.makeText(context, "객체 감지 실패", Toast.LENGTH_SHORT).show()
-                    navigator.onBack()
                 }
             }
         }

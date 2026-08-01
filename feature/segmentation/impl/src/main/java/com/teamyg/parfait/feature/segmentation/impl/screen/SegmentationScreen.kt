@@ -11,10 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
 @Composable
@@ -24,10 +26,15 @@ internal fun SegmentationScreen(
     onClickOk: (file: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (state.isLoading) {
-        SegmentationLoadingScreen(modifier = modifier)
-    } else {
-        SegmentationContent(
+    when {
+        state.isLoading -> SegmentationLoadingScreen(modifier = modifier)
+
+        state.isError -> SegmentationErrorScreen(
+            onClickBack = onClickBack,
+            modifier = modifier,
+        )
+
+        else -> SegmentationContent(
             state = state,
             onClickBack = onClickBack,
             onClickOk = onClickOk,
@@ -61,15 +68,19 @@ private fun SegmentationContent(
                 Image(
                     bitmap = originBitmap.asImageBitmap(),
                     contentDescription = null,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            // 오버레이 이미지
-            state.overlayBitmap?.let { overlayBitmap ->
-                Image(
-                    bitmap = overlayBitmap.asImageBitmap(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
+            // 감지된 객체를 dashed Rectangle 로 표시하고 바깥을 어둡게 덮는다
+            val originBitmap = state.originBitmap
+            val subjectBounds = state.subjectBounds
+            if (originBitmap != null && subjectBounds != null) {
+                SegmentationSubjectHighlight(
+                    bounds = subjectBounds,
+                    imageWidth = originBitmap.width,
+                    imageHeight = originBitmap.height,
+                    modifier = Modifier.matchParentSize(),
                 )
             }
         }
@@ -87,6 +98,7 @@ private class SegmentationScreenPreviewParameterProvider :
     override val values: Sequence<SegmentationState>
         get() = sequenceOf(
             SegmentationState(isLoading = true),
+            SegmentationState(isLoading = false, isError = true),
             SegmentationState(isLoading = false),
         )
 }
