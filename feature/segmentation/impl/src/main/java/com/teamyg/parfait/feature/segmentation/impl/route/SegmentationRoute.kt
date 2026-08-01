@@ -30,7 +30,12 @@ internal fun SegmentationRoute(
         // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
         onClickSubject = {
             state.subjectImagePath?.let { path ->
-                navigator.goTo(NavKeySegmentationConfirm(subjectImagePath = path))
+                navigator.goTo(
+                    NavKeySegmentationConfirm(
+                        sourceImageUri = key.sourceImageUri,
+                        subjectImagePath = path,
+                    ),
+                )
             }
         },
     )
