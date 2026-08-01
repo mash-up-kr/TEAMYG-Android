@@ -67,7 +67,7 @@ internal fun PictureConfirmScreen(
                     .fillMaxWidth(),
             )
         }
-        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),

@@ -129,7 +129,7 @@ private fun CameraContent(
                     onClick = onClickCancel,
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))   // 10.dp가 없어서 넣었습니다
+            Spacer(modifier = Modifier.height(10.dp)) // 10.dp가 없어서 넣었습니다
             // 뷰파인더 자리는 위치만 통지한다. 선명 영역 렌더링은 cameraFeed가 맡는다.
             Box(
                 modifier = Modifier
