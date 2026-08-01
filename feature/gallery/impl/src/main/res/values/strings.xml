@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gallery_permission_denied_title">갤러리 권한이 없어요</string>
+    <string name="gallery_permission_denied_description">설정에서 갤러리 권한을 허용해 주세요</string>
+    <string name="gallery_permission_open_settings">설정으로 이동</string>
+</resources>
