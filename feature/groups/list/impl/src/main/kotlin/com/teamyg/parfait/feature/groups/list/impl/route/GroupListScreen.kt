@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,10 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -21,9 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
@@ -31,12 +31,15 @@ import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonC
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GroupListScreen(
+internal fun GroupListScreen(
     uiState: GroupListUiState,
     onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
@@ -63,9 +66,9 @@ fun GroupListScreen(
                             spacingBetweenTooltipAndAnchor = 15.dp,
                         ),
                         tooltip = {
-                            Box(modifier = Modifier.background(color = Color.Red)) {
-                                Text("툴팁입니다") // Todo : 툴팁 UI 구현
-                            }
+                            GroupListTooltip(
+                                modifier = Modifier.padding(top = 16.dp),
+                            )
                         },
                         state = tooltipState,
                         enableUserInput = false,
@@ -161,4 +164,42 @@ fun GroupListScreen(
             }
         }
     }
+}
+
+private class GroupListScreenPreviewParameterProvider :
+    PreviewParameterProvider<GroupListUiState> {
+    override val values: Sequence<GroupListUiState>
+        get() = sequenceOf(
+            GroupListUiState(
+                groupAddButtonSelected = false,
+                isTooltipVisible = false,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+            GroupListUiState(
+                groupAddButtonSelected = true,
+                isTooltipVisible = false,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+            GroupListUiState(
+                groupAddButtonSelected = false,
+                isTooltipVisible = true,
+                dateString = "July 26",
+                dayOfWeekString = "Wed",
+            ),
+        )
+}
+
+@YGPreview
+@Composable
+private fun GroupListScreenPreview(
+    @PreviewParameter(GroupListScreenPreviewParameterProvider::class) uiState: GroupListUiState,
+) = PreviewBox {
+    GroupListScreen(
+        uiState = uiState,
+        onClickChip = {},
+        onClickSideMenu = {},
+        onClickTopping = {},
+    )
 }
