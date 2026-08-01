@@ -26,4 +26,6 @@ object SizeTokens {
     val Size48: SizeToken = SizeToken(48)
     val Size64: SizeToken = SizeToken(64)
     val Size80: SizeToken = SizeToken(80)
+    val Size96: SizeToken = SizeToken(96)
+    val Size160: SizeToken = SizeToken(160)
 }
