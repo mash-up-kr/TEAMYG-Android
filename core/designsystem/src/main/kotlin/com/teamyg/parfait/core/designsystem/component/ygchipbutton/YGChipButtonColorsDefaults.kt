@@ -6,13 +6,13 @@ object YGChipButtonColorsDefaults {
     /**
      * Figma Button-Chip-Left
      */
-    val CherrySubtle: YGChipButtonColors = YGChipButtonColors(
-        defaultForegroundColor = YGAtomicColors.Gray.Gray600,
-        pressedForegroundColor = YGAtomicColors.Gray.Gray700,
-        defaultBackgroundColor = YGAtomicColors.Cherry.Cherry50,
-        pressedBackgroundColor = YGAtomicColors.Cherry.Cherry100,
-        defaultBorderColor = YGAtomicColors.Gray.Transparent,
-        pressedBorderColor = YGAtomicColors.Gray.Transparent,
+    val GrayOutline: YGChipButtonColors = YGChipButtonColors(
+        defaultForegroundColor = YGAtomicColors.Gray.Gray900,
+        pressedForegroundColor = YGAtomicColors.Gray.Gray950,
+        defaultBackgroundColor = YGAtomicColors.Gray.White,
+        pressedBackgroundColor = YGAtomicColors.Gray.Gray200,
+        defaultBorderColor = YGAtomicColors.Gray.Gray500,
+        pressedBorderColor = YGAtomicColors.Gray.Gray500,
     )
 
     /**

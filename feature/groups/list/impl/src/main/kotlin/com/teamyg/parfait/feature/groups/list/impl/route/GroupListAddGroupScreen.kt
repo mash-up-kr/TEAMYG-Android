@@ -44,7 +44,7 @@ fun GroupListAddGroupScreen(
     ) {
         YGChipButton(
             text = stringResource(R.string.group_add),
-            colors = YGChipButtonColorsDefaults.CherrySubtle,
+            colors = YGChipButtonColorsDefaults.GrayOutline,
             onClick = {},
             startIconResource = DesignSystemR.drawable.ic_plus,
         )

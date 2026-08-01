@@ -56,6 +56,9 @@ internal fun GroupListScreen(
     Box(modifier = modifier) {
         Column {
             YGTopBarEmpty(
+                // TODO: 실제 날짜 데이터 결선
+                date = "December 31",
+                day = "Wed",
                 onIconClick = onClickSideMenu,
                 rightContent = {
                     TooltipBox(
@@ -75,7 +78,7 @@ internal fun GroupListScreen(
                     ) {
                         YGChipButton(
                             text = stringResource(R.string.group_add),
-                            colors = YGChipButtonColorsDefaults.CherrySubtle,
+                            colors = YGChipButtonColorsDefaults.GrayOutline,
                             onClick = onClickChip,
                             startIconResource = DesignSystemR.drawable.ic_plus,
                         )
