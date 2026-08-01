@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="group_add">그룹 추가하기</string>
+    <string name="group_create">그룹 만들기</string>
+    <string name="group_enter">그룹 들어가기</string>
+</resources>
