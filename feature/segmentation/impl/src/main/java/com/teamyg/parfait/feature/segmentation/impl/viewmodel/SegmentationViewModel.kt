@@ -26,9 +26,7 @@ data class SegmentationState(
 
 sealed interface SegmentationIntent : UiIntent
 
-sealed interface SegmentationEffect : UiSideEffect {
-    data object SegmentationFailed : SegmentationEffect
-}
+sealed interface SegmentationEffect : UiSideEffect
 
 @HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
 class SegmentationViewModel
@@ -53,10 +51,7 @@ class SegmentationViewModel
                             subjectBounds = result.subjectBounds,
                         )
                     }
-                }.onFailure {
-                    updateState { copy(isError = true) }
-                    postSideEffect(SegmentationEffect.SegmentationFailed)
-                }
+                }.onFailure { updateState { copy(isError = true) } }
 
             // 실패해도 로딩 화면에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }
