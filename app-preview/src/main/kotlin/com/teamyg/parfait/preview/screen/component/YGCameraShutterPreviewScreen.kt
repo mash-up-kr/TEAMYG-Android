@@ -1,21 +1,24 @@
 package com.teamyg.parfait.preview.screen.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
+import com.teamyg.parfait.core.designsystem.component.ygcamerashutter.YGCameraShutter
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
-internal fun YGActionItemPreviewScreen(
+internal fun YGCameraShutterPreviewScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -27,28 +30,14 @@ internal fun YGActionItemPreviewScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                PreviewSection("action item") {
-                    YGActionItem(
-                        text = "로그아웃",
-                        onClick = {},
-                    )
-                }
-            }
-            item {
-                PreviewSection("another action") {
-                    YGActionItem(
-                        text = "회원 탈퇴",
-                        onClick = {},
-                    )
-                }
-            }
-            item {
-                PreviewSection("show icon") {
-                    YGActionItem(
-                        text = "새 그룹 만들기",
-                        onClick = {},
-                        iconResource = R.drawable.ic_plus,
-                    )
+                PreviewSection("shutter (dark backdrop, tap to see pressed)") {
+                    Box(
+                        modifier = Modifier
+                            .background(YGAtomicColors.Gray.Black)
+                            .padding(24.dp),
+                    ) {
+                        YGCameraShutter(onClick = {})
+                    }
                 }
             }
         }
@@ -57,8 +46,8 @@ internal fun YGActionItemPreviewScreen(
 
 @YGPreview
 @Composable
-private fun PreviewYGActionItemPreviewScreen() = PreviewBox {
-    YGActionItemPreviewScreen(
+private fun PreviewYGCameraShutterPreviewScreen() = PreviewBox {
+    YGCameraShutterPreviewScreen(
         onBack = {},
     )
 }

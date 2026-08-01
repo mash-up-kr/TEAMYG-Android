@@ -14,17 +14,17 @@ class YGChipButtonPreviewParameterProvider : PreviewParameterProvider<YGChipButt
         YGChipButtonPreviewData(
             startIconResource = null,
             endIconResource = null,
-            colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+            colors = YGChipButtonColorsDefaults.CherrySolid,
         ),
         YGChipButtonPreviewData(
             startIconResource = R.drawable.ic_plus,
             endIconResource = null,
-            colors = YGChipButtonColorsDefaults.CherryBorderPressed,
+            colors = YGChipButtonColorsDefaults.CherrySubtle,
         ),
         YGChipButtonPreviewData(
             startIconResource = null,
             endIconResource = R.drawable.ic_plus,
-            colors = YGChipButtonColorsDefaults.CherryBackgroundPressed,
+            colors = YGChipButtonColorsDefaults.CherrySolid,
         ),
     )
 }

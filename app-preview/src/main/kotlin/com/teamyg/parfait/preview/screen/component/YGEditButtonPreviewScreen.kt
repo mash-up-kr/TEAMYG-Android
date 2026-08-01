@@ -13,13 +13,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.component.ygtogglebutton.YGToggleButton
+import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 @Composable
-internal fun YGToggleButtonPreviewScreen(
+internal fun YGEditButtonPreviewScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -33,35 +33,32 @@ internal fun YGToggleButtonPreviewScreen(
             item {
                 var selected by remember { mutableStateOf(false) }
                 PreviewSection("interactive (tap to toggle)") {
-                    YGToggleButton(
-                        text = "토글",
+                    YGEditButton(
+                        text = "편집",
                         isSelected = selected,
                         onClick = { selected = !selected },
+                        iconResource = R.drawable.ic_minus_round,
                     )
                 }
             }
             item {
-                PreviewSection("selected = false / true (static)") {
-                    YGToggleButton(
-                        text = "토글",
+                PreviewSection("default / selected (static) + no icon") {
+                    YGEditButton(
+                        text = "편집",
                         isSelected = false,
                         onClick = {},
+                        iconResource = R.drawable.ic_minus_round,
                     )
-                    YGToggleButton(
-                        text = "토글",
+                    YGEditButton(
+                        text = "편집",
                         isSelected = true,
                         onClick = {},
+                        iconResource = R.drawable.ic_minus_round,
                     )
-                }
-            }
-            item {
-                var selected by remember { mutableStateOf(true) }
-                PreviewSection("with icon") {
-                    YGToggleButton(
-                        text = "토글",
-                        isSelected = selected,
-                        onClick = { selected = !selected },
-                        iconResource = R.drawable.ic_plus,
+                    YGEditButton(
+                        text = "아이콘 없음",
+                        isSelected = false,
+                        onClick = {},
                     )
                 }
             }
@@ -71,8 +68,8 @@ internal fun YGToggleButtonPreviewScreen(
 
 @YGPreview
 @Composable
-private fun PreviewYGToggleButtonPreviewScreen() = PreviewBox {
-    YGToggleButtonPreviewScreen(
+private fun PreviewYGEditButtonPreviewScreen() = PreviewBox {
+    YGEditButtonPreviewScreen(
         onBack = {},
     )
 }
