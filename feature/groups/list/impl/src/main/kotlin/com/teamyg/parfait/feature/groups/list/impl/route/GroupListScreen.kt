@@ -28,19 +28,29 @@ import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
-import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingGroup
-import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingGroupType
-import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingTemplateType
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val SPECIAL_RULE_THRESHOLD = 3
+
+// ToppingLayout 이 index 짝/홀로 좌우를 번갈아 배치하므로 LEFT/RIGHT 가 교차하도록 나열한다
+private val TOPPING_PLACEMENT_TYPES = listOf(
+    YGToppingGroupType.TYPE_1_LEFT,
+    YGToppingGroupType.TYPE_1_RIGHT,
+    YGToppingGroupType.TYPE_2_LEFT,
+    YGToppingGroupType.TYPE_2_RIGHT,
+    YGToppingGroupType.TYPE_3_LEFT,
+    YGToppingGroupType.TYPE_3_RIGHT,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,13 +177,12 @@ internal fun GroupListContent(
             modifier = Modifier.fillMaxWidth(),
         ) {
             groupList.fastForEachIndexed { index, toppingGroup ->
-                ToppingGroup(
+                YGToppingGroup(
+                    image = YGToppingImage.Remote(toppingGroup.imageUrl),
                     name = toppingGroup.name,
-                    uploadTime = toppingGroup.lastModify,
-                    imageUrl = toppingGroup.imageUrl,
-                    chipColorType = toppingGroup.colorChipType,
-                    templateType = ToppingTemplateType.entries[index % ToppingTemplateType.entries.size],
-                    groupType = ToppingGroupType.entries[index % ToppingGroupType.entries.size],
+                    timestamp = toppingGroup.lastModify,
+                    chipType = toppingGroup.chipType,
+                    type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                 )
             }
         }
