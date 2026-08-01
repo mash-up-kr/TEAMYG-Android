@@ -5,11 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,8 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -37,23 +42,33 @@ internal fun GalleryPermissionRequestComponent(
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    Column(
         modifier = modifier
             .background(YGAtomicColors.Gray.White),
     ) {
         if (isDeniedPermission) {
-            YGIconButton(
-                iconResource = DesignSystemR.drawable.ic_close,
-                size = YGIconButtonSize.SIZE_44,
-                contentDescription = null,
-                onClick = onClickCancel,
+            Row(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = YGTheme.layout.padding.padding6, end = YGTheme.layout.padding.padding7),
-                isEnabled = true,
-            )
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.systemBars)
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                        top = YGTheme.layout.padding.padding6,
+                    ),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                YGCircleButton(
+                    iconResource = DesignSystemR.drawable.ic_close,
+                    type = YGCircleButtonType.Default,
+                    contentDescription = null,
+                    onClick = onClickCancel,
+                )
+            }
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
