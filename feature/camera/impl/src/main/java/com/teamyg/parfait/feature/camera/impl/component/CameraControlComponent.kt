@@ -10,8 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
-import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
+import com.teamyg.parfait.core.designsystem.component.ygcamerashutter.YGCameraShutter
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
@@ -39,7 +40,7 @@ internal fun CameraControlComponent(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Absolute.SpaceBetween,
         ) {
-            YGRoundIconButton(
+            YGCircleButton(
                 iconResource = if (flashMode ==
                     FlashMode.ON
                 ) {
@@ -47,15 +48,15 @@ internal fun CameraControlComponent(
                 } else {
                     R.drawable.ic_lightning
                 },
-                size = YGIconButtonSize.SIZE_44,
+                type = YGCircleButtonType.Default,
                 contentDescription = null,
                 onClick = onClickFlash,
             )
 
-            ShutterButton(onClick = onClickShutter)
-            YGRoundIconButton(
+            YGCameraShutter(onClick = onClickShutter)
+            YGCircleButton(
                 iconResource = R.drawable.ic_reverse,
-                size = YGIconButtonSize.SIZE_44,
+                type = YGCircleButtonType.Default,
                 contentDescription = null,
                 onClick = onClickFlip,
             )

@@ -18,13 +18,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -47,14 +47,13 @@ internal fun PictureConfirmScreen(
                 bottom = YGTheme.layout.padding.padding1,
             ),
     ) {
-        YGIconButton(
+        YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_close,
-            size = YGIconButtonSize.SIZE_44,
+            type = YGCircleButtonType.Default,
             contentDescription = null,
             onClick = onClickClose,
             modifier = Modifier
                 .align(Alignment.End),
-            isEnabled = true,
         )
         Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
         val painter = rememberAsyncImagePainter(model = uri)

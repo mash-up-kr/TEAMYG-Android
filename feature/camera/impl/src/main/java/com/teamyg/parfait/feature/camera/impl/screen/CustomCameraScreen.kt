@@ -24,7 +24,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -35,7 +36,6 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
-import com.teamyg.parfait.feature.camera.impl.component.YGRoundIconButton
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
@@ -122,9 +122,9 @@ private fun CameraContent(
                     date = today.format(DateTextFormat.monthDayFormat),
                     day = today.format(DateTextFormat.weekdayFormat),
                 )
-                YGRoundIconButton(
+                YGCircleButton(
                     iconResource = DesignSystemR.drawable.ic_close,
-                    size = YGIconButtonSize.SIZE_44,
+                    type = YGCircleButtonType.Default,
                     contentDescription = null,
                     onClick = onClickCancel,
                 )
