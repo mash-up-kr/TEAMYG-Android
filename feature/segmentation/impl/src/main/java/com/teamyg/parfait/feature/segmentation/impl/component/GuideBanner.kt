@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -42,7 +41,7 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
             painter = painterResource(DesignSystemR.drawable.ic_info_round),
             contentDescription = null,
             colorFilter = ColorFilter.tint(color = YGAtomicColors.Soda.Soda500),
-            modifier = Modifier.size(GuideBannerDefaults.IconSize),
+            modifier = Modifier.size(SizeTokens.Size28.getDp()),
         )
 
         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
@@ -53,10 +52,6 @@ internal fun GuideBanner(modifier: Modifier = Modifier) {
             color = YGAtomicColors.Gray.White,
         )
     }
-}
-
-internal object GuideBannerDefaults {
-    val IconSize: Dp = SizeTokens.Size28.getDp()
 }
 
 @YGPreview

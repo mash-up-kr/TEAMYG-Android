@@ -50,42 +50,42 @@ internal fun SegmentationSubjectHighlight(
                     imageWidth = imageWidth,
                     imageHeight = imageHeight,
                     canvasSize = size.toSize(),
-                ) ?: return@detectTapGestures
+                )
 
                 // 객체 영역 안쪽을 눌렀을 때만 반응한다
-                if (rect.contains(tapOffset)) onClickSubject()
+                if (rect != null && rect.contains(tapOffset)) onClickSubject()
             }
         },
     ) {
-        val rect = subjectRect(
+        subjectRect(
             bounds = bounds,
             imageWidth = imageWidth,
             imageHeight = imageHeight,
             canvasSize = size,
-        ) ?: return@Canvas
+        )?.let { rect ->
+            // Difference 로 잘라내서 객체 영역 안쪽에는 딤이 칠해지지 않게 한다
+            clipRect(
+                left = rect.left,
+                top = rect.top,
+                right = rect.right,
+                bottom = rect.bottom,
+                clipOp = ClipOp.Difference,
+            ) {
+                drawRect(color = YGAtomicColors.Transparency.Black25)
+            }
 
-        // Difference 로 잘라내서 객체 영역 안쪽에는 딤이 칠해지지 않게 한다
-        clipRect(
-            left = rect.left,
-            top = rect.top,
-            right = rect.right,
-            bottom = rect.bottom,
-            clipOp = ClipOp.Difference,
-        ) {
-            drawRect(color = YGAtomicColors.Transparency.Black25)
-        }
-
-        drawRect(
-            color = YGAtomicColors.Gray.White,
-            topLeft = Offset(x = rect.left, y = rect.top),
-            size = Size(width = rect.width, height = rect.height),
-            style = Stroke(
-                width = borderWidth.toPx(),
-                pathEffect = PathEffect.dashPathEffect(
-                    intervals = floatArrayOf(dashLength.toPx(), dashGap.toPx()),
+            drawRect(
+                color = YGAtomicColors.Gray.White,
+                topLeft = Offset(x = rect.left, y = rect.top),
+                size = Size(width = rect.width, height = rect.height),
+                style = Stroke(
+                    width = borderWidth.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(
+                        intervals = floatArrayOf(dashLength.toPx(), dashGap.toPx()),
+                    ),
                 ),
-            ),
-        )
+            )
+        }
     }
 }
 
@@ -100,14 +100,14 @@ private fun subjectRect(
     imageWidth: Int,
     imageHeight: Int,
     canvasSize: Size,
-): Rect? {
-    if (imageWidth <= 0 || imageHeight <= 0) return null
-
+): Rect? = if (imageWidth <= 0 || imageHeight <= 0) {
+    null
+} else {
     val scale = min(canvasSize.width / imageWidth, canvasSize.height / imageHeight)
     val offsetX = (canvasSize.width - imageWidth * scale) / 2f
     val offsetY = (canvasSize.height - imageHeight * scale) / 2f
 
-    return Rect(
+    Rect(
         left = offsetX + bounds.left * scale,
         top = offsetY + bounds.top * scale,
         right = offsetX + bounds.right * scale,
