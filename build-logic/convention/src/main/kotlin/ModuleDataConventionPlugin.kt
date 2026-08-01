@@ -21,6 +21,5 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
         implementation(libs.kakao.sdk.user)
 
         implementation(libs.google.mlkit.subject.segmentation)
-        implementation(libs.google.play.services.base)
     }
 })

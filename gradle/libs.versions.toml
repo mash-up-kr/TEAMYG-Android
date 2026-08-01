@@ -63,7 +63,6 @@ kakao-user = "2.23.2"
 
 #ML Kit
 mlkitSubjectSegmentation = "16.0.0-beta1"
-playServicesBase = "18.1.0"
 
 #java
 javaxInject = "1"
@@ -149,7 +148,6 @@ javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInjec
 
 #ML Kit
 google-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "mlkitSubjectSegmentation" }
-google-play-services-base = { group = "com.google.android.gms", name = "play-services-base", version.ref = "playServicesBase" }
 
 # Logger
 kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
