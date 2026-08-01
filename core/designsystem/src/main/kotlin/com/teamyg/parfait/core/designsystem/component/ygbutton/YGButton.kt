@@ -55,15 +55,12 @@ fun YGButton(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
-                shape = buttonType.radius,
-            ).clip(shape = buttonType.radius)
-            .border(
+            ).border(
                 width = 1.dp,
                 color = buttonType.colors.borderColor(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
-                shape = buttonType.radius,
             ).clickable(
                 enabled = isEnabled,
                 onClick = onClick,
