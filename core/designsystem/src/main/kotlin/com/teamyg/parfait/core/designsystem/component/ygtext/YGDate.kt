@@ -24,6 +24,7 @@ fun YGDate(
         modifier = modifier
             .background(color = YGAtomicColors.Gray.White)
             .border(width = 0.75.dp, color = YGAtomicColors.Gray.Gray800)
+            .background(color = YGAtomicColors.Gray.White)
             .padding(
                 vertical = YGTheme.layout.padding.padding3,
                 horizontal = YGTheme.layout.padding.padding4,

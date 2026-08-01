@@ -1,22 +1,46 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
-import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
-import com.teamyg.parfait.feature.camera.impl.component.CameraZoomIndicatorComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
+import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
+import kotlinx.datetime.format
+import kotlin.time.Clock
 
 @Composable
 internal fun CustomCameraScreen(
@@ -26,9 +50,12 @@ internal fun CustomCameraScreen(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
+    toastPolicy: YGToastPolicy,
+    onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
-    cameraPreview: @Composable () -> Unit,
+    cameraFeed: @Composable () -> Unit,
 ) {
     when (state.hasPermission) {
         true -> CameraContent(
@@ -37,9 +64,13 @@ internal fun CustomCameraScreen(
             onClickZoomLevel = onClickZoomLevel,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
+            onClickFlash = onClickFlash,
             onClickCancel = onClickCancel,
+            toastPolicy = toastPolicy,
+            onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
-            cameraPreview = cameraPreview,
+            cameraFeed = cameraFeed,
+            flashMode = state.flashMode,
         )
 
         false -> CameraPermissionRequestComponent(
@@ -47,6 +78,7 @@ internal fun CustomCameraScreen(
             permanentlyDenied = state.permanentlyDenied,
             onClickGrantPermission = onClickGrantPermission,
             onClickOpenAppSettings = onClickOpenAppSettings,
+            onClickCancel = onClickCancel,
             modifier = modifier,
         )
     }
@@ -59,34 +91,77 @@ private fun CameraContent(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
+    onViewfinderRectChange: (Rect) -> Unit,
+    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
-    cameraPreview: @Composable () -> Unit,
+    cameraFeed: @Composable () -> Unit,
+    flashMode: FlashMode,
 ) {
-    Column(modifier = modifier.background(Color.Black)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            cameraPreview()
+    Box(modifier = modifier.fillMaxSize()) {
+        cameraFeed()
 
-            CameraZoomIndicatorComponent(
+        Column(
+            modifier = Modifier
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .padding(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.padding.padding6,
+                    bottom = YGTheme.layout.padding.padding1,
+                ),
+        ) {
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+                YGDate(
+                    date = today.format(DateTextFormat.monthDayFormat),
+                    day = today.format(DateTextFormat.weekdayFormat),
+                )
+                YGCircleButton(
+                    iconResource = DesignSystemR.drawable.ic_close,
+                    type = YGCircleButtonType.Secondary,
+                    contentDescription = null,
+                    onClick = onClickCancel,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp)) // 10.dp가 없어서 넣었습니다
+            // 뷰파인더 자리는 위치만 통지한다. 선명 영역 렌더링은 cameraFeed가 맡는다.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .onGloballyPositioned { coordinates ->
+                        onViewfinderRectChange(coordinates.boundsInRoot())
+                    },
+            ) {
+                YGToastHost(
+                    policy = toastPolicy,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .requiredWidth(LocalConfiguration.current.screenWidthDp.dp)
+                        .windowInsetsPadding(WindowInsets.systemBars),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
+
+            CameraControlComponent(
                 zoomRatio = zoomRatio,
-                modifier = Modifier.padding(bottom = 16.dp),
+                zoomRange = zoomRange,
+                onClickZoomLevel = onClickZoomLevel,
+                onClickShutter = onClickShutter,
+                onClickFlip = onClickFlip,
+                onClickFlash = onClickFlash,
+                onClickCancel = onClickCancel,
+                flashMode = flashMode,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
-
-        CameraControlComponent(
-            zoomRatio = zoomRatio,
-            zoomRange = zoomRange,
-            onClickZoomLevel = onClickZoomLevel,
-            onClickShutter = onClickShutter,
-            onClickFlip = onClickFlip,
-            onClickCancel = onClickCancel,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -103,9 +178,12 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
+        onClickFlash = {},
         onClickCancel = {},
+        onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraFeed = @Composable {},
     )
 }
 
@@ -124,8 +202,11 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
+        onClickFlash = {},
+        onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraFeed = @Composable {},
     )
 }
 
@@ -144,7 +225,10 @@ private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
         onClickShutter = {},
         onClickFlip = {},
         onClickCancel = {},
+        onClickFlash = {},
+        onViewfinderRectChange = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
-        cameraPreview = @Composable {},
+        cameraFeed = @Composable {},
     )
 }

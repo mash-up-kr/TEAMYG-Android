@@ -1,7 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygbutton
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -11,9 +10,6 @@ import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 sealed interface YGButtonType {
     @get:Composable
     val iconGapSize: Dp
-
-    @get:Composable
-    val radius: Shape
 
     @get:Composable
     val textStyle: TextStyle
@@ -39,10 +35,6 @@ sealed interface YGButtonType {
         override val iconGapSize: Dp
             @Composable
             get() = YGTheme.layout.gap.gap1
-
-        override val radius: Shape
-            @Composable
-            get() = YGTheme.shapes.radius.none
 
         override val textStyle: TextStyle
             @Composable
@@ -85,10 +77,6 @@ sealed interface YGButtonType {
                 @Composable
                 get() = YGTheme.layout.gap.gap2
 
-            override val radius: Shape
-                @Composable
-                get() = YGTheme.shapes.radius.none
-
             override val textStyle: TextStyle
                 @Composable
                 get() = YGTheme.typography.body.b01SB
@@ -128,10 +116,6 @@ sealed interface YGButtonType {
             override val iconGapSize: Dp
                 @Composable
                 get() = YGTheme.layout.gap.gap2
-
-            override val radius: Shape
-                @Composable
-                get() = YGTheme.shapes.radius.none
 
             override val textStyle: TextStyle
                 @Composable
@@ -176,10 +160,6 @@ sealed interface YGButtonType {
                 @Composable
                 get() = YGTheme.layout.gap.gap2
 
-            override val radius: Shape
-                @Composable
-                get() = YGTheme.shapes.radius.none
-
             override val textStyle: TextStyle
                 @Composable
                 get() = YGTheme.typography.body.b01SB
@@ -220,10 +200,6 @@ sealed interface YGButtonType {
         override val iconGapSize: Dp
             @Composable
             get() = YGTheme.layout.gap.gap2
-
-        override val radius: Shape
-            @Composable
-            get() = YGTheme.shapes.radius.none
 
         override val textStyle: TextStyle
             @Composable

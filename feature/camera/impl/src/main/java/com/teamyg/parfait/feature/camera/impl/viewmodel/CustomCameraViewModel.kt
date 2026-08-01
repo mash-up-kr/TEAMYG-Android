@@ -24,6 +24,10 @@ sealed interface CustomCameraEffect : UiSideEffect {
     data class ReturnResult(
         val uri: String?,
     ) : CustomCameraEffect
+
+    data class NavigateToConfirm(
+        val uri: String,
+    ) : CustomCameraEffect
 }
 
 sealed interface CustomCameraIntent : UiIntent {
@@ -52,6 +56,8 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnClickShutter : CustomCameraIntent
 
+    data object OnClickFlash : CustomCameraIntent
+
     data class OnCaptureSaved(
         val file: File,
     ) : CustomCameraIntent
@@ -68,6 +74,7 @@ data class CustomCameraState(
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val zoomRatio: Float = 1f,
     val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
+    val flashMode: FlashMode = FlashMode.OFF,
 ) : UiState
 
 @HiltViewModel
@@ -96,6 +103,7 @@ constructor(
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
             is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
             is CustomCameraIntent.OnCancel -> handleOnCancel()
+            is CustomCameraIntent.OnClickFlash -> handleOnClickFlash()
         }
     }
 
@@ -150,13 +158,21 @@ constructor(
         }
     }
 
+    private fun handleOnClickFlash() {
+        updateState {
+            copy(
+                flashMode = !flashMode,
+            )
+        }
+    }
+
     private fun handleOnClickShutter() {
         postSideEffect(CustomCameraEffect.CaptureImage(file = createCameraCacheFileUseCase()))
     }
 
     private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
         val uri = createCameraCacheUriUseCase(file = intent.file)
-        postSideEffect(CustomCameraEffect.ReturnResult(uri = uri))
+        postSideEffect(CustomCameraEffect.NavigateToConfirm(uri = uri))
     }
 
     private fun handleOnCaptureFailed() {
@@ -166,4 +182,12 @@ constructor(
     private fun handleOnCancel() {
         postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
     }
+}
+
+enum class FlashMode {
+    OFF,
+    ON,
+    ;
+
+    operator fun not(): FlashMode = if (this == ON) OFF else ON
 }

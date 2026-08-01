@@ -2,12 +2,10 @@ package com.teamyg.parfait.feature.camera.impl.component
 
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -15,30 +13,35 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
-internal fun CameraPreviewComponent(
+internal fun CameraPreviewViewComponent(
     lensFacing: Int,
     zoomRatio: Float,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (ClosedFloatingPointRange<Float>) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+): CameraPreviewHandle {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
-    var camera by remember { mutableStateOf<Camera?>(null) }
+    val previewView = remember {
+        // GraphicsLayer로 피드를 기록하려면 SurfaceView가 아닌 TextureView여야 한다.
+        PreviewView(context).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
+    }
+    val cameraState = remember { mutableStateOf<Camera?>(null) }
+    var camera by cameraState
 
     DisposableEffect(lensFacing) {
+        var boundProvider: ProcessCameraProvider? = null
         val providerFuture = ProcessCameraProvider.getInstance(context)
         val listener = Runnable {
             val cameraProvider = providerFuture.get()
+            boundProvider = cameraProvider
+
             val preview: Preview = Preview
                 .Builder()
                 .build()
@@ -57,12 +60,15 @@ internal fun CameraPreviewComponent(
 
             cameraProvider.unbindAll()
 
-            val newCamera = cameraProvider.bindToLifecycle(
-                lifecycleOwner = lifecycleOwner,
-                cameraSelector = selector,
-                preview,
-                imageCapture,
-            )
+            val newCamera = runCatching {
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    selector,
+                    preview,
+                    imageCapture,
+                )
+            }.getOrNull() ?: return@Runnable
+
             camera = newCamera
             onImageCaptureReady(imageCapture)
             newCamera.cameraInfo.zoomState.value?.let { state ->
@@ -73,7 +79,7 @@ internal fun CameraPreviewComponent(
         providerFuture.addListener(listener, ContextCompat.getMainExecutor(context))
 
         onDispose {
-            providerFuture.get().unbindAll()
+            boundProvider?.unbindAll()
             camera = null
         }
     }
@@ -82,21 +88,8 @@ internal fun CameraPreviewComponent(
         camera?.cameraControl?.setZoomRatio(zoomRatio)
     }
 
-    AndroidView(
-        factory = { previewView },
-        modifier = modifier.pointerInput(camera) {
-            detectTapGestures { offset ->
-                val cam = camera ?: return@detectTapGestures
-
-                val point = previewView.meteringPointFactory
-                    .createPoint(offset.x, offset.y)
-
-                val action: FocusMeteringAction = FocusMeteringAction
-                    .Builder(point)
-                    .build()
-
-                cam.cameraControl.startFocusAndMetering(action)
-            }
-        },
+    return CameraPreviewHandle(
+        previewView = previewView,
+        camera = cameraState,
     )
 }

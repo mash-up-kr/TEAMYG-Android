@@ -1,24 +1,19 @@
 package com.teamyg.parfait.feature.camera.impl.component
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.feature.camera.impl.component.controls.FlipCameraButton
-import com.teamyg.parfait.feature.camera.impl.component.controls.ShutterButton
-import com.teamyg.parfait.feature.camera.impl.component.controls.ZoomLevelRow
+import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygcamerashutter.YGCameraShutter
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
+import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 
 @Composable
 internal fun CameraControlComponent(
@@ -27,51 +22,42 @@ internal fun CameraControlComponent(
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
+    onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
+    flashMode: FlashMode,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .background(Color.Black)
-            .padding(top = 16.dp, bottom = 24.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        ZoomLevelRow(
-            zoomRatio = zoomRatio,
-            zoomRange = zoomRange,
-            onClickZoomLevel = onClickZoomLevel,
-        )
-
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Absolute.SpaceBetween,
         ) {
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                TextButton(onClick = onClickCancel) {
-                    Text(
-                        text = "취소",
-                        color = Color.White,
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                ShutterButton(onClick = onClickShutter)
-            }
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                FlipCameraButton(onClick = onClickFlip)
-            }
+            YGCircleButton(
+                iconResource = if (flashMode ==
+                    FlashMode.ON
+                ) {
+                    R.drawable.ic_lightning_fill
+                } else {
+                    R.drawable.ic_lightning
+                },
+                type = YGCircleButtonType.Default,
+                contentDescription = null,
+                onClick = onClickFlash,
+            )
+
+            YGCameraShutter(onClick = onClickShutter)
+            YGCircleButton(
+                iconResource = R.drawable.ic_reverse,
+                type = YGCircleButtonType.Default,
+                contentDescription = null,
+                onClick = onClickFlip,
+            )
         }
     }
 }
@@ -85,7 +71,9 @@ private fun PreviewCameraControlComponent() = PreviewBox {
         onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
+        onClickFlash = {},
         onClickCancel = {},
+        flashMode = FlashMode.OFF,
         modifier = Modifier.fillMaxWidth(),
     )
 }
