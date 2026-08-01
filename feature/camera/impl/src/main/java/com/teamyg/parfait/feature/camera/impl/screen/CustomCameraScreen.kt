@@ -104,11 +104,14 @@ private fun CameraContent(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.systemBars)
-                .padding(horizontal = YGTheme.layout.padding.padding7),
+                .padding(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.padding.padding6,
+                    bottom = YGTheme.layout.padding.padding1,
+                ),
         ) {
-            Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding6))
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -143,7 +146,8 @@ private fun CameraContent(
                         .windowInsetsPadding(WindowInsets.systemBars),
                 )
             }
-            Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
+
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
             CameraControlComponent(
                 zoomRatio = zoomRatio,
@@ -160,7 +164,7 @@ private fun CameraContent(
     }
 }
 
-@YGPreview
+//@YGPreview
 @Composable
 private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
     CustomCameraScreen(

@@ -29,8 +29,7 @@ internal fun CameraControlComponent(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .padding(bottom = 24.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
