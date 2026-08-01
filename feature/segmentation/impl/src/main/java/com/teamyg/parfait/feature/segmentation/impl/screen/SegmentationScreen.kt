@@ -11,12 +11,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
 @Composable
 internal fun SegmentationScreen(
+    state: SegmentationState,
+    onClickBack: () -> Unit,
+    onClickOk: (file: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (state.isLoading) {
+        SegmentationLoadingScreen(modifier = modifier)
+    } else {
+        SegmentationContent(
+            state = state,
+            onClickBack = onClickBack,
+            onClickOk = onClickOk,
+            modifier = modifier,
+        )
+    }
+}
+
+@Composable
+private fun SegmentationContent(
     state: SegmentationState,
     onClickBack: () -> Unit,
     onClickOk: (file: String) -> Unit,
@@ -61,11 +82,22 @@ internal fun SegmentationScreen(
     }
 }
 
+private class SegmentationScreenPreviewParameterProvider :
+    PreviewParameterProvider<SegmentationState> {
+    override val values: Sequence<SegmentationState>
+        get() = sequenceOf(
+            SegmentationState(isLoading = true),
+            SegmentationState(isLoading = false),
+        )
+}
+
 @YGPreview
 @Composable
-private fun PreviewSegmentationScreen() = PreviewBox {
+private fun PreviewSegmentationScreen(
+    @PreviewParameter(SegmentationScreenPreviewParameterProvider::class) state: SegmentationState,
+) = PreviewBox {
     SegmentationScreen(
-        state = SegmentationState(),
+        state = state,
         onClickBack = {},
         onClickOk = {},
         modifier = Modifier.fillMaxSize(),

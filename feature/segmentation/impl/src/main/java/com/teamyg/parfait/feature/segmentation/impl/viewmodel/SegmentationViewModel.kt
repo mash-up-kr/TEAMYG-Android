@@ -16,6 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 
 data class SegmentationState(
+    val isLoading: Boolean = true,
     val originBitmap: Bitmap? = null,
     val overlayBitmap: Bitmap? = null,
     val subjectImagePath: String? = null,
@@ -52,6 +53,9 @@ class SegmentationViewModel
                         )
                     }
                 }.onFailure { postSideEffect(SegmentationEffect.SegmentationFailed) }
+
+            // 실패해도 로딩 화면에 갇히지 않도록 성공/실패와 무관하게 해제한다
+            updateState { copy(isLoading = false) }
         }
     }
 
