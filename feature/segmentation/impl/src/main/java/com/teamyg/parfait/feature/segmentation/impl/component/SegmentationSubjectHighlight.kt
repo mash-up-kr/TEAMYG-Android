@@ -76,7 +76,7 @@ internal fun SegmentationSubjectHighlight(
         }
 
         drawRect(
-            color = YGAtomicColors.Gray.Gray500,
+            color = YGAtomicColors.Gray.White,
             topLeft = Offset(x = rect.left, y = rect.top),
             size = Size(width = rect.width, height = rect.height),
             style = Stroke(
