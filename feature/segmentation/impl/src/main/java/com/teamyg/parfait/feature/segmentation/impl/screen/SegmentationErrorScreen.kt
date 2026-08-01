@@ -16,8 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -36,19 +35,11 @@ internal fun SegmentationErrorScreen(
     Column(
         modifier = modifier
             .background(YGAtomicColors.Gray.White)
-            .padding(
-                start = YGTheme.layout.padding.padding7,
-                end = YGTheme.layout.padding.padding7,
-                top = YGTheme.layout.padding.padding6,
-                bottom = YGTheme.layout.padding.padding6,
-            ),
+            .padding(bottom = YGTheme.layout.padding.padding6),
     ) {
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_close,
-            type = YGCircleButtonType.Default,
-            contentDescription = null,
-            onClick = onClickClose,
-            modifier = Modifier.align(Alignment.End),
+        YGFloatingBarClose(
+            onCloseClick = onClickClose,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Column(
@@ -56,7 +47,8 @@ internal fun SegmentationErrorScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
         ) {
             Image(
                 painter = painterResource(DesignSystemR.drawable.ic_warning_round),

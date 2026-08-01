@@ -16,13 +16,11 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /**
  * 세그멘테이션으로 분리된 객체 이미지를 크게 확인하는 화면.
@@ -43,9 +41,10 @@ internal fun SegmentationConfirmScreen(
             .fillMaxSize()
             .background(YGAtomicColors.Gray.White),
     ) {
-        SegmentationConfirmTopBar(
-            onClickBack = onClickBack,
-            onClickClose = onClickClose,
+        YGFloatingBarBackClose(
+            onBackClick = onClickBack,
+            onCloseClick = onClickClose,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Box(
@@ -89,38 +88,6 @@ internal fun SegmentationConfirmScreen(
                 modifier = Modifier.weight(1f),
             )
         }
-    }
-}
-
-@Composable
-private fun SegmentationConfirmTopBar(
-    onClickBack: () -> Unit,
-    onClickClose: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(
-                start = YGTheme.layout.padding.padding7,
-                end = YGTheme.layout.padding.padding7,
-                top = YGTheme.layout.padding.padding6,
-            ),
-    ) {
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_caret_left,
-            type = YGCircleButtonType.Default,
-            contentDescription = "뒤로가기",
-            onClick = onClickBack,
-        )
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_close,
-            type = YGCircleButtonType.Default,
-            contentDescription = "닫기",
-            onClick = onClickClose,
-        )
     }
 }
 
