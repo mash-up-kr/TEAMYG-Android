@@ -104,6 +104,7 @@ private fun CameraContent(
 
         Column(
             modifier = Modifier
+                .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(
                     start = YGTheme.layout.padding.padding7,
                     end = YGTheme.layout.padding.padding7,
@@ -164,7 +165,7 @@ private fun CameraContent(
     }
 }
 
-//@YGPreview
+@YGPreview
 @Composable
 private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
     CustomCameraScreen(
