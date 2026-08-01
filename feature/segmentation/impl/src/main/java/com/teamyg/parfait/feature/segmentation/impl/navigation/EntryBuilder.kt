@@ -8,12 +8,26 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationRoute
+import com.teamyg.parfait.feature.segmentation.impl.route.SegmentationConfirmRoute
 
 fun EntryProviderScope<NavKey>.featureSegmentationEntryBuilder(navigator: Navigator) {
     entry<NavKeySegmentation> { key ->
         YGScaffold { innerPadding ->
             SegmentationRoute(
+                navigator = navigator,
+                key = key,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+    }
+
+    entry<NavKeySegmentationConfirm> { key ->
+        YGScaffold { innerPadding ->
+            SegmentationConfirmRoute(
                 navigator = navigator,
                 key = key,
                 modifier = Modifier
