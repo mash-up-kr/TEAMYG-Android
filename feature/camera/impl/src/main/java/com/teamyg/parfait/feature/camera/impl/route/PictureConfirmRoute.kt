@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
 internal fun PictureConfirmRoute(
@@ -17,7 +18,13 @@ internal fun PictureConfirmRoute(
         uri = uri,
         source = source,
         onClickReCapture = { navigator.onBack() },
-        onClickConfirm = { }, // TODO("c103-로딩페이지로 넘어가야함")
+        onClickConfirm = {
+            navigator.goTo(
+                destination = NavKeySegmentation(
+                    sourceImageUri = uri,
+                ),
+            )
+        },
         onClickClose = {}, // TODO("c001-캔버스메인으로 넘어가야함")
         modifier = modifier,
     )
