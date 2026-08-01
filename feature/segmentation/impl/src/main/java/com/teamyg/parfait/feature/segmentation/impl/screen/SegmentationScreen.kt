@@ -9,14 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -25,29 +23,30 @@ import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.feature.segmentation.impl.component.GuideBanner
 import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun SegmentationScreen(
     state: SegmentationState,
     onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
     onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
         state.isLoading -> SegmentationLoadingScreen(
-            onClickClose = onClickBack,
+            onClickClose = onClickClose,
             modifier = modifier,
         )
 
         state.isError -> SegmentationErrorScreen(
-            onClickClose = onClickBack,
+            onClickClose = onClickClose,
             modifier = modifier,
         )
 
         else -> SegmentationContent(
             state = state,
             onClickBack = onClickBack,
+            onClickClose = onClickClose,
             onClickSubject = onClickSubject,
             modifier = modifier,
         )
@@ -58,22 +57,15 @@ internal fun SegmentationScreen(
 private fun SegmentationContent(
     state: SegmentationState,
     onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
     onClickSubject: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_caret_left,
-            type = YGCircleButtonType.Default,
-            contentDescription = "뒤로가기",
-            onClick = onClickBack,
-            modifier = Modifier
-                .align(Alignment.Start)
-                .padding(
-                    start = YGTheme.layout.padding.padding7,
-                    end = YGTheme.layout.padding.padding7,
-                    top = YGTheme.layout.padding.padding6,
-                ),
+        YGFloatingBarBackClose(
+            onBackClick = onClickBack,
+            onCloseClick = onClickClose,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Column(
@@ -151,6 +143,7 @@ private fun PreviewSegmentationScreen(
     SegmentationScreen(
         state = state,
         onClickBack = {},
+        onClickClose = {},
         onClickSubject = {},
         modifier = Modifier.fillMaxSize(),
     )

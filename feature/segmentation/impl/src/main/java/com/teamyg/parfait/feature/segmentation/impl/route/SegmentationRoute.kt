@@ -42,6 +42,7 @@ internal fun SegmentationRoute(
         state = state,
         modifier = modifier,
         onClickBack = { navigator.onBack() },
+        onClickClose = { }, // TODO: 편집 플로우 종료 후 이동할 화면 연결 필요
         // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
         onClickSubject = {
             state.subjectImagePath?.let { path ->
