@@ -61,6 +61,9 @@ fun ToppingLayout(
         var leftY = paddingTop
         var rightY = paddingTop + alternateOffsetYPx
 
+        // 마지막 아이템에도 overlap 이 빠진 leftY/rightY 대신, 실제로 놓인 아이템의 하단 중 가장 아래를 높이로 쓴다
+        var contentBottom = paddingTop
+
         val positions = mutableListOf<Pair<Int, Int>>()
 
         placeables.forEachIndexed { index, placeable ->
@@ -69,6 +72,7 @@ fun ToppingLayout(
                 // 왼쪽
                 positions += paddingLeft to leftY
 
+                contentBottom = maxOf(contentBottom, leftY + placeable.height)
                 leftY += placeable.height - overlapPx
             } else {
                 // 오른쪽
@@ -78,13 +82,14 @@ fun ToppingLayout(
                         placeable.width
                     ) to rightY
 
+                contentBottom = maxOf(contentBottom, rightY + placeable.height)
                 rightY += placeable.height - overlapPx
             }
         }
 
         layout(
             width = constraints.maxWidth,
-            height = maxOf(leftY, rightY) + paddingBottom,
+            height = contentBottom + paddingBottom,
         ) {
             placeables.forEachIndexed { index, placeable ->
 

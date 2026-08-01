@@ -43,7 +43,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
-// ToppingLayout 이 index 짝/홀로 좌우를 번갈아 배치하므로 LEFT/RIGHT 가 교차하도록 나열한다
+// Todo : 로직 추후 변경하기
 private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_1_LEFT,
     YGToppingGroupType.TYPE_1_RIGHT,

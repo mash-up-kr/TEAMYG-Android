@@ -20,9 +20,10 @@ import com.teamyg.parfait.feature.groups.list.impl.R
 /**
  * 파르페를 cherry - top - middle* - bottom 순서로 가운데 정렬해 세로로 쌓는 Layout.
  *
- * 기본적으로 각 섹션을 1개씩만 배치하지만, content 의 높이가 쌓인 섹션들의 총 높이보다 크면
- * 총 높이가 content 를 덮을 때까지 middleSection 을 반복해서 추가한다.
- * content 는 쌓인 파르페 위에 겹쳐서 그려진다.
+ * content 는 cherrySection 과 같은 y=0 에서 시작해 쌓인 파르페 위에 겹쳐서 그려진다.
+ * 기본적으로 middleSection 을 1개만 배치하지만, content 의 하단이 마지막 middleSection 의 하단보다
+ * 아래로 내려가면 다 덮을 때까지 middleSection 을 반복해서 추가한다.
+ * bottomSection 은 토핑을 받치지 않으므로 이 비교에 포함하지 않는다.
  *
  * @param cherryOverlap cherrySection 과 topSection 이 세로로 겹치는 양
  * @param topOverlap topSection 과 첫 middleSection 이 세로로 겹치는 양
@@ -62,16 +63,17 @@ internal fun GroupListParfaitLayout(
         val middleOverlapPx = middleOverlap.roundToPx()
         val bottomOverlapPx = bottomOverlap.roundToPx()
 
-        // middle 1개짜리 기본 높이
-        val sectionHeightSum = cherryHeight + topHeight + middleHeight + bottomHeight
-        val fixedOverlapSum = cherryOverlapPx + topOverlapPx + bottomOverlapPx
-        val baseHeight = sectionHeightSum - fixedOverlapSum
+        // 첫 middle 이 시작하는 y. content 는 y=0 에서 시작하므로 이 offset 을 더해야 같은 원점에서 비교할 수 있다
+        val creamTop = (cherryHeight - cherryOverlapPx) + (topHeight - topOverlapPx)
+
+        // middle 1개일 때 크림이 덮는 하단. bottomSection 은 토핑을 받치지 않으므로 여기서 제외한다
+        val coveredHeight = creamTop + middleHeight
 
         // middle 을 하나 더 쌓을 때마다 실제로 늘어나는 높이. 0 이하면 아무리 쌓아도 높이가 늘지 않으므로 반복하지 않는다
         val middleStep = middleHeight - middleOverlapPx
-        val middleCount = if (middleStep > 0 && contentHeight > baseHeight) {
+        val middleCount = if (middleStep > 0 && contentHeight > coveredHeight) {
             // 모자란 높이를 middleStep 으로 올림 나눗셈해서 추가로 필요한 middle 개수를 구한다
-            1 + ((contentHeight - baseHeight + middleStep - 1) / middleStep)
+            1 + ((contentHeight - coveredHeight + middleStep - 1) / middleStep)
         } else {
             1
         }
@@ -83,6 +85,11 @@ internal fun GroupListParfaitLayout(
                 measureSection(ParfaitSlot.Middle(index), sectionConstraints, middleSection)
             }
         }
+
+        // middle 1개짜리 전체 스택 높이
+        val sectionHeightSum = cherryHeight + topHeight + middleHeight + bottomHeight
+        val fixedOverlapSum = cherryOverlapPx + topOverlapPx + bottomOverlapPx
+        val baseHeight = sectionHeightSum - fixedOverlapSum
 
         val sectionsHeight = baseHeight + ((middleCount - 1) * middleStep)
         val layoutWidth = maxOf(
