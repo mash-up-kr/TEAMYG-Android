@@ -3,6 +3,7 @@ package com.teamyg.parfait.core.designsystem.component.ygbutton
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +55,15 @@ fun YGButton(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
+                shape = buttonType.radius,
+            ).clip(shape = buttonType.radius)
+            .border(
+                width = 1.dp,
+                color = buttonType.colors.borderColor(
+                    isEnabled = isEnabled,
+                    isPressed = isPressed,
+                ),
+                shape = buttonType.radius,
             ).clickable(
                 enabled = isEnabled,
                 onClick = onClick,
@@ -76,6 +87,7 @@ fun YGButton(
                         isPressed = isPressed,
                     ),
                 ),
+                modifier = Modifier.size(buttonType.iconSize),
             )
             Spacer(modifier = Modifier.width(buttonType.iconGapSize))
         }
@@ -99,6 +111,7 @@ fun YGButton(
                         isPressed = isPressed,
                     ),
                 ),
+                modifier = Modifier.size(buttonType.iconSize),
             )
         }
     }

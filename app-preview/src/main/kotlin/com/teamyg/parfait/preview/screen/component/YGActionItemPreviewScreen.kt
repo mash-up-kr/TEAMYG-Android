@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -38,6 +39,15 @@ internal fun YGActionItemPreviewScreen(
                     YGActionItem(
                         text = "회원 탈퇴",
                         onClick = {},
+                    )
+                }
+            }
+            item {
+                PreviewSection("show icon") {
+                    YGActionItem(
+                        text = "새 그룹 만들기",
+                        onClick = {},
+                        iconResource = R.drawable.ic_plus,
                     )
                 }
             }
