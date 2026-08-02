@@ -26,6 +26,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
@@ -74,7 +75,7 @@ internal fun CustomGalleryPickerRoute(
                 }
 
                 is CustomGalleryPickerEffect.NavigateToConfirm -> {
-                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
+                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri, source = PictureConfirmSource.GALLERY))
                 }
 
                 is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
