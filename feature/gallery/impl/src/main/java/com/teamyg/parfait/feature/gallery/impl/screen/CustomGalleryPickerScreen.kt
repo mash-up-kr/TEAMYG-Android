@@ -1,14 +1,15 @@
 package com.teamyg.parfait.feature.gallery.impl.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -18,13 +19,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryImageGridComponent
 import com.teamyg.parfait.feature.gallery.impl.component.GalleryPermissionRequestComponent
 import com.teamyg.parfait.feature.gallery.impl.model.GalleryAccessLevelPreviewParameterProvider
@@ -43,6 +51,7 @@ internal fun CustomGalleryPickerScreen(
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
+    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
 ) {
     when (state.access.hasPermission) {
@@ -55,6 +64,7 @@ internal fun CustomGalleryPickerScreen(
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
             onClickCancel = onClickCancel,
+            toastPolicy = toastPolicy,
             modifier = modifier,
         )
 
@@ -78,13 +88,13 @@ private fun GalleryContent(
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
+    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
+    Column(modifier = modifier.fillMaxSize().background(YGAtomicColors.Gray.White)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(
                     start = YGTheme.layout.padding.padding7,
                     end = YGTheme.layout.padding.padding7,
@@ -99,33 +109,23 @@ private fun GalleryContent(
                 onClick = onClickCancel,
             )
         }
-        Column(
+
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
+
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1, Alignment.CenterVertically),
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(DesignSystemR.drawable.image_gallery_empty),
-                    contentDescription = null,
-                )
-            }
-
-            Box(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 when {
                     isLoading -> CircularProgressIndicator(color = Color.White)
 
                     isEmpty -> Text(
-                        text = "오늘 찍은 사진이 없어요\n" +
-                            "사진을 찍고 토핑을 추가해 보세요",
+                        text = stringResource(R.string.gallery_empty_today_description),
                         color = YGAtomicColors.Gray.Gray300,
                         style = YGTheme.typography.body.b02R,
                         textAlign = TextAlign.Center,
@@ -138,6 +138,29 @@ private fun GalleryContent(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
+            }
+
+            YGToastHost(
+                policy = toastPolicy,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
+            )
+        }
+
+        if (isPartial) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = YGTheme.layout.padding.padding1),
+                contentAlignment = Alignment.Center,
+            ) {
+                YGButton(
+                    text = stringResource(R.string.gallery_reselect_photos),
+                    buttonType = YGButtonType.Medium.Primary,
+                    isEnabled = true,
+                    onClick = onClickManageMedia,
+                )
             }
         }
     }
@@ -158,6 +181,7 @@ private fun PreviewCustomGalleryPickerScreen(
         onClickManageMedia = {},
         onClickImage = {},
         onClickCancel = {},
+        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
     )
 }
