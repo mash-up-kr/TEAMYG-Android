@@ -1,9 +1,11 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,12 +29,14 @@ import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun PictureConfirmScreen(
     uri: String,
+    source: PictureConfirmSource,
     onClickReCapture: () -> Unit,
     onClickConfirm: () -> Unit,
     onClickClose: () -> Unit,
@@ -58,14 +63,44 @@ internal fun PictureConfirmScreen(
         Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
         val painter = rememberAsyncImagePainter(model = uri)
 
-        Box(modifier = Modifier.weight(1f).fillMaxWidth().border(width = 1.dp, color = YGAtomicColors.Gray.Gray500)) {
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxWidth(),
-            )
+        BoxWithConstraints(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        ) {
+            val intrinsicSize = painter.intrinsicSize
+            val isWidthBound = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
+                val imageRatio = intrinsicSize.width / intrinsicSize.height
+                val boxRatio = constraints.maxWidth.toFloat() / constraints.maxHeight.toFloat()
+                imageRatio >= boxRatio
+            } else {
+                true
+            }
+
+            if (isWidthBound) {
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .fillMaxWidth(),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(YGAtomicColors.Gray.White)
+                        .border(width = 1.dp, color = YGAtomicColors.Gray.Gray500),
+                ) {
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
         Row(
@@ -73,7 +108,12 @@ internal fun PictureConfirmScreen(
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
         ) {
             YGButton(
-                text = stringResource(R.string.camera_picture_confirm_retake),
+                text = stringResource(
+                    when (source) {
+                        PictureConfirmSource.CAMERA -> R.string.camera_picture_confirm_retake
+                        PictureConfirmSource.GALLERY -> R.string.camera_picture_confirm_reselect
+                    },
+                ),
                 buttonType = YGButtonType.Medium.Secondary,
                 isEnabled = true,
                 onClick = onClickReCapture,
@@ -95,6 +135,7 @@ internal fun PictureConfirmScreen(
 private fun PreviewPictureConfirmScreen() = PreviewBox {
     PictureConfirmScreen(
         uri = "",
+        source = PictureConfirmSource.CAMERA,
         onClickReCapture = {},
         onClickConfirm = {},
         onClickClose = {},
