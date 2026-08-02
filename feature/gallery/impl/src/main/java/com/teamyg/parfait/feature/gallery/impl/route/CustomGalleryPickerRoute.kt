@@ -9,17 +9,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
+import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
+import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
@@ -35,7 +42,6 @@ internal fun CustomGalleryPickerRoute(
     val context: Context = activity ?: LocalContext.current
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -43,6 +49,17 @@ internal fun CustomGalleryPickerRoute(
     ) {
         val access = GalleryPermissionManager.resolveAccessLevelAfterRequest(context, activity)
         viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(access))
+    }
+
+    val toastPolicy = rememberYGToastPolicy()
+    val guideToastMessage = stringResource(R.string.gallery_custom_guide_toast)
+    var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(state.isLoading, state.isEmpty, state.access) {
+        if (!hasShownGuideToast && state.access.hasPermission && !state.isLoading && !state.isEmpty) {
+            toastPolicy.show(YGToastType.Edit(guideToastMessage))
+            hasShownGuideToast = true
+        }
     }
 
     LaunchedEffect(viewModel.effect) {
@@ -56,9 +73,8 @@ internal fun CustomGalleryPickerRoute(
                     context.startActivity(context.buildAppSettingsIntent())
                 }
 
-                is CustomGalleryPickerEffect.ReturnResult -> {
-                    resultEventBus.sendResult(effect.uri)
-                    navigator.onBack()
+                is CustomGalleryPickerEffect.NavigateToConfirm -> {
+                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
                 }
 
                 is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
@@ -88,6 +104,7 @@ internal fun CustomGalleryPickerRoute(
         onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
         onClickImage = { viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(it)) },
         onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
+        toastPolicy = toastPolicy,
         modifier = modifier,
     )
 }
