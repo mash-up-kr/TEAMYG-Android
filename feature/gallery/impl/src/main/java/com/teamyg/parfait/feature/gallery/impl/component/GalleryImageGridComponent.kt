@@ -16,12 +16,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.feature.gallery.impl.R
 
 @Composable
 internal fun GalleryImageGridComponent(
@@ -35,13 +37,13 @@ internal fun GalleryImageGridComponent(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding5),
         modifier = modifier
             .background(YGAtomicColors.Gray.White)
-            .padding(horizontal = YGTheme.layout.padding.padding7),
+            .padding(horizontal = YGTheme.layout.padding.padding5),
     ) {
         item(
             key = "header-recent",
             span = { GridItemSpan(maxLineSpan) },
         ) {
-            GalleryDateHeader(date = "최근 업로드한 사진")
+            GalleryDateHeader(date = stringResource(R.string.gallery_recent_uploaded_header))
         }
 
         if (recentImages.isNotEmpty()) {
@@ -86,6 +88,7 @@ private fun GalleryImageCell(
 ) {
     Box(
         modifier = modifier
+            .padding(bottom = YGTheme.layout.padding.padding8)
             .aspectRatio(1f)
             .clickable { onClickImage(uri) },
     ) {
@@ -109,7 +112,7 @@ private fun GalleryDateHeader(
         style = YGTheme.typography.body.b02R,
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = YGTheme.layout.padding.padding5, top = YGTheme.layout.padding.padding8),
+            .padding(bottom = YGTheme.layout.padding.padding5),
     )
 }
 
