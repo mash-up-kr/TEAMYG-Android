@@ -10,3 +10,6 @@
 local.properties
 debug.keystore
 google-services.json
+
+# IntelliJ HTTP Client — 실제 토큰·서버 주소가 들어가므로 커밋 금지
+http-client.private.env.json
