@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.gallery.impl.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,14 +12,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.GalleryImageGroup
@@ -32,18 +32,19 @@ internal fun GalleryImageGridComponent(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(count = 3),
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding5),
         modifier = modifier
-            .background(Color.Black)
-            .padding(horizontal = 2.dp),
+            .background(YGAtomicColors.Gray.White)
+            .padding(horizontal = YGTheme.layout.padding.padding7),
     ) {
-        if (recentImages.isNotEmpty()) {
-            item(
-                key = "header-recent",
-                span = { GridItemSpan(maxLineSpan) },
-            ) {
-                GalleryDateHeader(date = "최근")
-            }
+        item(
+            key = "header-recent",
+            span = { GridItemSpan(maxLineSpan) },
+        ) {
+            GalleryDateHeader(date = "최근 업로드한 사진")
+        }
 
+        if (recentImages.isNotEmpty()) {
             items(
                 items = recentImages,
                 key = { "recent-$it" },
@@ -52,6 +53,10 @@ internal fun GalleryImageGridComponent(
                     uri = uri,
                     onClickImage = onClickImage,
                 )
+            }
+        } else {
+            item(key = "recent-empty") {
+                Box(modifier = Modifier.aspectRatio(1f))
             }
         }
 
@@ -82,7 +87,6 @@ private fun GalleryImageCell(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .padding(2.dp)
             .clickable { onClickImage(uri) },
     ) {
         AsyncImage(
@@ -101,14 +105,11 @@ private fun GalleryDateHeader(
 ) {
     Text(
         text = date,
-        color = Color.White,
-        style = MaterialTheme.typography.titleSmall,
+        color = YGAtomicColors.Gray.Gray900,
+        style = YGTheme.typography.body.b02R,
         modifier = modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 4.dp,
-                vertical = 12.dp,
-            ),
+            .padding(bottom = YGTheme.layout.padding.padding5, top = YGTheme.layout.padding.padding8),
     )
 }
 
