@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -14,10 +13,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.GroupCreateConfig
@@ -56,12 +55,7 @@ internal fun AccountInfoScreen(
                     verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    // TODO Design System Label 변환
-                    Text(
-                        text = stringResource(R.string.account_info_nickname_label),
-                        style = YGTheme.typography.body.b02R,
-                        color = YGAtomicColors.Gray.Gray400,
-                    )
+                    YGLabel(text = stringResource(R.string.account_info_nickname_label))
                     YGTextFormField(
                         value = state.nickname,
                         onValueChange = onValueChanged,
