@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -73,7 +74,7 @@ internal fun GroupListScreen(
                         focusable = true,
                     ) {
                         YGChipButton(
-                            text = "그룹 추가하기", // Todo : core:ui 에 string resource 로 분리
+                            text = stringResource(R.string.group_add),
                             colors = YGChipButtonColorsDefaults.CherrySubtle,
                             onClick = onClickChip,
                             startIconResource = DesignSystemR.drawable.ic_plus,

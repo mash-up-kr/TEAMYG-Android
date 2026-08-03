@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.datastore.RecentImageEditor
+import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.data.utils.sourceLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,7 +18,7 @@ class RecentImageLocalDataSourceImpl
 @Inject
 constructor(
     private val dataStore: DataStore<Preferences>,
-    private val json: Json,
+    @LocalJson private val json: Json,
 ) : RecentImageLocalDataSource {
     init {
         sourceLogger.i { "RecentImageLocalDataSourceImpl::init" }

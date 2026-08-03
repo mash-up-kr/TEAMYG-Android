@@ -19,13 +19,9 @@ import javax.inject.Singleton
 interface RepositoryModule {
     @Binds
     @Singleton
-    fun bindRecentImageRepository(recentImageRepositoryImpl: RecentImageRepositoryImpl): RecentImageRepository
-
-    @Binds
-    @Singleton
-    fun bindImageSegmentationRepository(
-        imageSegmentationRepositoryImpl: ImageSegmentationRepositoryImpl,
-    ): ImageSegmentationRepository
+    fun bindCameraCacheFileRepository(
+        cameraCacheFileRepositoryImpl: CameraCacheFileRepositoryImpl,
+    ): CameraCacheFileRepository
 
     @Binds
     @Singleton
@@ -33,7 +29,11 @@ interface RepositoryModule {
 
     @Binds
     @Singleton
-    fun bindCameraCacheFileRepository(
-        cameraCacheFileRepositoryImpl: CameraCacheFileRepositoryImpl,
-    ): CameraCacheFileRepository
+    fun bindRecentImageRepository(recentImageRepositoryImpl: RecentImageRepositoryImpl): RecentImageRepository
+
+    @Binds
+    @Singleton
+    fun bindImageSegmentationRepository(
+        imageSegmentationRepositoryImpl: ImageSegmentationRepositoryImpl,
+    ): ImageSegmentationRepository
 }

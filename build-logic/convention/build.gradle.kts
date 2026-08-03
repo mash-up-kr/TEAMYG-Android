@@ -33,6 +33,10 @@ gradlePlugin {
             className = "AndroidApplicationSigning",
         )
         pluginRegister(
+            pluginName = "android.network",
+            className = "AndroidNetwork",
+        )
+        pluginRegister(
             pluginName = "android.library",
             className = "AndroidLibrary",
         )
