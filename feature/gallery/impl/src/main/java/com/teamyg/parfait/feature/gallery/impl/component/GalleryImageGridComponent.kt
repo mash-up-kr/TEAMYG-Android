@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,8 +23,11 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.feature.gallery.impl.R
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.format
 
 @Composable
 internal fun GalleryImageGridComponent(
@@ -37,7 +41,7 @@ internal fun GalleryImageGridComponent(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding5),
         modifier = modifier
             .background(YGAtomicColors.Gray.White)
-            .padding(horizontal = YGTheme.layout.padding.padding5),
+            .padding(horizontal = YGTheme.layout.padding.padding7),
     ) {
         item(
             key = "header-recent",
@@ -67,7 +71,10 @@ internal fun GalleryImageGridComponent(
                 key = "header-${group.date}",
                 span = { GridItemSpan(maxLineSpan) },
             ) {
-                GalleryDateHeader(date = group.date)
+                GalleryDateHeader(
+                    date = group.date.format(DateTextFormat.monthDayFormat),
+                    day = group.date.format(DateTextFormat.weekdayFormat),
+                )
             }
 
             items(
@@ -88,7 +95,7 @@ private fun GalleryImageCell(
 ) {
     Box(
         modifier = modifier
-            .padding(bottom = YGTheme.layout.padding.padding8)
+            .padding(bottom = YGTheme.layout.padding.padding5)
             .aspectRatio(1f)
             .clickable { onClickImage(uri) },
     ) {
@@ -116,23 +123,50 @@ private fun GalleryDateHeader(
     )
 }
 
+@Composable
+private fun GalleryDateHeader(
+    date: String,
+    day: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = YGTheme.layout.padding.padding5, top = YGTheme.layout.padding.padding5),
+    ) {
+        Text(
+            text = date,
+            color = YGAtomicColors.Gray.Gray900,
+            style = YGTheme.typography.body.b02R,
+        )
+        Text(
+            text = " ($day)",
+            color = YGAtomicColors.Gray.Gray300,
+            style = YGTheme.typography.body.b02R,
+        )
+    }
+}
+
 @YGPreview
 @Composable
 private fun PreviewGalleryImageGridComponent() = PreviewBox {
     GalleryImageGridComponent(
         groups = listOf(
             GalleryImageGroup(
-                date = "2023.07.01",
+                date = LocalDate(2023, 7, 1),
                 images = listOf(
                     "test1",
                     "test2",
+                    "test3",
+                    "test4",
+                    "test5",
                 ),
             ),
             GalleryImageGroup(
-                date = "2023.07.02",
+                date = LocalDate(2023, 7, 2),
                 images = listOf(
-                    "test3",
-                    "test4",
+                    "test6",
+                    "test7",
                 ),
             ),
         ),
