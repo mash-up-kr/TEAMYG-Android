@@ -19,6 +19,7 @@ import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AccountInfoUiState
@@ -31,7 +32,7 @@ internal fun AccountInfoScreen(
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    YGScreen(modifier = modifier) {
+    YGScreen(modifier = modifier.clearFocusOnTap()) {
         Column(modifier = Modifier.fillMaxSize()) {
             YGTopBarDetail(
                 title = stringResource(R.string.account_info_title),
