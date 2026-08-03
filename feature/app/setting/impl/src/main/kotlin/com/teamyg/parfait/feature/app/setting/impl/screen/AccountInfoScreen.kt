@@ -14,8 +14,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
-import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
-import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -32,8 +30,6 @@ internal fun AccountInfoScreen(
     state: AccountInfoUiState,
     onValueChanged: (nickname: String) -> Unit,
     onClickBack: () -> Unit,
-    onClickLogout: () -> Unit,
-    onClickWithdraw: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     YGScreen(modifier = modifier) {
@@ -76,24 +72,6 @@ internal fun AccountInfoScreen(
                         colors = YGTextFormFieldDefaults.colors(),
                     )
                 }
-
-                YGDangerZone(
-                    topZone = {
-                        YGActionItem(
-                            text = stringResource(R.string.account_info_logout),
-                            onClick = onClickLogout,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    },
-                    bottomZone = {
-                        YGActionItem(
-                            text = stringResource(R.string.account_info_withdraw),
-                            onClick = onClickWithdraw,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
 
@@ -127,8 +105,6 @@ private fun AccountInfoScreenPreview(
         state = uiState,
         onValueChanged = {},
         onClickBack = {},
-        onClickLogout = {},
-        onClickWithdraw = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

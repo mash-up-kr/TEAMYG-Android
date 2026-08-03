@@ -32,8 +32,6 @@ internal fun AccountInfoRoute(
         state = state,
         onValueChanged = { viewModel.processIntent(AccountInfoIntent.InputWord(it)) },
         onClickBack = { viewModel.processIntent(AccountInfoIntent.ClickBack) },
-        onClickLogout = { viewModel.processIntent(AccountInfoIntent.ClickLogout) },
-        onClickWithdraw = { viewModel.processIntent(AccountInfoIntent.ClickWithdraw) },
         modifier = modifier,
     )
 }

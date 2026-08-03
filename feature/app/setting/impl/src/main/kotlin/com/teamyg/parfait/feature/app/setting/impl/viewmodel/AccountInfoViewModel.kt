@@ -20,10 +20,6 @@ sealed interface AccountInfoIntent : UiIntent {
     data class InputWord(val nickName: String) : AccountInfoIntent
 
     data object ClickBack : AccountInfoIntent
-
-    data object ClickLogout : AccountInfoIntent
-
-    data object ClickWithdraw : AccountInfoIntent
 }
 
 sealed interface AccountInfoSideEffect : UiSideEffect {
@@ -46,8 +42,6 @@ constructor(
         when (intent) {
             is AccountInfoIntent.InputWord -> handleInputWord(intent.nickName)
             AccountInfoIntent.ClickBack -> handleClickBack()
-            AccountInfoIntent.ClickLogout -> handleClickLogout()
-            AccountInfoIntent.ClickWithdraw -> handleClickWithdraw()
         }
     }
 
@@ -70,15 +64,5 @@ constructor(
 
     private fun handleClickBack() {
         postSideEffect(AccountInfoSideEffect.NavigateBack)
-    }
-
-    private fun handleClickLogout() {
-        // TODO auth 로그아웃 연동 전 stub
-        viewModelLogger.i { "AccountInfoViewModel::handleClickLogout (stub)" }
-    }
-
-    private fun handleClickWithdraw() {
-        // TODO 회원 탈퇴 API 연동 전 stub
-        viewModelLogger.i { "AccountInfoViewModel::handleClickWithdraw (stub)" }
     }
 }
