@@ -19,6 +19,3 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
-
-# Retrofit 서비스 메서드의 @NoAuth를 런타임에 읽으므로 어노테이션이 유지돼야 한다.
--keep @interface com.teamyg.parfait.data.network.NoAuth
