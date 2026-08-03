@@ -50,9 +50,6 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditState
 import kotlin.math.roundToInt
 
-/** 잘려나간 영역도 어렴풋이 보여야 어디를 되살릴지 판단할 수 있다 */
-private const val REMOVED_AREA_ALPHA = 0.25f
-
 @Composable
 internal fun SegmentationEditScreen(
     state: SegmentationEditState,
@@ -217,14 +214,7 @@ private fun SegmentationEditCanvas(
             height = (originBitmap.height * mapping.scale).roundToInt(),
         )
 
-        drawImage(
-            image = originImage,
-            dstOffset = dstOffset,
-            dstSize = dstSize,
-            alpha = REMOVED_AREA_ALPHA,
-        )
-
-        // 알파 합성을 독립된 레이어에서 해야 아래에 깔아둔 흐린 원본이 지워지지 않는다
+        // 알파 합성을 독립된 레이어에서 해야 Clear 가 화면 전체를 뚫지 않는다
         drawIntoCanvas { canvas ->
             canvas.saveLayer(Rect(Offset.Zero, size), Paint())
 
