@@ -49,7 +49,7 @@ internal fun SegmentationEditRoute(
 
                 // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집본 경로를 결과로 넘기고 돌아간다
                 is SegmentationEditEffect.EditCompleted -> {
-                    resultEventBus.sendResult(effect.editedImagePath)
+                    resultEventBus.sendResult(SEGMENTATION_EDIT_RESULT_KEY, effect.editedImagePath)
                     navigator.onBack()
                 }
             }

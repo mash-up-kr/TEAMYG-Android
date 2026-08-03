@@ -24,7 +24,9 @@ internal fun SegmentationConfirmRoute(
     // NavKey 는 화면을 처음 열 때의 인자라 편집 결과를 담지 못한다. 편집 후 경로는 화면이 들고 있는다
     var subjectImagePath by rememberSaveable { mutableStateOf(key.subjectImagePath) }
 
-    ResultEffect<String> { editedImagePath -> subjectImagePath = editedImagePath }
+    ResultEffect<String>(resultKey = SEGMENTATION_EDIT_RESULT_KEY) { editedImagePath ->
+        subjectImagePath = editedImagePath
+    }
 
     SegmentationConfirmScreen(
         subjectImagePath = subjectImagePath,
