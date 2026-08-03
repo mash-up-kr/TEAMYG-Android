@@ -69,7 +69,7 @@ internal fun GalleryImageGridComponent(
             ) {
                 GalleryDateHeader(
                     date = group.date.format(DateTextFormat.monthDayFormat),
-                    day = group.date.format(DateTextFormat.weekdayFormat),
+                    dayOfWeek = group.date.format(DateTextFormat.weekdayFormat),
                 )
             }
 
@@ -122,13 +122,14 @@ private fun GalleryDateHeader(
 @Composable
 private fun GalleryDateHeader(
     date: String,
-    day: String,
+    dayOfWeek: String,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = YGTheme.layout.padding.padding5, top = YGTheme.layout.padding.padding5),
+            .padding(vertical = YGTheme.layout.padding.padding5),
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
     ) {
         Text(
             text = date,
@@ -136,7 +137,7 @@ private fun GalleryDateHeader(
             style = YGTheme.typography.body.b02R,
         )
         Text(
-            text = " ($day)",
+            text = "($dayOfWeek)",
             color = YGAtomicColors.Gray.Gray300,
             style = YGTheme.typography.body.b02R,
         )
