@@ -105,10 +105,7 @@ constructor(
 
             val subjectBitmap = Bitmap.createBitmap(subjectColors, image.width, image.height, Bitmap.Config.ARGB_8888)
 
-            val file = File(context.cacheDir, "parfait_${System.currentTimeMillis()}.png")
-            withContext(Dispatchers.IO) {
-                file.outputStream().use { subjectBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            }
+            val file = subjectBitmap.saveToCacheAsPng()
             subjectBitmap.recycle()
 
             val result = SegmentationResult(
@@ -118,6 +115,23 @@ constructor(
 
             return@withContext Result.success(result)
         }
+    }
+
+    override suspend fun saveEditedImage(bitmapWrapper: BitmapWrapper): Result<String> {
+        // 화면이 아직 이 비트맵을 그리고 있을 수 있어, 저장 후에도 recycle 하지 않는다
+        val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
+            ?: return Result.failure(SegmentationException.ImageNotFound(null))
+
+        return runCatching { bitmap.saveToCacheAsPng().absolutePath }
+    }
+
+    private suspend fun Bitmap.saveToCacheAsPng(): File {
+        val file = File(context.cacheDir, "parfait_${System.currentTimeMillis()}.png")
+        withContext(Dispatchers.IO) {
+            file.outputStream().use { compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+
+        return file
     }
 
     /**

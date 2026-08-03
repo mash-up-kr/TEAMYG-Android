@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationEdit
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationEditScreen
@@ -31,6 +32,7 @@ internal fun SegmentationEditRoute(
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resultEventBus = LocalResultEventBus.current
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -40,8 +42,14 @@ internal fun SegmentationEditRoute(
                     navigator.onBack()
                 }
 
+                // Todo : core:ui 에 string resource 로 분리
+                is SegmentationEditEffect.SaveFailed -> {
+                    Toast.makeText(context, "편집 결과를 저장하지 못했습니다", Toast.LENGTH_SHORT).show()
+                }
+
+                // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집본 경로를 결과로 넘기고 돌아간다
                 is SegmentationEditEffect.EditCompleted -> {
-                    // Todo : 편집 결과 비트맵을 저장하고 그 경로로 캔버스 화면 이동
+                    resultEventBus.sendResult(effect.editedImagePath)
                     navigator.onBack()
                 }
             }

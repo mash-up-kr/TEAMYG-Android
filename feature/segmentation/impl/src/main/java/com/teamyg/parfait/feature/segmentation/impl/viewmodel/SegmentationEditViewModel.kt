@@ -6,8 +6,10 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
+import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
@@ -73,7 +75,10 @@ sealed interface SegmentationEditIntent : UiIntent {
 sealed interface SegmentationEditEffect : UiSideEffect {
     data object LoadFailed : SegmentationEditEffect
 
-    data class EditCompleted(val editedBitmap: Bitmap) : SegmentationEditEffect
+    data object SaveFailed : SegmentationEditEffect
+
+    /** @param editedImagePath 편집 결과가 저장된 파일 경로 */
+    data class EditCompleted(val editedImagePath: String) : SegmentationEditEffect
 }
 
 @HiltViewModel(assistedFactory = SegmentationEditViewModel.Factory::class)
@@ -82,6 +87,7 @@ class SegmentationEditViewModel
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
     private val decodeImageUseCase: DecodeImageUseCase,
+    private val saveEditedImageUseCase: SaveEditedImageUseCase,
 ) : BaseViewModel<SegmentationEditState, SegmentationEditIntent, SegmentationEditEffect>(
     initialState = SegmentationEditState(),
 ) {
@@ -175,8 +181,17 @@ class SegmentationEditViewModel
                     strokes = current.strokes,
                 )
             }
+
+            // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다
+            val savedPath = saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
             updateState { copy(isSaving = false) }
-            postSideEffect(SegmentationEditEffect.EditCompleted(edited))
+
+            if (savedPath == null) {
+                postSideEffect(SegmentationEditEffect.SaveFailed)
+                return@launch
+            }
+
+            postSideEffect(SegmentationEditEffect.EditCompleted(savedPath))
         }
     }
 
