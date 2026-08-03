@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,6 +63,7 @@ internal fun YGTopBarPreviewScreen(
                         date = "December 31",
                         day = "Wed",
                         onIconClick = {},
+                        windowInsets = WindowInsets(0),
                     )
                 }
             }
@@ -71,6 +73,7 @@ internal fun YGTopBarPreviewScreen(
                         date = "December 31",
                         day = "Wed",
                         onIconClick = {},
+                        windowInsets = WindowInsets(0),
                         rightContent = {
                             YGChipButton(
                                 text = "그룹 추가하기",
@@ -105,6 +108,7 @@ internal fun YGTopBarPreviewScreen(
                             day = "Wed",
                             onIconClick = {},
                             hazeState = hazeState,
+                            windowInsets = WindowInsets(0),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }

@@ -1,6 +1,10 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,7 +49,12 @@ internal fun GroupListRoute(
 
     // Todo : Error 화면 추가
 
-    YGScaffold(containerColor = YGAtomicColors.Gray.Transparent) { innerPadding ->
+    // 상단 인셋은 YGTopBarEmpty 가 직접 흡수하므로 Scaffold 는 하단/좌우 인셋만 내려준다.
+    YGScaffold(
+        containerColor = YGAtomicColors.Gray.Transparent,
+        contentWindowInsets = WindowInsets.systemBars
+            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+    ) { innerPadding ->
         GroupListScreen(
             uiState = uiState,
             onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
