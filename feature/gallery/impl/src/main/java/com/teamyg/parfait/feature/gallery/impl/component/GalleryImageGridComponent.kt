@@ -43,14 +43,14 @@ internal fun GalleryImageGridComponent(
             .background(YGAtomicColors.Gray.White)
             .padding(horizontal = YGTheme.layout.padding.padding7),
     ) {
-        item(
-            key = "header-recent",
-            span = { GridItemSpan(maxLineSpan) },
-        ) {
-            GalleryDateHeader(date = stringResource(R.string.gallery_recent_uploaded_header))
-        }
-
         if (recentImages.isNotEmpty()) {
+            item(
+                key = "header-recent",
+                span = { GridItemSpan(maxLineSpan) },
+            ) {
+                GalleryDateHeader(date = stringResource(R.string.gallery_recent_uploaded_header))
+            }
+
             items(
                 items = recentImages,
                 key = { "recent-$it" },
@@ -59,10 +59,6 @@ internal fun GalleryImageGridComponent(
                     uri = uri,
                     onClickImage = onClickImage,
                 )
-            }
-        } else {
-            item(key = "recent-empty") {
-                Box(modifier = Modifier.aspectRatio(1f))
             }
         }
 
