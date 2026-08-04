@@ -21,6 +21,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditActionButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditTabButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGFloatingBar
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGGrouptagChip
@@ -29,6 +30,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGIconButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInviteCard
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGLabel
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGListDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGMenuItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
@@ -51,6 +53,7 @@ import com.teamyg.parfait.preview.screen.component.YGDangerZonePreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGEditActionButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGEditButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGEditTabButtonPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGFloatingBarPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDatePreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGDateButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGGrouptagChipPreviewScreen
@@ -59,6 +62,7 @@ import com.teamyg.parfait.preview.screen.component.YGIconButtonPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGInputNumberPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGInviteCardPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGLabelPreviewScreen
+import com.teamyg.parfait.preview.screen.component.YGListDatePreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGListItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGMenuItemPreviewScreen
 import com.teamyg.parfait.preview.screen.component.YGModalPopupPreviewScreen
@@ -137,6 +141,14 @@ internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Naviga
     entry<NavKeyYGDateButton> {
         ScreenScaffold { modifier ->
             YGDateButtonPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGListDate> {
+        ScreenScaffold { modifier ->
+            YGListDatePreviewScreen(
                 onBack = navigator::onBack,
                 modifier = modifier,
             )
@@ -249,6 +261,14 @@ internal fun EntryProviderScope<NavKey>.componentEntryBuilders(navigator: Naviga
     entry<NavKeyYGTopBar> {
         ScreenScaffold { modifier ->
             YGTopBarPreviewScreen(
+                onBack = navigator::onBack,
+                modifier = modifier,
+            )
+        }
+    }
+    entry<NavKeyYGFloatingBar> {
+        ScreenScaffold { modifier ->
+            YGFloatingBarPreviewScreen(
                 onBack = navigator::onBack,
                 modifier = modifier,
             )

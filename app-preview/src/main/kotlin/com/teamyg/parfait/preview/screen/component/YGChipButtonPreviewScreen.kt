@@ -28,10 +28,10 @@ internal fun YGChipButtonPreviewScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                PreviewSection("CherrySubtle") {
+                PreviewSection("GrayOutline") {
                     YGChipButton(
                         text = "칩",
-                        colors = YGChipButtonColorsDefaults.CherrySubtle,
+                        colors = YGChipButtonColorsDefaults.GrayOutline,
                         onClick = {},
                     )
                 }
