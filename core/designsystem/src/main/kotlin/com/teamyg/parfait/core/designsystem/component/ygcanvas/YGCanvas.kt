@@ -3,25 +3,28 @@ package com.teamyg.parfait.core.designsystem.component.ygcanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.R
@@ -37,6 +40,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
+private const val CANVAS_AREA_HEIGHT_RATIO = 16f / 9f
 
 /**
  * Figma Canvas
@@ -61,71 +65,104 @@ fun YGCanvas(
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shape = canvasCutCornerShape()
+    val defaultHorizontalPadding = YGTheme.layout.padding.padding7
+    val minVerticalGap = YGTheme.layout.padding.padding5
+    val menuHeight = SizeTokens.Size44.getDp()
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(-1.dp),
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // Canvas-Area만 16:9 비율을 유지하고 Canvas-Menu는 고정 높이로 더해진다.
+        val defaultCanvasWidth = maxWidth - defaultHorizontalPadding * 2
+        val defaultCanvasAreaHeight = defaultCanvasWidth * CANVAS_AREA_HEIGHT_RATIO
+        val defaultTotalHeight = defaultCanvasAreaHeight + menuHeight
+        val availableHeightForCanvas = maxHeight - minVerticalGap * 2
+
+        val canvasWidth: Dp
+        val canvasAreaHeight: Dp
+        val verticalGap: Dp
+        val horizontalPadding: Dp
+
+        if (defaultTotalHeight <= availableHeightForCanvas) {
+            // 좌우 패딩 20dp 유지
+            canvasWidth = defaultCanvasWidth
+            canvasAreaHeight = defaultCanvasAreaHeight
+            verticalGap = (maxHeight - defaultTotalHeight) / 2
+            horizontalPadding = defaultHorizontalPadding
+        } else {
+            // 세로 공간이 부족한 예외 상황: 캔버스를 축소하고 좌우 패딩이 20dp보다 커짐
+            val totalHeight = availableHeightForCanvas
+            canvasAreaHeight = totalHeight - menuHeight
+            canvasWidth = canvasAreaHeight * CANVAS_AREA_ASPECT_RATIO
+            verticalGap = minVerticalGap
+            horizontalPadding = (maxWidth - canvasWidth) / 2
+        }
+
+        Box(
+            modifier = Modifier
+                .offset(x = horizontalPadding, y = verticalGap)
+                .width(canvasWidth)
+                .height(canvasAreaHeight + menuHeight - 1.dp),
         ) {
-            CanvasArea(
-                shape = shape,
-                background = background,
-                isEmpty = isEmpty,
-                emptyMessage = emptyMessage,
-                content = content,
-                dateSelect = {
-                    if (isCalendarVisible.not()) {
-                        YGCanvasDateSelectButton(
-                            date = date,
-                            day = day,
-                            onClick = onDateSelectClick,
-                        )
-                    }
-                },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(-1.dp)) {
+                CanvasArea(
+                    shape = shape,
+                    background = background,
+                    isEmpty = isEmpty,
+                    emptyMessage = emptyMessage,
+                    content = content,
+                    dateSelect = {
+                        if (isCalendarVisible.not()) {
+                            YGCanvasDateSelectButton(
+                                date = date,
+                                day = day,
+                                onClick = onDateSelectClick,
+                            )
+                        }
+                    },
+                )
+                if (isMenuExpanded) {
+                    Spacer(modifier = Modifier.height(menuHeight))
+                } else {
+                    YGCanvasMenu(
+                        addAction = addAction,
+                        editAction = editAction,
+                    )
+                }
+            }
+
+            if (isDimmed) {
+                Spacer(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(shape)
+                        .background(color = YGAtomicColors.Transparency.Black25)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            onClick = onDimClick,
+                        ),
+                )
+            }
+
+            if (isCalendarVisible) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    YGCanvasDateSelectButton(
+                        date = date,
+                        day = day,
+                        onClick = onDateSelectClick,
+                    )
+                    calendarContent()
+                }
+            }
+
             if (isMenuExpanded) {
-                Spacer(modifier = Modifier.height(SizeTokens.Size44.getDp()))
-            } else {
                 YGCanvasMenu(
                     addAction = addAction,
                     editAction = editAction,
+                    isExpanded = true,
+                    expandedItems = expandedItems,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-        }
-
-        if (isDimmed) {
-            Spacer(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .background(color = YGAtomicColors.Transparency.Black25)
-                    .clickable(
-                        interactionSource = null,
-                        indication = null,
-                        onClick = onDimClick,
-                    ),
-            )
-        }
-
-        if (isCalendarVisible) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                YGCanvasDateSelectButton(
-                    date = date,
-                    day = day,
-                    onClick = onDateSelectClick,
-                )
-                calendarContent()
-            }
-        }
-
-        if (isMenuExpanded) {
-            YGCanvasMenu(
-                addAction = addAction,
-                editAction = editAction,
-                isExpanded = true,
-                expandedItems = expandedItems,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }
