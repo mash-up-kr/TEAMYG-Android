@@ -46,14 +46,13 @@ internal fun AccountInfoScreen(
                     .fillMaxSize()
                     .padding(
                         paddingValues = PaddingValues(
-                            top = YGTheme.layout.padding.padding8,
                             start = YGTheme.layout.padding.padding7,
                             end = YGTheme.layout.padding.padding7,
                         ),
                     ),
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     YGLabel(text = stringResource(R.string.account_info_nickname_label))
