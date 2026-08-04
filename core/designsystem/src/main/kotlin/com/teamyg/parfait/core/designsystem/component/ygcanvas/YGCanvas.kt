@@ -2,6 +2,9 @@ package com.teamyg.parfait.core.designsystem.component.ygcanvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -12,11 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +51,7 @@ fun YGCanvas(
     modifier: Modifier = Modifier,
     background: YGCanvasBackground = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100),
     isDimmed: Boolean = false,
+    onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
@@ -59,7 +63,10 @@ fun YGCanvas(
     val shape = canvasCutCornerShape()
 
     Box(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(-1.dp),
+        ) {
             CanvasArea(
                 shape = shape,
                 background = background,
@@ -92,13 +99,11 @@ fun YGCanvas(
                     .matchParentSize()
                     .clip(shape)
                     .background(color = YGAtomicColors.Transparency.Black25)
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent().changes.forEach { it.consume() }
-                            }
-                        }
-                    },
+                    .clickable(
+                        interactionSource = null,
+                        indication = null,
+                        onClick = onDimClick,
+                    ),
             )
         }
 
