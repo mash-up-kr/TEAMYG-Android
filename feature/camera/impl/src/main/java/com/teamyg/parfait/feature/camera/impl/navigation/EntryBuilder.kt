@@ -39,6 +39,7 @@ fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
         YGScaffold { innerPadding ->
             PictureConfirmRoute(
                 uri = navKey.uri,
+                source = navKey.source,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()

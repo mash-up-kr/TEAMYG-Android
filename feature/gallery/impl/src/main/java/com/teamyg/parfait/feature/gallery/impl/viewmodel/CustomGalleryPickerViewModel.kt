@@ -31,7 +31,7 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
 
     data object OpenAppSettings : CustomGalleryPickerEffect()
 
-    data class ReturnResult(
+    data class NavigateToConfirm(
         val uri: String,
     ) : CustomGalleryPickerEffect()
 
@@ -129,7 +129,7 @@ constructor(
     }
 
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
-        postSideEffect(CustomGalleryPickerEffect.ReturnResult(intent.uri))
+        postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
     private fun handleOnCancel() {

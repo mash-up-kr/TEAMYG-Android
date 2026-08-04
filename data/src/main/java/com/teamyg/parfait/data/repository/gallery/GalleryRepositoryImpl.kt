@@ -9,8 +9,8 @@ import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.hours
@@ -25,14 +25,14 @@ constructor(
         repositoryLogger.i { "GalleryRepositoryImpl::init" }
     }
 
-    override suspend fun loadAllGalleryImages(): LinkedHashMap<String, MutableList<String>> =
+    override suspend fun loadAllGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
         withContext(Dispatchers.IO) {
             val uri: Uri = galleryMediaProvider
                 .collectionUri
-                ?: return@withContext LinkedHashMap<String, MutableList<String>>()
+                ?: return@withContext LinkedHashMap<LocalDate, MutableList<String>>()
             val timeZone: TimeZone = TimeZone.currentSystemDefault()
 
-            val grouped = linkedMapOf<String, MutableList<String>>()
+            val grouped = linkedMapOf<LocalDate, MutableList<String>>()
 
             galleryMediaProvider
                 .query(
@@ -55,10 +55,10 @@ constructor(
                             addedColumn = addedColumn,
                         )
 
-                        val dateKey: String = Instant
+                        val dateKey: LocalDate = Instant
                             .fromEpochMilliseconds(timestampMs)
                             .toLocalDateTime(timeZone)
-                            .format(galleryMediaProvider.dateFormat)
+                            .date
 
                         val imageUri: String = ContentUris
                             .withAppendedId(uri, id)
@@ -73,11 +73,11 @@ constructor(
             return@withContext grouped
         }
 
-    override suspend fun loadFilterYGGalleryImages(): LinkedHashMap<String, MutableList<String>> =
+    override suspend fun loadFilterYGGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
         withContext(Dispatchers.IO) {
             val uri: Uri = galleryMediaProvider
                 .collectionUri
-                ?: return@withContext LinkedHashMap<String, MutableList<String>>()
+                ?: return@withContext LinkedHashMap<LocalDate, MutableList<String>>()
             val timeZone: TimeZone = TimeZone.currentSystemDefault()
             val window: DayWindow = DayWindow.current(timeZone)
             val selectionArgs: Array<String> = arrayOf(
@@ -85,7 +85,7 @@ constructor(
                 window.endMs.toString(),
             )
 
-            val grouped = linkedMapOf<String, MutableList<String>>()
+            val grouped = linkedMapOf<LocalDate, MutableList<String>>()
 
             galleryMediaProvider
                 .query(
@@ -112,11 +112,11 @@ constructor(
                             continue
                         }
 
-                        val dateKey: String = Instant
+                        val dateKey: LocalDate = Instant
                             .fromEpochMilliseconds(timestampMs)
                             .minus(DayWindow.DAY_BOUNDARY_HOUR.hours)
                             .toLocalDateTime(timeZone)
-                            .format(galleryMediaProvider.dateFormat)
+                            .date
 
                         val imageUri: String = ContentUris
                             .withAppendedId(uri, id)

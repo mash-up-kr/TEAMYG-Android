@@ -15,6 +15,7 @@
     <string name="camera_permission_open_settings">설정으로 이동</string>
 
     <string name="camera_picture_confirm_retake">다시 찍기</string>
+    <string name="camera_picture_confirm_reselect">다시 선택</string>
     <string name="camera_picture_confirm_next">다음</string>
 
     <string name="camera_custom_guide_toast">대상이 배경과 선명하게 구분될수록 깔끔하게 선택돼요</string>

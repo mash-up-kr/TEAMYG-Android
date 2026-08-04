@@ -39,6 +39,7 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
@@ -150,7 +151,7 @@ internal fun CustomCameraRoute(
                 }
 
                 is CustomCameraEffect.NavigateToConfirm -> {
-                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri))
+                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri, source = PictureConfirmSource.CAMERA))
                 }
             }
         }

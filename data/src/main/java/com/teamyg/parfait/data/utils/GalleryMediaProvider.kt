@@ -5,9 +5,6 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.provider.MediaStore
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.format.Padding
-import kotlinx.datetime.format.char
 
 class GalleryMediaProvider(
     private val context: Context,
@@ -26,14 +23,6 @@ class GalleryMediaProvider(
     val selection: String =
         "(${MediaStore.Images.Media.DATE_TAKEN} >= ? AND ${MediaStore.Images.Media.DATE_TAKEN} < ?) " +
             "OR ${MediaStore.Images.Media.DATE_TAKEN} IS NULL"
-
-    val dateFormat = LocalDateTime.Format {
-        year()
-        char('.')
-        monthNumber()
-        char('.')
-        this@Format.day(padding = Padding.ZERO)
-    }
 
     fun query(
         uri: Uri,
