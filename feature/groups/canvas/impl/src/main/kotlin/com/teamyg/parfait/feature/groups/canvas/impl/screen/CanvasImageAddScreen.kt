@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
@@ -53,7 +54,11 @@ internal fun CanvasImageAddScreen(
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = { isMenuExpanded = true }
 
-    Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
+    Column(
+        modifier = modifier
+            .background(YGAtomicColors.Gray.White)
+            .ygBackgroundDotGrid(),
+    ) {
         CanvasImageAddTopBar(
             groupName = groupName,
             memberChips = memberChips,
