@@ -64,7 +64,6 @@ internal fun SegmentationEditRoute(
         onAddStroke = { stroke -> viewModel.processIntent(SegmentationEditIntent.AddStroke(stroke)) },
         onClickUndo = { viewModel.processIntent(SegmentationEditIntent.Undo) },
         onClickRedo = { viewModel.processIntent(SegmentationEditIntent.Redo) },
-        onClickReset = { viewModel.processIntent(SegmentationEditIntent.Reset) },
         onClickDone = { viewModel.processIntent(SegmentationEditIntent.ClickDone) },
         onClickBack = { navigator.onBack() },
         modifier = modifier,

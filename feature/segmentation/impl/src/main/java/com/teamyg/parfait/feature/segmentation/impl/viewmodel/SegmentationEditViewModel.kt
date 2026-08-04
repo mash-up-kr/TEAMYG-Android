@@ -67,8 +67,6 @@ sealed interface SegmentationEditIntent : UiIntent {
 
     data object Redo : SegmentationEditIntent
 
-    data object Reset : SegmentationEditIntent
-
     data object ClickDone : SegmentationEditIntent
 }
 
@@ -132,10 +130,6 @@ class SegmentationEditViewModel
                         redoableStrokes = redoableStrokes.dropLast(1),
                     )
                 }
-            }
-
-            SegmentationEditIntent.Reset -> {
-                updateState { copy(strokes = emptyList(), redoableStrokes = emptyList()) }
             }
 
             SegmentationEditIntent.ClickDone -> completeEdit()

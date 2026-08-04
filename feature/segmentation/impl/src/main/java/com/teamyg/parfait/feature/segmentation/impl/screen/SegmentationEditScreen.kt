@@ -7,16 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,13 +38,20 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditActionButton
+import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditState
 import kotlin.math.roundToInt
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun SegmentationEditScreen(
@@ -59,16 +62,31 @@ internal fun SegmentationEditScreen(
     onAddStroke: (SegmentationEditStroke) -> Unit,
     onClickUndo: () -> Unit,
     onClickRedo: () -> Unit,
-    onClickReset: () -> Unit,
     onClickDone: () -> Unit,
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
+        // 되돌리기는 획을 다루는 영역 탭에서만 의미가 있어 그 탭에서만 띄운다
+        if (state.tab == SegmentationEditTab.AREA) {
+            SegmentationEditHistoryActions(
+                canUndo = state.canUndo,
+                canRedo = state.canRedo,
+                onClickUndo = onClickUndo,
+                onClickRedo = onClickRedo,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(YGTheme.layout.padding.padding7),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap6))
+
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7)
                 .weight(1f),
         ) {
             when {
@@ -87,66 +105,62 @@ internal fun SegmentationEditScreen(
             }
         }
 
-        SegmentationEditTabRow(
-            selectedTab = state.tab,
-            onChangeTab = onChangeTab,
+        Spacer(modifier = Modifier.height(23.dp))
+
+        // 탭마다 만지는 대상이 달라 컨트롤도 갈리지만, 완료와 뒤로는 하단 플로팅 바 하나로 모은다
+        when (state.tab) {
+            SegmentationEditTab.AREA -> SegmentationAreaControls(
+                state = state,
+                onChangeMode = onChangeMode,
+                onChangeBrushWidth = onChangeBrushWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        top = YGTheme.layout.padding.padding6,
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                    ),
+            )
+
+            // Todo : 테두리 굵기/색 컨트롤 자리
+            SegmentationEditTab.BORDER -> Unit
+        }
+
+        YGFloatingBarEditTab(
+            tabs = SegmentationEditTab.entries.map { tab -> tab.label() },
+            selectedIndex = state.tab.ordinal,
+            onTabSelect = { index -> onChangeTab(SegmentationEditTab.entries[index]) },
+            onCloseClick = onClickBack,
+            onConfirmClick = onClickDone,
             modifier = Modifier.fillMaxWidth(),
         )
-
-        // 탭마다 만지는 대상이 달라 컨트롤도 갈리지만, 완료와 뒤로는 화면 전체에 하나씩만 둔다
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            when (state.tab) {
-                SegmentationEditTab.AREA -> SegmentationAreaControls(
-                    state = state,
-                    onChangeMode = onChangeMode,
-                    onChangeBrushWidth = onChangeBrushWidth,
-                    onClickUndo = onClickUndo,
-                    onClickRedo = onClickRedo,
-                    onClickReset = onClickReset,
-                )
-
-                // Todo : 테두리 굵기/색 컨트롤 자리
-                SegmentationEditTab.BORDER -> Unit
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onClickBack) {
-                    Text("뒤로") // Todo : core:ui 에 string resource 로 분리
-                }
-                Button(
-                    onClick = onClickDone,
-                    enabled = !state.isLoading && !state.isSaving,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("완료") // Todo : core:ui 에 string resource 로 분리
-                }
-            }
-        }
     }
 }
 
 @Composable
-private fun SegmentationEditTabRow(
-    selectedTab: SegmentationEditTab,
-    onChangeTab: (SegmentationEditTab) -> Unit,
+private fun SegmentationEditHistoryActions(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onClickUndo: () -> Unit,
+    onClickRedo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TabRow(
-        selectedTabIndex = selectedTab.ordinal,
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         modifier = modifier,
     ) {
-        SegmentationEditTab.entries.forEach { tab ->
-            Tab(
-                selected = tab == selectedTab,
-                onClick = { onChangeTab(tab) },
-                text = { Text(tab.label()) },
-            )
-        }
+        YGEditActionButton(
+            iconResource = DesignSystemR.drawable.ic_arrow_left,
+            contentDescription = "실행 취소", // Todo : core:ui 에 string resource 로 분리
+            onClick = onClickUndo,
+            isEnabled = canUndo,
+        )
+        YGEditActionButton(
+            iconResource = DesignSystemR.drawable.ic_arrow_right,
+            contentDescription = "다시 실행", // Todo : core:ui 에 string resource 로 분리
+            onClick = onClickRedo,
+            isEnabled = canRedo,
+        )
     }
 }
 
@@ -297,48 +311,45 @@ private fun SegmentationAreaControls(
     state: SegmentationEditState,
     onChangeMode: (SegmentationEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
-    onClickUndo: () -> Unit,
-    onClickRedo: () -> Unit,
-    onClickReset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 지우기는 알파를 비워 투명하게, 채우기는 원본 픽셀을 되살린다
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = state.mode == SegmentationEditMode.ERASE,
-                onClick = { onChangeMode(SegmentationEditMode.ERASE) },
-                label = { Text("영역 지우기") }, // Todo : core:ui 에 string resource 로 분리
-                modifier = Modifier.weight(1f),
+        // 라벨과 바는 한 덩어리로 붙여야 해서 바깥 Column 의 간격을 타지 않도록 따로 감싼다
+        Column {
+            Text(
+                text = "브러시 크기", // Todo : core:ui 에 string resource 로 분리
+                style = YGTheme.typography.caption.c01M,
+                color = YGAtomicColors.Gray.Gray700,
             )
-            FilterChip(
-                selected = state.mode == SegmentationEditMode.ADD,
-                onClick = { onChangeMode(SegmentationEditMode.ADD) },
-                label = { Text("영역 채우기") }, // Todo : core:ui 에 string resource 로 분리
-                modifier = Modifier.weight(1f),
+            Spacer(modifier = Modifier.height(4.dp))
+            BrushWidthSlider(
+                value = state.brushWidth,
+                onValueChange = onChangeBrushWidth,
+                valueRange = state.minBrushWidth..state.maxBrushWidth,
+                isEnabled = !state.isLoading,
             )
         }
 
-        Slider(
-            value = state.brushWidth,
-            onValueChange = onChangeBrushWidth,
-            valueRange = state.minBrushWidth..state.maxBrushWidth,
-            enabled = !state.isLoading,
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onClickUndo, enabled = state.canUndo) {
-                Text("실행 취소") // Todo : core:ui 에 string resource 로 분리
-            }
-            OutlinedButton(onClick = onClickRedo, enabled = state.canRedo) {
-                Text("다시 실행") // Todo : core:ui 에 string resource 로 분리
-            }
-            OutlinedButton(onClick = onClickReset, enabled = state.canUndo) {
-                Text("초기화") // Todo : core:ui 에 string resource 로 분리
-            }
+        // 지우기는 알파를 비워 투명하게, 채우기는 원본 픽셀을 되살린다.
+        // 하단 플로팅 바 바로 위에 붙어 모드 전환이 탭 전환과 한 덩어리로 보이게 둔다
+        Row {
+            YGEditButton(
+                text = "영역 지우기", // Todo : core:ui 에 string resource 로 분리
+                isSelected = state.mode == SegmentationEditMode.ERASE,
+                onClick = { onChangeMode(SegmentationEditMode.ERASE) },
+                modifier = Modifier.weight(1f),
+                iconResource = DesignSystemR.drawable.ic_minus_round,
+            )
+            YGEditButton(
+                text = "영역 채우기", // Todo : core:ui 에 string resource 로 분리
+                isSelected = state.mode == SegmentationEditMode.ADD,
+                onClick = { onChangeMode(SegmentationEditMode.ADD) },
+                modifier = Modifier.weight(1f),
+                iconResource = DesignSystemR.drawable.ic_add_round,
+            )
         }
     }
 }
@@ -354,7 +365,6 @@ private fun PreviewSegmentationEditScreen() = PreviewBox {
         onAddStroke = {},
         onClickUndo = {},
         onClickRedo = {},
-        onClickReset = {},
         onClickDone = {},
         onClickBack = {},
         modifier = Modifier.fillMaxSize(),
