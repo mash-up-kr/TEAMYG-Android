@@ -15,6 +15,22 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
 @Composable
+fun Modifier.clickableYGNoRipple(
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    windowMillis: Long = 300L,
+    onClick: () -> Unit,
+): Modifier = clickableYGThrottle(
+    indications = null,
+    enabled = enabled,
+    onClickLabel = onClickLabel,
+    role = role,
+    windowMillis = windowMillis,
+    onClick = onClick,
+)
+
+@Composable
 fun Modifier.clickableYG(
     interactionSource: MutableInteractionSource? = null,
     enabled: Boolean = true,
@@ -87,7 +103,7 @@ fun Modifier.clickableYGMergeRipple(
 
 @Composable
 internal fun Modifier.clickableYGThrottle(
-    indications: List<Indication>,
+    indications: List<Indication>?,
     enabled: Boolean = true,
     onClickLabel: String? = null,
     role: Role? = null,
@@ -96,7 +112,7 @@ internal fun Modifier.clickableYGThrottle(
     onClick: () -> Unit,
 ): Modifier {
     val gate = remember { YGClickThrottleGate() }
-    val indication = remember(indications) { indications.toYGIndication() }
+    val indication = remember(indications) { indications?.toYGIndication() }
     return this.clickable(
         interactionSource = interactionSource,
         indication = indication,

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -37,11 +38,7 @@ internal fun ProfileCard(
                 shape = RectangleShape,
             ).padding(YGTheme.layout.padding.padding6),
     ) {
-        Text(
-            text = stringResource(R.string.setting_profile_label),
-            style = YGTheme.typography.body.b02R,
-            color = YGAtomicColors.Gray.Gray400,
-        )
+        YGLabel(text = stringResource(R.string.setting_profile_label))
         Column(
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         ) {

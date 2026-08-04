@@ -14,6 +14,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGDangerZone
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditActionButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGEditTabButton
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGFloatingBar
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGDateButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGGrouptagChip
@@ -22,6 +23,7 @@ import com.teamyg.parfait.preview.navigation.key.NavKeyYGIconButton
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInputNumber
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGInviteCard
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGLabel
+import com.teamyg.parfait.preview.navigation.key.NavKeyYGListDate
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGListItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGMenuItem
 import com.teamyg.parfait.preview.navigation.key.NavKeyYGModalPopup
@@ -91,6 +93,11 @@ val componentCatalog: List<ComponentEntry> = listOf(
         category = ComponentCategory.BUTTON,
         label = "YGDateButton",
         navKey = NavKeyYGDateButton,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BUTTON,
+        label = "YGListDate",
+        navKey = NavKeyYGListDate,
     ),
     ComponentEntry(
         category = ComponentCategory.BUTTON,
@@ -196,5 +203,10 @@ val componentCatalog: List<ComponentEntry> = listOf(
         category = ComponentCategory.BAR,
         label = "YGTopBar",
         navKey = NavKeyYGTopBar,
+    ),
+    ComponentEntry(
+        category = ComponentCategory.BAR,
+        label = "YGFloatingBar",
+        navKey = NavKeyYGFloatingBar,
     ),
 )

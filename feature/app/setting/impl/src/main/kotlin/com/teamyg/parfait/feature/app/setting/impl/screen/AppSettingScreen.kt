@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
+import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
+import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -27,6 +29,8 @@ internal fun AppSettingScreen(
     onClickAccount: () -> Unit,
     onClickTerms: () -> Unit,
     onClickPrivacy: () -> Unit,
+    onClickLogout: () -> Unit,
+    onClickWithdraw: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     YGScreen(modifier = modifier) {
@@ -76,6 +80,26 @@ internal fun AppSettingScreen(
                         subText = state.version,
                     )
                 }
+
+                YGDangerZone(
+                    topZone = {
+                        YGActionItem(
+                            text = stringResource(R.string.setting_logout),
+                            onClick = onClickLogout,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    bottomZone = {
+                        YGActionItem(
+                            text = stringResource(R.string.setting_withdraw),
+                            onClick = onClickWithdraw,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = YGTheme.layout.padding.padding7),
+                )
             }
         }
 
@@ -92,6 +116,8 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickAccount = {},
         onClickTerms = {},
         onClickPrivacy = {},
+        onClickLogout = {},
+        onClickWithdraw = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

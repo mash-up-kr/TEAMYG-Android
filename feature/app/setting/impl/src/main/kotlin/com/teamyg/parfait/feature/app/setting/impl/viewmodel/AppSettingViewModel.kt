@@ -27,6 +27,10 @@ sealed interface AppSettingIntent : UiIntent {
     data object ClickServiceTerms : AppSettingIntent
 
     data object ClickPrivacyPolicy : AppSettingIntent
+
+    data object ClickLogout : AppSettingIntent
+
+    data object ClickWithdraw : AppSettingIntent
 }
 
 sealed interface AppSettingSideEffect : UiSideEffect {
@@ -55,6 +59,8 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
             AppSettingIntent.ClickAccount -> handleClickAccount()
             AppSettingIntent.ClickServiceTerms -> handleClickServiceTerms()
             AppSettingIntent.ClickPrivacyPolicy -> handleClickPrivacyPolicy()
+            AppSettingIntent.ClickLogout -> handleClickLogout()
+            AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
         }
     }
 
@@ -72,5 +78,15 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
 
     private fun handleClickPrivacyPolicy() {
         postSideEffect(AppSettingSideEffect.NavigateToPrivacyPolicy)
+    }
+
+    private fun handleClickLogout() {
+        // TODO auth 로그아웃 연동 전 stub
+        viewModelLogger.i { "AppSettingViewModel::handleClickLogout (stub)" }
+    }
+
+    private fun handleClickWithdraw() {
+        // TODO 회원 탈퇴 API 연동 전 stub
+        viewModelLogger.i { "AppSettingViewModel::handleClickWithdraw (stub)" }
     }
 }
