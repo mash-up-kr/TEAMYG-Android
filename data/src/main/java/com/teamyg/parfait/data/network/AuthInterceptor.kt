@@ -14,15 +14,11 @@ class AuthInterceptor(
             ?.method()
             ?.isAnnotationPresent(NoAuth::class.java) == true
 
-        if (skipAuth) {
-            return chain.proceed(originalRequest)
-        }
-
         val token = tokenProvider.getToken()
         val request = originalRequest
             .newBuilder()
             .apply {
-                if (token != null) {
+                if (token != null && skipAuth.not()) {
                     addHeader("Authorization", "Bearer $token")
                 }
             }.build()
