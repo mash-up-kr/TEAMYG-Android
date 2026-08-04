@@ -3,8 +3,8 @@ package com.teamyg.parfait.data.di
 import com.teamyg.parfait.data.BuildConfig
 import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.network.AuthInterceptor
-import com.teamyg.parfait.data.network.EmptyTokenProvider
 import com.teamyg.parfait.data.network.TokenProvider
+import com.teamyg.parfait.data.network.TokenStoreTokenProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +23,7 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideTokenProvider(): TokenProvider = EmptyTokenProvider()
+    fun provideTokenProvider(tokenStoreTokenProvider: TokenStoreTokenProvider): TokenProvider = tokenStoreTokenProvider
 
     @Provides
     @Singleton
@@ -37,6 +37,7 @@ object NetworkModule {
         .addInterceptor(
             HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+                redactHeader("Authorization")
             },
         ).connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)

@@ -1,0 +1,139 @@
+### 파르페 그룹 API — 8 엔드포인트
+#
+# base path: /api/parfait-groups  ← 버전 프리픽스가 없다(auth·parfait 는 /api/v1). 서버 규약이 갈린 상태다.
+# **전부 인증 필요.** 먼저 auth.http 로 로그인해 access_token 을 채운다.
+#
+# 그룹 생성 → groupId·inviteCode 가 자동 저장돼 이후 요청이 그대로 쓴다.
+
+### 1. 내 그룹 목록
+# recentImageUploadedAt 은 오프셋 없는 ISO-8601 로컬시각이다(서버 TZ = Asia/Seoul).
+# 값은 parfait_image.created_at 컬럼을 네이티브 쿼리가 프로젝션한 것이다.
+GET {{base_url}}/api/parfait-groups
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("그룹 " + (response.body.data ? response.body.data.length : 0) + "건");
+%}
+
+### 2. 그룹 생성
+# ⚠️ 201 CREATED.
+# groupName 1~10자 · groupNickname 1~15자 · memberLimit 1~12.
+# 규칙 위반 시 각각 400 INVALID_GROUP_NAME / INVALID_GROUP_NICKNAME / INVALID_GROUP_MEMBER_LIMIT.
+# 문자 규칙: 한글·영문·숫자 + 단어 사이 공백 1개(앞뒤 공백·연속 공백 불가).
+POST {{base_url}}/api/parfait-groups
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "groupName": "테스트그룹",
+  "groupNickname": "테스터",
+  "memberLimit": 12
+}
+
+> {%
+    client.test("201 생성", function() {
+        client.assert(response.status === 201, "status: " + response.status);
+        client.assert(response.body.code === "CREATED", "code: " + response.body.code);
+    });
+
+    client.global.set("group_id", response.body.data.groupId);
+    client.global.set("invite_code", response.body.data.inviteCode);
+    client.log("groupId=" + response.body.data.groupId + " inviteCode=" + response.body.data.inviteCode);
+%}
+
+### 3. 참여 미리보기 (초대코드로 그룹명 조회)
+# 초대코드가 유효하지 않으면 404 INVALID_INVITE_CODE.
+# ⚠️ 이 엔드포인트는 회원의 "전역 닉네임"에 그룹 닉네임 규칙을 적용해 검사한다.
+#    전역 닉네임이 그 규칙과 다르면 본인 입력과 무관하게 400 INVALID_GROUP_NICKNAME 이 날 수 있다.
+GET {{base_url}}/api/parfait-groups/join-preview?inviteCode={{invite_code}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("groupName=" + response.body.data.groupName);
+%}
+
+### 4. 그룹 참여
+# 이미 참여 중이면 409 GROUP_ALREADY_JOINED, 정원 초과면 409 GROUP_MEMBER_LIMIT_REACHED,
+# 그룹 내 닉네임이 이미 쓰이면 409 GROUP_NICKNAME_ALREADY_USED.
+# 본인이 만든 그룹으로는 이미 참여 상태라 409 가 난다 — 다른 계정으로 테스트한다.
+POST {{base_url}}/api/parfait-groups/join
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "inviteCode": "{{invite_code}}"
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.global.set("group_id", response.body.data.groupId);
+%}
+
+### 5. 그룹 상세 (멤버 목록 포함)
+# 참여하지 않은 그룹이면 403 GROUP_NOT_JOINED, 없는 그룹이면 404 GROUP_NOT_FOUND.
+GET {{base_url}}/api/parfait-groups/{{group_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("멤버 " + response.body.data.members.length + "명 / inviteCode=" + response.body.data.inviteCode);
+%}
+
+### 6. 그룹 내 내 닉네임 변경
+# 1~15자, 한글·영문·숫자 + 단어 사이 공백 1개. 위반 시 400 INVALID_GROUP_NICKNAME.
+# 같은 그룹에서 이미 쓰이는 닉네임이면 409 GROUP_NICKNAME_ALREADY_USED.
+PATCH {{base_url}}/api/parfait-groups/{{group_id}}/nickname
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "groupNickname": "바꾼닉네임"
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("groupNickname=" + response.body.data.groupNickname);
+%}
+
+### 7. 그룹 신고
+# ⚠️ 201 CREATED.
+# reason 이 유효하지 않으면 400 INVALID_GROUP_REPORT_REASON.
+POST {{base_url}}/api/parfait-groups/{{group_id}}/reports
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "reason": "테스트 신고 사유"
+}
+
+> {%
+    client.test("201 생성", function() {
+        client.assert(response.status === 201, "status: " + response.status);
+    });
+    client.log("reportId=" + response.body.data.reportId);
+%}
+
+### 8. 그룹 탈퇴 (내 멤버십 삭제)
+# ⚠️ 200 이다(204 아님). envelope 로 groupId 를 돌려준다.
+# 마지막에 실행하라 — 탈퇴 후에는 5·6·7 이 403 GROUP_NOT_JOINED 로 떨어진다.
+DELETE {{base_url}}/api/parfait-groups/{{group_id}}/members/me
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("탈퇴한 groupId=" + response.body.data.groupId);
+%}
