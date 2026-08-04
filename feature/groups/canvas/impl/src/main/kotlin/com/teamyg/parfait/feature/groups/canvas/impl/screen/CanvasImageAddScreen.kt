@@ -15,7 +15,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
@@ -68,7 +70,7 @@ internal fun CanvasImageAddScreen(
 
         YGCanvas(
             date = canvasDate,
-            day = canvasDay,
+            day = "($canvasDay)",
             onDateSelectClick = onClickDateSelect,
             addAction = YGCanvasMenuAction(
                 text = "토핑 추가",
@@ -81,6 +83,7 @@ internal fun CanvasImageAddScreen(
                 onClick = openMenu,
             ),
             isEmpty = true,
+            emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
             isDimmed = isMenuExpanded,
             onDimClick = { isMenuExpanded = false },
             isMenuExpanded = isMenuExpanded,
@@ -122,7 +125,6 @@ private fun CanvasImageAddTopBar(
                 top = YGTheme.layout.padding.padding3,
                 start = 18.dp, // 공통에 없음
                 end = 18.dp, // 공통에 없음
-                bottom = YGTheme.layout.padding.padding6,
             ),
         verticalAlignment = Alignment.CenterVertically,
     ) {

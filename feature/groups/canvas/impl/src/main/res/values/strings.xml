@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="canvas_image_add_empty_message">아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요</string>
+</resources>
