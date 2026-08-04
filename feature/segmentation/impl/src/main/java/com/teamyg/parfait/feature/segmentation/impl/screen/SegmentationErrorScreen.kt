@@ -66,7 +66,7 @@ internal fun SegmentationErrorScreen(
                 color = YGAtomicColors.Gray.Gray900,
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap1))
 
             Text(
                 text = stringResource(R.string.segmentation_error_description),

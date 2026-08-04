@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.SegmentationBounds
@@ -116,9 +116,9 @@ private fun subjectRect(
 }
 
 internal object SegmentationHighlightDefaults {
-    val BorderWidth: Dp = 2.dp
-    val DashLength: Dp = 6.dp
-    val DashGap: Dp = 4.dp
+    val BorderWidth: Dp = SizeTokens.Size2.getDp()
+    val DashLength: Dp = SizeTokens.Size6.getDp()
+    val DashGap: Dp = SizeTokens.Size4.getDp()
 }
 
 @YGPreview
