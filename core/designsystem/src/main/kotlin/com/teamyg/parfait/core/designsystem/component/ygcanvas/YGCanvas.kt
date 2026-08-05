@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -40,11 +40,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
-private const val CANVAS_AREA_HEIGHT_RATIO = 16f / 9f
 
-/**
- * Figma Canvas
- */
 @Composable
 fun YGCanvas(
     date: String,
@@ -70,37 +66,17 @@ fun YGCanvas(
     val menuHeight = SizeTokens.Size44.getDp()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // Canvas-Area만 16:9 비율을 유지하고 Canvas-Menu는 고정 높이로 더해진다.
-        val defaultCanvasWidth = maxWidth - defaultHorizontalPadding * 2
-        val defaultCanvasAreaHeight = defaultCanvasWidth * CANVAS_AREA_HEIGHT_RATIO
-        val defaultTotalHeight = defaultCanvasAreaHeight + menuHeight
-        val availableHeightForCanvas = maxHeight - minVerticalGap * 2
-
-        val canvasWidth: Dp
-        val canvasAreaHeight: Dp
-        val verticalGap: Dp
-        val horizontalPadding: Dp
-
-        if (defaultTotalHeight <= availableHeightForCanvas) {
-            // 좌우 패딩 20dp 유지
-            canvasWidth = defaultCanvasWidth
-            canvasAreaHeight = defaultCanvasAreaHeight
-            verticalGap = (maxHeight - defaultTotalHeight) / 2
-            horizontalPadding = defaultHorizontalPadding
-        } else {
-            // 세로 공간이 부족한 예외 상황: 캔버스를 축소하고 좌우 패딩이 20dp보다 커짐
-            val totalHeight = availableHeightForCanvas
-            canvasAreaHeight = totalHeight - menuHeight
-            canvasWidth = canvasAreaHeight * CANVAS_AREA_ASPECT_RATIO
-            verticalGap = minVerticalGap
-            horizontalPadding = (maxWidth - canvasWidth) / 2
-        }
+        val metrics = calculateCanvasLayoutMetrics(
+            defaultHorizontalPadding = defaultHorizontalPadding,
+            minVerticalGap = minVerticalGap,
+            menuHeight = menuHeight,
+        )
 
         Box(
             modifier = Modifier
-                .offset(x = horizontalPadding, y = verticalGap)
-                .width(canvasWidth)
-                .height(canvasAreaHeight + menuHeight - 1.dp),
+                .padding(start = metrics.horizontalPadding, top = metrics.verticalGap)
+                .width(metrics.canvasWidth)
+                .height(metrics.canvasAreaHeight + menuHeight - 1.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(-1.dp)) {
                 CanvasArea(
@@ -165,6 +141,51 @@ fun YGCanvas(
             }
         }
     }
+}
+
+private data class CanvasLayoutMetrics(
+    val canvasWidth: Dp,
+    val canvasAreaHeight: Dp,
+    val verticalGap: Dp,
+    val horizontalPadding: Dp,
+)
+
+/**
+ * Canvas-Area만 16:9 비율을 유지하고 Canvas-Menu는 고정 높이로 더해진다.
+ * 상하 gap은 항상 동일한 값을 유지하며 최소 gap([minVerticalGap])을 보장하고,
+ * 세로 공간이 부족하면 캔버스를 축소해 좌우 패딩이 [defaultHorizontalPadding]보다 커진다.
+ */
+private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
+    defaultHorizontalPadding: Dp,
+    minVerticalGap: Dp,
+    menuHeight: Dp,
+): CanvasLayoutMetrics {
+    val defaultWidth = maxWidth - defaultHorizontalPadding * 2
+    val defaultAreaHeight = defaultWidth / CANVAS_AREA_ASPECT_RATIO
+    val defaultTotalHeight = defaultAreaHeight + menuHeight
+
+    if (!constraints.hasBoundedHeight) {
+        return CanvasLayoutMetrics(defaultWidth, defaultAreaHeight, minVerticalGap, defaultHorizontalPadding)
+    }
+
+    val availableHeight = maxHeight - minVerticalGap * 2
+    if (defaultTotalHeight <= availableHeight) {
+        return CanvasLayoutMetrics(
+            canvasWidth = defaultWidth,
+            canvasAreaHeight = defaultAreaHeight,
+            verticalGap = (maxHeight - defaultTotalHeight) / 2,
+            horizontalPadding = defaultHorizontalPadding,
+        )
+    }
+
+    val areaHeight = availableHeight - menuHeight
+    val width = areaHeight * CANVAS_AREA_ASPECT_RATIO
+    return CanvasLayoutMetrics(
+        canvasWidth = width,
+        canvasAreaHeight = areaHeight,
+        verticalGap = minVerticalGap,
+        horizontalPadding = (maxWidth - width) / 2,
+    )
 }
 
 @Composable
