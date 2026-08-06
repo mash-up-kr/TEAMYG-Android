@@ -8,6 +8,7 @@ import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
+import androidx.compose.ui.geometry.Offset
 
 /**
  * Segmentation 결과에 사용자의 획을 반영해 최종 이미지를 만든다.
@@ -65,7 +66,7 @@ private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
 /**
  * 점 하나짜리 획은 선으로 그려지지 않으므로, 제자리에 아주 짧은 선을 그어 점을 찍는다.
  */
-private fun List<androidx.compose.ui.geometry.Offset>.toAndroidPath(): Path = Path().apply {
+private fun List<Offset>.toAndroidPath(): Path = Path().apply {
     val points = this@toAndroidPath
     val first = points.firstOrNull() ?: return@apply
 
