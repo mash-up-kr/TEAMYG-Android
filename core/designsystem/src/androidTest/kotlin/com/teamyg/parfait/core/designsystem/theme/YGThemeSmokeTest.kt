@@ -10,12 +10,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.filters.MediumTest
-import org.junit.Assert.assertNotNull
+import com.teamyg.parfait.core.designsystem.theme.colors.YGColorScheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGSemanticColorDefaults
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -34,7 +36,7 @@ class YGThemeSmokeTest {
     @Test
     fun ygCustomTheme_lightTheme_providesColorSchemeToContent() {
         // Given 컴포지션 결과를 담을 변수
-        var capturedBackground: Any? = null
+        var capturedBackground: YGColorScheme? = null
 
         // When 라이트 테마로 감싼 컨텐츠를 컴포지션
         composeTestRule.setContent {
@@ -48,9 +50,9 @@ class YGThemeSmokeTest {
             }
         }
 
-        // Then CompositionLocal 이 채워지고 컨텐츠가 그려진다
+        // Then CompositionLocal 이 라이트 컬러 스킴으로 채워지고 컨텐츠가 그려진다
         composeTestRule.onNodeWithTag(SMOKE_TAG).assertIsDisplayed()
-        assertNotNull(capturedBackground)
+        assertEquals(YGSemanticColorDefaults.YGLightColorScheme, capturedBackground)
     }
 
     @Test
@@ -76,6 +78,7 @@ class YGThemeSmokeTest {
 
         // When 노드를 한 번 클릭
         composeTestRule.onNodeWithTag(SMOKE_TAG).performClick()
+        composeTestRule.waitForIdle()
 
         // Then 재컴포지션이 일어나 태그가 바뀐다
         composeTestRule.onNodeWithTag("${COUNTER_TAG}1").assertIsDisplayed()
