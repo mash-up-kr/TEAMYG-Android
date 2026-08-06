@@ -14,3 +14,11 @@ data class NavKeyToppingEdit(
     val sourceImageUri: String,
     val segmentationImageUri: String,
 ) : NavKey
+
+/**
+ * 편집 화면이 편집본 경로를 돌려줄 때 쓰는 결과 키.
+ *
+ * 결과 타입은 [String] 이며, 저장된 편집본의 파일 경로다.
+ * [NavKeyToppingEdit] 로 들어온 쪽이 이 키로 결과를 받는다.
+ */
+const val TOPPING_EDIT_RESULT_KEY = "topping_edit_result"

@@ -12,6 +12,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationConfirmScreen
 import java.io.File
 

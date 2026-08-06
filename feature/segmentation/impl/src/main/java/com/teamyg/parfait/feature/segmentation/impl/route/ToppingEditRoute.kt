@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.ToppingEditScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditEffect
