@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -11,6 +12,9 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
+import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingBorderStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditHistory
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
@@ -31,25 +35,46 @@ private const val DEFAULT_BRUSH_WIDTH_DP = 10f
 private const val MIN_BRUSH_WIDTH_DP = 2f
 private const val MAX_BRUSH_WIDTH_DP = 50f
 
+/**
+ * 테두리 굵기의 mock 범위. 영역 붓과 달리 결과 이미지 바깥에 두르는 선이라 원본 해상도에 매이지 않는다.
+ */
+// Todo : 실제 테두리 스펙이 정해지면 값 교체
+private const val DEFAULT_BORDER_WIDTH = 4f
+private const val MIN_BORDER_WIDTH = 1f
+private const val MAX_BORDER_WIDTH = 20f
+
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
     val tab: ToppingEditTab = ToppingEditTab.AREA,
     val mode: ToppingEditMode = ToppingEditMode.ERASE,
     val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
-    val strokes: List<ToppingEditStroke> = emptyList(),
-    val redoableStrokes: List<ToppingEditStroke> = emptyList(),
+    val areaHistory: ToppingEditHistory<ToppingEditStroke> = ToppingEditHistory(),
+    val borderWidth: Float = DEFAULT_BORDER_WIDTH,
+    val borderHistory: ToppingEditHistory<ToppingBorderStroke> = ToppingEditHistory(),
     val isSaving: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
 
-    val canUndo: Boolean get() = strokes.isNotEmpty()
+    /** 영역 탭에서 확정된 획. 캔버스와 저장이 함께 본다 */
+    val strokes: List<ToppingEditStroke> get() = areaHistory.done
 
-    val canRedo: Boolean get() = redoableStrokes.isNotEmpty()
+    /** 안쪽부터 바깥쪽 순으로 중첩된 테두리 겹 */
+    val borderStrokes: List<ToppingBorderStroke> get() = borderHistory.done
+
+    /**
+     * 색상칩에서 켜둘 색. 가장 바깥 겹의 색이다.
+     * 되돌리면 그 아래 겹의 색으로 돌아가고, 겹이 다 벗겨지면 처음처럼 투명 칩이 켜진다.
+     */
+    val selectedBorderColor: Color get() = borderStrokes.lastOrNull()?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
     val minBrushWidthDp: Float get() = MIN_BRUSH_WIDTH_DP
 
     val maxBrushWidthDp: Float get() = MAX_BRUSH_WIDTH_DP
+
+    val minBorderWidth: Float get() = MIN_BORDER_WIDTH
+
+    val maxBorderWidth: Float get() = MAX_BORDER_WIDTH
 
     /**
      * 지금 고른 모드로 [points] 를 획 하나로 묶는다.
@@ -67,6 +92,10 @@ data class ToppingEditState(
     }
 }
 
+/**
+ * 되돌리기/다시 실행은 탭마다 스택이 따로여서 intent 도 탭별로 나눈다.
+ * 현재 탭을 보고 한쪽으로 흘려보내면 탭이 바뀌는 순간 어느 스택을 건드리는지가 흐려진다.
+ */
 sealed interface ToppingEditIntent : UiIntent {
     data class ChangeTab(val tab: ToppingEditTab) : ToppingEditIntent
 
@@ -77,9 +106,18 @@ sealed interface ToppingEditIntent : UiIntent {
     /** 드래그가 끝난 획을 확정한다. 그리는 도중의 획은 화면이 들고 있는다 */
     data class AddStroke(val stroke: ToppingEditStroke) : ToppingEditIntent
 
-    data object Undo : ToppingEditIntent
+    data object UndoArea : ToppingEditIntent
 
-    data object Redo : ToppingEditIntent
+    data object RedoArea : ToppingEditIntent
+
+    /** 고른 색으로 현재 굵기의 테두리를 한 겹 더 두른다 */
+    data class AddBorderStroke(val color: Color) : ToppingEditIntent
+
+    data class ChangeBorderWidth(val width: Float) : ToppingEditIntent
+
+    data object UndoBorder : ToppingEditIntent
+
+    data object RedoBorder : ToppingEditIntent
 
     data object ClickDone : ToppingEditIntent
 }
@@ -122,28 +160,35 @@ class ToppingEditViewModel
             }
 
             is ToppingEditIntent.AddStroke -> {
-                // 새로 그리면 redo 는 무효가 된다
-                updateState { copy(strokes = strokes + intent.stroke, redoableStrokes = emptyList()) }
+                updateState { copy(areaHistory = areaHistory.push(intent.stroke)) }
             }
 
-            ToppingEditIntent.Undo -> {
+            ToppingEditIntent.UndoArea -> {
+                updateState { copy(areaHistory = areaHistory.undo()) }
+            }
+
+            ToppingEditIntent.RedoArea -> {
+                updateState { copy(areaHistory = areaHistory.redo()) }
+            }
+
+            is ToppingEditIntent.AddBorderStroke -> {
                 updateState {
-                    val last = strokes.lastOrNull() ?: return@updateState this
-                    copy(
-                        strokes = strokes.dropLast(1),
-                        redoableStrokes = redoableStrokes + last,
-                    )
+                    val stroke = ToppingBorderStroke(color = intent.color, width = borderWidth)
+                    copy(borderHistory = borderHistory.push(stroke))
                 }
             }
 
-            ToppingEditIntent.Redo -> {
-                updateState {
-                    val last = redoableStrokes.lastOrNull() ?: return@updateState this
-                    copy(
-                        strokes = strokes + last,
-                        redoableStrokes = redoableStrokes.dropLast(1),
-                    )
-                }
+            is ToppingEditIntent.ChangeBorderWidth -> {
+                // 굵기는 다음에 두를 겹에만 적용된다. 이미 쌓인 겹은 그대로 둔다
+                updateState { copy(borderWidth = intent.width.coerceIn(minBorderWidth, maxBorderWidth)) }
+            }
+
+            ToppingEditIntent.UndoBorder -> {
+                updateState { copy(borderHistory = borderHistory.undo()) }
+            }
+
+            ToppingEditIntent.RedoBorder -> {
+                updateState { copy(borderHistory = borderHistory.redo()) }
             }
 
             ToppingEditIntent.ClickDone -> completeEdit()

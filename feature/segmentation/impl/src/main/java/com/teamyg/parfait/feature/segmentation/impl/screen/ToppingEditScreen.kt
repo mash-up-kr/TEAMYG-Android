@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,6 +56,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.R
+import com.teamyg.parfait.feature.segmentation.impl.component.BorderColorChipRow
 import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
@@ -80,8 +82,12 @@ internal fun ToppingEditScreen(
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onAddStroke: (ToppingEditStroke) -> Unit,
-    onClickUndo: () -> Unit,
-    onClickRedo: () -> Unit,
+    onClickUndoArea: () -> Unit,
+    onClickRedoArea: () -> Unit,
+    onSelectBorderColor: (Color) -> Unit,
+    onChangeBorderWidth: (Float) -> Unit,
+    onClickUndoBorder: () -> Unit,
+    onClickRedoBorder: () -> Unit,
     onClickDone: () -> Unit,
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -90,16 +96,24 @@ internal fun ToppingEditScreen(
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        // 되돌릴 대상인 획은 영역 탭에서만 그린다
-        if (state.tab == ToppingEditTab.AREA) {
-            ToppingEditHistoryActions(
-                canUndo = state.canUndo,
-                canRedo = state.canRedo,
-                onClickUndo = onClickUndo,
-                onClickRedo = onClickRedo,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(YGTheme.layout.padding.padding7),
+        // 되돌리기 스택이 탭마다 따로여서 버튼도 탭 전용으로 갈린다
+        val historyModifier = Modifier
+            .fillMaxWidth()
+            .padding(YGTheme.layout.padding.padding7)
+
+        when (state.tab) {
+            ToppingEditTab.AREA -> ToppingEditAreaHistoryActions(
+                state = state,
+                onClickUndo = onClickUndoArea,
+                onClickRedo = onClickRedoArea,
+                modifier = historyModifier,
+            )
+
+            ToppingEditTab.BORDER -> ToppingEditBorderHistoryActions(
+                state = state,
+                onClickUndo = onClickUndoBorder,
+                onClickRedo = onClickRedoBorder,
+                modifier = historyModifier,
             )
         }
 
@@ -149,8 +163,15 @@ internal fun ToppingEditScreen(
                     ),
             )
 
-            // Todo : 테두리 굵기/색 컨트롤 자리
-            ToppingEditTab.BORDER -> Unit
+            // 색상칩이 화면 끝까지 스크롤되도록 가로 여백은 컨트롤 안에서 항목별로 준다
+            ToppingEditTab.BORDER -> SegmentationBorderControls(
+                state = state,
+                onSelectColor = onSelectBorderColor,
+                onChangeWidth = onChangeBorderWidth,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = YGTheme.layout.padding.padding6),
+            )
         }
 
         YGFloatingBarEditTab(
@@ -162,6 +183,40 @@ internal fun ToppingEditScreen(
             modifier = Modifier.fillMaxWidth(),
         )
     }
+}
+
+/** 영역 탭 전용 되돌리기. [ToppingEditState.areaHistory] 만 본다 */
+@Composable
+private fun ToppingEditAreaHistoryActions(
+    state: ToppingEditState,
+    onClickUndo: () -> Unit,
+    onClickRedo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ToppingEditHistoryActions(
+        canUndo = state.areaHistory.canUndo,
+        canRedo = state.areaHistory.canRedo,
+        onClickUndo = onClickUndo,
+        onClickRedo = onClickRedo,
+        modifier = modifier,
+    )
+}
+
+/** 테두리 탭 전용 되돌리기. [ToppingEditState.borderHistory] 만 본다 */
+@Composable
+private fun ToppingEditBorderHistoryActions(
+    state: ToppingEditState,
+    onClickUndo: () -> Unit,
+    onClickRedo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ToppingEditHistoryActions(
+        canUndo = state.borderHistory.canUndo,
+        canRedo = state.borderHistory.canRedo,
+        onClickUndo = onClickUndo,
+        onClickRedo = onClickRedo,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -444,6 +499,50 @@ private fun SegmentationAreaControls(
     }
 }
 
+/**
+ * 테두리 탭의 컨트롤. 굵기 슬라이더 + 색상칩 가로 목록이다.
+ *
+ * 영역 탭의 모드 토글 자리를 색상칩이 대신한다. 색을 고를 때마다 그 시점의 굵기로
+ * 테두리가 한 겹 얹혀 중첩되므로, 값은 화면이 아니라 [ToppingEditState] 가 들고 있다.
+ */
+@Composable
+private fun SegmentationBorderControls(
+    state: ToppingEditState,
+    onSelectColor: (Color) -> Unit,
+    onChangeWidth: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val horizontalPadding = YGTheme.layout.padding.padding7
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // 라벨과 바는 한 덩어리로 붙여야 해서 바깥 Column 의 간격을 타지 않도록 따로 감싼다
+        Column(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+            Text(
+                text = stringResource(R.string.topping_edit_border_width),
+                style = YGTheme.typography.caption.c01M,
+                color = YGAtomicColors.Gray.Gray700,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            BrushWidthSlider(
+                value = state.borderWidth,
+                onValueChange = onChangeWidth,
+                valueRange = state.minBorderWidth..state.maxBorderWidth,
+                isEnabled = !state.isLoading,
+            )
+        }
+
+        BorderColorChipRow(
+            selectedColor = state.selectedBorderColor,
+            onSelectColor = onSelectColor,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = horizontalPadding),
+        )
+    }
+}
+
 @YGPreview
 @Composable
 private fun PreviewToppingEditScreen() = PreviewBox {
@@ -453,8 +552,12 @@ private fun PreviewToppingEditScreen() = PreviewBox {
         onChangeMode = {},
         onChangeBrushWidth = {},
         onAddStroke = {},
-        onClickUndo = {},
-        onClickRedo = {},
+        onClickUndoArea = {},
+        onClickRedoArea = {},
+        onSelectBorderColor = {},
+        onChangeBorderWidth = {},
+        onClickUndoBorder = {},
+        onClickRedoBorder = {},
         onClickDone = {},
         onClickBack = {},
         modifier = Modifier.fillMaxSize(),

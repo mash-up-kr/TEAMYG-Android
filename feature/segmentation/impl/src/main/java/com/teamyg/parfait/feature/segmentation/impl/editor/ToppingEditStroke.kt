@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.segmentation.impl.editor
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
@@ -39,5 +40,16 @@ enum class ToppingEditMode {
 data class ToppingEditStroke(
     val mode: ToppingEditMode,
     val points: List<Offset>,
+    val width: Float,
+)
+
+/**
+ * 테두리 탭에서 한 번에 두른 테두리 한 겹.
+ *
+ * 색상칩을 고를 때마다 그 시점의 굵기로 한 겹이 위에 쌓여 중첩된다.
+ * 되돌리기는 이 겹 단위로 가장 바깥부터 벗겨낸다.
+ */
+data class ToppingBorderStroke(
+    val color: Color,
     val width: Float,
 )
