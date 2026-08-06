@@ -18,8 +18,6 @@ class ContextExtensionTest {
 
     @Test
     fun buildAppSettingsIntent_anyContext_targetsApplicationDetailsSettings() {
-        // Given 애플리케이션 컨텍스트
-
         // When 앱 설정 인텐트 생성
         val intent = context.buildAppSettingsIntent()
 
@@ -29,8 +27,6 @@ class ContextExtensionTest {
 
     @Test
     fun buildAppSettingsIntent_anyContext_encodesOwnPackageName() {
-        // Given 애플리케이션 컨텍스트
-
         // When 앱 설정 인텐트 생성
         val intent = context.buildAppSettingsIntent()
 
@@ -41,8 +37,6 @@ class ContextExtensionTest {
 
     @Test
     fun buildAppSettingsIntent_anyContext_setsNewTaskFlag() {
-        // Given 애플리케이션 컨텍스트
-
         // When 앱 설정 인텐트 생성
         val intent = context.buildAppSettingsIntent()
 
