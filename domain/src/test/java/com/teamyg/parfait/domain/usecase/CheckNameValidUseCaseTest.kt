@@ -79,9 +79,10 @@ class CheckNameValidUseCaseTest {
     @Test
     fun invoke_emptyString_returnsEmptyString() {
         // Given 빈 문자열
+        val name = ""
 
         // When 유효성 검사
-        val result = checkNameValid("")
+        val result = checkNameValid(name)
 
         // Then 빈 문자열 오류
         assertEquals(NameValidResult.Error.EmptyString, result)
@@ -89,11 +90,26 @@ class CheckNameValidUseCaseTest {
 
     @Test
     fun invoke_singleSpaceOnly_returnsSpaceAtEdge() {
-        // Given 공백 한 칸만 입력
-        // 검사 순서상 가장자리 공백이 빈 문자열보다 먼저 걸린다
-        val result = checkNameValid(" ")
+        // Given 공백 한 칸만 입력 — " ".isNotEmpty() 는 true 이므로 EmptyString 에는 걸리지 않는다
+        val name = " "
 
-        // Then EmptyString 이 아니라 SpaceAtEdge
+        // When 유효성 검사
+        val result = checkNameValid(name)
+
+        // Then 빈 문자열이 아니라 가장자리 공백으로 분류된다
+        assertEquals(NameValidResult.Error.SpaceAtEdge, result)
+    }
+
+    @Test
+    fun invoke_twoSpacesOnly_returnsSpaceAtEdgeNotDuplicatedSpace() {
+        // Given 공백 두 칸 — CheckSpaceStartOrEnd(가장자리 공백)와 CheckDuplicatedSpace(연속 공백)
+        // 둘 다 실패하는 입력이라, 두 규칙의 선언 순서를 고정하는 회귀 방어다
+        val name = "  "
+
+        // When 유효성 검사
+        val result = checkNameValid(name)
+
+        // Then CheckSpaceStartOrEnd 가 먼저 선언되어 있어 DuplicatedSpace 가 아니라 SpaceAtEdge 로 걸린다
         assertEquals(NameValidResult.Error.SpaceAtEdge, result)
     }
 }
