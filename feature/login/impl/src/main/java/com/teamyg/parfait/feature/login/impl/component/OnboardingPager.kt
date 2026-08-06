@@ -101,14 +101,6 @@ private fun OnboardingPageContent(
         }
         Spacer(modifier = Modifier.height(30.dp))
 
-//        Text(
-//            text = page.title,
-//            color = Color(0xFF333333),
-//            fontSize = 24.sp,
-//            fontWeight = FontWeight.Bold,
-//            lineHeight = (1.2).em,
-//        )
-
         Text(
             text = page.description,
             style = YGTheme.typography.caption.c01R,

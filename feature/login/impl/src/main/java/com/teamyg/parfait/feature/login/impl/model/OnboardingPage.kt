@@ -4,7 +4,6 @@ import androidx.compose.runtime.Immutable
 
 @Immutable
 data class OnboardingPage(
-    val title: String,
     val description: String,
     val painterResourceId: Int?,
 )
