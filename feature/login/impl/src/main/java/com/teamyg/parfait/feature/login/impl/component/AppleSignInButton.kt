@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.AppleDesignGuideColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -45,13 +46,13 @@ internal fun AppleSignInButton(
     ) {
         Image(
             painter = painterResource(R.drawable.icon_logo_apple),
-            contentDescription = "apple_login",
+            contentDescription = stringResource(R.string.login_apple_content_description),
             colorFilter = ColorFilter.tint(AppleDesignGuideColors.SignSymbolColor),
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(text = "Apple 로그인")
+        Text(text = stringResource(R.string.login_apple_button_text))
 
         Spacer(modifier = Modifier.weight(1f))
     }
