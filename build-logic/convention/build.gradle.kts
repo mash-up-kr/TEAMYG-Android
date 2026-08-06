@@ -76,6 +76,10 @@ gradlePlugin {
             pluginName = "test.unit",
             className = "TestUnit",
         )
+        pluginRegister(
+            pluginName = "test.android",
+            className = "TestAndroid",
+        )
     }
 }
 
