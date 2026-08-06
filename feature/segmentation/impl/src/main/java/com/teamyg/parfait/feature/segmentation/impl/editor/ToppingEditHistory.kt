@@ -30,4 +30,15 @@ data class ToppingEditHistory<T>(
         val last = undone.lastOrNull() ?: return this
         return ToppingEditHistory(done = done + last, undone = undone.dropLast(1))
     }
+
+    /**
+     * 가장 최근 편집을 그 자리에서 손본다. 되돌릴 칸을 새로 만들지 않고 마지막 칸의 내용만 바뀐다.
+     *
+     * 슬라이더처럼 값이 이어서 변하는 조작에 쓴다. 미는 동안 매번 칸을 쌓으면
+     * 되돌리기 한 번에 한 칸씩만 물러나 쓸모가 없어진다.
+     */
+    fun replaceLast(transform: (T) -> T): ToppingEditHistory<T> {
+        val last = done.lastOrNull() ?: return this
+        return ToppingEditHistory(done = done.dropLast(1) + transform(last), undone = emptyList())
+    }
 }

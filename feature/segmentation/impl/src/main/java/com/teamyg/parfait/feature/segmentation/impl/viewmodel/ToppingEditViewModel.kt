@@ -36,12 +36,14 @@ private const val MIN_BRUSH_WIDTH_DP = 2f
 private const val MAX_BRUSH_WIDTH_DP = 50f
 
 /**
- * 테두리 굵기의 mock 범위. 영역 붓과 달리 결과 이미지 바깥에 두르는 선이라 원본 해상도에 매이지 않는다.
+ * 원본 긴 변 대비 테두리 굵기 비율.
+ *
+ * 붓 굵기와 같은 방식으로 잡는다. 화면 크기가 아니라 원본에 매여야 미리보기에서 본 굵기가
+ * 저장 결과에도 그대로 남는다.
  */
-// Todo : 실제 테두리 스펙이 정해지면 값 교체
-private const val DEFAULT_BORDER_WIDTH = 4f
-private const val MIN_BORDER_WIDTH = 1f
-private const val MAX_BORDER_WIDTH = 20f
+private const val DEFAULT_BORDER_WIDTH_RATIO = 0.02f
+private const val MIN_BORDER_WIDTH_RATIO = 0.005f
+private const val MAX_BORDER_WIDTH_RATIO = 0.08f
 
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
@@ -50,7 +52,8 @@ data class ToppingEditState(
     val mode: ToppingEditMode = ToppingEditMode.ERASE,
     val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
     val areaHistory: ToppingEditHistory<ToppingEditStroke> = ToppingEditHistory(),
-    val borderWidth: Float = DEFAULT_BORDER_WIDTH,
+    /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
+    val pendingBorderWidth: Float = 0f,
     val borderHistory: ToppingEditHistory<ToppingBorderStroke> = ToppingEditHistory(),
     val isSaving: Boolean = false,
 ) : UiState {
@@ -72,9 +75,15 @@ data class ToppingEditState(
 
     val maxBrushWidthDp: Float get() = MAX_BRUSH_WIDTH_DP
 
-    val minBorderWidth: Float get() = MIN_BORDER_WIDTH
+    /**
+     * 굵기 슬라이더가 가리키는 값. 두른 겹이 있으면 슬라이더가 곧 그 겹의 굵기다.
+     * 되돌려서 겹이 벗겨지면 그 아래 겹의 굵기로 따라 내려간다.
+     */
+    val borderWidth: Float get() = borderStrokes.lastOrNull()?.width ?: pendingBorderWidth
 
-    val maxBorderWidth: Float get() = MAX_BORDER_WIDTH
+    val minBorderWidth: Float get() = longestSideRatioOf(MIN_BORDER_WIDTH_RATIO)
+
+    val maxBorderWidth: Float get() = longestSideRatioOf(MAX_BORDER_WIDTH_RATIO)
 
     /**
      * 지금 고른 모드로 [points] 를 획 하나로 묶는다.
@@ -89,6 +98,12 @@ data class ToppingEditState(
         null
     } else {
         ToppingEditStroke(mode = mode, points = points, width = width)
+    }
+
+    /** 원본 긴 변에 [ratio] 를 곱한 길이. 해상도가 달라도 체감 굵기가 비슷하도록 비율로 잡는다 */
+    private fun longestSideRatioOf(ratio: Float): Float {
+        val bitmap = originBitmap ?: return 0f
+        return maxOf(bitmap.width, bitmap.height) * ratio
     }
 }
 
@@ -173,14 +188,24 @@ class ToppingEditViewModel
 
             is ToppingEditIntent.AddBorderStroke -> {
                 updateState {
+                    // 이미 가장 바깥에 있는 색을 다시 고른 것은 조작이 아니다
+                    if (intent.color == selectedBorderColor) return@updateState this
+
+                    // 새 색은 지금 보이는 굵기 그대로 바깥에 한 겹 더 두른다
                     val stroke = ToppingBorderStroke(color = intent.color, width = borderWidth)
                     copy(borderHistory = borderHistory.push(stroke))
                 }
             }
 
             is ToppingEditIntent.ChangeBorderWidth -> {
-                // 굵기는 다음에 두를 겹에만 적용된다. 이미 쌓인 겹은 그대로 둔다
-                updateState { copy(borderWidth = intent.width.coerceIn(minBorderWidth, maxBorderWidth)) }
+                updateState {
+                    val width = intent.width.coerceIn(minBorderWidth, maxBorderWidth)
+                    // 슬라이더는 가장 바깥 겹의 굵기를 직접 민다. 두른 겹이 없으면 다음 겹에 쓸 값만 바뀐다
+                    copy(
+                        pendingBorderWidth = width,
+                        borderHistory = borderHistory.replaceLast { stroke -> stroke.copy(width = width) },
+                    )
+                }
             }
 
             ToppingEditIntent.UndoBorder -> {
@@ -206,9 +231,11 @@ class ToppingEditViewModel
             }
 
             updateState {
+                val longestSide = maxOf(originBitmap.width, originBitmap.height)
                 copy(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
+                    pendingBorderWidth = longestSide * DEFAULT_BORDER_WIDTH_RATIO,
                 )
             }
         }
@@ -231,6 +258,7 @@ class ToppingEditViewModel
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
                     strokes = current.strokes,
+                    borderStrokes = current.borderStrokes,
                 )
             }
 

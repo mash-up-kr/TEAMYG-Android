@@ -48,6 +48,9 @@ data class ToppingEditStroke(
  *
  * 색상칩을 고를 때마다 그 시점의 굵기로 한 겹이 위에 쌓여 중첩된다.
  * 되돌리기는 이 겹 단위로 가장 바깥부터 벗겨낸다.
+ *
+ * [width] 는 [ToppingEditStroke] 와 같이 **원본 비트맵 좌표계** 기준이다.
+ * 화면에서 본 굵기와 저장된 결과의 굵기가 어긋나지 않으려면 화면 크기에 매이지 않아야 한다.
  */
 data class ToppingBorderStroke(
     val color: Color,
