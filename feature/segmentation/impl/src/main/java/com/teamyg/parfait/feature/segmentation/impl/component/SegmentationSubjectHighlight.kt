@@ -52,7 +52,6 @@ internal fun SegmentationSubjectHighlight(
                     canvasSize = size.toSize(),
                 )
 
-                // 객체 영역 안쪽을 눌렀을 때만 반응한다
                 if (rect != null && rect.contains(tapOffset)) onClickSubject()
             }
         },

@@ -68,7 +68,7 @@ internal fun ToppingEditScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        // 되돌리기는 획을 다루는 영역 탭에서만 의미가 있어 그 탭에서만 띄운다
+        // 되돌릴 대상인 획은 영역 탭에서만 그린다
         if (state.tab == ToppingEditTab.AREA) {
             ToppingEditHistoryActions(
                 canUndo = state.canUndo,
@@ -108,7 +108,6 @@ internal fun ToppingEditScreen(
 
         Spacer(modifier = Modifier.height(23.dp))
 
-        // 탭마다 만지는 대상이 달라 컨트롤도 갈리지만, 완료와 뒤로는 하단 플로팅 바 하나로 모은다
         when (state.tab) {
             ToppingEditTab.AREA -> SegmentationAreaControls(
                 state = state,
@@ -222,7 +221,7 @@ private fun ToppingEditCanvas(
 
             drawImage(image = segmentationImage, dstOffset = dstOffset, dstSize = dstSize)
 
-            // 확정된 획 위에 그리는 도중의 획을 얹는다. 매 프레임 리스트를 새로 만들지 않도록 따로 그린다
+            // 한 리스트로 이어 붙이면 그릴 때마다 리스트가 새로 생겨 따로 그린다
             state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
             state.strokeOrNull(drawingPoints)?.let { stroke -> drawEditStroke(stroke, mapping) }
 
@@ -303,7 +302,6 @@ private fun SegmentationAreaControls(
             )
         }
 
-        // 지우기는 알파를 비워 투명하게, 채우기는 원본 픽셀을 되살린다.
         // 하단 플로팅 바 바로 위에 붙어 모드 전환이 탭 전환과 한 덩어리로 보이게 둔다
         Row {
             YGEditButton(
