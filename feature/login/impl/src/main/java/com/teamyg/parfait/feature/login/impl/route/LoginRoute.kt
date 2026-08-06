@@ -11,7 +11,7 @@ import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.feature.groups.home.api.NavKeyGroupHome
-import com.teamyg.parfait.feature.login.impl.R
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
@@ -32,15 +32,15 @@ fun LoginRoute(
         listOf(
             OnboardingPage(
                 description = "매일 새로운 캔버스에 하루하루 다르게 기록해요",
-                painterResourceId = R.drawable.image_onboarding_1,
+                painterResourceId = DesignSystemR.drawable.image_onboarding_1,
             ),
             OnboardingPage(
                 description = "오늘 찍은 사진을 친구들과 함께 캔버스에 붙여요",
-                painterResourceId = R.drawable.image_onboarding_2,
+                painterResourceId = DesignSystemR.drawable.image_onboarding_2,
             ),
             OnboardingPage(
                 description = "서로의 하루가 겹겹이 쌓여,\n하나의 캔버스로 완성돼요",
-                painterResourceId = null,
+                painterResourceId = DesignSystemR.drawable.image_onboarding_1,
             ),
         )
     }
