@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.login.impl.screen
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,7 +31,6 @@ internal fun LoginScreen(
             .padding(top = 45.dp, bottom = YGTheme.layout.padding.padding1),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-
         OnboardingPager(
             pages = pages,
             modifier = Modifier
