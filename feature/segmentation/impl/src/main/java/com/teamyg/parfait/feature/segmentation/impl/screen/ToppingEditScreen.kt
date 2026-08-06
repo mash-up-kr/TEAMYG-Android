@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
@@ -198,7 +197,7 @@ private fun ToppingEditCanvas(
     Canvas(
         modifier = modifier
             .pointerInput(originBitmap, state.mode, state.brushWidth) {
-                val mapping = viewMapping(size, originBitmap.width, originBitmap.height)
+                val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
                 detectTapGestures(
                     onTap = { offset ->
                         drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping))
@@ -206,7 +205,7 @@ private fun ToppingEditCanvas(
                     },
                 )
             }.pointerInput(originBitmap, state.mode, state.brushWidth) {
-                val mapping = viewMapping(size, originBitmap.width, originBitmap.height)
+                val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
                 detectDragGestures(
                     onDragStart = { offset -> drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping)) },
                     onDrag = { change, _ ->
@@ -217,7 +216,7 @@ private fun ToppingEditCanvas(
                 )
             },
     ) {
-        val mapping = bitmapToViewMapping(size, originBitmap.width, originBitmap.height)
+        val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
         val dstOffset = IntOffset(mapping.offsetX.roundToInt(), mapping.offsetY.roundToInt())
         val dstSize = IntSize(
             width = (originBitmap.width * mapping.scale).roundToInt(),
@@ -291,16 +290,6 @@ private fun DrawScope.drawEditStroke(
         },
     )
 }
-
-private fun viewMapping(
-    size: IntSize,
-    bitmapWidth: Int,
-    bitmapHeight: Int,
-): BitmapViewMapping = bitmapToViewMapping(
-    viewSize = Size(size.width.toFloat(), size.height.toFloat()),
-    bitmapWidth = bitmapWidth,
-    bitmapHeight = bitmapHeight,
-)
 
 @Composable
 private fun SegmentationAreaControls(
