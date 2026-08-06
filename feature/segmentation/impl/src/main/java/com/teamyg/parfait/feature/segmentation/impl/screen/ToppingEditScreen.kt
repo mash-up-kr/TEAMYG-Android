@@ -182,16 +182,9 @@ private fun ToppingEditCanvas(
     val segmentationImage = remember(segmentationBitmap) { segmentationBitmap.asImageBitmap() }
 
     fun commitStroke() {
-        val points = drawingPoints
+        val stroke = state.strokeOrNull(drawingPoints)
         drawingPoints = emptyList()
-        if (points.isEmpty()) return
-        onAddStroke(
-            ToppingEditStroke(
-                mode = state.mode,
-                points = points,
-                width = state.brushWidth,
-            ),
-        )
+        stroke?.let(onAddStroke)
     }
 
     Canvas(
@@ -229,8 +222,9 @@ private fun ToppingEditCanvas(
 
             drawImage(image = segmentationImage, dstOffset = dstOffset, dstSize = dstSize)
 
-            val strokes = state.strokes + drawingStroke(drawingPoints, state)
-            strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
+            // 확정된 획 위에 그리는 도중의 획을 얹는다. 매 프레임 리스트를 새로 만들지 않도록 따로 그린다
+            state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
+            state.strokeOrNull(drawingPoints)?.let { stroke -> drawEditStroke(stroke, mapping) }
 
             // 마스크가 남은 자리에만 원본 픽셀을 채운다. ADD 로 칠한 곳이 원본으로 복원되는 지점
             drawImage(
@@ -243,15 +237,6 @@ private fun ToppingEditCanvas(
             canvas.restore()
         }
     }
-}
-
-private fun drawingStroke(
-    points: List<Offset>,
-    state: ToppingEditState,
-): List<ToppingEditStroke> = if (points.isEmpty()) {
-    emptyList()
-} else {
-    listOf(ToppingEditStroke(mode = state.mode, points = points, width = state.brushWidth))
 }
 
 private fun DrawScope.drawEditStroke(

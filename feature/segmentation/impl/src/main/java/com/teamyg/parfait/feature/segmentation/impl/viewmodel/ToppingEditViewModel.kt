@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -46,6 +47,16 @@ data class ToppingEditState(
     val minBrushWidth: Float get() = brushWidthRatioOf(MIN_BRUSH_WIDTH_RATIO)
 
     val maxBrushWidth: Float get() = brushWidthRatioOf(MAX_BRUSH_WIDTH_RATIO)
+
+    /**
+     * 지금 고른 모드와 붓 굵기로 [points] 를 획 하나로 묶는다.
+     * 찍힌 점이 없으면 만들 획도 없어 null 이다.
+     */
+    fun strokeOrNull(points: List<Offset>): ToppingEditStroke? = if (points.isEmpty()) {
+        null
+    } else {
+        ToppingEditStroke(mode = mode, points = points, width = brushWidth)
+    }
 
     private fun brushWidthRatioOf(ratio: Float): Float {
         val bitmap = originBitmap ?: return 0f
