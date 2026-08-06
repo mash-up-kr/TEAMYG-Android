@@ -6,8 +6,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 
 /**
@@ -26,7 +28,7 @@ internal fun ToppingBorderEditScreen(
         contentAlignment = Alignment.Center,
         modifier = modifier,
     ) {
-        Text("테두리 편집은 준비 중입니다") // Todo : core:ui 에 string resource 로 분리
+        Text(stringResource(R.string.topping_edit_border_preparing))
     }
 }
 

@@ -46,6 +46,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
@@ -152,13 +153,13 @@ private fun ToppingEditHistoryActions(
     ) {
         YGEditActionButton(
             iconResource = DesignSystemR.drawable.ic_arrow_left,
-            contentDescription = "실행 취소", // Todo : core:ui 에 string resource 로 분리
+            contentDescription = stringResource(R.string.topping_edit_undo),
             onClick = onClickUndo,
             isEnabled = canUndo,
         )
         YGEditActionButton(
             iconResource = DesignSystemR.drawable.ic_arrow_right,
-            contentDescription = "다시 실행", // Todo : core:ui 에 string resource 로 분리
+            contentDescription = stringResource(R.string.topping_edit_redo),
             onClick = onClickRedo,
             isEnabled = canRedo,
         )
@@ -315,7 +316,7 @@ private fun SegmentationAreaControls(
         // 라벨과 바는 한 덩어리로 붙여야 해서 바깥 Column 의 간격을 타지 않도록 따로 감싼다
         Column {
             Text(
-                text = "브러시 크기", // Todo : core:ui 에 string resource 로 분리
+                text = stringResource(R.string.topping_edit_brush_width),
                 style = YGTheme.typography.caption.c01M,
                 color = YGAtomicColors.Gray.Gray700,
             )
@@ -332,14 +333,14 @@ private fun SegmentationAreaControls(
         // 하단 플로팅 바 바로 위에 붙어 모드 전환이 탭 전환과 한 덩어리로 보이게 둔다
         Row {
             YGEditButton(
-                text = "영역 지우기", // Todo : core:ui 에 string resource 로 분리
+                text = stringResource(R.string.topping_edit_area_erase),
                 isSelected = state.mode == ToppingEditMode.ERASE,
                 onClick = { onChangeMode(ToppingEditMode.ERASE) },
                 modifier = Modifier.weight(1f),
                 iconResource = DesignSystemR.drawable.ic_minus_round,
             )
             YGEditButton(
-                text = "영역 채우기", // Todo : core:ui 에 string resource 로 분리
+                text = stringResource(R.string.topping_edit_area_add),
                 isSelected = state.mode == ToppingEditMode.ADD,
                 onClick = { onChangeMode(ToppingEditMode.ADD) },
                 modifier = Modifier.weight(1f),

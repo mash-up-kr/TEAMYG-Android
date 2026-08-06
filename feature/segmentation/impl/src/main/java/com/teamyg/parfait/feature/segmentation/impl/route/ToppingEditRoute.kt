@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.ToppingEditScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditIntent
@@ -38,13 +39,14 @@ internal fun ToppingEditRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ToppingEditEffect.LoadFailed -> {
-                    Toast.makeText(context, "이미지를 불러오지 못했습니다", Toast.LENGTH_SHORT).show()
+                    val message = context.getString(R.string.topping_edit_load_failed)
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     navigator.onBack()
                 }
 
-                // Todo : core:ui 에 string resource 로 분리
                 is ToppingEditEffect.SaveFailed -> {
-                    Toast.makeText(context, "편집 결과를 저장하지 못했습니다", Toast.LENGTH_SHORT).show()
+                    val message = context.getString(R.string.topping_edit_save_failed)
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
 
                 // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집본 경로를 결과로 넘기고 돌아간다
