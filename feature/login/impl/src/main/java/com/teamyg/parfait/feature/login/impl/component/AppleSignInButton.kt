@@ -35,7 +35,7 @@ internal fun AppleSignInButton(
     Button(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(50.dp),
+        shape = RoundedCornerShape(0.dp),
         colors = buttonColors,
         enabled = enabled,
         contentPadding = PaddingValues(

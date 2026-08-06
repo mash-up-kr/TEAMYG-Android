@@ -99,7 +99,7 @@ private fun OnboardingPageContent(
                 )
             // TODO impl
         }
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
         Text(
             text = page.description,

@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.KakaoDesignGuideColors
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.login.impl.R
@@ -35,12 +37,12 @@ internal fun KakaoSignInButton(
     Button(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(50.dp),
+        shape = RoundedCornerShape(0.dp),
         colors = buttonColors,
         enabled = enabled,
         contentPadding = PaddingValues(
-            horizontal = 15.dp,
-            vertical = 12.dp,
+            horizontal = YGTheme.layout.padding.padding5,
+            vertical = YGTheme.layout.padding.padding3,
         ),
     ) {
         Image(
@@ -51,7 +53,11 @@ internal fun KakaoSignInButton(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(text = "카카오 로그인")
+        Text(
+            text = "카카오 로그인",
+            style = YGTheme.typography.body.b01SB,
+            color = YGAtomicColors.Gray.Black,
+        )
 
         Spacer(modifier = Modifier.weight(1f))
     }
