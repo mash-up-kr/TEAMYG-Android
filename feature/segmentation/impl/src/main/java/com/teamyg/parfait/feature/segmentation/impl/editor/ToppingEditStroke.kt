@@ -1,16 +1,22 @@
 package com.teamyg.parfait.feature.segmentation.impl.editor
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.geometry.Offset
+import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
  * 편집 화면의 하단 탭. 탭마다 만지는 대상이 다르다.
+ *
+ * @param label 탭 버튼에 띄울 문구. 탭을 늘릴 때 문구를 빠뜨리지 않도록 여기에 함께 둔다
  */
-enum class ToppingEditTab {
+enum class ToppingEditTab(
+    @StringRes val label: Int,
+) {
     /** 잘라낼 영역 자체를 지우거나 되살린다 */
-    AREA,
+    AREA(R.string.topping_edit_tab_area),
 
     /** 잘라낸 결과에 두를 테두리를 다듬는다 */
-    BORDER,
+    BORDER(R.string.topping_edit_tab_border),
 }
 
 /**

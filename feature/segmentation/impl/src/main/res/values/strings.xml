@@ -10,4 +10,7 @@
 
     <string name="segmentation_confirm_edit_photo">사진 편집</string>
     <string name="segmentation_confirm_next">다음</string>
+
+    <string name="topping_edit_tab_area">영역</string>
+    <string name="topping_edit_tab_border">테두리</string>
 </resources>

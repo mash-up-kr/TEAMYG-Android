@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -127,7 +128,7 @@ internal fun ToppingEditScreen(
         }
 
         YGFloatingBarEditTab(
-            tabs = ToppingEditTab.entries.map { tab -> tab.label() },
+            tabs = ToppingEditTab.entries.map { tab -> stringResource(tab.label) },
             selectedIndex = state.tab.ordinal,
             onTabSelect = { index -> onChangeTab(ToppingEditTab.entries[index]) },
             onCloseClick = onClickBack,
@@ -162,12 +163,6 @@ private fun ToppingEditHistoryActions(
             isEnabled = canRedo,
         )
     }
-}
-
-// Todo : core:ui 에 string resource 로 분리
-private fun ToppingEditTab.label(): String = when (this) {
-    ToppingEditTab.AREA -> "영역"
-    ToppingEditTab.BORDER -> "테두리"
 }
 
 @Composable
