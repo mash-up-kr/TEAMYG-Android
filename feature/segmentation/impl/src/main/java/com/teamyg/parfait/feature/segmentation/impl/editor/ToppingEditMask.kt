@@ -14,7 +14,7 @@ import android.graphics.Rect
  *
  * 마스크를 알파 채널로 다루는 게 핵심이다.
  * 1. segmentation 결과를 그려 그 알파를 시작 마스크로 삼는다
- * 2. [SegmentationEditMode.ADD] 는 불투명하게, [SegmentationEditMode.ERASE] 는 CLEAR 로 그려 마스크를 가감한다
+ * 2. [ToppingEditMode.ADD] 는 불투명하게, [ToppingEditMode.ERASE] 는 CLEAR 로 그려 마스크를 가감한다
  * 3. 마지막에 원본을 SRC_IN 으로 얹으면 마스크가 남은 자리에만 원본 픽셀이 채워진다
  *
  * 3번 덕분에 지웠던 영역을 다시 ADD 로 칠하면 원본 픽셀이 그대로 복원된다.
@@ -23,7 +23,7 @@ import android.graphics.Rect
 internal fun buildEditedBitmap(
     originBitmap: Bitmap,
     segmentationBitmap: Bitmap,
-    strokes: List<SegmentationEditStroke>,
+    strokes: List<ToppingEditStroke>,
 ): Bitmap {
     val width = originBitmap.width
     val height = originBitmap.height
@@ -48,7 +48,7 @@ internal fun buildEditedBitmap(
     return edited
 }
 
-private fun strokePaint(stroke: SegmentationEditStroke): Paint = Paint().apply {
+private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
     isAntiAlias = true
     style = Paint.Style.STROKE
     strokeWidth = stroke.width
@@ -56,9 +56,9 @@ private fun strokePaint(stroke: SegmentationEditStroke): Paint = Paint().apply {
     strokeJoin = Paint.Join.ROUND
     when (stroke.mode) {
         // 색은 무의미하다. SRC_IN 단계에서 원본으로 덮이므로 알파를 채우는 역할만 한다
-        SegmentationEditMode.ADD -> color = Color.BLACK
+        ToppingEditMode.ADD -> color = Color.BLACK
 
-        SegmentationEditMode.ERASE -> xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        ToppingEditMode.ERASE -> xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
     }
 }
 

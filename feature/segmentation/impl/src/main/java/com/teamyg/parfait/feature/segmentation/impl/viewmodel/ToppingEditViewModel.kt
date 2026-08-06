@@ -10,9 +10,9 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildEditedBitmap
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -27,14 +27,14 @@ private const val DEFAULT_BRUSH_WIDTH_RATIO = 0.04f
 private const val MIN_BRUSH_WIDTH_RATIO = 0.01f
 private const val MAX_BRUSH_WIDTH_RATIO = 0.15f
 
-data class SegmentationEditState(
+data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
-    val tab: SegmentationEditTab = SegmentationEditTab.AREA,
-    val mode: SegmentationEditMode = SegmentationEditMode.ERASE,
+    val tab: ToppingEditTab = ToppingEditTab.AREA,
+    val mode: ToppingEditMode = ToppingEditMode.ERASE,
     val brushWidth: Float = 0f,
-    val strokes: List<SegmentationEditStroke> = emptyList(),
-    val redoableStrokes: List<SegmentationEditStroke> = emptyList(),
+    val strokes: List<ToppingEditStroke> = emptyList(),
+    val redoableStrokes: List<ToppingEditStroke> = emptyList(),
     val isSaving: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
@@ -53,66 +53,66 @@ data class SegmentationEditState(
     }
 }
 
-sealed interface SegmentationEditIntent : UiIntent {
-    data class ChangeTab(val tab: SegmentationEditTab) : SegmentationEditIntent
+sealed interface ToppingEditIntent : UiIntent {
+    data class ChangeTab(val tab: ToppingEditTab) : ToppingEditIntent
 
-    data class ChangeMode(val mode: SegmentationEditMode) : SegmentationEditIntent
+    data class ChangeMode(val mode: ToppingEditMode) : ToppingEditIntent
 
-    data class ChangeBrushWidth(val width: Float) : SegmentationEditIntent
+    data class ChangeBrushWidth(val width: Float) : ToppingEditIntent
 
     /** 드래그가 끝난 획을 확정한다. 그리는 도중의 획은 화면이 들고 있는다 */
-    data class AddStroke(val stroke: SegmentationEditStroke) : SegmentationEditIntent
+    data class AddStroke(val stroke: ToppingEditStroke) : ToppingEditIntent
 
-    data object Undo : SegmentationEditIntent
+    data object Undo : ToppingEditIntent
 
-    data object Redo : SegmentationEditIntent
+    data object Redo : ToppingEditIntent
 
-    data object ClickDone : SegmentationEditIntent
+    data object ClickDone : ToppingEditIntent
 }
 
-sealed interface SegmentationEditEffect : UiSideEffect {
-    data object LoadFailed : SegmentationEditEffect
+sealed interface ToppingEditEffect : UiSideEffect {
+    data object LoadFailed : ToppingEditEffect
 
-    data object SaveFailed : SegmentationEditEffect
+    data object SaveFailed : ToppingEditEffect
 
     /** @param editedImagePath 편집 결과가 저장된 파일 경로 */
-    data class EditCompleted(val editedImagePath: String) : SegmentationEditEffect
+    data class EditCompleted(val editedImagePath: String) : ToppingEditEffect
 }
 
-@HiltViewModel(assistedFactory = SegmentationEditViewModel.Factory::class)
-class SegmentationEditViewModel
+@HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
+class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveEditedImageUseCase: SaveEditedImageUseCase,
-) : BaseViewModel<SegmentationEditState, SegmentationEditIntent, SegmentationEditEffect>(
-    initialState = SegmentationEditState(),
+) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
+    initialState = ToppingEditState(),
 ) {
     init {
         loadImages()
     }
 
-    override fun processIntent(intent: SegmentationEditIntent) {
+    override fun processIntent(intent: ToppingEditIntent) {
         when (intent) {
-            is SegmentationEditIntent.ChangeTab -> {
+            is ToppingEditIntent.ChangeTab -> {
                 updateState { copy(tab = intent.tab) }
             }
 
-            is SegmentationEditIntent.ChangeMode -> {
+            is ToppingEditIntent.ChangeMode -> {
                 updateState { copy(mode = intent.mode) }
             }
 
-            is SegmentationEditIntent.ChangeBrushWidth -> {
+            is ToppingEditIntent.ChangeBrushWidth -> {
                 updateState { copy(brushWidth = intent.width.coerceIn(minBrushWidth, maxBrushWidth)) }
             }
 
-            is SegmentationEditIntent.AddStroke -> {
+            is ToppingEditIntent.AddStroke -> {
                 // 새로 그리면 redo 는 무효가 된다
                 updateState { copy(strokes = strokes + intent.stroke, redoableStrokes = emptyList()) }
             }
 
-            SegmentationEditIntent.Undo -> {
+            ToppingEditIntent.Undo -> {
                 updateState {
                     val last = strokes.lastOrNull() ?: return@updateState this
                     copy(
@@ -122,7 +122,7 @@ class SegmentationEditViewModel
                 }
             }
 
-            SegmentationEditIntent.Redo -> {
+            ToppingEditIntent.Redo -> {
                 updateState {
                     val last = redoableStrokes.lastOrNull() ?: return@updateState this
                     copy(
@@ -132,7 +132,7 @@ class SegmentationEditViewModel
                 }
             }
 
-            SegmentationEditIntent.ClickDone -> completeEdit()
+            ToppingEditIntent.ClickDone -> completeEdit()
         }
     }
 
@@ -142,7 +142,7 @@ class SegmentationEditViewModel
             val segmentationBitmap = decodeBitmapOrNull(segmentationImageUri)
 
             if (originBitmap == null || segmentationBitmap == null) {
-                postSideEffect(SegmentationEditEffect.LoadFailed)
+                postSideEffect(ToppingEditEffect.LoadFailed)
                 return@launch
             }
 
@@ -181,11 +181,11 @@ class SegmentationEditViewModel
             updateState { copy(isSaving = false) }
 
             if (savedPath == null) {
-                postSideEffect(SegmentationEditEffect.SaveFailed)
+                postSideEffect(ToppingEditEffect.SaveFailed)
                 return@launch
             }
 
-            postSideEffect(SegmentationEditEffect.EditCompleted(savedPath))
+            postSideEffect(ToppingEditEffect.EditCompleted(savedPath))
         }
     }
 
@@ -194,6 +194,6 @@ class SegmentationEditViewModel
         fun create(
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
-        ): SegmentationEditViewModel
+        ): ToppingEditViewModel
     }
 }

@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditState
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 
 /**
  * 테두리 탭의 내용. 잘라낸 결과에 두를 테두리를 다듬는 화면이다.
@@ -18,8 +18,8 @@ import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditSt
  */
 // Todo : 테두리 굵기/색 편집 구현
 @Composable
-internal fun SegmentationBorderEditScreen(
-    state: SegmentationEditState,
+internal fun ToppingBorderEditScreen(
+    state: ToppingEditState,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -32,9 +32,9 @@ internal fun SegmentationBorderEditScreen(
 
 @YGPreview
 @Composable
-private fun PreviewSegmentationBorderEditScreen() = PreviewBox {
-    SegmentationBorderEditScreen(
-        state = SegmentationEditState(),
+private fun PreviewToppingBorderEditScreen() = PreviewBox {
+    ToppingBorderEditScreen(
+        state = ToppingEditState(),
         modifier = Modifier.fillMaxSize(),
     )
 }

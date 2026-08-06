@@ -10,19 +10,19 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationEdit
-import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationEditScreen
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditEffect
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditIntent
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditViewModel
+import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.impl.screen.ToppingEditScreen
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditEffect
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditIntent
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditViewModel
 
 @Composable
-internal fun SegmentationEditRoute(
+internal fun ToppingEditRoute(
     navigator: Navigator,
-    key: NavKeySegmentationEdit,
+    key: NavKeyToppingEdit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = hiltViewModel<SegmentationEditViewModel, SegmentationEditViewModel.Factory>(
+    val viewModel = hiltViewModel<ToppingEditViewModel, ToppingEditViewModel.Factory>(
         creationCallback = { factory ->
             factory.create(
                 sourceImageUri = key.sourceImageUri,
@@ -37,34 +37,34 @@ internal fun SegmentationEditRoute(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is SegmentationEditEffect.LoadFailed -> {
+                is ToppingEditEffect.LoadFailed -> {
                     Toast.makeText(context, "이미지를 불러오지 못했습니다", Toast.LENGTH_SHORT).show()
                     navigator.onBack()
                 }
 
                 // Todo : core:ui 에 string resource 로 분리
-                is SegmentationEditEffect.SaveFailed -> {
+                is ToppingEditEffect.SaveFailed -> {
                     Toast.makeText(context, "편집 결과를 저장하지 못했습니다", Toast.LENGTH_SHORT).show()
                 }
 
                 // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집본 경로를 결과로 넘기고 돌아간다
-                is SegmentationEditEffect.EditCompleted -> {
-                    resultEventBus.sendResult(SEGMENTATION_EDIT_RESULT_KEY, effect.editedImagePath)
+                is ToppingEditEffect.EditCompleted -> {
+                    resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.editedImagePath)
                     navigator.onBack()
                 }
             }
         }
     }
 
-    SegmentationEditScreen(
+    ToppingEditScreen(
         state = state,
-        onChangeTab = { tab -> viewModel.processIntent(SegmentationEditIntent.ChangeTab(tab)) },
-        onChangeMode = { mode -> viewModel.processIntent(SegmentationEditIntent.ChangeMode(mode)) },
-        onChangeBrushWidth = { width -> viewModel.processIntent(SegmentationEditIntent.ChangeBrushWidth(width)) },
-        onAddStroke = { stroke -> viewModel.processIntent(SegmentationEditIntent.AddStroke(stroke)) },
-        onClickUndo = { viewModel.processIntent(SegmentationEditIntent.Undo) },
-        onClickRedo = { viewModel.processIntent(SegmentationEditIntent.Redo) },
-        onClickDone = { viewModel.processIntent(SegmentationEditIntent.ClickDone) },
+        onChangeTab = { tab -> viewModel.processIntent(ToppingEditIntent.ChangeTab(tab)) },
+        onChangeMode = { mode -> viewModel.processIntent(ToppingEditIntent.ChangeMode(mode)) },
+        onChangeBrushWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBrushWidth(width)) },
+        onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
+        onClickUndo = { viewModel.processIntent(ToppingEditIntent.Undo) },
+        onClickRedo = { viewModel.processIntent(ToppingEditIntent.Redo) },
+        onClickDone = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
         onClickBack = { navigator.onBack() },
         modifier = modifier,
     )

@@ -46,20 +46,20 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditMode
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditStroke
-import com.teamyg.parfait.feature.segmentation.impl.editor.SegmentationEditTab
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEditState
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
-internal fun SegmentationEditScreen(
-    state: SegmentationEditState,
-    onChangeTab: (SegmentationEditTab) -> Unit,
-    onChangeMode: (SegmentationEditMode) -> Unit,
+internal fun ToppingEditScreen(
+    state: ToppingEditState,
+    onChangeTab: (ToppingEditTab) -> Unit,
+    onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
-    onAddStroke: (SegmentationEditStroke) -> Unit,
+    onAddStroke: (ToppingEditStroke) -> Unit,
     onClickUndo: () -> Unit,
     onClickRedo: () -> Unit,
     onClickDone: () -> Unit,
@@ -68,8 +68,8 @@ internal fun SegmentationEditScreen(
 ) {
     Column(modifier = modifier) {
         // 되돌리기는 획을 다루는 영역 탭에서만 의미가 있어 그 탭에서만 띄운다
-        if (state.tab == SegmentationEditTab.AREA) {
-            SegmentationEditHistoryActions(
+        if (state.tab == ToppingEditTab.AREA) {
+            ToppingEditHistoryActions(
                 canUndo = state.canUndo,
                 canRedo = state.canRedo,
                 onClickUndo = onClickUndo,
@@ -92,12 +92,12 @@ internal fun SegmentationEditScreen(
             when {
                 state.isLoading -> CircularProgressIndicator()
 
-                state.tab == SegmentationEditTab.BORDER -> SegmentationBorderEditScreen(
+                state.tab == ToppingEditTab.BORDER -> ToppingBorderEditScreen(
                     state = state,
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                else -> SegmentationEditCanvas(
+                else -> ToppingEditCanvas(
                     state = state,
                     onAddStroke = onAddStroke,
                     modifier = Modifier.fillMaxSize(),
@@ -109,7 +109,7 @@ internal fun SegmentationEditScreen(
 
         // 탭마다 만지는 대상이 달라 컨트롤도 갈리지만, 완료와 뒤로는 하단 플로팅 바 하나로 모은다
         when (state.tab) {
-            SegmentationEditTab.AREA -> SegmentationAreaControls(
+            ToppingEditTab.AREA -> SegmentationAreaControls(
                 state = state,
                 onChangeMode = onChangeMode,
                 onChangeBrushWidth = onChangeBrushWidth,
@@ -123,13 +123,13 @@ internal fun SegmentationEditScreen(
             )
 
             // Todo : 테두리 굵기/색 컨트롤 자리
-            SegmentationEditTab.BORDER -> Unit
+            ToppingEditTab.BORDER -> Unit
         }
 
         YGFloatingBarEditTab(
-            tabs = SegmentationEditTab.entries.map { tab -> tab.label() },
+            tabs = ToppingEditTab.entries.map { tab -> tab.label() },
             selectedIndex = state.tab.ordinal,
-            onTabSelect = { index -> onChangeTab(SegmentationEditTab.entries[index]) },
+            onTabSelect = { index -> onChangeTab(ToppingEditTab.entries[index]) },
             onCloseClick = onClickBack,
             onConfirmClick = onClickDone,
             modifier = Modifier.fillMaxWidth(),
@@ -138,7 +138,7 @@ internal fun SegmentationEditScreen(
 }
 
 @Composable
-private fun SegmentationEditHistoryActions(
+private fun ToppingEditHistoryActions(
     canUndo: Boolean,
     canRedo: Boolean,
     onClickUndo: () -> Unit,
@@ -165,15 +165,15 @@ private fun SegmentationEditHistoryActions(
 }
 
 // Todo : core:ui 에 string resource 로 분리
-private fun SegmentationEditTab.label(): String = when (this) {
-    SegmentationEditTab.AREA -> "영역"
-    SegmentationEditTab.BORDER -> "테두리"
+private fun ToppingEditTab.label(): String = when (this) {
+    ToppingEditTab.AREA -> "영역"
+    ToppingEditTab.BORDER -> "테두리"
 }
 
 @Composable
-private fun SegmentationEditCanvas(
-    state: SegmentationEditState,
-    onAddStroke: (SegmentationEditStroke) -> Unit,
+private fun ToppingEditCanvas(
+    state: ToppingEditState,
+    onAddStroke: (ToppingEditStroke) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val originBitmap = state.originBitmap ?: return
@@ -191,7 +191,7 @@ private fun SegmentationEditCanvas(
         drawingPoints = emptyList()
         if (points.isEmpty()) return
         onAddStroke(
-            SegmentationEditStroke(
+            ToppingEditStroke(
                 mode = state.mode,
                 points = points,
                 width = state.brushWidth,
@@ -252,15 +252,15 @@ private fun SegmentationEditCanvas(
 
 private fun drawingStroke(
     points: List<Offset>,
-    state: SegmentationEditState,
-): List<SegmentationEditStroke> = if (points.isEmpty()) {
+    state: ToppingEditState,
+): List<ToppingEditStroke> = if (points.isEmpty()) {
     emptyList()
 } else {
-    listOf(SegmentationEditStroke(mode = state.mode, points = points, width = state.brushWidth))
+    listOf(ToppingEditStroke(mode = state.mode, points = points, width = state.brushWidth))
 }
 
 private fun DrawScope.drawEditStroke(
-    stroke: SegmentationEditStroke,
+    stroke: ToppingEditStroke,
     mapping: BitmapViewMapping,
 ) {
     val points = stroke.points
@@ -290,8 +290,8 @@ private fun DrawScope.drawEditStroke(
         ),
         // 색은 무의미하다. SrcIn 단계에서 원본으로 덮이므로 알파를 채우고 지우는 역할만 한다
         blendMode = when (stroke.mode) {
-            SegmentationEditMode.ADD -> BlendMode.SrcOver
-            SegmentationEditMode.ERASE -> BlendMode.Clear
+            ToppingEditMode.ADD -> BlendMode.SrcOver
+            ToppingEditMode.ERASE -> BlendMode.Clear
         },
     )
 }
@@ -308,8 +308,8 @@ private fun viewMapping(
 
 @Composable
 private fun SegmentationAreaControls(
-    state: SegmentationEditState,
-    onChangeMode: (SegmentationEditMode) -> Unit,
+    state: ToppingEditState,
+    onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -338,15 +338,15 @@ private fun SegmentationAreaControls(
         Row {
             YGEditButton(
                 text = "영역 지우기", // Todo : core:ui 에 string resource 로 분리
-                isSelected = state.mode == SegmentationEditMode.ERASE,
-                onClick = { onChangeMode(SegmentationEditMode.ERASE) },
+                isSelected = state.mode == ToppingEditMode.ERASE,
+                onClick = { onChangeMode(ToppingEditMode.ERASE) },
                 modifier = Modifier.weight(1f),
                 iconResource = DesignSystemR.drawable.ic_minus_round,
             )
             YGEditButton(
                 text = "영역 채우기", // Todo : core:ui 에 string resource 로 분리
-                isSelected = state.mode == SegmentationEditMode.ADD,
-                onClick = { onChangeMode(SegmentationEditMode.ADD) },
+                isSelected = state.mode == ToppingEditMode.ADD,
+                onClick = { onChangeMode(ToppingEditMode.ADD) },
                 modifier = Modifier.weight(1f),
                 iconResource = DesignSystemR.drawable.ic_add_round,
             )
@@ -356,9 +356,9 @@ private fun SegmentationAreaControls(
 
 @YGPreview
 @Composable
-private fun PreviewSegmentationEditScreen() = PreviewBox {
-    SegmentationEditScreen(
-        state = SegmentationEditState(),
+private fun PreviewToppingEditScreen() = PreviewBox {
+    ToppingEditScreen(
+        state = ToppingEditState(),
         onChangeTab = {},
         onChangeMode = {},
         onChangeBrushWidth = {},
