@@ -22,8 +22,11 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCall_successWithData_returnsData() = runTest {
-        // When 데이터가 담긴 성공 응답에 safeApiCall 을 호출하면
-        val result = apiCaller.safeApiCall { success("payload") }
+        // Given 데이터가 담긴 성공 응답
+        val response = success("payload")
+
+        // When safeApiCall
+        val result = apiCaller.safeApiCall { response }
 
         // Then 데이터를 그대로 돌려준다
         assertEquals("payload", result.getOrThrow())
@@ -31,9 +34,12 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCall_successWithTransform_appliesTransform() = runTest {
-        // When 데이터가 담긴 성공 응답에 변환 함수와 함께 호출하면
+        // Given 데이터가 담긴 성공 응답
+        val response = success("payload")
+
+        // When 변환 함수와 함께 호출
         val result = apiCaller.safeApiCall(
-            block = { success("payload") },
+            block = { response },
             transform = { it.length },
         )
 
@@ -43,8 +49,11 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCall_successWithNullData_returnsEmptyBody() = runTest {
-        // When success=true 인데 data 가 null 인 응답에 safeApiCall 을 호출하면
-        val result = apiCaller.safeApiCall { success(null) }
+        // Given success=true 인데 data 가 null
+        val response = success(null)
+
+        // When safeApiCall
+        val result = apiCaller.safeApiCall { response }
 
         // Then EmptyBody 로 실패한다
         val error = assertIs<ApiException.EmptyBody>(result.exceptionOrNull())
@@ -74,8 +83,11 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCall_ioException_returnsNetwork() = runTest {
-        // When 네트워크 예외가 발생한 채로 safeApiCall 을 호출하면
-        val result = apiCaller.safeApiCall<String> { throw IOException("timeout") }
+        // Given 네트워크 예외
+        val exception = IOException("timeout")
+
+        // When safeApiCall
+        val result = apiCaller.safeApiCall<String> { throw exception }
 
         // Then Network 로 감싼다
         assertIs<ApiException.Network>(result.exceptionOrNull())
@@ -101,8 +113,11 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCallNoContent_blockSucceeds_returnsSuccess() = runTest {
-        // When 응답 본문 자체가 없는 호출을 하면
-        val result = apiCaller.safeApiCallNoContent { }
+        // Given 응답 본문 자체가 없는 호출
+        val block: suspend () -> Unit = { }
+
+        // When safeApiCallNoContent
+        val result = apiCaller.safeApiCallNoContent(block)
 
         // Then 성공
         assertTrue(result.isSuccess)
@@ -110,8 +125,11 @@ class ApiCallerTest {
 
     @Test
     fun safeApiCallNoContent_blockThrowsIo_returnsNetwork() = runTest {
-        // When 블록이 IO 예외를 던지는 채로 safeApiCallNoContent 를 호출하면
-        val result = apiCaller.safeApiCallNoContent { throw IOException("reset") }
+        // Given 블록이 IO 예외를 던진다
+        val exception = IOException("reset")
+
+        // When safeApiCallNoContent
+        val result = apiCaller.safeApiCallNoContent { throw exception }
 
         // Then Network 로 감싼다
         assertIs<ApiException.Network>(result.exceptionOrNull())
