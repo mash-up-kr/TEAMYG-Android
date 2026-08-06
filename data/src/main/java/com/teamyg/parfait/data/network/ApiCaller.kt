@@ -21,6 +21,14 @@ class ApiCaller @Inject constructor(
                 ?: Result.failure(ApiException.EmptyBody(response.code, response.message))
         }
 
+    suspend fun <T : Any, R> safeApiCall(
+        block: suspend () -> ApiResponse<T>,
+        transform: (T) -> R,
+    ): Result<R> = runCatchingApi(block) { response ->
+        response.data?.let { Result.success(transform(it)) }
+            ?: Result.failure(ApiException.EmptyBody(response.code, response.message))
+    }
+
     suspend fun safeApiCallWithoutData(block: suspend () -> ApiResponse<Unit>): Result<Unit> =
         runCatchingApi(block) { Result.success(Unit) }
 

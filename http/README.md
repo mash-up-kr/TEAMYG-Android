@@ -23,6 +23,9 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
     "refresh_token": "",
     "registration_token": "",
 
+    "terms_id_1": "",
+    "terms_id_2": "",
+
     "group_id": "",
     "invite_code": ""
   }
@@ -59,11 +62,14 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 |---|---|
 | `_reset.http` | 전역 변수 초기화·확인(토큰을 손으로 넣을 때 먼저 실행) |
 | `auth.http` | 카카오 로그인 · 회원가입 완료 · 토큰 재발급 · 로그아웃 |
+| `policy.http` | 현재 유효 약관 목록(회원가입이 쓰는 `termsId` 출처) |
 | `parfait-group.http` | 그룹 8종(목록·생성·참여 미리보기·참여·상세·닉네임 변경·신고·탈퇴) |
 | `parfait.http` | 그룹 캘린더 연도 리스트 |
 | `health.http` | 헬스체크(인증 유무 대조용) |
 
-**권장 순서**: `auth.http` 1~2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
+**권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
+
+`policy.http`를 먼저 돌려야 `auth.http` 2번의 `termsId`가 채워진다. 기존 회원으로 로그인했다면 회원가입을 건너뛰므로 `policy.http`도 건너뛰어도 된다.
 
 ---
 
@@ -105,6 +111,10 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 스웨거에는 `200 OK`로 적혀 있지만 `SignupController`는 `ResponseEntity.status(HttpStatus.CREATED)`로 내보낸다. springdoc이 `ResponseEntity`의 런타임 status를 읽지 못해 기본값 200을 문서화한 것이다.
 
+### 약관 목록은 스웨거 `Auth` 태그 아래 있는데 경로는 `auth` 하위가 아니다
+
+`GET /api/v1/policies`는 컨트롤러가 `http/auth` 패키지에 있어 스웨거 태그가 `Auth`로 잡힌다. 경로는 `/api/v1/auth/...`가 아니라 최상위 `/api/v1/policies`다. 태그로 경로를 유추하지 않는다.
+
 ### 스웨거에 없는 에러 코드가 많다
 
 스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(12종)·`ParfaitGroupApiErrorCode`(11종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
@@ -142,9 +152,15 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 화이트리스트에는 `/actuator/health`만 있다. `/health`(`HealthController`)는 경로가 달라 인증 대상으로 남는다.
 
-### `termsId`를 알 방법이 없다
+### `termsId`는 하드코딩하지 않는다
 
-회원가입이 요구하는 `termsId`는 서버가 정한 "현재 유효한 약관"의 id인데, **약관 목록 조회 API가 서버 계약에 없다.** 하드코딩한 값이 최신 버전이 아니면 `400 TERMS_NOT_FOUND`. 서버팀에 물어봐야 한다.
+회원가입이 요구하는 `termsId`는 서버가 정한 "현재 유효한 약관"의 id다. **`GET /api/v1/policies`(`policy.http` 1번)가 그 출처다** — 실행하면 `terms_id_1`·`terms_id_2` 전역 변수가 채워지고 `auth.http` 2번이 그대로 쓴다. 손으로 넣은 값이 최신 버전이 아니면 `400 TERMS_NOT_FOUND`.
+
+서버는 **타입당 최신 1건씩**(`TERMS_OF_SERVICE`·`PRIVACY_POLICY`) 주므로 배열 길이는 **0~2**다. 0건이어도 `200`에 빈 배열이고 에러가 아니다 — 그대로 회원가입을 호출하면 `400 REQUIRED_TERMS_NOT_AGREED`가 난다. 1건뿐이면 `auth.http` 2번 바디의 항목 하나를 지워야 `400 DUPLICATE_TERMS_ID`를 피한다.
+
+### 약관 응답의 `url`이 링크가 아닐 수 있다
+
+`policies[].url`은 URL 전용 컬럼이 아니라 `tos.content`(`LONGTEXT`) 컬럼을 그대로 매핑한 값이다. 운영 데이터에 약관 **전문**이 들어 있으면 링크 대신 전문이 내려온다. 앱에서 WebView·브라우저로 열기 전에 실제 값을 확인해야 한다.
 
 ---
 
@@ -191,6 +207,7 @@ http/
 ├── README.md                     # 이 문서
 ├── _reset.http                   # 전역 변수 초기화·확인 (API 테스트 아님)
 ├── auth.http                     # 인증 4종
+├── policy.http                   # 약관 목록 조회
 ├── parfait-group.http            # 그룹 8종
 ├── parfait.http                  # 파르페 조회
 ├── health.http                   # 헬스체크

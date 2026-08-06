@@ -1,7 +1,13 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.source.temp.remote.TempRemoteDataSource
-import com.teamyg.parfait.data.source.temp.remote.TempRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
+import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSource
+import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
+import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
+import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -13,5 +19,19 @@ import javax.inject.Singleton
 interface RemoteDataSourceModule {
     @Binds
     @Singleton
-    fun bindTempRemoteDataSource(tempRemoteDataSourceImpl: TempRemoteDataSourceImpl): TempRemoteDataSource
+    fun bindAuthRemoteDataSource(authRemoteDataSourceImpl: AuthRemoteDataSourceImpl): AuthRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindPolicyRemoteDataSource(policyRemoteDataSourceImpl: PolicyRemoteDataSourceImpl): PolicyRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindParfaitGroupRemoteDataSource(
+        parfaitGroupRemoteDataSourceImpl: ParfaitGroupRemoteDataSourceImpl,
+    ): ParfaitGroupRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindParfaitRemoteDataSource(parfaitRemoteDataSourceImpl: ParfaitRemoteDataSourceImpl): ParfaitRemoteDataSource
 }
