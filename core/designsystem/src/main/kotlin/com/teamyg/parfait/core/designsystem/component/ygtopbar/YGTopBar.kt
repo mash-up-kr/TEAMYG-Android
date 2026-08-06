@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -74,13 +76,16 @@ fun YGTopBarEmpty(
     onIconClick: () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
+    windowInsets: WindowInsets = YGTopBarDefaults.windowInsets,
     rightContent: @Composable () -> Unit = {},
 ) {
     YGTopBarContent(
         iconResource = R.drawable.ic_hamburger,
         contentDescription = "메뉴",
         onIconClick = onIconClick,
-        modifier = modifier.ygTopBarBackdrop(hazeState = hazeState),
+        modifier = modifier
+            .ygTopBarBackdrop(hazeState = hazeState)
+            .windowInsetsPadding(windowInsets),
         titleContent = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
