@@ -9,8 +9,6 @@ class DateFormatTest {
 
     @Test
     fun fullMonthWithDay_augustSixth_returnsAugust06() {
-        // Given 2026-08-06
-
         // When 전체 월 이름 + 일 포맷 적용
         val formatted = DateFormat.FullMonthWithDay.format(date)
 
@@ -20,8 +18,6 @@ class DateFormatTest {
 
     @Test
     fun abbreviatedDayOfWeek_thursday_returnsThu() {
-        // Given 2026-08-06 은 목요일
-
         // When 요일 약어 포맷 적용
         val formatted = DateFormat.AbbreviatedDayOfWeek.format(date)
 
@@ -31,8 +27,6 @@ class DateFormatTest {
 
     @Test
     fun monthDayFormat_augustSixth_hasNoDayPadding() {
-        // Given 2026-08-06
-
         // When 축약 월 + 패딩 없는 일 포맷 적용
         val formatted = DateTextFormat.monthDayFormat.format(date)
 

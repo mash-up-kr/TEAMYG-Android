@@ -2,6 +2,7 @@ package com.teamyg.parfait.core.designsystem.theme
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +53,9 @@ class YGThemeSmokeTest {
 
         // Then CompositionLocal 이 라이트 컬러 스킴으로 채워지고 컨텐츠가 그려진다
         composeTestRule.onNodeWithTag(SMOKE_TAG).assertIsDisplayed()
+        // 주의: YGSemanticColorDefaults.YGDarkColorScheme 는 현재 YGLightColorScheme 와 동일하다
+        // (다크 모드는 프로덕션에서 아직 구현되지 않은 TODO). 따라서 이 단언은 라이트/다크
+        // 분기가 뒤바뀌는 회귀는 잡아내지 못한다.
         assertEquals(YGSemanticColorDefaults.YGLightColorScheme, capturedBackground)
     }
 
@@ -62,23 +66,24 @@ class YGThemeSmokeTest {
             var count by remember { mutableStateOf(0) }
 
             YGCustomTheme(darkTheme = false) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .testTag("$COUNTER_TAG$count"),
-                )
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .testTag(SMOKE_TAG)
-                        .clickable { count += 1 },
-                )
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag("$COUNTER_TAG$count"),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .testTag(SMOKE_TAG)
+                            .clickable { count += 1 },
+                    )
+                }
             }
         }
 
         // When 노드를 한 번 클릭
         composeTestRule.onNodeWithTag(SMOKE_TAG).performClick()
-        composeTestRule.waitForIdle()
 
         // Then 재컴포지션이 일어나 태그가 바뀐다
         composeTestRule.onNodeWithTag("${COUNTER_TAG}1").assertIsDisplayed()

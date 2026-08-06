@@ -46,14 +46,13 @@ jobs:
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
 
-      # 유닛 테스트 수행 (JVM 모듈은 test, Android 모듈은 testDebugUnitTest)
+      # 유닛 테스트 수행 (전체 모듈. 테스트가 없는 모듈은 NO-SOURCE 로 즉시 스킵된다)
       - name: Run unit tests
-        run: |
-          ./gradlew \
-            :domain:test \
-            :core:util:jvm:test \
-            :data:testDebugUnitTest \
-            :core:util:android:testDebugUnitTest
+        run: ./gradlew test
+
+      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지)
+      - name: Compile instrumented tests
+        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest
 
       # 실패해도 결과를 남긴다
       - name: Publish test report
@@ -73,8 +72,10 @@ jobs:
           path: '**/build/reports/tests/**'
           retention-days: 7
 
-      # 캐시 지우기
+      # 캐시 지우기 (이 워크플로는 실패하는 경우가 있으므로 실패해도 반드시 실행한다 —
+      # 안 그러면 modules-2.lock 이 캐시에 남아 ktlint 워크플로와 공유하는 캐시 키를 오염시킨다)
       - name: Cleanup Gradle Cache
+        if: always()
         run: |
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties

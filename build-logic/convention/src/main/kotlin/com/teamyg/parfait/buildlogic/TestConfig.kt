@@ -2,6 +2,8 @@ package com.teamyg.parfait.buildlogic
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.api.variant.HostTestBuilder
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.teamyg.parfait.buildlogic.utils.extensions.androidTestImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.debugImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.libs
@@ -15,6 +17,18 @@ internal fun Project.setConfigTestUnit() {
     dependencies {
         testImplementation(libs.bundles.test.unit)
         testImplementation(project(":core:testing"))
+    }
+
+    // 루트 `test` 태스크는 Android 라이브러리 모듈에서 testDebugUnitTest 와
+    // testReleaseUnitTest 를 둘 다 돌려 같은 테스트를 두 번 실행한다. release 변형의
+    // 유닛 테스트 컴포넌트를 꺼서 중복 실행을 막는다.
+    // AGP 9.2.1 기준: VariantBuilder.enableUnitTest(구 네이밍)는 여전히 존재하지만,
+    // LibraryVariantBuilder 가 구현하는 HasHostTestsBuilder 의 새 host-test 네이밍인
+    // `hostTests[HostTestBuilder.UNIT_TEST_TYPE]` 을 대신 쓴다.
+    extensions.findByType(LibraryAndroidComponentsExtension::class)?.apply {
+        beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+            variantBuilder.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = false
+        }
     }
 }
 

@@ -24,13 +24,11 @@ class CharExtensionTest {
 
     @Test
     fun isKorean_standaloneConsonant_returnsTrue() {
-        // Given 단독 자음(ㄱ~ㆎ 구간)
         assertTrue('ㄱ'.isKorean())
     }
 
     @Test
     fun isKorean_standaloneVowel_returnsTrue() {
-        // Given 단독 모음(ㅏ~ㅣ 구간)
         assertTrue('ㅏ'.isKorean())
     }
 

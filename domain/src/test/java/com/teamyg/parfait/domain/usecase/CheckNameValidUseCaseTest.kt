@@ -21,7 +21,6 @@ class CheckNameValidUseCaseTest {
 
     @Test
     fun invoke_nameWithSingleInnerSpace_returnsSuccess() {
-        // Given 가운데 공백 한 칸은 허용된다
         assertEquals(NameValidResult.Success, checkNameValid("우리 그룹"))
     }
 
