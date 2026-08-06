@@ -1,11 +1,16 @@
-name: ktlint
+name: test
 
 on:
   pull_request:
     branches: [ develop ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
-  test:
+  unit-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,9 +46,32 @@ jobs:
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
 
-      # Formatting 검사
-      - name: ktlint with Gradle
-        run: ./gradlew ktlintCheck
+      # 유닛 테스트 수행 (JVM 모듈은 test, Android 모듈은 testDebugUnitTest)
+      - name: Run unit tests
+        run: |
+          ./gradlew \
+            :domain:test \
+            :core:util:jvm:test \
+            :data:testDebugUnitTest \
+            :core:util:android:testDebugUnitTest
+
+      # 실패해도 결과를 남긴다
+      - name: Publish test report
+        uses: dorny/test-reporter@v2
+        if: always()
+        with:
+          name: Unit Test Results
+          path: '**/build/test-results/**/TEST-*.xml'
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/**'
+          retention-days: 7
 
       # 캐시 지우기
       - name: Cleanup Gradle Cache
