@@ -75,6 +75,13 @@ firebase = "4.5.0"
 firebase-bom = "34.15.0"
 firebase-crashlytics = "3.0.6"
 
+# Test
+junit4 = "4.13.2"
+androidxTest = "1.7.0"
+androidxTestExtJunit = "1.3.0"
+turbine = "1.2.1"
+mockk = "1.14.11"
+
 [libraries]
 #gradle plugin
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
@@ -151,6 +158,24 @@ firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 
+#Test - unit
+junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver3", version.ref = "okhttp" }
+
+#Test - android
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTest" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTest" }
+androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidxTest" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
+
+#Test - compose
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+
 [bundles]
 hilt = [
     "hilt-navigation",
@@ -175,6 +200,23 @@ camerax = [
     "camerax-camera2",
     "camerax-lifecycle",
     "camerax-view",
+]
+
+test-unit = [
+    "junit4",
+    "kotlin-test",
+    "kotlinx-coroutines-test",
+    "turbine",
+    "mockk",
+    "okhttp-mockwebserver",
+]
+
+test-android = [
+    "junit4",
+    "androidx-test-core",
+    "androidx-test-runner",
+    "androidx-test-rules",
+    "androidx-test-ext-junit",
 ]
 
 [plugins]
@@ -206,3 +248,6 @@ parfait-module-data = { id = "com.teamyg.parfait.plugin.module.data" }
 parfait-module-domain = { id = "com.teamyg.parfait.plugin.module.domain" }
 parfait-module-feature-impl = { id = "com.teamyg.parfait.plugin.module.feature.impl" }
 parfait-module-feature-api = { id = "com.teamyg.parfait.plugin.module.feature.api" }
+parfait-test-unit = { id = "com.teamyg.parfait.plugin.test.unit" }
+parfait-test-android = { id = "com.teamyg.parfait.plugin.test.android" }
+parfait-test-compose = { id = "com.teamyg.parfait.plugin.test.compose" }

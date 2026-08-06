@@ -72,6 +72,10 @@ gradlePlugin {
             pluginName = "module.feature.api",
             className = "ModuleFeatureApi",
         )
+        pluginRegister(
+            pluginName = "test.unit",
+            className = "TestUnit",
+        )
     }
 }
 
