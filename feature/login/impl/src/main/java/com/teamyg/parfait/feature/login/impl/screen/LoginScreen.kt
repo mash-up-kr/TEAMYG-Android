@@ -29,7 +29,7 @@ internal fun LoginScreen(
 ) {
     Column(
         modifier = modifier
-            .padding(start = 35.dp, end = 34.dp, top = 45.dp, bottom = YGTheme.layout.padding.padding1),
+            .padding(top = 45.dp, bottom = YGTheme.layout.padding.padding1),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
 
@@ -37,21 +37,26 @@ internal fun LoginScreen(
             pages = pages,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .padding(start = 35.dp, end = 34.dp),
         )
 
         Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
         KakaoSignInButton(
             onClick = onClickKakaoButton,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
         )
 
         Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
         AppleSignInButton(
             onClick = onClickKakaoButton,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
         )
     }
 }
