@@ -4,14 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -55,29 +56,31 @@ internal fun BrushWidthSlider(
             )
         },
         track = { sliderState ->
-            val span = sliderState.valueRange.endInclusive - sliderState.valueRange.start
-            val passedFraction = if (span == 0f) {
-                0f
-            } else {
-                ((sliderState.value - sliderState.valueRange.start) / span).coerceIn(0f, 1f)
-            }
-
+            // 지나온 구간을 draw 단계에서 그린다. 값을 여기서 읽어야 드래그 중 recomposition 없이
+            // 다시 그리기만 한다
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(TRACK_HEIGHT)
-                    .background(color = YGAtomicColors.Gray.Gray100),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(passedFraction)
-                        .fillMaxHeight()
-                        .background(color = YGAtomicColors.Gray.Gray850),
-                )
-            }
+                    .drawBehind {
+                        drawRect(color = YGAtomicColors.Gray.Gray100)
+                        drawRect(
+                            color = YGAtomicColors.Gray.Gray850,
+                            size = size.copy(width = size.width * sliderState.passedFraction),
+                        )
+                    },
+            )
         },
     )
 }
+
+/** 트랙 전체에서 지나온 구간이 차지하는 비율 */
+@OptIn(ExperimentalMaterial3Api::class)
+private val SliderState.passedFraction: Float
+    get() {
+        val span = valueRange.endInclusive - valueRange.start
+        return if (span == 0f) 0f else ((value - valueRange.start) / span).coerceIn(0f, 1f)
+    }
 
 private class BrushWidthSliderPreviewParameterProvider : PreviewParameterProvider<Float> {
     override val values: Sequence<Float> = sequenceOf(0f, 0.35f, 1f)
