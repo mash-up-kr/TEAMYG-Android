@@ -9,6 +9,7 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import androidx.compose.ui.geometry.Offset
+import androidx.core.graphics.createBitmap
 
 /**
  * Segmentation 결과에 사용자의 획을 반영해 최종 이미지를 만든다.
@@ -30,7 +31,7 @@ internal fun buildEditedBitmap(
     val height = originBitmap.height
     val bounds = Rect(0, 0, width, height)
 
-    val edited = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val edited = createBitmap(width, height)
     val canvas = Canvas(edited)
 
     canvas.drawBitmap(segmentationBitmap, null, bounds, null)
