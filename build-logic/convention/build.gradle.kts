@@ -80,6 +80,10 @@ gradlePlugin {
             pluginName = "test.android",
             className = "TestAndroid",
         )
+        pluginRegister(
+            pluginName = "test.compose",
+            className = "TestCompose",
+        )
     }
 }
 

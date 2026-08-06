@@ -3,6 +3,7 @@ package com.teamyg.parfait.buildlogic
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import com.teamyg.parfait.buildlogic.utils.extensions.androidTestImplementation
+import com.teamyg.parfait.buildlogic.utils.extensions.debugImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import com.teamyg.parfait.buildlogic.utils.extensions.project
 import com.teamyg.parfait.buildlogic.utils.extensions.testImplementation
@@ -46,3 +47,12 @@ private fun LibraryExtension.configureInstrumentationTest() {
 }
 
 private const val ANDROID_JUNIT_RUNNER = "androidx.test.runner.AndroidJUnitRunner"
+
+internal fun Project.setConfigTestCompose() {
+    dependencies {
+        androidTestImplementation(platform(libs.androidx.compose.bom))
+        androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+        debugImplementation(libs.androidx.compose.ui.test.manifest)
+    }
+}
