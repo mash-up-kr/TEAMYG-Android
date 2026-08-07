@@ -1,14 +1,17 @@
 package com.teamyg.parfait.feature.groups.setting.impl.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -17,10 +20,13 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCard
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCardStatus
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
@@ -28,6 +34,7 @@ import com.teamyg.parfait.feature.groups.setting.impl.R
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupMemberList
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupNicknameField
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingUiState
+import com.teamyg.parfait.core.ui.R as CoreR
 
 @Composable
 internal fun GroupSettingScreen(
@@ -110,6 +117,25 @@ internal fun GroupSettingScreen(
                     )
                 }
             }
+
+            if (state.isEditing) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .imePadding()
+                        .background(YGAtomicColors.Gray.White)
+                        .padding(YGTheme.layout.padding.padding7),
+                ) {
+                    YGButton(
+                        text = stringResource(R.string.group_setting_confirm),
+                        buttonType = YGButtonType.Large,
+                        isEnabled = state.isConfirmEnabled,
+                        onClick = confirmAndDismissKeyboard,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
         }
 
         OnBack { onClickBack() }
@@ -137,6 +163,15 @@ private class GroupSettingPreviewParameterProvider :
                 groupName = "열글자를꽉채운그룹명",
                 myNickname = "열다섯글자를꽉꽉채운닉네임야호",
                 nicknameInput = "열다섯글자를꽉꽉채운닉네임야호",
+            ),
+            GroupSettingUiState(
+                isEditing = true,
+                nicknameInput = "바꾼닉네임",
+            ),
+            GroupSettingUiState(
+                isEditing = true,
+                nicknameInput = " 잘못된닉네임",
+                errorMessageResId = CoreR.string.error_space_at_edge_nickname,
             ),
         )
 }
