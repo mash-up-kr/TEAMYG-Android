@@ -57,8 +57,10 @@ internal fun GroupSettingScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val confirmAndDismissKeyboard = {
-        onConfirmNickname()
-        focusManager.clearFocus()
+        if (state.isConfirmEnabled) {
+            onConfirmNickname()
+            focusManager.clearFocus()
+        }
     }
     val density = LocalDensity.current
     var confirmBarHeight by remember { mutableStateOf(0.dp) }
