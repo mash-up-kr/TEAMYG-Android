@@ -56,8 +56,11 @@ internal fun GroupSettingScreen(
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
+    val handleBack = {
+        if (state.isEditing) focusManager.clearFocus() else onClickBack()
+    }
     val confirmAndDismissKeyboard = {
-        if (state.isConfirmEnabled) {
+        if (state.errorMessageResId == null) {
             onConfirmNickname()
             focusManager.clearFocus()
         }
@@ -70,7 +73,7 @@ internal fun GroupSettingScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 YGTopBarDetail(
                     title = state.groupName,
-                    onIconClick = onClickBack,
+                    onIconClick = handleBack,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -155,7 +158,7 @@ internal fun GroupSettingScreen(
             }
         }
 
-        OnBack { onClickBack() }
+        OnBack { handleBack() }
     }
 }
 

@@ -62,6 +62,21 @@ class GroupSettingViewModelTest {
     }
 
     @Test
+    fun inputNickname_duplicatedSpace_setsDuplicatedSpaceError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초기 상태의 화면
+        val viewModel = viewModel()
+
+        // When 단어 사이에 공백이 연속된 닉네임을 입력
+        viewModel.processIntent(GroupSettingIntent.InputNickname("가  나"))
+
+        // Then 연속 공백 에러가 붙는다
+        assertEquals(
+            CoreR.string.error_duplicated_space,
+            viewModel.state.value.errorMessageResId,
+        )
+    }
+
+    @Test
     fun inputNickname_emptyName_setsEmptyStringError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
@@ -105,16 +120,20 @@ class GroupSettingViewModelTest {
 
     @Test
     fun changeNicknameFocus_unfocused_cancelsEditingAndRestoresInput() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 편집 중 입력을 고친 상태
+        // Given 편집 중 무효한 입력으로 고친 상태
         val viewModel = viewModel()
         val original = viewModel.state.value.myNickname
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
-        viewModel.processIntent(GroupSettingIntent.InputNickname("고치던값"))
+        viewModel.processIntent(GroupSettingIntent.InputNickname("고치던 값!"))
+        assertEquals(
+            CoreR.string.error_invalid_character,
+            viewModel.state.value.errorMessageResId,
+        )
 
         // When 포커스를 잃음
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = false))
 
-        // Then 편집이 취소되고 입력값이 원래대로 돌아간다
+        // Then 편집이 취소되고 입력값이 원래대로 돌아가며 에러도 초기화된다
         assertFalse(viewModel.state.value.isEditing)
         assertEquals(original, viewModel.state.value.nicknameInput)
         assertNull(viewModel.state.value.errorMessageResId)
@@ -151,6 +170,24 @@ class GroupSettingViewModelTest {
         // Then 아무 것도 확정되지 않고 편집 상태가 유지된다
         assertEquals(original, viewModel.state.value.myNickname)
         assertTrue(viewModel.state.value.isEditing)
+    }
+
+    @Test
+    fun confirmNickname_thenLosesFocus_keepsConfirmedNickname() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 편집 중 유효한 새 닉네임을 입력한 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname("확정될닉네임"))
+
+        // When 확정 직후 포커스 상실이 이어짐
+        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = false))
+
+        // Then 확정된 닉네임이 되돌아가지 않는다
+        val state = viewModel.state.value
+        assertEquals("확정될닉네임", state.myNickname)
+        assertEquals("확정될닉네임", state.nicknameInput)
+        assertFalse(state.isEditing)
     }
 
     @Test
