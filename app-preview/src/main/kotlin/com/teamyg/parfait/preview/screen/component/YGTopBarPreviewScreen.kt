@@ -135,7 +135,7 @@ private fun MemberListSample() {
         YGColorChipType.NametagChip4 to "이",
         YGColorChipType.NametagChip1 to "박",
         YGColorChipType.NametagChip2 to "최",
-        YGColorChipType.NametagChip12 to "정",
+        YGColorChipType.NametagChip11 to "정",
     )
     Row(
         horizontalArrangement = Arrangement.spacedBy((-12).dp),
