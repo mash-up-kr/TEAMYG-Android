@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +35,8 @@ internal fun YGTextFieldImpl(
     isError: Boolean,
     maxLength: Int?,
     colors: YGTextFieldColors,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isFocused: Boolean by interactionSource.collectIsFocusedAsState()
@@ -79,6 +83,8 @@ internal fun YGTextFieldImpl(
                 color = colors.textColor(isEnabled = enabled),
             ),
             cursorBrush = SolidColor(colors.cursorColor),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             singleLine = true,
             interactionSource = interactionSource,
             decorationBox = { innerTextField ->
