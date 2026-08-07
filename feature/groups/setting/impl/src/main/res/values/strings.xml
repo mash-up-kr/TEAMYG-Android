@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="group_setting_nickname_label">그룹 속 내 닉네임</string>
+    <string name="group_setting_member_label">그룹원 (%1$d)</string>
+    <string name="group_setting_member_name_me">%1$s (나)</string>
+    <string name="group_setting_invite_label">그룹 초대 코드</string>
+    <string name="group_setting_invite_remaining">%1$d명 남음</string>
+    <string name="group_setting_invite_copied">복사됨</string>
+    <string name="group_setting_invite_full">최대 인원 도달</string>
+    <string name="group_setting_copy">복사</string>
+    <string name="group_setting_leave">그룹 나가기</string>
+    <string name="group_setting_report">그룹 신고하기</string>
+    <string name="group_setting_confirm">확인</string>
+</resources>
