@@ -19,7 +19,7 @@ internal fun PictureConfirmRoute(
         source = source,
         onClickReCapture = { navigator.onBack() },
         onClickConfirm = {
-            navigator.goTo(
+            navigator.goToAndPopCurrent(
                 destination = NavKeySegmentation(
                     sourceImageUri = uri,
                 ),

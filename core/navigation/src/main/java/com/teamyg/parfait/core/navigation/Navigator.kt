@@ -32,6 +32,17 @@ class Navigator(initialNavigationKey: NavKey) {
         _backStack.removeRange(destinationIndex + 1, _backStack.size)
     }
 
+    /** [destination] 으로 가면서 지금 화면은 백스택에서 걷어낸다. 뒤로 가면 지금 화면을 건너뛴다 */
+    fun goToAndPopCurrent(destination: NavKey) {
+        val currentIndex = _backStack.lastIndex
+        if (currentIndex < 0) {
+            _backStack.add(destination)
+            return
+        }
+
+        _backStack[currentIndex] = destination
+    }
+
     fun onBack() {
         if (_backStack.size <= 1) {
             // ResultEffect 발동 상황에서 사이즈가 1인 경우 크래시 발생
