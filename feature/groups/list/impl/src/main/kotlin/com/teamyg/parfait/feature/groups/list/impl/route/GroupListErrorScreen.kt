@@ -21,34 +21,45 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.feature.groups.list.impl.R
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 
 private val ERROR_CONTENT_TOP_PADDING = 112.dp
 private val ERROR_DESCRIPTION_TO_CUP_GAP = 234.dp
 private val ERROR_CUP_WIDTH = 324.dp
 
 @Composable
-internal fun GroupListErrorScreen(modifier: Modifier = Modifier) {
-    LazyColumn(
-        contentPadding = PaddingValues(top = ERROR_CONTENT_TOP_PADDING),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.fillMaxSize(),
+internal fun GroupListErrorScreen(
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    GroupListPullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier,
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.group_list_error),
-                style = YGTheme.typography.title.t03SB,
-                color = YGAtomicColors.Gray.Gray500,
-                textAlign = TextAlign.Center,
-            )
+        LazyColumn(
+            contentPadding = PaddingValues(top = ERROR_CONTENT_TOP_PADDING),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.group_list_error),
+                    style = YGTheme.typography.title.t03SB,
+                    color = YGAtomicColors.Gray.Gray500,
+                    textAlign = TextAlign.Center,
+                )
 
-            Spacer(modifier = Modifier.height(ERROR_DESCRIPTION_TO_CUP_GAP))
+                Spacer(modifier = Modifier.height(ERROR_DESCRIPTION_TO_CUP_GAP))
 
-            Image(
-                painter = painterResource(R.drawable.parfait_cup),
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier.width(ERROR_CUP_WIDTH),
-            )
+                Image(
+                    painter = painterResource(R.drawable.parfait_cup),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier.width(ERROR_CUP_WIDTH),
+                )
+            }
         }
     }
 }
@@ -56,5 +67,8 @@ internal fun GroupListErrorScreen(modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun GroupListErrorScreenPreview() = PreviewBox {
-    GroupListErrorScreen()
+    GroupListErrorScreen(
+        isRefreshing = false,
+        onRefresh = {},
+    )
 }

@@ -54,14 +54,20 @@ internal fun GroupListRoute(
         contentWindowInsets = WindowInsets.systemBars
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { innerPadding ->
+        // 두 화면 모두 LazyColumn 만 GroupListPullToRefreshBox 로 감싸 pull-to-refresh 동작이 동일하다.
         if (uiState.isError) {
-            GroupListErrorScreen(modifier = modifier.padding(innerPadding))
+            GroupListErrorScreen(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.processIntent(GroupListIntent.Refresh) },
+                modifier = modifier.padding(innerPadding),
+            )
         } else {
             GroupListScreen(
                 uiState = uiState,
                 onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
                 onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
                 onClickTopping = { viewModel.processIntent(GroupListIntent.ClickTopping) },
+                onRefresh = { viewModel.processIntent(GroupListIntent.Refresh) },
                 modifier = modifier.padding(innerPadding),
             )
         }

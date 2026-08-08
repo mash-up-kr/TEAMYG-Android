@@ -34,6 +34,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -57,6 +58,7 @@ internal fun GroupListScreen(
     onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
     onClickTopping: () -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tooltipState = rememberTooltipState(
@@ -100,20 +102,25 @@ internal fun GroupListScreen(
                 },
             )
 
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    start = YGTheme.layout.padding.padding7,
-                    top = YGTheme.layout.padding.padding10,
-                    end = YGTheme.layout.padding.padding7,
-                    bottom = YGTheme.layout.padding.padding6,
-                ),
-                modifier = Modifier.fillMaxWidth(),
+            GroupListPullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = onRefresh,
             ) {
-                item {
-                    GroupListContent(
-                        groupList = uiState.groupList,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                LazyColumn(
+                    contentPadding = PaddingValues(
+                        start = YGTheme.layout.padding.padding7,
+                        top = YGTheme.layout.padding.padding10,
+                        end = YGTheme.layout.padding.padding7,
+                        bottom = YGTheme.layout.padding.padding6,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    item {
+                        GroupListContent(
+                            groupList = uiState.groupList,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
@@ -216,5 +223,6 @@ private fun GroupListScreenPreview(
         onClickChip = {},
         onClickSideMenu = {},
         onClickTopping = {},
+        onRefresh = {},
     )
 }
