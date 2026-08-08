@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.login.impl.component.AppleSignInButton
 import com.teamyg.parfait.feature.login.impl.component.KakaoSignInButton
 import com.teamyg.parfait.feature.login.impl.component.OnboardingPager
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
@@ -49,13 +48,6 @@ internal fun LoginScreen(
         )
 
         Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
-
-        AppleSignInButton(
-            onClick = onClickKakaoButton,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = YGTheme.layout.padding.padding7),
-        )
     }
 }
 
