@@ -10,7 +10,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
-import com.teamyg.parfait.feature.groups.home.api.NavKeyGroupHome
+import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
@@ -51,11 +51,7 @@ fun LoginRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is LoginSideEffect.NavigateToNext -> {
-                    navigator.goTo(
-                        destination = NavKeyGroupHome(
-                            groupId = 1231,
-                        ),
-                    )
+                    navigator.goTo(destination = NavKeyTermAgree)
                 }
 
                 is LoginSideEffect.RequestLoginWithKakao -> {
