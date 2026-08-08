@@ -9,6 +9,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -19,6 +20,8 @@ fun Modifier.ygBackgroundDotGrid(
     dotDiameter: Dp = SizeTokens.Size2.getDp(),
     spacing: Dp = SizeTokens.Size20.getDp(),
 ): Modifier = drawBehind {
+    require(spacing > 0.dp) { "spacing은 0보다 커야합니다." }
+
     val spacingPx = spacing.toPx()
     val radiusPx = dotDiameter.toPx() / 2
 
