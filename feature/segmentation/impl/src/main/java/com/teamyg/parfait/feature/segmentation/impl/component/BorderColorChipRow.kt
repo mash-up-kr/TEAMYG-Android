@@ -5,9 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -17,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -52,7 +52,6 @@ internal fun BorderColorChipRow(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
     ) {
         items(items = colors) { color ->
-            // 투명은 칠할 색이 없어 칩을 채우는 대신 사선으로 표시한다
             if (color == Color.Transparent) {
                 TransparentBorderColorChip(
                     isSelected = color == selectedColor,
@@ -76,29 +75,28 @@ private fun BorderColorChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    // 흰색부터 검정까지 색이 갈리는 목록이라, 골라둔 표시는 어느 색 위에서나 남도록 반투명 검정을 섞는다.
+    // 반투명 칩을 한 겹 덮는 것과 같은 색이면서 그릴 것은 배경 하나로 끝난다
+    val chipColor = if (isSelected) {
+        YGAtomicColors.Transparency.Black25.compositeOver(color)
+    } else {
+        color
+    }
+
+    Spacer(
         modifier = modifier
             .size(CHIP_SIZE)
             .clip(CircleShape)
-            .background(color)
+            .background(chipColor)
             .border(width = CHIP_BORDER_WIDTH, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
             .clickable(onClick = onClick),
-    ) {
-        // 흰색부터 검정까지 색이 갈리는 목록이라, 칩 색을 바꾸는 대신 위에 얹어야 어느 색에서나 표시가 남는다
-        if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(YGAtomicColors.Transparency.Black25),
-            )
-        }
-    }
+    )
 }
 
 /**
  * 색을 얹지 않는 칩. 채울 색이 없어 테두리와 사선만으로 그린다.
  *
- * 덮을 바탕이 없어 [BorderColorChip] 처럼 반투명 칩을 씌우지 못하므로,
+ * 섞을 바탕이 없어 [BorderColorChip] 처럼 색을 어둡게 만들지 못하므로,
  * 예외적으로 테두리와 사선 색 자체를 바꿔 선택을 표시한다.
  */
 @Composable
