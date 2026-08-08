@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 
 @Composable
@@ -37,7 +38,7 @@ internal fun GroupListRoute(
                 }
 
                 GroupListSideEffect.NavigateToCreateGroup -> {
-                    // Todo : navigator.goTo(NavKeyGroupCreate)
+                    navigator.goTo(NavKeyGroupCreate(nickName = uiState.nickName))
                 }
 
                 GroupListSideEffect.NavigateToInviteCode -> {
@@ -47,14 +48,13 @@ internal fun GroupListRoute(
         }
     }
 
-    // Todo : Error 화면 추가
-
     // 상단 인셋은 YGTopBarEmpty 가 직접 흡수하므로 Scaffold 는 하단/좌우 인셋만 내려준다.
     YGScaffold(
         containerColor = YGAtomicColors.Gray.Transparent,
         contentWindowInsets = WindowInsets.systemBars
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { innerPadding ->
+        // Todo : Error 화면 추가
         GroupListScreen(
             uiState = uiState,
             onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },

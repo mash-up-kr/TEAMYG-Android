@@ -45,6 +45,8 @@ data class GroupListUiState(
             "1시간전",
         ),
     ),
+    // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
+    val nickName: String = "모카",
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
     val dateString: String = "",
