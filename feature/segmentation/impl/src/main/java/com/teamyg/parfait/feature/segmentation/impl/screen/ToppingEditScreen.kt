@@ -500,10 +500,8 @@ private fun SegmentationAreaControls(
 }
 
 /**
- * 테두리 탭의 컨트롤. 굵기 슬라이더 + 색상칩 가로 목록이다.
- *
- * 영역 탭의 모드 토글 자리를 색상칩이 대신한다. 색을 고를 때마다 그 시점의 굵기로
- * 테두리가 한 겹 얹혀 중첩되므로, 값은 화면이 아니라 [ToppingEditState] 가 들고 있다.
+ * 영역 탭의 모드 토글 자리를 색상칩이 대신한다.
+ * 고른 색과 굵기가 되돌리기 스택에 쌓이므로 값은 화면이 아니라 [ToppingEditState] 가 들고 있다.
  */
 @Composable
 private fun SegmentationBorderControls(
