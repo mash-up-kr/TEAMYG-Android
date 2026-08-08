@@ -73,12 +73,12 @@ internal fun CanvasImageAddScreen(
             day = "($canvasDay)",
             onDateSelectClick = onClickDateSelect,
             addAction = YGCanvasMenuAction(
-                text = "토핑 추가",
+                text = stringResource(R.string.canvas_image_add_topping_add),
                 iconResource = DesignSystemR.drawable.ic_plus,
                 onClick = openMenu,
             ),
             editAction = YGCanvasMenuAction(
-                text = "캔버스 편집",
+                text = stringResource(R.string.canvas_image_add_canvas_edit),
                 iconResource = DesignSystemR.drawable.ic_caret_right,
                 onClick = openMenu,
             ),
@@ -89,14 +89,14 @@ internal fun CanvasImageAddScreen(
             isMenuExpanded = isMenuExpanded,
             expandedItems = listOf(
                 YGCanvasMenuItem(
-                    text = "카메라로 촬영",
+                    text = stringResource(R.string.canvas_image_add_camera_capture),
                     onClick = {
                         isMenuExpanded = false
                         onClickCamera()
                     },
                 ),
                 YGCanvasMenuItem(
-                    text = "갤러리에서 선택",
+                    text = stringResource(R.string.canvas_image_add_gallery_select),
                     onClick = {
                         isMenuExpanded = false
                         onClickGallery()
@@ -155,7 +155,7 @@ private fun CanvasImageAddTopBar(
             if (overflowCount > 0) {
                 YGNametagChip(
                     colorChipType = YGColorChipType.NametagChipPlus,
-                    userFirstName = "+$overflowCount",
+                    userFirstName = stringResource(R.string.canvas_image_add_member_overflow_count, overflowCount),
                     chip = YGNametagChipStyle.Style28,
                 )
             }
