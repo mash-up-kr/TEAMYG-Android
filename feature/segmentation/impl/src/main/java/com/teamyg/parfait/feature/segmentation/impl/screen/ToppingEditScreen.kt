@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -22,8 +23,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +45,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -59,6 +63,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.extension.toPath
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.component.BorderColorChipRow
 import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
@@ -171,16 +176,27 @@ private fun ToppingEditContent(
                 .padding(horizontal = YGTheme.layout.padding.padding7)
                 .weight(1f),
         ) {
+            // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
+            val originBitmap = state.originBitmap
+            val segmentationBitmap = state.segmentationBitmap
+
             when {
-                state.isLoading -> CircularProgressIndicator()
+                originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
 
                 state.tab == ToppingEditTab.BORDER -> ToppingBorderEditScreen(
-                    state = state,
+                    originBitmap = originBitmap,
+                    segmentationBitmap = segmentationBitmap,
+                    strokes = state.strokes,
+                    borderLayers = state.borderLayers,
                     modifier = Modifier.fillMaxSize(),
                 )
 
                 else -> ToppingEditCanvas(
-                    state = state,
+                    originBitmap = originBitmap,
+                    segmentationBitmap = segmentationBitmap,
+                    strokes = state.strokes,
+                    mode = state.mode,
+                    brushWidthDp = state.brushWidthDp,
                     onAddStroke = onAddStroke,
                     isBrushPreviewVisible = isAdjustingBrushWidth,
                     modifier = Modifier.fillMaxSize(),
@@ -192,7 +208,10 @@ private fun ToppingEditContent(
 
         when (state.tab) {
             ToppingEditTab.AREA -> SegmentationAreaControls(
-                state = state,
+                mode = state.mode,
+                brushWidth = state.brushWidthDp,
+                brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
+                isEnabled = !state.isLoading,
                 onChangeMode = onChangeMode,
                 onChangeBrushWidth = { width ->
                     isAdjustingBrushWidth = true
@@ -210,7 +229,10 @@ private fun ToppingEditContent(
 
             // 색상칩이 화면 끝까지 스크롤되도록 가로 여백은 컨트롤 안에서 항목별로 준다
             ToppingEditTab.BORDER -> SegmentationBorderControls(
-                state = state,
+                selectedColor = state.selectedBorderColor,
+                borderWidth = state.borderWidth,
+                borderWidthRange = state.minBorderWidth..state.maxBorderWidth,
+                isEnabled = !state.isLoading,
                 onSelectColor = onSelectBorderColor,
                 onChangeWidth = onChangeBorderWidth,
                 modifier = Modifier
@@ -283,17 +305,19 @@ private fun ToppingEditHistoryActions(
 
 @Composable
 private fun ToppingEditCanvas(
-    state: ToppingEditState,
+    originBitmap: Bitmap,
+    segmentationBitmap: Bitmap,
+    strokes: List<ToppingEditStroke>,
+    mode: ToppingEditMode,
+    brushWidthDp: Float,
     onAddStroke: (ToppingEditStroke) -> Unit,
     isBrushPreviewVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val originBitmap = state.originBitmap ?: return
-    val segmentationBitmap = state.segmentationBitmap ?: return
-
     // 그리는 도중의 획. 매 포인터 이벤트마다 ViewModel 상태를 갱신하지 않도록 화면이 들고 있다가
-    // 드래그가 끝날 때 한 번만 확정한다
-    var drawingPoints by remember { mutableStateOf<List<Offset>>(emptyList()) }
+    // 드래그가 끝날 때 한 번만 확정한다.
+    // 스냅샷 리스트라 점을 덧붙여도 리스트를 통째로 베끼지 않으면서 다시 그리기는 그대로 걸린다
+    val drawingPoints = remember { mutableStateListOf<Offset>() }
 
     // 두 손가락으로 조절하는 확대 배율과 이동량. 사진이 바뀌면 처음 배치로 되돌린다
     var zoom by remember(originBitmap) { mutableFloatStateOf(MIN_ZOOM) }
@@ -302,13 +326,29 @@ private fun ToppingEditCanvas(
     val originImage = remember(originBitmap) { originBitmap.asImageBitmap() }
     val segmentationImage = remember(segmentationBitmap) { segmentationBitmap.asImageBitmap() }
 
-    val brushWidthPx = with(LocalDensity.current) { state.brushWidthDp.dp.toPx() }
+    val brushWidthPx = with(LocalDensity.current) { brushWidthDp.dp.toPx() }
+
+    // 확정된 획은 더 바뀌지 않으므로 프레임마다 다시 이을 필요가 없다.
+    // 원본 좌표 그대로 담아 두고 그릴 때 화면 배율만 태운다
+    val strokePaths = remember(strokes) { strokes.map { stroke -> stroke.points.toPath() } }
+
+    // 획을 확정하는 시점의 값만 있으면 되므로, 값이 바뀔 때마다 제스처 감지기를 다시 세우지 않는다
+    val currentMode by rememberUpdatedState(mode)
+    val currentBrushWidthPx by rememberUpdatedState(brushWidthPx)
+    val currentOnAddStroke by rememberUpdatedState(onAddStroke)
 
     fun commitStroke(mapping: BitmapViewMapping) {
-        // 붓 굵기는 화면 기준이라 확대 배율을 걷어내야 원본 좌표계 굵기가 된다
-        val stroke = state.strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
-        drawingPoints = emptyList()
-        stroke?.let(onAddStroke)
+        if (drawingPoints.isNotEmpty()) {
+            // 확정한 획이 뒤이어 비워질 목록을 그대로 들고 가지 않도록 여기서 사본을 뜬다.
+            // 붓 굵기는 화면 기준이라 확대 배율을 걷어내야 원본 좌표계 굵기가 된다
+            val stroke = ToppingEditStroke(
+                mode = currentMode,
+                points = drawingPoints.toList(),
+                width = currentBrushWidthPx / mapping.scale,
+            )
+            currentOnAddStroke(stroke)
+        }
+        drawingPoints.clear()
     }
 
     Canvas(
@@ -316,7 +356,7 @@ private fun ToppingEditCanvas(
             // 그리기는 레이아웃 경계를 저절로 지키지 않는다. 확대한 사진이 편집 영역을 넘어
             // 아래 조작부까지 번지지 않도록 처음 받은 자리에서 잘라낸다
             .clipToBounds()
-            .pointerInput(originBitmap, state.mode, brushWidthPx) {
+            .pointerInput(originBitmap) {
                 val viewSize = Size(size.width.toFloat(), size.height.toFloat())
                 val viewCenter = Offset(viewSize.width / 2f, viewSize.height / 2f)
 
@@ -332,7 +372,8 @@ private fun ToppingEditCanvas(
                     val down = awaitFirstDown(requireUnconsumed = false)
                     // 손가락이 둘 이상이면 그리기가 아니라 확대/이동으로 넘어간다
                     var isTransforming = false
-                    drawingPoints = listOf(mapViewToBitmapFloat(down.position, currentMapping()))
+                    drawingPoints.clear()
+                    drawingPoints.add(mapViewToBitmapFloat(down.position, currentMapping()))
 
                     do {
                         val event = awaitPointerEvent()
@@ -342,7 +383,7 @@ private fun ToppingEditCanvas(
                             if (!isTransforming) {
                                 // 두 번째 손가락이 닿는 순간 그리던 획은 버린다
                                 isTransforming = true
-                                drawingPoints = emptyList()
+                                drawingPoints.clear()
                             }
 
                             val newZoom = (zoom * event.calculateZoom()).coerceIn(MIN_ZOOM, MAX_ZOOM)
@@ -364,14 +405,14 @@ private fun ToppingEditCanvas(
                         } else if (!isTransforming) {
                             val change = pressedChanges.firstOrNull()
                             if (change != null && change.positionChange() != Offset.Zero) {
-                                drawingPoints = drawingPoints + mapViewToBitmapFloat(change.position, currentMapping())
+                                drawingPoints.add(mapViewToBitmapFloat(change.position, currentMapping()))
                                 change.consume()
                             }
                         }
                     } while (event.changes.any { change -> change.pressed })
 
                     if (isTransforming) {
-                        drawingPoints = emptyList()
+                        drawingPoints.clear()
                     } else {
                         commitStroke(currentMapping())
                     }
@@ -413,11 +454,18 @@ private fun ToppingEditCanvas(
             ) {
                 drawImage(image = segmentationImage, dstOffset = dstOffset, dstSize = dstSize)
 
-                // 한 리스트로 이어 붙이면 그릴 때마다 리스트가 새로 생겨 따로 그린다
-                state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
-                state
-                    .strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
-                    ?.let { stroke -> drawEditStroke(stroke, mapping) }
+                // 획은 원본 좌표로 담겨 있으므로 화면 자리로 옮겨 놓고 그린다. 굵기도 함께 늘어난다
+                withTransform({
+                    translate(mapping.offsetX, mapping.offsetY)
+                    scale(mapping.scale, mapping.scale, pivot = Offset.Zero)
+                }) {
+                    strokes.forEachIndexed { index, stroke ->
+                        drawEditStroke(strokePaths[index], stroke.width, stroke.mode)
+                    }
+                    if (drawingPoints.isNotEmpty()) {
+                        drawEditStroke(drawingPoints.toPath(), brushWidthPx / mapping.scale, mode)
+                    }
+                }
 
                 // 마스크가 남은 자리에만 원본 픽셀을 채운다. ADD 로 칠한 곳이 원본으로 복원되는 지점
                 drawImage(
@@ -449,36 +497,20 @@ private fun ToppingEditCanvas(
 }
 
 private fun DrawScope.drawEditStroke(
-    stroke: ToppingEditStroke,
-    mapping: BitmapViewMapping,
+    path: Path,
+    width: Float,
+    mode: ToppingEditMode,
 ) {
-    val points = stroke.points
-    val first = points.firstOrNull() ?: return
-    val start = mapBitmapToViewFloat(first, mapping)
-
-    val path = Path().apply {
-        moveTo(start.x, start.y)
-        if (points.size == 1) {
-            // 점 하나짜리 획은 제자리에 짧은 선을 그어 둥근 점으로 찍는다
-            lineTo(start.x, start.y)
-        } else {
-            points.drop(1).forEach { point ->
-                val mapped = mapBitmapToViewFloat(point, mapping)
-                lineTo(mapped.x, mapped.y)
-            }
-        }
-    }
-
     drawPath(
         path = path,
         color = Color.Black,
         style = Stroke(
-            width = stroke.width * mapping.scale,
+            width = width,
             cap = StrokeCap.Round,
             join = StrokeJoin.Round,
         ),
         // 색은 무의미하다. SrcIn 단계에서 원본으로 덮이므로 알파를 채우고 지우는 역할만 한다
-        blendMode = when (stroke.mode) {
+        blendMode = when (mode) {
             ToppingEditMode.ADD -> BlendMode.SrcOver
             ToppingEditMode.ERASE -> BlendMode.Clear
         },
@@ -487,7 +519,10 @@ private fun DrawScope.drawEditStroke(
 
 @Composable
 private fun SegmentationAreaControls(
-    state: ToppingEditState,
+    mode: ToppingEditMode,
+    brushWidth: Float,
+    brushWidthRange: ClosedFloatingPointRange<Float>,
+    isEnabled: Boolean,
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onChangeBrushWidthFinished: () -> Unit,
@@ -506,11 +541,11 @@ private fun SegmentationAreaControls(
             )
             Spacer(modifier = Modifier.height(4.dp))
             BrushWidthSlider(
-                value = state.brushWidthDp,
+                value = brushWidth,
                 onValueChange = onChangeBrushWidth,
                 onValueChangeFinished = onChangeBrushWidthFinished,
-                valueRange = state.minBrushWidthDp..state.maxBrushWidthDp,
-                isEnabled = !state.isLoading,
+                valueRange = brushWidthRange,
+                isEnabled = isEnabled,
             )
         }
 
@@ -518,14 +553,14 @@ private fun SegmentationAreaControls(
         Row {
             YGEditButton(
                 text = stringResource(R.string.topping_edit_area_erase),
-                isSelected = state.mode == ToppingEditMode.ERASE,
+                isSelected = mode == ToppingEditMode.ERASE,
                 onClick = { onChangeMode(ToppingEditMode.ERASE) },
                 modifier = Modifier.weight(1f),
                 iconResource = DesignSystemR.drawable.ic_minus_round,
             )
             YGEditButton(
                 text = stringResource(R.string.topping_edit_area_add),
-                isSelected = state.mode == ToppingEditMode.ADD,
+                isSelected = mode == ToppingEditMode.ADD,
                 onClick = { onChangeMode(ToppingEditMode.ADD) },
                 modifier = Modifier.weight(1f),
                 iconResource = DesignSystemR.drawable.ic_add_round,
@@ -540,7 +575,10 @@ private fun SegmentationAreaControls(
  */
 @Composable
 private fun SegmentationBorderControls(
-    state: ToppingEditState,
+    selectedColor: Color,
+    borderWidth: Float,
+    borderWidthRange: ClosedFloatingPointRange<Float>,
+    isEnabled: Boolean,
     onSelectColor: (Color) -> Unit,
     onChangeWidth: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -560,15 +598,15 @@ private fun SegmentationBorderControls(
             )
             Spacer(modifier = Modifier.height(4.dp))
             BrushWidthSlider(
-                value = state.borderWidth,
+                value = borderWidth,
                 onValueChange = onChangeWidth,
-                valueRange = state.minBorderWidth..state.maxBorderWidth,
-                isEnabled = !state.isLoading,
+                valueRange = borderWidthRange,
+                isEnabled = isEnabled,
             )
         }
 
         BorderColorChipRow(
-            selectedColor = state.selectedBorderColor,
+            selectedColor = selectedColor,
             onSelectColor = onSelectColor,
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = horizontalPadding),

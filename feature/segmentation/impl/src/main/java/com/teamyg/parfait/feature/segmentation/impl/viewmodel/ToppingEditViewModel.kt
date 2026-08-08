@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.viewModelScope
@@ -95,21 +94,6 @@ data class ToppingEditState(
     val minBorderWidth: Float get() = longestSideRatioOf(MIN_BORDER_WIDTH_RATIO)
 
     val maxBorderWidth: Float get() = longestSideRatioOf(MAX_BORDER_WIDTH_RATIO)
-
-    /**
-     * 지금 고른 모드로 [points] 를 획 하나로 묶는다.
-     * 찍힌 점이 없으면 만들 획도 없어 null 이다.
-     *
-     * @param width 원본 비트맵 좌표계 기준 굵기. 확대 배율을 아는 화면이 dp 굵기를 환산해 넘긴다
-     */
-    fun strokeOrNull(
-        points: List<Offset>,
-        width: Float,
-    ): ToppingEditStroke? = if (points.isEmpty()) {
-        null
-    } else {
-        ToppingEditStroke(mode = mode, points = points, width = width)
-    }
 
     /** 원본 긴 변에 [ratio] 를 곱한 길이. 해상도가 달라도 체감 굵기가 비슷하도록 비율로 잡는다 */
     private fun longestSideRatioOf(ratio: Float): Float {

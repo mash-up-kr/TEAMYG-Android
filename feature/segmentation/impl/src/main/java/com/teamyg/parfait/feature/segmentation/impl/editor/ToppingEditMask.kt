@@ -4,14 +4,13 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
-import androidx.compose.ui.geometry.Offset
 import androidx.core.graphics.createBitmap
+import com.teamyg.parfait.core.util.android.extension.toAndroidPath
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 
 /**
@@ -69,10 +68,9 @@ internal fun Bitmap.withBorders(borderLayers: List<ToppingBorderLayer>): Bitmap 
     val bordered = createBitmap(width, height)
     val canvas = Canvas(bordered)
 
-    // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
-    borderLayers.withOutsets().asReversed().forEach { (layer, layerOutset) ->
+    borderLayers.forEachOutsetOutermostFirst { layer, layerOutset ->
         val paint = borderPaint(layer.colorArgb)
-        outlineOffsets(layerOutset).forEach { offset ->
+        forEachOutlineOffset(layerOutset) { offset ->
             val shifted = RectF(destination).apply { offset(offset.x, offset.y) }
             canvas.drawBitmap(this, null, shifted, paint)
         }
@@ -102,19 +100,4 @@ private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
 
         ToppingEditMode.ERASE -> xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
     }
-}
-
-/**
- * 점 하나짜리 획은 선으로 그려지지 않으므로, 제자리에 아주 짧은 선을 그어 점을 찍는다.
- */
-private fun List<Offset>.toAndroidPath(): Path = Path().apply {
-    val points = this@toAndroidPath
-    val first = points.firstOrNull() ?: return@apply
-
-    moveTo(first.x, first.y)
-    if (points.size == 1) {
-        lineTo(first.x, first.y)
-        return@apply
-    }
-    points.drop(1).forEach { point -> lineTo(point.x, point.y) }
 }

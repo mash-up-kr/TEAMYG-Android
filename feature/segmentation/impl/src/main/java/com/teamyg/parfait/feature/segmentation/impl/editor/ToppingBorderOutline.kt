@@ -15,17 +15,38 @@ private const val OUTLINE_SAMPLE_COUNT = 24
 
 private const val FULL_TURN_RADIANS = 2 * Math.PI
 
-/** 화면 미리보기와 저장이 같은 자리를 찍어야 두 결과가 어긋나지 않으므로 여기서 한 번만 계산한다 */
-internal fun outlineOffsets(radius: Float): List<Offset> = List(OUTLINE_SAMPLE_COUNT) { index ->
+/**
+ * 반지름 1 일 때 찍을 자리. 반지름을 곱하면 실제 자리가 나온다.
+ *
+ * 화면은 프레임마다 이 자리를 다시 훑으므로 반지름마다 목록을 새로 만들지 않도록 한 번만 계산해 둔다.
+ * 미리보기와 저장이 같은 목록을 보기도 해야 두 결과가 어긋나지 않는다.
+ */
+private val OUTLINE_UNIT_OFFSETS: List<Offset> = List(OUTLINE_SAMPLE_COUNT) { index ->
     val angle = FULL_TURN_RADIANS * index / OUTLINE_SAMPLE_COUNT
-    Offset(x = (cos(angle) * radius).toFloat(), y = (sin(angle) * radius).toFloat())
+    Offset(x = cos(angle).toFloat(), y = sin(angle).toFloat())
 }
 
-/** 겹은 아래 겹을 감싸며 쌓이므로, 밀려나는 거리는 자기 굵기가 아니라 자기까지의 굵기를 모두 더한 값이다 */
-internal fun List<ToppingBorderLayer>.withOutsets(): List<Pair<ToppingBorderLayer, Float>> {
-    var accumulated = 0f
-    return map { layer ->
-        accumulated += layer.width
-        layer to accumulated
+/** [radius] 만큼 떨어진 자리를 빙 둘러 훑는다 */
+internal inline fun forEachOutlineOffset(
+    radius: Float,
+    action: (Offset) -> Unit,
+) {
+    OUTLINE_UNIT_OFFSETS.forEach { unit -> action(unit * radius) }
+}
+
+/**
+ * 겹을 가장 바깥부터 훑으며 저마다 밀려날 거리를 함께 넘긴다.
+ *
+ * 겹은 아래 겹을 감싸며 쌓이므로 밀려나는 거리는 자기 굵기가 아니라 자기까지의 굵기를 모두 더한 값이다.
+ * 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남으므로 훑는 방향도 바깥에서 안쪽이다.
+ */
+internal inline fun List<ToppingBorderLayer>.forEachOutsetOutermostFirst(action: (ToppingBorderLayer, Float) -> Unit) {
+    var outset = 0f
+    forEach { layer -> outset += layer.width }
+
+    for (index in lastIndex downTo 0) {
+        val layer = this[index]
+        action(layer, outset)
+        outset -= layer.width
     }
 }
