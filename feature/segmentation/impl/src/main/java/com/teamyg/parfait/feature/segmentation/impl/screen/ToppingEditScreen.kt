@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
@@ -41,10 +42,13 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -77,6 +81,47 @@ private val BRUSH_PREVIEW_BORDER_WIDTH = 1.dp
 
 @Composable
 internal fun ToppingEditScreen(
+    state: ToppingEditState,
+    onChangeTab: (ToppingEditTab) -> Unit,
+    onChangeMode: (ToppingEditMode) -> Unit,
+    onChangeBrushWidth: (Float) -> Unit,
+    onAddStroke: (ToppingEditStroke) -> Unit,
+    onClickUndoArea: () -> Unit,
+    onClickRedoArea: () -> Unit,
+    onSelectBorderColor: (Color) -> Unit,
+    onChangeBorderWidth: (Float) -> Unit,
+    onClickUndoBorder: () -> Unit,
+    onClickRedoBorder: () -> Unit,
+    onClickDone: () -> Unit,
+    onClickBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        ToppingEditContent(
+            state = state,
+            onChangeTab = onChangeTab,
+            onChangeMode = onChangeMode,
+            onChangeBrushWidth = onChangeBrushWidth,
+            onAddStroke = onAddStroke,
+            onClickUndoArea = onClickUndoArea,
+            onClickRedoArea = onClickRedoArea,
+            onSelectBorderColor = onSelectBorderColor,
+            onChangeBorderWidth = onChangeBorderWidth,
+            onClickUndoBorder = onClickUndoBorder,
+            onClickRedoBorder = onClickRedoBorder,
+            onClickDone = onClickDone,
+            onClickBack = onClickBack,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        if (state.isSaving) {
+            ToppingEditSavingOverlay(modifier = Modifier.matchParentSize())
+        }
+    }
+}
+
+@Composable
+private fun ToppingEditContent(
     state: ToppingEditState,
     onChangeTab: (ToppingEditTab) -> Unit,
     onChangeMode: (ToppingEditMode) -> Unit,
@@ -182,6 +227,30 @@ internal fun ToppingEditScreen(
             onConfirmClick = onClickDone,
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/**
+ * 저장이 끝날 때까지 화면을 덮는 딤.
+ *
+ * 덮은 동안은 뒤쪽 조작이 닿으면 안 되므로 눌림도 여기서 삼킨다.
+ * 맨 앞에서 먼저 받는 [PointerEventPass.Initial] 단계에 삼켜야 뒤쪽 획과 버튼이 함께 막힌다.
+ */
+@Composable
+private fun ToppingEditSavingOverlay(modifier: Modifier = Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .background(YGAtomicColors.Transparency.Black50)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { change -> change.consume() }
+                    }
+                }
+            },
+    ) {
+        CircularProgressIndicator(color = YGAtomicColors.Cherry.Cherry100)
     }
 }
 
@@ -541,11 +610,20 @@ private fun SegmentationBorderControls(
     }
 }
 
+private class ToppingEditStatePreviewParameterProvider : PreviewParameterProvider<ToppingEditState> {
+    override val values: Sequence<ToppingEditState> = sequenceOf(
+        ToppingEditState(),
+        ToppingEditState(isSaving = true),
+    )
+}
+
 @YGPreview
 @Composable
-private fun PreviewToppingEditScreen() = PreviewBox {
+private fun PreviewToppingEditScreen(
+    @PreviewParameter(ToppingEditStatePreviewParameterProvider::class) state: ToppingEditState,
+) = PreviewBox {
     ToppingEditScreen(
-        state = ToppingEditState(),
+        state = state,
         onChangeTab = {},
         onChangeMode = {},
         onChangeBrushWidth = {},
