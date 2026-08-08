@@ -8,7 +8,6 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
  *
  * 맨 앞은 색을 얹지 않는 투명 칩이다.
  */
-// Todo : 파스텔 다섯 색이 디자인 시스템에 올라가면 토큰으로 교체
 val TOPPING_BORDER_COLORS: List<Color> = listOf(
     YGAtomicColors.Gray.Transparent,
     YGAtomicColors.Gray.White,
