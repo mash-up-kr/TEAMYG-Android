@@ -65,6 +65,7 @@ import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
+import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -141,21 +142,20 @@ private fun ToppingEditContent(
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        // 되돌리기 스택이 탭마다 따로여서 버튼도 탭 전용으로 갈린다
         val historyModifier = Modifier
             .fillMaxWidth()
             .padding(YGTheme.layout.padding.padding7)
 
         when (state.tab) {
-            ToppingEditTab.AREA -> ToppingEditAreaHistoryActions(
-                state = state,
+            ToppingEditTab.AREA -> ToppingEditHistoryActions(
+                history = state.areaHistory,
                 onClickUndo = onClickUndoArea,
                 onClickRedo = onClickRedoArea,
                 modifier = historyModifier,
             )
 
-            ToppingEditTab.BORDER -> ToppingEditBorderHistoryActions(
-                state = state,
+            ToppingEditTab.BORDER -> ToppingEditHistoryActions(
+                history = state.borderHistory,
                 onClickUndo = onClickUndoBorder,
                 onClickRedo = onClickRedoBorder,
                 modifier = historyModifier,
@@ -254,44 +254,10 @@ private fun ToppingEditSavingOverlay(modifier: Modifier = Modifier) {
     }
 }
 
-/** 영역 탭 전용 되돌리기. [ToppingEditState.areaHistory] 만 본다 */
-@Composable
-private fun ToppingEditAreaHistoryActions(
-    state: ToppingEditState,
-    onClickUndo: () -> Unit,
-    onClickRedo: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ToppingEditHistoryActions(
-        canUndo = state.areaHistory.canUndo,
-        canRedo = state.areaHistory.canRedo,
-        onClickUndo = onClickUndo,
-        onClickRedo = onClickRedo,
-        modifier = modifier,
-    )
-}
-
-/** 테두리 탭 전용 되돌리기. [ToppingEditState.borderHistory] 만 본다 */
-@Composable
-private fun ToppingEditBorderHistoryActions(
-    state: ToppingEditState,
-    onClickUndo: () -> Unit,
-    onClickRedo: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ToppingEditHistoryActions(
-        canUndo = state.borderHistory.canUndo,
-        canRedo = state.borderHistory.canRedo,
-        onClickUndo = onClickUndo,
-        onClickRedo = onClickRedo,
-        modifier = modifier,
-    )
-}
-
+/** 어느 탭의 스택이든 되돌릴 수 있는지만 보므로 [history] 가 무엇을 쌓는지는 알 필요가 없다 */
 @Composable
 private fun ToppingEditHistoryActions(
-    canUndo: Boolean,
-    canRedo: Boolean,
+    history: UndoRedoStack<*>,
     onClickUndo: () -> Unit,
     onClickRedo: () -> Unit,
     modifier: Modifier = Modifier,
@@ -304,13 +270,13 @@ private fun ToppingEditHistoryActions(
             iconResource = DesignSystemR.drawable.ic_arrow_left,
             contentDescription = stringResource(R.string.topping_edit_undo),
             onClick = onClickUndo,
-            isEnabled = canUndo,
+            isEnabled = history.canUndo,
         )
         YGEditActionButton(
             iconResource = DesignSystemR.drawable.ic_arrow_right,
             contentDescription = stringResource(R.string.topping_edit_redo),
             onClick = onClickRedo,
-            isEnabled = canRedo,
+            isEnabled = history.canRedo,
         )
     }
 }

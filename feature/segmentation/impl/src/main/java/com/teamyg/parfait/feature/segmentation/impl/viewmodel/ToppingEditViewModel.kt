@@ -16,10 +16,10 @@ import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
-import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditHistory
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
+import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.color
 import com.teamyg.parfait.feature.segmentation.impl.editor.withBorders
@@ -49,8 +49,7 @@ private const val DEFAULT_BORDER_WIDTH_RATIO = 0.02f
 private const val MIN_BORDER_WIDTH_RATIO = 0.005f
 private const val MAX_BORDER_WIDTH_RATIO = 0.08f
 
-private fun ToppingEditHistory<ToppingBorderLayer>.outermostColor(): Color =
-    done.lastOrNull()?.color ?: DEFAULT_TOPPING_BORDER_COLOR
+private fun UndoRedoStack<ToppingBorderLayer>.outermostColor(): Color = latest?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
@@ -58,10 +57,15 @@ data class ToppingEditState(
     val tab: ToppingEditTab = ToppingEditTab.AREA,
     val mode: ToppingEditMode = ToppingEditMode.ERASE,
     val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
-    val areaHistory: ToppingEditHistory<ToppingEditStroke> = ToppingEditHistory(),
+    /**
+     * 되돌리기 스택은 탭마다 따로다.
+     *
+     * 영역 탭에서 획을 지운 뒤 테두리 탭에서 되돌리기를 눌러도 획이 살아나면 안 되기 때문이다.
+     */
+    val areaHistory: UndoRedoStack<ToppingEditStroke> = UndoRedoStack(),
     /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
     val pendingBorderWidth: Float = 0f,
-    val borderHistory: ToppingEditHistory<ToppingBorderLayer> = ToppingEditHistory(),
+    val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
     /**
      * 색상칩에서 켜둘 색.
      *
@@ -86,7 +90,7 @@ data class ToppingEditState(
      * 굵기 슬라이더가 가리키는 값. 두른 겹이 있으면 슬라이더가 곧 그 겹의 굵기다.
      * 되돌려서 겹이 벗겨지면 그 아래 겹의 굵기로 따라 내려간다.
      */
-    val borderWidth: Float get() = borderLayers.lastOrNull()?.width ?: pendingBorderWidth
+    val borderWidth: Float get() = borderHistory.latest?.width ?: pendingBorderWidth
 
     val minBorderWidth: Float get() = longestSideRatioOf(MIN_BORDER_WIDTH_RATIO)
 
@@ -248,7 +252,7 @@ class ToppingEditViewModel
             }
 
             // 이미 두른 테두리를 겹째로 물려받아, 다시 편집해도 벗겨진 채로 열리지 않는다
-            val restoredBorders = ToppingEditHistory(done = initialBorderLayers)
+            val restoredBorders = UndoRedoStack(done = initialBorderLayers)
 
             updateState {
                 val longestSide = maxOf(originBitmap.width, originBitmap.height)
