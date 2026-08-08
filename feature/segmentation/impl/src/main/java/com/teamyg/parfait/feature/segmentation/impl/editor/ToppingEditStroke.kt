@@ -3,6 +3,8 @@ package com.teamyg.parfait.feature.segmentation.impl.editor
 import androidx.annotation.StringRes
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
@@ -55,4 +57,15 @@ data class ToppingEditStroke(
 data class ToppingBorderStroke(
     val color: Color,
     val width: Float,
+)
+
+/** 화면 밖으로 나를 수 있게 색을 ARGB 정수로 펼친다 */
+internal fun ToppingBorderStroke.toLayer(): ToppingBorderLayer = ToppingBorderLayer(
+    colorArgb = color.toArgb(),
+    width = width,
+)
+
+internal fun ToppingBorderLayer.toStroke(): ToppingBorderStroke = ToppingBorderStroke(
+    color = Color(colorArgb),
+    width = width,
 )

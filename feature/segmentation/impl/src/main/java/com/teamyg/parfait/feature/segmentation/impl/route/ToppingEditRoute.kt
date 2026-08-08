@@ -29,6 +29,7 @@ internal fun ToppingEditRoute(
             factory.create(
                 sourceImageUri = key.sourceImageUri,
                 segmentationImageUri = key.segmentationImageUri,
+                borderLayers = key.borderLayers,
             )
         },
     )
@@ -50,9 +51,9 @@ internal fun ToppingEditRoute(
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
 
-                // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집본 경로를 결과로 넘기고 돌아간다
+                // 확인 화면이 편집 전 이미지를 들고 있으므로, 편집 결과를 넘기고 돌아간다
                 is ToppingEditEffect.EditCompleted -> {
-                    resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.editedImagePath)
+                    resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.result)
                     navigator.onBack()
                 }
             }

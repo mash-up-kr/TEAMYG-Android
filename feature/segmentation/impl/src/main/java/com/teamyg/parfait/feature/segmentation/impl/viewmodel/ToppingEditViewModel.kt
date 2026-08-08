@@ -12,13 +12,18 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingBorderStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditHistory
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
-import com.teamyg.parfait.feature.segmentation.impl.editor.buildEditedBitmap
+import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
+import com.teamyg.parfait.feature.segmentation.impl.editor.toLayer
+import com.teamyg.parfait.feature.segmentation.impl.editor.toStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.withBorders
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -147,8 +152,7 @@ sealed interface ToppingEditEffect : UiSideEffect {
 
     data object SaveFailed : ToppingEditEffect
 
-    /** @param editedImagePath 편집 결과가 저장된 파일 경로 */
-    data class EditCompleted(val editedImagePath: String) : ToppingEditEffect
+    data class EditCompleted(val result: ToppingEditResult) : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -156,6 +160,7 @@ class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
+    @Assisted("borderLayers") private val borderLayers: List<ToppingBorderLayer>,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveEditedImageUseCase: SaveEditedImageUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
@@ -247,12 +252,17 @@ class ToppingEditViewModel
                 return@launch
             }
 
+            // 이미 두른 테두리를 겹째로 물려받아, 다시 편집해도 벗겨진 채로 열리지 않는다
+            val restoredBorders = ToppingEditHistory(done = borderLayers.map { layer -> layer.toStroke() })
+
             updateState {
                 val longestSide = maxOf(originBitmap.width, originBitmap.height)
                 copy(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
                     pendingBorderWidth = longestSide * DEFAULT_BORDER_WIDTH_RATIO,
+                    borderHistory = restoredBorders,
+                    selectedBorderColor = restoredBorders.outermostColor(),
                 )
             }
         }
@@ -270,31 +280,50 @@ class ToppingEditViewModel
 
         viewModelScope.launch {
             updateState { copy(isSaving = true) }
-            val edited = withContext(Dispatchers.Default) {
-                buildEditedBitmap(
+
+            // 테두리를 구운 결과에서는 알맹이를 되짚을 수 없어, 두르기 전 알맹이도 함께 남긴다
+            val cutout = withContext(Dispatchers.Default) {
+                buildCutoutBitmap(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
                     strokes = current.strokes,
-                    borderStrokes = current.borderStrokes,
                 )
             }
+            val edited = withContext(Dispatchers.Default) { cutout.withBorders(current.borderStrokes) }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
             // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
-            val savedPath = try {
-                saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
+            val (cutoutPath, editedPath) = try {
+                val savedCutoutPath = saveEditedImageUseCase(cutout.toAndroidBitmap()).getOrNull()
+                // 테두리가 없으면 알맹이가 곧 결과라 같은 파일을 두 번 떨구지 않는다
+                val savedEditedPath = if (current.borderStrokes.isEmpty()) {
+                    savedCutoutPath
+                } else {
+                    saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
+                }
+                savedCutoutPath to savedEditedPath
             } finally {
-                edited.recycle()
+                // 테두리가 없으면 두르기 전후가 같은 비트맵이라 한 번만 돌려준다
+                if (edited !== cutout) edited.recycle()
+                cutout.recycle()
             }
             updateState { copy(isSaving = false) }
 
-            if (savedPath == null) {
+            if (cutoutPath == null || editedPath == null) {
                 postSideEffect(ToppingEditEffect.SaveFailed)
                 return@launch
             }
 
-            postSideEffect(ToppingEditEffect.EditCompleted(savedPath))
+            postSideEffect(
+                ToppingEditEffect.EditCompleted(
+                    ToppingEditResult(
+                        editedImagePath = editedPath,
+                        cutoutImagePath = cutoutPath,
+                        borderLayers = current.borderStrokes.map { stroke -> stroke.toLayer() },
+                    ),
+                ),
+            )
         }
     }
 
@@ -303,6 +332,7 @@ class ToppingEditViewModel
         fun create(
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
+            @Assisted("borderLayers") borderLayers: List<ToppingBorderLayer>,
         ): ToppingEditViewModel
     }
 }

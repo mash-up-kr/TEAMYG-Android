@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.segmentation.impl.editor.buildEditedBitmap
+import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.outlineOffsets
 import com.teamyg.parfait.feature.segmentation.impl.editor.withOutsets
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
@@ -39,7 +39,7 @@ internal fun ToppingBorderEditScreen(
     // 테두리는 잘라낸 결과의 실루엣을 따라 두르므로 영역 탭 편집까지 반영된 결과를 만들어 두고 쓴다.
     // 이 결과의 알파가 곧 실루엣이라 윤곽과 본 그림에 같은 이미지를 쓸 수 있다
     val editedImage = remember(originBitmap, segmentationBitmap, state.strokes) {
-        buildEditedBitmap(
+        buildCutoutBitmap(
             originBitmap = originBitmap,
             segmentationBitmap = segmentationBitmap,
             strokes = state.strokes,

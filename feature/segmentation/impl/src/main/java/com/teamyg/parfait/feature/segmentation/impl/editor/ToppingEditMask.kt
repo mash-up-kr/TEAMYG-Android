@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 
 /**
- * Segmentation 결과에 사용자의 획을 반영해 최종 이미지를 만든다.
+ * Segmentation 결과에 사용자의 획을 반영해 테두리를 두르기 전 알맹이를 만든다.
  *
  * 마스크를 알파 채널로 다루는 게 핵심이다.
  * 1. segmentation 결과를 그려 그 알파를 시작 마스크로 삼는다
@@ -23,24 +23,12 @@ import androidx.core.graphics.createBitmap
  * 3. 마지막에 원본을 SRC_IN 으로 얹으면 마스크가 남은 자리에만 원본 픽셀이 채워진다
  *
  * 3번 덕분에 지웠던 영역을 다시 ADD 로 칠하면 원본 픽셀이 그대로 복원된다.
+ * 다만 3번이 알파만 물려받고 색은 원본에서 다시 채우므로, [segmentationBitmap] 에 테두리가 구워진
+ * 이미지를 넘기면 그 색이 원본 픽셀로 덮인다. 마스크로는 테두리를 두르기 전 알맹이를 넘겨야 한다.
  *
- * [borderStrokes] 가 있으면 잘라낸 결과를 겹겹이 두르되, 알맹이는 원본 자리를 그대로 지킨다.
  * 결과는 언제나 [originBitmap] 크기이며, [segmentationBitmap] 크기가 달라도 늘려서 맞춘다.
  */
-internal fun buildEditedBitmap(
-    originBitmap: Bitmap,
-    segmentationBitmap: Bitmap,
-    strokes: List<ToppingEditStroke>,
-    borderStrokes: List<ToppingBorderStroke> = emptyList(),
-): Bitmap {
-    val cutout = buildCutoutBitmap(originBitmap, segmentationBitmap, strokes)
-    if (borderStrokes.isEmpty()) return cutout
-
-    return cutout.withBorders(borderStrokes)
-}
-
-/** 테두리를 두르기 전 알맹이 */
-private fun buildCutoutBitmap(
+internal fun buildCutoutBitmap(
     originBitmap: Bitmap,
     segmentationBitmap: Bitmap,
     strokes: List<ToppingEditStroke>,
@@ -73,7 +61,9 @@ private fun buildCutoutBitmap(
  * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
  * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
  */
-private fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitmap {
+internal fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitmap {
+    if (borderStrokes.isEmpty()) return this
+
     val destination = RectF(0f, 0f, width.toFloat(), height.toFloat())
 
     val bordered = createBitmap(width, height)
