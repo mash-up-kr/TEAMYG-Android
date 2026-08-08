@@ -3,7 +3,6 @@ package com.teamyg.parfait.feature.segmentation.impl.editor
 import androidx.annotation.StringRes
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.impl.R
 
@@ -46,26 +45,7 @@ data class ToppingEditStroke(
 )
 
 /**
- * 테두리 탭에서 한 번에 두른 테두리 한 겹.
- *
- * 색상칩을 고를 때마다 그 시점의 굵기로 한 겹이 위에 쌓여 중첩된다.
- * 되돌리기는 이 겹 단위로 가장 바깥부터 벗겨낸다.
- *
- * [width] 는 [ToppingEditStroke] 와 같이 **원본 비트맵 좌표계** 기준이다.
- * 화면에서 본 굵기와 저장된 결과의 굵기가 어긋나지 않으려면 화면 크기에 매이지 않아야 한다.
+ * [ToppingBorderLayer] 는 화면 밖으로 실려야 해서 Compose 를 모르는 api 모듈에 있다.
+ * 편집 화면은 색을 Color 로 다루므로 그 접점만 여기서 이어 붙인다.
  */
-data class ToppingBorderStroke(
-    val color: Color,
-    val width: Float,
-)
-
-/** 화면 밖으로 나를 수 있게 색을 ARGB 정수로 펼친다 */
-internal fun ToppingBorderStroke.toLayer(): ToppingBorderLayer = ToppingBorderLayer(
-    colorArgb = color.toArgb(),
-    width = width,
-)
-
-internal fun ToppingBorderLayer.toStroke(): ToppingBorderStroke = ToppingBorderStroke(
-    color = Color(colorArgb),
-    width = width,
-)
+internal val ToppingBorderLayer.color: Color get() = Color(colorArgb)

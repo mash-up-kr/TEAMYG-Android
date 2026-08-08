@@ -16,13 +16,14 @@ import androidx.compose.ui.unit.IntSize
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
+import com.teamyg.parfait.feature.segmentation.impl.editor.color
 import com.teamyg.parfait.feature.segmentation.impl.editor.outlineOffsets
 import com.teamyg.parfait.feature.segmentation.impl.editor.withOutsets
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
 
 /**
- * 테두리 탭의 내용. 잘라낸 결과에 [ToppingEditState.borderStrokes] 를 겹겹이 둘러 보여준다.
+ * 테두리 탭의 내용. 잘라낸 결과에 [ToppingEditState.borderLayers] 를 겹겹이 둘러 보여준다.
  *
  * 마스크를 직접 고치는 영역 탭과 달리 실루엣 바깥으로 색을 넓히는 작업이라 비트맵은 건드리지 않는다.
  * 알맹이는 원본 자리를 지키고 테두리만 바깥으로 번지며, 원본 밖으로 나간 만큼은 잘린다.
@@ -36,9 +37,8 @@ internal fun ToppingBorderEditScreen(
     val originBitmap = state.originBitmap ?: return
     val segmentationBitmap = state.segmentationBitmap ?: return
 
-    // 테두리는 잘라낸 결과의 실루엣을 따라 두르므로 영역 탭 편집까지 반영된 결과를 만들어 두고 쓴다.
-    // 이 결과의 알파가 곧 실루엣이라 윤곽과 본 그림에 같은 이미지를 쓸 수 있다
-    val editedImage = remember(originBitmap, segmentationBitmap, state.strokes) {
+    // 알맹이의 알파가 곧 실루엣이라 윤곽과 본 그림에 같은 이미지를 쓸 수 있다
+    val cutoutImage = remember(originBitmap, segmentationBitmap, state.strokes) {
         buildCutoutBitmap(
             originBitmap = originBitmap,
             segmentationBitmap = segmentationBitmap,
@@ -64,17 +64,17 @@ internal fun ToppingBorderEditScreen(
             bottom = (dstOffset.y + dstSize.height).toFloat(),
         ) {
             // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
-            state.borderStrokes.withOutsets().asReversed().forEach { (stroke, strokeOutset) ->
+            state.borderLayers.withOutsets().asReversed().forEach { (layer, layerOutset) ->
                 drawOutline(
-                    image = editedImage,
+                    image = cutoutImage,
                     dstOffset = dstOffset,
                     dstSize = dstSize,
-                    radius = strokeOutset * mapping.scale,
-                    color = stroke.color,
+                    radius = layerOutset * mapping.scale,
+                    color = layer.color,
                 )
             }
 
-            drawImage(image = editedImage, dstOffset = dstOffset, dstSize = dstSize)
+            drawImage(image = cutoutImage, dstOffset = dstOffset, dstSize = dstSize)
         }
     }
 }

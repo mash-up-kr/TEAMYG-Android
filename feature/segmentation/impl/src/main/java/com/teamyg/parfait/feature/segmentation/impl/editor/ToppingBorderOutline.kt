@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.editor
 
 import androidx.compose.ui.geometry.Offset
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -21,10 +22,10 @@ internal fun outlineOffsets(radius: Float): List<Offset> = List(OUTLINE_SAMPLE_C
 }
 
 /** 겹은 아래 겹을 감싸며 쌓이므로, 밀려나는 거리는 자기 굵기가 아니라 자기까지의 굵기를 모두 더한 값이다 */
-internal fun List<ToppingBorderStroke>.withOutsets(): List<Pair<ToppingBorderStroke, Float>> {
+internal fun List<ToppingBorderLayer>.withOutsets(): List<Pair<ToppingBorderLayer, Float>> {
     var accumulated = 0f
-    return map { stroke ->
-        accumulated += stroke.width
-        stroke to accumulated
+    return map { layer ->
+        accumulated += layer.width
+        layer to accumulated
     }
 }

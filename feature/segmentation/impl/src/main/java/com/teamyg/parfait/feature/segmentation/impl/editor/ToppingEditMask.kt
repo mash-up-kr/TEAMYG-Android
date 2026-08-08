@@ -11,8 +11,8 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 
 /**
  * Segmentation 결과에 사용자의 획을 반영해 테두리를 두르기 전 알맹이를 만든다.
@@ -61,8 +61,8 @@ internal fun buildCutoutBitmap(
  * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
  * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
  */
-internal fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitmap {
-    if (borderStrokes.isEmpty()) return this
+internal fun Bitmap.withBorders(borderLayers: List<ToppingBorderLayer>): Bitmap {
+    if (borderLayers.isEmpty()) return this
 
     val destination = RectF(0f, 0f, width.toFloat(), height.toFloat())
 
@@ -70,9 +70,9 @@ internal fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitma
     val canvas = Canvas(bordered)
 
     // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
-    borderStrokes.withOutsets().asReversed().forEach { (stroke, strokeOutset) ->
-        val paint = borderPaint(stroke.color.toArgb())
-        outlineOffsets(strokeOutset).forEach { offset ->
+    borderLayers.withOutsets().asReversed().forEach { (layer, layerOutset) ->
+        val paint = borderPaint(layer.colorArgb)
+        outlineOffsets(layerOutset).forEach { offset ->
             val shifted = RectF(destination).apply { offset(offset.x, offset.y) }
             canvas.drawBitmap(this, null, shifted, paint)
         }

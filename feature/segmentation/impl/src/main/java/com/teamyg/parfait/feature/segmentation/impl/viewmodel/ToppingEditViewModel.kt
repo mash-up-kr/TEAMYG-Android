@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 import android.graphics.Bitmap
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -15,14 +16,12 @@ import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
-import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingBorderStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditHistory
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
-import com.teamyg.parfait.feature.segmentation.impl.editor.toLayer
-import com.teamyg.parfait.feature.segmentation.impl.editor.toStroke
+import com.teamyg.parfait.feature.segmentation.impl.editor.color
 import com.teamyg.parfait.feature.segmentation.impl.editor.withBorders
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -50,7 +49,7 @@ private const val DEFAULT_BORDER_WIDTH_RATIO = 0.02f
 private const val MIN_BORDER_WIDTH_RATIO = 0.005f
 private const val MAX_BORDER_WIDTH_RATIO = 0.08f
 
-private fun ToppingEditHistory<ToppingBorderStroke>.outermostColor(): Color =
+private fun ToppingEditHistory<ToppingBorderLayer>.outermostColor(): Color =
     done.lastOrNull()?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
 data class ToppingEditState(
@@ -62,7 +61,7 @@ data class ToppingEditState(
     val areaHistory: ToppingEditHistory<ToppingEditStroke> = ToppingEditHistory(),
     /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
     val pendingBorderWidth: Float = 0f,
-    val borderHistory: ToppingEditHistory<ToppingBorderStroke> = ToppingEditHistory(),
+    val borderHistory: ToppingEditHistory<ToppingBorderLayer> = ToppingEditHistory(),
     /**
      * 색상칩에서 켜둘 색.
      *
@@ -77,7 +76,7 @@ data class ToppingEditState(
     /** 영역 탭에서 확정된 획. 캔버스와 저장이 함께 본다 */
     val strokes: List<ToppingEditStroke> get() = areaHistory.done
 
-    val borderStrokes: List<ToppingBorderStroke> get() = borderHistory.done
+    val borderLayers: List<ToppingBorderLayer> get() = borderHistory.done
 
     val minBrushWidthDp: Float get() = MIN_BRUSH_WIDTH_DP
 
@@ -87,7 +86,7 @@ data class ToppingEditState(
      * 굵기 슬라이더가 가리키는 값. 두른 겹이 있으면 슬라이더가 곧 그 겹의 굵기다.
      * 되돌려서 겹이 벗겨지면 그 아래 겹의 굵기로 따라 내려간다.
      */
-    val borderWidth: Float get() = borderStrokes.lastOrNull()?.width ?: pendingBorderWidth
+    val borderWidth: Float get() = borderLayers.lastOrNull()?.width ?: pendingBorderWidth
 
     val minBorderWidth: Float get() = longestSideRatioOf(MIN_BORDER_WIDTH_RATIO)
 
@@ -158,7 +157,7 @@ class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
-    @Assisted("borderLayers") private val borderLayers: List<ToppingBorderLayer>,
+    @Assisted("borderLayers") private val initialBorderLayers: List<ToppingBorderLayer>,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveEditedImageUseCase: SaveEditedImageUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
@@ -201,10 +200,10 @@ class ToppingEditViewModel
                         intent.color == borderHistory.outermostColor()
                     if (addsNothing) return@updateState copy(selectedBorderColor = intent.color)
 
-                    val stroke = ToppingBorderStroke(color = intent.color, width = borderWidth)
+                    val layer = ToppingBorderLayer(colorArgb = intent.color.toArgb(), width = borderWidth)
                     copy(
                         selectedBorderColor = intent.color,
-                        borderHistory = borderHistory.push(stroke),
+                        borderHistory = borderHistory.push(layer),
                     )
                 }
             }
@@ -215,7 +214,7 @@ class ToppingEditViewModel
                     // 슬라이더는 가장 바깥 겹의 굵기를 직접 민다. 두른 겹이 없으면 다음 겹에 쓸 값만 바뀐다
                     copy(
                         pendingBorderWidth = width,
-                        borderHistory = borderHistory.replaceLast { stroke -> stroke.copy(width = width) },
+                        borderHistory = borderHistory.replaceLast { layer -> layer.copy(width = width) },
                     )
                 }
             }
@@ -249,7 +248,7 @@ class ToppingEditViewModel
             }
 
             // 이미 두른 테두리를 겹째로 물려받아, 다시 편집해도 벗겨진 채로 열리지 않는다
-            val restoredBorders = ToppingEditHistory(done = borderLayers.map { layer -> layer.toStroke() })
+            val restoredBorders = ToppingEditHistory(done = initialBorderLayers)
 
             updateState {
                 val longestSide = maxOf(originBitmap.width, originBitmap.height)
@@ -285,7 +284,7 @@ class ToppingEditViewModel
                     strokes = current.strokes,
                 )
             }
-            val edited = withContext(Dispatchers.Default) { cutout.withBorders(current.borderStrokes) }
+            val edited = withContext(Dispatchers.Default) { cutout.withBorders(current.borderLayers) }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
@@ -293,7 +292,7 @@ class ToppingEditViewModel
             val (cutoutPath, editedPath) = try {
                 val savedCutoutPath = saveEditedImageUseCase(cutout.toAndroidBitmap()).getOrNull()
                 // 테두리가 없으면 알맹이가 곧 결과라 같은 파일을 두 번 떨구지 않는다
-                val savedEditedPath = if (current.borderStrokes.isEmpty()) {
+                val savedEditedPath = if (current.borderLayers.isEmpty()) {
                     savedCutoutPath
                 } else {
                     saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
@@ -316,7 +315,7 @@ class ToppingEditViewModel
                     ToppingEditResult(
                         editedImagePath = editedPath,
                         cutoutImagePath = cutoutPath,
-                        borderLayers = current.borderStrokes.map { stroke -> stroke.toLayer() },
+                        borderLayers = current.borderLayers,
                     ),
                 ),
             )
