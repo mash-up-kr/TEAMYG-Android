@@ -72,6 +72,7 @@ internal fun CanvasImageAddRoute(
         onClickMenu = {}, // TODO: 메뉴 연동 필요
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
+        onClickEditCanvasBG = {}, // TODO: 캔버스 편집 화면 연동 필요
         modifier = modifier,
     )
 }

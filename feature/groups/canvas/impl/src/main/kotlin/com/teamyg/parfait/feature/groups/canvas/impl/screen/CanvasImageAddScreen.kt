@@ -46,6 +46,7 @@ internal fun CanvasImageAddScreen(
     onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
+    onClickEditCanvasBG: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -97,7 +98,7 @@ internal fun CanvasImageAddScreen(
             editAction = YGCanvasMenuAction(
                 text = stringResource(R.string.canvas_image_add_canvas_edit),
                 iconResource = DesignSystemR.drawable.ic_caret_right,
-                onClick = openMenu,
+                onClick = onClickEditCanvasBG,
             ),
             isEmpty = true,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
@@ -148,6 +149,7 @@ private fun PreviewCanvasImageAddScreen() = PreviewBox {
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickEditCanvasBG = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
