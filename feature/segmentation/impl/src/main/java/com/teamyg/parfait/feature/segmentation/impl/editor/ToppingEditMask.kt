@@ -24,7 +24,7 @@ import androidx.core.graphics.createBitmap
  *
  * 3번 덕분에 지웠던 영역을 다시 ADD 로 칠하면 원본 픽셀이 그대로 복원된다.
  *
- * [borderStrokes] 가 있으면 잘라낸 결과를 겹겹이 두른다.
+ * [borderStrokes] 가 있으면 잘라낸 결과를 겹겹이 두르되, 알맹이는 원본 자리를 그대로 지킨다.
  * 결과는 언제나 [originBitmap] 크기이며, [segmentationBitmap] 크기가 달라도 늘려서 맞춘다.
  */
 internal fun buildEditedBitmap(
@@ -39,7 +39,7 @@ internal fun buildEditedBitmap(
     return cutout.withBorders(borderStrokes)
 }
 
-/** Segmentation 결과와 획으로 만든 마스크로 원본을 오려낸다. 테두리를 두르기 전 알맹이다 */
+/** 테두리를 두르기 전 알맹이 */
 private fun buildCutoutBitmap(
     originBitmap: Bitmap,
     segmentationBitmap: Bitmap,
@@ -67,32 +67,22 @@ private fun buildCutoutBitmap(
 }
 
 /**
- * 오려낸 알맹이 바깥에 [borderStrokes] 를 겹겹이 두른 새 비트맵을 만든다.
- *
  * 알파 마스크를 실제로 팽창시키는 대신, 알맹이를 반지름만큼 떨어진 자리에 빙 둘러 찍고
  * 겹친 자국을 겹 색으로 물들여 굵은 윤곽을 만든다. 화면 미리보기와 같은 방식이다.
  *
- * 크기는 원본 그대로 두므로, 테두리가 번질 자리는 알맹이를 안쪽으로 줄여 마련한다.
+ * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
+ * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
  */
 private fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitmap {
-    val shrink = borderStrokes.shrinkRatio(width, height)
-    val shrunkWidth = width * shrink
-    val shrunkHeight = height * shrink
-    val left = (width - shrunkWidth) / 2f
-    val top = (height - shrunkHeight) / 2f
-    val destination = RectF(left, top, left + shrunkWidth, top + shrunkHeight)
+    val destination = RectF(0f, 0f, width.toFloat(), height.toFloat())
 
     val bordered = createBitmap(width, height)
     val canvas = Canvas(bordered)
 
     // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
     borderStrokes.withOutsets().asReversed().forEach { (stroke, strokeOutset) ->
-        // 투명한 겹은 칠할 것이 없다. 그래도 자기 굵기만큼 자리는 차지해 바깥 겹을 더 밀어낸다
-        if (stroke.color.alpha == 0f) return@forEach
-
         val paint = borderPaint(stroke.color.toArgb())
-        // 알맹이를 줄인 만큼 번지는 거리도 함께 줄여야 화면에서 본 비율이 유지된다
-        outlineOffsets(strokeOutset * shrink).forEach { offset ->
+        outlineOffsets(strokeOutset).forEach { offset ->
             val shifted = RectF(destination).apply { offset(offset.x, offset.y) }
             canvas.drawBitmap(this, null, shifted, paint)
         }
@@ -103,7 +93,7 @@ private fun Bitmap.withBorders(borderStrokes: List<ToppingBorderStroke>): Bitmap
     return bordered
 }
 
-/** 알맹이를 줄여 그리므로 보간을 켠다. [colorArgb] 가 있으면 알파는 두고 색만 그 색으로 갈아끼운다 */
+/** 소수점 자리로 밀어 찍으므로 보간을 켠다. [colorArgb] 가 있으면 알파는 두고 색만 그 색으로 갈아끼운다 */
 private fun borderPaint(colorArgb: Int?): Paint = Paint().apply {
     isFilterBitmap = true
     isAntiAlias = true

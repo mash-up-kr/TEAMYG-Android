@@ -10,13 +10,13 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildEditedBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.outlineOffsets
-import com.teamyg.parfait.feature.segmentation.impl.editor.shrinkRatio
 import com.teamyg.parfait.feature.segmentation.impl.editor.withOutsets
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
@@ -24,9 +24,9 @@ import kotlin.math.roundToInt
 /**
  * 테두리 탭의 내용. 잘라낸 결과에 [ToppingEditState.borderStrokes] 를 겹겹이 둘러 보여준다.
  *
- * 마스크를 직접 고치는 영역 탭과 달리 실루엣 바깥으로 색을 넓히는 작업이라,
- * 비트맵은 그대로 두고 그릴 때만 실루엣을 부풀려 얹는다.
- * 저장도 같은 자리를 같은 비율로 찍으므로 여기서 본 모습이 그대로 파일로 남는다.
+ * 마스크를 직접 고치는 영역 탭과 달리 실루엣 바깥으로 색을 넓히는 작업이라 비트맵은 건드리지 않는다.
+ * 알맹이는 원본 자리를 지키고 테두리만 바깥으로 번지며, 원본 밖으로 나간 만큼은 잘린다.
+ * 저장도 같은 자리를 같은 배율로 찍고 같은 자리에서 자르므로 여기서 본 모습이 그대로 파일로 남는다.
  */
 @Composable
 internal fun ToppingBorderEditScreen(
@@ -49,41 +49,38 @@ internal fun ToppingBorderEditScreen(
     Canvas(modifier = modifier) {
         val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
 
-        // 저장 결과가 원본 크기를 지키므로 테두리가 번질 자리는 알맹이를 줄여 마련한다.
-        // 화면에서도 똑같이 줄여야 여기서 본 모습이 그대로 파일로 남는다
-        val shrink = state.borderStrokes.shrinkRatio(originBitmap.width, originBitmap.height)
-        val scale = mapping.scale * shrink
-
+        val dstOffset = IntOffset(mapping.offsetX.roundToInt(), mapping.offsetY.roundToInt())
         val dstSize = IntSize(
-            width = (originBitmap.width * scale).roundToInt(),
-            height = (originBitmap.height * scale).roundToInt(),
-        )
-        val dstOffset = IntOffset(
-            x = (mapping.offsetX + (originBitmap.width * mapping.scale - dstSize.width) / 2f).roundToInt(),
-            y = (mapping.offsetY + (originBitmap.height * mapping.scale - dstSize.height) / 2f).roundToInt(),
+            width = (originBitmap.width * mapping.scale).roundToInt(),
+            height = (originBitmap.height * mapping.scale).roundToInt(),
         )
 
-        // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
-        state.borderStrokes.withOutsets().asReversed().forEach { (stroke, strokeOutset) ->
-            drawOutline(
-                image = editedImage,
-                dstOffset = dstOffset,
-                dstSize = dstSize,
-                // 굵기는 원본 비트맵 기준이라 화면 배율과 줄인 비율을 함께 태운다
-                radius = strokeOutset * scale,
-                color = stroke.color,
-            )
+        // 저장 결과가 원본 크기를 지키므로 밖으로 나간 테두리는 잘려 나간다.
+        // 화면도 원본 자리에서 똑같이 잘라야 여기서 본 모습이 그대로 파일로 남는다
+        clipRect(
+            left = dstOffset.x.toFloat(),
+            top = dstOffset.y.toFloat(),
+            right = (dstOffset.x + dstSize.width).toFloat(),
+            bottom = (dstOffset.y + dstSize.height).toFloat(),
+        ) {
+            // 겹이 안쪽부터 쌓여 있으므로 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남는다
+            state.borderStrokes.withOutsets().asReversed().forEach { (stroke, strokeOutset) ->
+                drawOutline(
+                    image = editedImage,
+                    dstOffset = dstOffset,
+                    dstSize = dstSize,
+                    // 굵기는 원본 비트맵 기준이라 화면 배율을 태운다
+                    radius = strokeOutset * mapping.scale,
+                    color = stroke.color,
+                )
+            }
+
+            drawImage(image = editedImage, dstOffset = dstOffset, dstSize = dstSize)
         }
-
-        drawImage(image = editedImage, dstOffset = dstOffset, dstSize = dstSize)
     }
 }
 
-/**
- * [image] 의 실루엣을 [radius] 만큼 부풀려 [color] 로 칠한다.
- *
- * 알파는 두고 색만 갈아끼우는 tint 라 반투명한 가장자리도 원래 모양대로 번진다.
- */
+/** 알파는 두고 색만 갈아끼우는 tint 라 반투명한 가장자리도 원래 모양대로 번진다 */
 private fun DrawScope.drawOutline(
     image: ImageBitmap,
     dstOffset: IntOffset,
@@ -91,8 +88,7 @@ private fun DrawScope.drawOutline(
     radius: Float,
     color: Color,
 ) {
-    // 투명한 겹은 칠할 것이 없다. 그래도 자기 굵기만큼 자리는 차지해 바깥 겹을 더 밀어낸다
-    if (radius <= 0f || color.alpha == 0f) return
+    if (radius <= 0f) return
 
     val colorFilter = ColorFilter.tint(color)
     outlineOffsets(radius).forEach { offset ->
