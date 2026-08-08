@@ -30,9 +30,6 @@ data class ToppingEditHistory<T>(
         return ToppingEditHistory(done = done + last, undone = undone.dropLast(1))
     }
 
-    /** 되돌리기로 한 칸씩 물러난 것과 같은 자리에 쌓아, 다시 실행하면 걷어낸 순서 그대로 되살아난다 */
-    fun clear(): ToppingEditHistory<T> = ToppingEditHistory(done = emptyList(), undone = undone + done.asReversed())
-
     /**
      * 슬라이더처럼 값이 이어서 변하는 조작에 쓴다.
      * 미는 동안 [push] 로 칸을 쌓으면 되돌리기 한 번에 한 칸씩만 물러나 쓸모가 없어진다.
