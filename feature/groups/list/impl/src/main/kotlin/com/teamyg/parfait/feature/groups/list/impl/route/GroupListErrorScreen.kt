@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 
 private val ERROR_CONTENT_TOP_PADDING = 112.dp
 private val ERROR_DESCRIPTION_TO_CUP_GAP = 234.dp
@@ -29,36 +31,46 @@ private val ERROR_CUP_WIDTH = 324.dp
 
 @Composable
 internal fun GroupListErrorScreen(
-    isRefreshing: Boolean,
+    uiState: GroupListUiState,
+    onClickChip: () -> Unit,
+    onClickSideMenu: () -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    GroupListPullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-        modifier = modifier,
-    ) {
-        LazyColumn(
-            contentPadding = PaddingValues(top = ERROR_CONTENT_TOP_PADDING),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize(),
+    Column(modifier = modifier) {
+        GroupListTopBar(
+            date = uiState.dateString,
+            day = uiState.dayOfWeekString,
+            onClickChip = onClickChip,
+            onClickSideMenu = onClickSideMenu,
+        )
+
+        GroupListPullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = onRefresh,
         ) {
-            item {
-                Text(
-                    text = stringResource(R.string.group_list_error),
-                    style = YGTheme.typography.title.t03SB,
-                    color = YGAtomicColors.Gray.Gray500,
-                    textAlign = TextAlign.Center,
-                )
+            LazyColumn(
+                contentPadding = PaddingValues(top = ERROR_CONTENT_TOP_PADDING),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                item {
+                    Text(
+                        text = stringResource(R.string.group_list_error),
+                        style = YGTheme.typography.title.t03SB,
+                        color = YGAtomicColors.Gray.Gray500,
+                        textAlign = TextAlign.Center,
+                    )
 
-                Spacer(modifier = Modifier.height(ERROR_DESCRIPTION_TO_CUP_GAP))
+                    Spacer(modifier = Modifier.height(ERROR_DESCRIPTION_TO_CUP_GAP))
 
-                Image(
-                    painter = painterResource(R.drawable.parfait_cup),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier.width(ERROR_CUP_WIDTH),
-                )
+                    Image(
+                        painter = painterResource(R.drawable.parfait_cup),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.width(ERROR_CUP_WIDTH),
+                    )
+                }
             }
         }
     }
@@ -68,7 +80,13 @@ internal fun GroupListErrorScreen(
 @Composable
 private fun GroupListErrorScreenPreview() = PreviewBox {
     GroupListErrorScreen(
-        isRefreshing = false,
+        uiState = GroupListUiState(
+            isError = true,
+            dateString = "July 26",
+            dayOfWeekString = "Wed",
+        ),
+        onClickChip = {},
+        onClickSideMenu = {},
         onRefresh = {},
     )
 }

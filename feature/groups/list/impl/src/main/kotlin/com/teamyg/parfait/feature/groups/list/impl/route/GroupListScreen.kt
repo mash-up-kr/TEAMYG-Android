@@ -8,24 +8,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
-import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
-import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
@@ -35,9 +25,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
@@ -51,7 +40,6 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_3_RIGHT,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun GroupListScreen(
     uiState: GroupListUiState,
@@ -61,45 +49,13 @@ internal fun GroupListScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tooltipState = rememberTooltipState(
-        initialIsVisible = false,
-        isPersistent = true,
-    )
-
-    LaunchedEffect(Unit) {
-        tooltipState.show()
-    }
-
     Box(modifier = modifier) {
         Column {
-            YGTopBarEmpty(
+            GroupListTopBar(
                 date = uiState.dateString,
                 day = uiState.dayOfWeekString,
-                onIconClick = onClickSideMenu,
-                rightContent = {
-                    TooltipBox(
-                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
-                            positioning = TooltipAnchorPosition.Below,
-                            spacingBetweenTooltipAndAnchor = 15.dp,
-                        ),
-                        tooltip = {
-                            GroupListTooltip(
-                                modifier = Modifier.padding(top = 16.dp),
-                            )
-                        },
-                        state = tooltipState,
-                        enableUserInput = false,
-                        onDismissRequest = { tooltipState.dismiss() },
-                        focusable = true,
-                    ) {
-                        YGChipButton(
-                            text = stringResource(R.string.group_add),
-                            colors = YGChipButtonColorsDefaults.GrayOutline,
-                            onClick = onClickChip,
-                            startIconResource = DesignSystemR.drawable.ic_plus,
-                        )
-                    }
-                },
+                onClickChip = onClickChip,
+                onClickSideMenu = onClickSideMenu,
             )
 
             GroupListPullToRefreshBox(
