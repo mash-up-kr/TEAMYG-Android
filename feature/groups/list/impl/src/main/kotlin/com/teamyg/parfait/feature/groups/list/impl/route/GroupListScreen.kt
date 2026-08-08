@@ -4,9 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
-import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
@@ -106,21 +103,13 @@ internal fun GroupListScreen(
             LazyColumn(
                 contentPadding = PaddingValues(
                     start = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.padding.padding10,
                     end = YGTheme.layout.padding.padding7,
                     bottom = YGTheme.layout.padding.padding6,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 item {
-                    YGDate(
-                        date = uiState.dateString,
-                        day = uiState.dayOfWeekString,
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(40.dp))
-
                     GroupListContent(
                         groupList = uiState.groupList,
                         modifier = Modifier.fillMaxWidth(),
