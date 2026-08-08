@@ -32,10 +32,8 @@ private val CHIP_SIZE = 36.dp
 private val CHIP_BORDER_WIDTH = 1.dp
 
 /**
- * 테두리 색을 고르는 가로 목록.
- *
- * 색 수가 화면 너비를 넘어서므로 가로로 스크롤한다.
- * 고르면 그 색으로 테두리가 한 겹 더 얹히므로, 켜진 칩은 가장 바깥 겹의 색을 가리킨다.
+ * 테두리 색을 고르는 가로 목록. 고르면 그 색으로 테두리가 한 겹 더 얹히므로,
+ * 켜진 칩은 가장 바깥 겹의 색을 가리킨다. 투명 칩은 색이 아니라 아무 겹도 두르지 않은 상태다.
  *
  * 좌우 여백은 [modifier] 가 아니라 [contentPadding] 으로 준다.
  * 바깥에서 padding 을 걸면 스크롤 영역까지 좁아져 칩이 화면 끝에 닿기 전에 잘린다.
@@ -86,8 +84,7 @@ private fun BorderColorChip(
             .border(width = CHIP_BORDER_WIDTH, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
             .clickable(onClick = onClick),
     ) {
-        // 골라둔 색은 같은 크기의 반투명 칩을 덮어 눌러둔 것처럼 어둡게 보인다.
-        // 흰색부터 검정까지 색이 갈리는 목록이라, 칩 자체 색을 바꾸는 대신 위에 얹어야 어느 색에서나 표시가 남는다
+        // 흰색부터 검정까지 색이 갈리는 목록이라, 칩 색을 바꾸는 대신 위에 얹어야 어느 색에서나 표시가 남는다
         if (isSelected) {
             Box(
                 modifier = Modifier
@@ -101,8 +98,8 @@ private fun BorderColorChip(
 /**
  * 색을 얹지 않는 칩. 채울 색이 없어 테두리와 사선만으로 그린다.
  *
- * 다른 칩은 선택되면 반투명 칩을 덮지만, 여기는 덮을 바탕이 없어 예외적으로
- * 테두리와 사선 색 자체를 바꿔 선택을 표시한다.
+ * 덮을 바탕이 없어 [BorderColorChip] 처럼 반투명 칩을 씌우지 못하므로,
+ * 예외적으로 테두리와 사선 색 자체를 바꿔 선택을 표시한다.
  */
 @Composable
 private fun TransparentBorderColorChip(
@@ -127,7 +124,7 @@ private fun TransparentBorderColorChip(
             style = Stroke(width = strokeWidth),
         )
 
-        // 오른쪽 위에서 왼쪽 아래로. 모서리를 잇는 대각선이라 원에 잘려 지름만큼만 남는다
+        // 모서리를 잇는 대각선이라 원에 잘려 지름만큼만 남는다
         drawLine(
             color = contentColor,
             start = Offset(size.width, 0f),
@@ -138,7 +135,6 @@ private fun TransparentBorderColorChip(
 }
 
 private class BorderColorChipRowPreviewParameterProvider : PreviewParameterProvider<Color> {
-    // 기본값인 투명 칩 선택과 색 칩 선택을 함께 본다
     override val values: Sequence<Color> = sequenceOf(DEFAULT_TOPPING_BORDER_COLOR, TOPPING_BORDER_COLORS.last())
 }
 

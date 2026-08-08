@@ -67,7 +67,7 @@ internal fun ToppingEditRoute(
         onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
         onClickUndoArea = { viewModel.processIntent(ToppingEditIntent.UndoArea) },
         onClickRedoArea = { viewModel.processIntent(ToppingEditIntent.RedoArea) },
-        onSelectBorderColor = { color -> viewModel.processIntent(ToppingEditIntent.AddBorderStroke(color)) },
+        onSelectBorderColor = { color -> viewModel.processIntent(ToppingEditIntent.SelectBorderColor(color)) },
         onChangeBorderWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBorderWidth(width)) },
         onClickUndoBorder = { viewModel.processIntent(ToppingEditIntent.UndoBorder) },
         onClickRedoBorder = { viewModel.processIntent(ToppingEditIntent.RedoBorder) },

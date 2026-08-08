@@ -125,8 +125,8 @@ sealed interface ToppingEditIntent : UiIntent {
 
     data object RedoArea : ToppingEditIntent
 
-    /** 고른 색으로 현재 굵기의 테두리를 한 겹 더 두른다 */
-    data class AddBorderStroke(val color: Color) : ToppingEditIntent
+    /** 고른 색으로 현재 굵기의 테두리를 한 겹 더 두른다. 투명을 고르면 두른 겹을 모두 걷어낸다 */
+    data class SelectBorderColor(val color: Color) : ToppingEditIntent
 
     data class ChangeBorderWidth(val width: Float) : ToppingEditIntent
 
@@ -186,12 +186,16 @@ class ToppingEditViewModel
                 updateState { copy(areaHistory = areaHistory.redo()) }
             }
 
-            is ToppingEditIntent.AddBorderStroke -> {
+            is ToppingEditIntent.SelectBorderColor -> {
                 updateState {
                     // 이미 가장 바깥에 있는 색을 다시 고른 것은 조작이 아니다
                     if (intent.color == selectedBorderColor) return@updateState this
 
-                    // 새 색은 지금 보이는 굵기 그대로 바깥에 한 겹 더 두른다
+                    // 투명 칩은 색이 아니라 테두리를 두르지 않은 상태를 가리키므로 두른 겹을 모두 걷어낸다
+                    if (intent.color == DEFAULT_TOPPING_BORDER_COLOR) {
+                        return@updateState copy(borderHistory = borderHistory.clear())
+                    }
+
                     val stroke = ToppingBorderStroke(color = intent.color, width = borderWidth)
                     copy(borderHistory = borderHistory.push(stroke))
                 }
