@@ -30,14 +30,19 @@ internal fun GroupListTopBar(
     onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
     modifier: Modifier = Modifier,
+    isTooltipVisible: Boolean = true,
 ) {
     val tooltipState = rememberTooltipState(
         initialIsVisible = false,
         isPersistent = true,
     )
 
-    LaunchedEffect(Unit) {
-        tooltipState.show()
+    LaunchedEffect(isTooltipVisible) {
+        if (isTooltipVisible) {
+            tooltipState.show()
+        } else {
+            tooltipState.dismiss()
+        }
     }
 
     YGTopBarEmpty(

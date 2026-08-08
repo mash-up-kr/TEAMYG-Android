@@ -43,6 +43,8 @@ internal fun GroupListErrorScreen(
             day = uiState.dayOfWeekString,
             onClickChip = onClickChip,
             onClickSideMenu = onClickSideMenu,
+            // 불러오기에 실패한 상태에서는 그룹 추가 툴팁을 띄우지 않는다.
+            isTooltipVisible = false,
         )
 
         GroupListPullToRefreshBox(
