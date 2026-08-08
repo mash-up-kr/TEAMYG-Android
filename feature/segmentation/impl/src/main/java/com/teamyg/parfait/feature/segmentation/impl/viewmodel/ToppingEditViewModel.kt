@@ -45,6 +45,10 @@ private const val DEFAULT_BORDER_WIDTH_RATIO = 0.02f
 private const val MIN_BORDER_WIDTH_RATIO = 0.005f
 private const val MAX_BORDER_WIDTH_RATIO = 0.08f
 
+/** 가장 바깥 겹의 색. 두른 겹이 없으면 아무것도 두르지 않은 상태를 가리키는 색이다 */
+private fun ToppingEditHistory<ToppingBorderStroke>.outermostColor(): Color =
+    done.lastOrNull()?.color ?: DEFAULT_TOPPING_BORDER_COLOR
+
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
@@ -55,6 +59,13 @@ data class ToppingEditState(
     /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
     val pendingBorderWidth: Float = 0f,
     val borderHistory: ToppingEditHistory<ToppingBorderStroke> = ToppingEditHistory(),
+    /**
+     * 색상칩에서 켜둘 색.
+     *
+     * 보통은 가장 바깥 겹의 색이지만, 두를 색이 없는 투명 칩도 고른 표시는 남아야 해서
+     * 겹에서 끌어내지 않고 따로 들고 간다.
+     */
+    val selectedBorderColor: Color = DEFAULT_TOPPING_BORDER_COLOR,
     val isSaving: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
@@ -64,12 +75,6 @@ data class ToppingEditState(
 
     /** 안쪽부터 바깥쪽 순으로 중첩된 테두리 겹 */
     val borderStrokes: List<ToppingBorderStroke> get() = borderHistory.done
-
-    /**
-     * 색상칩에서 켜둘 색. 가장 바깥 겹의 색이다.
-     * 되돌리면 그 아래 겹의 색으로 돌아가고, 겹이 다 벗겨지면 처음처럼 투명 칩이 켜진다.
-     */
-    val selectedBorderColor: Color get() = borderStrokes.lastOrNull()?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
     val minBrushWidthDp: Float get() = MIN_BRUSH_WIDTH_DP
 
@@ -188,14 +193,17 @@ class ToppingEditViewModel
 
             is ToppingEditIntent.SelectBorderColor -> {
                 updateState {
-                    // 이미 가장 바깥에 있는 색을 다시 고르거나, 두를 색이 없는 투명 칩을 고른 것은 조작이 아니다.
-                    // 두른 겹을 걷어내는 건 되돌리기가 할 일이라 여기서는 손대지 않는다
-                    if (intent.color == selectedBorderColor || intent.color == DEFAULT_TOPPING_BORDER_COLOR) {
-                        return@updateState this
-                    }
+                    // 투명 칩은 두를 색이 없고, 가장 바깥 겹과 같은 색은 이미 두른 것이다.
+                    // 둘 다 겹은 그대로 두고 켜둘 색만 옮긴다. 걷어내는 건 되돌리기가 할 일이다
+                    val addsNothing = intent.color == DEFAULT_TOPPING_BORDER_COLOR ||
+                        intent.color == borderHistory.outermostColor()
+                    if (addsNothing) return@updateState copy(selectedBorderColor = intent.color)
 
                     val stroke = ToppingBorderStroke(color = intent.color, width = borderWidth)
-                    copy(borderHistory = borderHistory.push(stroke))
+                    copy(
+                        selectedBorderColor = intent.color,
+                        borderHistory = borderHistory.push(stroke),
+                    )
                 }
             }
 
@@ -210,12 +218,19 @@ class ToppingEditViewModel
                 }
             }
 
+            // 겹이 벗겨지거나 되살아나면 켜둘 색도 그때 드러난 가장 바깥 겹을 따라간다
             ToppingEditIntent.UndoBorder -> {
-                updateState { copy(borderHistory = borderHistory.undo()) }
+                updateState {
+                    val history = borderHistory.undo()
+                    copy(borderHistory = history, selectedBorderColor = history.outermostColor())
+                }
             }
 
             ToppingEditIntent.RedoBorder -> {
-                updateState { copy(borderHistory = borderHistory.redo()) }
+                updateState {
+                    val history = borderHistory.redo()
+                    copy(borderHistory = history, selectedBorderColor = history.outermostColor())
+                }
             }
 
             ToppingEditIntent.ClickDone -> completeEdit()
