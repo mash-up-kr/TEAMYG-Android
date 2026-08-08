@@ -69,7 +69,6 @@ internal fun ToppingBorderEditScreen(
                     image = editedImage,
                     dstOffset = dstOffset,
                     dstSize = dstSize,
-                    // 굵기는 원본 비트맵 기준이라 화면 배율을 태운다
                     radius = strokeOutset * mapping.scale,
                     color = stroke.color,
                 )
