@@ -49,6 +49,7 @@ data class GroupListUiState(
     val nickName: String = "모카",
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
+    val isError: Boolean = false,
     val dateString: String = "",
     val dayOfWeekString: String = "",
 ) : UiState

@@ -54,14 +54,17 @@ internal fun GroupListRoute(
         contentWindowInsets = WindowInsets.systemBars
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { innerPadding ->
-        // Todo : Error 화면 추가
-        GroupListScreen(
-            uiState = uiState,
-            onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
-            onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
-            onClickTopping = { viewModel.processIntent(GroupListIntent.ClickTopping) },
-            modifier = modifier.padding(innerPadding),
-        )
+        if (uiState.isError) {
+            GroupListErrorScreen(modifier = modifier.padding(innerPadding))
+        } else {
+            GroupListScreen(
+                uiState = uiState,
+                onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
+                onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
+                onClickTopping = { viewModel.processIntent(GroupListIntent.ClickTopping) },
+                modifier = modifier.padding(innerPadding),
+            )
+        }
     }
 
     if (uiState.groupAddButtonSelected) {

@@ -1,0 +1,60 @@
+package com.teamyg.parfait.feature.groups.list.impl.route
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.feature.groups.list.impl.R
+
+private val ERROR_CONTENT_TOP_PADDING = 112.dp
+private val ERROR_DESCRIPTION_TO_CUP_GAP = 234.dp
+private val ERROR_CUP_WIDTH = 324.dp
+
+@Composable
+internal fun GroupListErrorScreen(modifier: Modifier = Modifier) {
+    LazyColumn(
+        contentPadding = PaddingValues(top = ERROR_CONTENT_TOP_PADDING),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.fillMaxSize(),
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.group_list_error),
+                style = YGTheme.typography.title.t03SB,
+                color = YGAtomicColors.Gray.Gray500,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(modifier = Modifier.height(ERROR_DESCRIPTION_TO_CUP_GAP))
+
+            Image(
+                painter = painterResource(R.drawable.parfait_cup),
+                contentDescription = null,
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.width(ERROR_CUP_WIDTH),
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun GroupListErrorScreenPreview() = PreviewBox {
+    GroupListErrorScreen()
+}
