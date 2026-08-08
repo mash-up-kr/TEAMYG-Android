@@ -45,10 +45,18 @@ class SegmentationViewModel
 
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { result ->
+                    val subjectBounds = result.subjectBounds
+
+                    // bounds 가 없으면 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남는다
+                    if (subjectBounds == null) {
+                        updateState { copy(isError = true) }
+                        return@onSuccess
+                    }
+
                     updateState {
                         copy(
                             subjectImagePath = result.subjectImagePath,
-                            subjectBounds = result.subjectBounds,
+                            subjectBounds = subjectBounds,
                         )
                     }
                 }.onFailure { updateState { copy(isError = true) } }
