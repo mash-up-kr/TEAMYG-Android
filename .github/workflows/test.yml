@@ -15,36 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # JDK 17버전으로 설치
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Restore app secrets
+        uses: ./.github/actions/restore-app-secrets
         with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Gradlew Cache를 통한 속도 향상
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Gradlew 실행을 위한 권한 부여
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      # build 를 위한 local.properties 생성
-      - name: Create local.properties
-        run: |
-          echo "KAKAO_NATIVE_APP_KEY=${{ secrets.KAKAO_NATIVE_APP_KEY }}" >> local.properties
-
-      # google-services.json 생성
-      - name: Create google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+          kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
       # 유닛 테스트 수행 (전체 모듈. 테스트가 없는 모듈은 NO-SOURCE 로 즉시 스킵된다)
       - name: Run unit tests
@@ -71,11 +48,3 @@ jobs:
           name: test-reports
           path: '**/build/reports/tests/**'
           retention-days: 7
-
-      # 캐시 지우기 (이 워크플로는 실패하는 경우가 있으므로 실패해도 반드시 실행한다 —
-      # 안 그러면 modules-2.lock 이 캐시에 남아 ktlint 워크플로와 공유하는 캐시 키를 오염시킨다)
-      - name: Cleanup Gradle Cache
-        if: always()
-        run: |
-          rm -f ~/.gradle/caches/modules-2/modules-2.lock
-          rm -f ~/.gradle/caches/modules-2/gc.properties

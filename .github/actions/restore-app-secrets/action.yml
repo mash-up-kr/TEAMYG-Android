@@ -1,0 +1,21 @@
+name: Restore App Secrets
+description: 빌드에 필요한 local.properties와 app/google-services.json을 복원한다
+
+inputs:
+  kakao-native-app-key:
+    description: 카카오 네이티브 앱 키
+    required: true
+  google-services-json:
+    description: google-services.json 원문
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        KAKAO_NATIVE_APP_KEY: ${{ inputs.kakao-native-app-key }}
+        GOOGLE_SERVICES_JSON: ${{ inputs.google-services-json }}
+      run: |
+        printf 'KAKAO_NATIVE_APP_KEY=%s\n' "$KAKAO_NATIVE_APP_KEY" >> local.properties
+        printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
