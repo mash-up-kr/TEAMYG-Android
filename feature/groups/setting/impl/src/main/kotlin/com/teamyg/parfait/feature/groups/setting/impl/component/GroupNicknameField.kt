@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.setting.impl.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -10,9 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
 import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
@@ -47,4 +52,41 @@ internal fun GroupNicknameField(
             keyboardActions = KeyboardActions(onDone = { onConfirmNickname() }),
         )
     }
+}
+
+private data class GroupNicknameFieldPreviewState(
+    val nickname: String,
+    val nicknameError: NameValidResult.Error? = null,
+)
+
+private class GroupNicknameFieldPreviewParameterProvider :
+    PreviewParameterProvider<GroupNicknameFieldPreviewState> {
+    override val values: Sequence<GroupNicknameFieldPreviewState>
+        get() = sequenceOf(
+            GroupNicknameFieldPreviewState(nickname = "닉네임"),
+            GroupNicknameFieldPreviewState(nickname = ""),
+            GroupNicknameFieldPreviewState(
+                nickname = "닉네임!",
+                nicknameError = NameValidResult.Error.InvalidCharacter,
+            ),
+            GroupNicknameFieldPreviewState(nickname = "열다섯글자를꽉꽉채운닉네임야호"),
+        )
+}
+
+@YGPreview
+@Composable
+private fun GroupNicknameFieldPreview(
+    @PreviewParameter(GroupNicknameFieldPreviewParameterProvider::class)
+    state: GroupNicknameFieldPreviewState,
+) = PreviewBox {
+    GroupNicknameField(
+        nickname = state.nickname,
+        nicknameError = state.nicknameError,
+        onNicknameChange = {},
+        onFocusChange = {},
+        onConfirmNickname = {},
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(YGTheme.layout.padding.padding7),
+    )
 }

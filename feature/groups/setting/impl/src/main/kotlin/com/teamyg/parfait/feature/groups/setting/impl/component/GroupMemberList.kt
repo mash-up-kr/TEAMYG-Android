@@ -7,11 +7,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChipStyle
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGUserChip
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGUserNameStyle
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.setting.impl.R
 import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
 
@@ -52,4 +57,62 @@ internal fun GroupMemberList(
             }
         }
     }
+}
+
+private class GroupMemberListPreviewParameterProvider :
+    PreviewParameterProvider<List<GroupMemberUiModel>> {
+    override val values: Sequence<List<GroupMemberUiModel>>
+        get() = sequenceOf(
+            listOf(
+                GroupMemberUiModel(
+                    nickname = "나야나",
+                    colorChipType = YGColorChipType.NametagChip1,
+                    isMe = true,
+                ),
+            ),
+            listOf(
+                GroupMemberUiModel(
+                    nickname = "나야나",
+                    colorChipType = YGColorChipType.NametagChip1,
+                    isMe = true,
+                ),
+                GroupMemberUiModel(
+                    nickname = "철수",
+                    colorChipType = YGColorChipType.NametagChip3,
+                ),
+                GroupMemberUiModel(
+                    nickname = "영희",
+                    colorChipType = YGColorChipType.NametagChip5,
+                ),
+                GroupMemberUiModel(
+                    nickname = "민수",
+                    colorChipType = YGColorChipType.NametagChip8,
+                ),
+            ),
+            listOf(
+                GroupMemberUiModel(
+                    nickname = "열다섯글자를꽉꽉채운닉네임야호",
+                    colorChipType = YGColorChipType.NametagChip2,
+                    isMe = true,
+                ),
+                GroupMemberUiModel(
+                    nickname = "열다섯글자를꽉꽉채운닉네임이야",
+                    colorChipType = YGColorChipType.NametagChip6,
+                ),
+            ),
+        )
+}
+
+@YGPreview
+@Composable
+private fun GroupMemberListPreview(
+    @PreviewParameter(GroupMemberListPreviewParameterProvider::class)
+    members: List<GroupMemberUiModel>,
+) = PreviewBox {
+    GroupMemberList(
+        members = members,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(YGTheme.layout.padding.padding7),
+    )
 }
