@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -50,6 +51,7 @@ internal fun YGTextFieldImpl(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap5),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
+            .defaultMinSize(minHeight = SizeTokens.Size48.getDp())
             .background(
                 color = colors.backgroundColor(isEnabled = enabled),
                 shape = commonShape,
