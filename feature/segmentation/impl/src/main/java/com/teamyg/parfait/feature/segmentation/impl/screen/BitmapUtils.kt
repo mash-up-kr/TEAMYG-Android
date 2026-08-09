@@ -11,24 +11,27 @@ internal data class BitmapViewMapping(
 ) {
     companion object {
         /**
-         * 비트맵을 비율을 지킨 채 [viewSize] 안에 넣고, 남는 여백을 양쪽에 똑같이 나눈다.
-         * ImageView 의 FIT_CENTER 와 같은 배치다.
+         * 비트맵을 비율을 지킨 채 [viewSize] 안에 잘리지 않게 넣고, 남는 여백을 양쪽에 똑같이 나눈다.
+         * ImageView 의 FIT_CENTER 와 같은 배치이며, [zoom] 이 1 이면 가로/세로 모두 가운데 정렬이다.
+         *
+         * @param zoom 위 배치를 기준 1배로 삼는 확대 배율
+         * @param pan 확대된 상태에서의 이동량. 이미지가 뷰포트 밖으로 빠지지 않도록 가둔 뒤 반영한다
          */
         fun fitCenter(
             viewSize: Size,
             bitmapWidth: Int,
             bitmapHeight: Int,
+            zoom: Float = 1f,
+            pan: Offset = Offset.Zero,
         ): BitmapViewMapping {
-            val scale = minOf(
-                viewSize.width / bitmapWidth.toFloat(),
-                viewSize.height / bitmapHeight.toFloat(),
-            )
+            val scale = fitScale(viewSize, bitmapWidth, bitmapHeight) * zoom
             val displayedWidth = bitmapWidth * scale
             val displayedHeight = bitmapHeight * scale
+            val clampedPan = clampPan(pan, viewSize, bitmapWidth, bitmapHeight, zoom)
             return BitmapViewMapping(
                 scale = scale,
-                offsetX = (viewSize.width - displayedWidth) / 2f,
-                offsetY = (viewSize.height - displayedHeight) / 2f,
+                offsetX = (viewSize.width - displayedWidth) / 2f + clampedPan.x,
+                offsetY = (viewSize.height - displayedHeight) / 2f + clampedPan.y,
             )
         }
 
@@ -37,12 +40,46 @@ internal data class BitmapViewMapping(
             viewSize: IntSize,
             bitmapWidth: Int,
             bitmapHeight: Int,
+            zoom: Float = 1f,
+            pan: Offset = Offset.Zero,
         ): BitmapViewMapping = fitCenter(
             viewSize = Size(viewSize.width.toFloat(), viewSize.height.toFloat()),
             bitmapWidth = bitmapWidth,
             bitmapHeight = bitmapHeight,
+            zoom = zoom,
+            pan = pan,
         )
     }
+}
+
+/** 비율을 지킨 채 [viewSize] 안에 잘리지 않고 꽉 차게 담기는 배율 */
+internal fun fitScale(
+    viewSize: Size,
+    bitmapWidth: Int,
+    bitmapHeight: Int,
+): Float = minOf(
+    viewSize.width / bitmapWidth.toFloat(),
+    viewSize.height / bitmapHeight.toFloat(),
+)
+
+/**
+ * 확대된 이미지가 뷰포트 밖으로 빠지지 않도록 이동량을 가둔다.
+ * 이미지가 뷰포트보다 작은 축은 이동할 여지가 없어 늘 가운데에 머문다.
+ */
+internal fun clampPan(
+    pan: Offset,
+    viewSize: Size,
+    bitmapWidth: Int,
+    bitmapHeight: Int,
+    zoom: Float,
+): Offset {
+    val scale = fitScale(viewSize, bitmapWidth, bitmapHeight) * zoom
+    val maxX = ((bitmapWidth * scale - viewSize.width) / 2f).coerceAtLeast(0f)
+    val maxY = ((bitmapHeight * scale - viewSize.height) / 2f).coerceAtLeast(0f)
+    return Offset(
+        x = pan.x.coerceIn(-maxX, maxX),
+        y = pan.y.coerceIn(-maxY, maxY),
+    )
 }
 
 internal fun mapViewToBitmap(

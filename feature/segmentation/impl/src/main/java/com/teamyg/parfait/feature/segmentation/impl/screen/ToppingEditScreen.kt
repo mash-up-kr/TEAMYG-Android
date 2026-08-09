@@ -1,8 +1,11 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -23,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
@@ -34,6 +39,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
@@ -54,6 +60,10 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+/** 두 손가락으로 넓힐 수 있는 배율. 1배는 화면에 꽉 맞춘 처음 배치라 그보다 작게는 줄이지 않는다 */
+private const val MIN_ZOOM = 1f
+private const val MAX_ZOOM = 3f
 
 @Composable
 internal fun ToppingEditScreen(
@@ -178,6 +188,10 @@ private fun ToppingEditCanvas(
     // 드래그가 끝날 때 한 번만 확정한다
     var drawingPoints by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
+    // 두 손가락으로 조절하는 확대 배율과 이동량. 사진이 바뀌면 처음 배치로 되돌린다
+    var zoom by remember(originBitmap) { mutableFloatStateOf(MIN_ZOOM) }
+    var pan by remember(originBitmap) { mutableStateOf(Offset.Zero) }
+
     val originImage = remember(originBitmap) { originBitmap.asImageBitmap() }
     val segmentationImage = remember(segmentationBitmap) { segmentationBitmap.asImageBitmap() }
 
@@ -193,26 +207,74 @@ private fun ToppingEditCanvas(
     Canvas(
         modifier = modifier
             .pointerInput(originBitmap, state.mode, brushWidthPx) {
-                val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
-                detectTapGestures(
-                    onTap = { offset ->
-                        drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping))
-                        commitStroke(mapping)
-                    },
+                val viewSize = Size(size.width.toFloat(), size.height.toFloat())
+                val viewCenter = Offset(viewSize.width / 2f, viewSize.height / 2f)
+
+                fun currentMapping(): BitmapViewMapping = BitmapViewMapping.fitCenter(
+                    viewSize = viewSize,
+                    bitmapWidth = originBitmap.width,
+                    bitmapHeight = originBitmap.height,
+                    zoom = zoom,
+                    pan = pan,
                 )
-            }.pointerInput(originBitmap, state.mode, brushWidthPx) {
-                val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
-                detectDragGestures(
-                    onDragStart = { offset -> drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping)) },
-                    onDrag = { change, _ ->
-                        drawingPoints = drawingPoints + mapViewToBitmapFloat(change.position, mapping)
-                    },
-                    onDragEnd = { commitStroke(mapping) },
-                    onDragCancel = { drawingPoints = emptyList() },
-                )
+
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    // 손가락이 둘 이상이면 그리기가 아니라 확대/이동으로 넘어간다
+                    var isTransforming = false
+                    drawingPoints = listOf(mapViewToBitmapFloat(down.position, currentMapping()))
+
+                    do {
+                        val event = awaitPointerEvent()
+                        val pressedChanges = event.changes.filter { it.pressed }
+
+                        if (pressedChanges.size >= 2) {
+                            if (!isTransforming) {
+                                // 두 번째 손가락이 닿는 순간 그리던 획은 버린다
+                                isTransforming = true
+                                drawingPoints = emptyList()
+                            }
+
+                            val newZoom = (zoom * event.calculateZoom()).coerceIn(MIN_ZOOM, MAX_ZOOM)
+                            // 배율이 한계에 걸리면 걸린 만큼만 반영해야 이동량이 어긋나지 않는다
+                            val appliedZoomChange = newZoom / zoom
+                            val centroid = event.calculateCentroid(useCurrent = true) - viewCenter
+                            // 두 손가락 사이 지점이 제자리에 머물도록 확대 전후의 이동량을 맞춘다
+                            val zoomedPan = centroid * (1f - appliedZoomChange) + pan * appliedZoomChange
+
+                            zoom = newZoom
+                            pan = clampPan(
+                                pan = zoomedPan + event.calculatePan(),
+                                viewSize = viewSize,
+                                bitmapWidth = originBitmap.width,
+                                bitmapHeight = originBitmap.height,
+                                zoom = newZoom,
+                            )
+                            event.changes.forEach { change -> change.consume() }
+                        } else if (!isTransforming) {
+                            val change = pressedChanges.firstOrNull()
+                            if (change != null && change.positionChange() != Offset.Zero) {
+                                drawingPoints = drawingPoints + mapViewToBitmapFloat(change.position, currentMapping())
+                                change.consume()
+                            }
+                        }
+                    } while (event.changes.any { change -> change.pressed })
+
+                    if (isTransforming) {
+                        drawingPoints = emptyList()
+                    } else {
+                        commitStroke(currentMapping())
+                    }
+                }
             },
     ) {
-        val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
+        val mapping = BitmapViewMapping.fitCenter(
+            viewSize = size,
+            bitmapWidth = originBitmap.width,
+            bitmapHeight = originBitmap.height,
+            zoom = zoom,
+            pan = pan,
+        )
         val dstOffset = IntOffset(mapping.offsetX.roundToInt(), mapping.offsetY.roundToInt())
         val dstSize = IntSize(
             width = (originBitmap.width * mapping.scale).roundToInt(),
