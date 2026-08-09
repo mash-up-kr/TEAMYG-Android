@@ -89,12 +89,13 @@ internal fun ToppingBorderEditScreen(
             right = (dstOffset.x + dstSize.width).toFloat(),
             bottom = (dstOffset.y + dstSize.height).toFloat(),
         ) {
-            borderLayers.forEachOutsetOutermostFirst { layer, layerOutset ->
+            // 굵기가 dp 라 화면 배율을 태우지 않는다. 사진 해상도가 달라도 눈에 보이는 굵기는 같다
+            borderLayers.forEachOutsetOutermostFirst(density) { layer, layerOutset ->
                 drawOutline(
                     image = image,
                     dstOffset = dstOffset,
                     dstSize = dstSize,
-                    radius = layerOutset * mapping.scale,
+                    radius = layerOutset,
                     color = layer.color,
                 )
             }

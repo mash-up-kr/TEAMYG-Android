@@ -59,16 +59,22 @@ internal fun buildCutoutBitmap(
  *
  * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
  * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
+ *
+ * 겹의 굵기는 dp 라 [originPxPerDp] 로 원본 좌표계 굵기를 얻는다. 미리보기가 화면에 그릴 때 쓰는
+ * 배율을 되짚은 값이므로, 화면에서 본 굵기가 그대로 파일에 남는다.
  */
-internal fun Bitmap.withBorders(borderLayers: List<ToppingBorderLayer>): Bitmap {
-    if (borderLayers.isEmpty()) return this
+internal fun Bitmap.withBorders(
+    borderLayers: List<ToppingBorderLayer>,
+    originPxPerDp: Float,
+): Bitmap {
+    if (borderLayers.isEmpty() || originPxPerDp <= 0f) return this
 
     val destination = RectF(0f, 0f, width.toFloat(), height.toFloat())
 
     val bordered = createBitmap(width, height)
     val canvas = Canvas(bordered)
 
-    borderLayers.forEachOutsetOutermostFirst { layer, layerOutset ->
+    borderLayers.forEachOutsetOutermostFirst(originPxPerDp) { layer, layerOutset ->
         val paint = borderPaint(layer.colorArgb)
         forEachOutlineOffset(layerOutset) { offset ->
             val shifted = RectF(destination).apply { offset(offset.x, offset.y) }

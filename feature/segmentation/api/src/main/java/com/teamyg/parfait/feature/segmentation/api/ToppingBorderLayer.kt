@@ -12,10 +12,11 @@ import kotlinx.serialization.Serializable
  * 이 모듈이 Compose 를 알지 않아야 하기 때문이다. 편집 화면 쪽에서 Color 로 바꿔 쓴다.
  *
  * @param colorArgb 겹의 색
- * @param width 겹의 굵기. 화면 크기에 매이면 미리보기와 저장 결과가 어긋나므로 원본 비트맵 좌표계 기준이다
+ * @param widthDp 겹의 굵기(dp). 붓 굵기와 같은 기준이라 사진 해상도가 달라도 화면에서 같은 굵기로 보인다.
+ * 저장할 때 편집 화면이 원본 비트맵 좌표계 굵기로 환산한다
  */
 @Serializable
 data class ToppingBorderLayer(
     val colorArgb: Int,
-    val width: Float,
+    val widthDp: Float,
 )

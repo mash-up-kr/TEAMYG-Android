@@ -39,14 +39,14 @@ private const val MIN_BRUSH_WIDTH_DP = 2f
 private const val MAX_BRUSH_WIDTH_DP = 50f
 
 /**
- * 테두리 굵기(px). 기획 정책(C-104)이 해상도와 무관한 고정 px 범위로 못박아 둔 값이다.
+ * 화면에 보이는 테두리 굵기. 기획 정책(C-104)이 정한 2~50 범위를 붓과 같은 dp 기준으로 잡는다.
  *
- * 굵기는 원본 좌표로 재고 저장 결과도 원본 크기라, 여기 적힌 px 가 곧 저장된 파일에서의 px 다.
- * 화면에서는 원본이 편집 영역에 맞춰 줄어든 배율만큼 함께 줄어 보인다.
+ * 원본 좌표로 재면 사진 해상도에 따라 같은 값이 전혀 다른 굵기로 보이므로 붓과 단위를 맞춘다.
+ * 저장할 때 편집 화면이 미리보기에 쓴 배율을 되짚어 원본 비트맵 좌표계 굵기로 환산한다.
  */
-private const val DEFAULT_BORDER_WIDTH = 10f
-private const val MIN_BORDER_WIDTH = 2f
-private const val MAX_BORDER_WIDTH = 50f
+private const val DEFAULT_BORDER_WIDTH_DP = 10f
+private const val MIN_BORDER_WIDTH_DP = 2f
+private const val MAX_BORDER_WIDTH_DP = 50f
 
 private fun UndoRedoStack<ToppingBorderLayer>.outermostColor(): Color = latest?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
@@ -62,8 +62,8 @@ data class ToppingEditState(
      * 영역 탭에서 획을 지운 뒤 테두리 탭에서 되돌리기를 눌러도 획이 살아나면 안 되기 때문이다.
      */
     val areaHistory: UndoRedoStack<ToppingEditStroke> = UndoRedoStack(),
-    /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
-    val pendingBorderWidth: Float = DEFAULT_BORDER_WIDTH,
+    /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidthDp] 가 그 겹을 따라간다 */
+    val pendingBorderWidthDp: Float = DEFAULT_BORDER_WIDTH_DP,
     val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
     /**
      * 색상칩에서 켜둘 색.
@@ -72,6 +72,13 @@ data class ToppingEditState(
      * 겹에서 끌어내지 않고 따로 들고 간다.
      */
     val selectedBorderColor: Color = DEFAULT_TOPPING_BORDER_COLOR,
+    /**
+     * dp 굵기를 원본 비트맵 좌표계 굵기로 바꿀 때 곱할 값.
+     *
+     * 미리보기가 사진을 편집 영역에 맞춰 줄여 놓은 배율을 되짚은 값이라 화면을 재 본 뒤에야 알 수 있다.
+     * 편집 영역을 그리는 쪽이 크기를 재서 알려준다.
+     */
+    val originPxPerDp: Float = 0f,
     val isSaving: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
@@ -89,11 +96,11 @@ data class ToppingEditState(
      * 굵기 슬라이더가 가리키는 값. 두른 겹이 있으면 슬라이더가 곧 그 겹의 굵기다.
      * 되돌려서 겹이 벗겨지면 그 아래 겹의 굵기로 따라 내려간다.
      */
-    val borderWidth: Float get() = borderHistory.latest?.width ?: pendingBorderWidth
+    val borderWidthDp: Float get() = borderHistory.latest?.widthDp ?: pendingBorderWidthDp
 
-    val minBorderWidth: Float get() = MIN_BORDER_WIDTH
+    val minBorderWidthDp: Float get() = MIN_BORDER_WIDTH_DP
 
-    val maxBorderWidth: Float get() = MAX_BORDER_WIDTH
+    val maxBorderWidthDp: Float get() = MAX_BORDER_WIDTH_DP
 }
 
 /**
@@ -118,6 +125,9 @@ sealed interface ToppingEditIntent : UiIntent {
     data class SelectBorderColor(val color: Color) : ToppingEditIntent
 
     data class ChangeBorderWidth(val width: Float) : ToppingEditIntent
+
+    /** 편집 영역을 다 재고 나서 dp 를 원본 좌표로 되돌릴 값을 알려준다 */
+    data class ChangeOriginPxPerDp(val originPxPerDp: Float) : ToppingEditIntent
 
     data object UndoBorder : ToppingEditIntent
 
@@ -182,7 +192,7 @@ class ToppingEditViewModel
                         intent.color == borderHistory.outermostColor()
                     if (addsNothing) return@updateState copy(selectedBorderColor = intent.color)
 
-                    val layer = ToppingBorderLayer(colorArgb = intent.color.toArgb(), width = borderWidth)
+                    val layer = ToppingBorderLayer(colorArgb = intent.color.toArgb(), widthDp = borderWidthDp)
                     copy(
                         selectedBorderColor = intent.color,
                         borderHistory = borderHistory.push(layer),
@@ -192,13 +202,17 @@ class ToppingEditViewModel
 
             is ToppingEditIntent.ChangeBorderWidth -> {
                 updateState {
-                    val width = intent.width.coerceIn(minBorderWidth, maxBorderWidth)
+                    val widthDp = intent.width.coerceIn(minBorderWidthDp, maxBorderWidthDp)
                     // 슬라이더는 가장 바깥 겹의 굵기를 직접 민다. 두른 겹이 없으면 다음 겹에 쓸 값만 바뀐다
                     copy(
-                        pendingBorderWidth = width,
-                        borderHistory = borderHistory.replaceLast { layer -> layer.copy(width = width) },
+                        pendingBorderWidthDp = widthDp,
+                        borderHistory = borderHistory.replaceLast { layer -> layer.copy(widthDp = widthDp) },
                     )
                 }
+            }
+
+            is ToppingEditIntent.ChangeOriginPxPerDp -> {
+                updateState { copy(originPxPerDp = intent.originPxPerDp) }
             }
 
             ToppingEditIntent.UndoBorder -> {
@@ -264,7 +278,9 @@ class ToppingEditViewModel
                     strokes = current.strokes,
                 )
             }
-            val edited = withContext(Dispatchers.Default) { cutout.withBorders(current.borderLayers) }
+            val edited = withContext(Dispatchers.Default) {
+                cutout.withBorders(current.borderLayers, current.originPxPerDp)
+            }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에

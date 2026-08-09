@@ -21,10 +21,10 @@ import java.io.File
 
 /** 겹은 화면 회전에도 살아남아야 하는데 [ToppingBorderLayer] 를 그대로 담지 못하므로 두 값으로 펼친다 */
 private val BorderLayersSaver = listSaver<List<ToppingBorderLayer>, Any>(
-    save = { layers -> layers.flatMap { layer -> listOf(layer.colorArgb, layer.width) } },
+    save = { layers -> layers.flatMap { layer -> listOf(layer.colorArgb, layer.widthDp) } },
     restore = { values ->
-        values.chunked(2) { (colorArgb, width) ->
-            ToppingBorderLayer(colorArgb = colorArgb as Int, width = width as Float)
+        values.chunked(2) { (colorArgb, widthDp) ->
+            ToppingBorderLayer(colorArgb = colorArgb as Int, widthDp = widthDp as Float)
         }
     },
 )

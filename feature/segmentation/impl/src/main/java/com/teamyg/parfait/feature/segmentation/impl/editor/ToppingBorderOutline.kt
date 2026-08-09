@@ -39,14 +39,20 @@ internal inline fun forEachOutlineOffset(
  *
  * 겹은 아래 겹을 감싸며 쌓이므로 밀려나는 거리는 자기 굵기가 아니라 자기까지의 굵기를 모두 더한 값이다.
  * 그릴 때는 가장 바깥부터 깔아야 안쪽 겹이 위에 남으므로 훑는 방향도 바깥에서 안쪽이다.
+ *
+ * 굵기는 dp 로 들고 있으므로 [pxPerDp] 를 곱해 그리는 쪽 좌표계로 환산해 넘긴다.
+ * 미리보기는 화면 px 로, 저장은 원본 비트맵 px 로 환산하는 값을 각각 넘긴다.
  */
-internal inline fun List<ToppingBorderLayer>.forEachOutsetOutermostFirst(action: (ToppingBorderLayer, Float) -> Unit) {
-    var outset = 0f
-    forEach { layer -> outset += layer.width }
+internal inline fun List<ToppingBorderLayer>.forEachOutsetOutermostFirst(
+    pxPerDp: Float,
+    action: (ToppingBorderLayer, Float) -> Unit,
+) {
+    var outsetDp = 0f
+    forEach { layer -> outsetDp += layer.widthDp }
 
     for (index in lastIndex downTo 0) {
         val layer = this[index]
-        action(layer, outset)
-        outset -= layer.width
+        action(layer, outsetDp * pxPerDp)
+        outsetDp -= layer.widthDp
     }
 }
