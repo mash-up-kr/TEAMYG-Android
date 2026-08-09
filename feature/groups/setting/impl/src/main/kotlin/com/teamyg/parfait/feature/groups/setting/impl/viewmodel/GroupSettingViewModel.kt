@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -10,6 +11,9 @@ import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupMemberUiModel(
@@ -63,6 +67,8 @@ constructor(
 ) : BaseViewModel<GroupSettingUiState, GroupSettingIntent, GroupSettingSideEffect>(
     initialState = GroupSettingUiState(),
 ) {
+    private var copyResetJob: Job? = null
+
     init {
         viewModelLogger.i { "GroupSettingViewModel::init" }
     }
@@ -131,6 +137,12 @@ constructor(
     private fun handleClickCopyInviteCode() {
         updateState { copy(isCodeCopied = true) }
         postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode))
+
+        copyResetJob?.cancel()
+        copyResetJob = viewModelScope.launch {
+            delay(COPY_CODE_RESET_DELAY_MS)
+            updateState { copy(isCodeCopied = false) }
+        }
     }
 
     private fun handleClickLeaveGroup() {
@@ -160,6 +172,9 @@ private const val MOCK_GROUP_NAME = "그룹이름"
 private const val MOCK_MY_NICKNAME = "잠탈전용닉네임2"
 private const val MOCK_INVITE_CODE = "WDIDCJ"
 private const val MOCK_REMAINING_COUNT = 1
+
+// 초대 코드 복사 후 "복사됨" 문구가 원래 문구로 되돌아가기까지의 지연(ms)
+private const val COPY_CODE_RESET_DELAY_MS = 2000L
 
 // TODO: 컬러칩 타입 부여 주체가 미정이라 목록 인덱스로 순환 배정한다. 서버가 타입을 주면 교체.
 private val NAMETAG_CHIP_TYPES: List<YGColorChipType> = listOf(
