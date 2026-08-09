@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -62,73 +61,71 @@ internal fun GroupSettingScreen(
     }
 
     YGScreen(modifier = modifier.clearFocusOnTap()) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                YGTopBarDetail(
-                    title = state.groupName.value,
-                    onIconClick = handleBack,
+        Column(modifier = Modifier.fillMaxSize()) {
+            YGTopBarDetail(
+                title = state.groupName.value,
+                onIconClick = handleBack,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                        bottom = YGTheme.layout.padding.padding8,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
+            ) {
+                GroupNicknameField(
+                    nickname = state.nicknameInput,
+                    nicknameError = state.nicknameError,
+                    onNicknameChange = onNicknameChange,
+                    onFocusChange = onNicknameFocusChange,
+                    onConfirmNickname = confirmAndDismissKeyboard,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(
-                            start = YGTheme.layout.padding.padding7,
-                            end = YGTheme.layout.padding.padding7,
-                            bottom = YGTheme.layout.padding.padding8,
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
-                ) {
-                    GroupNicknameField(
-                        nickname = state.nicknameInput,
-                        nicknameError = state.nicknameError,
-                        onNicknameChange = onNicknameChange,
-                        onFocusChange = onNicknameFocusChange,
-                        onConfirmNickname = confirmAndDismissKeyboard,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                GroupMemberList(
+                    members = state.members,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                    GroupMemberList(
-                        members = state.members,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                YGInviteCard(
+                    label = stringResource(R.string.group_setting_invite_label),
+                    inviteCode = state.inviteCode.value,
+                    subText = inviteCardSubText(state),
+                    status = inviteCardStatus(state),
+                    copyButtonText = stringResource(R.string.group_setting_copy),
+                    onCopyClick = onClickCopyInviteCode,
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-                    YGInviteCard(
-                        label = stringResource(R.string.group_setting_invite_label),
-                        inviteCode = state.inviteCode.value,
-                        subText = inviteCardSubText(state),
-                        status = inviteCardStatus(state),
-                        copyButtonText = stringResource(R.string.group_setting_copy),
-                        onCopyClick = onClickCopyInviteCode,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    YGDangerZone(
-                        topZone = {
-                            YGActionItem(
-                                text = stringResource(R.string.group_setting_leave),
-                                onClick = onClickLeaveGroup,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        },
-                        bottomZone = {
-                            YGActionItem(
-                                text = stringResource(R.string.group_setting_report),
-                                onClick = onClickReportGroup,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                YGDangerZone(
+                    topZone = {
+                        YGActionItem(
+                            text = stringResource(R.string.group_setting_leave),
+                            onClick = onClickLeaveGroup,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    bottomZone = {
+                        YGActionItem(
+                            text = stringResource(R.string.group_setting_report),
+                            onClick = onClickReportGroup,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
 
             if (state.isEditing) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .imePadding()
                         .background(YGAtomicColors.Gray.White)
