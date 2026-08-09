@@ -28,6 +28,8 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
+import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -87,9 +89,9 @@ internal fun GroupCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = stringResource(R.string.group_name_placeholder),
                     enabled = true,
-                    isError = uiState.groupNameErrorTextResId != null,
+                    isError = uiState.groupNameError != null,
                     maxLength = GroupCreateConfig.GROUP_NAME_MAX_LENGTH,
-                    errorDescription = uiState.groupNameErrorTextResId?.let { stringResource(it) },
+                    errorDescription = uiState.groupNameError?.toStringResource(NameFieldType.GROUP_NAME),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }

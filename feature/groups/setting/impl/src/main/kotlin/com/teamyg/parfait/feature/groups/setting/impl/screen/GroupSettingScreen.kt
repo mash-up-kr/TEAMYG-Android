@@ -37,13 +37,13 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.feature.groups.setting.impl.R
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupMemberList
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupNicknameField
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingUiState
-import com.teamyg.parfait.core.ui.R as CoreR
 
 @Composable
 internal fun GroupSettingScreen(
@@ -62,7 +62,7 @@ internal fun GroupSettingScreen(
         if (state.isEditing) focusManager.clearFocus() else onClickBack()
     }
     val confirmAndDismissKeyboard = {
-        if (state.errorMessageResId == null) {
+        if (state.nicknameError == null) {
             onConfirmNickname()
             focusManager.clearFocus()
         }
@@ -96,7 +96,7 @@ internal fun GroupSettingScreen(
                 ) {
                     GroupNicknameField(
                         nickname = state.nicknameInput,
-                        errorMessageResId = state.errorMessageResId,
+                        nicknameError = state.nicknameError,
                         onNicknameChange = onNicknameChange,
                         onFocusChange = onNicknameFocusChange,
                         onConfirmNickname = confirmAndDismissKeyboard,
@@ -193,7 +193,7 @@ private class GroupSettingPreviewParameterProvider :
             GroupSettingUiState(
                 isEditing = true,
                 nicknameInput = " 잘못된닉네임",
-                errorMessageResId = CoreR.string.error_space_at_edge_nickname,
+                nicknameError = NameValidResult.Error.SpaceAtEdge,
             ),
         )
 }

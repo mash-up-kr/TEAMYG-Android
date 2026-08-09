@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -12,7 +13,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.teamyg.parfait.core.ui.R as CoreR
 
 class GroupSettingViewModelTest {
     @get:Rule
@@ -30,7 +30,7 @@ class GroupSettingViewModelTest {
 
         // Then 입력값이 반영되고 에러가 없다
         assertEquals("새닉네임", viewModel.state.value.nicknameInput)
-        assertNull(viewModel.state.value.errorMessageResId)
+        assertNull(viewModel.state.value.nicknameError)
     }
 
     @Test
@@ -43,8 +43,8 @@ class GroupSettingViewModelTest {
 
         // Then 문자 규칙 위반 에러가 붙는다
         assertEquals(
-            CoreR.string.error_invalid_character,
-            viewModel.state.value.errorMessageResId,
+            NameValidResult.Error.InvalidCharacter,
+            viewModel.state.value.nicknameError,
         )
     }
 
@@ -58,8 +58,8 @@ class GroupSettingViewModelTest {
 
         // Then 가장자리 공백 에러가 붙는다
         assertEquals(
-            CoreR.string.error_space_at_edge_nickname,
-            viewModel.state.value.errorMessageResId,
+            NameValidResult.Error.SpaceAtEdge,
+            viewModel.state.value.nicknameError,
         )
     }
 
@@ -73,8 +73,8 @@ class GroupSettingViewModelTest {
 
         // Then 연속 공백 에러가 붙는다
         assertEquals(
-            CoreR.string.error_duplicated_space,
-            viewModel.state.value.errorMessageResId,
+            NameValidResult.Error.DuplicatedSpace,
+            viewModel.state.value.nicknameError,
         )
     }
 
@@ -88,8 +88,8 @@ class GroupSettingViewModelTest {
 
         // Then 빈 값 에러가 붙고 확인이 비활성이다
         assertEquals(
-            CoreR.string.error_empty_space_nickname,
-            viewModel.state.value.errorMessageResId,
+            NameValidResult.Error.EmptyString,
+            viewModel.state.value.nicknameError,
         )
         assertFalse(viewModel.state.value.isConfirmEnabled)
     }
@@ -128,8 +128,8 @@ class GroupSettingViewModelTest {
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname("고치던 값!"))
         assertEquals(
-            CoreR.string.error_invalid_character,
-            viewModel.state.value.errorMessageResId,
+            NameValidResult.Error.InvalidCharacter,
+            viewModel.state.value.nicknameError,
         )
 
         // When 포커스를 잃음
@@ -138,7 +138,7 @@ class GroupSettingViewModelTest {
         // Then 편집이 취소되고 입력값이 원래대로 돌아가며 에러도 초기화된다
         assertFalse(viewModel.state.value.isEditing)
         assertEquals(original, viewModel.state.value.nicknameInput)
-        assertNull(viewModel.state.value.errorMessageResId)
+        assertNull(viewModel.state.value.nicknameError)
     }
 
     @Test

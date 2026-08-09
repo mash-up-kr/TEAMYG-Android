@@ -18,21 +18,20 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupSettingUiState(
     val groupName: GroupName = GroupName(MOCK_GROUP_NAME),
     val myNickname: GroupNickname = GroupNickname(MOCK_MY_NICKNAME),
     val nicknameInput: String = MOCK_MY_NICKNAME,
     val isEditing: Boolean = false,
-    val errorMessageResId: Int? = null,
+    val nicknameError: NameValidResult.Error? = null,
     val members: List<GroupMemberUiModel> = MOCK_MEMBERS,
     val inviteCode: InviteCode = InviteCode(MOCK_INVITE_CODE),
     val remainingCount: Int = MOCK_REMAINING_COUNT,
     val isCodeCopied: Boolean = false,
 ) : UiState {
     val isConfirmEnabled: Boolean
-        get() = errorMessageResId == null && nicknameInput != myNickname.value
+        get() = nicknameError == null && nicknameInput != myNickname.value
 }
 
 sealed interface GroupSettingIntent : UiIntent {
@@ -92,18 +91,12 @@ constructor(
     }
 
     private fun handleInputNickname(nickname: String) {
-        val errorMessageResId = when (checkNameValid(nickname)) {
-            NameValidResult.Success -> null
-            NameValidResult.Error.DuplicatedSpace -> CoreR.string.error_duplicated_space
-            NameValidResult.Error.InvalidCharacter -> CoreR.string.error_invalid_character
-            NameValidResult.Error.SpaceAtEdge -> CoreR.string.error_space_at_edge_nickname
-            NameValidResult.Error.EmptyString -> CoreR.string.error_empty_space_nickname
-        }
+        val nicknameError = checkNameValid(nickname) as? NameValidResult.Error
 
         updateState {
             copy(
                 nicknameInput = nickname,
-                errorMessageResId = errorMessageResId,
+                nicknameError = nicknameError,
             )
         }
     }
@@ -127,7 +120,7 @@ constructor(
                     if (member.isMe) member.copy(nickname = nicknameInput) else member
                 },
                 isEditing = false,
-                errorMessageResId = null,
+                nicknameError = null,
             )
         }
     }
@@ -157,7 +150,7 @@ constructor(
         updateState {
             copy(
                 nicknameInput = myNickname.value,
-                errorMessageResId = null,
+                nicknameError = null,
                 isEditing = false,
             )
         }

@@ -13,13 +13,16 @@ import androidx.compose.ui.text.input.ImeAction
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.feature.groups.setting.impl.R
 
 @Composable
 internal fun GroupNicknameField(
     nickname: String,
-    errorMessageResId: Int?,
+    nicknameError: NameValidResult.Error?,
     onNicknameChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
     onConfirmNickname: () -> Unit,
@@ -37,9 +40,9 @@ internal fun GroupNicknameField(
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState -> onFocusChange(focusState.hasFocus) },
-            isError = errorMessageResId != null,
+            isError = nicknameError != null,
             maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-            errorDescription = errorMessageResId?.let { stringResource(it) },
+            errorDescription = nicknameError?.toStringResource(NameFieldType.NICKNAME),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onConfirmNickname() }),
         )
