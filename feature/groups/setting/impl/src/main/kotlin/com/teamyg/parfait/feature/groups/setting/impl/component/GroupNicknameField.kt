@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
@@ -33,6 +34,11 @@ internal fun GroupNicknameField(
     onConfirmNickname: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val keyboardOptions = remember { KeyboardOptions(imeAction = ImeAction.Done) }
+    val keyboardActions = remember(onConfirmNickname) {
+        KeyboardActions(onDone = { onConfirmNickname() })
+    }
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
@@ -48,8 +54,8 @@ internal fun GroupNicknameField(
             isError = nicknameError != null,
             maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
             errorDescription = nicknameError?.toStringResource(NameFieldType.NICKNAME),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onConfirmNickname() }),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.setting.impl.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -50,13 +53,19 @@ internal fun GroupSettingScreen(
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
-    val handleBack = {
-        if (state.isEditing) focusManager.clearFocus() else onClickBack()
+    val isEditing = state.isEditing
+    val canConfirm = state.nicknameError == null
+    val handleBack = remember(isEditing, onClickBack, focusManager) {
+        {
+            if (isEditing) focusManager.clearFocus() else onClickBack()
+        }
     }
-    val confirmAndDismissKeyboard = {
-        if (state.nicknameError == null) {
-            onConfirmNickname()
-            focusManager.clearFocus()
+    val confirmAndDismissKeyboard = remember(canConfirm, onConfirmNickname, focusManager) {
+        {
+            if (canConfirm) {
+                onConfirmNickname()
+                focusManager.clearFocus()
+            }
         }
     }
 
@@ -97,8 +106,8 @@ internal fun GroupSettingScreen(
                 YGInviteCard(
                     label = stringResource(R.string.group_setting_invite_label),
                     inviteCode = state.inviteCode.value,
-                    subText = inviteCardSubText(state),
-                    status = inviteCardStatus(state),
+                    subText = inviteCardSubText(state.remainingCount, state.isCodeCopied),
+                    status = inviteCardStatus(state.remainingCount),
                     copyButtonText = stringResource(R.string.group_setting_copy),
                     onCopyClick = onClickCopyInviteCode,
                     modifier = Modifier.fillMaxWidth(),
@@ -129,6 +138,7 @@ internal fun GroupSettingScreen(
                         .fillMaxWidth()
                         .imePadding()
                         .background(YGAtomicColors.Gray.White)
+                        .pointerInput(Unit) { detectTapGestures { /* 버튼 스트립에서 소비 */ } }
                         .padding(YGTheme.layout.padding.padding7),
                 ) {
                     YGButton(
@@ -147,14 +157,17 @@ internal fun GroupSettingScreen(
 }
 
 @Composable
-private fun inviteCardSubText(state: GroupSettingUiState): String = when {
-    state.remainingCount <= 0 -> stringResource(R.string.group_setting_invite_full)
-    state.isCodeCopied -> stringResource(R.string.group_setting_invite_copied)
-    else -> stringResource(R.string.group_setting_invite_remaining, state.remainingCount)
+private fun inviteCardSubText(
+    remainingCount: Int,
+    isCodeCopied: Boolean,
+): String = when {
+    remainingCount <= 0 -> stringResource(R.string.group_setting_invite_full)
+    isCodeCopied -> stringResource(R.string.group_setting_invite_copied)
+    else -> stringResource(R.string.group_setting_invite_remaining, remainingCount)
 }
 
-private fun inviteCardStatus(state: GroupSettingUiState): YGInviteCardStatus =
-    if (state.remainingCount > 0) YGInviteCardStatus.Active else YGInviteCardStatus.Invalid
+private fun inviteCardStatus(remainingCount: Int): YGInviteCardStatus =
+    if (remainingCount > 0) YGInviteCardStatus.Active else YGInviteCardStatus.Invalid
 
 private class GroupSettingPreviewParameterProvider :
     PreviewParameterProvider<GroupSettingUiState> {
