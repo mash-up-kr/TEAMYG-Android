@@ -62,8 +62,6 @@ dependencies {
     implementation(projects.feature.groups.canvas.impl)
     implementation(projects.feature.groups.enter.api)
     implementation(projects.feature.groups.enter.impl)
-    implementation(projects.feature.groups.home.api)
-    implementation(projects.feature.groups.home.impl)
     implementation(projects.feature.groups.list.api)
     implementation(projects.feature.groups.list.impl)
     implementation(projects.feature.groups.setting.api)
