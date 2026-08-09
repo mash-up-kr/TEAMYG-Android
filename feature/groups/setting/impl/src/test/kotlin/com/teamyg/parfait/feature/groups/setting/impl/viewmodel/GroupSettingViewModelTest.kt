@@ -323,6 +323,32 @@ class GroupSettingViewModelTest {
     }
 
     @Test
+    fun confirmLeaveGroup_whenDialogNotVisible_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어떤 팝업도 떠 있지 않은 초기 상태
+        val viewModel = viewModel()
+        val before = viewModel.state.value
+
+        // When 팝업 없이 나가기 확인 Intent가 들어옴(멀티터치로 취소와 동시에 발화한 경우 등)
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+        // Then 아무 것도 바뀌지 않는다
+        assertEquals(before, viewModel.state.value)
+    }
+
+    @Test
+    fun confirmLeaveGroup_whileReportDialogVisible_keepsReportDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 신고 확인 팝업이 떠 있는 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 멀티터치 등으로 나가기 확인 Intent가 잘못 들어옴(교차 확인 방어)
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+        // Then 신고 확인 팝업이 그대로 남아 있다
+        assertEquals(GroupSettingDialog.Report, viewModel.state.value.visibleDialog)
+    }
+
+    @Test
     fun confirmReportGroup_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
         // Given 신고 확인 팝업이 떠 있는 상태
         val viewModel = viewModel()

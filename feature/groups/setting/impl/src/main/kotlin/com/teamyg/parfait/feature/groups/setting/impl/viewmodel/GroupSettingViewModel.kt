@@ -167,12 +167,16 @@ constructor(
     }
 
     private fun handleConfirmLeaveGroup() {
+        if (state.value.visibleDialog != GroupSettingDialog.Leave) return
+
         updateState { copy(visibleDialog = null) }
         // TODO: 그룹 나가기 API 연동 (DELETE /api/parfait-groups/{groupId}/members/me)
         viewModelLogger.i { "GroupSettingViewModel::handleConfirmLeaveGroup" }
     }
 
     private fun handleConfirmReportGroup() {
+        if (state.value.visibleDialog != GroupSettingDialog.Report) return
+
         updateState { copy(visibleDialog = null) }
         // TODO: 그룹 신고 API 연동 (POST /api/parfait-groups/{groupId}/reports)
         viewModelLogger.i { "GroupSettingViewModel::handleConfirmReportGroup" }

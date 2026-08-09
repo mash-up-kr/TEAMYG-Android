@@ -54,6 +54,19 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun confirmWithdraw_whenDialogNotVisible_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴 확인 팝업이 떠 있지 않은 초기 상태
+        val viewModel = viewModel()
+        val before = viewModel.state.value
+
+        // When 팝업 없이 확인 Intent가 들어옴(멀티터치로 취소와 동시에 발화한 경우 등)
+        viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+
+        // Then 아무 것도 바뀌지 않는다
+        assertEquals(before, viewModel.state.value)
+    }
+
+    @Test
     fun clickWithdraw_doesNotChangeProfileState() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 화면의 프로필 값
         val viewModel = viewModel()

@@ -98,8 +98,10 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
     }
 
     private fun handleConfirmWithdraw() {
+        if (!state.value.isWithdrawDialogVisible) return
+
         updateState { copy(isWithdrawDialogVisible = false) }
-        // TODO 회원 탈퇴 API 연동 전 stub
+        // TODO 회원 탈퇴 API 연동 — 서버에 해당 엔드포인트 계약이 아직 없다(신설 후 연동)
         viewModelLogger.i { "AppSettingViewModel::handleConfirmWithdraw (stub)" }
     }
 
