@@ -5,5 +5,5 @@ import androidx.compose.runtime.Immutable
 @Immutable
 data class OnboardingPage(
     val description: String,
-    val painterResourceId: Int?,
+    val painterResourceId: Int,
 )

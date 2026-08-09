@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,13 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -52,6 +49,7 @@ internal fun OnboardingPager(
             pageCount = pages.size,
             currentPage = pagerState.currentPage,
         )
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth().weight(1f),
@@ -70,30 +68,12 @@ private fun OnboardingPageContent(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        when (page.painterResourceId) {
-            null -> Box(
-                modifier = Modifier
-                    .size(225.dp)
-                    .clip(RectangleShape)
-                    .background(Color(0xFFEBEBEB)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "[ 일러스트 ]",
-                    color = Color(0xFF404040),
-                    fontSize = 18.sp,
-                )
-            }
-
-            else ->
-                Image(
-                    painter = painterResource(page.painterResourceId),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentScale = ContentScale.Fit,
-                )
-            // TODO impl
-        }
+        Image(
+            painter = painterResource(page.painterResourceId),
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            contentScale = ContentScale.Fit,
+        )
         Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
         Text(
