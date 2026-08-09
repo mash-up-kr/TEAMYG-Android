@@ -13,7 +13,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGUserNameStyl
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.groups.setting.impl.R
-import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupMemberUiModel
+import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
 
 @Composable
 internal fun GroupMemberList(

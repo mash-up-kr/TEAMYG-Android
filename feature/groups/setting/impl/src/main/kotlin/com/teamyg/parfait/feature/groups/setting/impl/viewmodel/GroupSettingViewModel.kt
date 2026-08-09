@@ -9,18 +9,13 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
+import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.teamyg.parfait.core.ui.R as CoreR
-
-data class GroupMemberUiModel(
-    val nickname: String,
-    val colorChipType: YGColorChipType,
-    val isMe: Boolean = false,
-)
 
 data class GroupSettingUiState(
     val groupName: String = MOCK_GROUP_NAME,
