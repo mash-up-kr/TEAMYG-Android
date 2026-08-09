@@ -28,9 +28,8 @@ class Navigator(initialNavigationKey: NavKey) {
             return
         }
 
-        while (_backStack.lastIndex > destinationIndex) {
-            _backStack.removeAt(_backStack.lastIndex)
-        }
+        // 하나씩 걷어내면 스냅샷에도 그만큼 변경이 쌓이므로 한 번에 잘라낸다
+        _backStack.removeRange(destinationIndex + 1, _backStack.size)
     }
 
     fun onBack() {
