@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
 import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
@@ -31,6 +32,8 @@ internal fun AppSettingScreen(
     onClickPrivacy: () -> Unit,
     onClickLogout: () -> Unit,
     onClickWithdraw: () -> Unit,
+    onConfirmWithdraw: () -> Unit,
+    onDismissWithdrawDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     YGScreen(modifier = modifier) {
@@ -103,6 +106,19 @@ internal fun AppSettingScreen(
             }
         }
 
+        if (state.isWithdrawDialogVisible) {
+            YGModalPopup(
+                title = stringResource(R.string.setting_withdraw_dialog_title),
+                body = stringResource(R.string.setting_withdraw_dialog_body),
+                iconRes = DesignSystemR.drawable.ic_warning_round,
+                secondaryText = stringResource(R.string.setting_withdraw_dialog_confirm),
+                onSecondaryClick = onConfirmWithdraw,
+                primaryText = stringResource(R.string.setting_dialog_cancel),
+                onPrimaryClick = onDismissWithdrawDialog,
+                onDismissRequest = onDismissWithdrawDialog,
+            )
+        }
+
         OnBack { onClickBack() }
     }
 }
@@ -118,6 +134,8 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickPrivacy = {},
         onClickLogout = {},
         onClickWithdraw = {},
+        onConfirmWithdraw = {},
+        onDismissWithdrawDialog = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

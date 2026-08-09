@@ -42,6 +42,10 @@ internal fun AppSettingRoute(
         onClickPrivacy = { viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy) },
         onClickLogout = { viewModel.processIntent(AppSettingIntent.ClickLogout) },
         onClickWithdraw = { viewModel.processIntent(AppSettingIntent.ClickWithdraw) },
+        onConfirmWithdraw = { viewModel.processIntent(AppSettingIntent.ConfirmWithdraw) },
+        onDismissWithdrawDialog = {
+            viewModel.processIntent(AppSettingIntent.DismissWithdrawDialog)
+        },
         modifier = modifier,
     )
 }
