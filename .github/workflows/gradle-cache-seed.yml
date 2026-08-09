@@ -2,9 +2,11 @@ name: gradle-cache-seed
 
 # setup-gradle 은 기본 브랜치(develop)의 job 에서만 캐시를 저장한다.
 # PR 워크플로는 전부 cache-read-only 라, 저장하는 주체가 이 job 하나다.
+# workflow_dispatch: 캐시가 만료·축출됐을 때 더미 커밋 없이 수동 재시딩.
 on:
   push:
     branches: [ develop ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,6 +14,7 @@ permissions:
 jobs:
   seed:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -27,8 +30,11 @@ jobs:
       # 워크플로마다 push 트리거를 다는 대신 하나로 묶는 이유: job 이 둘이면 같은
       # 캐시 키에 동시에 써서 한쪽 저장이 버려지고, 데몬 기동·의존성 해석도 두 번 친다.
       # --continue: 앞 태스크가 실패해도 나머지 태스크 출력은 캐시에 남긴다.
-      #             이 job 의 목적은 게이트가 아니라 캐시 적재다.
+      # continue-on-error: --continue 는 종료 코드를 성공으로 만들지 않는다. 이 job 은
+      #                    게이트가 아니라 캐시 적재가 목적이라 실패해도 develop 을 빨갛게
+      #                    만들지 않는다. 캐시 저장은 post 스텝(post-if: !cancelled())이라 무관.
       - name: Warm Gradle caches
+        continue-on-error: true
         run: |
           ./gradlew test ktlintCheck \
             :core:util:android:assembleDebugAndroidTest \
