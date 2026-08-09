@@ -19,6 +19,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/** 그룹 설정 화면이 한 번에 하나만 띄울 수 있는 확인 팝업. */
+enum class GroupSettingDialog {
+    Leave,
+    Report,
+}
+
 // TODO: 그룹 상세 조회 API 연동 전까지만 Mock 기본값을 쓴다. 연동 시 기본값 제거하고 로딩 상태로 대체.
 data class GroupSettingUiState(
     val groupName: GroupName = GroupName(MOCK_GROUP_NAME),
@@ -30,6 +36,7 @@ data class GroupSettingUiState(
     val inviteCode: InviteCode = InviteCode(MOCK_INVITE_CODE),
     val remainingCount: Int = MOCK_REMAINING_COUNT,
     val isCodeCopied: Boolean = false,
+    val visibleDialog: GroupSettingDialog? = null,
 ) : UiState {
     /** 입력값이 유효한가. 키보드 Done 처리처럼 "닫아도 되는가"의 기준. */
     val isNicknameValid: Boolean
@@ -54,6 +61,12 @@ sealed interface GroupSettingIntent : UiIntent {
     data object ClickLeaveGroup : GroupSettingIntent
 
     data object ClickReportGroup : GroupSettingIntent
+
+    data object ConfirmLeaveGroup : GroupSettingIntent
+
+    data object ConfirmReportGroup : GroupSettingIntent
+
+    data object DismissDialog : GroupSettingIntent
 }
 
 sealed interface GroupSettingSideEffect : UiSideEffect {
@@ -85,6 +98,9 @@ constructor(
             GroupSettingIntent.ClickCopyInviteCode -> handleClickCopyInviteCode()
             GroupSettingIntent.ClickLeaveGroup -> handleClickLeaveGroup()
             GroupSettingIntent.ClickReportGroup -> handleClickReportGroup()
+            GroupSettingIntent.ConfirmLeaveGroup -> handleConfirmLeaveGroup()
+            GroupSettingIntent.ConfirmReportGroup -> handleConfirmReportGroup()
+            GroupSettingIntent.DismissDialog -> handleDismissDialog()
         }
     }
 
@@ -143,13 +159,27 @@ constructor(
     }
 
     private fun handleClickLeaveGroup() {
-        // TODO: 그룹 나가기 확인 모달 + DELETE /api/parfait-groups/{groupId}/members/me
-        viewModelLogger.i { "GroupSettingViewModel::handleClickLeaveGroup" }
+        updateState { copy(visibleDialog = GroupSettingDialog.Leave) }
     }
 
     private fun handleClickReportGroup() {
-        // TODO: 그룹 신고 확인 모달 + POST /api/parfait-groups/{groupId}/reports
-        viewModelLogger.i { "GroupSettingViewModel::handleClickReportGroup" }
+        updateState { copy(visibleDialog = GroupSettingDialog.Report) }
+    }
+
+    private fun handleConfirmLeaveGroup() {
+        updateState { copy(visibleDialog = null) }
+        // TODO: 그룹 나가기 API 연동 (DELETE /api/parfait-groups/{groupId}/members/me)
+        viewModelLogger.i { "GroupSettingViewModel::handleConfirmLeaveGroup" }
+    }
+
+    private fun handleConfirmReportGroup() {
+        updateState { copy(visibleDialog = null) }
+        // TODO: 그룹 신고 API 연동 (POST /api/parfait-groups/{groupId}/reports)
+        viewModelLogger.i { "GroupSettingViewModel::handleConfirmReportGroup" }
+    }
+
+    private fun handleDismissDialog() {
+        updateState { copy(visibleDialog = null) }
     }
 
     private fun cancelEditing() {
