@@ -40,6 +40,7 @@ include(
     ":core:util:android",
     ":core:util:jvm",
     ":core:navigation",
+    ":core:testing",
 )
 include(":data")
 include(":domain")
