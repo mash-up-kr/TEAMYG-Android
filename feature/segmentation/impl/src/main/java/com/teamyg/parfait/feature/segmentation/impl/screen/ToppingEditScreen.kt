@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -308,21 +309,30 @@ private fun ToppingEditCanvas(
         drawIntoCanvas { canvas ->
             canvas.saveLayer(Rect(Offset.Zero, size), Paint())
 
-            drawImage(image = segmentationImage, dstOffset = dstOffset, dstSize = dstSize)
+            // 이미지가 놓인 자리로 잘라낸다. 원본을 덮어씌우는 SrcIn 은 이미지가 그려지는
+            // 만큼만 닿기 때문에, 잘라내지 않으면 여백에 그은 검은 획이 덮이지 못하고 남는다
+            clipRect(
+                left = dstOffset.x.toFloat(),
+                top = dstOffset.y.toFloat(),
+                right = (dstOffset.x + dstSize.width).toFloat(),
+                bottom = (dstOffset.y + dstSize.height).toFloat(),
+            ) {
+                drawImage(image = segmentationImage, dstOffset = dstOffset, dstSize = dstSize)
 
-            // 한 리스트로 이어 붙이면 그릴 때마다 리스트가 새로 생겨 따로 그린다
-            state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
-            state
-                .strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
-                ?.let { stroke -> drawEditStroke(stroke, mapping) }
+                // 한 리스트로 이어 붙이면 그릴 때마다 리스트가 새로 생겨 따로 그린다
+                state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
+                state
+                    .strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
+                    ?.let { stroke -> drawEditStroke(stroke, mapping) }
 
-            // 마스크가 남은 자리에만 원본 픽셀을 채운다. ADD 로 칠한 곳이 원본으로 복원되는 지점
-            drawImage(
-                image = originImage,
-                dstOffset = dstOffset,
-                dstSize = dstSize,
-                blendMode = BlendMode.SrcIn,
-            )
+                // 마스크가 남은 자리에만 원본 픽셀을 채운다. ADD 로 칠한 곳이 원본으로 복원되는 지점
+                drawImage(
+                    image = originImage,
+                    dstOffset = dstOffset,
+                    dstSize = dstSize,
+                    blendMode = BlendMode.SrcIn,
+                )
+            }
 
             canvas.restore()
         }
