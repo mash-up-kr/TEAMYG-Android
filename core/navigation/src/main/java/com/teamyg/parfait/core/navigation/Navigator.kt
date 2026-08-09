@@ -14,6 +14,25 @@ class Navigator(initialNavigationKey: NavKey) {
         _backStack.add(destination)
     }
 
+    /**
+     * [destination] 을 백스택 최상단으로 올린다.
+     *
+     * 이미 백스택에 있으면 그 위에 쌓여 있던 키들을 모두 걷어내 기존 화면을 그대로 재사용하고,
+     * 없으면 평범하게 새로 쌓는다.
+     */
+    fun goToSingleClearTop(destination: NavKey) {
+        val destinationIndex = _backStack.lastIndexOf(destination)
+
+        if (destinationIndex == -1) {
+            _backStack.add(destination)
+            return
+        }
+
+        while (_backStack.lastIndex > destinationIndex) {
+            _backStack.removeAt(_backStack.lastIndex)
+        }
+    }
+
     fun onBack() {
         if (_backStack.size <= 1) {
             // ResultEffect 발동 상황에서 사이즈가 1인 경우 크래시 발생
