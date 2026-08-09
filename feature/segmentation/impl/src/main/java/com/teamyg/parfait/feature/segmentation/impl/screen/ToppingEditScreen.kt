@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -180,30 +181,33 @@ private fun ToppingEditCanvas(
     val originImage = remember(originBitmap) { originBitmap.asImageBitmap() }
     val segmentationImage = remember(segmentationBitmap) { segmentationBitmap.asImageBitmap() }
 
-    fun commitStroke() {
-        val stroke = state.strokeOrNull(drawingPoints)
+    val brushWidthPx = with(LocalDensity.current) { state.brushWidthDp.dp.toPx() }
+
+    fun commitStroke(mapping: BitmapViewMapping) {
+        // 붓 굵기는 화면 기준이라 확대 배율을 걷어내야 원본 좌표계 굵기가 된다
+        val stroke = state.strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
         drawingPoints = emptyList()
         stroke?.let(onAddStroke)
     }
 
     Canvas(
         modifier = modifier
-            .pointerInput(originBitmap, state.mode, state.brushWidth) {
+            .pointerInput(originBitmap, state.mode, brushWidthPx) {
                 val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
                 detectTapGestures(
                     onTap = { offset ->
                         drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping))
-                        commitStroke()
+                        commitStroke(mapping)
                     },
                 )
-            }.pointerInput(originBitmap, state.mode, state.brushWidth) {
+            }.pointerInput(originBitmap, state.mode, brushWidthPx) {
                 val mapping = BitmapViewMapping.fitCenter(size, originBitmap.width, originBitmap.height)
                 detectDragGestures(
                     onDragStart = { offset -> drawingPoints = listOf(mapViewToBitmapFloat(offset, mapping)) },
                     onDrag = { change, _ ->
                         drawingPoints = drawingPoints + mapViewToBitmapFloat(change.position, mapping)
                     },
-                    onDragEnd = { commitStroke() },
+                    onDragEnd = { commitStroke(mapping) },
                     onDragCancel = { drawingPoints = emptyList() },
                 )
             },
@@ -223,7 +227,9 @@ private fun ToppingEditCanvas(
 
             // 한 리스트로 이어 붙이면 그릴 때마다 리스트가 새로 생겨 따로 그린다
             state.strokes.forEach { stroke -> drawEditStroke(stroke, mapping) }
-            state.strokeOrNull(drawingPoints)?.let { stroke -> drawEditStroke(stroke, mapping) }
+            state
+                .strokeOrNull(drawingPoints, brushWidthPx / mapping.scale)
+                ?.let { stroke -> drawEditStroke(stroke, mapping) }
 
             // 마스크가 남은 자리에만 원본 픽셀을 채운다. ADD 로 칠한 곳이 원본으로 복원되는 지점
             drawImage(
@@ -295,9 +301,9 @@ private fun SegmentationAreaControls(
             )
             Spacer(modifier = Modifier.height(4.dp))
             BrushWidthSlider(
-                value = state.brushWidth,
+                value = state.brushWidthDp,
                 onValueChange = onChangeBrushWidth,
-                valueRange = state.minBrushWidth..state.maxBrushWidth,
+                valueRange = state.minBrushWidthDp..state.maxBrushWidthDp,
                 isEnabled = !state.isLoading,
             )
         }

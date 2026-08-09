@@ -23,17 +23,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** 원본 긴 변 대비 붓 굵기 비율. 이미지 해상도가 달라도 체감 굵기가 비슷하도록 비율로 잡는다 */
-private const val DEFAULT_BRUSH_WIDTH_RATIO = 0.04f
-private const val MIN_BRUSH_WIDTH_RATIO = 0.01f
-private const val MAX_BRUSH_WIDTH_RATIO = 0.15f
+/**
+ * 화면에 보이는 붓 굵기. 사진 해상도나 기기 밀도가 달라도 체감 굵기가 같도록 dp 로 잡는다.
+ * 획을 확정할 때 화면이 원본 비트맵 좌표계 굵기로 환산한다.
+ */
+private const val DEFAULT_BRUSH_WIDTH_DP = 10f
+private const val MIN_BRUSH_WIDTH_DP = 2f
+private const val MAX_BRUSH_WIDTH_DP = 50f
 
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
     val tab: ToppingEditTab = ToppingEditTab.AREA,
     val mode: ToppingEditMode = ToppingEditMode.ERASE,
-    val brushWidth: Float = 0f,
+    val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
     val strokes: List<ToppingEditStroke> = emptyList(),
     val redoableStrokes: List<ToppingEditStroke> = emptyList(),
     val isSaving: Boolean = false,
@@ -44,23 +47,23 @@ data class ToppingEditState(
 
     val canRedo: Boolean get() = redoableStrokes.isNotEmpty()
 
-    val minBrushWidth: Float get() = brushWidthRatioOf(MIN_BRUSH_WIDTH_RATIO)
+    val minBrushWidthDp: Float get() = MIN_BRUSH_WIDTH_DP
 
-    val maxBrushWidth: Float get() = brushWidthRatioOf(MAX_BRUSH_WIDTH_RATIO)
+    val maxBrushWidthDp: Float get() = MAX_BRUSH_WIDTH_DP
 
     /**
-     * 지금 고른 모드와 붓 굵기로 [points] 를 획 하나로 묶는다.
+     * 지금 고른 모드로 [points] 를 획 하나로 묶는다.
      * 찍힌 점이 없으면 만들 획도 없어 null 이다.
+     *
+     * @param width 원본 비트맵 좌표계 기준 굵기. 확대 배율을 아는 화면이 dp 굵기를 환산해 넘긴다
      */
-    fun strokeOrNull(points: List<Offset>): ToppingEditStroke? = if (points.isEmpty()) {
+    fun strokeOrNull(
+        points: List<Offset>,
+        width: Float,
+    ): ToppingEditStroke? = if (points.isEmpty()) {
         null
     } else {
-        ToppingEditStroke(mode = mode, points = points, width = brushWidth)
-    }
-
-    private fun brushWidthRatioOf(ratio: Float): Float {
-        val bitmap = originBitmap ?: return 0f
-        return maxOf(bitmap.width, bitmap.height) * ratio
+        ToppingEditStroke(mode = mode, points = points, width = width)
     }
 }
 
@@ -115,7 +118,7 @@ class ToppingEditViewModel
             }
 
             is ToppingEditIntent.ChangeBrushWidth -> {
-                updateState { copy(brushWidth = intent.width.coerceIn(minBrushWidth, maxBrushWidth)) }
+                updateState { copy(brushWidthDp = intent.width.coerceIn(MIN_BRUSH_WIDTH_DP, MAX_BRUSH_WIDTH_DP)) }
             }
 
             is ToppingEditIntent.AddStroke -> {
@@ -161,7 +164,6 @@ class ToppingEditViewModel
                 copy(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
-                    brushWidth = maxOf(originBitmap.width, originBitmap.height) * DEFAULT_BRUSH_WIDTH_RATIO,
                 )
             }
         }
