@@ -39,14 +39,14 @@ private const val MIN_BRUSH_WIDTH_DP = 2f
 private const val MAX_BRUSH_WIDTH_DP = 50f
 
 /**
- * 원본 긴 변 대비 테두리 굵기 비율.
+ * 테두리 굵기(px). 기획 정책(C-104)이 해상도와 무관한 고정 px 범위로 못박아 둔 값이다.
  *
- * 붓 굵기와 같은 방식으로 잡는다. 화면 크기가 아니라 원본에 매여야 미리보기에서 본 굵기가
- * 저장 결과에도 그대로 남는다.
+ * 굵기는 원본 좌표로 재고 저장 결과도 원본 크기라, 여기 적힌 px 가 곧 저장된 파일에서의 px 다.
+ * 화면에서는 원본이 편집 영역에 맞춰 줄어든 배율만큼 함께 줄어 보인다.
  */
-private const val DEFAULT_BORDER_WIDTH_RATIO = 0.02f
-private const val MIN_BORDER_WIDTH_RATIO = 0.005f
-private const val MAX_BORDER_WIDTH_RATIO = 0.08f
+private const val DEFAULT_BORDER_WIDTH = 10f
+private const val MIN_BORDER_WIDTH = 2f
+private const val MAX_BORDER_WIDTH = 50f
 
 private fun UndoRedoStack<ToppingBorderLayer>.outermostColor(): Color = latest?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
@@ -63,7 +63,7 @@ data class ToppingEditState(
      */
     val areaHistory: UndoRedoStack<ToppingEditStroke> = UndoRedoStack(),
     /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidth] 가 그 겹을 따라간다 */
-    val pendingBorderWidth: Float = 0f,
+    val pendingBorderWidth: Float = DEFAULT_BORDER_WIDTH,
     val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
     /**
      * 색상칩에서 켜둘 색.
@@ -91,15 +91,9 @@ data class ToppingEditState(
      */
     val borderWidth: Float get() = borderHistory.latest?.width ?: pendingBorderWidth
 
-    val minBorderWidth: Float get() = longestSideRatioOf(MIN_BORDER_WIDTH_RATIO)
+    val minBorderWidth: Float get() = MIN_BORDER_WIDTH
 
-    val maxBorderWidth: Float get() = longestSideRatioOf(MAX_BORDER_WIDTH_RATIO)
-
-    /** 원본 긴 변에 [ratio] 를 곱한 길이. 해상도가 달라도 체감 굵기가 비슷하도록 비율로 잡는다 */
-    private fun longestSideRatioOf(ratio: Float): Float {
-        val bitmap = originBitmap ?: return 0f
-        return maxOf(bitmap.width, bitmap.height) * ratio
-    }
+    val maxBorderWidth: Float get() = MAX_BORDER_WIDTH
 }
 
 /**
@@ -239,11 +233,9 @@ class ToppingEditViewModel
             val restoredBorders = UndoRedoStack(done = initialBorderLayers)
 
             updateState {
-                val longestSide = maxOf(originBitmap.width, originBitmap.height)
                 copy(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
-                    pendingBorderWidth = longestSide * DEFAULT_BORDER_WIDTH_RATIO,
                     borderHistory = restoredBorders,
                     selectedBorderColor = restoredBorders.outermostColor(),
                 )
