@@ -189,8 +189,14 @@ class ToppingEditViewModel
                 )
             }
 
-            // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다
-            val savedPath = saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
+            // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
+            // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
+            // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
+            val savedPath = try {
+                saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
+            } finally {
+                edited.recycle()
+            }
             updateState { copy(isSaving = false) }
 
             if (savedPath == null) {
