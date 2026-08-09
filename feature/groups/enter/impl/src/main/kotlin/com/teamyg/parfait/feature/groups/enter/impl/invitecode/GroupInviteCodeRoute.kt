@@ -67,6 +67,8 @@ fun GroupInviteCodeRoute(
         },
         onClickNextButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickBackButton) },
+        onClickConfirmPopupEnter = { viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter) },
+        onDismissConfirmPopup = { viewModel.processIntent(GroupInviteCodeIntent.DismissConfirmPopup) },
         modifier = modifier.imePadding(),
     )
 }
