@@ -1,15 +1,18 @@
 package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.CreateGroupUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupCreateUiState(
@@ -17,6 +20,8 @@ data class GroupCreateUiState(
     val nickName: String = "",
     val groupNumber: Int? = null,
     val groupNameErrorTextResId: Int? = null,
+    val isConfirmPopupVisible: Boolean = false,
+    val isCreating: Boolean = false,
 ) : UiState {
     val isValid = groupName.isNotEmpty() && nickName.isNotEmpty() && groupNumber != null
 }
@@ -29,6 +34,10 @@ sealed interface GroupCreateIntent : UiIntent {
     data class InputGroupName(val newGroupName: String) : GroupCreateIntent
 
     data class ClickGroupNumber(val newSelectedNumber: Int) : GroupCreateIntent
+
+    data object ClickConfirmPopupCreate : GroupCreateIntent
+
+    data object DismissConfirmPopup : GroupCreateIntent
 }
 
 sealed interface GroupCreateSideEffect : UiSideEffect {
@@ -43,6 +52,7 @@ class GroupCreateViewModel
 constructor(
     @Assisted nickName: String,
     private val checkNameValid: CheckNameValidUseCase,
+    private val createGroup: CreateGroupUseCase,
 ) : BaseViewModel<GroupCreateUiState, GroupCreateIntent, GroupCreateSideEffect>(
     initialState = GroupCreateUiState(nickName = nickName),
 ) {
@@ -68,9 +78,11 @@ constructor(
                 when (result) {
                     NameValidResult.Success -> {
                         updateState {
-                            copy(groupNameErrorTextResId = null)
+                            copy(
+                                groupNameErrorTextResId = null,
+                                isConfirmPopupVisible = true,
+                            )
                         }
-                        postSideEffect(GroupCreateSideEffect.NavigateToNext)
                     }
 
                     NameValidResult.Error.DuplicatedSpace -> {
@@ -95,6 +107,32 @@ constructor(
                         updateState {
                             copy(groupNameErrorTextResId = CoreR.string.error_empty_space_groupname)
                         }
+                    }
+                }
+            }
+
+            GroupCreateIntent.DismissConfirmPopup -> {
+                if (state.value.isCreating) return
+
+                updateState { copy(isConfirmPopupVisible = false) }
+            }
+
+            GroupCreateIntent.ClickConfirmPopupCreate -> {
+                val groupNumber = state.value.groupNumber ?: return
+                if (state.value.isCreating) return
+
+                updateState { copy(isCreating = true) }
+                viewModelScope.launch {
+                    val result = createGroup(
+                        groupName = state.value.groupName,
+                        groupNumber = groupNumber,
+                    )
+                    updateState { copy(isCreating = false) }
+
+                    // Todo : 실패 처리는 서버 작업이 연결되면 추가 예정입니다
+                    if (result.isSuccess) {
+                        updateState { copy(isConfirmPopupVisible = false) }
+                        postSideEffect(GroupCreateSideEffect.NavigateToNext)
                     }
                 }
             }
