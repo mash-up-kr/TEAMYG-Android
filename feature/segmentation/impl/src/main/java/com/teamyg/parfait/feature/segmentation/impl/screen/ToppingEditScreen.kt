@@ -65,6 +65,9 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 private const val MIN_ZOOM = 1f
 private const val MAX_ZOOM = 3f
 
+/** 지워진 자리에 남겨 둘 원본의 불투명도 */
+private const val ERASED_AREA_ALPHA = 0.5f
+
 private const val BRUSH_PREVIEW_FILL_ALPHA = 0.5f
 private val BRUSH_PREVIEW_BORDER_WIDTH = 1.dp
 
@@ -291,6 +294,14 @@ private fun ToppingEditCanvas(
         val dstSize = IntSize(
             width = (originBitmap.width * mapping.scale).roundToInt(),
             height = (originBitmap.height * mapping.scale).roundToInt(),
+        )
+
+        // 잘려나간 자리에 원본을 옅게 깔아 무엇을 지웠는지 보이게 한다
+        drawImage(
+            image = originImage,
+            dstOffset = dstOffset,
+            dstSize = dstSize,
+            alpha = ERASED_AREA_ALPHA,
         )
 
         // 알파 합성을 독립된 레이어에서 해야 Clear 가 화면 전체를 뚫지 않는다
