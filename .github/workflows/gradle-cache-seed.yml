@@ -1,0 +1,36 @@
+name: gradle-cache-seed
+
+# setup-gradle 은 기본 브랜치(develop)의 job 에서만 캐시를 저장한다.
+# PR 워크플로는 전부 cache-read-only 라, 저장하는 주체가 이 job 하나다.
+on:
+  push:
+    branches: [ develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Restore app secrets
+        uses: ./.github/actions/restore-app-secrets
+        with:
+          kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      # PR 워크플로(test·ktlint)가 쓰는 태스크 전부를 한 번의 Gradle 호출로 돌린다.
+      # 워크플로마다 push 트리거를 다는 대신 하나로 묶는 이유: job 이 둘이면 같은
+      # 캐시 키에 동시에 써서 한쪽 저장이 버려지고, 데몬 기동·의존성 해석도 두 번 친다.
+      # --continue: 앞 태스크가 실패해도 나머지 태스크 출력은 캐시에 남긴다.
+      #             이 job 의 목적은 게이트가 아니라 캐시 적재다.
+      - name: Warm Gradle caches
+        run: |
+          ./gradlew test ktlintCheck \
+            :core:util:android:assembleDebugAndroidTest \
+            :core:designsystem:assembleDebugAndroidTest \
+            --continue
