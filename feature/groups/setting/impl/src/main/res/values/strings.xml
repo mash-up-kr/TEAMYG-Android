@@ -11,5 +11,12 @@
     <string name="group_setting_copy">복사</string>
     <string name="group_setting_leave">그룹 나가기</string>
     <string name="group_setting_report">그룹 신고하기</string>
+    <string name="group_setting_leave_dialog_title">그룹에서 나갈까요?</string>
+    <string name="group_setting_leave_dialog_body">그룹에서 나가도\n그룹에 올렸던 사진은 지워지지 않아요</string>
+    <string name="group_setting_leave_dialog_confirm">나가기</string>
+    <string name="group_setting_report_dialog_title">그룹을 신고할까요?</string>
+    <string name="group_setting_report_dialog_body">신고 후에는 그룹에서 자동으로 나가지며,\n그룹은 운영 정책에 따라 처리 돼요.</string>
+    <string name="group_setting_report_dialog_confirm">신고하기</string>
+    <string name="group_setting_dialog_cancel">그만두기</string>
     <string name="group_setting_confirm">확인</string>
 </resources>

@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCard
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCardStatus
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -37,7 +38,9 @@ import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.feature.groups.setting.impl.R
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupMemberList
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupNicknameField
+import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingDialog
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingUiState
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupSettingScreen(
@@ -49,6 +52,9 @@ internal fun GroupSettingScreen(
     onClickCopyInviteCode: () -> Unit,
     onClickLeaveGroup: () -> Unit,
     onClickReportGroup: () -> Unit,
+    onConfirmLeaveGroup: () -> Unit,
+    onConfirmReportGroup: () -> Unit,
+    onDismissDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -145,6 +151,32 @@ internal fun GroupSettingScreen(
             }
         }
 
+        when (state.visibleDialog) {
+            GroupSettingDialog.Leave -> YGModalPopup(
+                title = stringResource(R.string.group_setting_leave_dialog_title),
+                body = stringResource(R.string.group_setting_leave_dialog_body),
+                iconRes = DesignSystemR.drawable.ic_warning_round,
+                secondaryText = stringResource(R.string.group_setting_leave_dialog_confirm),
+                onSecondaryClick = onConfirmLeaveGroup,
+                primaryText = stringResource(R.string.group_setting_dialog_cancel),
+                onPrimaryClick = onDismissDialog,
+                onDismissRequest = onDismissDialog,
+            )
+
+            GroupSettingDialog.Report -> YGModalPopup(
+                title = stringResource(R.string.group_setting_report_dialog_title),
+                body = stringResource(R.string.group_setting_report_dialog_body),
+                iconRes = DesignSystemR.drawable.ic_warning_round,
+                secondaryText = stringResource(R.string.group_setting_report_dialog_confirm),
+                onSecondaryClick = onConfirmReportGroup,
+                primaryText = stringResource(R.string.group_setting_dialog_cancel),
+                onPrimaryClick = onDismissDialog,
+                onDismissRequest = onDismissDialog,
+            )
+
+            null -> Unit
+        }
+
         OnBack { handleBack() }
     }
 }
@@ -201,6 +233,9 @@ private fun GroupSettingScreenPreview(
         onClickCopyInviteCode = {},
         onClickLeaveGroup = {},
         onClickReportGroup = {},
+        onConfirmLeaveGroup = {},
+        onConfirmReportGroup = {},
+        onDismissDialog = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
