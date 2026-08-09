@@ -54,8 +54,8 @@ internal fun GroupListScreen(
             GroupListTopBar(
                 date = uiState.dateString,
                 day = uiState.dayOfWeekString,
-                onClickChip = onClickChip,
                 onClickSideMenu = onClickSideMenu,
+                onClickAddGroup = onClickChip,
             )
 
             GroupListPullToRefreshBox(

@@ -32,19 +32,16 @@ private val ERROR_CUP_WIDTH = 324.dp
 @Composable
 internal fun GroupListErrorScreen(
     uiState: GroupListUiState,
-    onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
+        // 불러오기에 실패한 상태에서는 그룹 추가 칩과 툴팁을 감춘다.
         GroupListTopBar(
             date = uiState.dateString,
             day = uiState.dayOfWeekString,
-            onClickChip = onClickChip,
             onClickSideMenu = onClickSideMenu,
-            // 불러오기에 실패한 상태에서는 그룹 추가 툴팁을 띄우지 않는다.
-            isTooltipVisible = false,
         )
 
         GroupListPullToRefreshBox(
@@ -87,7 +84,6 @@ private fun GroupListErrorScreenPreview() = PreviewBox {
             dateString = "July 26",
             dayOfWeekString = "Wed",
         ),
-        onClickChip = {},
         onClickSideMenu = {},
         onRefresh = {},
     )

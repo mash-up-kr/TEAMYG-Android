@@ -58,7 +58,6 @@ internal fun GroupListRoute(
         if (uiState.isError) {
             GroupListErrorScreen(
                 uiState = uiState,
-                onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
                 onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
                 onRefresh = { viewModel.processIntent(GroupListIntent.Refresh) },
                 modifier = modifier.padding(innerPadding),
