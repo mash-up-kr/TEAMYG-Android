@@ -8,6 +8,9 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.NameValidResult
+import com.teamyg.parfait.domain.model.group.GroupName
+import com.teamyg.parfait.domain.model.group.GroupNickname
+import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,18 +21,18 @@ import kotlinx.coroutines.launch
 import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupSettingUiState(
-    val groupName: String = MOCK_GROUP_NAME,
-    val myNickname: String = MOCK_MY_NICKNAME,
+    val groupName: GroupName = GroupName(MOCK_GROUP_NAME),
+    val myNickname: GroupNickname = GroupNickname(MOCK_MY_NICKNAME),
     val nicknameInput: String = MOCK_MY_NICKNAME,
     val isEditing: Boolean = false,
     val errorMessageResId: Int? = null,
     val members: List<GroupMemberUiModel> = MOCK_MEMBERS,
-    val inviteCode: String = MOCK_INVITE_CODE,
+    val inviteCode: InviteCode = InviteCode(MOCK_INVITE_CODE),
     val remainingCount: Int = MOCK_REMAINING_COUNT,
     val isCodeCopied: Boolean = false,
 ) : UiState {
     val isConfirmEnabled: Boolean
-        get() = errorMessageResId == null && nicknameInput != myNickname
+        get() = errorMessageResId == null && nicknameInput != myNickname.value
 }
 
 sealed interface GroupSettingIntent : UiIntent {
@@ -119,7 +122,7 @@ constructor(
         // TODO: 닉네임 변경 API 연동 (PATCH /api/parfait-groups/{groupId}/nickname)
         updateState {
             copy(
-                myNickname = nicknameInput,
+                myNickname = GroupNickname(nicknameInput),
                 members = members.map { member ->
                     if (member.isMe) member.copy(nickname = nicknameInput) else member
                 },
@@ -131,7 +134,7 @@ constructor(
 
     private fun handleClickCopyInviteCode() {
         updateState { copy(isCodeCopied = true) }
-        postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode))
+        postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
 
         copyResetJob?.cancel()
         copyResetJob = viewModelScope.launch {
@@ -153,7 +156,7 @@ constructor(
     private fun cancelEditing() {
         updateState {
             copy(
-                nicknameInput = myNickname,
+                nicknameInput = myNickname.value,
                 errorMessageResId = null,
                 isEditing = false,
             )

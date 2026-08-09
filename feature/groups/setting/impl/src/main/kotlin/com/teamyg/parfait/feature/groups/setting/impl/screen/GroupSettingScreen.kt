@@ -37,6 +37,8 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
+import com.teamyg.parfait.domain.model.group.GroupName
+import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.feature.groups.setting.impl.R
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupMemberList
 import com.teamyg.parfait.feature.groups.setting.impl.component.GroupNicknameField
@@ -72,7 +74,7 @@ internal fun GroupSettingScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 YGTopBarDetail(
-                    title = state.groupName,
+                    title = state.groupName.value,
                     onIconClick = handleBack,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -108,7 +110,7 @@ internal fun GroupSettingScreen(
 
                     YGInviteCard(
                         label = stringResource(R.string.group_setting_invite_label),
-                        inviteCode = state.inviteCode,
+                        inviteCode = state.inviteCode.value,
                         subText = inviteCardSubText(state),
                         status = inviteCardStatus(state),
                         copyButtonText = stringResource(R.string.group_setting_copy),
@@ -180,8 +182,8 @@ private class GroupSettingPreviewParameterProvider :
             GroupSettingUiState(isCodeCopied = true),
             GroupSettingUiState(remainingCount = 0),
             GroupSettingUiState(
-                groupName = "열글자를꽉채운그룹명",
-                myNickname = "열다섯글자를꽉꽉채운닉네임야호",
+                groupName = GroupName("열글자를꽉채운그룹명"),
+                myNickname = GroupNickname("열다섯글자를꽉꽉채운닉네임야호"),
                 nicknameInput = "열다섯글자를꽉꽉채운닉네임야호",
             ),
             GroupSettingUiState(

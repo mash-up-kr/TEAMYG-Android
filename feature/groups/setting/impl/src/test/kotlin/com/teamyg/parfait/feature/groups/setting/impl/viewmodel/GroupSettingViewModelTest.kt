@@ -98,7 +98,7 @@ class GroupSettingViewModelTest {
     fun isConfirmEnabled_nicknameUnchanged_isFalse() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
-        val original = viewModel.state.value.myNickname
+        val original = viewModel.state.value.myNickname.value
 
         // When 고쳤다가 원래 값으로 되돌림
         viewModel.processIntent(GroupSettingIntent.InputNickname("잠깐바꿈"))
@@ -124,7 +124,7 @@ class GroupSettingViewModelTest {
     fun changeNicknameFocus_unfocused_cancelsEditingAndRestoresInput() = runTest(mainDispatcherRule.dispatcher) {
         // Given 편집 중 무효한 입력으로 고친 상태
         val viewModel = viewModel()
-        val original = viewModel.state.value.myNickname
+        val original = viewModel.state.value.myNickname.value
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname("고치던 값!"))
         assertEquals(
@@ -153,7 +153,7 @@ class GroupSettingViewModelTest {
 
         // Then 내 닉네임이 바뀌고 편집이 끝나며 그룹원 목록의 내 항목도 따라 바뀐다
         val state = viewModel.state.value
-        assertEquals("확정될닉네임", state.myNickname)
+        assertEquals("확정될닉네임", state.myNickname.value)
         assertFalse(state.isEditing)
         assertEquals("확정될닉네임", state.members.first { it.isMe }.nickname)
     }
@@ -162,7 +162,7 @@ class GroupSettingViewModelTest {
     fun confirmNickname_invalidNickname_keepsPreviousNickname() = runTest(mainDispatcherRule.dispatcher) {
         // Given 유효성을 통과하지 못한 입력
         val viewModel = viewModel()
-        val original = viewModel.state.value.myNickname
+        val original = viewModel.state.value.myNickname.value
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname("잘못된 닉네임!"))
 
@@ -170,7 +170,7 @@ class GroupSettingViewModelTest {
         viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
 
         // Then 아무 것도 확정되지 않고 편집 상태가 유지된다
-        assertEquals(original, viewModel.state.value.myNickname)
+        assertEquals(original, viewModel.state.value.myNickname.value)
         assertTrue(viewModel.state.value.isEditing)
     }
 
@@ -187,7 +187,7 @@ class GroupSettingViewModelTest {
 
         // Then 확정된 닉네임이 되돌아가지 않는다
         val state = viewModel.state.value
-        assertEquals("확정될닉네임", state.myNickname)
+        assertEquals("확정될닉네임", state.myNickname.value)
         assertEquals("확정될닉네임", state.nicknameInput)
         assertFalse(state.isEditing)
     }
@@ -196,7 +196,7 @@ class GroupSettingViewModelTest {
     fun clickBack_whileEditing_cancelsEditingWithoutNavigating() = runTest(mainDispatcherRule.dispatcher) {
         // Given 편집 중인 상태
         val viewModel = viewModel()
-        val original = viewModel.state.value.myNickname
+        val original = viewModel.state.value.myNickname.value
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname("고치던값"))
 
@@ -229,7 +229,7 @@ class GroupSettingViewModelTest {
     fun clickCopyInviteCode_marksCopiedAndEmitsCopyEffect() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
-        val inviteCode = viewModel.state.value.inviteCode
+        val inviteCode = viewModel.state.value.inviteCode.value
 
         // When 복사 버튼
         viewModel.effect.test {
