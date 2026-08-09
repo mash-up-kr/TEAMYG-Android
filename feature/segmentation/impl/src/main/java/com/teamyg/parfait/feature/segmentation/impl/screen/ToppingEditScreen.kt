@@ -65,6 +65,9 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 private const val MIN_ZOOM = 1f
 private const val MAX_ZOOM = 3f
 
+private const val BRUSH_PREVIEW_FILL_ALPHA = 0.5f
+private val BRUSH_PREVIEW_BORDER_WIDTH = 1.dp
+
 @Composable
 internal fun ToppingEditScreen(
     state: ToppingEditState,
@@ -78,6 +81,9 @@ internal fun ToppingEditScreen(
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다. 화면 안에서만 쓰는 상태다
+    var isAdjustingBrushWidth by remember { mutableStateOf(false) }
+
     Column(modifier = modifier) {
         // 되돌릴 대상인 획은 영역 탭에서만 그린다
         if (state.tab == ToppingEditTab.AREA) {
@@ -112,6 +118,7 @@ internal fun ToppingEditScreen(
                 else -> ToppingEditCanvas(
                     state = state,
                     onAddStroke = onAddStroke,
+                    isBrushPreviewVisible = isAdjustingBrushWidth,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -123,7 +130,11 @@ internal fun ToppingEditScreen(
             ToppingEditTab.AREA -> SegmentationAreaControls(
                 state = state,
                 onChangeMode = onChangeMode,
-                onChangeBrushWidth = onChangeBrushWidth,
+                onChangeBrushWidth = { width ->
+                    isAdjustingBrushWidth = true
+                    onChangeBrushWidth(width)
+                },
+                onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
@@ -179,6 +190,7 @@ private fun ToppingEditHistoryActions(
 private fun ToppingEditCanvas(
     state: ToppingEditState,
     onAddStroke: (ToppingEditStroke) -> Unit,
+    isBrushPreviewVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val originBitmap = state.originBitmap ?: return
@@ -303,6 +315,21 @@ private fun ToppingEditCanvas(
 
             canvas.restore()
         }
+
+        // 굵기를 고르는 동안에만 실제 붓 크기를 캔버스 한가운데에 미리 보여준다
+        if (isBrushPreviewVisible) {
+            drawCircle(
+                color = YGAtomicColors.Cherry.Cherry500.copy(alpha = BRUSH_PREVIEW_FILL_ALPHA),
+                radius = brushWidthPx / 2f,
+                center = center,
+            )
+            drawCircle(
+                color = YGAtomicColors.Cherry.Cherry500,
+                radius = brushWidthPx / 2f,
+                center = center,
+                style = Stroke(width = BRUSH_PREVIEW_BORDER_WIDTH.toPx()),
+            )
+        }
     }
 }
 
@@ -348,6 +375,7 @@ private fun SegmentationAreaControls(
     state: ToppingEditState,
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
+    onChangeBrushWidthFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -365,6 +393,7 @@ private fun SegmentationAreaControls(
             BrushWidthSlider(
                 value = state.brushWidthDp,
                 onValueChange = onChangeBrushWidth,
+                onValueChangeFinished = onChangeBrushWidthFinished,
                 valueRange = state.minBrushWidthDp..state.maxBrushWidthDp,
                 isEnabled = !state.isLoading,
             )

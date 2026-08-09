@@ -38,10 +38,12 @@ internal fun BrushWidthSlider(
     valueRange: ClosedFloatingPointRange<Float>,
     modifier: Modifier = Modifier,
     isEnabled: Boolean = true,
+    onValueChangeFinished: () -> Unit = {},
 ) {
     Slider(
         value = value,
         onValueChange = onValueChange,
+        onValueChangeFinished = onValueChangeFinished,
         valueRange = valueRange,
         enabled = isEnabled,
         modifier = modifier,
