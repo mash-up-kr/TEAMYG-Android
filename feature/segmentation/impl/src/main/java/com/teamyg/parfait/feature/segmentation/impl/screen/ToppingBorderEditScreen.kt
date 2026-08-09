@@ -63,15 +63,16 @@ internal fun ToppingBorderEditScreen(
     var canvasSize by remember { mutableStateOf(IntSize.Zero) }
 
     // 윤곽은 알맹이를 겹 하나당 스물네 번 찍어 만든다. 원본 해상도로 찍으면 프레임마다 큰 그림을
-    // 그만큼 읽으므로, 화면에 나올 크기로 한 번 줄여 두고 그 사본을 찍는다
-    val stampImage: ImageBitmap? = remember(cutout, canvasSize) {
-        val source = cutout ?: return@remember null
+    // 그만큼 읽으므로, 화면에 나올 크기로 한 번 줄여 두고 그 사본을 찍는다.
+    // 줄이는 것도 원본 해상도를 훑는 일이라 알맹이를 만들 때와 마찬가지로 컴포지션 밖에서 한다
+    val stampImage: ImageBitmap? by produceState<ImageBitmap?>(initialValue = null, cutout, canvasSize) {
+        val source = cutout ?: return@produceState
         val mapping = BitmapViewMapping.fitCenter(canvasSize, source.width, source.height)
         val width = (source.width * mapping.scale).roundToInt()
         val height = (source.height * mapping.scale).roundToInt()
-        if (width <= 0 || height <= 0) return@remember null
+        if (width <= 0 || height <= 0) return@produceState
 
-        source.scale(width, height).asImageBitmap()
+        value = withContext(Dispatchers.Default) { source.scale(width, height).asImageBitmap() }
     }
 
     Canvas(modifier = modifier.onSizeChanged { size -> canvasSize = size }) {
