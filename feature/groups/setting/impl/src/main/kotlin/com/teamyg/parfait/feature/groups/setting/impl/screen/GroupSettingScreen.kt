@@ -11,19 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCard
 import com.teamyg.parfait.core.designsystem.component.card.YGInviteCardStatus
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
@@ -67,8 +60,6 @@ internal fun GroupSettingScreen(
             focusManager.clearFocus()
         }
     }
-    val density = LocalDensity.current
-    var confirmBarHeight by remember { mutableStateOf(0.dp) }
 
     YGScreen(modifier = modifier.clearFocusOnTap()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -80,19 +71,15 @@ internal fun GroupSettingScreen(
                 )
 
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(
                             start = YGTheme.layout.padding.padding7,
                             end = YGTheme.layout.padding.padding7,
-                            bottom = if (state.isEditing) {
-                                YGTheme.layout.padding.padding8 + confirmBarHeight
-                            } else {
-                                YGTheme.layout.padding.padding8
-                            },
+                            bottom = YGTheme.layout.padding.padding8,
                         ),
+                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
                 ) {
                     GroupNicknameField(
                         nickname = state.nicknameInput,
@@ -143,9 +130,7 @@ internal fun GroupSettingScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .onSizeChanged { size ->
-                            confirmBarHeight = with(density) { size.height.toDp() }
-                        }.imePadding()
+                        .imePadding()
                         .background(YGAtomicColors.Gray.White)
                         .padding(YGTheme.layout.padding.padding7),
                 ) {
