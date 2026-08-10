@@ -25,8 +25,11 @@ data class DayWindow(
     companion object {
         const val DAY_BOUNDARY_HOUR = 3
 
-        fun current(timeZone: TimeZone = TimeZone.currentSystemDefault()): DayWindow {
-            val now: LocalDateTime = Clock.System.now().toLocalDateTime(timeZone)
+        fun current(
+            timeZone: TimeZone = TimeZone.currentSystemDefault(),
+            clock: Clock = Clock.System,
+        ): DayWindow {
+            val now: LocalDateTime = clock.now().toLocalDateTime(timeZone)
             val anchorDate: LocalDate = when (now.time >= LocalTime(DAY_BOUNDARY_HOUR, 0)) {
                 true -> now.date
                 false -> now.date.minus(1, DateTimeUnit.DAY)
