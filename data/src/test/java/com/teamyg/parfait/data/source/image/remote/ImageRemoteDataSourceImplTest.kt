@@ -101,7 +101,7 @@ class ImageRemoteDataSourceImplTest {
 
     @Test
     fun issueUploadUrl_businessFailure_returnsBusinessException() = runTest {
-        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다 —
+        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다.
         // 실제 서버의 400 은 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery { imageService.postImages(any()) } returns ApiResponse(
             success = false,
@@ -168,7 +168,7 @@ class ImageRemoteDataSourceImplTest {
 
     @Test
     fun confirmUpload_alreadyConfirmed_returnsBusinessException() = runTest {
-        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다 —
+        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다.
         // 실제 서버의 409 는 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery { imageService.postImagesByImageIdConfirm(any()) } returns ApiResponse(
             success = false,
