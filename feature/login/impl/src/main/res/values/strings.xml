@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_kakao_button_text">카카오 로그인</string>
+    <string name="login_kakao_content_description">kakao_login</string>
+    <string name="login_apple_button_text">Apple 로그인</string>
+    <string name="login_apple_content_description">apple_login</string>
+    <string name="login_onboarding_description_1">매일 새로운 캔버스에 하루하루 다르게 기록해요</string>
+    <string name="login_onboarding_description_2">오늘 찍은 사진을 친구들과 함께 캔버스에 붙여요</string>
+    <string name="login_onboarding_description_3">서로의 하루가 겹겹이 쌓여, 하나의 캔버스로 완성돼요</string>
+</resources>
