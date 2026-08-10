@@ -81,7 +81,7 @@ internal fun CanvasBGEditScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = YGTheme.layout.padding.padding4, start = 21.dp, end = 21.dp) // 21.dp 공통에 없음
+                .padding(top = YGTheme.layout.padding.padding4, start = 21.dp, end = 21.dp, bottom = YGTheme.layout.padding.padding4) // 21.dp 공통에 없음
                 .aspectRatio(CANVAS_EDIT_BOX_ASPECT_RATIO)
                 .let { if (selectedImageUri == null) it.background(selectedColor) else it }
                 .border(
@@ -102,9 +102,9 @@ internal fun CanvasBGEditScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = YGTheme.layout.padding.padding4)
+                .padding(top = YGTheme.layout.padding.padding6)
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 21.dp), // 21.dp 공통에 없음
+                .padding(horizontal = YGTheme.layout.padding.padding7, vertical = YGTheme.layout.padding.padding2),
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
         ) {
             PaletteActionCircle(
@@ -132,7 +132,12 @@ internal fun CanvasBGEditScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = YGTheme.layout.padding.padding6, start = 21.dp, end = 21.dp), // 21.dp 공통에 없음
+                .padding(
+                    top = YGTheme.layout.padding.padding6,
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    bottom = YGTheme.layout.padding.padding1,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             YGCircleButton(
