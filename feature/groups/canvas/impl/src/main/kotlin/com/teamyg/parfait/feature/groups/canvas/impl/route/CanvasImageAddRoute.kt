@@ -28,11 +28,11 @@ internal fun CanvasImageAddRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is CanvasImageAddEffect.NavigateToCamera -> navigator.goTo(
-                    destination = NavKeyCameraCustom,
+                    destination = NavKeyCameraCustom(),
                 )
 
                 is CanvasImageAddEffect.NavigateToCanvas -> navigator.goTo(
-                    destination = NavKeyCustomGalleryPicker,
+                    destination = NavKeyCustomGalleryPicker(),
                 )
 
                 is CanvasImageAddEffect.NavigateToSegmentation -> navigator.goTo(

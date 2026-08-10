@@ -53,6 +53,7 @@ import kotlinx.coroutines.withContext
 internal fun CustomCameraRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
+    showGuideToast: Boolean = true,
     viewModel: CustomCameraViewModel = hiltViewModel(),
 ) {
     val activity: Activity? = LocalActivity.current
@@ -82,7 +83,7 @@ internal fun CustomCameraRoute(
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        if (!hasShownGuideToast) {
+        if (showGuideToast && !hasShownGuideToast) {
             toastPolicy.show(YGToastType.Edit(guideToastMessage))
             hasShownGuideToast = true
         }

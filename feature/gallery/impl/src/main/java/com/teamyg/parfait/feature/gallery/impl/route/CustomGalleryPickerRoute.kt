@@ -37,6 +37,7 @@ import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerView
 internal fun CustomGalleryPickerRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
+    showGuideToast: Boolean = true,
     viewModel: CustomGalleryPickerViewModel = hiltViewModel(),
 ) {
     val activity: Activity? = LocalActivity.current
@@ -57,7 +58,7 @@ internal fun CustomGalleryPickerRoute(
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.isLoading, state.isEmpty, state.access) {
-        if (!hasShownGuideToast && state.access.hasPermission && !state.isLoading && !state.isEmpty) {
+        if (showGuideToast && !hasShownGuideToast && state.access.hasPermission && !state.isLoading && !state.isEmpty) {
             toastPolicy.show(YGToastType.Edit(guideToastMessage))
             hasShownGuideToast = true
         }

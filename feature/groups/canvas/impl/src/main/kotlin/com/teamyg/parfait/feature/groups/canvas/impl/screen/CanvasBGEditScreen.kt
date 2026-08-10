@@ -36,8 +36,6 @@ import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygedittabbutton.YGEditTabButton
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
-import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -198,8 +196,7 @@ private fun PaletteActionCircle(
                 width = 1.dp,
                 color = YGAtomicColors.Transparency.Black5,
                 shape = CircleShape,
-            )
-            .clickable(onClick = onClick),
+            ).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Image(
