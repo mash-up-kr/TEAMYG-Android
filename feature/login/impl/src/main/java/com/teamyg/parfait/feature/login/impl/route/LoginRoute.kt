@@ -9,7 +9,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
-import com.teamyg.parfait.feature.groups.home.api.NavKeyGroupHome
+import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.feature.login.impl.R
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
