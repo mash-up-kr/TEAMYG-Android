@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.seconds
  * 매퍼 테스트는 결정이 있는 곳만 다룬다. 필드를 그대로 옮기기만 하는 매퍼는 컴파일러가
  * 막아주니 테스트하지 않는다.
  *
- * 이 매퍼가 내리는 결정은 둘이다. ① status 문자열을 ImageStatus 로 옮기는 규칙 —
+ * 이 매퍼가 내리는 결정은 둘이다. ① status 문자열을 ImageStatus 로 옮기는 규칙이다.
  * 모르는 값이 오면 예외를 던지지 않고 UNKNOWN 으로 떨어뜨린다. 누가 enumValueOf 로 바꾸면
  * 서버가 상태 하나 추가하는 순간 크래시가 난다. ② expiresIn 이 초 단위 Long 인데 VO 는
  * Duration 이다. 단위를 잘못 읽으면 밀리초로 해석돼 만료 판정이 1000배 어긋난다.
