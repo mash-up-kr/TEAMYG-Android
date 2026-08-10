@@ -53,7 +53,7 @@ Authorization: Bearer {{access_token}}
 ### 2. S3 에 직접 PUT (서버 계약이 아니라 AWS 계약)
 # 이 요청만 {{base_url}} 이 아니라 발급받은 uploadUrl 로 나간다. 서버를 지나지 않는다.
 #
-# ⚠️ Content-Type 이 1번에서 보낸 contentType 과 달라야 하면 S3 가 서명 불일치로 거절한다.
+# ⚠️ Content-Type 이 1번에서 보낸 contentType 과 다르면 S3 가 서명 불일치로 거절한다.
 #    발급 때 PutObjectRequest 에 contentType 이 실려 서명 대상에 들어가기 때문이다.
 #    이 실패는 서버 로그에 남지 않는다 — 여기서만 재현할 수 있다.
 # ⚠️ uploadUrl 은 발급 응답의 expiresIn(초) 동안만 유효하다. 만료됐으면 1번을 다시 실행한다.
@@ -78,7 +78,8 @@ Content-Type: image/png
 #    2번을 건너뛰고 이것만 불러도 200 이 나오고, 그 imageUrl 은 404 를 뱉는 주소다.
 # ⚠️ 두 번 부르면 409 IMAGE_ALREADY_CONFIRMED 다. 재시도 안전장치가 아니다.
 # ⚠️ 서버가 소유자를 검증하지 않는다 — 다른 계정 토큰으로도 이 imageId 가 확정된다.
-#    (서버 소관 미결. 5번에서 재현할 수 있다.)
+#    (서버 소관 미결. 재현하려면 다른 계정으로 로그인해 access_token 을 갈아끼운 뒤
+#    이 요청을 그대로 쏘면 된다 — 이 파일에 별도 요청은 두지 않는다.)
 POST {{base_url}}/api/v1/images/{{image_id}}/confirm
 Authorization: Bearer {{access_token}}
 
