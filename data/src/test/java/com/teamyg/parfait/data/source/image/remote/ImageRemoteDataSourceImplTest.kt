@@ -101,7 +101,8 @@ class ImageRemoteDataSourceImplTest {
 
     @Test
     fun issueUploadUrl_businessFailure_returnsBusinessException() = runTest {
-        // Given 지원하지 않는 MIME 이라 서버가 success=false 로 응답
+        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다 —
+        // 실제 서버의 400 은 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery { imageService.postImages(any()) } returns ApiResponse(
             success = false,
             code = "INVALID_CONTENT_TYPE",
@@ -167,7 +168,8 @@ class ImageRemoteDataSourceImplTest {
 
     @Test
     fun confirmUpload_alreadyConfirmed_returnsBusinessException() = runTest {
-        // Given 이미 확정된 이미지라 서버가 409 로 응답
+        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다 —
+        // 실제 서버의 409 는 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery { imageService.postImagesByImageIdConfirm(any()) } returns ApiResponse(
             success = false,
             code = "IMAGE_ALREADY_CONFIRMED",
@@ -199,6 +201,7 @@ class ImageRemoteDataSourceImplTest {
 
         // Then EmptyBody 예외
         assertTrue(result.isFailure)
-        assertIs<ApiException.EmptyBody>(result.exceptionOrNull())
+        val error = assertIs<ApiException.EmptyBody>(result.exceptionOrNull())
+        assertEquals("SUCCESS", error.code)
     }
 }
