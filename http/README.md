@@ -66,6 +66,7 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 | `parfait-group.http` | 그룹 8종(목록·생성·참여 미리보기·참여·상세·닉네임 변경·신고·탈퇴) |
 | `parfait.http` | 그룹 캘린더 연도 리스트 |
 | `health.http` | 헬스체크(인증 유무 대조용) |
+| `images.http` | 이미지 업로드 URL 발급 · 업로드 확인(**2번 요청만 서버가 아니라 S3로 나간다**) |
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
@@ -117,7 +118,7 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ### 스웨거에 없는 에러 코드가 많다
 
-스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(12종)·`ParfaitGroupApiErrorCode`(11종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
+스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(12종)·`ParfaitGroupApiErrorCode`(11종)·`ImageErrorCode`(4종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
 
 ---
 
@@ -186,17 +187,20 @@ Android 9(API 28)부터 평문 HTTP는 기본 차단이므로, 실제 연동을 
 | 401 | `EXPIRED_TOKEN` | access/refresh 만료. 재발급 또는 재로그인 |
 | 401 | `INVALID_TOKEN` | 토큰 위조, 또는 refresh가 서버 저장값과 불일치(재사용 의심) |
 | 401 | `UNAUTHORIZED` | `Authorization` 헤더 자체가 없음 |
-| 401 | `MEMBER_NOT_FOUND` | 토큰의 회원이 존재하지 않음 (그룹 API의 404 `MEMBER_NOT_FOUND`와 **다른 코드다**) |
+| 401 | `MEMBER_NOT_FOUND` | 토큰의 회원이 존재하지 않음 (그룹·이미지 API의 404 `MEMBER_NOT_FOUND`와 **다른 코드다**) |
 | 403 | `FORBIDDEN_REFRESH_TOKEN` | access token의 주인과 바디 refresh token의 주인이 다름 |
 | 403 | `GROUP_NOT_JOINED` | 참여하지 않은 그룹 |
 | 404 | `GROUP_NOT_FOUND` | 없는 그룹 |
 | 404 | `INVALID_INVITE_CODE` | 초대코드 무효 |
+| 400 | `INVALID_CONTENT_TYPE` | 이미지 MIME이 `image/png`·`image/jpeg`가 아님 |
+| 404 | `IMAGE_NOT_FOUND` | 없는 `imageId`로 업로드 확인 |
+| 409 | `IMAGE_ALREADY_CONFIRMED` | 이미 확정된 이미지를 다시 확인 (재시도 안전장치가 아니다) |
 | 409 | `ALREADY_REGISTERED` | 이미 가입된 회원인데 signup 호출 |
 | 409 | `GROUP_ALREADY_JOINED` · `GROUP_MEMBER_LIMIT_REACHED` · `GROUP_NICKNAME_ALREADY_USED` | 참여 관련 충돌 |
 | 400 | `TERMS_NOT_FOUND` · `DUPLICATE_TERMS_ID` · `REQUIRED_TERMS_NOT_AGREED` | 약관 관련 |
 | 400 | `INVALID_GROUP_NAME` · `INVALID_GROUP_NICKNAME` · `INVALID_GROUP_MEMBER_LIMIT` · `INVALID_GROUP_REPORT_REASON` | 그룹 입력값 |
 
-> `MEMBER_NOT_FOUND`는 **`AuthErrorCode`에서 401, `ParfaitGroupApiErrorCode`에서 404**로 중복 정의돼 있다. 코드 문자열만으로 분기하면 두 상황이 뭉개진다 — HTTP status와 함께 봐야 한다.
+> `MEMBER_NOT_FOUND`는 **`AuthErrorCode`에서 401, `ParfaitGroupApiErrorCode`와 `ImageErrorCode`에서 404**로 중복 정의돼 있다. 코드 문자열만으로 분기하면 세 상황이 뭉개진다 — HTTP status와 함께 봐야 한다.
 
 ---
 
@@ -211,6 +215,7 @@ http/
 ├── parfait-group.http            # 그룹 8종
 ├── parfait.http                  # 파르페 조회
 ├── health.http                   # 헬스체크
+├── images.http                   # 이미지 업로드 2종 (+ S3 PUT)
 ├── http-client.env.json          # 환경 변수 구조(값 비움, 커밋됨)
 └── http-client.private.env.json  # 실제 값 (gitignore — 커밋되지 않음)
 ```
