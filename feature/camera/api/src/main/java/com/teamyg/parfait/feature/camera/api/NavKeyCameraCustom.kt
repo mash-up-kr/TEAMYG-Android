@@ -6,4 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class NavKeyCameraCustom(
     val showGuideToast: Boolean = true,
+    val returnResultOnly: Boolean = false,
 ) : NavKey

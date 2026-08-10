@@ -54,6 +54,7 @@ internal fun CustomCameraRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
     showGuideToast: Boolean = true,
+    returnResultOnly: Boolean = false,
     viewModel: CustomCameraViewModel = hiltViewModel(),
 ) {
     val activity: Activity? = LocalActivity.current
@@ -152,7 +153,13 @@ internal fun CustomCameraRoute(
                 }
 
                 is CustomCameraEffect.NavigateToConfirm -> {
-                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri, source = PictureConfirmSource.CAMERA))
+                    navigator.goTo(
+                        NavKeyPictureConfirm(
+                            uri = effect.uri,
+                            source = PictureConfirmSource.CAMERA,
+                            returnResultOnly = returnResultOnly,
+                        ),
+                    )
                 }
             }
         }

@@ -31,6 +31,7 @@ fun EntryProviderScope<NavKey>.featureCustomGalleryEntryBuilder(navigator: Navig
             CustomGalleryPickerRoute(
                 navigator = navigator,
                 showGuideToast = navKey.showGuideToast,
+                returnResultOnly = navKey.returnResultOnly,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),

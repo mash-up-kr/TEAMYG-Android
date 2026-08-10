@@ -38,6 +38,7 @@ internal fun CustomGalleryPickerRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
     showGuideToast: Boolean = true,
+    returnResultOnly: Boolean = false,
     viewModel: CustomGalleryPickerViewModel = hiltViewModel(),
 ) {
     val activity: Activity? = LocalActivity.current
@@ -76,7 +77,13 @@ internal fun CustomGalleryPickerRoute(
                 }
 
                 is CustomGalleryPickerEffect.NavigateToConfirm -> {
-                    navigator.goTo(NavKeyPictureConfirm(uri = effect.uri, source = PictureConfirmSource.GALLERY))
+                    navigator.goTo(
+                        NavKeyPictureConfirm(
+                            uri = effect.uri,
+                            source = PictureConfirmSource.GALLERY,
+                            returnResultOnly = returnResultOnly,
+                        ),
+                    )
                 }
 
                 is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()

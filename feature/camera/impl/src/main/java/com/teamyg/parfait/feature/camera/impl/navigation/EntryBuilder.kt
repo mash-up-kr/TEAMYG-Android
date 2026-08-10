@@ -22,6 +22,7 @@ fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
             CustomCameraRoute(
                 navigator = navigator,
                 showGuideToast = navKey.showGuideToast,
+                returnResultOnly = navKey.returnResultOnly,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -41,6 +42,7 @@ fun EntryProviderScope<NavKey>.featureCameraEntryBuilder(navigator: Navigator) {
             PictureConfirmRoute(
                 uri = navKey.uri,
                 source = navKey.source,
+                returnResultOnly = navKey.returnResultOnly,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
