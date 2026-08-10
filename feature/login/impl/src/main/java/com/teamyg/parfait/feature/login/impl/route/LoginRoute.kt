@@ -50,7 +50,7 @@ fun LoginRoute(
             ),
             OnboardingPage(
                 description = onboardingDescription3,
-                painterResourceId = DesignSystemR.drawable.image_onboarding_1,
+                painterResourceId = DesignSystemR.drawable.image_onboarding_3,
             ),
         )
     }
