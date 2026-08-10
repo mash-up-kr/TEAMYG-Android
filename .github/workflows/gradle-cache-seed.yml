@@ -8,6 +8,15 @@ on:
     branches: [ develop ]
   workflow_dispatch:
 
+# 시딩의 목적은 "가장 최신 상태의 캐시"라 앞 런을 취소해도 잃는 것이 없고 러너 시간을 아낀다.
+# 다만 취소된 런은 캐시를 저장하지 않는다(setup-gradle 의 post 스텝이 post-if: '!cancelled()').
+# 따라서 seed 소요시간보다 촘촘한 간격으로 develop 머지가 이어지면 캐시가 한동안 갱신되지
+# 않을 수 있다 — 그 사이에도 직전 성공 캐시가 프리픽스 폴백으로 계속 쓰이고, 필요하면
+# workflow_dispatch 로 수동 재시딩한다.
+concurrency:
+  group: gradle-cache-seed
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
