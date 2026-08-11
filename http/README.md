@@ -67,10 +67,14 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 | `parfait.http` | 그룹 캘린더 연도 리스트 |
 | `health.http` | 헬스체크(인증 유무 대조용) |
 | `images.http` | 이미지 업로드 URL 발급 · 업로드 확인(**2번 요청만 서버가 아니라 S3로 나간다**) |
+| `users.http` | 내 계정 조회 · 전역 닉네임 변경(선행: `auth.http`만) |
+| `parfait-image.http` | 토핑 배치 확정 · 위치/크기/각도 수정(**선행이 셋** — `auth.http` → `parfait-group.http` → `images.http`) |
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
 `policy.http`를 먼저 돌려야 `auth.http` 2번의 `termsId`가 채워진다. 기존 회원으로 로그인했다면 회원가입을 건너뛰므로 `policy.http`도 건너뛰어도 된다.
+
+`parfait-image.http`는 준비가 가장 길다 — `images.http`의 발급 → S3 PUT → confirm 까지 끝내 이미지를 `COMPLETED`로 만들어야 배치가 통과한다(`PENDING`이면 `409 IMAGE_NOT_CONFIRMED`). `parfaitId`는 조회 API가 서버에 없어 요청 파일의 리터럴을 손으로 바꿔야 한다.
 
 ---
 
@@ -100,13 +104,11 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 스웨거 문서는 springdoc이 생성한 것이라 몇 군데가 실제와 어긋난다. **여기 적힌 쪽이 맞다**(서버 코드로 확인).
 
-### `isNewUser`가 아니라 `newUser`다 ⚠️ 가장 중요
+### 판별자 키는 `isNewUser`다 — 스웨거의 `newUser`가 틀렸다 ⚠️ 가장 중요
 
-카카오 로그인 응답의 신규 유저 판별자는 **`newUser`**다.
+서버 `KakaoLoginResponse`는 Kotlin `val isNewUser: Boolean`이고, 서버가 `jackson-module-kotlin`을 쓰므로 **JSON 키에 `is` 접두사가 그대로 남는다.** 컨트롤러 테스트가 실제 응답 본문에 `$.data.isNewUser`를 단언한다.
 
-서버 Kotlin은 `val isNewUser: Boolean`인데, Jackson이 getter 이름에서 `is` 접두사를 떼고 직렬화해 **실제 JSON 키는 `newUser`**로 나간다(OpenAPI 스키마가 그렇게 적혀 있고, 그게 실제 응답이다).
-
-`isNewUser`로 읽으면 항상 `undefined`/`null` → **신규 유저가 기존 회원으로 잘못 분기**되고, 없는 `accessToken`을 꺼내게 된다. Android 응답 타입도 `@SerialName("newUser")`가 필요하다.
+스웨거만 `newUser`로 적는데, springdoc이 Kotlin 모듈이 없는 자기 ObjectMapper로 모델을 유도하기 때문이다 — **런타임 직렬화 결과와 다르다.** 앱 `KakaoLoginResponse`에 붙은 `@SerialName("newUser")`는 **고쳐야 한다**(키를 못 찾아 `MissingFieldException`이 난다).
 
 ### 회원가입은 200이 아니라 201이다
 
@@ -118,7 +120,7 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ### 스웨거에 없는 에러 코드가 많다
 
-스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(12종)·`ParfaitGroupApiErrorCode`(11종)·`ImageErrorCode`(4종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
+스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(14종)·`ParfaitGroupApiErrorCode`(11종)·`ImageErrorCode`(4종)·`MemberErrorCode`(2종)·`ParfaitImageErrorCode`(5종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
 
 ---
 

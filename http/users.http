@@ -1,0 +1,97 @@
+### 회원(내 계정 조회 / 전역 닉네임 변경) API
+#
+# 인증 필요. 먼저 auth.http 로 로그인해 access_token 을 채운다.
+# 대상 회원은 요청이 아니라 토큰에서 정해진다 - 남의 계정을 지정할 경로가 없다.
+
+### 내 계정 정보 조회
+# 서버가 가입 시 자동 생성한 닉네임을 여기서 처음 볼 수 있다(가입 응답에는 없다).
+#
+# ⚠️ provider 에 서버 core enum 밖 값이 오면(영속 계층에는 GOOGLE 이 있다) 서버가
+#    500 INTERNAL_SERVER_ERROR 를 낸다. 앱은 UNKNOWN 으로 떨어뜨리지만 그 전에 서버가 깨진다.
+GET {{base_url}}/api/v1/users/me
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("provider=" + response.body.data.provider + " nickname=" + response.body.data.nickname);
+%}
+
+### 전역 닉네임 변경
+# 이미 참여한 그룹의 그룹 닉네임은 바뀌지 않는다 - 별도 컬럼이고 이 API 가 건드리지 않는다.
+PATCH {{base_url}}/api/v1/users/me/nickname
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "nickname": "부지런한 수달"
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.data.nickname === "부지런한 수달", "nickname: " + response.body.data.nickname);
+    });
+%}
+
+### (대조용) 빈 닉네임 → 400 INVALID_REQUEST
+# @NotBlank 에 걸린다. 아래 형식 위반과 코드가 다르다는 것이 요점이다.
+PATCH {{base_url}}/api/v1/users/me/nickname
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "nickname": ""
+}
+
+> {%
+    client.test("400 INVALID_REQUEST", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_REQUEST", "code: " + response.body.code);
+    });
+%}
+
+### (대조용) 연속 공백 → 400 INVALID_NICKNAME
+# @NotBlank 는 통과하고 GlobalNickname.of 에서 걸린다. 위 요청과 코드가 갈린다.
+PATCH {{base_url}}/api/v1/users/me/nickname
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "nickname": "연속  공백"
+}
+
+> {%
+    client.test("400 INVALID_NICKNAME", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_NICKNAME", "code: " + response.body.code);
+    });
+%}
+
+### (대조용) 16자 → 400 INVALID_NICKNAME
+# 상한은 15자다. 그룹 닉네임과 규칙이 문자 그대로 같다.
+PATCH {{base_url}}/api/v1/users/me/nickname
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "nickname": "가나다라마바사아자차카타파하가나"
+}
+
+> {%
+    client.test("400 INVALID_NICKNAME", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_NICKNAME", "code: " + response.body.code);
+    });
+%}
+
+### (대조용) 토큰 없이 호출 → 401 UNAUTHORIZED
+GET {{base_url}}/api/v1/users/me
+
+> {%
+    client.test("401 UNAUTHORIZED", function() {
+        client.assert(response.status === 401, "status: " + response.status);
+        client.assert(response.body.code === "UNAUTHORIZED", "code: " + response.body.code);
+    });
+%}
