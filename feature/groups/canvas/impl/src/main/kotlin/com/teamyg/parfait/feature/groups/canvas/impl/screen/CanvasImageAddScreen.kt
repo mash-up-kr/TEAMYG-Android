@@ -1,57 +1,163 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
+import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
+import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChip
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChipStyle
+import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+private const val MAX_VISIBLE_MEMBER_CHIPS = 5
 
 @Composable
 internal fun CanvasImageAddScreen(
+    canvasState: CanvasImageAddUiState,
+    onClickBack: () -> Unit,
+    onClickDateSelect: () -> Unit,
+    onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
-    onClickCanvasEdit: () -> Unit,
+    onClickEditCanvasBG: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+    val openMenu = { isMenuExpanded = true }
+
     Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly,
+        modifier = modifier
+            .background(YGAtomicColors.Gray.White)
+            .ygBackgroundDotGrid(),
     ) {
-        Text(text = "캔버스 이미지 추가")
+        YGTopBarCanvas(
+            title = canvasState.groupName,
+            onBackClick = onClickBack,
+            onMenuClick = onClickMenu,
+            memberContent = {
+                Row(horizontalArrangement = Arrangement.spacedBy(-12.dp)) {
+                    canvasState.memberChips.take(5).forEach { member ->
+                        YGNametagChip(
+                            colorChipType = member.colorChipType,
+                            userFirstName = member.nickname,
+                            chip = YGNametagChipStyle.Style28,
+                        )
+                    }
 
-        Button(
-            onClick = onClickCamera,
-        ) {
-            Text(text = "카메라로 촬영")
-        }
+                    val overflowCount = canvasState.memberChips.size - 5
+                    if (overflowCount > 0) {
+                        YGNametagChip(
+                            colorChipType = YGColorChipType.NametagChipPlus,
+                            userFirstName = stringResource(
+                                R.string.canvas_image_add_member_overflow_count,
+                                overflowCount,
+                            ),
+                            chip = YGNametagChipStyle.Style28,
+                        )
+                    }
+                }
+            },
+        )
 
-        Button(
-            onClick = onClickGallery,
-        ) {
-            Text(text = "갤러리에서 선택")
-        }
-
-        Button(
-            onClick = onClickCanvasEdit,
-        ) {
-            Text(text = "캔버스 편집")
-        }
+        YGCanvas(
+            date = canvasState.canvasDate,
+            day = "(${canvasState.canvasDay})",
+            onDateSelectClick = onClickDateSelect,
+            addAction = YGCanvasMenuAction(
+                text = stringResource(R.string.canvas_image_add_topping_add),
+                iconResource = DesignSystemR.drawable.ic_plus,
+                onClick = openMenu,
+            ),
+            editAction = YGCanvasMenuAction(
+                text = stringResource(R.string.canvas_image_add_canvas_edit),
+                iconResource = DesignSystemR.drawable.ic_caret_right,
+                onClick = onClickEditCanvasBG,
+            ),
+            isEmpty = true,
+            emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
+            isDimmed = isMenuExpanded,
+            onDimClick = { isMenuExpanded = false },
+            isMenuExpanded = isMenuExpanded,
+            expandedItems = listOf(
+                YGCanvasMenuItem(
+                    text = stringResource(R.string.canvas_image_add_camera_capture),
+                    onClick = {
+                        isMenuExpanded = false
+                        onClickCamera()
+                    },
+                ),
+                YGCanvasMenuItem(
+                    text = stringResource(R.string.canvas_image_add_gallery_select),
+                    onClick = {
+                        isMenuExpanded = false
+                        onClickGallery()
+                    },
+                ),
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        )
     }
+}
+
+private class CanvasImageAddScreenPreviewParameterProvider :
+    PreviewParameterProvider<CanvasImageAddUiState> {
+    override val values: Sequence<CanvasImageAddUiState>
+        get() = sequenceOf(
+            CanvasImageAddUiState(
+                groupName = "그룹이름은최대열글자",
+                memberChips = listOf(
+                    GroupMemberChip("문", YGColorChipType.NametagChip1),
+                    GroupMemberChip("전", YGColorChipType.NametagChip8),
+                    GroupMemberChip("김", YGColorChipType.NametagChip5),
+                    GroupMemberChip("장", YGColorChipType.NametagChip3),
+                    GroupMemberChip("김", YGColorChipType.NametagChip11),
+                    GroupMemberChip("류", YGColorChipType.NametagChip6),
+                    GroupMemberChip("정", YGColorChipType.NametagChip2),
+                ),
+                canvasDate = "May 20",
+                canvasDay = "Wed",
+            ),
+        )
 }
 
 @YGPreview
 @Composable
-private fun PreviewCanvasImageAddScreen() = PreviewBox {
+private fun PreviewCanvasImageAddScreen(
+    @PreviewParameter(CanvasImageAddScreenPreviewParameterProvider::class) uiState: CanvasImageAddUiState,
+) = PreviewBox {
     CanvasImageAddScreen(
+        canvasState = uiState,
+        onClickBack = {},
+        onClickDateSelect = {},
+        onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
-        onClickCanvasEdit = {},
+        onClickEditCanvasBG = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

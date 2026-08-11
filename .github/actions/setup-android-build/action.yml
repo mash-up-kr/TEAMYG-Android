@@ -1,0 +1,16 @@
+name: Setup Android Build
+description: JDK 17(temurin)과 Gradle을 설정한다
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    # Gradle User Home 캐시를 직접 관리한다. 캐시 저장 시 modules-2.lock·gc.properties 같은
+    # 휘발성 파일을 제외하므로, 워크플로마다 수동으로 지울 필요가 없다.
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v4

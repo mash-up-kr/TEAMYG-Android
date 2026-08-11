@@ -3,4 +3,5 @@
     <string name="group_add">그룹 추가하기</string>
     <string name="group_create">그룹 만들기</string>
     <string name="group_enter">그룹 들어가기</string>
+    <string name="group_list_error">앗, 파르페를 불러오지 못했어요.\n아래로 당겨 다시 시도해 주세요.</string>
 </resources>

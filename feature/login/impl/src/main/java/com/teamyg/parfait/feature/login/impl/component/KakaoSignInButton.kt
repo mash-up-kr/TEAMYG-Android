@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -13,8 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.KakaoDesignGuideColors
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.login.impl.R
@@ -35,23 +36,27 @@ internal fun KakaoSignInButton(
     Button(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(50.dp),
+        shape = YGTheme.shapes.radius.none,
         colors = buttonColors,
         enabled = enabled,
         contentPadding = PaddingValues(
-            horizontal = 15.dp,
-            vertical = 12.dp,
+            horizontal = YGTheme.layout.padding.padding5,
+            vertical = YGTheme.layout.padding.padding3,
         ),
     ) {
         Image(
             painter = painterResource(R.drawable.icon_logo_kakao),
-            contentDescription = "kakao_login",
+            contentDescription = stringResource(R.string.login_kakao_content_description),
             colorFilter = ColorFilter.tint(KakaoDesignGuideColors.SignSymbolColor),
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(text = "카카오 로그인")
+        Text(
+            text = stringResource(R.string.login_kakao_button_text),
+            style = YGTheme.typography.body.b01SB,
+            color = YGAtomicColors.Gray.Black,
+        )
 
         Spacer(modifier = Modifier.weight(1f))
     }

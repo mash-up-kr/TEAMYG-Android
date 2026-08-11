@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.login.impl.component.KakaoSignInButton
@@ -26,24 +27,27 @@ internal fun LoginScreen(
 ) {
     Column(
         modifier = modifier
-            .padding(all = 20.dp),
+            .padding(top = 45.dp, bottom = YGTheme.layout.padding.padding1),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(64.dp))
-
         OnboardingPager(
             pages = pages,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .padding(start = 35.dp, end = 34.dp),
         )
 
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
         KakaoSignInButton(
             onClick = onClickKakaoButton,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
         )
+
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
     }
 }
 

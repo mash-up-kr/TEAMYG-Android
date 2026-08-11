@@ -1,10 +1,12 @@
 package com.teamyg.parfait.core.designsystem.component.ygcanvasmenu
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygmenuitem.YGMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygstrokebutton.YGStrokeButton
@@ -22,7 +24,10 @@ fun YGCanvasMenu(
     isExpanded: Boolean = false,
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(-1.dp),
+    ) {
         if (isExpanded) {
             expandedItems.forEach { item ->
                 YGMenuItem(
@@ -31,7 +36,10 @@ fun YGCanvasMenu(
                 )
             }
         }
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(-1.dp),
+        ) {
             YGStrokeButton(
                 text = addAction.text,
                 onClick = addAction.onClick,

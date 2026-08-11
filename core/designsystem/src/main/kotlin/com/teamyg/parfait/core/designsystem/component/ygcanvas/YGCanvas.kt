@@ -2,23 +2,29 @@ package com.teamyg.parfait.core.designsystem.component.ygcanvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.R
@@ -35,9 +41,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
-/**
- * Figma Canvas
- */
 @Composable
 fun YGCanvas(
     date: String,
@@ -48,6 +51,7 @@ fun YGCanvas(
     modifier: Modifier = Modifier,
     background: YGCanvasBackground = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100),
     isDimmed: Boolean = false,
+    onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
@@ -57,72 +61,131 @@ fun YGCanvas(
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shape = canvasCutCornerShape()
+    val defaultHorizontalPadding = YGTheme.layout.padding.padding7
+    val minVerticalGap = YGTheme.layout.padding.padding5
+    val menuHeight = SizeTokens.Size44.getDp()
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            CanvasArea(
-                shape = shape,
-                background = background,
-                isEmpty = isEmpty,
-                emptyMessage = emptyMessage,
-                content = content,
-                dateSelect = {
-                    if (isCalendarVisible.not()) {
-                        YGCanvasDateSelectButton(
-                            date = date,
-                            day = day,
-                            onClick = onDateSelectClick,
-                        )
-                    }
-                },
-            )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val metrics = calculateCanvasLayoutMetrics(
+            defaultHorizontalPadding = defaultHorizontalPadding,
+            minVerticalGap = minVerticalGap,
+            menuHeight = menuHeight,
+        )
+
+        Box(
+            modifier = Modifier
+                .padding(start = metrics.horizontalPadding, top = metrics.verticalGap)
+                .width(metrics.canvasWidth)
+                .height(metrics.canvasAreaHeight + menuHeight - 1.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(-1.dp)) {
+                CanvasArea(
+                    shape = shape,
+                    background = background,
+                    isEmpty = isEmpty,
+                    emptyMessage = emptyMessage,
+                    content = content,
+                    dateSelect = {
+                        if (isCalendarVisible.not()) {
+                            YGCanvasDateSelectButton(
+                                date = date,
+                                day = day,
+                                onClick = onDateSelectClick,
+                            )
+                        }
+                    },
+                )
+                if (isMenuExpanded) {
+                    Spacer(modifier = Modifier.height(menuHeight))
+                } else {
+                    YGCanvasMenu(
+                        addAction = addAction,
+                        editAction = editAction,
+                    )
+                }
+            }
+
+            if (isDimmed) {
+                Spacer(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(shape)
+                        .background(color = YGAtomicColors.Transparency.Black25)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null,
+                            onClick = onDimClick,
+                        ),
+                )
+            }
+
+            if (isCalendarVisible) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    YGCanvasDateSelectButton(
+                        date = date,
+                        day = day,
+                        onClick = onDateSelectClick,
+                    )
+                    calendarContent()
+                }
+            }
+
             if (isMenuExpanded) {
-                Spacer(modifier = Modifier.height(SizeTokens.Size44.getDp()))
-            } else {
                 YGCanvasMenu(
                     addAction = addAction,
                     editAction = editAction,
+                    isExpanded = true,
+                    expandedItems = expandedItems,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-        }
-
-        if (isDimmed) {
-            Spacer(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .background(color = YGAtomicColors.Transparency.Black25)
-                    .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent().changes.forEach { it.consume() }
-                            }
-                        }
-                    },
-            )
-        }
-
-        if (isCalendarVisible) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                YGCanvasDateSelectButton(
-                    date = date,
-                    day = day,
-                    onClick = onDateSelectClick,
-                )
-                calendarContent()
-            }
-        }
-
-        if (isMenuExpanded) {
-            YGCanvasMenu(
-                addAction = addAction,
-                editAction = editAction,
-                isExpanded = true,
-                expandedItems = expandedItems,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
+}
+
+private data class CanvasLayoutMetrics(
+    val canvasWidth: Dp,
+    val canvasAreaHeight: Dp,
+    val verticalGap: Dp,
+    val horizontalPadding: Dp,
+)
+
+/**
+ * Canvas-Area만 16:9 비율을 유지하고 Canvas-Menu는 고정 높이로 더해진다.
+ * 상하 gap은 항상 동일한 값을 유지하며 최소 gap([minVerticalGap])을 보장하고,
+ * 세로 공간이 부족하면 캔버스를 축소해 좌우 패딩이 [defaultHorizontalPadding]보다 커진다.
+ */
+private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
+    defaultHorizontalPadding: Dp,
+    minVerticalGap: Dp,
+    menuHeight: Dp,
+): CanvasLayoutMetrics {
+    val defaultWidth = maxWidth - defaultHorizontalPadding * 2
+    val defaultAreaHeight = defaultWidth / CANVAS_AREA_ASPECT_RATIO
+    val defaultTotalHeight = defaultAreaHeight + menuHeight
+
+    if (!constraints.hasBoundedHeight) {
+        return CanvasLayoutMetrics(defaultWidth, defaultAreaHeight, minVerticalGap, defaultHorizontalPadding)
+    }
+
+    val availableHeight = maxHeight - minVerticalGap * 2
+    if (defaultTotalHeight <= availableHeight) {
+        return CanvasLayoutMetrics(
+            canvasWidth = defaultWidth,
+            canvasAreaHeight = defaultAreaHeight,
+            verticalGap = (maxHeight - defaultTotalHeight) / 2,
+            horizontalPadding = defaultHorizontalPadding,
+        )
+    }
+
+    val areaHeight = availableHeight - menuHeight
+    val width = areaHeight * CANVAS_AREA_ASPECT_RATIO
+    return CanvasLayoutMetrics(
+        canvasWidth = width,
+        canvasAreaHeight = areaHeight,
+        verticalGap = minVerticalGap,
+        horizontalPadding = (maxWidth - width) / 2,
+    )
 }
 
 @Composable

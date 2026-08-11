@@ -2,8 +2,10 @@ package com.teamyg.parfait.feature.groups.canvas.impl.route
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasImageAddScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddViewModel
@@ -21,6 +23,8 @@ internal fun CanvasImageAddRoute(
     modifier: Modifier = Modifier,
     viewModel: CanvasImageAddViewModel = hiltViewModel(),
 ) {
+    val canvasState by viewModel.state.collectAsStateWithLifecycle()
+
     ResultEffect<String> { imageUri ->
         viewModel.processIntent(CanvasImageAddIntent.CacheImage(imageUri))
     }
@@ -50,9 +54,13 @@ internal fun CanvasImageAddRoute(
     }
 
     CanvasImageAddScreen(
-        modifier = modifier,
+        canvasState = canvasState,
+        onClickBack = { navigator.onBack() },
+        onClickDateSelect = {}, // TODO: 날짜 선택 연동 필요
+        onClickMenu = {}, // TODO: 메뉴 연동 필요
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
-        onClickCanvasEdit = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
+        onClickEditCanvasBG = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
+        modifier = modifier,
     )
 }

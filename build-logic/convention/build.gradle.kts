@@ -72,6 +72,18 @@ gradlePlugin {
             pluginName = "module.feature.api",
             className = "ModuleFeatureApi",
         )
+        pluginRegister(
+            pluginName = "test.unit",
+            className = "TestUnit",
+        )
+        pluginRegister(
+            pluginName = "test.android",
+            className = "TestAndroid",
+        )
+        pluginRegister(
+            pluginName = "test.compose",
+            className = "TestCompose",
+        )
     }
 }
 

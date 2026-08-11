@@ -1,0 +1,50 @@
+name: test
+
+on:
+  pull_request:
+    branches: [ develop ]
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Restore app secrets
+        uses: ./.github/actions/restore-app-secrets
+        with:
+          kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      # 유닛 테스트 수행 (전체 모듈. 테스트가 없는 모듈은 NO-SOURCE 로 즉시 스킵된다)
+      - name: Run unit tests
+        run: ./gradlew test
+
+      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지)
+      - name: Compile instrumented tests
+        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest
+
+      # 실패해도 결과를 남긴다
+      - name: Publish test report
+        uses: dorny/test-reporter@v2
+        if: always()
+        with:
+          name: Unit Test Results
+          path: '**/build/test-results/**/TEST-*.xml'
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/**'
+          retention-days: 7
