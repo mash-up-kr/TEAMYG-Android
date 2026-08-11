@@ -151,6 +151,7 @@ class ImageRemoteDataSourceImplTest {
         // Then VO 로 매핑된 성공 결과
         val vo = result.getOrThrow()
         assertEquals(ImageId(7L), vo.imageId)
+        assertEquals("https://example.com/image", vo.imageUrl)
         assertEquals(ImageStatus.COMPLETED, vo.status)
     }
 

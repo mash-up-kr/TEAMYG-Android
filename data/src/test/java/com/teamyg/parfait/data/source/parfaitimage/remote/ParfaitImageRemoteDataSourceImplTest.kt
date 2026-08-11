@@ -175,7 +175,8 @@ class ParfaitImageRemoteDataSourceImplTest {
 
     @Test
     fun placeTopping_groupNotJoined_returnsBusinessException() = runTest {
-        // Given envelope 의 success=false 응답
+        // Given envelope 의 success=false 응답 (HTTP status 축은 여기서 잡지 않는다.
+        // 실제 서버의 403 은 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery {
             parfaitImageService.postGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         } returns ApiResponse(
@@ -196,7 +197,8 @@ class ParfaitImageRemoteDataSourceImplTest {
 
     @Test
     fun placeTopping_imageNotConfirmed_returnsBusinessException() = runTest {
-        // Given 업로드가 확인되지 않은 이미지
+        // Given 업로드가 확인되지 않은 이미지 (HTTP status 축은 여기서 잡지 않는다.
+        // 실제 서버의 409 는 Retrofit 이 HttpException 을 던지는 별도 경로를 탄다)
         coEvery {
             parfaitImageService.postGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         } returns ApiResponse(
@@ -357,7 +359,9 @@ class ParfaitImageRemoteDataSourceImplTest {
 
     @Test
     fun updateTopping_notOwned_returnsBusinessException() = runTest {
-        // Given 본인이 배치한 토핑이 아니다 (그룹 미참여도 같은 코드로 온다)
+        // Given 본인이 배치한 토핑이 아니다 (그룹 미참여도 같은 코드로 온다.
+        // HTTP status 축은 여기서 잡지 않는다 - 실제 서버의 403 은 Retrofit 이 HttpException 을
+        // 던지는 별도 경로를 탄다)
         coEvery {
             parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
                 any(),

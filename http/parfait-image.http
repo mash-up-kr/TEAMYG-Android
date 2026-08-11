@@ -13,7 +13,7 @@
 #    여기 imageId 와 parfaitImageId 는 서로 다른 키다.
 
 ### 1. 토핑 배치 확정 (테두리 없음)
-# 생성 POST 라 201 CREATED 다. 같은 도메인의 이미지 발급이 200 인 것과 다르다.
+# 생성 POST 라 201 CREATED 다. 같은 서버의 이미지 발급(다른 도메인)이 200 인 것과 다르다.
 POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/1/images
 Authorization: Bearer {{access_token}}
 Content-Type: application/json

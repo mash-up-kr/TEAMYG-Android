@@ -10,6 +10,9 @@ interface MemberRemoteDataSource {
      * MEMBER_NOT_FOUND 가 401(전역 인증 필터)과 404(서비스) 둘 다로 올 수 있다.
      * code 문자열만으로 분기하면 두 상황이 뭉개지므로, 이 계층은 번역하지 않고
      * ApiException.Business 로 그대로 흘린다.
+     * 소비 측은 ApiException.Business.statusCode 로 두 상황을 구분할 수 있다 — 401/404 는
+     * Retrofit 의 HttpException 경로를 타고, ApiCaller.toApiException 이 HTTP status 를
+     * statusCode 에 채워 넣는다.
      */
     suspend fun getMyAccount(): Result<MyAccountVO>
 
