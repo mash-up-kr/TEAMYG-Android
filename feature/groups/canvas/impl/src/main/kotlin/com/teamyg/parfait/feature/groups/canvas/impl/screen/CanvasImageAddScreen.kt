@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 internal fun CanvasImageAddScreen(
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
+    onClickCanvasEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -35,6 +36,12 @@ internal fun CanvasImageAddScreen(
         ) {
             Text(text = "갤러리에서 선택")
         }
+
+        Button(
+            onClick = onClickCanvasEdit,
+        ) {
+            Text(text = "캔버스 편집")
+        }
     }
 }
 
@@ -44,6 +51,7 @@ private fun PreviewCanvasImageAddScreen() = PreviewBox {
     CanvasImageAddScreen(
         onClickCamera = {},
         onClickGallery = {},
+        onClickCanvasEdit = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

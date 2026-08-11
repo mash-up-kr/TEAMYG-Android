@@ -12,6 +12,7 @@ import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
@@ -35,6 +36,10 @@ internal fun CanvasImageAddRoute(
                     destination = NavKeyCustomGalleryPicker(),
                 )
 
+                is CanvasImageAddEffect.NavigateToCanvasBGEdit -> navigator.goTo(
+                    destination = NavKeyCanvasBGEdit,
+                )
+
                 is CanvasImageAddEffect.NavigateToSegmentation -> navigator.goTo(
                     destination = NavKeySegmentation(
                         sourceImageUri = effect.uri,
@@ -48,5 +53,6 @@ internal fun CanvasImageAddRoute(
         modifier = modifier,
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
+        onClickCanvasEdit = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
     )
 }

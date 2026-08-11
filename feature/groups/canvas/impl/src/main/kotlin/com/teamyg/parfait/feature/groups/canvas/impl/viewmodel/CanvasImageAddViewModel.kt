@@ -18,6 +18,8 @@ sealed interface CanvasImageAddEffect : UiSideEffect {
 
     class NavigateToCanvas : CanvasImageAddEffect
 
+    class NavigateToCanvasBGEdit : CanvasImageAddEffect
+
     data class NavigateToSegmentation(
         val uri: String,
     ) : CanvasImageAddEffect
@@ -31,6 +33,8 @@ sealed interface CanvasImageAddIntent : UiIntent {
     class OnClickCamera : CanvasImageAddIntent
 
     class OnClickCanvas : CanvasImageAddIntent
+
+    class OnClickCanvasEdit : CanvasImageAddIntent
 }
 
 @HiltViewModel
@@ -50,6 +54,7 @@ constructor(
             is CanvasImageAddIntent.CacheImage -> handleCacheImage(intent)
             is CanvasImageAddIntent.OnClickCamera -> handleOnClickCamera()
             is CanvasImageAddIntent.OnClickCanvas -> handleOnClickCanvas()
+            is CanvasImageAddIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
         }
     }
 
@@ -71,6 +76,12 @@ constructor(
     private fun handleOnClickCanvas() {
         postSideEffect(
             effect = CanvasImageAddEffect.NavigateToCanvas(),
+        )
+    }
+
+    private fun handleOnClickCanvasEdit() {
+        postSideEffect(
+            effect = CanvasImageAddEffect.NavigateToCanvasBGEdit(),
         )
     }
 }
