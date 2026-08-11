@@ -1,17 +1,33 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.todayIn
+import kotlin.time.Clock
 import javax.inject.Inject
 
-class CanvasImageAddState : UiState
+data class GroupMemberChip(
+    val nickname: String,
+    val colorChipType: YGColorChipType,
+)
+
+data class CanvasImageAddUiState(
+    val groupName: String = "",
+    val memberChips: List<GroupMemberChip> = emptyList(),
+    val canvasDate: String = "",
+    val canvasDay: String = "",
+) : UiState
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
     class NavigateToCamera : CanvasImageAddEffect
@@ -38,11 +54,34 @@ class CanvasImageAddViewModel
 @Inject
 constructor(
     private val addRecentImageUseCase: AddRecentImageUseCase,
-) : BaseViewModel<CanvasImageAddState, CanvasImageAddIntent, CanvasImageAddEffect>(
-    initialState = CanvasImageAddState(),
+) : BaseViewModel<CanvasImageAddUiState, CanvasImageAddIntent, CanvasImageAddEffect>(
+    initialState = CanvasImageAddUiState(),
 ) {
     init {
         viewModelLogger.i { "CanvasImageAddViewModel::init" }
+        loadCanvasImageAddInfo()
+    }
+
+    private fun loadCanvasImageAddInfo() {
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        updateState {
+            copy(
+                // TODO: 그룹 정보 연동 필요
+                groupName = "그룹이름은최대열글자",
+                // TODO: 그룹원 Nametag-Chip 정보 연동 필요
+                memberChips = listOf(
+                    GroupMemberChip("문", YGColorChipType.NametagChip1),
+                    GroupMemberChip("전", YGColorChipType.NametagChip8),
+                    GroupMemberChip("김", YGColorChipType.NametagChip5),
+                    GroupMemberChip("이", YGColorChipType.NametagChip3),
+                    GroupMemberChip("박", YGColorChipType.NametagChip11),
+                    GroupMemberChip("최", YGColorChipType.NametagChip6),
+                    GroupMemberChip("정", YGColorChipType.NametagChip2),
+                ),
+                canvasDate = today.format(DateTextFormat.monthDayFormat),
+                canvasDay = today.format(DateTextFormat.weekdayFormat),
+            )
+        }
     }
 
     override fun processIntent(intent: CanvasImageAddIntent) {
