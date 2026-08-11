@@ -204,4 +204,40 @@ class ImageRemoteDataSourceImplTest {
         val error = assertIs<ApiException.EmptyBody>(result.exceptionOrNull())
         assertEquals("SUCCESS", error.code)
     }
+
+    @Test
+    fun confirmUpload_pendingStatus_mapsToPending() = runTest {
+        // Given 서버가 PENDING 상태를 준다
+        coEvery { imageService.postImagesByImageIdConfirm(any()) } returns confirmSuccess(status = "PENDING")
+
+        // When 업로드 확인
+        val result = dataSource.confirmUpload(ImageId(7L))
+
+        // Then PENDING enum 으로 떨어진다
+        assertEquals(ImageStatus.PENDING, result.getOrThrow().status)
+    }
+
+    @Test
+    fun confirmUpload_unknownStatus_fallsBackToUnknown() = runTest {
+        // Given 클라이언트가 모르는 상태 문자열
+        coEvery { imageService.postImagesByImageIdConfirm(any()) } returns confirmSuccess(status = "FAILED")
+
+        // When 업로드 확인
+        val result = dataSource.confirmUpload(ImageId(7L))
+
+        // Then 예외를 던지지 않고 UNKNOWN 으로 떨어진다
+        assertEquals(ImageStatus.UNKNOWN, result.getOrThrow().status)
+    }
+
+    @Test
+    fun confirmUpload_statusMatchIsCaseSensitive() = runTest {
+        // Given 값은 맞지만 대소문자가 다른 상태
+        coEvery { imageService.postImagesByImageIdConfirm(any()) } returns confirmSuccess(status = "completed")
+
+        // When 업로드 확인
+        val result = dataSource.confirmUpload(ImageId(7L))
+
+        // Then enum 이름과 정확히 같아야 매칭되므로 UNKNOWN 이다
+        assertEquals(ImageStatus.UNKNOWN, result.getOrThrow().status)
+    }
 }
