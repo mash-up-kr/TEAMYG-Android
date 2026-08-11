@@ -27,10 +27,20 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
     "terms_id_2": "",
 
     "group_id": "",
-    "invite_code": ""
+    "invite_code": "",
+
+    "image_id": "",
+    "image_upload_url": "",
+
+    "parfait_image_id": ""
   }
 }
 ```
+
+> `terms_id_*`·`group_id`·`invite_code`·`image_*`·`parfait_image_id`는 **손으로 채우는 값이 아니다** —
+> 각 `.http` 파일의 응답 핸들러가 `client.global.set`으로 런타임에 채운다. 여기 구조로 적어 두는 것은
+> "이 체계에 어떤 변수가 있는가"를 한곳에서 보기 위해서고, `_reset.http`가 도메인별로 비우는 목록과
+> 짝을 이룬다.
 
 ### 두 가지 사용법
 

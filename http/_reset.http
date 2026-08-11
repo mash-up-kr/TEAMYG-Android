@@ -45,6 +45,14 @@ GET {{base_url}}/actuator/health
     client.log("image_id/image_upload_url 초기화 완료 — images.http 1번을 다시 실행해 채운다");
 %}
 
+### 0-1-3. 토핑 배치 변수만 비우기 (parfait-image.http 를 다시 돌려 받고 싶을 때)
+GET {{base_url}}/actuator/health
+
+> {%
+    client.global.clear("parfait_image_id");
+    client.log("parfait_image_id 초기화 완료 — parfait-image.http 1번을 다시 실행해 채운다");
+%}
+
 ### 0-2. 현재 어떤 값이 쓰이고 있는지 확인
 # global 에 값이 있으면 그게 쓰이고, 없으면 private env 값이 쓰인다.
 GET {{base_url}}/actuator/health
@@ -58,4 +66,5 @@ GET {{base_url}}/actuator/health
                                     (client.global.get("terms_id_2") || "(비어 있음)"));
     client.log("image_id      : " + (client.global.get("image_id") || "(비어 있음)"));
     client.log("image_upload_url : " + (client.global.get("image_upload_url") || "(비어 있음)"));
+    client.log("parfait_image_id : " + (client.global.get("parfait_image_id") || "(비어 있음)"));
 %}
