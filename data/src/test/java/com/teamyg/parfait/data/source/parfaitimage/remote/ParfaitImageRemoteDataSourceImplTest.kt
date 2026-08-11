@@ -4,9 +4,11 @@ import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
@@ -245,5 +247,169 @@ class ParfaitImageRemoteDataSourceImplTest {
         // Then EmptyBody 예외
         assertTrue(result.isFailure)
         assertEquals("SUCCESS", assertIs<ApiException.EmptyBody>(result.exceptionOrNull()).code)
+    }
+
+    private fun updateSuccess() = ApiResponse(
+        success = true,
+        code = "SUCCESS",
+        message = "성공",
+        data = UpdateParfaitImageResponse(
+            parfaitImageId = 201L,
+            positionX = 200.0,
+            positionY = 400.0,
+            positionZ = 1,
+            scale = 1.5,
+            rotation = 45.0,
+        ),
+    )
+
+    @Test
+    fun updateTopping_serviceReturnsSuccess_returnsMergedTransform() = runTest {
+        // Given 서비스가 병합된 값을 준다
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns updateSuccess()
+
+        // When 위치와 크기만 수정
+        val vo = dataSource
+            .updateTopping(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(5L),
+                parfaitImageId = ParfaitImageId(201L),
+                positionX = 200.0,
+                positionY = 400.0,
+                scale = 1.5,
+                rotation = 45.0,
+            ).getOrThrow()
+
+        // Then 응답은 부분이 아니라 전체 transform 이다
+        assertEquals(ParfaitImageId(201L), vo.parfaitImageId)
+        assertEquals(
+            ToppingTransform(positionX = 200.0, positionY = 400.0, positionZ = 1, scale = 1.5, rotation = 45.0),
+            vo.transform,
+        )
+    }
+
+    @Test
+    fun updateTopping_omittedFieldsAreSentAsNull() = runTest {
+        // Given 요청 바디를 잡아둔다
+        val request = slot<UpdateParfaitImageRequest>()
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                any(),
+                any(),
+                any(),
+                capture(request),
+            )
+        } returns updateSuccess()
+
+        // When z-order 만 바꾼다
+        dataSource.updateTopping(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            parfaitImageId = ParfaitImageId(201L),
+            positionZ = 3,
+        )
+
+        // Then 지정한 필드만 값이 있고 나머지는 null 이다 (서버가 null 을 미변경으로 읽는다)
+        assertEquals(3, request.captured.positionZ)
+        assertNull(request.captured.positionX)
+        assertNull(request.captured.positionY)
+        assertNull(request.captured.scale)
+        assertNull(request.captured.rotation)
+    }
+
+    @Test
+    fun updateTopping_unwrapsIdsForPathVariables() = runTest {
+        // Given 성공 응답
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns updateSuccess()
+
+        // When value class 로 감싼 id 로 수정
+        dataSource.updateTopping(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            parfaitImageId = ParfaitImageId(201L),
+            positionX = 200.0,
+        )
+
+        // Then 경로 변수 셋에 raw Long 이 들어간다
+        coVerify(exactly = 1) {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                1L,
+                5L,
+                201L,
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun updateTopping_notOwned_returnsBusinessException() = runTest {
+        // Given 본인이 배치한 토핑이 아니다 (그룹 미참여도 같은 코드로 온다)
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns ApiResponse(
+            success = false,
+            code = "PARFAIT_IMAGE_NOT_OWNED",
+            message = "본인이 배치한 토핑이 아닙니다",
+            data = null,
+        )
+
+        // When 수정
+        val result = dataSource.updateTopping(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            parfaitImageId = ParfaitImageId(201L),
+            positionX = 200.0,
+        )
+
+        // Then Business 예외로 실패한다
+        assertTrue(result.isFailure)
+        assertEquals(
+            "PARFAIT_IMAGE_NOT_OWNED",
+            assertIs<ApiException.Business>(result.exceptionOrNull()).code,
+        )
+    }
+
+    @Test
+    fun updateTopping_ioException_returnsNetworkException() = runTest {
+        // Given 네트워크 단절
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } throws IOException("connection reset")
+
+        // When 수정
+        val result = dataSource.updateTopping(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            parfaitImageId = ParfaitImageId(201L),
+            positionX = 200.0,
+        )
+
+        // Then Network 예외로 감싸진다
+        assertTrue(result.isFailure)
+        assertIs<ApiException.Network>(result.exceptionOrNull())
     }
 }

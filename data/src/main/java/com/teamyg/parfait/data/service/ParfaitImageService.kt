@@ -1,9 +1,12 @@
 package com.teamyg.parfait.data.service
 
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import retrofit2.http.Body
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -20,4 +23,12 @@ interface ParfaitImageService {
         @Path("parfaitId") parfaitId: Long,
         @Body request: PlaceParfaitImageRequest,
     ): ApiResponse<PlaceParfaitImageResponse>
+
+    @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images/{parfaitImageId}")
+    suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+        @Path("groupId") groupId: Long,
+        @Path("parfaitId") parfaitId: Long,
+        @Path("parfaitImageId") parfaitImageId: Long,
+        @Body request: UpdateParfaitImageRequest,
+    ): ApiResponse<UpdateParfaitImageResponse>
 }

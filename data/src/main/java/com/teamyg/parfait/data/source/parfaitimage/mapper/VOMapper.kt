@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.source.parfaitimage.mapper
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -11,6 +12,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
 private const val BORDER_TYPE_NONE = "NONE"
 private const val BORDER_TYPE_SOLID = "SOLID"
@@ -56,4 +58,15 @@ internal fun PlaceParfaitImageResponse.toPlacedToppingVO(): PlacedToppingVO = Pl
 private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
     groupMemberId = GroupMemberId(groupMemberId),
     nickname = GroupNickname(nickname),
+)
+
+internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO = UpdatedToppingVO(
+    parfaitImageId = ParfaitImageId(parfaitImageId),
+    transform = ToppingTransform(
+        positionX = positionX,
+        positionY = positionY,
+        positionZ = positionZ,
+        scale = scale,
+        rotation = rotation,
+    ),
 )
