@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
 
@@ -23,7 +24,7 @@ internal fun PictureConfirmRoute(
         onClickReCapture = { navigator.onBack() },
         onClickConfirm = {
             if (returnResultOnly) {
-                resultEventBus.sendResult(uri)
+                resultEventBus.sendResult(PictureConfirmResult(uri = uri, source = source))
                 navigator.onBack() // PictureConfirm
                 navigator.onBack() // Camera/Gallery
             } else {

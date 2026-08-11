@@ -40,6 +40,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -61,6 +62,7 @@ private val CanvasBackgroundPaletteColors = listOf(
 @Composable
 internal fun CanvasBGEditScreen(
     backgroundImageUri: String?,
+    backgroundImageSource: PictureConfirmSource?,
     onClickClose: () -> Unit,
     onClickConfirm: (Color) -> Unit,
     onClickCamera: () -> Unit,
@@ -71,18 +73,26 @@ internal fun CanvasBGEditScreen(
     // 저장된 배경 없을때만 하얀색 아니면 기존 배경 불러와야함
     var selectedColor by remember { mutableStateOf(CanvasBackgroundPaletteColors.first()) }
     var selectedImageUri by remember { mutableStateOf(backgroundImageUri) }
+    var selectedImageSource by remember { mutableStateOf(backgroundImageSource) }
     var showQuitDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(backgroundImageUri) {
-        if (backgroundImageUri != null) selectedImageUri = backgroundImageUri
+    LaunchedEffect(backgroundImageUri, backgroundImageSource) {
+        if (backgroundImageUri != null) {
+            selectedImageUri = backgroundImageUri
+            selectedImageSource = backgroundImageSource
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = YGTheme.layout.padding.padding4, start = 21.dp, end = 21.dp, bottom = YGTheme.layout.padding.padding4) // 21.dp 공통에 없음
-                .aspectRatio(CANVAS_EDIT_BOX_ASPECT_RATIO)
+                .padding(
+                    top = YGTheme.layout.padding.padding4,
+                    start = 21.dp, // 21.dp 공통에 없음
+                    end = 21.dp, // 21.dp 공통에 없음
+                    bottom = YGTheme.layout.padding.padding4,
+                ).aspectRatio(CANVAS_EDIT_BOX_ASPECT_RATIO)
                 .let { if (selectedImageUri == null) it.background(selectedColor) else it }
                 .border(
                     width = 1.dp,
@@ -111,11 +121,13 @@ internal fun CanvasBGEditScreen(
                 iconResource = DesignSystemR.drawable.ic_gallery,
                 contentDescription = null,
                 onClick = onClickGallery,
+                thumbnailUri = selectedImageUri.takeIf { selectedImageSource == PictureConfirmSource.GALLERY },
             )
             PaletteActionCircle(
                 iconResource = DesignSystemR.drawable.ic_camera,
                 contentDescription = null,
                 onClick = onClickCamera,
+                thumbnailUri = selectedImageUri.takeIf { selectedImageSource == PictureConfirmSource.CAMERA },
             )
             CanvasBackgroundPaletteColors.forEach { color ->
                 PaletteColorCircle(
@@ -124,6 +136,7 @@ internal fun CanvasBGEditScreen(
                     onClick = {
                         selectedColor = color
                         selectedImageUri = null
+                        selectedImageSource = null
                     },
                 )
             }
@@ -191,23 +204,39 @@ private fun PaletteActionCircle(
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    thumbnailUri: String? = null,
 ) {
     Box(
         modifier = modifier
             .size(36.dp)
             .clip(CircleShape)
             .background(YGAtomicColors.Gray.Gray100)
-            .border(
-                width = 1.dp,
-                color = YGAtomicColors.Transparency.Black5,
-                shape = CircleShape,
-            ).clickable(onClick = onClick),
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
+        if (thumbnailUri != null) {
+            Image(
+                painter = rememberAsyncImagePainter(model = thumbnailUri),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(
+                    width = 1.dp,
+                    color = YGAtomicColors.Transparency.Black5,
+                    shape = CircleShape,
+                ),
+        )
         Image(
             painter = painterResource(iconResource),
-            contentDescription = contentDescription,
-            colorFilter = ColorFilter.tint(YGAtomicColors.Gray.Gray500),
+            contentDescription = if (thumbnailUri == null) contentDescription else null,
+            colorFilter = ColorFilter.tint(
+                if (thumbnailUri != null) YGAtomicColors.Gray.White else YGAtomicColors.Gray.Gray500,
+            ),
         )
     }
 }
@@ -252,6 +281,7 @@ private fun PaletteColorCircle(
 private fun PreviewCanvasBGEditScreen() = PreviewBox {
     CanvasBGEditScreen(
         backgroundImageUri = null,
+        backgroundImageSource = null,
         onClickClose = {},
         onClickConfirm = {},
         onClickCamera = {},

@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
+import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
 
@@ -18,13 +20,16 @@ internal fun CanvasBGEditRoute(
     modifier: Modifier = Modifier,
 ) {
     var backgroundImageUri by remember { mutableStateOf<String?>(null) }
+    var backgroundImageSource by remember { mutableStateOf<PictureConfirmSource?>(null) }
 
-    ResultEffect<String> { uri ->
-        backgroundImageUri = uri
+    ResultEffect<PictureConfirmResult> { result ->
+        backgroundImageUri = result.uri
+        backgroundImageSource = result.source
     }
 
     CanvasBGEditScreen(
         backgroundImageUri = backgroundImageUri,
+        backgroundImageSource = backgroundImageSource,
         onClickClose = { navigator.onBack() },
         onClickConfirm = {
             // TODO: 선택한 배경색을 이전 화면으로 전달하는 방식 연동 필요
