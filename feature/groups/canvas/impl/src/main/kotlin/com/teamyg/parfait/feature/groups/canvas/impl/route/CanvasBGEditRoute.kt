@@ -3,7 +3,8 @@ package com.teamyg.parfait.feature.groups.canvas.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.result.ResultEffect
@@ -14,13 +15,20 @@ import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
 
+private val PictureConfirmSourceSaver = Saver<PictureConfirmSource?, String>(
+    save = { it?.name.orEmpty() },
+    restore = { if (it.isEmpty()) null else PictureConfirmSource.valueOf(it) },
+)
+
 @Composable
 internal fun CanvasBGEditRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    var backgroundImageUri by remember { mutableStateOf<String?>(null) }
-    var backgroundImageSource by remember { mutableStateOf<PictureConfirmSource?>(null) }
+    var backgroundImageUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var backgroundImageSource by rememberSaveable(stateSaver = PictureConfirmSourceSaver) {
+        mutableStateOf<PictureConfirmSource?>(null)
+    }
 
     ResultEffect<PictureConfirmResult> { result ->
         backgroundImageUri = result.uri

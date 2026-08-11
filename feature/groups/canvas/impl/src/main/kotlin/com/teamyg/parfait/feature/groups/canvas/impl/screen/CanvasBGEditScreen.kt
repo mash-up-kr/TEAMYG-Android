@@ -21,12 +21,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,6 +50,16 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 private const val CANVAS_EDIT_BOX_ASPECT_RATIO = 9f / 16f
 
 private enum class CanvasEditTab { BACKGROUND, TOPPING }
+
+private val ColorSaver = Saver<Color, Int>(
+    save = { it.toArgb() },
+    restore = { Color(it) },
+)
+
+private val PictureConfirmSourceSaver = Saver<PictureConfirmSource?, String>(
+    save = { it?.name.orEmpty() },
+    restore = { if (it.isEmpty()) null else PictureConfirmSource.valueOf(it) },
+)
 
 private val CanvasBackgroundPaletteColors = listOf(
     YGAtomicColors.Gray.White,
@@ -71,9 +84,13 @@ internal fun CanvasBGEditScreen(
 ) {
     var selectedTab by remember { mutableStateOf(CanvasEditTab.BACKGROUND) }
     // 저장된 배경 없을때만 하얀색 아니면 기존 배경 불러와야함
-    var selectedColor by remember { mutableStateOf(CanvasBackgroundPaletteColors.first()) }
-    var selectedImageUri by remember { mutableStateOf(backgroundImageUri) }
-    var selectedImageSource by remember { mutableStateOf(backgroundImageSource) }
+    var selectedColor by rememberSaveable(stateSaver = ColorSaver) {
+        mutableStateOf(CanvasBackgroundPaletteColors.first())
+    }
+    var selectedImageUri by rememberSaveable { mutableStateOf(backgroundImageUri) }
+    var selectedImageSource by rememberSaveable(stateSaver = PictureConfirmSourceSaver) {
+        mutableStateOf(backgroundImageSource)
+    }
     var showQuitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(backgroundImageUri, backgroundImageSource) {
