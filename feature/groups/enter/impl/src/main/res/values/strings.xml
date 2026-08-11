@@ -17,7 +17,7 @@
 
     <string name="confirm_popup_cancel">취소</string>
 
-    <string name="group_create_confirm_title">%1$s을 만들까요?</string>
+    <string name="group_create_confirm_title">%1$s 그룹을 만들까요?</string>
     <string name="group_create_confirm_body">그룹명과 인원수는 추후 변경할 수 없어요\n다시 한번 확인해 주세요</string>
     <string name="group_create_confirm_create">만들기</string>
 
