@@ -218,6 +218,8 @@ http/
 ├── parfait.http                  # 파르페 조회
 ├── health.http                   # 헬스체크
 ├── images.http                   # 이미지 업로드 2종 (+ S3 PUT)
+├── users.http                    # 내 계정 조회 · 전역 닉네임 변경
+├── parfait-image.http            # 토핑 배치 확정 · 위치/크기/각도 수정
 ├── http-client.env.json          # 환경 변수 구조(값 비움, 커밋됨)
 └── http-client.private.env.json  # 실제 값 (gitignore — 커밋되지 않음)
 ```
