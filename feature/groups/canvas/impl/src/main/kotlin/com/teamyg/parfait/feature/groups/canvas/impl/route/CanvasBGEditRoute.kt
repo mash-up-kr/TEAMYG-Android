@@ -41,7 +41,6 @@ internal fun CanvasBGEditRoute(
         onClickClose = { navigator.onBack() },
         onClickConfirm = {
             // TODO: 선택한 배경색을 이전 화면으로 전달하는 방식 연동 필요
-            navigator.onBack()
         },
         onClickCamera = {
             navigator.goTo(destination = NavKeyCameraCustom(showGuideToast = false, returnResultOnly = true))
