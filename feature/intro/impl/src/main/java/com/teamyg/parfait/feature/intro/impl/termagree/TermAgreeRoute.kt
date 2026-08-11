@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
 fun TermAgreeRoute(
@@ -25,7 +26,10 @@ fun TermAgreeRoute(
                     navigator.onBack()
                 }
 
-                is TermAgreeSideEffect.NavigateToNext -> { /* navigate to next */ }
+                is TermAgreeSideEffect.NavigateToNext -> {
+                    navigator.clearBackStack()
+                    navigator.goTo(destination = NavKeyGroupList)
+                }
             }
         }
     }

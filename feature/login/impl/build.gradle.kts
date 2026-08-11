@@ -8,6 +8,6 @@ android {
 
 dependencies {
     implementation(projects.feature.login.api)
-    implementation(projects.feature.groups.home.api)
+    implementation(projects.feature.intro.api)
     implementation(libs.kakao.sdk.user)
 }

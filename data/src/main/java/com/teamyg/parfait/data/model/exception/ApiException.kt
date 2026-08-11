@@ -10,6 +10,8 @@ sealed class ApiException(
     data class Business(
         val code: String,
         val serverMessage: String,
+        val statusCode: Int?,
+        val errorDetail: Map<String, String>?,
     ) : ApiException(serverMessage, null)
 
     data class EmptyBody(

@@ -40,6 +40,7 @@ include(
     ":core:util:android",
     ":core:util:jvm",
     ":core:navigation",
+    ":core:testing",
 )
 include(":data")
 include(":domain")
@@ -71,8 +72,6 @@ include(
     ":feature:groups:canvas:impl",
     ":feature:groups:enter:api",
     ":feature:groups:enter:impl",
-    ":feature:groups:home:api",
-    ":feature:groups:home:impl",
     ":feature:groups:list:api",
     ":feature:groups:list:impl",
     ":feature:groups:setting:api",

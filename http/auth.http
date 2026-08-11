@@ -1,0 +1,129 @@
+### 인증 API — 카카오 로그인 / 회원가입 / 토큰 재발급 / 로그아웃
+#
+# 서버: mash-up-kr/TEAMYG-SERVER (main)
+# 실행: 요청 왼쪽 ▶️ → 환경 `dev` 선택
+#
+# 토큰은 응답에서 자동 추출돼 전역 변수로 저장된다. 순서대로 실행하면 복붙할 일이 없다.
+#
+# 응답은 전부 envelope로 감싸여 온다: { success, code, message, data, errorDetail }
+# 토큰은 response.body.data.accessToken 에 있다 (response.body.accessToken 아님).
+
+### 1. 카카오 로그인 / 회원가입
+# 인증 불필요(화이트리스트).
+#
+# ⚠️ idToken 은 카카오 SDK 로그인 결과라 이 파일만으로는 만들 수 없다.
+#    앱 로그에서 뽑거나 카카오 개발자 도구로 발급받아 http-client.private.env.json 에 넣는다.
+# ⚠️ nonce 는 앱이 직접 생성해 카카오 SDK 로그인 요청과 이 API에 "같은 값"을 보내야 한다.
+#    서버가 idToken 의 nonce 클레임과 대조한다 — 다르면 401 INVALID_ID_TOKEN.
+POST {{base_url}}/api/v1/auth/kakao
+Content-Type: application/json
+
+{
+  "idToken": "{{id_token}}",
+  "nonce": "{{nonce}}"
+}
+
+> {%
+    client.test("200 성공", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.success === true, "code: " + response.body.code);
+    });
+
+    // ⚠️ 판별자 필드명은 newUser 다. isNewUser 가 아니다.
+    //    서버 Kotlin 은 `val isNewUser: Boolean` 이지만 Jackson 이 getter 이름에서 is 접두사를
+    //    떼고 직렬화해 실제 JSON 키는 newUser 로 나간다(OpenAPI 스키마로 확인).
+    //    isNewUser 로 읽으면 항상 undefined → 신규 유저가 기존 회원으로 잘못 분기된다.
+    if (response.body.data.newUser) {
+        client.global.set("registration_token", response.body.data.registrationToken);
+        client.log("신규 유저 → registrationToken 저장. 다음은 '2. 회원가입 완료'");
+    } else {
+        client.global.set("access_token", response.body.data.accessToken);
+        client.global.set("refresh_token", response.body.data.refreshToken);
+        client.log("기존 회원 → access/refresh 저장. expiresIn=" + response.body.data.expiresIn + "초");
+    }
+%}
+
+### 2. 회원가입 완료 (약관동의)
+# 인증 불필요(화이트리스트). 1번이 newUser=true 를 준 경우에만 호출한다.
+#
+# ⚠️ 실제 응답은 201 이다. `SignupController` 가 ResponseEntity.status(CREATED) 로 내보낸다.
+#    스웨거(OpenAPI)에는 200 으로 적혀 있는데, springdoc 이 ResponseEntity 의 런타임 status 를
+#    읽지 못해 기본값 200 을 문서화한 것이다 — 스웨거 쪽이 부정확하다.
+# ⚠️ termsId 는 서버가 정한 "현재 유효한 약관"의 id다. 최신 버전이 아니면 400 TERMS_NOT_FOUND.
+#    하드코딩하지 마라 — policy.http 1번(GET /api/v1/policies)을 먼저 실행하면
+#    terms_id_1/terms_id_2 가 자동으로 채워진다. 서버는 타입당 최신 1건씩 최대 2건을 준다.
+# ⚠️ 약관이 1건뿐이거나 0건이면 아래 바디를 손봐야 한다(중복 항목 → 400 DUPLICATE_TERMS_ID).
+# ⚠️ 필수 약관이 agreed:true 로 없으면 400 REQUIRED_TERMS_NOT_AGREED.
+# 닉네임은 보내지 않는다 — 서버가 자동 생성한다.
+POST {{base_url}}/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "registrationToken": "{{registration_token}}",
+  "agreements": [
+    { "termsId": {{terms_id_1}}, "agreed": true },
+    { "termsId": {{terms_id_2}}, "agreed": true }
+  ]
+}
+
+> {%
+    client.test("201 생성", function() {
+        client.assert(response.status === 201, "status: " + response.status);
+        client.assert(response.body.code === "CREATED", "code: " + response.body.code);
+    });
+
+    client.global.set("access_token", response.body.data.accessToken);
+    client.global.set("refresh_token", response.body.data.refreshToken);
+%}
+
+### 3. 토큰 재발급
+# 인증 불필요(화이트리스트). refresh token 은 헤더가 아니라 "바디"로 보낸다.
+#
+# ⚠️ Authorization 헤더를 붙이지 마라. 이 경로는 화이트리스트지만 JwtAuthFilter 는
+#    shouldNotFilter 를 오버라이드하지 않아 화이트리스트 경로에서도 실행된다.
+#    만료된 access token 을 붙이면 필터가 검증에 실패해 401 EXPIRED_TOKEN 이 나고
+#    재발급 자체가 막힌다. (앱이 @NoAuth 어노테이션으로 헤더를 빼는 이유가 이것이다.)
+#    ↓ 이 함정을 직접 재현하려면 아래 Authorization 줄의 주석을 풀고 만료 토큰으로 실행해 보라.
+# ⚠️ 회전이다. 응답의 새 refresh token 을 반드시 저장해야 한다 — 기존 것은 서버에서 폐기된다.
+POST {{base_url}}/api/v1/auth/reissue
+Content-Type: application/json
+# Authorization: Bearer {{access_token}}
+
+{
+  "refreshToken": "{{refresh_token}}"
+}
+
+> {%
+    client.test("200 성공", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+
+    client.global.set("access_token", response.body.data.accessToken);
+    client.global.set("refresh_token", response.body.data.refreshToken);
+    client.log("회전 완료 — 새 access/refresh 로 교체됨");
+%}
+
+### 4. 로그아웃
+# 인증 "필요" — 인증 도메인 4개 중 유일하게 화이트리스트 밖이다.
+# 헤더에 access token, 바디에 삭제할 refresh token 을 둘 다 보낸다.
+#
+# ⚠️ 204 라 응답 본문이 없다. envelope 조차 오지 않으므로 아래 테스트는 body 를 보지 않는다.
+# ⚠️ 멱등이다 — 이미 삭제된 세션이어도 204.
+# ⚠️ 바디의 refresh token 이 만료·위조면 401 이 먼저 난다(memberId 비교보다 앞선다).
+POST {{base_url}}/api/v1/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "refreshToken": "{{refresh_token}}"
+}
+
+> {%
+    client.test("204 본문 없음", function() {
+        client.assert(response.status === 204, "status: " + response.status);
+    });
+
+    client.global.clear("access_token");
+    client.global.clear("refresh_token");
+    client.log("로그아웃 완료 — 저장된 토큰 비움");
+%}

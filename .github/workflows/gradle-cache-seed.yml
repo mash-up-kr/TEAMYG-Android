@@ -1,0 +1,51 @@
+name: gradle-cache-seed
+
+# setup-gradle 은 기본 브랜치(develop)의 job 에서만 캐시를 저장한다.
+# PR 워크플로는 전부 cache-read-only 라, 저장하는 주체가 이 job 하나다.
+# workflow_dispatch: 캐시가 만료·축출됐을 때 더미 커밋 없이 수동 재시딩.
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+
+# 시딩의 목적은 "가장 최신 상태의 캐시"라 앞 런을 취소해도 잃는 것이 없고 러너 시간을 아낀다.
+# 다만 취소된 런은 캐시를 저장하지 않는다(setup-gradle 의 post 스텝이 post-if: '!cancelled()').
+# 따라서 seed 소요시간보다 촘촘한 간격으로 develop 머지가 이어지면 캐시가 한동안 갱신되지
+# 않을 수 있다 — 그 사이에도 직전 성공 캐시가 프리픽스 폴백으로 계속 쓰이고, 필요하면
+# workflow_dispatch 로 수동 재시딩한다.
+concurrency:
+  group: gradle-cache-seed
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Restore app secrets
+        uses: ./.github/actions/restore-app-secrets
+        with:
+          kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      # PR 워크플로(test·ktlint)가 쓰는 태스크 전부를 한 번의 Gradle 호출로 돌린다.
+      # 워크플로마다 push 트리거를 다는 대신 하나로 묶는 이유: job 이 둘이면 같은
+      # 캐시 키에 동시에 써서 한쪽 저장이 버려지고, 데몬 기동·의존성 해석도 두 번 친다.
+      # --continue: 앞 태스크가 실패해도 나머지 태스크 출력은 캐시에 남긴다.
+      # continue-on-error: --continue 는 종료 코드를 성공으로 만들지 않는다. 이 job 은
+      #                    게이트가 아니라 캐시 적재가 목적이라 실패해도 develop 을 빨갛게
+      #                    만들지 않는다. 캐시 저장은 post 스텝(post-if: !cancelled())이라 무관.
+      - name: Warm Gradle caches
+        continue-on-error: true
+        run: |
+          ./gradlew test ktlintCheck \
+            :core:util:android:assembleDebugAndroidTest \
+            :core:designsystem:assembleDebugAndroidTest \
+            --continue

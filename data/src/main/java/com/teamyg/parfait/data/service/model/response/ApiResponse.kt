@@ -1,17 +1,18 @@
 package com.teamyg.parfait.data.service.model.response
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ApiResponse<T>(
+    @SerialName("success")
+    val success: Boolean,
+    @SerialName("code")
     val code: String,
+    @SerialName("message")
     val message: String,
+    @SerialName("data")
     val data: T? = null,
-) {
-    val isSuccess: Boolean get() = code == SUCCESS_CODE
-
-    companion object {
-        // TODO 실제 백엔드 성공 코드로 교체
-        private const val SUCCESS_CODE = "SUCCESS"
-    }
-}
+    @SerialName("errorDetail")
+    val errorDetail: Map<String, String>? = null,
+)

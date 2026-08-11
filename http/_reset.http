@@ -1,0 +1,50 @@
+### 전역 변수 초기화
+#
+# 이 파일은 API 테스트가 아니라 **변수 관리용**이다.
+#
+# 변수 우선순위: 런타임 global > http-client.private.env.json > http-client.env.json
+#
+# 요청을 실행하면 응답 핸들러가 토큰을 런타임 global 에 저장한다. 그 값은 env 파일보다
+# 우선하므로, **private env 파일의 토큰을 고쳐도 반영되지 않는다.**
+# 손으로 넣은 토큰을 쓰려면 먼저 아래 요청으로 global 을 비워야 한다.
+
+### 0. 전역 변수 전부 비우기 (→ 이후 private env 값이 쓰인다)
+# 인증이 필요 없는 actuator 헬스체크에 얹어 실행한다.
+GET {{base_url}}/actuator/health
+
+> {%
+    client.global.clearAll();
+    client.log("전역 변수 초기화 완료 — 이제 http-client.private.env.json 값이 쓰인다");
+%}
+
+### 0-1. 토큰만 비우기 (base_url 등 다른 값은 유지)
+GET {{base_url}}/actuator/health
+
+> {%
+    client.global.clear("access_token");
+    client.global.clear("refresh_token");
+    client.global.clear("registration_token");
+    client.log("토큰 3종 초기화 완료");
+%}
+
+### 0-1-1. 약관 id 만 비우기 (policy.http 를 다시 돌려 받고 싶을 때)
+GET {{base_url}}/actuator/health
+
+> {%
+    client.global.clear("terms_id_1");
+    client.global.clear("terms_id_2");
+    client.log("terms_id 초기화 완료 — policy.http 1번을 다시 실행해 채운다");
+%}
+
+### 0-2. 현재 어떤 값이 쓰이고 있는지 확인
+# global 에 값이 있으면 그게 쓰이고, 없으면 private env 값이 쓰인다.
+GET {{base_url}}/actuator/health
+
+> {%
+    const shorten = (v) => (v ? v.substring(0, 12) + "..." : "(global 비어 있음 → env 값 사용)");
+    client.log("access_token  : " + shorten(client.global.get("access_token")));
+    client.log("refresh_token : " + shorten(client.global.get("refresh_token")));
+    client.log("group_id      : " + (client.global.get("group_id") || "(env 값 사용)"));
+    client.log("terms_id_1/2  : " + (client.global.get("terms_id_1") || "(비어 있음)") + " / " +
+                                    (client.global.get("terms_id_2") || "(비어 있음)"));
+%}

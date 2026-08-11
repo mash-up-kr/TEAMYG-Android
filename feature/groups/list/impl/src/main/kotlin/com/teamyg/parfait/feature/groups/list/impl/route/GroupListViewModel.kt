@@ -1,21 +1,63 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
+import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.jvm.model.DateFormat
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
+
+// Todo : 서버 연동 후 제거 예정인 mock 새로고침 시간입니다
+private val MOCK_REFRESH_DURATION = 1.seconds
+
+data class MockToppingGroup(
+    val name: String,
+    val imageUrl: String,
+    val lastModify: String,
+) {
+    val chipType: YGGrouptagChipType = YGGrouptagChipType.TYPE_1_2
+}
 
 data class GroupListUiState(
-    val groupList: List<String> = emptyList(), // Todo : 임시로 String 으로 설정하였습니다
+    // Todo : 임시로 MockToppingGroup 으로 설정하였습니다
+    val groupList: List<MockToppingGroup> = listOf(
+        MockToppingGroup(
+            "매시업1",
+            "https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/201611/16/htm_2016111623638229254.png",
+            "3분전",
+        ),
+        MockToppingGroup(
+            "매시업매시업매시업",
+            "https://i.pinimg.com/236x/d8/a6/cb/d8a6cbb02bc2c5c27ae238db2e89425d.jpg",
+            "10분전",
+        ),
+        MockToppingGroup(
+            "매시업3",
+            "https://i.namu.wiki/i/izVXkClWRy9-s5DAkC_lGo3za4Zy9seGH1V6AM0qZJzsckE9eWe6-Hp-1OvJm_DkVv7BL7U0Ar7QB89ApaklkQ.webp",
+            "1시간전",
+        ),
+        MockToppingGroup(
+            "매시업4",
+            "https://https://i.namu.wiki/i/h01cpKjF51MCkPZBi9-x7RMltpQbztoVgRB_0fnqrGA6S0M_9mcxpptqAmhr1YxCo0fWeErT3DGg55Nb8O2WeA.webp",
+            "1시간전",
+        ),
+    ),
+    // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
+    val nickName: String = "모카",
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
+    val isError: Boolean = false,
+    val isRefreshing: Boolean = false,
     val dateString: String = "",
     val dayOfWeekString: String = "",
 ) : UiState
@@ -32,6 +74,8 @@ sealed interface GroupListIntent : UiIntent {
     data object ClickSideMenu : GroupListIntent
 
     data object ClickTopping : GroupListIntent
+
+    data object Refresh : GroupListIntent
 }
 
 sealed interface GroupListSideEffect : UiSideEffect {
@@ -87,6 +131,15 @@ constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEf
 
             GroupListIntent.ClickEnterNewGroup -> {
                 postSideEffect(GroupListSideEffect.NavigateToInviteCode)
+            }
+
+            GroupListIntent.Refresh -> {
+                // Todo : 서버에서 그룹 목록을 다시 받아오도록 변경 필요, 지금은 로딩만 흉내냅니다
+                updateState { copy(isRefreshing = true) }
+                viewModelScope.launch {
+                    delay(MOCK_REFRESH_DURATION)
+                    updateState { copy(isRefreshing = false) }
+                }
             }
         }
     }
