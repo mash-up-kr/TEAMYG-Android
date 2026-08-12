@@ -1,7 +1,9 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -22,12 +24,19 @@ data class GroupMemberChip(
     val colorChipType: YGColorChipType,
 )
 
+internal val DefaultCanvasBackground: YGCanvasBackground = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100)
+
 data class CanvasImageAddUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
     val canvasDate: String = "",
     val canvasDay: String = "",
-) : UiState
+    val background: YGCanvasBackground = DefaultCanvasBackground,
+) : UiState {
+    // TODO: 토핑 데이터 연동되면 조건 추가 필요
+    val isEmpty: Boolean
+        get() = background == DefaultCanvasBackground
+}
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
     class NavigateToCamera : CanvasImageAddEffect
@@ -51,6 +60,10 @@ sealed interface CanvasImageAddIntent : UiIntent {
     class OnClickCanvas : CanvasImageAddIntent
 
     class OnClickCanvasEdit : CanvasImageAddIntent
+
+    data class SetBackground(
+        val background: YGCanvasBackground,
+    ) : CanvasImageAddIntent
 }
 
 @HiltViewModel
@@ -94,6 +107,7 @@ constructor(
             is CanvasImageAddIntent.OnClickCamera -> handleOnClickCamera()
             is CanvasImageAddIntent.OnClickCanvas -> handleOnClickCanvas()
             is CanvasImageAddIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
+            is CanvasImageAddIntent.SetBackground -> handleSetBackground(intent)
         }
     }
 
@@ -122,5 +136,9 @@ constructor(
         postSideEffect(
             effect = CanvasImageAddEffect.NavigateToCanvasBGEdit(),
         )
+    }
+
+    private fun handleSetBackground(intent: CanvasImageAddIntent.SetBackground) {
+        updateState { copy(background = intent.background) }
     }
 }

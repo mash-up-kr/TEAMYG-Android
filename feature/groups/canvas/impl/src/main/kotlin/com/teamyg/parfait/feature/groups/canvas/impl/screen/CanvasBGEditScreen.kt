@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygedittabbutton.YGEditTabButton
@@ -73,7 +74,7 @@ internal fun CanvasBGEditScreen(
     backgroundImageUri: String?,
     backgroundImageSource: PictureConfirmSource?,
     onClickClose: () -> Unit,
-    onClickConfirm: (Color) -> Unit,
+    onClickConfirm: (YGCanvasBackground) -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
     modifier: Modifier = Modifier,
@@ -192,7 +193,16 @@ internal fun CanvasBGEditScreen(
                 iconResource = DesignSystemR.drawable.ic_check,
                 type = YGCircleButtonType.Default,
                 contentDescription = null,
-                onClick = { onClickConfirm(selectedColor) },
+                onClick = {
+                    val imageUri = selectedImageUri
+                    onClickConfirm(
+                        if (imageUri != null) {
+                            YGCanvasBackground.Image(url = imageUri)
+                        } else {
+                            YGCanvasBackground.Solid(selectedColor)
+                        },
+                    )
+                },
             )
         }
     }
