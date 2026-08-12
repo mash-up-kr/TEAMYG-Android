@@ -6,10 +6,6 @@
     <string name="canvas_image_add_camera_capture">카메라로 촬영</string>
     <string name="canvas_image_add_gallery_select">갤러리에서 선택</string>
     <string name="canvas_image_add_member_overflow_count">+%1$d</string>
-    <string name="canvas_bg_edit_camera">카메라로 반영</string>
-    <string name="canvas_bg_edit_gallery">갤러리로 반영</string>
-    <string name="canvas_bg_edit_close">닫기</string>
-    <string name="canvas_bg_edit_confirm">확인</string>
     <string name="canvas_bg_edit_tab_background">배경</string>
     <string name="canvas_bg_edit_tab_topping">토핑</string>
     <string name="canvas_bg_edit_quit_dialog_title">편집을 그만둘까요?</string>
