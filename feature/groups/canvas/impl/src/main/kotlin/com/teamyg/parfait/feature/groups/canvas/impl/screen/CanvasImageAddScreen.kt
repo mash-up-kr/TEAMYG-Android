@@ -86,8 +86,6 @@ internal fun CanvasImageAddScreen(
             date = canvasState.canvasDate,
             day = "(${canvasState.canvasDay})",
             onDateSelectClick = onClickDateSelect,
-            background = canvasState.background,
-            isEmpty = canvasState.isEmpty,
             addAction = YGCanvasMenuAction(
                 text = stringResource(R.string.canvas_image_add_topping_add),
                 iconResource = DesignSystemR.drawable.ic_plus,
@@ -98,6 +96,7 @@ internal fun CanvasImageAddScreen(
                 iconResource = DesignSystemR.drawable.ic_caret_right,
                 onClick = onClickEditCanvasBG,
             ),
+            isEmpty = true,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
             isDimmed = isMenuExpanded,
             onDimClick = { isMenuExpanded = false },

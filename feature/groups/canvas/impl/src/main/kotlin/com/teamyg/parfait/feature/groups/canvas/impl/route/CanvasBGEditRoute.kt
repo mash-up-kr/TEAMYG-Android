@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
@@ -21,7 +20,6 @@ internal fun CanvasBGEditRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    val resultEventBus = LocalResultEventBus.current
     var backgroundImageUri by rememberSaveable { mutableStateOf<String?>(null) }
     var backgroundImageSource by rememberSaveable(stateSaver = PictureConfirmSourceSaver) {
         mutableStateOf<PictureConfirmSource?>(null)
@@ -36,8 +34,8 @@ internal fun CanvasBGEditRoute(
         backgroundImageUri = backgroundImageUri,
         backgroundImageSource = backgroundImageSource,
         onClickClose = { navigator.onBack() },
-        onClickConfirm = { background ->
-            resultEventBus.sendResult(background)
+        onClickConfirm = {
+            // TODO: 선택한 배경을 서버에 업로드/저장하는 연동 필요
             navigator.onBack()
         },
         onClickCamera = {
