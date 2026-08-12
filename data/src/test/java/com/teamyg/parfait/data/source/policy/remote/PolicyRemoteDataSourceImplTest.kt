@@ -6,6 +6,7 @@ import com.teamyg.parfait.data.service.PolicyService
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.policy.PolicyItemResponse
 import com.teamyg.parfait.data.service.model.response.policy.PolicyResponse
+import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -134,5 +135,60 @@ class PolicyRemoteDataSourceImplTest {
         // Then Unknown 예외로 감싸진다
         assertTrue(result.isFailure)
         assertIs<ApiException.Unknown>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun getPolicies_unknownType_fallsBackToUnknown() = runTest {
+        // Given 클라이언트가 모르는 타입 문자열
+        coEvery { policyService.getPolicies() } returns successResponse("MARKETING_CONSENT")
+
+        // When 정책 조회
+        val result = dataSource.getPolicies()
+
+        // Then 예외를 던지지 않고 UNKNOWN 으로 떨어진다
+        assertEquals(PolicyType.UNKNOWN, result.getOrThrow().single().type)
+    }
+
+    @Test
+    fun getPolicies_typeMatchIsCaseSensitive() = runTest {
+        // Given 값은 맞지만 대소문자가 다른 타입
+        coEvery { policyService.getPolicies() } returns successResponse("terms_of_service")
+
+        // When 정책 조회
+        val result = dataSource.getPolicies()
+
+        // Then enum 이름과 정확히 같아야 매칭되므로 UNKNOWN 이다
+        assertEquals(PolicyType.UNKNOWN, result.getOrThrow().single().type)
+    }
+
+    @Test
+    fun getPolicies_mapsEveryFieldOfEachItem() = runTest {
+        // Given title 과 url 이 서로 다른 값인 약관 한 건
+        coEvery { policyService.getPolicies() } returns ApiResponse(
+            success = true,
+            code = "SUCCESS",
+            message = "성공",
+            data = PolicyResponse(
+                policies = listOf(
+                    PolicyItemResponse(
+                        termsId = 7L,
+                        type = "PRIVACY_POLICY",
+                        title = "개인정보 처리방침",
+                        url = "https://example.com/privacy",
+                        required = false,
+                    ),
+                ),
+            ),
+        )
+
+        // When 정책 조회
+        val vo = dataSource.getPolicies().getOrThrow().single()
+
+        // Then 모든 필드가 제자리에 들어간다 (title 과 url 은 둘 다 String 이라 뒤바뀌어도 컴파일된다)
+        assertEquals(TermsId(7L), vo.termsId)
+        assertEquals(PolicyType.PRIVACY_POLICY, vo.type)
+        assertEquals("개인정보 처리방침", vo.title)
+        assertEquals("https://example.com/privacy", vo.url)
+        assertEquals(false, vo.required)
     }
 }

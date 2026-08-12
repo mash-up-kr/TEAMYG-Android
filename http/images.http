@@ -1,0 +1,143 @@
+### 이미지 API — 업로드 URL 발급 / 업로드 확인
+#
+# 서버: mash-up-kr/TEAMYG-SERVER (main)
+# 실행: 요청 왼쪽 ▶️ → 환경 `dev` 선택
+#
+# 업로드는 3단계다. ① 서버에서 presigned PUT URL 을 받고 ② 그 URL 로 S3 에 직접 PUT 하고
+# ③ 서버에 완료를 알린다. ②는 서버를 지나지 않으므로 실패해도 서버 로그에 안 남는다.
+#
+# 두 서버 요청 모두 인증이 필요하다(화이트리스트 밖). auth.http 로 로그인해
+# access_token 을 먼저 채운다.
+
+### 1. 업로드 URL 발급
+# 리소스를 만드는 POST 인데 201 이 아니라 200 이다(서버가 ApiResponse.ok 를 쓴다).
+#
+# ⚠️ fileName 은 @NotBlank 필수인데 서버가 쓰지 않는다 — S3 키는 UUID 로 만들고
+#    확장자는 contentType 에서 유도한다. 빈 문자열을 보내면 400 이다.
+# ⚠️ imageType 은 스웨거 required 목록에 없지만 빼면 400 이다(springdoc 이 required 를
+#    Bean Validation 애노테이션에서만 유도한다). NUKKI 또는 BACKGROUND 만 유효하고
+#    그 외 문자열은 400 INVALID_REQUEST 다(INVALID_CONTENT_TYPE 이 아니다).
+# ⚠️ contentType 은 image/png · image/jpeg 2종만 받는다. 그 외는 400 INVALID_CONTENT_TYPE.
+POST {{base_url}}/api/v1/images
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "fileName": "photo.png",
+  "contentType": "image/png",
+  "imageType": "NUKKI"
+}
+
+> {%
+    client.test("200 성공", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.success === true, "code: " + response.body.code);
+    });
+
+    // 실패했으면 전역 변수를 지운다. 그냥 두면 이전 실행의 image_id 가 남아
+    // 3·4번이 엉뚱한 이미지를 확정하는데, 서버가 소유자를 검증하지 않아 200 으로 조용히 성공한다.
+    const data = response.body ? response.body.data : null;
+    if (!data) {
+        client.global.clear("image_id");
+        client.global.clear("image_upload_url");
+        client.log("⚠️ 발급 실패 — image_id/image_upload_url 을 비웠다. status=" + response.status);
+    } else {
+        client.global.set("image_id", data.imageId);
+        client.global.set("image_upload_url", data.uploadUrl);
+        client.log("imageId=" + data.imageId + " expiresIn=" + data.expiresIn + "초");
+        client.log("uploadUrl 저장 완료 → 다음은 '2. S3 에 직접 PUT'");
+        client.log("imageUrl=" + data.imageUrl);
+    }
+%}
+
+### 2. S3 에 직접 PUT (서버 계약이 아니라 AWS 계약)
+# 이 요청만 {{base_url}} 이 아니라 발급받은 uploadUrl 로 나간다. 서버를 지나지 않는다.
+#
+# ⚠️ Content-Type 이 1번에서 보낸 contentType 과 다르면 S3 가 서명 불일치로 거절한다.
+#    발급 때 PutObjectRequest 에 contentType 이 실려 서명 대상에 들어가기 때문이다.
+#    이 실패는 서버 로그에 남지 않는다 — 여기서만 재현할 수 있다.
+# ⚠️ uploadUrl 은 발급 응답의 expiresIn(초) 동안만 유효하다. 만료됐으면 1번을 다시 실행한다.
+# 바디는 아무 png 파일이면 된다. 아래는 같은 디렉토리의 sample.png 를 보낸다는 뜻이고,
+# 파일이 없으면 이 요청만 실패한다(1·3번과 무관).
+PUT {{image_upload_url}}
+Content-Type: image/png
+
+< ./sample.png
+
+> {%
+    client.test("200 업로드 성공", function() {
+        client.assert(response.status === 200, "status: " + response.status +
+            " — 403 이면 Content-Type 이 발급 때와 다르거나 URL 이 만료된 것이다");
+    });
+%}
+
+### 3. 업로드 확인
+# 상태를 PENDING → COMPLETED 로 올린다. 성공이면 status 는 항상 COMPLETED 다.
+#
+# ⚠️ 서버는 S3 에 객체가 실제로 있는지 확인하지 않는다 — 상태 전이만 한다.
+#    2번을 건너뛰고 이것만 불러도 200 이 나오고, 그 imageUrl 은 404 를 뱉는 주소다.
+# ⚠️ 두 번 부르면 409 IMAGE_ALREADY_CONFIRMED 다. 재시도 안전장치가 아니다.
+# ⚠️ 서버가 소유자를 검증하지 않는다 — 다른 계정 토큰으로도 이 imageId 가 확정된다.
+#    (서버 소관 미결. 재현하려면 다른 계정으로 로그인해 access_token 을 갈아끼운 뒤
+#    이 요청을 그대로 쏘면 된다 — 이 파일에 별도 요청은 두지 않는다.)
+POST {{base_url}}/api/v1/images/{{image_id}}/confirm
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200 성공", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.success === true, "code: " + response.body.code);
+    });
+
+    client.test("status 는 COMPLETED", function() {
+        client.assert(response.body.data.status === "COMPLETED",
+            "status: " + response.body.data.status);
+    });
+%}
+
+### 4. (대조용) 같은 이미지를 다시 확인 → 409
+# 3번을 실행한 뒤 이 요청을 쏘면 409 IMAGE_ALREADY_CONFIRMED 가 난다.
+POST {{base_url}}/api/v1/images/{{image_id}}/confirm
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.log("status=" + response.status + " code=" + (response.body ? response.body.code : "(본문 없음)"));
+%}
+
+### 5. (대조용) 존재하지 않는 imageId 확인 → 404
+POST {{base_url}}/api/v1/images/999999999/confirm
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.log("status=" + response.status + " code=" + (response.body ? response.body.code : "(본문 없음)"));
+%}
+
+### 6. (대조용) 지원하지 않는 MIME → 400 INVALID_CONTENT_TYPE
+POST {{base_url}}/api/v1/images
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "fileName": "photo.gif",
+  "contentType": "image/gif",
+  "imageType": "NUKKI"
+}
+
+> {%
+    client.log("status=" + response.status + " code=" + (response.body ? response.body.code : "(본문 없음)"));
+%}
+
+### 7. (대조용) imageType 누락 → 400 INVALID_REQUEST
+# 스웨거 required 목록에 없어서 선택 필드처럼 보이지만 실제로는 필수다.
+POST {{base_url}}/api/v1/images
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "fileName": "photo.png",
+  "contentType": "image/png"
+}
+
+> {%
+    client.log("status=" + response.status + " code=" + (response.body ? response.body.code : "(본문 없음)"));
+%}

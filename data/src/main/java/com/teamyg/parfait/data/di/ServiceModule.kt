@@ -1,7 +1,10 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.service.AuthService
+import com.teamyg.parfait.data.service.ImageService
+import com.teamyg.parfait.data.service.MemberService
 import com.teamyg.parfait.data.service.ParfaitGroupService
+import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.ParfaitService
 import com.teamyg.parfait.data.service.PolicyService
 import dagger.Module
@@ -30,4 +33,17 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideParfaitService(retrofit: Retrofit): ParfaitService = retrofit.create(ParfaitService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideImageService(retrofit: Retrofit): ImageService = retrofit.create(ImageService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMemberService(retrofit: Retrofit): MemberService = retrofit.create(MemberService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideParfaitImageService(retrofit: Retrofit): ParfaitImageService =
+        retrofit.create(ParfaitImageService::class.java)
 }
