@@ -19,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// TODO: 그룹 상세 조회 API 연동 전까지만 Mock 기본값을 쓴다. 연동 시 기본값 제거하고 로딩 상태로 대체.
 data class GroupSettingUiState(
     val groupName: GroupName = GroupName(MOCK_GROUP_NAME),
     val myNickname: GroupNickname = GroupNickname(MOCK_MY_NICKNAME),
@@ -30,8 +31,13 @@ data class GroupSettingUiState(
     val remainingCount: Int = MOCK_REMAINING_COUNT,
     val isCodeCopied: Boolean = false,
 ) : UiState {
+    /** 입력값이 유효한가. 키보드 Done 처리처럼 "닫아도 되는가"의 기준. */
+    val isNicknameValid: Boolean
+        get() = nicknameError == null
+
+    /** 실제로 서버에 보낼 변경이 있는가. 확인 버튼 활성 기준. */
     val isConfirmEnabled: Boolean
-        get() = nicknameError == null && nicknameInput != myNickname.value
+        get() = isNicknameValid && nicknameInput != myNickname.value
 }
 
 sealed interface GroupSettingIntent : UiIntent {
@@ -199,6 +205,8 @@ private val MOCK_MEMBER_NICKNAMES = listOf(
 
 private val MOCK_MEMBERS: List<GroupMemberUiModel> = MOCK_MEMBER_NICKNAMES.mapIndexed { index, nickname ->
     GroupMemberUiModel(
+        // TODO: API 연동 시 서버 memberId로 교체(GET /api/parfait-groups/{groupId} 의 members[].memberId)
+        id = index.toLong(),
         nickname = nickname,
         colorChipType = NAMETAG_CHIP_TYPES[index % NAMETAG_CHIP_TYPES.size],
         isMe = index == 0,
