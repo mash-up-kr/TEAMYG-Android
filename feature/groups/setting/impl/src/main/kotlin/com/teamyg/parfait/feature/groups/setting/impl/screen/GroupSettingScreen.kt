@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -53,19 +52,13 @@ internal fun GroupSettingScreen(
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
-    val isEditing = state.isEditing
-    val canConfirm = state.nicknameError == null
-    val handleBack = remember(isEditing, onClickBack, focusManager) {
-        {
-            if (isEditing) focusManager.clearFocus() else onClickBack()
-        }
+    val handleBack = {
+        if (state.isEditing) focusManager.clearFocus() else onClickBack()
     }
-    val confirmAndDismissKeyboard = remember(canConfirm, onConfirmNickname, focusManager) {
-        {
-            if (canConfirm) {
-                onConfirmNickname()
-                focusManager.clearFocus()
-            }
+    val confirmAndDismissKeyboard = {
+        if (state.isNicknameValid) {
+            onConfirmNickname()
+            focusManager.clearFocus()
         }
     }
 
