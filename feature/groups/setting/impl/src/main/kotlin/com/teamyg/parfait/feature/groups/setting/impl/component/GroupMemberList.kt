@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -38,22 +39,24 @@ internal fun GroupMemberList(
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
         ) {
             members.forEach { member ->
-                YGUserChip(
-                    colorChipType = member.colorChipType,
-                    userFirstName = member.nickname.take(1),
-                    chip = YGNametagChipStyle.Style40,
-                    userName = if (member.isMe) {
-                        stringResource(R.string.group_setting_member_name_me, member.nickname)
-                    } else {
-                        member.nickname
-                    },
-                    userStyle = if (member.isMe) {
-                        YGUserNameStyle.StyleBold
-                    } else {
-                        YGUserNameStyle.StyleMedium
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                key(member.id) {
+                    YGUserChip(
+                        colorChipType = member.colorChipType,
+                        userFirstName = member.nickname.take(1),
+                        chip = YGNametagChipStyle.Style40,
+                        userName = if (member.isMe) {
+                            stringResource(R.string.group_setting_member_name_me, member.nickname)
+                        } else {
+                            member.nickname
+                        },
+                        userStyle = if (member.isMe) {
+                            YGUserNameStyle.StyleBold
+                        } else {
+                            YGUserNameStyle.StyleMedium
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -65,6 +68,7 @@ private class GroupMemberListPreviewParameterProvider :
         get() = sequenceOf(
             listOf(
                 GroupMemberUiModel(
+                    id = 1L,
                     nickname = "나야나",
                     colorChipType = YGColorChipType.NametagChip1,
                     isMe = true,
@@ -72,30 +76,36 @@ private class GroupMemberListPreviewParameterProvider :
             ),
             listOf(
                 GroupMemberUiModel(
+                    id = 1L,
                     nickname = "나야나",
                     colorChipType = YGColorChipType.NametagChip1,
                     isMe = true,
                 ),
                 GroupMemberUiModel(
+                    id = 2L,
                     nickname = "철수",
                     colorChipType = YGColorChipType.NametagChip3,
                 ),
                 GroupMemberUiModel(
+                    id = 3L,
                     nickname = "영희",
                     colorChipType = YGColorChipType.NametagChip5,
                 ),
                 GroupMemberUiModel(
+                    id = 4L,
                     nickname = "민수",
                     colorChipType = YGColorChipType.NametagChip8,
                 ),
             ),
             listOf(
                 GroupMemberUiModel(
+                    id = 1L,
                     nickname = "열다섯글자를꽉꽉채운닉네임야호",
                     colorChipType = YGColorChipType.NametagChip2,
                     isMe = true,
                 ),
                 GroupMemberUiModel(
+                    id = 2L,
                     nickname = "열다섯글자를꽉꽉채운닉네임이야",
                     colorChipType = YGColorChipType.NametagChip6,
                 ),
