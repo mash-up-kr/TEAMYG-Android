@@ -3,7 +3,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -14,11 +13,7 @@ import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
-
-private val PictureConfirmSourceSaver = Saver<PictureConfirmSource?, String>(
-    save = { it?.name.orEmpty() },
-    restore = { if (it.isEmpty()) null else PictureConfirmSource.valueOf(it) },
-)
+import com.teamyg.parfait.feature.groups.canvas.impl.util.PictureConfirmSourceSaver
 
 @Composable
 internal fun CanvasBGEditRoute(
