@@ -59,6 +59,11 @@ internal fun GroupSettingRoute(
         },
         onClickLeaveGroup = { viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup) },
         onClickReportGroup = { viewModel.processIntent(GroupSettingIntent.ClickReportGroup) },
+        onConfirmLeaveGroup = { viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup) },
+        onConfirmReportGroup = {
+            viewModel.processIntent(GroupSettingIntent.ConfirmReportGroup)
+        },
+        onDismissDialog = { viewModel.processIntent(GroupSettingIntent.DismissDialog) },
         modifier = modifier,
     )
 }

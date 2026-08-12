@@ -283,4 +283,112 @@ class GroupSettingViewModelTest {
             // Then 복사됨 상태가 풀린다
             assertFalse(viewModel.state.value.isCodeCopied)
         }
+
+    @Test
+    fun clickLeaveGroup_showsLeaveDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 팝업이 떠 있지 않은 초기 화면
+        val viewModel = viewModel()
+        assertNull(viewModel.state.value.visibleDialog)
+
+        // When 그룹 나가기를 누름
+        viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
+
+        // Then 나가기 확인 팝업이 뜬다
+        assertEquals(GroupSettingDialog.Leave, viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun clickReportGroup_showsReportDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 팝업이 떠 있지 않은 초기 화면
+        val viewModel = viewModel()
+
+        // When 그룹 신고하기를 누름
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // Then 신고 확인 팝업이 뜬다
+        assertEquals(GroupSettingDialog.Report, viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun confirmLeaveGroup_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 나가기 확인 팝업이 떠 있는 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
+
+        // When 팝업의 나가기를 누름
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+        // Then 팝업이 닫힌다
+        assertNull(viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun confirmLeaveGroup_whenDialogNotVisible_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어떤 팝업도 떠 있지 않은 초기 상태
+        val viewModel = viewModel()
+        val before = viewModel.state.value
+
+        // When 팝업 없이 나가기 확인 Intent가 들어옴(멀티터치로 취소와 동시에 발화한 경우 등)
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+        // Then 아무 것도 바뀌지 않는다
+        assertEquals(before, viewModel.state.value)
+    }
+
+    @Test
+    fun confirmLeaveGroup_whileReportDialogVisible_keepsReportDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 신고 확인 팝업이 떠 있는 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 멀티터치 등으로 나가기 확인 Intent가 잘못 들어옴(교차 확인 방어)
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+        // Then 신고 확인 팝업이 그대로 남아 있다
+        assertEquals(GroupSettingDialog.Report, viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun confirmReportGroup_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 신고 확인 팝업이 떠 있는 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 팝업의 신고하기를 누름
+        viewModel.processIntent(GroupSettingIntent.ConfirmReportGroup)
+
+        // Then 팝업이 닫힌다
+        assertNull(viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun dismissDialog_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 신고 확인 팝업이 떠 있는 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 그만두기 또는 바깥 탭으로 닫기를 요청
+        viewModel.processIntent(GroupSettingIntent.DismissDialog)
+
+        // Then 팝업이 닫힌다
+        assertNull(viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun dialogIntents_whileEditing_keepEditingState() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임을 편집 중인 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname("고치던닉네임"))
+
+        // When 나가기 팝업을 열었다 닫음
+        viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
+        viewModel.processIntent(GroupSettingIntent.DismissDialog)
+
+        // Then 편집 상태와 입력값이 그대로 남는다
+        val state = viewModel.state.value
+        assertTrue(state.isEditing)
+        assertEquals("고치던닉네임", state.nicknameInput)
+        assertNull(state.visibleDialog)
+    }
 }
