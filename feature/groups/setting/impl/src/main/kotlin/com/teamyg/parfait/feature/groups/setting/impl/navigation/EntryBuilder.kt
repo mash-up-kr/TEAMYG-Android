@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.setting.impl.navigation
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
@@ -17,7 +18,10 @@ fun EntryProviderScope<NavKey>.featureGroupSettingEntryBuilder(navigator: Naviga
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    // Scaffold가 준 systemBars 인셋을 소비해, 하위 imePadding()이
+                    // 내비게이션 바 높이를 두 번 세지 않게 한다.
+                    .consumeWindowInsets(innerPadding),
             )
         }
     }

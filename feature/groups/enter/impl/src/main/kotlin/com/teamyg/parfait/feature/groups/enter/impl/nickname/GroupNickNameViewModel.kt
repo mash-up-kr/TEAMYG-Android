@@ -4,15 +4,18 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.EnterGroupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupNickNameUiState(
     val nickName: String = "",
-    val errorMessageResId: Int? = null,
+    val nicknameError: NameValidResult.Error? = null,
+    val isEntering: Boolean = false,
 ) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
@@ -34,6 +37,7 @@ class GroupNickNameViewModel
 @Inject
 constructor(
     private val checkNickNameValid: CheckNameValidUseCase,
+    private val enterGroup: EnterGroupUseCase,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(),
 ) {
@@ -42,36 +46,30 @@ constructor(
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
             is GroupNickNameIntent.ClickNextButton -> {
-                val result = checkNickNameValid(state.value.nickName)
-                when (result) {
+                if (state.value.isEntering) return
+
+                when (val result = checkNickNameValid(state.value.nickName)) {
                     NameValidResult.Success -> {
                         updateState {
-                            copy(errorMessageResId = null)
+                            copy(
+                                nicknameError = null,
+                                isEntering = true,
+                            )
                         }
-                        postSideEffect(GroupNickNameSideEffect.NavigateToNext)
-                    }
+                        viewModelScope.launch {
+                            val enterResult = enterGroup(nickName = state.value.nickName)
+                            updateState { copy(isEntering = false) }
 
-                    NameValidResult.Error.DuplicatedSpace -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_duplicated_space)
-                        }
-                    }
-
-                    NameValidResult.Error.InvalidCharacter -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_invalid_character)
-                        }
-                    }
-
-                    NameValidResult.Error.SpaceAtEdge -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_space_at_edge_nickname)
+                            // Todo : 실패 처리는 서버 작업이 연결되면 추가 예정입니다
+                            if (enterResult.isSuccess) {
+                                postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+                            }
                         }
                     }
 
-                    NameValidResult.Error.EmptyString -> {
+                    is NameValidResult.Error -> {
                         updateState {
-                            copy(errorMessageResId = CoreR.string.error_empty_space_nickname)
+                            copy(nicknameError = result)
                         }
                     }
                 }
@@ -81,7 +79,7 @@ constructor(
                 updateState {
                     copy(
                         nickName = intent.nickName,
-                        errorMessageResId = null,
+                        nicknameError = null,
                     )
                 }
             }

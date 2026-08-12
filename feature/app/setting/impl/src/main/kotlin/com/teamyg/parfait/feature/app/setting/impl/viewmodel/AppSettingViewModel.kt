@@ -12,11 +12,13 @@ import javax.inject.Inject
  * @property nickname TODO 프로필 API 연동 전 placeholder 데이터
  * @property loginProvider
  * @property version TODO BuildConfig.VERSION_NAME 주입으로 교체
+ * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  */
 data class AppSettingState(
     val nickname: String = "아니야나그런데기니야",
     val loginProvider: String = "Kakao",
     val version: String = "1.0v",
+    val isWithdrawDialogVisible: Boolean = false,
 ) : UiState
 
 sealed interface AppSettingIntent : UiIntent {
@@ -31,6 +33,10 @@ sealed interface AppSettingIntent : UiIntent {
     data object ClickLogout : AppSettingIntent
 
     data object ClickWithdraw : AppSettingIntent
+
+    data object ConfirmWithdraw : AppSettingIntent
+
+    data object DismissWithdrawDialog : AppSettingIntent
 }
 
 sealed interface AppSettingSideEffect : UiSideEffect {
@@ -61,6 +67,8 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
             AppSettingIntent.ClickPrivacyPolicy -> handleClickPrivacyPolicy()
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
+            AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
+            AppSettingIntent.DismissWithdrawDialog -> handleDismissWithdrawDialog()
         }
     }
 
@@ -86,7 +94,18 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
     }
 
     private fun handleClickWithdraw() {
-        // TODO 회원 탈퇴 API 연동 전 stub
-        viewModelLogger.i { "AppSettingViewModel::handleClickWithdraw (stub)" }
+        updateState { copy(isWithdrawDialogVisible = true) }
+    }
+
+    private fun handleConfirmWithdraw() {
+        if (!state.value.isWithdrawDialogVisible) return
+
+        updateState { copy(isWithdrawDialogVisible = false) }
+        // TODO 회원 탈퇴 API 연동 — 서버에 해당 엔드포인트 계약이 아직 없다(신설 후 연동)
+        viewModelLogger.i { "AppSettingViewModel::handleConfirmWithdraw (stub)" }
+    }
+
+    private fun handleDismissWithdrawDialog() {
+        updateState { copy(isWithdrawDialogVisible = false) }
     }
 }

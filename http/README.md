@@ -27,10 +27,20 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
     "terms_id_2": "",
 
     "group_id": "",
-    "invite_code": ""
+    "invite_code": "",
+
+    "image_id": "",
+    "image_upload_url": "",
+
+    "parfait_image_id": ""
   }
 }
 ```
+
+> `terms_id_*`·`group_id`·`invite_code`·`image_*`·`parfait_image_id`는 **손으로 채우는 값이 아니다** —
+> 각 `.http` 파일의 응답 핸들러가 `client.global.set`으로 런타임에 채운다. 여기 구조로 적어 두는 것은
+> "이 체계에 어떤 변수가 있는가"를 한곳에서 보기 위해서고, `_reset.http`가 도메인별로 비우는 목록과
+> 짝을 이룬다.
 
 ### 두 가지 사용법
 
@@ -66,10 +76,15 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 | `parfait-group.http` | 그룹 8종(목록·생성·참여 미리보기·참여·상세·닉네임 변경·신고·탈퇴) |
 | `parfait.http` | 그룹 캘린더 연도 리스트 |
 | `health.http` | 헬스체크(인증 유무 대조용) |
+| `images.http` | 이미지 업로드 URL 발급 · 업로드 확인(**2번 요청만 서버가 아니라 S3로 나간다**) |
+| `users.http` | 내 계정 조회 · 전역 닉네임 변경(선행: `auth.http`만) |
+| `parfait-image.http` | 토핑 배치 확정 · 위치/크기/각도 수정(**선행이 셋** — `auth.http` → `parfait-group.http` → `images.http`) |
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
 `policy.http`를 먼저 돌려야 `auth.http` 2번의 `termsId`가 채워진다. 기존 회원으로 로그인했다면 회원가입을 건너뛰므로 `policy.http`도 건너뛰어도 된다.
+
+`parfait-image.http`는 준비가 가장 길다 — `images.http`의 발급 → S3 PUT → confirm 까지 끝내 이미지를 `COMPLETED`로 만들어야 배치가 통과한다(`PENDING`이면 `409 IMAGE_NOT_CONFIRMED`). `parfaitId`는 조회 API가 서버에 없어 요청 파일의 리터럴을 손으로 바꿔야 한다.
 
 ---
 
@@ -99,13 +114,11 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 스웨거 문서는 springdoc이 생성한 것이라 몇 군데가 실제와 어긋난다. **여기 적힌 쪽이 맞다**(서버 코드로 확인).
 
-### `isNewUser`가 아니라 `newUser`다 ⚠️ 가장 중요
+### 판별자 키는 `isNewUser`다 — 스웨거의 `newUser`가 틀렸다 ⚠️ 가장 중요
 
-카카오 로그인 응답의 신규 유저 판별자는 **`newUser`**다.
+서버 `KakaoLoginResponse`는 Kotlin `val isNewUser: Boolean`이고, 서버가 `jackson-module-kotlin`을 쓰므로 **JSON 키에 `is` 접두사가 그대로 남는다.** 컨트롤러 테스트가 실제 응답 본문에 `$.data.isNewUser`를 단언한다.
 
-서버 Kotlin은 `val isNewUser: Boolean`인데, Jackson이 getter 이름에서 `is` 접두사를 떼고 직렬화해 **실제 JSON 키는 `newUser`**로 나간다(OpenAPI 스키마가 그렇게 적혀 있고, 그게 실제 응답이다).
-
-`isNewUser`로 읽으면 항상 `undefined`/`null` → **신규 유저가 기존 회원으로 잘못 분기**되고, 없는 `accessToken`을 꺼내게 된다. Android 응답 타입도 `@SerialName("newUser")`가 필요하다.
+스웨거만 `newUser`로 적는데, springdoc이 Kotlin 모듈이 없는 자기 ObjectMapper로 모델을 유도하기 때문이다 — **런타임 직렬화 결과와 다르다.** 앱 `KakaoLoginResponse`에 붙은 `@SerialName("newUser")`는 **고쳐야 한다**(키를 못 찾아 `MissingFieldException`이 난다).
 
 ### 회원가입은 200이 아니라 201이다
 
@@ -117,7 +130,7 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ### 스웨거에 없는 에러 코드가 많다
 
-스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(12종)·`ParfaitGroupApiErrorCode`(11종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
+스웨거는 성공 응답만 열거한다. 실제 에러 코드는 `AuthErrorCode`(14종)·`ParfaitGroupApiErrorCode`(11종)·`ImageErrorCode`(4종)·`MemberErrorCode`(2종)·`ParfaitImageErrorCode`(5종)·`CommonErrorCode`(2종)에 있고, 각 `.http` 파일 주석에 엔드포인트별로 적어뒀다.
 
 ---
 
@@ -186,17 +199,20 @@ Android 9(API 28)부터 평문 HTTP는 기본 차단이므로, 실제 연동을 
 | 401 | `EXPIRED_TOKEN` | access/refresh 만료. 재발급 또는 재로그인 |
 | 401 | `INVALID_TOKEN` | 토큰 위조, 또는 refresh가 서버 저장값과 불일치(재사용 의심) |
 | 401 | `UNAUTHORIZED` | `Authorization` 헤더 자체가 없음 |
-| 401 | `MEMBER_NOT_FOUND` | 토큰의 회원이 존재하지 않음 (그룹 API의 404 `MEMBER_NOT_FOUND`와 **다른 코드다**) |
+| 401 | `MEMBER_NOT_FOUND` | 토큰의 회원이 존재하지 않음 (그룹·이미지 API의 404 `MEMBER_NOT_FOUND`와 **다른 코드다**) |
 | 403 | `FORBIDDEN_REFRESH_TOKEN` | access token의 주인과 바디 refresh token의 주인이 다름 |
 | 403 | `GROUP_NOT_JOINED` | 참여하지 않은 그룹 |
 | 404 | `GROUP_NOT_FOUND` | 없는 그룹 |
 | 404 | `INVALID_INVITE_CODE` | 초대코드 무효 |
+| 400 | `INVALID_CONTENT_TYPE` | 이미지 MIME이 `image/png`·`image/jpeg`가 아님 |
+| 404 | `IMAGE_NOT_FOUND` | 없는 `imageId`로 업로드 확인 |
+| 409 | `IMAGE_ALREADY_CONFIRMED` | 이미 확정된 이미지를 다시 확인 (재시도 안전장치가 아니다) |
 | 409 | `ALREADY_REGISTERED` | 이미 가입된 회원인데 signup 호출 |
 | 409 | `GROUP_ALREADY_JOINED` · `GROUP_MEMBER_LIMIT_REACHED` · `GROUP_NICKNAME_ALREADY_USED` | 참여 관련 충돌 |
 | 400 | `TERMS_NOT_FOUND` · `DUPLICATE_TERMS_ID` · `REQUIRED_TERMS_NOT_AGREED` | 약관 관련 |
 | 400 | `INVALID_GROUP_NAME` · `INVALID_GROUP_NICKNAME` · `INVALID_GROUP_MEMBER_LIMIT` · `INVALID_GROUP_REPORT_REASON` | 그룹 입력값 |
 
-> `MEMBER_NOT_FOUND`는 **`AuthErrorCode`에서 401, `ParfaitGroupApiErrorCode`에서 404**로 중복 정의돼 있다. 코드 문자열만으로 분기하면 두 상황이 뭉개진다 — HTTP status와 함께 봐야 한다.
+> `MEMBER_NOT_FOUND`는 **`AuthErrorCode`에서 401, `ParfaitGroupApiErrorCode`와 `ImageErrorCode`에서 404**로 중복 정의돼 있다. 코드 문자열만으로 분기하면 세 상황이 뭉개진다 — HTTP status와 함께 봐야 한다.
 
 ---
 
@@ -211,6 +227,9 @@ http/
 ├── parfait-group.http            # 그룹 8종
 ├── parfait.http                  # 파르페 조회
 ├── health.http                   # 헬스체크
+├── images.http                   # 이미지 업로드 2종 (+ S3 PUT)
+├── users.http                    # 내 계정 조회 · 전역 닉네임 변경
+├── parfait-image.http            # 토핑 배치 확정 · 위치/크기/각도 수정
 ├── http-client.env.json          # 환경 변수 구조(값 비움, 커밋됨)
 └── http-client.private.env.json  # 실제 값 (gitignore — 커밋되지 않음)
 ```

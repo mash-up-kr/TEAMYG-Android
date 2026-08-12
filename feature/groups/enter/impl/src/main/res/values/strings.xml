@@ -14,4 +14,14 @@
     <string name="group_name_placeholder">그룹명을 입력해 주세요</string>
     <string name="group_count_label">그룹 인원</string>
     <string name="group_count_description">그룹명과 인원수는 추후 변경할 수 없어요</string>
+
+    <string name="confirm_popup_cancel">취소</string>
+
+    <string name="group_create_confirm_title">%1$s 그룹을 만들까요?</string>
+    <string name="group_create_confirm_body">그룹명과 인원수는 추후 변경할 수 없어요\n다시 한번 확인해 주세요</string>
+    <string name="group_create_confirm_create">만들기</string>
+
+    <string name="group_enter_confirm_title">%1$s에 참여할까요?</string>
+    <string name="group_enter_confirm_body">참여하려는 그룹이 해당 그룹이 맞는지\n다시 한번 확인해 주세요</string>
+    <string name="group_enter_confirm_enter">참여하기</string>
 </resources>

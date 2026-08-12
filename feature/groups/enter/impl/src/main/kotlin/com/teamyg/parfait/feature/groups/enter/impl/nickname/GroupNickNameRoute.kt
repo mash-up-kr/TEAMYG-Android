@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
 fun GroupNickNameRoute(
@@ -23,7 +24,9 @@ fun GroupNickNameRoute(
                     navigator.onBack()
                 }
 
-                GroupNickNameSideEffect.NavigateToNext -> { /* navigate to next */ }
+                GroupNickNameSideEffect.NavigateToNext -> {
+                    navigator.goToSingleClearTop(destination = NavKeyGroupList)
+                }
             }
         }
     }

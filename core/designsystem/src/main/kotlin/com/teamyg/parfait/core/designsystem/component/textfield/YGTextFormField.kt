@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,6 +25,8 @@ fun YGTextFormField(
     maxLength: Int? = null,
     errorDescription: String? = null,
     colors: YGTextFormFieldColors = YGTextFormFieldDefaults.colors(),
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
     Column(
         modifier = modifier,
@@ -37,6 +41,8 @@ fun YGTextFormField(
             isError = isError,
             maxLength = maxLength,
             colors = colors.textFieldColors,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
         )
         if (errorDescription != null) {
             Text(

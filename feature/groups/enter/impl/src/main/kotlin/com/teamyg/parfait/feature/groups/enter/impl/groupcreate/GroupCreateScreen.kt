@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
@@ -27,8 +28,11 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
+import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupCreateScreen(
@@ -37,8 +41,24 @@ internal fun GroupCreateScreen(
     onClickBackButton: () -> Unit,
     onGroupNameChanged: (newGroupName: String) -> Unit,
     onClickGroupNumber: (newSelectedNumber: Int) -> Unit,
+    onClickConfirmPopupCreate: () -> Unit,
+    onDismissConfirmPopup: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState.isConfirmPopupVisible) {
+        YGModalPopup(
+            title = stringResource(R.string.group_create_confirm_title, uiState.groupName),
+            body = stringResource(R.string.group_create_confirm_body),
+            iconRes = DesignSystemR.drawable.ic_warning_round,
+            secondaryText = stringResource(R.string.confirm_popup_cancel),
+            onSecondaryClick = onDismissConfirmPopup,
+            primaryText = stringResource(R.string.group_create_confirm_create),
+            onPrimaryClick = onClickConfirmPopupCreate,
+            onDismissRequest = onDismissConfirmPopup,
+            isEnabledButton = uiState.isCreating.not(),
+        )
+    }
+
     Column(modifier = modifier) {
         YGTopBarDetail(
             title = stringResource(R.string.group_create),
@@ -69,9 +89,9 @@ internal fun GroupCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = stringResource(R.string.group_name_placeholder),
                     enabled = true,
-                    isError = uiState.groupNameErrorTextResId != null,
+                    isError = uiState.groupNameError != null,
                     maxLength = GroupCreateConfig.GROUP_NAME_MAX_LENGTH,
-                    errorDescription = uiState.groupNameErrorTextResId?.let { stringResource(it) },
+                    errorDescription = uiState.groupNameError?.toStringResource(NameFieldType.GROUP_NAME),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -149,6 +169,7 @@ private class GroupCreateScreenPreviewParameterProvider :
             GroupCreateUiState(""),
             GroupCreateUiState("", "", null),
             GroupCreateUiState("가나", "하이하이", 3),
+            GroupCreateUiState("가나", "하이하이", 3, isConfirmPopupVisible = true),
         )
 }
 
@@ -163,6 +184,8 @@ private fun GroupCreateScreenPreview(
         onClickBackButton = {},
         onGroupNameChanged = {},
         onClickGroupNumber = {},
+        onClickConfirmPopupCreate = {},
+        onDismissConfirmPopup = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

@@ -27,6 +27,8 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
 
@@ -83,9 +85,9 @@ internal fun GroupNickNameScreen(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
-                    isError = uiState.errorMessageResId != null,
+                    isError = uiState.nicknameError != null,
                     maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                    errorDescription = uiState.errorMessageResId?.let { stringResource(it) },
+                    errorDescription = uiState.nicknameError?.toStringResource(NameFieldType.NICKNAME),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
