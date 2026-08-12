@@ -13,13 +13,12 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupCreateUiState(
     val groupName: String = "",
     val nickName: String = "",
     val groupNumber: Int? = null,
-    val groupNameErrorTextResId: Int? = null,
+    val groupNameError: NameValidResult.Error? = null,
     val isConfirmPopupVisible: Boolean = false,
     val isCreating: Boolean = false,
 ) : UiState {
@@ -68,44 +67,25 @@ constructor(
                 updateState {
                     copy(
                         groupName = intent.newGroupName,
-                        groupNameErrorTextResId = null,
+                        groupNameError = null,
                     )
                 }
             }
 
             GroupCreateIntent.ClickNextButton -> {
-                val result = checkNameValid(state.value.groupName)
-                when (result) {
+                when (val result = checkNameValid(state.value.groupName)) {
                     NameValidResult.Success -> {
                         updateState {
                             copy(
-                                groupNameErrorTextResId = null,
+                                groupNameError = null,
                                 isConfirmPopupVisible = true,
                             )
                         }
                     }
 
-                    NameValidResult.Error.DuplicatedSpace -> {
+                    is NameValidResult.Error -> {
                         updateState {
-                            copy(groupNameErrorTextResId = CoreR.string.error_duplicated_space)
-                        }
-                    }
-
-                    NameValidResult.Error.InvalidCharacter -> {
-                        updateState {
-                            copy(groupNameErrorTextResId = CoreR.string.error_invalid_character)
-                        }
-                    }
-
-                    NameValidResult.Error.SpaceAtEdge -> {
-                        updateState {
-                            copy(groupNameErrorTextResId = CoreR.string.error_space_at_edge_groupname)
-                        }
-                    }
-
-                    NameValidResult.Error.EmptyString -> {
-                        updateState {
-                            copy(groupNameErrorTextResId = CoreR.string.error_empty_space_groupname)
+                            copy(groupNameError = result)
                         }
                     }
                 }

@@ -59,7 +59,7 @@ sealed interface YGColorChipType {
     data object NametagChip9 : YGColorChipType {
         override val fillColor = YGAtomicColors.Melon.Melon500
         override val strokeColor = YGAtomicColors.Cherry.Cherry50
-        override val textColor = YGAtomicColors.Cherry.Cherry50
+        override val textColor = YGAtomicColors.Pudding.Pudding500
     }
 
     data object NametagChip10 : YGColorChipType {
@@ -69,18 +69,12 @@ sealed interface YGColorChipType {
     }
 
     data object NametagChip11 : YGColorChipType {
-        override val fillColor = YGAtomicColors.Cherry.Cherry400
-        override val strokeColor = YGAtomicColors.Cherry.Cherry100
-        override val textColor = YGAtomicColors.Melon.Melon500
-    }
-
-    data object NametagChip12 : YGColorChipType {
         override val fillColor = YGAtomicColors.Pudding.Pudding500
         override val strokeColor = YGAtomicColors.Melon.Melon500
         override val textColor = YGAtomicColors.Cherry.Cherry300
     }
 
-    data object NametagChip13 : YGColorChipType {
+    data object NametagChip12 : YGColorChipType {
         override val fillColor = YGAtomicColors.Pudding.Pudding500
         override val strokeColor = YGAtomicColors.Cherry.Cherry100
         override val textColor = YGAtomicColors.Cherry.Cherry300

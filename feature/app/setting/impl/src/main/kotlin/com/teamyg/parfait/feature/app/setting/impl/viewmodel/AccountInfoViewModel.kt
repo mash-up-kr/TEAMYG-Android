@@ -9,11 +9,10 @@ import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import com.teamyg.parfait.core.ui.R as CoreR
 
 data class AccountInfoUiState(
     val nickname: String = "대충지은랜덤닉네임",
-    val errorMessageResId: Int? = null,
+    val nicknameError: NameValidResult.Error? = null,
 ) : UiState
 
 sealed interface AccountInfoIntent : UiIntent {
@@ -46,18 +45,12 @@ constructor(
     }
 
     private fun handleInputWord(nickName: String) {
-        val errorMessageResId = when (checkNameValid(nickName)) {
-            NameValidResult.Success -> null
-            NameValidResult.Error.DuplicatedSpace -> CoreR.string.error_duplicated_space
-            NameValidResult.Error.InvalidCharacter -> CoreR.string.error_invalid_character
-            NameValidResult.Error.SpaceAtEdge -> CoreR.string.error_space_at_edge_nickname
-            NameValidResult.Error.EmptyString -> CoreR.string.error_empty_space_nickname
-        }
+        val nicknameError = checkNameValid(nickName) as? NameValidResult.Error
 
         updateState {
             copy(
                 nickname = nickName,
-                errorMessageResId = errorMessageResId,
+                nicknameError = nicknameError,
             )
         }
     }

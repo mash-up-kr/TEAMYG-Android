@@ -19,11 +19,13 @@ import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
 import com.teamyg.parfait.domain.model.GroupCreateConfig
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AccountInfoUiState
-import com.teamyg.parfait.core.ui.R as CoreR
 
 @Composable
 internal fun AccountInfoScreen(
@@ -60,9 +62,9 @@ internal fun AccountInfoScreen(
                         value = state.nickname,
                         onValueChange = onValueChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        isError = state.errorMessageResId != null,
+                        isError = state.nicknameError != null,
                         maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                        errorDescription = state.errorMessageResId?.let { stringResource(it) },
+                        errorDescription = state.nicknameError?.toStringResource(NameFieldType.NICKNAME),
                         colors = YGTextFormFieldDefaults.colors(),
                     )
                 }
@@ -81,11 +83,11 @@ private class AccountInfoPreviewParameterProvider :
             AccountInfoUiState(nickname = "닉네임바꾸"),
             AccountInfoUiState(
                 nickname = "",
-                errorMessageResId = CoreR.string.error_empty_space_nickname,
+                nicknameError = NameValidResult.Error.EmptyString,
             ),
             AccountInfoUiState(
                 nickname = " 가",
-                errorMessageResId = CoreR.string.error_space_at_edge_nickname,
+                nicknameError = NameValidResult.Error.SpaceAtEdge,
             ),
         )
 }

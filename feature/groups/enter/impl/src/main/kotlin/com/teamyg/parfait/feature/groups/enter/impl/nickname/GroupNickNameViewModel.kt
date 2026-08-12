@@ -11,11 +11,10 @@ import com.teamyg.parfait.domain.usecase.group.EnterGroupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupNickNameUiState(
     val nickName: String = "",
-    val errorMessageResId: Int? = null,
+    val nicknameError: NameValidResult.Error? = null,
     val isEntering: Boolean = false,
 ) : UiState
 
@@ -49,12 +48,11 @@ constructor(
             is GroupNickNameIntent.ClickNextButton -> {
                 if (state.value.isEntering) return
 
-                val result = checkNickNameValid(state.value.nickName)
-                when (result) {
+                when (val result = checkNickNameValid(state.value.nickName)) {
                     NameValidResult.Success -> {
                         updateState {
                             copy(
-                                errorMessageResId = null,
+                                nicknameError = null,
                                 isEntering = true,
                             )
                         }
@@ -69,27 +67,9 @@ constructor(
                         }
                     }
 
-                    NameValidResult.Error.DuplicatedSpace -> {
+                    is NameValidResult.Error -> {
                         updateState {
-                            copy(errorMessageResId = CoreR.string.error_duplicated_space)
-                        }
-                    }
-
-                    NameValidResult.Error.InvalidCharacter -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_invalid_character)
-                        }
-                    }
-
-                    NameValidResult.Error.SpaceAtEdge -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_space_at_edge_nickname)
-                        }
-                    }
-
-                    NameValidResult.Error.EmptyString -> {
-                        updateState {
-                            copy(errorMessageResId = CoreR.string.error_empty_space_nickname)
+                            copy(nicknameError = result)
                         }
                     }
                 }
@@ -99,7 +79,7 @@ constructor(
                 updateState {
                     copy(
                         nickName = intent.nickName,
-                        errorMessageResId = null,
+                        nicknameError = null,
                     )
                 }
             }
