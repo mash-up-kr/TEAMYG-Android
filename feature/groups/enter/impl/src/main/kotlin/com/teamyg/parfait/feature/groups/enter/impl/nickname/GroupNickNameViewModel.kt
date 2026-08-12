@@ -4,15 +4,19 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.EnterGroupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.teamyg.parfait.core.ui.R as CoreR
 
 data class GroupNickNameUiState(
     val nickName: String = "",
     val errorMessageResId: Int? = null,
+    val isEntering: Boolean = false,
 ) : UiState
 
 sealed interface GroupNickNameIntent : UiIntent {
@@ -34,6 +38,7 @@ class GroupNickNameViewModel
 @Inject
 constructor(
     private val checkNickNameValid: CheckNameValidUseCase,
+    private val enterGroup: EnterGroupUseCase,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(),
 ) {
@@ -42,13 +47,26 @@ constructor(
             GroupNickNameIntent.ClickBackButton -> postSideEffect(GroupNickNameSideEffect.NavigateToBack)
 
             is GroupNickNameIntent.ClickNextButton -> {
+                if (state.value.isEntering) return
+
                 val result = checkNickNameValid(state.value.nickName)
                 when (result) {
                     NameValidResult.Success -> {
                         updateState {
-                            copy(errorMessageResId = null)
+                            copy(
+                                errorMessageResId = null,
+                                isEntering = true,
+                            )
                         }
-                        postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+                        viewModelScope.launch {
+                            val enterResult = enterGroup(nickName = state.value.nickName)
+                            updateState { copy(isEntering = false) }
+
+                            // Todo : 실패 처리는 서버 작업이 연결되면 추가 예정입니다
+                            if (enterResult.isSuccess) {
+                                postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+                            }
+                        }
                     }
 
                     NameValidResult.Error.DuplicatedSpace -> {

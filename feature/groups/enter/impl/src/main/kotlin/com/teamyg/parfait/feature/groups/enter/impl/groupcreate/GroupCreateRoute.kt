@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -25,7 +26,9 @@ fun GroupCreateRoute(
                     navigator.onBack()
                 }
 
-                GroupCreateSideEffect.NavigateToNext -> { /* navigate to next */ }
+                GroupCreateSideEffect.NavigateToNext -> {
+                    navigator.goToSingleClearTop(destination = NavKeyGroupList)
+                }
             }
         }
     }
@@ -36,6 +39,8 @@ fun GroupCreateRoute(
         onClickBackButton = { viewModel.processIntent(GroupCreateIntent.ClickBackButton) },
         onGroupNameChanged = { viewModel.processIntent(GroupCreateIntent.InputGroupName(it)) },
         onClickGroupNumber = { viewModel.processIntent(GroupCreateIntent.ClickGroupNumber(it)) },
+        onClickConfirmPopupCreate = { viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate) },
+        onDismissConfirmPopup = { viewModel.processIntent(GroupCreateIntent.DismissConfirmPopup) },
         modifier = modifier,
     )
 }

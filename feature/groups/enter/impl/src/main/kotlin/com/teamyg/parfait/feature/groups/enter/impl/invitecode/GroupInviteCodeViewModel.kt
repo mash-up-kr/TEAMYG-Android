@@ -15,6 +15,8 @@ data class GroupInviteCodeUiState(
     val focusedIndex: Int? = null,
     val inputMode: InputMode = InputMode.ADD,
     val errorText: String? = null,
+    val groupName: String = "",
+    val isConfirmPopupVisible: Boolean = false,
 ) : UiState {
     val codeLength = 6
 }
@@ -36,6 +38,10 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data object HideKeyboard : GroupInviteCodeIntent
 
     data object FocusedFirstIndex : GroupInviteCodeIntent
+
+    data object ClickConfirmPopupEnter : GroupInviteCodeIntent
+
+    data object DismissConfirmPopup : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
@@ -60,7 +66,12 @@ constructor(
                 viewModelScope.launch {
                     val result = checkInviteCodeValidUseCase()
                     if (result.isSuccess) {
-                        postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
+                        updateState {
+                            copy(
+                                groupName = result.groupName,
+                                isConfirmPopupVisible = true,
+                            )
+                        }
                     } else {
                         updateState {
                             GroupInviteCodeUiState(
@@ -121,6 +132,15 @@ constructor(
 
             is GroupInviteCodeIntent.FocusedFirstIndex -> {
                 updateState { copy(focusedIndex = 0) }
+            }
+
+            GroupInviteCodeIntent.DismissConfirmPopup -> {
+                updateState { copy(isConfirmPopupVisible = false) }
+            }
+
+            GroupInviteCodeIntent.ClickConfirmPopupEnter -> {
+                updateState { copy(isConfirmPopupVisible = false) }
+                postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
             }
         }
     }
