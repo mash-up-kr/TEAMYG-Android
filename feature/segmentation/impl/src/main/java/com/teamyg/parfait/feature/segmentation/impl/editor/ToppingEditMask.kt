@@ -5,10 +5,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
-import android.graphics.RectF
 import androidx.core.graphics.createBitmap
 import com.teamyg.parfait.core.util.android.extension.toAndroidPath
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
@@ -54,8 +52,8 @@ internal fun buildCutoutBitmap(
 }
 
 /**
- * 알파 마스크를 실제로 팽창시키는 대신, 알맹이를 반지름만큼 떨어진 자리에 빙 둘러 찍고
- * 겹친 자국을 겹 색으로 물들여 굵은 윤곽을 만든다. 화면 미리보기와 같은 방식이다.
+ * 알맹이 실루엣에서 떨어진 거리를 재 두고, 겹마다 정해진 거리까지를 그 색으로 칠해 테두리를 만든다.
+ * 화면 미리보기와 같은 방식이라 여기서 본 모습이 그대로 파일에 남는다.
  *
  * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
  * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
@@ -69,29 +67,15 @@ internal fun Bitmap.withBorders(
 ): Bitmap {
     if (borderLayers.isEmpty() || originPxPerDp <= 0f) return this
 
-    val destination = RectF(0f, 0f, width.toFloat(), height.toFloat())
+    val bordered = toOutlineDistanceField().buildBorderBitmap(
+        targetWidth = width,
+        targetHeight = height,
+        bands = borderLayers.toBorderBands(originPxPerDp),
+    ) ?: return this
 
-    val bordered = createBitmap(width, height)
-    val canvas = Canvas(bordered)
-
-    borderLayers.forEachOutsetOutermostFirst(originPxPerDp) { layer, layerOutset ->
-        val paint = borderPaint(layer.colorArgb)
-        forEachOutlineOffset(layerOutset) { offset ->
-            val shifted = RectF(destination).apply { offset(offset.x, offset.y) }
-            canvas.drawBitmap(this, null, shifted, paint)
-        }
-    }
-
-    canvas.drawBitmap(this, null, destination, borderPaint(colorArgb = null))
+    Canvas(bordered).drawBitmap(this, 0f, 0f, null)
 
     return bordered
-}
-
-/** 소수점 자리로 밀어 찍으므로 보간을 켠다. [colorArgb] 가 있으면 알파는 두고 색만 그 색으로 갈아끼운다 */
-private fun borderPaint(colorArgb: Int?): Paint = Paint().apply {
-    isFilterBitmap = true
-    isAntiAlias = true
-    colorArgb?.let { colorFilter = PorterDuffColorFilter(it, PorterDuff.Mode.SRC_IN) }
 }
 
 private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
