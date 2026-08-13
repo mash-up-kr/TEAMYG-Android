@@ -5,6 +5,8 @@ import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
+import com.teamyg.parfait.domain.model.auth.RegistrationToken
+import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import javax.inject.Inject
 
@@ -24,6 +26,15 @@ class AuthRepositoryImpl @Inject constructor(
     ): Result<KakaoLoginVO> = authRemoteDataSource
         .loginWithKakao(idToken = idToken, nonce = nonce)
         .mapErrorToAppError()
+
+    override suspend fun signUp(
+        registrationToken: RegistrationToken,
+        agreements: List<TermsAgreement>,
+    ): Result<AuthSessionVO> = authRemoteDataSource
+        .signup(
+            registrationToken = registrationToken,
+            agreements = agreements,
+        ).mapErrorToAppError()
 
     override suspend fun saveSession(session: AuthSessionVO) {
         tokenStore.save(

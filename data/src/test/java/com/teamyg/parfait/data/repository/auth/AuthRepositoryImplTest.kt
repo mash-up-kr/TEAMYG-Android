@@ -8,7 +8,9 @@ import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
 import com.teamyg.parfait.domain.model.auth.RefreshToken
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
+import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.TermsId
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -25,6 +27,15 @@ class AuthRepositoryImplTest {
     private val repository = AuthRepositoryImpl(
         authRemoteDataSource = remoteDataSource,
         tokenStore = tokenStore,
+    )
+
+    private val registrationToken = RegistrationToken("registration-token")
+    private val agreements = listOf(TermsAgreement(termsId = TermsId(1L), agreed = true))
+
+    private val session = AuthSessionVO(
+        accessToken = AccessToken("access-1"),
+        refreshToken = RefreshToken("refresh-1"),
+        expiresIn = 3600.seconds,
     )
 
     @Test
@@ -75,14 +86,49 @@ class AuthRepositoryImplTest {
     }
 
     @Test
-    fun saveSession_delegatesRawTokenValuesToTokenStore() = runTest {
-        // Given 세션 VO
-        val session = AuthSessionVO(
-            accessToken = AccessToken("access-1"),
-            refreshToken = RefreshToken("refresh-1"),
-            expiresIn = 3600.seconds,
-        )
+    fun signUp_remoteSucceeds_returnsSession() = runTest {
+        // Given 가입에 성공한다
+        coEvery { remoteDataSource.signup(any(), any()) } returns Result.success(session)
 
+        // When 가입 요청
+        val result = repository.signUp(registrationToken, agreements)
+
+        // Then 세션을 그대로 돌려준다
+        assertEquals(session, result.getOrThrow())
+    }
+
+    @Test
+    fun signUp_passesTokenAndAgreementsToDataSource() = runTest {
+        // Given 가입에 성공한다
+        coEvery { remoteDataSource.signup(any(), any()) } returns Result.success(session)
+
+        // When 가입 요청
+        repository.signUp(registrationToken, agreements)
+
+        // Then 입력값이 가공 없이 전달된다
+        coVerify(exactly = 1) {
+            remoteDataSource.signup(
+                registrationToken = registrationToken,
+                agreements = agreements,
+            )
+        }
+    }
+
+    @Test
+    fun signUp_remoteFailsWithNetwork_convertsToAppErrorNetwork() = runTest {
+        // Given 연결 실패
+        coEvery { remoteDataSource.signup(any(), any()) } returns
+            Result.failure(ApiException.Network(cause = IOException("connection reset")))
+
+        // When 가입 요청
+        val result = repository.signUp(registrationToken, agreements)
+
+        // Then Network 갈래로 바뀌어 나온다
+        assertIs<AppError.Network>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun saveSession_delegatesRawTokenValuesToTokenStore() = runTest {
         // When 저장
         repository.saveSession(session)
 

@@ -6,6 +6,7 @@ import com.teamyg.parfait.data.repository.gallery.GalleryRepositoryImpl
 import com.teamyg.parfait.data.repository.group.ParfaitGroupRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
+import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
 import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
@@ -13,6 +14,7 @@ import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
+import com.teamyg.parfait.domain.repository.policy.PolicyRepository
 import com.teamyg.parfait.domain.util.NonceGenerator
 import dagger.Binds
 import dagger.Module
@@ -39,6 +41,14 @@ interface RepositoryModule {
 
     @Binds
     @Singleton
+    fun bindAuthRepository(authRepositoryImpl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    fun bindPolicyRepository(policyRepositoryImpl: PolicyRepositoryImpl): PolicyRepository
+
+    @Binds
+    @Singleton
     fun bindImageSegmentationRepository(
         imageSegmentationRepositoryImpl: ImageSegmentationRepositoryImpl,
     ): ImageSegmentationRepository
@@ -46,10 +56,6 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindNonceGenerator(secureRandomNonceGenerator: SecureRandomNonceGenerator): NonceGenerator
-
-    @Binds
-    @Singleton
-    fun bindAuthRepository(authRepositoryImpl: AuthRepositoryImpl): AuthRepository
 
     @Binds
     @Singleton
