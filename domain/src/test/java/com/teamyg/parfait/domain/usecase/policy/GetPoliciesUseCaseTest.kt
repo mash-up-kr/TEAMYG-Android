@@ -49,7 +49,7 @@ class GetPoliciesUseCaseTest {
     }
 
     @Test
-    fun invoke_requiredPolicyIsLast_sortsRequiredFirst() = runTest {
+    fun invoke_optionalPolicyComesFirst_keepsServerOrder() = runTest {
         // Given 선택 약관이 앞에 오는 응답
         val optional = policy(id = 1L, required = false)
         val required = policy(id = 2L, required = true)
@@ -58,23 +58,8 @@ class GetPoliciesUseCaseTest {
         // When 약관 조회
         val result = useCase().getOrThrow()
 
-        // Then 필수 약관이 앞으로 온다
-        assertEquals(listOf(required, optional), result)
-    }
-
-    @Test
-    fun invoke_multipleRequiredPolicies_keepsServerOrderWithinSameRequiredFlag() = runTest {
-        // Given 필수 약관이 여러 건
-        val first = policy(id = 1L, required = true)
-        val second = policy(id = 2L, required = true)
-        val optional = policy(id = 3L, required = false)
-        val useCase = GetPoliciesUseCase(FakePolicyRepository(Result.success(listOf(first, second, optional))))
-
-        // When 약관 조회
-        val result = useCase().getOrThrow()
-
-        // Then 같은 필수 여부끼리는 서버 순서를 유지한다 (안정 정렬)
-        assertEquals(listOf(first, second, optional), result)
+        // Then 순서를 바꾸지 않고 서버가 내려준 그대로 전달한다
+        assertEquals(listOf(optional, required), result)
     }
 
     @Test

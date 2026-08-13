@@ -14,7 +14,5 @@ constructor(
         useCaseLogger.i { "GetPoliciesUseCase::init" }
     }
 
-    suspend operator fun invoke(): Result<List<PolicyVO>> = policyRepository
-        .getPolicies()
-        .map { policies -> policies.sortedByDescending(PolicyVO::required) }
+    suspend operator fun invoke(): Result<List<PolicyVO>> = policyRepository.getPolicies()
 }
