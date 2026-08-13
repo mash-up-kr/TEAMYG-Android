@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.usecase.group.CheckInviteCodeValidUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -17,8 +18,18 @@ data class GroupInviteCodeUiState(
     val errorText: String? = null,
     val groupName: String = "",
     val isConfirmPopupVisible: Boolean = false,
+    val clipboardInviteCode: String? = null,
 ) : UiState {
-    val codeLength = 6
+    val codeLength = InviteCode.LENGTH
+
+    /**
+     * 클립보드에서 초대코드를 찾았고, 키보드가 올라와 있으며,
+     * 아직 그 코드가 입력되지 않았을 때만 붙여넣기 바를 노출한다.
+     */
+    val isPasteBarVisible: Boolean
+        get() = clipboardInviteCode != null &&
+            focusedIndex != null &&
+            clipboardInviteCode != text
 }
 
 enum class InputMode {
@@ -42,6 +53,10 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data object ClickConfirmPopupEnter : GroupInviteCodeIntent
 
     data object DismissConfirmPopup : GroupInviteCodeIntent
+
+    data class ClipboardCodeDetected(val code: String?) : GroupInviteCodeIntent
+
+    data object ClickPasteInviteCode : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
@@ -76,6 +91,7 @@ constructor(
                         updateState {
                             GroupInviteCodeUiState(
                                 errorText = result.errorMessage,
+                                clipboardInviteCode = clipboardInviteCode,
                             )
                         }
                     }
@@ -141,6 +157,24 @@ constructor(
             GroupInviteCodeIntent.ClickConfirmPopupEnter -> {
                 updateState { copy(isConfirmPopupVisible = false) }
                 postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
+            }
+
+            is GroupInviteCodeIntent.ClipboardCodeDetected -> {
+                updateState { copy(clipboardInviteCode = intent.code) }
+            }
+
+            GroupInviteCodeIntent.ClickPasteInviteCode -> {
+                updateState {
+                    val pastedCode = clipboardInviteCode ?: return@updateState this
+                    // 코드가 모두 채워지므로 focusedIndex 를 비워 키보드를 내린다
+                    copy(
+                        text = pastedCode.take(codeLength),
+                        focusedIndex = null,
+                        inputMode = InputMode.ADD,
+                        errorText = null,
+                        clipboardInviteCode = null,
+                    )
+                }
             }
         }
     }

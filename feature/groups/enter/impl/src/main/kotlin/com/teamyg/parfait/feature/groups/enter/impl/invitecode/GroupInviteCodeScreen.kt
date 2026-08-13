@@ -27,6 +27,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
+import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodePasteBar
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -38,6 +39,7 @@ internal fun GroupInviteCodeScreen(
     onClickBackButton: () -> Unit,
     onClickConfirmPopupEnter: () -> Unit,
     onDismissConfirmPopup: () -> Unit,
+    onClickPasteBar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (uiState.isConfirmPopupVisible) {
@@ -127,6 +129,15 @@ internal fun GroupInviteCodeScreen(
                 .fillMaxWidth()
                 .padding(all = YGTheme.layout.padding.padding7),
         )
+
+        val clipboardInviteCode = uiState.clipboardInviteCode
+        if (uiState.isPasteBarVisible && clipboardInviteCode != null) {
+            InviteCodePasteBar(
+                inviteCode = clipboardInviteCode,
+                onClick = onClickPasteBar,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -142,6 +153,11 @@ private class GroupInviteCodeScreenPreviewParameterProvider :
                 text = "hello!",
                 groupName = "모카의 파르페",
                 isConfirmPopupVisible = true,
+            ),
+            GroupInviteCodeUiState(
+                text = "",
+                focusedIndex = 0,
+                clipboardInviteCode = "E54W1A",
             ),
         )
 }
@@ -159,6 +175,7 @@ private fun GroupInviteCodeScreenPreview(
         onClickBackButton = {},
         onClickConfirmPopupEnter = {},
         onDismissConfirmPopup = {},
+        onClickPasteBar = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
