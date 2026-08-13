@@ -1,23 +1,27 @@
 package com.teamyg.parfait.feature.segmentation.impl.component
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -27,9 +31,11 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
 import com.teamyg.parfait.feature.segmentation.impl.editor.TOPPING_BORDER_COLORS
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private val CHIP_SIZE = 36.dp
 private val CHIP_BORDER_WIDTH = 1.dp
+private val CHECK_ICON_SIZE = 24.dp
 
 /**
  * 테두리 색을 고르는 가로 목록. 고르면 그 색으로 테두리가 한 겹 더 얹히므로,
@@ -75,7 +81,7 @@ private fun BorderColorChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 흰색부터 검정까지 색이 갈리는 목록이라, 골라둔 표시는 어느 색 위에서나 남도록 반투명 검정을 섞는다.
+    // 흰색부터 검정까지 색이 갈리는 목록이라, 얹은 체크가 어느 색 위에서나 읽히도록 반투명 검정을 섞어 깔아둔다.
     // 반투명 칩을 한 겹 덮는 것과 같은 색이면서 그릴 것은 배경 하나로 끝난다
     val chipColor = if (isSelected) {
         YGAtomicColors.Transparency.Black25.compositeOver(color)
@@ -83,14 +89,24 @@ private fun BorderColorChip(
         color
     }
 
-    Spacer(
+    Box(
         modifier = modifier
             .size(CHIP_SIZE)
             .clip(CircleShape)
             .background(chipColor)
             .border(width = CHIP_BORDER_WIDTH, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
             .clickable(onClick = onClick),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isSelected) {
+            Image(
+                painter = painterResource(DesignSystemR.drawable.ic_check),
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.White),
+                modifier = Modifier.size(CHECK_ICON_SIZE),
+            )
+        }
+    }
 }
 
 /**
