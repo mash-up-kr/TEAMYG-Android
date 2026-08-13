@@ -89,9 +89,9 @@ constructor(
                         }
                     } else {
                         updateState {
-                            GroupInviteCodeUiState(
+                            copy(
                                 errorText = result.errorMessage,
-                                clipboardInviteCode = clipboardInviteCode,
+                                isConfirmPopupVisible = false,
                             )
                         }
                     }
