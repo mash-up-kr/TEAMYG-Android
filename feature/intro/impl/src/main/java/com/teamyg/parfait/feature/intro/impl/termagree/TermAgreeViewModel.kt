@@ -29,9 +29,6 @@ data class TermAgreeState(
 ) : UiState {
     val isAllSelected: Boolean = policies.isNotEmpty() && policies.all { it.termsId in agreedTermsIds }
 
-    /**
-     * 약관을 받아왔고 필수 약관에 모두 동의했을 때만 다음으로 갈 수 있다.
-     */
     val isAvailable: Boolean = policies.isNotEmpty() &&
         policies.none { it.required && it.termsId !in agreedTermsIds }
 

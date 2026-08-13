@@ -21,11 +21,8 @@ class SignUpUseCase @Inject constructor(
     private val authRepository: AuthRepository,
 ) {
     /**
-     * 서버는 동의하지 않은 약관도 `agreed = false` 로 함께 받아야 하므로,
-     * 화면이 보여준 약관 전체를 동의 여부와 묶어서 보낸다.
-     *
-     * @param policies 화면에 노출한 약관 전체
-     * @param agreedTermsIds 그중 사용자가 동의한 약관의 id
+     * 서버는 동의하지 않은 약관도 `agreed = false` 로 함께 받아야 하므로
+     * 화면에 노출한 [policies] 전체를 [agreedTermsIds] 와 묶어서 보낸다.
      */
     suspend operator fun invoke(
         registrationToken: RegistrationToken,

@@ -16,8 +16,6 @@ interface AuthRepository {
     ): Result<KakaoLoginVO>
 
     /**
-     * 약관 동의 내역과 함께 회원 가입을 완료하고 로그인 세션을 받는다.
-     *
      * @param registrationToken 카카오 로그인에서 신규 사용자로 판별될 때 발급된 토큰
      */
     suspend fun signUp(

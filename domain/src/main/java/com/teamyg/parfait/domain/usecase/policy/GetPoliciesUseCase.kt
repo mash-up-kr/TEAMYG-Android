@@ -15,8 +15,7 @@ constructor(
     }
 
     /**
-     * 약관 목록을 필수 약관이 앞에 오도록 정렬해서 돌려준다.
-     * 서버 응답 순서는 보장되지 않으므로 화면이 아닌 여기서 순서를 정한다.
+     * 서버 응답 순서는 보장되지 않으므로 필수 약관이 앞에 오도록 정렬한다.
      */
     suspend operator fun invoke(): Result<List<PolicyVO>> = policyRepository
         .getPolicies()
