@@ -61,7 +61,6 @@ sealed interface TermAgreeSideEffect : UiSideEffect {
 class TermAgreeViewModel
 @AssistedInject
 constructor(
-    // KSP 가 value class 를 assisted 파라미터로 처리하지 못해 원시 값으로 받는다
     @Assisted registrationTokenValue: String,
     private val getPolicies: GetPoliciesUseCase,
     private val signUp: SignUpUseCase,
@@ -152,7 +151,6 @@ constructor(
                 updateState { copy(isSigningUp = false) }
                 postSideEffect(NavigateToNext)
             }.onFailure { throwable ->
-                // Todo : 가입 실패 UI 는 디자인 확정 후 추가 예정
                 viewModelLogger.e(throwable) { "회원 가입 실패" }
                 updateState { copy(isSigningUp = false) }
             }
