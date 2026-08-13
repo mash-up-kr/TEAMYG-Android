@@ -1,8 +1,13 @@
 package com.teamyg.parfait.feature.segmentation.impl.editor
 
 import android.graphics.Bitmap
+import androidx.compose.ui.util.lerp
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
+import com.teamyg.parfait.core.util.jvm.extension.SQUARED_DISTANCE_UNSET
+import com.teamyg.parfait.core.util.jvm.extension.fadeArgb
+import com.teamyg.parfait.core.util.jvm.extension.fillWithSquaredDistance
+import com.teamyg.parfait.core.util.jvm.extension.mixArgb
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import kotlin.math.floor
 import kotlin.math.max
@@ -13,6 +18,9 @@ import kotlin.math.sqrt
 /** 실루엣 안으로 볼 알파 문턱. 이보다 옅은 자리는 실루엣 바깥으로 친다 */
 private const val OUTLINE_ALPHA_THRESHOLD = 128
 
+/** 픽셀에서 알파만 떼어낼 때 밀어낼 자리 수 */
+private const val ALPHA_SHIFT = 24
+
 /**
  * 거리를 잴 때 긴 변을 이 길이까지만 쓴다.
  *
@@ -20,9 +28,6 @@ private const val OUTLINE_ALPHA_THRESHOLD = 128
  * 원본 해상도로 재면 사진 크기에 비례해 시간과 메모리만 늘어난다.
  */
 private const val DISTANCE_FIELD_MAX_DIMENSION = 1440
-
-/** 아직 거리를 재지 않은 자리. 이 판에서 나올 수 있는 어떤 제곱거리보다 크기만 하면 된다 */
-private const val SQUARED_DISTANCE_INFINITY = 1e10f
 
 /** 가장자리 한 겹을 반 픽셀씩 물려 칠해 계단이 지지 않게 한다 */
 private const val EDGE_FEATHER_PX = 0.5f
@@ -111,9 +116,9 @@ internal class ToppingOutlineDistanceField internal constructor(
                 val coverage = ((edges[index] - distance) * targetPxPerField + EDGE_FEATHER_PX).coerceIn(0f, 1f)
 
                 pixels[rowStart + x] = if (index == edges.lastIndex) {
-                    fadeArgb(colors[index], coverage)
+                    colors[index].fadeArgb(coverage)
                 } else {
-                    mixArgb(colors[index], colors[index + 1], coverage)
+                    colors[index].mixArgb(colors[index + 1], coverage)
                 }
             }
         }
@@ -135,45 +140,13 @@ internal class ToppingOutlineDistanceField internal constructor(
         val rightWeight = (x - leftIndex).coerceIn(0f, 1f)
         val bottomWeight = (y - topIndex).coerceIn(0f, 1f)
 
-        val top = distances.lerpAt(topIndex * width + leftIndex, topIndex * width + rightIndex, rightWeight)
-        val bottom = distances.lerpAt(bottomIndex * width + leftIndex, bottomIndex * width + rightIndex, rightWeight)
+        val topRow = topIndex * width
+        val bottomRow = bottomIndex * width
+        val top = lerp(distances[topRow + leftIndex], distances[topRow + rightIndex], rightWeight)
+        val bottom = lerp(distances[bottomRow + leftIndex], distances[bottomRow + rightIndex], rightWeight)
 
-        return top + (bottom - top) * bottomWeight
+        return lerp(top, bottom, bottomWeight)
     }
-}
-
-private fun FloatArray.lerpAt(
-    fromIndex: Int,
-    toIndex: Int,
-    weight: Float,
-): Float {
-    val from = this[fromIndex]
-    return from + (this[toIndex] - from) * weight
-}
-
-/** 색은 두고 알파만 [coverage] 만큼 남긴다 */
-private fun fadeArgb(
-    colorArgb: Int,
-    coverage: Float,
-): Int {
-    val alpha = ((colorArgb ushr 24 and 0xFF) * coverage).roundToInt().coerceIn(0, 255)
-    return (alpha shl 24) or (colorArgb and 0x00FFFFFF)
-}
-
-private val ARGB_CHANNEL_SHIFTS = intArrayOf(24, 16, 8, 0)
-
-/** [coverage] 가 1 이면 [colorArgb], 0 이면 [otherArgb] 다 */
-private fun mixArgb(
-    colorArgb: Int,
-    otherArgb: Int,
-    coverage: Float,
-): Int {
-    var mixed = 0
-    for (shift in ARGB_CHANNEL_SHIFTS) {
-        val channel = (colorArgb ushr shift and 0xFF) * coverage + (otherArgb ushr shift and 0xFF) * (1f - coverage)
-        mixed = mixed or (channel.roundToInt().coerceIn(0, 255) shl shift)
-    }
-    return mixed
 }
 
 /**
@@ -192,84 +165,13 @@ internal fun Bitmap.toOutlineDistanceField(): ToppingOutlineDistanceField {
     if (source !== this) source.recycle()
 
     val squared = FloatArray(pixels.size) { index ->
-        if (pixels[index] ushr 24 >= OUTLINE_ALPHA_THRESHOLD) 0f else SQUARED_DISTANCE_INFINITY
+        if (pixels[index] ushr ALPHA_SHIFT >= OUTLINE_ALPHA_THRESHOLD) 0f else SQUARED_DISTANCE_UNSET
     }
-    squared.transformSquaredDistance(fieldWidth, fieldHeight)
+    squared.fillWithSquaredDistance(fieldWidth, fieldHeight)
 
     return ToppingOutlineDistanceField(
         width = fieldWidth,
         height = fieldHeight,
         distances = FloatArray(squared.size) { index -> sqrt(squared[index]) },
     )
-}
-
-/** 세로줄을 먼저 훑고 그 결과를 가로줄로 한 번 더 훑으면 두 방향을 함께 잰 제곱거리가 남는다 */
-private fun FloatArray.transformSquaredDistance(
-    width: Int,
-    height: Int,
-) {
-    val longest = max(width, height)
-    val line = FloatArray(longest)
-    val transformed = FloatArray(longest)
-    val nearestIndices = IntArray(longest)
-    val nearestBoundaries = FloatArray(longest + 1)
-
-    for (x in 0 until width) {
-        for (y in 0 until height) line[y] = this[y * width + x]
-        transformLine(line, height, transformed, nearestIndices, nearestBoundaries)
-        for (y in 0 until height) this[y * width + x] = transformed[y]
-    }
-
-    for (y in 0 until height) {
-        val rowStart = y * width
-        for (x in 0 until width) line[x] = this[rowStart + x]
-        transformLine(line, width, transformed, nearestIndices, nearestBoundaries)
-        for (x in 0 until width) this[rowStart + x] = transformed[x]
-    }
-}
-
-/**
- * 한 줄에서 각 자리까지의 최소 제곱거리를 구한다.
- *
- * 자리마다 그 자리를 꼭짓점으로 하는 포물선을 세우고 가장 아래에 깔리는 조각만 남기는 방식이라,
- * 자리마다 온 줄을 다시 보지 않고 줄 길이에 비례한 시간만 든다.
- *
- * [nearestIndices] 는 남은 조각의 꼭짓점, [nearestBoundaries] 는 조각이 바뀌는 자리다.
- * 줄마다 새로 만들지 않도록 밖에서 받아 돌려 쓴다.
- */
-private fun transformLine(
-    line: FloatArray,
-    count: Int,
-    transformed: FloatArray,
-    nearestIndices: IntArray,
-    nearestBoundaries: FloatArray,
-) {
-    var nearestCount = 0
-    nearestIndices[0] = 0
-    nearestBoundaries[0] = -SQUARED_DISTANCE_INFINITY
-    nearestBoundaries[1] = SQUARED_DISTANCE_INFINITY
-
-    for (index in 1 until count) {
-        var boundary: Float
-        while (true) {
-            val nearest = nearestIndices[nearestCount]
-            val squaredGap = (index * index - nearest * nearest).toFloat()
-            boundary = (line[index] - line[nearest] + squaredGap) / (2f * (index - nearest))
-            if (boundary > nearestBoundaries[nearestCount] || nearestCount == 0) break
-            nearestCount--
-        }
-
-        nearestCount++
-        nearestIndices[nearestCount] = index
-        nearestBoundaries[nearestCount] = boundary
-        nearestBoundaries[nearestCount + 1] = SQUARED_DISTANCE_INFINITY
-    }
-
-    nearestCount = 0
-    for (index in 0 until count) {
-        while (nearestBoundaries[nearestCount + 1] < index) nearestCount++
-        val nearest = nearestIndices[nearestCount]
-        val gap = (index - nearest).toFloat()
-        transformed[index] = gap * gap + line[nearest]
-    }
 }
