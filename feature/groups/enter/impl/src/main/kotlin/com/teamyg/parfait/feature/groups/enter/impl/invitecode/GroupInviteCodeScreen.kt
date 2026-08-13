@@ -130,10 +130,10 @@ internal fun GroupInviteCodeScreen(
                 .padding(all = YGTheme.layout.padding.padding7),
         )
 
-        val clipboardInviteCode = uiState.clipboardInviteCode
-        if (uiState.isPasteBarVisible && clipboardInviteCode != null) {
+        val pasteBarInviteCode = uiState.pasteBarInviteCode
+        if (pasteBarInviteCode != null) {
             InviteCodePasteBar(
-                inviteCode = clipboardInviteCode,
+                inviteCode = pasteBarInviteCode,
                 onClick = onClickPasteBar,
                 modifier = Modifier.fillMaxWidth(),
             )

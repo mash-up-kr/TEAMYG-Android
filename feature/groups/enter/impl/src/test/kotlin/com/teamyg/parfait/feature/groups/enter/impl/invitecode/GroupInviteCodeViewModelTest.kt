@@ -6,9 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class GroupInviteCodeViewModelTest {
     @get:Rule
@@ -26,8 +24,7 @@ class GroupInviteCodeViewModelTest {
         viewModel.processIntent(GroupInviteCodeIntent.ClipboardCodeDetected("E54W1A"))
 
         // Then 붙여넣기 바가 노출된다
-        assertEquals("E54W1A", viewModel.state.value.clipboardInviteCode)
-        assertTrue(viewModel.state.value.isPasteBarVisible)
+        assertEquals("E54W1A", viewModel.state.value.pasteBarInviteCode)
     }
 
     @Test
@@ -40,7 +37,7 @@ class GroupInviteCodeViewModelTest {
         viewModel.processIntent(GroupInviteCodeIntent.ClipboardCodeDetected("E54W1A"))
 
         // Then 붙여넣기 바는 노출되지 않는다
-        assertFalse(viewModel.state.value.isPasteBarVisible)
+        assertNull(viewModel.state.value.pasteBarInviteCode)
     }
 
     @Test
@@ -53,7 +50,7 @@ class GroupInviteCodeViewModelTest {
         viewModel.processIntent(GroupInviteCodeIntent.ClipboardCodeDetected(null))
 
         // Then 붙여넣기 바는 노출되지 않는다
-        assertFalse(viewModel.state.value.isPasteBarVisible)
+        assertNull(viewModel.state.value.pasteBarInviteCode)
     }
 
     @Test
@@ -67,7 +64,7 @@ class GroupInviteCodeViewModelTest {
         viewModel.processIntent(GroupInviteCodeIntent.ClipboardCodeDetected("E54W1A"))
 
         // Then 붙여넣기 바는 노출되지 않는다
-        assertFalse(viewModel.state.value.isPasteBarVisible)
+        assertNull(viewModel.state.value.pasteBarInviteCode)
     }
 
     @Test
@@ -86,7 +83,7 @@ class GroupInviteCodeViewModelTest {
         assertNull(state.focusedIndex)
         assertEquals(InputMode.ADD, state.inputMode)
         assertNull(state.clipboardInviteCode)
-        assertFalse(state.isPasteBarVisible)
+        assertNull(state.pasteBarInviteCode)
     }
 
     @Test

@@ -23,13 +23,13 @@ data class GroupInviteCodeUiState(
     val codeLength = InviteCode.LENGTH
 
     /**
+     * 붙여넣기 바에 노출할 초대코드.
+     *
      * 클립보드에서 초대코드를 찾았고, 키보드가 올라와 있으며,
-     * 아직 그 코드가 입력되지 않았을 때만 붙여넣기 바를 노출한다.
+     * 아직 그 코드가 입력되지 않았을 때만 값이 있다.
      */
-    val isPasteBarVisible: Boolean
-        get() = clipboardInviteCode != null &&
-            focusedIndex != null &&
-            clipboardInviteCode != text
+    val pasteBarInviteCode: String?
+        get() = clipboardInviteCode?.takeIf { code -> focusedIndex != null && code != text }
 }
 
 enum class InputMode {
