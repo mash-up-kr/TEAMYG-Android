@@ -55,7 +55,7 @@ internal fun BorderColorChipRow(
     LazyRow(
         modifier = modifier,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
     ) {
         items(items = colors) { color ->
             if (color == Color.Transparent) {
