@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode
 
 import android.content.ClipDescription
-import android.os.Build
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
@@ -17,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.android.extension.isSensitive
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 import com.teamyg.parfait.core.ui.R as CoreUiR
@@ -115,12 +115,4 @@ private suspend fun Clipboard.readInviteCodeOrNull(messageTemplate: String): Inv
         text = clipData.getItemAt(0).text?.toString(),
         messageTemplate = messageTemplate,
     )
-}
-
-private fun ClipDescription.isSensitive(): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        return false
-    }
-
-    return extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true
 }
