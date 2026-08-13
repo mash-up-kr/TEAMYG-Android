@@ -48,8 +48,6 @@ private const val DEFAULT_BORDER_WIDTH_DP = 10f
 private const val MIN_BORDER_WIDTH_DP = 2f
 private const val MAX_BORDER_WIDTH_DP = 50f
 
-private fun UndoRedoStack<ToppingBorderLayer>.outermostColor(): Color = latest?.color ?: DEFAULT_TOPPING_BORDER_COLOR
-
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
@@ -62,16 +60,16 @@ data class ToppingEditState(
      * 영역 탭에서 획을 지운 뒤 테두리 탭에서 되돌리기를 눌러도 획이 살아나면 안 되기 때문이다.
      */
     val areaHistory: UndoRedoStack<ToppingEditStroke> = UndoRedoStack(),
-    /** 아직 두르지 않은, 다음 겹에 쓸 굵기. 두른 겹이 있으면 [borderWidthDp] 가 그 겹을 따라간다 */
+    /** 아직 아무 색도 고르지 않았을 때 쓸 굵기. 고른 테두리가 있으면 [borderWidthDp] 가 그 테두리를 따라간다 */
     val pendingBorderWidthDp: Float = DEFAULT_BORDER_WIDTH_DP,
-    val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
     /**
-     * 색상칩에서 켜둘 색.
+     * 테두리를 고른 이력. 뒤쪽이 지금 둘러진 테두리다.
      *
-     * 보통은 가장 바깥 겹의 색이지만, 두를 색이 없는 투명 칩도 고른 표시는 남아야 해서
-     * 겹에서 끌어내지 않고 따로 들고 간다.
+     * 테두리는 겹쳐 두를 수 없어 언제나 마지막에 고른 하나만 둘러지므로,
+     * 이 스택은 두른 겹이 아니라 무엇을 골랐는지를 순서대로 쌓는다.
+     * 빨강 → 흰색 → 초록 순으로 골랐다면 되돌리기는 초록 → 흰색 → 빨강 순으로 물러난다.
      */
-    val selectedBorderColor: Color = DEFAULT_TOPPING_BORDER_COLOR,
+    val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
     /**
      * dp 굵기를 원본 비트맵 좌표계 굵기로 바꿀 때 곱할 값.
      *
@@ -86,15 +84,24 @@ data class ToppingEditState(
     /** 영역 탭에서 확정된 획. 캔버스와 저장이 함께 본다 */
     val strokes: List<ToppingEditStroke> get() = areaHistory.done
 
-    val borderLayers: List<ToppingBorderLayer> get() = borderHistory.done
+    /**
+     * 지금 둘러진 테두리. 겹칠 수 없으니 마지막에 고른 하나뿐이다.
+     *
+     * 투명 칩은 색이 아니라 두르지 않음을 가리키므로, 골랐다는 이력만 남고 두를 테두리는 없다.
+     */
+    val borderLayers: List<ToppingBorderLayer>
+        get() = listOfNotNull(borderHistory.latest?.takeIf { layer -> layer.color != DEFAULT_TOPPING_BORDER_COLOR })
+
+    /** 색상칩에서 켜둘 색. 마지막에 고른 것이 곧 켜둘 색이라, 아무것도 고르지 않았으면 투명 칩이 켜진다 */
+    val selectedBorderColor: Color get() = borderHistory.latest?.color ?: DEFAULT_TOPPING_BORDER_COLOR
 
     val minBrushWidthDp: Float get() = MIN_BRUSH_WIDTH_DP
 
     val maxBrushWidthDp: Float get() = MAX_BRUSH_WIDTH_DP
 
     /**
-     * 굵기 슬라이더가 가리키는 값. 두른 겹이 있으면 슬라이더가 곧 그 겹의 굵기다.
-     * 되돌려서 겹이 벗겨지면 그 아래 겹의 굵기로 따라 내려간다.
+     * 굵기 슬라이더가 가리키는 값. 고른 테두리가 있으면 슬라이더가 곧 그 테두리의 굵기다.
+     * 되돌려서 이전 선택으로 물러나면 그 선택의 굵기로 따라간다.
      */
     val borderWidthDp: Float get() = borderHistory.latest?.widthDp ?: pendingBorderWidthDp
 
@@ -121,7 +128,10 @@ sealed interface ToppingEditIntent : UiIntent {
 
     data object RedoArea : ToppingEditIntent
 
-    /** 고른 색으로 현재 굵기의 테두리를 한 겹 더 두른다. 투명 칩은 두를 색이 없어 아무것도 하지 않는다 */
+    /**
+     * 고른 색으로 테두리를 갈아 두른다. 겹칠 수 없어 직전 테두리는 남지 않는다.
+     * 투명 칩은 두를 색이 없어 테두리를 벗기며, 어느 쪽이든 고른 이력은 남아 되돌릴 수 있다.
+     */
     data class SelectBorderColor(val color: Color) : ToppingEditIntent
 
     data class ChangeBorderWidth(val width: Float) : ToppingEditIntent
@@ -187,23 +197,18 @@ class ToppingEditViewModel
 
             is ToppingEditIntent.SelectBorderColor -> {
                 updateState {
-                    // 겹을 더하지 않는 색이라고 두른 겹을 걷어내지는 않는다. 걷어내는 건 되돌리기가 할 일이다
-                    val addsNothing = intent.color == DEFAULT_TOPPING_BORDER_COLOR ||
-                        intent.color == borderHistory.outermostColor()
-                    if (addsNothing) return@updateState copy(selectedBorderColor = intent.color)
+                    // 켜져 있는 칩을 다시 눌러도 달라지는 게 없어 되돌릴 칸을 쌓지 않는다
+                    if (intent.color == selectedBorderColor) return@updateState this
 
-                    val layer = ToppingBorderLayer(colorArgb = intent.color.toArgb(), widthDp = borderWidthDp)
-                    copy(
-                        selectedBorderColor = intent.color,
-                        borderHistory = borderHistory.push(layer),
-                    )
+                    val selection = ToppingBorderLayer(colorArgb = intent.color.toArgb(), widthDp = borderWidthDp)
+                    copy(borderHistory = borderHistory.push(selection))
                 }
             }
 
             is ToppingEditIntent.ChangeBorderWidth -> {
                 updateState {
                     val widthDp = intent.width.coerceIn(minBorderWidthDp, maxBorderWidthDp)
-                    // 슬라이더는 가장 바깥 겹의 굵기를 직접 민다. 두른 겹이 없으면 다음 겹에 쓸 값만 바뀐다
+                    // 슬라이더는 지금 고른 테두리의 굵기를 직접 민다. 고른 게 없으면 다음에 쓸 값만 바뀐다
                     copy(
                         pendingBorderWidthDp = widthDp,
                         borderHistory = borderHistory.replaceLast { layer -> layer.copy(widthDp = widthDp) },
@@ -216,17 +221,11 @@ class ToppingEditViewModel
             }
 
             ToppingEditIntent.UndoBorder -> {
-                updateState {
-                    val history = borderHistory.undo()
-                    copy(borderHistory = history, selectedBorderColor = history.outermostColor())
-                }
+                updateState { copy(borderHistory = borderHistory.undo()) }
             }
 
             ToppingEditIntent.RedoBorder -> {
-                updateState {
-                    val history = borderHistory.redo()
-                    copy(borderHistory = history, selectedBorderColor = history.outermostColor())
-                }
+                updateState { copy(borderHistory = borderHistory.redo()) }
             }
 
             ToppingEditIntent.ClickDone -> completeEdit()
@@ -243,15 +242,12 @@ class ToppingEditViewModel
                 return@launch
             }
 
-            // 이미 두른 테두리를 겹째로 물려받아, 다시 편집해도 벗겨진 채로 열리지 않는다
-            val restoredBorders = UndoRedoStack(done = initialBorderLayers)
-
+            // 이미 두른 테두리를 고른 이력으로 물려받아, 다시 편집해도 벗겨진 채로 열리지 않는다
             updateState {
                 copy(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
-                    borderHistory = restoredBorders,
-                    selectedBorderColor = restoredBorders.outermostColor(),
+                    borderHistory = UndoRedoStack(done = initialBorderLayers),
                 )
             }
         }
