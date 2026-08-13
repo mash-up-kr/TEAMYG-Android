@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.parfait.android.library)
     alias(libs.plugins.parfait.jetpack.compose)
     alias(libs.plugins.google.ksp)
+    alias(libs.plugins.parfait.test.unit)
 }
 
 android {
