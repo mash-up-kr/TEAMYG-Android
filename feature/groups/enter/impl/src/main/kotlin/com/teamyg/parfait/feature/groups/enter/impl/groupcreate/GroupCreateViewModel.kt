@@ -46,12 +46,6 @@ sealed interface GroupCreateSideEffect : UiSideEffect {
     data object NavigateToBack : GroupCreateSideEffect
 
     data object NavigateToNext : GroupCreateSideEffect
-
-    /**
-     * 그룹 생성이 실패했다. 확인 팝업은 이미 닫힌 뒤이므로(팝업은 `Dialog` 라 그 위로는
-     * 토스트가 보이지 않는다) 화면이 안내를 띄우고 사용자는 다시 확인을 누르면 된다.
-     */
-    data object ShowCreateFailure : GroupCreateSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupCreateViewModel.Factory::class)
@@ -116,7 +110,7 @@ constructor(
 
         updateState { copy(isCreating = true) }
         // `Result.failure` 는 아래 `onFailure` 가, 매퍼 버그 같은 *예상 못 한* 예외는
-        // `onError` 가 받는다 — 두 경로 모두 같은 안내로 모아야 실패가 조용히 사라지지 않는다
+        // `onError` 가 받는다 — 두 경로를 한곳으로 모아야 실패가 조용히 사라지지 않는다
         launch(key = KEY_CREATE_GROUP, onError = ::onCreateGroupFailed) {
             try {
                 createGroup(
@@ -140,26 +134,28 @@ constructor(
     }
 
     /**
-     * 실패 갈래를 전부 열거해 둔다. 지금은 어느 갈래든 같은 안내를 띄우지만, 문구가
-     * 정해지면 각 자리를 바꾸면 되고 분기를 다시 발굴할 필요가 없다.
+     * TODO : 그룹 생성 실패 시 사용자에게 무엇을 보여줄지 정책이 아직 없습니다.
+     *  현재는 갈래별로 로그만 남기며, **정책 문의 후 개선 예정**입니다.
+     *  (토스트/팝업 중 무엇으로 알릴지, 갈래별 문구, 재시도 동선 확정 필요)
+     *
+     * 갈래를 미리 열거해 두는 이유는 정책이 정해졌을 때 각 자리를 안내로 바꾸기만 하면
+     * 되도록 하기 위해서다 — 분기를 그때 다시 발굴하지 않아도 된다.
+     *
+     * 실패해도 확인 팝업을 닫지 않는다. 안내가 없는 지금 팝업까지 닫으면 사용자에게는
+     * 아무 일도 일어나지 않은 것으로 보인다. 열어 두면 만들기 버튼으로 바로 재시도된다.
      */
     private fun onCreateGroupFailed(throwable: Throwable) {
         when (throwable) {
             is AppError.Network ->
-                // TODO(에러 UX 미정): "네트워크 연결을 확인해 주세요" + 재시도 안내
                 viewModelLogger.e(throwable) { "그룹 생성 실패 — 네트워크 단절" }
 
             is AppError.Server ->
-                // TODO(에러 UX 미정): 서버가 준 사유별 안내
                 viewModelLogger.e(throwable) { "그룹 생성 실패 — 서버 에러 ${throwable.code}" }
 
             else ->
                 // groupId 가 유효하지 않은 응답·매핑 실패가 여기로 온다
                 viewModelLogger.e(throwable) { "그룹 생성 실패 — 예상하지 못한 오류" }
         }
-
-        updateState { copy(isConfirmPopupVisible = false) }
-        postSideEffect(GroupCreateSideEffect.ShowCreateFailure)
     }
 
     @AssistedFactory

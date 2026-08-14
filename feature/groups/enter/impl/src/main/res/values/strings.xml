@@ -21,7 +21,6 @@
     <string name="group_create_confirm_title">%1$s 그룹을 만들까요?</string>
     <string name="group_create_confirm_body">그룹명과 인원수는 추후 변경할 수 없어요\n다시 한번 확인해 주세요</string>
     <string name="group_create_confirm_create">만들기</string>
-    <string name="group_create_failed">그룹 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <string name="group_enter_confirm_title">%1$s에 참여할까요?</string>
     <string name="group_enter_confirm_body">참여하려는 그룹이 해당 그룹이 맞는지\n다시 한번 확인해 주세요</string>

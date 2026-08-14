@@ -90,29 +90,27 @@ class GroupCreateViewModelTest {
     }
 
     @Test
-    fun clickConfirmPopupCreate_serverFailure_showsFailureAndDoesNotNavigate() =
-        runTest(mainDispatcherRule.dispatcher) {
-            // Given 서버가 비즈니스 에러로 실패
-            coEvery { createGroupUseCase(any(), any(), any()) } returns Result.failure(
-                AppError.Server(code = "INVALID_MEMBER_LIMIT", statusCode = 400, serverMessage = "…"),
-            )
-            val viewModel = viewModel()
-            viewModel.fillFormAndOpenConfirmPopup()
+    fun clickConfirmPopupCreate_serverFailure_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 비즈니스 에러로 실패
+        coEvery { createGroupUseCase(any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "INVALID_MEMBER_LIMIT", statusCode = 400, serverMessage = "…"),
+        )
+        val viewModel = viewModel()
+        viewModel.fillFormAndOpenConfirmPopup()
 
-            viewModel.effect.test {
-                // When 만들기를 누른다
-                viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
-                advanceUntilIdle()
+        viewModel.effect.test {
+            // When 만들기를 누른다
+            viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
+            advanceUntilIdle()
 
-                // Then 실패 안내만 나가고 내비게이션은 없다
-                assertEquals(GroupCreateSideEffect.ShowCreateFailure, awaitItem())
-                expectNoEvents()
-                cancelAndIgnoreRemainingEvents()
-            }
+            // Then 다음 화면으로 넘어가지 않는다(실패 안내는 정책 확정 전이라 아직 없다)
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
         }
+    }
 
     @Test
-    fun clickConfirmPopupCreate_networkFailure_closesPopupAndAllowsRetry() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickConfirmPopupCreate_networkFailure_keepsPopupOpenForRetry() = runTest(mainDispatcherRule.dispatcher) {
         // Given 네트워크 단절
         coEvery { createGroupUseCase(any(), any(), any()) } returns Result.failure(AppError.Network(null))
         val viewModel = viewModel()
@@ -122,16 +120,16 @@ class GroupCreateViewModelTest {
         viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
         advanceUntilIdle()
 
-        // Then 팝업이 닫히고 로딩이 풀려 다시 시도할 수 있다(입력값은 남는다)
+        // Then 팝업이 열린 채 로딩만 풀려 만들기 버튼으로 바로 다시 시도할 수 있다(입력값도 남는다)
         val state = viewModel.state.value
-        assertFalse(state.isConfirmPopupVisible)
+        assertTrue(state.isConfirmPopupVisible)
         assertFalse(state.isCreating)
         assertEquals(GROUP_NAME, state.groupName)
         assertEquals(MEMBER_LIMIT, state.groupNumber)
     }
 
     @Test
-    fun clickConfirmPopupCreate_useCaseThrows_showsFailureAndTurnsOffCreating() =
+    fun clickConfirmPopupCreate_useCaseThrows_turnsOffCreatingAndDoesNotNavigate() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given UseCase 가 Result.failure 가 아니라 예외를 그대로 던진다
             coEvery { createGroupUseCase(any(), any(), any()) } throws IllegalStateException("boom")
@@ -143,8 +141,8 @@ class GroupCreateViewModelTest {
                 viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
                 advanceUntilIdle()
 
-                // Then 던져진 실패도 안내로 모이고, 로딩이 풀려 버튼이 영구 비활성으로 남지 않는다
-                assertEquals(GroupCreateSideEffect.ShowCreateFailure, awaitItem())
+                // Then 넘어가지 않고, 로딩이 풀려 만들기 버튼이 영구 비활성으로 남지 않는다
+                expectNoEvents()
                 assertFalse(viewModel.state.value.isCreating)
                 cancelAndIgnoreRemainingEvents()
             }
