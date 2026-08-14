@@ -7,15 +7,10 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.usecase.auth.LoginWithKakaoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-
-private const val KEY_KAKAO_LOGIN = "kakaoLogin"
-
-private const val CODE_INVALID_ID_TOKEN = "INVALID_ID_TOKEN"
-private const val CODE_KAKAO_JWKS_FETCH_FAILED = "KAKAO_JWKS_FETCH_FAILED"
-private const val CODE_KAKAO_SERVER_UNAVAILABLE = "KAKAO_SERVER_UNAVAILABLE"
 
 data class LoginState(
     val isLoading: Boolean = false,
@@ -131,15 +126,15 @@ constructor(
                 viewModelLogger.e(throwable) { "로그인 실패 — 네트워크 단절" }
 
             is AppError.Server -> when (throwable.code) {
-                CODE_INVALID_ID_TOKEN ->
+                ServerErrorCode.Auth.INVALID_ID_TOKEN ->
                     // TODO(에러 UX 미정): 다시 로그인 안내
                     viewModelLogger.e(throwable) { "로그인 실패 — ID 토큰 검증 실패(401)" }
 
-                CODE_KAKAO_JWKS_FETCH_FAILED ->
+                ServerErrorCode.Auth.KAKAO_JWKS_FETCH_FAILED ->
                     // TODO(에러 UX 미정): 잠시 후 재시도 안내
                     viewModelLogger.e(throwable) { "로그인 실패 — 카카오 공개키 조회 실패(502)" }
 
-                CODE_KAKAO_SERVER_UNAVAILABLE ->
+                ServerErrorCode.Auth.KAKAO_SERVER_UNAVAILABLE ->
                     // TODO(에러 UX 미정): 잠시 후 재시도 안내
                     viewModelLogger.e(throwable) { "로그인 실패 — 카카오 서버 연결 불가(503)" }
 
@@ -152,5 +147,10 @@ constructor(
                 // TODO(에러 UX 미정): 알 수 없는 오류 안내. 매퍼 실패·파싱 실패가 여기로 온다
                 viewModelLogger.e(throwable) { "로그인 실패 — 예상하지 못한 오류" }
         }
+    }
+
+    private companion object {
+        /** [launch] 중복 실행 가드 키 — 이 ViewModel 의 서버 로그인 job 하나를 가리킨다 */
+        const val KEY_KAKAO_LOGIN = "kakaoLogin"
     }
 }
