@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.repository.policy
 
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
@@ -13,7 +14,6 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class PolicyRepositoryImplTest {
     private val policyRemoteDataSource: PolicyRemoteDataSource = mockk()
@@ -52,16 +52,36 @@ class PolicyRepositoryImplTest {
     }
 
     @Test
-    fun getPolicies_dataSourceFails_propagatesFailure() = runTest {
-        // Given 원격 데이터소스가 실패를 준다
+    fun getPolicies_dataSourceFailsWithNetwork_convertsToAppErrorNetwork() = runTest {
+        // Given 연결 실패
         coEvery { policyRemoteDataSource.getPolicies() } returns
             Result.failure(ApiException.Network(cause = IOException("connection reset")))
 
         // When 약관 조회
         val result = repository.getPolicies()
 
-        // Then 예외를 삼키지 않고 그대로 전달한다
-        assertTrue(result.isFailure)
-        assertIs<ApiException.Network>(result.exceptionOrNull())
+        // Then Network 갈래로 바뀌어 나온다
+        assertIs<AppError.Network>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun getPolicies_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
+        // Given 서버가 에러 envelope 로 응답
+        coEvery { policyRemoteDataSource.getPolicies() } returns Result.failure(
+            ApiException.Business(
+                code = "POLICY_NOT_FOUND",
+                serverMessage = "약관을 찾을 수 없습니다",
+                statusCode = 404,
+                errorDetail = null,
+            ),
+        )
+
+        // When 약관 조회
+        val result = repository.getPolicies()
+
+        // Then 도메인 에러로 바뀌어 나온다(호출부가 :data 를 보지 않아도 된다)
+        val error = assertIs<AppError.Server>(result.exceptionOrNull())
+        assertEquals("POLICY_NOT_FOUND", error.code)
+        assertEquals(404, error.statusCode)
     }
 }
