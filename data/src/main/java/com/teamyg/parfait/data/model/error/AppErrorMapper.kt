@@ -26,7 +26,7 @@ internal fun Throwable.toAppError(): AppError = when (this) {
 
     is ApiException.EmptyBody -> AppError.Unexpected(this)
 
-    is ApiException.Unknown -> AppError.Unexpected(cause)
+    is ApiException.Unknown -> AppError.Unexpected(this)
 
     else -> AppError.Unexpected(this)
 }

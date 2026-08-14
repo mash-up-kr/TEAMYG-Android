@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.ui
 
+import androidx.annotation.MainThread
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.model.error.AppError
@@ -7,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,7 +65,12 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
      */
     val error: Flow<AppError> = _error.receiveAsFlow()
 
-    /** `viewModelScope` 는 `Main.immediate` 라 이 맵 접근은 항상 메인 스레드 단일이다 */
+    /**
+     * [launch] 는 항상 메인 스레드에서 호출된다는 것이 이 맵의 스레드 안전 불변식이다
+     * (`viewModelScope` 가 `Main.immediate` 라서가 아니다 — 그건 `block` 이 도는
+     * 디스패처일 뿐, `runningJobs[key] = job` 줄 자체는 코루틴 밖, 즉 `launch` 를
+     * 호출한 스레드에서 동기적으로 돈다).
+     */
     private val runningJobs = mutableMapOf<Any, Job>()
 
     protected fun postError(error: AppError) {
@@ -83,6 +90,7 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
      * `Result.failure` 는 값이지 예외가 아니므로 여기서 잡히지 않는다 — 호출부가 명시적으로
      * 처리한다. 이 가드는 매퍼 버그·NPE 같은 *예상 못 한* 예외용이다.
      */
+    @MainThread
     protected fun launch(
         key: Any? = null,
         onError: ((AppError) -> Unit)? = null,
@@ -92,7 +100,10 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
 
         val job = viewModelScope.launch {
             try {
-                block()
+                // `coroutineScope` 로 감싸야 `block` 안에서 띄운 자식 코루틴의 실패가
+                // (부모 job 취소 후 여기가 CancellationException 으로 재개되는 대신)
+                // 이 호출 지점으로 원래 예외 그대로 재던져진다.
+                coroutineScope { block() }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -102,6 +113,12 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
         }
 
         if (key != null) {
+            // production 의 `Main.immediate` 에서는 여기 있는 non-suspending 블록이
+            // 메인 스레드에서 동기적으로 끝까지 실행된다 — `runningJobs[key] = job` 이
+            // 실행되기 전에 `job` 이 이미 완료될 수는 없다. 그래서 `invokeOnCompletion`
+            // 을 `put` 뒤에 등록해도 순서가 깨지지 않는다. (단, `runTest` 처럼
+            // `StandardTestDispatcher` 를 쓰는 테스트에서는 `job` 이 즉시 시작되지
+            // 않으므로 이 순서 보장에 기대는 테스트를 짜지 않는다.)
             runningJobs[key] = job
             // 같은 key 로 이미 다음 job 이 등록됐다면 그것을 지우면 안 된다
             job.invokeOnCompletion { if (runningJobs[key] === job) runningJobs.remove(key) }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -168,17 +169,38 @@ class BaseViewModelTest {
     }
 
     @Test
+    fun launch_childCoroutineThrows_emitsUnexpectedError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 에러를 수집하는 화면
+        val viewModel = TestViewModel()
+
+        viewModel.error.test {
+            // When block 이 자식 코루틴을 띄우고 그 자식이 예상 못 한 예외를 던진다
+            viewModel.run { launch { throw IllegalStateException("boom") } }
+            advanceUntilIdle()
+
+            // Then 부모로 전파돼 Unexpected 로 정확히 1건 발행된다
+            val error = assertIs<AppError.Unexpected>(awaitItem())
+            assertEquals("boom", error.cause?.message)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun launch_onErrorGiven_handlerReceivesInsteadOfChannel() = runTest(mainDispatcherRule.dispatcher) {
         // Given onError 를 넘긴 호출
         val viewModel = TestViewModel()
         var handled: AppError? = null
 
-        // When 블록이 던진다
-        viewModel.run(onError = { handled = it }) { throw IllegalStateException("boom") }
-        advanceUntilIdle()
+        viewModel.error.test {
+            // When 블록이 던진다
+            viewModel.run(onError = { handled = it }) { throw IllegalStateException("boom") }
+            advanceUntilIdle()
 
-        // Then 핸들러가 받는다
-        assertIs<AppError.Unexpected>(handled)
+            // Then 핸들러가 받고, error 채널은 침묵한다(onError 와 postError 가 동시에
+            // 발화하는 회귀를 잡는다)
+            assertIs<AppError.Unexpected>(handled)
+            expectNoEvents()
+        }
     }
 
     @Test

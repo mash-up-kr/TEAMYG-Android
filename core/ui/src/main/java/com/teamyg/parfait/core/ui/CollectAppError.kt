@@ -2,6 +2,8 @@ package com.teamyg.parfait.core.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import com.teamyg.parfait.domain.model.error.AppError
 
 /**
@@ -15,8 +17,9 @@ fun CollectAppError(
     viewModel: BaseViewModel<*, *, *>,
     onError: (AppError) -> Unit = defaultAppErrorHandler,
 ) {
+    val currentOnError by rememberUpdatedState(onError)
     LaunchedEffect(viewModel) {
-        viewModel.error.collect(onError)
+        viewModel.error.collect { currentOnError(it) }
     }
 }
 

@@ -66,7 +66,10 @@ class AppErrorMapperTest {
         // Then 셋 다 Unexpected 로 접힌다
         assertIs<AppError.Unexpected>(http.toAppError())
         assertIs<AppError.Unexpected>(emptyBody.toAppError())
-        assertIs<AppError.Unexpected>(unknown.toAppError())
+        val unknownError = assertIs<AppError.Unexpected>(unknown.toAppError())
+        // cause 체인 모양을 Http·EmptyBody 와 통일한다 — 중첩 cause 가 아니라
+        // ApiException 자신을 싣는다
+        assertSame(unknown, unknownError.cause)
     }
 
     @Test
