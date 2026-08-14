@@ -10,7 +10,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.ui.CollectAppError
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
@@ -59,8 +58,6 @@ fun LoginRoute(
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    CollectAppError(viewModel)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
