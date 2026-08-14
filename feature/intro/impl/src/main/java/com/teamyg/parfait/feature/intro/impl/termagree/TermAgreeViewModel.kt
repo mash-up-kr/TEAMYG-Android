@@ -52,7 +52,6 @@ sealed interface TermAgreeSideEffect : UiSideEffect {
 
     data object NavigateToBack : TermAgreeSideEffect
 
-    /** 가입이 끝나고 세션까지 저장된 뒤에만 나간다. 백스택을 지우고 그룹 목록으로 간다 */
     data object NavigateToNext : TermAgreeSideEffect
 }
 
@@ -76,9 +75,10 @@ constructor(
             is TermAgreeIntent.ClickAgreeAllTerm -> {
                 updateState {
                     copy(
-                        agreedTermsIds = when (intent.newSelected) {
-                            true -> policies.map(PolicyVO::termsId).toSet()
-                            false -> emptySet()
+                        agreedTermsIds = if (intent.newSelected) {
+                            policies.map(PolicyVO::termsId).toSet()
+                        } else {
+                            emptySet()
                         },
                     )
                 }
@@ -87,9 +87,10 @@ constructor(
             is TermAgreeIntent.ClickTermAgree -> {
                 updateState {
                     copy(
-                        agreedTermsIds = when (intent.newSelected) {
-                            true -> agreedTermsIds + intent.termsId
-                            false -> agreedTermsIds - intent.termsId
+                        agreedTermsIds = if (intent.newSelected) {
+                            agreedTermsIds + intent.termsId
+                        } else {
+                            agreedTermsIds - intent.termsId
                         },
                     )
                 }
@@ -162,9 +163,6 @@ constructor(
         }
     }
 
-    /**
-     * 조회 실패는 화면이 재시도 버튼으로 표현하므로 상태만 세우고, 원인은 갈래별로 남긴다.
-     */
     private fun handleLoadFailure(throwable: Throwable) {
         updateState { copy(isLoadFailed = true) }
 
