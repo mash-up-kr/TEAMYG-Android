@@ -21,6 +21,7 @@ import com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateRoute
 import com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateViewModel
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.GroupInviteCodeRoute
 import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameRoute
+import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameViewModel
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupInviteCode> {
@@ -42,13 +43,18 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
 }
 
 fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupNickName> { _ ->
+    entry<NavKeyGroupNickName> { navKey ->
+        val viewModel = hiltViewModel<GroupNickNameViewModel, GroupNickNameViewModel.Factory>(
+            creationCallback = { factory -> factory.create(navKey.groupId) },
+        )
+
         YGScaffold(
             contentWindowInsets = WindowInsets(0.dp),
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             GroupNickNameRoute(
                 navigator = navigator,
+                viewModel = viewModel,
                 modifier = Modifier
                     .fillMaxSize()
                     .background(YGAtomicColors.Gray.White)

@@ -25,4 +25,15 @@
     <string name="group_enter_confirm_title">%1$s에 참여할까요?</string>
     <string name="group_enter_confirm_body">참여하려는 그룹이 해당 그룹이 맞는지\n다시 한번 확인해 주세요</string>
     <string name="group_enter_confirm_enter">참여하기</string>
+
+    <string name="invite_code_error_invalid">초대코드를 다시 확인해 주세요</string>
+    <string name="invite_code_error_already_joined">이미 참여하고 있는 그룹이에요</string>
+    <string name="invite_code_error_member_limit_reached">이미 최대 인원이 모두 참여한 그룹이에요</string>
+    <string name="invite_code_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="invite_code_error_unknown">잠시 후 다시 시도해 주세요</string>
+
+    <string name="group_nickname_error_already_used">이미 사용 중인 닉네임이에요</string>
+    <string name="group_nickname_error_invalid">사용할 수 없는 닉네임이에요</string>
+    <string name="group_nickname_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="group_nickname_error_unknown">잠시 후 다시 시도해 주세요</string>
 </resources>

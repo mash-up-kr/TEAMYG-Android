@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
@@ -13,7 +12,7 @@ import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 fun GroupNickNameRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: GroupNickNameViewModel = hiltViewModel(),
+    viewModel: GroupNickNameViewModel,
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
