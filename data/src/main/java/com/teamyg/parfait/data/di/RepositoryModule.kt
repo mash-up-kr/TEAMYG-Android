@@ -4,10 +4,12 @@ import com.teamyg.parfait.data.repository.camera.CameraCacheFileRepositoryImpl
 import com.teamyg.parfait.data.repository.gallery.GalleryRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
+import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
+import com.teamyg.parfait.domain.util.NonceGenerator
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -36,4 +38,8 @@ interface RepositoryModule {
     fun bindImageSegmentationRepository(
         imageSegmentationRepositoryImpl: ImageSegmentationRepositoryImpl,
     ): ImageSegmentationRepository
+
+    @Binds
+    @Singleton
+    fun bindNonceGenerator(secureRandomNonceGenerator: SecureRandomNonceGenerator): NonceGenerator
 }
