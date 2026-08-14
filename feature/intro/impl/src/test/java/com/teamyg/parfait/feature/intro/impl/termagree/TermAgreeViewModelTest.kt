@@ -6,20 +6,20 @@ import com.teamyg.parfait.domain.model.auth.AccessToken
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.RefreshToken
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
-import com.teamyg.parfait.domain.model.auth.TermsAgreement
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
-import com.teamyg.parfait.domain.repository.auth.AuthRepository
-import com.teamyg.parfait.domain.repository.policy.PolicyRepository
 import com.teamyg.parfait.domain.usecase.auth.SignUpUseCase
 import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,50 +30,28 @@ class TermAgreeViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private class FakePolicyRepository(
-        var result: Result<List<PolicyVO>>,
-    ) : PolicyRepository {
-        override suspend fun getPolicies(): Result<List<PolicyVO>> = result
-    }
+    private val getPolicies: GetPoliciesUseCase = mockk()
+    private val signUp: SignUpUseCase = mockk()
 
-    /**
-     * @param gate 값이 있으면 이 게이트가 완료될 때까지 가입 요청이 진행 중 상태로 머문다
-     */
-    private class FakeAuthRepository(
-        private val result: Result<AuthSessionVO> = Result.success(SESSION),
-        private val gate: CompletableDeferred<Unit>? = null,
-    ) : AuthRepository {
-        var callCount = 0
-            private set
-        var requestedAgreements: List<TermsAgreement>? = null
-            private set
-
-        override suspend fun signUp(
-            registrationToken: RegistrationToken,
-            agreements: List<TermsAgreement>,
-        ): Result<AuthSessionVO> {
-            callCount++
-            requestedAgreements = agreements
-            gate?.await()
-            return result
-        }
-    }
-
-    private fun viewModel(
-        policyRepository: PolicyRepository = FakePolicyRepository(Result.success(POLICIES)),
-        authRepository: AuthRepository = FakeAuthRepository(),
-    ) = TermAgreeViewModel(
-        registrationTokenValue = "registration-token",
-        getPolicies = GetPoliciesUseCase(policyRepository),
-        signUp = SignUpUseCase(authRepository),
+    /** 약관 조회는 `init` 에서 돌므로 ViewModel 을 만들기 전에 응답을 정해 둔다 */
+    private fun viewModel() = TermAgreeViewModel(
+        registrationTokenValue = REGISTRATION_TOKEN_VALUE,
+        getPolicies = getPolicies,
+        signUp = signUp,
     )
 
-    private fun loadedViewModel(authRepository: AuthRepository = FakeAuthRepository()) =
-        viewModel(authRepository = authRepository)
+    private fun givenPoliciesLoaded() {
+        coEvery { getPolicies() } returns Result.success(POLICIES)
+    }
+
+    private fun givenSignUpSucceeds() {
+        coEvery { signUp(any(), any(), any()) } returns Result.success(SESSION)
+    }
 
     @Test
     fun init_loadsPoliciesFromUseCase() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 화면 진입
+        givenPoliciesLoaded()
         val viewModel = viewModel()
 
         // When 조회가 끝나면
@@ -88,8 +66,9 @@ class TermAgreeViewModelTest {
 
     @Test
     fun init_loadFails_marksLoadFailed() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 약관 조회가 실패한다
-        val viewModel = viewModel(policyRepository = FakePolicyRepository(Result.failure(IOException("network"))))
+        // Given 약관 조회가 네트워크 단절로 실패한다
+        coEvery { getPolicies() } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = viewModel()
 
         // When 조회가 끝나면
         advanceUntilIdle()
@@ -104,12 +83,12 @@ class TermAgreeViewModelTest {
     @Test
     fun clickRetryLoad_afterFailure_loadsAgain() = runTest(mainDispatcherRule.dispatcher) {
         // Given 첫 조회가 실패한 화면
-        val repository = FakePolicyRepository(Result.failure(IOException("network")))
-        val viewModel = viewModel(policyRepository = repository)
+        coEvery { getPolicies() } returns
+            Result.failure(AppError.Network(cause = null)) andThen Result.success(POLICIES)
+        val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 서버가 정상으로 돌아온 뒤 다시 시도
-        repository.result = Result.success(POLICIES)
+        // When 다시 시도
         viewModel.processIntent(TermAgreeIntent.ClickRetryLoad)
         advanceUntilIdle()
 
@@ -120,8 +99,32 @@ class TermAgreeViewModelTest {
     }
 
     @Test
+    fun clickRetryLoad_whileLoading_doesNotStartSecondLoad() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 첫 조회가 아직 끝나지 않은 화면
+        val gate = CompletableDeferred<Unit>()
+        coEvery { getPolicies() } coAnswers {
+            gate.await()
+            Result.success(POLICIES)
+        }
+        val viewModel = viewModel()
+        runCurrent()
+
+        // When 재시도를 누른다
+        viewModel.processIntent(TermAgreeIntent.ClickRetryLoad)
+        runCurrent()
+
+        // Then 조회가 중복으로 나가지 않고 로딩 표시는 유지된다
+        assertTrue(viewModel.state.value.isLoading)
+        coVerify(exactly = 1) { getPolicies() }
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    @Test
     fun initialState_beforeLoad_isNotAvailable() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 화면 진입 직후
+        givenPoliciesLoaded()
         val viewModel = viewModel()
 
         // Then 약관이 없으므로 다음으로 갈 수 없다
@@ -134,7 +137,8 @@ class TermAgreeViewModelTest {
     @Test
     fun clickTermAgree_agreesOnlyThatPolicy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관을 받아온 화면
-        val viewModel = loadedViewModel()
+        givenPoliciesLoaded()
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         // When 필수 약관만 동의
@@ -150,7 +154,8 @@ class TermAgreeViewModelTest {
     @Test
     fun clickTermAgree_requiredPolicyAgreed_becomesAvailable() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관을 받아온 화면
-        val viewModel = loadedViewModel()
+        givenPoliciesLoaded()
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         // When 필수 약관에만 동의
@@ -163,7 +168,8 @@ class TermAgreeViewModelTest {
     @Test
     fun clickAgreeAllTerm_agreesEveryPolicy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관을 받아온 화면
-        val viewModel = loadedViewModel()
+        givenPoliciesLoaded()
+        val viewModel = viewModel()
         advanceUntilIdle()
 
         // When 전체 동의
@@ -178,7 +184,8 @@ class TermAgreeViewModelTest {
     @Test
     fun clickAgreeAllTerm_deselect_clearsEveryPolicy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 전체 동의된 화면
-        val viewModel = loadedViewModel()
+        givenPoliciesLoaded()
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(newSelected = true))
 
@@ -194,6 +201,7 @@ class TermAgreeViewModelTest {
     @Test
     fun clickTermLandingUrl_emitsNavigateToUrl() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 화면
+        givenPoliciesLoaded()
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -209,6 +217,7 @@ class TermAgreeViewModelTest {
     @Test
     fun clickBackButton_emitsNavigateToBack() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 화면
+        givenPoliciesLoaded()
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -224,9 +233,13 @@ class TermAgreeViewModelTest {
     @Test
     fun clickNextButton_signsUpAndNavigatesToNext() = runTest(mainDispatcherRule.dispatcher) {
         // Given 전체 동의된 화면과 아직 응답하지 않는 서버
+        givenPoliciesLoaded()
         val gate = CompletableDeferred<Unit>()
-        val authRepository = FakeAuthRepository(gate = gate)
-        val viewModel = loadedViewModel(authRepository)
+        coEvery { signUp(any(), any(), any()) } coAnswers {
+            gate.await()
+            Result.success(SESSION)
+        }
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(newSelected = true))
 
@@ -248,10 +261,11 @@ class TermAgreeViewModelTest {
     }
 
     @Test
-    fun clickNextButton_sendsEveryShownPolicyWithAgreedFlag() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNextButton_passesShownPoliciesAndAgreedIdsToUseCase() = runTest(mainDispatcherRule.dispatcher) {
         // Given 필수 약관만 동의한 화면
-        val authRepository = FakeAuthRepository()
-        val viewModel = loadedViewModel(authRepository)
+        givenPoliciesLoaded()
+        givenSignUpSucceeds()
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickTermAgree(termsId = TermsId(1L), newSelected = true))
 
@@ -259,21 +273,23 @@ class TermAgreeViewModelTest {
         viewModel.processIntent(TermAgreeIntent.ClickNextButton)
         advanceUntilIdle()
 
-        // Then 미동의 약관도 agreed=false 로 함께 나간다
-        assertEquals(
-            listOf(
-                TermsAgreement(termsId = TermsId(1L), agreed = true),
-                TermsAgreement(termsId = TermsId(2L), agreed = false),
-            ),
-            authRepository.requestedAgreements,
-        )
+        // Then 화면에 노출한 약관 전체와 동의한 id 를 그대로 넘긴다
+        // (미동의 약관을 agreed=false 로 바꿔 보내는 것은 UseCase 의 몫이다)
+        coVerify(exactly = 1) {
+            signUp(
+                registrationToken = RegistrationToken(REGISTRATION_TOKEN_VALUE),
+                policies = POLICIES,
+                agreedTermsIds = setOf(TermsId(1L)),
+            )
+        }
     }
 
     @Test
     fun clickNextButton_requiredPolicyNotAgreed_doesNotSignUp() = runTest(mainDispatcherRule.dispatcher) {
         // Given 선택 약관에만 동의한 화면
-        val authRepository = FakeAuthRepository()
-        val viewModel = loadedViewModel(authRepository)
+        givenPoliciesLoaded()
+        givenSignUpSucceeds()
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickTermAgree(termsId = TermsId(2L), newSelected = true))
 
@@ -283,7 +299,7 @@ class TermAgreeViewModelTest {
             advanceUntilIdle()
 
             // Then 가입 요청 자체가 나가지 않는다
-            assertEquals(0, authRepository.callCount)
+            coVerify(exactly = 0) { signUp(any(), any(), any()) }
             expectNoEvents()
         }
     }
@@ -291,9 +307,13 @@ class TermAgreeViewModelTest {
     @Test
     fun clickNextButton_whileSigningUp_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
         // Given 가입 요청이 아직 끝나지 않은 화면
+        givenPoliciesLoaded()
         val gate = CompletableDeferred<Unit>()
-        val authRepository = FakeAuthRepository(gate = gate)
-        val viewModel = loadedViewModel(authRepository)
+        coEvery { signUp(any(), any(), any()) } coAnswers {
+            gate.await()
+            Result.success(SESSION)
+        }
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(newSelected = true))
         viewModel.processIntent(TermAgreeIntent.ClickNextButton)
@@ -304,7 +324,7 @@ class TermAgreeViewModelTest {
         runCurrent()
 
         // Then 중복 가입 요청이 나가지 않는다
-        assertEquals(1, authRepository.callCount)
+        coVerify(exactly = 1) { signUp(any(), any(), any()) }
 
         gate.complete(Unit)
         advanceUntilIdle()
@@ -312,9 +332,10 @@ class TermAgreeViewModelTest {
 
     @Test
     fun clickNextButton_signUpFails_staysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 가입이 실패하는 화면
-        val authRepository = FakeAuthRepository(Result.failure(IOException("network")))
-        val viewModel = loadedViewModel(authRepository)
+        // Given 가입이 네트워크 단절로 실패하는 화면
+        givenPoliciesLoaded()
+        coEvery { signUp(any(), any(), any()) } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(newSelected = true))
 
@@ -330,6 +351,8 @@ class TermAgreeViewModelTest {
     }
 
     companion object {
+        private const val REGISTRATION_TOKEN_VALUE = "registration-token"
+
         private val REQUIRED_POLICY = PolicyVO(
             termsId = TermsId(1L),
             type = PolicyType.TERMS_OF_SERVICE,
