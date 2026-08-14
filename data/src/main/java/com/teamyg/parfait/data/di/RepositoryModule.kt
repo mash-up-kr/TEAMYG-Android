@@ -1,10 +1,12 @@
 package com.teamyg.parfait.data.di
 
+import com.teamyg.parfait.data.repository.auth.AuthRepositoryImpl
 import com.teamyg.parfait.data.repository.camera.CameraCacheFileRepositoryImpl
 import com.teamyg.parfait.data.repository.gallery.GalleryRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
+import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
@@ -42,4 +44,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindNonceGenerator(secureRandomNonceGenerator: SecureRandomNonceGenerator): NonceGenerator
+
+    @Binds
+    @Singleton
+    fun bindAuthRepository(authRepositoryImpl: AuthRepositoryImpl): AuthRepository
 }
