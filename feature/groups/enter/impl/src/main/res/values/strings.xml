@@ -5,6 +5,7 @@
     <string name="group_enter">그룹 참여하기</string>
     <string name="group_invite_title">초대코드를 입력해 주세요</string>
     <string name="group_invite_description">초대코드는 그룹원에게 직접 받을 수 있어요</string>
+    <string name="invite_code_paste_bar_label">클립보드에 복사됨</string>
     <string name="group_nickname_title">그룹이름에서 사용할\n닉네임을 입력해 주세요</string>
     <string name="group_nickname_description">그룹이름에서만 공유되는 닉네임이에요</string>
     <string name="group_nickname_placeholder">그룹에서 사용할 닉네임을 입력해 주세요</string>
