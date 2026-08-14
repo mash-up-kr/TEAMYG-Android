@@ -1,9 +1,9 @@
 package com.teamyg.parfait.domain.usecase.auth
 
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
-import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 /**
@@ -23,15 +23,10 @@ class LoginWithKakaoUseCase @Inject constructor(
         val member = loginResult.getOrElse { return Result.failure(it) }
 
         if (member is KakaoLoginVO.ExistingMember) {
-            try {
-                authRepository.saveSession(member.session)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                // `Result.onSuccess` 는 inline 이라 여기서 던지면 선언된 실패 채널을
-                // 새어나가 호출부가 `Result` 만 봐서는 영영 못 본다 — 여기서 닫는다.
-                return Result.failure(AppError.Unexpected(e))
-            }
+            // 저장 실패를 선언된 실패 채널로 되돌린다 — 그냥 던지면 호출부가 `Result` 만
+            // 봐서는 영영 못 본다. 취소는 [runSuspendCatching] 이 걸러 재던진다.
+            runSuspendCatching { authRepository.saveSession(member.session) }
+                .getOrElse { return Result.failure(AppError.Unexpected(it)) }
         }
 
         return Result.success(member)
