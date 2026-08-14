@@ -98,11 +98,15 @@ constructor(
         nonce: String,
     ) {
         launch(key = KEY_KAKAO_LOGIN) {
-            loginWithKakaoUseCase(idToken = idToken, nonce = nonce)
-                .onSuccess(::navigateByMemberType)
-                .onFailure(::logServerLoginFailure)
-
-            updateState { copy(isLoading = false) }
+            try {
+                loginWithKakaoUseCase(idToken = idToken, nonce = nonce)
+                    .onSuccess(::navigateByMemberType)
+                    .onFailure(::logServerLoginFailure)
+            } finally {
+                // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
+                // 영구 비활성으로 남는 것을 여기서 막는다
+                updateState { copy(isLoading = false) }
+            }
         }
     }
 

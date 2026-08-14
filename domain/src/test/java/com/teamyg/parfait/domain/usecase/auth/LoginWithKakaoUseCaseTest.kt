@@ -65,4 +65,18 @@ class LoginWithKakaoUseCaseTest {
         assertIs<AppError.Server>(result.exceptionOrNull())
         coVerify(exactly = 0) { authRepository.saveSession(any()) }
     }
+
+    @Test
+    fun invoke_saveSessionThrows_returnsFailureInsteadOfThrowing() = runTest {
+        // Given 기존 회원 응답이지만 세션 저장(KeyStore·DataStore IO)이 던진다
+        coEvery { authRepository.loginWithKakao(any(), any()) } returns
+            Result.success(KakaoLoginVO.ExistingMember(session))
+        coEvery { authRepository.saveSession(session) } throws IllegalStateException("keystore boom")
+
+        // When 로그인 — throw 하지 않고 Result 로 돌아와야 한다
+        val result = useCase(idToken = "id-1", nonce = "nonce-1")
+
+        // Then Result.failure(AppError.Unexpected) 로 감싸져 있다
+        assertIs<AppError.Unexpected>(result.exceptionOrNull())
+    }
 }

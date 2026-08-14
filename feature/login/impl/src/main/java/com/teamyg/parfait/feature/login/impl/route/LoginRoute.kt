@@ -22,6 +22,7 @@ import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
+import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
 fun LoginRoute(
@@ -85,20 +86,27 @@ fun LoginRoute(
                         return@collect
                     }
 
-                    when (val result = kakaoLoginHelper.login(currentActivity)) {
-                        is KakaoLoginResult.Success ->
-                            viewModel.processIntent(
-                                LoginIntent.LoginWithKakaoSuccess(
-                                    idToken = result.idToken,
-                                    nonce = result.nonce,
-                                ),
-                            )
+                    try {
+                        when (val result = kakaoLoginHelper.login(currentActivity)) {
+                            is KakaoLoginResult.Success ->
+                                viewModel.processIntent(
+                                    LoginIntent.LoginWithKakaoSuccess(
+                                        idToken = result.idToken,
+                                        nonce = result.nonce,
+                                    ),
+                                )
 
-                        is KakaoLoginResult.Failure ->
-                            viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(result.throwable))
+                            is KakaoLoginResult.Failure ->
+                                viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(result.throwable))
 
-                        is KakaoLoginResult.Cancel ->
-                            viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+                            is KakaoLoginResult.Cancel ->
+                                viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+                        }
+                    } catch (e: CancellationException) {
+                        // 설정 변경(회전 등)으로 컴포지션이 죽어 이 continuation 이 취소되면
+                        // SDK 콜백이 돌아올 곳이 없다 — 로딩이 영구히 켜진 채 남는 것을 막는다
+                        viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+                        throw e
                     }
                 }
             }

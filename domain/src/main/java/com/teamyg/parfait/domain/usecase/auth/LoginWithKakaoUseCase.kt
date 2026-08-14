@@ -1,7 +1,9 @@
 package com.teamyg.parfait.domain.usecase.auth
 
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 /**
@@ -16,11 +18,22 @@ class LoginWithKakaoUseCase @Inject constructor(
     suspend operator fun invoke(
         idToken: String,
         nonce: String,
-    ): Result<KakaoLoginVO> = authRepository
-        .loginWithKakao(idToken = idToken, nonce = nonce)
-        .onSuccess { result ->
-            if (result is KakaoLoginVO.ExistingMember) {
-                authRepository.saveSession(result.session)
+    ): Result<KakaoLoginVO> {
+        val loginResult = authRepository.loginWithKakao(idToken = idToken, nonce = nonce)
+        val member = loginResult.getOrElse { return Result.failure(it) }
+
+        if (member is KakaoLoginVO.ExistingMember) {
+            try {
+                authRepository.saveSession(member.session)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                // `Result.onSuccess` 는 inline 이라 여기서 던지면 선언된 실패 채널을
+                // 새어나가 호출부가 `Result` 만 봐서는 영영 못 본다 — 여기서 닫는다.
+                return Result.failure(AppError.Unexpected(e))
             }
         }
+
+        return Result.success(member)
+    }
 }

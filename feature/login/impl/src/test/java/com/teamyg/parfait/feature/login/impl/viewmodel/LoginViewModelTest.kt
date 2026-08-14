@@ -145,6 +145,25 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun loginFailure_useCaseThrows_stillTurnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given UseCase 가 Result.failure 가 아니라 예외를 그대로 던진다
+        coEvery { loginWithKakaoUseCase(any(), any()) } throws IllegalStateException("boom")
+        val viewModel = viewModel()
+
+        // Given 로딩이 이미 켜져 있다(SDK 로그인 요청 단계)
+        viewModel.processIntent(LoginIntent.LoginWithKakao)
+        runCurrent()
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When SDK 성공 결과를 전달했지만 서버 UseCase 가 던진다
+        viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
+        advanceUntilIdle()
+
+        // Then 로딩이 풀려 버튼이 영구 비활성으로 남지 않는다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun sdkCancel_turnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
         // Given 로그인 진행 중
         val viewModel = viewModel()
