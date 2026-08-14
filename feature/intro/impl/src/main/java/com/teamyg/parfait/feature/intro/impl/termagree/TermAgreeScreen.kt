@@ -131,11 +131,13 @@ internal fun TermAgreeScreen(
                 }
             }
 
+            // 목록이 비면(로딩·조회 실패) 여백만 남지 않도록 항목이 있을 때만 띄운다
+            if (state.policies.isNotEmpty()) {
+                item { Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4)) }
+            }
+
             items(state.policies, key = { policy -> policy.termsId.value }) { policy ->
                 val isSelected = state.isAgreed(policy)
-                if (policy == state.policies.first()) {
-                    Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
-                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
