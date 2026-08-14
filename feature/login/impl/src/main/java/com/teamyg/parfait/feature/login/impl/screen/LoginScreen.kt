@@ -22,6 +22,7 @@ import com.teamyg.parfait.feature.login.impl.model.OnboardingPagesPreviewParamet
 @Composable
 internal fun LoginScreen(
     pages: List<OnboardingPage>,
+    isLoading: Boolean,
     onClickKakaoButton: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -42,6 +43,7 @@ internal fun LoginScreen(
 
         KakaoSignInButton(
             onClick = onClickKakaoButton,
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = YGTheme.layout.padding.padding7),
@@ -58,6 +60,7 @@ private fun PreviewLoginScreen(
 ) = PreviewBox {
     LoginScreen(
         pages = pages,
+        isLoading = false,
         onClickKakaoButton = {},
         modifier = Modifier.fillMaxSize(),
     )
