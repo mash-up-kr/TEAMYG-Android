@@ -12,9 +12,12 @@ import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 @Composable
 fun TermAgreeRoute(
     navigator: Navigator,
+    registrationToken: String,
     modifier: Modifier = Modifier,
     viewModel: TermAgreeViewModel = hiltViewModel(),
 ) {
+    // TODO(signup 라운드): 이 토큰으로 POST /api/v1/auth/signup 을 호출한다.
+    //  ViewModel 주입은 GroupCreateViewModel 과 같은 assisted Factory 패턴으로 붙인다.
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
