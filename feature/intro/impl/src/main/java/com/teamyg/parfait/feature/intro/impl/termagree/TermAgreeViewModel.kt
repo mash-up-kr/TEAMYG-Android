@@ -21,6 +21,7 @@ data class TermAgreeState(
     val policies: List<PolicyVO> = emptyList(),
     val agreedTermsIds: Set<TermsId> = emptySet(),
     val isLoading: Boolean = true,
+    /** TODO(공통 에러화면): 이 플래그가 서면 목록 대신 공통 에러화면을 띄운다 */
     val isLoadFailed: Boolean = false,
     val isSigningUp: Boolean = false,
 ) : UiState {
