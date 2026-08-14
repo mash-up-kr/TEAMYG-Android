@@ -7,6 +7,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
@@ -16,16 +17,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 
 data class SegmentationState(
+    val isLoading: Boolean = true,
+    val isError: Boolean = false,
     val originBitmap: Bitmap? = null,
-    val overlayBitmap: Bitmap? = null,
     val subjectImagePath: String? = null,
+    val subjectBounds: SegmentationBounds? = null,
 ) : UiState
 
 sealed interface SegmentationIntent : UiIntent
 
-sealed interface SegmentationEffect : UiSideEffect {
-    data object SegmentationFailed : SegmentationEffect
-}
+sealed interface SegmentationEffect : UiSideEffect
 
 @HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
 class SegmentationViewModel
@@ -44,14 +45,24 @@ class SegmentationViewModel
 
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { result ->
-                    val overlayBitmap = (result.bitmap as? AndroidBitmap)?.getRawData()
+                    val subjectBounds = result.subjectBounds
+
+                    // bounds 가 없으면 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남는다
+                    if (subjectBounds == null) {
+                        updateState { copy(isError = true) }
+                        return@onSuccess
+                    }
+
                     updateState {
                         copy(
-                            overlayBitmap = overlayBitmap,
                             subjectImagePath = result.subjectImagePath,
+                            subjectBounds = subjectBounds,
                         )
                     }
-                }.onFailure { postSideEffect(SegmentationEffect.SegmentationFailed) }
+                }.onFailure { updateState { copy(isError = true) } }
+
+            // 실패해도 로딩 화면에 갇히지 않도록 성공/실패와 무관하게 해제한다
+            updateState { copy(isLoading = false) }
         }
     }
 
