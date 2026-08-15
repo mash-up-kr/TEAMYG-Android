@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasMove
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
