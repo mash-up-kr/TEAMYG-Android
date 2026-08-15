@@ -39,10 +39,7 @@ object ServerErrorCode {
         /** 409 — 그룹 정원이 찼다 */
         const val GROUP_MEMBER_LIMIT_REACHED = "GROUP_MEMBER_LIMIT_REACHED"
 
-        /** 409 — 같은 그룹에서 이미 쓰이는 닉네임이다 */
-        const val GROUP_NICKNAME_ALREADY_USED = "GROUP_NICKNAME_ALREADY_USED"
-
-        /** 400 — 그룹명이 1~10자·`^[가-힣A-Za-z0-9]+(?: [가-힣A-Za-z0-9]+)*$` 를 벗어났다 */
+        /** 400 — 그룹명이 1~10자·`^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+(?: [가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+)*$` 를 벗어났다 */
         const val INVALID_GROUP_NAME = "INVALID_GROUP_NAME"
 
         /** 400 — 그룹 닉네임이 1~15자·그룹명과 같은 패턴을 벗어났다 */

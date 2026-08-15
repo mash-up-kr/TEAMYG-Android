@@ -81,10 +81,10 @@ class GroupNickNameViewModelTest {
     }
 
     @Test
-    fun clickNextButton_nicknameAlreadyUsed_showsAlreadyUsedError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 409 GROUP_NICKNAME_ALREADY_USED 로 응답
+    fun clickNextButton_serverRejectsNickname_showsInvalidError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 400 INVALID_GROUP_NICKNAME 으로 응답(앱 검증과 서버 규칙이 어긋난 경우)
         coEvery { changeGroupNickname(any(), any()) } returns Result.failure(
-            AppError.Server(code = "GROUP_NICKNAME_ALREADY_USED", statusCode = 409, serverMessage = "…"),
+            AppError.Server(code = "INVALID_GROUP_NICKNAME", statusCode = 400, serverMessage = "…"),
         )
         val viewModel = viewModelWith(NICKNAME)
 
@@ -95,7 +95,7 @@ class GroupNickNameViewModelTest {
 
             // Then 이동하지 않고 입력 자리에 사유가 붙는다
             expectNoEvents()
-            assertEquals(GroupNickNameError.ALREADY_USED, viewModel.state.value.submitError)
+            assertEquals(GroupNickNameError.INVALID, viewModel.state.value.submitError)
             assertFalse(viewModel.state.value.isEntering)
         }
     }

@@ -75,19 +75,21 @@ class CheckNameValidUseCaseTest {
         assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("파르페!"))
     }
 
-    // 아래 다섯은 서버 정규식(`^[가-힣A-Za-z0-9]+(?: [가-힣A-Za-z0-9]+)*$`)보다 넓게
+    // 아래 넷은 서버 정규식(`^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+(?: [가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+)*$`)보다 넓게
     // 통과시켜 서버에서만 400 으로 튕기던 입력들이다. 규칙이 다시 벌어지면 여기서 깨진다.
 
     @Test
-    fun invoke_standaloneJamo_returnsInvalidCharacter() {
-        // Given 자모만 있는 이름 — 서버는 완성형 '가'~'힣' 만 받는다
+    fun invoke_standaloneJamo_returnsSuccess() {
+        // Given 자모만 있는 이름 — 2026-08-15 서버 변경으로 허용 대상이다
         val name = "ㅋㅋㅋ"
 
         // When 유효성 검사
         val result = checkNameValid(name)
 
-        // Then 문자 오류
-        assertEquals(NameValidResult.Error.InvalidCharacter, result)
+        // Then 통과한다 — 모음 단독·완성형 혼용도 같다
+        assertEquals(NameValidResult.Success, result)
+        assertEquals(NameValidResult.Success, checkNameValid("ㅠㅠ"))
+        assertEquals(NameValidResult.Success, checkNameValid("파르페ㅎㅎ"))
     }
 
     @Test
