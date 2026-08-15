@@ -27,6 +27,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
+import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodePasteBar
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -38,6 +39,7 @@ internal fun GroupInviteCodeScreen(
     onClickBackButton: () -> Unit,
     onClickConfirmPopupEnter: () -> Unit,
     onDismissConfirmPopup: () -> Unit,
+    onClickPasteBar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (uiState.isConfirmPopupVisible) {
@@ -93,7 +95,7 @@ internal fun GroupInviteCodeScreen(
                         InviteCodeInputFieldElement(
                             word = word,
                             isFocus = index == uiState.focusedIndex,
-                            isError = uiState.errorText != null,
+                            isError = uiState.inviteCodeError != null,
                             onValueChanged = { changed -> onValueChanged(index, changed) },
                             onClickTextFieldElement = { onClickTextFieldElement(index) },
                             modifier = Modifier
@@ -103,11 +105,11 @@ internal fun GroupInviteCodeScreen(
                     },
                 )
             }
-            if (uiState.errorText != null) {
+            if (uiState.inviteCodeError != null) {
                 item {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                     Text(
-                        text = uiState.errorText,
+                        text = uiState.inviteCodeError.toStringResource(),
                         color = YGAtomicColors.Cherry.Cherry600,
                         style = YGTheme.typography.caption.c01R,
                     )
@@ -121,12 +123,21 @@ internal fun GroupInviteCodeScreen(
         YGButton(
             text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
-            isEnabled = uiState.text.length == uiState.codeLength,
+            isEnabled = uiState.text.length == uiState.codeLength && uiState.isSubmitting.not(),
             onClick = onClickNextButton,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(all = YGTheme.layout.padding.padding7),
         )
+
+        val pasteBarInviteCode = uiState.pasteBarInviteCode
+        if (pasteBarInviteCode != null) {
+            InviteCodePasteBar(
+                inviteCode = pasteBarInviteCode,
+                onClick = onClickPasteBar,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
@@ -137,11 +148,16 @@ private class GroupInviteCodeScreenPreviewParameterProvider :
             GroupInviteCodeUiState(""),
             GroupInviteCodeUiState(text = "he"),
             GroupInviteCodeUiState(text = "hello"),
-            GroupInviteCodeUiState(text = "", errorText = "이미 최대 인원이 모두 참여한 그룹이에요"),
+            GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
             GroupInviteCodeUiState(
                 text = "hello!",
                 groupName = "모카의 파르페",
                 isConfirmPopupVisible = true,
+            ),
+            GroupInviteCodeUiState(
+                text = "",
+                focusedIndex = 0,
+                clipboardInviteCode = "E54W1A",
             ),
         )
 }
@@ -159,6 +175,7 @@ private fun GroupInviteCodeScreenPreview(
         onClickBackButton = {},
         onClickConfirmPopupEnter = {},
         onDismissConfirmPopup = {},
+        onClickPasteBar = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

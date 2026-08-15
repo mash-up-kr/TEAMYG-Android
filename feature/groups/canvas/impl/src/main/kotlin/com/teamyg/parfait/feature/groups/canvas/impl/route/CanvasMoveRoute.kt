@@ -1,9 +1,9 @@
-package com.teamyg.parfait.feature.canvas.impl.route
+package com.teamyg.parfait.feature.groups.canvas.impl.route
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.canvas.impl.screen.CanvasMoveScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMoveScreen
 
 @Composable
 internal fun CanvasMoveRoute(

@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,6 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -32,17 +34,21 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.domain.model.id.TermsId
+import com.teamyg.parfait.domain.model.policy.PolicyType
+import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.feature.intro.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun TermAgreeScreen(
     state: TermAgreeState,
-    onClickTermAgree: (index: Int, newSelected: Boolean) -> Unit,
+    onClickTermAgree: (termsId: TermsId, newSelected: Boolean) -> Unit,
     onClickTermLandingUrl: (landingUrl: String) -> Unit,
     onClickAgreeAllTerm: (newSelected: Boolean) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
+    onClickRetryLoad: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
@@ -100,11 +106,38 @@ internal fun TermAgreeScreen(
                 }
             }
 
-            itemsIndexed(state.termContentList) { index, termContent ->
-                val isSelected = state.selectedList[index]
-                if (index == 0) {
+            // TODO(공통 에러화면): 조회 실패는 목록 안의 임시 문구가 아니라 공통 에러화면으로
+            //  대체한다. 재시도는 그 화면의 버튼이 [TermAgreeIntent.ClickRetryLoad] 로 잇는다
+            if (state.isLoadFailed) {
+                item {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.term_agree_load_failed),
+                            style = YGTheme.typography.body.b02R,
+                            color = YGAtomicColors.Gray.Gray500,
+                        )
+                        Text(
+                            text = stringResource(R.string.term_agree_retry),
+                            style = YGTheme.typography.body.b02SB,
+                            color = YGAtomicColors.Gray.Gray800,
+                            modifier = Modifier.clickable { onClickRetryLoad() },
+                        )
+                    }
                 }
+            }
+
+            // 목록이 비면(로딩·조회 실패) 여백만 남지 않도록 항목이 있을 때만 띄운다
+            if (state.policies.isNotEmpty()) {
+                item { Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4)) }
+            }
+
+            items(state.policies, key = { policy -> policy.termsId.value }) { policy ->
+                val isSelected = state.isAgreed(policy)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -118,7 +151,7 @@ internal fun TermAgreeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onClickTermAgree(index, isSelected.not()) },
+                            .clickable { onClickTermAgree(policy.termsId, isSelected.not()) },
                     ) {
                         Image(
                             painter = painterResource(DesignSystemR.drawable.ic_check),
@@ -127,7 +160,7 @@ internal fun TermAgreeScreen(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
-                        if (termContent.isRequired) {
+                        if (policy.required) {
                             Text(
                                 text = stringResource(R.string.prefix_required),
                                 color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
@@ -136,7 +169,7 @@ internal fun TermAgreeScreen(
                             Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                         }
                         Text(
-                            text = termContent.title,
+                            text = policy.title,
                             color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
                             style = YGTheme.typography.body.b02R,
                             modifier = Modifier.weight(1f),
@@ -149,7 +182,7 @@ internal fun TermAgreeScreen(
                         colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Gray500),
                         modifier = Modifier
                             .size(18.dp)
-                            .clickable { onClickTermLandingUrl(termContent.landingUrl) },
+                            .clickable { onClickTermLandingUrl(policy.url) },
                     )
                 }
             }
@@ -171,16 +204,54 @@ internal fun TermAgreeScreen(
     }
 }
 
+private class TermAgreeScreenPreviewParameterProvider : PreviewParameterProvider<TermAgreeState> {
+    private val policies = listOf(
+        PolicyVO(
+            termsId = TermsId(1L),
+            type = PolicyType.TERMS_OF_SERVICE,
+            title = "서비스 이용약관",
+            url = "https://example.com/terms",
+            required = true,
+        ),
+        PolicyVO(
+            termsId = TermsId(2L),
+            type = PolicyType.PRIVACY_POLICY,
+            title = "개인정보 처리방침",
+            url = "https://example.com/privacy",
+            required = true,
+        ),
+    )
+
+    override val values: Sequence<TermAgreeState>
+        get() = sequenceOf(
+            TermAgreeState(policies = policies, isLoading = false),
+            TermAgreeState(
+                policies = policies,
+                agreedTermsIds = setOf(TermsId(1L)),
+                isLoading = false,
+            ),
+            TermAgreeState(
+                policies = policies,
+                agreedTermsIds = policies.map(PolicyVO::termsId).toSet(),
+                isLoading = false,
+            ),
+            TermAgreeState(isLoading = false, isLoadFailed = true),
+        )
+}
+
 @YGPreview
 @Composable
-private fun TermAgreeScreenPreview() = PreviewBox {
+private fun TermAgreeScreenPreview(
+    @PreviewParameter(TermAgreeScreenPreviewParameterProvider::class) state: TermAgreeState,
+) = PreviewBox {
     TermAgreeScreen(
-        state = TermAgreeState(),
+        state = state,
         onClickTermAgree = { _, _ -> },
         onClickTermLandingUrl = {},
         onClickAgreeAllTerm = {},
         onClickNextButton = {},
         onClickBackButton = {},
+        onClickRetryLoad = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

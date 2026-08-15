@@ -85,9 +85,10 @@ internal fun GroupNickNameScreen(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
-                    isError = uiState.nicknameError != null,
+                    isError = uiState.nicknameError != null || uiState.submitError != null,
                     maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                    errorDescription = uiState.nicknameError?.toStringResource(NameFieldType.NICKNAME),
+                    errorDescription = uiState.nicknameError?.toStringResource(NameFieldType.NICKNAME)
+                        ?: uiState.submitError?.toStringResource(),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -96,7 +97,7 @@ internal fun GroupNickNameScreen(
         YGButton(
             text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
-            isEnabled = uiState.nickName.isNotEmpty(),
+            isEnabled = uiState.nickName.isNotEmpty() && uiState.isEntering.not(),
             onClick = onClickNextButton,
             modifier = Modifier
                 .fillMaxWidth()
@@ -112,6 +113,7 @@ private class GroupNickNameScreenPreviewParameterProvider :
             GroupNickNameUiState(""),
             GroupNickNameUiState(nickName = "he"),
             GroupNickNameUiState(nickName = "hello"),
+            GroupNickNameUiState(nickName = "hello", submitError = GroupNickNameError.ALREADY_USED),
         )
 }
 

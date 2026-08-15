@@ -1,5 +1,6 @@
 package com.teamyg.parfait.domain.usecase.image
 
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import javax.inject.Inject
@@ -14,7 +15,7 @@ constructor(
     }
 
     suspend operator fun invoke(uri: String) {
-        val stableUri: String? = runCatching {
+        val stableUri: String? = runSuspendCatching {
             recentImageRepository.storeRecentImageInInternalStorage(uri)
         }.getOrNull()
 

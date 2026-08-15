@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.canvas.api
+package com.teamyg.parfait.feature.groups.canvas.api
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable

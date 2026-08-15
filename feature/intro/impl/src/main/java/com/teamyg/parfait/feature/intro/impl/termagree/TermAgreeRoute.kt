@@ -7,13 +7,17 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.domain.model.auth.RegistrationToken
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
 fun TermAgreeRoute(
     navigator: Navigator,
+    registrationToken: RegistrationToken,
     modifier: Modifier = Modifier,
-    viewModel: TermAgreeViewModel = hiltViewModel(),
+    viewModel: TermAgreeViewModel = hiltViewModel<TermAgreeViewModel, TermAgreeViewModel.Factory>(
+        creationCallback = { factory -> factory.create(registrationToken.value) },
+    ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -36,13 +40,14 @@ fun TermAgreeRoute(
 
     TermAgreeScreen(
         state = state,
-        onClickTermAgree = { index, newSelected ->
-            viewModel.processIntent(TermAgreeIntent.ClickTermAgree(index, newSelected))
+        onClickTermAgree = { termsId, newSelected ->
+            viewModel.processIntent(TermAgreeIntent.ClickTermAgree(termsId, newSelected))
         },
         onClickTermLandingUrl = { viewModel.processIntent(TermAgreeIntent.ClickTermLandingUrl(it)) },
         onClickAgreeAllTerm = { viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(it)) },
         onClickNextButton = { viewModel.processIntent(TermAgreeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(TermAgreeIntent.ClickBackButton) },
+        onClickRetryLoad = { viewModel.processIntent(TermAgreeIntent.ClickRetryLoad) },
         modifier = modifier,
     )
 }

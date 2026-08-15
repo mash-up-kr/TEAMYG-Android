@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.setting.impl.R
+import com.teamyg.parfait.core.ui.R as CoreUiR
 import com.teamyg.parfait.feature.groups.setting.impl.screen.GroupSettingScreen
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingIntent
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingSideEffect
@@ -27,7 +27,7 @@ internal fun GroupSettingRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val clipboard = LocalClipboard.current
-    val inviteMessageTemplate = stringResource(R.string.group_setting_invite_message)
+    val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->

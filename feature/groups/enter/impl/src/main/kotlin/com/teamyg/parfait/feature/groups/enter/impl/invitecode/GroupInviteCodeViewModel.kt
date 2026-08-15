@@ -1,24 +1,39 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode
 
-import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.domain.usecase.group.CheckInviteCodeValidUseCase
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
+import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.domain.model.group.JoinedGroupVO
+import com.teamyg.parfait.domain.usecase.group.GetGroupJoinPreviewUseCase
+import com.teamyg.parfait.domain.usecase.group.JoinGroupUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class GroupInviteCodeUiState(
     val text: String = "",
     val focusedIndex: Int? = null,
     val inputMode: InputMode = InputMode.ADD,
-    val errorText: String? = null,
+    val inviteCodeError: InviteCodeError? = null,
     val groupName: String = "",
     val isConfirmPopupVisible: Boolean = false,
+    val isSubmitting: Boolean = false,
+    val clipboardInviteCode: String? = null,
 ) : UiState {
-    val codeLength = 6
+    val codeLength = InviteCode.LENGTH
+
+    /**
+     * 붙여넣기 바에 노출할 초대코드.
+     *
+     * 클립보드에서 초대코드를 찾았고, 키보드가 올라와 있으며,
+     * 아직 그 코드가 입력되지 않았을 때만 값이 있다.
+     */
+    val pasteBarInviteCode: String?
+        get() = clipboardInviteCode?.takeIf { code -> focusedIndex != null && code != text }
 }
 
 enum class InputMode {
@@ -42,19 +57,24 @@ sealed interface GroupInviteCodeIntent : UiIntent {
     data object ClickConfirmPopupEnter : GroupInviteCodeIntent
 
     data object DismissConfirmPopup : GroupInviteCodeIntent
+
+    data class ClipboardCodeDetected(val code: String?) : GroupInviteCodeIntent
+
+    data object ClickPasteInviteCode : GroupInviteCodeIntent
 }
 
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
     data object NavigateToBack : GroupInviteCodeSideEffect
 
-    data object NavigateToNext : GroupInviteCodeSideEffect
+    data class NavigateToNext(val groupId: Long) : GroupInviteCodeSideEffect
 }
 
 @HiltViewModel
 class GroupInviteCodeViewModel
 @Inject
 constructor(
-    private val checkInviteCodeValidUseCase: CheckInviteCodeValidUseCase,
+    private val getGroupJoinPreview: GetGroupJoinPreviewUseCase,
+    private val joinGroup: JoinGroupUseCase,
 ) : BaseViewModel<GroupInviteCodeUiState, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
     initialState = GroupInviteCodeUiState(),
 ) {
@@ -62,25 +82,7 @@ constructor(
         when (intent) {
             GroupInviteCodeIntent.ClickBackButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToBack)
 
-            GroupInviteCodeIntent.ClickNextButton -> {
-                viewModelScope.launch {
-                    val result = checkInviteCodeValidUseCase()
-                    if (result.isSuccess) {
-                        updateState {
-                            copy(
-                                groupName = result.groupName,
-                                isConfirmPopupVisible = true,
-                            )
-                        }
-                    } else {
-                        updateState {
-                            GroupInviteCodeUiState(
-                                errorText = result.errorMessage,
-                            )
-                        }
-                    }
-                }
-            }
+            GroupInviteCodeIntent.ClickNextButton -> requestJoinPreview()
 
             is GroupInviteCodeIntent.InputWord -> {
                 updateState {
@@ -100,7 +102,7 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = InputMode.ADD,
-                                errorText = null,
+                                inviteCodeError = null,
                             )
                         }
 
@@ -109,7 +111,7 @@ constructor(
                                 text = newText,
                                 focusedIndex = newFocusedIndex,
                                 inputMode = if (newFocusedIndex == newText.length) InputMode.ADD else InputMode.EDIT,
-                                errorText = null,
+                                inviteCodeError = null,
                             )
                         }
                     }
@@ -135,13 +137,118 @@ constructor(
             }
 
             GroupInviteCodeIntent.DismissConfirmPopup -> {
+                if (state.value.isSubmitting) return
+
                 updateState { copy(isConfirmPopupVisible = false) }
             }
 
-            GroupInviteCodeIntent.ClickConfirmPopupEnter -> {
-                updateState { copy(isConfirmPopupVisible = false) }
-                postSideEffect(GroupInviteCodeSideEffect.NavigateToNext)
+            GroupInviteCodeIntent.ClickConfirmPopupEnter -> requestJoin()
+
+            is GroupInviteCodeIntent.ClipboardCodeDetected -> {
+                updateState { copy(clipboardInviteCode = intent.code) }
+            }
+
+            GroupInviteCodeIntent.ClickPasteInviteCode -> {
+                updateState {
+                    val pastedCode = clipboardInviteCode ?: return@updateState this
+                    // 코드가 모두 채워지므로 focusedIndex 를 비워 키보드를 내린다
+                    copy(
+                        text = pastedCode.take(codeLength),
+                        focusedIndex = null,
+                        inputMode = InputMode.ADD,
+                        inviteCodeError = null,
+                        clipboardInviteCode = null,
+                    )
+                }
             }
         }
+    }
+
+    /**
+     * 참여 확인 팝업은 초대코드가 실재하는 그룹을 가리킬 때만 띄운다. 미리보기는 참여 상태를
+     * 바꾸지 않으므로, 잘못된 코드를 팝업까지 간 뒤에 되돌리는 것보다 여기서 걸러내는 편이 낫다.
+     */
+    private fun requestJoinPreview() {
+        val inviteCode = state.value.text
+        if (inviteCode.length != state.value.codeLength) {
+            viewModelLogger.d { "초대코드가 ${state.value.codeLength}자가 아니라 조회하지 않는다" }
+            return
+        }
+
+        launch(key = KEY_JOIN_PREVIEW) {
+            updateState { copy(isSubmitting = true, inviteCodeError = null) }
+            try {
+                getGroupJoinPreview(InviteCode(inviteCode))
+                    .onSuccess { groupName ->
+                        updateState {
+                            copy(
+                                groupName = groupName.value,
+                                isConfirmPopupVisible = true,
+                            )
+                        }
+                    }.onFailure { throwable -> handleFailure(throwable, "초대코드 조회") }
+            } finally {
+                // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
+                // 영구 비활성으로 남는 것을 여기서 막는다
+                updateState { copy(isSubmitting = false) }
+            }
+        }
+    }
+
+    private fun requestJoin() {
+        val inviteCode = state.value.text
+
+        launch(key = KEY_JOIN_GROUP) {
+            updateState { copy(isSubmitting = true) }
+            try {
+                joinGroup(InviteCode(inviteCode))
+                    .onSuccess(::navigateToNickname)
+                    .onFailure { throwable ->
+                        // 실패 사유는 초대코드 입력 자리에 붙이므로 팝업은 닫는다
+                        updateState { copy(isConfirmPopupVisible = false) }
+                        handleFailure(throwable, "그룹 참여")
+                    }
+            } finally {
+                updateState { copy(isSubmitting = false) }
+            }
+        }
+    }
+
+    private fun navigateToNickname(joinedGroup: JoinedGroupVO) {
+        updateState { copy(isConfirmPopupVisible = false) }
+        postSideEffect(GroupInviteCodeSideEffect.NavigateToNext(groupId = joinedGroup.groupId.value))
+    }
+
+    /**
+     * 실패 갈래를 전부 열거해 둔다. 화면에는 입력 자리 아래 한 줄로만 나가므로, 갈래마다
+     * 문구를 고르고 원인은 로그로 남긴다.
+     */
+    private fun handleFailure(
+        throwable: Throwable,
+        action: String,
+    ) {
+        val error = when (throwable) {
+            is AppError.Network -> InviteCodeError.NETWORK
+
+            is AppError.Server -> when (throwable.code) {
+                ServerErrorCode.ParfaitGroup.INVALID_INVITE_CODE -> InviteCodeError.INVALID_CODE
+                ServerErrorCode.ParfaitGroup.GROUP_ALREADY_JOINED -> InviteCodeError.ALREADY_JOINED
+                ServerErrorCode.ParfaitGroup.GROUP_MEMBER_LIMIT_REACHED -> InviteCodeError.MEMBER_LIMIT_REACHED
+                else -> InviteCodeError.UNKNOWN
+            }
+
+            else -> InviteCodeError.UNKNOWN
+        }
+
+        viewModelLogger.e(throwable) { "$action 실패 — $error" }
+        updateState { copy(inviteCodeError = error) }
+    }
+
+    private companion object {
+        /** [launch] 중복 실행 가드 키 — 초대코드 조회 job 하나를 가리킨다 */
+        const val KEY_JOIN_PREVIEW = "joinPreview"
+
+        /** [launch] 중복 실행 가드 키 — 그룹 참여 job 하나를 가리킨다 */
+        const val KEY_JOIN_GROUP = "joinGroup"
     }
 }

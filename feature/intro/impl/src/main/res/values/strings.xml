@@ -4,4 +4,7 @@
     <string name="agree_all">모두 동의하기</string>
     <string name="prefix_required">(필수)</string>
     <string name="submit">확인</string>
+
+    <string name="term_agree_load_failed">약관을 불러오지 못했어요</string>
+    <string name="term_agree_retry">다시 시도</string>
 </resources>

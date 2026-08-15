@@ -15,8 +15,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasImageAddRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasImageSelectRoute
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.canvas.api.NavKeyCanvasMove
-import com.teamyg.parfait.feature.canvas.impl.route.CanvasMoveRoute
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
+import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasMoveRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasImageAdd> {

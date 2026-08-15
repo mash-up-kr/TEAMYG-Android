@@ -7,6 +7,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
 internal fun PictureConfirmRoute(
@@ -28,8 +29,13 @@ internal fun PictureConfirmRoute(
                 navigator.onBack() // PictureConfirm
                 navigator.onBack() // Camera/Gallery
             } else {
-                // TODO("c103-로딩페이지로 넘어가야함")
-            }
+                navigator.goToAndPopCurrent(
+                  destination = NavKeySegmentation(
+                    sourceImageUri = uri,
+              ),
+            )
+          }
+            
         },
         onClickClose = {}, // TODO("c001-캔버스메인으로 넘어가야함")
         modifier = modifier,

@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.domain.model.auth.RegistrationToken
 import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
@@ -28,10 +29,11 @@ fun EntryProviderScope<NavKey>.featureSplashEntryBuilder(navigator: Navigator) {
 }
 
 fun EntryProviderScope<NavKey>.featureTermAgreeEntryBuilder(navigator: Navigator) {
-    entry<NavKeyTermAgree> {
+    entry<NavKeyTermAgree> { navKey ->
         YGScaffold { innerPadding ->
             TermAgreeRoute(
                 navigator = navigator,
+                registrationToken = RegistrationToken(navKey.registrationToken),
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color = YGTheme.colorScheme.grayScale.white)
