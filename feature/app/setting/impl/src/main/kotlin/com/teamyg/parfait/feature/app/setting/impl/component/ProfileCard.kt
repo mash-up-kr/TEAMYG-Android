@@ -19,10 +19,16 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.app.setting.impl.R
 
+/**
+ * @param nickname `null` 은 SSoT 가 아직 값을 방출하지 않은 로딩 상태다(빈 문자열이 아니다).
+ * @param loginProviderText 이미 화면에 보일 문구로 매핑된 값. `LoginProvider` 도메인 타입에서
+ *   `core:ui`의 `toStringResource()`(ADR-0016)로 변환하는 것은 호출부(Screen)의 책임이다.
+ *   `null` 은 [nickname] 과 같은 이유로 로딩이다.
+ */
 @Composable
 internal fun ProfileCard(
-    nickname: String,
-    loginProvider: String,
+    nickname: String?,
+    loginProviderText: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -43,12 +49,12 @@ internal fun ProfileCard(
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         ) {
             Text(
-                text = nickname,
+                text = nickname ?: stringResource(R.string.setting_profile_loading),
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray900,
             )
             Text(
-                text = loginProvider,
+                text = loginProviderText ?: stringResource(R.string.setting_profile_loading),
                 style = YGTheme.typography.caption.c01R,
                 color = YGAtomicColors.Gray.Gray500,
             )
@@ -61,7 +67,7 @@ internal fun ProfileCard(
 private fun ProfileCardPreview() = PreviewBox {
     ProfileCard(
         nickname = "아니야나그런데기니야",
-        loginProvider = "Kakao",
+        loginProviderText = "카카오",
         modifier = Modifier.padding(20.dp),
     )
 }

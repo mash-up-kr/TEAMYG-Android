@@ -13,4 +13,11 @@
     <string name="setting_dialog_cancel">그만두기</string>
     <string name="account_info_title">계정 정보</string>
     <string name="account_info_nickname_label">닉네임</string>
+    <string name="account_info_submit">확인</string>
+    <string name="account_info_error_invalid">사용할 수 없는 닉네임이에요</string>
+    <string name="account_info_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="account_info_error_unknown">잠시 후 다시 시도해 주세요</string>
+
+    <string name="setting_profile_loading">불러오는 중</string>
+    <string name="account_info_nickname_loading">닉네임을 불러오는 중이에요</string>
 </resources>

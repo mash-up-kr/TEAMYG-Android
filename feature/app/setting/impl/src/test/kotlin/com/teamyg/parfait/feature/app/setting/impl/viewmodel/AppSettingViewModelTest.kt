@@ -2,11 +2,20 @@ package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
+import com.teamyg.parfait.domain.usecase.member.ObserveMyAccountUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -14,6 +23,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AppSettingViewModelTest {
@@ -21,8 +31,12 @@ class AppSettingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val logout: LogoutUseCase = mockk()
+    private val observeMyAccount: ObserveMyAccountUseCase = mockk()
 
-    private fun viewModel() = AppSettingViewModel(logout = logout)
+    private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AppSettingViewModel {
+        every { observeMyAccount() } returns accountFlow
+        return AppSettingViewModel(logout = logout, observeMyAccount = observeMyAccount)
+    }
 
     @Test
     fun clickWithdraw_showsWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
@@ -78,8 +92,14 @@ class AppSettingViewModelTest {
 
     @Test
     fun clickWithdraw_doesNotChangeProfileState() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 초기 화면의 프로필 값
-        val viewModel = viewModel()
+        // Given SSoT 에서 채워진 프로필 값
+        val account = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("모카"),
+        )
+        val viewModel = viewModel(accountFlow = flowOf(account))
+        advanceUntilIdle()
         val before = viewModel.state.value
 
         // When 팝업을 열었다 닫음
@@ -172,5 +192,55 @@ class AppSettingViewModelTest {
 
         gate.complete(Unit)
         advanceUntilIdle()
+    }
+
+    @Test
+    fun init_beforeSSoTEmits_nicknameAndProviderAreNull() = runTest(mainDispatcherRule.dispatcher) {
+        // Given SSoT 가 아직 아무 것도 방출하지 않은 첫 프레임(구독은 걸렸으나 값이 없다)
+        val viewModel = viewModel(accountFlow = MutableSharedFlow())
+        runCurrent()
+
+        // Then null 은 로딩을 의미한다 — placeholder 문자열로 채워지지 않는다
+        assertNull(viewModel.state.value.nickname)
+        assertNull(viewModel.state.value.loginProvider)
+    }
+
+    @Test
+    fun init_ssotEmitsAccount_updatesNicknameAndProvider() = runTest(mainDispatcherRule.dispatcher) {
+        // Given SSoT 에 저장된 계정 정보
+        val account = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("모카"),
+        )
+
+        // When 화면이 SSoT 를 구독한다
+        val viewModel = viewModel(accountFlow = flowOf(account))
+        advanceUntilIdle()
+
+        // Then 상태가 SSoT 값을 그대로 반영한다
+        assertEquals("모카", viewModel.state.value.nickname)
+        assertEquals(LoginProvider.KAKAO, viewModel.state.value.loginProvider)
+    }
+
+    @Test
+    fun init_ssotEmitsNewAccount_stateFollowsLatestEmission() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 구독 중인 화면에 최초 값이 흘렀다
+        val ssot = MutableSharedFlow<MyAccountVO?>(replay = 1)
+        ssot.tryEmit(
+            MyAccountVO(memberId = MemberId(1L), provider = LoginProvider.KAKAO, nickname = GlobalNickname("모카")),
+        )
+        val viewModel = viewModel(accountFlow = ssot)
+        advanceUntilIdle()
+        assertEquals("모카", viewModel.state.value.nickname)
+
+        // When SSoT 가 갱신된다(예: S-002 에서 닉네임 변경이 로컬에 반영됨)
+        ssot.tryEmit(
+            MyAccountVO(memberId = MemberId(1L), provider = LoginProvider.KAKAO, nickname = GlobalNickname("라떼")),
+        )
+        advanceUntilIdle()
+
+        // Then 화면은 계속 SSoT 를 따라간다 — 최초 구독 값에 멈춰 있지 않는다
+        assertEquals("라떼", viewModel.state.value.nickname)
     }
 }

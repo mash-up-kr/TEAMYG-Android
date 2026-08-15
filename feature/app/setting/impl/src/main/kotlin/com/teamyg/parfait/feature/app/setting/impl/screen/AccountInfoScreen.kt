@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -13,10 +14,13 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
@@ -26,11 +30,14 @@ import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AccountInfoUiState
+import com.teamyg.parfait.feature.app.setting.impl.viewmodel.GlobalNicknameError
+import com.teamyg.parfait.feature.app.setting.impl.viewmodel.toStringResource as globalNicknameErrorToStringResource
 
 @Composable
 internal fun AccountInfoScreen(
     state: AccountInfoUiState,
     onValueChanged: (nickname: String) -> Unit,
+    onClickConfirm: () -> Unit,
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -53,19 +60,38 @@ internal fun AccountInfoScreen(
                         ),
                     ),
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    YGLabel(text = stringResource(R.string.account_info_nickname_label))
-                    YGTextFormField(
-                        value = state.nickname,
-                        onValueChange = onValueChanged,
+                val nickname = state.nickname
+                if (nickname == null) {
+                    // SSoT 가 아직 값을 방출하지 않았다 — 빈 문자열이 아니라 로딩을 보여준다
+                    Text(
+                        text = stringResource(R.string.account_info_nickname_loading),
+                        style = YGTheme.typography.body.b02R,
+                        color = YGAtomicColors.Gray.Gray400,
+                    )
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
                         modifier = Modifier.fillMaxWidth(),
-                        isError = state.nicknameError != null,
-                        maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                        errorDescription = state.nicknameError?.toStringResource(NameFieldType.NICKNAME),
-                        colors = YGTextFormFieldDefaults.colors(),
+                    ) {
+                        YGLabel(text = stringResource(R.string.account_info_nickname_label))
+                        YGTextFormField(
+                            value = nickname,
+                            onValueChange = onValueChanged,
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = state.nicknameError != null || state.submitError != null,
+                            maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
+                            errorDescription = state.nicknameError?.toStringResource(NameFieldType.NICKNAME)
+                                ?: state.submitError?.globalNicknameErrorToStringResource(),
+                            colors = YGTextFormFieldDefaults.colors(),
+                        )
+                    }
+
+                    YGButton(
+                        text = stringResource(R.string.account_info_submit),
+                        buttonType = YGButtonType.Large,
+                        isEnabled = nickname.isNotBlank() && state.nicknameError == null && state.isSubmitting.not(),
+                        onClick = onClickConfirm,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -89,6 +115,11 @@ private class AccountInfoPreviewParameterProvider :
                 nickname = " 가",
                 nicknameError = NameValidResult.Error.SpaceAtEdge,
             ),
+            AccountInfoUiState(
+                nickname = "닉네임바꾸",
+                submitError = GlobalNicknameError.INVALID,
+            ),
+            AccountInfoUiState(nickname = null),
         )
 }
 
@@ -100,6 +131,7 @@ private fun AccountInfoScreenPreview(
     AccountInfoScreen(
         state = uiState,
         onValueChanged = {},
+        onClickConfirm = {},
         onClickBack = {},
         modifier = Modifier.fillMaxSize(),
     )

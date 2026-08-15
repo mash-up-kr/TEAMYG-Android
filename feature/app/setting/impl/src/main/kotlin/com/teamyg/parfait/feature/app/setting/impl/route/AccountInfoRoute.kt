@@ -31,6 +31,7 @@ internal fun AccountInfoRoute(
     AccountInfoScreen(
         state = state,
         onValueChanged = { viewModel.processIntent(AccountInfoIntent.InputWord(it)) },
+        onClickConfirm = { viewModel.processIntent(AccountInfoIntent.ClickConfirm) },
         onClickBack = { viewModel.processIntent(AccountInfoIntent.ClickBack) },
         modifier = modifier,
     )
