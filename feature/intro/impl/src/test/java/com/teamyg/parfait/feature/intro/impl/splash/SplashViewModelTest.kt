@@ -58,29 +58,31 @@ class SplashViewModelTest {
     }
 
     @Test
-    fun init_bootstrapSlow_doesNotStartSecondJobAndEmitsOnce() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 부트스트랩이 곧바로 끝나지 않는다 — launch(key) 가드가 지키는 job 하나가 떠 있다
-        val gate = CompletableDeferred<SessionBootstrap>()
-        coEvery { bootstrapSession() } coAnswers { gate.await() }
-
-        val viewModel = viewModel()
-
-        viewModel.effect.test {
-            // When 아직 응답 전인 상태로 재구성 등으로 여러 번 idle 이 돌아도
+    fun bootstrap_calledAgainWhileFirstStillRunning_doesNotInvokeUseCaseTwice() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 부트스트랩이 곧바로 끝나지 않는다 — init 이 이미 launch(key) 로 job 하나를 띄운 상태
+            val gate = CompletableDeferred<SessionBootstrap>()
+            coEvery { bootstrapSession() } coAnswers { gate.await() }
+            val viewModel = viewModel()
             runCurrent()
-            runCurrent()
-
-            // Then 이펙트는 아직 없고, 조회는 한 번만 나간 채로 대기 중이다
-            expectNoEvents()
             coVerify(exactly = 1) { bootstrapSession() }
 
-            // When 부트스트랩이 마침내 끝나면
-            gate.complete(SessionBootstrap.ToLogin)
-            advanceUntilIdle()
+            viewModel.effect.test {
+                // When 같은 key 를 쓰는 bootstrap() 을 직접 한 번 더 트리거한다
+                // (포그라운드 복귀처럼 향후 두 번째 진입점이 생기는 상황을 흉내낸다)
+                viewModel.bootstrap()
+                runCurrent()
 
-            // Then 이펙트가 정확히 한 번만 나가고, 조회도 끝까지 한 번뿐이다
-            assertEquals(SplashSideEffect.NavigateToLogin, awaitItem())
-            coVerify(exactly = 1) { bootstrapSession() }
+                // Then guard 에 막혀 조회가 다시 나가지 않는다
+                coVerify(exactly = 1) { bootstrapSession() }
+
+                // When 원래 job 이 끝나면
+                gate.complete(SessionBootstrap.ToLogin)
+                advanceUntilIdle()
+
+                // Then 이펙트도 정확히 한 번만 나가고, 조회도 끝까지 한 번뿐이다
+                assertEquals(SplashSideEffect.NavigateToLogin, awaitItem())
+                coVerify(exactly = 1) { bootstrapSession() }
+            }
         }
-    }
 }

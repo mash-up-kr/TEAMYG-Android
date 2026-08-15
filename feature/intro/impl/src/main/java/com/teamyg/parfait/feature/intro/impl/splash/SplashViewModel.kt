@@ -43,8 +43,14 @@ constructor(
      * 항상 [SessionBootstrap.ToLogin]/[SessionBootstrap.ToGroupList] 중 하나로 끝난다),
      * 같은 key 로 guard 를 걸어 두면 이후 이 함수가 다른 진입점(예: 포그라운드 복귀)에서도
      * 다시 불려도 안전하다.
+     *
+     * `internal` 인 이유: 이 guard 자체는 지금은 어떤 UI 경로로도 두 번 트리거되지 않아
+     * (진입점이 `init` 하나뿐) 블랙박스로는 idempotency 를 증명할 수 없다. 테스트가 이
+     * 함수를 직접 두 번 호출해 guard 를 고정할 수 있도록 가시성을 넓혔다 — `private` 로
+     * 감춘 채 존재하지 않는 재시도 UI 를 지어내는 것보다, 이미 있는 함수의 재호출
+     * 안전성을 직접 검증하는 쪽을 택했다.
      */
-    private fun bootstrap() {
+    internal fun bootstrap() {
         launch(key = KEY_BOOTSTRAP) {
             val destination = bootstrapSession()
             postSideEffect(
