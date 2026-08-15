@@ -52,6 +52,8 @@ data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
     val tab: ToppingEditTab = ToppingEditTab.AREA,
+    /** 이미 캔버스에 놓인 토핑을 다시 손보는 중이면 영역은 못 건드리고 테두리만 고칠 수 있다 */
+    val isBorderOnly: Boolean = false,
     val mode: ToppingEditMode = ToppingEditMode.ERASE,
     val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
     /**
@@ -160,10 +162,14 @@ class ToppingEditViewModel
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
     @Assisted("borderLayers") private val initialBorderLayers: List<ToppingBorderLayer>,
+    @Assisted("borderOnly") borderOnly: Boolean,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveEditedImageUseCase: SaveEditedImageUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
-    initialState = ToppingEditState(),
+    initialState = ToppingEditState(
+        tab = if (borderOnly) ToppingEditTab.BORDER else ToppingEditTab.AREA,
+        isBorderOnly = borderOnly,
+    ),
 ) {
     init {
         loadImages()
@@ -320,6 +326,7 @@ class ToppingEditViewModel
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
             @Assisted("borderLayers") borderLayers: List<ToppingBorderLayer>,
+            @Assisted("borderOnly") borderOnly: Boolean,
         ): ToppingEditViewModel
     }
 }

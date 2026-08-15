@@ -30,6 +30,7 @@ internal fun ToppingEditRoute(
                 sourceImageUri = key.sourceImageUri,
                 segmentationImageUri = key.segmentationImageUri,
                 borderLayers = key.borderLayers,
+                borderOnly = key.borderOnly,
             )
         },
     )
