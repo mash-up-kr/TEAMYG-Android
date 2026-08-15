@@ -368,8 +368,7 @@ private fun CanvasToppingImage(
             ),
     ) {
         Image(
-            painter = topping.editedImagePath?.let { path -> rememberAsyncImagePainter(model = path) }
-                ?: painterResource(topping.imageResId),
+            painter = painterResource(topping.imageResId),
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),

@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -18,10 +17,8 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import javax.inject.Inject
 
 enum class CanvasEditTab { BACKGROUND, TOPPING }
@@ -36,9 +33,6 @@ data class CanvasToppingItem(
     val segmentationImageUri: String,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
-    val borderLayers: List<ToppingBorderLayer> = emptyList(),
-    /** 테두리 편집을 거쳐 새로 구운 이미지 경로. 있으면 [imageResId] 대신 이걸 그린다. */
-    val editedImagePath: String? = null,
 )
 
 private const val TOPPING_MIN_SCALE = 0.5f
@@ -133,12 +127,6 @@ sealed interface CanvasBGEditIntent : UiIntent {
     data class OnToppingMoveDrag(
         val delta: DpOffset,
     ) : CanvasBGEditIntent
-
-    /** 테두리 편집 화면에서 돌아온 결과. 편집을 시작한 토핑에 새 이미지·테두리를 반영한다. */
-    data class OnToppingEditResult(
-        val toppingId: Long,
-        val result: ToppingEditResult,
-    ) : CanvasBGEditIntent
 }
 
 sealed interface CanvasBGEditEffect : UiSideEffect {
@@ -153,7 +141,6 @@ sealed interface CanvasBGEditEffect : UiSideEffect {
     ) : CanvasBGEditEffect
 
     data class NavigateToToppingEdit(
-        val toppingId: Long,
         val sourceImageUri: String,
         val segmentationImageUri: String,
         val borderLayers: List<ToppingBorderLayer>,
@@ -241,7 +228,6 @@ constructor(
             is CanvasBGEditIntent.OnToppingResizeDrag -> handleOnToppingResizeDrag(intent)
             is CanvasBGEditIntent.OnToppingRotateDrag -> handleOnToppingRotateDrag(intent)
             is CanvasBGEditIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
-            is CanvasBGEditIntent.OnToppingEditResult -> handleOnToppingEditResult(intent)
         }
     }
 
@@ -331,23 +317,11 @@ constructor(
 
         postSideEffect(
             effect = CanvasBGEditEffect.NavigateToToppingEdit(
-                toppingId = selected.parfaitImageId,
                 sourceImageUri = selected.sourceImageUri,
                 segmentationImageUri = selected.segmentationImageUri,
-                borderLayers = selected.borderLayers,
+                borderLayers = emptyList(),
             ),
         )
-    }
-
-    private fun handleOnToppingEditResult(intent: CanvasBGEditIntent.OnToppingEditResult) {
-        applyToppingTransform(intent.toppingId) { topping ->
-            topping.copy(
-                // 다시 편집을 열 때 이 사진에서 시작해야 방금 지운/되살린 영역이 유지된다
-                segmentationImageUri = File(intent.result.cutoutImagePath).toUri().toString(),
-                borderLayers = intent.result.borderLayers,
-                editedImagePath = intent.result.editedImagePath,
-            )
-        }
     }
 
     private fun handleOnSelectColor(intent: CanvasBGEditIntent.OnSelectColor) {
