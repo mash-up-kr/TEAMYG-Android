@@ -5,10 +5,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.InviteCode
-import com.teamyg.parfait.domain.model.group.JoinedGroupVO
-import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.usecase.group.GetGroupJoinPreviewUseCase
-import com.teamyg.parfait.domain.usecase.group.JoinGroupUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -21,21 +18,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class GroupInviteCodeViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getGroupJoinPreview: GetGroupJoinPreviewUseCase = mockk()
-    private val joinGroup: JoinGroupUseCase = mockk()
 
-    private fun viewModel() = GroupInviteCodeViewModel(
-        getGroupJoinPreview = getGroupJoinPreview,
-        joinGroup = joinGroup,
-    )
+    private fun viewModel() = GroupInviteCodeViewModel(getGroupJoinPreview = getGroupJoinPreview)
 
-    /** 초대코드를 다 채운 화면을 만든다 — 조회·참여는 코드가 다 차야 나간다 */
+    /** 초대코드를 다 채운 화면을 만든다 — 조회는 코드가 다 차야 나간다 */
     private fun filledViewModel(): GroupInviteCodeViewModel = viewModel().apply {
         processIntent(GroupInviteCodeIntent.InputWord(index = 0, word = INVITE_CODE))
     }
@@ -44,28 +36,25 @@ class GroupInviteCodeViewModelTest {
         coEvery { getGroupJoinPreview(any()) } returns Result.success(GroupName(GROUP_NAME))
     }
 
-    private fun givenJoinSucceeds() {
-        coEvery { joinGroup(any()) } returns Result.success(
-            JoinedGroupVO(groupId = GroupId(GROUP_ID), groupName = GroupName(GROUP_NAME)),
-        )
-    }
-
     @Test
-    fun clickNextButton_previewSucceeds_showsConfirmPopupWithGroupName() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNextButton_previewSucceeds_navigatesWithCodeAndGroupName() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초대코드를 다 입력한 화면
         givenPreviewSucceeds()
         val viewModel = filledViewModel()
 
-        // When 확인 버튼 클릭
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
 
-        // Then 서버가 준 그룹명으로 참여 확인 팝업이 뜬다
-        val state = viewModel.state.value
-        assertTrue(state.isConfirmPopupVisible)
-        assertEquals(GROUP_NAME, state.groupName)
-        assertNull(state.inviteCodeError)
-        coVerify(exactly = 1) { getGroupJoinPreview(InviteCode(INVITE_CODE)) }
+            // Then 참여는 다음 화면에서 하므로, 초대코드와 그룹명을 들고 바로 넘어간다
+            assertEquals(
+                GroupInviteCodeSideEffect.NavigateToNext(inviteCode = INVITE_CODE, groupName = GROUP_NAME),
+                awaitItem(),
+            )
+            assertNull(viewModel.state.value.inviteCodeError)
+            coVerify(exactly = 1) { getGroupJoinPreview(InviteCode(INVITE_CODE)) }
+        }
     }
 
     @Test
@@ -75,13 +64,15 @@ class GroupInviteCodeViewModelTest {
         val viewModel = viewModel()
         viewModel.processIntent(GroupInviteCodeIntent.InputWord(index = 0, word = "ABC"))
 
-        // When 확인 버튼 클릭
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
 
-        // Then 조회 요청 자체가 나가지 않는다
-        coVerify(exactly = 0) { getGroupJoinPreview(any()) }
-        assertFalse(viewModel.state.value.isConfirmPopupVisible)
+            // Then 조회 요청 자체가 나가지 않고 화면도 그대로다
+            coVerify(exactly = 0) { getGroupJoinPreview(any()) }
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -92,14 +83,53 @@ class GroupInviteCodeViewModelTest {
         )
         val viewModel = filledViewModel()
 
-        // When 확인 버튼 클릭
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
 
-        // Then 팝업 대신 입력 자리에 사유가 붙는다
-        val state = viewModel.state.value
-        assertFalse(state.isConfirmPopupVisible)
-        assertEquals(InviteCodeError.INVALID_CODE, state.inviteCodeError)
+            // Then 넘어가지 않고 입력 자리에 사유가 붙는다
+            expectNoEvents()
+            assertEquals(InviteCodeError.INVALID_CODE, viewModel.state.value.inviteCodeError)
+        }
+    }
+
+    @Test
+    fun clickNextButton_alreadyJoined_showsAlreadyJoinedError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 409 GROUP_ALREADY_JOINED 로 응답
+        coEvery { getGroupJoinPreview(any()) } returns Result.failure(
+            AppError.Server(code = "GROUP_ALREADY_JOINED", statusCode = 409, serverMessage = "…"),
+        )
+        val viewModel = filledViewModel()
+
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
+
+            // Then 참여를 시도하기 전에 여기서 막힌다
+            expectNoEvents()
+            assertEquals(InviteCodeError.ALREADY_JOINED, viewModel.state.value.inviteCodeError)
+        }
+    }
+
+    @Test
+    fun clickNextButton_memberLimitReached_showsMemberLimitError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 정원이 찬 그룹이라 409 GROUP_MEMBER_LIMIT_REACHED 로 응답
+        coEvery { getGroupJoinPreview(any()) } returns Result.failure(
+            AppError.Server(code = "GROUP_MEMBER_LIMIT_REACHED", statusCode = 409, serverMessage = "…"),
+        )
+        val viewModel = filledViewModel()
+
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
+
+            // Then 정원 초과 사유가 붙는다
+            expectNoEvents()
+            assertEquals(InviteCodeError.MEMBER_LIMIT_REACHED, viewModel.state.value.inviteCodeError)
+        }
     }
 
     @Test
@@ -135,122 +165,6 @@ class GroupInviteCodeViewModelTest {
 
         // Then 중복 요청이 나가지 않는다
         coVerify(exactly = 1) { getGroupJoinPreview(any()) }
-
-        gate.complete(Unit)
-        advanceUntilIdle()
-    }
-
-    @Test
-    fun clickConfirmPopupEnter_joinSucceeds_navigatesWithJoinedGroupId() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여 확인 팝업이 뜬 화면
-        givenPreviewSucceeds()
-        givenJoinSucceeds()
-        val viewModel = filledViewModel()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
-
-        viewModel.effect.test {
-            // When 팝업의 참여하기 클릭
-            viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-            advanceUntilIdle()
-
-            // Then 참여한 그룹 id 를 들고 닉네임 화면으로 간다
-            assertEquals(GroupInviteCodeSideEffect.NavigateToNext(groupId = GROUP_ID), awaitItem())
-            assertFalse(viewModel.state.value.isConfirmPopupVisible)
-            coVerify(exactly = 1) { joinGroup(InviteCode(INVITE_CODE)) }
-        }
-    }
-
-    @Test
-    fun clickConfirmPopupEnter_alreadyJoined_closesPopupAndShowsError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여 확인 팝업이 뜬 뒤 서버가 409 GROUP_ALREADY_JOINED 로 응답
-        givenPreviewSucceeds()
-        coEvery { joinGroup(any()) } returns Result.failure(
-            AppError.Server(code = "GROUP_ALREADY_JOINED", statusCode = 409, serverMessage = "…"),
-        )
-        val viewModel = filledViewModel()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
-
-        viewModel.effect.test {
-            // When 팝업의 참여하기 클릭
-            viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-            advanceUntilIdle()
-
-            // Then 이동하지 않고 팝업을 닫은 뒤 입력 자리에 사유가 붙는다
-            expectNoEvents()
-            val state = viewModel.state.value
-            assertFalse(state.isConfirmPopupVisible)
-            assertEquals(InviteCodeError.ALREADY_JOINED, state.inviteCodeError)
-        }
-    }
-
-    @Test
-    fun clickConfirmPopupEnter_memberLimitReached_showsMemberLimitError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 정원이 찬 그룹이라 409 GROUP_MEMBER_LIMIT_REACHED 로 응답
-        givenPreviewSucceeds()
-        coEvery { joinGroup(any()) } returns Result.failure(
-            AppError.Server(code = "GROUP_MEMBER_LIMIT_REACHED", statusCode = 409, serverMessage = "…"),
-        )
-        val viewModel = filledViewModel()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
-
-        // When 팝업의 참여하기 클릭
-        viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-        advanceUntilIdle()
-
-        // Then 정원 초과 사유가 붙는다
-        assertEquals(InviteCodeError.MEMBER_LIMIT_REACHED, viewModel.state.value.inviteCodeError)
-    }
-
-    @Test
-    fun clickConfirmPopupEnter_whileJoining_doesNotJoinTwice() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여 요청이 아직 끝나지 않은 화면
-        givenPreviewSucceeds()
-        val gate = CompletableDeferred<Unit>()
-        coEvery { joinGroup(any()) } coAnswers {
-            gate.await()
-            Result.success(JoinedGroupVO(groupId = GroupId(GROUP_ID), groupName = GroupName(GROUP_NAME)))
-        }
-        val viewModel = filledViewModel()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-        runCurrent()
-
-        // When 참여하기를 한 번 더 클릭
-        viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-        runCurrent()
-
-        // Then 중복 참여 요청이 나가지 않는다
-        coVerify(exactly = 1) { joinGroup(any()) }
-
-        gate.complete(Unit)
-        advanceUntilIdle()
-    }
-
-    @Test
-    fun dismissConfirmPopup_whileJoining_keepsPopupOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여 요청이 도는 중
-        givenPreviewSucceeds()
-        val gate = CompletableDeferred<Unit>()
-        coEvery { joinGroup(any()) } coAnswers {
-            gate.await()
-            Result.success(JoinedGroupVO(groupId = GroupId(GROUP_ID), groupName = GroupName(GROUP_NAME)))
-        }
-        val viewModel = filledViewModel()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
-        advanceUntilIdle()
-        viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter)
-        runCurrent()
-
-        // When 팝업 바깥을 눌러 닫으려 한다
-        viewModel.processIntent(GroupInviteCodeIntent.DismissConfirmPopup)
-        runCurrent()
-
-        // Then 요청이 도는 동안에는 닫히지 않는다 — 참여 결과를 못 본 채로 화면이 남으면 안 된다
-        assertTrue(viewModel.state.value.isConfirmPopupVisible)
 
         gate.complete(Unit)
         advanceUntilIdle()
@@ -361,6 +275,5 @@ class GroupInviteCodeViewModelTest {
     private companion object {
         const val INVITE_CODE = "ABCDEF"
         const val GROUP_NAME = "모카의 파르페"
-        const val GROUP_ID = 7L
     }
 }

@@ -43,7 +43,12 @@ fun GroupInviteCodeRoute(
                 }
 
                 is GroupInviteCodeSideEffect.NavigateToNext -> {
-                    navigator.goTo(NavKeyGroupNickName(groupId = effect.groupId))
+                    navigator.goTo(
+                        NavKeyGroupNickName(
+                            inviteCode = effect.inviteCode,
+                            groupName = effect.groupName,
+                        ),
+                    )
                 }
             }
         }
@@ -84,8 +89,6 @@ fun GroupInviteCodeRoute(
         },
         onClickNextButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickBackButton) },
-        onClickConfirmPopupEnter = { viewModel.processIntent(GroupInviteCodeIntent.ClickConfirmPopupEnter) },
-        onDismissConfirmPopup = { viewModel.processIntent(GroupInviteCodeIntent.DismissConfirmPopup) },
         onClickPasteBar = { viewModel.processIntent(GroupInviteCodeIntent.ClickPasteInviteCode) },
         modifier = modifier,
     )
