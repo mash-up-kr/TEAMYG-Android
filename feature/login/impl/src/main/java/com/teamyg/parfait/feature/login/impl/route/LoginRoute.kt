@@ -3,12 +3,15 @@ package com.teamyg.parfait.feature.login.impl.route
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.feature.login.impl.R
@@ -18,6 +21,7 @@ import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
+import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
 fun LoginRoute(
@@ -53,18 +57,41 @@ fun LoginRoute(
         )
     }
 
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is LoginSideEffect.NavigateToNext -> {
-                    navigator.goTo(destination = NavKeyTermAgree)
+                is LoginSideEffect.NavigateToGroupList -> {
+                    navigator.clearBackStack()
+                    navigator.goTo(destination = NavKeyGroupList)
+                }
+
+                is LoginSideEffect.NavigateToTermAgree -> {
+                    navigator.goTo(
+                        destination = NavKeyTermAgree(registrationToken = effect.registrationToken),
+                    )
                 }
 
                 is LoginSideEffect.RequestLoginWithKakao -> {
-                    activity?.let {
-                        when (val result = kakaoLoginHelper.login(activity)) {
+                    // activity 가 null 이면 로딩이 켜진 채 영영 남는다 — 실패로 닫는다
+                    val currentActivity = activity
+                    if (currentActivity == null) {
+                        viewModel.processIntent(
+                            LoginIntent.LoginWithKakaoFailure(IllegalStateException("Activity 가 없다")),
+                        )
+                        return@collect
+                    }
+
+                    try {
+                        when (val result = kakaoLoginHelper.login(currentActivity)) {
                             is KakaoLoginResult.Success ->
-                                viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(result.token))
+                                viewModel.processIntent(
+                                    LoginIntent.LoginWithKakaoSuccess(
+                                        idToken = result.idToken,
+                                        nonce = result.nonce,
+                                    ),
+                                )
 
                             is KakaoLoginResult.Failure ->
                                 viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(result.throwable))
@@ -72,6 +99,11 @@ fun LoginRoute(
                             is KakaoLoginResult.Cancel ->
                                 viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
                         }
+                    } catch (e: CancellationException) {
+                        // 설정 변경(회전 등)으로 컴포지션이 죽어 이 continuation 이 취소되면
+                        // SDK 콜백이 돌아올 곳이 없다 — 로딩이 영구히 켜진 채 남는 것을 막는다
+                        viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+                        throw e
                     }
                 }
             }
@@ -80,6 +112,7 @@ fun LoginRoute(
 
     LoginScreen(
         pages = tempPages,
+        isLoading = state.isLoading,
         onClickKakaoButton = {
             viewModel.processIntent(LoginIntent.LoginWithKakao)
         },

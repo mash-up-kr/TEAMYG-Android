@@ -28,10 +28,11 @@ fun EntryProviderScope<NavKey>.featureSplashEntryBuilder(navigator: Navigator) {
 }
 
 fun EntryProviderScope<NavKey>.featureTermAgreeEntryBuilder(navigator: Navigator) {
-    entry<NavKeyTermAgree> {
+    entry<NavKeyTermAgree> { navKey ->
         YGScaffold { innerPadding ->
             TermAgreeRoute(
                 navigator = navigator,
+                registrationToken = navKey.registrationToken,
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color = YGTheme.colorScheme.grayScale.white)
