@@ -12,6 +12,7 @@ import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.data.security.CryptoManager
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -25,9 +26,15 @@ constructor(
     @LocalJson private val json: Json,
     private val cryptoManager: CryptoManager,
 ) : UserInfoLocalDataSource {
-    override val myAccount: Flow<MyAccountVO?> = dataStore.data.map { preferences ->
-        decode(preferences[USER_INFO_KEY])
-    }
+    // `parfait_preferences` 는 `EncryptedTokenStore`·`RecentImageLocalDataSourceImpl` 과
+    // 공유하는 DataStore 라 `dataStore.data` 는 이 키와 무관한 다른 키 변경에도 재방출한다.
+    // 원문 값에서 먼저 dedupe 한 뒤 decode 해야, 편집 중인 화면(예: 닉네임 입력 필드)이
+    // 무관한 쓰기(예: 토큰 재발급 저장)로 재방출을 맞고도 값이 바뀌지 않아 조용히 넘어간다.
+    // decode 뒤에 dedupe 하면 이미 매번 Keystore 복호화가 일어난 다음이라 비용을 못 던다.
+    override val myAccount: Flow<MyAccountVO?> = dataStore.data
+        .map { preferences -> preferences[USER_INFO_KEY] }
+        .distinctUntilChanged()
+        .map { stored -> decode(stored) }
 
     override suspend fun save(account: MyAccountVO) {
         val encoded = json.encodeToString(account.toEntity())
