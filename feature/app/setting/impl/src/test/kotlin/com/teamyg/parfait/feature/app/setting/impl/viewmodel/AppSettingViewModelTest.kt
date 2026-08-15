@@ -1,6 +1,14 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
@@ -12,7 +20,9 @@ class AppSettingViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private fun viewModel() = AppSettingViewModel()
+    private val logout: LogoutUseCase = mockk()
+
+    private fun viewModel() = AppSettingViewModel(logout = logout)
 
     @Test
     fun clickWithdraw_showsWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
@@ -82,5 +92,45 @@ class AppSettingViewModelTest {
         assertEquals(before.loginProvider, after.loginProvider)
         assertEquals(before.version, after.version)
         assertFalse(after.isWithdrawDialogVisible)
+    }
+
+    @Test
+    fun clickLogout_succeeds_navigatesToLogin() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 로그아웃이 성공하는 화면
+        coEvery { logout() } returns Result.success(Unit)
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            // When 로그아웃을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickLogout)
+            advanceUntilIdle()
+
+            // Then 로그인 화면으로 간다
+            assertEquals(AppSettingSideEffect.NavigateToLogin, awaitItem())
+            coVerify(exactly = 1) { logout() }
+        }
+    }
+
+    @Test
+    fun clickLogout_whileLoggingOut_doesNotRequestAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 로그아웃 요청이 아직 끝나지 않은 화면
+        val gate = CompletableDeferred<Unit>()
+        coEvery { logout() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        val viewModel = viewModel()
+        viewModel.processIntent(AppSettingIntent.ClickLogout)
+        runCurrent()
+
+        // When 한 번 더 누른다
+        viewModel.processIntent(AppSettingIntent.ClickLogout)
+        runCurrent()
+
+        // Then 중복 요청이 나가지 않는다
+        coVerify(exactly = 1) { logout() }
+
+        gate.complete(Unit)
+        advanceUntilIdle()
     }
 }

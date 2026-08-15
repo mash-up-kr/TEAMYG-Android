@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -47,12 +48,16 @@ sealed interface AppSettingSideEffect : UiSideEffect {
     data object NavigateToServiceTerms : AppSettingSideEffect
 
     data object NavigateToPrivacyPolicy : AppSettingSideEffect
+
+    data object NavigateToLogin : AppSettingSideEffect
 }
 
 @HiltViewModel
 class AppSettingViewModel
 @Inject
-constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
+constructor(
+    private val logout: LogoutUseCase,
+) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
     init {
@@ -89,8 +94,12 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
     }
 
     private fun handleClickLogout() {
-        // TODO auth 로그아웃 연동 전 stub
-        viewModelLogger.i { "AppSettingViewModel::handleClickLogout (stub)" }
+        launch(key = KEY_LOGOUT) {
+            // logout() 은 서버 실패도 성공으로 접어 돌려준다 — 이 기기에서 나가는 것이
+            // 사용자가 누른 것의 의미이고, 화면이 갈래를 나눌 이유가 없다
+            logout()
+            postSideEffect(AppSettingSideEffect.NavigateToLogin)
+        }
     }
 
     private fun handleClickWithdraw() {
@@ -107,5 +116,10 @@ constructor() : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideE
 
     private fun handleDismissWithdrawDialog() {
         updateState { copy(isWithdrawDialogVisible = false) }
+    }
+
+    private companion object {
+        /** [launch] 중복 실행 가드 키 — 로그아웃 job 하나를 가리킨다 */
+        const val KEY_LOGOUT = "logout"
     }
 }
