@@ -1,31 +1,40 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 class GroupTimestampTest {
-    private val timeZone = TimeZone.UTC
-    private val uploadedAt = LocalDateTime(2026, 8, 15, 10, 0)
-    private val uploadedInstant = uploadedAt.toInstant(timeZone)
+    private val uploadedAt = Instant.parse("2026-08-15T10:00:00Z")
 
-    private fun timestampAfter(elapsed: kotlin.time.Duration) =
-        uploadedAt.toGroupTimestamp(now = uploadedInstant + elapsed, timeZone = timeZone)
+    private fun timestampAfter(elapsed: Duration) = uploadedAt.toGroupTimestamp(now = uploadedAt + elapsed)
 
     @Test
     fun nullUploadedAt_isNoImage() {
         // Given 아직 아무도 토핑을 올리지 않은 그룹
         // When 경과 단위를 고른다
-        val timestamp = null.toGroupTimestamp(now = uploadedInstant, timeZone = timeZone)
+        val timestamp = null.toGroupTimestamp(now = uploadedAt)
 
         // Then 조회 실패가 아니라 "이미지 없음" 갈래로 떨어진다
         assertEquals(GroupTimestamp.NoImage, timestamp)
+    }
+
+    @Test
+    fun sameInstantWrittenInAnotherOffset_isTheSameElapsed() {
+        // Given 같은 순간을 UTC 와 KST 표기로 각각 받는다
+        val utc = Instant.parse("2026-08-15T05:17:10Z")
+        val kst = Instant.parse("2026-08-15T14:17:10+09:00")
+        val now = utc + 30.minutes
+
+        // When 각각 경과 단위를 고른다
+        // Then 표기가 달라도 같은 순간이라 같은 값이 나온다
+        assertEquals(utc.toGroupTimestamp(now), kst.toGroupTimestamp(now))
+        assertEquals(GroupTimestamp.Minutes(30), kst.toGroupTimestamp(now))
     }
 
     @Test

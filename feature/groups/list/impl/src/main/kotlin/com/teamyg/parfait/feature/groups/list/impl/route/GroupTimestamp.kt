@@ -3,9 +3,6 @@ package com.teamyg.parfait.feature.groups.list.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.feature.groups.list.impl.R
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -29,15 +26,13 @@ internal sealed interface GroupTimestamp {
 }
 
 /**
- * 서버는 오프셋 없는 `LocalDateTime` 을 주므로 [timeZone] 을 붙여 시점으로 만든다.
+ * 두 시점의 차이라 기기 타임존과 무관하게 같은 값이 나온다 — 해외에서 봐도 어긋나지 않는다.
+ *
  * 기기 시계가 서버보다 뒤처져 미래 시각이 들어오면 [GroupTimestamp.JustNow] 로 본다 —
  * 음수 경과를 그대로 보여주는 것보다 낫다.
  */
-internal fun LocalDateTime?.toGroupTimestamp(
-    now: Instant,
-    timeZone: TimeZone,
-): GroupTimestamp {
-    val uploadedAt = this?.toInstant(timeZone) ?: return GroupTimestamp.NoImage
+internal fun Instant?.toGroupTimestamp(now: Instant): GroupTimestamp {
+    val uploadedAt = this ?: return GroupTimestamp.NoImage
     val elapsed = now - uploadedAt
 
     return when {

@@ -22,13 +22,14 @@ import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
-import kotlinx.datetime.LocalDateTime
+import kotlin.time.Instant
 
 internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyParfaitGroupVO(
     groupId = GroupId(groupId),
     groupName = GroupName(groupName),
     recentImageUrl = recentImageUrl,
-    recentImageUploadedAt = recentImageUploadedAt?.let(LocalDateTime::parse),
+    // 오프셋(`Z`)째로 읽는다 — 벽시계 숫자로 받으면 기기 타임존에 따라 다른 시점이 된다
+    recentImageUploadedAt = recentImageUploadedAt?.let(Instant::parse),
 )
 
 internal fun MyParfaitGroupDetailResponse.toParfaitGroupDetailVO(): ParfaitGroupDetailVO = ParfaitGroupDetailVO(

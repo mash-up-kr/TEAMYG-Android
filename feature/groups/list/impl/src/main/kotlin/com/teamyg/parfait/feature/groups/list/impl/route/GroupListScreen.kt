@@ -33,9 +33,8 @@ import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParf
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
 import kotlin.time.Clock
+import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
@@ -158,14 +157,13 @@ internal fun GroupListContent(
         ) {
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
             val now = remember(groupList) { Clock.System.now() }
-            val timeZone = TimeZone.currentSystemDefault()
 
             groupList.fastForEachIndexed { index, group ->
                 YGToppingGroup(
                     image = group.toToppingImage(),
                     name = group.groupName.value,
                     timestamp = group.recentImageUploadedAt
-                        .toGroupTimestamp(now = now, timeZone = timeZone)
+                        .toGroupTimestamp(now)
                         .toStringResource(),
                     chipType = CHIP_TYPES[index % CHIP_TYPES.size],
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
@@ -182,13 +180,13 @@ private class GroupListScreenPreviewParameterProvider :
             groupId = GroupId(1L),
             groupName = GroupName("매시업"),
             recentImageUrl = "https://picsum.photos/id/1025/200",
-            recentImageUploadedAt = LocalDateTime(2026, 8, 15, 9, 57),
+            recentImageUploadedAt = Instant.parse("2026-08-15T09:57:00Z"),
         ),
         MyParfaitGroupVO(
             groupId = GroupId(2L),
             groupName = GroupName("매시업매시업매시업"),
             recentImageUrl = "https://picsum.photos/id/1062/200",
-            recentImageUploadedAt = LocalDateTime(2026, 8, 15, 8, 0),
+            recentImageUploadedAt = Instant.parse("2026-08-15T08:00:00Z"),
         ),
         MyParfaitGroupVO(
             groupId = GroupId(3L),

@@ -13,12 +13,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDateTime
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class GroupListViewModelTest {
     @get:Rule
@@ -152,7 +152,7 @@ class GroupListViewModelTest {
                 groupId = GroupId(1L),
                 groupName = GroupName("모카의 파르페"),
                 recentImageUrl = "https://cdn.example.com/a.png",
-                recentImageUploadedAt = LocalDateTime(2026, 8, 15, 10, 0),
+                recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
             ),
             MyParfaitGroupVO(
                 groupId = GroupId(2L),

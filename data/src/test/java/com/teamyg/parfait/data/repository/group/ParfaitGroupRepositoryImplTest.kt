@@ -15,11 +15,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDateTime
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Instant
 
 class ParfaitGroupRepositoryImplTest {
     private val remoteDataSource: ParfaitGroupRemoteDataSource = mockk()
@@ -38,7 +38,7 @@ class ParfaitGroupRepositoryImplTest {
                 groupId = groupId,
                 groupName = groupName,
                 recentImageUrl = "https://cdn.example.com/a.png",
-                recentImageUploadedAt = LocalDateTime(2026, 8, 15, 10, 0),
+                recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
             ),
             MyParfaitGroupVO(
                 groupId = GroupId(2L),
