@@ -133,7 +133,7 @@ private class GroupNickNameScreenPreviewParameterProvider :
             GroupNickNameUiState(
                 groupName = GROUP_NAME,
                 nickName = "hello",
-                submitError = GroupNickNameError.INVALID,
+                submitError = GroupNickNameError.MEMBER_LIMIT_REACHED,
             ),
             GroupNickNameUiState(
                 groupName = GROUP_NAME,

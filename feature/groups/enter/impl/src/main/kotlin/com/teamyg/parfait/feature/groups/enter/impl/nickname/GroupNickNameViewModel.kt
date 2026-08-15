@@ -97,15 +97,19 @@ constructor(
             updateState { copy(submitError = null, isEntering = true) }
             try {
                 val joined = joinGroup(inviteCode).getOrElse { throwable ->
-                    handleFailure(throwable, "그룹 참여")
+                    handleJoinFailure(throwable)
                     return@launch
                 }
 
                 changeGroupNickname(groupId = joined.groupId, groupNickname = GroupNickname(state.value.nickName))
-                    .onSuccess {
-                        updateState { copy(isConfirmPopupVisible = false) }
-                        postSideEffect(GroupNickNameSideEffect.NavigateToNext)
-                    }.onFailure { throwable -> handleFailure(throwable, "그룹 닉네임 적용") }
+                    .onFailure { throwable ->
+                        // TODO(닉네임 적용 실패 안내): 참여는 됐고 전역 닉네임이 그대로 쓰이는 상태다.
+                        //  "닉네임은 나중에 바꿀 수 있어요" 정도의 토스트를 띄울 자리가 필요하다
+                        viewModelLogger.e(throwable) { "그룹 닉네임 적용 실패 — 전역 닉네임을 그대로 쓴다" }
+                    }
+
+                updateState { copy(isConfirmPopupVisible = false) }
+                postSideEffect(GroupNickNameSideEffect.NavigateToNext)
             } finally {
                 // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
                 // 영구 비활성으로 남는 것을 여기서 막는다
@@ -115,10 +119,7 @@ constructor(
     }
 
     /** 실패 갈래를 전부 열거해 둔다. 화면에는 입력 자리 아래 한 줄로만 나간다 */
-    private fun handleFailure(
-        throwable: Throwable,
-        action: String,
-    ) {
+    private fun handleJoinFailure(throwable: Throwable) {
         val error = when (throwable) {
             is AppError.Network -> GroupNickNameError.NETWORK
 
@@ -126,14 +127,13 @@ constructor(
                 ServerErrorCode.ParfaitGroup.INVALID_INVITE_CODE -> GroupNickNameError.INVALID_INVITE_CODE
                 ServerErrorCode.ParfaitGroup.GROUP_ALREADY_JOINED -> GroupNickNameError.ALREADY_JOINED
                 ServerErrorCode.ParfaitGroup.GROUP_MEMBER_LIMIT_REACHED -> GroupNickNameError.MEMBER_LIMIT_REACHED
-                ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupNickNameError.INVALID
                 else -> GroupNickNameError.UNKNOWN
             }
 
             else -> GroupNickNameError.UNKNOWN
         }
 
-        viewModelLogger.e(throwable) { "$action 실패 — $error" }
+        viewModelLogger.e(throwable) { "그룹 참여 실패 — $error" }
         updateState { copy(isConfirmPopupVisible = false, submitError = error) }
     }
 

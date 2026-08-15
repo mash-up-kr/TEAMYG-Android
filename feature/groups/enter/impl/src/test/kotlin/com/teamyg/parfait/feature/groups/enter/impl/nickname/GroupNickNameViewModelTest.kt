@@ -142,7 +142,7 @@ class GroupNickNameViewModelTest {
     }
 
     @Test
-    fun clickConfirmPopupEnter_serverRejectsNickname_showsInvalidError() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickConfirmPopupEnter_nicknameFails_stillEntersTheGroup() = runTest(mainDispatcherRule.dispatcher) {
         // Given 참여는 됐지만 서버가 400 INVALID_GROUP_NICKNAME 으로 응답
         givenJoinSucceeds()
         coEvery { changeGroupNickname(any(), any()) } returns Result.failure(
@@ -155,10 +155,11 @@ class GroupNickNameViewModelTest {
             viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
             advanceUntilIdle()
 
-            // Then 이동하지 않고 입력 자리에 사유가 붙는다
-            expectNoEvents()
-            assertEquals(GroupNickNameError.INVALID, viewModel.state.value.submitError)
-            assertFalse(viewModel.state.value.isEntering)
+            // Then 참여 자체는 끝났으므로 전역 닉네임을 그대로 둔 채 다음 화면으로 간다
+            assertEquals(GroupNickNameSideEffect.NavigateToNext, awaitItem())
+            val state = viewModel.state.value
+            assertFalse(state.isConfirmPopupVisible)
+            assertNull(state.submitError)
         }
     }
 
