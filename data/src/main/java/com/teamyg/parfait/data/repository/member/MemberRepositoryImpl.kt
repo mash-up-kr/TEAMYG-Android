@@ -28,12 +28,20 @@ class MemberRepositoryImpl @Inject constructor(
     /**
      * 성공 응답을 받은 뒤에 로컬을 갱신한다(낙관적 갱신 안 함) — 실패했는데 다른 화면에
      * 새 닉네임이 보이는 것이 되돌리는 것보다 나쁘다.
+     *
+     * 로컬이 비어 있으면(`current == null`) `memberId`·`provider` 를 몰라 닉네임만으로
+     * VO 를 만들 수 없으므로 [refreshMyAccount] 로 폴백해 SSoT 를 채운다. 그 결과는
+     * 무시한다 — 닉네임 변경 자체는 이미 성공했으니, 폴백(재조회)이 실패한다고 이 함수의
+     * 결과까지 실패로 되돌리면 안 된다.
      */
     override suspend fun changeGlobalNickname(nickname: GlobalNickname): Result<GlobalNickname> = remoteDataSource
         .changeGlobalNickname(nickname)
         .onSuccess { changed ->
-            localDataSource.myAccount.first()?.let { current ->
+            val current = localDataSource.myAccount.first()
+            if (current != null) {
                 localDataSource.save(current.copy(nickname = changed))
+            } else {
+                refreshMyAccount()
             }
         }.mapErrorToAppError()
 

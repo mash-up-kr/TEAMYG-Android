@@ -83,6 +83,25 @@ class MemberRepositoryImplTest {
     }
 
     @Test
+    fun changeGlobalNickname_succeedsWithEmptyLocal_fallsBackToRefresh() = runTest {
+        // Given 로컬이 비어 있고(memberId·provider 를 모름) 서버가 새 닉네임을 확인해 준다
+        every { localDataSource.myAccount } returns flowOf(null)
+        coEvery { remoteDataSource.changeGlobalNickname(NEW_NICKNAME) } returns
+            Result.success(NEW_NICKNAME)
+        coEvery { remoteDataSource.getMyAccount() } returns Result.success(ACCOUNT)
+        coEvery { localDataSource.save(any()) } returns Unit
+
+        // When 닉네임을 바꾼다
+        val result = repository.changeGlobalNickname(NEW_NICKNAME)
+
+        // Then 닉네임만으로 VO를 지어내 저장하지 않는다 — 재조회로 SSoT를 채운다.
+        // 닉네임 변경 자체는 이미 성공했으니 결과는 성공으로 남는다
+        assertEquals(NEW_NICKNAME, result.getOrNull())
+        coVerify(exactly = 1) { remoteDataSource.getMyAccount() }
+        coVerify(exactly = 1) { localDataSource.save(ACCOUNT) }
+    }
+
+    @Test
     fun changeGlobalNickname_fails_leavesLocalUntouched() = runTest {
         // Given 서버가 거절한다
         every { localDataSource.myAccount } returns flowOf(ACCOUNT)
