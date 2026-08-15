@@ -4,8 +4,11 @@ import app.cash.turbine.test
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
+import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -60,6 +63,7 @@ class TokenAuthenticatorTest {
     private lateinit var server: MockWebServer
     private lateinit var tokenStore: FakeTokenStore
     private lateinit var sessionEventBus: SessionEventBus
+    private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var authenticator: TokenAuthenticator
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -71,6 +75,7 @@ class TokenAuthenticatorTest {
 
         tokenStore = FakeTokenStore(accessToken = OLD_ACCESS_TOKEN, refreshToken = REFRESH_TOKEN)
         sessionEventBus = SessionEventBus()
+        userInfoLocalDataSource = mockk(relaxed = true)
 
         val authService = Retrofit
             .Builder()
@@ -85,6 +90,7 @@ class TokenAuthenticatorTest {
             authService = authService,
             apiCaller = ApiCaller(json),
             sessionEventBus = sessionEventBus,
+            userInfoLocalDataSource = userInfoLocalDataSource,
         )
     }
 
@@ -161,6 +167,25 @@ class TokenAuthenticatorTest {
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
+    }
+
+    @Test
+    fun authenticate_reissueRejected_clearsUserInfoTogether() = runTest {
+        // Given 서버가 refresh token 을 거절한다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(401)
+                .body("""{"success":false,"code":"INVALID_TOKEN","message":"…","data":null}""")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 토큰과 함께 계정 정보도 지워진다 — 이벤트가 유실돼도 둘이 갈라지면 안 된다
+        assertEquals(1, tokenStore.clearCount)
+        coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
     }
 
     @Test
