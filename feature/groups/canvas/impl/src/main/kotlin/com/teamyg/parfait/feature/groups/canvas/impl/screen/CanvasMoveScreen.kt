@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.canvas.impl.screen
+package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
