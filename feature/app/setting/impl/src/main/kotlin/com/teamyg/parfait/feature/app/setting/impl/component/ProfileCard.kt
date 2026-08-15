@@ -67,7 +67,7 @@ internal fun ProfileCard(
 private fun ProfileCardPreview() = PreviewBox {
     ProfileCard(
         nickname = "아니야나그런데기니야",
-        loginProviderText = "카카오",
+        loginProviderText = "Kakao",
         modifier = Modifier.padding(20.dp),
     )
 }
