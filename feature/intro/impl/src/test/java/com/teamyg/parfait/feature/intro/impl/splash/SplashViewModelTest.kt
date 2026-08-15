@@ -58,7 +58,7 @@ class SplashViewModelTest {
     }
 
     @Test
-    fun bootstrap_calledAgainWhileFirstStillRunning_doesNotInvokeUseCaseTwice() =
+    fun processIntent_initAgainWhileFirstStillRunning_doesNotInvokeUseCaseTwice() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 부트스트랩이 곧바로 끝나지 않는다 — init 이 이미 launch(key) 로 job 하나를 띄운 상태
             val gate = CompletableDeferred<SessionBootstrap>()
@@ -68,9 +68,9 @@ class SplashViewModelTest {
             coVerify(exactly = 1) { bootstrapSession() }
 
             viewModel.effect.test {
-                // When 같은 key 를 쓰는 bootstrap() 을 직접 한 번 더 트리거한다
+                // When 같은 의도를 한 번 더 보낸다
                 // (포그라운드 복귀처럼 향후 두 번째 진입점이 생기는 상황을 흉내낸다)
-                viewModel.bootstrap()
+                viewModel.processIntent(SplashIntent.Init)
                 runCurrent()
 
                 // Then guard 에 막혀 조회가 다시 나가지 않는다

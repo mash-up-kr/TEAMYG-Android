@@ -12,7 +12,10 @@ import javax.inject.Inject
 
 data object SplashState : UiState
 
-sealed interface SplashIntent : UiIntent
+sealed interface SplashIntent : UiIntent {
+    /** 화면 진입. 스플래시는 사용자 조작이 없어 이것이 유일한 의도다 */
+    data object Init : SplashIntent
+}
 
 sealed interface SplashSideEffect : UiSideEffect {
     data object NavigateToLogin : SplashSideEffect
@@ -28,29 +31,24 @@ constructor(
 ) : BaseViewModel<SplashState, SplashIntent, SplashSideEffect>(initialState = SplashState) {
     init {
         viewModelLogger.i { "SplashViewModel::init" }
-        bootstrap()
+        processIntent(SplashIntent.Init)
     }
 
-    override fun processIntent(intent: SplashIntent) = Unit
+    override fun processIntent(intent: SplashIntent) {
+        when (intent) {
+            SplashIntent.Init -> handleInit()
+        }
+    }
 
     /**
      * 목적지 판단은 전부 [BootstrapSessionUseCase] 가 끝낸다 — 여기서는 토큰 유무·조회
      * 성공 여부를 다시 따지지 않고 [SessionBootstrap] 을 이펙트로만 옮긴다.
      *
-     * [KEY_BOOTSTRAP] 로 감싸는 이유는 화면의 다른 ViewModel들과 같은 관용구를 맞추기
-     * 위해서다 — 스플래시는 재시도 진입점이 없어 실제로 두 번째 호출이 발생하진 않지만
-     * (재조회가 필요하면 [BootstrapSessionUseCase] 가 내부에서 이미 실패를 흡수해
-     * 항상 [SessionBootstrap.ToLogin]/[SessionBootstrap.ToGroupList] 중 하나로 끝난다),
-     * 같은 key 로 guard 를 걸어 두면 이후 이 함수가 다른 진입점(예: 포그라운드 복귀)에서도
-     * 다시 불려도 안전하다.
-     *
-     * `internal` 인 이유: 이 guard 자체는 지금은 어떤 UI 경로로도 두 번 트리거되지 않아
-     * (진입점이 `init` 하나뿐) 블랙박스로는 idempotency 를 증명할 수 없다. 테스트가 이
-     * 함수를 직접 두 번 호출해 guard 를 고정할 수 있도록 가시성을 넓혔다 — `private` 로
-     * 감춘 채 존재하지 않는 재시도 UI 를 지어내는 것보다, 이미 있는 함수의 재호출
-     * 안전성을 직접 검증하는 쪽을 택했다.
+     * [KEY_BOOTSTRAP] 로 감싸는 이유 — 지금은 진입점이 [SplashIntent.Init] 하나라 두 번째
+     * 호출이 실제로 발생하진 않지만, 같은 key 로 guard 를 걸어 두면 이후 다른 진입점(예:
+     * 포그라운드 복귀)이 생겨도 조회가 겹치지 않는다.
      */
-    internal fun bootstrap() {
+    private fun handleInit() {
         launch(key = KEY_BOOTSTRAP) {
             val destination = bootstrapSession()
             postSideEffect(
