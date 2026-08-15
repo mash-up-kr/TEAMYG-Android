@@ -77,9 +77,8 @@ class AccountInfoViewModelTest {
     @Test
     fun clickConfirm_succeeds_doesNotWriteResultDirectly_followsSSoTInstead() = runTest(mainDispatcherRule.dispatcher) {
         // Given SSoT 를 직접 제어할 수 있는 화면(리포지토리가 로컬에 쓴 뒤 흘려보내는 것을 흉내)
-        // 서버 응답값을 타이핑값과 일부러 다르게 준다("라떼" 입력 → 서버는 "라떼 " 로
-        // 정규화해 돌려준다고 가정) — 값이 우연히 같으면 직접 쓰기와 SSoT 반영을 구분할 수
-        // 없다.
+        // 서버 응답값을 타이핑값과 일부러 다르게 준다("라떼" 입력 → 서버는 "서버응답값" 을
+        // 돌려준다고 가정) — 값이 우연히 같으면 직접 쓰기와 SSoT 반영을 구분할 수 없다.
         val ssot = MutableStateFlow<MyAccountVO?>(accountOf("모카"))
         coEvery { changeGlobalNickname(any()) } returns Result.success(GlobalNickname("서버응답값"))
         val viewModel = viewModel(accountFlow = ssot)
