@@ -16,26 +16,48 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 /**
- * @property nickname 계정 정보 SSoT 구독 결과이자 입력 필드 값. `null` 은 SSoT 가 아직 값을
- *   방출하지 않은 로딩 상태다(빈 문자열이 아니다). 타이핑 중에는 [InputWord] 가 로컬로 갱신한다.
+ * @property savedNickname 계정 정보 SSoT 가 준 현재 값. `null` 은 아직 방출 전인 로딩
+ *   상태다(빈 문자열이 아니다). [nickname] 과 나눠 두는 이유는 "되돌릴 것이 있는가"를
+ *   판단해야 해서다 — 입력 버퍼 하나만으로는 사용자가 뭘 바꿨는지 알 수 없다.
+ * @property nickname 입력 필드 값. 타이핑은 이쪽만 바꾼다.
  * @property nicknameError 입력 형식 위반(`CheckNameValidUseCase`). 요청 전에 걸러진다.
  * @property submitError 서버가 되돌린 사유. [nicknameError] 와 별개 축이라 형식 오류를
  *   먼저 보여준다(`nicknameError ?: submitError`, ADR-0016).
  * @property isSubmitting 변경 요청이 진행 중인지. 진행 중이면 확인 버튼을 비활성한다.
+ * @property isEditing 입력 필드에 포커스가 있는지. 확인 버튼은 이때만 보인다.
+ * @property isDiscardDialogVisible 수정 중 뒤로가기를 눌러 확인을 묻고 있는지.
  */
 data class AccountInfoUiState(
+    val savedNickname: String? = null,
     val nickname: String? = null,
     val nicknameError: NameValidResult.Error? = null,
     val submitError: GlobalNicknameError? = null,
     val isSubmitting: Boolean = false,
-) : UiState
+    val isEditing: Boolean = false,
+    val isDiscardDialogVisible: Boolean = false,
+) : UiState {
+    /** 서버 값과 달라 되돌릴 것이 있는 상태 */
+    val isDirty: Boolean
+        get() = nickname != null && nickname != savedNickname
+
+    val isConfirmEnabled: Boolean
+        get() = isDirty && nicknameError == null && isSubmitting.not()
+}
 
 sealed interface AccountInfoIntent : UiIntent {
     data class InputWord(val nickName: String) : AccountInfoIntent
 
+    data class ChangeFocus(val hasFocus: Boolean) : AccountInfoIntent
+
     data object ClickConfirm : AccountInfoIntent
 
     data object ClickBack : AccountInfoIntent
+
+    /** 수정 취소 확인의 "취소하기" — 입력을 버리고 나간다 */
+    data object ConfirmDiscard : AccountInfoIntent
+
+    /** 수정 취소 확인의 "그만두기" — 다이얼로그만 닫고 편집을 이어간다 */
+    data object DismissDiscardDialog : AccountInfoIntent
 }
 
 sealed interface AccountInfoSideEffect : UiSideEffect {
@@ -56,9 +78,12 @@ constructor(
         viewModelLogger.i { "AccountInfoViewModel::init" }
 
         // 구독만 한다 — 변경 성공 후의 새 값도 이 구독이 되돌려준다(낙관적 갱신 안 함).
+        // 입력 버퍼까지 같이 따라가는 이유: SSoT 는 저장된 값이 실제로 달라질 때만 방출하므로
+        // (로컬 저장소가 원문 기준으로 중복 방출을 끊는다) 타이핑 도중에 끼어들지 않는다.
         launch {
             observeMyAccount().collect { account ->
-                updateState { copy(nickname = account?.nickname?.value) }
+                val serverNickname = account?.nickname?.value
+                updateState { copy(savedNickname = serverNickname, nickname = serverNickname) }
             }
         }
     }
@@ -66,9 +91,16 @@ constructor(
     override fun processIntent(intent: AccountInfoIntent) {
         when (intent) {
             is AccountInfoIntent.InputWord -> handleInputWord(intent.nickName)
+            is AccountInfoIntent.ChangeFocus -> handleChangeFocus(intent.hasFocus)
             AccountInfoIntent.ClickConfirm -> handleClickConfirm()
             AccountInfoIntent.ClickBack -> handleClickBack()
+            AccountInfoIntent.ConfirmDiscard -> handleConfirmDiscard()
+            AccountInfoIntent.DismissDiscardDialog -> handleDismissDiscardDialog()
         }
+    }
+
+    private fun handleChangeFocus(hasFocus: Boolean) {
+        updateState { copy(isEditing = hasFocus) }
     }
 
     private fun handleInputWord(nickName: String) {
@@ -83,8 +115,31 @@ constructor(
         }
     }
 
+    /**
+     * 되돌릴 것이 있을 때만 묻는다 — 구경만 하고 나가는 사용자를 막지 않는다.
+     */
     private fun handleClickBack() {
+        if (state.value.isDirty) {
+            updateState { copy(isDiscardDialogVisible = true) }
+        } else {
+            postSideEffect(AccountInfoSideEffect.NavigateBack)
+        }
+    }
+
+    private fun handleConfirmDiscard() {
+        updateState {
+            copy(
+                nickname = savedNickname,
+                nicknameError = null,
+                submitError = null,
+                isDiscardDialogVisible = false,
+            )
+        }
         postSideEffect(AccountInfoSideEffect.NavigateBack)
+    }
+
+    private fun handleDismissDiscardDialog() {
+        updateState { copy(isDiscardDialogVisible = false) }
     }
 
     private fun handleClickConfirm() {

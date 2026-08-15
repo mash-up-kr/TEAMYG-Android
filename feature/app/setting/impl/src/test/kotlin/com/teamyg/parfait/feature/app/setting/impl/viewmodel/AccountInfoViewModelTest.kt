@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -228,5 +229,121 @@ class AccountInfoViewModelTest {
 
         // Then 표시된 서버 실패 사유가 사라진다
         assertNull(viewModel.state.value.submitError)
+    }
+
+    @Test
+    fun clickBack_nothingEdited_navigatesBackWithoutAsking() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 값 그대로 두고 구경만 한 화면
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 뒤로가기를 누른다
+            viewModel.processIntent(AccountInfoIntent.ClickBack)
+            runCurrent()
+
+            // Then 묻지 않고 나간다 — 잃을 것이 없는데 막으면 성가시기만 하다
+            assertEquals(AccountInfoSideEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.isDiscardDialogVisible)
+    }
+
+    @Test
+    fun clickBack_nicknameEdited_asksBeforeLeaving() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 값과 다르게 고쳐 둔 상태
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+        viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
+
+        viewModel.effect.test {
+            // When 뒤로가기를 누른다
+            viewModel.processIntent(AccountInfoIntent.ClickBack)
+            runCurrent()
+
+            // Then 확인을 묻고, 아직 나가지 않는다 — 물어보기도 전에 나가면 입력이 사라진다
+            assertTrue(viewModel.state.value.isDiscardDialogVisible)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun confirmDiscard_afterEditing_restoresSavedNicknameAndNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 고쳐 둔 채로 확인을 묻고 있는 상태
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+        viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
+        viewModel.processIntent(AccountInfoIntent.ClickBack)
+
+        viewModel.effect.test {
+            // When 수정을 버리기로 한다
+            viewModel.processIntent(AccountInfoIntent.ConfirmDiscard)
+            runCurrent()
+
+            // Then 입력이 서버 값으로 돌아가고 화면을 나간다
+            assertEquals(AccountInfoSideEffect.NavigateBack, awaitItem())
+        }
+        assertEquals("모카", viewModel.state.value.nickname)
+        assertFalse(viewModel.state.value.isDiscardDialogVisible)
+    }
+
+    @Test
+    fun dismissDiscardDialog_afterEditing_keepsInputAndStays() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 고쳐 둔 채로 확인을 묻고 있는 상태
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+        viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
+        viewModel.processIntent(AccountInfoIntent.ClickBack)
+
+        viewModel.effect.test {
+            // When 계속 고치기로 한다
+            viewModel.processIntent(AccountInfoIntent.DismissDiscardDialog)
+            runCurrent()
+
+            // Then 다이얼로그만 닫히고 고치던 값이 남는다
+            assertFalse(viewModel.state.value.isDiscardDialogVisible)
+            assertEquals("라떼", viewModel.state.value.nickname)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun isConfirmEnabled_nicknameUnchanged_isFalse() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 값 그대로인 상태
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+
+        // When 같은 값을 그대로 다시 입력한다
+        viewModel.processIntent(AccountInfoIntent.InputWord("모카"))
+
+        // Then 확인 버튼은 비활성이다 — 바꾼 게 없으면 보낼 것도 없다
+        assertFalse(viewModel.state.value.isConfirmEnabled)
+    }
+
+    @Test
+    fun isConfirmEnabled_nicknameEditedToValidValue_isTrue() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 값이 도착한 상태
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+
+        // When 유효한 다른 값으로 고친다
+        viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
+
+        // Then 확인 버튼이 활성된다
+        assertTrue(viewModel.state.value.isConfirmEnabled)
+    }
+
+    @Test
+    fun changeFocus_gainedThenLost_tracksEditing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 값이 도착한 화면 — 확인 버튼은 편집 중일 때만 보인다
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+
+        // When 입력 필드에 포커스가 갔다가 빠진다
+        viewModel.processIntent(AccountInfoIntent.ChangeFocus(hasFocus = true))
+        assertTrue(viewModel.state.value.isEditing)
+        viewModel.processIntent(AccountInfoIntent.ChangeFocus(hasFocus = false))
+
+        // Then 편집 상태가 그대로 따라간다
+        assertFalse(viewModel.state.value.isEditing)
     }
 }
