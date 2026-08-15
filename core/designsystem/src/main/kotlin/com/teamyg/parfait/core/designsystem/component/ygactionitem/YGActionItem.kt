@@ -32,8 +32,9 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 /**
- * @param enabled `false` 면 클릭을 받지 않고 흐린 색으로 그린다. 요청이 나가 있는 동안
- *   버튼이 계속 눌리는 것처럼 보이지 않게 하려는 용도다.
+ * @param enabled `false` 면 클릭을 받지 않는다. 요청이 나가 있는 동안 같은 동작이 다시
+ *   실행되는 것을 막으려는 용도다. **색은 바뀌지 않는다** — 비활성 색이 디자인시스템에
+ *   정의돼 있지 않아 여기서 임의로 정하지 않는다.
  */
 @Composable
 fun YGActionItem(
@@ -45,11 +46,7 @@ fun YGActionItem(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
-    val contentColor = when {
-        !enabled -> YGAtomicColors.Gray.Gray300
-        isPressed -> YGAtomicColors.Gray.Gray700
-        else -> YGAtomicColors.Gray.Gray500
-    }
+    val contentColor = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
