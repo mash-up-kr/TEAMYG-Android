@@ -1,8 +1,10 @@
 package com.teamyg.parfait.data.source.parfaitimage.mapper
 
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
@@ -12,6 +14,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
 private const val BORDER_TYPE_NONE = "NONE"
@@ -70,3 +73,31 @@ internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO =
         rotation = rotation,
     ),
 )
+
+internal fun ToppingBorder.toUpdateBorderRequest(): UpdateParfaitImageBorderRequest {
+    val solid = this as? ToppingBorder.Solid
+    return UpdateParfaitImageBorderRequest(
+        borderType = when (this) {
+            ToppingBorder.None -> BORDER_TYPE_NONE
+            is ToppingBorder.Solid -> BORDER_TYPE_SOLID
+        },
+        borderColor = solid?.color,
+        borderWidth = solid?.width,
+    )
+}
+
+internal fun UpdateParfaitImageBorderResponse.toUpdatedToppingBorderVO(): UpdatedToppingBorderVO =
+    UpdatedToppingBorderVO(
+        parfaitImageId = ParfaitImageId(parfaitImageId),
+        border = toToppingBorder(),
+    )
+
+/**
+ * SOLID 인데 색이나 두께가 비어 있으면 Solid 를 만들 수 없으므로 None 으로 떨어뜨린다.
+ */
+private fun UpdateParfaitImageBorderResponse.toToppingBorder(): ToppingBorder {
+    if (borderType != BORDER_TYPE_SOLID) return ToppingBorder.None
+    val color = borderColor ?: return ToppingBorder.None
+    val width = borderWidth ?: return ToppingBorder.None
+    return ToppingBorder.Solid(color = color, width = width)
+}
