@@ -61,7 +61,7 @@ internal fun CanvasImageAddScreen(
             onMenuClick = onClickMenu,
             memberContent = {
                 Row(horizontalArrangement = Arrangement.spacedBy(-12.dp)) {
-                    canvasState.memberChips.take(5).forEach { member ->
+                    canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,
                             userFirstName = member.nickname,
@@ -69,7 +69,7 @@ internal fun CanvasImageAddScreen(
                         )
                     }
 
-                    val overflowCount = canvasState.memberChips.size - 5
+                    val overflowCount = canvasState.memberChips.size - MAX_VISIBLE_MEMBER_CHIPS
                     if (overflowCount > 0) {
                         YGNametagChip(
                             colorChipType = YGColorChipType.NametagChipPlus,
