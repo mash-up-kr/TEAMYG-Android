@@ -7,4 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- 런처 아이콘 바탕. 모눈 이미지가 선만 있고 바탕은 투명해 이 색을 깔아야 한다 -->
+    <color name="ic_launcher_background">#FFFAFAFA</color>
 </resources>
