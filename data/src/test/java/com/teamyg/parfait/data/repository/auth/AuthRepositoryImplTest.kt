@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
@@ -227,5 +228,29 @@ class AuthRepositoryImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 0) { remoteDataSource.logout(any()) }
         coVerify(exactly = 1) { tokenStore.clear() }
+    }
+
+    @Test
+    fun hasSession_refreshTokenStored_returnsTrue() = runTest {
+        // Given 저장된 refresh token 이 있다
+        coEvery { tokenStore.getRefreshToken() } returns "refresh-1"
+
+        // When 세션 존재를 확인한다
+        val result = repository.hasSession()
+
+        // Then true 다
+        assertTrue(result)
+    }
+
+    @Test
+    fun hasSession_noRefreshToken_returnsFalse() = runTest {
+        // Given 저장된 refresh token 이 없다
+        coEvery { tokenStore.getRefreshToken() } returns null
+
+        // When 세션 존재를 확인한다
+        val result = repository.hasSession()
+
+        // Then false 다
+        assertFalse(result)
     }
 }

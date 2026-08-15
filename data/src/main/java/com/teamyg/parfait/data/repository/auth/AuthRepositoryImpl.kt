@@ -45,6 +45,8 @@ class AuthRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun hasSession(): Boolean = tokenStore.getRefreshToken() != null
+
     override suspend fun logout(): Result<Unit> {
         val refreshToken = tokenStore.getRefreshToken()
 

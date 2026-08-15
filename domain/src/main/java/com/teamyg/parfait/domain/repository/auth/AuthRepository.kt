@@ -26,6 +26,9 @@ interface AuthRepository {
     /** 발급받은 세션을 암호화 저장소에 넣는다 */
     suspend fun saveSession(session: AuthSessionVO)
 
+    /** 저장된 세션(refresh token)이 있는지 — 부트스트랩이 복원을 시도할지 판단하는 근거 */
+    suspend fun hasSession(): Boolean
+
     /**
      * 서버 세션을 끊고 로컬 토큰을 지운다.
      *
