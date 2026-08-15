@@ -4,23 +4,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
@@ -30,6 +39,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import kotlinx.datetime.DatePeriod
@@ -47,19 +57,28 @@ internal data class CalendarDayUiModel(
     val isCurrentMonth: Boolean,
 )
 
+private enum class CalendarPeriod { Year, Month }
+
+/**
+ * 드롭다운 열림 상태는 안에서 들고 있다. 밖으로 내보내면 쓰는 화면마다 같은 토글 코드를
+ * 다시 쓰게 된다.
+ */
 @Composable
 internal fun CustomCalendar(
     displayedMonth: LocalDate,
     today: LocalDate,
     selectedDate: LocalDate?,
     uploadedDates: Set<LocalDate>,
-    onClickMonth: () -> Unit,
-    onClickYear: () -> Unit,
+    selectableYears: List<Int>,
+    selectableMonths: List<LocalDate>,
+    onSelectYear: (Int) -> Unit,
+    onSelectMonth: (LocalDate) -> Unit,
     onClickDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val firstDayOfMonth = remember(displayedMonth) { displayedMonth.toFirstDayOfMonth() }
     val days = remember(firstDayOfMonth) { buildCalendarDays(firstDayOfMonth) }
+    var expandedPeriod by remember { mutableStateOf<CalendarPeriod?>(null) }
 
     Column(
         modifier = modifier
@@ -72,8 +91,19 @@ internal fun CustomCalendar(
         HeadCalendar(
             month = firstDayOfMonth.format(DateTextFormat.monthFormat),
             year = firstDayOfMonth.year.toString(),
-            onClickMonth = onClickMonth,
-            onClickYear = onClickYear,
+            expandedPeriod = expandedPeriod,
+            selectableYears = selectableYears,
+            selectableMonths = selectableMonths,
+            onClickPeriod = { period -> expandedPeriod = period.takeIf { it != expandedPeriod } },
+            onDismissDropdown = { expandedPeriod = null },
+            onSelectYear = {
+                expandedPeriod = null
+                onSelectYear(it)
+            },
+            onSelectMonth = {
+                expandedPeriod = null
+                onSelectMonth(it)
+            },
         )
 
         YGHorizontalDivider()
@@ -108,8 +138,6 @@ private fun Modifier.sideBorder(
     drawLine(color, Offset(0f, size.height - inset), Offset(size.width, size.height - inset), strokeWidth)
 }
 
-private fun LocalDate.toFirstDayOfMonth(): LocalDate = minus(DatePeriod(days = day - 1))
-
 /**
  * 앞은 이전 달, 뒤는 다음 달 날짜로 채워 항상 7의 배수를 만든다.
  *
@@ -139,8 +167,13 @@ private fun ceilToWeek(dayCount: Int): Int = (dayCount + DAYS_IN_WEEK - 1) / DAY
 private fun HeadCalendar(
     month: String,
     year: String,
-    onClickMonth: () -> Unit,
-    onClickYear: () -> Unit,
+    expandedPeriod: CalendarPeriod?,
+    selectableYears: List<Int>,
+    selectableMonths: List<LocalDate>,
+    onClickPeriod: (CalendarPeriod) -> Unit,
+    onDismissDropdown: () -> Unit,
+    onSelectYear: (Int) -> Unit,
+    onSelectMonth: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -154,47 +187,84 @@ private fun HeadCalendar(
     ) {
         CalendarPeriodSelector(
             text = month,
-            onClick = onClickMonth,
+            isExpanded = expandedPeriod == CalendarPeriod.Month,
+            items = selectableMonths,
+            itemLabel = { it.format(DateTextFormat.monthFormat) },
+            onClick = { onClickPeriod(CalendarPeriod.Month) },
+            onDismiss = onDismissDropdown,
+            onSelect = onSelectMonth,
         )
         CalendarPeriodSelector(
             text = year,
-            onClick = onClickYear,
+            isExpanded = expandedPeriod == CalendarPeriod.Year,
+            items = selectableYears,
+            itemLabel = { it.toString() },
+            onClick = { onClickPeriod(CalendarPeriod.Year) },
+            onDismiss = onDismissDropdown,
+            onSelect = onSelectYear,
         )
     }
 }
 
 /**
- * 텍스트와 캐럿이 한 덩어리다. `interactionSource` 까지 공유해야 텍스트를 눌렀을 때도
- * 캐럿이 같이 눌린 색이 된다 — 따로 두면 별개의 버튼 두 개로 보인다.
+ * `interactionSource` 까지 공유해야 텍스트를 눌렀을 때도 캐럿이 같이 눌린 색이 된다 —
+ * 따로 두면 별개의 버튼 두 개로 보인다.
+ *
+ * 드롭다운을 [Popup] 으로 띄우는 이유는 같은 레이아웃에 넣으면 열릴 때마다 달력 본문이
+ * 아래로 밀려서다.
  */
 @Composable
-private fun CalendarPeriodSelector(
+private fun <T> CalendarPeriodSelector(
     text: String,
+    isExpanded: Boolean,
+    items: List<T>,
+    itemLabel: (T) -> String,
     onClick: () -> Unit,
+    onDismiss: () -> Unit,
+    onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    var anchorHeight by remember { mutableIntStateOf(0) }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier.clickable(
-            onClick = onClick,
-            indication = null,
-            interactionSource = interactionSource,
-        ),
-    ) {
-        Text(
-            text = text,
-            style = YGTheme.typography.title.t03SB,
-            color = YGAtomicColors.Gray.Gray900,
-        )
-        YGIconButton(
-            iconResource = DesignSystemR.drawable.ic_caret_bottom,
-            size = YGIconButtonSize.SIZE_44,
-            contentDescription = null,
-            onClick = onClick,
-            interactionSource = interactionSource,
-        )
+    Box(modifier = modifier.onSizeChanged { anchorHeight = it.height }) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = interactionSource,
+            ),
+        ) {
+            Text(
+                text = text,
+                style = YGTheme.typography.title.t03SB,
+                color = YGAtomicColors.Gray.Gray900,
+            )
+            YGIconButton(
+                iconResource = DesignSystemR.drawable.ic_caret_bottom,
+                size = YGIconButtonSize.SIZE_44,
+                contentDescription = null,
+                onClick = onClick,
+                interactionSource = interactionSource,
+            )
+        }
+
+        if (isExpanded) {
+            Popup(
+                alignment = Alignment.TopStart,
+                // TopStart 는 앵커의 좌상단에 붙으므로 앵커 높이만큼 내려 아래로 보낸다
+                offset = IntOffset(x = 0, y = anchorHeight),
+                onDismissRequest = onDismiss,
+                properties = PopupProperties(focusable = true),
+            ) {
+                CalendarDropdown(
+                    items = items,
+                    itemLabel = itemLabel,
+                    onSelect = onSelect,
+                )
+            }
+        }
     }
 }
 
@@ -303,8 +373,10 @@ private fun CustomCalendarPreview(
         today = data.today,
         selectedDate = data.selectedDate,
         uploadedDates = data.uploadedDates,
-        onClickMonth = {},
-        onClickYear = {},
+        selectableYears = listOf(2026, 2025),
+        selectableMonths = listOf(LocalDate(2026, 8, 1), LocalDate(2026, 7, 1)),
+        onSelectYear = {},
+        onSelectMonth = {},
         onClickDate = {},
         modifier = Modifier.fillMaxWidth(),
     )
