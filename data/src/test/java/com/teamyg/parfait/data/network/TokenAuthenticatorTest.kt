@@ -7,6 +7,7 @@ import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -22,10 +23,12 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.io.IOException
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -186,6 +189,31 @@ class TokenAuthenticatorTest {
         // Then 토큰과 함께 계정 정보도 지워진다 — 이벤트가 유실돼도 둘이 갈라지면 안 된다
         assertEquals(1, tokenStore.clearCount)
         coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
+    }
+
+    @Test
+    fun authenticate_userInfoClearThrows_stillPostsForcedLogout() = runTest {
+        // Given 서버가 refresh token 을 거절하고, 계정 정보 clear() 는 DataStore IO 실패로 던진다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(401)
+                .body("""{"success":false,"code":"INVALID_TOKEN","message":"…","data":null}""")
+                .build(),
+        )
+        coEvery { userInfoLocalDataSource.clear() } throws IOException("disk full")
+
+        // When 인증기가 응답을 받는다 — clear() 의 예외는 그대로 authenticate() 밖으로
+        // 샌다(이 동작 자체는 이번 수정 범위 밖이다)
+        assertFailsWith<IOException> {
+            authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+        }
+
+        // Then 정리가 실패해도 이벤트는 이미 발행된 뒤라 여전히 도착한다 — 이벤트가
+        // "정리 완료"가 아니라 "세션이 죽었다"를 알리기 때문이다
+        sessionEventBus.events.test {
+            assertEquals(SessionEvent.ForcedLogout, awaitItem())
+        }
     }
 
     @Test
