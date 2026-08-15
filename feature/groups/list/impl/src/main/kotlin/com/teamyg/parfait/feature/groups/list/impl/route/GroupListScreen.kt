@@ -49,6 +49,8 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_3_RIGHT,
 )
 
+// TODO(칩 컬러): 칩 타입은 마지막으로 그룹을 바꾼 유저의 Nametag-Chip 타입을 따라야 한다.
+//  MyParfaitGroupVO 에 그 정보가 오면 index 순환을 걷어낸다
 private val CHIP_TYPES = YGGrouptagChipType.entries
 
 // TODO(토핑 템플릿): 정책은 그룹 생성 시 6종 중 하나를 무작위로 골라 고정하는 것이다.
