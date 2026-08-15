@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
@@ -43,6 +44,7 @@ internal fun CanvasImageAddScreen(
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
+    onDismissCalendar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -98,9 +100,27 @@ internal fun CanvasImageAddScreen(
             ),
             isEmpty = true,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
-            isDimmed = isMenuExpanded,
-            onDimClick = { isMenuExpanded = false },
+            // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
+            isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
+            onDimClick = {
+                isMenuExpanded = false
+                onDismissCalendar()
+            },
             isMenuExpanded = isMenuExpanded,
+            isCalendarVisible = canvasState.isCalendarVisible,
+            calendarContent = {
+                CustomCalendar(
+                    displayedMonth = canvasState.selectedDate,
+                    today = canvasState.today,
+                    selectedDate = canvasState.selectedDate,
+                    // TODO(#207): 업로드된 날짜 연동 필요
+                    uploadedDates = emptySet(),
+                    // TODO(#207): 월·연도 선택과 날짜 선택 연동 필요
+                    onClickMonth = {},
+                    onClickYear = {},
+                    onClickDate = {},
+                )
+            },
             expandedItems = listOf(
                 YGCanvasMenuItem(
                     text = stringResource(R.string.canvas_image_add_camera_capture),
@@ -158,6 +178,7 @@ private fun PreviewCanvasImageAddScreen(
         onClickCamera = {},
         onClickGallery = {},
         onClickEditCanvasBG = {},
+        onDismissCalendar = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

@@ -11,6 +11,7 @@ import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.todayIn
@@ -27,6 +28,9 @@ data class CanvasImageAddUiState(
     val memberChips: List<GroupMemberChip> = emptyList(),
     val canvasDate: String = "",
     val canvasDay: String = "",
+    val today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+    val selectedDate: LocalDate = today,
+    val isCalendarVisible: Boolean = false,
 ) : UiState
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
@@ -51,6 +55,10 @@ sealed interface CanvasImageAddIntent : UiIntent {
     class OnClickCanvas : CanvasImageAddIntent
 
     class OnClickCanvasEdit : CanvasImageAddIntent
+
+    data object OnClickDateSelect : CanvasImageAddIntent
+
+    data object DismissCalendar : CanvasImageAddIntent
 }
 
 @HiltViewModel
@@ -94,6 +102,8 @@ constructor(
             is CanvasImageAddIntent.OnClickCamera -> handleOnClickCamera()
             is CanvasImageAddIntent.OnClickCanvas -> handleOnClickCanvas()
             is CanvasImageAddIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
+            is CanvasImageAddIntent.OnClickDateSelect -> updateState { copy(isCalendarVisible = true) }
+            is CanvasImageAddIntent.DismissCalendar -> updateState { copy(isCalendarVisible = false) }
         }
     }
 
