@@ -75,6 +75,53 @@ class CheckNameValidUseCaseTest {
         assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("파르페!"))
     }
 
+    // 아래 다섯은 서버 정규식(`^[가-힣A-Za-z0-9]+(?: [가-힣A-Za-z0-9]+)*$`)보다 넓게
+    // 통과시켜 서버에서만 400 으로 튕기던 입력들이다. 규칙이 다시 벌어지면 여기서 깨진다.
+
+    @Test
+    fun invoke_standaloneJamo_returnsInvalidCharacter() {
+        // Given 자모만 있는 이름 — 서버는 완성형 '가'~'힣' 만 받는다
+        val name = "ㅋㅋㅋ"
+
+        // When 유효성 검사
+        val result = checkNameValid(name)
+
+        // Then 문자 오류
+        assertEquals(NameValidResult.Error.InvalidCharacter, result)
+    }
+
+    @Test
+    fun invoke_nonKoreanLetter_returnsInvalidCharacter() {
+        // Given 한글·영문이 아닌 문자(isLetter() 로는 전부 통과하던 것들)
+        assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("さくら"))
+        assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("中文"))
+        assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("Привет"))
+    }
+
+    @Test
+    fun invoke_accentedLatinLetter_returnsInvalidCharacter() {
+        // Given 라틴 확장 문자 — 'A'..'Z'·'a'..'z' 범위 밖이다
+        assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("Café"))
+    }
+
+    @Test
+    fun invoke_nonAsciiDigit_returnsInvalidCharacter() {
+        // Given 아랍-인도 숫자 — isDigit() 은 통과시키지만 서버는 '0'..'9' 만 받는다
+        assertEquals(NameValidResult.Error.InvalidCharacter, checkNameValid("٣٤"))
+    }
+
+    @Test
+    fun invoke_nonBreakingSpace_returnsInvalidCharacter() {
+        // Given 붙여넣기로 딸려 오기 쉬운 non-breaking space — 서버 정규식은 U+0020 만 받는다
+        val name = "우리\u00A0그룹"
+
+        // When 유효성 검사
+        val result = checkNameValid(name)
+
+        // Then 문자 오류
+        assertEquals(NameValidResult.Error.InvalidCharacter, result)
+    }
+
     @Test
     fun invoke_emptyString_returnsEmptyString() {
         // Given 빈 문자열
