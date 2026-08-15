@@ -112,6 +112,46 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickLogout_whileRequestInFlight_marksLoggingOutUntilItFinishes() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 로그아웃 요청이 끝나지 않게 붙잡아 둔다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { logout() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        val viewModel = viewModel()
+        assertFalse(viewModel.state.value.isLoggingOut)
+
+        // When 로그아웃을 누른다
+        viewModel.processIntent(AppSettingIntent.ClickLogout)
+        runCurrent()
+
+        // Then 요청 중이라 버튼이 비활성이다
+        assertTrue(viewModel.state.value.isLoggingOut)
+
+        // When 요청이 끝난다
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        // Then 플래그가 내려간다
+        assertFalse(viewModel.state.value.isLoggingOut)
+    }
+
+    @Test
+    fun clickLogout_throws_clearsLoggingOut() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 예상 못 한 예외로 로그아웃이 터진다
+        coEvery { logout() } throws IllegalStateException("예상 못 한 실패")
+        val viewModel = viewModel()
+
+        // When 로그아웃을 누른다
+        viewModel.processIntent(AppSettingIntent.ClickLogout)
+        advanceUntilIdle()
+
+        // Then 버튼이 영구 비활성으로 남지 않는다
+        assertFalse(viewModel.state.value.isLoggingOut)
+    }
+
+    @Test
     fun clickLogout_whileLoggingOut_doesNotRequestAgain() = runTest(mainDispatcherRule.dispatcher) {
         // Given 로그아웃 요청이 아직 끝나지 않은 화면
         val gate = CompletableDeferred<Unit>()

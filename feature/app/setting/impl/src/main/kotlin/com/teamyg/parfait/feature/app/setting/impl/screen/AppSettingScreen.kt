@@ -89,6 +89,9 @@ internal fun AppSettingScreen(
                         YGActionItem(
                             text = stringResource(R.string.setting_logout),
                             onClick = onClickLogout,
+                            // 요청이 나가 있는 동안 비활성 — 연타가 ViewModel 에서 삼켜지는
+                            // 것과 별개로, 눌리는 것처럼 보이지 않아야 한다
+                            enabled = !state.isLoggingOut,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     },

@@ -28,9 +28,14 @@ class SessionEventBus @Inject constructor() : SessionEventSource {
 
     override val events: Flow<SessionEvent> = channel.receiveAsFlow()
 
+    /**
+     * 확인을 남겨두는 이유: `CONFLATED` 인 지금은 [kotlinx.coroutines.channels.Channel.trySend]
+     * 가 버퍼 때문에 실패할 수 없다(가장 오래된 값을 밀어내고 항상 성공한다). 채널 종류가
+     * 바뀌면 그때부터 조용한 유실이 생기므로, 그 회귀가 로그로 드러나게 확인만 남긴다.
+     */
     fun postForcedLogout() {
         if (channel.trySend(SessionEvent.ForcedLogout).isFailure) {
-            sourceLogger.e { "SessionEvent.ForcedLogout 발행 실패 — 버퍼가 가득 찼다" }
+            sourceLogger.e { "SessionEvent.ForcedLogout 을 전달하지 못했다 — CONFLATED 채널 가정이 깨졌다" }
         }
     }
 }

@@ -31,23 +31,36 @@ import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
+/**
+ * @param enabled `false` 면 클릭을 받지 않고 흐린 색으로 그린다. 요청이 나가 있는 동안
+ *   버튼이 계속 눌리는 것처럼 보이지 않게 하려는 용도다.
+ */
 @Composable
 fun YGActionItem(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     @DrawableRes iconResource: Int? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
-    val contentColor = if (isPressed) YGAtomicColors.Gray.Gray700 else YGAtomicColors.Gray.Gray500
+    val contentColor = when {
+        !enabled -> YGAtomicColors.Gray.Gray300
+        isPressed -> YGAtomicColors.Gray.Gray700
+        else -> YGAtomicColors.Gray.Gray500
+    }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
-            .semantics { role = Role.Button }
+            .clickable(
+                enabled = enabled,
+                onClick = onClick,
+                interactionSource = interactionSource,
+                indication = null,
+            ).semantics { role = Role.Button }
             .padding(
                 vertical = YGTheme.layout.padding.padding5,
                 horizontal = YGTheme.layout.padding.padding6,

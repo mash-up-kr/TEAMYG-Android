@@ -19,7 +19,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import javax.inject.Provider
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -83,7 +82,7 @@ class TokenAuthenticatorTest {
 
         authenticator = TokenAuthenticator(
             tokenStore = tokenStore,
-            authService = Provider { authService },
+            authService = authService,
             apiCaller = ApiCaller(json),
             sessionEventBus = sessionEventBus,
         )
@@ -188,6 +187,53 @@ class TokenAuthenticatorTest {
     }
 
     @Test
+    fun authenticate_reissueForbiddenWithTokenRejectionCode_clearsTokensAndPostsForcedLogout() = runTest {
+        // Given 서버가 403 + FORBIDDEN_REFRESH_TOKEN 으로 refresh token 자체를 거절한다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(403)
+                .body(
+                    """{"success":false,"code":"FORBIDDEN_REFRESH_TOKEN","message":"다른 회원의 토큰입니다","data":null}""",
+                ).build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 상태코드가 아니라 본문의 code 로 거절을 알아보고 세션을 버린다
+        assertNull(retried)
+        assertEquals(1, tokenStore.clearCount)
+        sessionEventBus.events.test {
+            assertEquals(SessionEvent.ForcedLogout, awaitItem())
+        }
+    }
+
+    @Test
+    fun authenticate_reissueForbiddenWithHtmlBody_keepsSession() = runTest {
+        // Given WAF·사내 프록시·CDN 이 HTML 본문을 실은 403 을 돌려준다
+        // (envelope 로 파싱되지 않아 code 가 없는 ApiException.Http(403) 이 된다)
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(403)
+                .body("<html><head><title>403 Forbidden</title></head><body>Forbidden</body></html>")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 인프라가 막은 것이지 자격증명이 죽은 것이 아니다 — 로그인 상태를 유지한다
+        assertNull(retried)
+        assertEquals(0, tokenStore.clearCount)
+        assertEquals(REFRESH_TOKEN, tokenStore.refreshToken)
+        sessionEventBus.events.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun authenticate_reissueNetworkFails_keepsTokensAndPostsNothing() = runTest {
         // Given 연결이 끊겨 재발급 요청 자체가 실패한다
         server.close()
@@ -274,6 +320,34 @@ class TokenAuthenticatorTest {
         // Then 재발급조차 시도하지 않고 포기한다 — 무한 재시도를 끊는다
         assertNull(retried)
         assertEquals(0, server.requestCount)
+    }
+
+    /** 로드밸런서의 http→https 이동 같은, 401 이 아닌 선행 응답 */
+    private fun movedPermanentlyResponse(): Response = Response
+        .Builder()
+        .request(Request.Builder().url(server.url("/api/parfait-groups")).build())
+        .protocol(Protocol.HTTP_1_1)
+        .code(301)
+        .message("Moved Permanently")
+        .build()
+
+    @Test
+    fun authenticate_priorResponseIsRedirect_stillReissues() = runTest {
+        // Given 리다이렉트를 한 번 거친 뒤 처음으로 401 을 맞았다 —
+        // `priorResponse` 체인에 401 이 아닌 응답이 섞여 있다
+        enqueueReissueSuccess()
+        val afterRedirect = unauthorizedResponse(OLD_ACCESS_TOKEN)
+            .newBuilder()
+            .priorResponse(movedPermanentlyResponse())
+            .build()
+
+        // When 인증기가 그 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = afterRedirect)
+
+        // Then 리다이렉트는 재시도 횟수가 아니다 — 첫 401 이므로 재발급을 시도한다
+        assertNotNull(retried)
+        assertEquals("Bearer $NEW_ACCESS_TOKEN", retried.header("Authorization"))
+        assertEquals(1, server.requestCount)
     }
 
     /**
