@@ -48,6 +48,20 @@ class MemberRepositoryImplTest {
     }
 
     @Test
+    fun refreshMyAccount_localSaveThrows_returnsFailureInsteadOfThrowing() = runTest {
+        // Given 서버 조회는 성공하지만 로컬 저장(DataStore IO)이 던진다
+        coEvery { remoteDataSource.getMyAccount() } returns Result.success(ACCOUNT)
+        coEvery { localDataSource.save(any()) } throws IOException("disk full")
+
+        // When 갱신한다 — throw 하지 않고 Result 로 돌아와야 한다
+        val result = repository.refreshMyAccount()
+
+        // Then Result.failure(AppError) 로 감싸져 있다 — 미포착 예외로 크래시하지 않는다
+        assertTrue(result.isFailure)
+        assertIs<AppError.Unexpected>(result.exceptionOrNull())
+    }
+
+    @Test
     fun refreshMyAccount_fails_keepsLocalUntouched() = runTest {
         // Given 서버 조회가 실패한다
         coEvery { remoteDataSource.getMyAccount() } returns
@@ -121,6 +135,22 @@ class MemberRepositoryImplTest {
         // Then 낙관적 갱신을 하지 않는다 — 실패했는데 다른 화면에 새 이름이 보이면 안 된다
         assertTrue(result.isFailure)
         coVerify(exactly = 0) { localDataSource.save(any()) }
+    }
+
+    @Test
+    fun changeGlobalNickname_localSaveThrows_returnsFailureInsteadOfThrowing() = runTest {
+        // Given 저장된 계정 정보가 있고 서버는 새 닉네임을 확인해 주지만 로컬 저장이 던진다
+        every { localDataSource.myAccount } returns flowOf(ACCOUNT)
+        coEvery { remoteDataSource.changeGlobalNickname(NEW_NICKNAME) } returns
+            Result.success(NEW_NICKNAME)
+        coEvery { localDataSource.save(any()) } throws IOException("disk full")
+
+        // When 닉네임을 바꾼다 — throw 하지 않고 Result 로 돌아와야 한다
+        val result = repository.changeGlobalNickname(NEW_NICKNAME)
+
+        // Then Result.failure(AppError) 로 감싸져 있다 — 미포착 예외로 크래시하지 않는다
+        assertTrue(result.isFailure)
+        assertIs<AppError.Unexpected>(result.exceptionOrNull())
     }
 
     private companion object {

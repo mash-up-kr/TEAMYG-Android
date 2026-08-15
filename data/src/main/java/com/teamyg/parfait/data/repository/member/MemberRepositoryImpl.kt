@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.repository.member
 
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
@@ -22,8 +23,10 @@ class MemberRepositoryImpl @Inject constructor(
 
     override suspend fun refreshMyAccount(): Result<MyAccountVO> = remoteDataSource
         .getMyAccount()
-        .onSuccess { account -> localDataSource.save(account) }
-        .mapErrorToAppError()
+        .fold(
+            onSuccess = { account -> saveLocally(account).map { account } },
+            onFailure = { Result.failure(it) },
+        ).mapErrorToAppError()
 
     /**
      * 성공 응답을 받은 뒤에 로컬을 갱신한다(낙관적 갱신 안 함) — 실패했는데 다른 화면에
@@ -36,14 +39,29 @@ class MemberRepositoryImpl @Inject constructor(
      */
     override suspend fun changeGlobalNickname(nickname: GlobalNickname): Result<GlobalNickname> = remoteDataSource
         .changeGlobalNickname(nickname)
-        .onSuccess { changed ->
-            val current = localDataSource.myAccount.first()
-            if (current != null) {
-                localDataSource.save(current.copy(nickname = changed))
-            } else {
-                refreshMyAccount()
-            }
-        }.mapErrorToAppError()
+        .fold(
+            onSuccess = { changed ->
+                val current = localDataSource.myAccount.first()
+                val saveResult = if (current != null) {
+                    saveLocally(current.copy(nickname = changed))
+                } else {
+                    refreshMyAccount()
+                    Result.success(Unit)
+                }
+                saveResult.map { changed }
+            },
+            onFailure = { Result.failure(it) },
+        ).mapErrorToAppError()
 
     override suspend fun clearMyAccount() = localDataSource.clear()
+
+    /**
+     * `DataStore.edit` 는 IOException 을 던질 수 있는데, 이 값이 원격 응답의
+     * `Result.onSuccess` 체인 안에서 무방비로 던져지면 [mapErrorToAppError] 를 거치지
+     * 않고 Repository 경계를 그대로 뚫고 나간다 — 소비자(로그인·가입·닉네임 변경)가
+     * `Result` 만 보고 있다가 미포착 예외로 크래시한다. 여기서 [runSuspendCatching] 으로
+     * 잡아 선언된 실패 채널로 되돌린다. 취소는 [runSuspendCatching] 이 걸러 재던진다.
+     */
+    private suspend fun saveLocally(account: MyAccountVO): Result<Unit> =
+        runSuspendCatching { localDataSource.save(account) }
 }
