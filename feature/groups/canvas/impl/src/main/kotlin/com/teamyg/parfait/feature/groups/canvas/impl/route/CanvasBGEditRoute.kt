@@ -3,6 +3,9 @@ package com.teamyg.parfait.feature.groups.canvas.impl.route
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -16,6 +19,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditEffec
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditViewModel
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 
 @Composable
 internal fun CanvasBGEditRoute(
@@ -25,10 +30,18 @@ internal fun CanvasBGEditRoute(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
+    // NavKey는 결과를 안 담아오므로, 편집을 보낸 토핑 id를 기억해뒀다가 결과가 오면 그 토핑에 반영한다
+    var editingToppingId by rememberSaveable { mutableStateOf<Long?>(null) }
+
     ResultEffect<PictureConfirmResult> { result ->
         viewModel.processIntent(
             CanvasBGEditIntent.OnBackgroundImageResult(uri = result.uri, source = result.source),
         )
+    }
+
+    ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
+        val toppingId = editingToppingId ?: return@ResultEffect
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingEditResult(toppingId, result))
     }
 
     LaunchedEffect(viewModel) {
@@ -52,6 +65,7 @@ internal fun CanvasBGEditRoute(
                 }
 
                 is CanvasBGEditEffect.NavigateToToppingEdit -> {
+                    editingToppingId = effect.toppingId
                     navigator.goTo(
                         destination = NavKeyToppingEdit(
                             sourceImageUri = effect.sourceImageUri,
