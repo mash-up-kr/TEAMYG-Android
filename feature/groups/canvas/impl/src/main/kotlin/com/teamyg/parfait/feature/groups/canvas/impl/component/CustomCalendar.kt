@@ -52,6 +52,9 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val DAYS_IN_WEEK = 7
 
+/** 달력 좌·우 테두리 두께. 구분선도 이만큼 들여야 테두리를 덮지 않는다 */
+private val SideBorderWidth = SizeTokens.Size1.getDp()
+
 internal data class CalendarDayUiModel(
     val date: LocalDate,
     val isCurrentMonth: Boolean,
@@ -84,13 +87,12 @@ internal fun CustomCalendar(
         modifier = modifier
             .background(YGAtomicColors.Gray.White)
             .sideBorder(
-                width = SizeTokens.Size1.getDp(),
+                width = SideBorderWidth,
                 color = YGAtomicColors.Gray.Gray500,
             ),
     ) {
         HeadCalendar(
-            month = firstDayOfMonth.format(DateTextFormat.monthFormat),
-            year = firstDayOfMonth.year.toString(),
+            displayedMonth = firstDayOfMonth,
             expandedPeriod = expandedPeriod,
             selectableYears = selectableYears,
             selectableMonths = selectableMonths,
@@ -106,7 +108,7 @@ internal fun CustomCalendar(
             },
         )
 
-        YGHorizontalDivider()
+        YGHorizontalDivider(modifier = Modifier.padding(horizontal = SideBorderWidth))
 
         BodyCalendar(
             days = days,
@@ -163,10 +165,10 @@ private fun buildCalendarDays(firstDayOfMonth: LocalDate): List<CalendarDayUiMod
 
 private fun ceilToWeek(dayCount: Int): Int = (dayCount + DAYS_IN_WEEK - 1) / DAYS_IN_WEEK * DAYS_IN_WEEK
 
+/** [displayedMonth] 는 그 달의 1일이어야 [selectableMonths] 항목과 같은 값으로 맞아떨어진다 */
 @Composable
 private fun HeadCalendar(
-    month: String,
-    year: String,
+    displayedMonth: LocalDate,
     expandedPeriod: CalendarPeriod?,
     selectableYears: List<Int>,
     selectableMonths: List<LocalDate>,
@@ -186,18 +188,20 @@ private fun HeadCalendar(
         ),
     ) {
         CalendarPeriodSelector(
-            text = month,
+            text = displayedMonth.format(DateTextFormat.monthFormat),
             isExpanded = expandedPeriod == CalendarPeriod.Month,
             items = selectableMonths,
+            selectedItem = displayedMonth,
             itemLabel = { it.format(DateTextFormat.monthFormat) },
             onClick = { onClickPeriod(CalendarPeriod.Month) },
             onDismiss = onDismissDropdown,
             onSelect = onSelectMonth,
         )
         CalendarPeriodSelector(
-            text = year,
+            text = displayedMonth.year.toString(),
             isExpanded = expandedPeriod == CalendarPeriod.Year,
             items = selectableYears,
+            selectedItem = displayedMonth.year,
             itemLabel = { it.toString() },
             onClick = { onClickPeriod(CalendarPeriod.Year) },
             onDismiss = onDismissDropdown,
@@ -218,6 +222,7 @@ private fun <T> CalendarPeriodSelector(
     text: String,
     isExpanded: Boolean,
     items: List<T>,
+    selectedItem: T?,
     itemLabel: (T) -> String,
     onClick: () -> Unit,
     onDismiss: () -> Unit,
@@ -260,6 +265,7 @@ private fun <T> CalendarPeriodSelector(
             ) {
                 CalendarDropdown(
                     items = items,
+                    selectedItem = selectedItem,
                     itemLabel = itemLabel,
                     onSelect = onSelect,
                 )
@@ -373,8 +379,8 @@ private fun CustomCalendarPreview(
         today = data.today,
         selectedDate = data.selectedDate,
         uploadedDates = data.uploadedDates,
-        selectableYears = listOf(2026, 2025),
-        selectableMonths = listOf(LocalDate(2026, 8, 1), LocalDate(2026, 7, 1)),
+        selectableYears = listOf(2025, 2026),
+        selectableMonths = listOf(LocalDate(2026, 7, 1), LocalDate(2026, 8, 1)),
         onSelectYear = {},
         onSelectMonth = {},
         onClickDate = {},
