@@ -7,17 +7,18 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.domain.model.auth.RegistrationToken
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
 fun TermAgreeRoute(
     navigator: Navigator,
-    registrationToken: String,
+    registrationToken: RegistrationToken,
     modifier: Modifier = Modifier,
-    viewModel: TermAgreeViewModel = hiltViewModel(),
+    viewModel: TermAgreeViewModel = hiltViewModel<TermAgreeViewModel, TermAgreeViewModel.Factory>(
+        creationCallback = { factory -> factory.create(registrationToken.value) },
+    ),
 ) {
-    // TODO(signup 라운드): 이 토큰으로 POST /api/v1/auth/signup 을 호출한다.
-    //  ViewModel 주입은 GroupCreateViewModel 과 같은 assisted Factory 패턴으로 붙인다.
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -39,13 +40,14 @@ fun TermAgreeRoute(
 
     TermAgreeScreen(
         state = state,
-        onClickTermAgree = { index, newSelected ->
-            viewModel.processIntent(TermAgreeIntent.ClickTermAgree(index, newSelected))
+        onClickTermAgree = { termsId, newSelected ->
+            viewModel.processIntent(TermAgreeIntent.ClickTermAgree(termsId, newSelected))
         },
         onClickTermLandingUrl = { viewModel.processIntent(TermAgreeIntent.ClickTermLandingUrl(it)) },
         onClickAgreeAllTerm = { viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(it)) },
         onClickNextButton = { viewModel.processIntent(TermAgreeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(TermAgreeIntent.ClickBackButton) },
+        onClickRetryLoad = { viewModel.processIntent(TermAgreeIntent.ClickRetryLoad) },
         modifier = modifier,
     )
 }
