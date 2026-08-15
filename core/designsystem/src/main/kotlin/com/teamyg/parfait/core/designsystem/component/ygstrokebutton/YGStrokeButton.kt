@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -33,6 +33,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 /**
  * Figma Button-Stroke
+ *
+ * @param borderWidth 테두리 두께. [Dp.Hairline] 이면 테두리를 그리지 않는다.
  */
 @Composable
 fun YGStrokeButton(
@@ -42,6 +44,7 @@ fun YGStrokeButton(
     @DrawableRes iconResource: Int? = null,
     isSelected: Boolean = false,
     isEnabled: Boolean = true,
+    borderWidth: Dp = SizeTokens.Size1.getDp(),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
@@ -70,10 +73,17 @@ fun YGStrokeButton(
                 color = backgroundColor,
                 shape = shape,
             ).clip(shape)
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = shape,
+            // Modifier.border 는 Dp.Hairline(= 0.dp) 을 1px 선으로 그리므로 직접 걸러낸다
+            .then(
+                if (borderWidth > Dp.Hairline) {
+                    Modifier.border(
+                        width = borderWidth,
+                        color = borderColor,
+                        shape = shape,
+                    )
+                } else {
+                    Modifier
+                },
             ).selectable(
                 selected = isSelected,
                 enabled = isEnabled,
