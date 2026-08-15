@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.network
 
 import app.cash.turbine.test
 import com.teamyg.parfait.data.service.AuthService
+import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
@@ -15,6 +16,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import javax.inject.Provider
@@ -270,6 +272,66 @@ class TokenAuthenticatorTest {
         val retried = authenticator.authenticate(route = null, response = exhausted)
 
         // Then 재발급조차 시도하지 않고 포기한다 — 무한 재시도를 끊는다
+        assertNull(retried)
+        assertEquals(0, server.requestCount)
+    }
+
+    /**
+     * [AuthService.postAuthReissue] 가 실제로 만드는, `@NoAuth` 태그가 달린 [Request] 를
+     * 포착한다. 인터셉터가 네트워크로 나가기 전에 바로 가짜 200 을 돌려주므로
+     * `server.requestCount` 는 이 과정에서 늘지 않는다 — 이 테스트가 확인하려는 것은
+     * "재발급 요청 자신이 401 을 받아도 인증기가 재진입하지 않는다"이지 실제 네트워크
+     * 왕복이 아니다.
+     */
+    private fun capturedReissueRequest(): Request {
+        var captured: Request? = null
+        val capturingClient = OkHttpClient
+            .Builder()
+            .addInterceptor { chain ->
+                captured = chain.request()
+                Response
+                    .Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body(
+                        """
+                        {"success":true,"code":"OK","message":"성공",
+                         "data":{"accessToken":"$NEW_ACCESS_TOKEN","refreshToken":"$NEW_REFRESH_TOKEN","expiresIn":3600}}
+                        """.trimIndent().toResponseBody("application/json".toMediaType()),
+                    ).build()
+            }.build()
+
+        val capturingAuthService = Retrofit
+            .Builder()
+            .baseUrl(server.url("/"))
+            .client(capturingClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(AuthService::class.java)
+
+        runBlocking { capturingAuthService.postAuthReissue(ReissueRequest(refreshToken = REFRESH_TOKEN)) }
+        return requireNotNull(captured)
+    }
+
+    @Test
+    fun authenticate_noAuthEndpointGets401_returnsNullWithoutReissue() = runTest {
+        // Given 재발급 요청(`@NoAuth`) 자신이 401 을 받은 상황 — 같은 OkHttpClient 를 타므로
+        // 이 인증기가 그 요청도 다시 붙잡을 수 있다(재진입 데드락 경로)
+        val reissueRequest = capturedReissueRequest()
+        val unauthorizedReissue = Response
+            .Builder()
+            .request(reissueRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(401)
+            .message("Unauthorized")
+            .build()
+
+        // When 인증기가 그 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedReissue)
+
+        // Then 재발급을 시도조차 하지 않고 즉시 포기한다
         assertNull(retried)
         assertEquals(0, server.requestCount)
     }

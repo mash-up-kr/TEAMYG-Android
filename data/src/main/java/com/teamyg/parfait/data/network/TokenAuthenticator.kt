@@ -16,6 +16,7 @@ import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
+import retrofit2.Invocation
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -42,6 +43,16 @@ class TokenAuthenticator @Inject constructor(
         route: Route?,
         response: Response,
     ): Request? {
+        // `@NoAuth` 엔드포인트는 인증이 필요 없어 재발급 대상이 아니다. 특히 재발급 요청
+        // 자신(`postAuthReissue`)도 `@NoAuth`이면서 같은 `OkHttpClient`를 타므로, 이 가드가
+        // 없으면 재발급이 401을 받았을 때 재진입한 `authenticate()`가 바깥 호출이 이미 쥔
+        // `mutex`를 기다리며 영구 대기한다(데드락).
+        val skipAuth = response.request
+            .tag(Invocation::class.java)
+            ?.method()
+            ?.isAnnotationPresent(NoAuth::class.java) == true
+        if (skipAuth) return null
+
         // 새 토큰으로 재시도했는데 또 401 이면 재발급으로 풀릴 문제가 아니다
         if (response.retryCount() >= MAX_RETRY) {
             sourceLogger.e { "재발급 후에도 401 — 재시도를 끊는다" }
