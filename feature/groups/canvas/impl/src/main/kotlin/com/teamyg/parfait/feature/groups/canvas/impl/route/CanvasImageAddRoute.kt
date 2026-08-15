@@ -14,6 +14,7 @@ import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
@@ -32,11 +33,15 @@ internal fun CanvasImageAddRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is CanvasImageAddEffect.NavigateToCamera -> navigator.goTo(
-                    destination = NavKeyCameraCustom,
+                    destination = NavKeyCameraCustom(),
                 )
 
                 is CanvasImageAddEffect.NavigateToCanvas -> navigator.goTo(
-                    destination = NavKeyCustomGalleryPicker,
+                    destination = NavKeyCustomGalleryPicker(),
+                )
+
+                is CanvasImageAddEffect.NavigateToCanvasBGEdit -> navigator.goTo(
+                    destination = NavKeyCanvasBGEdit,
                 )
 
                 is CanvasImageAddEffect.NavigateToSegmentation -> navigator.goTo(
@@ -55,7 +60,7 @@ internal fun CanvasImageAddRoute(
         onClickMenu = {}, // TODO: 메뉴 연동 필요
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
-        onClickEditCanvasBG = {}, // TODO: 캔버스 편집 화면 연동 필요
+        onClickEditCanvasBG = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
         modifier = modifier,
     )
 }

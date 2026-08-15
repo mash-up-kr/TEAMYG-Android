@@ -6,4 +6,10 @@
     <string name="canvas_image_add_camera_capture">카메라로 촬영</string>
     <string name="canvas_image_add_gallery_select">갤러리에서 선택</string>
     <string name="canvas_image_add_member_overflow_count">+%1$d</string>
+    <string name="canvas_bg_edit_tab_background">배경</string>
+    <string name="canvas_bg_edit_tab_topping">토핑</string>
+    <string name="canvas_bg_edit_quit_dialog_title">편집을 그만둘까요?</string>
+    <string name="canvas_bg_edit_quit_dialog_body">기존 편집 내용은 모두 사라지며\n캔버스 화면으로 돌아가요</string>
+    <string name="canvas_bg_edit_quit_dialog_confirm">그만두기</string>
+    <string name="canvas_bg_edit_quit_dialog_cancel">계속 편집하기</string>
 </resources>

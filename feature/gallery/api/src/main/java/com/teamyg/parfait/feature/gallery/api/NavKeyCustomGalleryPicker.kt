@@ -4,4 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object NavKeyCustomGalleryPicker : NavKey
+data class NavKeyCustomGalleryPicker(
+    val showGuideToast: Boolean = true,
+    val returnResultOnly: Boolean = false,
+) : NavKey

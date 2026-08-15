@@ -26,10 +26,12 @@ fun EntryProviderScope<NavKey>.featureSystemGalleryEntryBuilder(navigator: Navig
 }
 
 fun EntryProviderScope<NavKey>.featureCustomGalleryEntryBuilder(navigator: Navigator) {
-    entry<NavKeyCustomGalleryPicker> {
+    entry<NavKeyCustomGalleryPicker> { navKey ->
         YGScaffold { innerPadding ->
             CustomGalleryPickerRoute(
                 navigator = navigator,
+                showGuideToast = navKey.showGuideToast,
+                returnResultOnly = navKey.returnResultOnly,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),

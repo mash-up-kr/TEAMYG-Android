@@ -7,4 +7,5 @@ import kotlinx.serialization.Serializable
 data class NavKeyPictureConfirm(
     val uri: String,
     val source: PictureConfirmSource,
+    val returnResultOnly: Boolean = false,
 ) : NavKey
