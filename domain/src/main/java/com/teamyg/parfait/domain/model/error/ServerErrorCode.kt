@@ -27,4 +27,37 @@ object ServerErrorCode {
         /** 503 — 카카오 서버에 연결할 수 없습니다 */
         const val KAKAO_SERVER_UNAVAILABLE = "KAKAO_SERVER_UNAVAILABLE"
     }
+
+    /** 그룹 도메인(`/api/parfait-groups...`) — 서버 `ParfaitGroupApiErrorCode` 에 대응한다 */
+    object ParfaitGroup {
+        /** 404 — 초대코드에 해당하는 그룹이 없다 */
+        const val INVALID_INVITE_CODE = "INVALID_INVITE_CODE"
+
+        /** 409 — 이미 참여한 그룹이다 */
+        const val GROUP_ALREADY_JOINED = "GROUP_ALREADY_JOINED"
+
+        /** 409 — 그룹 정원이 찼다 */
+        const val GROUP_MEMBER_LIMIT_REACHED = "GROUP_MEMBER_LIMIT_REACHED"
+
+        /** 409 — 같은 그룹에서 이미 쓰이는 닉네임이다 */
+        const val GROUP_NICKNAME_ALREADY_USED = "GROUP_NICKNAME_ALREADY_USED"
+
+        /** 400 — 그룹명이 1~10자·`^[가-힣A-Za-z0-9]+(?: [가-힣A-Za-z0-9]+)*$` 를 벗어났다 */
+        const val INVALID_GROUP_NAME = "INVALID_GROUP_NAME"
+
+        /** 400 — 그룹 닉네임이 1~15자·그룹명과 같은 패턴을 벗어났다 */
+        const val INVALID_GROUP_NICKNAME = "INVALID_GROUP_NICKNAME"
+
+        /** 400 — 그룹 정원이 1~12 밖이다 */
+        const val INVALID_GROUP_MEMBER_LIMIT = "INVALID_GROUP_MEMBER_LIMIT"
+
+        /** 404 — 토큰의 memberId 가 서버에 없다. 같은 문자열이 인증 도메인에서는 401 이라 [Auth] 와 나눠 둔다 */
+        const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+    }
+
+    /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */
+    object Common {
+        /** 400 — 바디 파싱 실패·필드 누락·타입 불일치. 정상 동선에서는 나오지 않는다(= 앱 버그) */
+        const val INVALID_REQUEST = "INVALID_REQUEST"
+    }
 }
