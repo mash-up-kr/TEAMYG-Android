@@ -99,10 +99,18 @@ constructor(
     override fun processIntent(intent: CanvasImageAddIntent) {
         when (intent) {
             is CanvasImageAddIntent.CacheImage -> handleCacheImage(intent)
+
             is CanvasImageAddIntent.OnClickCamera -> handleOnClickCamera()
+
             is CanvasImageAddIntent.OnClickCanvas -> handleOnClickCanvas()
+
             is CanvasImageAddIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
-            is CanvasImageAddIntent.OnClickDateSelect -> updateState { copy(isCalendarVisible = true) }
+
+            // 달력이 열린 동안에도 같은 버튼이 달력 위에 다시 그려지므로, 한 번 더 누르면 닫는다
+            is CanvasImageAddIntent.OnClickDateSelect -> {
+                updateState { copy(isCalendarVisible = isCalendarVisible.not()) }
+            }
+
             is CanvasImageAddIntent.DismissCalendar -> updateState { copy(isCalendarVisible = false) }
         }
     }
