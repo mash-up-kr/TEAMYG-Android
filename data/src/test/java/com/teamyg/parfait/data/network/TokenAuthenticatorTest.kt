@@ -163,6 +163,29 @@ class TokenAuthenticatorTest {
     }
 
     @Test
+    fun authenticate_reissueRejectedAsEnvelopeFailure_clearsTokensAndPostsForcedLogout() = runTest {
+        // Given 서버가 HTTP 200 안에 success:false·INVALID_TOKEN 을 실어 refresh token 을 거절한다
+        // (envelope 실패라 statusCode 는 null 로 오고, 판정은 code 만으로 이뤄져야 한다)
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(200)
+                .body("""{"success":false,"code":"INVALID_TOKEN","message":"유효하지 않은 토큰입니다","data":null}""")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 재시도하지 않고 세션을 버린다
+        assertNull(retried)
+        assertEquals(1, tokenStore.clearCount)
+        sessionEventBus.events.test {
+            assertEquals(SessionEvent.ForcedLogout, awaitItem())
+        }
+    }
+
+    @Test
     fun authenticate_reissueNetworkFails_keepsTokensAndPostsNothing() = runTest {
         // Given 연결이 끊겨 재발급 요청 자체가 실패한다
         server.close()
