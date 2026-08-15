@@ -19,6 +19,7 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class AuthRepositoryImplTest {
@@ -136,5 +137,95 @@ class AuthRepositoryImplTest {
         coVerify(exactly = 1) {
             tokenStore.save(accessToken = "access-1", refreshToken = "refresh-1")
         }
+    }
+
+    @Test
+    fun logout_serverSucceeds_clearsLocalTokens() = runTest {
+        // Given 로그인 상태이고 서버 로그아웃이 성공한다
+        coEvery { tokenStore.getRefreshToken() } returns "refresh"
+        coEvery { remoteDataSource.logout(RefreshToken("refresh")) } returns Result.success(Unit)
+        coEvery { tokenStore.clear() } returns Unit
+
+        // When 로그아웃한다
+        val result = repository.logout()
+
+        // Then 성공이고 로컬 토큰이 지워진다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { tokenStore.clear() }
+    }
+
+    @Test
+    fun logout_serverFails_stillClearsLocalTokens() = runTest {
+        // Given 서버 로그아웃이 실패한다
+        coEvery { tokenStore.getRefreshToken() } returns "refresh"
+        coEvery { remoteDataSource.logout(RefreshToken("refresh")) } returns
+            Result.failure(ApiException.Network(IOException("연결 실패")))
+        coEvery { tokenStore.clear() } returns Unit
+
+        // When 로그아웃한다
+        val result = repository.logout()
+
+        // Then 사용자가 눌렀으니 이 기기에서는 나간다 — 서버 실패는 전파하지 않는다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { tokenStore.clear() }
+    }
+
+    @Test
+    fun logout_refreshTokenRotatedMidFlight_retriesOnceWithNewToken() = runTest {
+        // Given access token 이 만료된 채 로그아웃해 인증기가 재발급을 태웠고,
+        // 그 재발급이 refresh token 을 회전시켜 방금 본문에 실어 보낸 값이 죽었다
+        coEvery { tokenStore.getRefreshToken() } returnsMany listOf("old-refresh", "new-refresh")
+        coEvery { remoteDataSource.logout(RefreshToken("old-refresh")) } returns
+            Result.failure(
+                ApiException.Business(
+                    code = "INVALID_TOKEN",
+                    serverMessage = "유효하지 않은 토큰입니다",
+                    statusCode = 401,
+                    errorDetail = null,
+                ),
+            )
+        coEvery { remoteDataSource.logout(RefreshToken("new-refresh")) } returns Result.success(Unit)
+        coEvery { tokenStore.clear() } returns Unit
+
+        // When 로그아웃한다
+        val result = repository.logout()
+
+        // Then 회전된 새 값으로 딱 한 번 다시 보내 서버 세션을 실제로 끊고, 로컬도 정리한다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { remoteDataSource.logout(RefreshToken("old-refresh")) }
+        coVerify(exactly = 1) { remoteDataSource.logout(RefreshToken("new-refresh")) }
+        coVerify(exactly = 1) { tokenStore.clear() }
+    }
+
+    @Test
+    fun logout_serverFailsWithoutRotation_doesNotRetry() = runTest {
+        // Given 서버 호출이 실패했지만 refresh token 은 그대로다(회전이 없었다)
+        coEvery { tokenStore.getRefreshToken() } returns "refresh"
+        coEvery { remoteDataSource.logout(RefreshToken("refresh")) } returns
+            Result.failure(ApiException.Network(IOException("연결 실패")))
+        coEvery { tokenStore.clear() } returns Unit
+
+        // When 로그아웃한다
+        val result = repository.logout()
+
+        // Then 같은 값으로 다시 보내지 않는다 — 재시도는 회전됐을 때만이다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { remoteDataSource.logout(any()) }
+        coVerify(exactly = 1) { tokenStore.clear() }
+    }
+
+    @Test
+    fun logout_noRefreshToken_clearsWithoutCallingServer() = runTest {
+        // Given 이미 토큰이 없는 상태
+        coEvery { tokenStore.getRefreshToken() } returns null
+        coEvery { tokenStore.clear() } returns Unit
+
+        // When 로그아웃한다
+        val result = repository.logout()
+
+        // Then 서버를 부르지 않고 로컬만 정리한다
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { remoteDataSource.logout(any()) }
+        coVerify(exactly = 1) { tokenStore.clear() }
     }
 }

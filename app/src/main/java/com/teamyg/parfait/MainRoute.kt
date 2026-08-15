@@ -3,6 +3,7 @@ package com.teamyg.parfait
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
@@ -13,13 +14,29 @@ import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorat
 import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
+import com.teamyg.parfait.domain.model.session.SessionEvent
+import com.teamyg.parfait.domain.repository.session.SessionEventSource
+import com.teamyg.parfait.feature.login.api.NavKeyLogin
 
 @Composable
 fun MainRoute(
     navigator: Navigator,
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
+    sessionEventSource: SessionEventSource,
     modifier: Modifier = Modifier,
 ) {
+    // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
+    // 화면마다 구독하면 한 이벤트로 이동이 여러 번 일어난다.
+    LaunchedEffect(Unit) {
+        sessionEventSource.events.collect { event ->
+            when (event) {
+                SessionEvent.ForcedLogout -> {
+                    navigator.replaceAll(NavKeyLogin)
+                }
+            }
+        }
+    }
+
     SharedTransitionLayout(modifier = modifier) {
         CompositionLocalProvider(LocalSharedTransitionScope provides this) {
             NavDisplay(

@@ -19,8 +19,7 @@ fun SplashRoute(
 
     LaunchedEffect(state.loadingStatus) {
         if (state.loadingStatus == LoadingStatus.Success) {
-            navigator.clearBackStack()
-            navigator.goTo(destination = NavKeyLogin)
+            navigator.replaceAll(destination = NavKeyLogin)
         }
     }
 

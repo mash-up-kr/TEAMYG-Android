@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.parfait.android.library)
     alias(libs.plugins.parfait.dagger.hilt.compose)
+    alias(libs.plugins.parfait.test.unit)
 }
 
 android {
