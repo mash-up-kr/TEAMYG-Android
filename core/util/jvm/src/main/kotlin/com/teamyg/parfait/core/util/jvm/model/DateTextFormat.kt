@@ -19,4 +19,8 @@ object DateTextFormat {
     val monthFormat = LocalDate.Format {
         monthName(MonthNames.ENGLISH_ABBREVIATED)
     }
+
+    val fullMonthFormat = LocalDate.Format {
+        monthName(MonthNames.ENGLISH_FULL)
+    }
 }

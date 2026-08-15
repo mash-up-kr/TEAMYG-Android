@@ -186,7 +186,8 @@ private fun HeadCalendar(
             isExpanded = expandedPeriod == CalendarPeriod.Month,
             items = selectableMonths,
             selectedItem = displayedMonth,
-            itemLabel = { it.format(DateTextFormat.monthFormat) },
+            // 머리글은 자리가 좁아 줄여 쓰지만, 드롭다운은 넓어 온전한 이름으로 보여준다
+            itemLabel = { it.format(DateTextFormat.fullMonthFormat) },
             onClick = { onClickPeriod(CalendarPeriod.Month) },
             onDismiss = onDismissDropdown,
             onSelect = onSelectMonth,
