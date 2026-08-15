@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
 interface ParfaitImageRemoteDataSource {
@@ -44,4 +45,32 @@ interface ParfaitImageRemoteDataSource {
         scale: Double? = null,
         rotation: Double? = null,
     ): Result<UpdatedToppingVO>
+
+    /**
+     * 배치된 토핑의 테두리를 바꾼다.
+     *
+     * 위치 수정과 달리 부분 병합이 아니라 통째 덮기다 — 그래서 nullable 파라미터가 아니라
+     * ToppingBorder 하나를 받는다. sealed 라 SOLID 인데 색·두께가 빠지는 조합을 만들 수 없고,
+     * 그래서 400 INVALID_BORDER 는 앱에서 도달 불가다.
+     *
+     * 그룹 미참여도 본인 배치가 아닐 때와 같은 코드(PARFAIT_IMAGE_NOT_OWNED, 403)가 온다.
+     */
+    suspend fun updateToppingBorder(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+        border: ToppingBorder,
+    ): Result<UpdatedToppingBorderVO>
+
+    /**
+     * 배치된 토핑을 지운다. 되돌릴 수 없다.
+     *
+     * 서버가 배치 행을 지우면서 이미지 참조 수를 줄이고, 그것이 0이 되면 S3 객체까지 지운다
+     * (`api/parfait-image.md`). 멱등이 아니라 같은 배치를 두 번 지우면 404 다.
+     */
+    suspend fun deleteTopping(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+    ): Result<Unit>
 }

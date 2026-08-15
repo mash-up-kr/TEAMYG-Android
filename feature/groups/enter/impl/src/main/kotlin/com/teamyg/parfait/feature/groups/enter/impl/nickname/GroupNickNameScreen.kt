@@ -113,7 +113,7 @@ private class GroupNickNameScreenPreviewParameterProvider :
             GroupNickNameUiState(""),
             GroupNickNameUiState(nickName = "he"),
             GroupNickNameUiState(nickName = "hello"),
-            GroupNickNameUiState(nickName = "hello", submitError = GroupNickNameError.ALREADY_USED),
+            GroupNickNameUiState(nickName = "hello", submitError = GroupNickNameError.INVALID),
         )
 }
 

@@ -5,6 +5,8 @@ import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
 import com.teamyg.parfait.data.source.parfaitimage.mapper.toPlaceRequest
 import com.teamyg.parfait.data.source.parfaitimage.mapper.toPlacedToppingVO
+import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdateBorderRequest
+import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdatedToppingBorderVO
 import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdatedToppingVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -13,6 +15,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import javax.inject.Inject
 
@@ -63,4 +66,33 @@ class ParfaitImageRemoteDataSourceImpl @Inject constructor(
         },
         transform = { it.toUpdatedToppingVO() },
     )
+
+    override suspend fun updateToppingBorder(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+        border: ToppingBorder,
+    ): Result<UpdatedToppingBorderVO> = apiCaller.safeApiCall(
+        block = {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageIdBorder(
+                groupId = groupId.value,
+                parfaitId = parfaitId.value,
+                parfaitImageId = parfaitImageId.value,
+                request = border.toUpdateBorderRequest(),
+            )
+        },
+        transform = { it.toUpdatedToppingBorderVO() },
+    )
+
+    override suspend fun deleteTopping(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+    ): Result<Unit> = apiCaller.safeApiCallWithoutData {
+        parfaitImageService.deleteGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+            groupId = groupId.value,
+            parfaitId = parfaitId.value,
+            parfaitImageId = parfaitImageId.value,
+        )
+    }
 }

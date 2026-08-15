@@ -105,7 +105,6 @@ constructor(
             is AppError.Network -> GroupNickNameError.NETWORK
 
             is AppError.Server -> when (throwable.code) {
-                ServerErrorCode.ParfaitGroup.GROUP_NICKNAME_ALREADY_USED -> GroupNickNameError.ALREADY_USED
                 ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupNickNameError.INVALID
                 else -> GroupNickNameError.UNKNOWN
             }

@@ -26,4 +26,8 @@ class MemberRemoteDataSourceImpl @Inject constructor(
         },
         transform = { it.toGlobalNickname() },
     )
+
+    override suspend fun withdraw(): Result<Unit> = apiCaller.safeApiCallNoContent {
+        memberService.deleteUsersMe()
+    }
 }

@@ -1,0 +1,95 @@
+package com.teamyg.parfait.data.service.model.response.parfait
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+/**
+ * 오늘의 캔버스 조회 응답.
+ *
+ * images 는 배치가 0건이면 빈 배열이 아니라 null 이다. background 도 type·value 중 하나라도
+ * 없으면 통째로 null 이다. 서버가 default-property-inclusion: always 라 키 자체는 실려 오므로
+ * 키 존재가 아니라 값이 null 인지로 갈라야 한다(`api/parfait.md`).
+ */
+@Serializable
+data class GetTodayParfaitResponse(
+    @SerialName("parfaitId")
+    val parfaitId: Long,
+    @SerialName("date")
+    val date: String,
+    @SerialName("status")
+    val status: String,
+    @SerialName("lastClosedDate")
+    val lastClosedDate: String? = null,
+    @SerialName("groupMembers")
+    val groupMembers: List<GroupMemberResponse>,
+    @SerialName("background")
+    val background: BackgroundResponse? = null,
+    @SerialName("images")
+    val images: List<TodayParfaitImageResponse>? = null,
+)
+
+/**
+ * @param id 계정 id 가 아니라 그룹 멤버십 행 id 다.
+ */
+@Serializable
+data class GroupMemberResponse(
+    @SerialName("id")
+    val id: Long,
+    @SerialName("nickname")
+    val nickname: String,
+)
+
+/**
+ * @param value type 이 COLOR 면 색 문자열, IMAGE 면 URL 이다.
+ */
+@Serializable
+data class BackgroundResponse(
+    @SerialName("type")
+    val type: String,
+    @SerialName("value")
+    val value: String,
+)
+
+@Serializable
+data class TodayParfaitImageResponse(
+    @SerialName("parfaitImageId")
+    val parfaitImageId: Long,
+    @SerialName("imageId")
+    val imageId: Long,
+    @SerialName("imageUrl")
+    val imageUrl: String,
+    @SerialName("positionX")
+    val positionX: Double,
+    @SerialName("positionY")
+    val positionY: Double,
+    @SerialName("positionZ")
+    val positionZ: Int,
+    @SerialName("scale")
+    val scale: Double,
+    @SerialName("rotation")
+    val rotation: Double,
+    @SerialName("borderType")
+    val borderType: String,
+    @SerialName("borderColor")
+    val borderColor: String? = null,
+    @SerialName("borderWidth")
+    val borderWidth: Double? = null,
+    @SerialName("placedBy")
+    val placedBy: PlacedByResponse,
+    @SerialName("createdAt")
+    val createdAt: String,
+)
+
+/**
+ * 배치자. 같은 이름의 DTO 가 response/parfaitimage 에도 있다 — 서버가 두 응답에 같은 이름을
+ * 썼고 wire DTO 는 서버의 거울이라 이름을 바꾸지 않는다.
+ *
+ * @param nickname 그룹 닉네임이다. 탈퇴·이탈한 멤버면 "(알수없음)"이 온다.
+ */
+@Serializable
+data class PlacedByResponse(
+    @SerialName("groupMemberId")
+    val groupMemberId: Long,
+    @SerialName("nickname")
+    val nickname: String,
+)
