@@ -83,6 +83,8 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
+⚠️ `users.http`의 마지막 요청은 회원 탈퇴, `parfait-image.http`의 마지막 요청은 토핑 삭제다 — 파일을 위에서부터 통째로 순서대로 돌리면 계정·데이터가 지워진다.
+
 `policy.http`를 먼저 돌려야 `auth.http` 2번의 `termsId`가 채워진다. 기존 회원으로 로그인했다면 회원가입을 건너뛰므로 `policy.http`도 건너뛰어도 된다.
 
 `parfait-image.http`는 준비가 가장 길다 — `images.http`의 발급 → S3 PUT → confirm 까지 끝내 이미지를 `COMPLETED`로 만들어야 배치가 통과한다(`PENDING`이면 `409 IMAGE_NOT_CONFIRMED`). `parfaitId`는 `parfait.http`의 "오늘의 캔버스 조회"가 응답 핸들러로 `parfait_id`에 채워 준다.
@@ -105,7 +107,9 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 토큰은 `data` 안에 있다 — `response.body.data.accessToken`이지 `response.body.accessToken`이 아니다.
 
-**예외**: `POST /api/v1/auth/logout`은 **204**라서 응답 본문이 아예 없다. envelope도 오지 않는다.
+**예외**: `POST /api/v1/auth/logout`과 `DELETE /api/v1/users/me`(회원 탈퇴)는 **204**라서 응답 본문이 아예 없다. envelope도 오지 않는다.
+
+**함정**: 같은 삭제라도 `DELETE .../images/{parfaitImageId}`(토핑 삭제)는 204가 아니라 **200 + `data: null`**이라 envelope가 그대로 온다 — 두 DELETE의 성공 표현이 다르다.
 
 `errorDetail`은 계약에는 있으나 **서버가 현재 항상 `null`로 보낸다**(필드별 검증 메시지가 채워지지 않는다).
 
@@ -229,8 +233,8 @@ http/
 ├── parfait.http                  # 파르페 조회
 ├── health.http                   # 헬스체크
 ├── images.http                   # 이미지 업로드 2종 (+ S3 PUT)
-├── users.http                    # 내 계정 조회 · 전역 닉네임 변경
-├── parfait-image.http            # 토핑 배치 확정 · 위치/크기/각도 수정
+├── users.http                    # 내 계정 조회 · 전역 닉네임 변경 · 탈퇴
+├── parfait-image.http            # 토핑 배치 확정 · 위치/크기/각도 수정 · 테두리 수정 · 삭제
 ├── http-client.env.json          # 환경 변수 구조(값 비움, 커밋됨)
 └── http-client.private.env.json  # 실제 값 (gitignore — 커밋되지 않음)
 ```

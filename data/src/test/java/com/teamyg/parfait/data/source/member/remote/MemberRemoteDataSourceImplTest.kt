@@ -222,8 +222,9 @@ class MemberRemoteDataSourceImplTest {
         // When 탈퇴한다
         val result = dataSource.withdraw()
 
-        // Then ApiException 으로 번역돼 흐른다
+        // Then ApiException.Http 로 번역되고 상태 코드가 보존된다
         assertTrue(result.isFailure)
-        assertIs<ApiException>(result.exceptionOrNull())
+        val error = assertIs<ApiException.Http>(result.exceptionOrNull())
+        assertEquals(401, error.statusCode)
     }
 }

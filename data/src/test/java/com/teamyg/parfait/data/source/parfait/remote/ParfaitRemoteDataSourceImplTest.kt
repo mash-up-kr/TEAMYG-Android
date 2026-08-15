@@ -146,6 +146,18 @@ class ParfaitRemoteDataSourceImplTest {
     }
 
     @Test
+    fun getTodayCanvas_lastClosedDateNull_staysNull() = runTest {
+        // Given 마지막으로 닫힌 날짜가 없다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns todaySuccess(lastClosedDate = null)
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 미설정은 그대로 널로 남는다
+        assertNull(canvas.lastClosedDate)
+    }
+
+    @Test
     fun getTodayCanvas_unknownBackgroundType_foldsToNull() = runTest {
         // Given 서버가 앱이 모르는 배경 타입을 준다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns
@@ -241,7 +253,12 @@ class ParfaitRemoteDataSourceImplTest {
         // Given 서버가 과거 캔버스 둘을 준다
         coEvery { parfaitService.getGroupsByGroupIdParfaits(1L, null, null) } returns pastSuccess(
             listOf(
-                PastParfaitResponse(parfaitId = 3L, date = "2026-08-14", thumbnailUrl = null, imageCount = 2),
+                PastParfaitResponse(
+                    parfaitId = 3L,
+                    date = "2026-08-14",
+                    thumbnailUrl = "https://example.com/thumb.png",
+                    imageCount = 2,
+                ),
                 PastParfaitResponse(parfaitId = 2L, date = "2026-08-13", thumbnailUrl = null, imageCount = 0),
             ),
         )
@@ -252,7 +269,8 @@ class ParfaitRemoteDataSourceImplTest {
         // Then 서버 순서를 유지하고 imageCount 가 toppingCount 로 간다
         assertEquals(listOf(ParfaitId(3L), ParfaitId(2L)), canvases.map { it.parfaitId })
         assertEquals(listOf(2, 0), canvases.map { it.toppingCount })
-        assertNull(canvases.first().thumbnailUrl)
+        assertEquals(LocalDate.parse("2026-08-14"), canvases.first().date)
+        assertEquals("https://example.com/thumb.png", canvases.first().thumbnailUrl)
     }
 
     @Test

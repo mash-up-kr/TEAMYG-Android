@@ -21,13 +21,18 @@ private const val BORDER_TYPE_NONE = "NONE"
 private const val BORDER_TYPE_SOLID = "SOLID"
 
 /**
- * sealed 테두리를 서버가 받는 평면 3필드로 편다. None 이면 색·두께를 보내지 않는다.
+ * sealed 테두리를 서버가 받는 평면 3필드(타입, 색, 두께)로 편다. None 이면 색·두께를 보내지 않는다.
  */
+private fun ToppingBorder.flatten(): Triple<String, String?, Double?> = when (this) {
+    ToppingBorder.None -> Triple(BORDER_TYPE_NONE, null, null)
+    is ToppingBorder.Solid -> Triple(BORDER_TYPE_SOLID, color, width)
+}
+
 internal fun ToppingTransform.toPlaceRequest(
     imageId: ImageId,
     border: ToppingBorder,
 ): PlaceParfaitImageRequest {
-    val solid = border as? ToppingBorder.Solid
+    val (borderType, borderColor, borderWidth) = border.flatten()
     return PlaceParfaitImageRequest(
         imageId = imageId.value,
         positionX = positionX,
@@ -35,12 +40,9 @@ internal fun ToppingTransform.toPlaceRequest(
         positionZ = positionZ,
         scale = scale,
         rotation = rotation,
-        borderType = when (border) {
-            ToppingBorder.None -> BORDER_TYPE_NONE
-            is ToppingBorder.Solid -> BORDER_TYPE_SOLID
-        },
-        borderColor = solid?.color,
-        borderWidth = solid?.width,
+        borderType = borderType,
+        borderColor = borderColor,
+        borderWidth = borderWidth,
     )
 }
 
@@ -75,14 +77,11 @@ internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO =
 )
 
 internal fun ToppingBorder.toUpdateBorderRequest(): UpdateParfaitImageBorderRequest {
-    val solid = this as? ToppingBorder.Solid
+    val (borderType, borderColor, borderWidth) = flatten()
     return UpdateParfaitImageBorderRequest(
-        borderType = when (this) {
-            ToppingBorder.None -> BORDER_TYPE_NONE
-            is ToppingBorder.Solid -> BORDER_TYPE_SOLID
-        },
-        borderColor = solid?.color,
-        borderWidth = solid?.width,
+        borderType = borderType,
+        borderColor = borderColor,
+        borderWidth = borderWidth,
     )
 }
 

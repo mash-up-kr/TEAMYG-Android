@@ -51,7 +51,7 @@ GET {{base_url}}/actuator/health
 > {%
     client.global.clear("parfait_image_id");
     client.global.clear("parfait_id");
-    client.log("parfait_image_id/parfait_id 초기화 완료 — parfait-image.http 1번을 다시 실행해 채운다");
+    client.log("parfait_image_id/parfait_id 초기화 완료 — parfait_id 는 parfait.http 의 \"오늘의 캔버스 조회\", parfait_image_id 는 parfait-image.http 1번을 다시 실행해 채운다");
 %}
 
 ### 0-2. 현재 어떤 값이 쓰이고 있는지 확인
@@ -67,5 +67,6 @@ GET {{base_url}}/actuator/health
                                     (client.global.get("terms_id_2") || "(비어 있음)"));
     client.log("image_id      : " + (client.global.get("image_id") || "(비어 있음)"));
     client.log("image_upload_url : " + (client.global.get("image_upload_url") || "(비어 있음)"));
+    client.log("parfait_id       : " + (client.global.get("parfait_id") || "(비어 있음)"));
     client.log("parfait_image_id : " + (client.global.get("parfait_image_id") || "(비어 있음)"));
 %}
