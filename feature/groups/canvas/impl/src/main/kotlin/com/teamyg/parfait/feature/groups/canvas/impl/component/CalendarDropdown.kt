@@ -25,7 +25,6 @@ import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 private val DropdownWidth = 120.dp
 private val DropdownMaxHeight = 220.dp
 
-/** 팝업 테두리와 항목 사이 구분선의 공통 두께 */
 private val BorderWidth = SizeTokens.Size1.getDp()
 
 private val ScrollbarWidth = 2.dp
@@ -33,11 +32,9 @@ private val ScrollbarEndPadding = 3.dp
 private val ScrollbarVerticalPadding = 4.dp
 
 /**
- * 항목은 [YGStrokeButton] 을 쓰되 테두리는 끈다. 배경·높이·눌림 색만 버튼에서 가져오고,
- * 테두리는 팝업이 바깥에 한 번만 두른다.
- *
- * 선을 한 곳에서만 그리므로 어느 항목이 뷰포트 끝에 걸리든 두께가 [BorderWidth] 로 고정된다.
- * 버튼마다 테두리를 두르고 겹쳐서 지우는 방식은 겹침이 빠지는 순간 두 배로 두꺼워진다.
+ * 항목은 [YGStrokeButton] 에서 배경·높이·눌림 색만 가져오고 테두리는 끈다. 선을 팝업이
+ * 한 번만 그어야 어느 항목이 뷰포트 끝에 걸리든 두께가 [BorderWidth] 로 고정된다 —
+ * 버튼마다 두르고 겹쳐 지우는 방식은 겹침이 빠지는 순간 두 배로 두꺼워진다.
  */
 @Composable
 internal fun <T> CalendarDropdown(
@@ -53,8 +50,7 @@ internal fun <T> CalendarDropdown(
         modifier = modifier
             .width(DropdownWidth)
             .heightIn(max = DropdownMaxHeight)
-            // 둘 다 verticalScroll 보다 앞에 둬야 스크롤 이동이 적용되지 않은 뷰포트 좌표에 그린다.
-            // border 는 내용 위에 그려지므로 끝까지 스크롤해도 항목에 가려지지 않는다
+            // 둘 다 verticalScroll 보다 앞에 둬야 스크롤이 반영되지 않은 뷰포트 좌표에 그린다
             .border(
                 width = BorderWidth,
                 color = YGAtomicColors.Gray.Gray500,
@@ -95,7 +91,6 @@ private fun Modifier.verticalScrollbar(
     val viewportHeight = size.height
     val contentHeight = viewportHeight + scrollState.maxValue
 
-    // 막대가 오르내리는 구간. 위아래 여백만큼 짧다
     val trackTop = ScrollbarVerticalPadding.toPx()
     val trackHeight = viewportHeight - trackTop * 2
 

@@ -52,7 +52,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val DAYS_IN_WEEK = 7
 
-/** 달력 좌·우 테두리 두께. 구분선도 이만큼 들여야 테두리를 덮지 않는다 */
+/** 구분선도 이만큼 들여야 좌·우 테두리를 덮지 않는다 */
 private val SideBorderWidth = SizeTokens.Size1.getDp()
 
 internal data class CalendarDayUiModel(
@@ -62,10 +62,7 @@ internal data class CalendarDayUiModel(
 
 private enum class CalendarPeriod { Year, Month }
 
-/**
- * 드롭다운 열림 상태는 안에서 들고 있다. 밖으로 내보내면 쓰는 화면마다 같은 토글 코드를
- * 다시 쓰게 된다.
- */
+/** 드롭다운 열림 상태를 안에서 드는 이유: 밖으로 내보내면 쓰는 화면마다 같은 토글을 다시 쓴다 */
 @Composable
 internal fun CustomCalendar(
     displayedMonth: LocalDate,
@@ -121,10 +118,8 @@ internal fun CustomCalendar(
 }
 
 /**
- * 좌·우·하단에만 테두리를 그린다. 상단을 빼는 이유는 바로 위에 붙는
- * `YGCanvasDateSelectButton` 이 같은 1dp Gray500 테두리를 이미 두르고 있어서,
- * 그대로 두면 맞닿는 자리에 선이 두 겹으로 깔린다.
- *
+ * 좌·우·하단에만 그린다. 상단을 빼는 이유는 바로 위에 붙는 `YGCanvasDateSelectButton` 이
+ * 같은 테두리를 이미 두르고 있어 맞닿는 자리에 선이 두 겹으로 깔려서다.
  * `Modifier.border` 는 변을 골라 그릴 수 없어 직접 그린다.
  */
 private fun Modifier.sideBorder(
@@ -141,9 +136,8 @@ private fun Modifier.sideBorder(
 }
 
 /**
- * 앞은 이전 달, 뒤는 다음 달 날짜로 채워 항상 7의 배수를 만든다.
- *
- * 빈 칸이 아니라 실제 날짜를 넣어야 칸마다 오늘·선택·업로드 여부를 스스로 판단할 수 있다.
+ * 앞은 이전 달, 뒤는 다음 달 날짜로 채워 항상 7의 배수를 만든다. 빈 칸이 아니라 실제 날짜를
+ * 넣어야 칸마다 오늘·선택·업로드 여부를 스스로 판단할 수 있다.
  */
 private fun buildCalendarDays(firstDayOfMonth: LocalDate): List<CalendarDayUiModel> {
     val lastDayOfMonth = firstDayOfMonth.plus(DatePeriod(months = 1)).minus(DatePeriod(days = 1))
@@ -212,10 +206,8 @@ private fun HeadCalendar(
 
 /**
  * `interactionSource` 까지 공유해야 텍스트를 눌렀을 때도 캐럿이 같이 눌린 색이 된다 —
- * 따로 두면 별개의 버튼 두 개로 보인다.
- *
- * 드롭다운을 [Popup] 으로 띄우는 이유는 같은 레이아웃에 넣으면 열릴 때마다 달력 본문이
- * 아래로 밀려서다.
+ * 따로 두면 별개의 버튼 두 개로 보인다. 드롭다운을 [Popup] 으로 띄우는 이유는 같은
+ * 레이아웃에 넣으면 열릴 때마다 달력 본문이 아래로 밀려서다.
  */
 @Composable
 private fun <T> CalendarPeriodSelector(
@@ -301,7 +293,6 @@ private fun BodyCalendar(
                         text = day.date.day.toString(),
                         isSelected = day.date == selectedDate,
                         isToday = day.date == today,
-                        // 앞뒤 달 날짜는 보여주되 고를 수는 없다
                         isEnabled = day.isCurrentMonth,
                         isUploaded = day.date in uploadedDates,
                         onClick = { onClickDate(day.date) },

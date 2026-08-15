@@ -49,10 +49,8 @@ data class CanvasImageAddUiState(
     val uploadedDates: Set<LocalDate> = emptySet(),
 ) : UiState {
     /**
-     * 그 해에 파르페가 있는 달만 고를 수 있다. [selectableYears] 와 같은 오름차순.
-     *
-     * 올해를 보고 있다면 이번 달은 서버 목록에 없어도 넣는다 — 파르페를 아직 하나도 안 만든
-     * 달이어도 오늘로는 돌아올 수 있어야 한다.
+     * 그 해에 파르페가 있는 달만 고를 수 있다. 이번 달만 예외로, 기록이 없어도 넣는다 —
+     * 파르페를 아직 하나도 안 만든 달이어도 오늘로는 돌아올 수 있어야 한다.
      */
     val selectableMonths: List<LocalDate> = parfaitHistories
         .map { it.date.toFirstDayOfMonth() }
@@ -117,7 +115,6 @@ constructor(
     private fun loadParfaitYears() {
         launch {
             getParfaitYearsUseCase()
-                // 유스케이스는 최신순으로 주지만 드롭다운은 오름차순으로 보여준다
                 .onSuccess { years -> updateState { copy(selectableYears = years.sorted()) } }
                 .onFailure { throwable ->
                     // 연도 드롭다운이 비는 것뿐이라 실패를 노출하지 않는다
@@ -149,10 +146,8 @@ constructor(
     }
 
     /**
-     * 달력은 연 단위로 한 번만 받아 두고 월을 오갈 때는 다시 부르지 않는다.
-     *
-     * 빈 파르페(캔버스에 들어가기만 하고 이미지를 안 올린 날)는 [ParfaitHistory.isEmpty]
-     * 로 걸러 낸다 — 걸러 내지 않으면 화면을 열어 본 날마다 점이 찍힌다.
+     * 달력은 연 단위로 한 번만 받아 두고 월을 오갈 때는 다시 부르지 않는다. 빈 파르페(캔버스에
+     * 들어가기만 하고 이미지는 안 올린 날)를 걸러 내지 않으면 화면을 열어 본 날마다 점이 찍힌다.
      */
     private fun loadParfaitHistories(
         year: Int,
@@ -205,10 +200,7 @@ constructor(
         }
     }
 
-    /**
-     * 해를 옮기면 그 해 목록을 새로 부르고, 도착한 뒤에 달을 정한다.
-     * 달을 미리 정해 두지 않는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다.
-     */
+    /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
     private fun handleSelectYear(year: Int) {
         if (year == state.value.displayedMonth.year) return
 
@@ -216,10 +208,8 @@ constructor(
     }
 
     /**
-     * 해를 옮겨도 보고 있던 달을 지킨다. [year] 에 같은 달이 없을 때만 가장 가까운 달로 간다.
-     *
-     * 기준점은 보고 있던 달을 [year] 로 그대로 옮긴 자리다. 그 해에 같은 달이 있으면 거리가
-     * 0 이라 저절로 유지되고, 없으면 앞뒤로 가장 덜 움직이는 달이 뽑힌다.
+     * 해를 옮겨도 보고 있던 달을 지킨다. 보고 있던 달을 [year] 로 그대로 옮긴 자리를 기준으로
+     * 삼으므로, 그 해에 같은 달이 있으면 거리가 0 이라 저절로 유지되고 없을 때만 옮겨간다.
      *
      * 기록이 아니라 [CanvasImageAddUiState.selectableMonths] 에서 고르는 이유는 그래야
      * 드롭다운에 없는 달로 넘어가지 않아서다 — 그 목록에는 이번 달이 더 들어갈 수 있다.
@@ -234,7 +224,6 @@ constructor(
             displayedMonth = anchored.selectableMonths
                 // 거리가 같으면 더 최근 달로 간다
                 .minWithOrNull(compareBy<LocalDate> { abs(it.monthsUntil(anchor)) }.thenByDescending { it })
-                // 고를 수 있는 달이 하나도 없으면 옮긴 자리에 그대로 선다
                 ?: anchor,
         )
     }
