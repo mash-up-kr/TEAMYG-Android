@@ -21,6 +21,7 @@ import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagC
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTemplate
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -49,6 +50,18 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
 )
 
 private val CHIP_TYPES = YGGrouptagChipType.entries
+
+// TODO(토핑 템플릿): 정책은 그룹 생성 시 6종 중 하나를 무작위로 골라 고정하는 것이다.
+//  서버가 그 값을 내려주면 groupId 파생을 걷어낸다
+private val TOPPING_TEMPLATES = YGToppingTemplate.entries
+
+/**
+ * 아직 토핑이 없는 그룹은 조회 실패([YGToppingImage.Error])와 다른 상태라 템플릿을 띄운다.
+ * 목록 순서가 바뀌어도 같은 그림이 걸리도록 index 가 아니라 groupId 로 고른다.
+ */
+internal fun MyParfaitGroupVO.toToppingImage(): YGToppingImage = recentImageUrl
+    ?.let(YGToppingImage::Remote)
+    ?: YGToppingImage.Template(TOPPING_TEMPLATES[groupId.value.mod(TOPPING_TEMPLATES.size)])
 
 @Composable
 internal fun GroupListScreen(
@@ -147,12 +160,11 @@ internal fun GroupListContent(
 
             groupList.fastForEachIndexed { index, group ->
                 YGToppingGroup(
-                    image = group.recentImageUrl?.let(YGToppingImage::Remote) ?: YGToppingImage.Error,
+                    image = group.toToppingImage(),
                     name = group.groupName.value,
                     timestamp = group.recentImageUploadedAt
                         .toGroupTimestamp(now = now, timeZone = timeZone)
-                        ?.toStringResource()
-                        .orEmpty(),
+                        .toStringResource(),
                     chipType = CHIP_TYPES[index % CHIP_TYPES.size],
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                 )

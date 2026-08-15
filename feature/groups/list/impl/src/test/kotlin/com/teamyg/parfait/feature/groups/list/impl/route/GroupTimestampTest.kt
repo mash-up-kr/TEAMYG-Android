@@ -5,7 +5,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -20,13 +19,13 @@ class GroupTimestampTest {
         uploadedAt.toGroupTimestamp(now = uploadedInstant + elapsed, timeZone = timeZone)
 
     @Test
-    fun nullUploadedAt_hasNoTimestamp() {
-        // Given 이미지가 한 장도 없는 그룹
+    fun nullUploadedAt_isNoImage() {
+        // Given 아직 아무도 토핑을 올리지 않은 그룹
         // When 경과 단위를 고른다
         val timestamp = null.toGroupTimestamp(now = uploadedInstant, timeZone = timeZone)
 
-        // Then 잴 기준 시각이 없어 표시할 것도 없다
-        assertNull(timestamp)
+        // Then 조회 실패가 아니라 "이미지 없음" 갈래로 떨어진다
+        assertEquals(GroupTimestamp.NoImage, timestamp)
     }
 
     @Test

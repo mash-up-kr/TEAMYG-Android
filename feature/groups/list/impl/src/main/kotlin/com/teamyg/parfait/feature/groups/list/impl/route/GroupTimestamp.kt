@@ -16,6 +16,9 @@ import kotlin.time.Instant
  * `Context` 를 들지 않는다. 문구는 [toStringResource] 가 화면에서 붙인다.
  */
 internal sealed interface GroupTimestamp {
+    /** 아직 아무도 토핑을 올리지 않아 잴 기준 시각이 없다 — 조회 실패와는 다른 상태다 */
+    data object NoImage : GroupTimestamp
+
     data object JustNow : GroupTimestamp
 
     data class Minutes(val value: Int) : GroupTimestamp
@@ -33,8 +36,8 @@ internal sealed interface GroupTimestamp {
 internal fun LocalDateTime?.toGroupTimestamp(
     now: Instant,
     timeZone: TimeZone,
-): GroupTimestamp? {
-    val uploadedAt = this?.toInstant(timeZone) ?: return null
+): GroupTimestamp {
+    val uploadedAt = this?.toInstant(timeZone) ?: return GroupTimestamp.NoImage
     val elapsed = now - uploadedAt
 
     return when {
@@ -47,6 +50,7 @@ internal fun LocalDateTime?.toGroupTimestamp(
 
 @Composable
 internal fun GroupTimestamp.toStringResource(): String = when (this) {
+    GroupTimestamp.NoImage -> stringResource(R.string.group_list_timestamp_no_image)
     GroupTimestamp.JustNow -> stringResource(R.string.group_list_timestamp_just_now)
     is GroupTimestamp.Minutes -> stringResource(R.string.group_list_timestamp_minutes, value)
     is GroupTimestamp.Hours -> stringResource(R.string.group_list_timestamp_hours, value)
