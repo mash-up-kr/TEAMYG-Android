@@ -1,8 +1,8 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.BuildConfig
-import com.teamyg.parfait.data.model.qualifier.AuthClient
 import com.teamyg.parfait.data.model.qualifier.RemoteJson
+import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.network.AuthInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
@@ -48,7 +48,7 @@ object NetworkModule {
         .build()
 
     /**
-     * 토큰 재발급 전용 클라이언트. 메인 클라이언트와 **아무것도 공유하지 않는다.**
+     * 자격증명을 붙이지 않는 클라이언트. 메인 클라이언트와 **아무것도 공유하지 않는다.**
      *
      * `authenticate()` 는 그 호출이 아직 `Dispatcher` 슬롯을 점유한 채 `runBlocking` 으로
      * 블록된 상태에서 실행된다. 재발급이 같은 클라이언트를 타면 같은 `Dispatcher` ·같은
@@ -65,8 +65,8 @@ object NetworkModule {
      */
     @Provides
     @Singleton
-    @AuthClient
-    fun provideAuthOkHttpClient(): OkHttpClient = OkHttpClient
+    @UnauthenticatedClient
+    fun provideUnauthenticatedOkHttpClient(): OkHttpClient = OkHttpClient
         .Builder()
         .dispatcher(Dispatcher())
         .addInterceptor(loggingInterceptor())
@@ -89,9 +89,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @AuthClient
-    fun provideAuthRetrofit(
-        @AuthClient okHttpClient: OkHttpClient,
+    @UnauthenticatedClient
+    fun provideUnauthenticatedRetrofit(
+        @UnauthenticatedClient okHttpClient: OkHttpClient,
         @RemoteJson json: Json,
     ): Retrofit = Retrofit
         .Builder()

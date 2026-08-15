@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.network
 
 import com.teamyg.parfait.data.model.exception.ApiException
-import com.teamyg.parfait.data.model.qualifier.AuthClient
+import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
@@ -25,8 +25,8 @@ import javax.inject.Singleton
 /**
  * 401 을 가로채 access token 을 재발급하고 원요청을 다시 만든다.
  *
- * [authService] 가 `@AuthClient` 로 한정된 이유: 재발급은 **인증기가 달리지 않은 전용
- * `OkHttpClient`** 를 탄다(`NetworkModule.provideAuthOkHttpClient`). 그 클라이언트는 자기
+ * [authService] 가 `@UnauthenticatedClient` 로 한정된 이유: 재발급은 **인증기가 달리지 않은
+ * `OkHttpClient`** 를 탄다(`NetworkModule.provideUnauthenticatedOkHttpClient`). 그 클라이언트는 자기
  * `Dispatcher` 를 가져 `authenticate()` 가 점유한 메인 디스패처 슬롯과 경합하지 않고,
  * 인증기가 없으므로 재발급 자신의 401 이 이 인증기를 재진입시키지도 않는다.
  * 이 분리 덕분에 `Retrofit → OkHttpClient → Authenticator → AuthService` 순환도 사라져
@@ -38,7 +38,7 @@ import javax.inject.Singleton
 @Singleton
 class TokenAuthenticator @Inject constructor(
     private val tokenStore: TokenStore,
-    @AuthClient private val authService: AuthService,
+    @UnauthenticatedClient private val authService: AuthService,
     private val apiCaller: ApiCaller,
     private val sessionEventBus: SessionEventBus,
 ) : Authenticator {
@@ -75,7 +75,7 @@ class TokenAuthenticator @Inject constructor(
                 // 재발급을 쏜다.
                 val currentToken = tokenStore.getAccessToken()
                 if (currentToken != null && currentToken != failedToken) {
-                    return@withLock response.request.withToken(currentToken)
+                    return@withLock response.request.withBearerToken(currentToken)
                 }
 
                 val refreshToken = tokenStore.getRefreshToken() ?: return@withLock null
@@ -85,7 +85,7 @@ class TokenAuthenticator @Inject constructor(
                     accessToken = session.accessToken.value,
                     refreshToken = session.refreshToken.value,
                 )
-                response.request.withToken(session.accessToken.value)
+                response.request.withBearerToken(session.accessToken.value)
             }
         }
     }
@@ -142,7 +142,7 @@ class TokenAuthenticator @Inject constructor(
         else -> false
     }
 
-    private fun Request.withToken(accessToken: String): Request = newBuilder()
+    private fun Request.withBearerToken(accessToken: String): Request = newBuilder()
         .header(AUTHORIZATION_HEADER, "$BEARER_PREFIX$accessToken")
         .build()
 
