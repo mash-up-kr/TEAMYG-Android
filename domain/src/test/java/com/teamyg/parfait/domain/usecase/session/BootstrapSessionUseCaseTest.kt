@@ -1,6 +1,7 @@
 package com.teamyg.parfait.domain.usecase.session
 
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
@@ -64,8 +65,8 @@ class BootstrapSessionUseCaseTest {
     }
 
     @Test
-    fun invoke_tokenButRefreshFailsWithNonNetworkError_clearsSessionAndGoesToLogin() = runTest {
-        // Given 토큰은 있으나 서버 거절 등 네트워크 외 사유로 조회가 실패한다
+    fun invoke_tokenButRefreshFailsWithHttp401_clearsSessionAndGoesToLogin() = runTest {
+        // Given 토큰은 있으나 서버가 401 로 인증을 거절해 조회가 실패한다
         coEvery { authRepository.hasSession() } returns true
         coEvery { memberRepository.refreshMyAccount() } returns
             Result.failure(AppError.Server(code = "UNAUTHORIZED", statusCode = 401, serverMessage = "만료"))
@@ -79,6 +80,68 @@ class BootstrapSessionUseCaseTest {
         assertEquals(SessionBootstrap.ToLogin, result)
         coVerify(exactly = 1) { authRepository.logout() }
         coVerify(exactly = 1) { memberRepository.clearMyAccount() }
+    }
+
+    @Test
+    fun invoke_tokenButRefreshFailsWithMemberNotFound_clearsSessionAndGoesToLogin() = runTest {
+        // Given 토큰은 유효해 보이지만 서버가 그 회원을 찾지 못한다(탈퇴·강제 삭제 등) —
+        // 상태코드는 401 이 아니라 404 다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns
+            Result.failure(
+                AppError.Server(
+                    code = ServerErrorCode.Member.MEMBER_NOT_FOUND,
+                    statusCode = 404,
+                    serverMessage = "회원 없음",
+                ),
+            )
+        coEvery { authRepository.logout() } returns Result.success(Unit)
+        coEvery { memberRepository.clearMyAccount() } returns Unit
+
+        // When 부트스트랩한다
+        val result = bootstrap()
+
+        // Then 상태코드가 401 이 아니어도 이 코드 자체가 인증 거절을 뜻하므로 세션을 지운다
+        assertEquals(SessionBootstrap.ToLogin, result)
+        coVerify(exactly = 1) { authRepository.logout() }
+        coVerify(exactly = 1) { memberRepository.clearMyAccount() }
+    }
+
+    @Test
+    fun invoke_tokenButRefreshFailsWithServerError_goesToLoginAndClearsNothing() = runTest {
+        // Given 토큰은 있으나 서버가 5xx 로 실패해 envelope 밖 실패(AppError.Unexpected)로 온다 —
+        // 배포 중 순단·서버 장애 상황이지 자격증명이 죽은 게 아니다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns
+            Result.failure(AppError.Unexpected(cause = RuntimeException("500")))
+
+        // When 부트스트랩한다
+        val result = bootstrap()
+
+        // Then 로그인으로 보내되, 인증 거절이 아니므로 아무것도 지우지 않는다 — 매 배포마다
+        // 돌아온 사용자가 로그아웃되면 안 된다
+        assertEquals(SessionBootstrap.ToLogin, result)
+        coVerify(exactly = 0) { authRepository.logout() }
+        coVerify(exactly = 0) { memberRepository.clearMyAccount() }
+    }
+
+    @Test
+    fun invoke_tokenButRefreshFailsWithNon401Server_goesToLoginAndClearsNothing() = runTest {
+        // Given 로컬 저장 실패 등 인증과 무관한 사유가 AppError.Server 로 표면화됐지만
+        // statusCode·code 어느 쪽도 인증 거절을 뜻하지 않는다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns
+            Result.failure(
+                AppError.Server(code = "SOME_OTHER_ERROR", statusCode = 500, serverMessage = "서버 오류"),
+            )
+
+        // When 부트스트랩한다
+        val result = bootstrap()
+
+        // Then 인증 거절이 아니므로 아무것도 지우지 않는다
+        assertEquals(SessionBootstrap.ToLogin, result)
+        coVerify(exactly = 0) { authRepository.logout() }
+        coVerify(exactly = 0) { memberRepository.clearMyAccount() }
     }
 
     private companion object {
