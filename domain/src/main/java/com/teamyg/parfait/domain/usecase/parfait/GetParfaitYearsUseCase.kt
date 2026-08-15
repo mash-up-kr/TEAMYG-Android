@@ -16,9 +16,22 @@ private const val MOCK_YEAR_COUNT = 3
 class GetParfaitYearsUseCase
 @Inject
 constructor() {
-    /** Todo : 서버 연동 시 `groupId` 를 받아 실제 API 를 호출하도록 바꾼다 */
     suspend operator fun invoke(): Result<List<Int>> {
         val thisYear = Clock.System.todayIn(TimeZone.currentSystemDefault()).year
-        return Result.success((0 until MOCK_YEAR_COUNT).map { thisYear - it })
+
+        /** Todo : 서버 연동 시 `groupId` 를 받아 실제 API 를 호출하도록 바꾼다 */
+        val years = (0 until MOCK_YEAR_COUNT).map { thisYear - it }
+
+        return Result.success(years.withYear(thisYear))
+    }
+
+    /**
+     * 파르페가 하나도 없는 해는 서버가 목록에서 빼고 준다. 올해가 그렇더라도 사용자는 오늘로
+     * 돌아올 수 있어야 하므로 없으면 채워 넣는다.
+     */
+    private fun List<Int>.withYear(year: Int): List<Int> = if (contains(year)) {
+        this
+    } else {
+        (this + year).sortedDescending()
     }
 }

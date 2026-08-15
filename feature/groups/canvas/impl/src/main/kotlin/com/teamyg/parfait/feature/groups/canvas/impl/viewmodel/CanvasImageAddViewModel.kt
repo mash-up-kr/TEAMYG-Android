@@ -15,10 +15,14 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
+import kotlinx.datetime.monthsUntil
+import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
+import kotlin.math.abs
 import kotlin.time.Clock
 import javax.inject.Inject
 
@@ -37,17 +41,26 @@ data class CanvasImageAddUiState(
     val isCalendarVisible: Boolean = false,
     /** 달력이 보고 있는 달. [selectedDate] 와 달리 날짜를 고르지 않아도 연·월만 옮겨진다 */
     val displayedMonth: LocalDate = today.toFirstDayOfMonth(),
+    /** 드롭다운이 위에서 아래로 읽히도록 오름차순으로 들고 있다 */
     val selectableYears: List<Int> = emptyList(),
     /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 연·월·일 묶음은 여기서 뽑아 쓴다 */
     val parfaitHistories: List<ParfaitHistory> = emptyList(),
     /** [parfaitHistories] 중 이미지가 실제로 올라간 날. 달력이 점을 찍는 기준 */
     val uploadedDates: Set<LocalDate> = emptySet(),
 ) : UiState {
-    /** 그 해에 파르페가 있는 달만 고를 수 있다 */
+    /**
+     * 그 해에 파르페가 있는 달만 고를 수 있다. [selectableYears] 와 같은 오름차순.
+     *
+     * 올해를 보고 있다면 이번 달은 서버 목록에 없어도 넣는다 — 파르페를 아직 하나도 안 만든
+     * 달이어도 오늘로는 돌아올 수 있어야 한다.
+     */
     val selectableMonths: List<LocalDate> = parfaitHistories
         .map { it.date.toFirstDayOfMonth() }
-        .distinct()
-        .sortedDescending()
+        .let { months ->
+            val thisMonth = today.toFirstDayOfMonth()
+            if (displayedMonth.year == thisMonth.year) months + thisMonth else months
+        }.distinct()
+        .sorted()
 }
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
@@ -104,7 +117,8 @@ constructor(
     private fun loadParfaitYears() {
         launch {
             getParfaitYearsUseCase()
-                .onSuccess { years -> updateState { copy(selectableYears = years) } }
+                // 유스케이스는 최신순으로 주지만 드롭다운은 오름차순으로 보여준다
+                .onSuccess { years -> updateState { copy(selectableYears = years.sorted()) } }
                 .onFailure { throwable ->
                     // 연도 드롭다운이 비는 것뿐이라 실패를 노출하지 않는다
                     viewModelLogger.e(throwable) { "파르페 연도를 불러오지 못했다" }
@@ -142,23 +156,20 @@ constructor(
      */
     private fun loadParfaitHistories(
         year: Int,
-        moveToNewestMonth: Boolean = false,
+        moveToNearestMonth: Boolean = false,
     ) {
         launch(key = LOAD_PARFAIT_HISTORIES_KEY) {
             getParfaitHistoriesUseCase(year)
                 .onSuccess { histories ->
                     updateState {
-                        copy(
+                        val loaded = copy(
                             parfaitHistories = histories,
                             uploadedDates = histories
                                 .filterNot(ParfaitHistory::isEmpty)
                                 .mapTo(mutableSetOf(), ParfaitHistory::date),
-                            displayedMonth = if (moveToNewestMonth) {
-                                histories.firstOrNull()?.date?.toFirstDayOfMonth() ?: displayedMonth
-                            } else {
-                                displayedMonth
-                            },
                         )
+
+                        if (moveToNearestMonth) loaded.movedToNearestMonth(year) else loaded
                     }
                 }.onFailure { throwable ->
                     // 달력의 점이 안 찍힐 뿐 화면은 그대로 쓸 수 있어 실패를 노출하지 않는다
@@ -195,14 +206,37 @@ constructor(
     }
 
     /**
-     * 해를 옮기면 그 해 목록을 새로 부르고, 도착하면 그 해에서 가장 최근 달로 옮긴다.
-     * 달을 미리 정해 두지 않는 이유: 보고 있던 달이 그 해에 없으면 빈 달이 떠서 사용자가
-     * 달을 한 번 더 골라야 한다.
+     * 해를 옮기면 그 해 목록을 새로 부르고, 도착한 뒤에 달을 정한다.
+     * 달을 미리 정해 두지 않는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다.
      */
     private fun handleSelectYear(year: Int) {
         if (year == state.value.displayedMonth.year) return
 
-        loadParfaitHistories(year = year, moveToNewestMonth = true)
+        loadParfaitHistories(year = year, moveToNearestMonth = true)
+    }
+
+    /**
+     * 해를 옮겨도 보고 있던 달을 지킨다. [year] 에 같은 달이 없을 때만 가장 가까운 달로 간다.
+     *
+     * 기준점은 보고 있던 달을 [year] 로 그대로 옮긴 자리다. 그 해에 같은 달이 있으면 거리가
+     * 0 이라 저절로 유지되고, 없으면 앞뒤로 가장 덜 움직이는 달이 뽑힌다.
+     *
+     * 기록이 아니라 [CanvasImageAddUiState.selectableMonths] 에서 고르는 이유는 그래야
+     * 드롭다운에 없는 달로 넘어가지 않아서다 — 그 목록에는 이번 달이 더 들어갈 수 있다.
+     */
+    private fun CanvasImageAddUiState.movedToNearestMonth(year: Int): CanvasImageAddUiState {
+        val anchored = copy(
+            displayedMonth = displayedMonth.plus(DatePeriod(years = year - displayedMonth.year)),
+        )
+        val anchor = anchored.displayedMonth
+
+        return anchored.copy(
+            displayedMonth = anchored.selectableMonths
+                // 거리가 같으면 더 최근 달로 간다
+                .minWithOrNull(compareBy<LocalDate> { abs(it.monthsUntil(anchor)) }.thenByDescending { it })
+                // 고를 수 있는 달이 하나도 없으면 옮긴 자리에 그대로 선다
+                ?: anchor,
+        )
     }
 
     private fun handleCacheImage(intent: CanvasImageAddIntent.CacheImage) {
