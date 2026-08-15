@@ -77,8 +77,11 @@ class AccountInfoViewModelTest {
     @Test
     fun clickConfirm_succeeds_doesNotWriteResultDirectly_followsSSoTInstead() = runTest(mainDispatcherRule.dispatcher) {
         // Given SSoT 를 직접 제어할 수 있는 화면(리포지토리가 로컬에 쓴 뒤 흘려보내는 것을 흉내)
+        // 서버 응답값을 타이핑값과 일부러 다르게 준다("라떼" 입력 → 서버는 "라떼 " 로
+        // 정규화해 돌려준다고 가정) — 값이 우연히 같으면 직접 쓰기와 SSoT 반영을 구분할 수
+        // 없다.
         val ssot = MutableStateFlow<MyAccountVO?>(accountOf("모카"))
-        coEvery { changeGlobalNickname(any()) } returns Result.success(GlobalNickname("라떼"))
+        coEvery { changeGlobalNickname(any()) } returns Result.success(GlobalNickname("서버응답값"))
         val viewModel = viewModel(accountFlow = ssot)
         advanceUntilIdle()
         viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
@@ -87,16 +90,18 @@ class AccountInfoViewModelTest {
         viewModel.processIntent(AccountInfoIntent.ClickConfirm)
         advanceUntilIdle()
 
-        // Then 성공했다고 해서 오류가 남지 않고, 요청이 끝났다는 것만 반영된다
+        // Then 성공 응답값(GlobalNickname("서버응답값"))을 직접 쓰지 않는다 — 화면은 여전히
+        // 타이핑한 값을 보여줄 뿐, 서버가 돌려준 값으로 바뀌어 있지 않다
+        assertEquals("라떼", viewModel.state.value.nickname)
         assertNull(viewModel.state.value.submitError)
         assertFalse(viewModel.state.value.isSubmitting)
 
-        // When SSoT 가 실제로 갱신된다
-        ssot.value = accountOf("서버가확정한값")
+        // When SSoT 가 실제로 갱신된다(리포지토리가 로컬에 쓴 뒤 흘려보낸 것을 흉내)
+        ssot.value = accountOf("서버응답값")
         advanceUntilIdle()
 
-        // Then 화면은 SSoT 를 따라간다 — 변경 결과값이 아니라 SSoT 가 정본이다
-        assertEquals("서버가확정한값", viewModel.state.value.nickname)
+        // Then 화면은 그제서야 SSoT 를 따라간다 — 변경 결과값이 아니라 SSoT 가 정본이다
+        assertEquals("서버응답값", viewModel.state.value.nickname)
     }
 
     @Test
