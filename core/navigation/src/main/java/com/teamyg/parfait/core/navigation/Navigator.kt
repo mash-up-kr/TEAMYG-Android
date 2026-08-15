@@ -43,6 +43,19 @@ class Navigator(initialNavigationKey: NavKey) {
         _backStack[currentIndex] = destination
     }
 
+    /**
+     * 백스택을 비우고 [destination] 하나만 남긴다. **되돌아갈 곳이 없어야 하는 전환**에 쓴다 —
+     * 로그인 완료·강제 로그아웃처럼 이전 화면으로 돌아가는 것이 말이 안 되는 경우다.
+     *
+     * 비우기와 채우기를 한 함수로 묶은 이유: 둘을 따로 노출하면 그 사이에 **백스택이 빈 상태**가
+     * 생기고, 채우는 것은 호출부의 규약일 뿐 강제되지 않는다. 빈 백스택은 [onBack] 이 이미
+     * 방어하고 있는 크래시 원인이라 아예 만들 수 없게 막는다.
+     */
+    fun replaceAll(destination: NavKey) {
+        _backStack.clear()
+        _backStack.add(destination)
+    }
+
     fun onBack() {
         if (_backStack.size <= 1) {
             // ResultEffect 발동 상황에서 사이즈가 1인 경우 크래시 발생
@@ -50,9 +63,5 @@ class Navigator(initialNavigationKey: NavKey) {
         }
 
         _backStack.removeLastOrNull()
-    }
-
-    fun clearBackStack() {
-        _backStack.clear()
     }
 }

@@ -31,8 +31,7 @@ fun TermAgreeRoute(
                 }
 
                 is TermAgreeSideEffect.NavigateToNext -> {
-                    navigator.clearBackStack()
-                    navigator.goTo(destination = NavKeyGroupList)
+                    navigator.replaceAll(destination = NavKeyGroupList)
                 }
             }
         }

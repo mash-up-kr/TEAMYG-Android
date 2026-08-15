@@ -31,8 +31,7 @@ fun MainRoute(
         sessionEventSource.events.collect { event ->
             when (event) {
                 SessionEvent.ForcedLogout -> {
-                    navigator.clearBackStack()
-                    navigator.goTo(NavKeyLogin)
+                    navigator.replaceAll(NavKeyLogin)
                 }
             }
         }

@@ -63,8 +63,7 @@ fun LoginRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is LoginSideEffect.NavigateToGroupList -> {
-                    navigator.clearBackStack()
-                    navigator.goTo(destination = NavKeyGroupList)
+                    navigator.replaceAll(destination = NavKeyGroupList)
                 }
 
                 is LoginSideEffect.NavigateToTermAgree -> {

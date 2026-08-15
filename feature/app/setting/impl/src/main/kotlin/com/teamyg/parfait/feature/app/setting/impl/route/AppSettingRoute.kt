@@ -36,8 +36,7 @@ internal fun AppSettingRoute(
                 AppSettingSideEffect.NavigateToPrivacyPolicy -> navigator.goTo(NavKeyPrivacyPolicy)
 
                 AppSettingSideEffect.NavigateToLogin -> {
-                    navigator.clearBackStack()
-                    navigator.goTo(NavKeyLogin)
+                    navigator.replaceAll(NavKeyLogin)
                 }
             }
         }
