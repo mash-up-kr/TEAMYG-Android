@@ -133,10 +133,10 @@ internal fun AccountInfoScreen(
                 title = stringResource(R.string.account_info_discard_dialog_title),
                 body = stringResource(R.string.account_info_discard_dialog_body),
                 iconRes = DesignSystemR.drawable.ic_warning_round,
-                secondaryText = stringResource(R.string.account_info_discard_dialog_confirm),
-                onSecondaryClick = onConfirmDiscard,
-                primaryText = stringResource(R.string.setting_dialog_cancel),
-                onPrimaryClick = onDismissDiscardDialog,
+                secondaryText = stringResource(R.string.account_info_discard_dialog_cancel),
+                onSecondaryClick = onDismissDiscardDialog,
+                primaryText = stringResource(R.string.account_info_discard_dialog_confirm),
+                onPrimaryClick = onConfirmDiscard,
                 onDismissRequest = onDismissDiscardDialog,
             )
         }

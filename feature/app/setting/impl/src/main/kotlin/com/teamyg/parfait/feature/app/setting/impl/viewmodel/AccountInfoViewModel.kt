@@ -53,10 +53,10 @@ sealed interface AccountInfoIntent : UiIntent {
 
     data object ClickBack : AccountInfoIntent
 
-    /** 수정 취소 확인의 "취소하기" — 입력을 버리고 나간다 */
+    /** 수정 취소 확인의 "그만두기" — 입력을 버리고 나간다 */
     data object ConfirmDiscard : AccountInfoIntent
 
-    /** 수정 취소 확인의 "그만두기" — 다이얼로그만 닫고 편집을 이어간다 */
+    /** 수정 취소 확인의 "취소하기" — 다이얼로그만 닫고 편집을 이어간다 */
     data object DismissDiscardDialog : AccountInfoIntent
 }
 
