@@ -31,6 +31,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
+import kotlinx.datetime.LocalDate
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val MAX_VISIBLE_MEMBER_CHIPS = 5
@@ -45,6 +46,9 @@ internal fun CanvasImageAddScreen(
     onClickGallery: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
     onDismissCalendar: () -> Unit,
+    onSelectYear: (Int) -> Unit,
+    onSelectMonth: (LocalDate) -> Unit,
+    onClickDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -110,15 +114,15 @@ internal fun CanvasImageAddScreen(
             isCalendarVisible = canvasState.isCalendarVisible,
             calendarContent = {
                 CustomCalendar(
-                    displayedMonth = canvasState.selectedDate,
+                    displayedMonth = canvasState.displayedMonth,
                     today = canvasState.today,
                     selectedDate = canvasState.selectedDate,
-                    // TODO(#207): 업로드된 날짜 연동 필요
-                    uploadedDates = emptySet(),
-                    // TODO(#207): 월·연도 선택과 날짜 선택 연동 필요
-                    onClickMonth = {},
-                    onClickYear = {},
-                    onClickDate = {},
+                    uploadedDates = canvasState.uploadedDates,
+                    selectableYears = canvasState.selectableYears,
+                    selectableMonths = canvasState.selectableMonths,
+                    onSelectYear = onSelectYear,
+                    onSelectMonth = onSelectMonth,
+                    onClickDate = onClickDate,
                 )
             },
             expandedItems = listOf(
@@ -179,6 +183,9 @@ private fun PreviewCanvasImageAddScreen(
         onClickGallery = {},
         onClickEditCanvasBG = {},
         onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
