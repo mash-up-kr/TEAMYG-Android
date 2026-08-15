@@ -41,17 +41,48 @@ class TokenAuthenticator @Inject constructor(
     override fun authenticate(
         route: Route?,
         response: Response,
-    ): Request? = runBlocking {
-        mutex.withLock {
-            val refreshToken = tokenStore.getRefreshToken() ?: return@withLock null
-
-            val session = reissue(refreshToken) ?: return@withLock null
-            tokenStore.save(
-                accessToken = session.accessToken.value,
-                refreshToken = session.refreshToken.value,
-            )
-            response.request.withToken(session.accessToken.value)
+    ): Request? {
+        // 새 토큰으로 재시도했는데 또 401 이면 재발급으로 풀릴 문제가 아니다
+        if (response.retryCount() >= MAX_RETRY) {
+            sourceLogger.e { "재발급 후에도 401 — 재시도를 끊는다" }
+            return null
         }
+
+        val failedToken = response.request
+            .header(AUTHORIZATION_HEADER)
+            ?.removePrefix(BEARER_PREFIX)
+
+        return runBlocking {
+            mutex.withLock {
+                // 기다리는 동안 다른 요청이 이미 갱신했다면 재발급 없이 새 토큰만 달아준다.
+                // 이 확인이 없으면 Mutex 는 직렬화만 할 뿐, 대기하던 요청들이 차례로 각자
+                // 재발급을 쏜다.
+                val currentToken = tokenStore.getAccessToken()
+                if (currentToken != null && currentToken != failedToken) {
+                    return@withLock response.request.withToken(currentToken)
+                }
+
+                val refreshToken = tokenStore.getRefreshToken() ?: return@withLock null
+
+                val session = reissue(refreshToken) ?: return@withLock null
+                tokenStore.save(
+                    accessToken = session.accessToken.value,
+                    refreshToken = session.refreshToken.value,
+                )
+                response.request.withToken(session.accessToken.value)
+            }
+        }
+    }
+
+    /** 이 응답이 몇 번째 시도인가. `priorResponse` 체인 길이 + 자기 자신 */
+    private fun Response.retryCount(): Int {
+        var count = 1
+        var prior = priorResponse
+        while (prior != null) {
+            count++
+            prior = prior.priorResponse
+        }
+        return count
     }
 
     private suspend fun reissue(refreshToken: String): AuthSessionVO? = apiCaller
@@ -90,6 +121,7 @@ class TokenAuthenticator @Inject constructor(
     private companion object {
         const val AUTHORIZATION_HEADER = "Authorization"
         const val BEARER_PREFIX = "Bearer "
+        const val MAX_RETRY = 2
 
         val SESSION_DEAD_STATUS_CODES = setOf(401, 403)
 

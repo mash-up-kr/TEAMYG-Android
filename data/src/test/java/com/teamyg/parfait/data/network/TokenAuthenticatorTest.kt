@@ -242,6 +242,38 @@ class TokenAuthenticatorTest {
         }
     }
 
+    @Test
+    fun authenticate_tokenAlreadyRefreshed_retriesWithoutReissue() = runTest {
+        // Given 401 두 건이 같은 낡은 토큰을 들고 있었고, 첫 건이 재발급을 끝냈다
+        enqueueReissueSuccess()
+        authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // When 뒤따라온 두 번째 401 이 처리된다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 재발급을 다시 쏘지 않고 이미 갱신된 토큰으로 재시도만 한다
+        assertNotNull(retried)
+        assertEquals("Bearer $NEW_ACCESS_TOKEN", retried.header("Authorization"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun authenticate_retriedTwice_givesUp() = runTest {
+        // Given 새 토큰으로 재시도했는데도 서버가 또 401 을 준 상황
+        enqueueReissueSuccess()
+        val exhausted = unauthorizedResponse(OLD_ACCESS_TOKEN)
+            .newBuilder()
+            .priorResponse(unauthorizedResponse(OLD_ACCESS_TOKEN))
+            .build()
+
+        // When 인증기가 그 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = exhausted)
+
+        // Then 재발급조차 시도하지 않고 포기한다 — 무한 재시도를 끊는다
+        assertNull(retried)
+        assertEquals(0, server.requestCount)
+    }
+
     private companion object {
         const val OLD_ACCESS_TOKEN = "old-access"
         const val NEW_ACCESS_TOKEN = "new-access"
