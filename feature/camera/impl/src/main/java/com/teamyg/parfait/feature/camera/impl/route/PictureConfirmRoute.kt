@@ -30,12 +30,11 @@ internal fun PictureConfirmRoute(
                 navigator.onBack() // Camera/Gallery
             } else {
                 navigator.goToAndPopCurrent(
-                  destination = NavKeySegmentation(
-                    sourceImageUri = uri,
-              ),
-            )
-          }
-            
+                    destination = NavKeySegmentation(
+                        sourceImageUri = uri,
+                    ),
+                )
+            }
         },
         onClickClose = {}, // TODO("c001-캔버스메인으로 넘어가야함")
         modifier = modifier,
