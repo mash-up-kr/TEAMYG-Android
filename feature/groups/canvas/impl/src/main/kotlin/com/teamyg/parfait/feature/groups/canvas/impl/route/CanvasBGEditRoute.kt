@@ -15,6 +15,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditViewModel
+import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 
 @Composable
 internal fun CanvasBGEditRoute(
@@ -49,6 +50,18 @@ internal fun CanvasBGEditRoute(
                     // TODO: 선택한 배경을 서버에 업로드/저장하는 연동 필요 - effect.background 사용
                     navigator.onBack()
                 }
+
+                is CanvasBGEditEffect.NavigateToToppingEdit -> {
+                    navigator.goTo(
+                        destination = NavKeyToppingEdit(
+                            sourceImageUri = effect.sourceImageUri,
+                            segmentationImageUri = effect.segmentationImageUri,
+                            borderLayers = effect.borderLayers,
+                            // 캔버스에 이미 놓인 토핑을 다시 손보는 거라 영역(잘라내기)은 다시 건드릴 수 없다
+                            borderOnly = true,
+                        ),
+                    )
+                }
             }
         }
     }
@@ -63,6 +76,15 @@ internal fun CanvasBGEditRoute(
         onQuitDialogConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogConfirm()) },
         onQuitDialogCancel = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogCancel()) },
         onClickConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm()) },
+        onClickTopping = { topping -> viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(topping)) },
+        onClickDeselectTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeselectTopping()) },
+        onClickDeleteTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeleteToppingButton()) },
+        onDeleteToppingDialogConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm()) },
+        onDeleteToppingDialogCancel = { viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogCancel()) },
+        onClickEditTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickEditTopping()) },
+        onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingResizeDrag(delta)) },
+        onToppingRotateDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingRotateDrag(delta)) },
+        onToppingMoveDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(delta)) },
         modifier = modifier,
     )
 }
