@@ -12,4 +12,15 @@
     <string name="canvas_bg_edit_quit_dialog_body">기존 편집 내용은 모두 사라지며\n캔버스 화면으로 돌아가요</string>
     <string name="canvas_bg_edit_quit_dialog_confirm">그만두기</string>
     <string name="canvas_bg_edit_quit_dialog_cancel">계속 편집하기</string>
+
+    <!-- 캘린더 요일 머리글. 순서가 곧 일요일 시작 주차 배열이므로 바꾸지 않는다 -->
+    <string-array name="canvas_calendar_day_of_week">
+        <item>일</item>
+        <item>월</item>
+        <item>화</item>
+        <item>수</item>
+        <item>목</item>
+        <item>금</item>
+        <item>토</item>
+    </string-array>
 </resources>
