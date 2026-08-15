@@ -11,11 +11,15 @@ import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import io.mockk.coEvery
+import io.mockk.coJustRun
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -193,5 +197,33 @@ class MemberRemoteDataSourceImplTest {
         assertTrue(result.isFailure)
         val error = assertIs<ApiException.EmptyBody>(result.exceptionOrNull())
         assertEquals("SUCCESS", error.code)
+    }
+
+    @Test
+    fun withdraw_serviceReturnsNoContent_returnsSuccess() = runTest {
+        // Given 서버가 204 를 준다(본문 없음 — envelope 자체가 오지 않는다)
+        coJustRun { memberService.deleteUsersMe() }
+
+        // When 탈퇴한다
+        val result = dataSource.withdraw()
+
+        // Then 파싱할 본문이 없어도 성공이다
+        assertTrue(result.isSuccess)
+        assertEquals(Unit, result.getOrThrow())
+    }
+
+    @Test
+    fun withdraw_serviceThrowsHttpException_returnsFailure() = runTest {
+        // Given 서버가 401 을 준다
+        coEvery { memberService.deleteUsersMe() } throws HttpException(
+            Response.error<Unit>(401, "".toResponseBody(null)),
+        )
+
+        // When 탈퇴한다
+        val result = dataSource.withdraw()
+
+        // Then ApiException 으로 번역돼 흐른다
+        assertTrue(result.isFailure)
+        assertIs<ApiException>(result.exceptionOrNull())
     }
 }

@@ -21,4 +21,15 @@ interface MemberRemoteDataSource {
      * 서버가 이 API 에서 건드리지 않는다(`api/member.md`).
      */
     suspend fun changeGlobalNickname(nickname: GlobalNickname): Result<GlobalNickname>
+
+    /**
+     * 회원 탈퇴. 되돌릴 수 없다.
+     *
+     * 서버가 회원 행을 지우고 참여 중인 모든 그룹 멤버십을 탈퇴 처리하며(그룹 닉네임이
+     * "(알수없음)"으로 바뀐다) 커밋 후 refresh token 을 정리한다. 다만 그 회원이 올린
+     * 토핑은 캔버스에 남는다(`api/member.md`).
+     *
+     * 성공 응답에 envelope 가 없다(204) — 서버 전체에서 logout 과 이 API 둘뿐이다.
+     */
+    suspend fun withdraw(): Result<Unit>
 }
