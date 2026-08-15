@@ -13,16 +13,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.yglistdate.YGListDate
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
@@ -56,7 +61,14 @@ internal fun CustomCalendar(
     val firstDayOfMonth = remember(displayedMonth) { displayedMonth.toFirstDayOfMonth() }
     val days = remember(firstDayOfMonth) { buildCalendarDays(firstDayOfMonth) }
 
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier
+            .background(YGAtomicColors.Gray.White)
+            .sideBorder(
+                width = SizeTokens.Size1.getDp(),
+                color = YGAtomicColors.Gray.Gray500,
+            ),
+    ) {
         HeadCalendar(
             month = firstDayOfMonth.format(DateTextFormat.monthFormat),
             year = firstDayOfMonth.year.toString(),
@@ -74,6 +86,26 @@ internal fun CustomCalendar(
             onClickDate = onClickDate,
         )
     }
+}
+
+/**
+ * 좌·우·하단에만 테두리를 그린다. 상단을 빼는 이유는 바로 위에 붙는
+ * `YGCanvasDateSelectButton` 이 같은 1dp Gray500 테두리를 이미 두르고 있어서,
+ * 그대로 두면 맞닿는 자리에 선이 두 겹으로 깔린다.
+ *
+ * `Modifier.border` 는 변을 골라 그릴 수 없어 직접 그린다.
+ */
+private fun Modifier.sideBorder(
+    width: Dp,
+    color: Color,
+): Modifier = drawBehind {
+    val strokeWidth = width.toPx()
+    // 선의 중심이 경계에 놓이면 절반이 밖으로 잘려 두께가 얇아 보인다
+    val inset = strokeWidth / 2
+
+    drawLine(color, Offset(inset, 0f), Offset(inset, size.height), strokeWidth)
+    drawLine(color, Offset(size.width - inset, 0f), Offset(size.width - inset, size.height), strokeWidth)
+    drawLine(color, Offset(0f, size.height - inset), Offset(size.width, size.height - inset), strokeWidth)
 }
 
 private fun LocalDate.toFirstDayOfMonth(): LocalDate = minus(DatePeriod(days = day - 1))
@@ -274,8 +306,6 @@ private fun CustomCalendarPreview(
         onClickMonth = {},
         onClickYear = {},
         onClickDate = {},
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(YGAtomicColors.Gray.White),
+        modifier = Modifier.fillMaxWidth(),
     )
 }
