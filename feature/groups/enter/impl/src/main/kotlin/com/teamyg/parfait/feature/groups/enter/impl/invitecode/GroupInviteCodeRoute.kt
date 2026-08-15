@@ -38,12 +38,12 @@ fun GroupInviteCodeRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                GroupInviteCodeSideEffect.NavigateToBack -> {
+                is GroupInviteCodeSideEffect.NavigateToBack -> {
                     navigator.onBack()
                 }
 
-                GroupInviteCodeSideEffect.NavigateToNext -> {
-                    navigator.goTo(NavKeyGroupNickName)
+                is GroupInviteCodeSideEffect.NavigateToNext -> {
+                    navigator.goTo(NavKeyGroupNickName(groupId = effect.groupId))
                 }
             }
         }

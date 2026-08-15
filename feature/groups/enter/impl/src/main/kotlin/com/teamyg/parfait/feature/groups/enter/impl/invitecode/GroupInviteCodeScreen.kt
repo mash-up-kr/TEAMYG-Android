@@ -95,7 +95,7 @@ internal fun GroupInviteCodeScreen(
                         InviteCodeInputFieldElement(
                             word = word,
                             isFocus = index == uiState.focusedIndex,
-                            isError = uiState.errorText != null,
+                            isError = uiState.inviteCodeError != null,
                             onValueChanged = { changed -> onValueChanged(index, changed) },
                             onClickTextFieldElement = { onClickTextFieldElement(index) },
                             modifier = Modifier
@@ -105,11 +105,11 @@ internal fun GroupInviteCodeScreen(
                     },
                 )
             }
-            if (uiState.errorText != null) {
+            if (uiState.inviteCodeError != null) {
                 item {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                     Text(
-                        text = uiState.errorText,
+                        text = uiState.inviteCodeError.toStringResource(),
                         color = YGAtomicColors.Cherry.Cherry600,
                         style = YGTheme.typography.caption.c01R,
                     )
@@ -123,7 +123,7 @@ internal fun GroupInviteCodeScreen(
         YGButton(
             text = stringResource(R.string.submit),
             buttonType = YGButtonType.Large,
-            isEnabled = uiState.text.length == uiState.codeLength,
+            isEnabled = uiState.text.length == uiState.codeLength && uiState.isSubmitting.not(),
             onClick = onClickNextButton,
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,7 +148,7 @@ private class GroupInviteCodeScreenPreviewParameterProvider :
             GroupInviteCodeUiState(""),
             GroupInviteCodeUiState(text = "he"),
             GroupInviteCodeUiState(text = "hello"),
-            GroupInviteCodeUiState(text = "", errorText = "이미 최대 인원이 모두 참여한 그룹이에요"),
+            GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
             GroupInviteCodeUiState(
                 text = "hello!",
                 groupName = "모카의 파르페",
