@@ -1,57 +1,23 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
-import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.model.DateFormat
-import androidx.lifecycle.viewModelScope
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.usecase.group.GetMyGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
-
-// Todo : 서버 연동 후 제거 예정인 mock 새로고침 시간입니다
-private val MOCK_REFRESH_DURATION = 1.seconds
-
-data class MockToppingGroup(
-    val name: String,
-    val imageUrl: String,
-    val lastModify: String,
-) {
-    val chipType: YGGrouptagChipType = YGGrouptagChipType.TYPE_1_2
-}
 
 data class GroupListUiState(
-    // Todo : 임시로 MockToppingGroup 으로 설정하였습니다
-    val groupList: List<MockToppingGroup> = listOf(
-        MockToppingGroup(
-            "매시업1",
-            "https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/201611/16/htm_2016111623638229254.png",
-            "3분전",
-        ),
-        MockToppingGroup(
-            "매시업매시업매시업",
-            "https://i.pinimg.com/236x/d8/a6/cb/d8a6cbb02bc2c5c27ae238db2e89425d.jpg",
-            "10분전",
-        ),
-        MockToppingGroup(
-            "매시업3",
-            "https://i.namu.wiki/i/izVXkClWRy9-s5DAkC_lGo3za4Zy9seGH1V6AM0qZJzsckE9eWe6-Hp-1OvJm_DkVv7BL7U0Ar7QB89ApaklkQ.webp",
-            "1시간전",
-        ),
-        MockToppingGroup(
-            "매시업4",
-            "https://https://i.namu.wiki/i/h01cpKjF51MCkPZBi9-x7RMltpQbztoVgRB_0fnqrGA6S0M_9mcxpptqAmhr1YxCo0fWeErT3DGg55Nb8O2WeA.webp",
-            "1시간전",
-        ),
-    ),
+    val groupList: List<MyParfaitGroupVO> = emptyList(),
     // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
     val nickName: String = "모카",
     val groupAddButtonSelected: Boolean = false,
@@ -91,7 +57,9 @@ sealed interface GroupListSideEffect : UiSideEffect {
 @HiltViewModel
 class GroupListViewModel
 @Inject
-constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
+constructor(
+    private val getMyGroups: GetMyGroupsUseCase,
+) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
     init {
@@ -105,6 +73,8 @@ constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEf
                 dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
             )
         }
+
+        loadGroups(isRefresh = false)
     }
 
     override fun processIntent(intent: GroupListIntent) {
@@ -133,14 +103,48 @@ constructor() : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEf
                 postSideEffect(GroupListSideEffect.NavigateToInviteCode)
             }
 
-            GroupListIntent.Refresh -> {
-                // Todo : 서버에서 그룹 목록을 다시 받아오도록 변경 필요, 지금은 로딩만 흉내냅니다
-                updateState { copy(isRefreshing = true) }
-                viewModelScope.launch {
-                    delay(MOCK_REFRESH_DURATION)
-                    updateState { copy(isRefreshing = false) }
-                }
+            GroupListIntent.Refresh -> loadGroups(isRefresh = true)
+        }
+    }
+
+    /**
+     * 새로고침 표시를 [launch] 밖에서 켜는 이유: 당겨서 새로고침이 [KEY_LOAD_GROUPS] 가드에
+     * 막혀도 인디케이터는 돌아야 하고, 실제로도 조회가 돌고 있다.
+     */
+    private fun loadGroups(isRefresh: Boolean) {
+        if (isRefresh) {
+            updateState { copy(isRefreshing = true) }
+        }
+
+        launch(key = KEY_LOAD_GROUPS) {
+            try {
+                getMyGroups()
+                    .onSuccess { groups -> updateState { copy(groupList = groups, isError = false) } }
+                    .onFailure(::handleLoadFailure)
+            } finally {
+                updateState { copy(isRefreshing = false) }
             }
         }
+    }
+
+    /**
+     * 목록이 남아 있어도 에러 화면으로 넘긴다 — 실패를 알릴 다른 자리가 없어서, 낡은 목록을
+     * 그대로 두면 사용자는 새로고침이 실패한 것을 알 방법이 없다.
+     */
+    private fun handleLoadFailure(throwable: Throwable) {
+        updateState { copy(isError = true) }
+
+        when (throwable) {
+            is AppError.Network -> viewModelLogger.e(throwable) { "그룹 목록 조회 실패 — 네트워크 단절" }
+
+            is AppError.Server ->
+                viewModelLogger.e(throwable) { "그룹 목록 조회 실패 — 서버 에러 ${throwable.code}" }
+
+            else -> viewModelLogger.e(throwable) { "그룹 목록 조회 실패 — 예상하지 못한 오류" }
+        }
+    }
+
+    private companion object {
+        const val KEY_LOAD_GROUPS = "loadGroups"
     }
 }
