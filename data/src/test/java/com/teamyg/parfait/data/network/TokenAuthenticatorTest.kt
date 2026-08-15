@@ -1,9 +1,12 @@
 package com.teamyg.parfait.data.network
 
+import app.cash.turbine.test
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.domain.model.session.SessionEvent
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -20,6 +23,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 /**
  * 저장 매체를 끌어들이지 않으려고 [TokenStore] 를 메모리 페이크로 둔다.
@@ -134,6 +138,85 @@ class TokenAuthenticatorTest {
         assertEquals(NEW_ACCESS_TOKEN, runBlocking { tokenStore.getAccessToken() })
         assertEquals(NEW_REFRESH_TOKEN, runBlocking { tokenStore.getRefreshToken() })
         assertEquals(0, tokenStore.clearCount)
+    }
+
+    @Test
+    fun authenticate_reissueRejected_clearsTokensAndPostsForcedLogout() = runTest {
+        // Given 서버가 refresh token 을 401 INVALID_TOKEN 으로 거절한다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(401)
+                .body("""{"success":false,"code":"INVALID_TOKEN","message":"유효하지 않은 토큰입니다","data":null}""")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 재시도하지 않고 세션을 버린다
+        assertNull(retried)
+        assertEquals(1, tokenStore.clearCount)
+        sessionEventBus.events.test {
+            assertEquals(SessionEvent.ForcedLogout, awaitItem())
+        }
+    }
+
+    @Test
+    fun authenticate_reissueNetworkFails_keepsTokensAndPostsNothing() = runTest {
+        // Given 연결이 끊겨 재발급 요청 자체가 실패한다
+        server.close()
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 토큰을 지우지 않는다 — 연결 실패는 자격증명이 죽은 것과 다른 사건이다
+        assertNull(retried)
+        assertEquals(0, tokenStore.clearCount)
+        assertEquals(REFRESH_TOKEN, tokenStore.refreshToken)
+        sessionEventBus.events.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun authenticate_reissueServerError_keepsTokens() = runTest {
+        // Given 재발급이 500 으로 실패한다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(500)
+                .body("{}")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 서버 장애로 세션을 버리지 않는다
+        assertNull(retried)
+        assertEquals(0, tokenStore.clearCount)
+        sessionEventBus.events.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun authenticate_noRefreshToken_postsNothing() = runTest {
+        // Given 로그인한 적이 없어 refresh token 이 없다
+        tokenStore.accessToken = null
+        tokenStore.refreshToken = null
+
+        // When 인증기가 응답을 받는다
+        val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(token = null))
+
+        // Then 조용히 포기한다 — 여기서 강제 로그아웃을 쏘면 로그인 화면이 자기 자신으로 튕긴다
+        assertNull(retried)
+        assertEquals(0, tokenStore.clearCount)
+        assertEquals(0, server.requestCount)
+        sessionEventBus.events.test {
+            expectNoEvents()
+        }
     }
 
     private companion object {

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.network
 
+import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
@@ -7,6 +8,7 @@ import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -57,9 +59,29 @@ class TokenAuthenticator @Inject constructor(
             block = { authService.get().postAuthReissue(ReissueRequest(refreshToken = refreshToken)) },
             transform = { it.toAuthSessionVO() },
         ).getOrElse { throwable ->
-            sourceLogger.e(throwable) { "토큰 재발급 실패" }
+            if (throwable.isSessionDead()) {
+                sourceLogger.e(throwable) { "재발급 거절 — 세션 종료" }
+                tokenStore.clear()
+                sessionEventBus.postForcedLogout()
+            } else {
+                // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
+                // 원요청은 401 그대로 화면에 도달하고 화면이 실패를 표시한다.
+                sourceLogger.e(throwable) { "재발급 실패 — 세션 유지" }
+            }
             null
         }
+
+    /**
+     * 서버가 refresh token 자체를 거절했는가.
+     *
+     * `statusCode` 와 `code` 를 함께 보는 이유: envelope 실패는 `statusCode` 가 비어 올 수
+     * 있고(`ApiCaller.runCatchingApi`), HTTP 실패는 code 없이 status 만 온다.
+     */
+    private fun Throwable.isSessionDead(): Boolean = when (this) {
+        is ApiException.Business -> statusCode in SESSION_DEAD_STATUS_CODES || code in SESSION_DEAD_CODES
+        is ApiException.Http -> statusCode in SESSION_DEAD_STATUS_CODES
+        else -> false
+    }
 
     private fun Request.withToken(accessToken: String): Request = newBuilder()
         .header(AUTHORIZATION_HEADER, "$BEARER_PREFIX$accessToken")
@@ -68,5 +90,13 @@ class TokenAuthenticator @Inject constructor(
     private companion object {
         const val AUTHORIZATION_HEADER = "Authorization"
         const val BEARER_PREFIX = "Bearer "
+
+        val SESSION_DEAD_STATUS_CODES = setOf(401, 403)
+
+        val SESSION_DEAD_CODES = setOf(
+            ServerErrorCode.Auth.INVALID_TOKEN,
+            ServerErrorCode.Auth.EXPIRED_TOKEN,
+            ServerErrorCode.Auth.FORBIDDEN_REFRESH_TOKEN,
+        )
     }
 }
