@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -16,17 +17,24 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.domain.model.group.GroupName
+import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlin.time.Clock
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
@@ -39,6 +47,8 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_3_LEFT,
     YGToppingGroupType.TYPE_3_RIGHT,
 )
+
+private val CHIP_TYPES = YGGrouptagChipType.entries
 
 @Composable
 internal fun GroupListScreen(
@@ -85,7 +95,7 @@ internal fun GroupListScreen(
 
 @Composable
 internal fun GroupListContent(
-    groupList: List<MockToppingGroup>,
+    groupList: List<MyParfaitGroupVO>,
     modifier: Modifier = Modifier,
 ) {
     GroupListParfaitLayout(
@@ -131,12 +141,19 @@ internal fun GroupListContent(
             ),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            groupList.fastForEachIndexed { index, toppingGroup ->
+            // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
+            val now = remember(groupList) { Clock.System.now() }
+            val timeZone = TimeZone.currentSystemDefault()
+
+            groupList.fastForEachIndexed { index, group ->
                 YGToppingGroup(
-                    image = YGToppingImage.Remote(toppingGroup.imageUrl),
-                    name = toppingGroup.name,
-                    timestamp = toppingGroup.lastModify,
-                    chipType = toppingGroup.chipType,
+                    image = group.recentImageUrl?.let(YGToppingImage::Remote) ?: YGToppingImage.Error,
+                    name = group.groupName.value,
+                    timestamp = group.recentImageUploadedAt
+                        .toGroupTimestamp(now = now, timeZone = timeZone)
+                        ?.toStringResource()
+                        .orEmpty(),
+                    chipType = CHIP_TYPES[index % CHIP_TYPES.size],
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                 )
             }
@@ -146,21 +163,45 @@ internal fun GroupListContent(
 
 private class GroupListScreenPreviewParameterProvider :
     PreviewParameterProvider<GroupListUiState> {
+    private val groupList = listOf(
+        MyParfaitGroupVO(
+            groupId = GroupId(1L),
+            groupName = GroupName("매시업"),
+            recentImageUrl = "https://picsum.photos/id/1025/200",
+            recentImageUploadedAt = LocalDateTime(2026, 8, 15, 9, 57),
+        ),
+        MyParfaitGroupVO(
+            groupId = GroupId(2L),
+            groupName = GroupName("매시업매시업매시업"),
+            recentImageUrl = "https://picsum.photos/id/1062/200",
+            recentImageUploadedAt = LocalDateTime(2026, 8, 15, 8, 0),
+        ),
+        MyParfaitGroupVO(
+            groupId = GroupId(3L),
+            groupName = GroupName("우리집"),
+            recentImageUrl = null,
+            recentImageUploadedAt = null,
+        ),
+    )
+
     override val values: Sequence<GroupListUiState>
         get() = sequenceOf(
             GroupListUiState(
+                groupList = groupList,
                 groupAddButtonSelected = false,
                 isTooltipVisible = false,
                 dateString = "July 26",
                 dayOfWeekString = "Wed",
             ),
             GroupListUiState(
+                groupList = groupList,
                 groupAddButtonSelected = true,
                 isTooltipVisible = false,
                 dateString = "July 26",
                 dayOfWeekString = "Wed",
             ),
             GroupListUiState(
+                groupList = emptyList(),
                 groupAddButtonSelected = false,
                 isTooltipVisible = true,
                 dateString = "July 26",
