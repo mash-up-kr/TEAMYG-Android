@@ -21,6 +21,15 @@ object ServerErrorCode {
         /** 401 — 유효하지 않은 ID 토큰입니다 */
         const val INVALID_ID_TOKEN = "INVALID_ID_TOKEN"
 
+        /** 401 — 유효하지 않은 토큰입니다. `reissue`·`logout` 의 refreshToken 검증 실패 */
+        const val INVALID_TOKEN = "INVALID_TOKEN"
+
+        /** 401 — 만료된 토큰입니다. `reissue`·`logout` 의 refreshToken */
+        const val EXPIRED_TOKEN = "EXPIRED_TOKEN"
+
+        /** 403 — 다른 회원의 Refresh Token 입니다. `logout` 의 `LogoutService` */
+        const val FORBIDDEN_REFRESH_TOKEN = "FORBIDDEN_REFRESH_TOKEN"
+
         /** 502 — 카카오 공개키 조회에 실패했습니다 */
         const val KAKAO_JWKS_FETCH_FAILED = "KAKAO_JWKS_FETCH_FAILED"
 
