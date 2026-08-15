@@ -32,12 +32,13 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
     "image_id": "",
     "image_upload_url": "",
 
-    "parfait_image_id": ""
+    "parfait_image_id": "",
+    "parfait_id": ""
   }
 }
 ```
 
-> `terms_id_*`·`group_id`·`invite_code`·`image_*`·`parfait_image_id`는 **손으로 채우는 값이 아니다** —
+> `terms_id_*`·`group_id`·`invite_code`·`image_*`·`parfait_image_id`·`parfait_id`는 **손으로 채우는 값이 아니다** —
 > 각 `.http` 파일의 응답 핸들러가 `client.global.set`으로 런타임에 채운다. 여기 구조로 적어 두는 것은
 > "이 체계에 어떤 변수가 있는가"를 한곳에서 보기 위해서고, `_reset.http`가 도메인별로 비우는 목록과
 > 짝을 이룬다.
@@ -74,17 +75,17 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 | `auth.http` | 카카오 로그인 · 회원가입 완료 · 토큰 재발급 · 로그아웃 |
 | `policy.http` | 현재 유효 약관 목록(회원가입이 쓰는 `termsId` 출처) |
 | `parfait-group.http` | 그룹 8종(목록·생성·참여 미리보기·참여·상세·닉네임 변경·신고·탈퇴) |
-| `parfait.http` | 그룹 캘린더 연도 리스트 |
+| `parfait.http` | 그룹 캘린더 연도 리스트 · **오늘의 캔버스** · **과거 캔버스 목록** |
 | `health.http` | 헬스체크(인증 유무 대조용) |
 | `images.http` | 이미지 업로드 URL 발급 · 업로드 확인(**2번 요청만 서버가 아니라 S3로 나간다**) |
-| `users.http` | 내 계정 조회 · 전역 닉네임 변경(선행: `auth.http`만) |
-| `parfait-image.http` | 토핑 배치 확정 · 위치/크기/각도 수정(**선행이 셋** — `auth.http` → `parfait-group.http` → `images.http`) |
+| `users.http` | 내 계정 조회 · 전역 닉네임 변경 · **탈퇴**(선행: `auth.http`만) |
+| `parfait-image.http` | 토핑 배치 확정 · 위치/크기/각도 수정 · **테두리 수정** · **삭제**(**선행이 넷** — `auth.http` → `parfait-group.http` → `images.http` → `parfait.http`) |
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
 `policy.http`를 먼저 돌려야 `auth.http` 2번의 `termsId`가 채워진다. 기존 회원으로 로그인했다면 회원가입을 건너뛰므로 `policy.http`도 건너뛰어도 된다.
 
-`parfait-image.http`는 준비가 가장 길다 — `images.http`의 발급 → S3 PUT → confirm 까지 끝내 이미지를 `COMPLETED`로 만들어야 배치가 통과한다(`PENDING`이면 `409 IMAGE_NOT_CONFIRMED`). `parfaitId`는 조회 API가 서버에 없어 요청 파일의 리터럴을 손으로 바꿔야 한다.
+`parfait-image.http`는 준비가 가장 길다 — `images.http`의 발급 → S3 PUT → confirm 까지 끝내 이미지를 `COMPLETED`로 만들어야 배치가 통과한다(`PENDING`이면 `409 IMAGE_NOT_CONFIRMED`). `parfaitId`는 `parfait.http`의 "오늘의 캔버스 조회"가 응답 핸들러로 `parfait_id`에 채워 준다.
 
 ---
 

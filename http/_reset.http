@@ -50,7 +50,8 @@ GET {{base_url}}/actuator/health
 
 > {%
     client.global.clear("parfait_image_id");
-    client.log("parfait_image_id 초기화 완료 — parfait-image.http 1번을 다시 실행해 채운다");
+    client.global.clear("parfait_id");
+    client.log("parfait_image_id/parfait_id 초기화 완료 — parfait-image.http 1번을 다시 실행해 채운다");
 %}
 
 ### 0-2. 현재 어떤 값이 쓰이고 있는지 확인

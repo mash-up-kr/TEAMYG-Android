@@ -32,3 +32,49 @@ Authorization: Bearer {{access_token}}
         client.assert(response.body.code === "GROUP_NOT_JOINED", "code: " + response.body.code);
     });
 %}
+
+### 오늘의 캔버스 조회
+# C-001 캔버스 메인이 그릴 것 전부가 한 응답에 있다 — 상태·멤버 목록·배경·배치 토핑.
+# 배치 목록 전용 API 는 없고 이 엔드포인트가 그 자리를 대신한다.
+#
+# ⚠️ 조회인데 서버가 캔버스를 만든다. 오늘 날짜 파르페가 없으면 생성해 저장하므로,
+#    이 요청을 한 번 쏘면 연도 목록·과거 목록에도 그날이 나타난다.
+# ⚠️ images 는 0건일 때 빈 배열이 아니라 null 이다. background 도 미설정이면 null 이다.
+# ⚠️ lastClosedDate 는 CLOSED 만 센다 — 토핑 0건으로 마감된 날(EMPTY)은 잡히지 않는다.
+GET {{base_url}}/api/v1/groups/{{group_id}}/parfaits/today
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.global.set("parfait_id", response.body.data.parfaitId);
+    client.log("status=" + response.body.data.status +
+        " toppings=" + (response.body.data.images === null ? "null(0건)" : response.body.data.images.length));
+%}
+
+### 과거 캔버스 목록
+# 범위를 생략하면 서버 기본값(오늘 - 30일 ~ 오늘)이다. 페이지네이션도 상한도 없다.
+#
+# ⚠️ thumbnailUrl 은 항상 null 이다 — 서버에 채우는 코드가 없다.
+# ⚠️ 0건이면 빈 배열이다. 위 today 의 images 가 null 인 것과 반대다.
+GET {{base_url}}/api/v1/groups/{{group_id}}/parfaits
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("count=" + response.body.data.parfaits.length);
+%}
+
+### (대조용) from 이 to 보다 늦으면 400 INVALID_DATE_RANGE
+GET {{base_url}}/api/v1/groups/{{group_id}}/parfaits?from=2026-08-20&to=2026-08-15
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("400 INVALID_DATE_RANGE", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_DATE_RANGE", "code: " + response.body.code);
+    });
+%}
