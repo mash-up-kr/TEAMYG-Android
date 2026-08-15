@@ -15,4 +15,8 @@ object DateTextFormat {
         chars(" ")
         day(padding = Padding.NONE)
     }
+
+    val monthFormat = LocalDate.Format {
+        monthName(MonthNames.ENGLISH_ABBREVIATED)
+    }
 }
