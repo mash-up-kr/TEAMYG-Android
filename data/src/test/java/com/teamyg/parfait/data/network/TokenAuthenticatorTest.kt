@@ -130,6 +130,7 @@ class TokenAuthenticatorTest {
         // Then 새 토큰을 단 요청이 나오고, 저장소도 갱신된다
         assertNotNull(retried)
         assertEquals("Bearer $NEW_ACCESS_TOKEN", retried.header("Authorization"))
+        assertEquals(listOf("Bearer $NEW_ACCESS_TOKEN"), retried.headers.values("Authorization"))
         assertEquals(NEW_ACCESS_TOKEN, runBlocking { tokenStore.getAccessToken() })
         assertEquals(NEW_REFRESH_TOKEN, runBlocking { tokenStore.getRefreshToken() })
         assertEquals(0, tokenStore.clearCount)
