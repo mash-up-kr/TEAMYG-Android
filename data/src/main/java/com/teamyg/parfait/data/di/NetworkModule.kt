@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.di
 import com.teamyg.parfait.data.BuildConfig
 import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.network.AuthInterceptor
+import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
 import com.teamyg.parfait.data.network.TokenStoreTokenProvider
 import dagger.Module
@@ -31,9 +32,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient = OkHttpClient
+    fun provideOkHttpClient(
+        authInterceptor: AuthInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
+    ): OkHttpClient = OkHttpClient
         .Builder()
         .addInterceptor(authInterceptor)
+        .authenticator(tokenAuthenticator)
         .addInterceptor(
             HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
