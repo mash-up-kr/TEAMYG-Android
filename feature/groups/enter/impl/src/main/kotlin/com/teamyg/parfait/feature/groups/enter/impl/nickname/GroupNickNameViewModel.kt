@@ -45,15 +45,10 @@ sealed interface GroupNickNameSideEffect : UiSideEffect {
     data object NavigateToNext : GroupNickNameSideEffect
 }
 
-/**
- * 참여 확인 팝업이 이 화면에 있는 이유: 앞 화면의 join-preview 가 코드 오류·이미 참여·정원
- * 초과를 이미 걸러 주므로, 참여를 확정할 마지막 자리를 닉네임까지 정한 뒤로 미룰 수 있다.
- */
 @HiltViewModel(assistedFactory = GroupNickNameViewModel.Factory::class)
 class GroupNickNameViewModel
 @AssistedInject
 constructor(
-    // 둘 다 String 이라 식별자가 없으면 Dagger 가 어느 인자인지 구분하지 못한다
     @Assisted(ASSISTED_INVITE_CODE) inviteCodeValue: String,
     @Assisted(ASSISTED_GROUP_NAME) groupName: String,
     private val checkNickNameValid: CheckNameValidUseCase,
@@ -90,7 +85,6 @@ constructor(
         }
     }
 
-    /** 형식이 틀린 닉네임으로 참여 팝업까지 가면 되돌아올 자리가 없어 여기서 먼저 걸러낸다 */
     private fun confirmNickname() {
         when (val result = checkNickNameValid(state.value.nickName)) {
             is NameValidResult.Error -> updateState { copy(nicknameError = result) }
@@ -98,10 +92,6 @@ constructor(
         }
     }
 
-    /**
-     * 참여와 닉네임 적용을 잇달아 보낸다. 그룹 닉네임은 참여로 생긴 멤버에만 붙일 수 있어
-     * 순서를 뒤집을 수 없다.
-     */
     private fun enterGroup() {
         launch(key = KEY_ENTER_GROUP) {
             updateState { copy(submitError = null, isEntering = true) }
@@ -124,12 +114,7 @@ constructor(
         }
     }
 
-    /**
-     * 실패 사유는 입력 자리 아래 한 줄로만 나가므로 팝업은 닫는다.
-     *
-     * 참여 쪽 사유(코드 오류·이미 참여·정원 초과)는 앞 화면의 미리보기를 통과한 뒤에야
-     * 나올 수 있어, 미리보기와 참여 사이에 그룹 상태가 바뀐 경우에 해당한다.
-     */
+    /** 실패 갈래를 전부 열거해 둔다. 화면에는 입력 자리 아래 한 줄로만 나간다 */
     private fun handleFailure(
         throwable: Throwable,
         action: String,

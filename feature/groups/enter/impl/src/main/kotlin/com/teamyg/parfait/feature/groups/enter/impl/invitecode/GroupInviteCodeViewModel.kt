@@ -58,10 +58,6 @@ sealed interface GroupInviteCodeIntent : UiIntent {
 sealed interface GroupInviteCodeSideEffect : UiSideEffect {
     data object NavigateToBack : GroupInviteCodeSideEffect
 
-    /**
-     * @param inviteCode 다음 화면이 참여를 확정할 때 그대로 써야 해서 같이 넘긴다
-     * @param groupName 다음 화면의 확인 팝업에 띄울 그룹명
-     */
     data class NavigateToNext(
         val inviteCode: String,
         val groupName: String,
@@ -154,10 +150,6 @@ constructor(
         }
     }
 
-    /**
-     * 미리보기는 참여 상태를 바꾸지 않으면서 코드 오류·이미 참여·정원 초과를 모두 걸러 준다.
-     * 그래서 다음 화면으로는 통과한 코드만 넘어가고, 참여 확정은 닉네임을 정한 뒤에 한다.
-     */
     private fun requestJoinPreview() {
         val inviteCode = state.value.text
         if (inviteCode.length != state.value.codeLength) {
