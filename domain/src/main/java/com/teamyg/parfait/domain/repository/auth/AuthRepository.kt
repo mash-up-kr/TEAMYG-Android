@@ -25,4 +25,12 @@ interface AuthRepository {
 
     /** 발급받은 세션을 암호화 저장소에 넣는다 */
     suspend fun saveSession(session: AuthSessionVO)
+
+    /**
+     * 서버 세션을 끊고 로컬 토큰을 지운다.
+     *
+     * **서버 호출이 실패해도 로컬은 정리하고 성공을 반환한다** — 사용자가 로그아웃을 눌렀으면
+     * 이 기기에서는 나가는 것이 기대 동작이고, 서버 세션 정리 실패는 로그로 남긴다.
+     */
+    suspend fun logout(): Result<Unit>
 }

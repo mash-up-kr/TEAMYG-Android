@@ -3,8 +3,10 @@ package com.teamyg.parfait.data.repository.auth
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
+import com.teamyg.parfait.domain.model.auth.RefreshToken
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
 import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
@@ -41,5 +43,18 @@ class AuthRepositoryImpl @Inject constructor(
             accessToken = session.accessToken.value,
             refreshToken = session.refreshToken.value,
         )
+    }
+
+    override suspend fun logout(): Result<Unit> {
+        val refreshToken = tokenStore.getRefreshToken()
+
+        if (refreshToken != null) {
+            authRemoteDataSource
+                .logout(RefreshToken(refreshToken))
+                .onFailure { throwable -> repositoryLogger.e(throwable) { "서버 로그아웃 실패 — 로컬은 정리한다" } }
+        }
+
+        tokenStore.clear()
+        return Result.success(Unit)
     }
 }
