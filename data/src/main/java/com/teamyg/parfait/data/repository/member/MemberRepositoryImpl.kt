@@ -40,18 +40,27 @@ class MemberRepositoryImpl @Inject constructor(
     override suspend fun changeGlobalNickname(nickname: GlobalNickname): Result<GlobalNickname> = remoteDataSource
         .changeGlobalNickname(nickname)
         .fold(
-            onSuccess = { changed ->
-                val current = localDataSource.myAccount.first()
-                val saveResult = if (current != null) {
-                    saveLocally(current.copy(nickname = changed))
-                } else {
-                    refreshMyAccount()
-                    Result.success(Unit)
-                }
-                saveResult.map { changed }
-            },
+            onSuccess = { changed -> applyChangedNicknameLocally(changed) },
             onFailure = { Result.failure(it) },
         ).mapErrorToAppError()
+
+    /**
+     * `localDataSource.myAccount.first()` 도 `DataStore.data` 를 읽는 suspend 호출이라
+     * [saveLocally] 와 똑같이 IOException 을 던질 수 있다. 이 함수 전체를
+     * [runSuspendCatching] 으로 감싸야 읽기 실패도 [saveLocally] 의 쓰기 실패와
+     * 마찬가지로 `Result` 로 되돌아온다 — 어느 한쪽만 감싸면 감싸지 않은 쪽이 Repository
+     * 경계를 뚫고 나가는 예외가 된다(ADR-0020).
+     */
+    private suspend fun applyChangedNicknameLocally(changed: GlobalNickname): Result<GlobalNickname> =
+        runSuspendCatching {
+            val current = localDataSource.myAccount.first()
+            if (current != null) {
+                saveLocally(current.copy(nickname = changed)).getOrThrow()
+            } else {
+                refreshMyAccount()
+            }
+            changed
+        }
 
     override suspend fun clearMyAccount() = localDataSource.clear()
 
