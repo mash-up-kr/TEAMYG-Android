@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 
 class UserInfoLocalDataSourceImplTest {
@@ -26,6 +27,17 @@ class UserInfoLocalDataSourceImplTest {
     private val passthroughCrypto: CryptoManager = mockk {
         every { encrypt(any()) } answers { firstArg() }
         every { decrypt(any()) } answers { firstArg() }
+    }
+
+    /**
+     * 실제로 값을 바꾸는(암호화하는 척하는) 페이크. `save()` 가 `cryptoManager.encrypt(...)`
+     * 를 건너뛰고 평문을 그대로 저장해도 [passthroughCrypto] 로는 잡히지 않는다 —
+     * encrypt/decrypt 가 항등 함수라 평문 저장과 구분이 안 된다. 이 페이크로 DataStore
+     * 원문이 평문 JSON 과 **다르다**는 것 자체를 그물로 건다.
+     */
+    private val prefixingCrypto: CryptoManager = mockk {
+        every { encrypt(any()) } answers { ENCRYPTED_PREFIX + firstArg<String>() }
+        every { decrypt(any()) } answers { firstArg<String>().removePrefix(ENCRYPTED_PREFIX) }
     }
 
     private fun dataSource(
@@ -54,6 +66,28 @@ class UserInfoLocalDataSourceImplTest {
         // Then 필드가 하나도 뒤바뀌지 않는다 — memberId 와 nickname 은 타입이 달라도
         // 매퍼가 뒤집히면 컴파일러가 막지 못한다
         assertEquals(account, source.myAccount.first())
+    }
+
+    @Test
+    fun save_storesEncryptedValue_notPlainJson() = runTest {
+        // Given 실제로 값을 바꾸는 암호화 페이크와, 평문으로 새면 안 되는 계정 정보
+        val dataStore = FakePreferencesDataStore()
+        val source = dataSource(dataStore, prefixingCrypto)
+        val account = MyAccountVO(
+            memberId = MemberId(7L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("모카"),
+        )
+        val plainJson = """{"memberId":7,"provider":"KAKAO","nickname":"모카"}"""
+
+        // When 저장한다
+        source.save(account)
+
+        // Then DataStore 에 쓰인 원문은 평문 JSON 이 아니다 — save() 가 encrypt() 호출을
+        // 건너뛰고 평문을 그대로 심어도 통과하던 그물 구멍을 막는다
+        val stored = dataStore.data.first()[UserInfoLocalDataSourceImpl.USER_INFO_KEY]
+        assertNotEquals(plainJson, stored)
+        assertEquals(ENCRYPTED_PREFIX + plainJson, stored)
     }
 
     @Test
@@ -100,6 +134,10 @@ class UserInfoLocalDataSourceImplTest {
 
         // Then 크래시하지 않고 UNKNOWN 으로 떨어진다
         assertEquals(LoginProvider.UNKNOWN, read?.provider)
+    }
+
+    private companion object {
+        const val ENCRYPTED_PREFIX = "enc:"
     }
 }
 
