@@ -44,8 +44,7 @@ internal data class CalendarDayUiModel(
 
 @Composable
 internal fun CustomCalendar(
-    year: Int,
-    month: Int,
+    displayedMonth: LocalDate,
     today: LocalDate,
     selectedDate: LocalDate?,
     uploadedDates: Set<LocalDate>,
@@ -54,15 +53,13 @@ internal fun CustomCalendar(
     onClickDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val days = remember(year, month) { buildCalendarDays(year = year, month = month) }
-    val monthLabel = remember(year, month) {
-        LocalDate(year, month, 1).format(DateTextFormat.monthFormat)
-    }
+    val firstDayOfMonth = remember(displayedMonth) { displayedMonth.toFirstDayOfMonth() }
+    val days = remember(firstDayOfMonth) { buildCalendarDays(firstDayOfMonth) }
 
     Column(modifier = modifier) {
         HeadCalendar(
-            month = monthLabel,
-            year = year.toString(),
+            month = firstDayOfMonth.format(DateTextFormat.monthFormat),
+            year = firstDayOfMonth.year.toString(),
             onClickMonth = onClickMonth,
             onClickYear = onClickYear,
         )
@@ -79,16 +76,14 @@ internal fun CustomCalendar(
     }
 }
 
+private fun LocalDate.toFirstDayOfMonth(): LocalDate = minus(DatePeriod(days = day - 1))
+
 /**
  * 앞은 이전 달, 뒤는 다음 달 날짜로 채워 항상 7의 배수를 만든다.
  *
  * 빈 칸이 아니라 실제 날짜를 넣어야 칸마다 오늘·선택·업로드 여부를 스스로 판단할 수 있다.
  */
-private fun buildCalendarDays(
-    year: Int,
-    month: Int,
-): List<CalendarDayUiModel> {
-    val firstDayOfMonth = LocalDate(year, month, 1)
+private fun buildCalendarDays(firstDayOfMonth: LocalDate): List<CalendarDayUiModel> {
     val lastDayOfMonth = firstDayOfMonth.plus(DatePeriod(months = 1)).minus(DatePeriod(days = 1))
 
     // 머리글이 일요일부터라 일요일을 0 으로 맞춘다 (ISO 는 월요일이 1, 일요일이 7)
@@ -228,8 +223,7 @@ private fun DayOfWeekHeader(modifier: Modifier = Modifier) {
 }
 
 private data class CustomCalendarPreviewData(
-    val year: Int,
-    val month: Int,
+    val displayedMonth: LocalDate,
     val today: LocalDate,
     val selectedDate: LocalDate?,
     val uploadedDates: Set<LocalDate>,
@@ -241,8 +235,7 @@ private class CustomCalendarPreviewParameterProvider : PreviewParameterProvider<
         get() = sequenceOf(
             // 6주 — 토요일 시작 31일. 앞뒤 달 날짜가 모두 나온다
             CustomCalendarPreviewData(
-                year = 2026,
-                month = 8,
+                displayedMonth = LocalDate(2026, 8, 1),
                 today = LocalDate(2026, 8, 15),
                 selectedDate = LocalDate(2026, 8, 20),
                 uploadedDates = setOf(
@@ -253,16 +246,14 @@ private class CustomCalendarPreviewParameterProvider : PreviewParameterProvider<
             ),
             // 4주 — 일요일 시작 28일. 앞뒤 달 날짜가 하나도 없다
             CustomCalendarPreviewData(
-                year = 2026,
-                month = 2,
+                displayedMonth = LocalDate(2026, 2, 1),
                 today = LocalDate(2026, 8, 15),
                 selectedDate = null,
                 uploadedDates = setOf(LocalDate(2026, 2, 14)),
             ),
             // 5주 — 오늘·선택·업로드가 모두 없는 기본 상태
             CustomCalendarPreviewData(
-                year = 2026,
-                month = 11,
+                displayedMonth = LocalDate(2026, 11, 1),
                 today = LocalDate(2026, 8, 15),
                 selectedDate = null,
                 uploadedDates = emptySet(),
@@ -276,8 +267,7 @@ private fun CustomCalendarPreview(
     @PreviewParameter(CustomCalendarPreviewParameterProvider::class) data: CustomCalendarPreviewData,
 ) = PreviewBox {
     CustomCalendar(
-        year = data.year,
-        month = data.month,
+        displayedMonth = data.displayedMonth,
         today = data.today,
         selectedDate = data.selectedDate,
         uploadedDates = data.uploadedDates,
