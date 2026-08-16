@@ -32,6 +32,11 @@ class GetParfaitHistoriesUseCaseTest {
 
         override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> =
             Result.failure(IllegalStateException("쓰이지 않는다"))
+
+        override suspend fun getCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<CanvasVO> = Result.failure(IllegalStateException("쓰이지 않는다"))
     }
 
     private fun canvas(date: LocalDate) = PastCanvasVO(

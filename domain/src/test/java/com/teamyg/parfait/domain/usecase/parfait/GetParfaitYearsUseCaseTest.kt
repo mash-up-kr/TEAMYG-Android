@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.parfait
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import kotlinx.coroutines.test.runTest
@@ -26,6 +27,11 @@ class GetParfaitYearsUseCaseTest {
 
         override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> =
             Result.failure(IllegalStateException("쓰이지 않는다"))
+
+        override suspend fun getCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<CanvasVO> = Result.failure(IllegalStateException("쓰이지 않는다"))
     }
 
     private val thisYear = parfaitToday().year

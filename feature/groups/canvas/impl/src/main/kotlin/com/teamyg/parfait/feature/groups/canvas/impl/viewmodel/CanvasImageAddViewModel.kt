@@ -12,11 +12,13 @@ import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetCanvasByDateUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
@@ -40,10 +42,16 @@ data class GroupMemberChip(
 data class CanvasImageAddUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
-    /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
-    val canvasBackground: CanvasBackground? = null,
-    /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
-    val toppings: List<CanvasToppingVO> = emptyList(),
+    /**
+     * 오늘 캔버스. 아직 못 받았으면 null 이다 — 조회가 실패했거나 응답 전이다.
+     *
+     * [viewedCanvas] 와 나눠 두는 이유는 토핑 추가·배경 편집이 언제나 오늘 것을 대상으로
+     * 해야 해서다. 서버는 마감된 캔버스의 편집도 막지 않으므로 여기서 갈라 두지 않으면
+     * 지난 날을 보다가 그 캔버스를 고치게 된다.
+     */
+    val todayCanvas: CanvasVO? = null,
+    /** 달력에서 고른 날의 캔버스. 화면에 그려지는 것은 언제나 이쪽이다 */
+    val viewedCanvas: CanvasVO? = null,
     val today: LocalDate = parfaitToday(),
     val selectedDate: LocalDate = today,
     val isCalendarVisible: Boolean = false,
@@ -60,10 +68,23 @@ data class CanvasImageAddUiState(
      */
     val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
 ) : UiState {
-    /** 캔버스 머리말은 고른 날을 따라간다 — 오늘로 굳으면 날짜와 그림이 어긋난다 */
-    val canvasDate: String = selectedDate.format(DateTextFormat.monthDayFormat)
+    /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
+    val canvasBackground: CanvasBackground?
+        get() = viewedCanvas?.background
 
-    val canvasDay: String = selectedDate.format(DateTextFormat.weekdayFormat)
+    /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
+    val toppings: List<CanvasToppingVO>
+        get() = viewedCanvas?.toppings.orEmpty().sortedBy { it.transform.positionZ }
+
+    /** 오늘을 보고 있는지. 지난 날에는 편집 대신 저장·오늘로 가기를 준다 */
+    val isViewingToday: Boolean
+        get() = selectedDate == today
+
+    val canvasDate: String
+        get() = selectedDate.format(DateTextFormat.monthDayFormat)
+
+    val canvasDay: String
+        get() = selectedDate.format(DateTextFormat.weekdayFormat)
 
     /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 아직 안 받았으면 비어 있다 */
     val parfaitHistories: List<PastCanvasVO>
@@ -86,7 +107,8 @@ data class CanvasImageAddUiState(
         }.distinct()
         .sorted()
 
-    val isCanvasEmpty: Boolean = toppings.isEmpty()
+    val isCanvasEmpty: Boolean
+        get() = toppings.isEmpty()
 }
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
@@ -121,6 +143,12 @@ sealed interface CanvasImageAddIntent : UiIntent {
     data class SelectMonth(val month: LocalDate) : CanvasImageAddIntent
 
     data class ClickDate(val date: LocalDate) : CanvasImageAddIntent
+
+    /** 지난 캔버스를 보는 중에만 뜨는 버튼 */
+    data object OnClickSaveToGallery : CanvasImageAddIntent
+
+    /** 지난 캔버스를 보는 중에만 뜨는 버튼 */
+    data object OnClickGoToToday : CanvasImageAddIntent
 }
 
 @HiltViewModel(assistedFactory = CanvasImageAddViewModel.Factory::class)
@@ -132,7 +160,7 @@ constructor(
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
-    private val getCanvasByDateUseCase: GetCanvasByDateUseCase,
+    private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
 ) : BaseViewModel<CanvasImageAddUiState, CanvasImageAddIntent, CanvasImageAddEffect>(
     initialState = CanvasImageAddUiState(),
 ) {
@@ -156,8 +184,9 @@ constructor(
                 .onSuccess { canvas ->
                     updateState {
                         copy(
-                            canvasBackground = canvas.background,
-                            toppings = canvas.toppings.sortedBy { it.transform.positionZ },
+                            todayCanvas = canvas,
+                            // 응답을 기다리는 사이 지난 날로 옮겼다면 그 화면을 덮지 않는다
+                            viewedCanvas = if (isViewingToday) canvas else viewedCanvas,
                             memberChips = canvas.members.toMemberChips(),
                         )
                     }
@@ -253,57 +282,78 @@ constructor(
             }
 
             is CanvasImageAddIntent.ClickDate -> handleClickDate(intent.date)
+
+            is CanvasImageAddIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
+
+            is CanvasImageAddIntent.OnClickGoToToday -> handleClickGoToToday()
         }
     }
 
     /**
-     * 날짜를 고르면 달력을 닫고 그날 캔버스로 갈아 끼운다. 고른 날이 이미 그려져 있으면
-     * 닫기만 한다.
+     * 고른 날의 캔버스를 상세 조회로 갈아 끼운다.
      *
-     * 새 캔버스가 오기 전에 이전 날 것을 비우는 이유는, 남겨 두면 머리말은 고른 날인데 그림은
-     * 이전 날인 상태가 눈에 보여서다. 잠깐 빈 캔버스가 뜨는 편이 덜 틀리다.
+     * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
+     * 받아 둔 [CanvasImageAddUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
+     *
+     * 응답이 올 때까지 이전 날의 토핑을 그대로 둔다. 비워 두면 파르페가 있는 날인데도 잠깐
+     * "캔버스가 비어 있다"고 말하게 된다 — 달력이 기록 있는 날만 열어 주므로 그건 늘 거짓이다.
      */
     private fun handleClickDate(date: LocalDate) {
-        if (date == state.value.selectedDate) {
-            updateState { copy(isCalendarVisible = false) }
+        val current = state.value
+
+        // 날짜를 고르는 것으로 볼 일은 끝났다. 이미 그려져 있는 날이어도 닫아 준다
+        updateState { copy(isCalendarVisible = false) }
+        if (date == current.selectedDate) return
+
+        if (date == current.today) {
+            updateState { copy(selectedDate = date, viewedCanvas = todayCanvas) }
             return
         }
 
+        // 달력이 기록 있는 날만 열어 주므로 여기까지 오면 있어야 한다. 없으면 그냥 두는 편이
+        // 빈 캔버스를 보여 주는 것보다 낫다
+        val parfaitId = current.parfaitHistories.firstOrNull { it.date == date }?.parfaitId ?: return
+
+        updateState { copy(selectedDate = date) }
+        loadCanvasDetail(date = date, parfaitId = parfaitId)
+    }
+
+    private fun loadCanvasDetail(
+        date: LocalDate,
+        parfaitId: ParfaitId,
+    ) {
+        launch(key = LOAD_CANVAS_DETAIL_KEY) {
+            getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+                .onSuccess { canvas ->
+                    updateState {
+                        // 기다리는 사이 다른 날로 옮겼으면 그 날의 캔버스를 덮지 않는다
+                        if (selectedDate == date) copy(viewedCanvas = canvas) else this
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - date: $date" }
+                }
+        }
+    }
+
+    /** 지난 캔버스에서 오늘로 돌아온다. 달력도 오늘이 있는 달로 따라간다 */
+    private fun handleClickGoToToday() {
         updateState {
             copy(
-                selectedDate = date,
-                isCalendarVisible = false,
-                canvasBackground = null,
-                toppings = emptyList(),
+                selectedDate = today,
+                displayedMonth = today.toFirstDayOfMonth(),
+                viewedCanvas = todayCanvas,
             )
         }
 
-        loadCanvasOf(date)
+        val current = state.value
+        if (current.parfaitHistoriesByYear.containsKey(current.today.year).not()) {
+            loadParfaitHistories(current.today.year)
+        }
     }
 
-    /**
-     * 응답이 늦게 온 조회가 그 사이 새로 고른 날의 캔버스를 덮지 않도록, 돌아온 날짜가 아직
-     * 고른 날인지 확인하고 반영한다.
-     *
-     * 중복 실행 가드를 걸지 않는 이유는 [launch] 의 가드가 앞선 조회를 살리고 새 것을 버리기
-     * 때문이다 — 날짜 선택은 마지막에 고른 것이 이겨야 한다.
-     */
-    private fun loadCanvasOf(date: LocalDate) {
-        launch {
-            getCanvasByDateUseCase(groupId = groupId, date = date)
-                .onSuccess { canvas ->
-                    updateState {
-                        if (selectedDate != date) return@updateState this
-
-                        copy(
-                            canvasBackground = canvas?.background,
-                            toppings = canvas?.toppings.orEmpty().sortedBy { it.transform.positionZ },
-                        )
-                    }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "$date 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-                }
-        }
+    private fun handleClickSaveToGallery() {
+        // TODO: 보고 있는 캔버스를 이미지로 만들어 갤러리에 저장한다
+        viewModelLogger.i { "갤러리 저장은 아직 구현 전이다" }
     }
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
@@ -377,6 +427,8 @@ constructor(
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
 
         const val LOAD_TODAY_CANVAS_KEY = "loadTodayCanvas"
+
+        const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 
         /** 상단 Nametag-Chip 색. 고르는 규칙은 [toMemberChips] 에 있다 */
         val NAMETAG_CHIP_PALETTE = listOf(
