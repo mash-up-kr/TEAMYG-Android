@@ -54,7 +54,16 @@ data class GroupSettingUiState(
     val visibleDialog: GroupSettingDialog? = null,
     /** 닉네임 변경이 서버에 오가는 중. 확인 버튼을 다시 누르지 못하게 막는다 */
     val isSubmittingNickname: Boolean = false,
+    /** 첫 조회가 끝나기 전. 화면에 아직 아무 값도 없는 구간이다 */
+    val isLoadingDetail: Boolean = true,
 ) : UiState {
+    /**
+     * 화면을 덮어야 하는 대기. 첫 조회는 보여 줄 값이 없어서, 닉네임 변경은 왕복이 끝나기 전에
+     * 입력 필드를 더 고칠 수 있어서 둘 다 덮는다.
+     */
+    val isLoading: Boolean
+        get() = isLoadingDetail || isSubmittingNickname
+
     /** 입력값이 유효한가. 키보드 Done 처리처럼 "닫아도 되는가"의 기준. */
     val isNicknameValid: Boolean
         get() = nicknameError == null
@@ -90,6 +99,12 @@ sealed interface GroupSettingSideEffect : UiSideEffect {
     data object NavigateBack : GroupSettingSideEffect
 
     data class CopyInviteCode(val inviteCode: String) : GroupSettingSideEffect
+
+    /**
+     * 조회 실패는 입력 자리와 무관해 토스트로 나간다 — 닉네임 변경 실패가 입력칸 아래
+     * 인라인으로 남는 것과 자리가 다르다.
+     */
+    data class ShowError(val error: GroupSettingError) : GroupSettingSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupSettingViewModel.Factory::class)
@@ -113,19 +128,21 @@ constructor(
         loadGroupDetail()
     }
 
-    /**
-     * 실패해도 알릴 자리가 없어 로그만 남긴다 — 화면은 빈 값 그대로 뜬다.
-     * TODO(에러 UX 미정): 이 화면이 실패를 표현할 방법이 정해지면 여기서 상태로 올린다
-     */
     private fun loadGroupDetail() {
         launch(key = KEY_LOAD_GROUP_DETAIL) {
-            val myMemberId = getMyAccountFlow().first()?.memberId
+            try {
+                val myMemberId = getMyAccountFlow().first()?.memberId
 
-            getGroupDetail(groupId)
-                .onSuccess { detail -> updateState { withDetail(detail, myMemberId) } }
-                .onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
-                }
+                getGroupDetail(groupId)
+                    .onSuccess { detail -> updateState { withDetail(detail, myMemberId) } }
+                    .onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
+                        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
+                    }
+            } finally {
+                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
+                updateState { copy(isLoadingDetail = false) }
+            }
         }
     }
 
@@ -217,7 +234,10 @@ constructor(
             try {
                 changeGroupNickname(groupId = groupId, groupNickname = nickname)
                     .onSuccess { changed -> updateState { withMyNickname(changed.groupNickname) } }
-                    .onFailure { throwable -> updateState { copy(submitError = throwable.toSubmitError()) } }
+                    .onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
+                        updateState { copy(submitError = throwable.toGroupSettingError()) }
+                    }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 버튼이 영구 비활성으로 남지 않게 한다
                 updateState { copy(isSubmittingNickname = false) }
@@ -235,20 +255,16 @@ constructor(
         nicknameError = null,
     )
 
-    /** 실패 갈래를 전부 열거해 둔다. 화면에는 입력 자리 아래 한 줄로만 나간다 */
-    private fun Throwable.toSubmitError(): GroupSettingError {
-        viewModelLogger.e(this) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
+    /** 실패 갈래를 전부 열거해 둔다 */
+    private fun Throwable.toGroupSettingError(): GroupSettingError = when (this) {
+        is AppError.Network -> GroupSettingError.NETWORK
 
-        return when (this) {
-            is AppError.Network -> GroupSettingError.NETWORK
-
-            is AppError.Server -> when (code) {
-                ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupSettingError.INVALID_NICKNAME
-                else -> GroupSettingError.UNKNOWN
-            }
-
+        is AppError.Server -> when (code) {
+            ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupSettingError.INVALID_NICKNAME
             else -> GroupSettingError.UNKNOWN
         }
+
+        else -> GroupSettingError.UNKNOWN
     }
 
     private fun handleClickCopyInviteCode() {

@@ -23,6 +23,7 @@ import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -509,17 +510,76 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun init_detailFails_keepsScreenUsable() = runTest(mainDispatcherRule.dispatcher) {
+    fun init_detailFails_stopsLoadingAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 상세 조회가 실패한다
         coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(Exception()))
 
         // When 화면이 열림
-        val viewModel = viewModel()
+        val viewModel = GroupSettingViewModel(
+            groupIdValue = GROUP_ID,
+            checkNameValid = CheckNameValidUseCase(),
+            getGroupDetail = getGroupDetail,
+            getMyAccountFlow = getMyAccountFlow,
+            changeGroupNickname = changeGroupNickname,
+        )
 
-        // Then 빈 값으로 서 있을 뿐 무한 로딩이나 크래시로 가지 않는다
+        viewModel.effect.test {
+            advanceUntilIdle()
+
+            // Then 사유가 토스트로 나가고, 로딩이 걸린 채 남지 않는다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.NETWORK), awaitItem())
+        }
         val state = viewModel.state.value
         assertEquals("", state.groupName.value)
         assertTrue(state.members.isEmpty())
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun init_beforeDetailArrives_isLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상세 조회가 아직 끝나지 않은 화면
+        val viewModel = GroupSettingViewModel(
+            groupIdValue = GROUP_ID,
+            checkNameValid = CheckNameValidUseCase(),
+            getGroupDetail = getGroupDetail,
+            getMyAccountFlow = getMyAccountFlow,
+            changeGroupNickname = changeGroupNickname,
+        )
+
+        // Then 보여 줄 값이 없으므로 화면을 덮는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When 조회가 끝나면
+        advanceUntilIdle()
+
+        // Then 덮개가 걷힌다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun confirmNickname_whileSubmitting_isLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 응답이 아직 오지 않은 닉네임 변경
+        val pending = CompletableDeferred<Result<GroupNicknameVO>>()
+        coEvery { changeGroupNickname(any(), any()) } coAnswers { pending.await() }
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
+
+        // When 확정
+        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
+
+        // Then 왕복이 끝날 때까지 입력 필드를 더 고치지 못하게 덮는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When 응답이 도착하면
+        pending.complete(
+            Result.success(GroupNicknameVO(GroupId(GROUP_ID), GroupNickname(NEW_NICKNAME))),
+        )
+        advanceUntilIdle()
+
+        // Then 덮개가 걷힌다
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     private companion object {
