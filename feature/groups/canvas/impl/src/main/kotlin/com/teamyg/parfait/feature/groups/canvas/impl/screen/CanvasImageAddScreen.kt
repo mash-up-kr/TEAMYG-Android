@@ -159,7 +159,7 @@ internal fun CanvasImageAddScreen(
 }
 
 /**
- * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색 문자열을 못 읽었을 때도 마찬가지로,
+ * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 마찬가지로,
  * 셋 다 기본 배경으로 떨어뜨린다 — 캔버스를 못 그리는 것보다 낫다.
  */
 private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when (this) {

@@ -85,7 +85,6 @@ private fun CanvasTopping(
         ToppingImage(
             imageUrl = topping.imageUrl,
             border = topping.border,
-            scale = transform.scale,
         )
     }
 }
@@ -101,7 +100,6 @@ private fun CanvasTopping(
 private fun ToppingImage(
     imageUrl: String,
     border: ToppingBorder,
-    scale: Double,
 ) {
     val painter = rememberAsyncImagePainter(
         model = imageUrl,
@@ -115,7 +113,6 @@ private fun ToppingImage(
             ToppingOutline(
                 painter = painter,
                 border = border,
-                scale = scale,
             )
         }
 
@@ -129,20 +126,17 @@ private fun ToppingImage(
 }
 
 /**
- * 테두리 굵기는 토핑과 함께 자란다 — 편집 화면이 원본 그림에 대고 정한 값이라, 토핑만 커지고
- * 선이 그대로면 의도보다 가늘어 보인다.
+ * `borderWidth` 는 화면 기준 dp 다 — 1.0 이 1dp 이고 토핑을 키워도 굵기는 그대로다.
  *
- * 색 문자열은 서버 계약이 형식을 말하지 않아 못 읽을 수 있다. 그때는 테두리를 걸러 낸다 —
- * 임의의 색을 골라 칠하는 것보다 안 그리는 편이 덜 틀린다.
+ * 색을 못 읽으면 테두리를 걸러 낸다 — 임의의 색을 골라 칠하는 것보다 안 그리는 편이 덜 틀린다.
  */
 @Composable
 private fun ToppingOutline(
     painter: AsyncImagePainter,
     border: ToppingBorder.Solid,
-    scale: Double,
 ) {
     val color = border.color.toCanvasColorOrNull() ?: return
-    val widthPx = with(LocalDensity.current) { (border.width * scale).dp.toPx() }
+    val widthPx = with(LocalDensity.current) { border.width.dp.toPx() }
 
     repeat(OUTLINE_STAMP_COUNT) { index ->
         val radians = Math.toRadians(FULL_TURN_DEGREES / OUTLINE_STAMP_COUNT * index)
