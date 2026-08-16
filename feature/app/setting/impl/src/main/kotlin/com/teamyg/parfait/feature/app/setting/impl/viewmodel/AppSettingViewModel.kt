@@ -5,20 +5,25 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 /**
- * @property nickname TODO 프로필 API 연동 전 placeholder 데이터
- * @property loginProvider
+ * @property nickname 계정 정보 SSoT 구독 결과. `null` 은 아직 SSoT 가 값을 방출하지 않은
+ *   로딩 상태를 뜻한다(빈 문자열이 아니다) — 화면은 이 값을 직접 갱신하지 않고 구독만 한다.
+ * @property loginProvider 도메인 의미만 담는다(ADR-0016). 표시 문자열은 `core:ui`
+ *   `LoginProvider.toStringResource()` 가 렌더 시점에 매핑한다. `null` 은 `nickname` 과 같은
+ *   이유로 로딩이다.
  * @property version TODO BuildConfig.VERSION_NAME 주입으로 교체
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
 data class AppSettingState(
-    val nickname: String = "아니야나그런데기니야",
-    val loginProvider: String = "Kakao",
+    val nickname: String? = null,
+    val loginProvider: LoginProvider? = null,
     val version: String = "1.0v",
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
@@ -59,11 +64,25 @@ class AppSettingViewModel
 @Inject
 constructor(
     private val logout: LogoutUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
     init {
         viewModelLogger.i { "AppSettingViewModel::init" }
+
+        // 구독만 한다 — fetch 는 로그인/가입·스플래시 부트스트랩·닉네임 변경 성공
+        // 세 지점에서만 트리거된다. 여기서 새로고침을 걸면 SSoT 가 두 곳에서 쓰이게 된다.
+        launch {
+            getMyAccountFlow().collect { account ->
+                updateState {
+                    copy(
+                        nickname = account?.nickname?.value,
+                        loginProvider = account?.provider,
+                    )
+                }
+            }
+        }
     }
 
     override fun processIntent(intent: AppSettingIntent) {

@@ -2,11 +2,10 @@ package com.teamyg.parfait.feature.intro.impl.splash
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 
 @Composable
@@ -15,11 +14,12 @@ fun SplashRoute(
     modifier: Modifier = Modifier,
     viewModel: SplashViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-
-    LaunchedEffect(state.loadingStatus) {
-        if (state.loadingStatus == LoadingStatus.Success) {
-            navigator.replaceAll(destination = NavKeyLogin)
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                SplashSideEffect.NavigateToLogin -> navigator.replaceAll(destination = NavKeyLogin)
+                SplashSideEffect.NavigateToGroupList -> navigator.replaceAll(destination = NavKeyGroupList)
+            }
         }
     }
 

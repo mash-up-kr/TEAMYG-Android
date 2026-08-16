@@ -18,6 +18,8 @@ import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.text.toStringResource
+import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.component.ProfileCard
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingState
@@ -55,7 +57,7 @@ internal fun AppSettingScreen(
             ) {
                 ProfileCard(
                     nickname = state.nickname,
-                    loginProvider = state.loginProvider,
+                    loginProviderText = state.loginProvider?.toStringResource(),
                     modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                 )
 
@@ -130,7 +132,10 @@ internal fun AppSettingScreen(
 @Composable
 private fun AppSettingScreenPreview() = PreviewBox {
     AppSettingScreen(
-        state = AppSettingState(),
+        state = AppSettingState(
+            nickname = "아니야나그런데기니야",
+            loginProvider = LoginProvider.KAKAO,
+        ),
         onClickBack = {},
         onClickAccount = {},
         onClickTerms = {},

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.teamyg.parfait.data.datastore.EncryptedPreferences
 import com.teamyg.parfait.data.security.CryptoManager
 import io.mockk.every
 import io.mockk.mockk
@@ -20,9 +21,11 @@ import kotlin.test.assertNull
 class EncryptedTokenStoreTest {
     private val dataStore: DataStore<Preferences> = mockk()
     private val cryptoManager: CryptoManager = mockk()
+
+    // 프록시는 실물을 통과시킨다 — 암호화·복호화·손상분 폐기가 이 저장소의 계약이라
+    // mock 으로 바꾸면 그 계약이 테스트에서 사라진다.
     private val tokenStore = EncryptedTokenStore(
-        dataStore = dataStore,
-        cryptoManager = cryptoManager,
+        preferences = EncryptedPreferences(dataStore = dataStore, cryptoManager = cryptoManager),
     )
 
     private val accessTokenKey = stringPreferencesKey("access_token")

@@ -31,7 +31,11 @@ internal fun AccountInfoRoute(
     AccountInfoScreen(
         state = state,
         onValueChanged = { viewModel.processIntent(AccountInfoIntent.InputWord(it)) },
+        onFocusChanged = { viewModel.processIntent(AccountInfoIntent.ChangeFocus(it)) },
+        onClickConfirm = { viewModel.processIntent(AccountInfoIntent.ClickConfirm) },
         onClickBack = { viewModel.processIntent(AccountInfoIntent.ClickBack) },
+        onConfirmDiscard = { viewModel.processIntent(AccountInfoIntent.ConfirmDiscard) },
+        onDismissDiscardDialog = { viewModel.processIntent(AccountInfoIntent.DismissDiscardDialog) },
         modifier = modifier,
     )
 }
