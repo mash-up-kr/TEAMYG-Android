@@ -16,10 +16,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toCanvasColorOrNull
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
@@ -35,6 +39,9 @@ import kotlinx.datetime.LocalDate
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val MAX_VISIBLE_MEMBER_CHIPS = 5
+
+/** [YGCanvas] 가 배경을 안 받았을 때 쓰는 값과 같다 */
+private val DEFAULT_CANVAS_BACKGROUND = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100)
 
 @Composable
 internal fun CanvasImageAddScreen(
@@ -102,7 +109,8 @@ internal fun CanvasImageAddScreen(
                 iconResource = DesignSystemR.drawable.ic_caret_right,
                 onClick = onClickEditCanvasBG,
             ),
-            isEmpty = true,
+            background = canvasState.canvasBackground.toYGCanvasBackground(),
+            isEmpty = canvasState.isCanvasEmpty,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
             // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
             isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
@@ -144,8 +152,26 @@ internal fun CanvasImageAddScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-        )
+        ) {
+            CanvasToppingLayer(toppings = canvasState.toppings)
+        }
     }
+}
+
+/**
+ * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색 문자열을 못 읽었을 때도 마찬가지로,
+ * 셋 다 기본 배경으로 떨어뜨린다 — 캔버스를 못 그리는 것보다 낫다.
+ */
+private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when (this) {
+    null -> DEFAULT_CANVAS_BACKGROUND
+
+    is CanvasBackground.Color ->
+        value
+            .toCanvasColorOrNull()
+            ?.let(YGCanvasBackground::Solid)
+            ?: DEFAULT_CANVAS_BACKGROUND
+
+    is CanvasBackground.Image -> YGCanvasBackground.Image(url)
 }
 
 private class CanvasImageAddScreenPreviewParameterProvider :
