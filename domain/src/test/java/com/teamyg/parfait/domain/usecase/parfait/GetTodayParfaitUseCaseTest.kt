@@ -28,6 +28,8 @@ class GetTodayParfaitUseCaseTest {
         var callCount = 0
             private set
 
+        override suspend fun getYears(groupId: GroupId): Result<List<Int>> = Result.success(emptyList())
+
         override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> {
             val result = results[minOf(callCount, results.lastIndex)]
             callCount++
