@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,15 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -58,7 +52,6 @@ import com.teamyg.parfait.domain.model.CANVAS_ASPECT_RATIO
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingStrokeSize
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBackgroundPaletteColors
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasEditTab
@@ -379,29 +372,6 @@ private fun CanvasToppingImage(
 }
 
 /**
- * [painter]의 실제 가로세로 크기(배율 적용 전, 배율 1배 기준).
- * 로딩 중에는 고정값을 임시로 쓰다가, 크기를 알게 되는 즉시 실제 크기로 다시 계산된다.
- */
-@Composable
-private fun rememberToppingBaseSize(painter: Painter): DpSize {
-    val intrinsicSize = painter.intrinsicSize
-    val density = LocalDensity.current
-
-    return remember(intrinsicSize, density) {
-        if (intrinsicSize.isSpecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
-            with(density) {
-                DpSize(
-                    width = intrinsicSize.width.toDp(),
-                    height = intrinsicSize.height.toDp(),
-                )
-            }
-        } else {
-            DpSize(60.dp, 60.dp)
-        }
-    }
-}
-
-/**
  * 선택된 토핑의 스트로크와 그 네 모서리에 놓는 버튼들.
  * 좌측 상단=삭제, 우측 상단=크기조절(드래그 핸들), 좌측 하단=편집, 우측 하단=회전(드래그 핸들).
  */
@@ -445,7 +415,7 @@ private fun ToppingCornerButtons(
             iconRes = DesignSystemR.drawable.ic_scale,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.topRight,
-            toppingId = topping.parfaitImageId,
+            key = topping.parfaitImageId,
             onDrag = onResizeDrag,
         )
         YGCircleButton(
@@ -459,65 +429,10 @@ private fun ToppingCornerButtons(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.bottomRight,
-            toppingId = topping.parfaitImageId,
+            key = topping.parfaitImageId,
             onDrag = onRotateDrag,
         )
     }
-}
-
-/**
- * 토핑과 함께 회전하는 흰색 2dp 점선 스트로크. [center]에 여백이 반영된 크기([toppingStrokeSize])로
- * 놓은 뒤 [rotationDegrees]만큼 [graphicsLayer]로 돌려, 토핑 자신의 회전을 그대로 따라가게 한다.
- */
-@Composable
-private fun ToppingSelectionStroke(
-    center: DpOffset,
-    sizeAfterScale: DpSize,
-    rotationDegrees: Float,
-    modifier: Modifier = Modifier,
-) {
-    val strokeSize = toppingStrokeSize(sizeAfterScale)
-
-    Box(
-        modifier = modifier
-            .offset(x = center.x - strokeSize.width / 2, y = center.y - strokeSize.height / 2)
-            .size(strokeSize)
-            .graphicsLayer(rotationZ = rotationDegrees)
-            .drawBehind {
-                drawRect(
-                    color = YGAtomicColors.Gray.White,
-                    style = Stroke(
-                        width = 2.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(
-                            intervals = floatArrayOf(7.5.dp.toPx(), 9.dp.toPx()),
-                        ),
-                    ),
-                )
-            },
-    )
-}
-
-/**
- * 누르는 버튼이 아니라 잡고 끄는 핸들. 원형 아이콘 버튼 위에 드래그 제스처를 얹어서 쓴다.
- */
-@Composable
-private fun ToppingDragHandleButton(
-    @DrawableRes iconRes: Int,
-    contentDescription: String,
-    point: DpOffset,
-    toppingId: Long,
-    onDrag: (Offset) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    YGCircleButton(
-        iconResource = iconRes,
-        type = YGCircleButtonType.Small,
-        contentDescription = contentDescription,
-        onClick = {},
-        modifier = modifier
-            .centeredAt(point)
-            .dragBy(toppingId, onDrag),
-    )
 }
 
 @YGPreview
