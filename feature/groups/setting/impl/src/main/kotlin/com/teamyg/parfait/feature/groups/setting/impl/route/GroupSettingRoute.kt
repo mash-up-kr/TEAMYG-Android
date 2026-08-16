@@ -18,6 +18,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.R as CoreUiR
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.groups.setting.impl.screen.GroupSettingScreen
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingError
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingIntent
@@ -63,6 +64,10 @@ internal fun GroupSettingRoute(
                         ),
                     ),
                 )
+
+                // 뒤로 가기(pop)가 아니라 백스택을 갈아 끼우는 이유: 여기 오기까지 쌓인 화면은
+                // 전부 방금 떠난 그룹의 것이라 돌아가면 403 뿐이다. 목록도 새로 열려 다시 읽는다.
+                GroupSettingSideEffect.NavigateToGroupList -> navigator.replaceAll(NavKeyGroupList)
             }
         }
     }
