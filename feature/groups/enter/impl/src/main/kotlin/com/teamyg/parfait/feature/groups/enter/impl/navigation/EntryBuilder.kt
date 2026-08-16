@@ -45,7 +45,9 @@ fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Nav
 fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupNickName> { navKey ->
         val viewModel = hiltViewModel<GroupNickNameViewModel, GroupNickNameViewModel.Factory>(
-            creationCallback = { factory -> factory.create(navKey.groupId) },
+            creationCallback = { factory ->
+                factory.create(inviteCodeValue = navKey.inviteCode, groupName = navKey.groupName)
+            },
         )
 
         YGScaffold(

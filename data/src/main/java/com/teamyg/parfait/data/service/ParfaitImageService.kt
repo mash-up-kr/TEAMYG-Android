@@ -1,11 +1,14 @@
 package com.teamyg.parfait.data.service
 
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -31,4 +34,23 @@ interface ParfaitImageService {
         @Path("parfaitImageId") parfaitImageId: Long,
         @Body request: UpdateParfaitImageRequest,
     ): ApiResponse<UpdateParfaitImageResponse>
+
+    @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images/{parfaitImageId}/border")
+    suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageIdBorder(
+        @Path("groupId") groupId: Long,
+        @Path("parfaitId") parfaitId: Long,
+        @Path("parfaitImageId") parfaitImageId: Long,
+        @Body request: UpdateParfaitImageBorderRequest,
+    ): ApiResponse<UpdateParfaitImageBorderResponse>
+
+    /**
+     * 성공이 204 가 아니라 200 + data: null 이다 — 회원 탈퇴(DELETE /users/me)와 달리
+     * envelope 가 온다(`api/conventions.md`).
+     */
+    @DELETE("api/v1/groups/{groupId}/parfaits/{parfaitId}/images/{parfaitImageId}")
+    suspend fun deleteGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+        @Path("groupId") groupId: Long,
+        @Path("parfaitId") parfaitId: Long,
+        @Path("parfaitImageId") parfaitImageId: Long,
+    ): ApiResponse<Unit>
 }

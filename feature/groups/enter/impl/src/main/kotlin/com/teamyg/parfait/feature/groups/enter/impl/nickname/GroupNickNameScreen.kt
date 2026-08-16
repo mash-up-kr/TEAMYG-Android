@@ -18,6 +18,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
@@ -31,6 +32,7 @@ import com.teamyg.parfait.core.ui.text.NameFieldType
 import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupNickNameScreen(
@@ -38,12 +40,27 @@ internal fun GroupNickNameScreen(
     onValueChanged: (word: String) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
+    onClickConfirmPopupEnter: () -> Unit,
+    onDismissConfirmPopup: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    if (uiState.isConfirmPopupVisible) {
+        YGModalPopup(
+            title = stringResource(R.string.group_enter_confirm_title, uiState.groupName),
+            body = stringResource(R.string.group_enter_confirm_body),
+            iconRes = DesignSystemR.drawable.ic_warning_round,
+            secondaryText = stringResource(R.string.confirm_popup_cancel),
+            onSecondaryClick = onDismissConfirmPopup,
+            primaryText = stringResource(R.string.group_enter_confirm_enter),
+            onPrimaryClick = onClickConfirmPopupEnter,
+            onDismissRequest = onDismissConfirmPopup,
+        )
     }
 
     Column(modifier = modifier) {
@@ -110,11 +127,24 @@ private class GroupNickNameScreenPreviewParameterProvider :
     PreviewParameterProvider<GroupNickNameUiState> {
     override val values: Sequence<GroupNickNameUiState>
         get() = sequenceOf(
-            GroupNickNameUiState(""),
-            GroupNickNameUiState(nickName = "he"),
-            GroupNickNameUiState(nickName = "hello"),
-            GroupNickNameUiState(nickName = "hello", submitError = GroupNickNameError.ALREADY_USED),
+            GroupNickNameUiState(groupName = GROUP_NAME),
+            GroupNickNameUiState(groupName = GROUP_NAME, nickName = "he"),
+            GroupNickNameUiState(groupName = GROUP_NAME, nickName = "hello"),
+            GroupNickNameUiState(
+                groupName = GROUP_NAME,
+                nickName = "hello",
+                submitError = GroupNickNameError.MEMBER_LIMIT_REACHED,
+            ),
+            GroupNickNameUiState(
+                groupName = GROUP_NAME,
+                nickName = "hello",
+                isConfirmPopupVisible = true,
+            ),
         )
+
+    private companion object {
+        const val GROUP_NAME = "모카의 파르페"
+    }
 }
 
 @YGPreview
@@ -127,6 +157,8 @@ private fun GroupNickNameScreenPreview(
         onValueChanged = { },
         onClickNextButton = {},
         onClickBackButton = {},
+        onClickConfirmPopupEnter = {},
+        onDismissConfirmPopup = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

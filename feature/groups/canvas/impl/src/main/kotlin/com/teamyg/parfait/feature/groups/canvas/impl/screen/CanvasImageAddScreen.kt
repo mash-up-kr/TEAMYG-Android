@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
@@ -30,6 +31,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
+import kotlinx.datetime.LocalDate
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val MAX_VISIBLE_MEMBER_CHIPS = 5
@@ -43,6 +45,10 @@ internal fun CanvasImageAddScreen(
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
+    onDismissCalendar: () -> Unit,
+    onSelectYear: (Int) -> Unit,
+    onSelectMonth: (LocalDate) -> Unit,
+    onClickDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -59,7 +65,7 @@ internal fun CanvasImageAddScreen(
             onMenuClick = onClickMenu,
             memberContent = {
                 Row(horizontalArrangement = Arrangement.spacedBy(-12.dp)) {
-                    canvasState.memberChips.take(5).forEach { member ->
+                    canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,
                             userFirstName = member.nickname,
@@ -67,7 +73,7 @@ internal fun CanvasImageAddScreen(
                         )
                     }
 
-                    val overflowCount = canvasState.memberChips.size - 5
+                    val overflowCount = canvasState.memberChips.size - MAX_VISIBLE_MEMBER_CHIPS
                     if (overflowCount > 0) {
                         YGNametagChip(
                             colorChipType = YGColorChipType.NametagChipPlus,
@@ -98,9 +104,27 @@ internal fun CanvasImageAddScreen(
             ),
             isEmpty = true,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
-            isDimmed = isMenuExpanded,
-            onDimClick = { isMenuExpanded = false },
+            // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
+            isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
+            onDimClick = {
+                isMenuExpanded = false
+                onDismissCalendar()
+            },
             isMenuExpanded = isMenuExpanded,
+            isCalendarVisible = canvasState.isCalendarVisible,
+            calendarContent = {
+                CustomCalendar(
+                    displayedMonth = canvasState.displayedMonth,
+                    today = canvasState.today,
+                    selectedDate = canvasState.selectedDate,
+                    uploadedDates = canvasState.uploadedDates,
+                    selectableYears = canvasState.selectableYears,
+                    selectableMonths = canvasState.selectableMonths,
+                    onSelectYear = onSelectYear,
+                    onSelectMonth = onSelectMonth,
+                    onClickDate = onClickDate,
+                )
+            },
             expandedItems = listOf(
                 YGCanvasMenuItem(
                     text = stringResource(R.string.canvas_image_add_camera_capture),
@@ -158,6 +182,10 @@ private fun PreviewCanvasImageAddScreen(
         onClickCamera = {},
         onClickGallery = {},
         onClickEditCanvasBG = {},
+        onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

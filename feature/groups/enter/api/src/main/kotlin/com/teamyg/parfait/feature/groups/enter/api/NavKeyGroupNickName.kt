@@ -4,7 +4,11 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /**
- * @param groupId 초대코드로 참여를 마친 그룹. 이 화면에서 입력한 닉네임을 이 그룹에 적용한다
+ * @param inviteCode 참여를 확정할 때 서버로 보낼 초대코드
+ * @param groupName 확인 팝업에 띄울 그룹명
  */
 @Serializable
-data class NavKeyGroupNickName(val groupId: Long) : NavKey
+data class NavKeyGroupNickName(
+    val inviteCode: String,
+    val groupName: String,
+) : NavKey

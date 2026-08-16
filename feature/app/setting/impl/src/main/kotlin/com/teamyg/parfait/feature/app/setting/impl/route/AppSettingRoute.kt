@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.common.terms.api.NavKeyPrivacyPolicy
 import com.teamyg.parfait.feature.common.terms.api.NavKeyServiceTerms
+import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.app.setting.impl.screen.AppSettingScreen
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingIntent
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingSideEffect
@@ -27,9 +28,16 @@ internal fun AppSettingRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 AppSettingSideEffect.NavigateBack -> navigator.onBack()
+
                 AppSettingSideEffect.NavigateToAccountInfo -> navigator.goTo(NavKeyAccountInfo)
+
                 AppSettingSideEffect.NavigateToServiceTerms -> navigator.goTo(NavKeyServiceTerms)
+
                 AppSettingSideEffect.NavigateToPrivacyPolicy -> navigator.goTo(NavKeyPrivacyPolicy)
+
+                AppSettingSideEffect.NavigateToLogin -> {
+                    navigator.replaceAll(NavKeyLogin)
+                }
             }
         }
     }

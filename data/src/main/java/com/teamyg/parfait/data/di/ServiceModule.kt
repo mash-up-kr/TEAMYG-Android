@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.di
 
+import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.ImageService
 import com.teamyg.parfait.data.service.MemberService
@@ -20,6 +21,17 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideAuthService(retrofit: Retrofit): AuthService = retrofit.create(AuthService::class.java)
+
+    /**
+     * 재발급이 타는 [AuthService]. 인증기가 붙지 않은 [UnauthenticatedClient] 클라이언트를
+     * 타므로 [com.teamyg.parfait.data.network.TokenAuthenticator] 가 이것을 써도 Dagger 순환이
+     * 생기지 않고, 재발급이 메인 `Dispatcher` 슬롯을 두고 경합하지도 않는다.
+     */
+    @Provides
+    @Singleton
+    @UnauthenticatedClient
+    fun provideUnauthenticatedAuthService(@UnauthenticatedClient retrofit: Retrofit): AuthService =
+        retrofit.create(AuthService::class.java)
 
     @Provides
     @Singleton

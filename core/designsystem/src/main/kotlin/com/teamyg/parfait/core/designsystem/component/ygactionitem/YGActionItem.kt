@@ -31,11 +31,17 @@ import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
+/**
+ * @param enabled `false` 면 클릭을 받지 않는다. 요청이 나가 있는 동안 같은 동작이 다시
+ *   실행되는 것을 막으려는 용도다. **색은 바뀌지 않는다** — 비활성 색이 디자인시스템에
+ *   정의돼 있지 않아 여기서 임의로 정하지 않는다.
+ */
 @Composable
 fun YGActionItem(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     @DrawableRes iconResource: Int? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
@@ -46,8 +52,12 @@ fun YGActionItem(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .clickable(onClick = onClick, interactionSource = interactionSource, indication = null)
-            .semantics { role = Role.Button }
+            .clickable(
+                enabled = enabled,
+                onClick = onClick,
+                interactionSource = interactionSource,
+                indication = null,
+            ).semantics { role = Role.Button }
             .padding(
                 vertical = YGTheme.layout.padding.padding5,
                 horizontal = YGTheme.layout.padding.padding6,

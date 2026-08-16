@@ -21,6 +21,15 @@ object ServerErrorCode {
         /** 401 — 유효하지 않은 ID 토큰입니다 */
         const val INVALID_ID_TOKEN = "INVALID_ID_TOKEN"
 
+        /** 401 — 유효하지 않은 토큰입니다. `reissue`·`logout` 의 refreshToken 검증 실패 */
+        const val INVALID_TOKEN = "INVALID_TOKEN"
+
+        /** 401 — 만료된 토큰입니다. `reissue`·`logout` 의 refreshToken */
+        const val EXPIRED_TOKEN = "EXPIRED_TOKEN"
+
+        /** 403 — 다른 회원의 Refresh Token 입니다. `logout` 의 `LogoutService` */
+        const val FORBIDDEN_REFRESH_TOKEN = "FORBIDDEN_REFRESH_TOKEN"
+
         /** 502 — 카카오 공개키 조회에 실패했습니다 */
         const val KAKAO_JWKS_FETCH_FAILED = "KAKAO_JWKS_FETCH_FAILED"
 
@@ -39,10 +48,7 @@ object ServerErrorCode {
         /** 409 — 그룹 정원이 찼다 */
         const val GROUP_MEMBER_LIMIT_REACHED = "GROUP_MEMBER_LIMIT_REACHED"
 
-        /** 409 — 같은 그룹에서 이미 쓰이는 닉네임이다 */
-        const val GROUP_NICKNAME_ALREADY_USED = "GROUP_NICKNAME_ALREADY_USED"
-
-        /** 400 — 그룹명이 1~10자·`^[가-힣A-Za-z0-9]+(?: [가-힣A-Za-z0-9]+)*$` 를 벗어났다 */
+        /** 400 — 그룹명이 1~10자·`^[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+(?: [가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+)*$` 를 벗어났다 */
         const val INVALID_GROUP_NAME = "INVALID_GROUP_NAME"
 
         /** 400 — 그룹 닉네임이 1~15자·그룹명과 같은 패턴을 벗어났다 */
@@ -52,6 +58,17 @@ object ServerErrorCode {
         const val INVALID_GROUP_MEMBER_LIMIT = "INVALID_GROUP_MEMBER_LIMIT"
 
         /** 404 — 토큰의 memberId 가 서버에 없다. 같은 문자열이 인증 도메인에서는 401 이라 [Auth] 와 나눠 둔다 */
+        const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+    }
+
+    /** 회원 도메인(`/api/v1/users/...`) — 서버 `MemberErrorCode` 에 대응한다 */
+    object Member {
+        /** 400 — 전역 닉네임 길이·문자 패턴 위반. 앱은 `CheckNameValidUseCase` 가 요청 전에
+         * 같은 규칙으로 미리 거른다 — 이 코드는 그 방어를 뚫고 서버까지 간 나머지 경우다 */
+        const val INVALID_NICKNAME = "INVALID_NICKNAME"
+
+        /** 404 — 조회·갱신 대상 회원 부재. 같은 문자열이 다른 도메인에서는 401/409 로도 쓰여
+         * [ParfaitGroup.MEMBER_NOT_FOUND] 와 나눠 둔다 */
         const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
     }
 

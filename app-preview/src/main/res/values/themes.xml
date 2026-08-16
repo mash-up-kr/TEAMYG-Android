@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
-    <style name="Theme.TeamYg" parent="android:Theme.Material.Light.NoActionBar" >
-        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon</item>
-        <item name="android:windowBackground">@drawable/splash_icon_background</item>
-    </style>
+    <!--
+        스플래시 아이콘을 따로 지정하지 않는다. 비워 두면 Android 12+ 시스템 스플래시가
+        런처 아이콘을 그대로 쓰므로 아이콘을 두 벌 관리하지 않아도 된다.
+    -->
+    <style name="Theme.TeamYg" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

@@ -56,11 +56,15 @@ internal fun CanvasImageAddRoute(
     CanvasImageAddScreen(
         canvasState = canvasState,
         onClickBack = { navigator.onBack() },
-        onClickDateSelect = {}, // TODO: 날짜 선택 연동 필요
+        onClickDateSelect = { viewModel.processIntent(CanvasImageAddIntent.OnClickDateSelect) },
         onClickMenu = {}, // TODO: 메뉴 연동 필요
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
         onClickEditCanvasBG = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
+        onDismissCalendar = { viewModel.processIntent(CanvasImageAddIntent.DismissCalendar) },
+        onSelectYear = { viewModel.processIntent(CanvasImageAddIntent.SelectYear(it)) },
+        onSelectMonth = { viewModel.processIntent(CanvasImageAddIntent.SelectMonth(it)) },
+        onClickDate = { viewModel.processIntent(CanvasImageAddIntent.ClickDate(it)) },
         modifier = modifier,
     )
 }

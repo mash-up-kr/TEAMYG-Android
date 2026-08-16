@@ -218,12 +218,12 @@ class ParfaitGroupRepositoryImplTest {
 
     @Test
     fun changeMyNickname_remoteFailsWithBusiness_convertsToAppErrorServer() = runTest {
-        // Given 같은 그룹에서 이미 쓰이는 닉네임이라 409 로 실패
+        // Given 서버 닉네임 규칙에 걸려 400 으로 실패
         coEvery { remoteDataSource.changeMyNickname(any(), any()) } returns Result.failure(
             ApiException.Business(
-                code = "GROUP_NICKNAME_ALREADY_USED",
-                serverMessage = "이미 사용 중인 닉네임입니다",
-                statusCode = 409,
+                code = "INVALID_GROUP_NICKNAME",
+                serverMessage = "그룹 닉네임이 올바르지 않습니다",
+                statusCode = 400,
                 errorDetail = null,
             ),
         )
@@ -233,7 +233,7 @@ class ParfaitGroupRepositoryImplTest {
 
         // Then 도메인 에러로 바뀌어 나온다
         val error = assertIs<AppError.Server>(result.exceptionOrNull())
-        assertEquals("GROUP_NICKNAME_ALREADY_USED", error.code)
-        assertEquals(409, error.statusCode)
+        assertEquals("INVALID_GROUP_NICKNAME", error.code)
+        assertEquals(400, error.statusCode)
     }
 }

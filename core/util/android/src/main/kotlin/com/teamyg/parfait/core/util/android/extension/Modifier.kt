@@ -1,6 +1,7 @@
 package com.teamyg.parfait.core.util.android.extension
 
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -8,7 +9,9 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -18,6 +21,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
+
+private val DefaultScrollbarWidth = 2.dp
+private val DefaultScrollbarEndPadding = 3.dp
+private val DefaultScrollbarVerticalPadding = 4.dp
 
 @Composable
 fun Modifier.navigationBarsAndImePadding(): Modifier {
@@ -45,6 +53,45 @@ fun Modifier.navigationBarsAndImePadding(): Modifier {
         ),
     )
     return windowInsetsPadding(insets)
+}
+
+/**
+ * Compose 에는 [ScrollState] 용 스크롤바가 없어 직접 그린다. `drawBehind` 가 아니라
+ * `drawWithContent` 인 이유는 막대가 내용 위에 얹혀야 해서다.
+ *
+ * `verticalScroll` 보다 앞에 둬야 스크롤 이동이 반영되지 않은 뷰포트 좌표에 그려, 내용이
+ * 움직여도 막대가 제자리에 선다.
+ */
+fun Modifier.verticalScrollbar(
+    scrollState: ScrollState,
+    color: Color,
+    width: Dp = DefaultScrollbarWidth,
+    endPadding: Dp = DefaultScrollbarEndPadding,
+    verticalPadding: Dp = DefaultScrollbarVerticalPadding,
+): Modifier = drawWithContent {
+    drawContent()
+    if (scrollState.maxValue <= 0) return@drawWithContent
+
+    val viewportHeight = size.height
+    val contentHeight = viewportHeight + scrollState.maxValue
+
+    val trackTop = verticalPadding.toPx()
+    val trackHeight = viewportHeight - trackTop * 2
+
+    // 뷰포트가 전체 내용에서 차지하는 비율이 곧 막대 길이다
+    val thumbHeight = trackHeight * viewportHeight / contentHeight
+    val scrollRatio = scrollState.value.toFloat() / scrollState.maxValue
+    val thumbWidth = width.toPx()
+
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(
+            x = size.width - endPadding.toPx() - thumbWidth,
+            y = trackTop + scrollRatio * (trackHeight - thumbHeight),
+        ),
+        size = Size(width = thumbWidth, height = thumbHeight),
+        cornerRadius = CornerRadius(thumbWidth / 2),
+    )
 }
 
 fun Modifier.drawTooltipCornerTop(
