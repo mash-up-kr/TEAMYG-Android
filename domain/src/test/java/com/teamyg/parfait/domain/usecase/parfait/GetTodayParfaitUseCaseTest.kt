@@ -5,19 +5,17 @@ import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
-import kotlinx.datetime.todayIn
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.time.Clock
 
 class GetTodayParfaitUseCaseTest {
     /**
@@ -48,7 +46,8 @@ class GetTodayParfaitUseCaseTest {
         ): Result<CanvasVO> = error("오늘 조회는 상세를 따로 부르지 않는다")
     }
 
-    private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    // parfaitToday() 와 같은 기준으로 세야 한다 — 기기 시간대로 세면 KST 가 아닌 CI 에서 깨진다
+    private val today = parfaitToday()
 
     private val yesterday = today.minus(DatePeriod(days = 1))
 

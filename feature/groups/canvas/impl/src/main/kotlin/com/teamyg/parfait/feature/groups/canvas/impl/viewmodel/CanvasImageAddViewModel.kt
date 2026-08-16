@@ -15,6 +15,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfait.ParfaitHistory
+import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetCanvasByDateUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
@@ -27,13 +28,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
 import kotlin.math.abs
-import kotlin.time.Clock
 
 data class GroupMemberChip(
     val nickname: String,
@@ -49,7 +47,7 @@ data class CanvasImageAddUiState(
     val canvasBackground: CanvasBackground? = null,
     /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
     val toppings: List<CanvasToppingVO> = emptyList(),
-    val today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+    val today: LocalDate = parfaitToday(),
     val selectedDate: LocalDate = today,
     val isCalendarVisible: Boolean = false,
     /** 달력이 보고 있는 달. [selectedDate] 와 달리 날짜를 고르지 않아도 연·월만 옮겨진다 */
