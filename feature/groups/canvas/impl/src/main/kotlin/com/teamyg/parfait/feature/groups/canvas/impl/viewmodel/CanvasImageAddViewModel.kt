@@ -44,7 +44,7 @@ data class CanvasImageAddUiState(
     val memberChips: List<GroupMemberChip> = emptyList(),
     val canvasDate: String = "",
     val canvasDay: String = "",
-    /** 오늘 캔버스가 아직 없으면 null 이다 — 화면을 여는 것만으로 만들지 않는다 */
+    /** 오늘 캔버스를 아직 못 받았으면 null 이다 — 조회가 실패했거나 응답 전이다 */
     val parfaitId: ParfaitId? = null,
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground? = null,
@@ -135,15 +135,13 @@ constructor(
     }
 
     /**
-     * 오늘 캔버스가 아직 없으면 빈 화면 그대로 둔다 — 여기서 만들지 않는다. 서버의 오늘 조회는
-     * 없으면 캔버스를 생성해 저장하므로, 토핑을 처음 올리는 순간까지 미룬다.
+     * ⚠️ 서버의 오늘 조회는 캔버스가 없으면 만들어 저장한다 — 화면을 여는 것만으로 그날 캔버스가
+     * 생긴다. 그래서 [LOAD_TODAY_CANVAS_KEY] 로 중복 호출을 막고 진입 시 한 번만 부른다.
      */
     private fun loadTodayCanvas() {
         launch(key = LOAD_TODAY_CANVAS_KEY) {
             getTodayParfaitUseCase(groupId)
                 .onSuccess { canvas ->
-                    canvas ?: return@onSuccess
-
                     updateState {
                         copy(
                             parfaitId = canvas.parfaitId,

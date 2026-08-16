@@ -3,37 +3,35 @@ package com.teamyg.parfait.domain.usecase.parfait
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import javax.inject.Inject
 import kotlin.time.Clock
 
 /**
- * 오늘 캔버스가 이미 있으면 상세까지 채워 준다. 없으면 `null` 이다.
+ * 오늘의 캔버스를 상세까지 받아 온다.
  *
- * 서버에 `/parfaits/today` 가 있는데도 목록으로 먼저 확인하는 이유는 그 엔드포인트가 조회인데
- * 캔버스를 만들기 때문이다 — 화면을 열기만 해도 빈 캔버스가 저장되고 달력·연도 목록에 그날이
- * 나타난다. 목록과 상세는 둘 다 부작용이 없다.
- *
- * 목록을 오늘 하루로 좁혀 부르므로 30일치를 받아 거르지 않는다. 서버가 상태로 거르지 않아
- * 오늘의 ACTIVE 캔버스도 이 목록에 실려 온다.
+ * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
+ * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
  */
 class GetTodayParfaitUseCase
 @Inject
 constructor(
     private val parfaitRepository: ParfaitRepository,
 ) {
-    suspend operator fun invoke(groupId: GroupId): Result<CanvasVO?> {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-
-        val parfaitId = parfaitRepository
-            .getPastCanvases(groupId = groupId, from = today, to = today)
-            // 범위를 오늘로 좁혔어도 날짜를 다시 본다 — 경계 처리는 서버 몫이라 하루가 더 딸려
-            // 오면 어제 캔버스를 오늘로 착각하게 된다
-            .map { canvases -> canvases.firstOrNull { it.date == today }?.parfaitId }
+    suspend operator fun invoke(groupId: GroupId): Result<CanvasVO> {
+        val canvas = parfaitRepository
+            .getTodayCanvas(groupId)
             .getOrElse { throwable -> return Result.failure(throwable) }
-            ?: return Result.success(null)
 
-        return parfaitRepository.getCanvasDetail(groupId = groupId, parfaitId = parfaitId)
+        if (canvas.date == today()) return Result.success(canvas)
+
+        // 자정을 넘기며 어제 캔버스를 받았다 — 딱 한 번 다시 부른다. 두 번째도 어긋나면 기기와
+        // 서버의 날짜 기준이 다른 것이라 더 불러도 같은 답이 오고, 그때는 받은 것을 그대로 쓴다.
+        return parfaitRepository.getTodayCanvas(groupId)
     }
+
+    /** 응답을 받은 뒤에 읽는다 — 요청이 도는 사이 자정을 넘겼다면 그 사이 날짜가 바뀌어 있다 */
+    private fun today(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
 }
