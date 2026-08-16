@@ -51,15 +51,28 @@ data class CanvasImageAddUiState(
     val displayedMonth: LocalDate = today.toFirstDayOfMonth(),
     /** 드롭다운이 위에서 아래로 읽히도록 오름차순으로 들고 있다 */
     val selectableYears: List<Int> = emptyList(),
-    /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 연·월·일 묶음은 여기서 뽑아 쓴다 */
-    val parfaitHistories: List<PastCanvasVO> = emptyList(),
-    /** [parfaitHistories] 중 토핑이 실제로 올라간 날. 달력이 점을 찍는 기준 */
-    val uploadedDates: Set<LocalDate> = emptySet(),
+    /**
+     * 연도별 파르페 기록 캐시. 한 번 받은 해는 다시 부르지 않는다 — 달력은 연·월을 오가는
+     * 동안 같은 해로 몇 번이고 돌아온다.
+     *
+     * 리스트 하나에 이어 붙이지 않는 이유는 "받아 봤는데 비어 있는 해"와 "아직 안 받은 해"를
+     * 구분해야 해서다. 그 둘이 같아지면 빈 해를 볼 때마다 서버를 다시 부른다.
+     */
+    val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
 ) : UiState {
     /** 캔버스 머리말은 고른 날을 따라간다 — 오늘로 굳으면 날짜와 그림이 어긋난다 */
     val canvasDate: String = selectedDate.format(DateTextFormat.monthDayFormat)
 
     val canvasDay: String = selectedDate.format(DateTextFormat.weekdayFormat)
+
+    /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 아직 안 받았으면 비어 있다 */
+    val parfaitHistories: List<PastCanvasVO>
+        get() = parfaitHistoriesByYear[displayedMonth.year].orEmpty()
+
+    /** [parfaitHistories] 중 토핑이 실제로 올라간 날. 달력이 점을 찍는 기준 */
+    val uploadedDates: Set<LocalDate> = parfaitHistories
+        .filterNot(PastCanvasVO::isEmpty)
+        .mapTo(mutableSetOf(), PastCanvasVO::date)
 
     /**
      * 그 해에 파르페가 있는 달만 고를 수 있다. 이번 달만 예외로, 기록이 없어도 넣는다 —
@@ -184,25 +197,30 @@ constructor(
     }
 
     /**
-     * 달력은 연 단위로 한 번만 받아 두고 월을 오갈 때는 다시 부르지 않는다. 빈 파르페(캔버스에
-     * 들어가기만 하고 이미지는 안 올린 날)를 걸러 내지 않으면 화면을 열어 본 날마다 점이 찍힌다.
+     * 달력은 연 단위로 한 번만 받아 [CanvasImageAddUiState.parfaitHistoriesByYear] 에 쌓아 두고,
+     * 월을 오갈 때는 물론 이미 본 해로 돌아올 때도 다시 부르지 않는다.
      */
     private fun loadParfaitHistories(
         year: Int,
         moveToNearestMonth: Boolean = false,
     ) {
+        // 응답을 기다리는 사이 사용자가 다른 해로 옮겼는지 판단할 기준
+        val requestedFrom = state.value.displayedMonth.year
+
         launch(key = LOAD_PARFAIT_HISTORIES_KEY) {
             getParfaitHistoriesUseCase(groupId = groupId, year = year)
                 .onSuccess { histories ->
                     updateState {
-                        val loaded = copy(
-                            parfaitHistories = histories,
-                            uploadedDates = histories
-                                .filterNot(PastCanvasVO::isEmpty)
-                                .mapTo(mutableSetOf(), PastCanvasVO::date),
+                        val cached = copy(
+                            parfaitHistoriesByYear = parfaitHistoriesByYear + (year to histories),
                         )
 
-                        if (moveToNearestMonth) loaded.movedToNearestMonth(year) else loaded
+                        // 기다리는 동안 사용자가 캐시된 다른 해로 옮겼다면 화면을 되돌리지 않는다
+                        if (moveToNearestMonth && displayedMonth.year == requestedFrom) {
+                            cached.movedToNearestMonth(year)
+                        } else {
+                            cached
+                        }
                     }
                 }.onFailure { throwable ->
                     // 달력의 점이 안 찍힐 뿐 화면은 그대로 쓸 수 있어 실패를 노출하지 않는다
@@ -290,7 +308,14 @@ constructor(
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
     private fun handleSelectYear(year: Int) {
-        if (year == state.value.displayedMonth.year) return
+        val current = state.value
+        if (year == current.displayedMonth.year) return
+
+        // 이미 받아 둔 해면 목록이 손에 있으니 서버를 거치지 않고 바로 옮긴다
+        if (current.parfaitHistoriesByYear.containsKey(year)) {
+            updateState { movedToNearestMonth(year) }
+            return
+        }
 
         loadParfaitHistories(year = year, moveToNearestMonth = true)
     }
