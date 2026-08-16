@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 
@@ -29,19 +30,19 @@ internal fun GroupListRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                GroupListSideEffect.NavigateToAppSideMenu -> {
+                is GroupListSideEffect.NavigateToAppSideMenu -> {
                     navigator.goTo(NavKeyAppSetting)
                 }
 
-                GroupListSideEffect.NavigateToCanvas -> {
-                    // Todo : canvas page 이동
+                is GroupListSideEffect.NavigateToCanvas -> {
+                    navigator.goTo(NavKeyCanvasImageAdd(groupId = effect.groupId.value))
                 }
 
-                GroupListSideEffect.NavigateToCreateGroup -> {
+                is GroupListSideEffect.NavigateToCreateGroup -> {
                     navigator.goTo(NavKeyGroupCreate(nickName = uiState.nickName))
                 }
 
-                GroupListSideEffect.NavigateToInviteCode -> {
+                is GroupListSideEffect.NavigateToInviteCode -> {
                     navigator.goTo(NavKeyGroupInviteCode)
                 }
             }
@@ -67,7 +68,7 @@ internal fun GroupListRoute(
                 uiState = uiState,
                 onClickChip = { viewModel.processIntent(GroupListIntent.ClickTopBarChip) },
                 onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
-                onClickTopping = { viewModel.processIntent(GroupListIntent.ClickTopping) },
+                onClickTopping = { groupId -> viewModel.processIntent(GroupListIntent.ClickTopping(groupId)) },
                 onRefresh = { viewModel.processIntent(GroupListIntent.Refresh) },
                 modifier = modifier.padding(innerPadding),
             )
