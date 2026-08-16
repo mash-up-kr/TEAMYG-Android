@@ -72,6 +72,17 @@ class YGToastPolicy {
 @Composable
 fun rememberYGToastPolicy(): YGToastPolicy = remember { YGToastPolicy() }
 
+/**
+ * 실패를 알리는 토스트를 띄운다. 공통 실패 표현은 [YGToastType.Fail] 하나로 고정이고,
+ * 문구는 호출부가 만든다 — 실패의 어휘가 화면마다 다르기 때문이다(로그인은 카카오 로그인
+ * 실패, 갤러리는 저장 실패).
+ *
+ * 재시도 동선이 필요한 실패는 이걸 쓰지 않는다. 그런 실패는 화면이 자기 UI 로 표현한다.
+ */
+fun YGToastPolicy.showError(text: String) {
+    show(YGToastType.Fail(text))
+}
+
 @Composable
 fun YGToastHost(
     policy: YGToastPolicy,
