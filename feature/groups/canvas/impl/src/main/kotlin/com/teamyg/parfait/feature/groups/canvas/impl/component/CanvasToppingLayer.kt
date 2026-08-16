@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -15,9 +14,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
@@ -60,8 +61,7 @@ internal fun CanvasToppingLayer(
 }
 
 /**
- * positionX·positionY 는 Canvas-Area 대비 0~1 로 정규화된 **중심점**이다. Compose 의 offset 은
- * 좌상단 기준이라 한 변의 절반을 빼서 옮긴다.
+ * positionX·positionY 는 Canvas-Area 대비 0~1 로 정규화된 **중심점**이라 [centeredAt] 으로 앉힌다.
  *
  * 캔버스 밖으로 나간 배치도 그대로 둔다 — 되돌리거나 가장자리에 붙이지 않고, 넘친 픽셀은
  * Canvas-Area 의 clip 이 잘라 낸다(CAN-007 §3.6·§3.7).
@@ -77,9 +77,11 @@ private fun CanvasTopping(
 
     Box(
         modifier = Modifier
-            .offset(
-                x = canvasWidth * transform.positionX.toFloat() - side / 2,
-                y = canvasHeight * transform.positionY.toFloat() - side / 2,
+            .centeredAt(
+                DpOffset(
+                    x = canvasWidth * transform.positionX.toFloat(),
+                    y = canvasHeight * transform.positionY.toFloat(),
+                ),
             ).size(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() },
     ) {
