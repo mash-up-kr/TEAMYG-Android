@@ -13,7 +13,6 @@ import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfait.ParfaitHistory
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
@@ -41,8 +40,6 @@ data class GroupMemberChip(
 data class CanvasImageAddUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
-    /** 지금 캔버스에 그려진 날의 파르페 id. 아직 못 받았으면 null 이다 */
-    val parfaitId: ParfaitId? = null,
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground? = null,
     /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
@@ -146,7 +143,6 @@ constructor(
                 .onSuccess { canvas ->
                     updateState {
                         copy(
-                            parfaitId = canvas.parfaitId,
                             canvasBackground = canvas.background,
                             toppings = canvas.toppings.sortedBy { it.transform.positionZ },
                             memberChips = canvas.members.toMemberChips(),
@@ -259,7 +255,6 @@ constructor(
             copy(
                 selectedDate = date,
                 isCalendarVisible = false,
-                parfaitId = null,
                 canvasBackground = null,
                 toppings = emptyList(),
             )
@@ -283,7 +278,6 @@ constructor(
                         if (selectedDate != date) return@updateState this
 
                         copy(
-                            parfaitId = canvas?.parfaitId,
                             canvasBackground = canvas?.background,
                             toppings = canvas?.toppings.orEmpty().sortedBy { it.transform.positionZ },
                         )
