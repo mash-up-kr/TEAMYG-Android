@@ -294,7 +294,8 @@ private fun BodyCalendar(
                         text = day.date.day.toString(),
                         isSelected = day.date == selectedDate,
                         isToday = day.date == today,
-                        isEnabled = day.isCurrentMonth,
+                        // 앞뒤 달 날짜는 자리만 채우는 칸이고, 아직 오지 않은 날은 올릴 파르페가 없다
+                        isEnabled = day.isCurrentMonth && day.date <= today,
                         isUploaded = day.date in uploadedDates,
                         onClick = { onClickDate(day.date) },
                         modifier = Modifier.weight(1f),
@@ -333,15 +334,15 @@ private data class CustomCalendarPreviewData(
 private class CustomCalendarPreviewParameterProvider : PreviewParameterProvider<CustomCalendarPreviewData> {
     override val values: Sequence<CustomCalendarPreviewData>
         get() = sequenceOf(
-            // 6주 — 토요일 시작 31일. 앞뒤 달 날짜가 모두 나온다
+            // 6주 — 토요일 시작 31일. 앞뒤 달 날짜가 모두 나오고, 오늘 다음 날부터는 잠긴다
             CustomCalendarPreviewData(
                 displayedMonth = LocalDate(2026, 8, 1),
                 today = LocalDate(2026, 8, 15),
-                selectedDate = LocalDate(2026, 8, 20),
+                selectedDate = LocalDate(2026, 8, 12),
                 uploadedDates = setOf(
                     LocalDate(2026, 8, 3),
+                    LocalDate(2026, 8, 12),
                     LocalDate(2026, 8, 15),
-                    LocalDate(2026, 8, 20),
                 ),
             ),
             // 4주 — 일요일 시작 28일. 앞뒤 달 날짜가 하나도 없다
@@ -351,9 +352,9 @@ private class CustomCalendarPreviewParameterProvider : PreviewParameterProvider<
                 selectedDate = null,
                 uploadedDates = setOf(LocalDate(2026, 2, 14)),
             ),
-            // 5주 — 오늘·선택·업로드가 모두 없는 기본 상태
+            // 5주 — 오늘·선택·업로드가 모두 없는 지난달. 미래가 섞이지 않아 전부 고를 수 있다
             CustomCalendarPreviewData(
-                displayedMonth = LocalDate(2026, 11, 1),
+                displayedMonth = LocalDate(2026, 7, 1),
                 today = LocalDate(2026, 8, 15),
                 selectedDate = null,
                 uploadedDates = emptySet(),
