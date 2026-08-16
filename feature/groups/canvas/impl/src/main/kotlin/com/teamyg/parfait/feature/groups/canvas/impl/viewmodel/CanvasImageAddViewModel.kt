@@ -76,7 +76,7 @@ data class CanvasImageAddUiState(
     val toppings: List<CanvasToppingVO>
         get() = viewedCanvas?.toppings.orEmpty().sortedBy { it.transform.positionZ }
 
-    /** 오늘을 보고 있는지. 지난 날에는 편집 대신 저장·오늘로 가기를 준다 */
+    /** 지난 날에는 편집 대신 저장·오늘로 가기를 준다 */
     val isViewingToday: Boolean
         get() = selectedDate == today
 
@@ -86,7 +86,7 @@ data class CanvasImageAddUiState(
     val canvasDay: String
         get() = selectedDate.format(DateTextFormat.weekdayFormat)
 
-    /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 아직 안 받았으면 비어 있다 */
+    /** 최신순. 아직 안 받은 해도 빈 목록이라 "기록 없는 해"와 구분되지 않는다 */
     val parfaitHistories: List<PastCanvasVO>
         get() = parfaitHistoriesByYear[displayedMonth.year].orEmpty()
 
@@ -144,10 +144,8 @@ sealed interface CanvasImageAddIntent : UiIntent {
 
     data class ClickDate(val date: LocalDate) : CanvasImageAddIntent
 
-    /** 지난 캔버스를 보는 중에만 뜨는 버튼 */
     data object OnClickSaveToGallery : CanvasImageAddIntent
 
-    /** 지난 캔버스를 보는 중에만 뜨는 버튼 */
     data object OnClickGoToToday : CanvasImageAddIntent
 }
 
@@ -290,8 +288,6 @@ constructor(
     }
 
     /**
-     * 고른 날의 캔버스를 상세 조회로 갈아 끼운다.
-     *
      * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
      * 받아 둔 [CanvasImageAddUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
      *
@@ -301,7 +297,7 @@ constructor(
     private fun handleClickDate(date: LocalDate) {
         val current = state.value
 
-        // 날짜를 고르는 것으로 볼 일은 끝났다. 이미 그려져 있는 날이어도 닫아 준다
+        // 이미 그려져 있는 날을 다시 눌러도 닫는다
         updateState { copy(isCalendarVisible = false) }
         if (date == current.selectedDate) return
 
@@ -335,7 +331,7 @@ constructor(
         }
     }
 
-    /** 지난 캔버스에서 오늘로 돌아온다. 달력도 오늘이 있는 달로 따라간다 */
+    /** 달력도 오늘이 있는 달로 따라간다 */
     private fun handleClickGoToToday() {
         updateState {
             copy(
@@ -361,7 +357,7 @@ constructor(
         val current = state.value
         if (year == current.displayedMonth.year) return
 
-        // 이미 받아 둔 해면 목록이 손에 있으니 서버를 거치지 않고 바로 옮긴다
+        // 이미 받아 둔 해면 서버를 거치지 않고 바로 옮긴다
         if (current.parfaitHistoriesByYear.containsKey(year)) {
             updateState { movedToNearestMonth(year) }
             return

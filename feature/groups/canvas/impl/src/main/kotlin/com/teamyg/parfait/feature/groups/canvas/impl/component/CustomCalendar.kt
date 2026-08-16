@@ -294,9 +294,8 @@ private fun BodyCalendar(
                         text = day.date.day.toString(),
                         isSelected = day.date == selectedDate,
                         isToday = day.date == today,
-                        // 앞뒤 달 날짜는 자리만 채우는 칸이다. 파르페가 올라간 날만 열어 준다 —
-                        // 나머지는 보여 줄 캔버스가 없다. 오늘은 기록이 없어도 돌아올 수 있어야 해
-                        // 예외이고, 아직 오지 않은 날은 [uploadedDates] 에 애초에 들어오지 않는다.
+                        // 앞뒤 달 날짜는 자리만 채우는 칸이고, 파르페가 없는 날은 보여 줄 캔버스가
+                        // 없다. 오늘만은 기록이 없어도 돌아올 수 있어야 해 예외다.
                         isEnabled = day.isCurrentMonth && (day.date == today || day.date in uploadedDates),
                         isUploaded = day.date in uploadedDates,
                         onClick = { onClickDate(day.date) },
