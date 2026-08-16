@@ -5,8 +5,6 @@ import com.teamyg.parfait.domain.model.id.GroupId
 
 interface ParfaitRepository {
     /**
-     * 오늘의 캔버스를 상태·멤버·배경·배치 토핑까지 한 번에 읽는다.
-     *
      * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
      * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
      *

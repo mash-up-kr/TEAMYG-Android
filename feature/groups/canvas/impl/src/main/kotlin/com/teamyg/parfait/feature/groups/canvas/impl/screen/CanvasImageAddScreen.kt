@@ -183,7 +183,6 @@ private class CanvasImageAddScreenPreviewParameterProvider :
         get() = sequenceOf(
             CanvasImageAddUiState(
                 groupName = "그룹이름은최대열글자",
-                // 이름표는 첫 글자만 보이므로 닉네임 전체를 넣어 둔다
                 memberChips = listOf(
                     GroupMemberChip("문어", YGColorChipType.NametagChip1),
                     GroupMemberChip("전봇대", YGColorChipType.NametagChip8),

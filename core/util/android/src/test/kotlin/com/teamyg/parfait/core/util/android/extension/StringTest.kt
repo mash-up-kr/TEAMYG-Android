@@ -11,7 +11,6 @@ class StringTest {
         // Given 서버가 주는 형식
         val hex = "#FF6B00"
 
-        // When
         val color = hex.toColorOrNull()
 
         // Then 알파가 없으니 불투명으로 채운다

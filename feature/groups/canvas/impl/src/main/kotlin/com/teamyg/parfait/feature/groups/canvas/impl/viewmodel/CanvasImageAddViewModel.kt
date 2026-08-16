@@ -309,7 +309,7 @@ constructor(
 
         const val LOAD_TODAY_CANVAS_KEY = "loadTodayCanvas"
 
-        /** 상단 Nametag-Chip 색. 서버가 색을 주지 않아 멤버 순서로 돌려 쓴다 */
+        /** 상단 Nametag-Chip 색. 고르는 규칙은 [toMemberChips] 에 있다 */
         val NAMETAG_CHIP_PALETTE = listOf(
             YGColorChipType.NametagChip1,
             YGColorChipType.NametagChip2,
