@@ -192,8 +192,7 @@ private class CanvasImageAddScreenPreviewParameterProvider :
                     GroupMemberChip("류현진", YGColorChipType.NametagChip6),
                     GroupMemberChip("정거장", YGColorChipType.NametagChip2),
                 ),
-                canvasDate = "May 20",
-                canvasDay = "Wed",
+                selectedDate = LocalDate(2026, 5, 20),
             ),
         )
 }

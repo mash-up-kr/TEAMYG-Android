@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.usecase.parfait
 
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
@@ -34,6 +35,17 @@ class GetTodayParfaitUseCaseTest {
             callCount++
             return result
         }
+
+        override suspend fun getPastCanvases(
+            groupId: GroupId,
+            from: LocalDate?,
+            to: LocalDate?,
+        ): Result<List<PastCanvasVO>> = error("오늘 조회는 목록을 보지 않는다")
+
+        override suspend fun getCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<CanvasVO> = error("오늘 조회는 상세를 따로 부르지 않는다")
     }
 
     private val today = Clock.System.todayIn(TimeZone.currentSystemDefault())

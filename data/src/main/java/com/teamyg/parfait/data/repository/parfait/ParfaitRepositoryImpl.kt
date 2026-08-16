@@ -3,8 +3,11 @@ package com.teamyg.parfait.data.repository.parfait
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
 /**
@@ -16,5 +19,20 @@ class ParfaitRepositoryImpl @Inject constructor(
 ) : ParfaitRepository {
     override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> = parfaitRemoteDataSource
         .getTodayCanvas(groupId)
+        .mapErrorToAppError()
+
+    override suspend fun getPastCanvases(
+        groupId: GroupId,
+        from: LocalDate?,
+        to: LocalDate?,
+    ): Result<List<PastCanvasVO>> = parfaitRemoteDataSource
+        .getPastCanvases(groupId = groupId, from = from, to = to)
+        .mapErrorToAppError()
+
+    override suspend fun getCanvasDetail(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+    ): Result<CanvasVO> = parfaitRemoteDataSource
+        .getCanvasDetail(groupId = groupId, parfaitId = parfaitId)
         .mapErrorToAppError()
 }

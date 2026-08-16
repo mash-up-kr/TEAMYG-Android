@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfait.ParfaitHistory
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetCanvasByDateUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
@@ -42,9 +43,7 @@ data class GroupMemberChip(
 data class CanvasImageAddUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
-    val canvasDate: String = "",
-    val canvasDay: String = "",
-    /** 오늘 캔버스를 아직 못 받았으면 null 이다 — 조회가 실패했거나 응답 전이다 */
+    /** 지금 캔버스에 그려진 날의 파르페 id. 아직 못 받았으면 null 이다 */
     val parfaitId: ParfaitId? = null,
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground? = null,
@@ -62,6 +61,11 @@ data class CanvasImageAddUiState(
     /** [parfaitHistories] 중 이미지가 실제로 올라간 날. 달력이 점을 찍는 기준 */
     val uploadedDates: Set<LocalDate> = emptySet(),
 ) : UiState {
+    /** 캔버스 머리말은 고른 날을 따라간다 — 오늘로 굳으면 날짜와 그림이 어긋난다 */
+    val canvasDate: String = selectedDate.format(DateTextFormat.monthDayFormat)
+
+    val canvasDay: String = selectedDate.format(DateTextFormat.weekdayFormat)
+
     /**
      * 그 해에 파르페가 있는 달만 고를 수 있다. 이번 달만 예외로, 기록이 없어도 넣는다 —
      * 파르페를 아직 하나도 안 만든 달이어도 오늘로는 돌아올 수 있어야 한다.
@@ -120,6 +124,7 @@ constructor(
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getCanvasByDateUseCase: GetCanvasByDateUseCase,
 ) : BaseViewModel<CanvasImageAddUiState, CanvasImageAddIntent, CanvasImageAddEffect>(
     initialState = CanvasImageAddUiState(),
 ) {
@@ -178,14 +183,9 @@ constructor(
     }
 
     private fun loadCanvasImageAddInfo() {
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         updateState {
-            copy(
-                // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
-                groupName = "그룹이름은최대열글자",
-                canvasDate = today.format(DateTextFormat.monthDayFormat),
-                canvasDay = today.format(DateTextFormat.weekdayFormat),
-            )
+            // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
+            copy(groupName = "그룹이름은최대열글자")
         }
     }
 
@@ -240,7 +240,59 @@ constructor(
                 copy(displayedMonth = intent.month.toFirstDayOfMonth())
             }
 
-            is CanvasImageAddIntent.ClickDate -> updateState { copy(selectedDate = intent.date) }
+            is CanvasImageAddIntent.ClickDate -> handleClickDate(intent.date)
+        }
+    }
+
+    /**
+     * 날짜를 고르면 달력을 닫고 그날 캔버스로 갈아 끼운다. 고른 날이 이미 그려져 있으면
+     * 닫기만 한다.
+     *
+     * 새 캔버스가 오기 전에 이전 날 것을 비우는 이유는, 남겨 두면 머리말은 고른 날인데 그림은
+     * 이전 날인 상태가 눈에 보여서다. 잠깐 빈 캔버스가 뜨는 편이 덜 틀리다.
+     */
+    private fun handleClickDate(date: LocalDate) {
+        if (date == state.value.selectedDate) {
+            updateState { copy(isCalendarVisible = false) }
+            return
+        }
+
+        updateState {
+            copy(
+                selectedDate = date,
+                isCalendarVisible = false,
+                parfaitId = null,
+                canvasBackground = null,
+                toppings = emptyList(),
+            )
+        }
+
+        loadCanvasOf(date)
+    }
+
+    /**
+     * 응답이 늦게 온 조회가 그 사이 새로 고른 날의 캔버스를 덮지 않도록, 돌아온 날짜가 아직
+     * 고른 날인지 확인하고 반영한다.
+     *
+     * 중복 실행 가드를 걸지 않는 이유는 [launch] 의 가드가 앞선 조회를 살리고 새 것을 버리기
+     * 때문이다 — 날짜 선택은 마지막에 고른 것이 이겨야 한다.
+     */
+    private fun loadCanvasOf(date: LocalDate) {
+        launch {
+            getCanvasByDateUseCase(groupId = groupId, date = date)
+                .onSuccess { canvas ->
+                    updateState {
+                        if (selectedDate != date) return@updateState this
+
+                        copy(
+                            parfaitId = canvas?.parfaitId,
+                            canvasBackground = canvas?.background,
+                            toppings = canvas?.toppings.orEmpty().sortedBy { it.transform.positionZ },
+                        )
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "$date 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                }
         }
     }
 
