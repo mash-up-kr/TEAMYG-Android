@@ -4,4 +4,6 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object NavKeyGroupSetting : NavKey
+data class NavKeyGroupSetting(
+    val groupId: Long,
+) : NavKey

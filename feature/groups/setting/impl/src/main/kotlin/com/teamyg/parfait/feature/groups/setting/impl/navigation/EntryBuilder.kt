@@ -12,9 +12,10 @@ import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.feature.groups.setting.impl.route.GroupSettingRoute
 
 fun EntryProviderScope<NavKey>.featureGroupSettingEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupSetting> {
+    entry<NavKeyGroupSetting> { navKey ->
         YGScaffold { innerPadding ->
             GroupSettingRoute(
+                groupId = navKey.groupId,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()

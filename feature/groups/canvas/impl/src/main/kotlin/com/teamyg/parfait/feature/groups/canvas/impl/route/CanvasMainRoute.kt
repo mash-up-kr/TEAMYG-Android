@@ -15,6 +15,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
+import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
@@ -49,6 +50,10 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCanvasBGEdit,
                 )
 
+                is CanvasMainEffect.NavigateToGroupSetting -> navigator.goTo(
+                    destination = NavKeyGroupSetting(groupId = effect.groupId.value),
+                )
+
                 is CanvasMainEffect.NavigateToSegmentation -> navigator.goTo(
                     destination = NavKeySegmentation(
                         sourceImageUri = effect.uri,
@@ -62,7 +67,7 @@ internal fun CanvasMainRoute(
         canvasState = canvasState,
         onClickBack = { navigator.onBack() },
         onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
-        onClickMenu = {}, // TODO: 메뉴 연동 필요
+        onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
         onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
         onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
