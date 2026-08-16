@@ -31,11 +31,16 @@ internal fun AccountInfoRoute(
         }
     }
 
-    // `isLoading` 을 넘기지 않는다. 이 화면의 실패는 입력 자리 인라인(`submitError`,
-    // 형식 오류와 같은 자리)이 정본이라 토스트가 아니고, 제출 중 표현도 확인 버튼 비활성
-    // (`isConfirmEnabled`)이 이미 하고 있다. 그 위에 전면 Dim 을 얹는 것은 UX 변경이라
-    // 디자인 결정이 필요하다 → ygscaffold-v2 스펙 "주의 / 열린 질문"
-    YGScaffoldV2(modifier = modifier) { innerPadding ->
+    // 닉네임 변경은 네트워크 왕복이라 언제 끝날지 보장이 없다. 확인 버튼 비활성
+    // (`isConfirmEnabled`)은 "지금 눌러도 소용없다"만 말할 뿐 대기 자체를 표현하지 못하고,
+    // 그동안 입력 필드는 살아 있어 PATCH 가 나간 뒤에도 값을 더 고칠 수 있다.
+    //
+    // 실패는 이 오버레이가 다루지 않는다 — 입력 자리 인라인(`submitError`, 형식 오류와 같은
+    // 자리)이 정본이라 토스트가 아니다. `toastPolicy` 를 안 넘기는 이유다.
+    YGScaffoldV2(
+        modifier = modifier,
+        isLoading = state.isSubmitting,
+    ) { innerPadding ->
         AccountInfoScreen(
             state = state,
             onValueChanged = { viewModel.processIntent(AccountInfoIntent.InputWord(it)) },
