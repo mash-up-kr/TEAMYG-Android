@@ -3,8 +3,10 @@ package com.teamyg.parfait.data.source.parfait.remote
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitService
+import com.teamyg.parfait.data.service.model.request.parfait.ChangeParfaitBackgroundRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfait.BackgroundResponse
+import com.teamyg.parfait.data.service.model.response.parfait.ChangeParfaitBackgroundResponse
 import com.teamyg.parfait.data.service.model.response.parfait.GetTodayParfaitResponse
 import com.teamyg.parfait.data.service.model.response.parfait.GroupMemberResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitResponse
@@ -12,6 +14,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsRespon
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -86,6 +89,18 @@ class ParfaitRemoteDataSourceImplTest {
         code = "SUCCESS",
         message = "성공",
         data = PastParfaitsResponse(parfaits = parfaits),
+    )
+
+    private fun backgroundSuccess(
+        type: String,
+        value: String,
+    ) = ApiResponse(
+        success = true,
+        code = "SUCCESS",
+        message = "성공",
+        data = ChangeParfaitBackgroundResponse(
+            background = BackgroundResponse(type = type, value = value),
+        ),
     )
 
     private fun <T : Any> businessFailure(code: String) = ApiResponse<T>(
@@ -321,5 +336,196 @@ class ParfaitRemoteDataSourceImplTest {
         // Then 서버 코드가 그대로 흐른다
         val error = assertIs<ApiException.Business>(result.exceptionOrNull())
         assertEquals("INVALID_DATE_RANGE", error.code)
+    }
+
+    @Test
+    fun getCanvasDetail_serviceReturnsCanvas_mapsSameShapeAsToday() = runTest {
+        // Given 지난 캔버스 상세를 서버가 오늘 조회와 같은 형태로 준다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsByParfaitId(1L, 100L) } returns
+            todaySuccess(status = "CLOSED")
+
+        // When 캔버스 상세 조회
+        val canvas = dataSource.getCanvasDetail(GroupId(1L), ParfaitId(100L)).getOrThrow()
+
+        // Then 오늘 조회와 같은 매퍼를 타 전 계층이 채워진다
+        assertEquals(ParfaitId(100L), canvas.parfaitId)
+        assertEquals(CanvasStatus.CLOSED, canvas.status)
+        assertEquals(CanvasBackground.Color("#FFEEDD"), canvas.background)
+        assertEquals(GroupMemberId(5L), canvas.members.single().groupMemberId)
+        assertEquals(ParfaitImageId(7L), canvas.toppings.single().parfaitImageId)
+    }
+
+    @Test
+    fun getCanvasDetail_parfaitNotFound_returnsBusinessFailure() = runTest {
+        // Given 없는 파르페이거나 다른 그룹 소속이다 — 서버는 둘을 구분하지 않는다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsByParfaitId(1L, 999L) } returns
+            businessFailure<GetTodayParfaitResponse>("PARFAIT_NOT_FOUND")
+
+        // When 캔버스 상세 조회
+        val result = dataSource.getCanvasDetail(GroupId(1L), ParfaitId(999L))
+
+        // Then 404 코드가 그대로 흐른다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("PARFAIT_NOT_FOUND", error.code)
+    }
+
+    @Test
+    fun changeCanvasBackground_colorEdit_sendsHexInValueAndLeavesImageIdNull() = runTest {
+        // Given 단색 배경으로 바꾼다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns backgroundSuccess(type = "COLOR", value = "#FF5733")
+
+        // When 색 배경 변경
+        dataSource
+            .changeCanvasBackground(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(100L),
+                background = CanvasBackgroundEdit.Color("#FF5733"),
+            ).getOrThrow()
+
+        // Then 서버가 요구하는 조건부 필수대로 value 만 채우고 imageId 는 비운다
+        coVerify {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(
+                groupId = 1L,
+                parfaitId = 100L,
+                request = ChangeParfaitBackgroundRequest(type = "COLOR", value = "#FF5733", imageId = null),
+            )
+        }
+    }
+
+    @Test
+    fun changeCanvasBackground_imageEdit_sendsImageIdAndLeavesValueNull() = runTest {
+        // Given 업로드 확인을 마친 이미지로 바꾼다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns backgroundSuccess(type = "IMAGE", value = "https://example.com/bg.png")
+
+        // When 이미지 배경 변경
+        dataSource
+            .changeCanvasBackground(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(100L),
+                background = CanvasBackgroundEdit.Image(ImageId(11L)),
+            ).getOrThrow()
+
+        // Then value 가 아니라 imageId 로 실린다 — 서버는 id 로 받고 URL 로 돌려준다
+        coVerify {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(
+                groupId = 1L,
+                parfaitId = 100L,
+                request = ChangeParfaitBackgroundRequest(type = "IMAGE", value = null, imageId = 11L),
+            )
+        }
+    }
+
+    @Test
+    fun changeCanvasBackground_imageEdit_returnsUrlEchoedByServer() = runTest {
+        // Given 서버가 저장한 이미지 URL 을 돌려준다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns backgroundSuccess(type = "IMAGE", value = "https://example.com/bg.png")
+
+        // When 이미지 배경 변경
+        val background = dataSource
+            .changeCanvasBackground(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(100L),
+                background = CanvasBackgroundEdit.Image(ImageId(11L)),
+            ).getOrThrow()
+
+        // Then 앱은 imageId 만 알았으므로 echo 된 URL 을 그대로 받아야 그릴 수 있다
+        assertEquals(CanvasBackground.Image("https://example.com/bg.png"), background)
+    }
+
+    @Test
+    fun changeCanvasBackground_unknownTypeEchoed_foldsToNull() = runTest {
+        // Given 서버가 앱이 모르는 type 을 돌려준다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns backgroundSuccess(type = "GRADIENT", value = "#FF5733")
+
+        // When 배경 변경
+        val background = dataSource
+            .changeCanvasBackground(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(100L),
+                background = CanvasBackgroundEdit.Color("#FF5733"),
+            ).getOrThrow()
+
+        // Then 조회와 같은 규칙으로 접힌다 — 저장은 됐지만 그릴 수 없다
+        assertNull(background)
+    }
+
+    @Test
+    fun changeCanvasBackground_invalidBackground_returnsBusinessFailure() = runTest {
+        // Given HEX 형식이 서버 검증을 통과하지 못한다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns businessFailure<ChangeParfaitBackgroundResponse>("INVALID_BACKGROUND")
+
+        // When 배경 변경
+        val result = dataSource.changeCanvasBackground(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(100L),
+            background = CanvasBackgroundEdit.Color("#FFF"),
+        )
+
+        // Then 서버 코드가 그대로 흐른다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("INVALID_BACKGROUND", error.code)
+    }
+
+    @Test
+    fun changeCanvasBackground_imageNotFound_returnsImageDomainCode() = runTest {
+        // Given imageId 에 해당하는 이미지 메타가 없다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns businessFailure<ChangeParfaitBackgroundResponse>("IMAGE_NOT_FOUND")
+
+        // When 이미지 배경 변경
+        val result = dataSource.changeCanvasBackground(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(100L),
+            background = CanvasBackgroundEdit.Image(ImageId(404L)),
+        )
+
+        // Then parfait 도메인 밖(ImageErrorCode) 코드도 번역 없이 그대로 흐른다 —
+        // 이 엔드포인트는 세 enum 의 코드를 섞어 내므로 도메인으로 분기하면 놓친다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("IMAGE_NOT_FOUND", error.code)
+    }
+
+    @Test
+    fun changeCanvasBackground_imageNotConfirmed_returnsBusinessFailure() = runTest {
+        // Given 업로드 확인을 마치지 않은 이미지다
+        coEvery {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
+        } returns businessFailure<ChangeParfaitBackgroundResponse>("BACKGROUND_IMAGE_NOT_CONFIRMED")
+
+        // When 이미지 배경 변경
+        val result = dataSource.changeCanvasBackground(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(100L),
+            background = CanvasBackgroundEdit.Image(ImageId(11L)),
+        )
+
+        // Then image 도메인이 아니라 parfait 도메인 코드로 온다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("BACKGROUND_IMAGE_NOT_CONFIRMED", error.code)
+    }
+
+    @Test
+    fun getCanvasDetail_groupNotJoined_returnsBusinessFailure() = runTest {
+        // Given 참여하지 않은 그룹이다 — 멤버십 검사가 파르페 조회보다 먼저다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsByParfaitId(1L, 100L) } returns
+            businessFailure<GetTodayParfaitResponse>("GROUP_NOT_JOINED")
+
+        // When 캔버스 상세 조회
+        val result = dataSource.getCanvasDetail(GroupId(1L), ParfaitId(100L))
+
+        // Then 403 코드가 그대로 흐른다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("GROUP_NOT_JOINED", error.code)
     }
 }

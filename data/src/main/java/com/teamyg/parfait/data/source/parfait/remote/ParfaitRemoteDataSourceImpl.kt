@@ -2,11 +2,16 @@ package com.teamyg.parfait.data.source.parfait.remote
 
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitService
+import com.teamyg.parfait.data.source.parfait.mapper.toCanvasBackground
+import com.teamyg.parfait.data.source.parfait.mapper.toCanvasVO
 import com.teamyg.parfait.data.source.parfait.mapper.toPastCanvasVOList
-import com.teamyg.parfait.data.source.parfait.mapper.toTodayCanvasVO
+import com.teamyg.parfait.data.source.parfait.mapper.toRequest
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
-import com.teamyg.parfait.domain.model.canvas.TodayCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
@@ -20,9 +25,9 @@ class ParfaitRemoteDataSourceImpl @Inject constructor(
             transform = { it.years },
         )
 
-    override suspend fun getTodayCanvas(groupId: GroupId): Result<TodayCanvasVO> = apiCaller.safeApiCall(
+    override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> = apiCaller.safeApiCall(
         block = { parfaitService.getGroupsByGroupIdParfaitsToday(groupId.value) },
-        transform = { it.toTodayCanvasVO() },
+        transform = { it.toCanvasVO() },
     )
 
     override suspend fun getPastCanvases(
@@ -38,5 +43,33 @@ class ParfaitRemoteDataSourceImpl @Inject constructor(
             )
         },
         transform = { it.toPastCanvasVOList() },
+    )
+
+    override suspend fun getCanvasDetail(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+    ): Result<CanvasVO> = apiCaller.safeApiCall(
+        block = {
+            parfaitService.getGroupsByGroupIdParfaitsByParfaitId(
+                groupId = groupId.value,
+                parfaitId = parfaitId.value,
+            )
+        },
+        transform = { it.toCanvasVO() },
+    )
+
+    override suspend fun changeCanvasBackground(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        background: CanvasBackgroundEdit,
+    ): Result<CanvasBackground?> = apiCaller.safeApiCall(
+        block = {
+            parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(
+                groupId = groupId.value,
+                parfaitId = parfaitId.value,
+                request = background.toRequest(),
+            )
+        },
+        transform = { it.toCanvasBackground() },
     )
 }

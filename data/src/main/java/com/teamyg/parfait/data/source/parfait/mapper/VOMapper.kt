@@ -1,17 +1,20 @@
 package com.teamyg.parfait.data.source.parfait.mapper
 
+import com.teamyg.parfait.data.service.model.request.parfait.ChangeParfaitBackgroundRequest
 import com.teamyg.parfait.data.service.model.response.parfait.BackgroundResponse
+import com.teamyg.parfait.data.service.model.response.parfait.ChangeParfaitBackgroundResponse
 import com.teamyg.parfait.data.service.model.response.parfait.GetTodayParfaitResponse
 import com.teamyg.parfait.data.service.model.response.parfait.GroupMemberResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
-import com.teamyg.parfait.domain.model.canvas.TodayCanvasVO
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -27,7 +30,7 @@ private const val BACKGROUND_TYPE_COLOR = "COLOR"
 private const val BACKGROUND_TYPE_IMAGE = "IMAGE"
 private const val BORDER_TYPE_SOLID = "SOLID"
 
-internal fun GetTodayParfaitResponse.toTodayCanvasVO(): TodayCanvasVO = TodayCanvasVO(
+internal fun GetTodayParfaitResponse.toCanvasVO(): CanvasVO = CanvasVO(
     parfaitId = ParfaitId(parfaitId),
     date = LocalDate.parse(date),
     status = status.toCanvasStatus(),
@@ -36,6 +39,28 @@ internal fun GetTodayParfaitResponse.toTodayCanvasVO(): TodayCanvasVO = TodayCan
     background = background?.toCanvasBackground(),
     toppings = images.orEmpty().map { it.toCanvasToppingVO() },
 )
+
+/**
+ * 조건부 필수를 여기서 편다 — 색이면 value 만, 이미지면 imageId 만 채운다.
+ * 어느 쪽도 둘을 함께 채우지 않으므로 서버가 값을 버릴 일이 없다.
+ */
+internal fun CanvasBackgroundEdit.toRequest(): ChangeParfaitBackgroundRequest = when (this) {
+    is CanvasBackgroundEdit.Color -> ChangeParfaitBackgroundRequest(
+        type = BACKGROUND_TYPE_COLOR,
+        value = hex,
+    )
+
+    is CanvasBackgroundEdit.Image -> ChangeParfaitBackgroundRequest(
+        type = BACKGROUND_TYPE_IMAGE,
+        imageId = imageId.value,
+    )
+}
+
+/**
+ * 방금 설정한 배경의 echo. 이미지면 앱이 모르던 URL 이 여기 실려 오므로 버리지 않는다.
+ * 미지 type 을 널로 접는 규칙은 조회와 같다 — 저장은 됐지만 그릴 수 없다는 뜻이다.
+ */
+internal fun ChangeParfaitBackgroundResponse.toCanvasBackground(): CanvasBackground? = background.toCanvasBackground()
 
 internal fun PastParfaitsResponse.toPastCanvasVOList(): List<PastCanvasVO> = parfaits.map {
     PastCanvasVO(
