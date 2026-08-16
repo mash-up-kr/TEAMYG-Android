@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -9,12 +8,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/**
- * 캔버스 위에 놓는 토핑 한 변의 기본 길이(배율 적용 전)
- */
-val TOPPING_SIZE: Dp = SizeTokens.Size64.getDp()
-
-/** 선택 스트로크가 토핑의 실제 가장자리로부터 떨어지는 여백. 토핑과 함께 회전한다. */
 private val STROKE_MARGIN_HORIZONTAL = SizeTokens.Size8.getDp()
 private val STROKE_MARGIN_VERTICAL = SizeTokens.Size10.getDp()
 
@@ -39,18 +32,18 @@ data class ToppingCorners(
  */
 fun computeToppingStrokeCorners(
     center: DpOffset,
-    sizeAfterScale: Dp,
+    sizeAfterScale: DpSize,
     rotationDegrees: Float,
 ): ToppingCorners {
-    val halfWidth = sizeAfterScale.value / 2f + STROKE_MARGIN_HORIZONTAL.value
-    val halfHeight = sizeAfterScale.value / 2f + STROKE_MARGIN_VERTICAL.value
+    val halfWidth = sizeAfterScale.width.value / 2f + STROKE_MARGIN_HORIZONTAL.value
+    val halfHeight = sizeAfterScale.height.value / 2f + STROKE_MARGIN_VERTICAL.value
     return rotatedRectangleCorners(center, halfWidth, halfHeight, rotationDegrees)
 }
 
 /** [computeToppingStrokeCorners]와 같은 사각형의, 회전하기 전(로컬) 가로/세로 크기. */
-fun toppingStrokeSize(sizeAfterScale: Dp): DpSize = DpSize(
-    width = sizeAfterScale + STROKE_MARGIN_HORIZONTAL * 2,
-    height = sizeAfterScale + STROKE_MARGIN_VERTICAL * 2,
+fun toppingStrokeSize(sizeAfterScale: DpSize): DpSize = DpSize(
+    width = sizeAfterScale.width + STROKE_MARGIN_HORIZONTAL * 2,
+    height = sizeAfterScale.height + STROKE_MARGIN_VERTICAL * 2,
 )
 
 /**
@@ -59,11 +52,11 @@ fun toppingStrokeSize(sizeAfterScale: Dp): DpSize = DpSize(
  */
 fun computeToppingButtonPoints(
     center: DpOffset,
-    sizeAfterScale: Dp,
+    sizeAfterScale: DpSize,
     rotationDegrees: Float,
 ): ToppingCorners {
-    val halfWidth = sizeAfterScale.value / 2f + STROKE_MARGIN_HORIZONTAL.value
-    val halfHeight = sizeAfterScale.value / 2f + STROKE_MARGIN_VERTICAL.value
+    val halfWidth = sizeAfterScale.width.value / 2f + STROKE_MARGIN_HORIZONTAL.value
+    val halfHeight = sizeAfterScale.height.value / 2f + STROKE_MARGIN_VERTICAL.value
     val diagonalLength = sqrt(halfWidth * halfWidth + halfHeight * halfHeight)
     val push = BUTTON_VISUAL_RADIUS.value + BUTTON_CORNER_GAP.value
     val pushedHalfWidth = halfWidth + push * (halfWidth / diagonalLength)

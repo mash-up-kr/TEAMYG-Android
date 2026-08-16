@@ -30,19 +30,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
@@ -56,7 +58,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.CANVAS_ASPECT_RATIO
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_SIZE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingStrokeSize
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditUiState
@@ -351,10 +352,14 @@ private fun CanvasToppingImage(
     modifier: Modifier = Modifier,
     onDrag: ((Offset) -> Unit)? = null,
 ) {
+    val painter = topping.editedImagePath?.let { path -> rememberAsyncImagePainter(model = path) }
+        ?: painterResource(topping.imageResId)
+    val baseSize = rememberToppingBaseSize(painter)
+
     Box(
         modifier = modifier
             .offset(x = topping.offsetX, y = topping.offsetY)
-            .size(TOPPING_SIZE)
+            .size(baseSize)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -368,11 +373,34 @@ private fun CanvasToppingImage(
             ),
     ) {
         Image(
-            painter = painterResource(topping.imageResId),
+            painter = painter,
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),
         )
+    }
+}
+
+/**
+ * [painter]의 실제 가로세로 크기(배율 적용 전, 배율 1배 기준).
+ * 로딩 중에는 고정값을 임시로 쓰다가, 크기를 알게 되는 즉시 실제 크기로 다시 계산된다.
+ */
+@Composable
+private fun rememberToppingBaseSize(painter: Painter): DpSize {
+    val intrinsicSize = painter.intrinsicSize
+    val density = LocalDensity.current
+
+    return remember(intrinsicSize, density) {
+        if (intrinsicSize.isSpecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
+            with(density) {
+                DpSize(
+                    width = intrinsicSize.width.toDp(),
+                    height = intrinsicSize.height.toDp(),
+                )
+            }
+        } else {
+            DpSize(60.dp, 60.dp)
+        }
     }
 }
 
@@ -389,11 +417,14 @@ private fun ToppingCornerButtons(
     onRotateDrag: (Offset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val painter = topping.editedImagePath?.let { path -> rememberAsyncImagePainter(model = path) }
+        ?: painterResource(topping.imageResId)
+    val baseSize = rememberToppingBaseSize(painter)
     val center = DpOffset(
-        x = topping.offsetX + TOPPING_SIZE / 2,
-        y = topping.offsetY + TOPPING_SIZE / 2,
+        x = topping.offsetX + baseSize.width / 2,
+        y = topping.offsetY + baseSize.height / 2,
     )
-    val sizeAfterScale = TOPPING_SIZE * topping.scale
+    val sizeAfterScale = DpSize(baseSize.width * topping.scale, baseSize.height * topping.scale)
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
@@ -444,7 +475,7 @@ private fun ToppingCornerButtons(
 @Composable
 private fun ToppingSelectionStroke(
     center: DpOffset,
-    sizeAfterScale: Dp,
+    sizeAfterScale: DpSize,
     rotationDegrees: Float,
     modifier: Modifier = Modifier,
 ) {
