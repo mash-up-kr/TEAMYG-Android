@@ -8,6 +8,14 @@ import kotlinx.datetime.LocalDate
 
 interface ParfaitRepository {
     /**
+     * 파르페가 하나라도 있는 연도. 하나도 없으면 빈 목록이다.
+     *
+     * 목록 조회에서 뽑을 수 없어 따로 있는 엔드포인트다 — 그쪽은 범위를 받으므로 어느 해까지
+     * 거슬러 물어봐야 하는지 미리 알 수 없다.
+     */
+    suspend fun getYears(groupId: GroupId): Result<List<Int>>
+
+    /**
      * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
      * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
      *

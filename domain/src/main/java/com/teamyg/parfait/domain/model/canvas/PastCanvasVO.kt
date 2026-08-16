@@ -16,4 +16,7 @@ data class PastCanvasVO(
     val date: LocalDate,
     val thumbnailUrl: String?,
     val toppingCount: Int,
-)
+) {
+    /** 캔버스만 열어 보고 토핑은 안 올린 날. 달력이 점을 찍으면 안 되는 날이다 */
+    val isEmpty: Boolean get() = toppingCount == 0
+}

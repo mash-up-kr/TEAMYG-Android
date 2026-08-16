@@ -17,6 +17,10 @@ import javax.inject.Inject
 class ParfaitRepositoryImpl @Inject constructor(
     private val parfaitRemoteDataSource: ParfaitRemoteDataSource,
 ) : ParfaitRepository {
+    override suspend fun getYears(groupId: GroupId): Result<List<Int>> = parfaitRemoteDataSource
+        .getYears(groupId)
+        .mapErrorToAppError()
+
     override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> = parfaitRemoteDataSource
         .getTodayCanvas(groupId)
         .mapErrorToAppError()

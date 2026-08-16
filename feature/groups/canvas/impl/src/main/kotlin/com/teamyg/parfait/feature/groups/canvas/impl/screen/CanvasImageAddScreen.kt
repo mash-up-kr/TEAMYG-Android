@@ -52,6 +52,8 @@ internal fun CanvasImageAddScreen(
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
+    onClickSaveToGallery: () -> Unit,
+    onClickGoToToday: () -> Unit,
     onDismissCalendar: () -> Unit,
     onSelectYear: (Int) -> Unit,
     onSelectMonth: (LocalDate) -> Unit,
@@ -99,16 +101,34 @@ internal fun CanvasImageAddScreen(
             date = canvasState.canvasDate,
             day = "(${canvasState.canvasDay})",
             onDateSelectClick = onClickDateSelect,
-            addAction = YGCanvasMenuAction(
-                text = stringResource(R.string.canvas_image_add_topping_add),
-                iconResource = DesignSystemR.drawable.ic_plus,
-                onClick = openMenu,
-            ),
-            editAction = YGCanvasMenuAction(
-                text = stringResource(R.string.canvas_image_add_canvas_edit),
-                iconResource = DesignSystemR.drawable.ic_caret_right,
-                onClick = onClickEditCanvasBG,
-            ),
+            // 지난 캔버스는 고치는 자리가 아니다 — 서버가 마감된 캔버스의 편집을 막지 않으므로
+            // 편집으로 가는 길 자체를 여기서 치운다
+            addAction = if (canvasState.isViewingToday) {
+                YGCanvasMenuAction(
+                    text = stringResource(R.string.canvas_image_add_topping_add),
+                    iconResource = DesignSystemR.drawable.ic_plus,
+                    onClick = openMenu,
+                )
+            } else {
+                YGCanvasMenuAction(
+                    text = stringResource(R.string.canvas_image_add_save_to_gallery),
+                    iconResource = DesignSystemR.drawable.ic_gallery,
+                    onClick = onClickSaveToGallery,
+                )
+            },
+            editAction = if (canvasState.isViewingToday) {
+                YGCanvasMenuAction(
+                    text = stringResource(R.string.canvas_image_add_canvas_edit),
+                    iconResource = DesignSystemR.drawable.ic_caret_right,
+                    onClick = onClickEditCanvasBG,
+                )
+            } else {
+                YGCanvasMenuAction(
+                    text = stringResource(R.string.canvas_image_add_go_to_today),
+                    iconResource = DesignSystemR.drawable.ic_caret_right,
+                    onClick = onClickGoToToday,
+                )
+            },
             background = canvasState.canvasBackground.toYGCanvasBackground(),
             isEmpty = canvasState.isCanvasEmpty,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
@@ -179,20 +199,32 @@ private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when 
 
 private class CanvasImageAddScreenPreviewParameterProvider :
     PreviewParameterProvider<CanvasImageAddUiState> {
+    private val today = LocalDate(2026, 5, 20)
+
+    private val memberChips = listOf(
+        GroupMemberChip("문어", YGColorChipType.NametagChip1),
+        GroupMemberChip("전봇대", YGColorChipType.NametagChip8),
+        GroupMemberChip("김밥", YGColorChipType.NametagChip5),
+        GroupMemberChip("장미", YGColorChipType.NametagChip3),
+        GroupMemberChip("김치", YGColorChipType.NametagChip11),
+        GroupMemberChip("류현진", YGColorChipType.NametagChip6),
+        GroupMemberChip("정거장", YGColorChipType.NametagChip2),
+    )
+
     override val values: Sequence<CanvasImageAddUiState>
         get() = sequenceOf(
             CanvasImageAddUiState(
                 groupName = "그룹이름은최대열글자",
-                memberChips = listOf(
-                    GroupMemberChip("문어", YGColorChipType.NametagChip1),
-                    GroupMemberChip("전봇대", YGColorChipType.NametagChip8),
-                    GroupMemberChip("김밥", YGColorChipType.NametagChip5),
-                    GroupMemberChip("장미", YGColorChipType.NametagChip3),
-                    GroupMemberChip("김치", YGColorChipType.NametagChip11),
-                    GroupMemberChip("류현진", YGColorChipType.NametagChip6),
-                    GroupMemberChip("정거장", YGColorChipType.NametagChip2),
-                ),
-                selectedDate = LocalDate(2026, 5, 20),
+                memberChips = memberChips,
+                today = today,
+                selectedDate = today,
+            ),
+            // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
+            CanvasImageAddUiState(
+                groupName = "그룹이름은최대열글자",
+                memberChips = memberChips,
+                today = today,
+                selectedDate = LocalDate(2026, 5, 3),
             ),
         )
 }
@@ -210,6 +242,8 @@ private fun PreviewCanvasImageAddScreen(
         onClickCamera = {},
         onClickGallery = {},
         onClickEditCanvasBG = {},
+        onClickSaveToGallery = {},
+        onClickGoToToday = {},
         onDismissCalendar = {},
         onSelectYear = {},
         onSelectMonth = {},

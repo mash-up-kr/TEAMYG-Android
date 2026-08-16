@@ -66,6 +66,8 @@ internal fun CanvasImageAddRoute(
         onClickCamera = { viewModel.processIntent(CanvasImageAddIntent.OnClickCamera()) },
         onClickGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvas()) },
         onClickEditCanvasBG = { viewModel.processIntent(CanvasImageAddIntent.OnClickCanvasEdit()) },
+        onClickSaveToGallery = { viewModel.processIntent(CanvasImageAddIntent.OnClickSaveToGallery) },
+        onClickGoToToday = { viewModel.processIntent(CanvasImageAddIntent.OnClickGoToToday) },
         onDismissCalendar = { viewModel.processIntent(CanvasImageAddIntent.DismissCalendar) },
         onSelectYear = { viewModel.processIntent(CanvasImageAddIntent.SelectYear(it)) },
         onSelectMonth = { viewModel.processIntent(CanvasImageAddIntent.SelectMonth(it)) },
