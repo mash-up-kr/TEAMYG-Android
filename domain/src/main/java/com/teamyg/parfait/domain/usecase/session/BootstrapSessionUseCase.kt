@@ -1,11 +1,11 @@
 package com.teamyg.parfait.domain.usecase.session
 
-import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import javax.inject.Inject
 
 /**
@@ -18,8 +18,7 @@ import javax.inject.Inject
  * 실패했을 때 정리 범위는 **실패가 실제로 "세션이 죽었다"고 말하는지**로 갈린다
  * ([isAuthRejection]):
  * - 인증 거절(401, 또는 회원 조회 자체가 회원을 못 찾는다는 서버 코드) — 세션이
- *   확실히 죽었다고 보고 [AuthRepository.logout] 과 [MemberRepository.clearMyAccount]
- *   를 모두 호출한다.
+ *   확실히 죽었다고 보고 [LogoutUseCase] 로 토큰과 계정 정보를 모두 지운다.
  * - 그 외 전부([AppError.Network], 5xx 등 [AppError.Unexpected], 로컬 저장 실패 포함) —
  *   **아무것도 지우지 않는다.** 서버 장애·배포 중 순단으로 매번 로그아웃되면 안 되고,
  *   `saveLocally` 실패처럼 서버는 200 을 줬는데 로컬 쓰기만 실패한 경우 건강한 세션을
@@ -34,6 +33,7 @@ import javax.inject.Inject
 class BootstrapSessionUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val memberRepository: MemberRepository,
+    private val logout: LogoutUseCase,
 ) {
     suspend operator fun invoke(): SessionBootstrap {
         if (!authRepository.hasSession()) return SessionBootstrap.ToLogin
@@ -44,12 +44,15 @@ class BootstrapSessionUseCase @Inject constructor(
         )
     }
 
+    /**
+     * 정리는 [LogoutUseCase] 가 한다 — 사용자가 직접 로그아웃할 때와 지워야 할 것이 같고
+     * (토큰 + 계정 정보), 로컬 저장소 IO 실패를 삼키는 규칙도 같다. 여기서 두 저장소를
+     * 다시 호출하면 "무엇을 지우는가"가 두 곳에 적히고 한쪽만 늘어난다.
+     *
+     * 반환값은 보지 않는다 — 라우팅은 이미 [SessionBootstrap.ToLogin] 으로 정해져 있다.
+     */
     private suspend fun handleRefreshFailure(error: Throwable): SessionBootstrap {
-        if (error.isAuthRejection()) {
-            authRepository.logout()
-            // 로컬 저장소 IO 가 실패해도 라우팅은 이미 ToLogin 으로 정해져 있다(취소는 재던진다).
-            runSuspendCatching { memberRepository.clearMyAccount() }
-        }
+        if (error.isAuthRejection()) logout()
         return SessionBootstrap.ToLogin
     }
 

@@ -6,7 +6,11 @@ import com.teamyg.parfait.domain.repository.member.MemberRepository
 import javax.inject.Inject
 
 /**
- * 사용자가 직접 로그아웃할 때 토큰과 계정 정보를 함께 정리한다.
+ * 세션을 끝낼 때 토큰과 계정 정보를 함께 정리한다 — **"무엇을 지우는가"의 단일 자리**다.
+ *
+ * 호출자는 둘이다: 사용자가 직접 로그아웃하는 S-001, 그리고 자동로그인이 인증 거절로
+ * 실패했을 때의 `BootstrapSessionUseCase`. 지울 대상이 같으므로 한쪽만 늘어나지 않도록
+ * 여기 모은다(호출자가 다른 것은 **언제 부르는가**뿐이다).
  *
  * [AuthRepository.logout] 은 서버 호출이 실패해도 로컬 토큰을 지우고 항상
  * `Result.success` 를 돌려준다(계약) — 그래서 계정 정보 정리는 그 결과를 보지 않고
