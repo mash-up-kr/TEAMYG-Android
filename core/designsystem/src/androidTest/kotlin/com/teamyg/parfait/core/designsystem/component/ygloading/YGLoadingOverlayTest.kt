@@ -26,7 +26,7 @@ class YGLoadingOverlayTest {
     fun ygLoadingOverlay_composed_isDisplayed() {
         // Given · When 오버레이만 컴포지션
         composeTestRule.setContent {
-            YGLoadingOverlay(modifier = Modifier.fillMaxSize())
+            YGLoadingOverlay()
         }
 
         // Then 오버레이가 그려진다
@@ -45,7 +45,7 @@ class YGLoadingOverlayTest {
                         .testTag(CONTENT_TAG)
                         .clickable { clickCount += 1 },
                 )
-                YGLoadingOverlay(modifier = Modifier.fillMaxSize())
+                YGLoadingOverlay()
             }
         }
 

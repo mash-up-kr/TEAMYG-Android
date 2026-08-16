@@ -25,6 +25,9 @@ const val YG_LOADING_OVERLAY_TEST_TAG = "yg_loading_overlay"
  * 로딩 중 화면 위에 덮는 오버레이. Dim 과 인디케이터를 그리고 그 아래 컨텐츠의
  * 터치를 삼킨다.
  *
+ * 기본이 화면 전체를 덮는 크기다 — [modifier] 를 비워 호출해도 스피너 크기로
+ * 쭈그러들지 않는다. 크기를 더 좁히거나 넓히고 싶으면 [modifier] 로 덧붙인다.
+ *
  * ⚠️ 임시 구현이다 — 로딩 UI 디자인이 아직 정해지지 않았다. Dim 농도·인디케이터 모양·
  * 문구 유무 전부 확정 전 자리 채움이고, 디자인이 나오면 이 파일만 고친다.
  * 다른 곳에 로딩 UI 를 복제하지 마라 — 그러면 고칠 곳이 늘어난다.
@@ -39,7 +42,9 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
+        modifier = Modifier
+            .fillMaxSize()
+            .then(modifier)
             .testTag(YG_LOADING_OVERLAY_TEST_TAG)
             .background(YGAtomicColors.Transparency.Black25)
             .pointerInput(Unit) {
@@ -48,7 +53,7 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
                         awaitPointerEvent().changes.forEach { it.consume() }
                     }
                 }
-            }.semantics { contentDescription = description },
+            }.semantics(mergeDescendants = true) { contentDescription = description },
     ) {
         CircularProgressIndicator(color = YGAtomicColors.Cherry.Cherry100)
     }
@@ -63,6 +68,6 @@ private fun YGLoadingOverlayPreview() = PreviewBox {
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray900,
         )
-        YGLoadingOverlay(modifier = Modifier.fillMaxSize())
+        YGLoadingOverlay()
     }
 }
