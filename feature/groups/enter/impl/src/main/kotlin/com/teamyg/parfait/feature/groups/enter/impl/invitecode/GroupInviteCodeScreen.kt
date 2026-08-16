@@ -16,7 +16,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
@@ -28,7 +27,6 @@ import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodePasteBar
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GroupInviteCodeScreen(
@@ -37,24 +35,9 @@ internal fun GroupInviteCodeScreen(
     onClickTextFieldElement: (index: Int) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
-    onClickConfirmPopupEnter: () -> Unit,
-    onDismissConfirmPopup: () -> Unit,
     onClickPasteBar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (uiState.isConfirmPopupVisible) {
-        YGModalPopup(
-            title = stringResource(R.string.group_enter_confirm_title, uiState.groupName),
-            body = stringResource(R.string.group_enter_confirm_body),
-            iconRes = DesignSystemR.drawable.ic_warning_round,
-            secondaryText = stringResource(R.string.confirm_popup_cancel),
-            onSecondaryClick = onDismissConfirmPopup,
-            primaryText = stringResource(R.string.group_enter_confirm_enter),
-            onPrimaryClick = onClickConfirmPopupEnter,
-            onDismissRequest = onDismissConfirmPopup,
-        )
-    }
-
     Column(modifier = modifier) {
         YGTopBarDetail(
             title = stringResource(R.string.group_enter),
@@ -150,11 +133,6 @@ private class GroupInviteCodeScreenPreviewParameterProvider :
             GroupInviteCodeUiState(text = "hello"),
             GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
             GroupInviteCodeUiState(
-                text = "hello!",
-                groupName = "모카의 파르페",
-                isConfirmPopupVisible = true,
-            ),
-            GroupInviteCodeUiState(
                 text = "",
                 focusedIndex = 0,
                 clipboardInviteCode = "E54W1A",
@@ -173,8 +151,6 @@ private fun GroupInviteCodeScreenPreview(
         onClickTextFieldElement = {},
         onClickNextButton = {},
         onClickBackButton = {},
-        onClickConfirmPopupEnter = {},
-        onDismissConfirmPopup = {},
         onClickPasteBar = {},
         modifier = Modifier.fillMaxSize(),
     )

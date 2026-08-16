@@ -35,6 +35,8 @@ fun GroupNickNameRoute(
         onValueChanged = { word -> viewModel.processIntent(GroupNickNameIntent.InputWord(word)) },
         onClickNextButton = { viewModel.processIntent(GroupNickNameIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupNickNameIntent.ClickBackButton) },
+        onClickConfirmPopupEnter = { viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter) },
+        onDismissConfirmPopup = { viewModel.processIntent(GroupNickNameIntent.DismissConfirmPopup) },
         modifier = modifier,
     )
 }
