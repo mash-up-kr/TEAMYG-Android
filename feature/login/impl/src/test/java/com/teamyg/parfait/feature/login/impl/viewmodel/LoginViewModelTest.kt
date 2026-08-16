@@ -110,7 +110,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun loginFailure_serverError_turnsOffLoadingAndDoesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+    fun loginFailure_serverError_showsErrorAndDoesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
         // Given 서버가 401 로 실패
         coEvery { loginWithKakaoUseCase(any(), any()) } returns Result.failure(
             AppError.Server(code = "INVALID_ID_TOKEN", statusCode = 401, serverMessage = "…"),
@@ -122,7 +122,8 @@ class LoginViewModelTest {
             viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
             advanceUntilIdle()
 
-            // Then 내비게이션 없이 로딩만 풀린다(에러 UX 는 아직 없다)
+            // Then 내비게이션 대신 실패 안내가 나가고 로딩이 풀린다
+            assertEquals(LoginSideEffect.ShowError(LoginError.INVALID_ID_TOKEN), awaitItem())
             expectNoEvents()
             assertFalse(viewModel.state.value.isLoading)
             cancelAndIgnoreRemainingEvents()
@@ -130,66 +131,126 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun loginFailure_networkError_turnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
+    fun loginFailure_kakaoServerUnavailable_showsKakaoUnavailableError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 카카오 서버 연결 불가(503) — 502 공개키 조회 실패와 같은 갈래로 묶인다
+        coEvery { loginWithKakaoUseCase(any(), any()) } returns Result.failure(
+            AppError.Server(code = "KAKAO_SERVER_UNAVAILABLE", statusCode = 503, serverMessage = "…"),
+        )
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            // When SDK 성공 결과를 전달
+            viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
+            advanceUntilIdle()
+
+            // Then 카카오 쪽 문제로 안내한다
+            assertEquals(LoginSideEffect.ShowError(LoginError.KAKAO_UNAVAILABLE), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun loginFailure_unclassifiedServerError_showsUnknownError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 앱이 모르는 서버 에러 코드
+        coEvery { loginWithKakaoUseCase(any(), any()) } returns Result.failure(
+            AppError.Server(code = "SOME_NEW_CODE", statusCode = 500, serverMessage = "…"),
+        )
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            // When SDK 성공 결과를 전달
+            viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
+            advanceUntilIdle()
+
+            // Then 서버가 코드를 추가해도 앱은 일반 문구로 안내한다
+            assertEquals(LoginSideEffect.ShowError(LoginError.UNKNOWN), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun loginFailure_networkError_showsNetworkErrorAndTurnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
         // Given 네트워크 단절
         coEvery { loginWithKakaoUseCase(any(), any()) } returns
             Result.failure(AppError.Network(null))
         val viewModel = viewModel()
 
-        // When SDK 성공 결과를 전달
-        viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
-        advanceUntilIdle()
+        viewModel.effect.test {
+            // When SDK 성공 결과를 전달
+            viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
+            advanceUntilIdle()
 
-        // Then 로딩이 풀려 재시도할 수 있다
-        assertFalse(viewModel.state.value.isLoading)
+            // Then 재시도할 수 있는 갈래라고 알리고 로딩이 풀린다
+            assertEquals(LoginSideEffect.ShowError(LoginError.NETWORK), awaitItem())
+            assertFalse(viewModel.state.value.isLoading)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
-    fun loginFailure_useCaseThrows_stillTurnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
+    fun loginFailure_useCaseThrows_showsUnknownErrorAndTurnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
         // Given UseCase 가 Result.failure 가 아니라 예외를 그대로 던진다
         coEvery { loginWithKakaoUseCase(any(), any()) } throws IllegalStateException("boom")
         val viewModel = viewModel()
 
-        // Given 로딩이 이미 켜져 있다(SDK 로그인 요청 단계)
-        viewModel.processIntent(LoginIntent.LoginWithKakao)
-        runCurrent()
-        assertTrue(viewModel.state.value.isLoading)
+        viewModel.effect.test {
+            // Given 로딩이 이미 켜져 있다(SDK 로그인 요청 단계)
+            viewModel.processIntent(LoginIntent.LoginWithKakao)
+            runCurrent()
+            assertEquals(LoginSideEffect.RequestLoginWithKakao, awaitItem())
+            assertTrue(viewModel.state.value.isLoading)
 
-        // When SDK 성공 결과를 전달했지만 서버 UseCase 가 던진다
-        viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
-        advanceUntilIdle()
+            // When SDK 성공 결과를 전달했지만 서버 UseCase 가 던진다
+            viewModel.processIntent(LoginIntent.LoginWithKakaoSuccess(idToken = "id-1", nonce = "nonce-1"))
+            advanceUntilIdle()
 
-        // Then 로딩이 풀려 버튼이 영구 비활성으로 남지 않는다
-        assertFalse(viewModel.state.value.isLoading)
+            // Then `Result.failure` 경로와 똑같이 알린다 — 던지는 실패만 조용하면 안 된다
+            assertEquals(LoginSideEffect.ShowError(LoginError.UNKNOWN), awaitItem())
+            // Then 로딩이 풀려 버튼이 영구 비활성으로 남지 않는다
+            assertFalse(viewModel.state.value.isLoading)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
-    fun sdkCancel_turnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
+    fun sdkCancel_turnsOffLoadingWithoutShowingError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 로그인 진행 중
         val viewModel = viewModel()
-        viewModel.processIntent(LoginIntent.LoginWithKakao)
-        runCurrent()
 
-        // When 사용자가 카카오 화면에서 취소
-        viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
-        runCurrent()
+        viewModel.effect.test {
+            viewModel.processIntent(LoginIntent.LoginWithKakao)
+            runCurrent()
+            assertEquals(LoginSideEffect.RequestLoginWithKakao, awaitItem())
 
-        // Then 로딩이 풀린다(취소는 에러가 아니다)
-        assertFalse(viewModel.state.value.isLoading)
+            // When 사용자가 카카오 화면에서 취소
+            viewModel.processIntent(LoginIntent.LoginWithKakaoCancel)
+            runCurrent()
+
+            // Then 로딩만 풀리고 아무 안내도 안 뜬다(취소는 에러가 아니다)
+            expectNoEvents()
+            assertFalse(viewModel.state.value.isLoading)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
-    fun sdkFailure_turnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
+    fun sdkFailure_showsKakaoUnavailableErrorAndTurnsOffLoading() = runTest(mainDispatcherRule.dispatcher) {
         // Given 로그인 진행 중
         val viewModel = viewModel()
-        viewModel.processIntent(LoginIntent.LoginWithKakao)
-        runCurrent()
 
-        // When SDK 가 실패를 돌려준다(idToken null 포함)
-        viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(IllegalStateException("idToken null")))
-        runCurrent()
+        viewModel.effect.test {
+            viewModel.processIntent(LoginIntent.LoginWithKakao)
+            runCurrent()
+            assertEquals(LoginSideEffect.RequestLoginWithKakao, awaitItem())
 
-        // Then 로딩이 풀린다
-        assertFalse(viewModel.state.value.isLoading)
+            // When SDK 가 실패를 돌려준다(idToken null 포함)
+            viewModel.processIntent(LoginIntent.LoginWithKakaoFailure(IllegalStateException("idToken null")))
+            runCurrent()
+
+            // Then 카카오 쪽 문제로 안내하고 로딩이 풀린다
+            assertEquals(LoginSideEffect.ShowError(LoginError.KAKAO_UNAVAILABLE), awaitItem())
+            assertFalse(viewModel.state.value.isLoading)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

@@ -41,6 +41,12 @@ sealed interface LoginSideEffect : UiSideEffect {
 
     /** 기존 회원 — 세션 저장이 끝났다. 백스택을 지우고 그룹 목록으로 간다 */
     data object NavigateToGroupList : LoginSideEffect
+
+    /**
+     * 실패를 알린다. 문구가 아니라 **사유**를 실어 보낸다 — 문자열 매핑은 프레젠테이션
+     * 소관이고(ADR-0016), ViewModel 이 리소스 ID 를 들면 그 결정이 되돌아온다.
+     */
+    data class ShowError(val error: LoginError) : LoginSideEffect
 }
 
 @HiltViewModel
@@ -64,7 +70,9 @@ constructor(
 
             is LoginIntent.LoginWithKakaoFailure -> {
                 updateState { copy(isLoading = false) }
-                // TODO(에러 UX 미정): 실패 안내 노출. idToken 이 null 이면 콘솔 OIDC 설정 문제다
+                // idToken 이 null 이면 콘솔 OIDC 설정 문제다 — 사용자에게는 구분이 무의미해
+                // 카카오 쪽 문제로 묶어 알린다
+                postSideEffect(LoginSideEffect.ShowError(LoginError.KAKAO_UNAVAILABLE))
                 viewModelLogger.e(intent.throwable) { "카카오 SDK 로그인 실패" }
             }
 
@@ -92,11 +100,16 @@ constructor(
         idToken: String,
         nonce: String,
     ) {
-        launch(key = KEY_KAKAO_LOGIN) {
+        // `Result.failure` 는 아래 `onFailure` 가 받고, UseCase 가 예외를 그대로 던지는 경로는
+        // 이 가드가 받는다. 둘 중 하나만 알리면 "어떤 실패는 조용히 아무 일도 안 일어난다"가 된다
+        launch(
+            key = KEY_KAKAO_LOGIN,
+            onError = { postSideEffect(LoginSideEffect.ShowError(LoginError.UNKNOWN)) },
+        ) {
             try {
                 loginWithKakaoUseCase(idToken = idToken, nonce = nonce)
                     .onSuccess(::navigateByMemberType)
-                    .onFailure(::logServerLoginFailure)
+                    .onFailure(::notifyServerLoginFailure)
             } finally {
                 // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
                 // 영구 비활성으로 남는 것을 여기서 막는다
@@ -116,37 +129,48 @@ constructor(
     }
 
     /**
-     * 실패 갈래를 전부 열거해 둔다. 지금은 로그뿐이지만, UX 가 정해지면 각 자리를 문구로
-     * 바꾸면 되고 분기를 다시 발굴할 필요가 없다.
+     * 실패 갈래를 전부 열거해 로그를 남기고 사용자에게 알린다.
+     *
+     * 로그의 분기가 [LoginError] 보다 잘게 갈라져 있는 것은 의도다 — 개발자는 502 와 503 을
+     * 구분해야 하지만 사용자는 둘 다 "잠시 후 다시"로 같다.
      */
-    private fun logServerLoginFailure(throwable: Throwable) {
-        when (throwable) {
-            is AppError.Network ->
-                // TODO(에러 UX 미정): "네트워크 연결을 확인해 주세요" + 재시도 안내
+    private fun notifyServerLoginFailure(throwable: Throwable) {
+        val error = when (throwable) {
+            is AppError.Network -> {
                 viewModelLogger.e(throwable) { "로그인 실패 — 네트워크 단절" }
-
-            is AppError.Server -> when (throwable.code) {
-                ServerErrorCode.Auth.INVALID_ID_TOKEN ->
-                    // TODO(에러 UX 미정): 다시 로그인 안내
-                    viewModelLogger.e(throwable) { "로그인 실패 — ID 토큰 검증 실패(401)" }
-
-                ServerErrorCode.Auth.KAKAO_JWKS_FETCH_FAILED ->
-                    // TODO(에러 UX 미정): 잠시 후 재시도 안내
-                    viewModelLogger.e(throwable) { "로그인 실패 — 카카오 공개키 조회 실패(502)" }
-
-                ServerErrorCode.Auth.KAKAO_SERVER_UNAVAILABLE ->
-                    // TODO(에러 UX 미정): 잠시 후 재시도 안내
-                    viewModelLogger.e(throwable) { "로그인 실패 — 카카오 서버 연결 불가(503)" }
-
-                else ->
-                    // TODO(에러 UX 미정): 알 수 없는 서버 에러 안내
-                    viewModelLogger.e(throwable) { "로그인 실패 — 미분류 서버 에러 ${throwable.code}" }
+                LoginError.NETWORK
             }
 
-            else ->
-                // TODO(에러 UX 미정): 알 수 없는 오류 안내. 매퍼 실패·파싱 실패가 여기로 온다
+            is AppError.Server -> when (throwable.code) {
+                ServerErrorCode.Auth.INVALID_ID_TOKEN -> {
+                    viewModelLogger.e(throwable) { "로그인 실패 — ID 토큰 검증 실패(401)" }
+                    LoginError.INVALID_ID_TOKEN
+                }
+
+                ServerErrorCode.Auth.KAKAO_JWKS_FETCH_FAILED -> {
+                    viewModelLogger.e(throwable) { "로그인 실패 — 카카오 공개키 조회 실패(502)" }
+                    LoginError.KAKAO_UNAVAILABLE
+                }
+
+                ServerErrorCode.Auth.KAKAO_SERVER_UNAVAILABLE -> {
+                    viewModelLogger.e(throwable) { "로그인 실패 — 카카오 서버 연결 불가(503)" }
+                    LoginError.KAKAO_UNAVAILABLE
+                }
+
+                else -> {
+                    viewModelLogger.e(throwable) { "로그인 실패 — 미분류 서버 에러 ${throwable.code}" }
+                    LoginError.UNKNOWN
+                }
+            }
+
+            else -> {
+                // 매퍼 실패·파싱 실패가 여기로 온다
                 viewModelLogger.e(throwable) { "로그인 실패 — 예상하지 못한 오류" }
+                LoginError.UNKNOWN
+            }
         }
+
+        postSideEffect(LoginSideEffect.ShowError(error))
     }
 
     private companion object {
