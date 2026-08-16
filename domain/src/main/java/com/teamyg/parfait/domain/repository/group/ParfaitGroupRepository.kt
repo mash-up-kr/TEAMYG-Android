@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.id.GroupId
 
 /**
@@ -16,6 +17,14 @@ import com.teamyg.parfait.domain.model.id.GroupId
 interface ParfaitGroupRepository {
     /** 탈퇴하지 않은 내 그룹을 활동이 최근인 순서로 준다. 없으면 빈 목록 */
     suspend fun getMyGroups(): Result<List<MyParfaitGroupVO>>
+
+    /**
+     * 그룹 하나의 내 닉네임·초대코드·멤버 목록.
+     *
+     * 그룹명과 정원은 이 응답에 없다 — 이름은 [getMyGroups] 로 따로 집어 오고([GetGroupDetailUseCase]),
+     * 정원은 그룹 생성 응답에만 있어 아직 얻을 길이 없다.
+     */
+    suspend fun getGroupDetail(groupId: GroupId): Result<ParfaitGroupDetailVO>
 
     /** 참여 전에 초대코드가 가리키는 그룹명을 확인한다. 참여 상태는 바뀌지 않는다 */
     suspend fun previewJoin(inviteCode: InviteCode): Result<GroupName>
