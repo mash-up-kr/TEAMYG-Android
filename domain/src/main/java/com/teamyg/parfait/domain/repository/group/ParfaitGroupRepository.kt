@@ -21,8 +21,10 @@ interface ParfaitGroupRepository {
     /**
      * 그룹 하나의 내 닉네임·초대코드·멤버 목록.
      *
-     * 그룹명과 정원은 이 응답에 없다 — 이름은 [getMyGroups] 로 따로 집어 오고([GetGroupDetailUseCase]),
-     * 정원은 그룹 생성 응답에만 있어 아직 얻을 길이 없다.
+     * TODO(서버 응답 확장 대기): 그룹명과 정원이 이 응답에 없다. 서버가 groupName·memberLimit 을
+     *  실어 주면 반영한다 — 그때 [GetGroupDetailUseCase] 의 [getMyGroups] 우회 호출을 걷어내고,
+     *  그룹 설정 화면의 남은 자리도 고정값 대신 `memberLimit - members.size` 로 바꾼다.
+     *  지금은 이름을 [getMyGroups] 에서 따로 집어 오고, 정원은 그룹 생성 응답에만 있어 얻을 길이 없다.
      */
     suspend fun getGroupDetail(groupId: GroupId): Result<ParfaitGroupDetailVO>
 
