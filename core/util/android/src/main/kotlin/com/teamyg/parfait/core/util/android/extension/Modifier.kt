@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.util.android.extension
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
@@ -14,9 +15,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
 private val DefaultScrollbarWidth = 2.dp
@@ -158,4 +162,25 @@ private fun getTrianglePath(
     lineTo(trianglePoint.x, trianglePoint.y)
     lineTo(endPoint.x, endPoint.y)
     close()
+}
+
+/** [point](부모 기준 절대 Dp 좌표)에 이 컴포저블 자신의 중심이 오도록 배치한다. */
+fun Modifier.centeredAt(point: DpOffset): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        val x = point.x.roundToPx() - placeable.width / 2
+        val y = point.y.roundToPx() - placeable.height / 2
+        placeable.placeRelative(x, y)
+    }
+}
+
+/** [key]가 바뀌면 제스처를 새로 추적하며, 드래그한 만큼(픽셀) [onDrag]로 넘겨준다. */
+fun Modifier.dragBy(
+    key: Any?,
+    onDrag: (Offset) -> Unit,
+): Modifier = pointerInput(key) {
+    detectDragGestures { change, dragAmount ->
+        change.consume()
+        onDrag(dragAmount)
+    }
 }

@@ -102,4 +102,10 @@ internal fun Project.setSigningConfig(extension: ApplicationExtension) {
             keyPassword = debugKey.keyPassword
         }
     }
+
+    extension.buildTypes {
+        getByName("release") {
+            signingConfig = extension.signingConfigs.getByName("release")
+        }
+    }
 }
