@@ -145,6 +145,31 @@ class AccountInfoViewModelTest {
     }
 
     @Test
+    fun clickConfirm_serverSaysMemberNotFound_showsAccountGoneError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 404 MEMBER_NOT_FOUND 로 응답한다 — 다른 기기에서 탈퇴해 계정이
+        // 이미 사라졌는데 이 화면에 남아 있는 경우다
+        coEvery { changeGlobalNickname(any()) } returns Result.failure(
+            AppError.Server(
+                code = ServerErrorCode.Member.MEMBER_NOT_FOUND,
+                statusCode = 404,
+                serverMessage = "…",
+            ),
+        )
+        val viewModel = viewModel(accountFlow = flowOf(accountOf("모카")))
+        advanceUntilIdle()
+        viewModel.processIntent(AccountInfoIntent.InputWord("라떼"))
+
+        // When 확인을 누른다
+        viewModel.processIntent(AccountInfoIntent.ClickConfirm)
+        advanceUntilIdle()
+
+        // Then UNKNOWN("잠시 후 다시 시도")이 아니라 계정 부재 사유가 붙는다 — 재시도로는
+        // 절대 성공할 수 없는 실패라 다시 시도하라고 말하면 안 된다
+        assertEquals(GlobalNicknameError.ACCOUNT_GONE, viewModel.state.value.submitError)
+        assertFalse(viewModel.state.value.isSubmitting)
+    }
+
+    @Test
     fun clickConfirm_networkFails_showsNetworkError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 연결 실패
         coEvery { changeGlobalNickname(any()) } returns Result.failure(AppError.Network(cause = null))

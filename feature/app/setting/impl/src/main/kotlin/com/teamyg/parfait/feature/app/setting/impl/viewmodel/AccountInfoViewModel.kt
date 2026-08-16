@@ -179,8 +179,11 @@ constructor(
         val error = when (throwable) {
             is AppError.Network -> GlobalNicknameError.NETWORK
 
+            // 이 엔드포인트가 낼 수 있는 서버 코드는 둘뿐이다(`parfait/api/member.md`) —
+            // 둘 다 여기서 이름으로 받는다. else 로 떨어지는 것은 계약 밖 코드다.
             is AppError.Server -> when (throwable.code) {
                 ServerErrorCode.Member.INVALID_NICKNAME -> GlobalNicknameError.INVALID
+                ServerErrorCode.Member.MEMBER_NOT_FOUND -> GlobalNicknameError.ACCOUNT_GONE
                 else -> GlobalNicknameError.UNKNOWN
             }
 

@@ -15,6 +15,7 @@
     <string name="account_info_nickname_label">닉네임</string>
     <string name="account_info_submit">확인</string>
     <string name="account_info_error_invalid">사용할 수 없는 닉네임이에요</string>
+    <string name="account_info_error_account_gone">계정을 찾을 수 없어요. 다시 로그인해 주세요</string>
     <string name="account_info_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="account_info_error_unknown">잠시 후 다시 시도해 주세요</string>
     <string name="account_info_discard_dialog_title">닉네임 수정을 취소할까요?</string>
