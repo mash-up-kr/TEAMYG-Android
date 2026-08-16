@@ -19,9 +19,10 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasMoveRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
-    entry<NavKeyCanvasImageAdd> {
+    entry<NavKeyCanvasImageAdd> { navKey ->
         YGScaffold { innerPadding ->
             CanvasImageAddRoute(
+                groupId = navKey.groupId,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()

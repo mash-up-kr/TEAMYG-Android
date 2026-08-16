@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.datetime.TimeZone
@@ -39,7 +40,7 @@ sealed interface GroupListIntent : UiIntent {
 
     data object ClickSideMenu : GroupListIntent
 
-    data object ClickTopping : GroupListIntent
+    data class ClickTopping(val groupId: GroupId) : GroupListIntent
 
     data object Refresh : GroupListIntent
 }
@@ -47,7 +48,7 @@ sealed interface GroupListIntent : UiIntent {
 sealed interface GroupListSideEffect : UiSideEffect {
     data object NavigateToAppSideMenu : GroupListSideEffect
 
-    data object NavigateToCanvas : GroupListSideEffect
+    data class NavigateToCanvas(val groupId: GroupId) : GroupListSideEffect
 
     data object NavigateToCreateGroup : GroupListSideEffect
 
@@ -91,8 +92,8 @@ constructor(
                 postSideEffect(GroupListSideEffect.NavigateToAppSideMenu)
             }
 
-            GroupListIntent.ClickTopping -> {
-                postSideEffect(GroupListSideEffect.NavigateToCanvas)
+            is GroupListIntent.ClickTopping -> {
+                postSideEffect(GroupListSideEffect.NavigateToCanvas(intent.groupId))
             }
 
             GroupListIntent.ClickCreateNewGroup -> {

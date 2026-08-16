@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
@@ -144,6 +145,23 @@ class GroupListViewModelTest {
         gate.complete(Unit)
         advanceUntilIdle()
         assertFalse(viewModel.state.value.isRefreshing)
+    }
+
+    @Test
+    fun clickTopping_carriesTheClickedGroup() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹 두 개가 그려진 목록
+        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 두 번째 그룹의 토핑을 누른다
+            viewModel.processIntent(GroupListIntent.ClickTopping(GroupId(2L)))
+            advanceUntilIdle()
+
+            // Then 첫 그룹으로 고정되지 않고 누른 그룹이 실려 간다
+            assertEquals(GroupListSideEffect.NavigateToCanvas(GroupId(2L)), awaitItem())
+        }
     }
 
     private companion object {

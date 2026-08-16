@@ -25,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTe
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGScaleRipple
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -69,7 +70,7 @@ internal fun GroupListScreen(
     uiState: GroupListUiState,
     onClickChip: () -> Unit,
     onClickSideMenu: () -> Unit,
-    onClickTopping: () -> Unit,
+    onClickTopping: (GroupId) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -98,6 +99,7 @@ internal fun GroupListScreen(
                     item {
                         GroupListContent(
                             groupList = uiState.groupList,
+                            onClickTopping = onClickTopping,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -110,6 +112,7 @@ internal fun GroupListScreen(
 @Composable
 internal fun GroupListContent(
     groupList: List<MyParfaitGroupVO>,
+    onClickTopping: (GroupId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     GroupListParfaitLayout(
@@ -167,6 +170,9 @@ internal fun GroupListContent(
                         .toStringResource(),
                     chipType = CHIP_TYPES[index % CHIP_TYPES.size],
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
+                    modifier = Modifier.clickableYGScaleRipple {
+                        onClickTopping(group.groupId)
+                    },
                 )
             }
         }

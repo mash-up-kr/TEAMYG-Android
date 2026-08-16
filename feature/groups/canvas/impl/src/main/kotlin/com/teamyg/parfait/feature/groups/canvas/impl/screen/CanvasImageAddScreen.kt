@@ -16,10 +16,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
@@ -29,12 +32,16 @@ import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
 import kotlinx.datetime.LocalDate
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val MAX_VISIBLE_MEMBER_CHIPS = 5
+
+/** [YGCanvas] 가 배경을 안 받았을 때 쓰는 값과 같다 */
+private val DEFAULT_CANVAS_BACKGROUND = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100)
 
 @Composable
 internal fun CanvasImageAddScreen(
@@ -68,7 +75,7 @@ internal fun CanvasImageAddScreen(
                     canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,
-                            userFirstName = member.nickname,
+                            userFirstName = member.nickname.take(1),
                             chip = YGNametagChipStyle.Style28,
                         )
                     }
@@ -102,7 +109,8 @@ internal fun CanvasImageAddScreen(
                 iconResource = DesignSystemR.drawable.ic_caret_right,
                 onClick = onClickEditCanvasBG,
             ),
-            isEmpty = true,
+            background = canvasState.canvasBackground.toYGCanvasBackground(),
+            isEmpty = canvasState.isCanvasEmpty,
             emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
             // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
             isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
@@ -144,8 +152,29 @@ internal fun CanvasImageAddScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
-        )
+        ) {
+            CanvasToppingLayer(
+                toppings = canvasState.toppings,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
+}
+
+/**
+ * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 마찬가지로,
+ * 셋 다 기본 배경으로 떨어뜨린다 — 캔버스를 못 그리는 것보다 낫다.
+ */
+private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when (this) {
+    null -> DEFAULT_CANVAS_BACKGROUND
+
+    is CanvasBackground.Color ->
+        value
+            .toColorOrNull()
+            ?.let(YGCanvasBackground::Solid)
+            ?: DEFAULT_CANVAS_BACKGROUND
+
+    is CanvasBackground.Image -> YGCanvasBackground.Image(url)
 }
 
 private class CanvasImageAddScreenPreviewParameterProvider :
@@ -155,16 +184,15 @@ private class CanvasImageAddScreenPreviewParameterProvider :
             CanvasImageAddUiState(
                 groupName = "그룹이름은최대열글자",
                 memberChips = listOf(
-                    GroupMemberChip("문", YGColorChipType.NametagChip1),
-                    GroupMemberChip("전", YGColorChipType.NametagChip8),
-                    GroupMemberChip("김", YGColorChipType.NametagChip5),
-                    GroupMemberChip("장", YGColorChipType.NametagChip3),
-                    GroupMemberChip("김", YGColorChipType.NametagChip11),
-                    GroupMemberChip("류", YGColorChipType.NametagChip6),
-                    GroupMemberChip("정", YGColorChipType.NametagChip2),
+                    GroupMemberChip("문어", YGColorChipType.NametagChip1),
+                    GroupMemberChip("전봇대", YGColorChipType.NametagChip8),
+                    GroupMemberChip("김밥", YGColorChipType.NametagChip5),
+                    GroupMemberChip("장미", YGColorChipType.NametagChip3),
+                    GroupMemberChip("김치", YGColorChipType.NametagChip11),
+                    GroupMemberChip("류현진", YGColorChipType.NametagChip6),
+                    GroupMemberChip("정거장", YGColorChipType.NametagChip2),
                 ),
-                canvasDate = "May 20",
-                canvasDay = "Wed",
+                selectedDate = LocalDate(2026, 5, 20),
             ),
         )
 }

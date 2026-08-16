@@ -4,4 +4,6 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object NavKeyCanvasImageAdd : NavKey
+data class NavKeyCanvasImageAdd(
+    val groupId: Long,
+) : NavKey
