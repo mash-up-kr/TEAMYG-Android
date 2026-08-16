@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -37,9 +36,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,6 +45,8 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.util.android.extension.centeredAt
+import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
@@ -521,27 +520,6 @@ private fun ToppingDragHandleButton(
             .centeredAt(point)
             .dragBy(toppingId, onDrag),
     )
-}
-
-/** [point](캔버스 기준 절대 Dp 좌표)에 이 컴포저블 자신의 중심이 오도록 배치한다. */
-private fun Modifier.centeredAt(point: DpOffset): Modifier = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    layout(placeable.width, placeable.height) {
-        val x = point.x.roundToPx() - placeable.width / 2
-        val y = point.y.roundToPx() - placeable.height / 2
-        placeable.placeRelative(x, y)
-    }
-}
-
-/** [key]가 바뀌면 제스처를 새로 추적하며, 드래그한 만큼(픽셀) [onDrag]로 넘겨준다. */
-private fun Modifier.dragBy(
-    key: Any?,
-    onDrag: (Offset) -> Unit,
-): Modifier = pointerInput(key) {
-    detectDragGestures { change, dragAmount ->
-        change.consume()
-        onDrag(dragAmount)
-    }
 }
 
 @YGPreview
