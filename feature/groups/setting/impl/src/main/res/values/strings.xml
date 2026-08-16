@@ -18,4 +18,7 @@
     <string name="group_setting_report_dialog_confirm">신고하기</string>
     <string name="group_setting_dialog_cancel">그만두기</string>
     <string name="group_setting_confirm">확인</string>
+    <string name="group_setting_nickname_error_invalid">사용할 수 없는 닉네임이에요</string>
+    <string name="group_setting_nickname_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="group_setting_nickname_error_unknown">잠시 후 다시 시도해 주세요</string>
 </resources>
