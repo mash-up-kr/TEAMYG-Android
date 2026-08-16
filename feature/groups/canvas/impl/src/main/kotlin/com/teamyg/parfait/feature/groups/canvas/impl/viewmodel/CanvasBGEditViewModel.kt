@@ -87,17 +87,17 @@ sealed interface CanvasBGEditIntent : UiIntent {
         val source: PictureConfirmSource,
     ) : CanvasBGEditIntent
 
-    class OnClickCamera : CanvasBGEditIntent
+    data object OnClickCamera : CanvasBGEditIntent
 
-    class OnClickGallery : CanvasBGEditIntent
+    data object OnClickGallery : CanvasBGEditIntent
 
-    class OnClickCloseButton : CanvasBGEditIntent
+    data object OnClickCloseButton : CanvasBGEditIntent
 
-    class OnQuitDialogConfirm : CanvasBGEditIntent
+    data object OnQuitDialogConfirm : CanvasBGEditIntent
 
-    class OnQuitDialogCancel : CanvasBGEditIntent
+    data object OnQuitDialogCancel : CanvasBGEditIntent
 
-    class OnClickConfirm : CanvasBGEditIntent
+    data object OnClickConfirm : CanvasBGEditIntent
 
     /** 내 토핑을 탭해 선택하거나, 이미 선택된 토핑을 다시 탭해 선택을 해제한다. */
     data class OnClickTopping(
@@ -105,16 +105,16 @@ sealed interface CanvasBGEditIntent : UiIntent {
     ) : CanvasBGEditIntent
 
     /** 딤 처리된 영역(배경, 남의 토핑)을 탭해 지금 선택을 해제한다. */
-    class OnClickDeselectTopping : CanvasBGEditIntent
+    data object OnClickDeselectTopping : CanvasBGEditIntent
 
     /** 툴바의 삭제 버튼. 바로 지우지 않고 확인 모달을 띄운다. */
-    class OnClickDeleteToppingButton : CanvasBGEditIntent
+    data object OnClickDeleteToppingButton : CanvasBGEditIntent
 
-    class OnDeleteToppingDialogConfirm : CanvasBGEditIntent
+    data object OnDeleteToppingDialogConfirm : CanvasBGEditIntent
 
-    class OnDeleteToppingDialogCancel : CanvasBGEditIntent
+    data object OnDeleteToppingDialogCancel : CanvasBGEditIntent
 
-    class OnClickEditTopping : CanvasBGEditIntent
+    data object OnClickEditTopping : CanvasBGEditIntent
 
     /**
      * 크기조절 아이콘을 잡고 드래그한 만큼 넘어온다. 토핑 바깥쪽(우측 상단 대각선) 방향으로 끌면 커지고
@@ -142,11 +142,11 @@ sealed interface CanvasBGEditIntent : UiIntent {
 }
 
 sealed interface CanvasBGEditEffect : UiSideEffect {
-    class NavigateToCamera : CanvasBGEditEffect
+    data object NavigateToCamera : CanvasBGEditEffect
 
-    class NavigateToGallery : CanvasBGEditEffect
+    data object NavigateToGallery : CanvasBGEditEffect
 
-    class NavigateBack : CanvasBGEditEffect
+    data object NavigateBack : CanvasBGEditEffect
 
     data class ConfirmBackground(
         val background: YGCanvasBackground,
@@ -226,18 +226,18 @@ constructor(
             is CanvasBGEditIntent.OnSelectTab -> updateState { copy(selectedTab = intent.tab) }
             is CanvasBGEditIntent.OnSelectColor -> handleOnSelectColor(intent)
             is CanvasBGEditIntent.OnBackgroundImageResult -> handleOnBackgroundImageResult(intent)
-            is CanvasBGEditIntent.OnClickCamera -> postSideEffect(effect = CanvasBGEditEffect.NavigateToCamera())
-            is CanvasBGEditIntent.OnClickGallery -> postSideEffect(effect = CanvasBGEditEffect.NavigateToGallery())
-            is CanvasBGEditIntent.OnClickCloseButton -> updateState { copy(showQuitDialog = true) }
-            is CanvasBGEditIntent.OnQuitDialogConfirm -> postSideEffect(effect = CanvasBGEditEffect.NavigateBack())
-            is CanvasBGEditIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
-            is CanvasBGEditIntent.OnClickConfirm -> handleOnClickConfirm()
+            CanvasBGEditIntent.OnClickCamera -> postSideEffect(effect = CanvasBGEditEffect.NavigateToCamera)
+            CanvasBGEditIntent.OnClickGallery -> postSideEffect(effect = CanvasBGEditEffect.NavigateToGallery)
+            CanvasBGEditIntent.OnClickCloseButton -> updateState { copy(showQuitDialog = true) }
+            CanvasBGEditIntent.OnQuitDialogConfirm -> postSideEffect(effect = CanvasBGEditEffect.NavigateBack)
+            CanvasBGEditIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
+            CanvasBGEditIntent.OnClickConfirm -> handleOnClickConfirm()
             is CanvasBGEditIntent.OnClickTopping -> handleOnClickTopping(intent)
-            is CanvasBGEditIntent.OnClickDeselectTopping -> handleOnClickDeselectTopping()
-            is CanvasBGEditIntent.OnClickDeleteToppingButton -> updateState { copy(showDeleteToppingDialog = true) }
-            is CanvasBGEditIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
-            is CanvasBGEditIntent.OnDeleteToppingDialogCancel -> updateState { copy(showDeleteToppingDialog = false) }
-            is CanvasBGEditIntent.OnClickEditTopping -> handleOnClickEditTopping()
+            CanvasBGEditIntent.OnClickDeselectTopping -> handleOnClickDeselectTopping()
+            CanvasBGEditIntent.OnClickDeleteToppingButton -> updateState { copy(showDeleteToppingDialog = true) }
+            CanvasBGEditIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
+            CanvasBGEditIntent.OnDeleteToppingDialogCancel -> updateState { copy(showDeleteToppingDialog = false) }
+            CanvasBGEditIntent.OnClickEditTopping -> handleOnClickEditTopping()
             is CanvasBGEditIntent.OnToppingResizeDrag -> handleOnToppingResizeDrag(intent)
             is CanvasBGEditIntent.OnToppingRotateDrag -> handleOnToppingRotateDrag(intent)
             is CanvasBGEditIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
