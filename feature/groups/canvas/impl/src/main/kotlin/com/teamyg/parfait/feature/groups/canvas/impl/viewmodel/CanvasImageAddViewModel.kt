@@ -12,8 +12,8 @@ import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.parfait.ParfaitHistory
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetCanvasByDateUseCase
@@ -52,8 +52,8 @@ data class CanvasImageAddUiState(
     /** 드롭다운이 위에서 아래로 읽히도록 오름차순으로 들고 있다 */
     val selectableYears: List<Int> = emptyList(),
     /** [displayedMonth] 가 속한 해의 파르페 기록. 최신순이며, 연·월·일 묶음은 여기서 뽑아 쓴다 */
-    val parfaitHistories: List<ParfaitHistory> = emptyList(),
-    /** [parfaitHistories] 중 이미지가 실제로 올라간 날. 달력이 점을 찍는 기준 */
+    val parfaitHistories: List<PastCanvasVO> = emptyList(),
+    /** [parfaitHistories] 중 토핑이 실제로 올라간 날. 달력이 점을 찍는 기준 */
     val uploadedDates: Set<LocalDate> = emptySet(),
 ) : UiState {
     /** 캔버스 머리말은 고른 날을 따라간다 — 오늘로 굳으면 날짜와 그림이 어긋난다 */
@@ -167,7 +167,7 @@ constructor(
 
     private fun loadParfaitYears() {
         launch {
-            getParfaitYearsUseCase()
+            getParfaitYearsUseCase(groupId)
                 .onSuccess { years -> updateState { copy(selectableYears = years.sorted()) } }
                 .onFailure { throwable ->
                     // 연도 드롭다운이 비는 것뿐이라 실패를 노출하지 않는다
@@ -192,14 +192,14 @@ constructor(
         moveToNearestMonth: Boolean = false,
     ) {
         launch(key = LOAD_PARFAIT_HISTORIES_KEY) {
-            getParfaitHistoriesUseCase(year)
+            getParfaitHistoriesUseCase(groupId = groupId, year = year)
                 .onSuccess { histories ->
                     updateState {
                         val loaded = copy(
                             parfaitHistories = histories,
                             uploadedDates = histories
-                                .filterNot(ParfaitHistory::isEmpty)
-                                .mapTo(mutableSetOf(), ParfaitHistory::date),
+                                .filterNot(PastCanvasVO::isEmpty)
+                                .mapTo(mutableSetOf(), PastCanvasVO::date),
                         )
 
                         if (moveToNearestMonth) loaded.movedToNearestMonth(year) else loaded
