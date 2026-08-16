@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
+import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
@@ -42,6 +43,13 @@ class GetGroupDetailUseCaseTest {
             groupId: GroupId,
             groupNickname: GroupNickname,
         ): Result<GroupNicknameVO> = error("쓰지 않는다")
+
+        override suspend fun leaveGroup(groupId: GroupId): Result<GroupId> = error("쓰지 않는다")
+
+        override suspend fun reportGroup(
+            groupId: GroupId,
+            reason: String,
+        ): Result<ReportedGroupVO> = error("쓰지 않는다")
     }
 
     @Test

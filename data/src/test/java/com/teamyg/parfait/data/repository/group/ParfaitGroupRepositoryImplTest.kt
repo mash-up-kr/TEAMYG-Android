@@ -10,7 +10,9 @@ import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ReportId
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -235,5 +237,71 @@ class ParfaitGroupRepositoryImplTest {
         val error = assertIs<AppError.Server>(result.exceptionOrNull())
         assertEquals("INVALID_GROUP_NICKNAME", error.code)
         assertEquals(400, error.statusCode)
+    }
+
+    @Test
+    fun leaveGroup_remoteSucceeds_returnsLeftGroupId() = runTest {
+        // Given 탈퇴에 성공한다
+        coEvery { remoteDataSource.leaveGroup(any()) } returns Result.success(groupId)
+
+        // When 그룹 나가기
+        val result = repository.leaveGroup(groupId)
+
+        // Then 탈퇴한 그룹 id 를 그대로 돌려준다
+        assertEquals(groupId, result.getOrThrow())
+        coVerify(exactly = 1) { remoteDataSource.leaveGroup(groupId) }
+    }
+
+    @Test
+    fun leaveGroup_remoteFailsWithBusiness_convertsToAppErrorServer() = runTest {
+        // Given 이미 나간 그룹이라 403 으로 실패
+        coEvery { remoteDataSource.leaveGroup(any()) } returns Result.failure(
+            ApiException.Business(
+                code = "GROUP_NOT_JOINED",
+                serverMessage = "참여하지 않은 그룹입니다",
+                statusCode = 403,
+                errorDetail = null,
+            ),
+        )
+
+        // When 그룹 나가기
+        val result = repository.leaveGroup(groupId)
+
+        // Then 도메인 에러로 바뀌어 나온다
+        val error = assertIs<AppError.Server>(result.exceptionOrNull())
+        assertEquals("GROUP_NOT_JOINED", error.code)
+        assertEquals(403, error.statusCode)
+    }
+
+    @Test
+    fun reportGroup_passesGroupIdAndReasonToDataSource() = runTest {
+        // Given 신고 접수에 성공한다
+        val reportedGroup = ReportedGroupVO(groupId = groupId, reportId = ReportId(9L))
+        coEvery { remoteDataSource.reportGroup(any(), any()) } returns Result.success(reportedGroup)
+
+        // When 그룹 신고
+        val result = repository.reportGroup(groupId = groupId, reason = REPORT_REASON)
+
+        // Then 사유를 가공하지 않고 넘기고 결과를 그대로 돌려준다
+        assertEquals(reportedGroup, result.getOrThrow())
+        coVerify(exactly = 1) { remoteDataSource.reportGroup(groupId = groupId, reason = REPORT_REASON) }
+    }
+
+    @Test
+    fun reportGroup_remoteFailsWithNetwork_convertsToAppErrorNetwork() = runTest {
+        // Given 연결이 끊긴다
+        coEvery { remoteDataSource.reportGroup(any(), any()) } returns Result.failure(
+            ApiException.Network(cause = IOException("연결 실패")),
+        )
+
+        // When 그룹 신고
+        val result = repository.reportGroup(groupId = groupId, reason = REPORT_REASON)
+
+        // Then 도메인 에러로 바뀌어 나온다
+        assertIs<AppError.Network>(result.exceptionOrNull())
+    }
+
+    private companion object {
+        const val REPORT_REASON = "부적절한 그룹"
     }
 }

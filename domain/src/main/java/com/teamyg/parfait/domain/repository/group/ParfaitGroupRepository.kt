@@ -8,6 +8,7 @@ import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
+import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 
 /**
@@ -47,4 +48,20 @@ interface ParfaitGroupRepository {
         groupId: GroupId,
         groupNickname: GroupNickname,
     ): Result<GroupNicknameVO>
+
+    /**
+     * 내 멤버십만 지운다. 그룹도, 내가 올린 사진도 남는다.
+     *
+     * 나간 뒤에는 그 그룹의 상세·닉네임 변경·신고가 모두 403 GROUP_NOT_JOINED 로 떨어진다 —
+     * 성공했다면 그 그룹을 가리키는 화면은 더 이상 열어 둘 수 없다.
+     */
+    suspend fun leaveGroup(groupId: GroupId): Result<GroupId>
+
+    /**
+     * @param reason 신고 사유. 서버 규칙을 벗어나면 400 INVALID_GROUP_REPORT_REASON 이다
+     */
+    suspend fun reportGroup(
+        groupId: GroupId,
+        reason: String,
+    ): Result<ReportedGroupVO>
 }
