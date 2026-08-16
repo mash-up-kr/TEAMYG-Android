@@ -483,13 +483,20 @@ class GroupSettingViewModelTest {
             viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
             // When 확정
-            viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
-            advanceUntilIdle()
+            viewModel.effect.test {
+                viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+                advanceUntilIdle()
 
-            // Then 서버가 받아 준 이름만 남으므로 이전 닉네임 그대로고, 사유가 붙는다
+                // Then 사유가 토스트로 나간다
+                assertEquals(
+                    GroupSettingSideEffect.ShowError(GroupSettingError.INVALID_NICKNAME),
+                    awaitItem(),
+                )
+            }
+
+            // Then 서버가 받아 준 이름만 남으므로 이전 닉네임 그대로다
             val state = viewModel.state.value
             assertEquals(MY_NICKNAME, state.myNickname.value)
-            assertEquals(GroupSettingError.INVALID_NICKNAME, state.submitError)
             assertFalse(state.isSubmittingNickname)
         }
 
@@ -502,11 +509,13 @@ class GroupSettingViewModelTest {
         viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
         // When 확정
-        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+            advanceUntilIdle()
 
-        // Then 네트워크 사유가 붙는다
-        assertEquals(GroupSettingError.NETWORK, viewModel.state.value.submitError)
+            // Then 네트워크 사유가 토스트로 나간다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.NETWORK), awaitItem())
+        }
     }
 
     @Test

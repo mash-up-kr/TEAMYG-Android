@@ -24,14 +24,11 @@ import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.feature.groups.setting.impl.R
-import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingError
-import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.toStringResource
 
 @Composable
 internal fun GroupNicknameField(
     nickname: String,
     nicknameError: NameValidResult.Error?,
-    submitError: GroupSettingError?,
     onNicknameChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
     onConfirmNickname: () -> Unit,
@@ -54,11 +51,9 @@ internal fun GroupNicknameField(
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { focusState -> onFocusChange(focusState.hasFocus) },
-            isError = nicknameError != null || submitError != null,
+            isError = nicknameError != null,
             maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-            // 입력 형식 오류가 먼저다 — 고쳐야 할 것이 눈앞에 있는 쪽을 알려 준다
-            errorDescription = nicknameError?.toStringResource(NameFieldType.NICKNAME)
-                ?: submitError?.toStringResource(),
+            errorDescription = nicknameError?.toStringResource(NameFieldType.NICKNAME),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
         )
@@ -68,7 +63,6 @@ internal fun GroupNicknameField(
 private data class GroupNicknameFieldPreviewState(
     val nickname: String,
     val nicknameError: NameValidResult.Error? = null,
-    val submitError: GroupSettingError? = null,
 )
 
 private class GroupNicknameFieldPreviewParameterProvider :
@@ -82,10 +76,6 @@ private class GroupNicknameFieldPreviewParameterProvider :
                 nicknameError = NameValidResult.Error.InvalidCharacter,
             ),
             GroupNicknameFieldPreviewState(nickname = "열다섯글자를꽉꽉채운닉네임야호"),
-            GroupNicknameFieldPreviewState(
-                nickname = "서버가거절한닉네임",
-                submitError = GroupSettingError.INVALID_NICKNAME,
-            ),
         )
 }
 
@@ -98,7 +88,6 @@ private fun GroupNicknameFieldPreview(
     GroupNicknameField(
         nickname = state.nickname,
         nicknameError = state.nicknameError,
-        submitError = state.submitError,
         onNicknameChange = {},
         onFocusChange = {},
         onConfirmNickname = {},

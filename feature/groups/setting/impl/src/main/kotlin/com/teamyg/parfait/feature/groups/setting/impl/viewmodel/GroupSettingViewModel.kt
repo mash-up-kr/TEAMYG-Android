@@ -42,9 +42,8 @@ data class GroupSettingUiState(
     val myNickname: GroupNickname = GroupNickname(""),
     val nicknameInput: String = "",
     val isEditing: Boolean = false,
+    /** 입력 형식 오류. 서버가 되돌린 사유는 상태가 아니라 [GroupSettingSideEffect.ShowError] 로 나간다 */
     val nicknameError: NameValidResult.Error? = null,
-    /** 서버가 닉네임 변경을 되돌린 사유. 입력 형식 오류인 [nicknameError] 와 자리가 다르다 */
-    val submitError: GroupSettingError? = null,
     val members: List<GroupMemberUiModel> = emptyList(),
     val inviteCode: InviteCode = InviteCode(""),
     // TODO: 정원이 그룹 생성 응답에만 있어 남은 자리를 셀 수 없다. 서버가 상세에 memberLimit 을
@@ -101,8 +100,8 @@ sealed interface GroupSettingSideEffect : UiSideEffect {
     data class CopyInviteCode(val inviteCode: String) : GroupSettingSideEffect
 
     /**
-     * 조회 실패는 입력 자리와 무관해 토스트로 나간다 — 닉네임 변경 실패가 입력칸 아래
-     * 인라인으로 남는 것과 자리가 다르다.
+     * 서버가 되돌린 사유. 입력 형식 오류는 고칠 곳이 눈앞에 있어 입력칸 아래 남지만, 서버 실패는
+     * 그 자리에서 고칠 수 있는 것이 아니라 공용 토스트로 나간다.
      */
     data class ShowError(val error: GroupSettingError) : GroupSettingSideEffect
 }
@@ -207,7 +206,6 @@ constructor(
             copy(
                 nicknameInput = nickname,
                 nicknameError = nicknameError,
-                submitError = null,
             )
         }
     }
@@ -230,13 +228,13 @@ constructor(
         val nickname = GroupNickname(state.value.nicknameInput)
 
         launch(key = KEY_CHANGE_NICKNAME) {
-            updateState { copy(isSubmittingNickname = true, submitError = null) }
+            updateState { copy(isSubmittingNickname = true) }
             try {
                 changeGroupNickname(groupId = groupId, groupNickname = nickname)
                     .onSuccess { changed -> updateState { withMyNickname(changed.groupNickname) } }
                     .onFailure { throwable ->
                         viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
-                        updateState { copy(submitError = throwable.toGroupSettingError()) }
+                        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                     }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 버튼이 영구 비활성으로 남지 않게 한다
@@ -321,7 +319,6 @@ constructor(
             copy(
                 nicknameInput = myNickname.value,
                 nicknameError = null,
-                submitError = null,
                 isEditing = false,
             )
         }
