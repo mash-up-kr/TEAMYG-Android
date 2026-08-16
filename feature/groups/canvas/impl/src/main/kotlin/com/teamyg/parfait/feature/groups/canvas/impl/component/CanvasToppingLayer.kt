@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import kotlin.math.cos
@@ -135,7 +136,7 @@ private fun ToppingOutline(
     painter: AsyncImagePainter,
     border: ToppingBorder.Solid,
 ) {
-    val color = border.color.toCanvasColorOrNull() ?: return
+    val color = border.color.toColorOrNull() ?: return
     val widthPx = with(LocalDensity.current) { border.width.dp.toPx() }
 
     repeat(OUTLINE_STAMP_COUNT) { index ->

@@ -20,7 +20,6 @@ import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
-import com.teamyg.parfait.feature.groups.canvas.impl.component.toCanvasColorOrNull
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
@@ -33,6 +32,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
 import kotlinx.datetime.LocalDate
@@ -167,7 +167,7 @@ private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when 
 
     is CanvasBackground.Color ->
         value
-            .toCanvasColorOrNull()
+            .toColorOrNull()
             ?.let(YGCanvasBackground::Solid)
             ?: DEFAULT_CANVAS_BACKGROUND
 
