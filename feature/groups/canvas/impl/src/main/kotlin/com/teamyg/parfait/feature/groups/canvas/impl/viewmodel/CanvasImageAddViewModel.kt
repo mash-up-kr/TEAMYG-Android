@@ -9,10 +9,19 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfait.ParfaitHistory
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
@@ -24,7 +33,6 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 import kotlin.math.abs
 import kotlin.time.Clock
-import javax.inject.Inject
 
 data class GroupMemberChip(
     val nickname: String,
@@ -36,6 +44,12 @@ data class CanvasImageAddUiState(
     val memberChips: List<GroupMemberChip> = emptyList(),
     val canvasDate: String = "",
     val canvasDay: String = "",
+    /** 오늘 캔버스가 아직 없으면 null 이다 — 화면을 여는 것만으로 만들지 않는다 */
+    val parfaitId: ParfaitId? = null,
+    /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
+    val canvasBackground: CanvasBackground? = null,
+    /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
+    val toppings: List<CanvasToppingVO> = emptyList(),
     val today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
     val selectedDate: LocalDate = today,
     val isCalendarVisible: Boolean = false,
@@ -59,6 +73,9 @@ data class CanvasImageAddUiState(
             if (displayedMonth.year == thisMonth.year) months + thisMonth else months
         }.distinct()
         .sorted()
+
+    /** 토핑이 하나도 없을 때만 안내 문구가 뜬다 */
+    val isCanvasEmpty: Boolean = toppings.isEmpty()
 }
 
 sealed interface CanvasImageAddEffect : UiSideEffect {
@@ -95,21 +112,61 @@ sealed interface CanvasImageAddIntent : UiIntent {
     data class ClickDate(val date: LocalDate) : CanvasImageAddIntent
 }
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = CanvasImageAddViewModel.Factory::class)
 class CanvasImageAddViewModel
-@Inject
+@AssistedInject
 constructor(
+    @Assisted groupIdValue: Long,
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
+    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
 ) : BaseViewModel<CanvasImageAddUiState, CanvasImageAddIntent, CanvasImageAddEffect>(
     initialState = CanvasImageAddUiState(),
 ) {
+    private val groupId = GroupId(groupIdValue)
+
     init {
         viewModelLogger.i { "CanvasImageAddViewModel::init" }
         loadCanvasImageAddInfo()
+        loadTodayCanvas()
         loadParfaitYears()
         loadParfaitHistories(state.value.today.year)
+    }
+
+    /**
+     * 오늘 캔버스가 아직 없으면 빈 화면 그대로 둔다 — 여기서 만들지 않는다. 서버의 오늘 조회는
+     * 없으면 캔버스를 생성해 저장하므로, 토핑을 처음 올리는 순간까지 미룬다.
+     */
+    private fun loadTodayCanvas() {
+        launch(key = LOAD_TODAY_CANVAS_KEY) {
+            getTodayParfaitUseCase(groupId)
+                .onSuccess { canvas ->
+                    canvas ?: return@onSuccess
+
+                    updateState {
+                        copy(
+                            parfaitId = canvas.parfaitId,
+                            canvasBackground = canvas.background,
+                            toppings = canvas.toppings.sortedBy { it.transform.positionZ },
+                            memberChips = canvas.members.toMemberChips(),
+                        )
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                }
+        }
+    }
+
+    /**
+     * 서버가 멤버 색을 주지 않아 목록 순서로 팔레트를 돌려 쓴다. 순서가 고정이라 같은 그룹을
+     * 다시 열어도 같은 사람에게 같은 색이 간다.
+     */
+    private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
+        GroupMemberChip(
+            nickname = member.nickname.value,
+            colorChipType = NAMETAG_CHIP_PALETTE[index % NAMETAG_CHIP_PALETTE.size],
+        )
     }
 
     private fun loadParfaitYears() {
@@ -127,18 +184,8 @@ constructor(
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
         updateState {
             copy(
-                // TODO: 그룹 정보 연동 필요
+                // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
                 groupName = "그룹이름은최대열글자",
-                // TODO: 그룹원 Nametag-Chip 정보 연동 필요
-                memberChips = listOf(
-                    GroupMemberChip("문", YGColorChipType.NametagChip1),
-                    GroupMemberChip("전", YGColorChipType.NametagChip8),
-                    GroupMemberChip("김", YGColorChipType.NametagChip5),
-                    GroupMemberChip("이", YGColorChipType.NametagChip3),
-                    GroupMemberChip("박", YGColorChipType.NametagChip11),
-                    GroupMemberChip("최", YGColorChipType.NametagChip6),
-                    GroupMemberChip("정", YGColorChipType.NametagChip2),
-                ),
                 canvasDate = today.format(DateTextFormat.monthDayFormat),
                 canvasDay = today.format(DateTextFormat.weekdayFormat),
             )
@@ -255,7 +302,25 @@ constructor(
         )
     }
 
+    @AssistedFactory
+    interface Factory {
+        fun create(groupIdValue: Long): CanvasImageAddViewModel
+    }
+
     private companion object {
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
+
+        const val LOAD_TODAY_CANVAS_KEY = "loadTodayCanvas"
+
+        /** 상단 Nametag-Chip 색. 서버가 색을 주지 않아 멤버 순서로 돌려 쓴다 */
+        val NAMETAG_CHIP_PALETTE = listOf(
+            YGColorChipType.NametagChip1,
+            YGColorChipType.NametagChip2,
+            YGColorChipType.NametagChip3,
+            YGColorChipType.NametagChip5,
+            YGColorChipType.NametagChip6,
+            YGColorChipType.NametagChip8,
+            YGColorChipType.NametagChip11,
+        )
     }
 }

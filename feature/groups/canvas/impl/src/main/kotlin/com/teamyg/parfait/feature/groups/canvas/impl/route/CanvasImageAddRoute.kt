@@ -19,9 +19,14 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
 internal fun CanvasImageAddRoute(
+    groupId: Long,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: CanvasImageAddViewModel = hiltViewModel(),
+    viewModel: CanvasImageAddViewModel = hiltViewModel(
+        creationCallback = { factory: CanvasImageAddViewModel.Factory ->
+            factory.create(groupIdValue = groupId)
+        },
+    ),
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
 
