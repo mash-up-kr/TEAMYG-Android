@@ -74,7 +74,6 @@ data class CanvasImageAddUiState(
         }.distinct()
         .sorted()
 
-    /** 토핑이 하나도 없을 때만 안내 문구가 뜬다 */
     val isCanvasEmpty: Boolean = toppings.isEmpty()
 }
 

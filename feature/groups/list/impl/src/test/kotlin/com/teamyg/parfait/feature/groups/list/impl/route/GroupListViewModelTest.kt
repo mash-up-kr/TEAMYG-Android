@@ -159,8 +159,7 @@ class GroupListViewModelTest {
             viewModel.processIntent(GroupListIntent.ClickTopping(GroupId(2L)))
             advanceUntilIdle()
 
-            // Then 캔버스가 어느 그룹인지 알 수 있도록 누른 그룹이 실려 간다 —
-            // 첫 그룹으로 고정되면 두 번째 그룹의 캔버스에 못 들어간다
+            // Then 첫 그룹으로 고정되지 않고 누른 그룹이 실려 간다
             assertEquals(GroupListSideEffect.NavigateToCanvas(GroupId(2L)), awaitItem())
         }
     }

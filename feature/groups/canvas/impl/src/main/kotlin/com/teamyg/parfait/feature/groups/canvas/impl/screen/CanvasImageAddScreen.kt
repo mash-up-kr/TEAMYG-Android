@@ -75,7 +75,6 @@ internal fun CanvasImageAddScreen(
                     canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,
-                            // 이름표에는 첫 글자만 올린다
                             userFirstName = member.nickname.take(1),
                             chip = YGNametagChipStyle.Style28,
                         )

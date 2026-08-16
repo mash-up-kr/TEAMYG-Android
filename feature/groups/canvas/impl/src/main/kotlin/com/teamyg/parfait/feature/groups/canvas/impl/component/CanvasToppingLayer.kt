@@ -94,8 +94,8 @@ private fun CanvasTopping(
  * 누끼 이미지라 테두리도 실루엣을 따라야 한다. 사각 테두리를 두르면 잘라 낸 배경이 다시
  * 드러나므로, 같은 그림을 테두리 색으로 물들여 여덟 방향으로 밀어 찍고 그 위에 원본을 얹는다.
  *
- * 그림은 [ContentScale.Fit] 로 담아 긴 변만 박스에 맞춘다 — 원본 비율을 몰라도 CAN-007 §3.3 이
- * 지켜지고, 남는 여백은 투명이라 배치 중심도 그대로다.
+ * [ContentScale.Fit] 이 남기는 여백은 투명이라 배치 중심은 그대로다
+ * ([TOPPING_BASE_LONG_SIDE_RATIO]).
  */
 @Composable
 private fun ToppingImage(

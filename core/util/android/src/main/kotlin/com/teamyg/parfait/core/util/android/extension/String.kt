@@ -16,8 +16,6 @@ private const val OPAQUE_ALPHA = 0xFF000000L
  * 서버가 주는 색은 `#RRGGBB` 여섯 자리다. 계약에는 String 이라고만 적혀 있어 형식이 바뀌어도
  * 컴파일로는 드러나지 않으므로, 알파가 붙은 여덟 자리도 함께 읽어 둔다 — 그때 색이 통째로
  * 사라지는 것보다 낫다.
- *
- * 그 밖의 형식은 null 이다. 못 읽은 색은 호출처에서 기본값으로 떨어뜨리거나 그리지 않는다.
  */
 fun String.toColorOrNull(): Color? {
     val hex = removePrefix("#")

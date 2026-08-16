@@ -25,8 +25,8 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTe
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.core.util.android.clickable.clickableYGScaleRipple
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.feature.groups.list.impl.R
