@@ -11,7 +11,7 @@ import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.member.ChangeGlobalNicknameUseCase
-import com.teamyg.parfait.domain.usecase.member.ObserveMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -68,7 +68,7 @@ sealed interface AccountInfoSideEffect : UiSideEffect {
 class AccountInfoViewModel
 @Inject
 constructor(
-    private val observeMyAccount: ObserveMyAccountUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val checkNameValid: CheckNameValidUseCase,
     private val changeGlobalNickname: ChangeGlobalNicknameUseCase,
 ) : BaseViewModel<AccountInfoUiState, AccountInfoIntent, AccountInfoSideEffect>(
@@ -81,7 +81,7 @@ constructor(
         // 입력 버퍼까지 같이 따라가는 이유: SSoT 는 저장된 값이 실제로 달라질 때만 방출하므로
         // (로컬 저장소가 원문 기준으로 중복 방출을 끊는다) 타이핑 도중에 끼어들지 않는다.
         launch {
-            observeMyAccount().collect { account ->
+            getMyAccountFlow().collect { account ->
                 val serverNickname = account?.nickname?.value
                 updateState { copy(savedNickname = serverNickname, nickname = serverNickname) }
             }

@@ -7,7 +7,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
-import com.teamyg.parfait.domain.usecase.member.ObserveMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -64,7 +64,7 @@ class AppSettingViewModel
 @Inject
 constructor(
     private val logout: LogoutUseCase,
-    private val observeMyAccount: ObserveMyAccountUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
@@ -74,7 +74,7 @@ constructor(
         // 구독만 한다 — fetch 는 로그인/가입·스플래시 부트스트랩·닉네임 변경 성공
         // 세 지점에서만 트리거된다. 여기서 새로고침을 걸면 SSoT 가 두 곳에서 쓰이게 된다.
         launch {
-            observeMyAccount().collect { account ->
+            getMyAccountFlow().collect { account ->
                 updateState {
                     copy(
                         nickname = account?.nickname?.value,

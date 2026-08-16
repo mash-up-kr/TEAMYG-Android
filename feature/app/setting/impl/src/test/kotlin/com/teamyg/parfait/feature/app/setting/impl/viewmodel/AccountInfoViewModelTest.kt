@@ -11,7 +11,7 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.member.ChangeGlobalNicknameUseCase
-import com.teamyg.parfait.domain.usecase.member.ObserveMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -37,12 +37,12 @@ class AccountInfoViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val changeGlobalNickname: ChangeGlobalNicknameUseCase = mockk()
-    private val observeMyAccount: ObserveMyAccountUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AccountInfoViewModel {
-        every { observeMyAccount() } returns accountFlow
+        every { getMyAccountFlow() } returns accountFlow
         return AccountInfoViewModel(
-            observeMyAccount = observeMyAccount,
+            getMyAccountFlow = getMyAccountFlow,
             checkNameValid = CheckNameValidUseCase(),
             changeGlobalNickname = changeGlobalNickname,
         )

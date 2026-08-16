@@ -7,7 +7,7 @@ import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
-import com.teamyg.parfait.domain.usecase.member.ObserveMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -31,11 +31,11 @@ class AppSettingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val logout: LogoutUseCase = mockk()
-    private val observeMyAccount: ObserveMyAccountUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AppSettingViewModel {
-        every { observeMyAccount() } returns accountFlow
-        return AppSettingViewModel(logout = logout, observeMyAccount = observeMyAccount)
+        every { getMyAccountFlow() } returns accountFlow
+        return AppSettingViewModel(logout = logout, getMyAccountFlow = getMyAccountFlow)
     }
 
     @Test
