@@ -7,4 +7,8 @@
     <string name="login_onboarding_description_1">매일 새로운 캔버스에 하루하루 다르게 기록해요</string>
     <string name="login_onboarding_description_2">오늘 찍은 사진을 친구들과 함께 캔버스에 붙여요</string>
     <string name="login_onboarding_description_3">서로의 하루가 겹겹이 쌓여, 하나의 캔버스로 완성돼요</string>
+    <string name="login_error_network">네트워크 연결을 확인해 주세요</string>
+    <string name="login_error_invalid_id_token">로그인 정보를 확인하지 못했어요. 다시 시도해 주세요</string>
+    <string name="login_error_kakao_unavailable">카카오 로그인이 원활하지 않아요. 잠시 후 다시 시도해 주세요</string>
+    <string name="login_error_unknown">로그인에 실패했어요. 잠시 후 다시 시도해 주세요</string>
 </resources>

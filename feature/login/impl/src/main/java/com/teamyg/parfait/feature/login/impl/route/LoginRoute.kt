@@ -1,6 +1,8 @@
 package com.teamyg.parfait.feature.login.impl.route
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -9,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
@@ -18,9 +23,11 @@ import com.teamyg.parfait.feature.login.impl.R
 import com.teamyg.parfait.feature.login.impl.model.OnboardingPage
 import com.teamyg.parfait.feature.login.impl.screen.LoginScreen
 import com.teamyg.parfait.feature.login.impl.util.KakaoLoginHelper
+import com.teamyg.parfait.feature.login.impl.viewmodel.LoginError
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginIntent
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginSideEffect
 import com.teamyg.parfait.feature.login.impl.viewmodel.LoginViewModel
+import com.teamyg.parfait.feature.login.impl.viewmodel.toStringResource
 import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
@@ -31,6 +38,13 @@ fun LoginRoute(
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val activity = LocalActivity.current
+    val toastPolicy = rememberYGToastPolicy()
+
+    // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
+    // `LocalContext.current.getString` 으로 우회하면 리소스 읽기가 컴포지션 밖으로 나가
+    // 로케일·설정 변경 때 갱신되지 않는다(`LocalContextResourcesRead` 린트). 그래서 문구는
+    // 여기서 미리 뽑아 두고 이펙트는 고르기만 한다
+    val errorMessages = LoginError.entries.associateWith { it.toStringResource() }
 
     val onboardingDescription1 = stringResource(R.string.login_onboarding_description_1)
     val onboardingDescription2 = stringResource(R.string.login_onboarding_description_2)
@@ -64,6 +78,10 @@ fun LoginRoute(
             when (effect) {
                 is LoginSideEffect.NavigateToGroupList -> {
                     navigator.replaceAll(destination = NavKeyGroupList)
+                }
+
+                is LoginSideEffect.ShowError -> {
+                    toastPolicy.showError(errorMessages.getValue(effect.error))
                 }
 
                 is LoginSideEffect.NavigateToTermAgree -> {
@@ -109,12 +127,22 @@ fun LoginRoute(
         }
     }
 
-    LoginScreen(
-        pages = tempPages,
-        isLoading = state.isLoading,
-        onClickKakaoButton = {
-            viewModel.processIntent(LoginIntent.LoginWithKakao)
-        },
+    YGScaffoldV2(
         modifier = modifier,
-    )
+        isLoading = state.isLoading,
+        toastPolicy = toastPolicy,
+    ) { innerPadding ->
+        LoginScreen(
+            pages = tempPages,
+            isLoading = state.isLoading,
+            onClickKakaoButton = {
+                viewModel.processIntent(LoginIntent.LoginWithKakao)
+            },
+            // `fillMaxSize` 는 취향이 아니라 하중이다 — LoginScreen 의 Column 안에서
+            // OnboardingPager 가 weight(1f) 을 쓰므로 높이가 안 잡히면 레이아웃이 접힌다
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
+    }
 }
