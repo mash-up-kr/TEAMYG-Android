@@ -75,7 +75,8 @@ internal fun CanvasImageAddScreen(
                     canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,
-                            userFirstName = member.nickname,
+                            // 이름표에는 첫 글자만 올린다
+                            userFirstName = member.nickname.take(1),
                             chip = YGNametagChipStyle.Style28,
                         )
                     }
@@ -183,14 +184,15 @@ private class CanvasImageAddScreenPreviewParameterProvider :
         get() = sequenceOf(
             CanvasImageAddUiState(
                 groupName = "그룹이름은최대열글자",
+                // 이름표는 첫 글자만 보이므로 닉네임 전체를 넣어 둔다
                 memberChips = listOf(
-                    GroupMemberChip("문", YGColorChipType.NametagChip1),
-                    GroupMemberChip("전", YGColorChipType.NametagChip8),
-                    GroupMemberChip("김", YGColorChipType.NametagChip5),
-                    GroupMemberChip("장", YGColorChipType.NametagChip3),
-                    GroupMemberChip("김", YGColorChipType.NametagChip11),
-                    GroupMemberChip("류", YGColorChipType.NametagChip6),
-                    GroupMemberChip("정", YGColorChipType.NametagChip2),
+                    GroupMemberChip("문어", YGColorChipType.NametagChip1),
+                    GroupMemberChip("전봇대", YGColorChipType.NametagChip8),
+                    GroupMemberChip("김밥", YGColorChipType.NametagChip5),
+                    GroupMemberChip("장미", YGColorChipType.NametagChip3),
+                    GroupMemberChip("김치", YGColorChipType.NametagChip11),
+                    GroupMemberChip("류현진", YGColorChipType.NametagChip6),
+                    GroupMemberChip("정거장", YGColorChipType.NametagChip2),
                 ),
                 canvasDate = "May 20",
                 canvasDay = "Wed",
