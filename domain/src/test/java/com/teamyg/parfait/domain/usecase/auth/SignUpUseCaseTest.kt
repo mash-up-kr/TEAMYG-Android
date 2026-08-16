@@ -7,10 +7,15 @@ import com.teamyg.parfait.domain.model.auth.RefreshToken
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
 import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.TermsId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -23,7 +28,8 @@ import kotlin.time.Duration.Companion.seconds
 
 class SignUpUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
-    private val useCase = SignUpUseCase(authRepository)
+    private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
+    private val useCase = SignUpUseCase(authRepository, refreshMyAccount)
 
     private val registrationToken = RegistrationToken("registration-token")
 
@@ -31,6 +37,12 @@ class SignUpUseCaseTest {
         accessToken = AccessToken("access-token"),
         refreshToken = RefreshToken("refresh-token"),
         expiresIn = 3600.seconds,
+    )
+
+    private val myAccount = MyAccountVO(
+        memberId = MemberId(1L),
+        provider = LoginProvider.KAKAO,
+        nickname = GlobalNickname("nickname"),
     )
 
     private val requiredPolicy = policy(id = 1L, required = true)
@@ -51,6 +63,7 @@ class SignUpUseCaseTest {
     fun invoke_allPoliciesAgreed_returnsSession() = runTest {
         // Given 모든 약관에 동의한 상태
         coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
 
         // When 가입 요청
         val result = useCase(
@@ -68,6 +81,7 @@ class SignUpUseCaseTest {
     fun invoke_success_savesSession() = runTest {
         // Given 가입에 성공한다
         coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
 
         // When 가입 요청
         useCase(
@@ -84,6 +98,7 @@ class SignUpUseCaseTest {
     fun invoke_optionalPolicyNotAgreed_sendsItAsNotAgreed() = runTest {
         // Given 필수 약관만 동의한 상태
         coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
 
         // When 가입 요청
         useCase(
@@ -126,6 +141,7 @@ class SignUpUseCaseTest {
     fun invoke_agreedIdNotInPolicies_isNotSent() = runTest {
         // Given 목록에 없는 약관 id 가 동의 목록에 섞여 있다
         coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
 
         // When 가입 요청
         useCase(
@@ -176,5 +192,39 @@ class SignUpUseCaseTest {
 
         // Then Result.failure(AppError.Unexpected) 로 감싸져 있다
         assertIs<AppError.Unexpected>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun invoke_signUpSucceeds_refreshesAccount() = runTest {
+        // Given 가입이 성공한다
+        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+
+        // When 가입 요청
+        useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = setOf(TermsId(1L)),
+        )
+
+        // Then 세션 저장과 함께 계정 정보를 한 번 당겨온다
+        coVerify(exactly = 1) { refreshMyAccount() }
+    }
+
+    @Test
+    fun invoke_accountRefreshFails_signUpStillSucceeds() = runTest {
+        // Given 가입은 성공하나 계정 조회가 실패한다
+        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 가입 요청
+        val result = useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = setOf(TermsId(1L)),
+        )
+
+        // Then 가입 결과는 성공이다 — 그 시점에 되돌릴 곳이 없고 값은 다음 진입에서 채워진다
+        assertTrue(result.isSuccess)
     }
 }

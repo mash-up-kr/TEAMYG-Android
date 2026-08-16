@@ -6,6 +6,7 @@ import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
+import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
@@ -41,6 +42,7 @@ class TokenAuthenticator @Inject constructor(
     @UnauthenticatedClient private val authService: AuthService,
     private val apiCaller: ApiCaller,
     private val sessionEventBus: SessionEventBus,
+    private val userInfoLocalDataSource: UserInfoLocalDataSource,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -114,8 +116,17 @@ class TokenAuthenticator @Inject constructor(
         ).getOrElse { throwable ->
             if (throwable.isSessionDead()) {
                 sourceLogger.e(throwable) { "재발급 거절 — 세션 종료" }
-                tokenStore.clear()
+                // 이벤트를 정리보다 먼저 쏜다. 이 이벤트는 "정리가 끝났다"가 아니라
+                // "세션이 죽었다"를 알리는 것이라 정리 성패와 무관하다 — clear() 는
+                // `dataStore.edit` 라 IOException 을 던질 수 있는데, 정리를 먼저 하면
+                // 그 예외가 이벤트 발행 자체를 막아 토큰은 지워졌는데 화면은 세션이
+                // 죽은 줄 모르는 상태가 된다.
                 sessionEventBus.postForcedLogout()
+                // 토큰을 지우는 이 자리에서 계정 정보도 함께 지운다. `SessionEventBus` 를
+                // 구독해 화면 쪽에서 지우게 하면 이벤트가 유실될 때 토큰은 없는데 계정
+                // 정보만 남는 상태가 생긴다 — `:data` 안에서 끝내면 그 경로 자체가 없다.
+                tokenStore.clear()
+                userInfoLocalDataSource.clear()
             } else {
                 // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
                 // 원요청은 401 그대로 화면에 도달하고 화면이 실패를 표시한다.

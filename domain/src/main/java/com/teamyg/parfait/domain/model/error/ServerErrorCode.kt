@@ -61,6 +61,17 @@ object ServerErrorCode {
         const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
     }
 
+    /** 회원 도메인(`/api/v1/users/...`) — 서버 `MemberErrorCode` 에 대응한다 */
+    object Member {
+        /** 400 — 전역 닉네임 길이·문자 패턴 위반. 앱은 `CheckNameValidUseCase` 가 요청 전에
+         * 같은 규칙으로 미리 거른다 — 이 코드는 그 방어를 뚫고 서버까지 간 나머지 경우다 */
+        const val INVALID_NICKNAME = "INVALID_NICKNAME"
+
+        /** 404 — 조회·갱신 대상 회원 부재. 같은 문자열이 다른 도메인에서는 401/409 로도 쓰여
+         * [ParfaitGroup.MEMBER_NOT_FOUND] 와 나눠 둔다 */
+        const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+    }
+
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */
     object Common {
         /** 400 — 바디 파싱 실패·필드 누락·타입 불일치. 정상 동선에서는 나오지 않는다(= 앱 버그) */
