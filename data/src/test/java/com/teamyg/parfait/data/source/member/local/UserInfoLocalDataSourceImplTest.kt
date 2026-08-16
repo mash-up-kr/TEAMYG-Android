@@ -1,10 +1,9 @@
 package com.teamyg.parfait.data.source.member.local
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.stringPreferencesKey
+import com.teamyg.parfait.data.datastore.EncryptedPreferences
+import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.data.security.CryptoManager
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
@@ -12,8 +11,6 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -44,9 +41,8 @@ class UserInfoLocalDataSourceImplTest {
         dataStore: DataStore<Preferences>,
         crypto: CryptoManager = passthroughCrypto,
     ) = UserInfoLocalDataSourceImpl(
-        dataStore = dataStore,
+        preferences = EncryptedPreferences(dataStore = dataStore, cryptoManager = crypto),
         json = Json { ignoreUnknownKeys = true },
-        cryptoManager = crypto,
     )
 
     @Test
@@ -138,31 +134,5 @@ class UserInfoLocalDataSourceImplTest {
 
     private companion object {
         const val ENCRYPTED_PREFIX = "enc:"
-    }
-}
-
-/**
- * 메모리 [MutableStateFlow] 로 구현한 [DataStore]. Keystore·디스크 IO 없이 `edit`/`data`
- * 왕복만 검증하면 되는 테스트 전용 대역이다. `putRaw` 는 테스트가 저장 형태를 직접
- * 심어(암호화되지 않은 원문 그대로) provider 알 수 없음 같은 케이스를 세팅하는 헬퍼다.
- */
-private class FakePreferencesDataStore : DataStore<Preferences> {
-    private val state = MutableStateFlow<Preferences>(emptyPreferences())
-
-    override val data: Flow<Preferences> = state
-
-    override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
-        val updated = transform(state.value)
-        state.value = updated
-        return updated
-    }
-
-    fun putRaw(
-        key: String,
-        value: String,
-    ) {
-        val mutable: MutablePreferences = state.value.toMutablePreferences()
-        mutable[stringPreferencesKey(key)] = value
-        state.value = mutable
     }
 }
