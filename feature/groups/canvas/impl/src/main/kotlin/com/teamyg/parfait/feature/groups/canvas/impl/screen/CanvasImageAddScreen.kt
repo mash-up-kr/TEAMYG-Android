@@ -153,7 +153,10 @@ internal fun CanvasImageAddScreen(
                 .weight(1f)
                 .fillMaxWidth(),
         ) {
-            CanvasToppingLayer(toppings = canvasState.toppings)
+            CanvasToppingLayer(
+                toppings = canvasState.toppings,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }

@@ -38,7 +38,7 @@ private const val OUTLINE_STAMP_COUNT = 8
 private const val FULL_TURN_DEGREES = 360.0
 
 /**
- * 저장된 배치대로 토핑을 얹는다. 부모는 Canvas-Area 와 같은 크기여야 한다 —
+ * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
  * 위치·크기가 모두 그 폭에 대한 비율이라 다른 크기 위에 얹으면 배치가 어긋난다.
  *
  * [toppings] 는 그리는 순서대로 받는다(positionZ 오름차순). 뒤에 오는 것이 위에 덮인다.
@@ -48,7 +48,7 @@ internal fun CanvasToppingLayer(
     toppings: List<CanvasToppingVO>,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier) {
         toppings.forEach { topping ->
             CanvasTopping(
                 topping = topping,
