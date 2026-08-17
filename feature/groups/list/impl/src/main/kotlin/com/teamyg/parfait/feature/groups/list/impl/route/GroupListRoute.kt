@@ -15,7 +15,7 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 
@@ -35,7 +35,7 @@ internal fun GroupListRoute(
                 }
 
                 is GroupListSideEffect.NavigateToCanvas -> {
-                    navigator.goTo(NavKeyCanvasImageAdd(groupId = effect.groupId.value))
+                    navigator.goTo(NavKeyCanvasMain(groupId = effect.groupId.value))
                 }
 
                 is GroupListSideEffect.NavigateToCreateGroup -> {
