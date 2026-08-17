@@ -30,6 +30,15 @@ data class GroupListUiState(
 ) : UiState
 
 sealed interface GroupListIntent : UiIntent {
+    /**
+     * 화면이 앞에 섰다. 처음 열릴 때뿐 아니라 다른 화면에서 **돌아올 때마다** 온다 — ViewModel 은
+     * NavEntry 가 백스택에 남아 있는 한 살아 있어, 초기화 한 번으로는 목록이 낡는다.
+     *
+     * 목록의 최근 사진은 다른 멤버가 올려도 바뀌므로, 내 앱 안의 변경만 좇아서는 최신이 될 수
+     * 없다. 들어올 때마다 다시 물어보는 것이 최신을 보장하는 유일한 방법이다.
+     */
+    data object Enter : GroupListIntent
+
     data object ClickTopBarChip : GroupListIntent
 
     data object DismissedTopBarChip : GroupListIntent
@@ -52,6 +61,14 @@ sealed interface GroupListSideEffect : UiSideEffect {
 
     data object NavigateToCreateGroup : GroupListSideEffect
 
+    /**
+     * 당겨서 새로고침이 실패했는데 보여 줄 목록은 남아 있다.
+     *
+     * 화면은 그대로 두고 토스트로만 알린다 — 목록이 바뀌지 않은 것은 "받아 봤는데 새 소식이
+     * 없다"와 구분되지 않아, 사용자가 직접 시킨 일이 실패했다는 것을 말해 줄 자리가 따로 필요하다.
+     */
+    data object ShowRefreshError : GroupListSideEffect
+
     data object NavigateToInviteCode : GroupListSideEffect
 }
 
@@ -63,23 +80,13 @@ constructor(
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
-    init {
-        val today = Clock.System
-            .now()
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-            .date
-        updateState {
-            copy(
-                dateString = today.format(DateFormat.FullMonthWithDay),
-                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
-            )
-        }
-
-        loadGroups(isRefresh = false)
-    }
-
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
+            GroupListIntent.Enter -> {
+                updateToday()
+                loadGroups(isRefresh = false)
+            }
+
             GroupListIntent.ClickTopBarChip -> {
                 updateState { copy(groupAddButtonSelected = true) }
             }
@@ -108,6 +115,20 @@ constructor(
         }
     }
 
+    /** 앱을 켜 둔 채 자정을 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
+    private fun updateToday() {
+        val today = Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+        updateState {
+            copy(
+                dateString = today.format(DateFormat.FullMonthWithDay),
+                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
+            )
+        }
+    }
+
     /**
      * 새로고침 표시를 [launch] 밖에서 켜는 이유: 당겨서 새로고침이 [KEY_LOAD_GROUPS] 가드에
      * 막혀도 인디케이터는 돌아야 하고, 실제로도 조회가 돌고 있다.
@@ -121,7 +142,7 @@ constructor(
             try {
                 getMyGroups()
                     .onSuccess { groups -> updateState { copy(groupList = groups, isError = false) } }
-                    .onFailure(::handleLoadFailure)
+                    .onFailure { throwable -> handleLoadFailure(throwable, isRefresh) }
             } finally {
                 updateState { copy(isRefreshing = false) }
             }
@@ -129,11 +150,23 @@ constructor(
     }
 
     /**
-     * 목록이 남아 있어도 에러 화면으로 넘긴다 — 실패를 알릴 다른 자리가 없어서, 낡은 목록을
-     * 그대로 두면 사용자는 새로고침이 실패한 것을 알 방법이 없다.
+     * 조회는 [GroupListIntent.Enter] 로 화면에 돌아올 때마다 나가므로, 실패마다 에러 화면으로
+     * 넘기면 뒤로 온 것만으로 보던 목록이 통째로 사라진다. 낡아도 남겨 두는 편이 낫다.
+     *
+     * 대신 남겨 두면 실패가 화면에서 사라지므로, 사용자가 **직접 시킨** 새로고침이었을 때는
+     * 토스트로 따로 알린다. 목록이 비어 에러 화면으로 넘어가는 경우는 그 화면이 이미 실패를
+     * 말하고 있어 토스트를 겹치지 않는다.
      */
-    private fun handleLoadFailure(throwable: Throwable) {
-        updateState { copy(isError = true) }
+    private fun handleLoadFailure(
+        throwable: Throwable,
+        isRefresh: Boolean,
+    ) {
+        val hasList = state.value.groupList.isNotEmpty()
+        updateState { copy(isError = hasList.not()) }
+
+        if (isRefresh && hasList) {
+            postSideEffect(GroupListSideEffect.ShowRefreshError)
+        }
 
         when (throwable) {
             is AppError.Network -> viewModelLogger.e(throwable) { "그룹 목록 조회 실패 — 네트워크 단절" }
