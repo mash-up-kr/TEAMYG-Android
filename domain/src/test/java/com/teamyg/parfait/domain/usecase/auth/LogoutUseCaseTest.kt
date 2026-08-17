@@ -1,17 +1,20 @@
 package com.teamyg.parfait.domain.usecase.auth
 
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class LogoutUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val memberRepository: MemberRepository = mockk(relaxed = true)
-    private val logout = LogoutUseCase(authRepository, memberRepository)
+    private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
+    private val logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository)
 
     @Test
     fun invoke_always_clearsTokensAndAccount() = runTest {
@@ -26,5 +29,18 @@ class LogoutUseCaseTest {
         // 사용자 정보가 남는다
         coVerify(exactly = 1) { authRepository.logout() }
         coVerify(exactly = 1) { memberRepository.clearMyAccount() }
+    }
+
+    @Test
+    fun invoke_clearsTokenAccountAndGroups() = runTest {
+        // Given 로그아웃이 성공한다
+        coEvery { authRepository.logout() } returns Result.success(Unit)
+
+        // When 로그아웃한다
+        LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository).invoke()
+
+        // Then 세 가지를 모두 지운다 — 하나만 남으면 계정 전환 때 이전 사용자 흔적이 남는다
+        coVerify(exactly = 1) { memberRepository.clearMyAccount() }
+        verify(exactly = 1) { parfaitGroupRepository.clearGroups() }
     }
 }

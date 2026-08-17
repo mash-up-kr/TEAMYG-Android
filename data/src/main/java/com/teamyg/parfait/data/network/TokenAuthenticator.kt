@@ -6,6 +6,7 @@ import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
+import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
@@ -43,6 +44,7 @@ class TokenAuthenticator @Inject constructor(
     private val apiCaller: ApiCaller,
     private val sessionEventBus: SessionEventBus,
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
+    private val groupLocalDataSource: GroupLocalDataSource,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -122,11 +124,13 @@ class TokenAuthenticator @Inject constructor(
                 // 그 예외가 이벤트 발행 자체를 막아 토큰은 지워졌는데 화면은 세션이
                 // 죽은 줄 모르는 상태가 된다.
                 sessionEventBus.postForcedLogout()
-                // 토큰을 지우는 이 자리에서 계정 정보도 함께 지운다. `SessionEventBus` 를
+                // 토큰을 지우는 이 자리에서 계정 정보와 그룹 캐시도 함께 지운다. `SessionEventBus` 를
                 // 구독해 화면 쪽에서 지우게 하면 이벤트가 유실될 때 토큰은 없는데 계정
                 // 정보만 남는 상태가 생긴다 — `:data` 안에서 끝내면 그 경로 자체가 없다.
                 tokenStore.clear()
                 userInfoLocalDataSource.clear()
+                // 그룹 캐시는 인메모리라 IO 실패 경로가 없다 — clear() 가 예외를 던지지 않는다.
+                groupLocalDataSource.clear()
             } else {
                 // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
                 // 원요청은 401 그대로 화면에 도달하고 화면이 실패를 표시한다.

@@ -2,11 +2,12 @@ package com.teamyg.parfait.domain.usecase.auth
 
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import javax.inject.Inject
 
 /**
- * 세션을 끝낼 때 토큰과 계정 정보를 함께 정리한다 — **"무엇을 지우는가"의 단일 자리**다.
+ * 세션을 끝낼 때 토큰·계정 정보·그룹 캐시를 함께 정리한다 — **"무엇을 지우는가"의 단일 자리**다.
  *
  * 호출자는 둘이다: 사용자가 직접 로그아웃하는 S-001, 그리고 자동로그인이 인증 거절로
  * 실패했을 때의 `BootstrapSessionUseCase`. 지울 대상이 같으므로 한쪽만 늘어나지 않도록
@@ -18,14 +19,18 @@ import javax.inject.Inject
  *
  * [MemberRepository.clearMyAccount] 는 suspend 라 [runSuspendCatching] 으로 감싼다 —
  * 로컬 저장소 IO 가 실패해도 로그아웃 자체를 실패로 만들지 않는다(취소는 재던진다).
+ * [ParfaitGroupRepository.clearGroups] 는 인메모리라 IO 실패 경로가 없어
+ * [runSuspendCatching] 이 필요 없다.
  */
 class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val memberRepository: MemberRepository,
+    private val parfaitGroupRepository: ParfaitGroupRepository,
 ) {
     suspend operator fun invoke(): Result<Unit> {
         val result = authRepository.logout()
         runSuspendCatching { memberRepository.clearMyAccount() }
+        parfaitGroupRepository.clearGroups()
         return result
     }
 }
