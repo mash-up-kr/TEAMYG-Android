@@ -128,9 +128,11 @@ class TokenAuthenticator @Inject constructor(
                 // 구독해 화면 쪽에서 지우게 하면 이벤트가 유실될 때 토큰은 없는데 계정
                 // 정보만 남는 상태가 생긴다 — `:data` 안에서 끝내면 그 경로 자체가 없다.
                 tokenStore.clear()
-                userInfoLocalDataSource.clear()
-                // 그룹 캐시는 인메모리라 IO 실패 경로가 없다 — clear() 가 예외를 던지지 않는다.
+                // 그룹 캐시는 인메모리(StateFlow 대입 두 번)라 던지지 않는다 — 던지지 않는 정리를
+                // 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO 실패가
+                // 그룹 캐시 정리까지 막지 않게 한다.
                 groupLocalDataSource.clear()
+                userInfoLocalDataSource.clear()
             } else {
                 // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
                 // 원요청은 401 그대로 화면에 도달하고 화면이 실패를 표시한다.

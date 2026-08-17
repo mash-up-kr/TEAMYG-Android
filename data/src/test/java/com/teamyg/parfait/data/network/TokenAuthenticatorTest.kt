@@ -221,6 +221,10 @@ class TokenAuthenticatorTest {
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
+        // Then 계정 정보 clear() 가 던져도 그룹 캐시는 이미 지워진 뒤다 — 던지지 않는 정리를
+        // 먼저 하므로 뒤이은 IO 실패가 그룹 캐시 정리를 막지 못한다(이전 계정 그룹이 남는
+        // 위험을 강제 로그아웃 경로에서도 막는다)
+        verify(exactly = 1) { groupLocalDataSource.clear() }
     }
 
     @Test
