@@ -21,9 +21,14 @@ private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
 @Composable
 internal fun GroupSettingRoute(
+    groupId: Long,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: GroupSettingViewModel = hiltViewModel(),
+    viewModel: GroupSettingViewModel = hiltViewModel(
+        creationCallback = { factory: GroupSettingViewModel.Factory ->
+            factory.create(groupIdValue = groupId)
+        },
+    ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val clipboard = LocalClipboard.current

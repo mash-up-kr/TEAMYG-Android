@@ -118,6 +118,8 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     class NavigateToCanvasBGEdit : CanvasMainEffect
 
+    data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
+
     data class NavigateToSegmentation(
         val uri: String,
     ) : CanvasMainEffect
@@ -133,6 +135,8 @@ sealed interface CanvasMainIntent : UiIntent {
     class OnClickCanvas : CanvasMainIntent
 
     class OnClickCanvasEdit : CanvasMainIntent
+
+    data object OnClickGroupSetting : CanvasMainIntent
 
     data object OnClickDateSelect : CanvasMainIntent
 
@@ -265,6 +269,10 @@ constructor(
             is CanvasMainIntent.OnClickCanvas -> handleOnClickCanvas()
 
             is CanvasMainIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
+
+            is CanvasMainIntent.OnClickGroupSetting -> postSideEffect(
+                effect = CanvasMainEffect.NavigateToGroupSetting(groupId),
+            )
 
             // 달력이 열린 동안에도 같은 버튼이 달력 위에 다시 그려지므로, 한 번 더 누르면 닫는다
             is CanvasMainIntent.OnClickDateSelect -> {

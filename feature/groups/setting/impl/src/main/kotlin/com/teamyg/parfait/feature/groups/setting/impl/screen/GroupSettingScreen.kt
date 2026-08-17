@@ -91,6 +91,7 @@ internal fun GroupSettingScreen(
                 GroupNicknameField(
                     nickname = state.nicknameInput,
                     nicknameError = state.nicknameError,
+                    submitError = state.submitError,
                     onNicknameChange = onNicknameChange,
                     onFocusChange = onNicknameFocusChange,
                     onConfirmNickname = confirmAndDismissKeyboard,

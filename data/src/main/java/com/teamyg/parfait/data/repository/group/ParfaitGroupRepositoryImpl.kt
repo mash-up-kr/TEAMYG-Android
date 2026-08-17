@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import javax.inject.Inject
@@ -22,6 +23,10 @@ class ParfaitGroupRepositoryImpl @Inject constructor(
 ) : ParfaitGroupRepository {
     override suspend fun getMyGroups(): Result<List<MyParfaitGroupVO>> = parfaitGroupRemoteDataSource
         .getMyGroups()
+        .mapErrorToAppError()
+
+    override suspend fun getGroupDetail(groupId: GroupId): Result<ParfaitGroupDetailVO> = parfaitGroupRemoteDataSource
+        .getGroupDetail(groupId)
         .mapErrorToAppError()
 
     override suspend fun previewJoin(inviteCode: InviteCode): Result<GroupName> = parfaitGroupRemoteDataSource

@@ -3,10 +3,33 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.NameValidResult
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
+import com.teamyg.parfait.domain.model.group.GroupDetailVO
+import com.teamyg.parfait.domain.model.group.GroupName
+import com.teamyg.parfait.domain.model.group.GroupNickname
+import com.teamyg.parfait.domain.model.group.GroupNicknameVO
+import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
+import com.teamyg.parfait.domain.usecase.group.ChangeGroupNicknameUseCase
+import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +41,27 @@ class GroupSettingViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private fun viewModel() = GroupSettingViewModel(CheckNameValidUseCase())
+    private val getGroupDetail: GetGroupDetailUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
+
+    @Before
+    fun setUp() {
+        coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.success(DETAIL)
+        every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
+        coEvery { changeGroupNickname(any(), any()) } returns Result.success(
+            GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname(NEW_NICKNAME)),
+        )
+    }
+
+    /** 만들자마자 상세 조회가 끝난 상태로 넘긴다 — 화면이 실제로 서 있는 지점이 여기다 */
+    private fun TestScope.viewModel(): GroupSettingViewModel = GroupSettingViewModel(
+        groupIdValue = GROUP_ID,
+        checkNameValid = CheckNameValidUseCase(),
+        getGroupDetail = getGroupDetail,
+        getMyAccountFlow = getMyAccountFlow,
+        changeGroupNickname = changeGroupNickname,
+    ).also { advanceUntilIdle() }
 
     @Test
     fun inputNickname_validName_updatesInputAndClearsError() = runTest(mainDispatcherRule.dispatcher) {
@@ -146,16 +189,17 @@ class GroupSettingViewModelTest {
         // Given 편집 중 유효한 새 닉네임을 입력한 상태
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
-        viewModel.processIntent(GroupSettingIntent.InputNickname("확정될닉네임"))
+        viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
         // When 확정
         viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
 
         // Then 내 닉네임이 바뀌고 편집이 끝나며 그룹원 목록의 내 항목도 따라 바뀐다
         val state = viewModel.state.value
-        assertEquals("확정될닉네임", state.myNickname.value)
+        assertEquals(NEW_NICKNAME, state.myNickname.value)
         assertFalse(state.isEditing)
-        assertEquals("확정될닉네임", state.members.first { it.isMe }.nickname)
+        assertEquals(NEW_NICKNAME, state.members.first { it.isMe }.nickname)
     }
 
     @Test
@@ -168,6 +212,7 @@ class GroupSettingViewModelTest {
 
         // When 확정을 시도(키보드 엔터 포함 같은 경로)
         viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
 
         // Then 아무 것도 확정되지 않고 편집 상태가 유지된다
         assertEquals(original, viewModel.state.value.myNickname.value)
@@ -179,16 +224,17 @@ class GroupSettingViewModelTest {
         // Given 편집 중 유효한 새 닉네임을 입력한 상태
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
-        viewModel.processIntent(GroupSettingIntent.InputNickname("확정될닉네임"))
+        viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
         // When 확정 직후 포커스 상실이 이어짐
         viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = false))
 
         // Then 확정된 닉네임이 되돌아가지 않는다
         val state = viewModel.state.value
-        assertEquals("확정될닉네임", state.myNickname.value)
-        assertEquals("확정될닉네임", state.nicknameInput)
+        assertEquals(NEW_NICKNAME, state.myNickname.value)
+        assertEquals(NEW_NICKNAME, state.nicknameInput)
         assertFalse(state.isEditing)
     }
 
@@ -390,5 +436,113 @@ class GroupSettingViewModelTest {
         assertTrue(state.isEditing)
         assertEquals("고치던닉네임", state.nicknameInput)
         assertNull(state.visibleDialog)
+    }
+
+    @Test
+    fun init_loadsGroupDetailIntoState() = runTest(mainDispatcherRule.dispatcher) {
+        // Given·When 화면이 열려 상세 조회가 끝남
+        val viewModel = viewModel()
+
+        // Then 그룹명·내 닉네임·초대코드·그룹원이 서버 값으로 채워지고, 내 항목이 표시된다
+        val state = viewModel.state.value
+        assertEquals("그룹이름", state.groupName.value)
+        assertEquals(MY_NICKNAME, state.myNickname.value)
+        assertEquals(MY_NICKNAME, state.nicknameInput)
+        assertEquals("WDIDCJ", state.inviteCode.value)
+        assertEquals(3, state.members.size)
+        assertEquals(MY_NICKNAME, state.members.single { it.isMe }.nickname)
+    }
+
+    @Test
+    fun init_myAccountUnknown_marksNobodyAsMe() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 정보를 아직 못 받은 상태
+        every { getMyAccountFlow() } returns flowOf(null)
+
+        // When 화면이 열림
+        val viewModel = viewModel()
+
+        // Then 이름이 겹칠 수 있으므로 남을 나로 표시하지 않는다
+        val members = viewModel.state.value.members
+        assertTrue(members.none { it.isMe })
+    }
+
+    @Test
+    fun confirmNickname_serverRejectsName_keepsPreviousNicknameAndShowsReason() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 서버가 닉네임을 거절한다
+            coEvery { changeGroupNickname(any(), any()) } returns Result.failure(
+                AppError.Server(
+                    code = ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME,
+                    statusCode = 400,
+                    serverMessage = "사용할 수 없는 닉네임입니다",
+                ),
+            )
+            val viewModel = viewModel()
+            viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+            viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
+
+            // When 확정
+            viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+            advanceUntilIdle()
+
+            // Then 서버가 받아 준 이름만 남으므로 이전 닉네임 그대로고, 사유가 붙는다
+            val state = viewModel.state.value
+            assertEquals(MY_NICKNAME, state.myNickname.value)
+            assertEquals(GroupSettingError.INVALID_NICKNAME, state.submitError)
+            assertFalse(state.isSubmittingNickname)
+        }
+
+    @Test
+    fun confirmNickname_networkFails_showsNetworkReason() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 네트워크가 끊긴 상태
+        coEvery { changeGroupNickname(any(), any()) } returns Result.failure(AppError.Network(Exception()))
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
+
+        // When 확정
+        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
+
+        // Then 네트워크 사유가 붙는다
+        assertEquals(GroupSettingError.NETWORK, viewModel.state.value.submitError)
+    }
+
+    @Test
+    fun init_detailFails_keepsScreenUsable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상세 조회가 실패한다
+        coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(Exception()))
+
+        // When 화면이 열림
+        val viewModel = viewModel()
+
+        // Then 빈 값으로 서 있을 뿐 무한 로딩이나 크래시로 가지 않는다
+        val state = viewModel.state.value
+        assertEquals("", state.groupName.value)
+        assertTrue(state.members.isEmpty())
+    }
+
+    private companion object {
+        const val GROUP_ID = 7L
+        const val MY_NICKNAME = "잠탈전용닉네임2"
+        const val NEW_NICKNAME = "확정될닉네임"
+
+        val MY_ACCOUNT = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("전역닉네임"),
+        )
+
+        val DETAIL = GroupDetailVO(
+            groupId = GroupId(GROUP_ID),
+            groupName = GroupName("그룹이름"),
+            myNickname = GroupNickname(MY_NICKNAME),
+            inviteCode = InviteCode("WDIDCJ"),
+            members = listOf(
+                ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME)),
+                ParfaitGroupMemberVO(MemberId(2L), GroupNickname("체리마루")),
+                ParfaitGroupMemberVO(MemberId(3L), GroupNickname("푸딩왕자")),
+            ),
+        )
     }
 }
