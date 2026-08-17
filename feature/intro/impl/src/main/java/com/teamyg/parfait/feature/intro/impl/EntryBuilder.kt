@@ -17,14 +17,10 @@ import com.teamyg.parfait.feature.intro.impl.termagree.TermAgreeRoute
 
 fun EntryProviderScope<NavKey>.featureSplashEntryBuilder(navigator: Navigator) {
     entry<NavKeySplash> {
-        YGScaffold { innerPadding ->
-            SplashRoute(
-                navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
+        SplashRoute(
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
