@@ -181,7 +181,9 @@ constructor(
         isRefresh: Boolean,
     ) {
         // 미조회(null)와 0건을 함께 "보여 줄 것이 없다"로 본다 — 둘 다 에러 화면이 맞다
-        val hasList = state.value.groupList.isNullOrEmpty().not()
+        val hasList = state.value.groupList
+            .isNullOrEmpty()
+            .not()
         updateState { copy(isError = hasList.not()) }
 
         if (isRefresh && hasList) {
