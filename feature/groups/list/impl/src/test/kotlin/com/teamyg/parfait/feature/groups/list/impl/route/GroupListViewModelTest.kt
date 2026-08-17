@@ -126,6 +126,58 @@ class GroupListViewModelTest {
     }
 
     @Test
+    fun refresh_failsWithLoadedGroups_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹을 이미 띄운 화면
+        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 사용자가 직접 당긴 새로고침이 실패한다
+            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            viewModel.processIntent(GroupListIntent.Refresh)
+            advanceUntilIdle()
+
+            // Then 목록은 남기되, 목록이 그대로인 것은 성공과 구분되지 않으므로 따로 알린다
+            assertEquals(GroupListSideEffect.ShowRefreshError, awaitItem())
+            assertEquals(GROUPS, viewModel.state.value.groupList)
+        }
+    }
+
+    @Test
+    fun enter_failsWithLoadedGroups_staysSilent() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹을 이미 띄운 화면
+        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 돌아오면서 저절로 나간 조회가 실패한다
+            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            viewModel.processIntent(GroupListIntent.Enter)
+            advanceUntilIdle()
+
+            // Then 사용자가 시킨 일이 아니므로 토스트로 방해하지 않는다
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun refresh_failsWithNoGroups_doesNotStackAToastOnTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 조회가 실패해 에러 화면이 뜬 상태
+        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 에러 화면에서 당겨 새로고침했는데 또 실패한다
+            viewModel.processIntent(GroupListIntent.Refresh)
+            advanceUntilIdle()
+
+            // Then 에러 화면이 이미 실패를 말하고 있어 토스트를 겹치지 않는다
+            assertTrue(viewModel.state.value.isError)
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun enter_loadSucceedsWithNoGroups_isNotError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 가입한 그룹이 없어 빈 배열이 온다
         coEvery { getMyGroups() } returns Result.success(emptyList())
