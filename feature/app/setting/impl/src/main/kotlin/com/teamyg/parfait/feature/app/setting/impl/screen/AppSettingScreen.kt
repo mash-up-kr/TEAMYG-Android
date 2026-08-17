@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
@@ -69,20 +71,24 @@ internal fun AppSettingScreen(
                         text = stringResource(R.string.setting_item_account),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickAccount,
+                        modifier = Modifier.heightIn(min = 52.dp),
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_service_terms),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickTerms,
+                        modifier = Modifier.heightIn(min = 52.dp),
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_privacy_policy),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickPrivacy,
+                        modifier = Modifier.heightIn(min = 52.dp),
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = state.version,
+                        modifier = Modifier.heightIn(min = 52.dp),
                     )
                 }
 
