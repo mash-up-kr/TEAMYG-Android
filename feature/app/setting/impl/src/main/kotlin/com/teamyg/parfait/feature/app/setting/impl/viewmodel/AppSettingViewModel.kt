@@ -18,9 +18,8 @@ import javax.inject.Inject
  * @property loginProvider 도메인 의미만 담는다(ADR-0016). 표시 문자열은 `core:ui`
  *   `LoginProvider.toStringResource()` 가 렌더 시점에 매핑한다. `null` 은 `nickname` 과 같은
  *   이유로 로딩이다.
- * @property version 설치된 앱의 버전 이름. `BuildConfig.VERSION_NAME` 을 가공 없이 그대로
- *   보여 준다(`"1.0.0"`). 빌드 시점에 정해져 화면이 사는 동안 바뀌지 않으므로 로딩 상태가 없다 —
- *   `nickname` 과 달리 처음부터 값이 있다
+ * @property version 앱 버전. 빌드에 박혀 있어 로딩 상태가 없다 — `nickname` 과 달리 처음부터
+ *   값이 있어 non-null 이다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
@@ -70,7 +69,6 @@ constructor(
     private val logout: LogoutUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
-    // 버전은 빌드에 박혀 있어 물어볼 곳이 없다 — 첫 상태에 그대로 담는다
     initialState = AppSettingState(version = appVersionName.value),
 ) {
     init {

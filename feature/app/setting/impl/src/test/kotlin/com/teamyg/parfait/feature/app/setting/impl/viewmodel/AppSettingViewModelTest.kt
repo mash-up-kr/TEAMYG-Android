@@ -259,7 +259,6 @@ class AppSettingViewModelTest {
     }
 
     private companion object {
-        /** 실제 `libs.versions.appVersionName` 과 달라도 되는 값 — 주입 경로만 검증한다 */
         const val VERSION_NAME = "9.8.7"
     }
 }
