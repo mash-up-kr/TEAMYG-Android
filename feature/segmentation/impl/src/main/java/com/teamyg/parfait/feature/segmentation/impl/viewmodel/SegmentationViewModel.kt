@@ -21,6 +21,7 @@ data class SegmentationState(
     val isError: Boolean = false,
     val originBitmap: Bitmap? = null,
     val subjectImagePath: String? = null,
+    val trimmedSubjectImagePath: String? = null,
     val subjectBounds: SegmentationBounds? = null,
 ) : UiState
 
@@ -56,6 +57,7 @@ class SegmentationViewModel
                     updateState {
                         copy(
                             subjectImagePath = result.subjectImagePath,
+                            trimmedSubjectImagePath = result.trimmedSubjectImagePath,
                             subjectBounds = subjectBounds,
                         )
                     }

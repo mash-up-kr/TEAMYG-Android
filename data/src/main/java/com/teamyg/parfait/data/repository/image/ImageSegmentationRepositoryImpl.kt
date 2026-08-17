@@ -106,10 +106,25 @@ constructor(
             val subjectBitmap = Bitmap.createBitmap(subjectColors, image.width, image.height, Bitmap.Config.ARGB_8888)
 
             val file = subjectBitmap.saveToCacheAsPng()
+
+            // 미리보기·배치는 투명 여백 없이 실제 객체 크기만 필요하므로, 이미 알고 있는 bounding box 로 바로 잘라 둔다
+            val trimmedFile = subjectBounds?.let { bounds ->
+                val trimmedBitmap = Bitmap.createBitmap(
+                    subjectBitmap,
+                    bounds.left,
+                    bounds.top,
+                    bounds.width,
+                    bounds.height,
+                )
+                val saved = trimmedBitmap.saveToCacheAsPng()
+                if (trimmedBitmap !== subjectBitmap) trimmedBitmap.recycle()
+                saved
+            }
             subjectBitmap.recycle()
 
             val result = SegmentationResult(
                 subjectImagePath = file.absolutePath,
+                trimmedSubjectImagePath = (trimmedFile ?: file).absolutePath,
                 subjectBounds = subjectBounds,
             )
 

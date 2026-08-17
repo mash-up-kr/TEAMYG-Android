@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
@@ -35,8 +35,9 @@ internal fun SegmentationConfirmRoute(
     key: NavKeySegmentationConfirm,
     modifier: Modifier = Modifier,
 ) {
-    // NavKey 는 화면을 처음 열 때의 인자라 편집 결과를 담지 못한다. 편집 후 결과는 화면이 들고 있는다
-    var subjectImagePath by rememberSaveable { mutableStateOf(key.subjectImagePath) }
+    // NavKey 는 화면을 처음 열 때의 인자라 편집 결과를 담지 못한다. 편집 후 결과는 화면이 들고 있는다.
+    // 미리보기·배치 화면에 넘길 값이라 투명 여백을 걷어낸 trimmedSubjectImagePath 로 초기화한다
+    var subjectImagePath by rememberSaveable { mutableStateOf(key.trimmedSubjectImagePath) }
 
     // 다시 편집할 때 넘길 재료. 테두리를 구운 [subjectImagePath] 를 마스크로 넘기면 그 색이
     // 원본 픽셀로 덮여 테두리가 사라지므로, 두르기 전 알맹이와 겹 목록을 따로 들고 간다
@@ -65,7 +66,7 @@ internal fun SegmentationConfirmRoute(
                 ),
             )
         },
-        onClickNext = { navigator.goTo(NavKeyCanvasMove(imageUri = subjectImagePath)) },
+        onClickNext = { navigator.goTo(NavKeyCanvasToppingPlace(imageUri = subjectImagePath)) },
         modifier = modifier,
     )
 }
