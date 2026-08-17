@@ -186,13 +186,14 @@ class GroupListViewModelTest {
 
     @Test
     fun refresh_failsWithLoadedGroups_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 그룹을 이미 띄운 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // Given 캐시에 그룹이 있어 이미 띄운 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
             // When 사용자가 직접 당긴 새로고침이 실패한다
-            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
             viewModel.processIntent(GroupListIntent.Refresh)
             advanceUntilIdle()
 
@@ -204,13 +205,14 @@ class GroupListViewModelTest {
 
     @Test
     fun enter_failsWithLoadedGroups_staysSilent() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 그룹을 이미 띄운 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // Given 캐시에 그룹이 있어 이미 띄운 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
             // When 돌아오면서 저절로 나간 조회가 실패한다
-            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
             viewModel.processIntent(GroupListIntent.Enter)
             advanceUntilIdle()
 
@@ -221,8 +223,9 @@ class GroupListViewModelTest {
 
     @Test
     fun refresh_failsWithNoGroups_doesNotStackAToastOnTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 조회가 실패해 에러 화면이 뜬 상태
-        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        // Given 캐시가 비어 있고 조회도 실패해 에러 화면이 뜬 상태
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
