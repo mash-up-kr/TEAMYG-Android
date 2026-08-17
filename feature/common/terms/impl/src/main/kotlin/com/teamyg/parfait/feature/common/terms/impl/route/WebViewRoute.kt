@@ -1,7 +1,10 @@
 package com.teamyg.parfait.feature.common.terms.impl.route
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.common.terms.impl.screen.WebViewScreen
 
@@ -16,10 +19,14 @@ internal fun WebViewRoute(
     navigator: Navigator,
     modifier: Modifier = Modifier,
 ) {
-    WebViewScreen(
-        title = title,
-        url = url,
-        onClickBack = navigator::onBack,
-        modifier = modifier,
-    )
+    YGScaffoldV2(modifier = modifier) { innerPadding ->
+        WebViewScreen(
+            title = title,
+            url = url,
+            onClickBack = navigator::onBack,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
+    }
 }
