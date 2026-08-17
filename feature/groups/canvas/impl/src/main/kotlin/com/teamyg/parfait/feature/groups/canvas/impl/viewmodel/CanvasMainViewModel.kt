@@ -39,7 +39,7 @@ data class GroupMemberChip(
     val colorChipType: YGColorChipType,
 )
 
-data class CanvasImageAddUiState(
+data class CanvasMainUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
     /**
@@ -111,46 +111,46 @@ data class CanvasImageAddUiState(
         get() = toppings.isEmpty()
 }
 
-sealed interface CanvasImageAddEffect : UiSideEffect {
-    class NavigateToCamera : CanvasImageAddEffect
+sealed interface CanvasMainEffect : UiSideEffect {
+    class NavigateToCamera : CanvasMainEffect
 
-    class NavigateToCanvas : CanvasImageAddEffect
+    class NavigateToCanvas : CanvasMainEffect
 
-    class NavigateToCanvasBGEdit : CanvasImageAddEffect
+    class NavigateToCanvasBGEdit : CanvasMainEffect
 
     data class NavigateToSegmentation(
         val uri: String,
-    ) : CanvasImageAddEffect
+    ) : CanvasMainEffect
 }
 
-sealed interface CanvasImageAddIntent : UiIntent {
+sealed interface CanvasMainIntent : UiIntent {
     data class CacheImage(
         val uri: String,
-    ) : CanvasImageAddIntent
+    ) : CanvasMainIntent
 
-    class OnClickCamera : CanvasImageAddIntent
+    class OnClickCamera : CanvasMainIntent
 
-    class OnClickCanvas : CanvasImageAddIntent
+    class OnClickCanvas : CanvasMainIntent
 
-    class OnClickCanvasEdit : CanvasImageAddIntent
+    class OnClickCanvasEdit : CanvasMainIntent
 
-    data object OnClickDateSelect : CanvasImageAddIntent
+    data object OnClickDateSelect : CanvasMainIntent
 
-    data object DismissCalendar : CanvasImageAddIntent
+    data object DismissCalendar : CanvasMainIntent
 
-    data class SelectYear(val year: Int) : CanvasImageAddIntent
+    data class SelectYear(val year: Int) : CanvasMainIntent
 
-    data class SelectMonth(val month: LocalDate) : CanvasImageAddIntent
+    data class SelectMonth(val month: LocalDate) : CanvasMainIntent
 
-    data class ClickDate(val date: LocalDate) : CanvasImageAddIntent
+    data class ClickDate(val date: LocalDate) : CanvasMainIntent
 
-    data object OnClickSaveToGallery : CanvasImageAddIntent
+    data object OnClickSaveToGallery : CanvasMainIntent
 
-    data object OnClickGoToToday : CanvasImageAddIntent
+    data object OnClickGoToToday : CanvasMainIntent
 }
 
-@HiltViewModel(assistedFactory = CanvasImageAddViewModel.Factory::class)
-class CanvasImageAddViewModel
+@HiltViewModel(assistedFactory = CanvasMainViewModel.Factory::class)
+class CanvasMainViewModel
 @AssistedInject
 constructor(
     @Assisted groupIdValue: Long,
@@ -159,14 +159,14 @@ constructor(
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
-) : BaseViewModel<CanvasImageAddUiState, CanvasImageAddIntent, CanvasImageAddEffect>(
-    initialState = CanvasImageAddUiState(),
+) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
+    initialState = CanvasMainUiState(),
 ) {
     private val groupId = GroupId(groupIdValue)
 
     init {
-        viewModelLogger.i { "CanvasImageAddViewModel::init" }
-        loadCanvasImageAddInfo()
+        viewModelLogger.i { "CanvasMainViewModel::init" }
+        loadCanvasMainInfo()
         loadTodayCanvas()
         loadParfaitYears()
         loadParfaitHistories(state.value.today.year)
@@ -216,7 +216,7 @@ constructor(
         }
     }
 
-    private fun loadCanvasImageAddInfo() {
+    private fun loadCanvasMainInfo() {
         updateState {
             // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
             copy(groupName = "그룹이름은최대열글자")
@@ -224,7 +224,7 @@ constructor(
     }
 
     /**
-     * 달력은 연 단위로 한 번만 받아 [CanvasImageAddUiState.parfaitHistoriesByYear] 에 쌓아 두고,
+     * 달력은 연 단위로 한 번만 받아 [CanvasMainUiState.parfaitHistoriesByYear] 에 쌓아 두고,
      * 월을 오갈 때는 물론 이미 본 해로 돌아올 때도 다시 부르지 않는다.
      */
     private fun loadParfaitHistories(
@@ -256,40 +256,40 @@ constructor(
         }
     }
 
-    override fun processIntent(intent: CanvasImageAddIntent) {
+    override fun processIntent(intent: CanvasMainIntent) {
         when (intent) {
-            is CanvasImageAddIntent.CacheImage -> handleCacheImage(intent)
+            is CanvasMainIntent.CacheImage -> handleCacheImage(intent)
 
-            is CanvasImageAddIntent.OnClickCamera -> handleOnClickCamera()
+            is CanvasMainIntent.OnClickCamera -> handleOnClickCamera()
 
-            is CanvasImageAddIntent.OnClickCanvas -> handleOnClickCanvas()
+            is CanvasMainIntent.OnClickCanvas -> handleOnClickCanvas()
 
-            is CanvasImageAddIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
+            is CanvasMainIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
 
             // 달력이 열린 동안에도 같은 버튼이 달력 위에 다시 그려지므로, 한 번 더 누르면 닫는다
-            is CanvasImageAddIntent.OnClickDateSelect -> {
+            is CanvasMainIntent.OnClickDateSelect -> {
                 updateState { copy(isCalendarVisible = isCalendarVisible.not()) }
             }
 
-            is CanvasImageAddIntent.DismissCalendar -> updateState { copy(isCalendarVisible = false) }
+            is CanvasMainIntent.DismissCalendar -> updateState { copy(isCalendarVisible = false) }
 
-            is CanvasImageAddIntent.SelectYear -> handleSelectYear(intent.year)
+            is CanvasMainIntent.SelectYear -> handleSelectYear(intent.year)
 
-            is CanvasImageAddIntent.SelectMonth -> updateState {
+            is CanvasMainIntent.SelectMonth -> updateState {
                 copy(displayedMonth = intent.month.toFirstDayOfMonth())
             }
 
-            is CanvasImageAddIntent.ClickDate -> handleClickDate(intent.date)
+            is CanvasMainIntent.ClickDate -> handleClickDate(intent.date)
 
-            is CanvasImageAddIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
+            is CanvasMainIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
 
-            is CanvasImageAddIntent.OnClickGoToToday -> handleClickGoToToday()
+            is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
         }
     }
 
     /**
      * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
-     * 받아 둔 [CanvasImageAddUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
+     * 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
      *
      * 응답이 올 때까지 이전 날의 토핑을 그대로 둔다. 비워 두면 파르페가 있는 날인데도 잠깐
      * "캔버스가 비어 있다"고 말하게 된다 — 달력이 기록 있는 날만 열어 주므로 그건 늘 거짓이다.
@@ -370,10 +370,10 @@ constructor(
      * 해를 옮겨도 보고 있던 달을 지킨다. 보고 있던 달을 [year] 로 그대로 옮긴 자리를 기준으로
      * 삼으므로, 그 해에 같은 달이 있으면 거리가 0 이라 저절로 유지되고 없을 때만 옮겨간다.
      *
-     * 기록이 아니라 [CanvasImageAddUiState.selectableMonths] 에서 고르는 이유는 그래야
+     * 기록이 아니라 [CanvasMainUiState.selectableMonths] 에서 고르는 이유는 그래야
      * 드롭다운에 없는 달로 넘어가지 않아서다 — 그 목록에는 이번 달이 더 들어갈 수 있다.
      */
-    private fun CanvasImageAddUiState.movedToNearestMonth(year: Int): CanvasImageAddUiState {
+    private fun CanvasMainUiState.movedToNearestMonth(year: Int): CanvasMainUiState {
         val anchored = copy(
             displayedMonth = displayedMonth.plus(DatePeriod(years = year - displayedMonth.year)),
         )
@@ -387,36 +387,36 @@ constructor(
         )
     }
 
-    private fun handleCacheImage(intent: CanvasImageAddIntent.CacheImage) {
+    private fun handleCacheImage(intent: CanvasMainIntent.CacheImage) {
         viewModelScope.launch {
             addRecentImageUseCase(intent.uri)
             postSideEffect(
-                effect = CanvasImageAddEffect.NavigateToSegmentation(intent.uri),
+                effect = CanvasMainEffect.NavigateToSegmentation(intent.uri),
             )
         }
     }
 
     private fun handleOnClickCamera() {
         postSideEffect(
-            effect = CanvasImageAddEffect.NavigateToCamera(),
+            effect = CanvasMainEffect.NavigateToCamera(),
         )
     }
 
     private fun handleOnClickCanvas() {
         postSideEffect(
-            effect = CanvasImageAddEffect.NavigateToCanvas(),
+            effect = CanvasMainEffect.NavigateToCanvas(),
         )
     }
 
     private fun handleOnClickCanvasEdit() {
         postSideEffect(
-            effect = CanvasImageAddEffect.NavigateToCanvasBGEdit(),
+            effect = CanvasMainEffect.NavigateToCanvasBGEdit(),
         )
     }
 
     @AssistedFactory
     interface Factory {
-        fun create(groupIdValue: Long): CanvasImageAddViewModel
+        fun create(groupIdValue: Long): CanvasMainViewModel
     }
 
     private companion object {

@@ -8,20 +8,20 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasEdit
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSelect
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasBGEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasEditRoute
-import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasImageAddRoute
+import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasMainRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasImageSelectRoute
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasMoveRoute
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
-    entry<NavKeyCanvasImageAdd> { navKey ->
+    entry<NavKeyCanvasMain> { navKey ->
         YGScaffold { innerPadding ->
-            CanvasImageAddRoute(
+            CanvasMainRoute(
                 groupId = navKey.groupId,
                 navigator = navigator,
                 modifier = Modifier

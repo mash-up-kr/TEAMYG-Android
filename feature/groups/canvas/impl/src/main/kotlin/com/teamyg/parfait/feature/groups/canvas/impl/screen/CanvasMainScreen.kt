@@ -33,7 +33,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
-import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasImageAddUiState
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.GroupMemberChip
 import kotlinx.datetime.LocalDate
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -44,8 +44,8 @@ private const val MAX_VISIBLE_MEMBER_CHIPS = 5
 private val DEFAULT_CANVAS_BACKGROUND = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100)
 
 @Composable
-internal fun CanvasImageAddScreen(
-    canvasState: CanvasImageAddUiState,
+internal fun CanvasMainScreen(
+    canvasState: CanvasMainUiState,
     onClickBack: () -> Unit,
     onClickDateSelect: () -> Unit,
     onClickMenu: () -> Unit,
@@ -87,7 +87,7 @@ internal fun CanvasImageAddScreen(
                         YGNametagChip(
                             colorChipType = YGColorChipType.NametagChipPlus,
                             userFirstName = stringResource(
-                                R.string.canvas_image_add_member_overflow_count,
+                                R.string.canvas_main_member_overflow_count,
                                 overflowCount,
                             ),
                             chip = YGNametagChipStyle.Style28,
@@ -105,33 +105,33 @@ internal fun CanvasImageAddScreen(
             // 편집으로 가는 길 자체를 여기서 치운다
             addAction = if (canvasState.isViewingToday) {
                 YGCanvasMenuAction(
-                    text = stringResource(R.string.canvas_image_add_topping_add),
+                    text = stringResource(R.string.canvas_main_topping_add),
                     iconResource = DesignSystemR.drawable.ic_plus,
                     onClick = openMenu,
                 )
             } else {
                 YGCanvasMenuAction(
-                    text = stringResource(R.string.canvas_image_add_save_to_gallery),
+                    text = stringResource(R.string.canvas_main_save_to_gallery),
                     iconResource = DesignSystemR.drawable.ic_gallery,
                     onClick = onClickSaveToGallery,
                 )
             },
             editAction = if (canvasState.isViewingToday) {
                 YGCanvasMenuAction(
-                    text = stringResource(R.string.canvas_image_add_canvas_edit),
+                    text = stringResource(R.string.canvas_main_canvas_edit),
                     iconResource = DesignSystemR.drawable.ic_caret_right,
                     onClick = onClickEditCanvasBG,
                 )
             } else {
                 YGCanvasMenuAction(
-                    text = stringResource(R.string.canvas_image_add_go_to_today),
+                    text = stringResource(R.string.canvas_main_go_to_today),
                     iconResource = DesignSystemR.drawable.ic_caret_right,
                     onClick = onClickGoToToday,
                 )
             },
             background = canvasState.canvasBackground.toYGCanvasBackground(),
             isEmpty = canvasState.isCanvasEmpty,
-            emptyMessage = stringResource(R.string.canvas_image_add_empty_message),
+            emptyMessage = stringResource(R.string.canvas_main_empty_message),
             // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
             isDimmed = isMenuExpanded || canvasState.isCalendarVisible,
             onDimClick = {
@@ -155,14 +155,14 @@ internal fun CanvasImageAddScreen(
             },
             expandedItems = listOf(
                 YGCanvasMenuItem(
-                    text = stringResource(R.string.canvas_image_add_camera_capture),
+                    text = stringResource(R.string.canvas_main_camera_capture),
                     onClick = {
                         isMenuExpanded = false
                         onClickCamera()
                     },
                 ),
                 YGCanvasMenuItem(
-                    text = stringResource(R.string.canvas_image_add_gallery_select),
+                    text = stringResource(R.string.canvas_main_gallery_select),
                     onClick = {
                         isMenuExpanded = false
                         onClickGallery()
@@ -197,8 +197,8 @@ private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when 
     is CanvasBackground.Image -> YGCanvasBackground.Image(url)
 }
 
-private class CanvasImageAddScreenPreviewParameterProvider :
-    PreviewParameterProvider<CanvasImageAddUiState> {
+private class CanvasMainScreenPreviewParameterProvider :
+    PreviewParameterProvider<CanvasMainUiState> {
     private val today = LocalDate(2026, 5, 20)
 
     private val memberChips = listOf(
@@ -211,16 +211,16 @@ private class CanvasImageAddScreenPreviewParameterProvider :
         GroupMemberChip("정거장", YGColorChipType.NametagChip2),
     )
 
-    override val values: Sequence<CanvasImageAddUiState>
+    override val values: Sequence<CanvasMainUiState>
         get() = sequenceOf(
-            CanvasImageAddUiState(
+            CanvasMainUiState(
                 groupName = "그룹이름은최대열글자",
                 memberChips = memberChips,
                 today = today,
                 selectedDate = today,
             ),
             // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
-            CanvasImageAddUiState(
+            CanvasMainUiState(
                 groupName = "그룹이름은최대열글자",
                 memberChips = memberChips,
                 today = today,
@@ -231,10 +231,10 @@ private class CanvasImageAddScreenPreviewParameterProvider :
 
 @YGPreview
 @Composable
-private fun PreviewCanvasImageAddScreen(
-    @PreviewParameter(CanvasImageAddScreenPreviewParameterProvider::class) uiState: CanvasImageAddUiState,
+private fun PreviewCanvasMainScreen(
+    @PreviewParameter(CanvasMainScreenPreviewParameterProvider::class) uiState: CanvasMainUiState,
 ) = PreviewBox {
-    CanvasImageAddScreen(
+    CanvasMainScreen(
         canvasState = uiState,
         onClickBack = {},
         onClickDateSelect = {},
