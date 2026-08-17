@@ -35,8 +35,7 @@ const val YG_LOADING_OVERLAY_TEST_TAG = "yg_loading_overlay"
  * 기본이 화면 전체를 덮는 크기다 — [modifier] 를 비워 호출해도 스피너 크기로
  * 쭈그러들지 않는다. 크기를 더 좁히거나 넓히고 싶으면 [modifier] 로 덧붙인다.
  *
- * 인디케이터는 디자인이 준 로띠다. Dim 농도와 문구 유무는 아직 확정 전이라, 바뀌면 이 파일만
- * 고친다 — 다른 곳에 로딩 UI 를 복제하지 마라. 그러면 고칠 곳이 늘어난다.
+ * 인디케이터는 디자인이 준 로띠다. Dim 농도와 문구 유무는 아직 확정 전이라 바뀌면 이 파일만 고친다.
  *
  * 밝은 애셋 하나만 둔다. 로띠가 Dim 위에 얹히므로 화면 테마와 무관하게 어두운 바탕을 깔고
  * 그려진다 — 어두운 변형을 함께 두면 고를 기준이 없다.
@@ -51,7 +50,6 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
     val composition by rememberLottieComposition(
         spec = LottieCompositionSpec.RawRes(R.raw.loading_light),
     )
-    // 로딩은 끝나는 시점을 스스로 모른다 — 덮고 있는 화면이 걷어 줄 때까지 계속 돈다
     val progress by animateLottieCompositionAsState(
         composition = composition,
         iterations = LottieConstants.IterateForever,

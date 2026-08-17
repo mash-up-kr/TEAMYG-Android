@@ -33,7 +33,7 @@ internal fun SplashScreen(
     val composition = compositionResult.value
     val progress by animateLottieCompositionAsState(
         composition = composition,
-        // 한 번만 재생한다. 반복하면 끝나는 시점이 없어 다음 화면으로 갈 신호를 만들 수 없다
+        // 반복하면 끝나는 시점이 없어 다음 화면으로 갈 신호를 만들 수 없다
         iterations = 1,
     )
     // 아래 이펙트는 한 번 서서 끝까지 산다 — 그 사이 다시 넘어온 콜백을 잡아 두는 건 여기다
@@ -45,9 +45,6 @@ internal fun SplashScreen(
      *
      * `progress` 는 프레임마다 바뀌므로 키로 두면 재생 내내 코루틴이 매 프레임 다시 선다.
      * 키는 고정하고 값 변화는 snapshotFlow 로 흘려보내 '끝'이 되는 첫 순간만 기다린다.
-     *
-     * 중복 호출은 막지 않는다. 여기서 세는 대신 ViewModel 이 첫 신호만 받아들인다 —
-     * 컴포지션이 다시 서는 경우까지 화면이 기억하고 있을 이유가 없다.
      */
     LaunchedEffect(Unit) {
         snapshotFlow {

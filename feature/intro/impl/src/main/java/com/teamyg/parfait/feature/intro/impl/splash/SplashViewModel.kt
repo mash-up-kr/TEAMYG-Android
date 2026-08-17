@@ -24,10 +24,8 @@ data class SplashState(
 ) : UiState
 
 sealed interface SplashIntent : UiIntent {
-    /** 화면 진입 */
     data object Init : SplashIntent
 
-    /** 로띠 재생이 끝났다 */
     data object AnimationFinished : SplashIntent
 }
 
@@ -83,7 +81,6 @@ constructor(
         navigateIfReady()
     }
 
-    /** 둘 중 나중에 끝난 쪽이 이동을 일으킨다 — 먼저 끝난 쪽에서는 조건이 아직 안 차 그냥 빠진다 */
     private fun navigateIfReady() {
         val current = state.value
         val destination = current.destination
