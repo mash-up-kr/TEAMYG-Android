@@ -210,6 +210,7 @@ constructor(
         val today = parfaitToday()
         if (today == state.value.today) return
 
+        // 시간이 지나면서 지금 보는 parfaitToday 가 어제가 되어버린 상황
         updateState {
             if (isViewingToday) {
                 // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 비운다 — 곧 이어지는
