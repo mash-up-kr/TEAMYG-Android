@@ -27,6 +27,9 @@ private const val TOPPING_DRAG_PX_PER_SCALE = 300f
 /** 가로로 1픽셀 드래그할 때 회전하는 각도 */
 private const val TOPPING_DRAG_DEGREES_PER_PX = 0.5f
 
+/** 스케일링된 토핑의 짧은 변이 이보다 작아지면, 그 변을 이 크기로 맞추도록 강제 상향한다 */
+private val MIN_TOPPING_SHORT_SIDE = 48.dp
+
 data class CanvasToppingPlaceUiState(
     val toppingImageUri: String,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
@@ -161,7 +164,12 @@ class CanvasToppingPlaceViewModel
         val baseSize = toppingBaseSize ?: return this
 
         val longerBaseSide = maxOf(baseSize.width, baseSize.height)
-        val newScale = (canvasSize.width * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
+        val shorterBaseSide = minOf(baseSize.width, baseSize.height)
+
+        val longSideScale = (canvasSize.width * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
+        // 위 배율대로 두면 짧은 변이 최소 터치 영역보다 작아질 수 있어, 그 경우 짧은 변 기준으로 다시 키운다
+        val minTouchScale = MIN_TOPPING_SHORT_SIDE / shorterBaseSide
+        val newScale = maxOf(longSideScale, minTouchScale)
 
         return copy(
             scale = newScale,
