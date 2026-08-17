@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -14,11 +13,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import com.airbnb.lottie.compose.LottieAnimation
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.rememberLottieComposition
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -37,8 +31,7 @@ const val YG_LOADING_OVERLAY_TEST_TAG = "yg_loading_overlay"
  *
  * 인디케이터는 디자인이 준 로띠다. Dim 농도와 문구 유무는 아직 확정 전이라 바뀌면 이 파일만 고친다.
  *
- * 밝은 애셋 하나만 둔다. 로띠가 Dim 위에 얹히므로 화면 테마와 무관하게 어두운 바탕을 깔고
- * 그려진다 — 어두운 변형을 함께 두면 고를 기준이 없다.
+ * 로띠가 Dim 위에 얹히므로 화면 테마와 무관하게 [YGLoadingTone.Light] 다.
  *
  * 터치 차단에 `clickable` 이 아니라 [pointerInput] 을 쓰는 이유: `clickable` 은 클릭
  * 시맨틱과 접근성 액션을 붙여 TalkBack 이 이 오버레이를 버튼으로 읽는다. 여기서 필요한
@@ -47,13 +40,6 @@ const val YG_LOADING_OVERLAY_TEST_TAG = "yg_loading_overlay"
 @Composable
 fun YGLoadingOverlay(modifier: Modifier = Modifier) {
     val description = stringResource(R.string.yg_loading_overlay_description)
-    val composition by rememberLottieComposition(
-        spec = LottieCompositionSpec.RawRes(R.raw.loading_light),
-    )
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever,
-    )
 
     Box(
         contentAlignment = Alignment.Center,
@@ -70,12 +56,11 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
                 }
             }.semantics(mergeDescendants = true) { contentDescription = description },
     ) {
-        LottieAnimation(
-            composition = composition,
-            progress = { progress },
+        YGLoadingLottie(
             // 크기를 묶어 두지 않으면 오버레이가 화면 전체라 애니메이션도 그만큼 늘어난다.
             // 애셋 원본이 44×44 라 그 크기에서 다시 그리는 일이 없다
             modifier = Modifier.size(SizeTokens.Size44.getDp()),
+            tone = YGLoadingTone.Light,
         )
     }
 }
