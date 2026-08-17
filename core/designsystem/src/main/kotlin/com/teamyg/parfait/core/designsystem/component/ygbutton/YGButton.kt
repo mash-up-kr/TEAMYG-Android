@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 @Composable
 fun YGButton(
@@ -61,11 +61,10 @@ fun YGButton(
                     isEnabled = isEnabled,
                     isPressed = isPressed,
                 ),
-            ).clickable(
+            ).clickableYGNoRipple(
                 enabled = isEnabled,
                 onClick = onClick,
                 interactionSource = interactionSource,
-                indication = null,
             ).semantics { role = Role.Button }
             .padding(
                 start = buttonType.startPadding,

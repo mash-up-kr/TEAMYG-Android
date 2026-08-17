@@ -3,7 +3,6 @@ package com.teamyg.parfait.core.designsystem.component.ygactionitem
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +29,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 /**
  * @param enabled `false` 면 클릭을 받지 않는다. 요청이 나가 있는 동안 같은 동작이 다시
@@ -52,11 +52,10 @@ fun YGActionItem(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
-            .clickable(
+            .clickableYGNoRipple(
                 enabled = enabled,
                 onClick = onClick,
                 interactionSource = interactionSource,
-                indication = null,
             ).semantics { role = Role.Button }
             .padding(
                 vertical = YGTheme.layout.padding.padding5,

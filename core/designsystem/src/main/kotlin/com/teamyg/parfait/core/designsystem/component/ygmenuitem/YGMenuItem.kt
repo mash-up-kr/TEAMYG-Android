@@ -2,7 +2,6 @@ package com.teamyg.parfait.core.designsystem.component.ygmenuitem
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +26,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 /**
  * Figma Menu-Item
@@ -58,10 +58,9 @@ fun YGMenuItem(
                 width = 1.dp,
                 color = YGAtomicColors.Gray.Gray500,
                 shape = shape,
-            ).clickable(
+            ).clickableYGNoRipple(
                 onClick = onClick,
                 interactionSource = interactionSource,
-                indication = null,
             ).semantics { role = Role.Button },
         contentAlignment = Alignment.Center,
     ) {

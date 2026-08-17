@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +38,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.groups.canvas.impl.R
@@ -228,9 +228,8 @@ private fun <T> CalendarPeriodSelector(
     Box(modifier = modifier.onSizeChanged { anchorHeight = it.height }) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable(
+            modifier = Modifier.clickableYGNoRipple(
                 onClick = onClick,
-                indication = null,
                 interactionSource = interactionSource,
             ),
         ) {

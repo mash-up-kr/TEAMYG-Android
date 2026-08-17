@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
@@ -138,9 +138,8 @@ internal fun CanvasBGEditScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(YGAtomicColors.Transparency.Black25)
-                            .clickable(
+                            .clickableYGNoRipple(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
                                 onClick = onClickDeselectTopping,
                             ),
                     )
@@ -271,7 +270,7 @@ private fun PaletteActionCircle(
             .size(36.dp)
             .clip(CircleShape)
             .background(YGAtomicColors.Gray.Gray100)
-            .clickable(onClick = onClick),
+            .clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (thumbnailUri != null) {
@@ -318,7 +317,7 @@ private fun PaletteColorCircle(
                 width = 1.dp,
                 color = YGAtomicColors.Transparency.Black5,
                 shape = CircleShape,
-            ).clickable(onClick = onClick),
+            ).clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (isSelected) {
@@ -359,9 +358,8 @@ private fun CanvasToppingImage(
         modifier = modifier
             .offset(x = topping.offsetX, y = topping.offsetY)
             .size(baseSize)
-            .clickable(
+            .clickableYGNoRipple(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
                 onClick = onClick,
             ).then(
                 if (onDrag != null) Modifier.dragBy(topping.parfaitImageId, onDrag) else Modifier,

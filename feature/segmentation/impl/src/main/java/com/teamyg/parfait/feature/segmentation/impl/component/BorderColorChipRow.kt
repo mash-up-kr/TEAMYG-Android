@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +28,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
 import com.teamyg.parfait.feature.segmentation.impl.editor.TOPPING_BORDER_COLORS
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -95,7 +95,7 @@ private fun BorderColorChip(
             .clip(CircleShape)
             .background(chipColor)
             .border(width = CHIP_BORDER_WIDTH, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
-            .clickable(onClick = onClick),
+            .clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (isSelected) {
@@ -127,7 +127,7 @@ private fun TransparentBorderColorChip(
         modifier = modifier
             .size(CHIP_SIZE)
             .clip(CircleShape)
-            .clickable(onClick = onClick),
+            .clickableYGNoRipple(onClick = onClick),
     ) {
         val strokeWidth = CHIP_BORDER_WIDTH.toPx()
 

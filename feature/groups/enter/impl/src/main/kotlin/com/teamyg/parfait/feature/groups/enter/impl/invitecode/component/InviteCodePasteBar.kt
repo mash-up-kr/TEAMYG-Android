@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +16,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.groups.enter.impl.R
 
 /**
@@ -36,7 +36,7 @@ internal fun InviteCodePasteBar(
         modifier = modifier
             .fillMaxWidth()
             .background(YGAtomicColors.Gray.Gray200)
-            .clickable(onClick = onClick)
+            .clickableYGNoRipple(onClick = onClick)
             .padding(
                 vertical = YGTheme.layout.padding.padding4,
                 horizontal = YGTheme.layout.padding.padding7,

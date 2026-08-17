@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.gallery.impl.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -23,6 +22,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.feature.gallery.impl.R
@@ -93,7 +93,7 @@ private fun GalleryImageCell(
         modifier = modifier
             .padding(bottom = YGTheme.layout.padding.padding5)
             .aspectRatio(1f)
-            .clickable { onClickImage(uri) },
+            .clickableYGNoRipple { onClickImage(uri) },
     ) {
         AsyncImage(
             model = uri,

@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.intro.impl.termagree
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,6 +33,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
@@ -84,7 +84,7 @@ internal fun TermAgreeScreen(
                         .background(color = YGAtomicColors.Gray.Gray100, shape = YGTheme.shapes.radius.small)
                         .clip(shape = YGTheme.shapes.radius.small)
                         .padding(YGTheme.layout.padding.padding3)
-                        .clickable { onClickAgreeAllTerm(state.isAllSelected.not()) },
+                        .clickableYGNoRipple { onClickAgreeAllTerm(state.isAllSelected.not()) },
                 ) {
                     Image(
                         painter = painterResource(DesignSystemR.drawable.ic_check_round),
@@ -125,7 +125,7 @@ internal fun TermAgreeScreen(
                             text = stringResource(R.string.term_agree_retry),
                             style = YGTheme.typography.body.b02SB,
                             color = YGAtomicColors.Gray.Gray800,
-                            modifier = Modifier.clickable { onClickRetryLoad() },
+                            modifier = Modifier.clickableYGNoRipple { onClickRetryLoad() },
                         )
                     }
                 }
@@ -151,7 +151,7 @@ internal fun TermAgreeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onClickTermAgree(policy.termsId, isSelected.not()) },
+                            .clickableYGNoRipple { onClickTermAgree(policy.termsId, isSelected.not()) },
                     ) {
                         Image(
                             painter = painterResource(DesignSystemR.drawable.ic_check),
@@ -182,7 +182,7 @@ internal fun TermAgreeScreen(
                         colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Gray500),
                         modifier = Modifier
                             .size(18.dp)
-                            .clickable { onClickTermLandingUrl(policy.url) },
+                            .clickableYGNoRipple { onClickTermLandingUrl(policy.url) },
                     )
                 }
             }

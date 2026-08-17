@@ -2,7 +2,6 @@ package com.teamyg.parfait.core.designsystem.component.yginputnumber
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -20,6 +19,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 @Composable
 fun YGInputNumber(
@@ -40,7 +40,7 @@ fun YGInputNumber(
                 shape = YGTheme.shapes.radius.none,
             ).clip(
                 shape = YGTheme.shapes.radius.none,
-            ).clickable(onClick = onClick)
+            ).clickableYGNoRipple(onClick = onClick)
             .border(
                 width = 1.dp,
                 color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray100,
