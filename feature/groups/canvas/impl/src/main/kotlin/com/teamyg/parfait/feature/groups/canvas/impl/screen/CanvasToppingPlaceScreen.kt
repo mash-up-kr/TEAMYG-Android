@@ -69,7 +69,6 @@ internal fun CanvasToppingPlaceScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 21.dp) // 21.dp 공통에 없음
                     .aspectRatio(CANVAS_ASPECT_RATIO)
                     .clipToBounds()
                     .background(uiState.backgroundColor)
