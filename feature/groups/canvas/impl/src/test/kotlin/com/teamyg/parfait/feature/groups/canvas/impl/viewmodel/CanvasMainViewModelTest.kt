@@ -149,7 +149,7 @@ class CanvasMainViewModelTest {
         viewModel.processIntent(CanvasMainIntent.Enter)
         advanceUntilIdle()
 
-        // Then 연도는 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
+        // Then 연도 목록은 재진입마다 물어볼 값이 아니라 init 에 남아 있다
         coVerify(exactly = 1) { getParfaitYears(any()) }
     }
 

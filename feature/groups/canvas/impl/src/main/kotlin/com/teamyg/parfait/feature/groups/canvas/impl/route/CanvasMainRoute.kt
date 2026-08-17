@@ -32,13 +32,8 @@ internal fun CanvasMainRoute(
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
 
-    /**
-     * ViewModel 은 NavEntry 가 백스택에 남아 있는 한 살아 있어, 초기화 한 번으로는 토핑을 올리고
-     * 돌아왔을 때도 낡은 캔버스가 그대로 남는다.
-     *
-     * 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 이 효과는 다시 앞에 설 때 한 번 돈다.
-     * 화면이 컴포지션에 있는 동안의 앱 복귀(ON_RESUME)도 같이 잡힌다.
-     */
+    // 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 다시 앞에 설 때 한 번 더 돈다.
+    // 매번 다시 묻는 이유는 CanvasMainIntent.Enter 에 있다
     LifecycleResumeEffect(viewModel) {
         viewModel.processIntent(CanvasMainIntent.Enter)
         onPauseOrDispose { }
