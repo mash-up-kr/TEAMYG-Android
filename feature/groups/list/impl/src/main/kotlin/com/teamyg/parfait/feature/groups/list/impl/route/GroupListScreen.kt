@@ -98,7 +98,8 @@ internal fun GroupListScreen(
                 ) {
                     item {
                         GroupListContent(
-                            groupList = uiState.groupList,
+                            // 0건 온보딩 툴팁이 결선되면 여기서 null(미조회)과 0건을 갈라 분기한다
+                            groupList = uiState.groupList.orEmpty(),
                             onClickTopping = onClickTopping,
                             modifier = Modifier.fillMaxWidth(),
                         )
