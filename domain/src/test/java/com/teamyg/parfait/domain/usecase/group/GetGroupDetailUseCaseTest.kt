@@ -1,151 +1,92 @@
 package com.teamyg.parfait.domain.usecase.group
 
-import com.teamyg.parfait.domain.model.group.CreatedGroupVO
+import app.cash.turbine.test
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
-import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
-import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
-import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class GetGroupDetailUseCaseTest {
-    private class FakeParfaitGroupRepository(
-        private val detailResult: Result<ParfaitGroupDetailVO> = Result.success(DETAIL),
-        private val myGroupsResult: Result<List<MyParfaitGroupVO>> = Result.success(listOf(MY_GROUP)),
-    ) : ParfaitGroupRepository {
-        override suspend fun getGroupDetail(groupId: GroupId): Result<ParfaitGroupDetailVO> = detailResult
+    private val repository: ParfaitGroupRepository = mockk()
 
-        override suspend fun getMyGroups(): Result<List<MyParfaitGroupVO>> = myGroupsResult
+    @Test
+    fun invoke_listCacheEmpty_stillEmitsDetailWithBlankName() = runTest {
+        // Given 상세는 있는데 목록 캐시가 비어 있다
+        every { repository.groupDetail(GROUP_ID) } returns flowOf(DETAIL)
+        every { repository.myGroups } returns flowOf(null)
 
-        override suspend fun previewJoin(inviteCode: InviteCode): Result<GroupName> = error("쓰지 않는다")
-
-        override suspend fun joinGroup(inviteCode: InviteCode): Result<JoinedGroupVO> = error("쓰지 않는다")
-
-        override suspend fun createGroup(
-            groupName: GroupName,
-            groupNickname: GroupNickname,
-            memberLimit: Int,
-        ): Result<CreatedGroupVO> = error("쓰지 않는다")
-
-        override suspend fun changeMyNickname(
-            groupId: GroupId,
-            groupNickname: GroupNickname,
-        ): Result<GroupNicknameVO> = error("쓰지 않는다")
-
-        override suspend fun leaveGroup(groupId: GroupId): Result<GroupId> = error("쓰지 않는다")
-
-        override suspend fun reportGroup(
-            groupId: GroupId,
-            reason: String,
-        ): Result<ReportedGroupVO> = error("쓰지 않는다")
+        // When 상세를 구독한다
+        GetGroupDetailUseCase(repository).invoke(GROUP_ID).test {
+            // Then 이름만 비고 나머지는 보인다 — 이름 한 줄 때문에 멤버·초대코드를 가리지 않는다
+            val detail = awaitItem()
+            assertEquals(GroupName(""), detail?.groupName)
+            assertEquals(DETAIL.inviteCode, detail?.inviteCode)
+            assertEquals(DETAIL.members, detail?.members)
+            awaitComplete()
+        }
     }
 
     @Test
-    fun invoke_bothCallsSucceed_fillsTheNameFromTheList() = runTest {
-        // Given 상세와 목록이 모두 온다
-        val repository = FakeParfaitGroupRepository()
+    fun invoke_listCacheArrivesLater_emitsNameOnly() = runTest {
+        // Given 상세는 이미 있고 목록은 나중에 채워진다
+        val groups = MutableStateFlow<List<MyParfaitGroupVO>?>(null)
+        every { repository.groupDetail(GROUP_ID) } returns flowOf(DETAIL)
+        every { repository.myGroups } returns groups
 
-        // When 그룹 상세 조회
-        val detail = GetGroupDetailUseCase(repository)(GroupId(GROUP_ID)).getOrThrow()
+        GetGroupDetailUseCase(repository).invoke(GROUP_ID).test {
+            assertEquals(GroupName(""), awaitItem()?.groupName)
 
-        // Then 상세에 없는 그룹명이 목록에서 채워진다
-        assertEquals(GroupName(GROUP_NAME), detail.groupName)
-        assertEquals(GroupNickname(MY_NICKNAME), detail.myNickname)
-        assertEquals(InviteCode(INVITE_CODE), detail.inviteCode)
-        assertEquals(2, detail.members.size)
+            // When 목록 캐시가 채워진다
+            groups.value = listOf(GROUP)
+
+            // Then 이름이 붙어 다시 나온다
+            assertEquals(GroupName("아메리카노"), awaitItem()?.groupName)
+        }
     }
 
     @Test
-    fun invoke_listHasOtherGroupsToo_picksTheAskedOne() = runTest {
-        // Given 목록에 다른 그룹이 먼저 있다
-        val repository = FakeParfaitGroupRepository(
-            myGroupsResult = Result.success(
-                listOf(myGroup(id = 99L, name = "다른그룹"), MY_GROUP),
-            ),
-        )
+    fun invoke_detailNotCached_emitsNull() = runTest {
+        // Given 상세를 아직 받지 못했다
+        every { repository.groupDetail(GROUP_ID) } returns flowOf(null)
+        every { repository.myGroups } returns flowOf(listOf(GROUP))
 
-        // When 그룹 상세 조회
-        val detail = GetGroupDetailUseCase(repository)(GroupId(GROUP_ID)).getOrThrow()
-
-        // Then 순서가 아니라 groupId 로 고른다
-        assertEquals(GroupName(GROUP_NAME), detail.groupName)
-    }
-
-    @Test
-    fun invoke_listFails_stillReturnsDetailWithBlankName() = runTest {
-        // Given 목록 조회만 실패한다
-        val repository = FakeParfaitGroupRepository(myGroupsResult = Result.failure(IOException("네트워크")))
-
-        // When 그룹 상세 조회
-        val detail = GetGroupDetailUseCase(repository)(GroupId(GROUP_ID)).getOrThrow()
-
-        // Then 이름 한 줄 때문에 멤버·초대코드까지 막지 않는다
-        assertEquals(GroupName(""), detail.groupName)
-        assertEquals(InviteCode(INVITE_CODE), detail.inviteCode)
-    }
-
-    @Test
-    fun invoke_groupMissingFromList_stillReturnsDetailWithBlankName() = runTest {
-        // Given 목록에 그 그룹이 없다 — 방금 나갔거나 목록이 낡았다
-        val repository = FakeParfaitGroupRepository(myGroupsResult = Result.success(emptyList()))
-
-        // When 그룹 상세 조회
-        val detail = GetGroupDetailUseCase(repository)(GroupId(GROUP_ID)).getOrThrow()
-
-        // Then 이름만 비운다
-        assertEquals(GroupName(""), detail.groupName)
-    }
-
-    @Test
-    fun invoke_detailFails_propagatesFailure() = runTest {
-        // Given 상세 조회가 실패한다
-        val repository = FakeParfaitGroupRepository(detailResult = Result.failure(IOException("네트워크")))
-
-        // When 그룹 상세 조회
-        val result = GetGroupDetailUseCase(repository)(GroupId(GROUP_ID))
-
-        // Then 화면에 띄울 것이 없으므로 실패로 남는다
-        assertTrue(result.isFailure)
-        assertIs<IOException>(result.exceptionOrNull())
+        // When 구독한다
+        GetGroupDetailUseCase(repository).invoke(GROUP_ID).test {
+            // Then 보여 줄 것이 없다
+            assertNull(awaitItem())
+            awaitComplete()
+        }
     }
 
     private companion object {
-        const val GROUP_ID = 7L
-        const val GROUP_NAME = "모카의 파르페"
-        const val MY_NICKNAME = "모카"
-        const val INVITE_CODE = "WDIDCJ"
+        val GROUP_ID = GroupId(1L)
 
-        fun myGroup(
-            id: Long,
-            name: String,
-        ) = MyParfaitGroupVO(
-            groupId = GroupId(id),
-            groupName = GroupName(name),
+        val GROUP = MyParfaitGroupVO(
+            groupId = GROUP_ID,
+            groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
         )
 
-        val MY_GROUP = myGroup(id = GROUP_ID, name = GROUP_NAME)
-
         val DETAIL = ParfaitGroupDetailVO(
-            groupId = GroupId(GROUP_ID),
-            groupNickname = GroupNickname(MY_NICKNAME),
-            inviteCode = InviteCode(INVITE_CODE),
+            groupId = GROUP_ID,
+            groupNickname = GroupNickname("모카"),
+            inviteCode = InviteCode("ABC123"),
             members = listOf(
-                ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME)),
-                ParfaitGroupMemberVO(MemberId(2L), GroupNickname("체리마루")),
+                ParfaitGroupMemberVO(memberId = MemberId(10L), groupNickname = GroupNickname("모카")),
             ),
         )
     }
