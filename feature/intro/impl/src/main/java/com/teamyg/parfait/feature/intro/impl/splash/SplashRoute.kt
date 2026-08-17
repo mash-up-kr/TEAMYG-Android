@@ -24,6 +24,7 @@ fun SplashRoute(
     }
 
     SplashScreen(
+        onAnimationFinished = { viewModel.processIntent(SplashIntent.AnimationFinished) },
         modifier = modifier,
     )
 }
