@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -31,8 +32,11 @@ sealed interface YGToastType {
 
     /**
      * Figma Type Alert
+     *
+     * @param time "3분 전"·"오래전"처럼 조사까지 포함한 완성된 구절
+     * @param userNameColor 닉네임 글자색.
      */
-    data class Record(val userName: String, val time: String) : YGToastType
+    data class Record(val userName: String, val time: String, val userNameColor: Color) : YGToastType
 
     /**
      * Figma Type Error
@@ -80,11 +84,11 @@ fun YGToast(
                 Text(
                     text = buildAnnotatedString {
                         withStyle(
-                            userStyle.toSpanStyle().copy(color = YGAtomicColors.Pudding.Pudding500),
+                            userStyle.toSpanStyle().copy(color = type.userNameColor),
                         ) { append(type.userName) }
                         withStyle(
                             timeStyle.toSpanStyle().copy(color = YGAtomicColors.Gray.Gray100),
-                        ) { append("님이 ${type.time} 전에 쌓았어요") }
+                        ) { append("님이 ${type.time}에 쌓았어요") }
                     },
                 )
             }
@@ -98,7 +102,13 @@ private fun YGToastPreview() = PreviewBox {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        YGToast(type = YGToastType.Record(userName = "WWWWWWWWWW", time = "59분"))
+        YGToast(
+            type = YGToastType.Record(
+                userName = "WWWWWWWWWW",
+                time = "59분 전",
+                userNameColor = YGAtomicColors.Pudding.Pudding500,
+            ),
+        )
         YGToast(type = YGToastType.Edit("내 토핑만 편집할 수 있어요"))
         YGToast(type = YGToastType.InviteCode("초대 코드를 복사했어요"))
         YGToast(type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."))

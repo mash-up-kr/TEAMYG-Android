@@ -86,4 +86,14 @@ sealed interface YGColorChipType {
         override val strokeColor = YGAtomicColors.Gray.Gray100
         override val textColor = YGAtomicColors.Gray.Gray900
     }
+
+    /**
+     * 실제 컬러를 배정할 수 없을 때 쓰는 중립 상태 — 탈퇴한 그룹원의 칩을 보여줘야 하거나,
+     * 칩 정보를 불러오지 못했을 때 등.
+     */
+    data object Default : YGColorChipType {
+        override val fillColor = YGAtomicColors.Gray.White
+        override val strokeColor = YGAtomicColors.Gray.Gray100
+        override val textColor = YGAtomicColors.Gray.Gray300
+    }
 }
