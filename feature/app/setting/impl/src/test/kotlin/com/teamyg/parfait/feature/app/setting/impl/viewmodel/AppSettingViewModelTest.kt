@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.jvm.model.AppVersionName
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
@@ -35,7 +36,20 @@ class AppSettingViewModelTest {
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AppSettingViewModel {
         every { getMyAccountFlow() } returns accountFlow
-        return AppSettingViewModel(logout = logout, getMyAccountFlow = getMyAccountFlow)
+        return AppSettingViewModel(
+            appVersionName = AppVersionName(VERSION_NAME),
+            logout = logout,
+            getMyAccountFlow = getMyAccountFlow,
+        )
+    }
+
+    @Test
+    fun init_versionIsTheInjectedBuildVersion() = runTest(mainDispatcherRule.dispatcher) {
+        // Given/When `:app` 이 BuildConfig.VERSION_NAME 을 넣어 준 화면
+        val viewModel = viewModel()
+
+        // Then 하드코딩이 아니라 주입값을 그대로 보여 준다 — 첫 프레임부터 값이 있다
+        assertEquals(VERSION_NAME, viewModel.state.value.version)
     }
 
     @Test
@@ -242,5 +256,10 @@ class AppSettingViewModelTest {
 
         // Then 화면은 계속 SSoT 를 따라간다 — 최초 구독 값에 멈춰 있지 않는다
         assertEquals("라떼", viewModel.state.value.nickname)
+    }
+
+    private companion object {
+        /** 실제 `libs.versions.appVersionName` 과 달라도 되는 값 — 주입 경로만 검증한다 */
+        const val VERSION_NAME = "9.8.7"
     }
 }

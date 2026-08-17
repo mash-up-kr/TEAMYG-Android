@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.jvm.model.AppVersionName
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -17,14 +18,16 @@ import javax.inject.Inject
  * @property loginProvider 도메인 의미만 담는다(ADR-0016). 표시 문자열은 `core:ui`
  *   `LoginProvider.toStringResource()` 가 렌더 시점에 매핑한다. `null` 은 `nickname` 과 같은
  *   이유로 로딩이다.
- * @property version TODO BuildConfig.VERSION_NAME 주입으로 교체
+ * @property version 설치된 앱의 버전 이름. `BuildConfig.VERSION_NAME` 을 가공 없이 그대로
+ *   보여 준다(`"1.0.0"`). 빌드 시점에 정해져 화면이 사는 동안 바뀌지 않으므로 로딩 상태가 없다 —
+ *   `nickname` 과 달리 처음부터 값이 있다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
 data class AppSettingState(
+    val version: String,
     val nickname: String? = null,
     val loginProvider: LoginProvider? = null,
-    val version: String = "1.0v",
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
 ) : UiState
@@ -63,10 +66,12 @@ sealed interface AppSettingSideEffect : UiSideEffect {
 class AppSettingViewModel
 @Inject
 constructor(
+    appVersionName: AppVersionName,
     private val logout: LogoutUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
-    initialState = AppSettingState(),
+    // 버전은 빌드에 박혀 있어 물어볼 곳이 없다 — 첫 상태에 그대로 담는다
+    initialState = AppSettingState(version = appVersionName.value),
 ) {
     init {
         viewModelLogger.i { "AppSettingViewModel::init" }
