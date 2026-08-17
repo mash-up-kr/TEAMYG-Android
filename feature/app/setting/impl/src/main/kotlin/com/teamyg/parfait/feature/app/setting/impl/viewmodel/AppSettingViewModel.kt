@@ -128,15 +128,19 @@ constructor(
     }
 
     /**
-     * 아직 목록이 없으면 열지 않고 다시 조회한다 — 진입 직후의 짧은 순간이거나 조회가 실패한
-     * 경우인데, 어느 쪽이든 다음 탭에서는 열리게 된다.
+     * 찾는 약관이 없으면 아무것도 하지 않는다. 여기서 다시 조회하지 않는 이유: 목록에 그 종류가
+     * 없다는 것은 서버가 잘못 내려줬다는 뜻이고, 같은 요청을 되풀이해도 같은 응답이 온다.
+     * 탭마다 요청만 늘면서 결함은 로그에만 남아 가려진다.
      */
     private fun handleClickPolicy(type: PolicyType) {
         val policy = state.value.policyOf(type)
 
         if (policy == null) {
-            viewModelLogger.w { "약관을 아직 받지 못해 열지 못했다 - type: $type" }
-            loadPolicies()
+            // 받은 개수를 함께 남긴다 — 0 이면 조회가 아직 안 끝났거나 실패한 것이고,
+            // 0 이 아니면 서버가 이 종류를 빼고 준 것이다
+            viewModelLogger.w {
+                "약관을 찾지 못해 열지 못했다 - type: $type, 받은 약관 수: ${state.value.policies.size}"
+            }
             return
         }
 

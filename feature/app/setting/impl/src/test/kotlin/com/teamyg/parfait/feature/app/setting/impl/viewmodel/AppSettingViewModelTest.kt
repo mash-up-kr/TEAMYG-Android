@@ -95,7 +95,7 @@ class AppSettingViewModelTest {
     }
 
     @Test
-    fun clickPolicy_whenLoadFailed_doesNotNavigateAndRetries() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickPolicy_whenLoadFailed_doesNotNavigateAndDoesNotRefetch() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 조회가 실패한 화면
         val viewModel = viewModel(policies = Result.failure(AppError.Network(cause = null)))
         advanceUntilIdle()
@@ -109,34 +109,9 @@ class AppSettingViewModelTest {
             expectNoEvents()
         }
 
-        // Then 대신 다시 조회한다(진입 시 1회 + 탭으로 1회) — 다음 탭에서는 열린다
-        coVerify(exactly = 2) { getPolicies() }
-    }
-
-    @Test
-    fun clickPolicy_whenLoadFailedThenSucceeds_navigatesOnNextTap() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 진입 시 조회는 실패했다
-        val viewModel = viewModel(policies = Result.failure(AppError.Network(cause = null)))
-        advanceUntilIdle()
-
-        // When 한 번 눌러 재조회가 돌고, 이번에는 성공한다
-        coEvery { getPolicies() } returns Result.success(listOf(SERVICE_TERMS, PRIVACY_POLICY))
-        viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
-        advanceUntilIdle()
-
-        viewModel.effect.test {
-            // When 다시 누른다
-            viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
-
-            // Then 이제 열린다
-            assertEquals(
-                AppSettingSideEffect.NavigateToPolicyDetail(
-                    title = SERVICE_TERMS.title,
-                    url = SERVICE_TERMS.url,
-                ),
-                awaitItem(),
-            )
-        }
+        // Then 탭으로 다시 조회하지도 않는다(진입 시 1회뿐) — 같은 요청을 되풀이해도
+        // 같은 응답이 오고, 탭마다 요청만 늘면서 원인은 가려진다
+        coVerify(exactly = 1) { getPolicies() }
     }
 
     @Test
