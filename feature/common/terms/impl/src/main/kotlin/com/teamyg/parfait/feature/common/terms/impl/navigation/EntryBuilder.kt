@@ -7,26 +7,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.common.terms.api.NavKeyPrivacyPolicy
-import com.teamyg.parfait.feature.common.terms.api.NavKeyServiceTerms
-import com.teamyg.parfait.feature.common.terms.impl.route.PrivacyPolicyRoute
-import com.teamyg.parfait.feature.common.terms.impl.route.ServiceTermsRoute
+import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
+import com.teamyg.parfait.feature.common.terms.impl.route.WebViewRoute
 
 fun EntryProviderScope<NavKey>.featureCommonTermsEntryBuilder(navigator: Navigator) {
-    entry<NavKeyServiceTerms> {
+    entry<NavKeyWebView> { key ->
         Scaffold { innerPadding ->
-            ServiceTermsRoute(
-                navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
-    }
-
-    entry<NavKeyPrivacyPolicy> {
-        Scaffold { innerPadding ->
-            PrivacyPolicyRoute(
+            WebViewRoute(
+                title = key.title,
+                url = key.url,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()
