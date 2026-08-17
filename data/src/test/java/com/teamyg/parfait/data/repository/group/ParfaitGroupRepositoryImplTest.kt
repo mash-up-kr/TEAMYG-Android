@@ -69,6 +69,22 @@ class ParfaitGroupRepositoryImplTest {
     }
 
     @Test
+    fun refreshGroupDetail_fails_keepsCacheAndMapsError() = runTest {
+        // Given 캐시에 이미 상세가 있고, 다음 조회가 실패한다
+        coEvery { remoteDataSource.getGroupDetail(GROUP_ID_A) } returns Result.success(DETAIL_A)
+        repository.refreshGroupDetail(GROUP_ID_A)
+        coEvery { remoteDataSource.getGroupDetail(GROUP_ID_A) } returns
+            Result.failure(ApiException.Network(cause = IOException("no network")))
+
+        // When 다시 갱신한다
+        val result = repository.refreshGroupDetail(GROUP_ID_A)
+
+        // Then 실패는 AppError 로 나오고 캐시는 그대로다
+        assertIs<AppError.Network>(result.exceptionOrNull())
+        assertEquals(DETAIL_A, repository.groupDetail(GROUP_ID_A).first())
+    }
+
+    @Test
     fun previewJoin_remoteSucceeds_returnsGroupNameUnchanged() = runTest {
         // Given 원격이 그룹명을 준다
         coEvery { remoteDataSource.previewJoin(inviteCode) } returns Result.success(groupName)
@@ -248,6 +264,20 @@ class ParfaitGroupRepositoryImplTest {
     }
 
     @Test
+    fun changeMyNickname_succeeds_refreshFails_stillSucceeds() = runTest {
+        // Given 닉네임 변경은 성공했는데 뒤이은 상세 재조회가 실패한다
+        coEvery { remoteDataSource.changeMyNickname(any(), any()) } returns Result.success(NICKNAME_VO)
+        coEvery { remoteDataSource.getGroupDetail(GROUP_ID_A) } returns
+            Result.failure(ApiException.Network(cause = IOException("no network")))
+
+        // When 닉네임을 바꾼다
+        val result = repository.changeMyNickname(GROUP_ID_A, GroupNickname("모카"))
+
+        // Then 이미 성공한 변경을 뒷정리 실패로 되돌리지 않는다
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
     fun changeMyNickname_succeeds_refreshesDetail() = runTest {
         // Given 닉네임 변경과 상세 재조회가 모두 성공한다
         coEvery { remoteDataSource.changeMyNickname(any(), any()) } returns Result.success(NICKNAME_VO)
@@ -361,6 +391,27 @@ class ParfaitGroupRepositoryImplTest {
 
         // Then 도메인 에러로 바뀌어 나온다
         assertIs<AppError.Network>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun reportGroup_succeeds_removesFromCache() = runTest {
+        // Given 목록·상세가 캐시에 있고 신고가 성공한다
+        coEvery { remoteDataSource.getMyGroups() } returns Result.success(listOf(GROUP_A, GROUP_B))
+        coEvery { remoteDataSource.getGroupDetail(GROUP_ID_A) } returns Result.success(DETAIL_A)
+        repository.refreshMyGroups()
+        repository.refreshGroupDetail(GROUP_ID_A)
+        coEvery { remoteDataSource.reportGroup(GROUP_ID_A, any()) } returns
+            Result.success(ReportedGroupVO(groupId = GROUP_ID_A, reportId = ReportId(9L)))
+
+        // When 그룹을 신고한다
+        val result = repository.reportGroup(groupId = GROUP_ID_A, reason = REPORT_REASON)
+
+        // Then 목록에서 빠지고 상세도 폐기된다. 재조회는 하지 않는다(신고는 탈퇴로 이어져
+        // 그 뒤로는 403 뿐이다)
+        assertTrue(result.isSuccess)
+        assertEquals(listOf(GROUP_B), repository.myGroups.first())
+        assertNull(repository.groupDetail(GROUP_ID_A).first())
+        coVerify(exactly = 1) { remoteDataSource.getMyGroups() }
     }
 
     @Test

@@ -144,8 +144,11 @@ constructor(
      * 여기로 내려온다. 화면이 자기 상태를 손으로 고치지 않는다.
      */
     private fun observeGroupDetail() {
-        viewModelScope.launch {
-            val myMemberId = getMyAccountFlow().first()?.memberId
+        // 계정 조회(EncryptedPreferences → DataStore IO)가 실패해도 상세는 계속 떠야 한다 —
+        // 그래서 `first()` 만 감싸 실패를 `null` 로 접고, 구독 자체는 이어간다. 바깥을
+        // `launch`(가드 있는 쪽)로 감싸는 것은 여기서 예상 못 한 예외까지 잡기 위한 방어선이다.
+        launch {
+            val myMemberId = runCatching { getMyAccountFlow().first() }.getOrNull()?.memberId
 
             getGroupDetail(groupId).collect { detail ->
                 if (detail == null) return@collect
