@@ -126,6 +126,15 @@ sealed interface CanvasMainEffect : UiSideEffect {
 }
 
 sealed interface CanvasMainIntent : UiIntent {
+    /**
+     * 화면이 앞에 섰다. 처음 열릴 때뿐 아니라 다른 화면에서 **돌아올 때마다** 온다.
+     *
+     * 캔버스는 다른 멤버가 올린 토핑으로도 바뀌므로, 내 앱 안의 변경만 좇아서는 최신이 될 수
+     * 없다. 다만 다시 물어보는 것은 오늘을 보고 있을 때뿐이다 — 지난 날의 캔버스는 마감돼
+     * 더 바뀌지 않는다.
+     */
+    data object Enter : CanvasMainIntent
+
     data class CacheImage(
         val uri: String,
     ) : CanvasMainIntent
@@ -171,14 +180,57 @@ constructor(
     init {
         viewModelLogger.i { "CanvasMainViewModel::init" }
         loadCanvasMainInfo()
-        loadTodayCanvas()
+        // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
+    }
+
+    /**
+     * 오늘을 보고 있을 때만 다시 물어본다 — 지난 날은 마감돼 바뀌지 않으므로 이미 받아 둔 것이
+     * 그대로 맞다.
+     *
+     * 달력 기록도 함께 받는다. 다른 멤버가 오늘 토핑을 올리면 오늘 칸의 점이 생기는데, 연 단위
+     * 캐시는 그것을 스스로 알 방법이 없다. 바뀔 수 있는 해는 올해뿐이라 올해만 다시 받는다.
+     */
+    private fun handleEnter() {
+        syncToday()
+        if (state.value.isViewingToday.not()) return
+
+        loadTodayCanvas()
         loadParfaitHistories(state.value.today.year)
     }
 
     /**
+     * 화면을 열어 둔 채 자정을 넘겼으면 오늘을 다시 센다.
+     *
+     * [CanvasMainUiState.today] 는 ViewModel 이 만들어질 때 한 번 셌을 뿐이라, 날이 바뀐 뒤
+     * 그대로 두면 오늘 조회가 가져온 **새 날의 캔버스**를 어제 날짜 아래에 그리게 된다.
+     *
+     * 오늘을 보고 있었다면 새 날로 따라가고, 지난 날을 보고 있었다면 보던 날을 지킨다 —
+     * 그 날의 캔버스는 여전히 유효하다.
+     */
+    private fun syncToday() {
+        val today = parfaitToday()
+        if (today == state.value.today) return
+
+        updateState {
+            if (isViewingToday.not()) return@updateState copy(today = today)
+
+            // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 둘 다 비운다.
+            // 곧 이어지는 오늘 조회가 채운다
+            copy(
+                today = today,
+                selectedDate = today,
+                displayedMonth = today.toFirstDayOfMonth(),
+                todayCanvas = null,
+                viewedCanvas = null,
+            )
+        }
+    }
+
+    /**
      * ⚠️ 서버의 오늘 조회는 캔버스가 없으면 만들어 저장한다 — 화면을 여는 것만으로 그날 캔버스가
-     * 생긴다. 그래서 [LOAD_TODAY_CANVAS_KEY] 로 중복 호출을 막고 진입 시 한 번만 부른다.
+     * 생긴다. 첫 진입에서 이미 만들어지므로 재진입에 다시 불러도 새로 생기는 것은 없지만,
+     * 겹쳐 나가지 않도록 [LOAD_TODAY_CANVAS_KEY] 로 중복 호출을 막는다.
      */
     private fun loadTodayCanvas() {
         launch(key = LOAD_TODAY_CANVAS_KEY) {
@@ -262,6 +314,8 @@ constructor(
 
     override fun processIntent(intent: CanvasMainIntent) {
         when (intent) {
+            is CanvasMainIntent.Enter -> handleEnter()
+
             is CanvasMainIntent.CacheImage -> handleCacheImage(intent)
 
             is CanvasMainIntent.OnClickCamera -> handleOnClickCamera()
