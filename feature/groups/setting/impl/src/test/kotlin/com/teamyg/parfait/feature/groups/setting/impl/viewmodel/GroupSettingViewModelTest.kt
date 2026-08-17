@@ -22,6 +22,7 @@ import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.group.ChangeGroupNicknameUseCase
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.LeaveGroupUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
@@ -30,6 +31,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -41,6 +43,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -49,6 +52,7 @@ class GroupSettingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getGroupDetail: GetGroupDetailUseCase = mockk()
+    private val refreshGroupDetail: RefreshGroupDetailUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
     private val leaveGroup: LeaveGroupUseCase = mockk()
@@ -56,7 +60,8 @@ class GroupSettingViewModelTest {
 
     @Before
     fun setUp() {
-        coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.success(DETAIL)
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(DETAIL)
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.success(Unit)
         every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
         coEvery { changeGroupNickname(any(), any()) } returns Result.success(
             GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname(NEW_NICKNAME)),
@@ -68,6 +73,7 @@ class GroupSettingViewModelTest {
         groupIdValue = GROUP_ID,
         checkNameValid = CheckNameValidUseCase(),
         getGroupDetail = getGroupDetail,
+        refreshGroupDetail = refreshGroupDetail,
         getMyAccountFlow = getMyAccountFlow,
         changeGroupNickname = changeGroupNickname,
         leaveGroup = leaveGroup,
@@ -200,7 +206,20 @@ class GroupSettingViewModelTest {
 
     @Test
     fun confirmNickname_validChange_commitsAndSyncsMemberList() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 편집 중 유효한 새 닉네임을 입력한 상태
+        // Given 편집 중 유효한 새 닉네임을 입력한 상태. 캐시는 저장소가 서버에서 다시 받아 온
+        // 값으로 새 닉네임을 낸다
+        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
+        coEvery { changeGroupNickname(any(), any()) } coAnswers {
+            val newNickname = GroupNickname(NEW_NICKNAME)
+            detail.value = DETAIL.copy(
+                myNickname = newNickname,
+                members = DETAIL.members.map { member ->
+                    if (member.memberId == MY_ACCOUNT.memberId) member.copy(groupNickname = newNickname) else member
+                },
+            )
+            Result.success(GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = newNickname))
+        }
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
@@ -235,7 +254,15 @@ class GroupSettingViewModelTest {
 
     @Test
     fun confirmNickname_thenLosesFocus_keepsConfirmedNickname() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 편집 중 유효한 새 닉네임을 입력한 상태
+        // Given 편집 중 유효한 새 닉네임을 입력한 상태. 캐시는 저장소가 서버에서 다시 받아 온
+        // 값으로 새 닉네임을 낸다
+        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
+        coEvery { changeGroupNickname(any(), any()) } coAnswers {
+            val newNickname = GroupNickname(NEW_NICKNAME)
+            detail.value = DETAIL.copy(myNickname = newNickname)
+            Result.success(GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = newNickname))
+        }
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
         viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
@@ -628,8 +655,9 @@ class GroupSettingViewModelTest {
 
     @Test
     fun init_detailFails_stopsLoadingAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 상세 조회가 실패한다
-        coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(Exception()))
+        // Given 캐시가 비었고 갱신도 실패한다
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(null)
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(Exception()))
 
         // When 화면이 열림
         val viewModel = newViewModel()
@@ -685,6 +713,69 @@ class GroupSettingViewModelTest {
 
         // Then 덮개가 걷힌다
         assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun init_cacheHasDetail_showsWithoutLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시에 상세가 이미 있다
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(DETAIL)
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.success(Unit)
+        every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 첫 값이 이미 있으므로 화면을 덮지 않는다
+        val state = viewModel.state.value
+        assertFalse(state.isLoadingDetail)
+        assertEquals(DETAIL.groupName, state.groupName)
+        assertEquals(DETAIL.myNickname, state.myNickname)
+    }
+
+    @Test
+    fun init_refreshFails_showsErrorEffect() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 비었고 갱신이 실패한다
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(null)
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(cause = null))
+        every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
+
+        val viewModel = newViewModel()
+
+        // When/Then 실패가 토스트로 나간다
+        viewModel.effect.test {
+            advanceUntilIdle()
+            val effect = awaitItem()
+            assertIs<GroupSettingSideEffect.ShowError>(effect)
+        }
+    }
+
+    @Test
+    fun confirmNickname_succeeds_takesNewValueFromCache() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 변경 후 새 닉네임을 낸다
+        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.success(Unit)
+        every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
+        coEvery { changeGroupNickname(GroupId(GROUP_ID), GroupNickname("라떼")) } coAnswers {
+            detail.value = DETAIL.copy(myNickname = GroupNickname("라떼"))
+            Result.success(GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname("라떼")))
+        }
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 닉네임을 바꾼다
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname("라떼"))
+        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
+
+        // Then 화면 값은 캐시 방출로 바뀐다 — ViewModel 이 손으로 고치지 않는다
+        val state = viewModel.state.value
+        assertEquals(GroupNickname("라떼"), state.myNickname)
+        assertEquals("라떼", state.nicknameInput)
+        assertFalse(state.isEditing)
     }
 
     private companion object {
