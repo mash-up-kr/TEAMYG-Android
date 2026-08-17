@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -54,6 +56,8 @@ internal fun CanvasToppingPlaceScreen(
     onToppingMoveDrag: (DpOffset) -> Unit,
     onToppingResizeDrag: (Offset) -> Unit,
     onToppingRotateDrag: (Offset) -> Unit,
+    onCanvasMeasured: (DpSize) -> Unit,
+    onToppingBaseSizeMeasured: (DpSize) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -75,7 +79,11 @@ internal fun CanvasToppingPlaceScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(CANVAS_ASPECT_RATIO)
-                    .clipToBounds()
+                    .onSizeChanged { size ->
+                        with(density) {
+                            onCanvasMeasured(DpSize(size.width.toDp(), size.height.toDp()))
+                        }
+                    }.clipToBounds()
                     .background(uiState.backgroundColor)
                     .border(
                         width = 1.dp,
@@ -91,6 +99,7 @@ internal fun CanvasToppingPlaceScreen(
 
                 val painter = rememberAsyncImagePainter(model = uiState.toppingImageUri)
                 val baseSize = rememberToppingBaseSize(painter)
+                LaunchedEffect(baseSize) { onToppingBaseSizeMeasured(baseSize) }
 
                 Image(
                     painter = painter,
@@ -192,6 +201,8 @@ private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
         onToppingMoveDrag = {},
         onToppingResizeDrag = {},
         onToppingRotateDrag = {},
+        onCanvasMeasured = {},
+        onToppingBaseSizeMeasured = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

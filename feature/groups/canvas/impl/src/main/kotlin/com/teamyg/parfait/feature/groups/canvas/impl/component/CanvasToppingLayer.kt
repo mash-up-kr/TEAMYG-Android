@@ -31,7 +31,7 @@ import kotlin.math.sin
  * 짧은 변은 원본 비율을 따라간다 — 정사각 박스에 [ContentScale.Fit] 로 담으면 긴 변이 박스에
  * 꽉 차고 짧은 변이 비율대로 줄어들므로, 원본 크기를 몰라도 규칙이 지켜진다.
  */
-private const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
+internal const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
 
 /** 누끼 외곽선을 찍는 방향 수. 8 방향이면 대각까지 메워져 이음매가 보이지 않는다 */
 private const val OUTLINE_STAMP_COUNT = 8

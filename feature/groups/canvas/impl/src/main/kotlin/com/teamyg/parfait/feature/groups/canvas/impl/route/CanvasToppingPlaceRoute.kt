@@ -45,6 +45,10 @@ internal fun CanvasToppingPlaceRoute(
         onToppingMoveDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingMoveDrag(delta)) },
         onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResizeDrag(delta)) },
         onToppingRotateDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotateDrag(delta)) },
+        onCanvasMeasured = { size -> viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(size)) },
+        onToppingBaseSizeMeasured = { size ->
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(size))
+        },
         modifier = modifier,
     )
 }

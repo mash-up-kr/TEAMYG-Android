@@ -4,12 +4,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -29,10 +31,14 @@ data class CanvasToppingPlaceUiState(
     val toppingImageUri: String,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
     val backgroundColor: Color = YGAtomicColors.Gray.White,
-    val offsetX: Dp = 60.dp,
-    val offsetY: Dp = 100.dp,
+    val offsetX: Dp = 0.dp,
+    val offsetY: Dp = 0.dp,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
+    val canvasSize: DpSize? = null,
+    val toppingBaseSize: DpSize? = null,
+    /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
+    val hasUserAdjustedPlacement: Boolean = false,
 ) : UiState
 
 sealed interface CanvasToppingPlaceIntent : UiIntent {
@@ -56,6 +62,16 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
     /** 회전 아이콘을 잡고 드래그한 만큼 넘어온다. 가로 드래그 거리만큼 회전한다. */
     data class OnToppingRotateDrag(
         val delta: Offset,
+    ) : CanvasToppingPlaceIntent
+
+    /** 화면이 Canvas-Area 를 실측해 알려준다. C-106 초기 배치를 계산하는 데 쓴다 */
+    data class OnCanvasMeasured(
+        val canvasSize: DpSize,
+    ) : CanvasToppingPlaceIntent
+
+    /** 화면이 토핑 이미지의 실제(배율 1배 기준) 크기를 알려준다. C-106 초기 배치를 계산하는 데 쓴다 */
+    data class OnToppingBaseSizeMeasured(
+        val baseSize: DpSize,
     ) : CanvasToppingPlaceIntent
 }
 
@@ -82,10 +98,22 @@ class CanvasToppingPlaceViewModel
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
             CanvasToppingPlaceIntent.OnClickClose -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
+
             CanvasToppingPlaceIntent.OnClickConfirm -> handleOnClickConfirm()
+
             is CanvasToppingPlaceIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
+
             is CanvasToppingPlaceIntent.OnToppingResizeDrag -> handleOnToppingResizeDrag(intent)
+
             is CanvasToppingPlaceIntent.OnToppingRotateDrag -> handleOnToppingRotateDrag(intent)
+
+            is CanvasToppingPlaceIntent.OnCanvasMeasured -> {
+                updateState { copy(canvasSize = intent.canvasSize).applyInitialPlacementIfNeeded() }
+            }
+
+            is CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured -> {
+                updateState { copy(toppingBaseSize = intent.baseSize).applyInitialPlacementIfNeeded() }
+            }
         }
     }
 
@@ -94,6 +122,7 @@ class CanvasToppingPlaceViewModel
             copy(
                 offsetX = offsetX + intent.delta.x,
                 offsetY = offsetY + intent.delta.y,
+                hasUserAdjustedPlacement = true,
             )
         }
     }
@@ -103,14 +132,42 @@ class CanvasToppingPlaceViewModel
             // 핸들이 우측 상단 모서리에 있으므로, 그 모서리의 바깥쪽 방향으로 끌면 커지고 안쪽이면 작아진다
             val (outX, outY) = resizeOutwardDirection(rotationDegrees)
             val deltaScale = (intent.delta.x * outX + intent.delta.y * outY) / TOPPING_DRAG_PX_PER_SCALE
-            copy(scale = (scale + deltaScale).coerceIn(TOPPING_MIN_SCALE, TOPPING_MAX_SCALE))
+            copy(
+                scale = (scale + deltaScale).coerceIn(TOPPING_MIN_SCALE, TOPPING_MAX_SCALE),
+                hasUserAdjustedPlacement = true,
+            )
         }
     }
 
     private fun handleOnToppingRotateDrag(intent: CanvasToppingPlaceIntent.OnToppingRotateDrag) {
         updateState {
-            copy(rotationDegrees = rotationDegrees + intent.delta.x * TOPPING_DRAG_DEGREES_PER_PX)
+            copy(
+                rotationDegrees = rotationDegrees + intent.delta.x * TOPPING_DRAG_DEGREES_PER_PX,
+                hasUserAdjustedPlacement = true,
+            )
         }
+    }
+
+    /**
+     * C-106: 사용자가 아직 손대지 않았다면, 캔버스 정중앙에 토핑의 긴 변이
+     * 캔버스 너비의 [TOPPING_BASE_LONG_SIDE_RATIO] 가 되도록 자동으로 놓는다.
+     *
+     * 캔버스 실측 크기와 토핑 원본 크기를 둘 다 알아야 계산되고, 이 둘은 서로 다른 시점에
+     * 비동기로 들어오므로 어느 쪽이 먼저 도착하든 매번 다시 시도한다.
+     */
+    private fun CanvasToppingPlaceUiState.applyInitialPlacementIfNeeded(): CanvasToppingPlaceUiState {
+        if (hasUserAdjustedPlacement) return this
+        val canvasSize = canvasSize ?: return this
+        val baseSize = toppingBaseSize ?: return this
+
+        val longerBaseSide = maxOf(baseSize.width, baseSize.height)
+        val newScale = (canvasSize.width * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
+
+        return copy(
+            scale = newScale,
+            offsetX = (canvasSize.width - baseSize.width) / 2,
+            offsetY = (canvasSize.height - baseSize.height) / 2,
+        )
     }
 
     private fun handleOnClickConfirm() {
