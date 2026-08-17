@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceEffect
@@ -31,7 +32,7 @@ internal fun CanvasToppingPlaceRoute(
 
                 is CanvasToppingPlaceEffect.ToppingPlaced -> {
                     // TODO: 배치 결과(effect)를 캔버스 상태에 반영/서버에 저장하는 연동 필요
-                    navigator.onBack()
+                    navigator.goTo(NavKeyCanvasImageAdd(groupId = 0L))
                 }
             }
         }
