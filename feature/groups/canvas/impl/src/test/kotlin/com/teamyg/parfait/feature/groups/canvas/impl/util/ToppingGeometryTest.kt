@@ -48,5 +48,4 @@ class ToppingGeometryTest {
         assertEquals(-base, x, DELTA)
         assertEquals(-base, y, DELTA)
     }
-
 }

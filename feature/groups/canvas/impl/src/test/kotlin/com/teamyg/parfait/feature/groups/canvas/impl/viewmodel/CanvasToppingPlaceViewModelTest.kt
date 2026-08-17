@@ -45,7 +45,13 @@ class CanvasToppingPlaceViewModelTest {
 
         // When 핸들을 바깥쪽(우측 상단 대각선)으로 끈다
         viewModel.processIntent(
-            CanvasToppingPlaceIntent.OnToppingResizeDrag(Offset(x = dragLength * direction.x, y = dragLength * direction.y)),
+            CanvasToppingPlaceIntent.OnToppingResizeDrag(
+                Offset(
+                    x = dragLength * direction.x,
+                    y =
+                    dragLength * direction.y,
+                ),
+            ),
         )
 
         // Then 드래그 거리를 바깥쪽 방향에 정사영한 만큼 커진다
