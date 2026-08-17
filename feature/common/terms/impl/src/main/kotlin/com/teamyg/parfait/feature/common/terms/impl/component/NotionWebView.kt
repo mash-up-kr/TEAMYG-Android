@@ -7,7 +7,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.common.terms.impl.R
 
 @Composable
@@ -159,7 +159,7 @@ private fun NotionWebViewError(
             text = stringResource(R.string.terms_webview_retry),
             style = YGTheme.typography.body.b01R,
             color = YGAtomicColors.Cherry.Cherry600,
-            modifier = Modifier.clickable(onClick = onRetry),
+            modifier = Modifier.clickableYGNoRipple(onClick = onRetry),
         )
     }
 }

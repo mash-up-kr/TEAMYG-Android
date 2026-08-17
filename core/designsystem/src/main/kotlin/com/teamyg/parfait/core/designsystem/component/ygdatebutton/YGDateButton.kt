@@ -2,7 +2,6 @@ package com.teamyg.parfait.core.designsystem.component.ygdatebutton
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 @Composable
 fun YGDateButton(
@@ -39,9 +39,8 @@ fun YGDateButton(
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .clickable(
+            .clickableYGNoRipple(
                 onClick = onClick,
-                indication = null,
                 enabled = isEnabled,
                 interactionSource = remember { MutableInteractionSource() },
             ).semantics { role = Role.Button }

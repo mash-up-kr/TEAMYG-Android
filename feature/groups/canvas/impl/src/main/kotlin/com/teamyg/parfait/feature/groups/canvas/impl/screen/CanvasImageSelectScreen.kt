@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -10,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 
@@ -34,7 +34,7 @@ internal fun CanvasImageSelectScreen(
                         rememberSharedContentState(key = "parfait"),
                         animatedVisibilityScope = animatedContentScope,
                     ).size(100.dp)
-                    .clickable { onClickImage() },
+                    .clickableYGNoRipple { onClickImage() },
             )
         }
     }

@@ -16,12 +16,14 @@ import kotlin.time.TimeSource
 
 @Composable
 fun Modifier.clickableYGNoRipple(
+    interactionSource: MutableInteractionSource? = null,
     enabled: Boolean = true,
     onClickLabel: String? = null,
     role: Role? = null,
     windowMillis: Long = 300L,
     onClick: () -> Unit,
 ): Modifier = clickableYGThrottle(
+    interactionSource = interactionSource,
     indications = null,
     enabled = enabled,
     onClickLabel = onClickLabel,

@@ -2,7 +2,6 @@ package com.teamyg.parfait.core.designsystem.component.ygcanvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -38,6 +37,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 private const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
@@ -111,9 +111,7 @@ fun YGCanvas(
                         .matchParentSize()
                         .clip(shape)
                         .background(color = YGAtomicColors.Transparency.Black25)
-                        .clickable(
-                            interactionSource = null,
-                            indication = null,
+                        .clickableYGNoRipple(
                             onClick = onDimClick,
                         ),
                 )

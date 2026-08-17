@@ -2,7 +2,6 @@ package com.teamyg.parfait.core.designsystem.component.ygiconbutton
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -20,6 +19,7 @@ import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 @Composable
 fun YGIconButton(
@@ -37,7 +37,7 @@ fun YGIconButton(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size.containerSize)
-            .clickable(
+            .clickableYGNoRipple(
                 onClick = onClick,
                 interactionSource = interactionSource,
             ),

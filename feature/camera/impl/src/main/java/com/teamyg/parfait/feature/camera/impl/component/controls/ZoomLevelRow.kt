@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.camera.impl.component.controls
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import kotlin.math.abs
 
 private val AccentZoomColor = Color(0xFFFFC107)
@@ -61,7 +61,7 @@ private fun ZoomLevelChip(
             .size(36.dp)
             .clip(CircleShape)
             .background(color = if (isSelected) ChipBackgroundColor else Color.Transparent)
-            .clickable(onClick = onClick),
+            .clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(

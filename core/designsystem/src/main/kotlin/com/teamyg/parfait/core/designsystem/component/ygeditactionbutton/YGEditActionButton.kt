@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +28,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 /**
  * Figma Button-Edit-Action
@@ -52,11 +52,10 @@ fun YGEditActionButton(
 
     Box(
         modifier = modifier
-            .clickable(
+            .clickableYGNoRipple(
                 enabled = isEnabled,
                 onClick = onClick,
                 interactionSource = interactionSource,
-                indication = null,
             ).semantics { role = Role.Button }
             .padding(YGTheme.layout.padding.padding1),
         contentAlignment = Alignment.Center,

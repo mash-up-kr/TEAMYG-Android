@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
 @Composable
 internal fun InviteCodeInputFieldElement(
@@ -58,7 +58,7 @@ internal fun InviteCodeInputFieldElement(
         Spacer(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable { onClickTextFieldElement() },
+                .clickableYGNoRipple { onClickTextFieldElement() },
         )
         Spacer(
             modifier = Modifier
