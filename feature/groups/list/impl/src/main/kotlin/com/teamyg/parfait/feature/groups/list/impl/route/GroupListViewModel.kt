@@ -30,6 +30,14 @@ data class GroupListUiState(
 ) : UiState
 
 sealed interface GroupListIntent : UiIntent {
+    /**
+     * 화면이 앞에 섰다. 처음 열릴 때뿐 아니라 다른 화면에서 **돌아올 때마다** 온다.
+     *
+     * 목록의 최근 사진은 다른 멤버가 올려도 바뀌므로, 내 앱 안의 변경만 좇아서는 최신이 될 수
+     * 없다. 들어올 때마다 다시 물어보는 것이 최신을 보장하는 유일한 방법이다.
+     */
+    data object Enter : GroupListIntent
+
     data object ClickTopBarChip : GroupListIntent
 
     data object DismissedTopBarChip : GroupListIntent
@@ -63,23 +71,13 @@ constructor(
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
-    init {
-        val today = Clock.System
-            .now()
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-            .date
-        updateState {
-            copy(
-                dateString = today.format(DateFormat.FullMonthWithDay),
-                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
-            )
-        }
-
-        loadGroups(isRefresh = false)
-    }
-
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
+            GroupListIntent.Enter -> {
+                updateToday()
+                loadGroups(isRefresh = false)
+            }
+
             GroupListIntent.ClickTopBarChip -> {
                 updateState { copy(groupAddButtonSelected = true) }
             }
@@ -105,6 +103,20 @@ constructor(
             }
 
             GroupListIntent.Refresh -> loadGroups(isRefresh = true)
+        }
+    }
+
+    /** 앱을 켜 둔 채 자정을 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
+    private fun updateToday() {
+        val today = Clock.System
+            .now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .date
+        updateState {
+            copy(
+                dateString = today.format(DateFormat.FullMonthWithDay),
+                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
+            )
         }
     }
 

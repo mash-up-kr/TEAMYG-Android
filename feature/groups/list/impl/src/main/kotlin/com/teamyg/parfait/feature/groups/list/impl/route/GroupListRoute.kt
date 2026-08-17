@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffold
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -26,6 +27,19 @@ internal fun GroupListRoute(
     viewModel: GroupListViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+
+    /**
+     * ViewModel 은 NavEntry 가 백스택에 남아 있는 한 살아 있어, 초기화 한 번으로는 돌아왔을 때
+     * 낡은 목록이 그대로 남는다. 특히 그룹 생성·참여는 `goToSingleClearTop` 으로 이 엔트리를
+     * 재사용하므로 방금 만든 그룹이 보이지 않았다.
+     *
+     * 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 이 효과는 다시 앞에 설 때 한 번 돈다.
+     * 화면이 컴포지션에 있는 동안의 앱 복귀(ON_RESUME)도 같이 잡힌다.
+     */
+    LifecycleResumeEffect(Unit) {
+        viewModel.processIntent(GroupListIntent.Enter)
+        onPauseOrDispose { }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
