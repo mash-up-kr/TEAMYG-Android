@@ -109,18 +109,20 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun refresh_fails_showsErrorScreenEvenWithLoadedGroups() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_failsWithLoadedGroups_keepsTheList() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹을 이미 띄운 화면
         coEvery { getMyGroups() } returns Result.success(GROUPS)
         val viewModel = enteredViewModel()
 
-        // When 새로고침이 실패한다
+        // When 돌아오면서 나간 조회가 실패한다
         coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
-        viewModel.processIntent(GroupListIntent.Refresh)
+        viewModel.processIntent(GroupListIntent.Enter)
         advanceUntilIdle()
 
-        // Then 실패를 알릴 다른 자리가 없으므로 목록이 있어도 에러 화면으로 넘어간다
-        assertTrue(viewModel.state.value.isError)
+        // Then 뒤로 온 것만으로 화면이 통째로 사라지지 않도록 낡은 목록을 남긴다
+        val state = viewModel.state.value
+        assertEquals(GROUPS, state.groupList)
+        assertFalse(state.isError)
     }
 
     @Test

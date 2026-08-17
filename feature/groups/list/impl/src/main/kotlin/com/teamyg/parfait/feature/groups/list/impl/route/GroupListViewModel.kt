@@ -141,11 +141,15 @@ constructor(
     }
 
     /**
-     * 목록이 남아 있어도 에러 화면으로 넘긴다 — 실패를 알릴 다른 자리가 없어서, 낡은 목록을
-     * 그대로 두면 사용자는 새로고침이 실패한 것을 알 방법이 없다.
+     * 보여 줄 목록이 없을 때만 에러 화면으로 넘긴다.
+     *
+     * 조회는 [GroupListIntent.Enter] 로 화면에 돌아올 때마다 나가므로, 실패마다 에러 화면으로
+     * 넘기면 뒤로 온 것만으로 보던 목록이 통째로 사라진다. 낡아도 남겨 두는 편이 낫다 —
+     * 사용자가 실패를 알아야 하는 순간은 직접 당겨서 새로고침했을 때이고, 그건 목록이 그대로인
+     * 것으로 드러난다.
      */
     private fun handleLoadFailure(throwable: Throwable) {
-        updateState { copy(isError = true) }
+        updateState { copy(isError = groupList.isEmpty()) }
 
         when (throwable) {
             is AppError.Network -> viewModelLogger.e(throwable) { "그룹 목록 조회 실패 — 네트워크 단절" }
