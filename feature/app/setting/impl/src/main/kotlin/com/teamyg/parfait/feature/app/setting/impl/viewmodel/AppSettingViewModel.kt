@@ -5,7 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.jvm.model.AppVersionName
+import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -24,9 +24,9 @@ import javax.inject.Inject
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
 data class AppSettingState(
-    val version: String,
     val nickname: String? = null,
     val loginProvider: LoginProvider? = null,
+    val version: String = APP_VERSION_NAME,
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
 ) : UiState
@@ -65,11 +65,10 @@ sealed interface AppSettingSideEffect : UiSideEffect {
 class AppSettingViewModel
 @Inject
 constructor(
-    appVersionName: AppVersionName,
     private val logout: LogoutUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
-    initialState = AppSettingState(version = appVersionName.value),
+    initialState = AppSettingState(),
 ) {
     init {
         viewModelLogger.i { "AppSettingViewModel::init" }

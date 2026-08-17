@@ -133,7 +133,6 @@ internal fun AppSettingScreen(
 private fun AppSettingScreenPreview() = PreviewBox {
     AppSettingScreen(
         state = AppSettingState(
-            version = "1.0.0",
             nickname = "아니야나그런데기니야",
             loginProvider = LoginProvider.KAKAO,
         ),
