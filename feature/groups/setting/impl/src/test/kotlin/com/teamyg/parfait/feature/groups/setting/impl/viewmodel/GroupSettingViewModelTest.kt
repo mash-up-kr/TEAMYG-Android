@@ -32,6 +32,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -603,6 +604,24 @@ class GroupSettingViewModelTest {
     }
 
     @Test
+    fun init_myAccountReadThrows_doesNotCrashAndShowsDetail() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 정보 조회가 저장소 IO 실패로 예외를 던진다(회귀 방지 - 예전엔 이 구독이
+        // BaseViewModel.launch 가드 안에 있어 잡혔지만, viewModelScope.launch 직접 호출로
+        // 바뀌며 잡히지 않게 됐었다)
+        every { getMyAccountFlow() } returns flow { throw IllegalStateException("디스크 IO 실패") }
+
+        // When 화면이 열린다 — 예외가 앱을 죽이지 않아야 한다
+        val viewModel = viewModel()
+
+        // Then 계정 id 를 못 읽었어도 상세는 그대로 채워진다. 다만 아무도 나로 표시되지 않는다
+        val state = viewModel.state.value
+        assertEquals(DETAIL.groupName, state.groupName)
+        assertEquals(DETAIL.myNickname, state.myNickname)
+        assertEquals(3, state.members.size)
+        assertTrue(state.members.none { it.isMe })
+    }
+
+    @Test
     fun confirmNickname_serverRejectsName_keepsPreviousNicknameAndShowsReason() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 서버가 닉네임을 거절한다
@@ -717,20 +736,25 @@ class GroupSettingViewModelTest {
 
     @Test
     fun init_cacheHasDetail_showsWithoutLoading() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캐시에 상세가 이미 있다
+        // Given 캐시에 상세가 이미 있고, 서버 갱신 왕복은 아직 응답하지 않는다
+        val pending = CompletableDeferred<Result<Unit>>()
         every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(DETAIL)
-        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.success(Unit)
+        coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } coAnswers { pending.await() }
         every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
 
-        // When 화면이 열린다
-        val viewModel = viewModel()
-        advanceUntilIdle()
+        // When 화면이 열리지만, 갱신 왕복은 아직 끝나지 않은 시점이다
+        val viewModel = newViewModel()
+        runCurrent()
 
-        // Then 첫 값이 이미 있으므로 화면을 덮지 않는다
+        // Then 갱신이 끝나길 기다리지 않고, 캐시의 첫 값만으로 이미 화면을 덮지 않는다
         val state = viewModel.state.value
         assertFalse(state.isLoadingDetail)
         assertEquals(DETAIL.groupName, state.groupName)
         assertEquals(DETAIL.myNickname, state.myNickname)
+
+        // 갱신 왕복을 마저 끝내 다음 테스트로 코루틴이 새지 않게 한다
+        pending.complete(Result.success(Unit))
+        advanceUntilIdle()
     }
 
     @Test

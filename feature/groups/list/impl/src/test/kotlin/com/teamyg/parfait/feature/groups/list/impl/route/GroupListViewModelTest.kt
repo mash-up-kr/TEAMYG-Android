@@ -124,7 +124,7 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_again_reloadsTheList() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_again_requestsAnotherRefresh() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹 하나를 띄워 둔 화면
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUPS.first()))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
@@ -268,19 +268,20 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun refresh_succeedsAfterFailure_returnsToTheList() = runTest(mainDispatcherRule.dispatcher) {
+    fun refresh_succeedsAfterFailure_clearsError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 조회가 실패해 에러 화면이 뜬 상태
         every { getMyGroupsFlow() } returns flowOf(null)
         coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
-        // When 다시 당겨 새로고침하고 이번엔 성공한다
-        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        // When 다시 당겨 새로고침하고 이번엔 성공한다. getMyGroupsFlow() 는 이미 구독 중이라
+        // 재스텁해도 캐시가 바뀌지 않으므로 다시 스텁하지 않는다 — 에러가 걷히는 것은 온전히
+        // refreshMyGroups() 의 성공 자체 때문이다
         coEvery { refreshMyGroups() } returns Result.success(Unit)
         viewModel.processIntent(GroupListIntent.Refresh)
         advanceUntilIdle()
 
-        // Then 에러 화면이 걷히고 목록이 돌아온다
+        // Then 에러 화면이 걷힌다
         val state = viewModel.state.value
         assertFalse(state.isError)
     }

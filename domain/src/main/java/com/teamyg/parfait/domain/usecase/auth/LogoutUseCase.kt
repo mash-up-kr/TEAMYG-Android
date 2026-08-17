@@ -21,6 +21,12 @@ import javax.inject.Inject
  * 로컬 저장소 IO 가 실패해도 로그아웃 자체를 실패로 만들지 않는다(취소는 재던진다).
  * [ParfaitGroupRepository.clearGroups] 는 인메모리라 IO 실패 경로가 없어
  * [runSuspendCatching] 이 필요 없다.
+ *
+ * 그래서 [ParfaitGroupRepository.clearGroups] 를 먼저 부른다 — 던지지 않는 정리를 앞세워,
+ * 뒤이은 [MemberRepository.clearMyAccount] 의 DataStore IO 가 취소를 재던지더라도(
+ * [runSuspendCatching] 은 취소는 그대로 던진다) 그룹 캐시 정리까지 막지 않게 한다. 순서가
+ * 반대면, 계정 정리 중 취소됐을 때 프로세스는 살아 있는 채 계정만 바뀌어 이전 계정의 그룹이
+ * 캐시에 남는다. `TokenAuthenticator` 도 같은 근거로 같은 순서를 쓴다.
  */
 class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,
@@ -29,8 +35,8 @@ class LogoutUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): Result<Unit> {
         val result = authRepository.logout()
-        runSuspendCatching { memberRepository.clearMyAccount() }
         parfaitGroupRepository.clearGroups()
+        runSuspendCatching { memberRepository.clearMyAccount() }
         return result
     }
 }
