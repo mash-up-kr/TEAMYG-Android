@@ -57,7 +57,6 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
             }.semantics(mergeDescendants = true) { contentDescription = description },
     ) {
         YGLoadingLottie(
-            // 크기를 묶어 두지 않으면 오버레이가 화면 전체라 애니메이션도 그만큼 늘어난다.
             // 애셋 원본이 44×44 라 그 크기에서 다시 그리는 일이 없다
             modifier = Modifier.size(SizeTokens.Size44.getDp()),
             tone = YGLoadingTone.Light,

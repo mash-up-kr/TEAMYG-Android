@@ -69,7 +69,6 @@ private fun BoxScope.GroupListRefreshIndicator(
             .align(Alignment.TopCenter)
             .size(INDICATOR_SIZE)
             .graphicsLayer {
-                // 손을 떼지 않은 동안에는 당긴 만큼만 드러난다
                 alpha = pulledFraction()
 
                 // 콘텐츠가 비워 준 자리 한가운데. 덜 당겼으면 음수라 위로 잘려, 열린 틈만큼만 보인다
@@ -77,7 +76,6 @@ private fun BoxScope.GroupListRefreshIndicator(
                 translationY = (gap - INDICATOR_SIZE.toPx()) / 2f
             },
         tone = YGLoadingTone.Dark,
-        // 새로고침이 걸리기 전까지는 손가락이 애니메이션을 돌린다 — 당긴 만큼 앞으로 감긴다
         progress = if (isRefreshing) null else pulledFraction,
     )
 }
