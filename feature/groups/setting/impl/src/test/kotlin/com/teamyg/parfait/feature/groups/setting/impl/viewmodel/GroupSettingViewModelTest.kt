@@ -11,18 +11,25 @@ import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
+import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.id.ReportId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.group.ChangeGroupNicknameUseCase
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
+import com.teamyg.parfait.domain.usecase.group.LeaveGroupUseCase
+import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -44,6 +51,8 @@ class GroupSettingViewModelTest {
     private val getGroupDetail: GetGroupDetailUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
+    private val leaveGroup: LeaveGroupUseCase = mockk()
+    private val reportGroup: ReportGroupUseCase = mockk()
 
     @Before
     fun setUp() {
@@ -54,14 +63,19 @@ class GroupSettingViewModelTest {
         )
     }
 
-    /** 만들자마자 상세 조회가 끝난 상태로 넘긴다 — 화면이 실제로 서 있는 지점이 여기다 */
-    private fun TestScope.viewModel(): GroupSettingViewModel = GroupSettingViewModel(
+    /** 조회가 끝나기 전 구간을 보는 테스트를 위해 시간을 흘리지 않고 만든다 */
+    private fun newViewModel(): GroupSettingViewModel = GroupSettingViewModel(
         groupIdValue = GROUP_ID,
         checkNameValid = CheckNameValidUseCase(),
         getGroupDetail = getGroupDetail,
         getMyAccountFlow = getMyAccountFlow,
         changeGroupNickname = changeGroupNickname,
-    ).also { advanceUntilIdle() }
+        leaveGroup = leaveGroup,
+        reportGroup = reportGroup,
+    )
+
+    /** 만들자마자 상세 조회가 끝난 상태로 넘긴다 — 화면이 실제로 서 있는 지점이 여기다 */
+    private fun TestScope.viewModel(): GroupSettingViewModel = newViewModel().also { advanceUntilIdle() }
 
     @Test
     fun inputNickname_validName_updatesInputAndClearsError() = runTest(mainDispatcherRule.dispatcher) {
@@ -356,16 +370,68 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun confirmLeaveGroup_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 나가기 확인 팝업이 떠 있는 상태
+    fun confirmLeaveGroup_succeeds_hidesDialogAndGoesToGroupList() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 탈퇴를 받아 주는 상태에서 나가기 확인 팝업이 떠 있다
+        coEvery { leaveGroup(GroupId(GROUP_ID)) } returns Result.success(GroupId(GROUP_ID))
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
 
         // When 팝업의 나가기를 누름
-        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
 
-        // Then 팝업이 닫힌다
+            // Then 되돌아갈 수 없는 그룹이므로 목록으로 보낸다
+            assertEquals(GroupSettingSideEffect.NavigateToGroupList, awaitItem())
+        }
+
+        // Then 팝업도 닫힌다
         assertNull(viewModel.state.value.visibleDialog)
+        coVerify(exactly = 1) { leaveGroup(GroupId(GROUP_ID)) }
+    }
+
+    @Test
+    fun confirmLeaveGroup_fails_showsErrorAndStaysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴 요청이 실패하는 상태에서 나가기 확인 팝업이 떠 있다
+        coEvery { leaveGroup(any()) } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
+
+        // When 팝업의 나가기를 누름
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+
+            // Then 나가지 못한 이유를 토스트로 알릴 뿐, 목록으로 보내지 않는다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.NETWORK), awaitItem())
+            expectNoEvents()
+        }
+
+        // Then 덮개도 걷혀 화면을 다시 쓸 수 있다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun confirmLeaveGroup_tappedTwiceWhileInFlight_callsApiOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 첫 요청이 아직 끝나지 않은 상태
+        val pending = CompletableDeferred<Result<GroupId>>()
+        coEvery { leaveGroup(any()) } coAnswers { pending.await() }
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup)
+
+        // When 응답을 기다리는 사이 한 번 더 누름
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+        runCurrent()
+
+        // Then 왕복 동안 팝업은 이미 닫혀 있고 화면은 덮여 있다
+        assertNull(viewModel.state.value.visibleDialog)
+        assertTrue(viewModel.state.value.isLoading)
+
+        viewModel.processIntent(GroupSettingIntent.ConfirmLeaveGroup)
+        runCurrent()
+        pending.complete(Result.success(GroupId(GROUP_ID)))
+        advanceUntilIdle()
+
+        // Then 탈퇴는 한 번만 나간다
+        coVerify(exactly = 1) { leaveGroup(any()) }
     }
 
     @Test
@@ -395,16 +461,59 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun confirmReportGroup_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
+    fun confirmReportGroup_succeeds_hidesDialogAndGoesToGroupList() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 신고를 받아 주는 상태에서 신고 확인 팝업이 떠 있다
+        coEvery { reportGroup(groupId = GroupId(GROUP_ID), reason = any()) } returns Result.success(REPORTED_GROUP)
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 팝업의 신고하기를 누름
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmReportGroup)
+
+            // Then 신고와 함께 그룹에서도 빠지므로 나가기와 같은 자리로 보낸다
+            assertEquals(GroupSettingSideEffect.NavigateToGroupList, awaitItem())
+        }
+
+        // Then 팝업도 닫힌다
+        assertNull(viewModel.state.value.visibleDialog)
+    }
+
+    @Test
+    fun confirmReportGroup_sendsNonBlankReason() = runTest(mainDispatcherRule.dispatcher) {
         // Given 신고 확인 팝업이 떠 있는 상태
+        val reason = slot<String>()
+        coEvery { reportGroup(groupId = any(), reason = capture(reason)) } returns Result.success(REPORTED_GROUP)
         val viewModel = viewModel()
         viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
 
         // When 팝업의 신고하기를 누름
         viewModel.processIntent(GroupSettingIntent.ConfirmReportGroup)
+        advanceUntilIdle()
 
-        // Then 팝업이 닫힌다
-        assertNull(viewModel.state.value.visibleDialog)
+        // Then 사유를 고르는 UI 가 없어도 서버가 요구하는 사유는 채워 보낸다
+        assertTrue(reason.captured.isNotBlank())
+    }
+
+    @Test
+    fun confirmReportGroup_fails_showsErrorAndStaysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 신고 요청이 실패하는 상태에서 신고 확인 팝업이 떠 있다
+        coEvery { reportGroup(groupId = any(), reason = any()) } returns
+            Result.failure(AppError.Server(code = "INVALID_GROUP_REPORT_REASON", statusCode = 400, serverMessage = "…"))
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ClickReportGroup)
+
+        // When 팝업의 신고하기를 누름
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmReportGroup)
+
+            // Then 닉네임 규칙과 무관한 코드라 일반 문구로 떨어지고, 목록으로 보내지 않는다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.UNKNOWN), awaitItem())
+            expectNoEvents()
+        }
+
+        // Then 덮개도 걷혀 화면을 다시 쓸 수 있다
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     @Test
@@ -482,13 +591,20 @@ class GroupSettingViewModelTest {
             viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
             // When 확정
-            viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
-            advanceUntilIdle()
+            viewModel.effect.test {
+                viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+                advanceUntilIdle()
 
-            // Then 서버가 받아 준 이름만 남으므로 이전 닉네임 그대로고, 사유가 붙는다
+                // Then 사유가 토스트로 나간다
+                assertEquals(
+                    GroupSettingSideEffect.ShowError(GroupSettingError.INVALID_NICKNAME),
+                    awaitItem(),
+                )
+            }
+
+            // Then 서버가 받아 준 이름만 남으므로 이전 닉네임 그대로다
             val state = viewModel.state.value
             assertEquals(MY_NICKNAME, state.myNickname.value)
-            assertEquals(GroupSettingError.INVALID_NICKNAME, state.submitError)
             assertFalse(state.isSubmittingNickname)
         }
 
@@ -501,25 +617,74 @@ class GroupSettingViewModelTest {
         viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
 
         // When 확정
-        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+            advanceUntilIdle()
 
-        // Then 네트워크 사유가 붙는다
-        assertEquals(GroupSettingError.NETWORK, viewModel.state.value.submitError)
+            // Then 네트워크 사유가 토스트로 나간다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.NETWORK), awaitItem())
+        }
     }
 
     @Test
-    fun init_detailFails_keepsScreenUsable() = runTest(mainDispatcherRule.dispatcher) {
+    fun init_detailFails_stopsLoadingAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 상세 조회가 실패한다
         coEvery { getGroupDetail(GroupId(GROUP_ID)) } returns Result.failure(AppError.Network(Exception()))
 
         // When 화면이 열림
-        val viewModel = viewModel()
+        val viewModel = newViewModel()
 
-        // Then 빈 값으로 서 있을 뿐 무한 로딩이나 크래시로 가지 않는다
+        viewModel.effect.test {
+            advanceUntilIdle()
+
+            // Then 사유가 토스트로 나가고, 로딩이 걸린 채 남지 않는다
+            assertEquals(GroupSettingSideEffect.ShowError(GroupSettingError.NETWORK), awaitItem())
+        }
         val state = viewModel.state.value
         assertEquals("", state.groupName.value)
         assertTrue(state.members.isEmpty())
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun init_beforeDetailArrives_isLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상세 조회가 아직 끝나지 않은 화면
+        val viewModel = newViewModel()
+
+        // Then 보여 줄 값이 없으므로 화면을 덮는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When 조회가 끝나면
+        advanceUntilIdle()
+
+        // Then 덮개가 걷힌다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun confirmNickname_whileSubmitting_isLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버 응답이 아직 오지 않은 닉네임 변경
+        val pending = CompletableDeferred<Result<GroupNicknameVO>>()
+        coEvery { changeGroupNickname(any(), any()) } coAnswers { pending.await() }
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(isFocused = true))
+        viewModel.processIntent(GroupSettingIntent.InputNickname(NEW_NICKNAME))
+
+        // When 확정
+        viewModel.processIntent(GroupSettingIntent.ConfirmNickname)
+        advanceUntilIdle()
+
+        // Then 왕복이 끝날 때까지 입력 필드를 더 고치지 못하게 덮는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When 응답이 도착하면
+        pending.complete(
+            Result.success(GroupNicknameVO(GroupId(GROUP_ID), GroupNickname(NEW_NICKNAME))),
+        )
+        advanceUntilIdle()
+
+        // Then 덮개가 걷힌다
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     private companion object {
@@ -543,6 +708,11 @@ class GroupSettingViewModelTest {
                 ParfaitGroupMemberVO(MemberId(2L), GroupNickname("체리마루")),
                 ParfaitGroupMemberVO(MemberId(3L), GroupNickname("푸딩왕자")),
             ),
+        )
+
+        val REPORTED_GROUP = ReportedGroupVO(
+            groupId = GroupId(GROUP_ID),
+            reportId = ReportId(1L),
         )
     }
 }

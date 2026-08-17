@@ -10,6 +10,7 @@ import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
+import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import javax.inject.Inject
@@ -55,5 +56,18 @@ class ParfaitGroupRepositoryImpl @Inject constructor(
         .changeMyNickname(
             groupId = groupId,
             groupNickname = groupNickname,
+        ).mapErrorToAppError()
+
+    override suspend fun leaveGroup(groupId: GroupId): Result<GroupId> = parfaitGroupRemoteDataSource
+        .leaveGroup(groupId)
+        .mapErrorToAppError()
+
+    override suspend fun reportGroup(
+        groupId: GroupId,
+        reason: String,
+    ): Result<ReportedGroupVO> = parfaitGroupRemoteDataSource
+        .reportGroup(
+            groupId = groupId,
+            reason = reason,
         ).mapErrorToAppError()
 }

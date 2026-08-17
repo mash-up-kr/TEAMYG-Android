@@ -20,6 +20,8 @@ import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.group.ChangeGroupNicknameUseCase
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
+import com.teamyg.parfait.domain.usecase.group.LeaveGroupUseCase
+import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
 import dagger.assisted.Assisted
@@ -42,9 +44,8 @@ data class GroupSettingUiState(
     val myNickname: GroupNickname = GroupNickname(""),
     val nicknameInput: String = "",
     val isEditing: Boolean = false,
+    /** 입력 형식 오류. 서버가 되돌린 사유는 상태가 아니라 [GroupSettingSideEffect.ShowError] 로 나간다 */
     val nicknameError: NameValidResult.Error? = null,
-    /** 서버가 닉네임 변경을 되돌린 사유. 입력 형식 오류인 [nicknameError] 와 자리가 다르다 */
-    val submitError: GroupSettingError? = null,
     val members: List<GroupMemberUiModel> = emptyList(),
     val inviteCode: InviteCode = InviteCode(""),
     // TODO: 정원이 그룹 생성 응답에만 있어 남은 자리를 셀 수 없다. 서버가 상세에 memberLimit 을
@@ -54,7 +55,18 @@ data class GroupSettingUiState(
     val visibleDialog: GroupSettingDialog? = null,
     /** 닉네임 변경이 서버에 오가는 중. 확인 버튼을 다시 누르지 못하게 막는다 */
     val isSubmittingNickname: Boolean = false,
+    /** 첫 조회가 끝나기 전. 화면에 아직 아무 값도 없는 구간이다 */
+    val isLoadingDetail: Boolean = true,
+    /** 나가기·신고가 서버에 오가는 중. 둘은 한 번에 하나만 뜨는 팝업에서 나와 함께 세지 않는다 */
+    val isSubmittingDialogAction: Boolean = false,
 ) : UiState {
+    /**
+     * 화면을 덮어야 하는 대기. 첫 조회는 보여 줄 값이 없어서, 닉네임 변경은 왕복이 끝나기 전에
+     * 입력 필드를 더 고칠 수 있어서, 나가기·신고는 끝나면 이 화면을 떠나서 덮는다.
+     */
+    val isLoading: Boolean
+        get() = isLoadingDetail || isSubmittingNickname || isSubmittingDialogAction
+
     /** 입력값이 유효한가. 키보드 Done 처리처럼 "닫아도 되는가"의 기준. */
     val isNicknameValid: Boolean
         get() = nicknameError == null
@@ -90,6 +102,15 @@ sealed interface GroupSettingSideEffect : UiSideEffect {
     data object NavigateBack : GroupSettingSideEffect
 
     data class CopyInviteCode(val inviteCode: String) : GroupSettingSideEffect
+
+    /**
+     * 서버가 되돌린 사유. 입력 형식 오류는 고칠 곳이 눈앞에 있어 입력칸 아래 남지만, 서버 실패는
+     * 그 자리에서 고칠 수 있는 것이 아니라 공용 토스트로 나간다.
+     */
+    data class ShowError(val error: GroupSettingError) : GroupSettingSideEffect
+
+    /** 그룹에서 빠져나온 뒤 갈 곳. 뒤로 가면 방금 떠난 그룹의 화면이라 되돌아갈 수 없어야 한다 */
+    data object NavigateToGroupList : GroupSettingSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupSettingViewModel.Factory::class)
@@ -101,6 +122,8 @@ constructor(
     private val getGroupDetail: GetGroupDetailUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
+    private val leaveGroup: LeaveGroupUseCase,
+    private val reportGroup: ReportGroupUseCase,
 ) : BaseViewModel<GroupSettingUiState, GroupSettingIntent, GroupSettingSideEffect>(
     initialState = GroupSettingUiState(),
 ) {
@@ -113,19 +136,21 @@ constructor(
         loadGroupDetail()
     }
 
-    /**
-     * 실패해도 알릴 자리가 없어 로그만 남긴다 — 화면은 빈 값 그대로 뜬다.
-     * TODO(에러 UX 미정): 이 화면이 실패를 표현할 방법이 정해지면 여기서 상태로 올린다
-     */
     private fun loadGroupDetail() {
         launch(key = KEY_LOAD_GROUP_DETAIL) {
-            val myMemberId = getMyAccountFlow().first()?.memberId
+            try {
+                val myMemberId = getMyAccountFlow().first()?.memberId
 
-            getGroupDetail(groupId)
-                .onSuccess { detail -> updateState { withDetail(detail, myMemberId) } }
-                .onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
-                }
+                getGroupDetail(groupId)
+                    .onSuccess { detail -> updateState { withDetail(detail, myMemberId) } }
+                    .onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
+                        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
+                    }
+            } finally {
+                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
+                updateState { copy(isLoadingDetail = false) }
+            }
         }
     }
 
@@ -190,7 +215,6 @@ constructor(
             copy(
                 nicknameInput = nickname,
                 nicknameError = nicknameError,
-                submitError = null,
             )
         }
     }
@@ -213,11 +237,14 @@ constructor(
         val nickname = GroupNickname(state.value.nicknameInput)
 
         launch(key = KEY_CHANGE_NICKNAME) {
-            updateState { copy(isSubmittingNickname = true, submitError = null) }
+            updateState { copy(isSubmittingNickname = true) }
             try {
                 changeGroupNickname(groupId = groupId, groupNickname = nickname)
                     .onSuccess { changed -> updateState { withMyNickname(changed.groupNickname) } }
-                    .onFailure { throwable -> updateState { copy(submitError = throwable.toSubmitError()) } }
+                    .onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
+                        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
+                    }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 버튼이 영구 비활성으로 남지 않게 한다
                 updateState { copy(isSubmittingNickname = false) }
@@ -235,20 +262,16 @@ constructor(
         nicknameError = null,
     )
 
-    /** 실패 갈래를 전부 열거해 둔다. 화면에는 입력 자리 아래 한 줄로만 나간다 */
-    private fun Throwable.toSubmitError(): GroupSettingError {
-        viewModelLogger.e(this) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
+    /** 실패 갈래를 전부 열거해 둔다 */
+    private fun Throwable.toGroupSettingError(): GroupSettingError = when (this) {
+        is AppError.Network -> GroupSettingError.NETWORK
 
-        return when (this) {
-            is AppError.Network -> GroupSettingError.NETWORK
-
-            is AppError.Server -> when (code) {
-                ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupSettingError.INVALID_NICKNAME
-                else -> GroupSettingError.UNKNOWN
-            }
-
+        is AppError.Server -> when (code) {
+            ServerErrorCode.ParfaitGroup.INVALID_GROUP_NICKNAME -> GroupSettingError.INVALID_NICKNAME
             else -> GroupSettingError.UNKNOWN
         }
+
+        else -> GroupSettingError.UNKNOWN
     }
 
     private fun handleClickCopyInviteCode() {
@@ -273,17 +296,55 @@ constructor(
     private fun handleConfirmLeaveGroup() {
         if (state.value.visibleDialog != GroupSettingDialog.Leave) return
 
-        updateState { copy(visibleDialog = null) }
-        // TODO: 그룹 나가기 API 연동 (DELETE /api/parfait-groups/{groupId}/members/me)
-        viewModelLogger.i { "GroupSettingViewModel::handleConfirmLeaveGroup" }
+        submitDialogAction(key = KEY_LEAVE_GROUP, action = LEAVE_ACTION) {
+            leaveGroup(groupId)
+        }
     }
 
+    /**
+     * 신고하면 그룹에서도 자동으로 나가진다(팝업 문구가 그렇게 약속한다) — 나가기와 같은 자리로
+     * 돌려보낸다.
+     */
     private fun handleConfirmReportGroup() {
         if (state.value.visibleDialog != GroupSettingDialog.Report) return
 
-        updateState { copy(visibleDialog = null) }
-        // TODO: 그룹 신고 API 연동 (POST /api/parfait-groups/{groupId}/reports)
-        viewModelLogger.i { "GroupSettingViewModel::handleConfirmReportGroup" }
+        submitDialogAction(key = KEY_REPORT_GROUP, action = REPORT_ACTION) {
+            reportGroup(groupId = groupId, reason = GROUP_REPORT_REASON)
+        }
+    }
+
+    /**
+     * 나가기와 신고는 결과가 같다 — 둘 다 이 그룹에서 빠져나온다. 다른 것은 부르는 API 와
+     * 실패 로그의 이름뿐이라 한 자리에 모은다.
+     *
+     * 팝업은 먼저 닫는다. 왕복 동안은 스캐폴드가 화면을 덮고, 실패는 토스트가 말한다 —
+     * 팝업을 띄운 채로 두면 그 덮개 아래 가려 아무것도 알리지 못한다.
+     */
+    private fun submitDialogAction(
+        key: String,
+        action: String,
+        request: suspend () -> Result<*>,
+    ) {
+        updateState { copy(visibleDialog = null, isSubmittingDialogAction = true) }
+
+        launch(key = key, onError = { onDialogActionFailed(it, action) }) {
+            try {
+                request()
+                    .onSuccess { postSideEffect(GroupSettingSideEffect.NavigateToGroupList) }
+                    .onFailure { onDialogActionFailed(it, action) }
+            } finally {
+                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
+                updateState { copy(isSubmittingDialogAction = false) }
+            }
+        }
+    }
+
+    private fun onDialogActionFailed(
+        throwable: Throwable,
+        action: String,
+    ) {
+        viewModelLogger.e(throwable) { "${action}에 실패했다 - groupId: ${groupId.value}" }
+        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
     }
 
     private fun handleDismissDialog() {
@@ -298,6 +359,11 @@ constructor(
     private companion object {
         const val KEY_LOAD_GROUP_DETAIL = "loadGroupDetail"
         const val KEY_CHANGE_NICKNAME = "changeNickname"
+        const val KEY_LEAVE_GROUP = "leaveGroup"
+        const val KEY_REPORT_GROUP = "reportGroup"
+
+        const val LEAVE_ACTION = "그룹 나가기"
+        const val REPORT_ACTION = "그룹 신고"
     }
 
     private fun cancelEditing() {
@@ -305,7 +371,6 @@ constructor(
             copy(
                 nicknameInput = myNickname.value,
                 nicknameError = null,
-                submitError = null,
                 isEditing = false,
             )
         }
@@ -316,6 +381,10 @@ private const val MOCK_REMAINING_COUNT = 1
 
 // 초대 코드 복사 후 "복사됨" 문구가 원래 문구로 되돌아가기까지의 지연(ms)
 private const val COPY_CODE_RESET_DELAY_MS = 2000L
+
+// TODO: 사유를 고르는 UI 가 아직 없다. 서버는 사유를 필수로 받으므로(빈 값이면
+//  400 INVALID_GROUP_REPORT_REASON) 화면이 대신 채운다 — 사유 선택이 생기면 이 상수는 사라진다.
+private const val GROUP_REPORT_REASON = "그룹 설정에서 신고"
 
 // TODO: 컬러칩 타입 부여 주체가 미정이라 목록 인덱스로 순환 배정한다. 서버가 타입을 주면 교체.
 private val NAMETAG_CHIP_TYPES: List<YGColorChipType> = listOf(
