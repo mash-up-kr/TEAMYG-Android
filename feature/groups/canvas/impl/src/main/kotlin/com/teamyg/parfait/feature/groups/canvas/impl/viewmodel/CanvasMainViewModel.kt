@@ -211,17 +211,20 @@ constructor(
         if (today == state.value.today) return
 
         updateState {
-            if (isViewingToday.not()) return@updateState copy(today = today)
-
-            // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 비운다 — 곧 이어지는
-            // 오늘 조회가 채운다
-            copy(
-                today = today,
-                selectedDate = today,
-                displayedMonth = today.toFirstDayOfMonth(),
-                todayCanvas = null,
-                viewedCanvas = null,
-            )
+            if (isViewingToday) {
+                // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 비운다 — 곧 이어지는
+                // 오늘 조회가 채운다
+                copy(
+                    today = today,
+                    selectedDate = today,
+                    displayedMonth = today.toFirstDayOfMonth(),
+                    todayCanvas = null,
+                    viewedCanvas = null,
+                )
+            } else {
+                // 지난 날을 보고 있었다면 그 캔버스는 그대로 유효하다
+                copy(today = today)
+            }
         }
     }
 
