@@ -64,6 +64,8 @@ class MemberRepositoryImpl @Inject constructor(
 
     override suspend fun clearMyAccount() = localDataSource.clear()
 
+    override suspend fun withdraw(): Result<Unit> = remoteDataSource.withdraw().mapErrorToAppError()
+
     /**
      * `DataStore.edit` 는 IOException 을 던질 수 있는데, 이 값이 원격 응답의
      * `Result.onSuccess` 체인 안에서 무방비로 던져지면 [mapErrorToAppError] 를 거치지

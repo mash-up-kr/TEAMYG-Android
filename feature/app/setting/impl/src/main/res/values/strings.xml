@@ -12,6 +12,7 @@
     <string name="setting_withdraw_dialog_body">지금까지 올린 사진은 익명으로 표시되며,\n삭제되지 않아요.</string>
     <string name="setting_withdraw_dialog_confirm">탈퇴하기</string>
     <string name="setting_dialog_cancel">그만두기</string>
+    <string name="setting_withdraw_error">탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요</string>
     <string name="account_info_title">계정 정보</string>
     <string name="account_info_nickname_label">닉네임</string>
     <string name="account_info_submit">확인</string>

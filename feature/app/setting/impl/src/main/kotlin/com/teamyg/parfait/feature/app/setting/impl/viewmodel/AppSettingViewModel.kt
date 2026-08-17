@@ -11,6 +11,7 @@ import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.domain.usecase.member.WithdrawUseCase
 import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -36,7 +37,10 @@ data class AppSettingState(
     val policies: List<PolicyVO> = emptyList(),
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
+    val isWithdrawing: Boolean = false,
 ) : UiState {
+    val isLoading: Boolean get() = isLoggingOut || isWithdrawing
+
     fun policyOf(type: PolicyType): PolicyVO? = policies.firstOrNull { it.type == type }
 }
 
@@ -69,6 +73,9 @@ sealed interface AppSettingSideEffect : UiSideEffect {
     ) : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
+
+    /** 탈퇴가 거절됐다. 계정이 그대로 살아 있으므로 화면을 떠나지 않고 알리기만 한다 */
+    data object ShowWithdrawError : AppSettingSideEffect
 }
 
 @HiltViewModel
@@ -76,6 +83,7 @@ class AppSettingViewModel
 @Inject
 constructor(
     private val logout: LogoutUseCase,
+    private val withdraw: WithdrawUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val getPolicies: GetPoliciesUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
@@ -176,8 +184,20 @@ constructor(
         if (!state.value.isWithdrawDialogVisible) return
 
         updateState { copy(isWithdrawDialogVisible = false) }
-        // TODO 회원 탈퇴 API 연동 — 서버에 해당 엔드포인트 계약이 아직 없다(신설 후 연동)
-        viewModelLogger.i { "AppSettingViewModel::handleConfirmWithdraw (stub)" }
+
+        launch(key = KEY_WITHDRAW) {
+            updateState { copy(isWithdrawing = true) }
+            try {
+                withdraw()
+                    .onSuccess { postSideEffect(AppSettingSideEffect.NavigateToLogin) }
+                    .onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "회원 탈퇴 실패" }
+                        postSideEffect(AppSettingSideEffect.ShowWithdrawError)
+                    }
+            } finally {
+                updateState { copy(isWithdrawing = false) }
+            }
+        }
     }
 
     private fun handleDismissWithdrawDialog() {
@@ -190,5 +210,8 @@ constructor(
 
         /** [launch] 중복 실행 가드 키 — 약관 조회 job 하나를 가리킨다 */
         const val KEY_LOAD_POLICIES = "loadPolicies"
+
+        /** [launch] 중복 실행 가드 키 — 탈퇴 job 하나를 가리킨다 */
+        const val KEY_WITHDRAW = "withdraw"
     }
 }

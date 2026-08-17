@@ -6,9 +6,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
@@ -25,6 +29,8 @@ internal fun AppSettingRoute(
     viewModel: AppSettingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val toastPolicy = rememberYGToastPolicy()
+    val withdrawErrorMessage = stringResource(R.string.setting_withdraw_error)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -40,16 +46,20 @@ internal fun AppSettingRoute(
                 AppSettingSideEffect.NavigateToLogin -> {
                     navigator.replaceAll(NavKeyLogin)
                 }
+
+                AppSettingSideEffect.ShowWithdrawError -> {
+                    toastPolicy.showError(withdrawErrorMessage)
+                }
             }
         }
     }
 
-    // 로그아웃 중에는 화면 전체를 막는다 — 끝나면 이 화면 자체가 `replaceAll` 로 사라지므로
-    // 그사이 다른 설정 항목을 누르는 것은 의미가 없다. 로그아웃 버튼만 비활성하는 기존
-    // 가드(`AppSettingState.isLoggingOut`)는 그대로 두고 그 위에 얹는다
+    // 로그아웃·탈퇴 중에는 화면 전체를 막는다 — 성공하면 이 화면 자체가 `replaceAll` 로
+    // 사라지므로 그사이 다른 설정 항목을 누르는 것은 의미가 없다
     YGScaffoldV2(
         modifier = modifier,
-        isLoading = state.isLoggingOut,
+        isLoading = state.isLoading,
+        toastPolicy = toastPolicy,
     ) { innerPadding ->
         AppSettingScreen(
             state = state,

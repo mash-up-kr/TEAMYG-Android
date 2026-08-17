@@ -18,4 +18,12 @@ interface MemberRepository {
     suspend fun changeGlobalNickname(nickname: GlobalNickname): Result<GlobalNickname>
 
     suspend fun clearMyAccount()
+
+    /**
+     * 회원 탈퇴. 되돌릴 수 없다.
+     *
+     * 서버만 건드린다 — 토큰과 계정 정보를 언제 지우는지는
+     * [com.teamyg.parfait.domain.usecase.member.WithdrawUseCase] 가 정한다.
+     */
+    suspend fun withdraw(): Result<Unit>
 }
