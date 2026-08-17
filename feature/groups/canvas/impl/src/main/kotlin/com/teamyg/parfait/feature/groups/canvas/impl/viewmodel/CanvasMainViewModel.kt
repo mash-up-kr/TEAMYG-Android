@@ -17,6 +17,8 @@ import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
@@ -26,6 +28,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -173,6 +176,8 @@ constructor(
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
+    private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
+    private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -273,10 +278,31 @@ constructor(
         }
     }
 
+    /**
+     * 캔버스 응답에는 그룹명이 없어 그룹 목록 캐시에서 가져온다. 캐시가 비어 있는 진입
+     * (프로세스 재시작 후 캔버스로 복귀)에서만 목록을 한 번 받아 온다 — 이름 한 줄 때문에
+     * 캔버스를 막지 않으므로 그 조회의 실패는 로그로만 남긴다.
+     */
     private fun loadCanvasMainInfo() {
-        updateState {
-            // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
-            copy(groupName = "그룹이름은최대열글자")
+        viewModelScope.launch {
+            getMyGroupsFlowUseCase().collect { groups ->
+                if (groups == null) return@collect
+
+                val groupName = groups
+                    .firstOrNull { it.groupId == groupId }
+                    ?.groupName
+                    ?.value
+                    .orEmpty()
+                updateState { copy(groupName = groupName) }
+            }
+        }
+
+        launch(key = LOAD_GROUP_NAME_KEY) {
+            if (getMyGroupsFlowUseCase().first() != null) return@launch
+
+            refreshMyGroupsUseCase().onFailure { throwable ->
+                viewModelLogger.e(throwable) { "그룹명을 불러오지 못했다 - groupId: ${groupId.value}" }
+            }
         }
     }
 
@@ -488,6 +514,8 @@ constructor(
         const val LOAD_TODAY_CANVAS_KEY = "loadTodayCanvas"
 
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
+
+        const val LOAD_GROUP_NAME_KEY = "loadGroupName"
 
         /** 상단 Nametag-Chip 색. 고르는 규칙은 [toMemberChips] 에 있다 */
         val NAMETAG_CHIP_PALETTE = listOf(
