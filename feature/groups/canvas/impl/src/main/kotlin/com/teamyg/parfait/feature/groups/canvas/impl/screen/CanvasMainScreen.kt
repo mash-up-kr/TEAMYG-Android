@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
@@ -29,6 +32,9 @@ import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipTyp
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChip
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChipStyle
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -58,6 +64,9 @@ internal fun CanvasMainScreen(
     onSelectYear: (Int) -> Unit,
     onSelectMonth: (LocalDate) -> Unit,
     onClickDate: (LocalDate) -> Unit,
+    onClickTopping: (CanvasToppingVO) -> Unit,
+    onClickSpotlightDim: () -> Unit,
+    toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     modifier: Modifier = Modifier,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
@@ -172,9 +181,18 @@ internal fun CanvasMainScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth(),
+            overlayContent = {
+                YGToastHost(
+                    policy = toastPolicy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
         ) {
             CanvasToppingLayer(
                 toppings = canvasState.toppings,
+                spotlightedToppingId = canvasState.spotlightedToppingId,
+                onClickTopping = onClickTopping,
+                onClickSpotlightDim = onClickSpotlightDim,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -202,13 +220,13 @@ private class CanvasMainScreenPreviewParameterProvider :
     private val today = LocalDate(2026, 5, 20)
 
     private val memberChips = listOf(
-        GroupMemberChip("문어", YGColorChipType.NametagChip1),
-        GroupMemberChip("전봇대", YGColorChipType.NametagChip8),
-        GroupMemberChip("김밥", YGColorChipType.NametagChip5),
-        GroupMemberChip("장미", YGColorChipType.NametagChip3),
-        GroupMemberChip("김치", YGColorChipType.NametagChip11),
-        GroupMemberChip("류현진", YGColorChipType.NametagChip6),
-        GroupMemberChip("정거장", YGColorChipType.NametagChip2),
+        GroupMemberChip(GroupMemberId(1L), "문설빈", YGColorChipType.NametagChip1),
+        GroupMemberChip(GroupMemberId(2L), "전계원", YGColorChipType.NametagChip8),
+        GroupMemberChip(GroupMemberId(3L), "전희훈", YGColorChipType.NametagChip5),
+        GroupMemberChip(GroupMemberId(4L), "장서휘", YGColorChipType.NametagChip3),
+        GroupMemberChip(GroupMemberId(5L), "김수연", YGColorChipType.NametagChip11),
+        GroupMemberChip(GroupMemberId(6L), "김남수", YGColorChipType.NametagChip6),
+        GroupMemberChip(GroupMemberId(7L), "박서연", YGColorChipType.NametagChip2),
     )
 
     override val values: Sequence<CanvasMainUiState>
@@ -248,6 +266,8 @@ private fun PreviewCanvasMainScreen(
         onSelectYear = {},
         onSelectMonth = {},
         onClickDate = {},
+        onClickTopping = {},
+        onClickSpotlightDim = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
@@ -7,6 +8,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.jvm.extension.ElapsedTimeBucket
+import com.teamyg.parfait.core.util.jvm.extension.toElapsedTimeBucket
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -15,13 +18,17 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -32,9 +39,12 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlin.math.abs
+import kotlin.time.Clock
 
 data class GroupMemberChip(
+    val groupMemberId: GroupMemberId,
     val nickname: String,
     val colorChipType: YGColorChipType,
 )
@@ -67,6 +77,8 @@ data class CanvasMainUiState(
      * 구분해야 해서다. 그 둘이 같아지면 빈 해를 볼 때마다 서버를 다시 부른다.
      */
     val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
+    /** Spotlight 로 강조된 토핑. Default 상태면 null */
+    val spotlightedToppingId: ParfaitImageId? = null,
 ) : UiState {
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground?
@@ -109,6 +121,10 @@ data class CanvasMainUiState(
 
     val isCanvasEmpty: Boolean
         get() = toppings.isEmpty()
+
+    /** Default 상태(또는 스포트라이트된 토핑이 그 사이 지워졌을 때)면 null */
+    val spotlightedTopping: CanvasToppingVO?
+        get() = spotlightedToppingId?.let { id -> toppings.firstOrNull { it.parfaitImageId == id } }
 }
 
 sealed interface CanvasMainEffect : UiSideEffect {
@@ -122,6 +138,13 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     data class NavigateToSegmentation(
         val uri: String,
+    ) : CanvasMainEffect
+
+    /** Spotlight 진입과 동시에 1회 노출하는 작성자 정보 토스트 */
+    data class ShowSpotlightToast(
+        val nickname: String,
+        val nicknameColor: Color,
+        val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
 }
 
@@ -161,6 +184,15 @@ sealed interface CanvasMainIntent : UiIntent {
     data object OnClickSaveToGallery : CanvasMainIntent
 
     data object OnClickGoToToday : CanvasMainIntent
+
+    /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
+    data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
+
+    /** Spotlight 상태에서 강조된 토핑 밖(Dim 영역)을 탭했다 */
+    data object OnClickSpotlightDim : CanvasMainIntent
+
+    /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제한다 */
+    data object OnAppReturnedFromBackground : CanvasMainIntent
 }
 
 @HiltViewModel(assistedFactory = CanvasMainViewModel.Factory::class)
@@ -257,6 +289,7 @@ constructor(
      */
     private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
         GroupMemberChip(
+            groupMemberId = member.groupMemberId,
             nickname = member.nickname.value,
             colorChipType = NAMETAG_CHIP_PALETTE[index % NAMETAG_CHIP_PALETTE.size],
         )
@@ -347,7 +380,62 @@ constructor(
             is CanvasMainIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
 
             is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
+
+            is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
+
+            is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
+
+            is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
         }
+    }
+
+    /**
+     * Default → Spotlighted 로만 전환한다.
+     * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어져야 하지만, 그 진입점은
+     * 아직 없어 지금은 아무 동작도 하지 않는다.
+     * 경로가 없어 [isMine] 이 항상 false 다. 그 경로가 생기면 여기서 실제로 갈라야 한다.
+     */
+    private fun handleOnClickTopping(topping: CanvasToppingVO) {
+        if (state.value.spotlightedToppingId != null) return
+
+        if (topping.isMine()) {
+            // TODO: C-305 토핑 편집 화면으로 이동
+            return
+        }
+
+        updateState { copy(spotlightedToppingId = topping.parfaitImageId) }
+
+        // TODO(임시): 서버 nameTagChp 필드가 도메인까지 반영되면(데이터 계층 담당) 그 값을
+        // 바로 쓰도록 바꾼다. 그 전까지는 화면이 이미 들고 있는 memberChips 에서 같은
+        // groupMemberId 를 찾아 대신 쓴다 — 탈퇴·이탈한 멤버는 이 목록에 없어 Default 로 빠진다.
+        val chipType = state.value.memberChips
+            .firstOrNull { chip -> chip.groupMemberId == topping.placedBy.groupMemberId }
+            ?.colorChipType
+            ?: YGColorChipType.Default
+
+        postSideEffect(
+            effect = CanvasMainEffect.ShowSpotlightToast(
+                nickname = topping.placedBy.nickname.value,
+                nicknameColor = chipType.toSpotlightToastNameColor(),
+                // createdAt 은 타임존이 없는 KST 벽시계 시각이다(PARFAIT_TIME_ZONE 참고) — 기기
+                // 시간대로 재면 해외에 있는 기기에서 서버와 어긋난다
+                elapsed = topping.createdAt
+                    .toInstant(PARFAIT_TIME_ZONE)
+                    .toElapsedTimeBucket(Clock.System.now()),
+            ),
+        )
+    }
+
+    /** TODO: 서버가 "내 groupMemberId" 를 알려주는 경로가 생기면 그것과 비교하도록 채운다 */
+    private fun CanvasToppingVO.isMine(): Boolean = false
+
+    /**
+     * 백그라운드 복귀·Pull-to-refresh 양쪽에서 재사용할 수 있도록 함수로 분리해 둔다.
+     * Pull-to-refresh 는 아직 캔버스 화면에 없어 지금은 [CanvasMainIntent.OnAppReturnedFromBackground]
+     * 에서만 부른다.
+     */
+    private fun resetSpotlight() {
+        updateState { copy(spotlightedToppingId = null) }
     }
 
     /**

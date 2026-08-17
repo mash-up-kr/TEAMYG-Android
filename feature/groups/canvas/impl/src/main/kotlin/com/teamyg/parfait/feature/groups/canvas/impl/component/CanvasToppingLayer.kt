@@ -1,6 +1,8 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +20,11 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import kotlin.math.cos
 import kotlin.math.sin
@@ -43,18 +47,50 @@ private const val FULL_TURN_DEGREES = 360.0
  * 위치·크기가 모두 그 폭에 대한 비율이라 다른 크기 위에 얹으면 배치가 어긋난다.
  *
  * [toppings] 는 그리는 순서대로 받는다(positionZ 오름차순). 뒤에 오는 것이 위에 덮인다.
+ *
+ * Spotlight(C-106): [spotlightedToppingId] 가 있으면 그 토핑만 목록 순서를 벗어나 맨 위로
+ * 옮기고, 그 바로 아래에 나머지 전체를 덮는 Dim 레이어를 끼워 넣는다 — 우선순위는
+ * "Spotlight 토핑 → Dim 레이어 → 나머지 토핑 → 배경" 순이다(배경은 이 레이어 바깥,
  */
 @Composable
 internal fun CanvasToppingLayer(
     toppings: List<CanvasToppingVO>,
+    spotlightedToppingId: ParfaitImageId?,
+    onClickTopping: (CanvasToppingVO) -> Unit,
+    onClickSpotlightDim: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val spotlightedTopping = toppings.firstOrNull { it.parfaitImageId == spotlightedToppingId }
+
     BoxWithConstraints(modifier = modifier) {
         toppings.forEach { topping ->
+            if (topping.parfaitImageId != spotlightedToppingId) {
+                CanvasTopping(
+                    topping = topping,
+                    canvasWidth = maxWidth,
+                    canvasHeight = maxHeight,
+                    onClick = { onClickTopping(topping) },
+                )
+            }
+        }
+
+        if (spotlightedTopping != null) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(YGAtomicColors.Transparency.Black50)
+                    .clickable(
+                        interactionSource = null,
+                        indication = null,
+                        onClick = onClickSpotlightDim,
+                    ),
+            )
+
             CanvasTopping(
-                topping = topping,
+                topping = spotlightedTopping,
                 canvasWidth = maxWidth,
                 canvasHeight = maxHeight,
+                onClick = { onClickTopping(spotlightedTopping) },
             )
         }
     }
@@ -71,6 +107,7 @@ private fun CanvasTopping(
     topping: CanvasToppingVO,
     canvasWidth: Dp,
     canvasHeight: Dp,
+    onClick: () -> Unit,
 ) {
     val transform = topping.transform
     val side = canvasWidth * TOPPING_BASE_LONG_SIDE_RATIO * transform.scale.toFloat()
@@ -83,7 +120,8 @@ private fun CanvasTopping(
                     y = canvasHeight * transform.positionY.toFloat(),
                 ),
             ).size(side)
-            .graphicsLayer { rotationZ = transform.rotation.toFloat() },
+            .graphicsLayer { rotationZ = transform.rotation.toFloat() }
+            .clickable(interactionSource = null, indication = null, onClick = onClick),
     ) {
         ToppingImage(
             imageUrl = topping.imageUrl,
