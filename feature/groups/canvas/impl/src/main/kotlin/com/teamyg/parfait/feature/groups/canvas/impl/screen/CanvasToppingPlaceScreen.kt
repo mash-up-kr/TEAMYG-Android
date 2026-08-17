@@ -63,7 +63,12 @@ internal fun CanvasToppingPlaceScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(top = 60.dp, bottom = 14.dp, start = YGTheme.layout.padding.padding7, end = YGTheme.layout.padding.padding7), // 60.dp/14.dp 공통에 없음
+                .padding(
+                    top = 60.dp,
+                    bottom = 14.dp,
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                ), // 60.dp/14.dp 공통에 없음
             contentAlignment = Alignment.Center,
         ) {
             Box(
