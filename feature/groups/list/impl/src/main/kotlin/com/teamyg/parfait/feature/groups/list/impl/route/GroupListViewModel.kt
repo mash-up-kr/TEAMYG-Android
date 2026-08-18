@@ -10,15 +10,13 @@ import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
-import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
-import kotlin.time.Clock
 
 data class GroupListUiState(
     /** `null` 은 아직 한 번도 받지 못했다는 뜻. 0건과 구분한다 */
@@ -134,12 +132,9 @@ constructor(
         }
     }
 
-    /** 앱을 켜 둔 채 자정을 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
+    /** 앱을 켜 둔 채 파르페 하루 경계를 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
     private fun updateToday() {
-        val today = Clock.System
-            .now()
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-            .date
+        val today = parfaitToday()
         updateState {
             copy(
                 dateString = today.format(DateFormat.FullMonthWithDay),
