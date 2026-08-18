@@ -28,6 +28,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGScaleRipple
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
@@ -49,10 +50,6 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_3_RIGHT,
 )
 
-// TODO(칩 컬러): 칩 타입은 마지막으로 그룹을 바꾼 유저의 Nametag-Chip 타입을 따라야 한다.
-//  MyParfaitGroupVO 에 그 정보가 오면 index 순환을 걷어낸다
-private val CHIP_TYPES = YGGrouptagChipType.entries
-
 // TODO(토핑 템플릿): 정책은 그룹 생성 시 6종 중 하나를 무작위로 골라 고정하는 것이다.
 //  서버가 그 값을 내려주면 groupId 파생을 걷어낸다
 private val TOPPING_TEMPLATES = YGToppingTemplate.entries
@@ -64,6 +61,25 @@ private val TOPPING_TEMPLATES = YGToppingTemplate.entries
 internal fun MyParfaitGroupVO.toToppingImage(): YGToppingImage = recentImageUrl
     ?.let(YGToppingImage::Remote)
     ?: YGToppingImage.Template(TOPPING_TEMPLATES[groupId.value.mod(TOPPING_TEMPLATES.size)])
+
+/**
+ * 마지막으로 그룹을 바꾼 사람의 칩을 Grouptag-Chip 색으로 옮긴다.
+ *
+ * Grouptag-Chip 6종은 Nametag 12종을 둘씩 묶은 타입이라 짝이 정해져 있다. 짝을 `ordinal`
+ * 산술로 내지 않는 이유는 [NametagChipType.RELEASED] 가 그 범위 밖이어서다 — 분기로 갈라 둔다.
+ *
+ * 가리킬 사람이 없으면([NametagChipType.RELEASED] · `null`) 중립 색이다. 목록 순서로 돌리면
+ * 그룹이 하나 빠질 때마다 남은 카드의 색이 밀린다.
+ */
+internal fun NametagChipType?.toGrouptagChipType(): YGGrouptagChipType = when (this) {
+    NametagChipType.TYPE1, NametagChipType.TYPE2 -> YGGrouptagChipType.TYPE_1_2
+    NametagChipType.TYPE3, NametagChipType.TYPE4 -> YGGrouptagChipType.TYPE_3_4
+    NametagChipType.TYPE5, NametagChipType.TYPE6 -> YGGrouptagChipType.TYPE_5_6
+    NametagChipType.TYPE7, NametagChipType.TYPE8 -> YGGrouptagChipType.TYPE_7_8
+    NametagChipType.TYPE9, NametagChipType.TYPE10 -> YGGrouptagChipType.TYPE_9_10
+    NametagChipType.TYPE11, NametagChipType.TYPE12 -> YGGrouptagChipType.TYPE_11_12
+    NametagChipType.RELEASED, null -> YGGrouptagChipType.DEFAULT
+}
 
 @Composable
 internal fun GroupListScreen(
@@ -169,7 +185,7 @@ internal fun GroupListContent(
                     timestamp = group.recentImageUploadedAt
                         .toGroupTimestamp(now)
                         .toStringResource(),
-                    chipType = CHIP_TYPES[index % CHIP_TYPES.size],
+                    chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                     modifier = Modifier.clickableYGScaleRipple {
                         onClickTopping(group.groupId)
@@ -188,18 +204,21 @@ private class GroupListScreenPreviewParameterProvider :
             groupName = GroupName("매시업"),
             recentImageUrl = "https://picsum.photos/id/1025/200",
             recentImageUploadedAt = Instant.parse("2026-08-15T09:57:00Z"),
+            lastPlacedByNametagChip = NametagChipType.TYPE1,
         ),
         MyParfaitGroupVO(
             groupId = GroupId(2L),
             groupName = GroupName("매시업매시업매시업"),
             recentImageUrl = "https://picsum.photos/id/1062/200",
             recentImageUploadedAt = Instant.parse("2026-08-15T08:00:00Z"),
+            lastPlacedByNametagChip = NametagChipType.TYPE9,
         ),
         MyParfaitGroupVO(
             groupId = GroupId(3L),
             groupName = GroupName("우리집"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
+            lastPlacedByNametagChip = null,
         ),
     )
 
