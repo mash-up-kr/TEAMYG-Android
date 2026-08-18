@@ -128,6 +128,20 @@ class GetTodayParfaitUseCaseTest {
         assertIs<IOException>(result.exceptionOrNull())
     }
 
+    @Test
+    fun invoke_beforeRolloverHour_treatsPreviousCalendarDayAsToday() = runTest {
+        // Given 서버가 파르페 기준의 오늘 날짜로 캔버스를 준다.
+        //  03시 이전이면 그 날짜는 달력상 어제이고, 그때도 어긋난 응답이 아니다
+        val repository = FakeParfaitRepository(listOf(Result.success(canvas(PARFAIT_ID, today))))
+
+        // When 오늘 파르페 조회
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+
+        // Then 한 번만 부른다 — 경계 기준이 서버와 같으면 재요청이 사라진다
+        assertEquals(1, repository.callCount)
+        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+    }
+
     private companion object {
         const val GROUP_ID = 7L
         const val PARFAIT_ID = 42L
