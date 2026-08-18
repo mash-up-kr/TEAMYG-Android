@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.list.impl.route
+package com.teamyg.parfait.feature.groups.list.impl.util
 
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.domain.model.group.GroupName

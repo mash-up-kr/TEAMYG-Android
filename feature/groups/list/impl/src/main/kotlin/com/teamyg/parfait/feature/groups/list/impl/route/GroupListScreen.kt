@@ -17,11 +17,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
-import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
-import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTemplate
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -35,6 +32,10 @@ import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParf
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
+import com.teamyg.parfait.feature.groups.list.impl.util.toGroupTimestamp
+import com.teamyg.parfait.feature.groups.list.impl.util.toGrouptagChipType
+import com.teamyg.parfait.feature.groups.list.impl.util.toStringResource
+import com.teamyg.parfait.feature.groups.list.impl.util.toToppingImage
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -49,37 +50,6 @@ private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_3_LEFT,
     YGToppingGroupType.TYPE_3_RIGHT,
 )
-
-// TODO(토핑 템플릿): 정책은 그룹 생성 시 6종 중 하나를 무작위로 골라 고정하는 것이다.
-//  서버가 그 값을 내려주면 groupId 파생을 걷어낸다
-private val TOPPING_TEMPLATES = YGToppingTemplate.entries
-
-/**
- * 아직 토핑이 없는 그룹은 조회 실패([YGToppingImage.Error])와 다른 상태라 템플릿을 띄운다.
- * 목록 순서가 바뀌어도 같은 그림이 걸리도록 index 가 아니라 groupId 로 고른다.
- */
-internal fun MyParfaitGroupVO.toToppingImage(): YGToppingImage = recentImageUrl
-    ?.let(YGToppingImage::Remote)
-    ?: YGToppingImage.Template(TOPPING_TEMPLATES[groupId.value.mod(TOPPING_TEMPLATES.size)])
-
-/**
- * 마지막으로 그룹을 바꾼 사람의 칩을 Grouptag-Chip 색으로 옮긴다.
- *
- * Grouptag-Chip 6종은 Nametag 12종을 둘씩 묶은 타입이라 짝이 정해져 있다. 짝을 `ordinal`
- * 산술로 내지 않는 이유는 [NametagChipType.RELEASED] 가 그 범위 밖이어서다 — 분기로 갈라 둔다.
- *
- * 가리킬 사람이 없으면([NametagChipType.RELEASED] · `null`) 중립 색이다. 목록 순서로 돌리면
- * 그룹이 하나 빠질 때마다 남은 카드의 색이 밀린다.
- */
-internal fun NametagChipType?.toGrouptagChipType(): YGGrouptagChipType = when (this) {
-    NametagChipType.TYPE1, NametagChipType.TYPE2 -> YGGrouptagChipType.TYPE_1_2
-    NametagChipType.TYPE3, NametagChipType.TYPE4 -> YGGrouptagChipType.TYPE_3_4
-    NametagChipType.TYPE5, NametagChipType.TYPE6 -> YGGrouptagChipType.TYPE_5_6
-    NametagChipType.TYPE7, NametagChipType.TYPE8 -> YGGrouptagChipType.TYPE_7_8
-    NametagChipType.TYPE9, NametagChipType.TYPE10 -> YGGrouptagChipType.TYPE_9_10
-    NametagChipType.TYPE11, NametagChipType.TYPE12 -> YGGrouptagChipType.TYPE_11_12
-    NametagChipType.RELEASED, null -> YGGrouptagChipType.DEFAULT
-}
 
 @Composable
 internal fun GroupListScreen(

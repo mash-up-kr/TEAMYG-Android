@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.list.impl.route
+package com.teamyg.parfait.feature.groups.list.impl.util
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
