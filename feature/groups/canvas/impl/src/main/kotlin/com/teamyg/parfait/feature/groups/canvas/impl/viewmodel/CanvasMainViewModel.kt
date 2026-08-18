@@ -257,8 +257,10 @@ constructor(
     }
 
     /**
-     * 서버가 멤버 색을 주지 않아 목록 순서로 팔레트를 돌려 쓴다. 순서가 고정이라 같은 그룹을
-     * 다시 열어도 같은 사람에게 같은 색이 간다.
+     * 색 배정은 이제 서버 소관이지만, 이 오늘 조회 응답의 `groupMembers` 목록에는 그 값이
+     * 실려 오지 않는다(`placedBy` 에만 실린다). 그래서 이 화면은 여전히 목록 순서로 팔레트를
+     * 돌려 쓴다 — 멤버가 나가면 그 뒤 순서가 밀려 색도 같이 바뀐다. 같은 사람이 서버 값을
+     * 그대로 읽는 그룹 설정 화면에서는 다른 색으로 보일 수 있다.
      */
     private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
         GroupMemberChip(
