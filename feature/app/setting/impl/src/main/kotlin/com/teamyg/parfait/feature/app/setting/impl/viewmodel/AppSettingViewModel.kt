@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
@@ -20,7 +21,8 @@ import javax.inject.Inject
  * @property loginProvider 도메인 의미만 담는다(ADR-0016). 표시 문자열은 `core:ui`
  *   `LoginProvider.toStringResource()` 가 렌더 시점에 매핑한다. `null` 은 `nickname` 과 같은
  *   이유로 로딩이다.
- * @property version TODO BuildConfig.VERSION_NAME 주입으로 교체
+ * @property version 앱 버전. 빌드에 박혀 있어 로딩 상태가 없다 — `nickname` 과 달리 처음부터
+ *   값이 있어 non-null 이다
  * @property policies 약관 목록. 화면의 약관 두 줄은 문자열 리소스로 고정돼 있고 이 목록은
  *   **누를 때 열 제목과 주소의 출처로만** 쓴다 — 조회가 실패해도 줄이 사라지지 않아야 한다.
  *   비어 있으면 아직 못 받았거나 조회가 실패한 것이다
@@ -30,7 +32,7 @@ import javax.inject.Inject
 data class AppSettingState(
     val nickname: String? = null,
     val loginProvider: LoginProvider? = null,
-    val version: String = "1.0v",
+    val version: String = APP_VERSION_NAME,
     val policies: List<PolicyVO> = emptyList(),
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
