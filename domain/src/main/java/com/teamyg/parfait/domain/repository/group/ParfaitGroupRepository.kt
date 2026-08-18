@@ -37,10 +37,8 @@ interface ParfaitGroupRepository {
     /**
      * 서버에서 그 그룹 상세를 다시 받아 캐시를 덮는다. 실패하면 캐시는 그대로다.
      *
-     * TODO(서버 응답 확장 대기): 그룹명과 정원이 이 응답에 없다. 서버가 groupName·memberLimit 을
-     *  실어 주면 반영한다 — 그때 [GetGroupDetailUseCase] 의 [refreshMyGroups] 우회 호출을 걷어내고,
-     *  그룹 설정 화면의 남은 자리도 고정값 대신 `memberLimit - members.size` 로 바꾼다.
-     *  지금은 이름을 [refreshMyGroups] 에서 따로 집어 오고, 정원은 그룹 생성 응답에만 있어 얻을 길이 없다.
+     * 응답에 그룹명·정원·멤버 칩이 함께 온다(서버 `08df1bf`) — 그전에는 이름을
+     * [refreshMyGroups] 에서 따로 집어 왔고 정원은 얻을 길이 없었다.
      */
     suspend fun refreshGroupDetail(groupId: GroupId): Result<Unit>
 
