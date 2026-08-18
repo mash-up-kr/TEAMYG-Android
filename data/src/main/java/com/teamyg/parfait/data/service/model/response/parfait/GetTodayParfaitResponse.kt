@@ -85,6 +85,9 @@ data class TodayParfaitImageResponse(
  * 썼고 wire DTO 는 서버의 거울이라 이름을 바꾸지 않는다.
  *
  * @param nickname 그룹 닉네임이다. 탈퇴·이탈한 멤버면 "(알수없음)"이 온다.
+ * @param nametagChip 그 사람의 칩. 탈퇴했으면 `"RELEASED"` 다. **아직 도메인으로 올리지 않는다** —
+ *  읽는 화면이 없고, [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO] 를 배치 확정
+ *  응답과 공유하는데 서버가 그쪽엔 이 값을 주지 않아서다. C-202 작성자 표시가 붙을 때 정한다.
  */
 @Serializable
 data class PlacedByResponse(
@@ -92,4 +95,6 @@ data class PlacedByResponse(
     val groupMemberId: Long,
     @SerialName("nickname")
     val nickname: String,
+    @SerialName("nametagChip")
+    val nametagChip: String? = null,
 )
