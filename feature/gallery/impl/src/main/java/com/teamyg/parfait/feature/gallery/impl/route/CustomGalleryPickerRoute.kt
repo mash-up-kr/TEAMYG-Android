@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
@@ -106,14 +108,15 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    CustomGalleryPickerScreen(
-        state = state,
-        onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
-        onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
-        onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
-        onClickImage = { viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(it)) },
-        onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
-        toastPolicy = toastPolicy,
-        modifier = modifier,
-    )
+    YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
+        CustomGalleryPickerScreen(
+            state = state,
+            onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
+            onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
+            onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
+            onClickImage = { viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(it)) },
+            onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
+            modifier = modifier.padding(innerPadding),
+        )
+    }
 }

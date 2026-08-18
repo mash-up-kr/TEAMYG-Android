@@ -25,9 +25,6 @@ import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
-import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.gallery.impl.R
@@ -49,7 +46,6 @@ internal fun CustomGalleryPickerScreen(
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
-    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
 ) {
     when (state.access.hasPermission) {
@@ -62,7 +58,6 @@ internal fun CustomGalleryPickerScreen(
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
             onClickCancel = onClickCancel,
-            toastPolicy = toastPolicy,
             modifier = modifier,
         )
 
@@ -86,7 +81,6 @@ private fun GalleryContent(
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,
-    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(YGAtomicColors.Gray.White)) {
@@ -146,13 +140,6 @@ private fun GalleryContent(
                     )
                 }
             }
-
-            YGToastHost(
-                policy = toastPolicy,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth(),
-            )
         }
 
         if (isPartial) {
@@ -188,7 +175,6 @@ private fun PreviewCustomGalleryPickerScreen(
         onClickManageMedia = {},
         onClickImage = {},
         onClickCancel = {},
-        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
     )
 }
