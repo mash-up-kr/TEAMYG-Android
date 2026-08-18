@@ -44,7 +44,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 internal fun TermAgreeScreen(
     state: TermAgreeState,
     onClickTermAgree: (termsId: TermsId, newSelected: Boolean) -> Unit,
-    onClickTermLandingUrl: (landingUrl: String) -> Unit,
+    onClickTermDetail: (policy: PolicyVO) -> Unit,
     onClickAgreeAllTerm: (newSelected: Boolean) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
@@ -182,7 +182,7 @@ internal fun TermAgreeScreen(
                         colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Gray500),
                         modifier = Modifier
                             .size(18.dp)
-                            .clickableYGNoRipple { onClickTermLandingUrl(policy.url) },
+                            .clickableYGNoRipple { onClickTermDetail(policy) },
                     )
                 }
             }
@@ -247,7 +247,7 @@ private fun TermAgreeScreenPreview(
     TermAgreeScreen(
         state = state,
         onClickTermAgree = { _, _ -> },
-        onClickTermLandingUrl = {},
+        onClickTermDetail = {},
         onClickAgreeAllTerm = {},
         onClickNextButton = {},
         onClickBackButton = {},

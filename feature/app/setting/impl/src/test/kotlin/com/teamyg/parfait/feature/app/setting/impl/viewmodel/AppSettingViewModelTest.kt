@@ -2,12 +2,17 @@ package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
+import com.teamyg.parfait.domain.model.policy.PolicyType
+import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,10 +37,97 @@ class AppSettingViewModelTest {
 
     private val logout: LogoutUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val getPolicies: GetPoliciesUseCase = mockk()
 
-    private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AppSettingViewModel {
+    private fun viewModel(
+        accountFlow: Flow<MyAccountVO?> = flowOf(null),
+        policies: Result<List<PolicyVO>> = Result.success(listOf(SERVICE_TERMS, PRIVACY_POLICY)),
+    ): AppSettingViewModel {
         every { getMyAccountFlow() } returns accountFlow
-        return AppSettingViewModel(logout = logout, getMyAccountFlow = getMyAccountFlow)
+        coEvery { getPolicies() } returns policies
+        return AppSettingViewModel(
+            logout = logout,
+            getMyAccountFlow = getMyAccountFlow,
+            getPolicies = getPolicies,
+        )
+    }
+
+    @Test
+    fun clickServiceTerms_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 목록을 이미 받아 둔 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 서비스 이용약관을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
+
+            // Then 그 약관의 제목과 주소를 실어 보낸다 — 상세 화면은 스스로 조회하지 않는다
+            assertEquals(
+                AppSettingSideEffect.NavigateToPolicyDetail(
+                    title = SERVICE_TERMS.title,
+                    url = SERVICE_TERMS.url,
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun clickPrivacyPolicy_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 목록을 이미 받아 둔 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 개인정보 처리방침을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
+
+            // Then 두 항목이 같은 목적지를 쓰더라도 서로 다른 약관이 열린다
+            assertEquals(
+                AppSettingSideEffect.NavigateToPolicyDetail(
+                    title = PRIVACY_POLICY.title,
+                    url = PRIVACY_POLICY.url,
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun clickPolicy_whenLoadFailed_doesNotNavigateAndDoesNotRefetch() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 조회가 실패한 화면
+        val viewModel = viewModel(policies = Result.failure(AppError.Network(cause = null)))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 서비스 이용약관을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
+            advanceUntilIdle()
+
+            // Then 열 곳을 모르니 이동하지 않는다 — 빈 화면으로 넘기지 않는다
+            expectNoEvents()
+        }
+
+        // Then 탭으로 다시 조회하지도 않는다(진입 시 1회뿐) — 같은 요청을 되풀이해도
+        // 같은 응답이 오고, 탭마다 요청만 늘면서 원인은 가려진다
+        coVerify(exactly = 1) { getPolicies() }
+    }
+
+    @Test
+    fun clickPolicy_whenServerOmitsThatType_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 이용약관만 내려 준 경우(길이 0~2 가 계약이다)
+        val viewModel = viewModel(policies = Result.success(listOf(SERVICE_TERMS)))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 없는 쪽인 개인정보 처리방침을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
+            advanceUntilIdle()
+
+            // Then 다른 약관을 대신 열지 않는다
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -242,5 +334,23 @@ class AppSettingViewModelTest {
 
         // Then 화면은 계속 SSoT 를 따라간다 — 최초 구독 값에 멈춰 있지 않는다
         assertEquals("라떼", viewModel.state.value.nickname)
+    }
+
+    private companion object {
+        val SERVICE_TERMS = PolicyVO(
+            termsId = TermsId(1L),
+            type = PolicyType.TERMS_OF_SERVICE,
+            title = "서비스 이용약관",
+            url = "https://example.com/terms-of-service",
+            required = true,
+        )
+
+        val PRIVACY_POLICY = PolicyVO(
+            termsId = TermsId(2L),
+            type = PolicyType.PRIVACY_POLICY,
+            title = "개인정보 처리 방침",
+            url = "https://example.com/privacy-policy",
+            required = true,
+        )
     }
 }

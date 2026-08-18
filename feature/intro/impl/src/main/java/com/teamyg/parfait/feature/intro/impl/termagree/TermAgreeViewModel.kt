@@ -36,7 +36,8 @@ data class TermAgreeState(
 sealed interface TermAgreeIntent : UiIntent {
     data class ClickTermAgree(val termsId: TermsId, val newSelected: Boolean) : TermAgreeIntent
 
-    data class ClickTermLandingUrl(val landingUrl: String) : TermAgreeIntent
+    /** 약관 줄의 화살표를 눌러 전문을 펼치려는 것. 동의 체크와는 별개다 */
+    data class ClickTermDetail(val policy: PolicyVO) : TermAgreeIntent
 
     data class ClickAgreeAllTerm(val newSelected: Boolean) : TermAgreeIntent
 
@@ -48,7 +49,11 @@ sealed interface TermAgreeIntent : UiIntent {
 }
 
 sealed interface TermAgreeSideEffect : UiSideEffect {
-    data class NavigateToUrl(val landingUrl: String) : TermAgreeSideEffect
+    /** 약관 전문 화면으로. 설정 화면과 같은 목적지를 쓴다 — 종류별로 화면을 나누지 않는다 */
+    data class NavigateToPolicyDetail(
+        val title: String,
+        val url: String,
+    ) : TermAgreeSideEffect
 
     data object NavigateToBack : TermAgreeSideEffect
 
@@ -96,8 +101,13 @@ constructor(
                 }
             }
 
-            is TermAgreeIntent.ClickTermLandingUrl ->
-                postSideEffect(TermAgreeSideEffect.NavigateToUrl(intent.landingUrl))
+            is TermAgreeIntent.ClickTermDetail ->
+                postSideEffect(
+                    TermAgreeSideEffect.NavigateToPolicyDetail(
+                        title = intent.policy.title,
+                        url = intent.policy.url,
+                    ),
+                )
 
             is TermAgreeIntent.ClickBackButton -> postSideEffect(TermAgreeSideEffect.NavigateToBack)
 
