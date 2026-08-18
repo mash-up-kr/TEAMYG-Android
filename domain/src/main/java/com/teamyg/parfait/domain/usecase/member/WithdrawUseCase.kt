@@ -22,7 +22,6 @@ class WithdrawUseCase @Inject constructor(
     suspend operator fun invoke(): Result<Unit> {
         val withdrawn = memberRepository.withdraw()
         if (withdrawn.isFailure.not()) {
-            // 성공했으면 logout 처리도 하기
             logout()
         }
 

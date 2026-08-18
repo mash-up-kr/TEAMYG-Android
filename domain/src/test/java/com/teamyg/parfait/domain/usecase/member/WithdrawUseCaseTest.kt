@@ -40,10 +40,11 @@ class WithdrawUseCaseTest {
         // Given 탈퇴 요청이 실패한다
         coEvery { memberRepository.withdraw() } returns Result.failure(AppError.Network(cause = null))
 
-        // Then 계정이 살아 있으므로 아무것도 지우지 않는다 — 지우면 사용자는 탈퇴했다고
-        // 믿는데 계정은 남는다
+        // When 탈퇴한다
         val result = withdraw()
 
+        // Then 계정이 살아 있으므로 아무것도 지우지 않는다 — 지우면 사용자는 탈퇴했다고
+        // 믿는데 계정은 남는다
         assertIs<AppError.Network>(result.exceptionOrNull())
         coVerify(exactly = 0) { authRepository.logout() }
         coVerify(exactly = 0) { memberRepository.clearMyAccount() }
