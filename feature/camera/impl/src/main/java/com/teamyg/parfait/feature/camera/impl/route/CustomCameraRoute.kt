@@ -27,7 +27,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
@@ -60,7 +59,6 @@ internal fun CustomCameraRoute(
     val activity: Activity? = LocalActivity.current
     val context: Context = activity ?: LocalContext.current
 
-    val resultEventBus = LocalResultEventBus.current
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
@@ -147,10 +145,7 @@ internal fun CustomCameraRoute(
                     )
                 }
 
-                is CustomCameraEffect.ReturnResult -> {
-                    resultEventBus.sendResult(effect.uri)
-                    navigator.onBack()
-                }
+                is CustomCameraEffect.Cancel -> navigator.onBack()
 
                 is CustomCameraEffect.NavigateToConfirm -> {
                     navigator.goTo(
