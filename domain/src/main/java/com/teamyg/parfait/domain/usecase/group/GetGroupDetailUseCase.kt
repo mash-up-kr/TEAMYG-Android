@@ -15,6 +15,5 @@ import javax.inject.Inject
 class GetGroupDetailUseCase @Inject constructor(
     private val parfaitGroupRepository: ParfaitGroupRepository,
 ) {
-    operator fun invoke(groupId: GroupId): Flow<ParfaitGroupDetailVO?> =
-        parfaitGroupRepository.groupDetail(groupId)
+    operator fun invoke(groupId: GroupId): Flow<ParfaitGroupDetailVO?> = parfaitGroupRepository.groupDetail(groupId)
 }
