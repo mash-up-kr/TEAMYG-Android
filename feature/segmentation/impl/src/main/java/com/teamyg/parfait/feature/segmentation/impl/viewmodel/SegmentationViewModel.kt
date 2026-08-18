@@ -43,7 +43,8 @@ class SegmentationViewModel
     init {
         viewModelScope.launch {
             // 이번 흐름이 파일을 만들기 전에 지운다 — 뒤에 두면 방금 만든 것을 지운다
-            clearSegmentationCacheUseCase()
+            // 지난 흐름의 파일을 못 지워도 이번 흐름은 진행돼야 한다 — 남은 파일은 다음 진입에서 다시 지운다
+            runCatching { clearSegmentationCacheUseCase() }
 
             // URI 가 만료됐거나 파일이 깨지면 디코더가 던진다. 잡지 않으면 이 코루틴이 그대로 터진다
             val bitmapWrapper = runCatching { decodeImageUseCase(sourceImageUri) }.getOrNull()

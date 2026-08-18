@@ -124,4 +124,19 @@ class SegmentationViewModelTest {
         // Then 에러다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남기지 않는다
         assertTrue(viewModel.state.value.isError)
     }
+
+    @Test
+    fun init_cacheClearThrows_stillSegments() = runTest {
+        // Given 캐시 정리가 실패하는 상황
+        coEvery { clearSegmentationCache() } throws IllegalStateException("cannot delete")
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 지난 파일을 못 지운 것이 이번 흐름을 막지 않는다
+        val state = viewModel.state.value
+        assertEquals(SUBJECT_PATH, state.subjectImagePath)
+        assertFalse(state.isError)
+    }
 }
