@@ -395,7 +395,7 @@ private const val GROUP_REPORT_REASON = "그룹 설정에서 신고"
  * 값이 없거나 반납된 자리는 [YGColorChipType.Default] 다 — 색이 "그룹 안의 이 사람"을 가리키는
  * 신호라, 가리킬 사람이 없을 때 아무 색이나 돌리면 신호가 거짓이 된다.
  */
-private fun NametagChipType?.toColorChipType(): YGColorChipType = when (this) {
+internal fun NametagChipType?.toColorChipType(): YGColorChipType = when (this) {
     NametagChipType.TYPE1 -> YGColorChipType.NametagChip1
     NametagChipType.TYPE2 -> YGColorChipType.NametagChip2
     NametagChipType.TYPE3 -> YGColorChipType.NametagChip3
