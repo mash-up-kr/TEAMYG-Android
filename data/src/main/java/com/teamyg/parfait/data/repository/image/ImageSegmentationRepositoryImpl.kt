@@ -128,13 +128,24 @@ constructor(
         return runCatching { bitmap.saveToCacheAsPng().absolutePath }
     }
 
-    private suspend fun Bitmap.saveToCacheAsPng(): File {
-        val file = File(context.cacheDir, "parfait_${System.currentTimeMillis()}.png")
-        withContext(Dispatchers.IO) {
-            file.outputStream().use { compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+    override suspend fun clearSegmentationCache() {
+        withContext(Dispatchers.IO) { segmentationCacheDir.clearFiles() }
+    }
 
-        return file
+    private val segmentationCacheDir: File
+        get() = File(context.cacheDir, SEGMENTATION_CACHE_DIR_NAME)
+
+    /**
+     * 밀리초 이름 대신 [File.createTempFile] 을 쓰는 이유: 한 번의 세그멘테이션이 subject 와
+     * trimmed 를 연달아 저장해서 같은 밀리초에 두 번 떨어질 수 있다. 그러면 뒤엣것이 앞엣것을 덮는다.
+     */
+    private suspend fun Bitmap.saveToCacheAsPng(): File = withContext(Dispatchers.IO) {
+        val directory = segmentationCacheDir.also { it.mkdirs() }
+        val file = File.createTempFile("parfait_", ".png", directory)
+
+        file.outputStream().use { compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+        file
     }
 
     /**
