@@ -16,6 +16,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class GetTodayParfaitUseCaseTest {
     /**
@@ -48,9 +50,15 @@ class GetTodayParfaitUseCaseTest {
         ): Result<CanvasVO> = error("오늘 조회는 상세를 따로 부르지 않는다")
     }
 
-    // parfaitToday() 와 같은 기준으로 세야 한다 — 기기 시간대로 세면 KST 가 아닌 CI 에서 깨진다
-    private val today = parfaitToday()
+    private fun fixedClock(iso: String): Clock = object : Clock {
+        override fun now(): Instant = Instant.parse(iso)
+    }
 
+    // 경계(새벽 3시)를 지난 평범한 시각 — 이 시계 아래서는 자정 기준과 새벽 3시 기준이 같은
+    // 날짜를 준다. 아래 세 테스트는 "오늘이면 그대로, 아니면 다시 부른다"는 일반 계약을
+    // 검증하는 것이지 경계 자체를 검증하는 것은 아니다 — 경계는 별도 테스트에서 고정 시계로 짚는다.
+    private val clock = fixedClock("2026-08-18T05:00:00Z") // 한국 시간 8월 18일 14:00
+    private val today = parfaitToday(clock)
     private val yesterday = today.minus(DatePeriod(days = 1))
 
     @Test
@@ -59,7 +67,7 @@ class GetTodayParfaitUseCaseTest {
         val repository = FakeParfaitRepository(listOf(Result.success(canvas(PARFAIT_ID, today))))
 
         // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
         // Then 그대로 돌려주고 한 번만 부른다 — 부작용 있는 호출을 아낀다
         assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
@@ -77,7 +85,7 @@ class GetTodayParfaitUseCaseTest {
         )
 
         // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
         // Then 두 번째 응답을 쓴다
         assertEquals(2, repository.callCount)
@@ -90,11 +98,51 @@ class GetTodayParfaitUseCaseTest {
         val repository = FakeParfaitRepository(listOf(Result.success(canvas(STALE_PARFAIT_ID, yesterday))))
 
         // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
         // Then 더 부르지 않고 받은 것을 쓴다 — 계속 불러도 같은 답이 온다
         assertEquals(2, repository.callCount)
         assertEquals(ParfaitId(STALE_PARFAIT_ID), result.getOrNull()?.parfaitId)
+    }
+
+    @Test
+    fun invoke_beforeBoundaryCanvasDatedPreviousDay_isAcceptedWithoutRetry() = runTest {
+        // Given 한국 시간 새벽 1시 30분 — 아직 새벽 3시 경계 전이라 파르페 기준 오늘은
+        // 달력상 어제다. 서버가 그 어제 날짜로 캔버스를 준다.
+        val beforeBoundaryClock = fixedClock("2026-08-17T16:30:00Z") // 한국 시간 8월 18일 01:30
+        val dayBeforeBoundaryDay = LocalDate(2026, 8, 17)
+        val repository = FakeParfaitRepository(
+            listOf(Result.success(canvas(PARFAIT_ID, dayBeforeBoundaryDay))),
+        )
+
+        // When 오늘 파르페 조회
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
+
+        // Then 옛 자정 경계였다면 재조회가 났을 상황이지만, 새벽 3시 경계에서는 그대로 받는다
+        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+        assertEquals(1, repository.callCount)
+    }
+
+    @Test
+    fun invoke_beforeBoundaryCanvasDatedTwoDaysAgo_retriesOnce() = runTest {
+        // Given 한국 시간 새벽 1시 30분인데 캔버스가 이틀 전 날짜다 — 새벽 3시 경계로도
+        // 설명이 안 되는 진짜 어긋남이라 재조회가 나가야 한다.
+        val beforeBoundaryClock = fixedClock("2026-08-17T16:30:00Z") // 한국 시간 8월 18일 01:30
+        val twoDaysBeforeBoundaryDay = LocalDate(2026, 8, 16)
+        val currentDay = LocalDate(2026, 8, 17)
+        val repository = FakeParfaitRepository(
+            listOf(
+                Result.success(canvas(STALE_PARFAIT_ID, twoDaysBeforeBoundaryDay)),
+                Result.success(canvas(PARFAIT_ID, currentDay)),
+            ),
+        )
+
+        // When 오늘 파르페 조회
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
+
+        // Then 한 번 더 불러 두 번째 응답을 쓴다
+        assertEquals(2, repository.callCount)
+        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
     }
 
     @Test
@@ -122,7 +170,7 @@ class GetTodayParfaitUseCaseTest {
         )
 
         // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
         // Then 어제 캔버스로 눙치지 않고 실패로 남긴다
         assertIs<IOException>(result.exceptionOrNull())
