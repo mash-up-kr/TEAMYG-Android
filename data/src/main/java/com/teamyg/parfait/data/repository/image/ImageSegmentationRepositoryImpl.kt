@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -73,37 +72,26 @@ constructor(
         }
 
         return withContext(Dispatchers.Default) {
-            val foregroundMask = result.foregroundConfidenceMask ?: error("foregroundConfidenceMask가 null입니다.")
-            val subjectColors = IntArray(image.width * image.height)
+            // 마스크가 없으면 잘라낼 근거가 없다. 여기는 위 try 밖이라 예외를 던져 봐야
+            // toSegmentationException 매핑을 타지 못하므로 실패 값으로 돌려준다
+            val foregroundMask = result.foregroundConfidenceMask
+                ?: return@withContext Result.failure(SegmentationException.Process(null))
 
-            // 객체 픽셀의 최소/최대 좌표를 모아 bounding box 를 만든다
-            var left = Int.MAX_VALUE
-            var top = Int.MAX_VALUE
-            var right = -1
-            var bottom = -1
+            val width = bitmap.width
+            val height = bitmap.height
 
-            for (i in 0 until image.width * image.height) {
-                if (foregroundMask[i] > 0.5f) {
-                    val x = i % image.width
-                    val y = i / image.width
-
-                    subjectColors[i] = bitmap.getPixel(x, y)
-
-                    if (x < left) left = x
-                    if (x > right) right = x
-                    if (y < top) top = y
-                    if (y > bottom) bottom = y
-                }
+            // InputImage.fromBitmap(bitmap, 0) 이라 지금은 치수가 같지만 그 일치가 계약으로
+            // 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 객체로 오려낸다
+            if (foregroundMask.capacity() != width * height) {
+                return@withContext Result.failure(SegmentationException.Process(null))
             }
 
-            // 감지된 픽셀이 하나도 없으면 bounding box 도 없다
-            val subjectBounds = if (left <= right && top <= bottom) {
-                SegmentationBounds(left = left, top = top, right = right + 1, bottom = bottom + 1)
-            } else {
-                null
-            }
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
-            val subjectBitmap = Bitmap.createBitmap(subjectColors, image.width, image.height, Bitmap.Config.ARGB_8888)
+            val subjectBounds = maskSubjectPixels(pixels, foregroundMask, width, height)
+
+            val subjectBitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
 
             val file = subjectBitmap.saveToCacheAsPng()
 
@@ -122,13 +110,13 @@ constructor(
             }
             subjectBitmap.recycle()
 
-            val result = SegmentationResult(
+            val segmentationResult = SegmentationResult(
                 subjectImagePath = file.absolutePath,
                 trimmedSubjectImagePath = (trimmedFile ?: file).absolutePath,
                 subjectBounds = subjectBounds,
             )
 
-            return@withContext Result.success(result)
+            return@withContext Result.success(segmentationResult)
         }
     }
 
