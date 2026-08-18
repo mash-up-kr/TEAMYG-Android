@@ -41,6 +41,9 @@ import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab

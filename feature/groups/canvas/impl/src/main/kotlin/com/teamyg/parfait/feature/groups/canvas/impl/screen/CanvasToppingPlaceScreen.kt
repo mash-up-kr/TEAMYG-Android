@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors

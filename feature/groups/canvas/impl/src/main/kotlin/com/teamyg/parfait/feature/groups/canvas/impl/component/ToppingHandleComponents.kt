@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.screen
+package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Box
