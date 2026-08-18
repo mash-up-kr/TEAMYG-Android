@@ -1,15 +1,17 @@
 package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
-import com.teamyg.parfait.domain.model.group.GroupDetailVO
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.domain.model.group.NametagChipType
+import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
 import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -68,6 +70,12 @@ class GroupSettingViewModelTest {
             GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname(NEW_NICKNAME)),
         )
     }
+
+    /** [DETAIL] 에서 정원·멤버만 바꾼 상세. 나머지 필드는 기본 픽스처 그대로다 */
+    private fun detailOf(
+        memberLimit: Int = 12,
+        members: List<ParfaitGroupMemberVO> = DETAIL.members,
+    ): ParfaitGroupDetailVO = DETAIL.copy(memberLimit = memberLimit, members = members)
 
     /** 조회가 끝나기 전 구간을 보는 테스트를 위해 시간을 흘리지 않고 만든다 */
     private fun newViewModel(): GroupSettingViewModel = GroupSettingViewModel(
@@ -209,12 +217,12 @@ class GroupSettingViewModelTest {
     fun confirmNickname_validChange_commitsAndSyncsMemberList() = runTest(mainDispatcherRule.dispatcher) {
         // Given 편집 중 유효한 새 닉네임을 입력한 상태. 캐시는 저장소가 서버에서 다시 받아 온
         // 값으로 새 닉네임을 낸다
-        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        val detail = MutableStateFlow<ParfaitGroupDetailVO?>(DETAIL)
         every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
         coEvery { changeGroupNickname(any(), any()) } coAnswers {
             val newNickname = GroupNickname(NEW_NICKNAME)
             detail.value = DETAIL.copy(
-                myNickname = newNickname,
+                groupNickname = newNickname,
                 members = DETAIL.members.map { member ->
                     if (member.memberId == MY_ACCOUNT.memberId) member.copy(groupNickname = newNickname) else member
                 },
@@ -257,11 +265,11 @@ class GroupSettingViewModelTest {
     fun confirmNickname_thenLosesFocus_keepsConfirmedNickname() = runTest(mainDispatcherRule.dispatcher) {
         // Given 편집 중 유효한 새 닉네임을 입력한 상태. 캐시는 저장소가 서버에서 다시 받아 온
         // 값으로 새 닉네임을 낸다
-        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        val detail = MutableStateFlow<ParfaitGroupDetailVO?>(DETAIL)
         every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
         coEvery { changeGroupNickname(any(), any()) } coAnswers {
             val newNickname = GroupNickname(NEW_NICKNAME)
-            detail.value = DETAIL.copy(myNickname = newNickname)
+            detail.value = DETAIL.copy(groupNickname = newNickname)
             Result.success(GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = newNickname))
         }
         val viewModel = viewModel()
@@ -591,6 +599,67 @@ class GroupSettingViewModelTest {
     }
 
     @Test
+    fun detailArrives_memberChipsFollowTheServerAssignment() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 멤버 셋에게 목록 순서와 무관한 칩을 배정했다(기본 픽스처가 그렇다)
+
+        // When 상세가 도착한 화면
+        val viewModel = viewModel()
+
+        // Then 인덱스가 아니라 배정된 값을 쓴다 — 멤버가 빠져도 남은 사람 색이 안 밀린다
+        assertEquals(
+            listOf(
+                YGColorChipType.NametagChip8,
+                YGColorChipType.NametagChip3,
+                YGColorChipType.NametagChip11,
+            ),
+            viewModel.state.value.members
+                .map { it.colorChipType },
+        )
+    }
+
+    @Test
+    fun detailArrives_missingChipFallsBackToDefault() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 칩을 알 수 없는 멤버가 섞여 있다 — 계약상 오지 않지만 타입은 널 허용이다
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(
+            detailOf(members = listOf(ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME), null))),
+        )
+
+        // When 상세가 도착한 화면
+        val viewModel = viewModel()
+
+        // Then 아무 색이나 돌리지 않고 중립 칩으로 그린다
+        assertEquals(
+            YGColorChipType.Default,
+            viewModel.state.value.members
+                .single()
+                .colorChipType,
+        )
+    }
+
+    @Test
+    fun detailArrives_remainingCountIsLimitMinusMembers() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 정원 12 인 그룹에 멤버가 셋 있다(기본 픽스처)
+
+        // When 상세가 도착한 화면
+        val viewModel = viewModel()
+
+        // Then 남은 자리를 실제로 센다 — 그전엔 고정 1 이었다
+        assertEquals(9, viewModel.state.value.remainingCount)
+    }
+
+    @Test
+    fun detailArrives_moreMembersThanLimit_clampsRemainingToZero() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시와 서버가 어긋나 멤버가 정원보다 많다
+        every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(detailOf(memberLimit = 1))
+
+        // When 상세가 도착한 화면
+        val viewModel = viewModel()
+
+        // Then 음수를 내보내지 않는다 — "-1명 남음"은 읽는 사람에게 뜻이 없다
+        assertEquals(0, viewModel.state.value.remainingCount)
+    }
+
+    @Test
     fun init_myAccountUnknown_marksNobodyAsMe() = runTest(mainDispatcherRule.dispatcher) {
         // Given 계정 정보를 아직 못 받은 상태
         every { getMyAccountFlow() } returns flowOf(null)
@@ -616,7 +685,7 @@ class GroupSettingViewModelTest {
         // Then 계정 id 를 못 읽었어도 상세는 그대로 채워진다. 다만 아무도 나로 표시되지 않는다
         val state = viewModel.state.value
         assertEquals(DETAIL.groupName, state.groupName)
-        assertEquals(DETAIL.myNickname, state.myNickname)
+        assertEquals(DETAIL.groupNickname, state.myNickname)
         assertEquals(3, state.members.size)
         assertTrue(state.members.none { it.isMe })
     }
@@ -750,7 +819,7 @@ class GroupSettingViewModelTest {
         val state = viewModel.state.value
         assertFalse(state.isLoadingDetail)
         assertEquals(DETAIL.groupName, state.groupName)
-        assertEquals(DETAIL.myNickname, state.myNickname)
+        assertEquals(DETAIL.groupNickname, state.myNickname)
 
         // 갱신 왕복을 마저 끝내 다음 테스트로 코루틴이 새지 않게 한다
         pending.complete(Result.success(Unit))
@@ -777,12 +846,12 @@ class GroupSettingViewModelTest {
     @Test
     fun confirmNickname_succeeds_takesNewValueFromCache() = runTest(mainDispatcherRule.dispatcher) {
         // Given 캐시가 변경 후 새 닉네임을 낸다
-        val detail = MutableStateFlow<GroupDetailVO?>(DETAIL)
+        val detail = MutableStateFlow<ParfaitGroupDetailVO?>(DETAIL)
         every { getGroupDetail(GroupId(GROUP_ID)) } returns detail
         coEvery { refreshGroupDetail(GroupId(GROUP_ID)) } returns Result.success(Unit)
         every { getMyAccountFlow() } returns flowOf(MY_ACCOUNT)
         coEvery { changeGroupNickname(GroupId(GROUP_ID), GroupNickname("라떼")) } coAnswers {
-            detail.value = DETAIL.copy(myNickname = GroupNickname("라떼"))
+            detail.value = DETAIL.copy(groupNickname = GroupNickname("라떼"))
             Result.success(GroupNicknameVO(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname("라떼")))
         }
 
@@ -813,15 +882,16 @@ class GroupSettingViewModelTest {
             nickname = GlobalNickname("전역닉네임"),
         )
 
-        val DETAIL = GroupDetailVO(
+        val DETAIL = ParfaitGroupDetailVO(
             groupId = GroupId(GROUP_ID),
             groupName = GroupName("그룹이름"),
-            myNickname = GroupNickname(MY_NICKNAME),
+            groupNickname = GroupNickname(MY_NICKNAME),
             inviteCode = InviteCode("WDIDCJ"),
+            memberLimit = 12,
             members = listOf(
-                ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME)),
-                ParfaitGroupMemberVO(MemberId(2L), GroupNickname("체리마루")),
-                ParfaitGroupMemberVO(MemberId(3L), GroupNickname("푸딩왕자")),
+                ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME), NametagChipType.TYPE8),
+                ParfaitGroupMemberVO(MemberId(2L), GroupNickname("체리마루"), NametagChipType.TYPE3),
+                ParfaitGroupMemberVO(MemberId(3L), GroupNickname("푸딩왕자"), NametagChipType.TYPE11),
             ),
         )
 
