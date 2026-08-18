@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
@@ -33,6 +34,7 @@ sealed interface SegmentationEffect : UiSideEffect
 class SegmentationViewModel
 @AssistedInject constructor(
     @Assisted private val sourceImageUri: String,
+    private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
@@ -40,7 +42,17 @@ class SegmentationViewModel
 ) {
     init {
         viewModelScope.launch {
-            val bitmapWrapper = decodeImageUseCase(sourceImageUri)
+            // 이번 흐름이 파일을 만들기 전에 지운다 — 뒤에 두면 방금 만든 것을 지운다
+            clearSegmentationCacheUseCase()
+
+            // URI 가 만료됐거나 파일이 깨지면 디코더가 던진다. 잡지 않으면 이 코루틴이 그대로 터진다
+            val bitmapWrapper = runCatching { decodeImageUseCase(sourceImageUri) }.getOrNull()
+
+            if (bitmapWrapper == null) {
+                updateState { copy(isLoading = false, isError = true) }
+                return@launch
+            }
+
             val originBitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
             updateState { copy(originBitmap = originBitmap) }
 
