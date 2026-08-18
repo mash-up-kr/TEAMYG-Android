@@ -3,6 +3,8 @@ package com.teamyg.parfait.core.navigation
 import androidx.navigation3.runtime.NavKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 private data object Home : NavKey
 
@@ -52,5 +54,49 @@ class NavigatorTest {
 
         // Then 이전 화면으로 돌아가지 않는다 — 걷어낸 화면은 되살아나지 않아야 한다
         assertEquals(listOf(Login), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_targetIsBelowSeveralEntries_removesEverythingAboveIt() {
+        // Given 목적지 위로 두 화면이 쌓인 백스택
+        val navigator = navigator()
+        navigator.goTo(Detail)
+        navigator.goTo(Login)
+
+        // When 목적지 타입까지 걷어낸다
+        val reached = navigator.popUpTo<Home>()
+
+        // Then 목적지만 남고 도달했다고 알린다
+        assertTrue(reached)
+        assertEquals(listOf(Home), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_targetIsAlreadyOnTop_leavesTheStackAlone() {
+        // Given 목적지가 이미 최상단인 백스택
+        val navigator = navigator()
+
+        // When 같은 타입까지 걷어낸다
+        val reached = navigator.popUpTo<Home>()
+
+        // Then 걷어낼 것이 없으므로 그대로다. 도달 여부는 참이다 —
+        // 호출부가 보기에 "그 화면에 있게 됐다"는 결과가 같다
+        assertTrue(reached)
+        assertEquals(listOf(Home), navigator.backStack)
+    }
+
+    @Test
+    fun popUpTo_targetIsNotInTheStack_changesNothing() {
+        // Given 목적지 타입이 없는 백스택
+        val navigator = navigator()
+        navigator.goTo(Detail)
+
+        // When 없는 타입까지 걷어내려 한다
+        val reached = navigator.popUpTo<Login>()
+
+        // Then 백스택을 건드리지 않고 실패를 알린다 — 못 찾았는데 비우면
+        // 사용자가 어디에도 없는 화면에 남는다
+        assertFalse(reached)
+        assertEquals(listOf(Home, Detail), navigator.backStack)
     }
 }
