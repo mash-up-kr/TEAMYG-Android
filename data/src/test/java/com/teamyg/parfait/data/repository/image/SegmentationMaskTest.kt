@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.repository.image
 import java.nio.FloatBuffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -95,5 +96,25 @@ class SegmentationMaskTest {
         assertEquals(3, bounds?.right)
         assertEquals(3, bounds?.bottom)
         assertTrue(pixels.all { it == OPAQUE_WHITE })
+    }
+
+    @Test
+    fun maskSubjectPixels_bufferLimitBelowCapacity_stopsAtLimitInsteadOfReadingPastIt() {
+        // Given capacity 는 3×3(9) 와 같지만 limit 은 그보다 작은 버퍼 — ML Kit 이 capacity 만큼
+        // 할당은 해 놓고 실제로는 그보다 적은 데이터만 채워 돌려주는 경우를 흉내낸다.
+        // capacity() 만 보는 낡은 가드는 9 == 9 라 통과시키지만, absolute get(index) 는 limit 을
+        // 경계로 삼으므로 limit 을 넘어서는 인덱스는 실제로 읽을 수 없다
+        val pixels = pixels()
+        val underlying = FloatBuffer.allocate(9)
+        underlying.put(floatArrayOf(0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f))
+        underlying.limit(8)
+        underlying.position(0)
+
+        // When & Then limit(8) 을 넘어서는 마지막 인덱스(8)를 읽으려 하면 조용히 넘어가거나
+        // 엉뚱한 값을 읽는 대신 예외로 멈춘다 — 읽기가 limit 안에서만 유효하다는 뜻이고, 그래서
+        // 호출부 가드는 capacity() 가 아니라 remaining() 으로 비교해야 한다
+        assertFailsWith<IndexOutOfBoundsException> {
+            maskSubjectPixels(pixels, underlying, width = 3, height = 3)
+        }
     }
 }
