@@ -199,18 +199,24 @@ class TermAgreeViewModelTest {
     }
 
     @Test
-    fun clickTermLandingUrl_emitsNavigateToUrl() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickTermDetail_emitsNavigateToPolicyDetailWithTitleAndUrl() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 화면
         givenPoliciesLoaded()
         val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // When 약관 상세 링크 클릭
-            viewModel.processIntent(TermAgreeIntent.ClickTermLandingUrl("https://example.com/terms"))
+            // When 약관 상세 화살표 클릭
+            viewModel.processIntent(TermAgreeIntent.ClickTermDetail(REQUIRED_POLICY))
 
-            // Then 클릭한 URL 그대로 이동 이펙트가 나간다
-            assertEquals(TermAgreeSideEffect.NavigateToUrl("https://example.com/terms"), awaitItem())
+            // Then 상단바에 걸 제목과 열 주소를 함께 넘긴다 — 상세 화면은 스스로 조회하지 않는다
+            assertEquals(
+                TermAgreeSideEffect.NavigateToPolicyDetail(
+                    title = REQUIRED_POLICY.title,
+                    url = REQUIRED_POLICY.url,
+                ),
+                awaitItem(),
+            )
         }
     }
 

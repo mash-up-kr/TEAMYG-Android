@@ -7,8 +7,11 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
 import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.policy.PolicyType
+import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -20,6 +23,9 @@ import javax.inject.Inject
  *   이유로 로딩이다.
  * @property version 앱 버전. 빌드에 박혀 있어 로딩 상태가 없다 — `nickname` 과 달리 처음부터
  *   값이 있어 non-null 이다
+ * @property policies 약관 목록. 화면의 약관 두 줄은 문자열 리소스로 고정돼 있고 이 목록은
+ *   **누를 때 열 제목과 주소의 출처로만** 쓴다 — 조회가 실패해도 줄이 사라지지 않아야 한다.
+ *   비어 있으면 아직 못 받았거나 조회가 실패한 것이다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
@@ -27,9 +33,12 @@ data class AppSettingState(
     val nickname: String? = null,
     val loginProvider: LoginProvider? = null,
     val version: String = APP_VERSION_NAME,
+    val policies: List<PolicyVO> = emptyList(),
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
-) : UiState
+) : UiState {
+    fun policyOf(type: PolicyType): PolicyVO? = policies.firstOrNull { it.type == type }
+}
 
 sealed interface AppSettingIntent : UiIntent {
     data object ClickBack : AppSettingIntent
@@ -54,9 +63,10 @@ sealed interface AppSettingSideEffect : UiSideEffect {
 
     data object NavigateToAccountInfo : AppSettingSideEffect
 
-    data object NavigateToServiceTerms : AppSettingSideEffect
-
-    data object NavigateToPrivacyPolicy : AppSettingSideEffect
+    data class NavigateToPolicyDetail(
+        val title: String,
+        val url: String,
+    ) : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
 }
@@ -67,6 +77,7 @@ class AppSettingViewModel
 constructor(
     private val logout: LogoutUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
+    private val getPolicies: GetPoliciesUseCase,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
@@ -85,14 +96,16 @@ constructor(
                 }
             }
         }
+
+        loadPolicies()
     }
 
     override fun processIntent(intent: AppSettingIntent) {
         when (intent) {
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
-            AppSettingIntent.ClickServiceTerms -> handleClickServiceTerms()
-            AppSettingIntent.ClickPrivacyPolicy -> handleClickPrivacyPolicy()
+            AppSettingIntent.ClickServiceTerms -> handleClickPolicy(PolicyType.TERMS_OF_SERVICE)
+            AppSettingIntent.ClickPrivacyPolicy -> handleClickPolicy(PolicyType.PRIVACY_POLICY)
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
             AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
@@ -108,12 +121,34 @@ constructor(
         postSideEffect(AppSettingSideEffect.NavigateToAccountInfo)
     }
 
-    private fun handleClickServiceTerms() {
-        postSideEffect(AppSettingSideEffect.NavigateToServiceTerms)
+    private fun loadPolicies() {
+        launch(key = KEY_LOAD_POLICIES) {
+            getPolicies()
+                .onSuccess { policies -> updateState { copy(policies = policies) } }
+                .onFailure { viewModelLogger.e(it) { "약관 목록 조회에 실패했다" } }
+        }
     }
 
-    private fun handleClickPrivacyPolicy() {
-        postSideEffect(AppSettingSideEffect.NavigateToPrivacyPolicy)
+    /**
+     * 찾는 약관이 없으면 아무것도 하지 않는다. 여기서 다시 조회하지 않는 이유: 목록에 그 종류가
+     * 없다는 것은 서버가 잘못 내려줬다는 뜻이고, 같은 요청을 되풀이해도 같은 응답이 온다.
+     * 탭마다 요청만 늘면서 결함은 로그에만 남아 가려진다.
+     */
+    private fun handleClickPolicy(type: PolicyType) {
+        val policy = state.value.policyOf(type)
+
+        if (policy == null) {
+            // 받은 개수를 함께 남긴다 — 0 이면 조회가 아직 안 끝났거나 실패한 것이고,
+            // 0 이 아니면 서버가 이 종류를 빼고 준 것이다
+            viewModelLogger.w {
+                "약관을 찾지 못해 열지 못했다 - type: $type, 받은 약관 수: ${state.value.policies.size}"
+            }
+            return
+        }
+
+        postSideEffect(
+            AppSettingSideEffect.NavigateToPolicyDetail(title = policy.title, url = policy.url),
+        )
     }
 
     private fun handleClickLogout() {
@@ -152,5 +187,8 @@ constructor(
     private companion object {
         /** [launch] 중복 실행 가드 키 — 로그아웃 job 하나를 가리킨다 */
         const val KEY_LOGOUT = "logout"
+
+        /** [launch] 중복 실행 가드 키 — 약관 조회 job 하나를 가리킨다 */
+        const val KEY_LOAD_POLICIES = "loadPolicies"
     }
 }
