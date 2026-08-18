@@ -29,6 +29,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
@@ -79,6 +81,7 @@ internal fun CustomCameraRoute(
 
     val toastPolicy = rememberYGToastPolicy()
     val guideToastMessage = stringResource(R.string.camera_custom_guide_toast)
+    val captureFailedMessage = stringResource(R.string.camera_capture_failed)
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -147,6 +150,10 @@ internal fun CustomCameraRoute(
 
                 is CustomCameraEffect.Cancel -> navigator.onBack()
 
+                is CustomCameraEffect.CaptureFailed -> {
+                    toastPolicy.showError(captureFailedMessage)
+                }
+
                 is CustomCameraEffect.NavigateToConfirm -> {
                     navigator.goTo(
                         NavKeyPictureConfirm(
@@ -181,26 +188,29 @@ internal fun CustomCameraRoute(
         onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
     )
 
-    CustomCameraScreen(
-        state = state,
-        onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
-        onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
-        onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },
-        onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
-        onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
-        onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
-        onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
-        toastPolicy = toastPolicy,
-        modifier = modifier,
-        onViewfinderRectChange = { viewfinderRect = it },
-        cameraFeed = {
-            CameraFeedLayer(
-                previewView = cameraPreviewHandle.previewView,
-                camera = cameraPreviewHandle.camera.value,
-                viewfinderRect = { viewfinderRect },
-                onFeedRectChange = { feedRect = it },
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-    )
+    // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
+    // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
+    YGScaffoldV2(toastPolicy = toastPolicy) { _ ->
+        CustomCameraScreen(
+            state = state,
+            onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
+            onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
+            onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },
+            onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
+            onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
+            onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
+            onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
+            modifier = modifier,
+            onViewfinderRectChange = { viewfinderRect = it },
+            cameraFeed = {
+                CameraFeedLayer(
+                    previewView = cameraPreviewHandle.previewView,
+                    camera = cameraPreviewHandle.camera.value,
+                    viewfinderRect = { viewfinderRect },
+                    onFeedRectChange = { feedRect = it },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            },
+        )
+    }
 }

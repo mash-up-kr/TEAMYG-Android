@@ -29,6 +29,9 @@ sealed interface CustomCameraEffect : UiSideEffect {
      */
     data object Cancel : CustomCameraEffect
 
+    /** 촬영이 실패했다. 알리고 그 자리에 머문다 — 되돌아가면 사용자는 왜 아무 일도 없었는지 모른다 */
+    data object CaptureFailed : CustomCameraEffect
+
     data class NavigateToConfirm(
         val uri: String,
     ) : CustomCameraEffect
@@ -180,7 +183,7 @@ constructor(
     }
 
     private fun handleOnCaptureFailed() {
-        postSideEffect(CustomCameraEffect.Cancel)
+        postSideEffect(CustomCameraEffect.CaptureFailed)
     }
 
     private fun handleOnCancel() {
