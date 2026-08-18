@@ -21,6 +21,7 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.exception.SegmentationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -127,6 +128,9 @@ constructor(
                 } finally {
                     subjectBitmap.recycle()
                 }
+            } catch (e: CancellationException) {
+                // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
+                throw e
             } catch (e: Exception) {
                 Result.failure(SegmentationException.Process(e))
             }
