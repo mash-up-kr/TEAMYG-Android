@@ -5,6 +5,7 @@ import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -90,20 +91,28 @@ class GroupLocalDataSourceImplTest {
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
+            lastPlacedByNametagChip = null,
         )
         val GROUP_B = MyParfaitGroupVO(
             groupId = GROUP_ID_B,
             groupName = GroupName("라떼"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
+            lastPlacedByNametagChip = null,
         )
 
         val DETAIL_A = ParfaitGroupDetailVO(
             groupId = GROUP_ID_A,
+            groupName = GroupName("모카의 파르페"),
             groupNickname = GroupNickname("모카"),
             inviteCode = InviteCode("ABC123"),
+            memberLimit = 12,
             members = listOf(
-                ParfaitGroupMemberVO(memberId = MemberId(10L), groupNickname = GroupNickname("모카")),
+                ParfaitGroupMemberVO(
+                    memberId = MemberId(10L),
+                    groupNickname = GroupNickname("모카"),
+                    nametagChip = NametagChipType.TYPE1,
+                ),
             ),
         )
         val DETAIL_B = DETAIL_A.copy(groupId = GROUP_ID_B)
