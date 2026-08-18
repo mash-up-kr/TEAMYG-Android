@@ -17,6 +17,7 @@ class ToppingImageTest {
         groupName = GroupName("모카의 파르페"),
         recentImageUrl = recentImageUrl,
         recentImageUploadedAt = null,
+        lastPlacedByNametagChip = null,
     )
 
     @Test
