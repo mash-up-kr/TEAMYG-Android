@@ -1,11 +1,14 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageAdd
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
@@ -38,17 +41,25 @@ internal fun CanvasToppingPlaceRoute(
         }
     }
 
-    CanvasToppingPlaceScreen(
-        uiState = uiState,
-        onClickClose = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose) },
-        onClickConfirm = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm) },
-        onToppingMoveDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingMoveDrag(delta)) },
-        onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResizeDrag(delta)) },
-        onToppingRotateDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotateDrag(delta)) },
-        onCanvasMeasured = { size -> viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(size)) },
-        onToppingBaseSizeMeasured = { size ->
-            viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(size))
-        },
-        modifier = modifier,
-    )
+    YGScaffoldV2(modifier = modifier) { innerPadding ->
+        CanvasToppingPlaceScreen(
+            uiState = uiState,
+            onClickClose = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose) },
+            onClickConfirm = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm) },
+            onToppingMoveDrag = { delta -> viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingMoveDrag(delta)) },
+            onToppingResizeDrag = { delta ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResizeDrag(delta))
+            },
+            onToppingRotateDrag = { delta ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotateDrag(delta))
+            },
+            onCanvasMeasured = { size -> viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(size)) },
+            onToppingBaseSizeMeasured = { size ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(size))
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
+    }
 }

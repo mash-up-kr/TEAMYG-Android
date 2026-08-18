@@ -79,14 +79,10 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     }
 
     entry<NavKeyCanvasToppingPlace> { navKey ->
-        YGScaffold { innerPadding ->
-            CanvasToppingPlaceRoute(
-                key = navKey,
-                navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
+        CanvasToppingPlaceRoute(
+            key = navKey,
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
