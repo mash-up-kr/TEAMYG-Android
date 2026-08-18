@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -9,7 +10,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.navigation3.runtime.result.ResultEffect
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
@@ -52,23 +55,26 @@ internal fun SegmentationConfirmRoute(
         borderLayers = result.borderLayers
     }
 
-    SegmentationConfirmScreen(
-        subjectImagePath = subjectImagePath,
-        onClickBack = { navigator.onBack() },
-        onClickClose = { }, // TODO: 편집 플로우 종료 후 이동할 화면 연결 필요
-        onClickEditPhoto = {
-            navigator.goTo(
-                NavKeyToppingEdit(
-                    sourceImageUri = key.sourceImageUri,
-                    // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
-                    segmentationImageUri = File(cutoutImagePath).toUri().toString(),
-                    borderLayers = borderLayers,
-                ),
-            )
-        },
-        onClickNext = {
-            navigator.goTo(NavKeyCanvasToppingPlace(imageUri = File(subjectImagePath).toUri().toString()))
-        },
-        modifier = modifier,
-    )
+    YGScaffoldV2 { innerPadding ->
+        SegmentationConfirmScreen(
+            subjectImagePath = subjectImagePath,
+            onClickBack = { navigator.onBack() },
+            // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
+            onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
+            onClickEditPhoto = {
+                navigator.goTo(
+                    NavKeyToppingEdit(
+                        sourceImageUri = key.sourceImageUri,
+                        // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
+                        segmentationImageUri = File(cutoutImagePath).toUri().toString(),
+                        borderLayers = borderLayers,
+                    ),
+                )
+            },
+            onClickNext = {
+                navigator.goTo(NavKeyCanvasToppingPlace(imageUri = File(subjectImagePath).toUri().toString()))
+            },
+            modifier = modifier.padding(innerPadding),
+        )
+    }
 }
