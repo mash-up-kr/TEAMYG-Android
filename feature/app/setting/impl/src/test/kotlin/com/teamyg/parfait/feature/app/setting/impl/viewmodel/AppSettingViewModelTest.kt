@@ -12,6 +12,7 @@ import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.domain.usecase.member.WithdrawUseCase
 import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -36,6 +37,7 @@ class AppSettingViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val logout: LogoutUseCase = mockk()
+    private val withdraw: WithdrawUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val getPolicies: GetPoliciesUseCase = mockk()
 
@@ -47,6 +49,7 @@ class AppSettingViewModelTest {
         coEvery { getPolicies() } returns policies
         return AppSettingViewModel(
             logout = logout,
+            withdraw = withdraw,
             getMyAccountFlow = getMyAccountFlow,
             getPolicies = getPolicies,
         )
@@ -146,6 +149,7 @@ class AppSettingViewModelTest {
     @Test
     fun confirmWithdraw_hidesWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
         // Given 탈퇴 확인 팝업이 떠 있는 상태
+        coEvery { withdraw() } returns Result.success(Unit)
         val viewModel = viewModel()
         viewModel.processIntent(AppSettingIntent.ClickWithdraw)
 
@@ -154,6 +158,93 @@ class AppSettingViewModelTest {
 
         // Then 팝업이 닫힌다
         assertFalse(viewModel.state.value.isWithdrawDialogVisible)
+    }
+
+    @Test
+    fun confirmWithdraw_succeeds_navigatesToLogin() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴가 성공하는 화면
+        coEvery { withdraw() } returns Result.success(Unit)
+        val viewModel = viewModel()
+        viewModel.processIntent(AppSettingIntent.ClickWithdraw)
+
+        viewModel.effect.test {
+            // When 팝업의 탈퇴하기를 누름
+            viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+            advanceUntilIdle()
+
+            // Then 로그인 화면으로 간다
+            assertEquals(AppSettingSideEffect.NavigateToLogin, awaitItem())
+            coVerify(exactly = 1) { withdraw() }
+        }
+    }
+
+    @Test
+    fun confirmWithdraw_fails_staysOnTheScreenAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴 요청이 거절된다
+        coEvery { withdraw() } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = viewModel()
+        viewModel.processIntent(AppSettingIntent.ClickWithdraw)
+
+        viewModel.effect.test {
+            // When 팝업의 탈퇴하기를 누름
+            viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+            advanceUntilIdle()
+
+            // Then 계정이 살아 있으므로 화면을 떠나지 않고 실패만 알린다
+            assertEquals(AppSettingSideEffect.ShowWithdrawError, awaitItem())
+        }
+        assertFalse(viewModel.state.value.isWithdrawing)
+    }
+
+    @Test
+    fun confirmWithdraw_inFlight_blocksTheScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴 요청이 끝나지 않게 붙잡아 둔다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { withdraw() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        val viewModel = viewModel()
+        viewModel.processIntent(AppSettingIntent.ClickWithdraw)
+
+        // When 팝업의 탈퇴하기를 누름
+        viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+        runCurrent()
+
+        // Then 요청 중에는 화면을 막는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        // When 요청이 끝난다
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        // Then 가드가 풀린다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun confirmWithdraw_whileWithdrawing_doesNotRequestAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 탈퇴 요청이 아직 끝나지 않은 화면
+        val gate = CompletableDeferred<Unit>()
+        coEvery { withdraw() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        val viewModel = viewModel()
+        viewModel.processIntent(AppSettingIntent.ClickWithdraw)
+        viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+        runCurrent()
+
+        // When 팝업을 다시 열어 한 번 더 누른다
+        viewModel.processIntent(AppSettingIntent.ClickWithdraw)
+        viewModel.processIntent(AppSettingIntent.ConfirmWithdraw)
+        runCurrent()
+
+        // Then 되돌릴 수 없는 요청이 두 번 나가지 않는다
+        coVerify(exactly = 1) { withdraw() }
+
+        gate.complete(Unit)
+        advanceUntilIdle()
     }
 
     @Test
