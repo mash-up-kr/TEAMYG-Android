@@ -9,6 +9,7 @@ import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupRespon
 import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberResponse
 import com.teamyg.parfait.data.service.model.response.group.PreviewParfaitGroupJoinResponse
 import com.teamyg.parfait.data.service.model.response.group.ReportParfaitGroupResponse
+import com.teamyg.parfait.data.source.common.mapper.toNametagChipType
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.group.CreatedGroupVO
 import com.teamyg.parfait.domain.model.group.GroupName
@@ -17,7 +18,6 @@ import com.teamyg.parfait.domain.model.group.GroupNicknameVO
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.model.group.JoinedGroupVO
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
-import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
 import com.teamyg.parfait.domain.model.group.ReportedGroupVO
@@ -26,15 +26,6 @@ import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toInstant
-
-/**
- * 서버가 주는 칩 이름을 도메인 값으로 바꾼다.
- *
- * 열린 입력이라 모르는 문자열은 `null` 로 접는다 — 새 타입이 서버에 먼저 들어와도 목록 조회가
- * 통째로 실패하지 않아야 한다. `"DEFAULT"` 는 접지 않고 그대로 남긴다.
- */
-private fun String?.toNametagChipType(): NametagChipType? =
-    this?.let { raw -> NametagChipType.entries.firstOrNull { it.name == raw } }
 
 internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyParfaitGroupVO(
     groupId = GroupId(groupId),
