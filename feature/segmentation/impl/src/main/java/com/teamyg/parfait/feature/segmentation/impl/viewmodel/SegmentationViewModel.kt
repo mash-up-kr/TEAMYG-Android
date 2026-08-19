@@ -21,7 +21,6 @@ import kotlinx.coroutines.launch
 
 data class SegmentationState(
     val isLoading: Boolean = true,
-    val isError: Boolean = false,
     val originBitmap: Bitmap? = null,
     val subjectImagePath: String? = null,
     val trimmedSubjectImagePath: String? = null,
@@ -30,7 +29,13 @@ data class SegmentationState(
 
 sealed interface SegmentationIntent : UiIntent
 
-sealed interface SegmentationEffect : UiSideEffect
+sealed interface SegmentationEffect : UiSideEffect {
+    /**
+     * 객체 인식 실패. 상태가 아니라 1회성 효과인 이유는 이 실패에 재시도 동선이 없어서다 —
+     * 화면은 그대로 두고 공통 에러 토스트로 한 번 알리면 끝이다.
+     */
+    data object ShowError : SegmentationEffect
+}
 
 @HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
 class SegmentationViewModel
@@ -52,7 +57,8 @@ class SegmentationViewModel
             val bitmapWrapper = decodeImageUseCase(sourceImageUri).getOrNull()
 
             if (bitmapWrapper == null) {
-                updateState { copy(isLoading = false, isError = true) }
+                postSideEffect(SegmentationEffect.ShowError)
+                updateState { copy(isLoading = false) }
                 return@launch
             }
 
@@ -68,7 +74,7 @@ class SegmentationViewModel
 
                     // bounds 가 없으면 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남는다
                     if (subjectBounds == null) {
-                        updateState { copy(isError = true) }
+                        postSideEffect(SegmentationEffect.ShowError)
                         return@onSuccess
                     }
 
@@ -79,9 +85,9 @@ class SegmentationViewModel
                             subjectBounds = subjectBounds,
                         )
                     }
-                }.onFailure { updateState { copy(isError = true) } }
+                }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
 
-            // 실패해도 로딩 화면에 갇히지 않도록 성공/실패와 무관하게 해제한다
+            // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }
         }
     }
