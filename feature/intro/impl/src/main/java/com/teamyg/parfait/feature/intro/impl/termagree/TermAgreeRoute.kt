@@ -8,6 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
@@ -24,6 +26,11 @@ fun TermAgreeRoute(
     ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val toastPolicy = rememberYGToastPolicy()
+
+    // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
+    // 문구는 여기서 미리 뽑아 두고 이펙트는 고르기만 한다
+    val errorMessages = TermAgreeError.entries.associateWith { it.toStringResource() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect {
@@ -39,6 +46,10 @@ fun TermAgreeRoute(
                 is TermAgreeSideEffect.NavigateToNext -> {
                     navigator.replaceAll(destination = NavKeyGroupList)
                 }
+
+                is TermAgreeSideEffect.ShowError -> {
+                    toastPolicy.showError(errorMessages.getValue(it.error))
+                }
             }
         }
     }
@@ -48,6 +59,7 @@ fun TermAgreeRoute(
     YGScaffoldV2(
         modifier = modifier,
         isLoading = state.isLoading || state.isSigningUp,
+        toastPolicy = toastPolicy,
     ) { innerPadding ->
         TermAgreeScreen(
             state = state,

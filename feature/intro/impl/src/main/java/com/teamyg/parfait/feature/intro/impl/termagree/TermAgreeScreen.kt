@@ -106,8 +106,7 @@ internal fun TermAgreeScreen(
                 }
             }
 
-            // TODO(공통 에러화면): 조회 실패는 목록 안의 임시 문구가 아니라 공통 에러화면으로
-            //  대체한다. 재시도는 그 화면의 버튼이 [TermAgreeIntent.ClickRetryLoad] 로 잇는다
+            // 재시도라는 갈 곳이 있는 실패라 공통 에러 토스트로 흘려보내지 않고 목록 자리에 남긴다
             if (state.isLoadFailed) {
                 item {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
