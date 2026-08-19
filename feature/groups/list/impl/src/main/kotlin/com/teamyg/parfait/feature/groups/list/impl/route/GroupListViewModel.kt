@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.format
@@ -21,8 +22,8 @@ import javax.inject.Inject
 data class GroupListUiState(
     /** `null` 은 아직 한 번도 받지 못했다는 뜻. 0건과 구분한다 */
     val groupList: List<MyParfaitGroupVO>? = null,
-    // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
-    val nickName: String = "모카",
+    /** 계정 스트림이 아직 첫 값을 내놓기 전에는 빈 문자열이다 */
+    val nickName: String = "",
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
@@ -80,11 +81,13 @@ class GroupListViewModel
 constructor(
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase,
     private val refreshMyGroups: RefreshMyGroupsUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
     init {
         observeGroups()
+        observeMyAccount()
     }
 
     /**
@@ -94,6 +97,20 @@ constructor(
     private fun observeGroups() {
         viewModelScope.launch {
             getMyGroupsFlow().collect { groups -> updateState { copy(groupList = groups) } }
+        }
+    }
+
+    /**
+     * 닉네임은 [GroupListIntent.Enter] 가 아니라 생성 시점에 구독한다 — 목록과 달리 서버에
+     * 다시 묻는 값이 아니라 계정 SSoT 가 밀어 주는 값이라, 화면에 설 때마다 끌어올 이유가 없다.
+     *
+     * 구독만 하고 갱신은 걸지 않는다. 계정 갱신은 로그인/가입·스플래시·닉네임 변경 쪽이 맡는다.
+     */
+    private fun observeMyAccount() {
+        launch {
+            getMyAccountFlow().collect { account ->
+                updateState { copy(nickName = account?.nickname?.value.orEmpty()) }
+            }
         }
     }
 

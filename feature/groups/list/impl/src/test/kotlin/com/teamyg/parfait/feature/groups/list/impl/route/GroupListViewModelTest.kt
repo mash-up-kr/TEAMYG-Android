@@ -7,13 +7,19 @@ import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -33,8 +39,16 @@ class GroupListViewModelTest {
 
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
 
-    private fun viewModel() = GroupListViewModel(getMyGroupsFlow, refreshMyGroups)
+    private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupListViewModel {
+        every { getMyAccountFlow() } returns accountFlow
+        return GroupListViewModel(
+            getMyGroupsFlow = getMyGroupsFlow,
+            refreshMyGroups = refreshMyGroups,
+            getMyAccountFlow = getMyAccountFlow,
+        )
+    }
 
     /** 화면에 서기 전에는 아무것도 조회하지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
     private fun TestScope.enteredViewModel() = viewModel().also { viewModel ->
@@ -333,7 +347,55 @@ class GroupListViewModelTest {
         }
     }
 
+    @Test
+    fun init_showsTheNicknameFromTheAccountStream() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 SSoT 가 내 닉네임을 들고 있다
+        every { getMyGroupsFlow() } returns flowOf(null)
+
+        // When ViewModel 이 만들어진다 — 화면에 서기 전이다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 목록과 달리 진입을 기다리지 않고 닉네임이 채워진다
+        assertEquals("모카", viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun accountNicknameChanges_followsTheStream() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임을 이미 받아 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(null)
+        val accountFlow = MutableStateFlow<MyAccountVO?>(ACCOUNT)
+        val viewModel = viewModel(accountFlow)
+        advanceUntilIdle()
+
+        // When 다른 화면에서 닉네임을 바꿔 SSoT 가 새 값을 밀어 준다
+        accountFlow.value = ACCOUNT.copy(nickname = GlobalNickname("바닐라"))
+        advanceUntilIdle()
+
+        // Then 그룹 만들기로 실려 갈 값이 낡지 않도록 구독이 따라간다
+        assertEquals("바닐라", viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun init_accountIsNotStoredYet_leavesTheNicknameEmpty() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 저장된 계정이 없어 스트림이 null 을 낸다
+        every { getMyGroupsFlow() } returns flowOf(null)
+
+        // When ViewModel 이 만들어진다
+        val viewModel = viewModel(accountFlow = flowOf(null))
+        advanceUntilIdle()
+
+        // Then mock 이름을 지어내지 않는다 — 그룹 만들기 화면의 입력칸이 빈 채로 열린다
+        assertEquals("", viewModel.state.value.nickName)
+    }
+
     private companion object {
+        val ACCOUNT = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("모카"),
+        )
+
         val GROUPS = listOf(
             MyParfaitGroupVO(
                 groupId = GroupId(1L),
