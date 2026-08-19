@@ -6,11 +6,15 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.usecase.group.GetMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -26,9 +30,10 @@ class GroupListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val getMyGroups: GetMyGroupsUseCase = mockk()
+    private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
+    private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
 
-    private fun viewModel() = GroupListViewModel(getMyGroups)
+    private fun viewModel() = GroupListViewModel(getMyGroupsFlow, refreshMyGroups)
 
     /** 화면에 서기 전에는 아무것도 조회하지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
     private fun TestScope.enteredViewModel() = viewModel().also { viewModel ->
@@ -37,55 +42,107 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_loadSucceeds_showsGroupsInServerOrder() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 그룹 두 개를 준다
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+    fun enter_cacheEmits_showsGroups() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시에 그룹 둘이 있고 갱신은 성공한다
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
 
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
+        // When 화면이 앞에 선다
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
 
-        // Then 서버가 준 순서 그대로 들고 있고 에러 화면은 뜨지 않는다
-        val state = viewModel.state.value
-        assertEquals(GROUPS, state.groupList)
-        assertFalse(state.isError)
-        coVerify(exactly = 1) { getMyGroups() }
+        // Then 캐시가 준 순서 그대로 들고 있다
+        assertEquals(GROUPS, viewModel.state.value.groupList)
+        assertFalse(viewModel.state.value.isError)
+        coVerify(exactly = 1) { refreshMyGroups() }
+    }
+
+    @Test
+    fun enter_refreshFailsWithEmptyCache_showsErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 비었고 갱신이 실패한다
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 화면이 앞에 선다
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 보여 줄 것이 없으므로 에러 화면으로 넘어간다
+        assertTrue(viewModel.state.value.isError)
+    }
+
+    @Test
+    fun enter_refreshFailsWithCachedGroups_keepsList() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시에 목록이 있는데 갱신이 실패한다
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 화면이 앞에 선다
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 낡아도 목록을 남긴다 — 뒤로 온 것만으로 화면이 사라지지 않는다
+        assertFalse(viewModel.state.value.isError)
+        assertEquals(GROUPS, viewModel.state.value.groupList)
+    }
+
+    @Test
+    fun cacheUpdatesAfterEnter_reflectsWithoutNewRefresh() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시를 구독 중이다
+        val cache = MutableStateFlow<List<MyParfaitGroupVO>?>(emptyList())
+        every { getMyGroupsFlow() } returns cache
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
+
+        // When 다른 화면이 그룹을 만들어 캐시가 바뀐다
+        cache.value = GROUPS
+        advanceUntilIdle()
+
+        // Then 이 화면이 다시 조회하지 않고도 반영한다
+        assertEquals(GROUPS, viewModel.state.value.groupList)
+        coVerify(exactly = 1) { refreshMyGroups() }
     }
 
     @Test
     fun enter_beforeTheScreenIsShown_doesNotLoad() = runTest(mainDispatcherRule.dispatcher) {
         // Given 서버가 그룹을 준다
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When ViewModel 만 만들어지고 화면은 아직 앞에 서지 않았다
         val viewModel = viewModel()
         advanceUntilIdle()
 
         // Then 조회는 화면이 설 때 나간다 — 생성만으로 부르면 재진입 조회와 겹쳐 두 번 나간다
-        coVerify(exactly = 0) { getMyGroups() }
-        val state = viewModel.state.value
-        assertTrue(state.groupList.isEmpty())
+        coVerify(exactly = 0) { refreshMyGroups() }
     }
 
     @Test
-    fun enter_again_reloadsTheList() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_again_requestsAnotherRefresh() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹 하나를 띄워 둔 화면
-        coEvery { getMyGroups() } returns Result.success(listOf(GROUPS.first()))
+        every { getMyGroupsFlow() } returns flowOf(listOf(GROUPS.first()))
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
-        // When 다른 화면에 갔다가 돌아온 사이 그룹이 하나 늘었다
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // When 다른 화면에 갔다가 돌아온다
         viewModel.processIntent(GroupListIntent.Enter)
         advanceUntilIdle()
 
-        // Then 늘어난 목록이 보인다
-        assertEquals(GROUPS, viewModel.state.value.groupList)
-        coVerify(exactly = 2) { getMyGroups() }
+        // Then 다시 갱신을 부른다
+        coVerify(exactly = 2) { refreshMyGroups() }
     }
 
     @Test
     fun enter_fillsTodayInTheHeader() = runTest(mainDispatcherRule.dispatcher) {
         // Given 서버가 그룹을 준다
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When 화면이 열린다
         val viewModel = enteredViewModel()
@@ -99,7 +156,8 @@ class GroupListViewModelTest {
     @Test
     fun enter_loadFails_showsErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
         // Given 연결 실패
-        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
 
         // When 화면이 열린다
         val viewModel = enteredViewModel()
@@ -111,11 +169,12 @@ class GroupListViewModelTest {
     @Test
     fun enter_failsWithLoadedGroups_keepsTheList() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹을 이미 띄운 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         // When 돌아오면서 나간 조회가 실패한다
-        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         viewModel.processIntent(GroupListIntent.Enter)
         advanceUntilIdle()
 
@@ -127,13 +186,14 @@ class GroupListViewModelTest {
 
     @Test
     fun refresh_failsWithLoadedGroups_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 그룹을 이미 띄운 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // Given 캐시에 그룹이 있어 이미 띄운 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
             // When 사용자가 직접 당긴 새로고침이 실패한다
-            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
             viewModel.processIntent(GroupListIntent.Refresh)
             advanceUntilIdle()
 
@@ -145,13 +205,14 @@ class GroupListViewModelTest {
 
     @Test
     fun enter_failsWithLoadedGroups_staysSilent() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 그룹을 이미 띄운 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // Given 캐시에 그룹이 있어 이미 띄운 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
             // When 돌아오면서 저절로 나간 조회가 실패한다
-            coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
             viewModel.processIntent(GroupListIntent.Enter)
             advanceUntilIdle()
 
@@ -162,8 +223,9 @@ class GroupListViewModelTest {
 
     @Test
     fun refresh_failsWithNoGroups_doesNotStackAToastOnTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 조회가 실패해 에러 화면이 뜬 상태
-        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        // Given 캐시가 비어 있고 조회도 실패해 에러 화면이 뜬 상태
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
@@ -180,21 +242,23 @@ class GroupListViewModelTest {
     @Test
     fun enter_loadSucceedsWithNoGroups_isNotError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 가입한 그룹이 없어 빈 배열이 온다
-        coEvery { getMyGroups() } returns Result.success(emptyList())
+        every { getMyGroupsFlow() } returns flowOf(emptyList())
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When 화면이 열린다
         val viewModel = enteredViewModel()
 
         // Then 조회는 성공했으므로 에러 화면이 아니라 빈 파르페를 띄운다
         val state = viewModel.state.value
-        assertTrue(state.groupList.isEmpty())
+        assertTrue(state.groupList.isNullOrEmpty())
         assertFalse(state.isError)
     }
 
     @Test
     fun refresh_reloadsAndClearsIndicator() = runTest(mainDispatcherRule.dispatcher) {
         // Given 첫 조회가 끝난 화면
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         // When 아래로 당겨 새로고침
@@ -202,24 +266,26 @@ class GroupListViewModelTest {
         advanceUntilIdle()
 
         // Then 한 번 더 조회하고 인디케이터를 내린다
-        coVerify(exactly = 2) { getMyGroups() }
+        coVerify(exactly = 2) { refreshMyGroups() }
         assertFalse(viewModel.state.value.isRefreshing)
     }
 
     @Test
-    fun refresh_succeedsAfterFailure_returnsToTheList() = runTest(mainDispatcherRule.dispatcher) {
+    fun refresh_succeedsAfterFailure_clearsError() = runTest(mainDispatcherRule.dispatcher) {
         // Given 조회가 실패해 에러 화면이 뜬 상태
-        coEvery { getMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
-        // When 다시 당겨 새로고침하고 이번엔 성공한다
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        // When 다시 당겨 새로고침하고 이번엔 성공한다. getMyGroupsFlow() 는 이미 구독 중이라
+        // 재스텁해도 캐시가 바뀌지 않으므로 다시 스텁하지 않는다 — 에러가 걷히는 것은 온전히
+        // refreshMyGroups() 의 성공 자체 때문이다
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         viewModel.processIntent(GroupListIntent.Refresh)
         advanceUntilIdle()
 
-        // Then 에러 화면이 걷히고 목록이 돌아온다
+        // Then 에러 화면이 걷힌다
         val state = viewModel.state.value
-        assertEquals(GROUPS, state.groupList)
         assertFalse(state.isError)
     }
 
@@ -227,9 +293,10 @@ class GroupListViewModelTest {
     fun refresh_whileLoading_doesNotRequestAgain() = runTest(mainDispatcherRule.dispatcher) {
         // Given 첫 조회가 아직 끝나지 않은 화면
         val gate = CompletableDeferred<Unit>()
-        coEvery { getMyGroups() } coAnswers {
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } coAnswers {
             gate.await()
-            Result.success(GROUPS)
+            Result.success(Unit)
         }
         val viewModel = viewModel()
         viewModel.processIntent(GroupListIntent.Enter)
@@ -240,7 +307,7 @@ class GroupListViewModelTest {
         runCurrent()
 
         // Then 중복 조회가 나가지 않고, 인디케이터는 도는 채로 남는다
-        coVerify(exactly = 1) { getMyGroups() }
+        coVerify(exactly = 1) { refreshMyGroups() }
         assertTrue(viewModel.state.value.isRefreshing)
 
         gate.complete(Unit)
@@ -251,7 +318,8 @@ class GroupListViewModelTest {
     @Test
     fun clickTopping_carriesTheClickedGroup() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹 두 개가 그려진 목록
-        coEvery { getMyGroups() } returns Result.success(GROUPS)
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {

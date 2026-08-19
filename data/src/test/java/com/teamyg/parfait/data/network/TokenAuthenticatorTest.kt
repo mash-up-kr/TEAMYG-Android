@@ -4,12 +4,14 @@ import app.cash.turbine.test
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
+import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -67,6 +69,7 @@ class TokenAuthenticatorTest {
     private lateinit var tokenStore: FakeTokenStore
     private lateinit var sessionEventBus: SessionEventBus
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
+    private lateinit var groupLocalDataSource: GroupLocalDataSource
     private lateinit var authenticator: TokenAuthenticator
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -79,6 +82,7 @@ class TokenAuthenticatorTest {
         tokenStore = FakeTokenStore(accessToken = OLD_ACCESS_TOKEN, refreshToken = REFRESH_TOKEN)
         sessionEventBus = SessionEventBus()
         userInfoLocalDataSource = mockk(relaxed = true)
+        groupLocalDataSource = mockk(relaxed = true)
 
         val authService = Retrofit
             .Builder()
@@ -94,6 +98,7 @@ class TokenAuthenticatorTest {
             apiCaller = ApiCaller(json),
             sessionEventBus = sessionEventBus,
             userInfoLocalDataSource = userInfoLocalDataSource,
+            groupLocalDataSource = groupLocalDataSource,
         )
     }
 
@@ -189,6 +194,8 @@ class TokenAuthenticatorTest {
         // Then 토큰과 함께 계정 정보도 지워진다 — 이벤트가 유실돼도 둘이 갈라지면 안 된다
         assertEquals(1, tokenStore.clearCount)
         coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
+        // Then 토큰·계정 정보와 함께 그룹 캐시도 지운다
+        verify(exactly = 1) { groupLocalDataSource.clear() }
     }
 
     @Test
@@ -214,6 +221,10 @@ class TokenAuthenticatorTest {
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
+        // Then 계정 정보 clear() 가 던져도 그룹 캐시는 이미 지워진 뒤다 — 던지지 않는 정리를
+        // 먼저 하므로 뒤이은 IO 실패가 그룹 캐시 정리를 막지 못한다(이전 계정 그룹이 남는
+        // 위험을 강제 로그아웃 경로에서도 막는다)
+        verify(exactly = 1) { groupLocalDataSource.clear() }
     }
 
     @Test

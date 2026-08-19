@@ -21,6 +21,7 @@ import com.teamyg.parfait.domain.usecase.CheckNameValidUseCase
 import com.teamyg.parfait.domain.usecase.group.ChangeGroupNicknameUseCase
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.LeaveGroupUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
@@ -120,6 +121,7 @@ constructor(
     @Assisted groupIdValue: Long,
     private val checkNameValid: CheckNameValidUseCase,
     private val getGroupDetail: GetGroupDetailUseCase,
+    private val refreshGroupDetail: RefreshGroupDetailUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
     private val leaveGroup: LeaveGroupUseCase,
@@ -133,20 +135,35 @@ constructor(
 
     init {
         viewModelLogger.i { "GroupSettingViewModel::init" }
+        observeGroupDetail()
         loadGroupDetail()
+    }
+
+    /**
+     * 상세는 캐시가 낸다 — 닉네임을 바꾸면 저장소가 서버에서 다시 받아 캐시에 넣고, 그 값이
+     * 여기로 내려온다. 화면이 자기 상태를 손으로 고치지 않는다.
+     */
+    private fun observeGroupDetail() {
+        // 계정 조회(EncryptedPreferences → DataStore IO)가 실패해도 상세는 계속 떠야 한다 —
+        // 그래서 `first()` 만 감싸 실패를 `null` 로 접고, 구독 자체는 이어간다. 바깥을
+        // `launch`(가드 있는 쪽)로 감싸는 것은 여기서 예상 못 한 예외까지 잡기 위한 방어선이다.
+        launch {
+            val myMemberId = runCatching { getMyAccountFlow().first() }.getOrNull()?.memberId
+
+            getGroupDetail(groupId).collect { detail ->
+                if (detail == null) return@collect
+                updateState { withDetail(detail, myMemberId).copy(isLoadingDetail = false) }
+            }
+        }
     }
 
     private fun loadGroupDetail() {
         launch(key = KEY_LOAD_GROUP_DETAIL) {
             try {
-                val myMemberId = getMyAccountFlow().first()?.memberId
-
-                getGroupDetail(groupId)
-                    .onSuccess { detail -> updateState { withDetail(detail, myMemberId) } }
-                    .onFailure { throwable ->
-                        viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
-                        postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
-                    }
+                refreshGroupDetail(groupId).onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "그룹 상세를 불러오지 못했다 - groupId: ${groupId.value}" }
+                    postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
+                }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isLoadingDetail = false) }
@@ -240,7 +257,7 @@ constructor(
             updateState { copy(isSubmittingNickname = true) }
             try {
                 changeGroupNickname(groupId = groupId, groupNickname = nickname)
-                    .onSuccess { changed -> updateState { withMyNickname(changed.groupNickname) } }
+                    .onSuccess { updateState { copy(isEditing = false, nicknameError = null) } }
                     .onFailure { throwable ->
                         viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
                         postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
@@ -251,16 +268,6 @@ constructor(
             }
         }
     }
-
-    private fun GroupSettingUiState.withMyNickname(nickname: GroupNickname): GroupSettingUiState = copy(
-        myNickname = nickname,
-        nicknameInput = nickname.value,
-        members = members.map { member ->
-            if (member.isMe) member.copy(nickname = nickname.value) else member
-        },
-        isEditing = false,
-        nicknameError = null,
-    )
 
     /** 실패 갈래를 전부 열거해 둔다 */
     private fun Throwable.toGroupSettingError(): GroupSettingError = when (this) {

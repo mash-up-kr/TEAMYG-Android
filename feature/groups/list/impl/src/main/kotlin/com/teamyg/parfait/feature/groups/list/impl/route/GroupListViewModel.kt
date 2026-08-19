@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
+import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -9,8 +10,10 @@ import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.usecase.group.GetMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
@@ -18,7 +21,8 @@ import javax.inject.Inject
 import kotlin.time.Clock
 
 data class GroupListUiState(
-    val groupList: List<MyParfaitGroupVO> = emptyList(),
+    /** `null` 은 아직 한 번도 받지 못했다는 뜻. 0건과 구분한다 */
+    val groupList: List<MyParfaitGroupVO>? = null,
     // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
     val nickName: String = "모카",
     val groupAddButtonSelected: Boolean = false,
@@ -76,10 +80,25 @@ sealed interface GroupListSideEffect : UiSideEffect {
 class GroupListViewModel
 @Inject
 constructor(
-    private val getMyGroups: GetMyGroupsUseCase,
+    private val getMyGroupsFlow: GetMyGroupsFlowUseCase,
+    private val refreshMyGroups: RefreshMyGroupsUseCase,
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
+    init {
+        observeGroups()
+    }
+
+    /**
+     * 표시는 캐시가 맡는다 — 다른 화면이 그룹을 만들거나 나가면 이 화면이 다시 조회하지 않아도
+     * 그 자리에서 반영된다.
+     */
+    private fun observeGroups() {
+        viewModelScope.launch {
+            getMyGroupsFlow().collect { groups -> updateState { copy(groupList = groups) } }
+        }
+    }
+
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
             GroupListIntent.Enter -> {
@@ -140,8 +159,8 @@ constructor(
 
         launch(key = KEY_LOAD_GROUPS) {
             try {
-                getMyGroups()
-                    .onSuccess { groups -> updateState { copy(groupList = groups, isError = false) } }
+                refreshMyGroups()
+                    .onSuccess { updateState { copy(isError = false) } }
                     .onFailure { throwable -> handleLoadFailure(throwable, isRefresh) }
             } finally {
                 updateState { copy(isRefreshing = false) }
@@ -161,7 +180,10 @@ constructor(
         throwable: Throwable,
         isRefresh: Boolean,
     ) {
-        val hasList = state.value.groupList.isNotEmpty()
+        // 미조회(null)와 0건을 함께 "보여 줄 것이 없다"로 본다 — 둘 다 에러 화면이 맞다
+        val hasList = state.value.groupList
+            .isNullOrEmpty()
+            .not()
         updateState { copy(isError = hasList.not()) }
 
         if (isRefresh && hasList) {
