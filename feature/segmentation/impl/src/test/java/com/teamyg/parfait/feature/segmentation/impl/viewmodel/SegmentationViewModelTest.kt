@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationResult
+import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
@@ -29,6 +30,7 @@ class SegmentationViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val addRecentImage: AddRecentImageUseCase = mockk(relaxed = true)
     private val clearSegmentationCache: ClearSegmentationCacheUseCase = mockk(relaxed = true)
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
@@ -49,6 +51,7 @@ class SegmentationViewModelTest {
 
     private fun viewModel() = SegmentationViewModel(
         sourceImageUri = SOURCE_URI,
+        addRecentImageUseCase = addRecentImage,
         clearSegmentationCacheUseCase = clearSegmentationCache,
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
@@ -142,6 +145,30 @@ class SegmentationViewModelTest {
     }
 
     @Test
+    fun init_always_recordsTheSourceAsRecentImage() = runTest {
+        // Given 정상 응답
+        // When 화면이 열린다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 최근 목록에 이 흐름이 쓴 원본을 남긴다
+        coVerify(exactly = 1) { addRecentImage(SOURCE_URI) }
+    }
+
+    @Test
+    fun init_decodeFails_doesNotRecordTheSourceAsRecentImage() = runTest {
+        // Given 열리지 않는 이미지
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
+
+        // When 화면이 열린다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 최근 목록의 자리를 열리지 않는 이미지에 내주지 않는다
+        coVerify(exactly = 0) { addRecentImage(any()) }
+    }
+
+    @Test
     fun init_cacheClearIsCancelled_stopsBeforeDecoding() = runTest {
         // Given 화면을 벗어나 캐시 정리가 취소된 상황
         coEvery { clearSegmentationCache() } throws CancellationException("scope gone")
@@ -152,5 +179,33 @@ class SegmentationViewModelTest {
 
         // Then 취소는 실패가 아니라 전파돼야 한다 — 값으로 접으면 떠난 화면이 계속 일한다
         coVerify(exactly = 0) { decodeImage(any()) }
+    }
+
+    @Test
+    fun init_recentImageRecordIsCancelled_stopsBeforeSegmenting() = runTest {
+        // Given 화면을 벗어나 최근 이미지 기록이 취소된 상황
+        coEvery { addRecentImage(SOURCE_URI) } throws CancellationException("scope gone")
+
+        // When 화면이 열린다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 곁다리 작업을 감싼 가드도 취소만은 통과시켜야 한다
+        coVerify(exactly = 0) { segmentImage(any()) }
+    }
+
+    @Test
+    fun init_recentImageRecordThrows_stillSegments() = runTest {
+        // Given 최근 이미지 기록이 실패하는 상황
+        coEvery { addRecentImage(SOURCE_URI) } throws IllegalStateException("cannot copy")
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 곁다리 기록의 실패가 잘라내기 자체를 막지 않는다
+        val state = viewModel.state.value
+        assertEquals(SUBJECT_PATH, state.subjectImagePath)
+        assertFalse(state.isError)
     }
 }
