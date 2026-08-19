@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +21,7 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.exception.SegmentationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -73,62 +73,67 @@ constructor(
         }
 
         return withContext(Dispatchers.Default) {
-            val foregroundMask = result.foregroundConfidenceMask ?: error("foregroundConfidenceMask가 null입니다.")
-            val subjectColors = IntArray(image.width * image.height)
+            // 이 블록은 위 try 밖이라, 안에서 예외가 그대로 새어나가면 toSegmentationException
+            // 매핑을 타지 못하고 호출부(SegmentationViewModel init)의 코루틴을 그대로 죽인다.
+            // saveToCacheAsPng() 의 IOException(저장 공간 부족·캐시 회수 등)을 값으로 감싼다
+            try {
+                // 마스크가 없으면 잘라낼 근거가 없다. 실패도 값으로 돌려준다
+                val foregroundMask = result.foregroundConfidenceMask
+                    ?: return@withContext Result.failure(SegmentationException.Process(null))
 
-            // 객체 픽셀의 최소/최대 좌표를 모아 bounding box 를 만든다
-            var left = Int.MAX_VALUE
-            var top = Int.MAX_VALUE
-            var right = -1
-            var bottom = -1
+                val width = bitmap.width
+                val height = bitmap.height
 
-            for (i in 0 until image.width * image.height) {
-                if (foregroundMask[i] > 0.5f) {
-                    val x = i % image.width
-                    val y = i / image.width
-
-                    subjectColors[i] = bitmap.getPixel(x, y)
-
-                    if (x < left) left = x
-                    if (x > right) right = x
-                    if (y < top) top = y
-                    if (y > bottom) bottom = y
+                // InputImage.fromBitmap(bitmap, 0) 이라 지금은 치수가 같지만 그 일치가 계약으로
+                // 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 객체로 오려낸다.
+                // absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼으므로(넘으면
+                // IndexOutOfBoundsException), 남은 유효 구간을 뜻하는 remaining() 으로 비교한다
+                if (foregroundMask.remaining() != width * height) {
+                    return@withContext Result.failure(SegmentationException.Process(null))
                 }
+
+                val pixels = IntArray(width * height)
+                bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+                val subjectBounds = maskSubjectPixels(pixels, foregroundMask, width, height)
+
+                val subjectBitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+
+                // subjectBitmap 이 살아 있는 구간을 finally 로 감싸서, 저장 도중 실패해도
+                // 전체 해상도 비트맵이 GC 전까지 붙들려 있지 않게 한다
+                try {
+                    val file = subjectBitmap.saveToCacheAsPng()
+
+                    // 미리보기·배치는 투명 여백 없이 실제 객체 크기만 필요하므로, 이미 알고 있는 bounding box 로 바로 잘라 둔다
+                    val trimmedFile = subjectBounds?.let { bounds ->
+                        val trimmedBitmap = Bitmap.createBitmap(
+                            subjectBitmap,
+                            bounds.left,
+                            bounds.top,
+                            bounds.width,
+                            bounds.height,
+                        )
+                        val saved = trimmedBitmap.saveToCacheAsPng()
+                        if (trimmedBitmap !== subjectBitmap) trimmedBitmap.recycle()
+                        saved
+                    }
+
+                    val segmentationResult = SegmentationResult(
+                        subjectImagePath = file.absolutePath,
+                        trimmedSubjectImagePath = (trimmedFile ?: file).absolutePath,
+                        subjectBounds = subjectBounds,
+                    )
+
+                    Result.success(segmentationResult)
+                } finally {
+                    subjectBitmap.recycle()
+                }
+            } catch (e: CancellationException) {
+                // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
+                throw e
+            } catch (e: Exception) {
+                Result.failure(SegmentationException.Process(e))
             }
-
-            // 감지된 픽셀이 하나도 없으면 bounding box 도 없다
-            val subjectBounds = if (left <= right && top <= bottom) {
-                SegmentationBounds(left = left, top = top, right = right + 1, bottom = bottom + 1)
-            } else {
-                null
-            }
-
-            val subjectBitmap = Bitmap.createBitmap(subjectColors, image.width, image.height, Bitmap.Config.ARGB_8888)
-
-            val file = subjectBitmap.saveToCacheAsPng()
-
-            // 미리보기·배치는 투명 여백 없이 실제 객체 크기만 필요하므로, 이미 알고 있는 bounding box 로 바로 잘라 둔다
-            val trimmedFile = subjectBounds?.let { bounds ->
-                val trimmedBitmap = Bitmap.createBitmap(
-                    subjectBitmap,
-                    bounds.left,
-                    bounds.top,
-                    bounds.width,
-                    bounds.height,
-                )
-                val saved = trimmedBitmap.saveToCacheAsPng()
-                if (trimmedBitmap !== subjectBitmap) trimmedBitmap.recycle()
-                saved
-            }
-            subjectBitmap.recycle()
-
-            val result = SegmentationResult(
-                subjectImagePath = file.absolutePath,
-                trimmedSubjectImagePath = (trimmedFile ?: file).absolutePath,
-                subjectBounds = subjectBounds,
-            )
-
-            return@withContext Result.success(result)
         }
     }
 
@@ -140,13 +145,24 @@ constructor(
         return runCatching { bitmap.saveToCacheAsPng().absolutePath }
     }
 
-    private suspend fun Bitmap.saveToCacheAsPng(): File {
-        val file = File(context.cacheDir, "parfait_${System.currentTimeMillis()}.png")
-        withContext(Dispatchers.IO) {
-            file.outputStream().use { compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+    override suspend fun clearSegmentationCache() {
+        withContext(Dispatchers.IO) { segmentationCacheDir.clearFiles() }
+    }
 
-        return file
+    private val segmentationCacheDir: File
+        get() = File(context.cacheDir, SEGMENTATION_CACHE_DIR_NAME)
+
+    /**
+     * 밀리초 이름 대신 [File.createTempFile] 을 쓰는 이유: 한 번의 세그멘테이션이 subject 와
+     * trimmed 를 연달아 저장해서 같은 밀리초에 두 번 떨어질 수 있다. 그러면 뒤엣것이 앞엣것을 덮는다.
+     */
+    private suspend fun Bitmap.saveToCacheAsPng(): File = withContext(Dispatchers.IO) {
+        val directory = segmentationCacheDir.also { it.mkdirs() }
+        val file = File.createTempFile("parfait_", ".png", directory)
+
+        file.outputStream().use { compress(Bitmap.CompressFormat.PNG, 100, it) }
+
+        file
     }
 
     /**

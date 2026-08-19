@@ -19,7 +19,6 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -123,10 +122,6 @@ sealed interface CanvasMainEffect : UiSideEffect {
     class NavigateToCanvasBGEdit : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
-
-    data class NavigateToSegmentation(
-        val uri: String,
-    ) : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -139,10 +134,6 @@ sealed interface CanvasMainIntent : UiIntent {
      * 더 바뀌지 않는다.
      */
     data object Enter : CanvasMainIntent
-
-    data class CacheImage(
-        val uri: String,
-    ) : CanvasMainIntent
 
     class OnClickCamera : CanvasMainIntent
 
@@ -172,7 +163,6 @@ class CanvasMainViewModel
 @AssistedInject
 constructor(
     @Assisted groupIdValue: Long,
-    private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
@@ -343,8 +333,6 @@ constructor(
         when (intent) {
             is CanvasMainIntent.Enter -> handleEnter()
 
-            is CanvasMainIntent.CacheImage -> handleCacheImage(intent)
-
             is CanvasMainIntent.OnClickCamera -> handleOnClickCamera()
 
             is CanvasMainIntent.OnClickCanvas -> handleOnClickCanvas()
@@ -474,15 +462,6 @@ constructor(
                 .minWithOrNull(compareBy<LocalDate> { abs(it.monthsUntil(anchor)) }.thenByDescending { it })
                 ?: anchor,
         )
-    }
-
-    private fun handleCacheImage(intent: CanvasMainIntent.CacheImage) {
-        viewModelScope.launch {
-            addRecentImageUseCase(intent.uri)
-            postSideEffect(
-                effect = CanvasMainEffect.NavigateToSegmentation(intent.uri),
-            )
-        }
     }
 
     private fun handleOnClickCamera() {

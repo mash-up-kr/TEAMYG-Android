@@ -21,9 +21,16 @@ sealed interface CustomCameraEffect : UiSideEffect {
         val file: File,
     ) : CustomCameraEffect
 
-    data class ReturnResult(
-        val uri: String?,
-    ) : CustomCameraEffect
+    /**
+     * 촬영을 접고 부른 쪽으로 돌아간다.
+     *
+     * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, 예전처럼 `null` 을 결과 버스에
+     * 흘리면 그것을 결과로 아는 화면이 받아 터진다.
+     */
+    data object Cancel : CustomCameraEffect
+
+    /** 촬영이 실패했다. 알리고 그 자리에 머문다 — 되돌아가면 사용자는 왜 아무 일도 없었는지 모른다 */
+    data object CaptureFailed : CustomCameraEffect
 
     data class NavigateToConfirm(
         val uri: String,
@@ -176,11 +183,11 @@ constructor(
     }
 
     private fun handleOnCaptureFailed() {
-        postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
+        postSideEffect(CustomCameraEffect.CaptureFailed)
     }
 
     private fun handleOnCancel() {
-        postSideEffect(CustomCameraEffect.ReturnResult(uri = null))
+        postSideEffect(CustomCameraEffect.Cancel)
     }
 }
 
