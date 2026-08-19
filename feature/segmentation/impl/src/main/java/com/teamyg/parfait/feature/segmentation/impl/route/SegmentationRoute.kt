@@ -41,8 +41,6 @@ internal fun SegmentationRoute(
         }
     }
 
-    // 객체 인식이 끝날 때까지 공통 로딩 오버레이가 화면을 덮는다 — 인식 결과가 없는 동안
-    // 사진만 덩그러니 보이는 것을 막고, 그동안의 터치도 오버레이가 삼킨다.
     YGScaffoldV2(
         isLoading = state.isLoading,
         toastPolicy = toastPolicy,

@@ -23,12 +23,8 @@ import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjec
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
 /**
- * 로딩과 실패는 이 화면이 그리지 않는다 — 로딩은 `YGScaffoldV2` 의 공통 오버레이가,
- * 실패는 공통 에러 토스트가 맡는다(둘 다 Route 가 건다). 그래서 여기 남는 것은
- * "객체 인식이 끝난 뒤의 화면" 하나뿐이다.
- *
- * 실패해도 이 화면이 그대로 보인다. 인식된 대상이 없으니 하이라이트만 빠진 채
- * 원본 사진이 남고, 사용자는 토스트를 읽고 뒤로 가 다른 사진을 고른다.
+ * 실패해도 이 화면이 그대로 보인다 — 인식된 대상이 없으니 하이라이트만 빠진 채 원본
+ * 사진이 남고, 사용자는 토스트를 읽고 뒤로 가 다른 사진을 고른다.
  */
 @Composable
 internal fun SegmentationScreen(

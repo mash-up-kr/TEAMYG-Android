@@ -30,10 +30,7 @@ data class SegmentationState(
 sealed interface SegmentationIntent : UiIntent
 
 sealed interface SegmentationEffect : UiSideEffect {
-    /**
-     * 객체 인식 실패. 상태가 아니라 1회성 효과인 이유는 이 실패에 재시도 동선이 없어서다 —
-     * 화면은 그대로 두고 공통 에러 토스트로 한 번 알리면 끝이다.
-     */
+    /** 재시도 동선이 없는 실패라 상태로 남기지 않는다 — 토스트로 한 번 알리고 끝이다. */
     data object ShowError : SegmentationEffect
 }
 
