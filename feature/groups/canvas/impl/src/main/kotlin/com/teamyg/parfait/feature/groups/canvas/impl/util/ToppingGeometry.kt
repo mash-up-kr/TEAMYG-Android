@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -7,6 +8,41 @@ import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+
+/**
+ * `scale = 1.0` 일 때 토핑의 긴 변이 갖는 크기. Canvas-Area **너비** 기준이다(CAN-007 §3.3).
+ *
+ * 짧은 변은 원본 비율을 따라간다.
+ *
+ * 캔버스 메인과 편집 화면이 같은 값을 봐야 한다 — 한쪽만 바꾸면 편집에서 맞춰 놓은 크기가
+ * 돌아온 캔버스에서 달라진다.
+ */
+const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
+
+/**
+ * 저장된 배율을 화면 크기로 편 토핑의 긴 변.
+ *
+ * 캔버스 높이가 아니라 너비만 보는 이유는 [TOPPING_BASE_LONG_SIDE_RATIO] 가 너비 기준이라
+ * 그렇다 — 세로 비율이 달라도 토핑 크기는 변하지 않는다.
+ */
+fun toppingLongSide(
+    canvasWidth: Dp,
+    scale: Float,
+): Dp = canvasWidth * TOPPING_BASE_LONG_SIDE_RATIO * scale
+
+/**
+ * 0~1 로 정규화된 배치를 캔버스 안의 절대 Dp 좌표로 옮긴다. 좌상단이 아니라 **중심**이다 —
+ * 저장된 positionX/positionY 가 그 뜻이다.
+ */
+fun toppingCenter(
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    positionX: Float,
+    positionY: Float,
+): DpOffset = DpOffset(
+    x = canvasWidth * positionX,
+    y = canvasHeight * positionY,
+)
 
 private val STROKE_MARGIN_HORIZONTAL = SizeTokens.Size8.getDp()
 private val STROKE_MARGIN_VERTICAL = SizeTokens.Size10.getDp()
