@@ -22,6 +22,7 @@
     <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>
     <string name="canvas_bg_edit_topping_delete_dialog_confirm">삭제하기</string>
     <string name="canvas_bg_edit_topping_delete_dialog_cancel">그만두기</string>
+    <string name="canvas_topping_place_title">토핑배치</string>
 
     <!-- 캘린더 요일 머리글. 순서가 곧 일요일 시작 주차 배열이므로 바꾸지 않는다 -->
     <string-array name="canvas_calendar_day_of_week">

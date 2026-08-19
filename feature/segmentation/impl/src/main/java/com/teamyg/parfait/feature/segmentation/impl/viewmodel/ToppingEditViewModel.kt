@@ -21,6 +21,7 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.color
+import com.teamyg.parfait.feature.segmentation.impl.editor.trimTransparentBounds
 import com.teamyg.parfait.feature.segmentation.impl.editor.withBorders
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -283,21 +284,19 @@ class ToppingEditViewModel
             val edited = withContext(Dispatchers.Default) {
                 cutout.withBorders(current.borderLayers, current.originPxPerDp)
             }
+            // cutout 은 재편집 좌표계를 지키려고 원본 크기를 유지해야 하지만, 배치 화면에 보여줄
+            // 결과는 투명 여백 없이 실제 토핑(+테두리) 크기여야 하므로 여기서만 트리밍한다
+            val trimmedEdited = withContext(Dispatchers.Default) { edited.trimTransparentBounds() }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
             // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
             val (cutoutPath, editedPath) = try {
                 val savedCutoutPath = saveEditedImageUseCase(cutout.toAndroidBitmap()).getOrNull()
-                // 테두리가 없으면 알맹이가 곧 결과라 같은 파일을 두 번 떨구지 않는다
-                val savedEditedPath = if (current.borderLayers.isEmpty()) {
-                    savedCutoutPath
-                } else {
-                    saveEditedImageUseCase(edited.toAndroidBitmap()).getOrNull()
-                }
+                val savedEditedPath = saveEditedImageUseCase(trimmedEdited.toAndroidBitmap()).getOrNull()
                 savedCutoutPath to savedEditedPath
             } finally {
-                // 테두리가 없으면 두르기 전후가 같은 비트맵이라 한 번만 돌려준다
+                if (trimmedEdited !== edited) trimmedEdited.recycle()
                 if (edited !== cutout) edited.recycle()
                 cutout.recycle()
             }
