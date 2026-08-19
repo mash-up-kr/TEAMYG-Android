@@ -188,7 +188,7 @@ private class GroupListScreenPreviewParameterProvider :
             groupName = GroupName("우리집"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
-            lastPlacedByNametagChip = null,
+            lastPlacedByNametagChip = NametagChipType.DEFAULT,
         ),
     )
 

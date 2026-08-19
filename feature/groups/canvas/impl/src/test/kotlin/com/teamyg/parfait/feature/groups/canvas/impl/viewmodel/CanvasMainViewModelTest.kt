@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -8,6 +9,7 @@ import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
@@ -194,6 +196,71 @@ class CanvasMainViewModelTest {
         coVerify(exactly = 1) { refreshMyGroups() }
     }
 
+    @Test
+    fun enter_memberChips_followTheServerAssignedChip() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 두 멤버에게 12종 중 서로 다른 값을 배정했다
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(
+                TODAY_PARFAIT_ID,
+                today,
+                members = listOf(
+                    member("모카", NametagChipType.TYPE7),
+                    member("판다", NametagChipType.TYPE2),
+                ),
+            ),
+        )
+
+        // When 화면에 들어간다
+        val viewModel = enteredViewModel()
+
+        // Then 목록 순서가 아니라 배정된 값이 색을 정한다
+        assertEquals(
+            listOf(YGColorChipType.NametagChip7, YGColorChipType.NametagChip2),
+            viewModel.state.value.memberChips
+                .map(GroupMemberChip::colorChipType),
+        )
+    }
+
+    @Test
+    fun enter_memberChips_doNotShiftWhenAnEarlierMemberLeaves() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 앞자리 멤버가 빠지고 뒤의 멤버만 남았다
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(TODAY_PARFAIT_ID, today, members = listOf(member("판다", NametagChipType.TYPE2))),
+        )
+
+        // When 화면에 들어간다
+        val viewModel = enteredViewModel()
+
+        // Then 남은 사람 색이 밀리지 않는다 — 인덱스 규칙이었다면 첫 칸 색이 됐다
+        assertEquals(
+            listOf(YGColorChipType.NametagChip2),
+            viewModel.state.value.memberChips
+                .map(GroupMemberChip::colorChipType),
+        )
+    }
+
+    @Test
+    fun enter_memberWithDefaultChip_getsTheNeutralColour() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 앱이 모르는 값을 줘 매퍼가 DEFAULT 로 접었다
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(
+                TODAY_PARFAIT_ID,
+                today,
+                members = listOf(member("모카", nametagChip = NametagChipType.DEFAULT)),
+            ),
+        )
+
+        // When 화면에 들어간다
+        val viewModel = enteredViewModel()
+
+        // Then 아무 색이나 돌리지 않는다
+        assertEquals(
+            listOf(YGColorChipType.Default),
+            viewModel.state.value.memberChips
+                .map(GroupMemberChip::colorChipType),
+        )
+    }
+
     private companion object {
         const val GROUP_ID = 7L
         const val TODAY_PARFAIT_ID = 42L
@@ -205,12 +272,16 @@ class CanvasMainViewModelTest {
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
-            lastPlacedByNametagChip = null,
+            lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
 
-        fun member(nickname: String) = CanvasMemberVO(
+        fun member(
+            nickname: String,
+            nametagChip: NametagChipType = NametagChipType.DEFAULT,
+        ) = CanvasMemberVO(
             groupMemberId = GroupMemberId(1L),
             nickname = GroupNickname(nickname),
+            nametagChip = nametagChip,
         )
 
         fun canvas(

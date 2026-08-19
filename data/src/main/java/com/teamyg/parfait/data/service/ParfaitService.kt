@@ -23,8 +23,11 @@ interface ParfaitService {
     suspend fun getGroupsByGroupIdParfaitsToday(@Path("groupId") groupId: Long): ApiResponse<GetTodayParfaitResponse>
 
     /**
-     * from·to 가 null 이면 Retrofit 이 쿼리 파라미터를 URL 에서 빼므로 서버 기본값
-     * (to = 오늘, from = to - 30일)이 그대로 산다.
+     * from·to 가 null 이면 Retrofit 이 쿼리 파라미터를 URL 에서 빼므로 서버 기본값이 그대로
+     * 산다 — `to` 는 서버 기준 오늘, `from` 은 그로부터 30일 전이다.
+     *
+     * 그 "오늘"은 자정이 아니라 **03시에 넘어간다**(서버 `ParfaitDay.current()`). 앱은 항상
+     * 범위를 명시해 부르므로 이 기본값에 물리지 않는다.
      */
     @GET("api/v1/groups/{groupId}/parfaits")
     suspend fun getGroupsByGroupIdParfaits(

@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.setting.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.domain.model.group.NametagChipType
@@ -32,7 +32,7 @@ class ColorChipTypeTest {
 
     @Test
     fun toColorChipType_defaultFallsBackToDefault() {
-        // Given 마지막 토퍼가 그룹을 나가 자리가 반납됐다
+        // Given 반납된 자리다
         // When/Then 나간 사람 색을 계속 쓰지 않고 중립으로 간다
         assertEquals(YGColorChipType.Default, NametagChipType.DEFAULT.toColorChipType())
     }

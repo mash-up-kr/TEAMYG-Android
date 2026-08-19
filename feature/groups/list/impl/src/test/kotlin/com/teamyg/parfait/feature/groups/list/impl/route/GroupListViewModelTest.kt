@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
@@ -339,14 +340,14 @@ class GroupListViewModelTest {
                 groupName = GroupName("모카의 파르페"),
                 recentImageUrl = "https://cdn.example.com/a.png",
                 recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
-                lastPlacedByNametagChip = null,
+                lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),
             MyParfaitGroupVO(
                 groupId = GroupId(2L),
                 groupName = GroupName("우리집"),
                 recentImageUrl = null,
                 recentImageUploadedAt = null,
-                lastPlacedByNametagChip = null,
+                lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),
         )
     }

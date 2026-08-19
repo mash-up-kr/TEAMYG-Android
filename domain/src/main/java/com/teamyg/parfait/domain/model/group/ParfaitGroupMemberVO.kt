@@ -6,10 +6,9 @@ data class ParfaitGroupMemberVO(
     val memberId: MemberId,
     val groupNickname: GroupNickname,
     /**
-     * 서버가 이 그룹 안에서 배정한 칩. `null` 은 값이 없거나 앱이 모르는 값이라는 뜻이다 —
-     * 상세 응답은 탈퇴자를 빼고 주므로 실제로는 [NametagChipType.RELEASED] 도 `null` 도
-     * 잘 오지 않지만, 계약 타입이 널 허용인 데다 앱이 아직 모르는 타입 문자열이 오면
-     * 매퍼가 그것도 `null` 로 접으므로 그대로 받는다.
+     * 서버가 이 그룹 안에서 배정한 칩. 이 목록은 탈퇴자를 빼고 오므로 [NametagChipType.DEFAULT] 가
+     * 제 뜻("반납된 자리")으로 오지는 않는다 — 다만 구버전 서버나 모르는 타입 문자열을 만나면
+     * 매퍼가 그 값으로 접으므로 여기서 볼 수는 있다.
      */
-    val nametagChip: NametagChipType?,
+    val nametagChip: NametagChipType,
 )

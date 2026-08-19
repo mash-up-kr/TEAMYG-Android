@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.setting.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.domain.model.group.NametagChipType

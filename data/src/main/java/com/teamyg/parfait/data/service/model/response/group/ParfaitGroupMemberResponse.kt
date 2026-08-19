@@ -9,6 +9,6 @@ data class ParfaitGroupMemberResponse(
     val memberId: Long,
     @SerialName("groupNickname")
     val groupNickname: String,
-    @SerialName("nametagChip")
-    val nametagChip: String? = null,
+    @SerialName("nameTagChip")
+    val nameTagChip: String? = null,
 )

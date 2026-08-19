@@ -618,10 +618,19 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun detailArrives_missingChipFallsBackToDefault() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 칩을 알 수 없는 멤버가 섞여 있다 — 계약상 오지 않지만 타입은 널 허용이다
+    fun detailArrives_defaultChip_rendersNeutral() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 칩을 알 수 없는 멤버가 섞여 있다 — 이 목록에 DEFAULT 가 제 뜻으로 오지는 않지만
+        // 매퍼가 모르는 값을 그리로 접으므로 볼 수 있다
         every { getGroupDetail(GroupId(GROUP_ID)) } returns flowOf(
-            detailOf(members = listOf(ParfaitGroupMemberVO(MemberId(1L), GroupNickname(MY_NICKNAME), null))),
+            detailOf(
+                members = listOf(
+                    ParfaitGroupMemberVO(
+                        MemberId(1L),
+                        GroupNickname(MY_NICKNAME),
+                        NametagChipType.DEFAULT,
+                    ),
+                ),
+            ),
         )
 
         // When 상세가 도착한 화면
