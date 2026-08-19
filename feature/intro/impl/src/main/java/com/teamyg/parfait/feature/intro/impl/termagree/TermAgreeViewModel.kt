@@ -21,10 +21,7 @@ data class TermAgreeState(
     val policies: List<PolicyVO> = emptyList(),
     val agreedTermsIds: Set<TermsId> = emptySet(),
     val isLoading: Boolean = true,
-    /**
-     * 조회 실패는 토스트로 흘려보내지 않는다 — 재시도라는 갈 곳이 있는 실패라 화면에 남아야
-     * 한다. 공통 에러 토스트는 갈 곳이 없는 가입 실패([TermAgreeError]) 쪽이 쓴다.
-     */
+    /** 재시도라는 갈 곳이 있는 실패라 토스트로 흘려보내지 않고 화면에 남긴다 */
     val isLoadFailed: Boolean = false,
     val isSigningUp: Boolean = false,
 ) : UiState {
@@ -62,7 +59,6 @@ sealed interface TermAgreeSideEffect : UiSideEffect {
 
     data object NavigateToNext : TermAgreeSideEffect
 
-    /** 가입 실패를 공통 에러 토스트로 알린다. 문구는 화면이 [TermAgreeError] 에서 고른다 */
     data class ShowError(val error: TermAgreeError) : TermAgreeSideEffect
 }
 
@@ -192,12 +188,7 @@ constructor(
         }
     }
 
-    /**
-     * 로그는 갈래별로 남기고 사용자에게는 [TermAgreeError] 두 갈래로만 말한다 — 서버 에러
-     * 코드는 진단에 필요하지 로그를 읽지 않는 사람에게 할 말이 다르지 않다.
-     *
-     * 재시도 동선을 따로 주지 않는 이유: 화면이 그대로 남아 다음 버튼이 그 자리에 있다.
-     */
+    /** 재시도 동선을 따로 주지 않는다 — 화면이 그대로 남아 다음 버튼이 그 자리에 있다 */
     private fun handleSignUpFailure(throwable: Throwable) {
         val error = when (throwable) {
             is SignUpException.RequiredPolicyNotAgreed -> {

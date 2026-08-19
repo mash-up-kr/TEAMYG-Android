@@ -28,8 +28,7 @@ fun TermAgreeRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
 
-    // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
-    // 문구는 여기서 미리 뽑아 두고 이펙트는 고르기만 한다
+    // 이펙트 수집은 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다 — 미리 뽑아 둔다
     val errorMessages = TermAgreeError.entries.associateWith { it.toStringResource() }
 
     LaunchedEffect(Unit) {
@@ -54,8 +53,7 @@ fun TermAgreeRoute(
         }
     }
 
-    // 가입 요청도 오버레이로 덮는다 — 다음 버튼은 `isAvailable` 만 보고 잠기지 않아,
-    // 응답을 기다리는 동안 화면이 눌리는 대로 반응하면 요청이 나간 티가 나지 않는다
+    // 가입 요청도 덮는다 — 다음 버튼은 `isSigningUp` 을 보지 않아 응답을 기다리는 동안에도 눌린다
     YGScaffoldV2(
         modifier = modifier,
         isLoading = state.isLoading || state.isSigningUp,
