@@ -13,4 +13,7 @@ enum class YGGrouptagChipType(val timestampColor: Color) {
     TYPE_7_8(YGAtomicColors.Gray.Gray200),
     TYPE_9_10(YGAtomicColors.Melon.Melon500),
     TYPE_11_12(YGAtomicColors.Pudding.Pudding500),
+
+    /** 마지막으로 바꾼 사람을 가리킬 수 없을 때 — 그 사람이 나갔거나, 아직 아무도 안 올렸다 */
+    DEFAULT(YGAtomicColors.Gray.Gray300),
 }

@@ -206,7 +206,7 @@ constructor(
     }
 
     /**
-     * 화면을 열어 둔 채 자정을 넘겼으면 오늘을 다시 센다.
+     * 화면을 열어 둔 채 파르페 하루 경계(새벽 3시)를 넘겼으면 오늘을 다시 센다.
      *
      * [CanvasMainUiState.today] 는 ViewModel 이 만들어질 때 한 번 셌을 뿐이라, 날이 바뀐 뒤
      * 그대로 두면 오늘 조회가 가져온 **새 날의 캔버스**를 어제 날짜 아래에 그리게 된다.
@@ -257,8 +257,10 @@ constructor(
     }
 
     /**
-     * 서버가 멤버 색을 주지 않아 목록 순서로 팔레트를 돌려 쓴다. 순서가 고정이라 같은 그룹을
-     * 다시 열어도 같은 사람에게 같은 색이 간다.
+     * 색 배정은 이제 서버 소관이지만, 이 오늘 조회 응답의 `groupMembers` 목록에는 그 값이
+     * 실려 오지 않는다(`placedBy` 에만 실린다). 그래서 이 화면은 여전히 목록 순서로 팔레트를
+     * 돌려 쓴다 — 멤버가 나가면 그 뒤 순서가 밀려 색도 같이 바뀐다. 같은 사람이 서버 값을
+     * 그대로 읽는 그룹 설정 화면에서는 다른 색으로 보일 수 있다.
      */
     private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
         GroupMemberChip(

@@ -13,4 +13,7 @@ data class MyParfaitGroupResponse(
     val recentImageUrl: String? = null,
     @SerialName("recentImageUploadedAt")
     val recentImageUploadedAt: String? = null,
+    /** 마지막 토퍼가 이미 그룹을 나갔으면 `"RELEASED"` 가 온다 */
+    @SerialName("lastPlacedByNametagChip")
+    val lastPlacedByNametagChip: String? = null,
 )

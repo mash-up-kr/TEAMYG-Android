@@ -61,5 +61,9 @@ class YGNametagChipPreviewParameterProvider : PreviewParameterProvider<YGChipPre
             name = "NametagChipPlus",
             colorChipType = YGColorChipType.NametagChipPlus,
         ),
+        YGChipPreviewData(
+            name = "Default",
+            colorChipType = YGColorChipType.Default,
+        ),
     )
 }

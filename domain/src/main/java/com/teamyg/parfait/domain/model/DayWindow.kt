@@ -23,6 +23,11 @@ data class DayWindow(
     operator fun contains(timestampMs: Long): Boolean = timestampMs in startMs..<endMs
 
     companion object {
+        /**
+         * 경계 시각(3시)만 [parfaitToday] 와 공유한다 — 시간대는 공유하지 않는다. 이 값은
+         * [current] 에서 기기 시간대([TimeZone.currentSystemDefault])에, [parfaitToday] 에서는
+         * 고정된 [PARFAIT_TIME_ZONE] 에 각각 물려 쓰인다.
+         */
         const val DAY_BOUNDARY_HOUR = 3
 
         fun current(

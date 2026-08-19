@@ -339,12 +339,14 @@ class GroupListViewModelTest {
                 groupName = GroupName("모카의 파르페"),
                 recentImageUrl = "https://cdn.example.com/a.png",
                 recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
+                lastPlacedByNametagChip = null,
             ),
             MyParfaitGroupVO(
                 groupId = GroupId(2L),
                 groupName = GroupName("우리집"),
                 recentImageUrl = null,
                 recentImageUploadedAt = null,
+                lastPlacedByNametagChip = null,
             ),
         )
     }

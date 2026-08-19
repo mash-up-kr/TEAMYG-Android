@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -10,10 +9,10 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
-import com.teamyg.parfait.domain.model.group.GroupDetailVO
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
@@ -25,6 +24,7 @@ import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.feature.groups.setting.impl.model.GroupMemberUiModel
+import com.teamyg.parfait.feature.groups.setting.impl.util.toColorChipType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -49,9 +49,7 @@ data class GroupSettingUiState(
     val nicknameError: NameValidResult.Error? = null,
     val members: List<GroupMemberUiModel> = emptyList(),
     val inviteCode: InviteCode = InviteCode(""),
-    // TODO: 정원이 그룹 생성 응답에만 있어 남은 자리를 셀 수 없다. 서버가 상세에 memberLimit 을
-    //  실어 주면 `memberLimit - members.size` 로 바꾼다
-    val remainingCount: Int = MOCK_REMAINING_COUNT,
+    val remainingCount: Int = 0,
     val isCodeCopied: Boolean = false,
     val visibleDialog: GroupSettingDialog? = null,
     /** 닉네임 변경이 서버에 오가는 중. 확인 버튼을 다시 누르지 못하게 막는다 */
@@ -176,31 +174,30 @@ constructor(
      * 지워 버릴 이유가 없다.
      */
     private fun GroupSettingUiState.withDetail(
-        detail: GroupDetailVO,
+        detail: ParfaitGroupDetailVO,
         myMemberId: MemberId?,
     ): GroupSettingUiState = copy(
         groupName = detail.groupName,
-        myNickname = detail.myNickname,
-        nicknameInput = if (isEditing) nicknameInput else detail.myNickname.value,
+        myNickname = detail.groupNickname,
+        nicknameInput = if (isEditing) nicknameInput else detail.groupNickname.value,
         inviteCode = detail.inviteCode,
+        // 캐시와 서버가 어긋나 멤버가 정원을 넘으면 음수가 난다 — 0 아래로는 뜻이 없다
+        remainingCount = (detail.memberLimit - detail.members.size).coerceAtLeast(0),
         members = detail.members.toUiModels(myMemberId),
     )
 
     /**
-     * 서버가 칩 색을 주지 않아 목록 순서로 팔레트를 돌려 쓴다.
-     *
      * [myMemberId] 를 모르면 아무도 나로 표시되지 않는다 — 그룹 닉네임은 중복될 수 있어
      * 이름으로 나를 찾으면 남을 나로 표시할 수 있다.
      */
-    private fun List<ParfaitGroupMemberVO>.toUiModels(myMemberId: MemberId?): List<GroupMemberUiModel> =
-        mapIndexed { index, member ->
-            GroupMemberUiModel(
-                id = member.memberId.value,
-                nickname = member.groupNickname.value,
-                colorChipType = NAMETAG_CHIP_TYPES[index % NAMETAG_CHIP_TYPES.size],
-                isMe = member.memberId == myMemberId,
-            )
-        }
+    private fun List<ParfaitGroupMemberVO>.toUiModels(myMemberId: MemberId?): List<GroupMemberUiModel> = map { member ->
+        GroupMemberUiModel(
+            id = member.memberId.value,
+            nickname = member.groupNickname.value,
+            colorChipType = member.nametagChip.toColorChipType(),
+            isMe = member.memberId == myMemberId,
+        )
+    }
 
     override fun processIntent(intent: GroupSettingIntent) {
         when (intent) {
@@ -384,27 +381,9 @@ constructor(
     }
 }
 
-private const val MOCK_REMAINING_COUNT = 1
-
 // 초대 코드 복사 후 "복사됨" 문구가 원래 문구로 되돌아가기까지의 지연(ms)
 private const val COPY_CODE_RESET_DELAY_MS = 2000L
 
 // TODO: 사유를 고르는 UI 가 아직 없다. 서버는 사유를 필수로 받으므로(빈 값이면
 //  400 INVALID_GROUP_REPORT_REASON) 화면이 대신 채운다 — 사유 선택이 생기면 이 상수는 사라진다.
 private const val GROUP_REPORT_REASON = "그룹 설정에서 신고"
-
-// TODO: 컬러칩 타입 부여 주체가 미정이라 목록 인덱스로 순환 배정한다. 서버가 타입을 주면 교체.
-private val NAMETAG_CHIP_TYPES: List<YGColorChipType> = listOf(
-    YGColorChipType.NametagChip1,
-    YGColorChipType.NametagChip2,
-    YGColorChipType.NametagChip3,
-    YGColorChipType.NametagChip4,
-    YGColorChipType.NametagChip5,
-    YGColorChipType.NametagChip6,
-    YGColorChipType.NametagChip7,
-    YGColorChipType.NametagChip8,
-    YGColorChipType.NametagChip9,
-    YGColorChipType.NametagChip10,
-    YGColorChipType.NametagChip11,
-    YGColorChipType.NametagChip12,
-)

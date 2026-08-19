@@ -205,6 +205,7 @@ class CanvasMainViewModelTest {
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
+            lastPlacedByNametagChip = null,
         )
 
         fun member(nickname: String) = CanvasMemberVO(
