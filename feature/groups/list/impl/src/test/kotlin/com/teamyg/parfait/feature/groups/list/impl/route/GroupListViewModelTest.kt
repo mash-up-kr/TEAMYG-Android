@@ -30,6 +30,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -377,7 +378,7 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun init_accountIsNotStoredYet_leavesTheNicknameEmpty() = runTest(mainDispatcherRule.dispatcher) {
+    fun init_accountIsNotStoredYet_hasNoNickname() = runTest(mainDispatcherRule.dispatcher) {
         // Given 저장된 계정이 없어 스트림이 null 을 낸다
         every { getMyGroupsFlow() } returns flowOf(null)
 
@@ -385,8 +386,44 @@ class GroupListViewModelTest {
         val viewModel = viewModel(accountFlow = flowOf(null))
         advanceUntilIdle()
 
-        // Then mock 이름을 지어내지 않는다 — 그룹 만들기 화면의 입력칸이 빈 채로 열린다
-        assertEquals("", viewModel.state.value.nickName)
+        // Then mock 이름을 지어내지 않는다
+        assertNull(viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun clickCreateNewGroup_carriesTheNickname() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임을 받아 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그룹 만들기를 누른다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 갈 화면이 입력칸에 채울 이름을 이펙트가 들고 간다
+            assertEquals(GroupListSideEffect.NavigateToCreateGroup("모카"), awaitItem())
+        }
+    }
+
+    @Test
+    fun clickCreateNewGroup_withoutANickname_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 스트림이 아직 닉네임을 내놓지 않은 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = viewModel(accountFlow = flowOf(null))
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 그룹 만들기를 누른다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 이미 가진 이름을 다시 입력하게 두느니 열지 않는다 — 다시 누르면 열린다
+            expectNoEvents()
+        }
     }
 
     private companion object {
