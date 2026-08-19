@@ -33,7 +33,8 @@ data class PlaceParfaitImageResponse(
 )
 
 /**
- * 배치자. 이름이 긴 것은 캔버스 응답의 `PlacedByResponse` 와 구분하려는 서버 이름을 따랐기 때문이다.
+ * 배치자. 이름이 긴 것은 캔버스 응답의 `PlacedByResponse` 와 구분하려는 서버 이름을 따랐기
+ * 때문이다(사유는 `api/parfait-image.md`) — 짧게 고치면 거울이 깨진다.
  *
  * @param nameTagChip 읽는 화면이 생길 때 도메인으로 올린다.
  */

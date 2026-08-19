@@ -85,11 +85,14 @@ data class TodayParfaitImageResponse(
 )
 
 /**
- * 배치자.
+ * 배치자. `response/parfaitimage` 의 `PlaceParfaitImagePlacedByResponse` 와 이름이 다른 것은
+ * 서버가 그렇기 때문이다(사유는 `api/parfait-image.md`) — 통일하려 들지 말 것.
  *
  * @param nickname 그룹 닉네임이다. 탈퇴·이탈한 멤버면 "(알수없음)"이 온다.
  * @param nameTagChip 그 사람의 칩. 탈퇴했으면 `"DEFAULT"` 다. 읽는 화면이 생길 때 도메인으로
  *  올린다 — 소비자 없이 [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO] 모양을 굳히지 않는다.
+ *  ⚠️ 칩이 필요한 화면이라고 해서 자동으로 이 값은 아니다. 상단 멤버 칩을 그리는 자리는
+ *  `groupMembers` 를 `GroupMemberId` 로 조인해 찾는다.
  */
 @Serializable
 data class PlacedByResponse(
