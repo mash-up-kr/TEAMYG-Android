@@ -12,4 +12,6 @@ android {
 dependencies {
     implementation(projects.core.util.android)
     implementation(projects.core.util.jvm)
+
+    implementation(libs.lottie.compose)
 }

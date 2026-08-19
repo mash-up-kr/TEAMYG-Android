@@ -10,5 +10,8 @@ android {
 dependencies {
     implementation(projects.feature.intro.api)
     implementation(projects.feature.login.api)
+    implementation(projects.feature.common.terms.api)
     implementation(projects.feature.groups.list.api)
+
+    implementation(libs.lottie.compose)
 }

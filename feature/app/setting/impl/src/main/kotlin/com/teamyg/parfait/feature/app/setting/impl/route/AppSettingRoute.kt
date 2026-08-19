@@ -11,8 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
-import com.teamyg.parfait.feature.common.terms.api.NavKeyPrivacyPolicy
-import com.teamyg.parfait.feature.common.terms.api.NavKeyServiceTerms
+import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.app.setting.impl.screen.AppSettingScreen
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingIntent
@@ -34,9 +33,9 @@ internal fun AppSettingRoute(
 
                 AppSettingSideEffect.NavigateToAccountInfo -> navigator.goTo(NavKeyAccountInfo)
 
-                AppSettingSideEffect.NavigateToServiceTerms -> navigator.goTo(NavKeyServiceTerms)
-
-                AppSettingSideEffect.NavigateToPrivacyPolicy -> navigator.goTo(NavKeyPrivacyPolicy)
+                is AppSettingSideEffect.NavigateToPolicyDetail -> navigator.goTo(
+                    NavKeyWebView(title = effect.title, url = effect.url),
+                )
 
                 AppSettingSideEffect.NavigateToLogin -> {
                     navigator.replaceAll(NavKeyLogin)
