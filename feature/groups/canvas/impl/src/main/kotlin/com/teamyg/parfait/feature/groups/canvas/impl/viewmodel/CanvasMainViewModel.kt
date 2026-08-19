@@ -24,6 +24,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -257,15 +258,13 @@ constructor(
     }
 
     /**
-     * 색 배정은 이제 서버 소관이지만, 이 오늘 조회 응답의 `groupMembers` 목록에는 그 값이
-     * 실려 오지 않는다(`placedBy` 에만 실린다). 그래서 이 화면은 여전히 목록 순서로 팔레트를
-     * 돌려 쓴다 — 멤버가 나가면 그 뒤 순서가 밀려 색도 같이 바뀐다. 같은 사람이 서버 값을
-     * 그대로 읽는 그룹 설정 화면에서는 다른 색으로 보일 수 있다.
+     * 색은 서버가 그룹 안에서 배정한 값을 그대로 쓴다 — 목록 순서를 쓰면 멤버가 빠질 때 남은
+     * 사람 색이 밀리고, 같은 사람이 S-101 그룹 설정과 다른 색으로 보인다.
      */
-    private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
+    private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = map { member ->
         GroupMemberChip(
             nickname = member.nickname.value,
-            colorChipType = NAMETAG_CHIP_PALETTE[index % NAMETAG_CHIP_PALETTE.size],
+            colorChipType = member.nametagChip.toColorChipType(),
         )
     }
 
@@ -518,16 +517,5 @@ constructor(
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
-
-        /** 상단 Nametag-Chip 색. 고르는 규칙은 [toMemberChips] 에 있다 */
-        val NAMETAG_CHIP_PALETTE = listOf(
-            YGColorChipType.NametagChip1,
-            YGColorChipType.NametagChip2,
-            YGColorChipType.NametagChip3,
-            YGColorChipType.NametagChip5,
-            YGColorChipType.NametagChip6,
-            YGColorChipType.NametagChip8,
-            YGColorChipType.NametagChip11,
-        )
     }
 }
