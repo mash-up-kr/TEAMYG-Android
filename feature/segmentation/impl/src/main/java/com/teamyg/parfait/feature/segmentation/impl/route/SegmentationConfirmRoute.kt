@@ -66,7 +66,9 @@ internal fun SegmentationConfirmRoute(
                 ),
             )
         },
-        onClickNext = { navigator.goTo(NavKeyCanvasToppingPlace(imageUri = subjectImagePath)) },
+        onClickNext = {
+            navigator.goTo(NavKeyCanvasToppingPlace(imageUri = File(subjectImagePath).toUri().toString()))
+        },
         modifier = modifier,
     )
 }

@@ -18,8 +18,15 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 
-private const val TOPPING_MIN_SCALE = 0.5f
-private const val TOPPING_MAX_SCALE = 2.5f
+// 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
+private const val TOPPING_MIN_SCALE_FALLBACK = 0.5f
+private const val TOPPING_MAX_SCALE_FALLBACK = 2.5f
+
+/**
+ * 원본이 큰 사진은 그 배율만으로는 캔버스를 못 벗어나 "아무리 키워도 안 벗어나는" 것처럼 보인다 —
+ * 최대 배율을 캔버스 대비 객체의 실제 크기로 역산해야 원본 크기와 무관하게 항상 벗어날 수 있다.
+ */
+private const val TOPPING_MAX_OVERFLOW_RATIO = 1.5f
 
 /** 세로로 이 픽셀만큼 드래그해야 배율이 1.0만큼 바뀐다 */
 private const val TOPPING_DRAG_PX_PER_SCALE = 300f
@@ -136,7 +143,7 @@ class CanvasToppingPlaceViewModel
             val (outX, outY) = resizeOutwardDirection(rotationDegrees)
             val deltaScale = (intent.delta.x * outX + intent.delta.y * outY) / TOPPING_DRAG_PX_PER_SCALE
             copy(
-                scale = (scale + deltaScale).coerceIn(TOPPING_MIN_SCALE, TOPPING_MAX_SCALE),
+                scale = (scale + deltaScale).coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas()),
                 hasUserAdjustedPlacement = true,
             )
         }
@@ -176,6 +183,34 @@ class CanvasToppingPlaceViewModel
             offsetX = (canvasSize.width - baseSize.width) / 2,
             offsetY = (canvasSize.height - baseSize.height) / 2,
         )
+    }
+
+    /**
+     * 리사이즈로 도달할 수 있는 하한. 고정 배율(0.5)로 두면, 초기 배치 배율이 그보다 작은
+     * 큰 원본 사진(예: 0.23)은 한 번이라도 리사이즈를 건드리는 순간 원래 크기보다 작게는
+     * 다시 못 줄인다 — [applyInitialPlacementIfNeeded]와 같은 최소 터치 영역 기준으로 역산해
+     * 원본 크기와 무관하게 항상 처음 크기까지는 줄일 수 있게 한다.
+     */
+    private fun CanvasToppingPlaceUiState.minScaleForTouchTarget(): Float {
+        val baseSize = toppingBaseSize ?: return TOPPING_MIN_SCALE_FALLBACK
+        val shorterBaseSide = minOf(baseSize.width, baseSize.height)
+        if (shorterBaseSide <= 0.dp) return TOPPING_MIN_SCALE_FALLBACK
+
+        return MIN_TOPPING_SHORT_SIDE / shorterBaseSide
+    }
+
+    /**
+     * 리사이즈로 도달할 수 있는 상한.
+     */
+    private fun CanvasToppingPlaceUiState.maxScaleToOverflowCanvas(): Float {
+        val canvasSize = canvasSize ?: return TOPPING_MAX_SCALE_FALLBACK
+        val baseSize = toppingBaseSize ?: return TOPPING_MAX_SCALE_FALLBACK
+        val longerCanvasSide = maxOf(canvasSize.width, canvasSize.height).value
+        val longerBaseSide = maxOf(baseSize.width, baseSize.height).value
+        if (longerBaseSide <= 0f) return TOPPING_MAX_SCALE_FALLBACK
+
+        val overflowScale = (longerCanvasSide * TOPPING_MAX_OVERFLOW_RATIO) / longerBaseSide
+        return maxOf(overflowScale, TOPPING_MAX_SCALE_FALLBACK)
     }
 
     private fun handleOnClickConfirm() {

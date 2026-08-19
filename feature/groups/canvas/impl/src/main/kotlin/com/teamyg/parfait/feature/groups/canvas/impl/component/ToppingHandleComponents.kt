@@ -3,7 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -65,7 +65,7 @@ internal fun ToppingSelectionStroke(
     Box(
         modifier = modifier
             .offset(x = center.x - strokeSize.width / 2, y = center.y - strokeSize.height / 2)
-            .size(strokeSize)
+            .requiredSize(strokeSize)
             .graphicsLayer(rotationZ = rotationDegrees)
             .drawBehind {
                 drawRect(

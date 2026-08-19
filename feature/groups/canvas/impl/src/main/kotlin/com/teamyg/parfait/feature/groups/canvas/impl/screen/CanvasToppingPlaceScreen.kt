@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,7 +23,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -78,6 +77,20 @@ internal fun CanvasToppingPlaceScreen(
                 ), // 60.dp/14.dp 공통에 없음
             contentAlignment = Alignment.Center,
         ) {
+            val painter = rememberAsyncImagePainter(model = uiState.toppingImageUri)
+            val baseSize = rememberToppingBaseSize(painter)
+            LaunchedEffect(baseSize) { onToppingBaseSizeMeasured(baseSize) }
+
+            // 스트로크·핸들과 정확히 같은 자리·크기를 그리려면 이미지도 이 값을 그대로 써야 한다 —
+            // 이미지는 graphicsLayer(scale), 스트로크는 requiredSize(sizeAfterScale)처럼
+            // 서로 다른 방식으로 "같은 배율"을 표현하면, 그 둘이 실제로 같은 값을 내는지는
+            // Compose 내부 구현에 기대는 셈이라 어긋나기 쉽다. 여기서 한 번만 계산해서 그대로 넘긴다.
+            val center = DpOffset(
+                x = uiState.offsetX + baseSize.width / 2,
+                y = uiState.offsetY + baseSize.height / 2,
+            )
+            val sizeAfterScale = DpSize(baseSize.width * uiState.scale, baseSize.height * uiState.scale)
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,33 +113,55 @@ internal fun CanvasToppingPlaceScreen(
                         .background(YGAtomicColors.Transparency.Black25),
                 )
 
-                val painter = rememberAsyncImagePainter(model = uiState.toppingImageUri)
-                val baseSize = rememberToppingBaseSize(painter)
-                LaunchedEffect(baseSize) { onToppingBaseSizeMeasured(baseSize) }
-
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
+                // Image()는 painter.intrinsicSize를 다시 읽어 스스로 크기를 맞추려 한다
+                // (sizeToIntrinsics) — 그 시점이 requiredSize(sizeAfterScale)와 어긋나면 실제
+                // 그려지는 크기가 스트로크·핸들 계산과 달라진다. 크기는 이 바깥 Box가 고정하고,
+                // Image 자신은 그 Box를 꽉 채우기만 하도록 둬서 intrinsic 기반 자체 사이징을 막는다.
+                Box(
                     modifier = Modifier
-                        .offset(x = uiState.offsetX, y = uiState.offsetY)
-                        .size(baseSize)
+                        .offset(
+                            x = center.x - sizeAfterScale.width / 2,
+                            y = center.y - sizeAfterScale.height / 2,
+                        ).requiredSize(sizeAfterScale)
                         .dragBy(Unit) { delta ->
                             onToppingMoveDrag(
                                 with(density) { DpOffset(delta.x.toDp(), delta.y.toDp()) },
                             )
-                        }.graphicsLayer(
-                            scaleX = uiState.scale,
-                            scaleY = uiState.scale,
-                            rotationZ = uiState.rotationDegrees,
-                        ),
-                )
+                        }.graphicsLayer(rotationZ = uiState.rotationDegrees),
+                ) {
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
 
+            // 스트로크는 토핑 이미지와 달리 캔버스를 넘어가도 잘리면 안 되고 진짜 크기 그대로 보여야 한다
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(CANVAS_ASPECT_RATIO),
+            ) {
+                ToppingSelectionStroke(
+                    center = center,
+                    sizeAfterScale = sizeAfterScale,
+                    rotationDegrees = uiState.rotationDegrees,
+                )
+            }
+
+            // 버튼 좌표는 캔버스 밖으로 나간 진짜 모서리 값을 그대로 쓰되(clamp 없음),
+            // 그려지는 픽셀은 토핑 이미지와 마찬가지로 캔버스 경계에서 잘리게 한다
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(CANVAS_ASPECT_RATIO)
+                    .clipToBounds(),
+            ) {
                 ToppingPlaceCornerButtons(
-                    offsetX = uiState.offsetX,
-                    offsetY = uiState.offsetY,
-                    baseSize = baseSize,
-                    scale = uiState.scale,
+                    center = center,
+                    sizeAfterScale = sizeAfterScale,
                     rotationDegrees = uiState.rotationDegrees,
                     onResizeDrag = onToppingResizeDrag,
                     onRotateDrag = onToppingRotateDrag,
@@ -148,23 +183,16 @@ internal fun CanvasToppingPlaceScreen(
     }
 }
 
-/** 배치 중인 토핑의 스트로크와, 리사이즈·회전 두 모서리 버튼만 그린다(삭제·편집 없음). */
+/** 배치 중인 토핑의 리사이즈·회전 두 모서리 버튼만 그린다(삭제·편집 없음). */
 @Composable
 private fun ToppingPlaceCornerButtons(
-    offsetX: Dp,
-    offsetY: Dp,
-    baseSize: DpSize,
-    scale: Float,
+    center: DpOffset,
+    sizeAfterScale: DpSize,
     rotationDegrees: Float,
     onResizeDrag: (Offset) -> Unit,
     onRotateDrag: (Offset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val center = DpOffset(
-        x = offsetX + baseSize.width / 2,
-        y = offsetY + baseSize.height / 2,
-    )
-    val sizeAfterScale = DpSize(baseSize.width * scale, baseSize.height * scale)
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
@@ -172,11 +200,6 @@ private fun ToppingPlaceCornerButtons(
     )
 
     Box(modifier = modifier) {
-        ToppingSelectionStroke(
-            center = center,
-            sizeAfterScale = sizeAfterScale,
-            rotationDegrees = rotationDegrees,
-        )
         ToppingDragHandleButton(
             iconRes = DesignSystemR.drawable.ic_scale,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),

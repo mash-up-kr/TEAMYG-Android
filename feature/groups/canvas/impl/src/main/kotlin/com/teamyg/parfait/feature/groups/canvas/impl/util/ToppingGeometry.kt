@@ -48,7 +48,8 @@ fun toppingStrokeSize(sizeAfterScale: DpSize): DpSize = DpSize(
 
 /**
  * 모서리 버튼이 놓이는 네 지점. [computeToppingStrokeCorners]의 스트로크 모서리와 겹치지 않도록,
- * 그 모서리의 대각선 방향으로 [BUTTON_CORNER_GAP]만큼 더 밀어낸 위치다.
+ * 그 모서리의 대각선 방향으로 [BUTTON_CORNER_GAP]만큼 더 밀어낸 위치다 — 가로/세로에 같은 고정값을
+ * 더하면 정사각형이 아닌 토핑에서 버튼이 대각선에서 벗어나므로, 반드시 대각선 방향 비율로 나눠 밀어낸다.
  */
 fun computeToppingButtonPoints(
     center: DpOffset,
