@@ -51,6 +51,7 @@ private const val FULL_TURN_DEGREES = 360.0
  * Spotlight(C-106): [spotlightedToppingId] 가 있으면 그 토핑만 목록 순서를 벗어나 맨 위로
  * 옮기고, 그 바로 아래에 나머지 전체를 덮는 Dim 레이어를 끼워 넣는다 — 우선순위는
  * "Spotlight 토핑 → Dim 레이어 → 나머지 토핑 → 배경" 순이다(배경은 이 레이어 바깥,
+ * 이 레이어를 감싸는 YGCanvas 가 그린다).
  */
 @Composable
 internal fun CanvasToppingLayer(
