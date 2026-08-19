@@ -11,6 +11,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -42,7 +43,7 @@ class SegmentationViewModelTest {
 
     @Before
     fun stubTheHappyPath() {
-        coEvery { decodeImage(SOURCE_URI) } returns bitmapWrapper
+        coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
     }
 
@@ -82,9 +83,9 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun init_decodeThrows_endsInErrorWithoutSegmenting() = runTest {
-        // Given URI 가 만료돼 디코드가 던지는 상황
-        coEvery { decodeImage(SOURCE_URI) } throws IllegalStateException("broken uri")
+    fun init_decodeFails_endsInErrorWithoutSegmenting() = runTest {
+        // Given URI 가 만료돼 디코드가 실패를 돌려주는 상황
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -138,5 +139,18 @@ class SegmentationViewModelTest {
         val state = viewModel.state.value
         assertEquals(SUBJECT_PATH, state.subjectImagePath)
         assertFalse(state.isError)
+    }
+
+    @Test
+    fun init_cacheClearIsCancelled_stopsBeforeDecoding() = runTest {
+        // Given 화면을 벗어나 캐시 정리가 취소된 상황
+        coEvery { clearSegmentationCache() } throws CancellationException("scope gone")
+
+        // When 화면이 열린다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 취소는 실패가 아니라 전파돼야 한다 — 값으로 접으면 떠난 화면이 계속 일한다
+        coVerify(exactly = 0) { decodeImage(any()) }
     }
 }
