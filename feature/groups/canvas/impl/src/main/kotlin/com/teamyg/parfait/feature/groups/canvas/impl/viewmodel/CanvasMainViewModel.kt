@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
