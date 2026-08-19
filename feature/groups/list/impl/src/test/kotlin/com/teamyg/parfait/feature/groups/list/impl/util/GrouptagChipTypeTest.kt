@@ -36,13 +36,4 @@ class GrouptagChipTypeTest {
         // When/Then 나간 사람 색을 계속 쓰지 않고 중립으로 간다
         assertEquals(YGGrouptagChipType.DEFAULT, NametagChipType.DEFAULT.toGrouptagChipType())
     }
-
-    @Test
-    fun toGrouptagChipType_missingFallsBackToDefault() {
-        // Given 아직 아무도 토핑을 올리지 않아 칩이 없다
-        val missing: NametagChipType? = null
-
-        // When/Then 목록 순서로 아무 색이나 돌리지 않는다
-        assertEquals(YGGrouptagChipType.DEFAULT, missing.toGrouptagChipType())
-    }
 }

@@ -91,14 +91,14 @@ class GroupLocalDataSourceImplTest {
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
-            lastPlacedByNametagChip = null,
+            lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
         val GROUP_B = MyParfaitGroupVO(
             groupId = GROUP_ID_B,
             groupName = GroupName("라떼"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
-            lastPlacedByNametagChip = null,
+            lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
 
         val DETAIL_A = ParfaitGroupDetailVO(

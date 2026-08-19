@@ -241,9 +241,13 @@ class CanvasMainViewModelTest {
 
     @Test
     fun enter_memberWithoutAChip_getsTheNeutralColour() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 앱이 모르는 값을 줘 매퍼가 접었다
+        // Given 서버가 앱이 모르는 값을 줘 매퍼가 DEFAULT 로 접었다
         coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(TODAY_PARFAIT_ID, today, members = listOf(member("모카", nametagChip = null))),
+            canvas(
+                TODAY_PARFAIT_ID,
+                today,
+                members = listOf(member("모카", nametagChip = NametagChipType.DEFAULT)),
+            ),
         )
 
         // When 화면에 들어간다
@@ -268,12 +272,12 @@ class CanvasMainViewModelTest {
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
             recentImageUploadedAt = null,
-            lastPlacedByNametagChip = null,
+            lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
 
         fun member(
             nickname: String,
-            nametagChip: NametagChipType? = null,
+            nametagChip: NametagChipType = NametagChipType.DEFAULT,
         ) = CanvasMemberVO(
             groupMemberId = GroupMemberId(1L),
             nickname = GroupNickname(nickname),

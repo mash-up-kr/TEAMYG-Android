@@ -15,9 +15,8 @@ data class MyParfaitGroupVO(
     /**
      * 마지막으로 토핑을 올린 사람의 칩. **토핑이 하나도 없으면 그룹을 만든 사람의 칩**이 온다 —
      * 그때 이 값은 "마지막으로 바꾼 사람"이 아니라 "만든 사람"을 가리킨다.
-     * 가리키는 사람이 그룹을 나갔으면 [NametagChipType.DEFAULT] 다.
-     *
-     * `null` 은 앱이 모르는 타입 문자열이 와서 매퍼가 접었다는 뜻이다.
+     * 가리키는 사람이 그룹을 나갔으면 [NametagChipType.DEFAULT] 다. 앱이 모르는 타입 문자열이
+     * 왔을 때도 매퍼가 같은 값으로 접는다.
      */
-    val lastPlacedByNametagChip: NametagChipType?,
+    val lastPlacedByNametagChip: NametagChipType,
 )

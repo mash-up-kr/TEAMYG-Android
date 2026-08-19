@@ -83,27 +83,27 @@ class ParfaitGroupRemoteDataSourceImplTest {
     }
 
     @Test
-    fun getMyGroups_missingChip_isNull() = runTest {
-        // Given 아직 아무도 토핑을 올리지 않아 칩이 없다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse(null)))
-
-        // When 목록을 받는다
-        val result = dataSource.getMyGroups()
-
-        // Then null 그대로 둔다
-        assertNull(result.getOrNull()?.single()?.lastPlacedByNametagChip)
-    }
-
-    @Test
-    fun getMyGroups_unknownChipString_foldsToNull() = runTest {
+    fun getMyGroups_unknownChipString_foldsToDefault() = runTest {
         // Given 서버가 앱이 모르는 값을 준다 — 열린 입력이다
         coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("TYPE99")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
 
-        // Then 던지지 않고 null 로 접는다 — 모르는 색은 그리지 못할 뿐이다
-        assertNull(result.getOrNull()?.single()?.lastPlacedByNametagChip)
+        // Then 던지지 않고 DEFAULT 로 접는다 — 모르는 색은 중립으로 그린다
+        assertEquals(NametagChipType.DEFAULT, result.getOrNull()?.single()?.lastPlacedByNametagChip)
+    }
+
+    @Test
+    fun getMyGroups_missingChipField_foldsToDefault() = runTest {
+        // Given 구버전 서버라 칩 필드가 아예 없다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse(null)))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 값이 없는 것도 DEFAULT 다 — 이 축에 "값 없음"을 따로 두지 않는다
+        assertEquals(NametagChipType.DEFAULT, result.getOrNull()?.single()?.lastPlacedByNametagChip)
     }
 
     @Test

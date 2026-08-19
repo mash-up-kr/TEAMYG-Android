@@ -280,15 +280,15 @@ class ParfaitRemoteDataSourceImplTest {
     }
 
     @Test
-    fun getTodayCanvas_unknownMemberChip_foldsToNull() = runTest {
+    fun getTodayCanvas_unknownMemberChip_foldsToDefault() = runTest {
         // Given 서버가 앱이 모르는 값을 준다 — 열린 입력이다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns todaySuccess(memberChip = "TYPE99")
 
         // When 오늘의 캔버스 조회
         val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
 
-        // Then 던지지 않고 null 로 접는다 — 모르는 색은 그리지 못할 뿐이다
-        assertNull(canvas.members.single().nametagChip)
+        // Then 던지지 않고 DEFAULT 로 접는다 — 모르는 색은 중립으로 그린다
+        assertEquals(NametagChipType.DEFAULT, canvas.members.single().nametagChip)
     }
 
     @Test
