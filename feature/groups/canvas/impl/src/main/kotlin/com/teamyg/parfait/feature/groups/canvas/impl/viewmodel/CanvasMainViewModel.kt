@@ -143,7 +143,10 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     class NavigateToCanvas : CanvasMainEffect
 
-    class NavigateToCanvasBGEdit : CanvasMainEffect
+    data class NavigateToCanvasBGEdit(
+        val groupId: GroupId,
+        val parfaitId: ParfaitId,
+    ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
@@ -610,9 +613,21 @@ constructor(
     /** 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다 */
     private fun CanvasVO.nextPositionZ(): Int = (toppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
 
+    /**
+     * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만
+     * 움직이고, 없는 id 를 지어내면 남의 날 캔버스를 고치게 된다.
+     */
     private fun handleOnClickCanvasEdit() {
+        val todayCanvas = state.value.todayCanvas ?: run {
+            viewModelLogger.e { "오늘 캔버스를 못 받은 채로 편집을 눌렀다 - groupId: ${groupId.value}" }
+            return
+        }
+
         postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvasBGEdit(),
+            effect = CanvasMainEffect.NavigateToCanvasBGEdit(
+                groupId = groupId,
+                parfaitId = todayCanvas.parfaitId,
+            ),
         )
     }
 

@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,27 +12,43 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.ResultEffect
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditEffect
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditError
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditViewModel
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.toStringResource
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 
 @Composable
 internal fun CanvasBGEditRoute(
+    groupId: Long,
+    parfaitId: Long,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: CanvasBGEditViewModel = hiltViewModel(),
+    viewModel: CanvasBGEditViewModel = hiltViewModel(
+        creationCallback = { factory: CanvasBGEditViewModel.Factory ->
+            factory.create(groupIdValue = groupId, parfaitIdValue = parfaitId)
+        },
+    ),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val toastPolicy = rememberYGToastPolicy()
 
     var editingToppingId by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
+    // 문구를 여기서 미리 뽑아 두고 이펙트는 고르기만 한다
+    val errorMessages = CanvasBGEditError.entries.associateWith { it.toStringResource() }
 
     ResultEffect<PictureConfirmResult> { result ->
         viewModel.processIntent(
@@ -58,10 +76,11 @@ internal fun CanvasBGEditRoute(
 
                 is CanvasBGEditEffect.NavigateBack -> navigator.onBack()
 
-                is CanvasBGEditEffect.ConfirmBackground -> {
-                    // TODO: 선택한 배경을 서버에 업로드/저장하는 연동 필요 - effect.background 사용
-                    navigator.onBack()
-                }
+                // 배경은 이 이펙트가 오기 전에 이미 저장돼 있다. 돌아간 캔버스 메인이 다시
+                // 조회하므로 저장된 배경을 따로 실어 보낼 필요가 없다
+                is CanvasBGEditEffect.ConfirmBackground -> navigator.onBack()
+
+                is CanvasBGEditEffect.ShowError -> toastPolicy.showError(errorMessages.getValue(effect.error))
 
                 is CanvasBGEditEffect.NavigateToToppingEdit -> {
                     editingToppingId = effect.toppingId
@@ -79,25 +98,38 @@ internal fun CanvasBGEditRoute(
         }
     }
 
-    CanvasBGEditScreen(
-        uiState = uiState,
-        onSelectTab = { tab -> viewModel.processIntent(CanvasBGEditIntent.OnSelectTab(tab)) },
-        onSelectColor = { color -> viewModel.processIntent(CanvasBGEditIntent.OnSelectColor(color)) },
-        onClickCamera = { viewModel.processIntent(CanvasBGEditIntent.OnClickCamera) },
-        onClickGallery = { viewModel.processIntent(CanvasBGEditIntent.OnClickGallery) },
-        onClickCloseButton = { viewModel.processIntent(CanvasBGEditIntent.OnClickCloseButton) },
-        onQuitDialogConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogConfirm) },
-        onQuitDialogCancel = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogCancel) },
-        onClickConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm) },
-        onClickTopping = { topping -> viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(topping)) },
-        onClickDeselectTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeselectTopping) },
-        onClickDeleteTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeleteToppingButton) },
-        onDeleteToppingDialogConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm) },
-        onDeleteToppingDialogCancel = { viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogCancel) },
-        onClickEditTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickEditTopping) },
-        onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingResizeDrag(delta)) },
-        onToppingRotateDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingRotateDrag(delta)) },
-        onToppingMoveDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(delta)) },
+    YGScaffoldV2(
         modifier = modifier,
-    )
+        toastPolicy = toastPolicy,
+    ) { innerPadding ->
+        CanvasBGEditScreen(
+            uiState = uiState,
+            onSelectTab = { tab -> viewModel.processIntent(CanvasBGEditIntent.OnSelectTab(tab)) },
+            onSelectColor = { color -> viewModel.processIntent(CanvasBGEditIntent.OnSelectColor(color)) },
+            onClickCamera = { viewModel.processIntent(CanvasBGEditIntent.OnClickCamera) },
+            onClickGallery = { viewModel.processIntent(CanvasBGEditIntent.OnClickGallery) },
+            onClickCloseButton = { viewModel.processIntent(CanvasBGEditIntent.OnClickCloseButton) },
+            onQuitDialogConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogConfirm) },
+            onQuitDialogCancel = { viewModel.processIntent(CanvasBGEditIntent.OnQuitDialogCancel) },
+            onClickConfirm = { viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm) },
+            onClickTopping = { topping -> viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(topping)) },
+            onClickDeselectTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeselectTopping) },
+            onClickDeleteTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickDeleteToppingButton) },
+            onDeleteToppingDialogConfirm = {
+                viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+            },
+            onDeleteToppingDialogCancel = {
+                viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogCancel)
+            },
+            onClickEditTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickEditTopping) },
+            onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingResizeDrag(delta)) },
+            onToppingRotateDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingRotateDrag(delta)) },
+            onToppingMoveDrag = { deltaX, deltaY ->
+                viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = deltaX, deltaY = deltaY))
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
+    }
 }
