@@ -76,8 +76,7 @@ internal fun CanvasBGEditRoute(
 
                 is CanvasBGEditEffect.NavigateBack -> navigator.onBack()
 
-                // 배경은 이 이펙트가 오기 전에 이미 저장돼 있다. 돌아간 캔버스 메인이 다시
-                // 조회하므로 저장된 배경을 따로 실어 보낼 필요가 없다
+                // 실린 배경을 쓰지 않는 이유: 돌아간 캔버스 메인이 다시 조회해 그린다
                 is CanvasBGEditEffect.ConfirmBackground -> navigator.onBack()
 
                 is CanvasBGEditEffect.ShowError -> toastPolicy.showError(errorMessages.getValue(effect.error))

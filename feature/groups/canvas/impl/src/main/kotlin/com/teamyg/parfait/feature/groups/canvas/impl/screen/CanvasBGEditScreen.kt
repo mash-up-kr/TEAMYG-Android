@@ -165,7 +165,6 @@ internal fun CanvasBGEditScreen(
                                 // 선택된 토핑만 드래그로 이동할 수 있다
                                 onDrag = if (topping.parfaitImageId == uiState.selectedToppingId) {
                                     { dragAmount ->
-                                        // 저장되는 위치가 캔버스 대비 비율이라 픽셀을 여기서 환산한다
                                         onToppingMoveDrag(
                                             dragAmount.x / canvasWidthPx,
                                             dragAmount.y / canvasHeightPx,
@@ -374,7 +373,6 @@ private fun CanvasToppingImage(
     onDrag: ((Offset) -> Unit)? = null,
 ) {
     val painter = rememberToppingPainter(topping)
-    // 배율이 크기에 이미 반영돼 있어 graphicsLayer 로 또 키우지 않는다
     val size = rememberToppingSize(painter = painter, longSide = toppingLongSide(canvasWidth, topping.scale))
 
     Box(
@@ -403,7 +401,6 @@ private fun CanvasToppingImage(
     }
 }
 
-/** 테두리를 다시 두른 토핑은 그 결과가 최신이라 서버 이미지 대신 그것을 그린다 */
 @Composable
 private fun rememberToppingPainter(topping: CanvasToppingItem): Painter =
     rememberAsyncImagePainter(model = topping.editedImagePath ?: topping.imageUrl)

@@ -19,12 +19,7 @@ import kotlin.math.sqrt
  */
 const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
 
-/**
- * 저장된 배율을 화면 크기로 편 토핑의 긴 변.
- *
- * 캔버스 높이가 아니라 너비만 보는 이유는 [TOPPING_BASE_LONG_SIDE_RATIO] 가 너비 기준이라
- * 그렇다 — 세로 비율이 달라도 토핑 크기는 변하지 않는다.
- */
+/** 저장된 배율을 화면 크기로 편 토핑의 긴 변 */
 fun toppingLongSide(
     canvasWidth: Dp,
     scale: Float,

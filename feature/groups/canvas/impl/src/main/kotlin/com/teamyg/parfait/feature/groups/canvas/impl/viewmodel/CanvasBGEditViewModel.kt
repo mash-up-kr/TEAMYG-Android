@@ -274,7 +274,6 @@ constructor(
             ?.toColorOrNull()
             ?: selectedColor,
         selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
-        // 서버에서 온 배경은 기기에 원본이 없다 — 다시 올릴 수 없다는 표시이기도 하다
         selectedImageSource = null,
     )
 
@@ -352,7 +351,7 @@ constructor(
         updateState { copy(selectedToppingId = null) }
     }
 
-    /** TODO(#270 대기): 지금은 화면에서만 사라진다 — 토핑 삭제 API 연동은 따로다 */
+    /** TODO(#271 대기): 지금은 화면에서만 사라진다 — 토핑 삭제 API 연동은 따로다 */
     private fun handleOnDeleteToppingDialogConfirm() {
         val selectedId = state.value.selectedToppingId ?: return
 
@@ -417,7 +416,7 @@ constructor(
     }
 
     /**
-     * TODO(#270 대기): 서버 토핑은 https 주소라 편집 화면이 [android.content.ContentResolver] 로
+     * TODO(#274 대기): 서버 토핑은 https 주소라 편집 화면이 [android.content.ContentResolver] 로
      *  열지 못한다. 이미지를 기기에 받아 그 경로를 넘기는 일은 토핑 편집 API 연동 쪽이다.
      */
     private fun handleOnClickEditTopping() {
@@ -439,7 +438,6 @@ constructor(
             topping.copy(
                 borderLayers = intent.result.borderLayers,
                 editedImagePath = intent.result.subjectImagePath,
-                // 다시 편집을 열 때 이 사진에서 시작해야 방금 지운/되살린 영역이 유지된다
                 cutoutImagePath = File(intent.result.cutoutImagePath).toUri().toString(),
             )
         }
@@ -472,14 +470,12 @@ constructor(
         val current = state.value
         val imageUri = current.selectedImageUri
 
-        // 서버에서 받아 온 배경을 그대로 두고 확인만 누른 경우다. 올릴 원본이 기기에 없고
-        // 바뀐 것도 없으니 요청 없이 닫는다
+        // 서버 배경을 그대로 둔 채 확인만 누른 경우다 — 바뀐 것이 없어 요청할 것도 없다
         if (imageUri != null && current.selectedImageSource == null) {
             postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(YGCanvasBackground.Image(imageUri)))
             return
         }
 
-        // 저장이 끝날 때까지 같은 key 의 두 번째 요청은 시작되지 않는다 — 확인 연타 방어다
         launch(key = SAVE_BACKGROUND_KEY) {
             val background = if (imageUri == null) {
                 CanvasBackgroundEdit.Color(current.selectedColor.toRgbHex())
@@ -507,7 +503,6 @@ constructor(
         }
     }
 
-    /** 배경 이미지는 발급 → 전송 → 확인을 마쳐야 한다. 확인 전 imageId 는 서버가 거절한다 */
     private suspend fun uploadBackgroundImage(imageUri: String): Result<ImageId> = uploadImageUseCase(
         uri = imageUri,
         imageType = ImageType.BACKGROUND,
@@ -535,7 +530,6 @@ constructor(
     private fun Throwable.toCanvasBGEditError(): CanvasBGEditError = when (this) {
         is AppError.Network -> CanvasBGEditError.NETWORK
 
-        // 사진을 못 읽었거나 서버가 받지 않는 형식이다. 어느 쪽이든 다시 눌러도 같은 결과다
         is AppError.Unexpected -> when (cause) {
             is IllegalArgumentException -> CanvasBGEditError.UNSUPPORTED_IMAGE
             else -> CanvasBGEditError.UNKNOWN
