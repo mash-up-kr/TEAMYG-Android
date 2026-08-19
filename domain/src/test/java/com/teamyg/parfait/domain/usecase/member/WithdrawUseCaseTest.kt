@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.usecase.member
 
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
@@ -15,9 +16,10 @@ import kotlin.test.assertTrue
 class WithdrawUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val authRepository: AuthRepository = mockk(relaxed = true)
+    private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
     private val withdraw = WithdrawUseCase(
         memberRepository = memberRepository,
-        logout = LogoutUseCase(authRepository, memberRepository),
+        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository),
     )
 
     @Test
