@@ -9,6 +9,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
@@ -30,8 +31,9 @@ internal fun PictureConfirmRoute(
             onClickConfirm = {
                 if (returnResultOnly) {
                     resultEventBus.sendResult(PictureConfirmResult(uri = uri, source = source))
-                    navigator.onBack() // PictureConfirm
-                    navigator.onBack() // Camera/Gallery
+                    // 사이에 낀 촬영·선택 화면을 몇 장이든 걷고 부른 화면으로 되감는다.
+                    // 뒤로가기를 세어 돌아가면 그 경로에 화면이 하나 끼는 날 조용히 어긋난다
+                    navigator.popUpTo<NavKeyCanvasBGEdit>()
                 } else {
                     navigator.goToAndPopCurrent(
                         destination = NavKeySegmentation(
@@ -41,11 +43,10 @@ internal fun PictureConfirmRoute(
                 }
             },
             // 배경 편집에서 들어온 경우 캔버스까지 튀면 편집 중이던 배경이 날아간다.
-            // 그 경로의 닫기는 부른 화면으로 돌아가는 것이고, 확인 버튼과 같은 백 처리다
+            // 그 경로의 닫기는 부른 화면으로 돌아가는 것이고, 확인 버튼과 같은 처리다
             onClickClose = {
                 if (returnResultOnly) {
-                    navigator.onBack() // PictureConfirm
-                    navigator.onBack() // Camera/Gallery
+                    navigator.popUpTo<NavKeyCanvasBGEdit>()
                 } else {
                     navigator.popUpTo<NavKeyCanvasMain>()
                 }
