@@ -47,7 +47,7 @@ internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyP
     recentImageUploadedAt = recentImageUploadedAt
         ?.let(LocalDateTime::parse)
         ?.toInstant(PARFAIT_TIME_ZONE),
-    lastPlacedByNametagChip = lastPlacedByNametagChip.toNametagChipType(),
+    lastPlacedByNametagChip = lastPlacedByNameTagChip.toNametagChipType(),
 )
 
 internal fun MyParfaitGroupDetailResponse.toParfaitGroupDetailVO(): ParfaitGroupDetailVO = ParfaitGroupDetailVO(
@@ -62,7 +62,7 @@ internal fun MyParfaitGroupDetailResponse.toParfaitGroupDetailVO(): ParfaitGroup
 internal fun ParfaitGroupMemberResponse.toParfaitGroupMemberVO(): ParfaitGroupMemberVO = ParfaitGroupMemberVO(
     memberId = MemberId(memberId),
     groupNickname = GroupNickname(groupNickname),
-    nametagChip = nametagChip.toNametagChipType(),
+    nametagChip = nameTagChip.toNametagChipType(),
 )
 
 internal fun JoinParfaitGroupResponse.toJoinedGroupVO(): JoinedGroupVO = JoinedGroupVO(

@@ -81,13 +81,15 @@ data class TodayParfaitImageResponse(
 )
 
 /**
- * 배치자. 같은 이름의 DTO 가 response/parfaitimage 에도 있다 — 서버가 두 응답에 같은 이름을
- * 썼고 wire DTO 는 서버의 거울이라 이름을 바꾸지 않는다.
+ * 배치자. 같은 이름의 DTO 가 response/parfaitimage 에도 있었으나 서버가 그쪽을
+ * PlaceParfaitImagePlacedByResponse 로 개명했다(springdoc 이 두 스키마를 같은 것으로 취급해
+ * 이쪽에 추가한 칩이 스웨거에 안 보이던 문제 때문이다). 이 클래스는 서버가 이름을 안 바꿨다.
  *
  * @param nickname 그룹 닉네임이다. 탈퇴·이탈한 멤버면 "(알수없음)"이 온다.
- * @param nametagChip 그 사람의 칩. 탈퇴했으면 `"RELEASED"` 다. **아직 도메인으로 올리지 않는다** —
- *  읽는 화면이 없고, [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO] 를 배치 확정
- *  응답과 공유하는데 서버가 그쪽엔 이 값을 주지 않아서다. C-202 작성자 표시가 붙을 때 정한다.
+ * @param nameTagChip 그 사람의 칩. 탈퇴했으면 `"DEFAULT"` 다. **아직 도메인으로 올리지 않는다** —
+ *  서버는 이제 배치 확정 응답에도 이 값을 주므로 [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO]
+ *  를 채울 수 있게 됐지만, `placedBy` 를 읽는 화면이 0건이다. C-202 Spotlight 는 이 값이 아니라
+ *  groupMembers 를 GroupMemberId 로 조인해 찾으므로 이 보류에 물리지 않는다.
  */
 @Serializable
 data class PlacedByResponse(
@@ -95,6 +97,6 @@ data class PlacedByResponse(
     val groupMemberId: Long,
     @SerialName("nickname")
     val nickname: String,
-    @SerialName("nametagChip")
-    val nametagChip: String? = null,
+    @SerialName("nameTagChip")
+    val nameTagChip: String? = null,
 )

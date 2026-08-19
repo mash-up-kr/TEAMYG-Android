@@ -40,7 +40,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
         groupName = "모카의 파르페",
         recentImageUrl = null,
         recentImageUploadedAt = recentImageUploadedAt,
-        lastPlacedByNametagChip = lastPlacedByNametagChip,
+        lastPlacedByNameTagChip = lastPlacedByNametagChip,
     )
 
     private fun detailResponse(memberChip: String?) = MyParfaitGroupDetailResponse(
@@ -53,7 +53,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
             ParfaitGroupMemberResponse(
                 memberId = 42L,
                 groupNickname = "모카",
-                nametagChip = memberChip,
+                nameTagChip = memberChip,
             ),
         ),
     )
