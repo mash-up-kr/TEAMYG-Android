@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,12 +67,18 @@ private fun YGListItemImpl(
     modifier: Modifier = Modifier,
     trailing: @Composable () -> Unit,
 ) {
+    val verticalPadding = YGTheme.layout.padding.padding2
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            // 두 오버로드의 높이를 맞춘다. 아이콘 쪽은 YGIconButton 이 높이를 정하고 subText 쪽은
+            // 텍스트 한 줄뿐이라, 그냥 두면 같은 목록 안에서 줄마다 높이가 달라진다.
+            // 리터럴 대신 아이콘 쪽 높이를 그대로 계산해 토큰이 바뀌어도 따라오게 한다
+            .heightIn(min = YGIconButtonSize.SIZE_44.containerSize + verticalPadding * 2)
             .padding(
                 horizontal = YGTheme.layout.padding.padding7,
-                vertical = YGTheme.layout.padding.padding2,
+                vertical = verticalPadding,
             ),
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,

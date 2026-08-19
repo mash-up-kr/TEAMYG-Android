@@ -78,6 +78,36 @@ internal fun Bitmap.withBorders(
     return bordered
 }
 
+/**
+ * 투명한 여백을 걷어내고 실제로 보이는(알파가 있는) 픽셀의 최소 사각형만 남긴다.
+ * 완전히 투명한 이미지처럼 자를 기준이 없으면 원본을 그대로 돌려준다.
+ */
+internal fun Bitmap.trimTransparentBounds(): Bitmap {
+    val pixels = IntArray(width * height)
+    getPixels(pixels, 0, width, 0, 0, width, height)
+
+    var left = width
+    var top = height
+    var right = -1
+    var bottom = -1
+
+    for (y in 0 until height) {
+        val rowOffset = y * width
+        for (x in 0 until width) {
+            if (pixels[rowOffset + x] ushr 24 != 0) {
+                if (x < left) left = x
+                if (x > right) right = x
+                if (y < top) top = y
+                if (y > bottom) bottom = y
+            }
+        }
+    }
+
+    if (right < left || bottom < top) return this
+
+    return Bitmap.createBitmap(this, left, top, right - left + 1, bottom - top + 1)
+}
+
 private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
     isAntiAlias = true
     style = Paint.Style.STROKE

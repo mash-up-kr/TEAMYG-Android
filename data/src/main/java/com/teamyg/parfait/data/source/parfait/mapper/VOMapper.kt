@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.GroupMemberRespons
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
+import com.teamyg.parfait.data.source.common.mapper.toNametagChipType
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
@@ -90,6 +91,7 @@ private fun BackgroundResponse.toCanvasBackground(): CanvasBackground? = when (t
 private fun GroupMemberResponse.toCanvasMemberVO(): CanvasMemberVO = CanvasMemberVO(
     groupMemberId = GroupMemberId(id),
     nickname = GroupNickname(nickname),
+    nametagChip = nameTagChip.toNametagChipType(),
 )
 
 private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = CanvasToppingVO(

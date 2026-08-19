@@ -7,10 +7,14 @@ import kotlinx.serialization.Serializable
 data class MyParfaitGroupDetailResponse(
     @SerialName("groupId")
     val groupId: Long,
+    @SerialName("groupName")
+    val groupName: String,
     @SerialName("groupNickname")
     val groupNickname: String,
     @SerialName("inviteCode")
     val inviteCode: String,
+    @SerialName("memberLimit")
+    val memberLimit: Int,
     @SerialName("members")
     val members: List<ParfaitGroupMemberResponse>,
 )

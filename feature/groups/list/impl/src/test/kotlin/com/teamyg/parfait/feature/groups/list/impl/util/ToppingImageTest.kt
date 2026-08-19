@@ -1,8 +1,9 @@
-package com.teamyg.parfait.feature.groups.list.impl.route
+package com.teamyg.parfait.feature.groups.list.impl.util
 
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,6 +18,7 @@ class ToppingImageTest {
         groupName = GroupName("모카의 파르페"),
         recentImageUrl = recentImageUrl,
         recentImageUploadedAt = null,
+        lastPlacedByNametagChip = NametagChipType.DEFAULT,
     )
 
     @Test

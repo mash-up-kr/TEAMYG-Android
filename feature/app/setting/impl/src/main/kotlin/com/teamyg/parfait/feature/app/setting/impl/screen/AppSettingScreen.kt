@@ -82,7 +82,7 @@ internal fun AppSettingScreen(
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
-                        subText = state.version,
+                        subText = stringResource(R.string.setting_item_version_value, state.version),
                     )
                 }
 

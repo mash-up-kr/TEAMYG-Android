@@ -10,24 +10,40 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
+import kotlinx.coroutines.flow.Flow
 
 /**
  * `/api/parfait-groups` 계열 호출. 실패는 모두
  * [com.teamyg.parfait.domain.model.error.AppError] 로 온다.
  */
 interface ParfaitGroupRepository {
-    /** 탈퇴하지 않은 내 그룹을 활동이 최근인 순서로 준다. 없으면 빈 목록 */
-    suspend fun getMyGroups(): Result<List<MyParfaitGroupVO>>
+    /**
+     * 캐시된 내 그룹 목록. `null` 은 아직 한 번도 받지 못했다는 뜻이고 빈 목록과 다르다.
+     * 값을 새로 받으려면 [refreshMyGroups] 를 부른다 — 이 흐름은 스스로 조회하지 않는다.
+     */
+    val myGroups: Flow<List<MyParfaitGroupVO>?>
+
+    /** 캐시된 그룹 상세. 받아 둔 것이 없으면 `null` */
+    fun groupDetail(groupId: GroupId): Flow<ParfaitGroupDetailVO?>
 
     /**
-     * 그룹 하나의 내 닉네임·초대코드·멤버 목록.
+     * 서버에서 목록을 다시 받아 캐시를 덮는다. 실패하면 캐시는 그대로다.
      *
-     * TODO(서버 응답 확장 대기): 그룹명과 정원이 이 응답에 없다. 서버가 groupName·memberLimit 을
-     *  실어 주면 반영한다 — 그때 [GetGroupDetailUseCase] 의 [getMyGroups] 우회 호출을 걷어내고,
-     *  그룹 설정 화면의 남은 자리도 고정값 대신 `memberLimit - members.size` 로 바꾼다.
-     *  지금은 이름을 [getMyGroups] 에서 따로 집어 오고, 정원은 그룹 생성 응답에만 있어 얻을 길이 없다.
+     * 값을 돌려주지 않는 이유: 읽는 길이 [myGroups] 하나여야 한다. 반환값으로도 줄 수 있으면
+     * 화면이 그것을 쓰기 시작하고 캐시는 두 번째 출처가 된다.
      */
-    suspend fun getGroupDetail(groupId: GroupId): Result<ParfaitGroupDetailVO>
+    suspend fun refreshMyGroups(): Result<Unit>
+
+    /**
+     * 서버에서 그 그룹 상세를 다시 받아 캐시를 덮는다. 실패하면 캐시는 그대로다.
+     *
+     * 응답에 그룹명·정원·멤버 칩이 함께 온다(서버 `08df1bf`) — 그전에는 이름을
+     * [refreshMyGroups] 에서 따로 집어 왔고 정원은 얻을 길이 없었다.
+     */
+    suspend fun refreshGroupDetail(groupId: GroupId): Result<Unit>
+
+    /** 세션이 끝났을 때 캐시를 비운다. 인메모리라 suspend 가 아니다 */
+    fun clearGroups()
 
     /** 참여 전에 초대코드가 가리키는 그룹명을 확인한다. 참여 상태는 바뀌지 않는다 */
     suspend fun previewJoin(inviteCode: InviteCode): Result<GroupName>

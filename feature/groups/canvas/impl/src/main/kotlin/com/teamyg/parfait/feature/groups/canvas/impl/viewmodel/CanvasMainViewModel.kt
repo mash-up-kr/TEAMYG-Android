@@ -23,6 +23,8 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
+import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
@@ -33,6 +35,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -205,6 +208,8 @@ constructor(
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
+    private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
+    private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -233,7 +238,7 @@ constructor(
     }
 
     /**
-     * 화면을 열어 둔 채 자정을 넘겼으면 오늘을 다시 센다.
+     * 화면을 열어 둔 채 파르페 하루 경계(새벽 3시)를 넘겼으면 오늘을 다시 센다.
      *
      * [CanvasMainUiState.today] 는 ViewModel 이 만들어질 때 한 번 셌을 뿐이라, 날이 바뀐 뒤
      * 그대로 두면 오늘 조회가 가져온 **새 날의 캔버스**를 어제 날짜 아래에 그리게 된다.
@@ -284,14 +289,13 @@ constructor(
     }
 
     /**
-     * 서버가 멤버 색을 주지 않아 목록 순서로 팔레트를 돌려 쓴다. 순서가 고정이라 같은 그룹을
-     * 다시 열어도 같은 사람에게 같은 색이 간다.
+     * 색은 서버가 배정한 값을 그대로 쓴다 — 목록 순서로 돌리면 멤버가 빠질 때 남은 사람 색이 밀린다.
      */
-    private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = mapIndexed { index, member ->
+    private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = map { member ->
         GroupMemberChip(
             groupMemberId = member.groupMemberId,
             nickname = member.nickname.value,
-            colorChipType = NAMETAG_CHIP_PALETTE[index % NAMETAG_CHIP_PALETTE.size],
+            colorChipType = member.nametagChip.toColorChipType(),
         )
     }
 
@@ -306,10 +310,31 @@ constructor(
         }
     }
 
+    /**
+     * 캔버스 응답에는 그룹명이 없어 그룹 목록 캐시에서 가져온다. 캐시가 비어 있는 진입
+     * (프로세스 재시작 후 캔버스로 복귀)에서만 목록을 한 번 받아 온다 — 이름 한 줄 때문에
+     * 캔버스를 막지 않으므로 그 조회의 실패는 로그로만 남긴다.
+     */
     private fun loadCanvasMainInfo() {
-        updateState {
-            // TODO: 그룹 정보 연동 필요 — 캔버스 응답에는 그룹명이 없다
-            copy(groupName = "그룹이름은최대열글자")
+        viewModelScope.launch {
+            getMyGroupsFlowUseCase().collect { groups ->
+                if (groups == null) return@collect
+
+                val groupName = groups
+                    .firstOrNull { it.groupId == groupId }
+                    ?.groupName
+                    ?.value
+                    .orEmpty()
+                updateState { copy(groupName = groupName) }
+            }
+        }
+
+        launch(key = LOAD_GROUP_NAME_KEY) {
+            if (getMyGroupsFlowUseCase().first() != null) return@launch
+
+            refreshMyGroupsUseCase().onFailure { throwable ->
+                viewModelLogger.e(throwable) { "그룹명을 불러오지 못했다 - groupId: ${groupId.value}" }
+            }
         }
     }
 
@@ -577,15 +602,6 @@ constructor(
 
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 
-        /** 상단 Nametag-Chip 색. 고르는 규칙은 [toMemberChips] 에 있다 */
-        val NAMETAG_CHIP_PALETTE = listOf(
-            YGColorChipType.NametagChip1,
-            YGColorChipType.NametagChip2,
-            YGColorChipType.NametagChip3,
-            YGColorChipType.NametagChip5,
-            YGColorChipType.NametagChip6,
-            YGColorChipType.NametagChip8,
-            YGColorChipType.NametagChip11,
-        )
+        const val LOAD_GROUP_NAME_KEY = "loadGroupName"
     }
 }

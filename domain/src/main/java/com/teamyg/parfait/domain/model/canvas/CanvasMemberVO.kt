@@ -1,6 +1,7 @@
 package com.teamyg.parfait.domain.model.canvas
 
 import com.teamyg.parfait.domain.model.group.GroupNickname
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 
 /**
@@ -13,4 +14,6 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 data class CanvasMemberVO(
     val groupMemberId: GroupMemberId,
     val nickname: GroupNickname,
+    /** 서버가 배정한 칩. 앱이 모르는 값이면 [NametagChipType.DEFAULT] 다. */
+    val nametagChip: NametagChipType,
 )

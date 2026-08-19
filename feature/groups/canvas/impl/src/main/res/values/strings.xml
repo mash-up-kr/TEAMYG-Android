@@ -22,6 +22,7 @@
     <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>
     <string name="canvas_bg_edit_topping_delete_dialog_confirm">삭제하기</string>
     <string name="canvas_bg_edit_topping_delete_dialog_cancel">그만두기</string>
+    <string name="canvas_topping_place_title">토핑배치</string>
 
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>

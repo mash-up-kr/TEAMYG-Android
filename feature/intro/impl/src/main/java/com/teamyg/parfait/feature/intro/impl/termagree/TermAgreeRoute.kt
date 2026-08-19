@@ -8,6 +8,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.auth.RegistrationToken
+import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
@@ -24,7 +25,9 @@ fun TermAgreeRoute(
     LaunchedEffect(Unit) {
         viewModel.effect.collect {
             when (it) {
-                is TermAgreeSideEffect.NavigateToUrl -> { /* navigate to url */ }
+                is TermAgreeSideEffect.NavigateToPolicyDetail -> {
+                    navigator.goTo(NavKeyWebView(title = it.title, url = it.url))
+                }
 
                 is TermAgreeSideEffect.NavigateToBack -> {
                     navigator.onBack()
@@ -42,7 +45,7 @@ fun TermAgreeRoute(
         onClickTermAgree = { termsId, newSelected ->
             viewModel.processIntent(TermAgreeIntent.ClickTermAgree(termsId, newSelected))
         },
-        onClickTermLandingUrl = { viewModel.processIntent(TermAgreeIntent.ClickTermLandingUrl(it)) },
+        onClickTermDetail = { viewModel.processIntent(TermAgreeIntent.ClickTermDetail(it)) },
         onClickAgreeAllTerm = { viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(it)) },
         onClickNextButton = { viewModel.processIntent(TermAgreeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(TermAgreeIntent.ClickBackButton) },

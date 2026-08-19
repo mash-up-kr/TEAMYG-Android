@@ -4,6 +4,8 @@ import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSourceImpl
+import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
+import com.teamyg.parfait.data.source.group.local.GroupLocalDataSourceImpl
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSourceImpl
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
@@ -44,4 +46,8 @@ interface LocalDataSourceModule {
     @Binds
     @Singleton
     fun bindUserInfoLocalDataSource(userInfoLocalDataSourceImpl: UserInfoLocalDataSourceImpl): UserInfoLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindGroupLocalDataSource(groupLocalDataSourceImpl: GroupLocalDataSourceImpl): GroupLocalDataSource
 }

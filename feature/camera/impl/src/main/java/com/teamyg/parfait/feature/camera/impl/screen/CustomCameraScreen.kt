@@ -22,8 +22,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
@@ -39,8 +37,8 @@ import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestC
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
+import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.datetime.format
-import kotlin.time.Clock
 
 @Composable
 internal fun CustomCameraScreen(
@@ -117,7 +115,7 @@ private fun CameraContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
+                val today = remember { parfaitToday() }
                 YGDate(
                     date = today.format(DateTextFormat.monthDayFormat),
                     day = today.format(DateTextFormat.weekdayFormat),
