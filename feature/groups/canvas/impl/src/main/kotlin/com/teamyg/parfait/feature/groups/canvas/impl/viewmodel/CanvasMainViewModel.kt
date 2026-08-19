@@ -258,8 +258,7 @@ constructor(
     }
 
     /**
-     * 색은 서버가 그룹 안에서 배정한 값을 그대로 쓴다 — 목록 순서를 쓰면 멤버가 빠질 때 남은
-     * 사람 색이 밀리고, 같은 사람이 S-101 그룹 설정과 다른 색으로 보인다.
+     * 색은 서버가 배정한 값을 그대로 쓴다 — 목록 순서로 돌리면 멤버가 빠질 때 남은 사람 색이 밀린다.
      */
     private fun List<CanvasMemberVO>.toMemberChips(): List<GroupMemberChip> = map { member ->
         GroupMemberChip(

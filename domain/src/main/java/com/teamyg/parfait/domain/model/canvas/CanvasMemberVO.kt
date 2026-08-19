@@ -14,6 +14,6 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 data class CanvasMemberVO(
     val groupMemberId: GroupMemberId,
     val nickname: GroupNickname,
-    /** 서버가 배정한 칩. 모르는 값이면 `null` 이고 화면은 중립 색으로 떨어뜨린다. */
+    /** 서버가 배정한 칩. 앱이 모르는 값이면 `null` 이다. */
     val nametagChip: NametagChipType?,
 )

@@ -17,9 +17,8 @@ data class CreateParfaitGroupResponse(
     @SerialName("recentImageUrl")
     val recentImageUrl: String? = null,
     /**
-     * 방금 저장한 그룹의 updatedAt 이다 — 목록 응답의 같은 필드는 created_at 이라 출처가 다르다.
-     * 포맷은 목록 응답과 같은 모양이다(오프셋 없음, 벽시계는 Asia/Seoul) — 소비할 때는
-     * `Instant::parse`가 아니라 `LocalDateTime::parse` + 시간대 부여로 읽어야 한다.
+     * 오프셋 없는 로컬 날짜시각이고 벽시계는 KST다 — `Instant::parse` 로 읽으면 던진다.
+     * 목록 응답의 같은 이름 필드와 출처가 달라 두 값이 같다고 가정하면 안 된다.
      */
     @SerialName("recentImageUploadedAt")
     val recentImageUploadedAt: String? = null,

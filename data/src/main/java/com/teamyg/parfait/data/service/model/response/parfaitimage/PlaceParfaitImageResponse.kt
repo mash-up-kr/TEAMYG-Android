@@ -33,9 +33,9 @@ data class PlaceParfaitImageResponse(
 )
 
 /**
- * 배치자. 서버가 캔버스 응답의 동명 클래스와 스키마 충돌을 없애려고 이쪽만 개명했다.
+ * 배치자. 이름이 긴 것은 캔버스 응답의 `PlacedByResponse` 와 구분하려는 서버 이름을 따랐기 때문이다.
  *
- * @param nameTagChip **아직 도메인으로 올리지 않는다** — 이 값을 읽는 화면이 0건이다.
+ * @param nameTagChip 읽는 화면이 생길 때 도메인으로 올린다.
  */
 @Serializable
 data class PlaceParfaitImagePlacedByResponse(

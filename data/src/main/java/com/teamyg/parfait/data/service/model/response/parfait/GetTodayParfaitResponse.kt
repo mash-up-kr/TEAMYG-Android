@@ -30,7 +30,7 @@ data class GetTodayParfaitResponse(
 
 /**
  * @param id 계정 id 가 아니라 그룹 멤버십 행 id 다.
- * @param nameTagChip 서버가 그 그룹 안에서 배정한 칩. 탈퇴자는 이 목록에서 빠지므로 `"DEFAULT"` 는
+ * @param nameTagChip 서버가 그 그룹 안에서 배정한 칩. 이 목록은 탈퇴자를 빼고 오므로 `"DEFAULT"` 는
  *  오지 않는다.
  */
 @Serializable
@@ -85,15 +85,11 @@ data class TodayParfaitImageResponse(
 )
 
 /**
- * 배치자. 같은 이름의 DTO 가 response/parfaitimage 에도 있었으나 서버가 그쪽을
- * PlaceParfaitImagePlacedByResponse 로 개명했다(springdoc 이 두 스키마를 같은 것으로 취급해
- * 이쪽에 추가한 칩이 스웨거에 안 보이던 문제 때문이다). 이 클래스는 서버가 이름을 안 바꿨다.
+ * 배치자.
  *
  * @param nickname 그룹 닉네임이다. 탈퇴·이탈한 멤버면 "(알수없음)"이 온다.
- * @param nameTagChip 그 사람의 칩. 탈퇴했으면 `"DEFAULT"` 다. **아직 도메인으로 올리지 않는다** —
- *  서버는 이제 배치 확정 응답에도 이 값을 주므로 [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO]
- *  를 채울 수 있게 됐지만, `placedBy` 를 읽는 화면이 0건이다. C-202 Spotlight 는 이 값이 아니라
- *  groupMembers 를 GroupMemberId 로 조인해 찾으므로 이 보류에 물리지 않는다.
+ * @param nameTagChip 그 사람의 칩. 탈퇴했으면 `"DEFAULT"` 다. 읽는 화면이 생길 때 도메인으로
+ *  올린다 — 소비자 없이 [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO] 모양을 굳히지 않는다.
  */
 @Serializable
 data class PlacedByResponse(

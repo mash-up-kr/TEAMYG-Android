@@ -40,10 +40,8 @@ internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyP
     groupId = GroupId(groupId),
     groupName = GroupName(groupName),
     recentImageUrl = recentImageUrl,
-    // 서버는 오프셋 없는 로컬 날짜시각을 준다. 그 벽시계가 Asia/Seoul 기준이라는 것이 계약 사실이다 —
-    // 서버 DB 커넥션이 dev·local·prod 세 환경 전부 serverTimezone=Asia/Seoul 이고
-    // hibernate.jdbc.time_zone 도 같다(api/parfait-group.md 타임존 절). 그래서 여기서 시간대를
-    // 부여해 절대 시점으로 만든다 — 벽시계 숫자를 그대로 들면 기기 타임존에 따라 다른 시점이 된다.
+    // 서버는 오프셋 없는 로컬 날짜시각을 주고 그 벽시계는 KST다(api/parfait-group.md 타임존 절).
+    // 오프셋을 안 붙이면 기기 타임존에 따라 다른 시점이 된다.
     recentImageUploadedAt = recentImageUploadedAt
         ?.let(LocalDateTime::parse)
         ?.toInstant(PARFAIT_TIME_ZONE),
