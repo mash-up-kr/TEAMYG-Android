@@ -1,5 +1,7 @@
 package com.teamyg.parfait.domain.repository.parfait
 
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -45,4 +47,19 @@ interface ParfaitRepository {
         groupId: GroupId,
         parfaitId: ParfaitId,
     ): Result<CanvasVO>
+
+    /**
+     * 캔버스 배경을 단색 또는 이미지로 바꾸고 저장된 배경을 돌려받는다.
+     *
+     * 반환값이 필요한 이유: 이미지 배경은 보낼 때 imageId, 받을 때 URL 이라 앱은 방금 저장한
+     * 배경의 주소를 이 응답으로만 알 수 있다. 앱이 모르는 type 이 오면 조회와 같은 규칙으로
+     * null 이다 — 저장은 됐지만 그릴 수 없다는 뜻이다.
+     *
+     * ⚠️ 서버가 캔버스 상태를 보지 않아 마감된 캔버스의 배경도 바뀐다 — 막는 것은 화면 책임이다.
+     */
+    suspend fun changeCanvasBackground(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        background: CanvasBackgroundEdit,
+    ): Result<CanvasBackground?>
 }

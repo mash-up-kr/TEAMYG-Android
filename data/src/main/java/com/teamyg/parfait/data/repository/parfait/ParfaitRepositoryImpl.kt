@@ -2,6 +2,8 @@ package com.teamyg.parfait.data.repository.parfait
 
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -38,5 +40,13 @@ class ParfaitRepositoryImpl @Inject constructor(
         parfaitId: ParfaitId,
     ): Result<CanvasVO> = parfaitRemoteDataSource
         .getCanvasDetail(groupId = groupId, parfaitId = parfaitId)
+        .mapErrorToAppError()
+
+    override suspend fun changeCanvasBackground(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        background: CanvasBackgroundEdit,
+    ): Result<CanvasBackground?> = parfaitRemoteDataSource
+        .changeCanvasBackground(groupId = groupId, parfaitId = parfaitId, background = background)
         .mapErrorToAppError()
 }
