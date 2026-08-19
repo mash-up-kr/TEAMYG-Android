@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.group.GroupNickname
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
@@ -90,7 +91,18 @@ private fun BackgroundResponse.toCanvasBackground(): CanvasBackground? = when (t
 private fun GroupMemberResponse.toCanvasMemberVO(): CanvasMemberVO = CanvasMemberVO(
     groupMemberId = GroupMemberId(id),
     nickname = GroupNickname(nickname),
+    nametagChip = nameTagChip.toNametagChipType(),
 )
+
+/**
+ * 서버가 주는 칩 이름을 도메인 값으로 바꾼다. 열린 입력이라 모르는 문자열은 `null` 로 접는다 —
+ * 새 타입이 서버에 먼저 들어와도 캔버스 조회가 통째로 실패하지 않아야 한다.
+ *
+ * group 매퍼에도 같은 함수가 있다. 서로 private 이라 공유하지 않는다 — 두 도메인 매퍼가 서로를
+ * 보게 만드는 것보다 낫다고 판단했다.
+ */
+private fun String?.toNametagChipType(): NametagChipType? =
+    this?.let { raw -> NametagChipType.entries.firstOrNull { it.name == raw } }
 
 private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = CanvasToppingVO(
     parfaitImageId = ParfaitImageId(parfaitImageId),

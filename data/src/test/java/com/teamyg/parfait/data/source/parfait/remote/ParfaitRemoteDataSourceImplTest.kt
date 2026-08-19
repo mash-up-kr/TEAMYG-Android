@@ -17,6 +17,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.group.GroupNickname
+import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -69,6 +70,7 @@ class ParfaitRemoteDataSourceImplTest {
         lastClosedDate: String? = "2026-08-14",
         background: BackgroundResponse? = BackgroundResponse(type = "COLOR", value = "#FFEEDD"),
         images: List<TodayParfaitImageResponse>? = listOf(toppingResponse()),
+        memberChip: String? = "TYPE6",
     ) = ApiResponse(
         success = true,
         code = "SUCCESS",
@@ -78,7 +80,9 @@ class ParfaitRemoteDataSourceImplTest {
             date = "2026-08-15",
             status = status,
             lastClosedDate = lastClosedDate,
-            groupMembers = listOf(GroupMemberResponse(id = 5L, nickname = "행복한 판다")),
+            groupMembers = listOf(
+                GroupMemberResponse(id = 5L, nickname = "행복한 판다", nameTagChip = memberChip),
+            ),
             background = background,
             images = images,
         ),
@@ -261,6 +265,30 @@ class ParfaitRemoteDataSourceImplTest {
         assertTrue(result.isFailure)
         val error = assertIs<ApiException.Business>(result.exceptionOrNull())
         assertEquals("GROUP_NOT_JOINED", error.code)
+    }
+
+    @Test
+    fun getTodayCanvas_memberChip_becomesThatType() = runTest {
+        // Given 서버가 그룹 멤버마다 배정된 칩을 준다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns todaySuccess()
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 도메인 enum 으로 넘어온다 — 상단 멤버 칩을 계약으로 그릴 수 있다
+        assertEquals(NametagChipType.TYPE6, canvas.members.single().nametagChip)
+    }
+
+    @Test
+    fun getTodayCanvas_unknownMemberChip_foldsToNull() = runTest {
+        // Given 서버가 앱이 모르는 값을 준다 — 열린 입력이다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns todaySuccess(memberChip = "TYPE99")
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 던지지 않고 null 로 접는다 — 모르는 색은 그리지 못할 뿐이다
+        assertNull(canvas.members.single().nametagChip)
     }
 
     @Test

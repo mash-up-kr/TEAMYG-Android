@@ -30,6 +30,8 @@ data class GetTodayParfaitResponse(
 
 /**
  * @param id 계정 id 가 아니라 그룹 멤버십 행 id 다.
+ * @param nameTagChip 서버가 그 그룹 안에서 배정한 칩. 탈퇴자는 이 목록에서 빠지므로 `"DEFAULT"` 는
+ *  오지 않는다.
  */
 @Serializable
 data class GroupMemberResponse(
@@ -37,6 +39,8 @@ data class GroupMemberResponse(
     val id: Long,
     @SerialName("nickname")
     val nickname: String,
+    @SerialName("nameTagChip")
+    val nameTagChip: String? = null,
 )
 
 /**

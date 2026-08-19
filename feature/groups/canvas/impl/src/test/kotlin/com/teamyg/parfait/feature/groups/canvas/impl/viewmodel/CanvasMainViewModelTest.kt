@@ -211,6 +211,7 @@ class CanvasMainViewModelTest {
         fun member(nickname: String) = CanvasMemberVO(
             groupMemberId = GroupMemberId(1L),
             nickname = GroupNickname(nickname),
+            nametagChip = null,
         )
 
         fun canvas(
