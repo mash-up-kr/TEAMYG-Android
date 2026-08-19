@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -79,11 +79,7 @@ internal fun CanvasToppingLayer(
                 modifier = Modifier
                     .matchParentSize()
                     .background(YGAtomicColors.Transparency.Black50)
-                    .clickable(
-                        interactionSource = null,
-                        indication = null,
-                        onClick = onClickSpotlightDim,
-                    ),
+                    .clickableYGNoRipple(onClick = onClickSpotlightDim),
             )
 
             CanvasTopping(
@@ -121,7 +117,7 @@ private fun CanvasTopping(
                 ),
             ).size(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() }
-            .clickable(interactionSource = null, indication = null, onClick = onClick),
+            .clickableYGNoRipple(onClick = onClick),
     ) {
         ToppingImage(
             imageUrl = topping.imageUrl,
