@@ -31,10 +31,10 @@ class GrouptagChipTypeTest {
     }
 
     @Test
-    fun toGrouptagChipType_releasedFallsBackToDefault() {
+    fun toGrouptagChipType_defaultFallsBackToDefault() {
         // Given 마지막 토퍼가 그룹을 나갔다
         // When/Then 나간 사람 색을 계속 쓰지 않고 중립으로 간다
-        assertEquals(YGGrouptagChipType.DEFAULT, NametagChipType.RELEASED.toGrouptagChipType())
+        assertEquals(YGGrouptagChipType.DEFAULT, NametagChipType.DEFAULT.toGrouptagChipType())
     }
 
     @Test

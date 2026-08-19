@@ -71,15 +71,15 @@ class ParfaitGroupRemoteDataSourceImplTest {
     }
 
     @Test
-    fun getMyGroups_releasedChip_isKeptNotFolded() = runTest {
+    fun getMyGroups_defaultChip_isKeptNotFolded() = runTest {
         // Given 마지막 토퍼가 그룹을 나가 서버가 반납 표식을 준다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("RELEASED")))
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("DEFAULT")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
 
         // Then null 로 접지 않는다 — "나간 사람"과 "값이 없다"는 뜻이 다르다
-        assertEquals(NametagChipType.RELEASED, result.getOrNull()?.single()?.lastPlacedByNametagChip)
+        assertEquals(NametagChipType.DEFAULT, result.getOrNull()?.single()?.lastPlacedByNametagChip)
     }
 
     @Test

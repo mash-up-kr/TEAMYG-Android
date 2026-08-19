@@ -31,10 +31,10 @@ class ColorChipTypeTest {
     }
 
     @Test
-    fun toColorChipType_releasedFallsBackToDefault() {
+    fun toColorChipType_defaultFallsBackToDefault() {
         // Given 마지막 토퍼가 그룹을 나가 자리가 반납됐다
         // When/Then 나간 사람 색을 계속 쓰지 않고 중립으로 간다
-        assertEquals(YGColorChipType.Default, NametagChipType.RELEASED.toColorChipType())
+        assertEquals(YGColorChipType.Default, NametagChipType.DEFAULT.toColorChipType())
     }
 
     @Test

@@ -25,5 +25,5 @@ internal fun NametagChipType?.toColorChipType(): YGColorChipType = when (this) {
     NametagChipType.TYPE10 -> YGColorChipType.NametagChip10
     NametagChipType.TYPE11 -> YGColorChipType.NametagChip11
     NametagChipType.TYPE12 -> YGColorChipType.NametagChip12
-    NametagChipType.RELEASED, null -> YGColorChipType.Default
+    NametagChipType.DEFAULT, null -> YGColorChipType.Default
 }
