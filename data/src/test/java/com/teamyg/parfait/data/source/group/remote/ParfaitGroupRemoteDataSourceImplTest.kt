@@ -139,6 +139,19 @@ class ParfaitGroupRemoteDataSourceImplTest {
     }
 
     @Test
+    fun getMyGroups_missingUploadedAt_isNull() = runTest {
+        // Given 서버가 시각을 주지 않는다(구버전 서버·롤백)
+        coEvery { parfaitGroupService.getParfaitGroups() } returns
+            success(listOf(groupResponse(null, recentImageUploadedAt = null)))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 던지지 않고 null 그대로 둔다 — 널 허용을 유지하기로 한 결정을 여기서 잠근다
+        assertNull(result.getOrNull()?.single()?.recentImageUploadedAt)
+    }
+
+    @Test
     fun getGroupDetail_carriesNameLimitAndMemberChip() = runTest {
         // Given 서버가 그룹명·정원·멤버 칩을 함께 준다
         coEvery { parfaitGroupService.getParfaitGroupsByGroupId(1L) } returns success(detailResponse("TYPE3"))
