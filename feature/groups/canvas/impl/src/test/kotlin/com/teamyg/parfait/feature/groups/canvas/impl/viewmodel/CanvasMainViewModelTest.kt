@@ -240,7 +240,7 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun enter_memberWithoutAChip_getsTheNeutralColour() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_memberWithDefaultChip_getsTheNeutralColour() = runTest(mainDispatcherRule.dispatcher) {
         // Given 서버가 앱이 모르는 값을 줘 매퍼가 DEFAULT 로 접었다
         coEvery { getTodayParfait(any()) } returns Result.success(
             canvas(

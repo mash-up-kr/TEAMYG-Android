@@ -71,14 +71,14 @@ class ParfaitGroupRemoteDataSourceImplTest {
     }
 
     @Test
-    fun getMyGroups_defaultChip_isKeptNotFolded() = runTest {
+    fun getMyGroups_defaultChipString_becomesDefault() = runTest {
         // Given 마지막 토퍼가 그룹을 나가 서버가 반납 표식을 준다
         coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("DEFAULT")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
 
-        // Then null 로 접지 않는다 — "나간 사람"과 "값이 없다"는 뜻이 다르다
+        // Then 반납 표식도 이름 그대로 온다 — 폴백 경로가 아니라 정규 경로다
         assertEquals(NametagChipType.DEFAULT, result.getOrNull()?.single()?.lastPlacedByNametagChip)
     }
 
@@ -163,5 +163,18 @@ class ParfaitGroupRemoteDataSourceImplTest {
         assertEquals("모카의 파르페", detail?.groupName?.value)
         assertEquals(12, detail?.memberLimit)
         assertEquals(NametagChipType.TYPE3, detail?.members?.single()?.nametagChip)
+    }
+
+    @Test
+    fun getGroupDetail_unknownMemberChip_foldsToDefault() = runTest {
+        // Given 이 목록은 탈퇴자를 빼고 오므로 반납 표식이 올 자리가 아닌데, 서버가 앱이
+        // 모르는 값을 준다
+        coEvery { parfaitGroupService.getParfaitGroupsByGroupId(1L) } returns success(detailResponse("TYPE99"))
+
+        // When 상세를 받는다
+        val detail = dataSource.getGroupDetail(GroupId(1L)).getOrNull()
+
+        // Then 던지지 않고 DEFAULT 로 접는다 — 멤버 하나 때문에 상세가 통째로 실패하지 않는다
+        assertEquals(NametagChipType.DEFAULT, detail?.members?.single()?.nametagChip)
     }
 }
