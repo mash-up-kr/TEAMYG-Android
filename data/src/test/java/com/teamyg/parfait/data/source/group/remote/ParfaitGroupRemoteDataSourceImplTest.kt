@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class ParfaitGroupRemoteDataSourceImplTest {
     private val parfaitGroupService: ParfaitGroupService = mockk()
@@ -31,11 +32,14 @@ class ParfaitGroupRemoteDataSourceImplTest {
         data = data,
     )
 
-    private fun groupResponse(lastPlacedByNametagChip: String?) = MyParfaitGroupResponse(
+    private fun groupResponse(
+        lastPlacedByNametagChip: String?,
+        recentImageUploadedAt: String? = null,
+    ) = MyParfaitGroupResponse(
         groupId = 1L,
         groupName = "모카의 파르페",
         recentImageUrl = null,
-        recentImageUploadedAt = null,
+        recentImageUploadedAt = recentImageUploadedAt,
         lastPlacedByNametagChip = lastPlacedByNametagChip,
     )
 
@@ -100,6 +104,38 @@ class ParfaitGroupRemoteDataSourceImplTest {
 
         // Then 던지지 않고 null 로 접는다 — 모르는 색은 그리지 못할 뿐이다
         assertNull(result.getOrNull()?.single()?.lastPlacedByNametagChip)
+    }
+
+    @Test
+    fun getMyGroups_offsetlessUploadedAt_isReadAsSeoulWallClock() = runTest {
+        // Given 서버가 오프셋 없는 로컬 날짜시각을 준다 — 그 벽시계는 Asia/Seoul 기준이다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns
+            success(listOf(groupResponse(null, recentImageUploadedAt = "2026-08-01T12:00:00")))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then KST 정오는 UTC 오전 3시와 같은 시점이다
+        assertEquals(
+            Instant.parse("2026-08-01T03:00:00Z"),
+            result.getOrNull()?.single()?.recentImageUploadedAt,
+        )
+    }
+
+    @Test
+    fun getMyGroups_uploadedAtAcrossMidnight_staysOnItsOwnSeoulDay() = runTest {
+        // Given 자정 직후 값이다 — UTC 로 읽으면 전날로 밀린다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns
+            success(listOf(groupResponse(null, recentImageUploadedAt = "2026-08-02T00:30:00")))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 서울 벽시계 8월 2일 00:30 = UTC 8월 1일 15:30
+        assertEquals(
+            Instant.parse("2026-08-01T15:30:00Z"),
+            result.getOrNull()?.single()?.recentImageUploadedAt,
+        )
     }
 
     @Test

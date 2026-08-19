@@ -9,6 +9,7 @@ import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupRespon
 import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberResponse
 import com.teamyg.parfait.data.service.model.response.group.PreviewParfaitGroupJoinResponse
 import com.teamyg.parfait.data.service.model.response.group.ReportParfaitGroupResponse
+import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.group.CreatedGroupVO
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
@@ -23,7 +24,8 @@ import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
-import kotlin.time.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toInstant
 
 /**
  * 서버가 주는 칩 이름을 도메인 값으로 바꾼다.
@@ -38,8 +40,13 @@ internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyP
     groupId = GroupId(groupId),
     groupName = GroupName(groupName),
     recentImageUrl = recentImageUrl,
-    // 오프셋(`Z`)째로 읽는다 — 벽시계 숫자로 받으면 기기 타임존에 따라 다른 시점이 된다
-    recentImageUploadedAt = recentImageUploadedAt?.let(Instant::parse),
+    // 서버는 오프셋 없는 로컬 날짜시각을 준다. 그 벽시계가 Asia/Seoul 기준이라는 것이 계약 사실이다 —
+    // 서버 DB 커넥션이 dev·local·prod 세 환경 전부 serverTimezone=Asia/Seoul 이고
+    // hibernate.jdbc.time_zone 도 같다(api/parfait-group.md 타임존 절). 그래서 여기서 시간대를
+    // 부여해 절대 시점으로 만든다 — 벽시계 숫자를 그대로 들면 기기 타임존에 따라 다른 시점이 된다.
+    recentImageUploadedAt = recentImageUploadedAt
+        ?.let(LocalDateTime::parse)
+        ?.toInstant(PARFAIT_TIME_ZONE),
     lastPlacedByNametagChip = lastPlacedByNametagChip.toNametagChipType(),
 )
 
