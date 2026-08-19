@@ -3,7 +3,7 @@ package com.teamyg.parfait.data.source.parfaitimage.mapper
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
-import com.teamyg.parfait.data.service.model.response.parfaitimage.PlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
@@ -60,7 +60,7 @@ internal fun PlaceParfaitImageResponse.toPlacedToppingVO(): PlacedToppingVO = Pl
     placedBy = placedBy.toToppingPlacerVO(),
 )
 
-private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
+private fun PlaceParfaitImagePlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
     groupMemberId = GroupMemberId(groupMemberId),
     nickname = GroupNickname(nickname),
 )

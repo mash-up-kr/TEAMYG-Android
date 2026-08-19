@@ -29,13 +29,20 @@ data class PlaceParfaitImageResponse(
     @SerialName("rotation")
     val rotation: Double,
     @SerialName("placedBy")
-    val placedBy: PlacedByResponse,
+    val placedBy: PlaceParfaitImagePlacedByResponse,
 )
 
+/**
+ * 배치자. 서버가 캔버스 응답의 동명 클래스와 스키마 충돌을 없애려고 이쪽만 개명했다.
+ *
+ * @param nameTagChip **아직 도메인으로 올리지 않는다** — 이 값을 읽는 화면이 0건이다.
+ */
 @Serializable
-data class PlacedByResponse(
+data class PlaceParfaitImagePlacedByResponse(
     @SerialName("groupMemberId")
     val groupMemberId: Long,
     @SerialName("nickname")
     val nickname: String,
+    @SerialName("nameTagChip")
+    val nameTagChip: String? = null,
 )

@@ -8,7 +8,7 @@ import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitI
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
-import com.teamyg.parfait.data.service.model.response.parfaitimage.PlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
@@ -61,7 +61,7 @@ class ParfaitImageRemoteDataSourceImplTest {
             positionZ = 1,
             scale = 1.0,
             rotation = 0.0,
-            placedBy = PlacedByResponse(groupMemberId = 10L, nickname = "연경이"),
+            placedBy = PlaceParfaitImagePlacedByResponse(groupMemberId = 10L, nickname = "연경이"),
         ),
     )
 
