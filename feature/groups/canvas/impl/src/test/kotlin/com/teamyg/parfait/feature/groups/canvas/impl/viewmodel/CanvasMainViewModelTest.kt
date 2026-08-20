@@ -1,11 +1,13 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -35,6 +37,7 @@ import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class CanvasMainViewModelTest {
@@ -256,6 +259,41 @@ class CanvasMainViewModelTest {
             viewModel.state.value.memberChips
                 .map(GroupMemberChip::colorChipType),
         )
+    }
+
+    @Test
+    fun enter_todayCanvasFailsWithNothingOnScreen_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 한 번도 못 받은 화면
+        coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            // When 화면이 앞에 서면서 나간 조회가 실패한다
+            viewModel.processIntent(CanvasMainIntent.Enter)
+            advanceUntilIdle()
+
+            // Then 빈 캔버스와 조회 실패가 구분되지 않으므로 따로 알린다. 알리지 않으면
+            // 토핑 추가 버튼이 왜 안 눌리는지까지 보이지 않는다
+            assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
+        }
+    }
+
+    @Test
+    fun enter_todayCanvasFailsAfterOneIsShown_staysQuiet() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 오늘 캔버스를 그린 화면
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 돌아오면서 저절로 나간 재조회가 실패한다
+            coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
+            viewModel.processIntent(CanvasMainIntent.Enter)
+            advanceUntilIdle()
+
+            // Then 화면이 앞에 설 때마다 재조회하므로 매번 알리면 방해가 된다. 보여 줄
+            // 캔버스가 남아 있으면 조용히 넘어간다
+            expectNoEvents()
+        }
+        assertTrue(viewModel.state.value.todayCanvas != null)
     }
 
     private companion object {

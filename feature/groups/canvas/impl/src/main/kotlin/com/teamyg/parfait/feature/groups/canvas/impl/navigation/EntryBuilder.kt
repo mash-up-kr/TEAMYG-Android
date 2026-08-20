@@ -22,15 +22,11 @@ import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingPlaceRou
 
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasMain> { navKey ->
-        YGScaffold { innerPadding ->
-            CanvasMainRoute(
-                groupId = navKey.groupId,
-                navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
+        CanvasMainRoute(
+            groupId = navKey.groupId,
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 
     entry<NavKeyCanvasBGEdit> {

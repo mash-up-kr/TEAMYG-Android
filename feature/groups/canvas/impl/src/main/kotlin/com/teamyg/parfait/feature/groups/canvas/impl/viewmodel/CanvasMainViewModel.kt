@@ -145,6 +145,12 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val nicknameColor: Color,
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
+
+    /**
+     * 오늘 캔버스를 못 받았고 보여 줄 것도 없을 때만 온다. 화면이 앞에 설 때마다 재조회하므로
+     * 매번 알리면 방해가 된다(`specs/2026-08-20-c106-topping-place-api.md` C-001 절).
+     */
+    data object ShowTodayCanvasError : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -275,6 +281,9 @@ constructor(
                     }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                    if (state.value.todayCanvas == null) {
+                        postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
+                    }
                 }
         }
     }
