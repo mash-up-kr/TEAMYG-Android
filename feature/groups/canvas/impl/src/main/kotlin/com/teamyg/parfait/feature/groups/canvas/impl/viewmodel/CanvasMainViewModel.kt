@@ -269,8 +269,10 @@ constructor(
                     viewedCanvas = null,
                 )
             } else {
-                // 지난 날을 보고 있었다면 그 캔버스는 그대로 유효하다
-                copy(today = today)
+                // 보고 있던 지난 날(viewedCanvas)은 마감돼 그대로 유효하지만, todayCanvas 는
+                // 더 이상 "오늘 것"이 아니므로 비운다 — 안 비우면 "오늘의 파르페 가기"로 돌아갔을
+                // 때 어제 캔버스가 오늘 것으로 오인돼 그 위에 토핑이 올라간다
+                copy(today = today, todayCanvas = null)
             }
         }
     }
@@ -517,7 +519,13 @@ constructor(
         }
     }
 
-    /** 달력도 오늘이 있는 달로 따라간다 */
+    /**
+     * 달력도 오늘이 있는 달로 따라간다.
+     *
+     * [CanvasMainUiState.todayCanvas] 가 비어 있을 수 있다 — 지난 날을 보는 동안 하루 경계를
+     * 넘으면 [syncToday] 가 낡은 값을 비워 둔다. 그 상태로 그냥 돌아오면 캔버스도 못 받은 채
+     * 토핑 추가 버튼만 잠긴 화면이 되므로 다시 부른다.
+     */
     private fun handleClickGoToToday() {
         updateState {
             copy(
@@ -530,6 +538,9 @@ constructor(
         val current = state.value
         if (current.parfaitHistoriesByYear.containsKey(current.today.year).not()) {
             loadParfaitHistories(current.today.year)
+        }
+        if (current.todayCanvas == null) {
+            loadTodayCanvas()
         }
     }
 
@@ -582,8 +593,8 @@ constructor(
     }
 
     /**
-     * 흐름에 들어서는 순간 초안을 새로 쓴다. 그 뒤에야 화면을 옮긴다 — 초안 없이 들어가면
-     * 촬영·누끼·편집을 다 마친 뒤에야 올릴 데가 없다는 것을 알게 된다.
+     * 흐름에 들어서는 순간 초안을 새로 쓴다. 그 뒤에야 화면을 옮긴다 — 이유는
+     * [CanvasMainUiState.isToppingAddEnabled] 참고.
      */
     private fun startToppingFlow(effect: CanvasMainEffect) {
         val canvas = state.value.todayCanvas ?: return
