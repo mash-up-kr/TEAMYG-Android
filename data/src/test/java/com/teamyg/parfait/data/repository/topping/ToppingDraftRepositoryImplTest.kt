@@ -16,7 +16,9 @@ import org.junit.Before
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ToppingDraftRepositoryImplTest {
     private val toppingDraftLocalDataSource: ToppingDraftLocalDataSource = mockk(relaxUnitFun = true)
@@ -116,6 +118,79 @@ class ToppingDraftRepositoryImplTest {
 
         // Then 저장소에서 지운다 — 지우지 않으면 다음 흐름의 진입 전까지 낡은 초안이 읽힌다
         coVerify(exactly = 1) { toppingDraftLocalDataSource.clear() }
+    }
+
+    @Test
+    fun record_keepsCanvasIdentity_andFillsImages() = runTest {
+        // Given 흐름 진입만 마친 초안(이미지·테두리가 비어 있다)
+        givenStoredDraft(draft(subjectImagePath = null, cutoutImagePath = null))
+        val saved = slot<ToppingDraft>()
+        coEvery { toppingDraftLocalDataSource.save(capture(saved)) } returns Unit
+
+        // When 세그멘테이션 결과를 적는다
+        val recorded = repository().record(
+            subjectImagePath = "/cache/segmentation/subject.png",
+            cutoutImagePath = "/cache/segmentation/cutout.png",
+            borderColorArgb = null,
+            borderWidthDp = null,
+        )
+
+        // Then 진입 때 못 박은 캔버스 식별값은 건드리지 않는다 — 그것이 이 배치의 전제다
+        assertTrue(recorded)
+        assertEquals(
+            ToppingDraft(
+                groupId = GROUP_ID,
+                parfaitId = PARFAIT_ID,
+                nextPositionZ = 4,
+                subjectImagePath = "/cache/segmentation/subject.png",
+                cutoutImagePath = "/cache/segmentation/cutout.png",
+            ),
+            saved.captured,
+        )
+    }
+
+    @Test
+    fun record_withoutBorder_dropsThePreviousOne() = runTest {
+        // Given 테두리까지 적혀 있던 초안
+        givenStoredDraft(
+            draft(
+                subjectImagePath = "/cache/segmentation/old.png",
+                cutoutImagePath = "/cache/segmentation/old-cutout.png",
+            ).copy(borderColorArgb = 0xFFFF0000.toInt(), borderWidthDp = 10f),
+        )
+        val saved = slot<ToppingDraft>()
+        coEvery { toppingDraftLocalDataSource.save(capture(saved)) } returns Unit
+
+        // When 테두리를 벗긴 편집 결과를 적는다
+        repository().record(
+            subjectImagePath = "/cache/segmentation/new.png",
+            cutoutImagePath = "/cache/segmentation/new-cutout.png",
+            borderColorArgb = null,
+            borderWidthDp = null,
+        )
+
+        // Then 지난 테두리가 살아남지 않는다 — 병합하면 방금 벗긴 테두리가 배치까지 따라간다
+        assertNull(saved.captured.borderColorArgb)
+        assertNull(saved.captured.borderWidthDp)
+    }
+
+    @Test
+    fun record_withNoOpenFlow_writesNothing() = runTest {
+        // Given 흐름 밖이다(진입이 초안을 쓰지 못했거나 이미 비워졌다)
+        givenStoredDraft(null)
+
+        // When 결과를 적으려 한다
+        val recorded = repository().record(
+            subjectImagePath = "/cache/segmentation/subject.png",
+            cutoutImagePath = "/cache/segmentation/cutout.png",
+            borderColorArgb = null,
+            borderWidthDp = null,
+        )
+
+        // Then 캔버스 식별값 없는 초안을 지어내지 않는다 — 그걸 만들면 배치까지 가서야 올릴 데가
+        // 없다는 것을 알게 된다
+        assertFalse(recorded)
+        coVerify(exactly = 0) { toppingDraftLocalDataSource.save(any()) }
     }
 
     private companion object {
