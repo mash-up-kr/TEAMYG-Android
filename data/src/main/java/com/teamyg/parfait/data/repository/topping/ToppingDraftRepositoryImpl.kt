@@ -7,7 +7,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import java.io.File
@@ -16,11 +15,9 @@ import javax.inject.Inject
 class ToppingDraftRepositoryImpl @Inject constructor(
     private val toppingDraftLocalDataSource: ToppingDraftLocalDataSource,
 ) : ToppingDraftRepository {
-    // 초안 하나가 앉은 DataStore 는 토큰·계정·최근 이미지도 함께 쓰는 파일이라, 남의 쓰기마다
-    // 이 흐름이 다시 방출된다. 파일 확인이 수집자 디스패처에서 도는 것을 막고 같은 값의
-    // 재방출을 걸러 낸다
+    // 재방출 dedupe 는 원문 단계(ToppingDraftLocalDataSourceImpl.draft)에서 이미 끝났다.
+    // 파일 확인만 수집자 디스패처 밖으로 옮긴다
     override val draft: Flow<ToppingDraft?> = toppingDraftLocalDataSource.draft
-        .distinctUntilChanged()
         .map { draft -> draft?.withExistingFilesOnly() }
         .flowOn(Dispatchers.IO)
 

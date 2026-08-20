@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.model.local.toVO
 import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -22,8 +23,13 @@ constructor(
     private val dataStore: DataStore<Preferences>,
     @LocalJson private val json: Json,
 ) : ToppingDraftLocalDataSource {
+    // 이 DataStore 는 토큰·계정·최근 이미지와 파일을 공유해 남의 키 하나만 바뀌어도 `data` 가
+    // 재방출한다. `EncryptedPreferences.observe` 와 같은 이유로, 원문에서 먼저 dedupe 한 뒤에
+    // decode 한다 — 순서를 바꾸면 남의 쓰기마다 안 바뀐 JSON 을 매번 다시 파싱하게 된다.
     override val draft: Flow<ToppingDraft?> = dataStore.data
-        .map { prefs -> decode(prefs[TOPPING_DRAFT_KEY]) }
+        .map { prefs -> prefs[TOPPING_DRAFT_KEY] }
+        .distinctUntilChanged()
+        .map { raw -> decode(raw) }
 
     override suspend fun save(draft: ToppingDraft) {
         dataStore.edit { prefs ->
