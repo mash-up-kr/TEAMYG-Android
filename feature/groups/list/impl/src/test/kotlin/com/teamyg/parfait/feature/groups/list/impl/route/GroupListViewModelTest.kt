@@ -345,7 +345,7 @@ class GroupListViewModelTest {
             advanceUntilIdle()
 
             // Then 돌아왔을 때 누른 적 없는 오버레이가 떠 있지 않도록 접고 나간다
-            assertEquals(GroupListSideEffect.NavigateToCreateGroup, awaitItem())
+            assertEquals(GroupListSideEffect.NavigateToCreateGroup("모카"), awaitItem())
             assertFalse(viewModel.state.value.groupAddButtonSelected)
         }
     }
