@@ -38,16 +38,17 @@ class PresignedUploadDataSourceImplTest {
 
     @Test
     fun impl_injectsUploadQualifiedClient() {
-        // Given·When 생성자에 붙은 한정자를 본다
+        // Given·When 생성자에 붙은 모든 파라미터의 한정자를 본다
         val qualifiers = PresignedUploadDataSourceImpl::class.java
             .declaredConstructors
             .single()
             .parameterAnnotations
-            .single()
+            .flatMap { it.toList() }
             .map { annotation -> annotation.annotationClass }
 
-        // Then @UploadClient 다. 빠지면 공유 클라이언트가 주입돼 Authorization 이 붙고 업로드가
-        // 통째로 죽는데, 이 PR 은 소비자가 0 이라 컴파일도 assembleDebug 도 그것을 못 잡는다
+        // Then @UploadClient 가 어딘가에 붙어 있다. 빠지면 공유 클라이언트가 주입돼 Authorization 이
+        // 붙고 업로드가 통째로 죽는데, 소비자가 없는 바인딩은 Dagger 도달성 검증 대상이 아니라
+        // 컴파일도 assembleDebug 도 그것을 못 잡는다
         assertTrue(UploadClient::class in qualifiers)
     }
 

@@ -150,6 +150,41 @@ class ImageUploadRepositoryImplTest {
     }
 
     @Test
+    fun upload_allStepsSucceed_sendsGivenImageType() = runTest {
+        // Given 발급·전송·확인이 모두 성공한다
+        givenAllStepsSucceed()
+        val imageType = slot<ImageType>()
+        coEvery {
+            imageRemoteDataSource.issueUploadUrl(any(), any(), capture(imageType))
+        } returns Result.success(issued)
+
+        // When NUKKI 가 아닌 imageType 으로 업로드한다
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+
+        // Then 넘긴 값이 그대로 발급 요청까지 간다 — 하드코딩되면 서버가 엉뚱한 S3 키 접두사로 저장한다
+        assertEquals(ImageType.BACKGROUND, imageType.captured)
+    }
+
+    @Test
+    fun upload_allStepsSucceed_usesJpegContentTypeForJpgFile() = runTest {
+        // Given .jpg 파일로 발급·전송·확인이 모두 성공한다
+        val jpgFile = File.createTempFile("topping", ".jpg")
+        jpgFile.deleteOnExit()
+        jpgFile.writeBytes(ByteArray(FILE_SIZE))
+        givenAllStepsSucceed()
+        val issuedContentType = slot<String>()
+        coEvery {
+            imageRemoteDataSource.issueUploadUrl(any(), capture(issuedContentType), any())
+        } returns Result.success(issued)
+
+        // When 업로드한다
+        repository.upload(filePath = jpgFile.absolutePath, imageType = ImageType.NUKKI)
+
+        // Then image/jpg 가 아니라 image/jpeg 다 — image/jpg 는 서버가 INVALID_CONTENT_TYPE 으로 거절한다
+        assertEquals("image/jpeg", issuedContentType.captured)
+    }
+
+    @Test
     fun upload_issueFails_doesNotPutOrConfirm() = runTest {
         // Given 발급이 실패한다
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.failure(
