@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.model.error.toAppError
+import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -26,7 +27,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
         }
         // 발급 요청과 PUT 헤더가 같은 값을 써야 한다 — 둘 다 S3 서명 대상이고 어긋난 실패는
         // 서버 로그에 남지 않는다. 그래서 여기서 한 번만 정해 양쪽에 넘긴다
-        val contentType = contentTypeOf(file) ?: return Result.failure(
+        val contentType = UploadImageFormat.ofExtension(file.extension)?.contentType ?: return Result.failure(
             IllegalArgumentException("서버가 받지 않는 확장자다 - ${file.extension}").toAppError(),
         )
 
@@ -42,11 +43,5 @@ class ImageUploadRepositoryImpl @Inject constructor(
             .confirmUpload(issued.imageId)
             .map { confirmed -> confirmed.imageId }
             .mapErrorToAppError()
-    }
-
-    private fun contentTypeOf(file: File): String? = when (file.extension.lowercase()) {
-        "png" -> "image/png"
-        "jpg", "jpeg" -> "image/jpeg"
-        else -> null
     }
 }
