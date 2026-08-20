@@ -50,9 +50,9 @@ import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleBut
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.domain.model.CANVAS_ASPECT_RATIO
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
@@ -109,7 +109,7 @@ internal fun CanvasBGEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 21.dp) // 21.dp 공통에 없음
-                    .aspectRatio(CANVAS_ASPECT_RATIO)
+                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .clipToBounds()
                     .let { if (uiState.selectedImageUri == null) it.background(uiState.selectedColor) else it }
                     .border(

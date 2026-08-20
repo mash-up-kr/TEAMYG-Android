@@ -35,8 +35,8 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.util.android.extension.dragBy
-import com.teamyg.parfait.domain.model.CANVAS_ASPECT_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
@@ -94,7 +94,7 @@ internal fun CanvasToppingPlaceScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(CANVAS_ASPECT_RATIO)
+                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .onSizeChanged { size ->
                         with(density) {
                             onCanvasMeasured(DpSize(size.width.toDp(), size.height.toDp()))
@@ -142,7 +142,7 @@ internal fun CanvasToppingPlaceScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(CANVAS_ASPECT_RATIO),
+                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO),
             ) {
                 ToppingSelectionStroke(
                     center = center,
@@ -156,7 +156,7 @@ internal fun CanvasToppingPlaceScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(CANVAS_ASPECT_RATIO)
+                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .clipToBounds(),
             ) {
                 ToppingPlaceCornerButtons(
