@@ -19,7 +19,6 @@ import kotlin.math.sqrt
  */
 const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
 
-/** 저장된 배율을 화면 크기로 편 토핑의 긴 변 */
 fun toppingLongSide(
     canvasWidth: Dp,
     scale: Float,

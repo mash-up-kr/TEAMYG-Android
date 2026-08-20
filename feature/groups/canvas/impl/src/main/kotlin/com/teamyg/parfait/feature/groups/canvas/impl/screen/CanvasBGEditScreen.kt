@@ -162,7 +162,6 @@ internal fun CanvasBGEditScreen(
                                 canvasWidth = canvasWidth,
                                 canvasHeight = canvasHeight,
                                 onClick = { onClickTopping(topping) },
-                                // 선택된 토핑만 드래그로 이동할 수 있다
                                 onDrag = if (topping.parfaitImageId == uiState.selectedToppingId) {
                                     { dragAmount ->
                                         onToppingMoveDrag(

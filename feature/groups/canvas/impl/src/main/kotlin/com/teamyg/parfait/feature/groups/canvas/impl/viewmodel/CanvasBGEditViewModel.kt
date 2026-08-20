@@ -526,7 +526,6 @@ constructor(
         ?.let(YGCanvasBackground::Image)
         ?: YGCanvasBackground.Solid(color)
 
-    /** 실패 갈래를 전부 열거해 둔다 */
     private fun Throwable.toCanvasBGEditError(): CanvasBGEditError = when (this) {
         is AppError.Network -> CanvasBGEditError.NETWORK
 
