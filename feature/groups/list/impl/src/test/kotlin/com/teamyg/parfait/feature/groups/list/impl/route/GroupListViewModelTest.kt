@@ -332,6 +332,44 @@ class GroupListViewModelTest {
     }
 
     @Test
+    fun clickCreateNewGroup_closesTheAddGroupOverlay() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹 추가 오버레이를 펼쳐 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(GroupListIntent.ClickTopBarChip)
+
+        viewModel.effect.test {
+            // When 새 그룹 만들기로 나간다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 돌아왔을 때 누른 적 없는 오버레이가 떠 있지 않도록 접고 나간다
+            assertEquals(GroupListSideEffect.NavigateToCreateGroup, awaitItem())
+            assertFalse(viewModel.state.value.groupAddButtonSelected)
+        }
+    }
+
+    @Test
+    fun clickEnterNewGroup_closesTheAddGroupOverlay() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹 추가 오버레이를 펼쳐 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(GroupListIntent.ClickTopBarChip)
+
+        viewModel.effect.test {
+            // When 초대 코드로 참여하러 나간다
+            viewModel.processIntent(GroupListIntent.ClickEnterNewGroup)
+            advanceUntilIdle()
+
+            // Then 같은 이유로 오버레이를 접고 나간다
+            assertEquals(GroupListSideEffect.NavigateToInviteCode, awaitItem())
+            assertFalse(viewModel.state.value.groupAddButtonSelected)
+        }
+    }
+
+    @Test
     fun clickTopping_carriesTheClickedGroup() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹 두 개가 그려진 목록
         every { getMyGroupsFlow() } returns flowOf(GROUPS)

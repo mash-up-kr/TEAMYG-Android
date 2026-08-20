@@ -17,8 +17,8 @@ interface ParfaitRemoteDataSource {
      * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
      * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
      *
-     * 오늘 날짜가 이미 마감돼 있으면 그것을 그대로 돌려준다 — status 가 ACTIVE 가 아닐 수 있고,
-     * 서버는 마감된 캔버스의 편집도 막지 않으므로 잠그는 것은 화면 책임이다.
+     * 오늘 날짜가 이미 마감돼 있으면 그것을 그대로 돌려준다 — status 가 ACTIVE 가 아닐 수 있다.
+     * 그 캔버스에 쓰기를 보내면 409 PARFAIT_ALREADY_CLOSED 로 돌아온다(`api/parfait.md`).
      */
     suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
 
@@ -54,7 +54,7 @@ interface ParfaitRemoteDataSource {
      * 서버가 앱이 모르는 type 을 돌려주면 조회와 같은 규칙으로 null 이 된다(저장은 됐지만
      * 그릴 수 없다).
      *
-     * ⚠️ 서버가 캔버스 상태를 보지 않아 마감된 캔버스의 배경도 바뀐다 — 막는 것은 화면 책임이다.
+     * ⚠️ 마감된 캔버스에는 저장되지 않는다 — 409 PARFAIT_ALREADY_CLOSED 다.
      * ⚠️ 배경 이미지는 참조 카운트를 올리지 않는다 — 같은 이미지의 토핑을 지우면 배경이 깨진다
      * (`api/parfait.md`).
      */
