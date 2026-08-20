@@ -101,7 +101,7 @@ internal fun CanvasMainScreen(
             date = canvasState.canvasDate,
             day = "(${canvasState.canvasDay})",
             onDateSelectClick = onClickDateSelect,
-            // 지난 캔버스는 고치는 자리가 아니다 — 서버가 마감된 캔버스의 편집을 막지 않으므로
+            // 지난 캔버스는 고치는 자리가 아니다 — 서버가 409 로 거부하므로, 실패를 보여 주기 전에
             // 편집으로 가는 길 자체를 여기서 치운다
             addAction = if (canvasState.isViewingToday) {
                 YGCanvasMenuAction(

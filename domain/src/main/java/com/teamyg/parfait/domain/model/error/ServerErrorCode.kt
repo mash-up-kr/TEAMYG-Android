@@ -14,6 +14,8 @@ package com.teamyg.parfait.domain.model.error
  *
  * 여기에는 **앱이 실제로 분기에 쓰는 코드만** 둔다. 서버 enum 전체를 미리 옮겨 적지
  * 않는다 — 쓰지 않는 상수는 계약이 바뀌어도 아무도 고치지 않아 거짓말이 된다.
+ * **처분이 이미 정해진 코드는 예외로 미리 둔다** — 그때는 어떻게 다룰지를 그 상수의 KDoc 에
+ * 함께 적어, 소비처가 붙을 때 결정을 다시 하지 않게 한다.
  */
 object ServerErrorCode {
     /** 인증 도메인(`/api/v1/auth/...`) — 서버 `AuthErrorCode` 에 대응한다 */
@@ -70,6 +72,34 @@ object ServerErrorCode {
         /** 404 — 조회·갱신 대상 회원 부재. 같은 문자열이 다른 도메인에서는 401/409 로도 쓰여
          * [ParfaitGroup.MEMBER_NOT_FOUND] 와 나눠 둔다 */
         const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+    }
+
+    /**
+     * 캔버스 도메인(`/api/v1/groups/{groupId}/parfaits...`) — 서버 `ParfaitErrorCode` 에 대응한다.
+     *
+     * ⚠️ 토핑 API(`.../parfaits/{parfaitId}/images...`)도 마감 거부만은 자기 enum 이 아니라
+     * 이 코드로 낸다 — 서버가 `ParfaitErrorCode` 를 그대로 던지기 때문이다(`api/parfait-image.md`).
+     */
+    object Parfait {
+        /**
+         * 409 — 마감된(CLOSED·EMPTY) 캔버스에 쓰기를 보냈다. 토핑 배치·수정·테두리·삭제와
+         * 배경 변경 다섯 경로가 이 코드를 낸다.
+         *
+         * ⚠️ 다섯 경로 전부 **권한 검사가 마감 검사보다 앞이다** — 마감된 캔버스라도 남의
+         * 토핑이거나 그룹 멤버가 아니면 409 가 아니라 403 이 먼저 온다(수정·테두리·삭제는
+         * PARFAIT_IMAGE_NOT_OWNED, 배치·배경 변경은 GROUP_NOT_JOINED). 마감을 유일한 실패로
+         * 두고 분기하면 그 경우를 놓친다. 검사 순서 전문은 `api/parfait-image.md`.
+         *
+         * **사용자 잘못이 아니라 시간이 지난 것이다.** 03시 회전 배치가 캔버스를 닫는 사이
+         * 화면이 열려 있었을 때 나온다 — 앱은 오늘 캔버스만 편집 대상으로 두지만
+         * (`CanvasMainUiState.todayCanvas`) 편집을 시작한 뒤 경계를 넘으면 그 방어를 지나간다.
+         *
+         * 처분이 다른 실패와 다르다 — **되돌리지 않고 알린다.** 토핑 추가 흐름이 이 코드를
+         * 받으면 화면 이동은 그대로 진행하고 실패만 알린다(막 만든 토핑을 들고 갈 곳이 없어지면
+         * 사용자가 작업을 통째로 잃는다). 재시도해도 같은 결과이므로 재시도를 권하지 않고,
+         * 새 캔버스를 받으려면 오늘 조회를 다시 해야 한다.
+         */
+        const val PARFAIT_ALREADY_CLOSED = "PARFAIT_ALREADY_CLOSED"
     }
 
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */
