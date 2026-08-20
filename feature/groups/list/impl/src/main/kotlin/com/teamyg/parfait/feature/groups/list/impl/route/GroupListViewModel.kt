@@ -121,15 +121,28 @@ constructor(
             }
 
             GroupListIntent.ClickCreateNewGroup -> {
+                closeAddGroup()
                 postSideEffect(GroupListSideEffect.NavigateToCreateGroup)
             }
 
             GroupListIntent.ClickEnterNewGroup -> {
+                closeAddGroup()
                 postSideEffect(GroupListSideEffect.NavigateToInviteCode)
             }
 
             GroupListIntent.Refresh -> loadGroups(isRefresh = true)
         }
+    }
+
+    /**
+     * 그룹 추가 오버레이는 다른 화면으로 나가기 전에 접는다.
+     *
+     * ViewModel 은 NavEntry 가 백스택에 남아 있는 한 살아 있어, 켜 둔 채 나가면 목록으로
+     * 돌아왔을 때 누른 적 없는 오버레이가 그대로 떠 있다. 뒤로 가기 한 번을 오버레이 닫는 데
+     * 쓰게 되는 셈이라, 나가는 길에 원래 화면으로 되돌린다.
+     */
+    private fun closeAddGroup() {
+        updateState { copy(groupAddButtonSelected = false) }
     }
 
     /** 앱을 켜 둔 채 파르페 하루 경계를 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
