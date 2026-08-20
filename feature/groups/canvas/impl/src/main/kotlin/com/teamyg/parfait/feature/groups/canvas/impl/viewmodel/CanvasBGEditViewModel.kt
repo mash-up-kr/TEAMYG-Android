@@ -528,12 +528,7 @@ constructor(
 
     private fun Throwable.toCanvasBGEditError(): CanvasBGEditError = when (this) {
         is AppError.Network -> CanvasBGEditError.NETWORK
-
-        is AppError.Unexpected -> when (cause) {
-            is IllegalArgumentException -> CanvasBGEditError.UNSUPPORTED_IMAGE
-            else -> CanvasBGEditError.UNKNOWN
-        }
-
+        is AppError.UnsupportedImage -> CanvasBGEditError.UNSUPPORTED_IMAGE
         else -> CanvasBGEditError.UNKNOWN
     }
 
