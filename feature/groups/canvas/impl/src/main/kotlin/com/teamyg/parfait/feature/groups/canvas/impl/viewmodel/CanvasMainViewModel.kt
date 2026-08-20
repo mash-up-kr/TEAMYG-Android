@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import android.graphics.Bitmap
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.ui.BaseViewModel
@@ -7,6 +8,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -17,6 +19,7 @@ import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
@@ -127,6 +130,18 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToSegmentation(
         val uri: String,
     ) : CanvasMainEffect
+
+    /**
+     * 지금 보고 있는 캔버스 프레임을 이미지로 캡처해 달라는 요청. 캡처(Compose
+     * GraphicsLayer) 자체는 화면만 할 수 있어, ViewModel 은 요청만 보내고 화면이 캡처한
+     * 결과를 [CanvasMainIntent.SaveCapturedCanvas] 로 다시 돌려받는다.
+     */
+    data object RequestCanvasCapture : CanvasMainEffect
+
+    data class ShowGallerySaveResult(
+        val isSuccess: Boolean,
+        val date: LocalDate,
+    ) : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -165,6 +180,9 @@ sealed interface CanvasMainIntent : UiIntent {
     data object OnClickSaveToGallery : CanvasMainIntent
 
     data object OnClickGoToToday : CanvasMainIntent
+
+    /** [CanvasMainEffect.RequestCanvasCapture] 에 대한 응답으로, 화면이 캡처한 비트맵을 돌려준다 */
+    data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 }
 
 @HiltViewModel(assistedFactory = CanvasMainViewModel.Factory::class)
@@ -179,6 +197,7 @@ constructor(
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
+    private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -373,6 +392,8 @@ constructor(
             is CanvasMainIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
 
             is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
+
+            is CanvasMainIntent.SaveCapturedCanvas -> handleSaveCapturedCanvas(intent.bitmap)
         }
     }
 
@@ -436,9 +457,24 @@ constructor(
         }
     }
 
+    /** 캡처(Compose GraphicsLayer)는 화면만 할 수 있어, 화면에 요청만 보낸다 */
     private fun handleClickSaveToGallery() {
-        // TODO: 보고 있는 캔버스를 이미지로 만들어 갤러리에 저장한다
-        viewModelLogger.i { "갤러리 저장은 아직 구현 전이다" }
+        postSideEffect(effect = CanvasMainEffect.RequestCanvasCapture)
+    }
+
+    private fun handleSaveCapturedCanvas(bitmap: Bitmap) {
+        val date = state.value.selectedDate
+
+        launch(key = SAVE_CANVAS_TO_GALLERY_KEY) {
+            val displayName = "parfait_${System.currentTimeMillis()}.png"
+
+            saveCanvasToGalleryUseCase(bitmap.toAndroidBitmap(), displayName)
+                .onSuccess {
+                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = date))
+                }.onFailure {
+                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))
+                }
+        }
     }
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
@@ -516,5 +552,7 @@ constructor(
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
+
+        const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
     }
 }

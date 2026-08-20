@@ -14,6 +14,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
@@ -49,6 +50,7 @@ class CanvasMainViewModelTest {
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
+    private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
 
     private val today = parfaitToday()
 
@@ -86,6 +88,7 @@ class CanvasMainViewModelTest {
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
+        saveCanvasToGalleryUseCase = saveCanvasToGallery,
     )
 
     /** 화면에 서기 전에는 캔버스를 부르지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
