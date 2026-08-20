@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import android.graphics.Bitmap
+import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
@@ -259,6 +261,56 @@ class CanvasMainViewModelTest {
             viewModel.state.value.memberChips
                 .map(GroupMemberChip::colorChipType),
         )
+    }
+
+    @Test
+    fun onClickSaveToGallery_requestsCanvasCapture() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태
+        val viewModel = enteredViewModel()
+
+        // When 저장 버튼을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+
+            // Then 캡처 자체는 화면만 할 수 있어 요청만 보낸다
+            assertEquals(CanvasMainEffect.RequestCanvasCapture, awaitItem())
+        }
+    }
+
+    @Test
+    fun saveCapturedCanvas_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태(오늘을 보고 있다)이고 저장이 성공한다
+        val viewModel = enteredViewModel()
+        coEvery { saveCanvasToGallery(any(), any()) } returns Result.success(Unit)
+
+        // When 화면이 캡처한 비트맵을 돌려준다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(mockk<Bitmap>()))
+
+            // Then 지금 보고 있는 날짜와 함께 성공을 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun saveCapturedCanvas_useCaseFails_showsFailure() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태이고 저장이 실패한다
+        val viewModel = enteredViewModel()
+        coEvery { saveCanvasToGallery(any(), any()) } returns Result.failure(RuntimeException("저장 실패"))
+
+        // When 화면이 캡처한 비트맵을 돌려준다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(mockk<Bitmap>()))
+
+            // Then 실패를 알린다 — 크래시 대신 토스트로 이어진다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
+                awaitItem(),
+            )
+        }
     }
 
     private companion object {
