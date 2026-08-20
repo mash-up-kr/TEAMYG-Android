@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -10,15 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
@@ -26,8 +24,6 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * `scale = 1.0` 일 때 토핑의 긴 변이 갖는 크기. Canvas-Area 너비 기준이다(CAN-007 §3.3).
@@ -36,11 +32,6 @@ import kotlin.math.sin
  * 꽉 차고 짧은 변이 비율대로 줄어들므로, 원본 크기를 몰라도 규칙이 지켜진다.
  */
 internal const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
-
-/** 누끼 외곽선을 찍는 방향 수. 8 방향이면 대각까지 메워져 이음매가 보이지 않는다 */
-private const val OUTLINE_STAMP_COUNT = 8
-
-private const val FULL_TURN_DEGREES = 360.0
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -127,13 +118,6 @@ private fun CanvasTopping(
     }
 }
 
-/**
- * 누끼 이미지라 테두리도 실루엣을 따라야 한다. 사각 테두리를 두르면 잘라 낸 배경이 다시
- * 드러나므로, 같은 그림을 테두리 색으로 물들여 여덟 방향으로 밀어 찍고 그 위에 원본을 얹는다.
- *
- * [ContentScale.Fit] 이 남기는 여백은 투명이라 배치 중심은 그대로다
- * ([TOPPING_BASE_LONG_SIDE_RATIO]).
- */
 @Composable
 private fun ToppingImage(
     imageUrl: String,
@@ -144,52 +128,17 @@ private fun ToppingImage(
         contentScale = ContentScale.Fit,
     )
     val painterState by painter.state.collectAsState()
+    val solidBorder = border as? ToppingBorder.Solid
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    YGToppingCutoutImage(
+        painter = painter,
+        // 색을 못 읽으면 테두리를 걸러 낸다 — 임의의 색을 골라 칠하는 것보다 안 그리는 편이 덜 틀리다.
         // 로딩·실패 상태에서 찍으면 플레이스홀더 실루엣이 테두리로 보인다
-        if (border is ToppingBorder.Solid && painterState is AsyncImagePainter.State.Success) {
-            ToppingOutline(
-                painter = painter,
-                border = border,
-            )
-        }
-
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-}
-
-/**
- * `borderWidth` 는 화면 기준 dp 다 — 1.0 이 1dp 이고 토핑을 키워도 굵기는 그대로다.
- *
- * 색을 못 읽으면 테두리를 걸러 낸다 — 임의의 색을 골라 칠하는 것보다 안 그리는 편이 덜 틀린다.
- */
-@Composable
-private fun ToppingOutline(
-    painter: AsyncImagePainter,
-    border: ToppingBorder.Solid,
-) {
-    val color = border.color.toColorOrNull() ?: return
-    val widthPx = with(LocalDensity.current) { border.width.dp.toPx() }
-
-    repeat(OUTLINE_STAMP_COUNT) { index ->
-        val radians = Math.toRadians(FULL_TURN_DEGREES / OUTLINE_STAMP_COUNT * index)
-
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            colorFilter = ColorFilter.tint(color),
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    translationX = (cos(radians) * widthPx).toFloat()
-                    translationY = (sin(radians) * widthPx).toFloat()
-                },
-        )
-    }
+        borderColor = solidBorder
+            ?.color
+            ?.toColorOrNull()
+            ?.takeIf { painterState is AsyncImagePainter.State.Success },
+        borderWidth = (solidBorder?.width?.toFloat() ?: 0f).dp,
+        modifier = Modifier.fillMaxSize(),
+    )
 }
