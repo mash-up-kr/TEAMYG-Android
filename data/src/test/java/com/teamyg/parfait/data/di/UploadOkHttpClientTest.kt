@@ -28,12 +28,12 @@ class UploadOkHttpClientTest {
     }
 
     @Test
-    fun provideUploadOkHttpClient_doesNotLogRequestBody() {
+    fun provideUploadOkHttpClient_hasNoLoggingInterceptor() {
         // Given·When 업로드 전용 클라이언트를 만든다
         val client = NetworkModule.provideUploadOkHttpClient()
 
-        // Then 본문 로깅이 없다 — 원본 해상도 이미지가 매 업로드마다 문자열로 힙에 올라간다
-        val logging = client.interceptors.filterIsInstance<HttpLoggingInterceptor>()
-        assertTrue(logging.none { it.level == HttpLoggingInterceptor.Level.BODY })
+        // Then 로깅 인터셉터가 아예 없다 — presigned URL 은 쿼리 스트링이 곧 자격증명이라
+        // 요청 라인만 남겨도 새어나가고, OkHttp 로깅 인터셉터에는 URL 을 가릴 수단이 없다
+        assertTrue(client.interceptors.none { it is HttpLoggingInterceptor })
     }
 }
