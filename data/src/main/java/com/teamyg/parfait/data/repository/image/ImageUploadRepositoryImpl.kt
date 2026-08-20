@@ -20,7 +20,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
     ): Result<ImageId> {
         val file = File(filePath)
         // 발급을 먼저 부르면 올릴 것도 없는데 PENDING 행과 S3 키만 남고, 재시도해도 영원히
-        // 같은 자리에서 실패한다. 캐시 파일은 다음 흐름이 시작될 때 지워진다
+        // 같은 자리에서 실패한다
         if (file.isFile.not()) {
             return Result.failure(IllegalStateException("업로드할 파일이 없다 - $filePath").toAppError())
         }

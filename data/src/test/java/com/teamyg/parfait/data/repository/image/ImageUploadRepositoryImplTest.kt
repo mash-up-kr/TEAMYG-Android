@@ -99,13 +99,17 @@ class ImageUploadRepositoryImplTest {
         // Given 발급·전송·확인이 모두 성공한다
         givenAllStepsSucceed()
         val putUrl = slot<String>()
-        coEvery { presignedUploadDataSource.put(capture(putUrl), any(), any()) } returns Result.success(Unit)
+        val putFile = slot<File>()
+        coEvery {
+            presignedUploadDataSource.put(capture(putUrl), any(), capture(putFile))
+        } returns Result.success(Unit)
 
         // When 업로드한다
         repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
 
-        // Then 표시용 imageUrl 이 아니라 서명된 uploadUrl 로 나간다. 둘 다 String 이라 컴파일러가 안 막는다
+        // Then 표시용 imageUrl 이 아니라 서명된 uploadUrl 로, 그리고 넘겨받은 그 파일로 나간다
         assertEquals(issued.uploadUrl, putUrl.captured)
+        assertEquals(file.absolutePath, putFile.captured.absolutePath)
     }
 
     @Test
