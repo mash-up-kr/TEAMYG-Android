@@ -41,10 +41,10 @@ internal fun CanvasMainRoute(
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    // 토스트 정책을 둘로 나눈다 — 토핑 작성자 알림은 캔버스 영역 안에 뜨고(Spotlight 디자인),
-    // 조회 실패는 화면 최상단에 뜬다. 하나를 두 호스트에 넘기면 같은 토스트가 두 곳에 그려진다
-    val spotlightToastPolicy = rememberYGToastPolicy()
-    val errorToastPolicy = rememberYGToastPolicy()
+    // 이 화면의 토스트는 전부 캔버스 프레임 상단에 뜬다 — 작성자 알림이 그 자리에 고정돼 있고,
+    // 실패만 화면 최상단으로 보내면 같은 화면에서 자리가 갈린다. 큐를 하나로 둬야 Toast 공통
+    // 정책의 스택(나중 것이 위로)도 성립한다. 그래서 스캐폴드에는 정책을 넘기지 않는다
+    val toastPolicy = rememberYGToastPolicy()
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
 
@@ -74,7 +74,7 @@ internal fun CanvasMainRoute(
                     destination = NavKeyGroupSetting(groupId = effect.groupId.value),
                 )
 
-                is CanvasMainEffect.ShowSpotlightToast -> spotlightToastPolicy.show(
+                is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
                     YGToastType.Record(
                         userName = effect.nickname,
                         time = effect.elapsed.toSpotlightTimeLabel(context),
@@ -82,10 +82,10 @@ internal fun CanvasMainRoute(
                     ),
                 )
 
-                is CanvasMainEffect.ShowTodayCanvasError -> errorToastPolicy.showError(todayCanvasErrorMessage)
+                is CanvasMainEffect.ShowTodayCanvasError -> toastPolicy.showError(todayCanvasErrorMessage)
 
                 is CanvasMainEffect.ShowToppingFlowStartError ->
-                    errorToastPolicy.showError(toppingFlowStartErrorMessage)
+                    toastPolicy.showError(toppingFlowStartErrorMessage)
             }
         }
     }
@@ -96,10 +96,7 @@ internal fun CanvasMainRoute(
         onStopOrDispose { }
     }
 
-    YGScaffoldV2(
-        modifier = modifier,
-        toastPolicy = errorToastPolicy,
-    ) { innerPadding ->
+    YGScaffoldV2(modifier = modifier) { innerPadding ->
         CanvasMainScreen(
             canvasState = canvasState,
             onClickBack = { navigator.onBack() },
@@ -116,7 +113,7 @@ internal fun CanvasMainRoute(
             onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
-            toastPolicy = spotlightToastPolicy,
+            toastPolicy = toastPolicy,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
