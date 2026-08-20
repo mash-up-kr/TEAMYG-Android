@@ -305,9 +305,9 @@ class CanvasBGEditViewModelTest {
 
     @Test
     fun clickConfirm_unreadableImage_tellsThePhotoIsTheProblem() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 받지 않는 형식이라 업로드 전에 걸렸다
+        // Given 고른 사진으로는 올릴 수 없어 업로드 전에 걸렸다
         coEvery { uploadImage(any(), any()) } returns Result.failure(
-            AppError.Unexpected(IllegalArgumentException("서버가 받지 않는 이미지 형식이다")),
+            AppError.UnsupportedImage(IllegalStateException("서버가 받지 않는 이미지 형식이다")),
         )
         val viewModel = viewModel()
         viewModel.processIntent(

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.repository.image
 
+import com.teamyg.parfait.data.model.exception.UnsupportedImageException
 import com.teamyg.parfait.data.source.image.local.ImageFileLocalDataSource
 import com.teamyg.parfait.domain.model.error.AppError
 import io.mockk.every
@@ -7,8 +8,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import java.io.File
 import java.io.IOException
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -21,17 +20,9 @@ class ImageFileRepositoryImplTest {
         imageFileLocalDataSource = imageFileLocalDataSource,
     )
 
-    private lateinit var file: File
-
-    @BeforeTest
-    fun setUp() {
-        file = File.createTempFile("background", ".png")
-    }
-
-    @AfterTest
-    fun tearDown() {
-        file.delete()
-    }
+    // absolutePath 는 문자열 연산이라 이 파일은 실제로 있을 필요가 없다. 진짜 파일을 두면
+    // 구현이 언젠가 파일을 열기 시작해도 이 테스트가 모른 채 계속 통과한다
+    private val file = File("/tmp/background.png")
 
     @Test
     fun copyToCache_success_returnsTheAbsolutePath() = runTest {
@@ -45,25 +36,25 @@ class ImageFileRepositoryImplTest {
     }
 
     @Test
-    fun copyToCache_cannotOpenTheUri_failsAsAppError() = runTest {
-        // Given 열 수 없는 uri — 사용자가 사이에 사진을 지웠거나 권한이 빠진 경우다
+    fun copyToCache_unusableImage_failsAsUnsupportedImage() = runTest {
+        // Given 열 수 없는 uri 든 모르는 형식이든, 떨구는 쪽은 한 갈래로 끊는다
+        every { imageFileLocalDataSource.copyToCache(URI) } throws
+            UnsupportedImageException("이미지를 열 수 없다")
+
+        val result = repository.copyToCache(URI)
+
+        // Then 화면이 cause 를 뒤지지 않고도 "이 사진이 문제"라고 말할 수 있어야 한다
+        assertIs<AppError.UnsupportedImage>(result.exceptionOrNull())
+    }
+
+    @Test
+    fun copyToCache_otherFailure_staysUnexpected() = runTest {
+        // Given 사진 탓이라고 단정할 수 없는 실패
         every { imageFileLocalDataSource.copyToCache(URI) } throws IOException("stream")
 
         val result = repository.copyToCache(URI)
 
-        // Then 던지지 않고, :data 예외를 그대로 올려보내지도 않는다 — 그래야 feature 가
-        // `:data` 를 보지 않는다
-        assertIs<AppError.Unexpected>(result.exceptionOrNull())
-    }
-
-    @Test
-    fun copyToCache_unsupportedFormat_failsAsAppError() = runTest {
-        // Given 서버가 받지 않는 형식이라 떨구는 쪽에서 끊은 경우
-        every { imageFileLocalDataSource.copyToCache(URI) } throws IllegalArgumentException("형식")
-
-        val result = repository.copyToCache(URI)
-
-        // Then 이것도 같은 경계에서 AppError 로 바뀐다 — 화면이 예외 타입을 구분하지 않는다
+        // Then 사진을 바꾸라고 말하지 않는다 — 그래도 :data 예외를 그대로 올리지는 않는다
         assertIs<AppError.Unexpected>(result.exceptionOrNull())
     }
 }
