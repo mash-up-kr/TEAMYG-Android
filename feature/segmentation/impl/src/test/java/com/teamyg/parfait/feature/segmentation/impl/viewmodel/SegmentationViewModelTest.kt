@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationResult
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -34,6 +35,7 @@ class SegmentationViewModelTest {
     private val clearSegmentationCache: ClearSegmentationCacheUseCase = mockk(relaxed = true)
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
+    private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
 
     private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
 
@@ -55,6 +57,7 @@ class SegmentationViewModelTest {
         clearSegmentationCacheUseCase = clearSegmentationCache,
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
+        toppingDraftRepository = toppingDraftRepository,
     )
 
     @Test
@@ -203,5 +206,38 @@ class SegmentationViewModelTest {
         // Then 곁다리 기록의 실패가 잘라내기 자체를 막지 않는다
         assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
         viewModel.effect.test { expectNoEvents() }
+    }
+
+    @Test
+    fun init_segmentationSucceeds_recordsTheDraft() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 세그멘테이션이 성공한다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
+
+        // When 화면이 돈다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 알맹이와 재편집 마스크가 초안에 적힌다. 이 시점엔 두른 테두리가 없다
+        coVerify(exactly = 1) {
+            toppingDraftRepository.record(
+                subjectImagePath = TRIMMED_SUBJECT_PATH,
+                cutoutImagePath = SUBJECT_PATH,
+                borderColorArgb = null,
+                borderWidthDp = null,
+            )
+        }
+    }
+
+    @Test
+    fun init_segmentationFails_recordsNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 세그멘테이션이 실패한다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException())
+
+        // When 화면이 돈다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 초안에 아무것도 적지 않는다 — 다음 화면으로 갈 수 없는 결과다
+        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
     }
 }

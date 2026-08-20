@@ -9,6 +9,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -42,6 +43,7 @@ class SegmentationViewModel
     private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
+    private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
@@ -80,6 +82,17 @@ class SegmentationViewModel
                             subjectImagePath = result.subjectImagePath,
                             trimmedSubjectImagePath = result.trimmedSubjectImagePath,
                             subjectBounds = subjectBounds,
+                        )
+                    }
+
+                    // 흐름의 결과물은 초안이 나른다(`adr/0026-topping-draft-datastore-ssot.md`).
+                    // 미리보기·배치에 쓸 것은 여백을 걷은 판이고, 재편집 마스크는 좌표계를 지킨 판이다
+                    runSuspendCatching {
+                        toppingDraftRepository.record(
+                            subjectImagePath = result.trimmedSubjectImagePath,
+                            cutoutImagePath = result.subjectImagePath,
+                            borderColorArgb = null,
+                            borderWidthDp = null,
                         )
                     }
                 }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
