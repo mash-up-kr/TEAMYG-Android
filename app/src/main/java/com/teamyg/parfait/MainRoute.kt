@@ -12,6 +12,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 import com.teamyg.parfait.domain.model.session.SessionEvent
@@ -52,6 +53,12 @@ fun MainRoute(
                 ),
                 backStack = navigator.backStack,
                 onBack = navigator::onBack,
+                // 다르게 움직여야 하는 화면은 그 화면의 entry 에 NavTransition metadata 를 붙인다
+                transitionSpec = { NavTransition.Default.push(this) },
+                popTransitionSpec = { NavTransition.Default.pop(this) },
+                predictivePopTransitionSpec = { swipeEdge ->
+                    NavTransition.Default.predictivePop(this, swipeEdge)
+                },
                 entryProvider = entryProvider {
                     entryBuilders.forEach { builder -> this.builder(navigator) }
                 },
