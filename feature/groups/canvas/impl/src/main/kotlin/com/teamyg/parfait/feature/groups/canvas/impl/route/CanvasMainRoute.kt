@@ -46,6 +46,7 @@ internal fun CanvasMainRoute(
     val spotlightToastPolicy = rememberYGToastPolicy()
     val errorToastPolicy = rememberYGToastPolicy()
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
+    val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
 
     // 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 다시 앞에 설 때 한 번 더 돈다.
     // 매번 다시 묻는 이유는 CanvasMainIntent.Enter 에 있다
@@ -82,6 +83,9 @@ internal fun CanvasMainRoute(
                 )
 
                 is CanvasMainEffect.ShowTodayCanvasError -> errorToastPolicy.showError(todayCanvasErrorMessage)
+
+                is CanvasMainEffect.ShowToppingFlowStartError ->
+                    errorToastPolicy.showError(toppingFlowStartErrorMessage)
             }
         }
     }

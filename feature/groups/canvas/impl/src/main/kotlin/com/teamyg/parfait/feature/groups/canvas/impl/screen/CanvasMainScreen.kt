@@ -116,6 +116,7 @@ internal fun CanvasMainScreen(
                     text = stringResource(R.string.canvas_main_topping_add),
                     iconResource = DesignSystemR.drawable.ic_plus,
                     onClick = openMenu,
+                    isEnabled = canvasState.isToppingAddEnabled,
                 )
             } else {
                 YGCanvasMenuAction(

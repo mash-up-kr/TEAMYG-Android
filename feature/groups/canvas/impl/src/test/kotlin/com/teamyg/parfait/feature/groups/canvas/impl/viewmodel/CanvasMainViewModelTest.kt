@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -14,8 +15,14 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
+import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
+import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
@@ -32,11 +39,14 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
 import org.junit.Before
 import org.junit.Rule
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -50,6 +60,7 @@ class CanvasMainViewModelTest {
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
+    private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxUnitFun = true)
 
     private val today = parfaitToday()
 
@@ -86,6 +97,7 @@ class CanvasMainViewModelTest {
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
+        toppingDraftRepository = toppingDraftRepository,
     )
 
     /** 화면에 서기 전에는 캔버스를 부르지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
@@ -296,6 +308,106 @@ class CanvasMainViewModelTest {
         assertTrue(viewModel.state.value.todayCanvas != null)
     }
 
+    @Test
+    fun clickCamera_opensTheFlowWithTheCanvasItEnteredFrom() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 그린 화면
+        val viewModel = enteredViewModel()
+
+        // When 카메라로 떠난다
+        viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+        advanceUntilIdle()
+
+        // Then 진입 시점의 캔버스가 초안에 못 박힌다 — 도중에 하루 경계를 넘어도 다른 캔버스로
+        // 조용히 옮겨 가지 않는다
+        coVerify(exactly = 1) {
+            toppingDraftRepository.start(
+                groupId = GroupId(GROUP_ID),
+                parfaitId = ParfaitId(TODAY_PARFAIT_ID),
+                nextPositionZ = any(),
+            )
+        }
+    }
+
+    @Test
+    fun clickGallery_opensTheFlowToo() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 그린 화면
+        val viewModel = enteredViewModel()
+
+        // When 갤러리로 떠난다
+        viewModel.processIntent(CanvasMainIntent.OnClickCanvas())
+        advanceUntilIdle()
+
+        // Then 카메라와 같은 흐름이라 초안도 같이 열린다
+        coVerify(exactly = 1) { toppingDraftRepository.start(any(), any(), any()) }
+    }
+
+    @Test
+    fun clickCamera_stacksTheNewToppingOnTop() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑이 z 3 과 7 로 놓여 있는 오늘 캔버스
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(topping(3), topping(7))),
+        )
+        val viewModel = enteredViewModel()
+
+        // When 카메라로 떠난다
+        viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+        advanceUntilIdle()
+
+        // Then 맨 위 z 보다 하나 크다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 겹친다
+        coVerify(exactly = 1) {
+            toppingDraftRepository.start(any(), any(), nextPositionZ = 8)
+        }
+    }
+
+    @Test
+    fun clickCamera_draftWriteFails_staysOnTheCanvasAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 쓸 수 없는 상태
+        coEvery { toppingDraftRepository.start(any(), any(), any()) } throws IOException("no space")
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 카메라로 떠나려 한다
+            viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+            advanceUntilIdle()
+
+            // Then 화면을 옮기지 않는다 — 초안 없이 흐름에 들어가면 촬영·누끼·편집을 다 마친
+            // 뒤에야 올릴 데가 없다는 것을 알게 된다
+            assertIs<CanvasMainEffect.ShowToppingFlowStartError>(awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun clickCamera_withoutTodayCanvas_doesNotOpenTheFlow() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 못 받아 버튼이 잠긴 화면
+        coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = enteredViewModel()
+
+        // When 그래도 의도가 들어온다(가드가 뚫렸거나 화면 밖에서 왔다)
+        viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+        advanceUntilIdle()
+
+        // Then 캔버스 식별값 없이 초안을 열지 않는다 — 그 초안으로는 올릴 데를 정할 수 없다
+        coVerify(exactly = 0) { toppingDraftRepository.start(any(), any(), any()) }
+    }
+
+    @Test
+    fun toppingAdd_isEnabledOnlyWhenTodayCanvasIsInHand() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 못 받은 화면
+        coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
+        val failed = enteredViewModel()
+
+        // Then 올릴 데가 없으므로 잠근다
+        assertFalse(failed.state.value.isToppingAddEnabled)
+
+        // Given, When 캔버스를 받은 화면
+        coEvery { getTodayParfait(any()) } returns Result.success(canvas(TODAY_PARFAIT_ID, today))
+        val loaded = enteredViewModel()
+
+        // Then 열어 준다
+        assertTrue(loaded.state.value.isToppingAddEnabled)
+    }
+
     private companion object {
         const val GROUP_ID = 7L
         const val TODAY_PARFAIT_ID = 42L
@@ -331,6 +443,25 @@ class CanvasMainViewModelTest {
             members = members,
             background = null,
             toppings = emptyList(),
+        )
+
+        fun topping(positionZ: Int) = CanvasToppingVO(
+            parfaitImageId = ParfaitImageId(positionZ.toLong()),
+            imageId = ImageId(positionZ.toLong()),
+            imageUrl = "https://cdn.example.com/topping-$positionZ.png",
+            transform = ToppingTransform(
+                positionX = 0.5,
+                positionY = 0.5,
+                positionZ = positionZ,
+                scale = 1.0,
+                rotation = 0.0,
+            ),
+            border = ToppingBorder.None,
+            placedBy = ToppingPlacerVO(
+                groupMemberId = GroupMemberId(1L),
+                nickname = GroupNickname("연경이"),
+            ),
+            createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )
     }
 }

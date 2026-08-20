@@ -9,6 +9,7 @@
     <string name="canvas_main_gallery_select">갤러리에서 선택</string>
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_today_canvas_error">오늘의 캔버스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="canvas_main_topping_flow_start_error">토핑을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_bg_edit_tab_background">배경</string>
     <string name="canvas_bg_edit_tab_topping">토핑</string>
     <string name="canvas_bg_edit_quit_dialog_title">편집을 그만둘까요?</string>
