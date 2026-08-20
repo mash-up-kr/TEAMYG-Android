@@ -60,6 +60,7 @@ fun YGCanvas(
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
     emptyMessage: String = "",
     calendarContent: @Composable () -> Unit = {},
+    overlayContent: @Composable BoxScope.() -> Unit = {},
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shape = canvasCutCornerShape()
@@ -144,6 +145,14 @@ fun YGCanvas(
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = metrics.verticalGap + 1.dp),
+        ) {
+            overlayContent()
         }
     }
 }

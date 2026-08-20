@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
@@ -139,7 +140,7 @@ fun YGToastHost(
 @Composable
 private fun YGToastHostPreview() = PreviewBox {
     val previewTypes = listOf(
-        YGToastType.Record(userName = "WWWWWWWWWW", time = "59분"),
+        YGToastType.Record(userName = "WWWWWWWWWW", time = "59분 전", userNameColor = YGAtomicColors.Pudding.Pudding500),
         YGToastType.Edit("내 토핑만 편집할 수 있어요"),
         YGToastType.InviteCode("초대 코드를 복사했어요"),
         YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."),
