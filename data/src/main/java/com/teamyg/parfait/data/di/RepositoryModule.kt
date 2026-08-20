@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
+import com.teamyg.parfait.data.repository.topping.ToppingRepositoryImpl
 import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
@@ -21,6 +22,7 @@ import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.policy.PolicyRepository
+import com.teamyg.parfait.domain.repository.topping.ToppingRepository
 import com.teamyg.parfait.domain.util.NonceGenerator
 import dagger.Binds
 import dagger.Module
@@ -78,4 +80,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindImageUploadRepository(imageUploadRepositoryImpl: ImageUploadRepositoryImpl): ImageUploadRepository
+
+    @Binds
+    @Singleton
+    fun bindToppingRepository(toppingRepositoryImpl: ToppingRepositoryImpl): ToppingRepository
 }
