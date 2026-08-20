@@ -14,7 +14,6 @@ class NavTransitionTest {
     @Test
     fun metadata_everyPreset_fillsAllThreeSlots() {
         presets.forEach { (name, transition) ->
-            // Given 프리셋 하나
             val metadata = transition.metadata
 
             // Then 쌓임·걷힘·뒤로가기 제스처가 모두 채워져 있다 — 하나라도 비면 그 방향만
@@ -33,7 +32,6 @@ class NavTransitionTest {
         // Given 들어오는 모양만 바꾼 전환
         val custom = NavTransition.Default.copy(push = { NavTransition.Fade.push(this) })
 
-        // When metadata 로 만든다
         val metadata = custom.metadata
 
         // Then 손대지 않은 나머지는 기본 전환 그대로 실려 나간다
