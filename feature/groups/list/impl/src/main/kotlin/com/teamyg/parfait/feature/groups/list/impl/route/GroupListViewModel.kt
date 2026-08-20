@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.format
@@ -21,8 +22,7 @@ import javax.inject.Inject
 data class GroupListUiState(
     /** `null` 은 아직 한 번도 받지 못했다는 뜻. 0건과 구분한다 */
     val groupList: List<MyParfaitGroupVO>? = null,
-    // Todo : 서버에서 내 닉네임을 받아오도록 변경 필요, 지금은 mock 값입니다
-    val nickName: String = "모카",
+    val nickName: String? = null,
     val groupAddButtonSelected: Boolean = false,
     val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
@@ -61,7 +61,8 @@ sealed interface GroupListSideEffect : UiSideEffect {
 
     data class NavigateToCanvas(val groupId: GroupId) : GroupListSideEffect
 
-    data object NavigateToCreateGroup : GroupListSideEffect
+    /** 닉네임이 없으면 나가지 않는 이펙트라, 갈 화면이 받을 값을 실어 보낸다 */
+    data class NavigateToCreateGroup(val nickName: String) : GroupListSideEffect
 
     /**
      * 당겨서 새로고침이 실패했는데 보여 줄 목록은 남아 있다.
@@ -80,11 +81,13 @@ class GroupListViewModel
 constructor(
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase,
     private val refreshMyGroups: RefreshMyGroupsUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
     init {
         observeGroups()
+        observeMyAccount()
     }
 
     /**
@@ -94,6 +97,19 @@ constructor(
     private fun observeGroups() {
         viewModelScope.launch {
             getMyGroupsFlow().collect { groups -> updateState { copy(groupList = groups) } }
+        }
+    }
+
+    /**
+     * 닉네임은 [GroupListIntent.Enter] 가 아니라 생성 시점에 구독한다 — 목록과 달리 계정
+     * SSoT 가 밀어 주는 값이라 화면에 설 때마다 끌어올 이유가 없다. 구독만 하고 갱신은
+     * 걸지 않는다 — 계정 갱신은 로그인/가입·스플래시·닉네임 변경 쪽이 맡는다.
+     */
+    private fun observeMyAccount() {
+        launch {
+            getMyAccountFlow().collect { account ->
+                updateState { copy(nickName = account?.nickname?.value) }
+            }
         }
     }
 
@@ -122,7 +138,7 @@ constructor(
 
             GroupListIntent.ClickCreateNewGroup -> {
                 closeAddGroup()
-                postSideEffect(GroupListSideEffect.NavigateToCreateGroup)
+                handleClickCreateNewGroup()
             }
 
             GroupListIntent.ClickEnterNewGroup -> {
@@ -132,6 +148,22 @@ constructor(
 
             GroupListIntent.Refresh -> loadGroups(isRefresh = true)
         }
+    }
+
+    /**
+     * 닉네임 없이 열면 사용자가 이미 가진 이름을 다시 입력하게 되므로, 스트림이 첫 값을
+     * 내놓기 전에는 열지 않는다. DataStore 를 한 번 읽는 사이라 따로 알리지 않는다 —
+     * 다시 누르면 열린다.
+     */
+    private fun handleClickCreateNewGroup() {
+        val nickName = state.value.nickName
+
+        if (nickName == null) {
+            viewModelLogger.w { "닉네임이 아직 없어 그룹 만들기를 열지 않는다" }
+            return
+        }
+
+        postSideEffect(GroupListSideEffect.NavigateToCreateGroup(nickName))
     }
 
     /**
