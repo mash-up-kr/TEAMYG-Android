@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.feature.camera.impl.screen.SystemCameraScreen
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.SystemCameraIntent
@@ -113,12 +115,14 @@ internal fun SystemCameraRoute(
         onPauseOrDispose {}
     }
 
-    SystemCameraScreen(
-        state = state,
-        onClickGrantPermission = { viewModel.processIntent(SystemCameraIntent.OnRequestPermission) },
-        onClickOpenAppSettings = { viewModel.processIntent(SystemCameraIntent.OnOpenAppSettings) },
-        onClickRetry = { viewModel.processIntent(SystemCameraIntent.OnRetry) },
-        onClickCancel = { viewModel.processIntent(SystemCameraIntent.OnCancel) },
-        modifier = modifier,
-    )
+    YGScaffoldV2 { innerPadding ->
+        SystemCameraScreen(
+            state = state,
+            onClickGrantPermission = { viewModel.processIntent(SystemCameraIntent.OnRequestPermission) },
+            onClickOpenAppSettings = { viewModel.processIntent(SystemCameraIntent.OnOpenAppSettings) },
+            onClickRetry = { viewModel.processIntent(SystemCameraIntent.OnRetry) },
+            onClickCancel = { viewModel.processIntent(SystemCameraIntent.OnCancel) },
+            modifier = modifier.padding(innerPadding),
+        )
+    }
 }

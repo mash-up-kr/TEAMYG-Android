@@ -9,6 +9,7 @@ android {
 dependencies {
     implementation(projects.feature.camera.api)
     implementation(projects.feature.segmentation.api)
+    implementation(projects.feature.groups.canvas.api)
 
     implementation(libs.bundles.camerax)
 }

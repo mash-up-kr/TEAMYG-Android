@@ -337,7 +337,7 @@ class TermAgreeViewModelTest {
     }
 
     @Test
-    fun clickNextButton_signUpFails_staysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickNextButton_signUpFailsWithNetwork_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 가입이 네트워크 단절로 실패하는 화면
         givenPoliciesLoaded()
         coEvery { signUp(any(), any(), any()) } returns Result.failure(AppError.Network(cause = null))
@@ -350,9 +350,29 @@ class TermAgreeViewModelTest {
             viewModel.processIntent(TermAgreeIntent.ClickNextButton)
             advanceUntilIdle()
 
-            // Then 이동하지 않고 다시 시도할 수 있는 상태로 돌아온다
-            expectNoEvents()
+            // Then 사용자가 고칠 수 있는 실패라 따로 말해 주고, 이동하지 않은 채 다시 시도할 수 있다
+            assertEquals(TermAgreeSideEffect.ShowError(TermAgreeError.NETWORK), awaitItem())
             assertFalse(viewModel.state.value.isSigningUp)
+        }
+    }
+
+    @Test
+    fun clickNextButton_signUpFailsWithServerError_saysTheSameThing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 가입이 서버 에러로 실패하는 화면
+        givenPoliciesLoaded()
+        coEvery { signUp(any(), any(), any()) } returns
+            Result.failure(AppError.Server(code = "SIGN_UP_FAILED", statusCode = 500, serverMessage = "…"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(TermAgreeIntent.ClickAgreeAllTerm(newSelected = true))
+
+        viewModel.effect.test {
+            // When 다음 버튼 클릭
+            viewModel.processIntent(TermAgreeIntent.ClickNextButton)
+            advanceUntilIdle()
+
+            // Then 사용자가 할 수 있는 일이 "잠시 후 다시"로 같아 갈래를 나누지 않는다 — 구분은 로그가 남긴다
+            assertEquals(TermAgreeSideEffect.ShowError(TermAgreeError.UNKNOWN), awaitItem())
         }
     }
 

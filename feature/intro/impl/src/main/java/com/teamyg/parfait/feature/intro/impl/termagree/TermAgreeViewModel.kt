@@ -21,7 +21,7 @@ data class TermAgreeState(
     val policies: List<PolicyVO> = emptyList(),
     val agreedTermsIds: Set<TermsId> = emptySet(),
     val isLoading: Boolean = true,
-    /** TODO(공통 에러화면): 이 플래그가 서면 목록 대신 공통 에러화면을 띄운다 */
+    /** 재시도라는 갈 곳이 있는 실패라 토스트로 흘려보내지 않고 화면에 남긴다 */
     val isLoadFailed: Boolean = false,
     val isSigningUp: Boolean = false,
 ) : UiState {
@@ -58,6 +58,8 @@ sealed interface TermAgreeSideEffect : UiSideEffect {
     data object NavigateToBack : TermAgreeSideEffect
 
     data object NavigateToNext : TermAgreeSideEffect
+
+    data class ShowError(val error: TermAgreeError) : TermAgreeSideEffect
 }
 
 @HiltViewModel(assistedFactory = TermAgreeViewModel.Factory::class)
@@ -166,7 +168,7 @@ constructor(
                     policies = current.policies,
                     agreedTermsIds = current.agreedTermsIds,
                 ).onSuccess { postSideEffect(TermAgreeSideEffect.NavigateToNext) }
-                    .onFailure(::logSignUpFailure)
+                    .onFailure(::handleSignUpFailure)
             } finally {
                 updateState { copy(isSigningUp = false) }
             }
@@ -186,28 +188,33 @@ constructor(
         }
     }
 
-    /**
-     * 실패 갈래를 전부 열거해 둔다. 지금은 로그뿐이지만, UX 가 정해지면 각 자리를 문구로
-     * 바꾸면 되고 분기를 다시 발굴할 필요가 없다.
-     */
-    private fun logSignUpFailure(throwable: Throwable) {
-        when (throwable) {
-            is SignUpException.RequiredPolicyNotAgreed ->
-                // 화면 가드(`isAvailable`)가 뚫렸다는 뜻이라 사용자 안내가 아니라 결함으로 본다
+    /** 재시도 동선을 따로 주지 않는다 — 화면이 그대로 남아 다음 버튼이 그 자리에 있다 */
+    private fun handleSignUpFailure(throwable: Throwable) {
+        val error = when (throwable) {
+            is SignUpException.RequiredPolicyNotAgreed -> {
+                // 화면 가드(`isAvailable`)가 뚫렸다는 뜻이라 로그에는 결함으로 남긴다
                 viewModelLogger.e(throwable) { "가입 실패 — 필수 약관 미동의로 도메인에서 막혔다" }
+                TermAgreeError.UNKNOWN
+            }
 
-            is AppError.Network ->
-                // TODO(에러 UX 미정): "네트워크 연결을 확인해 주세요" + 재시도 안내
+            is AppError.Network -> {
                 viewModelLogger.e(throwable) { "가입 실패 — 네트워크 단절" }
+                TermAgreeError.NETWORK
+            }
 
-            is AppError.Server ->
-                // TODO(에러 UX 미정): 서버가 준 사유를 화면 문구로 옮긴다
+            is AppError.Server -> {
                 viewModelLogger.e(throwable) { "가입 실패 — 서버 에러 ${throwable.code}" }
+                TermAgreeError.UNKNOWN
+            }
 
-            else ->
-                // TODO(에러 UX 미정): 알 수 없는 오류 안내. 세션 저장 실패도 여기로 온다
+            else -> {
+                // 세션 저장 실패도 여기로 온다
                 viewModelLogger.e(throwable) { "가입 실패 — 예상하지 못한 오류" }
+                TermAgreeError.UNKNOWN
+            }
         }
+
+        postSideEffect(TermAgreeSideEffect.ShowError(error))
     }
 
     @AssistedFactory

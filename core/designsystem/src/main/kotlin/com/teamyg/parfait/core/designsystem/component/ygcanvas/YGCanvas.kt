@@ -2,6 +2,7 @@ package com.teamyg.parfait.core.designsystem.component.ygcanvas
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -24,6 +25,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -130,7 +132,12 @@ fun YGCanvas(
             }
 
             if (isCalendarVisible) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // 달력은 딤 위에 겹쳐 있을 뿐이라 항목 사이 빈 자리를 누르면 뒤의 딤이 받아 달력이 닫힌다
+                        .pointerInput(Unit) { detectTapGestures { /* 달력 안에서 소비 */ } },
+                ) {
                     YGCanvasDateSelectButton(
                         date = date,
                         day = day,

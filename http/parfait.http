@@ -78,3 +78,147 @@ Authorization: Bearer {{access_token}}
         client.assert(response.body.code === "INVALID_DATE_RANGE", "code: " + response.body.code);
     });
 %}
+
+### 캔버스 상세 조회
+# 과거 목록에서 항목을 눌러 들어가는 자리. 응답이 "오늘의 캔버스"와 **같은 타입**이라
+# 앱 DTO·VO·매퍼를 그대로 쓴다.
+#
+# 선행: 위 "오늘의 캔버스 조회"가 parfait_id 를 채운다.
+#       지난 날을 보려면 "과거 캔버스 목록" 응답의 parfaitId 를 손으로 넣는다.
+#
+# ⚠️ today 와 달리 부작용이 없다 — 없는 캔버스를 조회해도 행이 생기지 않는다.
+# ⚠️ 상태로 거르지 않는다. "이전 파르페 상세"라는 이름이지만 오늘의 ACTIVE 캔버스도 그대로 온다
+#    — 같은 캔버스를 두 경로로 얻을 수 있고 한쪽(today)만 부작용이 있다.
+# ⚠️ lastClosedDate 는 조회 대상이 아니라 **그룹 기준**이다 — 지난 캔버스를 봐도 그룹의 최신
+#    마감일이 오므로 조회한 날짜보다 뒤일 수 있다.
+GET {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("date=" + response.body.data.date + " status=" + response.body.data.status);
+%}
+
+### (대조용) 그 그룹에 없는 parfaitId → 404 PARFAIT_NOT_FOUND
+# 남의 그룹 캔버스를 id 로 훔쳐볼 수 없다. 다만 403 이 아니라 404 다 —
+# 서버가 (parfaitId, groupId) 쌍으로 찾아서 "없음"과 "남의 것"을 구분하지 않는다.
+GET {{base_url}}/api/v1/groups/{{group_id}}/parfaits/999999999
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("404 PARFAIT_NOT_FOUND", function() {
+        client.assert(response.status === 404, "status: " + response.status);
+        client.assert(response.body.code === "PARFAIT_NOT_FOUND", "code: " + response.body.code);
+    });
+%}
+
+### 캔버스 배경 변경 (단색)
+# C-301 배경 편집이 고른 값을 저장하는 경로 — 이 도메인의 유일한 쓰기다.
+#
+# ⚠️ 조건부 필수다. type=COLOR 면 value, type=IMAGE 면 imageId 가 있어야 한다.
+#    검증 애노테이션이 하나도 없어 **스웨거 required 에는 type 조차 안 나온다.**
+# ⚠️ 둘 다 채워 보내도 에러가 아니다 — type 에 해당하는 쪽만 쓰이고 나머지는 조용히 버려진다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/background
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "type": "COLOR",
+  "value": "#FFB6C1"
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("background=" + JSON.stringify(response.body.data.background));
+%}
+
+### (대조용) HEX 형식 위반 → 400 INVALID_BACKGROUND
+# 통과하는 형태는 `#` + 6자리뿐이다. 3자리 축약형·8자리 알파 포함·`#` 없는 형태는 전부 막힌다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/background
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "type": "COLOR",
+  "value": "#FFF"
+}
+
+> {%
+    client.test("400 INVALID_BACKGROUND", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_BACKGROUND", "code: " + response.body.code);
+    });
+%}
+
+### 캔버스 배경 변경 (이미지)
+# 선행: images.http 로 image_id 를 COMPLETED 까지 만든다.
+#
+# ⚠️ PENDING 이면 409 BACKGROUND_IMAGE_NOT_CONFIRMED 다 — 토핑 배치가 같은 상황에서 내는
+#    IMAGE_NOT_CONFIRMED 와 **다른 코드**이고, parfait 쪽 enum 에 산다.
+# ⚠️ 요청은 imageId 로 보내는데 저장·응답되는 value 는 **이미지 URL** 이다. 앱이 "지금 배경이
+#    어느 이미지인지"를 id 로 되짚을 방법이 계약에 없다.
+# ⚠️ 배경은 참조 카운트를 올리지 않는다 — 같은 이미지를 토핑으로도 올렸다가 그 토핑을 지우면
+#    카운트가 0이 되어 S3 객체가 삭제되고 **배경이 깨진다.**
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/background
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "type": "IMAGE",
+  "imageId": {{image_id}}
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("value=" + response.body.data.background.value + " (id 가 아니라 URL 이다)");
+%}
+
+### ⚠️⚠️ 아래 둘은 파괴적이다 — 여기서부터 통째로 실행하지 말 것
+
+### (테스트 전용) 캔버스 강제 회전
+# ⚠️ **인증 없이 전 그룹의 캔버스를 즉시 마감하고 다음 날 캔버스를 만든다.** 내 그룹만이
+#    아니라 서버에 있는 **모든 그룹**이 대상이다(서버가 프로덕션 오픈 전 제거를 예고한 엔드포인트).
+# ⚠️ 회전 뒤에는 이 그룹으로 쓰기를 더 시험할 수 없다 — 오늘 날짜 캔버스가 CLOSED 로 남고
+#    "오늘의 캔버스 조회"가 그것을 계속 돌려주기 때문이다(날짜로 찾는다). 이어서 시험하려면
+#    parfait-group.http 로 그룹을 새로 만든다.
+#
+# 아래 409 대조용 요청을 재현할 때만 쓴다.
+POST {{base_url}}/api/v1/test/parfait-canvas/rotate
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("closed=" + response.body.data.closedCount +
+        " empty=" + response.body.data.emptyCount +
+        " created=" + response.body.data.createdCount +
+        " failed=" + response.body.data.failedCount);
+%}
+
+### (대조용) 마감된 캔버스에 배경 변경 → 409 PARFAIT_ALREADY_CLOSED
+# 선행: 바로 위 강제 회전. parfait_id 는 그 회전으로 방금 마감된 캔버스를 가리킨다.
+#
+# 2026-08-20 서버 delta로 생긴 가드다. 그전에는 이 요청이 **200 으로 성공**했고, 뒤이은
+# 오늘 조회가 새 캔버스를 줘서 사용자에게는 편집이 사라진 것처럼 보였다.
+# 토핑 네 엔드포인트도 같은 코드로 거부한다(parfait-image.http 마지막 요청).
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/background
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "type": "COLOR",
+  "value": "#FFB6C1"
+}
+
+> {%
+    client.test("409 PARFAIT_ALREADY_CLOSED", function() {
+        client.assert(response.status === 409, "status: " + response.status);
+        client.assert(response.body.code === "PARFAIT_ALREADY_CLOSED", "code: " + response.body.code);
+    });
+%}

@@ -53,8 +53,8 @@ interface ParfaitService {
     /**
      * 캔버스 배경 변경. 서버 컨트롤러는 별도 클래스지만 같은 도메인이다.
      *
-     * ⚠️ 서버가 캔버스 상태를 보지 않아 CLOSED·EMPTY 캔버스의 배경도 바뀐다 — 마감 후 편집을
-     * 막는 것은 화면 책임이다.
+     * ⚠️ 마감된 캔버스에는 저장되지 않는다 — CLOSED·EMPTY 면 409 PARFAIT_ALREADY_CLOSED 다
+     * (`api/parfait.md`).
      *
      * ⚠️ 배경 이미지는 image_meta.reference_count 를 올리지 않는다 — 같은 이미지를 토핑으로도
      * 올렸다가 그 토핑을 지우면 S3 객체가 삭제돼 배경이 깨진다(`api/parfait.md`).

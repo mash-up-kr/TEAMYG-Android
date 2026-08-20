@@ -17,7 +17,6 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -43,7 +42,6 @@ class CanvasMainViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val addRecentImage: AddRecentImageUseCase = mockk()
     private val getParfaitHistories: GetParfaitHistoriesUseCase = mockk()
     private val getParfaitYears: GetParfaitYearsUseCase = mockk()
     private val getTodayParfait: GetTodayParfaitUseCase = mockk()
@@ -81,7 +79,6 @@ class CanvasMainViewModelTest {
 
     private fun viewModel() = CanvasMainViewModel(
         groupIdValue = GROUP_ID,
-        addRecentImageUseCase = addRecentImage,
         getParfaitHistoriesUseCase = getParfaitHistories,
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitUseCase = getTodayParfait,

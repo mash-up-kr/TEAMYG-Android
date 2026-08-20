@@ -22,7 +22,6 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -53,8 +52,8 @@ data class CanvasMainUiState(
      * 오늘 캔버스. 아직 못 받았으면 null 이다 — 조회가 실패했거나 응답 전이다.
      *
      * [viewedCanvas] 와 나눠 두는 이유는 토핑 추가·배경 편집이 언제나 오늘 것을 대상으로
-     * 해야 해서다. 서버는 마감된 캔버스의 편집도 막지 않으므로 여기서 갈라 두지 않으면
-     * 지난 날을 보다가 그 캔버스를 고치게 된다.
+     * 해야 해서다. 지난 날을 보다가 그 캔버스를 고치면 서버가 409 로 되돌려주므로, 갈라 두지
+     * 않으면 사용자가 편집을 마친 뒤에야 실패를 보게 된다.
      */
     val todayCanvas: CanvasVO? = null,
     /** 달력에서 고른 날의 캔버스. 화면에 그려지는 것은 언제나 이쪽이다 */
@@ -127,10 +126,6 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
-    data class NavigateToSegmentation(
-        val uri: String,
-    ) : CanvasMainEffect
-
     /**
      * 지금 보고 있는 캔버스 프레임을 이미지로 캡처해 달라는 요청. 캡처(Compose
      * GraphicsLayer) 자체는 화면만 할 수 있어, ViewModel 은 요청만 보내고 화면이 캡처한
@@ -154,10 +149,6 @@ sealed interface CanvasMainIntent : UiIntent {
      * 더 바뀌지 않는다.
      */
     data object Enter : CanvasMainIntent
-
-    data class CacheImage(
-        val uri: String,
-    ) : CanvasMainIntent
 
     class OnClickCamera : CanvasMainIntent
 
@@ -190,7 +181,6 @@ class CanvasMainViewModel
 @AssistedInject
 constructor(
     @Assisted groupIdValue: Long,
-    private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
@@ -362,8 +352,6 @@ constructor(
         when (intent) {
             is CanvasMainIntent.Enter -> handleEnter()
 
-            is CanvasMainIntent.CacheImage -> handleCacheImage(intent)
-
             is CanvasMainIntent.OnClickCamera -> handleOnClickCamera()
 
             is CanvasMainIntent.OnClickCanvas -> handleOnClickCanvas()
@@ -510,15 +498,6 @@ constructor(
                 .minWithOrNull(compareBy<LocalDate> { abs(it.monthsUntil(anchor)) }.thenByDescending { it })
                 ?: anchor,
         )
-    }
-
-    private fun handleCacheImage(intent: CanvasMainIntent.CacheImage) {
-        viewModelScope.launch {
-            addRecentImageUseCase(intent.uri)
-            postSideEffect(
-                effect = CanvasMainEffect.NavigateToSegmentation(intent.uri),
-            )
-        }
     }
 
     private fun handleOnClickCamera() {

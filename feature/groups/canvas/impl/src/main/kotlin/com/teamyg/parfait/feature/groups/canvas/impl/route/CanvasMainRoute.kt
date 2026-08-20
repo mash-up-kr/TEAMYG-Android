@@ -10,7 +10,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
@@ -24,7 +23,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import kotlinx.datetime.number
 
 @Composable
@@ -51,10 +49,6 @@ internal fun CanvasMainRoute(
         onPauseOrDispose { }
     }
 
-    ResultEffect<String> { imageUri ->
-        viewModel.processIntent(CanvasMainIntent.CacheImage(imageUri))
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -72,12 +66,6 @@ internal fun CanvasMainRoute(
 
                 is CanvasMainEffect.NavigateToGroupSetting -> navigator.goTo(
                     destination = NavKeyGroupSetting(groupId = effect.groupId.value),
-                )
-
-                is CanvasMainEffect.NavigateToSegmentation -> navigator.goTo(
-                    destination = NavKeySegmentation(
-                        sourceImageUri = effect.uri,
-                    ),
                 )
 
                 is CanvasMainEffect.RequestCanvasCapture -> {
