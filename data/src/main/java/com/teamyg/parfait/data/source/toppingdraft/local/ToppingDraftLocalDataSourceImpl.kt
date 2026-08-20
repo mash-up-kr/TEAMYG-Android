@@ -23,9 +23,8 @@ constructor(
     private val dataStore: DataStore<Preferences>,
     @LocalJson private val json: Json,
 ) : ToppingDraftLocalDataSource {
-    // 이 DataStore 는 토큰·계정·최근 이미지와 파일을 공유해 남의 키 하나만 바뀌어도 `data` 가
-    // 재방출한다. `EncryptedPreferences.observe` 와 같은 이유로, 원문에서 먼저 dedupe 한 뒤에
-    // decode 한다 — 순서를 바꾸면 남의 쓰기마다 안 바뀐 JSON 을 매번 다시 파싱하게 된다.
+    // 이 파일을 공유하는 다른 키가 바뀌어도 `data` 는 재방출한다. 원문에서 먼저 dedupe 해야
+    // 안 바뀐 JSON 을 매번 다시 파싱하지 않는다(`EncryptedPreferences.observe` 와 같은 이유)
     override val draft: Flow<ToppingDraft?> = dataStore.data
         .map { prefs -> prefs[TOPPING_DRAFT_KEY] }
         .distinctUntilChanged()
@@ -41,10 +40,7 @@ constructor(
         dataStore.edit { prefs -> prefs.remove(TOPPING_DRAFT_KEY) }
     }
 
-    /**
-     * 못 읽는 값은 초안이 없는 것으로 본다 — 흐름은 진입에서 새로 열리므로 되살릴 이유가 없다.
-     * 손상분을 지우지 않는 것도 같은 이유다(다음 진입이 덮어쓴다).
-     */
+    /** 못 읽는 값은 초안이 없는 것으로 본다. 지우지도 않는다 — 다음 흐름 진입이 덮어쓴다 */
     private fun decode(raw: String?): ToppingDraft? {
         if (raw.isNullOrBlank()) {
             return null

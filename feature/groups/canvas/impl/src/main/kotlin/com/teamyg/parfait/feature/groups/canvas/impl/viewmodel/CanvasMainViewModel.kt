@@ -97,8 +97,7 @@ data class CanvasMainUiState(
         get() = selectedDate == today
 
     /**
-     * 캔버스를 아직 못 받았으면 parfaitId 도 nextPositionZ 도 없다. 열어 두면 촬영·누끼·편집을
-     * 다 마친 뒤에야 올릴 데가 없다는 것을 알게 된다
+     * 열어 두면 촬영·누끼·편집을 다 마친 뒤에야 올릴 데가 없다는 것을 알게 된다
      * (`adr/0026-topping-draft-datastore-ssot.md`).
      */
     val isToppingAddEnabled: Boolean
@@ -155,10 +154,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
 
-    /**
-     * 오늘 캔버스를 못 받았고 보여 줄 것도 없을 때만 온다. 화면이 앞에 설 때마다 재조회하므로
-     * 매번 알리면 방해가 된다(`specs/2026-08-20-c106-topping-place-api.md` C-001 절).
-     */
+    /** 보여 줄 캔버스가 없을 때만 온다 — 화면이 앞에 설 때마다 재조회하므로 매번 알리면 방해가 된다 */
     data object ShowTodayCanvasError : CanvasMainEffect
 
     data object ShowToppingFlowStartError : CanvasMainEffect
@@ -269,9 +265,8 @@ constructor(
                     viewedCanvas = null,
                 )
             } else {
-                // 보고 있던 지난 날(viewedCanvas)은 마감돼 그대로 유효하지만, todayCanvas 는
-                // 더 이상 "오늘 것"이 아니므로 비운다 — 안 비우면 "오늘의 파르페 가기"로 돌아갔을
-                // 때 어제 캔버스가 오늘 것으로 오인돼 그 위에 토핑이 올라간다
+                // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다 — 안 비우면
+                // "오늘의 파르페 가기"로 돌아갔을 때 어제 캔버스 위에 토핑이 올라간다
                 copy(today = today, todayCanvas = null)
             }
         }
@@ -520,11 +515,8 @@ constructor(
     }
 
     /**
-     * 달력도 오늘이 있는 달로 따라간다.
-     *
-     * [CanvasMainUiState.todayCanvas] 가 비어 있을 수 있다 — 지난 날을 보는 동안 하루 경계를
-     * 넘으면 [syncToday] 가 낡은 값을 비워 둔다. 그 상태로 그냥 돌아오면 캔버스도 못 받은 채
-     * 토핑 추가 버튼만 잠긴 화면이 되므로 다시 부른다.
+     * 달력도 오늘이 있는 달로 따라간다. 다시 부르는 것은 [syncToday] 가 하루 경계에서 비워 둔
+     * 경우가 있어서다 — 그대로 돌아오면 캔버스 없이 버튼만 잠긴 화면이 된다.
      */
     private fun handleClickGoToToday() {
         updateState {
