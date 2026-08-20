@@ -4,10 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.ResultEffect
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
 import com.teamyg.parfait.core.navigation.Navigator
@@ -18,6 +25,7 @@ import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
+import kotlinx.datetime.number
 
 @Composable
 internal fun CanvasMainRoute(
@@ -31,6 +39,10 @@ internal fun CanvasMainRoute(
     ),
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
+    val graphicsLayer = rememberGraphicsLayer()
+    val toastPolicy = rememberYGToastPolicy()
+    val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
+    val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
 
     // 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 다시 앞에 설 때 한 번 더 돈다.
     // 매번 다시 묻는 이유는 CanvasMainIntent.Enter 에 있다
@@ -67,6 +79,18 @@ internal fun CanvasMainRoute(
                         sourceImageUri = effect.uri,
                     ),
                 )
+
+                is CanvasMainEffect.RequestCanvasCapture -> {
+                    val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+                    viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+                }
+
+                is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
+                    val message = gallerySaveSuccessFormat.format(effect.date.month.number, effect.date.day)
+                    toastPolicy.show(YGToastType.InviteCode(message))
+                } else {
+                    toastPolicy.showError(gallerySaveFailureMessage)
+                }
             }
         }
     }
@@ -86,5 +110,7 @@ internal fun CanvasMainRoute(
         onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
         onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
         modifier = modifier,
+        graphicsLayer = graphicsLayer,
+        toastPolicy = toastPolicy,
     )
 }

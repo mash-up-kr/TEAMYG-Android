@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -20,6 +22,9 @@ import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
+import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertHost
+import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertPolicy
+import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygbackgrounddotgrid.ygBackgroundDotGrid
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
@@ -28,6 +33,10 @@ import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuI
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChip
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGNametagChipStyle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -59,12 +68,16 @@ internal fun CanvasMainScreen(
     onSelectMonth: (LocalDate) -> Unit,
     onClickDate: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
+    graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
+    toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
+    alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val openMenu = { isMenuExpanded = true }
 
     Column(
         modifier = modifier
+            .fillMaxSize()
             .background(YGAtomicColors.Gray.White)
             .ygBackgroundDotGrid(),
     ) {
@@ -112,7 +125,7 @@ internal fun CanvasMainScreen(
             } else {
                 YGCanvasMenuAction(
                     text = stringResource(R.string.canvas_main_save_to_gallery),
-                    iconResource = DesignSystemR.drawable.ic_gallery,
+                    iconResource = null,
                     onClick = onClickSaveToGallery,
                 )
             },
@@ -130,6 +143,15 @@ internal fun CanvasMainScreen(
                 )
             },
             background = canvasState.canvasBackground.toYGCanvasBackground(),
+            captureGraphicsLayer = graphicsLayer,
+            // TODO: 전일 캔버스 알림 트리거를 실제로 붙일 때, 토스트·얼럿이 같은 타이밍에
+            // 겹쳐 뜨지 않게 같이 처리한다 — 지금은 그냥 세로로 쌓아 둘 다 보일 수 있다
+            overlayContent = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    YGToastHost(policy = toastPolicy, modifier = Modifier.fillMaxWidth())
+                    YGAlertHost(policy = alertPolicy, modifier = Modifier.fillMaxWidth())
+                }
+            },
             isEmpty = canvasState.isCanvasEmpty,
             emptyMessage = stringResource(R.string.canvas_main_empty_message),
             // 메뉴와 캘린더 모두 캔버스를 가린 채 뜬다 — 어느 쪽이든 바깥을 누르면 닫힌다
@@ -248,6 +270,75 @@ private fun PreviewCanvasMainScreen(
         onSelectYear = {},
         onSelectMonth = {},
         onClickDate = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/** 갤러리 저장 토스트가 캔버스 상단에 어떻게 걸리는지 확인용. */
+@YGPreview
+@Composable
+private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
+    val today = LocalDate(2026, 5, 20)
+    val toastMessage = stringResource(R.string.canvas_main_gallery_save_success, 12, 31)
+    val toastPolicy = remember(toastMessage) {
+        YGToastPolicy().apply { show(YGToastType.InviteCode(toastMessage)) }
+    }
+
+    CanvasMainScreen(
+        canvasState = CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            today = today,
+            selectedDate = LocalDate(2026, 5, 3),
+        ),
+        onClickBack = {},
+        onClickDateSelect = {},
+        onClickMenu = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickEditCanvasBG = {},
+        onClickSaveToGallery = {},
+        onClickGoToToday = {},
+        onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
+        toastPolicy = toastPolicy,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
+    val today = LocalDate(2026, 5, 20)
+    val alertTitle = stringResource(R.string.canvas_main_closed_canvas_alert_title, 12, 31)
+    val alertSub = stringResource(R.string.canvas_main_closed_canvas_alert_sub, 12)
+    val alertButtonText = stringResource(R.string.canvas_main_closed_canvas_alert_button)
+    val alertPolicy = remember(alertTitle, alertSub, alertButtonText) {
+        YGAlertPolicy().apply {
+            show(title = alertTitle, sub = alertSub, buttonText = alertButtonText)
+        }
+    }
+
+    CanvasMainScreen(
+        canvasState = CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            today = today,
+            selectedDate = today,
+        ),
+        onClickBack = {},
+        onClickDateSelect = {},
+        onClickMenu = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickEditCanvasBG = {},
+        onClickSaveToGallery = {},
+        onClickGoToToday = {},
+        onDismissCalendar = {},
+        onSelectYear = {},
+        onSelectMonth = {},
+        onClickDate = {},
+        alertPolicy = alertPolicy,
         modifier = Modifier.fillMaxSize(),
     )
 }
