@@ -165,7 +165,8 @@ constructor(
 
         postSideEffect(GroupListSideEffect.NavigateToCreateGroup(nickName))
     }
-    
+
+    /**
      * ViewModel 은 NavEntry 가 백스택에 남아 있는 한 살아 있어, 오버레이를 켜 둔 채 나가면
      * 목록으로 돌아왔을 때 누른 적 없는 오버레이가 그대로 떠 있다. 뒤로 가기 한 번을 그걸
      * 닫는 데 쓰게 되는 셈이라, 나가는 길에 접는다.
