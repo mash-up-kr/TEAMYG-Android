@@ -77,10 +77,10 @@ class ToppingDraftRepositoryImplTest {
         // When 초안을 읽는다
         val read = repository().draft.first()
 
-        // Then 경로를 흘리지 않는다 — 세그멘테이션 진입이 그 디렉토리를 통째로 비우므로
-        // 그대로 두면 읽는 쪽이 있지도 않은 파일을 올리려 든다
-        assertNull(read?.subjectImagePath)
-        assertNull(read?.cutoutImagePath)
+        // Then 경로만 비운다 — 세그멘테이션 진입이 그 디렉토리를 통째로 비우므로 그대로
+        // 두면 읽는 쪽이 있지도 않은 파일을 올리려 들지만, 캔버스 식별값(`parfaitId` 등)까지
+        // 잃으면 흐름 진입 때 못 박은 값이 사라진다
+        assertEquals(draft(subjectImagePath = null, cutoutImagePath = null), read)
     }
 
     @Test
