@@ -139,10 +139,6 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
-    data class NavigateToSegmentation(
-        val uri: String,
-    ) : CanvasMainEffect
-
     /** Spotlight 진입과 동시에 1회 노출하는 작성자 정보 토스트 */
     data class ShowSpotlightToast(
         val nickname: String,

@@ -9,7 +9,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
@@ -62,12 +61,6 @@ internal fun CanvasMainRoute(
 
                 is CanvasMainEffect.NavigateToGroupSetting -> navigator.goTo(
                     destination = NavKeyGroupSetting(groupId = effect.groupId.value),
-                )
-
-                is CanvasMainEffect.NavigateToSegmentation -> navigator.goTo(
-                    destination = NavKeySegmentation(
-                        sourceImageUri = effect.uri,
-                    ),
                 )
 
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
