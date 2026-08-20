@@ -9,7 +9,6 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import androidx.core.graphics.createBitmap
 import com.teamyg.parfait.core.util.android.extension.toAndroidPath
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 
 /**
  * Segmentation 결과에 사용자의 획을 반영해 테두리를 두르기 전 알맹이를 만든다.
@@ -49,33 +48,6 @@ internal fun buildCutoutBitmap(
     )
 
     return cutout
-}
-
-/**
- * 알맹이 실루엣에서 떨어진 거리를 재 두고, 겹마다 정해진 거리까지를 그 색으로 칠해 테두리를 만든다.
- * 화면 미리보기와 같은 방식이라 여기서 본 모습이 그대로 파일에 남는다.
- *
- * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
- * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
- *
- * 겹의 굵기는 dp 라 [originPxPerDp] 로 원본 좌표계 굵기를 얻는다. 미리보기가 화면에 그릴 때 쓰는
- * 배율을 되짚은 값이므로, 화면에서 본 굵기가 그대로 파일에 남는다.
- */
-internal fun Bitmap.withBorders(
-    borderLayers: List<ToppingBorderLayer>,
-    originPxPerDp: Float,
-): Bitmap {
-    if (borderLayers.isEmpty() || originPxPerDp <= 0f) return this
-
-    val bordered = toOutlineDistanceField().buildBorderBitmap(
-        targetWidth = width,
-        targetHeight = height,
-        bands = borderLayers.toBorderBands(originPxPerDp),
-    ) ?: return this
-
-    Canvas(bordered).drawBitmap(this, 0f, 0f, null)
-
-    return bordered
 }
 
 /**

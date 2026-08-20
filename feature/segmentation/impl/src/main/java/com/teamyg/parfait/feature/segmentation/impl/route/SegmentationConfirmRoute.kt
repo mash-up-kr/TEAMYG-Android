@@ -50,7 +50,7 @@ internal fun SegmentationConfirmRoute(
     }
 
     ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
-        subjectImagePath = result.editedImagePath
+        subjectImagePath = result.subjectImagePath
         cutoutImagePath = result.cutoutImagePath
         borderLayers = result.borderLayers
     }

@@ -21,17 +21,16 @@ data class NavKeyToppingEdit(
 ) : NavKey
 
 /**
- * 편집 화면이 편집을 마치고 돌려주는 결과.
+ * 편집 결과.
  *
- * 테두리는 [editedImagePath] 에 이미 구워져 있어 되짚을 수 없다.
- * 그래서 테두리를 두르기 전 알맹이와 두른 겹 목록을 함께 돌려주고, 다시 편집할 때 이 둘로 되살린다.
+ * 테두리는 픽셀에 굽지 않고 값으로 나른다(`adr/0025-topping-border-as-server-field.md`).
+ * 그리는 것은 결과를 받는 쪽이다.
  *
- * @param editedImagePath 테두리까지 두른 최종 이미지. 화면에 띄우고 다음 단계로 넘기는 결과물이다
- * @param cutoutImagePath 테두리를 두르기 전 알맹이. 다시 편집할 때의 시작 마스크가 된다
- * @param borderLayers 두른 테두리 겹. 안쪽부터 바깥쪽 순이다
+ * @param subjectImagePath 테두리를 두르지 않은 알맹이. 투명 여백을 걷어 실제 토핑 크기다
+ * @param cutoutImagePath 다시 편집할 때의 시작 마스크. 원본 좌표계를 지켜야 해 여백을 걷지 않는다
  */
 data class ToppingEditResult(
-    val editedImagePath: String,
+    val subjectImagePath: String,
     val cutoutImagePath: String,
     val borderLayers: List<ToppingBorderLayer>,
 )

@@ -22,7 +22,6 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.color
 import com.teamyg.parfait.feature.segmentation.impl.editor.trimTransparentBounds
-import com.teamyg.parfait.feature.segmentation.impl.editor.withBorders
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -73,13 +72,6 @@ data class ToppingEditState(
      * 빨강 → 흰색 → 초록 순으로 골랐다면 되돌리기는 초록 → 흰색 → 빨강 순으로 물러난다.
      */
     val borderHistory: UndoRedoStack<ToppingBorderLayer> = UndoRedoStack(),
-    /**
-     * dp 굵기를 원본 비트맵 좌표계 굵기로 바꿀 때 곱할 값.
-     *
-     * 미리보기가 사진을 편집 영역에 맞춰 줄여 놓은 배율을 되짚은 값이라 화면을 재 본 뒤에야 알 수 있다.
-     * 편집 영역을 그리는 쪽이 크기를 재서 알려준다.
-     */
-    val originPxPerDp: Float = 0f,
     val isSaving: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
@@ -138,9 +130,6 @@ sealed interface ToppingEditIntent : UiIntent {
     data class SelectBorderColor(val color: Color) : ToppingEditIntent
 
     data class ChangeBorderWidth(val width: Float) : ToppingEditIntent
-
-    /** 편집 영역을 다 재고 나서 dp 를 원본 좌표로 되돌릴 값을 알려준다 */
-    data class ChangeOriginPxPerDp(val originPxPerDp: Float) : ToppingEditIntent
 
     data object UndoBorder : ToppingEditIntent
 
@@ -223,10 +212,6 @@ class ToppingEditViewModel
                 }
             }
 
-            is ToppingEditIntent.ChangeOriginPxPerDp -> {
-                updateState { copy(originPxPerDp = intent.originPxPerDp) }
-            }
-
             ToppingEditIntent.UndoBorder -> {
                 updateState { copy(borderHistory = borderHistory.undo()) }
             }
@@ -272,7 +257,6 @@ class ToppingEditViewModel
         viewModelScope.launch {
             updateState { copy(isSaving = true) }
 
-            // 테두리를 구운 결과에서는 알맹이를 되짚을 수 없어, 두르기 전 알맹이도 함께 남긴다
             val cutout = withContext(Dispatchers.Default) {
                 buildCutoutBitmap(
                     originBitmap = originBitmap,
@@ -280,28 +264,24 @@ class ToppingEditViewModel
                     strokes = current.strokes,
                 )
             }
-            val edited = withContext(Dispatchers.Default) {
-                cutout.withBorders(current.borderLayers, current.originPxPerDp)
-            }
-            // cutout 은 재편집 좌표계를 지키려고 원본 크기를 유지해야 하지만, 배치 화면에 보여줄
-            // 결과는 투명 여백 없이 실제 토핑(+테두리) 크기여야 하므로 여기서만 트리밍한다
-            val trimmedEdited = withContext(Dispatchers.Default) { edited.trimTransparentBounds() }
+            // cutout 은 재편집 좌표계를 지키려고 원본 크기를 유지해야 하고, 보여 주고 올릴 알맹이는
+            // 투명 여백 없이 실제 토핑 크기여야 한다. 여백이 붙은 채로 올라가면 배치 좌표가 어긋난다
+            val trimmedCutout = withContext(Dispatchers.Default) { cutout.trimTransparentBounds() }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
             // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
-            val (cutoutPath, editedPath) = try {
+            val (cutoutPath, subjectPath) = try {
                 val savedCutoutPath = saveEditedImageUseCase(cutout.toAndroidBitmap()).getOrNull()
-                val savedEditedPath = saveEditedImageUseCase(trimmedEdited.toAndroidBitmap()).getOrNull()
-                savedCutoutPath to savedEditedPath
+                val savedSubjectPath = saveEditedImageUseCase(trimmedCutout.toAndroidBitmap()).getOrNull()
+                savedCutoutPath to savedSubjectPath
             } finally {
-                if (trimmedEdited !== edited) trimmedEdited.recycle()
-                if (edited !== cutout) edited.recycle()
+                if (trimmedCutout !== cutout) trimmedCutout.recycle()
                 cutout.recycle()
             }
             updateState { copy(isSaving = false) }
 
-            if (cutoutPath == null || editedPath == null) {
+            if (cutoutPath == null || subjectPath == null) {
                 postSideEffect(ToppingEditEffect.SaveFailed)
                 return@launch
             }
@@ -309,7 +289,7 @@ class ToppingEditViewModel
             postSideEffect(
                 ToppingEditEffect.EditCompleted(
                     ToppingEditResult(
-                        editedImagePath = editedPath,
+                        subjectImagePath = subjectPath,
                         cutoutImagePath = cutoutPath,
                         borderLayers = current.borderLayers,
                     ),
