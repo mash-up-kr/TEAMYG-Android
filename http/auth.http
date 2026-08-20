@@ -29,11 +29,12 @@ Content-Type: application/json
         client.assert(response.body.success === true, "code: " + response.body.code);
     });
 
-    // ⚠️ 판별자 필드명은 newUser 다. isNewUser 가 아니다.
-    //    서버 Kotlin 은 `val isNewUser: Boolean` 이지만 Jackson 이 getter 이름에서 is 접두사를
-    //    떼고 직렬화해 실제 JSON 키는 newUser 로 나간다(OpenAPI 스키마로 확인).
-    //    isNewUser 로 읽으면 항상 undefined → 신규 유저가 기존 회원으로 잘못 분기된다.
-    if (response.body.data.newUser) {
+    // ⚠️ 판별자 필드명은 isNewUser 다. newUser 가 아니다.
+    //    서버가 jackson-module-kotlin 을 써서 `val isNewUser: Boolean` 의 is 접두사가 JSON 키에
+    //    그대로 남는다. 스웨거만 newUser 로 적는데 springdoc 이 Kotlin 모듈 없는 자기
+    //    ObjectMapper 로 모델을 유도한 산물이라 런타임 결과와 다르다(README 4절).
+    //    newUser 로 읽으면 항상 undefined → 신규 유저가 기존 회원으로 잘못 분기된다.
+    if (response.body.data.isNewUser) {
         client.global.set("registration_token", response.body.data.registrationToken);
         client.log("신규 유저 → registrationToken 저장. 다음은 '2. 회원가입 완료'");
     } else {
@@ -44,7 +45,7 @@ Content-Type: application/json
 %}
 
 ### 2. 회원가입 완료 (약관동의)
-# 인증 불필요(화이트리스트). 1번이 newUser=true 를 준 경우에만 호출한다.
+# 인증 불필요(화이트리스트). 1번이 isNewUser=true 를 준 경우에만 호출한다.
 #
 # ⚠️ 실제 응답은 201 이다. `SignupController` 가 ResponseEntity.status(CREATED) 로 내보낸다.
 #    스웨거(OpenAPI)에는 200 으로 적혀 있는데, springdoc 이 ResponseEntity 의 런타임 status 를
