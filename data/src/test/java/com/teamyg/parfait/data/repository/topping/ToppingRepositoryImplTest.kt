@@ -48,7 +48,8 @@ class ToppingRepositoryImplTest {
         ),
     )
 
-    private suspend fun place() = repository.place(
+    // SUT 의 place() 와 이름을 나눠 둔다. 겹치면 호출부가 어느 쪽을 부르는지 읽기 어렵다
+    private suspend fun placeWithFixtures() = repository.place(
         groupId = GROUP_ID,
         parfaitId = PARFAIT_ID,
         imageId = IMAGE_ID,
@@ -64,7 +65,7 @@ class ToppingRepositoryImplTest {
         } returns Result.success(placed)
 
         // When 배치한다
-        val result = place()
+        val result = placeWithFixtures()
 
         // Then 값을 가공 없이 그대로 전달한다
         assertEquals(placed, result.getOrThrow())
@@ -86,7 +87,7 @@ class ToppingRepositoryImplTest {
         } returns Result.success(placed)
 
         // When 배치한다
-        place()
+        placeWithFixtures()
 
         // Then 좌표와 테두리가 손대지 않은 채 그대로 나간다 — 이 층은 에러 변환만 한다.
         // 테두리를 흘리면 서버는 200 을 주고 캔버스에서 테두리만 조용히 사라진다
@@ -112,7 +113,7 @@ class ToppingRepositoryImplTest {
         )
 
         // When 배치한다
-        val result = place()
+        val result = placeWithFixtures()
 
         // Then 코드와 상태 코드가 함께 살아 있다 — 화면이 둘을 같이 봐야 되감기를 판정한다
         val error = assertIs<AppError.Server>(result.exceptionOrNull())
@@ -128,7 +129,7 @@ class ToppingRepositoryImplTest {
         } returns Result.failure(ApiException.Network(cause = IOException("connection reset")))
 
         // When 배치한다
-        val result = place()
+        val result = placeWithFixtures()
 
         // Then ApiException 이 도메인까지 새지 않는다
         assertIs<AppError.Network>(result.exceptionOrNull())
