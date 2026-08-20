@@ -53,7 +53,7 @@ internal fun GroupListRoute(
                 }
 
                 is GroupListSideEffect.NavigateToCreateGroup -> {
-                    navigator.goTo(NavKeyGroupCreate(nickName = uiState.nickName))
+                    navigator.goTo(NavKeyGroupCreate(nickName = effect.nickName))
                 }
 
                 is GroupListSideEffect.NavigateToInviteCode -> {
