@@ -28,6 +28,7 @@ class NetworkModuleTest {
         tokenAuthenticator = tokenAuthenticator,
     )
     private val unauthenticatedClient = NetworkModule.provideUnauthenticatedOkHttpClient()
+    private val uploadClient = NetworkModule.provideUploadOkHttpClient()
 
     @Test
     fun unauthenticatedOkHttpClient_hasItsOwnDispatcher() {
@@ -57,5 +58,15 @@ class NetworkModuleTest {
         // When 자격증명 없는 클라이언트의 인터셉터 목록을 본다
         // Then AuthInterceptor 가 없다 — 재발급은 자격증명을 헤더가 아니라 본문으로 보낸다
         assertFalse(unauthenticatedClient.interceptors.any { it is AuthInterceptor })
+    }
+
+    @Test
+    fun uploadOkHttpClient_hasItsOwnDispatcher() {
+        // Given 메인 클라이언트·재발급 클라이언트·업로드 클라이언트
+        // When 업로드 클라이언트의 디스패처를 본다
+        // Then 메인 클라이언트와도, 재발급 클라이언트와도 같지 않다 — `newBuilder()` 로 파생하면
+        // 부모 디스패처를 그대로 물려받아 이 단언이 깨진다
+        assertNotSame(mainClient.dispatcher, uploadClient.dispatcher)
+        assertNotSame(unauthenticatedClient.dispatcher, uploadClient.dispatcher)
     }
 }
