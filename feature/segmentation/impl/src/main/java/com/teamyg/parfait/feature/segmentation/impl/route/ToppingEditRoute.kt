@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -9,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
@@ -60,23 +62,25 @@ internal fun ToppingEditRoute(
         }
     }
 
-    ToppingEditScreen(
-        state = state,
-        onChangeTab = { tab -> viewModel.processIntent(ToppingEditIntent.ChangeTab(tab)) },
-        onChangeMode = { mode -> viewModel.processIntent(ToppingEditIntent.ChangeMode(mode)) },
-        onChangeBrushWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBrushWidth(width)) },
-        onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
-        onClickUndoArea = { viewModel.processIntent(ToppingEditIntent.UndoArea) },
-        onClickRedoArea = { viewModel.processIntent(ToppingEditIntent.RedoArea) },
-        onSelectBorderColor = { color -> viewModel.processIntent(ToppingEditIntent.SelectBorderColor(color)) },
-        onChangeBorderWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBorderWidth(width)) },
-        onChangeOriginPxPerDp = { value ->
-            viewModel.processIntent(ToppingEditIntent.ChangeOriginPxPerDp(value))
-        },
-        onClickUndoBorder = { viewModel.processIntent(ToppingEditIntent.UndoBorder) },
-        onClickRedoBorder = { viewModel.processIntent(ToppingEditIntent.RedoBorder) },
-        onClickDone = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
-        onClickBack = { navigator.onBack() },
-        modifier = modifier,
-    )
+    YGScaffoldV2 { innerPadding ->
+        ToppingEditScreen(
+            state = state,
+            onChangeTab = { tab -> viewModel.processIntent(ToppingEditIntent.ChangeTab(tab)) },
+            onChangeMode = { mode -> viewModel.processIntent(ToppingEditIntent.ChangeMode(mode)) },
+            onChangeBrushWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBrushWidth(width)) },
+            onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
+            onClickUndoArea = { viewModel.processIntent(ToppingEditIntent.UndoArea) },
+            onClickRedoArea = { viewModel.processIntent(ToppingEditIntent.RedoArea) },
+            onSelectBorderColor = { color -> viewModel.processIntent(ToppingEditIntent.SelectBorderColor(color)) },
+            onChangeBorderWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBorderWidth(width)) },
+            onChangeOriginPxPerDp = { value ->
+                viewModel.processIntent(ToppingEditIntent.ChangeOriginPxPerDp(value))
+            },
+            onClickUndoBorder = { viewModel.processIntent(ToppingEditIntent.UndoBorder) },
+            onClickRedoBorder = { viewModel.processIntent(ToppingEditIntent.RedoBorder) },
+            onClickDone = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
+            onClickBack = { navigator.onBack() },
+            modifier = modifier.padding(innerPadding),
+        )
+    }
 }

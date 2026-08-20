@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.feature.gallery.impl.screen.SystemGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.SystemGalleryIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.SystemGalleryPickerViewModel
@@ -50,11 +52,13 @@ internal fun SystemGalleryPickerRoute(
         }
     }
 
-    SystemGalleryPickerScreen(
-        state = state,
-        modifier = modifier,
-        onClickConfirm = {
-            viewModel.processIntent(SystemGalleryIntent.ConfirmPhoto(state.imageUri))
-        },
-    )
+    YGScaffoldV2 { innerPadding ->
+        SystemGalleryPickerScreen(
+            state = state,
+            modifier = modifier.padding(innerPadding),
+            onClickConfirm = {
+                viewModel.processIntent(SystemGalleryIntent.ConfirmPhoto(state.imageUri))
+            },
+        )
+    }
 }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.navigation3.runtime.NavKey
 import dagger.hilt.android.scopes.ActivityRetainedScoped
+import kotlin.reflect.KClass
 
 @ActivityRetainedScoped
 class Navigator(initialNavigationKey: NavKey) {
@@ -41,6 +42,31 @@ class Navigator(initialNavigationKey: NavKey) {
         }
 
         _backStack[currentIndex] = destination
+    }
+
+    /**
+     * [T] 타입 키가 백스택에 있으면 그 위에 쌓인 것을 모두 걷어낸다.
+     *
+     * [goToSingleClearTop] 과 달리 **키 값이 아니라 타입**으로 찾는다. 목적지 키가 인자를 갖는
+     * 경우(예: 그룹 id) 걷어내려는 쪽이 그 인자를 모를 수 있어서다 — 촬영·누끼 화면들은 어느
+     * 그룹에서 시작했는지를 들고 다니지 않는다.
+     *
+     * @return 그 타입에 도달했으면 `true`. 백스택에 없으면 **아무것도 걷어내지 않고** `false` —
+     *   못 찾았는데 비우면 사용자가 어느 화면에도 없는 상태로 남는다
+     */
+    inline fun <reified T : NavKey> popUpTo(): Boolean = popUpTo(T::class)
+
+    /** 타입을 값으로 받는 [popUpTo]. reified 판이 이쪽으로 넘긴다 */
+    fun popUpTo(type: KClass<out NavKey>): Boolean {
+        val destinationIndex = _backStack.indexOfLast { it::class == type }
+
+        if (destinationIndex == -1) return false
+        if (destinationIndex == _backStack.lastIndex) return true
+
+        // 하나씩 걷어내면 스냅샷에도 그만큼 변경이 쌓이므로 한 번에 잘라낸다
+        _backStack.removeRange(destinationIndex + 1, _backStack.size)
+
+        return true
     }
 
     /**

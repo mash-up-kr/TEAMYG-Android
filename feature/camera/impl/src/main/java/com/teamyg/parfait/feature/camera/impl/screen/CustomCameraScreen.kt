@@ -12,22 +12,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
-import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
-import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
@@ -50,7 +44,6 @@ internal fun CustomCameraScreen(
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
-    toastPolicy: YGToastPolicy,
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
@@ -64,7 +57,6 @@ internal fun CustomCameraScreen(
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
             onClickCancel = onClickCancel,
-            toastPolicy = toastPolicy,
             onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
             cameraFeed = cameraFeed,
@@ -92,7 +84,6 @@ private fun CameraContent(
     onClickFlash: () -> Unit,
     onClickCancel: () -> Unit,
     onViewfinderRectChange: (Rect) -> Unit,
-    toastPolicy: YGToastPolicy,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
     flashMode: FlashMode,
@@ -136,15 +127,7 @@ private fun CameraContent(
                     .onGloballyPositioned { coordinates ->
                         onViewfinderRectChange(coordinates.boundsInRoot())
                     },
-            ) {
-                YGToastHost(
-                    policy = toastPolicy,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .requiredWidth(LocalConfiguration.current.screenWidthDp.dp)
-                        .windowInsetsPadding(WindowInsets.systemBars),
-                )
-            }
+            )
 
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
@@ -179,7 +162,6 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
         onClickFlash = {},
         onClickCancel = {},
         onViewfinderRectChange = {},
-        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )
@@ -202,7 +184,6 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
         onClickCancel = {},
         onClickFlash = {},
         onViewfinderRectChange = {},
-        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )
@@ -225,7 +206,6 @@ private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
         onClickCancel = {},
         onClickFlash = {},
         onViewfinderRectChange = {},
-        toastPolicy = rememberYGToastPolicy(),
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},
     )

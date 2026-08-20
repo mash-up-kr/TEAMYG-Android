@@ -22,7 +22,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 
 @Composable
 internal fun CanvasMainRoute(
@@ -44,10 +43,6 @@ internal fun CanvasMainRoute(
     LifecycleResumeEffect(viewModel) {
         viewModel.processIntent(CanvasMainIntent.Enter)
         onPauseOrDispose { }
-    }
-
-    ResultEffect<String> { imageUri ->
-        viewModel.processIntent(CanvasMainIntent.CacheImage(imageUri))
     }
 
     LaunchedEffect(viewModel) {

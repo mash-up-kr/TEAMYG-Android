@@ -260,9 +260,8 @@ class ToppingEditViewModel
         }
     }
 
-    private suspend fun decodeBitmapOrNull(uri: String): Bitmap? = runCatching {
-        (decodeImageUseCase(uri) as? AndroidBitmap)?.getRawData()
-    }.getOrNull()
+    private suspend fun decodeBitmapOrNull(uri: String): Bitmap? =
+        (decodeImageUseCase(uri).getOrNull() as? AndroidBitmap)?.getRawData()
 
     private fun completeEdit() {
         val current = state.value
