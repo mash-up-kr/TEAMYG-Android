@@ -326,6 +326,25 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
+    fun onClickConfirm_nonOpaqueBorderColor_failsInsteadOfCrashing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 팔레트가 아닌 곳에서 반투명 색이 흘러든 초안 — 지금은 도달하지 않지만
+        // 진입점이 늘면(예: 커스텀 컬러피커) 열리는 경로다
+        val viewModel = readyViewModel(draft(borderColorArgb = 0x80FF6B00.toInt(), borderWidthDp = 4f))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 색 변환이 던져도 크래시가 아니라 실패로 흡수된다
+            assertEquals(CanvasToppingPlaceEffect.PlaceFailed, awaitItem())
+        }
+        // 업로드가 시작되기 전에 끊겨 서버에 고아 이미지가 안 남는다
+        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any()) }
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun onClickConfirm_permanentFailure_rewindsAndKeepsDraftUncleaned() = runTest(mainDispatcherRule.dispatcher) {
         // 스펙의 되감기 표는 세 코드를 든다. 하나만 넣으면 집합이 좁아진 회귀를 못 잡는다
         listOf("PARFAIT_ALREADY_CLOSED", "GROUP_NOT_JOINED", "PARFAIT_NOT_FOUND").forEach { code ->

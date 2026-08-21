@@ -308,14 +308,16 @@ class CanvasToppingPlaceViewModel
             toppingBaseSize = baseSize,
             positionZ = positionZ,
         )
-        val border = toToppingBorder(current.borderColorArgb, current.borderWidthDp)
-
         launch(key = CONFIRM_JOB_KEY, onError = { postSideEffect(CanvasToppingPlaceEffect.PlaceFailed) }) {
             updateState { copy(isLoading = true) }
 
             // finally 하나로 성공·실패·예외·취소 네 경로를 다 덮는다 — onSuccess/onFailure 에
             // 각자 흩어 두면 Result.onSuccess { } 가 던지는 경로가 어디에도 안 걸린다
             try {
+                // 테두리 조립은 던질 수 있다. launch 밖에서 부르면 그 예외가 onError 를 못 만나고
+                // 호출 스레드까지 올라가 크래시가 된다. 업로드보다 앞이라 고아 이미지도 안 남는다
+                val border = toToppingBorder(current.borderColorArgb, current.borderWidthDp)
+
                 addToppingUseCase(
                     groupId = groupId,
                     parfaitId = parfaitId,
