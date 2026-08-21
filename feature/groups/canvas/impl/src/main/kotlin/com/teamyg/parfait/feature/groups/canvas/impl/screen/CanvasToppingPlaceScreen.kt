@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -13,11 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -26,11 +28,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -41,6 +46,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import java.io.File
 
 /**
  * 다듬기(영역/테두리 편집)를 마친 토핑 하나를 캔버스 위에 놓는 배치 화면.
@@ -77,9 +83,23 @@ internal fun CanvasToppingPlaceScreen(
                 ), // 60.dp/14.dp 공통에 없음
             contentAlignment = Alignment.Center,
         ) {
-            val painter = rememberAsyncImagePainter(model = uiState.toppingImageUri)
+            val toppingImagePath = uiState.toppingImagePath
+            val painter = rememberAsyncImagePainter(
+                // 이 화면은 지금까지 file 스킴 uri 로 그려 왔다. 초안이 담는 것은 절대경로다
+                model = remember(toppingImagePath) {
+                    toppingImagePath?.let { path -> File(path).toUri().toString() }
+                },
+                contentScale = ContentScale.Fit,
+            )
+            val painterState by painter.state.collectAsState()
+            val isToppingImageLoaded = painterState is AsyncImagePainter.State.Success
             val baseSize = rememberToppingBaseSize(painter)
-            LaunchedEffect(baseSize) { onToppingBaseSizeMeasured(baseSize) }
+
+            // 그림이 뜨기 전 실측은 고정 폴백 크기다. 그것을 올려보내면 폴백 기준으로 계산된 배율이
+            // 배치에 굳는다 — 초안을 읽어 오는 동안 그 창이 생긴다
+            LaunchedEffect(baseSize, isToppingImageLoaded) {
+                if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
+            }
 
             // 스트로크·핸들과 정확히 같은 자리·크기를 그리려면 이미지도 이 값을 그대로 써야 한다 —
             // 이미지는 graphicsLayer(scale), 스트로크는 requiredSize(sizeAfterScale)처럼
@@ -129,10 +149,13 @@ internal fun CanvasToppingPlaceScreen(
                             )
                         }.graphicsLayer(rotationZ = uiState.rotationDegrees),
                 ) {
-                    Image(
+                    YGToppingCutoutImage(
                         painter = painter,
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
+                        // 그림이 뜨기 전에 찍으면 플레이스홀더 실루엣이 테두리로 보인다
+                        borderColor = uiState.borderColorArgb
+                            ?.takeIf { isToppingImageLoaded }
+                            ?.let { argb -> Color(argb) },
+                        borderWidth = (uiState.borderWidthDp ?: 0f).dp,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -221,7 +244,7 @@ private fun ToppingPlaceCornerButtons(
 @Composable
 private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
     CanvasToppingPlaceScreen(
-        uiState = CanvasToppingPlaceUiState(toppingImageUri = ""),
+        uiState = CanvasToppingPlaceUiState(),
         onClickClose = {},
         onClickConfirm = {},
         onToppingMoveDrag = {},

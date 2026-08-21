@@ -1,10 +1,22 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.geometry.Offset
+import app.cash.turbine.test
+import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import io.mockk.every
+import io.mockk.mockk
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 
 /** ViewModel 안의 private 상수(TOPPING_DRAG_PX_PER_SCALE=300f, TOPPING_DRAG_DEGREES_PER_PX=0.5f)와 맞춘 값 */
 private const val DRAG_PX_PER_SCALE = 300f
@@ -12,7 +24,29 @@ private const val DRAG_DEGREES_PER_PX = 0.5f
 private const val SCALE_DELTA = 1e-4f
 
 class CanvasToppingPlaceViewModelTest {
-    private fun viewModel(imageUri: String = "uri") = CanvasToppingPlaceViewModel(imageUri = imageUri)
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private val toppingDraftRepository: ToppingDraftRepository = mockk()
+
+    private fun draft(
+        subjectImagePath: String? = "/cache/segmentation/subject.png",
+        borderColorArgb: Int? = null,
+        borderWidthDp: Float? = null,
+    ) = ToppingDraft(
+        groupId = GroupId(1L),
+        parfaitId = ParfaitId(2L),
+        nextPositionZ = 3,
+        subjectImagePath = subjectImagePath,
+        cutoutImagePath = "/cache/segmentation/cutout.png",
+        borderColorArgb = borderColorArgb,
+        borderWidthDp = borderWidthDp,
+    )
+
+    private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
+        every { toppingDraftRepository.draft } returns flowOf(draft)
+        return CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+    }
 
     /** 회전 0/90/180/270도에서 핸들이 가리키는 바깥쪽 방향. [resizeOutwardDirection]과 같은 값이다 */
     private fun outwardDirectionAt(rotationDegrees: Float): Offset {
@@ -142,5 +176,54 @@ class CanvasToppingPlaceViewModelTest {
 
         // Then 각 드래그의 각도 변화가 그대로 누적된다
         assertEquals((40f + 20f) * DRAG_DEGREES_PER_PX, viewModel.state.value.rotationDegrees, SCALE_DELTA)
+    }
+
+    @Test
+    fun draft_fillsTheToppingImageAndBorder() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 테두리까지 적힌 초안
+        val viewModel = viewModel(draft(borderColorArgb = 0xFFFF0000.toInt(), borderWidthDp = 8f))
+
+        // When 화면이 초안을 읽는다
+        advanceUntilIdle()
+
+        // Then 올릴 알맹이와 그릴 테두리가 상태에 실린다 — NavKey 인자로 나르지 않는다
+        val state = viewModel.state.value
+        assertEquals("/cache/segmentation/subject.png", state.toppingImagePath)
+        assertEquals(0xFFFF0000.toInt(), state.borderColorArgb)
+        assertEquals(8f, state.borderWidthDp)
+    }
+
+    @Test
+    fun onClickConfirm_withoutASubjectImage_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안이 가리키던 캐시 파일이 이미 사라졌다
+        val viewModel = viewModel(draft(subjectImagePath = null))
+        advanceUntilIdle()
+
+        // When 확인을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 조용히 아무 일도 안 하지 않는다 — 올릴 것이 없다고 알린다
+            assertEquals(CanvasToppingPlaceEffect.DraftMissing, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickConfirm_withASubjectImage_confirmsThePlacement() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 올릴 알맹이가 있다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 확인을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 배치를 확정한다(서버에 올리는 것은 다음 라운드다)
+            val effect = awaitItem()
+            assertTrue(effect is CanvasToppingPlaceEffect.ToppingPlaced)
+            assertEquals("/cache/segmentation/subject.png", effect.imagePath)
+        }
     }
 }

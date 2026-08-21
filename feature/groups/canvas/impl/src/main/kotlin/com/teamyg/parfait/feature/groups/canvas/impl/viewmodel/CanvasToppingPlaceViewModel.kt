@@ -11,12 +11,11 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
 // 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
 private const val TOPPING_MIN_SCALE_FALLBACK = 0.5f
@@ -38,7 +37,10 @@ private const val TOPPING_DRAG_DEGREES_PER_PX = 0.5f
 private val MIN_TOPPING_SHORT_SIDE = 48.dp
 
 data class CanvasToppingPlaceUiState(
-    val toppingImageUri: String,
+    /** 올릴 알맹이의 파일 시스템 절대경로. 초안이 비어 있으면 `null` 이다 */
+    val toppingImagePath: String? = null,
+    val borderColorArgb: Int? = null,
+    val borderWidthDp: Float? = null,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val offsetX: Dp = 0.dp,
@@ -88,9 +90,12 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     data object NavigateBack : CanvasToppingPlaceEffect
 
+    /** 올릴 알맹이가 없다. 초안이 가리키던 캐시 파일은 먼저 사라질 수 있다 */
+    data object DraftMissing : CanvasToppingPlaceEffect
+
     /** 사용자가 정한 위치·크기·각도로 토핑 배치를 확정했다. */
     data class ToppingPlaced(
-        val imageUri: String,
+        val imagePath: String,
         val offsetX: Dp,
         val offsetY: Dp,
         val scale: Float,
@@ -98,13 +103,31 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     ) : CanvasToppingPlaceEffect
 }
 
-@HiltViewModel(assistedFactory = CanvasToppingPlaceViewModel.Factory::class)
+@HiltViewModel
 class CanvasToppingPlaceViewModel
-@AssistedInject constructor(
-    @Assisted("imageUri") imageUri: String,
+@Inject constructor(
+    private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
-    initialState = CanvasToppingPlaceUiState(toppingImageUri = imageUri),
+    initialState = CanvasToppingPlaceUiState(),
 ) {
+    init {
+        observeDraft()
+    }
+
+    private fun observeDraft() {
+        launch {
+            toppingDraftRepository.draft.collect { draft ->
+                updateState {
+                    copy(
+                        toppingImagePath = draft?.subjectImagePath,
+                        borderColorArgb = draft?.borderColorArgb,
+                        borderWidthDp = draft?.borderWidthDp,
+                    )
+                }
+            }
+        }
+    }
+
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
             CanvasToppingPlaceIntent.OnClickClose -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
@@ -215,21 +238,21 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnClickConfirm() {
         val current = state.value
+        val imagePath = current.toppingImagePath
+        if (imagePath == null) {
+            postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing)
+            return
+        }
 
         // TODO: 캔버스에 토핑을 배치하는 저장 API 연동 필요 - 지금은 결과만 이펙트로 흘려보낸다
         postSideEffect(
             effect = CanvasToppingPlaceEffect.ToppingPlaced(
-                imageUri = current.toppingImageUri,
+                imagePath = imagePath,
                 offsetX = current.offsetX,
                 offsetY = current.offsetY,
                 scale = current.scale,
                 rotationDegrees = current.rotationDegrees,
             ),
         )
-    }
-
-    @AssistedFactory
-    interface Factory {
-        fun create(@Assisted("imageUri") imageUri: String): CanvasToppingPlaceViewModel
     }
 }

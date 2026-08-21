@@ -74,9 +74,8 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         }
     }
 
-    entry<NavKeyCanvasToppingPlace> { navKey ->
+    entry<NavKeyCanvasToppingPlace> {
         CanvasToppingPlaceRoute(
-            key = navKey,
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )
