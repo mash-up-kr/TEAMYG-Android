@@ -65,8 +65,14 @@ class SegmentationConfirmViewModel
                 val subjectImagePath = draft?.subjectImagePath
                 if (subjectImagePath == null) {
                     reportMissingDraft()
+                    // 경로 값은 그대로 둔다 — 화면이 떠 있는 동안 다시 비면 그림이 깜빡이지 않게.
+                    // 다음 버튼만 잠근다
+                    updateState { copy(isDraftReady = false) }
                     return@collect
                 }
+
+                // 초안이 다시 채워졌으니 이번에 또 비면 한 번 더 알려야 한다
+                hasReportedMissingDraft = false
 
                 val border = draft.borderColorArgb?.let { argb ->
                     ToppingBorderLayer(colorArgb = argb, widthDp = draft.borderWidthDp ?: 0f)

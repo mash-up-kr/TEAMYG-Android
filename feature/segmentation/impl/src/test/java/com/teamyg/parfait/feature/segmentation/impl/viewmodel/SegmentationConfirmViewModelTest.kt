@@ -147,4 +147,31 @@ class SegmentationConfirmViewModelTest {
         }
         assertFalse(viewModel.state.value.isDraftReady)
     }
+
+    @Test
+    fun draft_turnsEmptyMidSession_blocksNext_keepsPaths_andReportsOncePerOccurrence() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 정상 초안이 흐르다 캐시 파일이 사라져 두 번 연달아 비고, 다시 정상으로
+            // 돌아왔다가 또 빈다 — 화면이 떠 있는 동안 저장소가 이 순서로 재방출할 수 있다
+            val normal = draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f)
+            val empty = draft(subjectImagePath = null)
+            every { toppingDraftRepository.draft } returns flowOf(normal, empty, empty, normal, empty)
+            coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+
+            // When 화면이 열린다
+            val viewModel = viewModel()
+
+            // Then 초안이 빌 때마다(연달아 두 번은 한 번으로 묶어) 알림이 오지만 쌓이지 않는다 —
+            // 총 두 번(첫 공백 구간, 재개 뒤 다시 빈 구간)만 온다
+            viewModel.effect.test {
+                advanceUntilIdle()
+                assertEquals(SegmentationConfirmEffect.DraftMissing, awaitItem())
+                assertEquals(SegmentationConfirmEffect.DraftMissing, awaitItem())
+            }
+
+            // Then 마지막 빈 초안에서도 화면이 깜빡이지 않도록 경로 값은 남고 다음 버튼만 잠긴다
+            val state = viewModel.state.value
+            assertFalse(state.isDraftReady)
+            assertEquals(SUBJECT_PATH, state.subjectImagePath)
+        }
 }
