@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -13,6 +14,7 @@ import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -220,10 +222,51 @@ class CanvasToppingPlaceViewModelTest {
             viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
             advanceUntilIdle()
 
-            // Then 배치를 확정한다(서버에 올리는 것은 다음 라운드다)
+            // Then 배치를 확정한다(서버에 올리는 것은 다음 라운드다) — 위치·크기·각도도 그대로 실린다
             val effect = awaitItem()
             assertTrue(effect is CanvasToppingPlaceEffect.ToppingPlaced)
             assertEquals("/cache/segmentation/subject.png", effect.imagePath)
+            assertEquals(0.dp, effect.offsetX)
+            assertEquals(0.dp, effect.offsetY)
+            assertEquals(1f, effect.scale, SCALE_DELTA)
+            assertEquals(0f, effect.rotationDegrees, SCALE_DELTA)
         }
     }
+
+    @Test
+    fun onClickConfirm_beforeDraftEmits_sendsNoEffect() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 흐름이 아직 한 번도 방출하지 않았다(DataStore 첫 방출 전 첫 프레임)
+        val neverEmittedDraft = MutableSharedFlow<ToppingDraft?>()
+        every { toppingDraftRepository.draft } returns neverEmittedDraft
+        val viewModel = CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+        advanceUntilIdle()
+
+        // When 그 상태에서 확인을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 초안이 비었는지 아직 모르므로 거짓 DraftMissing 을 내지 않고 조용히 무시한다
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun onClickConfirm_afterDraftEmitsWithoutASubjectImage_sendsOnlyDraftMissing() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 초안이 방출됐고 알맹이가 없다
+            val viewModel = viewModel(draft(subjectImagePath = null))
+            advanceUntilIdle()
+
+            // When 확인을 누른다
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+                advanceUntilIdle()
+
+                // Then DraftMissing 하나만 나가고, 뒤이어 되감기 같은 다른 이펙트는 따라오지 않는다
+                // (되감을지는 Route 가 정한다 — ViewModel 은 알린다는 사실만 책임진다)
+                assertEquals(CanvasToppingPlaceEffect.DraftMissing, awaitItem())
+                expectNoEvents()
+            }
+        }
 }

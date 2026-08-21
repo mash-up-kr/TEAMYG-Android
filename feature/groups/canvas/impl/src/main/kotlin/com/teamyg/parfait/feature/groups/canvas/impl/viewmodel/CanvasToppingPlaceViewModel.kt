@@ -41,6 +41,8 @@ data class CanvasToppingPlaceUiState(
     val toppingImagePath: String? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
+    /** 초안 흐름이 한 번이라도 방출됐는가. `false`인 동안은 "아직 못 읽음"과 "비었음"을 구분 못 한다 */
+    val isDraftLoaded: Boolean = false,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val offsetX: Dp = 0.dp,
@@ -122,6 +124,7 @@ class CanvasToppingPlaceViewModel
                         toppingImagePath = draft?.subjectImagePath,
                         borderColorArgb = draft?.borderColorArgb,
                         borderWidthDp = draft?.borderWidthDp,
+                        isDraftLoaded = true,
                     )
                 }
             }
@@ -238,6 +241,9 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnClickConfirm() {
         val current = state.value
+        // 초안 첫 방출 전이면 "비었다"와 "아직 못 읽었다"를 구분 못 한다 — 거짓 DraftMissing을 피해 무시한다
+        if (!current.isDraftLoaded) return
+
         val imagePath = current.toppingImagePath
         if (imagePath == null) {
             postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing)
