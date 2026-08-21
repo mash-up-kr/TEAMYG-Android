@@ -19,6 +19,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -30,7 +31,11 @@ private data class YGToastSample(
 private val ygToastSamples: List<YGToastSample> = listOf(
     YGToastSample(
         label = "Record (Figma Type=Alert)",
-        type = YGToastType.Record(userName = "WWWWWWWWWW", time = "59분"),
+        type = YGToastType.Record(
+            userName = "WWWWWWWWWW",
+            time = "59분 전",
+            userNameColor = YGAtomicColors.Pudding.Pudding500,
+        ),
     ),
     YGToastSample(
         label = "Edit (Figma Type=Warning)",

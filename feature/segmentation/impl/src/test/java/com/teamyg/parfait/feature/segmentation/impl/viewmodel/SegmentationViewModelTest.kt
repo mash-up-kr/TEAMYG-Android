@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
@@ -20,7 +21,6 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
@@ -68,7 +68,7 @@ class SegmentationViewModelTest {
         val state = viewModel.state.value
         assertEquals(SUBJECT_PATH, state.subjectImagePath)
         assertFalse(state.isLoading)
-        assertFalse(state.isError)
+        viewModel.effect.test { expectNoEvents() }
     }
 
     @Test
@@ -86,7 +86,7 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun init_decodeFails_endsInErrorWithoutSegmenting() = runTest {
+    fun init_decodeFails_tellsTheUserWithoutSegmenting() = runTest {
         // Given URI 가 만료돼 디코드가 실패를 돌려주는 상황
         coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
 
@@ -94,15 +94,14 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 크래시 대신 에러 화면으로 접히고 세그멘테이션은 시도하지 않는다
-        val state = viewModel.state.value
-        assertTrue(state.isError)
-        assertFalse(state.isLoading)
+        // Then 크래시 대신 토스트로 알리고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        assertFalse(viewModel.state.value.isLoading)
         coVerify(exactly = 0) { segmentImage(any()) }
     }
 
     @Test
-    fun init_segmentationFails_endsInError() = runTest {
+    fun init_segmentationFails_tellsTheUser() = runTest {
         // Given 세그멘테이션이 실패를 돌려주는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
 
@@ -110,14 +109,13 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 에러 화면이고 로딩에 갇히지 않는다
-        val state = viewModel.state.value
-        assertTrue(state.isError)
-        assertFalse(state.isLoading)
+        // Then 토스트로 알리고 로딩 오버레이는 걷힌다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     @Test
-    fun init_noSubjectDetected_endsInError() = runTest {
+    fun init_noSubjectDetected_tellsTheUser() = runTest {
         // Given 성공했지만 감지된 객체가 없는 응답
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(success.copy(subjectBounds = null))
 
@@ -125,8 +123,8 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 에러다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남기지 않는다
-        assertTrue(viewModel.state.value.isError)
+        // Then 실패로 알린다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
     }
 
     @Test
@@ -139,9 +137,8 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 지난 파일을 못 지운 것이 이번 흐름을 막지 않는다
-        val state = viewModel.state.value
-        assertEquals(SUBJECT_PATH, state.subjectImagePath)
-        assertFalse(state.isError)
+        assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
+        viewModel.effect.test { expectNoEvents() }
     }
 
     @Test
@@ -204,8 +201,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 곁다리 기록의 실패가 잘라내기 자체를 막지 않는다
-        val state = viewModel.state.value
-        assertEquals(SUBJECT_PATH, state.subjectImagePath)
-        assertFalse(state.isError)
+        assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
+        viewModel.effect.test { expectNoEvents() }
     }
 }
