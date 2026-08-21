@@ -36,6 +36,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -77,7 +78,7 @@ private fun GalleryContent(
     isLoading: Boolean,
     isEmpty: Boolean,
     groups: List<GalleryImageGroup>,
-    recentImages: List<String>,
+    recentImages: List<RecentImage>,
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCancel: () -> Unit,

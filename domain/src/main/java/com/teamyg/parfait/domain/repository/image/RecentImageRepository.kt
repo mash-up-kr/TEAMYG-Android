@@ -1,12 +1,16 @@
 package com.teamyg.parfait.domain.repository.image
 
+import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import kotlinx.coroutines.flow.Flow
 
 interface RecentImageRepository {
-    val recentCacheImages: Flow<List<String>>
+    val recentCacheImages: Flow<List<RecentImage>>
 
-    suspend fun addAndGetEvictedCacheFileName(value: String): List<String>
+    suspend fun addAndGetEvictedCacheFileName(
+        uri: String,
+        kind: RecentImageKind,
+    ): List<String>
 
     suspend fun removeCacheFileName(values: List<String>)
 

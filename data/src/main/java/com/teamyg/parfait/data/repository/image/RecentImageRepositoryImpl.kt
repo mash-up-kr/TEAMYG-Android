@@ -1,10 +1,12 @@
 package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.local.RecentImageEntity
-import com.teamyg.parfait.data.model.local.RecentImageKindEntity
+import com.teamyg.parfait.data.model.local.toEntity
+import com.teamyg.parfait.data.model.local.toVO
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.data.utils.repositoryLogger
+import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.Dispatchers
@@ -27,20 +29,39 @@ constructor(
         repositoryLogger.i { "RecentImageRepositoryImpl::init" }
     }
 
-    override val recentCacheImages: Flow<List<String>> = recentImageLocalDataSource.values
-        .map { entities -> entities.map { it.uri } }
+    /**
+     * mapNotNull이 경로를 못 만든 항목을 뺀다 — 그 항목은 만료 정리의 시야에서도 사라져 저장소에
+     * 영영 남을 수 있다. 저장값이 항상 FileProvider content uri라 발생 조건이 거의 없어 감수한다.
+     */
+    override val recentCacheImages: Flow<List<RecentImage>> = recentImageLocalDataSource.values
+        .map { entities ->
+            entities.mapNotNull { entity ->
+                val file: File = fileRecentImageLocalDataSource.getTargetFileFromUri(entity.uri)
+                    ?: return@mapNotNull null
 
-    override suspend fun addAndGetEvictedCacheFileName(value: String): List<String> {
+                RecentImage(
+                    uri = entity.uri,
+                    filePath = file.absolutePath,
+                    kind = entity.kind.toVO(),
+                )
+            }
+        }
+
+    override suspend fun addAndGetEvictedCacheFileName(
+        uri: String,
+        kind: RecentImageKind,
+    ): List<String> {
         var evicted: List<String> = emptyList()
 
         recentImageLocalDataSource.edit { prefs ->
             val current: List<RecentImageEntity> = recentImageLocalDataSource.decodeValue(prefs.get())
             val updated: List<RecentImageEntity> = (
-                current.filterNot { it.uri == value } +
-                    listOf(RecentImageEntity(uri = value, kind = RecentImageKindEntity.SOURCE))
+                current.filterNot { it.uri == uri } +
+                    listOf(RecentImageEntity(uri = uri, kind = kind.toEntity()))
                 ).takeLast(MAX_SIZE)
+            val keptUris: List<String> = updated.map(RecentImageEntity::uri)
 
-            evicted = current.filterNot { it.uri in updated.map(RecentImageEntity::uri) }.map(RecentImageEntity::uri)
+            evicted = current.filterNot { it.uri in keptUris }.map(RecentImageEntity::uri)
             prefs.set(recentImageLocalDataSource.encodeValue(updated))
         }
 

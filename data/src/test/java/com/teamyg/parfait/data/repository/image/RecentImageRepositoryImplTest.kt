@@ -1,41 +1,38 @@
 package com.teamyg.parfait.data.repository.image
 
+import com.teamyg.parfait.data.model.local.RecentImageEntity
+import com.teamyg.parfait.data.model.local.RecentImageKindEntity
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
+import com.teamyg.parfait.domain.model.image.RecentImage
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import java.io.File
-import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RecentImageRepositoryImplTest {
-    private val dir: File = File(System.getProperty("java.io.tmpdir"), "recent-image-test").apply {
-        deleteRecursively()
-        mkdirs()
-    }
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    private val dir: File by lazy { temporaryFolder.newFolder("recent-image-test") }
 
     private val localDataSource: RecentImageLocalDataSource = mockk(relaxed = true)
     private val fileDataSource: FileRecentImageLocalDataSource = mockk(relaxed = true)
 
-    /**
-     * 프로퍼티가 아니라 함수다. 구현의 `recentCacheImages` 가 **생성자 초기화식**에서
-     * `localDataSource.values` 를 곧바로 읽으므로, 저장소를 먼저 만들어 두면 relaxed mock 이 준
-     * 빈 흐름을 붙들어 뒤늦은 `every` 가 닿지 않는다(`ToppingDraftRepositoryImplTest` 가 같은
-     * 함정을 문서로 박아 두었다).
-     */
+    /** 생성자 초기화식이 `localDataSource.values`를 곧바로 읽으므로 stub을 먼저 둔다 */
     private fun repository() = RecentImageRepositoryImpl(
         recentImageLocalDataSource = localDataSource,
         fileRecentImageLocalDataSource = fileDataSource,
     )
-
-    @AfterTest
-    fun tearDown() {
-        dir.deleteRecursively()
-    }
 
     @Test
     fun store_withContentUri_readsThroughContentResolverPath() = runTest {
@@ -49,7 +46,7 @@ class RecentImageRepositoryImplTest {
         // When 원본 사진으로 저장한다
         val stored = repository().storeRecentImageInInternalStorage(
             source = "content://media/1",
-            kind = com.teamyg.parfait.domain.model.image.RecentImageKind.SOURCE,
+            kind = RecentImageKind.SOURCE,
         )
 
         // Then uri 읽기 경로를 탄다
@@ -70,7 +67,7 @@ class RecentImageRepositoryImplTest {
         // When 알맹이로 저장한다
         val stored = repository().storeRecentImageInInternalStorage(
             source = "/data/cache/segmentation/subject.png",
-            kind = com.teamyg.parfait.domain.model.image.RecentImageKind.CUTOUT,
+            kind = RecentImageKind.CUTOUT,
         )
 
         // Then 파일 읽기 경로를 타고 확장자가 png 다 — jpg 로 굳으면 투명 PNG 가
@@ -78,5 +75,53 @@ class RecentImageRepositoryImplTest {
         verify { fileDataSource.readFileBytes("/data/cache/segmentation/subject.png") }
         verify { fileDataSource.getTargetFile(bytes, "png") }
         assertEquals("content://recent/def.png", stored)
+    }
+
+    @Test
+    fun recentCacheImages_attachesAbsolutePathToEachEntry() = runTest {
+        // Given 종류가 섞인 저장 목록
+        every { localDataSource.values } returns flowOf(
+            listOf(
+                RecentImageEntity(uri = "content://recent/a.jpg", kind = RecentImageKindEntity.SOURCE),
+                RecentImageEntity(uri = "content://recent/b.png", kind = RecentImageKindEntity.CUTOUT),
+            ),
+        )
+        every { fileDataSource.getTargetFileFromUri("content://recent/a.jpg") } returns File(dir, "a.jpg")
+        every { fileDataSource.getTargetFileFromUri("content://recent/b.png") } returns File(dir, "b.png")
+
+        // When 목록을 읽는다
+        val images: List<RecentImage> = repository().recentCacheImages.first()
+
+        // Then 절대경로가 함께 온다 — 확인 화면과 초안이 요구하는 형태가 uri 가 아니라 경로다
+        assertEquals(
+            listOf(
+                RecentImage(
+                    uri = "content://recent/a.jpg",
+                    filePath = File(dir, "a.jpg").absolutePath,
+                    kind = RecentImageKind.SOURCE,
+                ),
+                RecentImage(
+                    uri = "content://recent/b.png",
+                    filePath = File(dir, "b.png").absolutePath,
+                    kind = RecentImageKind.CUTOUT,
+                ),
+            ),
+            images,
+        )
+    }
+
+    @Test
+    fun recentCacheImages_dropsEntryWhoseFileNameIsUnreadable() = runTest {
+        // Given 파일 이름을 못 읽는 값이 섞여 있다
+        every { localDataSource.values } returns flowOf(
+            listOf(RecentImageEntity(uri = "broken", kind = RecentImageKindEntity.SOURCE)),
+        )
+        every { fileDataSource.getTargetFileFromUri("broken") } returns null
+
+        // When 목록을 읽는다
+        val images: List<RecentImage> = repository().recentCacheImages.first()
+
+        // Then 경로 없는 항목을 지어내지 않고 뺀다
+        assertEquals(emptyList(), images)
     }
 }

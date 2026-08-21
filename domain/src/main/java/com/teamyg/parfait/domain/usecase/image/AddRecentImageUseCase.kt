@@ -15,11 +15,14 @@ constructor(
         useCaseLogger.i { "AddRecentImageUseCase::init" }
     }
 
-    suspend operator fun invoke(uri: String) {
+    suspend operator fun invoke(
+        source: String,
+        kind: RecentImageKind = RecentImageKind.SOURCE,
+    ) {
         val stableUri: String? = runSuspendCatching {
             recentImageRepository.storeRecentImageInInternalStorage(
-                source = uri,
-                kind = RecentImageKind.SOURCE,
+                source = source,
+                kind = kind,
             )
         }.getOrNull()
 
@@ -28,7 +31,10 @@ constructor(
             return
         }
 
-        val evicted: List<String> = recentImageRepository.addAndGetEvictedCacheFileName(stableUri)
+        val evicted: List<String> = recentImageRepository.addAndGetEvictedCacheFileName(
+            uri = stableUri,
+            kind = kind,
+        )
 
         useCaseLogger.d { "AddRecentImageUseCase - evicted.size: ${evicted.size}" }
 

@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -20,7 +21,7 @@ data class CustomGalleryPickerState(
     val isLoading: Boolean = false,
     val access: GalleryPermissionManager.GalleryAccessLevel = GalleryPermissionManager.GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
-    val recentImages: List<String> = emptyList(),
+    val recentImages: List<RecentImage> = emptyList(),
 ) : UiState {
     val isEmpty: Boolean
         get() = groups.all { it.images.isEmpty() } && recentImages.isEmpty()
@@ -136,7 +137,7 @@ constructor(
         postSideEffect(CustomGalleryPickerEffect.NavigateToBack)
     }
 
-    private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { uris ->
-        updateState { copy(recentImages = uris) }
+    private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { images ->
+        updateState { copy(recentImages = images) }
     }
 }
