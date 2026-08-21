@@ -36,8 +36,7 @@ internal fun CanvasToppingPlaceRoute(
                 CanvasToppingPlaceEffect.NavigateBack -> navigator.onBack()
 
                 // 알리고 화면엔 남는다 — 여기서 되감으면 이 Route에 매달린 toastPolicy까지 같이
-                // 폐기돼 안내가 잔상으로 끝난다. 닫기 버튼이 이미 있어 막다른 곳도 아니다.
-                // 실패 코드로 갈라 되감을지는 다음 라운드가 정한다
+                // 폐기돼 안내가 잔상으로 끝난다. 닫기 버튼이 이미 있어 막다른 곳도 아니다
                 CanvasToppingPlaceEffect.DraftMissing -> {
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_draft_unavailable))
                 }

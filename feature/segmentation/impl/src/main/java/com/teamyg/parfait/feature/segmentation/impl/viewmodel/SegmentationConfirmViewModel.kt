@@ -46,7 +46,7 @@ class SegmentationConfirmViewModel
         cutoutImagePath = cutoutImagePath,
     ),
 ) {
-    // 초안이 비어 있다는 말은 한 번만 한다. 흐름이 여러 번 방출돼도 토스트가 쌓이면 안 된다
+    // 흐름이 여러 번 방출돼도 같은 말을 되풀이하지 않는다
     private var hasReportedMissingDraft = false
 
     init {

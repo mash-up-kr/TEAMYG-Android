@@ -85,7 +85,7 @@ internal fun CanvasToppingPlaceScreen(
         ) {
             val toppingImagePath = uiState.toppingImagePath
             val painter = rememberAsyncImagePainter(
-                // 이 화면은 지금까지 file 스킴 uri 로 그려 왔다. 초안이 담는 것은 절대경로다
+                // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
                 model = remember(toppingImagePath) {
                     toppingImagePath?.let { path -> File(path).toUri().toString() }
                 },

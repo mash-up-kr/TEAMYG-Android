@@ -37,11 +37,11 @@ private const val TOPPING_DRAG_DEGREES_PER_PX = 0.5f
 private val MIN_TOPPING_SHORT_SIDE = 48.dp
 
 data class CanvasToppingPlaceUiState(
-    /** 올릴 알맹이의 파일 시스템 절대경로. 초안이 비어 있으면 `null` 이다 */
+    /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
     val toppingImagePath: String? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
-    /** 초안 흐름이 한 번이라도 방출됐는가. `false`인 동안은 "아직 못 읽음"과 "비었음"을 구분 못 한다 */
+    /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
     val isDraftLoaded: Boolean = false,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
     val backgroundColor: Color = YGAtomicColors.Gray.White,
@@ -92,7 +92,7 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     data object NavigateBack : CanvasToppingPlaceEffect
 
-    /** 올릴 알맹이가 없다. 초안이 가리키던 캐시 파일은 먼저 사라질 수 있다 */
+    /** 초안이 가리키던 캐시 파일은 초안보다 먼저 사라질 수 있다 */
     data object DraftMissing : CanvasToppingPlaceEffect
 
     /** 사용자가 정한 위치·크기·각도로 토핑 배치를 확정했다. */
@@ -241,7 +241,6 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnClickConfirm() {
         val current = state.value
-        // 초안 첫 방출 전이면 "비었다"와 "아직 못 읽었다"를 구분 못 한다 — 거짓 DraftMissing을 피해 무시한다
         if (!current.isDraftLoaded) return
 
         val imagePath = current.toppingImagePath

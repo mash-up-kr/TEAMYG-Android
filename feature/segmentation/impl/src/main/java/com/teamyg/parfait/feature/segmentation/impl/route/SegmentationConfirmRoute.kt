@@ -36,8 +36,7 @@ internal fun SegmentationConfirmRoute(
     val viewModel = hiltViewModel<SegmentationConfirmViewModel, SegmentationConfirmViewModel.Factory>(
         creationCallback = { factory ->
             factory.create(
-                // 미리보기·배치에 넘길 값이라 투명 여백을 걷어낸 판으로 연다.
-                // 재편집 마스크는 원본 좌표계를 지켜야 해 걷지 않은 판이다
+                // 두 인자의 이름이 서로 반대 의미라 뒤바꾸기 쉽다(`ToppingEditResult` KDoc)
                 subjectImagePath = key.trimmedSubjectImagePath,
                 cutoutImagePath = key.subjectImagePath,
             )
