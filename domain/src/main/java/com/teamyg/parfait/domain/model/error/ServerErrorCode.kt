@@ -61,6 +61,9 @@ object ServerErrorCode {
 
         /** 404 — 토큰의 memberId 가 서버에 없다. 같은 문자열이 인증 도메인에서는 401 이라 [Auth] 와 나눠 둔다 */
         const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+
+        /** 403 — 그 그룹의 멤버가 아니다. 토핑 배치 POST 가 마감 검사보다 **먼저** 이 검사를 한다 */
+        const val GROUP_NOT_JOINED = "GROUP_NOT_JOINED"
     }
 
     /** 회원 도메인(`/api/v1/users/...`) — 서버 `MemberErrorCode` 에 대응한다 */
@@ -100,6 +103,19 @@ object ServerErrorCode {
          * 새 캔버스를 받으려면 오늘 조회를 다시 해야 한다.
          */
         const val PARFAIT_ALREADY_CLOSED = "PARFAIT_ALREADY_CLOSED"
+    }
+
+    /** 서버 `ParfaitImageErrorCode` 에 대응한다 */
+    object ParfaitImage {
+        /**
+         * 404 — `parfaitId` 가 그 그룹의 파르페가 아니다.
+         *
+         * ⚠️ "존재하지 않음"과 "남의 그룹 것"을 구분하지 않는다 — 서버가
+         * `findByIdAndGroupId` 하나로 판정한다. 같은 문자열을 `ParfaitErrorCode` 도 갖지만
+         * (캔버스 상세 조회·배경 변경) 둘 다 404 라 와이어에서 구분되지 않는다 — 그래서 이
+         * 문자열을 보는 판정은 `code` 단독으로 한다. 검사 순서는 `api/parfait-image.md`.
+         */
+        const val PARFAIT_NOT_FOUND = "PARFAIT_NOT_FOUND"
     }
 
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */
