@@ -2,14 +2,16 @@ package com.teamyg.parfait.feature.segmentation.impl.route
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.ResultEffect
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -17,20 +19,13 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationConfirmScreen
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmEffect
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmIntent
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmViewModel
 import java.io.File
-
-/** 겹은 화면 회전에도 살아남아야 하는데 [ToppingBorderLayer] 를 그대로 담지 못하므로 두 값으로 펼친다 */
-private val BorderLayersSaver = listSaver<List<ToppingBorderLayer>, Any>(
-    save = { layers -> layers.flatMap { layer -> listOf(layer.colorArgb, layer.widthDp) } },
-    restore = { values ->
-        values.chunked(2) { (colorArgb, widthDp) ->
-            ToppingBorderLayer(colorArgb = colorArgb as Int, widthDp = widthDp as Float)
-        }
-    },
-)
 
 @Composable
 internal fun SegmentationConfirmRoute(
@@ -38,26 +33,41 @@ internal fun SegmentationConfirmRoute(
     key: NavKeySegmentationConfirm,
     modifier: Modifier = Modifier,
 ) {
-    // NavKey 는 화면을 처음 열 때의 인자라 편집 결과를 담지 못한다. 편집 후 결과는 화면이 들고 있는다.
-    // 미리보기·배치 화면에 넘길 값이라 투명 여백을 걷어낸 trimmedSubjectImagePath 로 초기화한다
-    var subjectImagePath by rememberSaveable { mutableStateOf(key.trimmedSubjectImagePath) }
-
-    // 다시 편집할 때 넘길 재료. 테두리를 구운 [subjectImagePath] 를 마스크로 넘기면 그 색이
-    // 원본 픽셀로 덮여 테두리가 사라지므로, 두르기 전 알맹이와 겹 목록을 따로 들고 간다
-    var cutoutImagePath by rememberSaveable { mutableStateOf(key.subjectImagePath) }
-    var borderLayers by rememberSaveable(stateSaver = BorderLayersSaver) {
-        mutableStateOf(emptyList<ToppingBorderLayer>())
-    }
+    val viewModel = hiltViewModel<SegmentationConfirmViewModel, SegmentationConfirmViewModel.Factory>(
+        creationCallback = { factory ->
+            factory.create(
+                // 미리보기·배치에 넘길 값이라 투명 여백을 걷어낸 판으로 연다.
+                // 재편집 마스크는 원본 좌표계를 지켜야 해 걷지 않은 판이다
+                subjectImagePath = key.trimmedSubjectImagePath,
+                cutoutImagePath = key.subjectImagePath,
+            )
+        },
+    )
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val toastPolicy = rememberYGToastPolicy()
 
     ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
-        subjectImagePath = result.subjectImagePath
-        cutoutImagePath = result.cutoutImagePath
-        borderLayers = result.borderLayers
+        viewModel.processIntent(SegmentationConfirmIntent.OnEditResult(result))
     }
 
-    YGScaffoldV2 { innerPadding ->
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            val message = when (effect) {
+                SegmentationConfirmEffect.DraftMissing,
+                SegmentationConfirmEffect.DraftWriteFailed,
+                -> context.getString(R.string.segmentation_confirm_draft_unavailable)
+            }
+            toastPolicy.showError(message)
+        }
+    }
+
+    YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
         SegmentationConfirmScreen(
-            subjectImagePath = subjectImagePath,
+            subjectImagePath = uiState.subjectImagePath,
+            borderColorArgb = uiState.borderColorArgb,
+            borderWidthDp = uiState.borderWidthDp,
+            isNextEnabled = uiState.isDraftReady,
             onClickBack = { navigator.onBack() },
             // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
             onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
@@ -66,13 +76,13 @@ internal fun SegmentationConfirmRoute(
                     NavKeyToppingEdit(
                         sourceImageUri = key.sourceImageUri,
                         // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
-                        segmentationImageUri = File(cutoutImagePath).toUri().toString(),
-                        borderLayers = borderLayers,
+                        segmentationImageUri = File(uiState.cutoutImagePath).toUri().toString(),
+                        borderLayers = uiState.borderLayers,
                     ),
                 )
             },
             onClickNext = {
-                navigator.goTo(NavKeyCanvasToppingPlace(imageUri = File(subjectImagePath).toUri().toString()))
+                navigator.goTo(NavKeyCanvasToppingPlace(imageUri = File(uiState.subjectImagePath).toUri().toString()))
             },
             modifier = modifier.padding(innerPadding),
         )
