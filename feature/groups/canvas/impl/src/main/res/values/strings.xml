@@ -27,7 +27,8 @@
     <string name="canvas_topping_place_title">토핑배치</string>
     <string name="canvas_topping_place_draft_unavailable">올릴 토핑을 찾지 못했어요. 캔버스에서 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_failed">토핑을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>
-    <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 캔버스에서 다시 시작해 주세요.</string>
+    <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
+    <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>

@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class StringTest {
@@ -41,26 +42,32 @@ class StringTest {
     }
 
     @Test
-    fun toArgbHexString_opaqueColor_writesEightDigitsWithHash() {
+    fun toRgbHexString_opaqueColor_writesSixDigitsWithHash() {
         // Given 초안이 담는 ARGB Int
         val argb = Color(0xFFFF6B00).toArgb()
 
-        // Then 서버에 보내는 형식은 8자리다 — 6자리로 보내면 알파가 사라진다
-        assertEquals("#FFFF6B00", argb.toArgbHexString())
+        // Then 서버에 보내는 형식은 6자리다
+        assertEquals("#FF6B00", argb.toRgbHexString())
     }
 
     @Test
-    fun toArgbHexString_thenToColorOrNull_roundTrips() {
+    fun toRgbHexString_thenToColorOrNull_roundTrips() {
         // 이 왕복이 깨지면 캔버스가 테두리를 조용히 안 그린다 — 서버는 200 을 준다
-        val original = Color(0x80123456)
-        val restored = original.toArgb().toArgbHexString().toColorOrNull()
+        val original = Color(0xFF123456)
+        val restored = original.toArgb().toRgbHexString().toColorOrNull()
 
         assertEquals(original, restored)
     }
 
     @Test
-    fun toArgbHexString_transparentBlack_keepsLeadingZeros() {
-        // 앞자리 0 이 잘리면 길이가 8 이 아니게 되고 읽기 쪽이 null 을 낸다
-        assertEquals("#00000000", 0.toArgbHexString())
+    fun toRgbHexString_opaqueBlack_keepsLeadingZeros() {
+        // 앞자리 0 이 잘리면 길이가 6 이 아니게 되고 읽기 쪽이 null 을 낸다
+        assertEquals("#000000", Color(0xFF000000).toArgb().toRgbHexString())
+    }
+
+    @Test
+    fun toRgbHexString_nonOpaqueAlpha_throws() {
+        // 이 함수가 받는 색은 팔레트에서 오는 불투명 색뿐이라 지금은 도달하지 않아야 하는 자리
+        assertFailsWith<IllegalArgumentException> { Color(0x80123456).toArgb().toRgbHexString() }
     }
 }

@@ -41,9 +41,17 @@ class ToppingPlaceFailureTest {
     }
 
     @Test
+    fun isPermanentPlaceFailure_badRequestCodes_arePermanent() {
+        // 재시도가 발급부터 4단계를 다시 태워도 같은 400이라, 되감지 않으면 참조되지 않는
+        // 이미지가 확인을 누를 때마다 서버에 쌓인다
+        assertTrue(server(code = "INVALID_REQUEST", statusCode = 400).isPermanentPlaceFailure())
+        assertTrue(server(code = "INVALID_BORDER", statusCode = 400).isPermanentPlaceFailure())
+    }
+
+    @Test
     fun isPermanentPlaceFailure_otherServerCode_isNotPermanent() {
         assertFalse(server(code = "IMAGE_NOT_FOUND", statusCode = 404).isPermanentPlaceFailure())
-        assertFalse(server(code = "INVALID_REQUEST", statusCode = 400).isPermanentPlaceFailure())
+        assertFalse(server(code = "IMAGE_NOT_CONFIRMED", statusCode = 409).isPermanentPlaceFailure())
     }
 
     @Test

@@ -22,11 +22,12 @@ class AddToppingUseCase @Inject constructor(
     private val toppingRepository: ToppingRepository,
 ) {
     /**
+     * ⚠️ 업로드가 확정된 뒤 배치 전에 취소되면 서버에 **이미지만 남는다.** 되돌리지 않는 것이
+     * 결정이다(재시도가 이미 고아 S3 객체를 감수한다) — 근거는
+     * `specs/2026-08-20-c106-topping-place-api.md` "주의 / 열린 질문" 절의 OQ-P-248.
+     *
      * @param filePath 파일 시스템 절대경로다. `file://` uri 가 아니다.
      * @param transform 화면 좌표가 아니라 정규화된 서버 좌표다.
-     * ⚠️ 업로드가 확정된 뒤 배치 전에 취소되면 서버에 **이미지만 남는다.** 되돌리지 않는 것이
-     * 결정이고(재시도가 이미 고아 S3 객체를 감수한다), `mapErrorToAppError` 가
-     * `CancellationException` 을 재던지므로 그 취소는 실패 `Result` 가 아니라 예외로 올라온다.
      */
     suspend operator fun invoke(
         groupId: GroupId,

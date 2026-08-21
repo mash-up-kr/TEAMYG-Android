@@ -11,7 +11,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.util.android.extension.toArgbHexString
+import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
@@ -121,8 +121,11 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     /** 다시 눌러 볼 값이 있는 실패. 화면에 남는다 */
     data object PlaceFailed : CanvasToppingPlaceEffect
 
-    /** 다시 눌러도 같은 실패. 알리고 되감는다 */
+    /** 다시 눌러도 같은 실패. 알리고 화면에 남는다 */
     data object PlaceFailedPermanently : CanvasToppingPlaceEffect
+
+    /** painter 가 아직 그림을 못 들었는데 확인을 눌렀다. 초안 결손과 달리 다시 시도해 볼 수 있다 */
+    data object ToppingImageNotReady : CanvasToppingPlaceEffect
 }
 
 @HiltViewModel
@@ -291,7 +294,10 @@ class CanvasToppingPlaceViewModel
         // 그림이 아직 없으면 실측이 폴백 크기다. 그것으로 계산한 배율이 서버에 굳는다
         val canvasSize = current.canvasSize
         val baseSize = current.toppingBaseSize
-        if (!current.isToppingImageReady || canvasSize == null || baseSize == null) return
+        if (!current.isToppingImageReady || canvasSize == null || baseSize == null) {
+            postSideEffect(effect = CanvasToppingPlaceEffect.ToppingImageNotReady)
+            return
+        }
 
         val transform = toToppingTransform(
             offsetX = current.offsetX,
@@ -343,7 +349,7 @@ class CanvasToppingPlaceViewModel
         colorArgb: Int?,
         widthDp: Float?,
     ): ToppingBorder = if (colorArgb != null && widthDp != null) {
-        ToppingBorder.Solid(color = colorArgb.toArgbHexString(), width = widthDp.toDouble())
+        ToppingBorder.Solid(color = colorArgb.toRgbHexString(), width = widthDp.toDouble())
     } else {
         ToppingBorder.None
     }

@@ -116,6 +116,13 @@ object ServerErrorCode {
          * 문자열을 보는 판정은 `code` 단독으로 한다. 검사 순서는 `api/parfait-image.md`.
          */
         const val PARFAIT_NOT_FOUND = "PARFAIT_NOT_FOUND"
+
+        /**
+         * 400 — `SOLID`인데 색·두께 중 하나가 없다. 토핑 배치 POST 가 던질 수 있는 코드다
+         * (`ToppingBorder` 가 그 조합을 표현 불가능하게 만들어 앱에서는 도달하지 않지만,
+         * 서버 계약에는 있다 — `api/parfait-image.md` 배치(POST) 실패 표).
+         */
+        const val INVALID_BORDER = "INVALID_BORDER"
     }
 
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */

@@ -64,7 +64,7 @@ class ToppingPlacementTest {
     }
 
     @Test
-    fun toToppingTransform_overflowingTopping_roundTripsToo() {
+    fun toToppingTransform_largeScale_roundTripsThroughReadSideFormula() {
         // Given 캔버스 폭을 넘도록 키운 토핑 — maxScaleToOverflowCanvas 가 허용하는 구간이다
         val baseSize = DpSize(width = 200.dp, height = 80.dp)
         val transform = toToppingTransform(
@@ -77,8 +77,8 @@ class ToppingPlacementTest {
             positionZ = 1,
         )
 
-        // 화면 긴 변 800dp 는 캔버스 폭 360dp 를 넘는다. 읽기 쪽 박스가 clamp 되면
-        // 여기가 아니라 실제 화면에서만 갈리므로, 이 단언과 Step 3 의 수정이 한 쌍이다
+        // 옆의 배율 왕복 테스트(toToppingTransform_scale_roundTripsThroughReadSideFormula)와
+        // 같은 식이 큰 배율에서도 성립하는지만 본다
         assertEquals(
             200.0 * 4,
             readBackLongSideDp(scale = transform.scale, canvasWidth = CANVAS.width.value),

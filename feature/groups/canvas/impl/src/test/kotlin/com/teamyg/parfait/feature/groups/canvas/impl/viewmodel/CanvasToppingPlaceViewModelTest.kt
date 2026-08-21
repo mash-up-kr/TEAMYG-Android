@@ -239,7 +239,7 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onClickConfirm_whenImageNotReady_doesNotCallTheUseCase() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickConfirm_whenImageNotReady_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 실측은 끝났지만 그림은 아직 뜨지 않았다
         val viewModel = viewModel().apply {
             processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
@@ -247,10 +247,13 @@ class CanvasToppingPlaceViewModelTest {
         }
         advanceUntilIdle()
 
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
 
-        // Then 폴백 크기로 계산된 배율이 서버에 올라가면 안 된다
+            // Then 조용히 아무 일도 안 하지 않는다 — 알리고, 폴백 크기로 계산된 배율은 서버에 올리지 않는다
+            assertEquals(CanvasToppingPlaceEffect.ToppingImageNotReady, awaitItem())
+        }
         coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any()) }
     }
 
@@ -300,8 +303,8 @@ class CanvasToppingPlaceViewModelTest {
         assertEquals(GroupId(1L), groupIdSlot.captured)
         assertEquals(ParfaitId(2L), parfaitIdSlot.captured)
         assertEquals(3, transformSlot.captured.positionZ)
-        // 형식이 어긋나면 캔버스가 테두리를 조용히 안 그린다
-        assertEquals(ToppingBorder.Solid(color = "#FFFF6B00", width = 4.0), borderSlot.captured)
+        // 서버 형식은 Int.toRgbHexString() KDoc 참고
+        assertEquals(ToppingBorder.Solid(color = "#FF6B00", width = 4.0), borderSlot.captured)
     }
 
     @Test
@@ -374,7 +377,7 @@ class CanvasToppingPlaceViewModelTest {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // 연타로 두 번 올라가면 고아 이미지와 겹친 토핑이 함께 생긴다
+        // CONFIRM_JOB_KEY 의 존재 이유(ViewModel KDoc 참고)
         coVerify(exactly = 1) { addToppingUseCase(any(), any(), any(), any(), any()) }
     }
 

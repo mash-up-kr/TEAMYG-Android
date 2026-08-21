@@ -50,10 +50,13 @@ internal fun CanvasToppingPlaceRoute(
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed))
                 }
 
-                // 다시 눌러도 같은 실패라 잡아 두지 않는다. 되감아도 막 만든 토핑은 초안에 남는다
+                // DraftMissing과 같은 이유로 되감지 않는다(위 주석 참고) — 되감으면 안내가 잔상으로 끝난다
                 CanvasToppingPlaceEffect.PlaceFailedPermanently -> {
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed_permanently))
-                    navigator.popUpTo<NavKeyCanvasMain>()
+                }
+
+                CanvasToppingPlaceEffect.ToppingImageNotReady -> {
+                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_image_not_ready))
                 }
             }
         }

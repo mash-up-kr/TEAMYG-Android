@@ -27,9 +27,17 @@ fun String.toColorOrNull(): Color? {
 }
 
 /**
- * ARGB 정수를 서버에 보내는 색 문자열로 쓴다. [toColorOrNull] 의 역함수다.
+ * ARGB 정수를 서버에 보내는 색 문자열로 쓴다. [toColorOrNull] 의 역함수(불투명 색만).
  *
- * 8자리로 쓰는 것이 C-106 의 결정이다 — 6자리로 줄이면 알파가 사라지고, 형식이 어긋나면
- * 읽기 쪽이 `null` 을 내 캔버스가 테두리를 그냥 안 그린다(서버는 200 을 준다).
+ * 계약은 `#RRGGBB` 6자리다. 8자리로 쓰면 iOS·CSS 파서가 `#RRGGBBAA`로 읽어 이 함수가 쓰는
+ * ARGB 관례와 어긋나는데, 서버는 그 문자열을 검증 없이 그대로 저장·반환해 어긋나도 드러나지
+ * 않는다 — 형식이 어긋나면 읽기 쪽이 `null` 을 내 캔버스가 테두리를 그냥 안 그린다.
+ *
+ * 알파가 불투명이 아니면 6자리로 조용히 잘리는 대신 여기서 막는다 — 이 함수가 받는 색은
+ * 팔레트에서 오는 불투명 색뿐이라 지금은 도달하지 않는 자리다.
  */
-fun Int.toArgbHexString(): String = "#%08X".format(this)
+fun Int.toRgbHexString(): String {
+    val alpha = (this ushr 24) and 0xFF
+    require(alpha == 0xFF) { "불투명 색만 지원한다: alpha=$alpha" }
+    return "#%06X".format(this and 0xFFFFFF)
+}
