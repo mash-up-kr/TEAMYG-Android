@@ -66,6 +66,7 @@ internal fun CanvasToppingPlaceScreen(
     onToppingRotateDrag: (Offset) -> Unit,
     onCanvasMeasured: (DpSize) -> Unit,
     onToppingBaseSizeMeasured: (DpSize) -> Unit,
+    onToppingImageReadyChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -94,6 +95,12 @@ internal fun CanvasToppingPlaceScreen(
             val painterState by painter.state.collectAsState()
             val isToppingImageLoaded = painterState is AsyncImagePainter.State.Success
             val baseSize = rememberToppingBaseSize(painter)
+
+            // 확정 판정의 근거를 ViewModel 자기 어휘로 올린다 — 실측 방출 가드에 기대면
+            // 그 가드를 걷는 순간 확인 버튼이 폴백 크기로 확정을 내보낸다
+            LaunchedEffect(isToppingImageLoaded) {
+                onToppingImageReadyChanged(isToppingImageLoaded)
+            }
 
             // 그림이 뜨기 전 실측은 고정 폴백 크기다. 그것을 올려보내면 폴백 기준으로 계산된 배율이
             // 배치에 굳는다 — 초안을 읽어 오는 동안 그 창이 생긴다
@@ -252,6 +259,7 @@ private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
         onToppingRotateDrag = {},
         onCanvasMeasured = {},
         onToppingBaseSizeMeasured = {},
+        onToppingImageReadyChanged = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

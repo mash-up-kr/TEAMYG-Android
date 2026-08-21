@@ -41,18 +41,19 @@ internal fun CanvasToppingPlaceRoute(
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_draft_unavailable))
                 }
 
-                CanvasToppingPlaceEffect.PlaceSucceeded -> {
-                    // TODO(Task 6): 성공 알림·에러 문구는 이 라운드의 다음 태스크가 확정한다
-                    // 캔버스를 새로 쌓지 않고 원래 자리로 되감는다. 새로 쌓으면 방금 끝난 토핑 만들기
-                    // 화면들이 그 밑에 남고, 다음 흐름이 진입하며 비우는 세그멘테이션 캐시가 그 화면들이
-                    // 가리키던 PNG 를 지운다(뒤로 가면 빈 이미지만 남는다)
-                    navigator.popUpTo<NavKeyCanvasMain>()
+                // 캔버스를 새로 쌓지 않고 원래 자리로 되감는다. 새로 쌓으면 방금 끝난 토핑 만들기
+                // 화면들이 그 밑에 남고, 다음 흐름이 진입하며 비우는 세그멘테이션 캐시가 그 화면들이
+                // 가리키던 PNG 를 지운다(뒤로 가면 빈 이미지만 남는다)
+                CanvasToppingPlaceEffect.PlaceSucceeded -> navigator.popUpTo<NavKeyCanvasMain>()
+
+                CanvasToppingPlaceEffect.PlaceFailed -> {
+                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed))
                 }
 
-                CanvasToppingPlaceEffect.PlaceFailed,
-                CanvasToppingPlaceEffect.PlaceFailedPermanently,
-                -> {
-                    // TODO(Task 6): 실패 문구·되감기 여부는 이 라운드의 다음 태스크가 확정한다
+                // 다시 눌러도 같은 실패라 잡아 두지 않는다. 되감아도 막 만든 토핑은 초안에 남는다
+                CanvasToppingPlaceEffect.PlaceFailedPermanently -> {
+                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed_permanently))
+                    navigator.popUpTo<NavKeyCanvasMain>()
                 }
             }
         }
@@ -60,6 +61,7 @@ internal fun CanvasToppingPlaceRoute(
 
     YGScaffoldV2(
         modifier = modifier,
+        isLoading = uiState.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
         CanvasToppingPlaceScreen(
@@ -76,6 +78,9 @@ internal fun CanvasToppingPlaceRoute(
             onCanvasMeasured = { size -> viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(size)) },
             onToppingBaseSizeMeasured = { size ->
                 viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(size))
+            },
+            onToppingImageReadyChanged = { isReady ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingImageReadyChanged(isReady))
             },
             modifier = Modifier
                 .fillMaxSize()
