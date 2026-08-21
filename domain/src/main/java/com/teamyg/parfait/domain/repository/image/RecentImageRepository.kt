@@ -1,5 +1,6 @@
 package com.teamyg.parfait.domain.repository.image
 
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import kotlinx.coroutines.flow.Flow
 
 interface RecentImageRepository {
@@ -9,7 +10,10 @@ interface RecentImageRepository {
 
     suspend fun removeCacheFileName(values: List<String>)
 
-    suspend fun storeRecentImageInInternalStorage(sourceUri: String): String
+    suspend fun storeRecentImageInInternalStorage(
+        source: String,
+        kind: RecentImageKind,
+    ): String
 
     suspend fun deleteRecentImageInInternalStorage(sourceUri: String): Boolean
 
