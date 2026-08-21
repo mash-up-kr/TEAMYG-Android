@@ -12,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -79,6 +80,9 @@ class SegmentationConfirmViewModelTest {
         assertEquals(0xFF00FF00.toInt(), state.borderColorArgb)
         assertEquals(4f, state.borderWidthDp)
         assertTrue(state.isDraftReady)
+
+        // Then 일반 진입은 원본·재편집 마스크가 둘 다 있으므로 "사진 편집"이 열려 있다
+        assertTrue(state.isEditPhotoEnabled)
     }
 
     @Test
@@ -203,8 +207,12 @@ class SegmentationConfirmViewModelTest {
 
     @Test
     fun reuseEntry_withEmptyDraft_recordsBeforeObserving() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다
-        givenDraft(draft(subjectImagePath = null))
+        // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다.
+        // 끝나지 않는 흐름을 준다 — flowOf 는 완결되므로 collectDraft() 를 먼저 불러도 그 뒤
+        // record() 가 결국 실행돼 순서 위반이 테스트를 통과해 버린다. MutableStateFlow 는
+        // collect 가 끝나지 않아, record 가 구독보다 먼저 불리지 않으면 영영 불리지 않는다
+        every { toppingDraftRepository.draft } returns MutableStateFlow(draft(subjectImagePath = null))
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
 
         // When 화면이 열린다
         reuseViewModel()
@@ -230,6 +238,25 @@ class SegmentationConfirmViewModelTest {
         // 사용자가 방금 두른 테두리가 사라진다
         coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
         assertEquals(0xFF00FF00.toInt(), viewModel.state.value.borderColorArgb)
+    }
+
+    @Test
+    fun reuseEntry_whenDraftHasDifferentSubject_recordsTheNewOne() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스 → 갤러리 → 다른 최근 알맹이를 이미 골라 적은 초안이 있다 — 뒤로가기로
+        // 갤러리에 돌아가 이번에는 다른 알맹이를 고른 자리다
+        givenDraft(
+            draft(subjectImagePath = "/data/files/recent_images/a.png", borderColorArgb = 0xFF00FF00.toInt()),
+        )
+
+        // When 새 알맹이로 화면이 다시 열린다
+        reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 초안이 가리키는 경로가 다르므로 새로 적는다 — "초안이 비어 있는가"로 판정하면
+        // 이 경우를 놓쳐 옛 알맹이가 그대로 배치된다
+        coVerify(exactly = 1) {
+            toppingDraftRepository.record(REUSED_PATH, null, null, null)
+        }
     }
 
     @Test

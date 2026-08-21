@@ -26,6 +26,9 @@ interface ToppingDraftRepository {
      *
      * 테두리는 넘어온 값으로 매번 덮어쓴다 — 알맹이가 바뀌면 그 전 테두리는 설 자리가 없다.
      *
+     * `cutoutImagePath`는 널을 받는다 — 최근 목록에서 되살린 알맹이는 세그멘테이션을 타지 않아
+     * 재편집 마스크가 없다.
+     *
      * @return 흐름이 열려 있지 않으면 `false`. 없는 초안을 지어내지 않는다
      */
     suspend fun record(

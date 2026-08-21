@@ -61,21 +61,23 @@ class SegmentationConfirmViewModel
         launch(onError = { reportMissingDraft() }) {
             // 최근 목록에서 되살린 알맹이는 세그멘테이션을 타지 않아 초안을 적어 준 데가 없다.
             // 구독보다 먼저 적어야 첫 방출의 null 이 없는 실패를 알리지 않는다.
-            // 이미 적혀 있으면 건드리지 않는다 — record 는 테두리까지 통째로 덮어쓰므로,
-            // 프로세스 사망 복원으로 이 화면이 다시 만들어질 때 사용자가 두른 테두리가 사라진다
+            // "초안이 비어 있는가"가 아니라 "초안이 이미 이 알맹이를 가리키는가"로 판정한다 —
+            // 프로세스 사망 복원은 경로가 같아 여전히 건너뛰어 테두리가 살아남지만, 캔버스로
+            // 돌아가 다른 최근 알맹이를 새로 고른 경우는 경로가 달라 다시 적는다. 옛 알맹이의
+            // 테두리는 새 알맹이에 설 자리가 없다
             val isReuseEntry = cutoutImagePath == null
-            val isDraftEmpty = toppingDraftRepository.draft.first()?.subjectImagePath == null
-
-            if (isReuseEntry && isDraftEmpty) {
-                val recorded = toppingDraftRepository.record(
-                    subjectImagePath = subjectImagePath,
-                    cutoutImagePath = null,
-                    borderColorArgb = null,
-                    borderWidthDp = null,
-                )
-                if (!recorded) {
-                    reportMissingDraft()
-                    return@launch
+            if (isReuseEntry) {
+                val draftSubjectPath = toppingDraftRepository.draft.first()?.subjectImagePath
+                if (draftSubjectPath != subjectImagePath) {
+                    val recorded = toppingDraftRepository.record(
+                        subjectImagePath = subjectImagePath,
+                        cutoutImagePath = null,
+                        borderColorArgb = null,
+                        borderWidthDp = null,
+                    )
+                    // 여기서 못 적어도 구독은 그대로 연다 — 이어지는 초안 흐름의 첫 방출이
+                    // 비어 있으면 같은 reportMissingDraft 가드가 중복 없이 알린다
+                    if (!recorded) reportMissingDraft()
                 }
             }
 
