@@ -8,7 +8,7 @@ import com.teamyg.parfait.domain.model.image.ImageUploadUrlVO
 interface ImageRemoteDataSource {
     /**
      * 업로드용 presigned URL 을 발급받는다. 실제 바이트 전송은 이 함수가 하지 않는다.
-     * 호출부가 응답의 uploadUrl 로 직접 PUT 해야 하고, 그 경로는 아직 없다.
+     * 실제 바이트 전송은 같은 패키지의 [PresignedUploadDataSource] 가 맡는다.
      *
      * @param fileName 서버가 현재 이 값을 쓰지 않지만(`api/image.md` 미결) 실제 파일명을 넘긴다.
      *   서버가 쓰기 시작해도 값이 맞고, 빈 문자열은 400 이다.

@@ -225,3 +225,34 @@ Authorization: Bearer {{access_token}}
         client.assert(response.body.data === null, "data: " + JSON.stringify(response.body.data));
     });
 %}
+
+### 11. (대조용) 마감된 캔버스에 배치 → 409 PARFAIT_ALREADY_CLOSED
+# 선행: parfait.http 의 "(테스트 전용) 캔버스 강제 회전"으로 이 캔버스를 마감시킨다.
+#       ⚠️ 그 요청은 **전 그룹**의 캔버스를 마감한다 — 경고를 먼저 읽을 것.
+#
+# 2026-08-20 서버 delta로 생긴 가드다. 그전에는 이 요청이 **201 로 성공**했고, 뒤이은 오늘
+# 조회가 새 캔버스를 줘서 사용자에게는 배치가 사라진 것처럼 보였다.
+# 수정·테두리·삭제 셋도 같은 코드로 거부된다 — 다만 그 셋은 마감 검사가 **소유권 뒤**라
+# 남의 토핑을 지목하면 409 가 아니라 403 PARFAIT_IMAGE_NOT_OWNED 가 먼저 나온다.
+#
+# ⚠️ 이 코드는 자기 도메인 enum 이 아니라 서버 ParfaitErrorCode 의 값이다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 0.5,
+  "positionY": 0.5,
+  "positionZ": 0,
+  "scale": 1.0,
+  "rotation": 0.0,
+  "borderType": "NONE"
+}
+
+> {%
+    client.test("409 PARFAIT_ALREADY_CLOSED", function() {
+        client.assert(response.status === 409, "status: " + response.status);
+        client.assert(response.body.code === "PARFAIT_ALREADY_CLOSED", "code: " + response.body.code);
+    });
+%}

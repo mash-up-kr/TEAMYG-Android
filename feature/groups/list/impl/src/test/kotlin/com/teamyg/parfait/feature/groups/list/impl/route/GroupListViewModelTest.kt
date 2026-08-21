@@ -7,13 +7,19 @@ import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -24,6 +30,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -33,8 +40,16 @@ class GroupListViewModelTest {
 
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
 
-    private fun viewModel() = GroupListViewModel(getMyGroupsFlow, refreshMyGroups)
+    private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupListViewModel {
+        every { getMyAccountFlow() } returns accountFlow
+        return GroupListViewModel(
+            getMyGroupsFlow = getMyGroupsFlow,
+            refreshMyGroups = refreshMyGroups,
+            getMyAccountFlow = getMyAccountFlow,
+        )
+    }
 
     /** 화면에 서기 전에는 아무것도 조회하지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
     private fun TestScope.enteredViewModel() = viewModel().also { viewModel ->
@@ -317,6 +332,44 @@ class GroupListViewModelTest {
     }
 
     @Test
+    fun clickCreateNewGroup_closesTheAddGroupOverlay() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹 추가 오버레이를 펼쳐 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(GroupListIntent.ClickTopBarChip)
+
+        viewModel.effect.test {
+            // When 새 그룹 만들기로 나간다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 돌아왔을 때 누른 적 없는 오버레이가 떠 있지 않도록 접고 나간다
+            assertEquals(GroupListSideEffect.NavigateToCreateGroup("모카"), awaitItem())
+            assertFalse(viewModel.state.value.groupAddButtonSelected)
+        }
+    }
+
+    @Test
+    fun clickEnterNewGroup_closesTheAddGroupOverlay() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹 추가 오버레이를 펼쳐 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(GroupListIntent.ClickTopBarChip)
+
+        viewModel.effect.test {
+            // When 초대 코드로 참여하러 나간다
+            viewModel.processIntent(GroupListIntent.ClickEnterNewGroup)
+            advanceUntilIdle()
+
+            // Then 같은 이유로 오버레이를 접고 나간다
+            assertEquals(GroupListSideEffect.NavigateToInviteCode, awaitItem())
+            assertFalse(viewModel.state.value.groupAddButtonSelected)
+        }
+    }
+
+    @Test
     fun clickTopping_carriesTheClickedGroup() = runTest(mainDispatcherRule.dispatcher) {
         // Given 그룹 두 개가 그려진 목록
         every { getMyGroupsFlow() } returns flowOf(GROUPS)
@@ -333,7 +386,91 @@ class GroupListViewModelTest {
         }
     }
 
+    @Test
+    fun init_showsTheNicknameFromTheAccountStream() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 SSoT 가 내 닉네임을 들고 있다
+        every { getMyGroupsFlow() } returns flowOf(null)
+
+        // When ViewModel 이 만들어진다 — 화면에 서기 전이다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 목록과 달리 진입을 기다리지 않고 닉네임이 채워진다
+        assertEquals("모카", viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun accountNicknameChanges_followsTheStream() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임을 이미 받아 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(null)
+        val accountFlow = MutableStateFlow<MyAccountVO?>(ACCOUNT)
+        val viewModel = viewModel(accountFlow)
+        advanceUntilIdle()
+
+        // When 다른 화면에서 닉네임을 바꿔 SSoT 가 새 값을 밀어 준다
+        accountFlow.value = ACCOUNT.copy(nickname = GlobalNickname("바닐라"))
+        advanceUntilIdle()
+
+        // Then 그룹 만들기로 실려 갈 값이 낡지 않도록 구독이 따라간다
+        assertEquals("바닐라", viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun init_accountIsNotStoredYet_hasNoNickname() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 저장된 계정이 없어 스트림이 null 을 낸다
+        every { getMyGroupsFlow() } returns flowOf(null)
+
+        // When ViewModel 이 만들어진다
+        val viewModel = viewModel(accountFlow = flowOf(null))
+        advanceUntilIdle()
+
+        // Then mock 이름을 지어내지 않는다
+        assertNull(viewModel.state.value.nickName)
+    }
+
+    @Test
+    fun clickCreateNewGroup_carriesTheNickname() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임을 받아 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그룹 만들기를 누른다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 갈 화면이 입력칸에 채울 이름을 이펙트가 들고 간다
+            assertEquals(GroupListSideEffect.NavigateToCreateGroup("모카"), awaitItem())
+        }
+    }
+
+    @Test
+    fun clickCreateNewGroup_withoutANickname_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 스트림이 아직 닉네임을 내놓지 않은 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = viewModel(accountFlow = flowOf(null))
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 그룹 만들기를 누른다
+            viewModel.processIntent(GroupListIntent.ClickCreateNewGroup)
+            advanceUntilIdle()
+
+            // Then 이미 가진 이름을 다시 입력하게 두느니 열지 않는다 — 다시 누르면 열린다
+            expectNoEvents()
+        }
+    }
+
     private companion object {
+        val ACCOUNT = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname("모카"),
+        )
+
         val GROUPS = listOf(
             MyParfaitGroupVO(
                 groupId = GroupId(1L),
