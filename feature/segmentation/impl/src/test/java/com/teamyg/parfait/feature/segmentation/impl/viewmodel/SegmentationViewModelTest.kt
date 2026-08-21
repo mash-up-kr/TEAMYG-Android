@@ -165,7 +165,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 최근 목록의 자리를 열리지 않는 이미지에 내주지 않는다
-        coVerify(exactly = 0) { addRecentImage(any()) }
+        coVerify(exactly = 0) { addRecentImage(any(), any()) }
     }
 
     @Test

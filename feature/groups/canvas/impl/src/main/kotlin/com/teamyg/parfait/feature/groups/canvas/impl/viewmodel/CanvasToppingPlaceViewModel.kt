@@ -11,12 +11,16 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.extension.toRgbHexString
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
@@ -133,6 +137,7 @@ class CanvasToppingPlaceViewModel
 @Inject constructor(
     private val toppingDraftRepository: ToppingDraftRepository,
     private val addToppingUseCase: AddToppingUseCase,
+    private val addRecentImageUseCase: AddRecentImageUseCase,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
@@ -325,6 +330,14 @@ class CanvasToppingPlaceViewModel
                     transform = transform,
                     border = border,
                 ).onSuccess {
+                    // 알림보다 먼저 남긴다 — PlaceSucceeded 를 받은 Route 가 popUpTo 로 이 화면을
+                    // 걷어 내면 viewModelScope 가 취소되고, 그 뒤 코드는 실행되다 말고 끊긴다
+                    runSuspendCatching {
+                        addRecentImageUseCase(source = imagePath, kind = RecentImageKind.CUTOUT)
+                    }.onFailure { throwable ->
+                        viewModelLogger.d { "recent cutout save failed - $throwable" }
+                    }
+
                     // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
                     postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)

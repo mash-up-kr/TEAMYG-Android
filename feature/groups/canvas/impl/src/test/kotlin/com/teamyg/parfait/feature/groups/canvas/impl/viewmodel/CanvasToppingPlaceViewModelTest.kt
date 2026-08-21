@@ -10,13 +10,16 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -62,11 +65,14 @@ class CanvasToppingPlaceViewModelTest {
 
     private val addToppingUseCase: AddToppingUseCase = mockk()
 
+    private val addRecentImageUseCase: AddRecentImageUseCase = mockk(relaxed = true)
+
     private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
         every { toppingDraftRepository.draft } returns flowOf(draft)
         return CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
+            addRecentImageUseCase = addRecentImageUseCase,
         )
     }
 
@@ -275,6 +281,47 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
+    fun onClickConfirm_afterSuccess_savesCutoutBeforeClearingDraft() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 배치가 성공하는 상태
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        // When 확인을 누른다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 알맹이를 남긴 뒤에 초안을 비운다 — 순서가 뒤집히면 경로를 잃어 아무것도 안 남는다
+        coVerifyOrder {
+            addRecentImageUseCase(
+                source = "/cache/segmentation/subject.png",
+                kind = RecentImageKind.CUTOUT,
+            )
+            toppingDraftRepository.clear()
+        }
+    }
+
+    @Test
+    fun onClickConfirm_whenRecentImageSaveThrows_stillReportsSuccess() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 최근 목록 저장이 던진다
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        coEvery { addRecentImageUseCase(any(), any()) } throws IllegalStateException("disk full")
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        // When 확인을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 배치는 이미 성공했다. 재사용 편의 하나로 성공한 흐름을 실패로 보이게 하지 않는다
+            assertEquals(CanvasToppingPlaceEffect.PlaceSucceeded, awaitItem())
+        }
+    }
+
+    @Test
     fun onClickConfirm_sendsDraftIdentityAndBorderAsServerFormat() = runTest(mainDispatcherRule.dispatcher) {
         val groupIdSlot = slot<GroupId>()
         val parfaitIdSlot = slot<ParfaitId>()
@@ -426,6 +473,7 @@ class CanvasToppingPlaceViewModelTest {
         val viewModel = CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
+            addRecentImageUseCase = addRecentImageUseCase,
         )
         advanceUntilIdle()
 
@@ -465,6 +513,7 @@ class CanvasToppingPlaceViewModelTest {
         val viewModel = CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
+            addRecentImageUseCase = addRecentImageUseCase,
         )
 
         // When 화면이 열린다
