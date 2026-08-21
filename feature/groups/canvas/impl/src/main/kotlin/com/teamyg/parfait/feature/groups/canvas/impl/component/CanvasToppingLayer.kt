@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -107,7 +107,9 @@ private fun CanvasTopping(
                     x = canvasWidth * transform.positionX.toFloat(),
                     y = canvasHeight * transform.positionY.toFloat(),
                 ),
-            ).size(side)
+                // 캔버스를 넘긴 토핑은 잘려야지 작아지면 안 된다. size 는 부모 constraints 로
+                // clamp 돼 정사각 박스가 캔버스 크기로 줄고, 그 안에서 Fit 이 다시 축소한다
+            ).requiredSize(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() }
             .clickableYGNoRipple(onClick = onClick),
     ) {

@@ -25,3 +25,11 @@ fun String.toColorOrNull(): Color? {
 
     return Color(if (hex.length == HEX_LENGTH_RGB) argb or OPAQUE_ALPHA else argb)
 }
+
+/**
+ * ARGB 정수를 서버에 보내는 색 문자열로 쓴다. [toColorOrNull] 의 역함수다.
+ *
+ * 8자리로 쓰는 것이 C-106 의 결정이다 — 6자리로 줄이면 알파가 사라지고, 형식이 어긋나면
+ * 읽기 쪽이 `null` 을 내 캔버스가 테두리를 그냥 안 그린다(서버는 200 을 준다).
+ */
+fun Int.toArgbHexString(): String = "#%08X".format(this)
