@@ -117,7 +117,7 @@ class CanvasToppingPlaceViewModel
     }
 
     private fun observeDraft() {
-        launch {
+        launch(onError = { postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing) }) {
             toppingDraftRepository.draft.collect { draft ->
                 updateState {
                     copy(

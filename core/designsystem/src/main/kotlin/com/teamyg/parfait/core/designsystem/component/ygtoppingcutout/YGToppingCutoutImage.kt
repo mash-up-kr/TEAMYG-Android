@@ -31,7 +31,7 @@ private const val FULL_TURN_DEGREES = 360.0
  * 누끼 이미지와 그 실루엣을 따르는 테두리를 함께 그린다. 사각 테두리를 두르면 잘라 낸 배경이 다시
  * 드러나므로, 같은 그림을 테두리 색으로 물들여 여덟 방향으로 밀어 찍고 그 위에 원본을 얹는다.
  *
- * 테두리를 그리는 화면이 셋이라 여기서 한 벌만 둔다(`adr/0025-topping-border-as-server-field.md`).
+ * 테두리를 그리는 화면이 여럿이라 여기서 한 벌만 둔다(`adr/0025-topping-border-as-server-field.md`).
  *
  * ⚠️ **그림이 아직 뜨지 않은 [painter] 로 찍으면 플레이스홀더 실루엣이 테두리로 보인다.**
  * 준비되기 전에는 호출부가 [borderColor] 에 `null` 을 넘긴다.

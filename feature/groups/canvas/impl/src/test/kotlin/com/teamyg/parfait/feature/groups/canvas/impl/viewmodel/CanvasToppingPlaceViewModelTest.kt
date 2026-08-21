@@ -15,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -269,4 +270,19 @@ class CanvasToppingPlaceViewModelTest {
                 expectNoEvents()
             }
         }
+
+    @Test
+    fun draft_throws_tellsTheUser_insteadOfDyingSilently() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 흐름이 던진다(DataStore 읽기 실패 등)
+        every { toppingDraftRepository.draft } returns flow { throw IllegalStateException("boom") }
+        val viewModel = CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+
+        // When 화면이 열린다
+        viewModel.effect.test {
+            advanceUntilIdle()
+
+            // Then 수집이 조용히 죽지 않고, 이미 있는 이펙트로 사용자에게 알린다
+            assertEquals(CanvasToppingPlaceEffect.DraftMissing, awaitItem())
+        }
+    }
 }

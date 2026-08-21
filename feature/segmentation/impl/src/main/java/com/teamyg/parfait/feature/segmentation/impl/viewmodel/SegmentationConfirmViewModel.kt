@@ -60,7 +60,7 @@ class SegmentationConfirmViewModel
     }
 
     private fun observeDraft() {
-        launch {
+        launch(onError = { reportMissingDraft() }) {
             toppingDraftRepository.draft.collect { draft ->
                 val subjectImagePath = draft?.subjectImagePath
                 if (subjectImagePath == null) {

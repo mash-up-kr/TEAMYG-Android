@@ -11,7 +11,7 @@ import androidx.core.graphics.createBitmap
 import com.teamyg.parfait.core.util.android.extension.toAndroidPath
 
 /**
- * Segmentation 결과에 사용자의 획을 반영해 테두리를 두르기 전 알맹이를 만든다.
+ * Segmentation 결과에 사용자의 획을 반영해 알맹이를 만든다.
  *
  * 마스크를 알파 채널로 다루는 게 핵심이다.
  * 1. segmentation 결과를 그려 그 알파를 시작 마스크로 삼는다
@@ -19,8 +19,8 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidPath
  * 3. 마지막에 원본을 SRC_IN 으로 얹으면 마스크가 남은 자리에만 원본 픽셀이 채워진다
  *
  * 3번 덕분에 지웠던 영역을 다시 ADD 로 칠하면 원본 픽셀이 그대로 복원된다.
- * 다만 3번이 알파만 물려받고 색은 원본에서 다시 채우므로, [segmentationBitmap] 에 테두리가 구워진
- * 이미지를 넘기면 그 색이 원본 픽셀로 덮인다. 마스크로는 테두리를 두르기 전 알맹이를 넘겨야 한다.
+ * 다만 3번이 알파만 물려받고 색은 원본에서 다시 채우므로, [segmentationBitmap] 에 색이 입혀진
+ * 이미지를 넘기면 그 색은 사라지고 원본 픽셀로 덮인다.
  *
  * 결과는 언제나 [originBitmap] 크기이며, [segmentationBitmap] 크기가 달라도 늘려서 맞춘다.
  */

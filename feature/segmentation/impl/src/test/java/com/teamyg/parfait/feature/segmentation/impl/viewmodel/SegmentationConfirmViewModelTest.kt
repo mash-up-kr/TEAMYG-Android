@@ -12,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -174,4 +175,20 @@ class SegmentationConfirmViewModelTest {
             assertFalse(state.isDraftReady)
             assertEquals(SUBJECT_PATH, state.subjectImagePath)
         }
+
+    @Test
+    fun draft_throws_tellsTheUser_insteadOfDyingSilently() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 흐름이 던진다(DataStore 읽기 실패 등)
+        every { toppingDraftRepository.draft } returns flow { throw IllegalStateException("boom") }
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+
+        // Then 수집이 조용히 죽지 않고, 이미 있는 이펙트로 사용자에게 알린다
+        viewModel.effect.test {
+            advanceUntilIdle()
+            assertEquals(SegmentationConfirmEffect.DraftMissing, awaitItem())
+        }
+        assertFalse(viewModel.state.value.isDraftReady)
+    }
 }
