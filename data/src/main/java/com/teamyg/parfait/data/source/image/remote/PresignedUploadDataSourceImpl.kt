@@ -42,8 +42,6 @@ class PresignedUploadDataSourceImpl @Inject constructor(
         } catch (e: Exception) {
             // uploadUrl·contentType 은 서버가 준 값이라 Request 조립 단계에서 예외가 날 수 있다.
             // 여기서 안 잡으면 Result 를 돌려주기로 한 계약이 깨진 채 호출부까지 올라간다.
-            // 이 블록에는 suspend 호출이 없어 CancellationException 재던지기가 필요 없다 —
-            // 한 줄이라도 들어오면 그때 가드를 붙인다
             return Result.failure(ApiException.Unknown(e))
         }
 

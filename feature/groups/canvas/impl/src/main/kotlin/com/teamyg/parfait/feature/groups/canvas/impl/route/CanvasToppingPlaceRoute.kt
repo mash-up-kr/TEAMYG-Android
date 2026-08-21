@@ -50,7 +50,7 @@ internal fun CanvasToppingPlaceRoute(
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed))
                 }
 
-                // DraftMissing과 같은 이유로 되감지 않는다(위 주석 참고) — 되감으면 안내가 잔상으로 끝난다
+                // DraftMissing과 같은 이유로 되감지 않는다(위 주석 참고)
                 CanvasToppingPlaceEffect.PlaceFailedPermanently -> {
                     toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed_permanently))
                 }

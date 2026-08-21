@@ -313,9 +313,8 @@ class CanvasToppingPlaceViewModel
         launch(key = CONFIRM_JOB_KEY, onError = { postSideEffect(CanvasToppingPlaceEffect.PlaceFailed) }) {
             updateState { copy(isLoading = true) }
 
-            // finally 하나로 성공·실패·(onError 로 새는) 예외·취소 네 경로를 다 덮는다 — onSuccess/
-            // onFailure 안에 각자 isLoading=false 를 흩어 두면 Result.onSuccess { } 가 던진 예외처럼
-            // 둘 다 안 타는 경로가 생겨 오버레이가 안 걷힌 채로 남는다
+            // finally 하나로 성공·실패·예외·취소 네 경로를 다 덮는다 — onSuccess/onFailure 에
+            // 각자 흩어 두면 Result.onSuccess { } 가 던지는 경로가 어디에도 안 걸린다
             try {
                 addToppingUseCase(
                     groupId = groupId,

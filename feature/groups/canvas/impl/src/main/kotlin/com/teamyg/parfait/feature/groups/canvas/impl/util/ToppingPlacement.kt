@@ -8,11 +8,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG
 /**
  * 배치 화면의 화면 좌표를 서버가 저장하는 정규화 좌표로 바꾼다.
  *
- * ⚠️ **쓰기 쪽 `scale` 과 읽기 쪽 `scale` 은 기준이 다른 다른 수다.** 읽기 쪽
- * `CanvasToppingLayer#CanvasTopping` 은 한 변이 `canvasWidth × TOPPING_BASE_LONG_SIDE_RATIO ×
- * scale` 인 정사각 박스에 `ContentScale.Fit` 으로 담아 긴 변을 꽉 채운다. 그 긴 변이 배치
- * 화면의 `max(baseWidth, baseHeight) × scale` 과 같아지도록 역산한 것이 아래 식이다.
- * 그대로 보내면 캔버스에서 크기가 달라진다.
+ * ⚠️ **쓰기 쪽 `scale` 과 읽기 쪽 `scale` 은 기준이 다른 다른 수다.** 그대로 보내면 캔버스에서
+ * 크기가 달라진다. 계산식 근거는 `specs/2026-08-20-c106-topping-place-api.md`의 「좌표 변환」 절 참고.
  *
  * 위치는 좌상단이 아니라 **중심** 기준이다.
  */

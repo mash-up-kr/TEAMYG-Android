@@ -107,9 +107,9 @@ private fun CanvasTopping(
                     x = canvasWidth * transform.positionX.toFloat(),
                     y = canvasHeight * transform.positionY.toFloat(),
                 ),
-                // 캔버스를 넘긴 토핑은 잘려야지 작아지면 안 된다. size 는 부모 constraints 로
-                // clamp 돼 정사각 박스가 캔버스 크기로 줄고, 그 안에서 Fit 이 다시 축소한다
-            ).requiredSize(side)
+            )
+            // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
+            .requiredSize(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() }
             .clickableYGNoRipple(onClick = onClick),
     ) {
