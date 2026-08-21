@@ -292,7 +292,8 @@ class CanvasToppingPlaceViewModelTest {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 알맹이를 남긴 뒤에 초안을 비운다 — 순서가 뒤집히면 경로를 잃어 아무것도 안 남는다
+        // Then 알맹이를 남긴 뒤에 초안을 비운다 — 순서가 뒤집히면 되감기가 viewModelScope 를
+        // 취소해 저장이 끝까지 못 돈다(ViewModel 쪽 handleOnClickConfirm 주석 참고)
         coVerifyOrder {
             addRecentImageUseCase(
                 source = "/cache/segmentation/subject.png",
@@ -317,6 +318,41 @@ class CanvasToppingPlaceViewModelTest {
             advanceUntilIdle()
 
             // Then 배치는 이미 성공했다. 재사용 편의 하나로 성공한 흐름을 실패로 보이게 하지 않는다
+            assertEquals(CanvasToppingPlaceEffect.PlaceSucceeded, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickConfirm_savesCutout_beforeAnnouncingSuccess() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 배치가 성공하는 상태
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // 저장이 도는 순간 이펙트 채널에 이미 뭔가 나가 있으면 순서가 뒤집힌 것이다.
+            // 여기서 던지면 handleOnClickConfirm 의 runSuspendCatching 이 삼켜 조용히
+            // 로그만 남기므로, 던지는 대신 바깥에서 확인할 플래그에 결과만 남긴다
+            var effectAlreadyAnnouncedWhileSaving = false
+            coEvery { addRecentImageUseCase(any(), any()) } coAnswers {
+                effectAlreadyAnnouncedWhileSaving = try {
+                    expectNoEvents()
+                    false
+                } catch (unexpectedEvent: AssertionError) {
+                    true
+                }
+            }
+
+            // When 확인을 누른다
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 저장이 알림보다 먼저 끝나 있었어야 한다 — 저장을 postSideEffect 뒤로 옮기면
+            // (브리프가 막으려는 회귀) 이 단언이 깨진다. awaitItem() 보다 먼저 확인하는 이유:
+            // 순서가 뒤집히면 위 expectNoEvents() 가 그 이벤트를 이미 소비해 버려, 뒤에
+            // awaitItem() 을 먼저 부르면 받을 게 없어 타임아웃으로 죽어 원인이 흐려진다
+            assertFalse(effectAlreadyAnnouncedWhileSaving)
             assertEquals(CanvasToppingPlaceEffect.PlaceSucceeded, awaitItem())
         }
     }
