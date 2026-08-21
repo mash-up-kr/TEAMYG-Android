@@ -307,27 +307,32 @@ class CanvasToppingPlaceViewModel
         launch(key = CONFIRM_JOB_KEY, onError = { postSideEffect(CanvasToppingPlaceEffect.PlaceFailed) }) {
             updateState { copy(isLoading = true) }
 
-            addToppingUseCase(
-                groupId = groupId,
-                parfaitId = parfaitId,
-                filePath = imagePath,
-                transform = transform,
-                border = border,
-            ).onSuccess {
-                // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
-                // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
-                postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
-                toppingDraftRepository.clear()
-                updateState { copy(isLoading = false) }
-            }.onFailure { throwable ->
-                val error = throwable as? AppError ?: AppError.Unexpected(throwable)
-                postSideEffect(
-                    effect = if (error.isPermanentPlaceFailure()) {
-                        CanvasToppingPlaceEffect.PlaceFailedPermanently
-                    } else {
-                        CanvasToppingPlaceEffect.PlaceFailed
-                    },
-                )
+            // finally 하나로 성공·실패·(onError 로 새는) 예외·취소 네 경로를 다 덮는다 — onSuccess/
+            // onFailure 안에 각자 isLoading=false 를 흩어 두면 Result.onSuccess { } 가 던진 예외처럼
+            // 둘 다 안 타는 경로가 생겨 오버레이가 안 걷힌 채로 남는다
+            try {
+                addToppingUseCase(
+                    groupId = groupId,
+                    parfaitId = parfaitId,
+                    filePath = imagePath,
+                    transform = transform,
+                    border = border,
+                ).onSuccess {
+                    // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
+                    // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
+                    postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
+                    toppingDraftRepository.clear()
+                }.onFailure { throwable ->
+                    val error = throwable as? AppError ?: AppError.Unexpected(throwable)
+                    postSideEffect(
+                        effect = if (error.isPermanentPlaceFailure()) {
+                            CanvasToppingPlaceEffect.PlaceFailedPermanently
+                        } else {
+                            CanvasToppingPlaceEffect.PlaceFailed
+                        },
+                    )
+                }
+            } finally {
                 updateState { copy(isLoading = false) }
             }
         }
