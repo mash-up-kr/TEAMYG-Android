@@ -35,7 +35,7 @@ import kotlinx.datetime.format
 internal fun GalleryImageGridComponent(
     groups: List<GalleryImageGroup>,
     recentImages: List<RecentImage>,
-    onClickImage: (String) -> Unit,
+    onClickImage: (String, RecentImageKind) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -59,7 +59,12 @@ internal fun GalleryImageGridComponent(
             ) { image ->
                 GalleryImageCell(
                     uri = image.uri,
-                    onClickImage = onClickImage,
+                    // 알맹이는 투명 여백을 걷어낸 객체라 잘라 채우면 잘린다
+                    contentScale = when (image.kind) {
+                        RecentImageKind.SOURCE -> ContentScale.Crop
+                        RecentImageKind.CUTOUT -> ContentScale.Fit
+                    },
+                    onClickImage = { onClickImage(image.uri, image.kind) },
                 )
             }
         }
@@ -79,7 +84,7 @@ internal fun GalleryImageGridComponent(
                 items = group.images,
                 key = { it },
             ) { uri ->
-                GalleryImageCell(uri = uri, onClickImage = onClickImage)
+                GalleryImageCell(uri = uri, onClickImage = { onClickImage(uri, RecentImageKind.SOURCE) })
             }
         }
     }
@@ -88,19 +93,20 @@ internal fun GalleryImageGridComponent(
 @Composable
 private fun GalleryImageCell(
     uri: String,
-    onClickImage: (String) -> Unit,
+    onClickImage: () -> Unit,
     modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
 ) {
     Box(
         modifier = modifier
             .padding(bottom = YGTheme.layout.padding.padding5)
             .aspectRatio(1f)
-            .clickableYGNoRipple { onClickImage(uri) },
+            .clickableYGNoRipple { onClickImage() },
     ) {
         AsyncImage(
             model = uri,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -173,6 +179,6 @@ private fun PreviewGalleryImageGridComponent() = PreviewBox {
             RecentImage(uri = "test1", filePath = "test1", kind = RecentImageKind.SOURCE),
             RecentImage(uri = "test3", filePath = "test3", kind = RecentImageKind.SOURCE),
         ),
-        onClickImage = {},
+        onClickImage = { _, _ -> },
     )
 }

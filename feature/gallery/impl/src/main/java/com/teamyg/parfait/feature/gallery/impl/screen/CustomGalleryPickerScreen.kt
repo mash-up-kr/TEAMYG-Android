@@ -37,6 +37,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -45,7 +46,7 @@ internal fun CustomGalleryPickerScreen(
     onClickGrantPermission: () -> Unit,
     onClickOpenSettings: () -> Unit,
     onClickManageMedia: () -> Unit,
-    onClickImage: (String) -> Unit,
+    onClickImage: (String, RecentImageKind) -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,7 +81,7 @@ private fun GalleryContent(
     groups: List<GalleryImageGroup>,
     recentImages: List<RecentImage>,
     onClickManageMedia: () -> Unit,
-    onClickImage: (String) -> Unit,
+    onClickImage: (String, RecentImageKind) -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -174,7 +175,7 @@ private fun PreviewCustomGalleryPickerScreen(
         onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickManageMedia = {},
-        onClickImage = {},
+        onClickImage = { _, _ -> },
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
     )
