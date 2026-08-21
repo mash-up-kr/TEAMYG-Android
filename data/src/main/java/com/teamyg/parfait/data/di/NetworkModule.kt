@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.di
 import com.teamyg.parfait.data.BuildConfig
 import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
+import com.teamyg.parfait.data.model.qualifier.UploadClient
 import com.teamyg.parfait.data.network.AuthInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
@@ -75,6 +76,32 @@ object NetworkModule {
         .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
+    /**
+     * S3 presigned PUT 전용. **자격증명을 붙이지 않는 것이 이 클라이언트의 존재 이유다** —
+     * presigned URL 에 `Authorization` 이 실리면 S3 가 거절해 업로드가 아예 동작하지 않는다.
+     * 재발급 표면([provideUnauthenticatedOkHttpClient])을 재사용하지 않는 이유를 포함한 근거는
+     * `parfait/specs/2026-08-20-c106-topping-place-api.md` 업로드 전송 절에 있다.
+     *
+     * ⚠️ `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
+     * 반드시 새 [OkHttpClient.Builder] 로 만든다.
+     *
+     * 로깅 인터셉터를 달지 않는다 — presigned URL 은 서명을 쿼리 스트링에 싣는 방식이라
+     * URL 자체가 자격증명이고, OkHttp 로깅 인터셉터에는 그것을 가릴 수단이 없다.
+     * 이 표면만 `callTimeout` 을 두는 것도 의도다 — `writeTimeout` 은 바이트 사이 유휴
+     * 상한이라 전송 전체가 느린 것을 잡지 못한다.
+     */
+    @Provides
+    @Singleton
+    @UploadClient
+    fun provideUploadOkHttpClient(): OkHttpClient = OkHttpClient
+        .Builder()
+        .dispatcher(Dispatcher())
+        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .writeTimeout(UPLOAD_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .callTimeout(UPLOAD_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .build()
+
     @Provides
     @Singleton
     fun provideRetrofit(
@@ -109,4 +136,6 @@ object NetworkModule {
     private const val CONNECT_TIMEOUT_SECONDS = 10L
     private const val READ_TIMEOUT_SECONDS = 15L
     private const val WRITE_TIMEOUT_SECONDS = 15L
+    private const val UPLOAD_WRITE_TIMEOUT_SECONDS = 60L
+    private const val UPLOAD_CALL_TIMEOUT_SECONDS = 120L
 }

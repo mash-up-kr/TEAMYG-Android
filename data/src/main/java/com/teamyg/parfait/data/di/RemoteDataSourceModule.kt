@@ -6,6 +6,8 @@ import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSource
 import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSourceImpl
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
@@ -54,4 +56,10 @@ interface RemoteDataSourceModule {
     fun bindParfaitImageRemoteDataSource(
         parfaitImageRemoteDataSourceImpl: ParfaitImageRemoteDataSourceImpl,
     ): ParfaitImageRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindPresignedUploadDataSource(
+        presignedUploadDataSourceImpl: PresignedUploadDataSourceImpl,
+    ): PresignedUploadDataSource
 }
