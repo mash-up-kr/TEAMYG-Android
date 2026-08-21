@@ -2,16 +2,22 @@ package com.teamyg.parfait.feature.segmentation.impl.route
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
 
 @Composable
@@ -24,8 +30,21 @@ internal fun SegmentationRoute(
         creationCallback = { factory -> factory.create(key.sourceImageUri) },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val toastPolicy = rememberYGToastPolicy()
+    val errorMessage = stringResource(R.string.segmentation_error_message)
 
-    YGScaffoldV2 { innerPadding ->
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
+            }
+        }
+    }
+
+    YGScaffoldV2(
+        isLoading = state.isLoading,
+        toastPolicy = toastPolicy,
+    ) { innerPadding ->
         SegmentationScreen(
             state = state,
             modifier = modifier.padding(innerPadding),
