@@ -11,9 +11,17 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.util.android.extension.toArgbHexString
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -43,6 +51,13 @@ data class CanvasToppingPlaceUiState(
     val borderWidthDp: Float? = null,
     /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
     val isDraftLoaded: Boolean = false,
+    /** 흐름 진입 때 초안에 못 박힌 캔버스다. 화면이 다시 고르지 않는다 */
+    val groupId: GroupId? = null,
+    val parfaitId: ParfaitId? = null,
+    val nextPositionZ: Int? = null,
+    /** 확정 판정의 근거. 그림이 뜨기 전 실측은 폴백 크기라 그대로 올리면 배율이 틀어진다 */
+    val isToppingImageReady: Boolean = false,
+    val isLoading: Boolean = false,
     // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val offsetX: Dp = 0.dp,
@@ -87,6 +102,11 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
     data class OnToppingBaseSizeMeasured(
         val baseSize: DpSize,
     ) : CanvasToppingPlaceIntent
+
+    /** 토핑 이미지 painter 가 실제 그림을 들었는지 화면이 알려준다 */
+    data class OnToppingImageReadyChanged(
+        val isReady: Boolean,
+    ) : CanvasToppingPlaceIntent
 }
 
 sealed interface CanvasToppingPlaceEffect : UiSideEffect {
@@ -95,20 +115,21 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     /** 초안이 가리키던 캐시 파일은 초안보다 먼저 사라질 수 있다 */
     data object DraftMissing : CanvasToppingPlaceEffect
 
-    /** 사용자가 정한 위치·크기·각도로 토핑 배치를 확정했다. */
-    data class ToppingPlaced(
-        val imagePath: String,
-        val offsetX: Dp,
-        val offsetY: Dp,
-        val scale: Float,
-        val rotationDegrees: Float,
-    ) : CanvasToppingPlaceEffect
+    /** 초안을 비웠다. 캔버스로 되감으면 새 토핑이 오늘 조회에 함께 내려온다 */
+    data object PlaceSucceeded : CanvasToppingPlaceEffect
+
+    /** 다시 눌러 볼 값이 있는 실패. 화면에 남는다 */
+    data object PlaceFailed : CanvasToppingPlaceEffect
+
+    /** 다시 눌러도 같은 실패. 알리고 되감는다 */
+    data object PlaceFailedPermanently : CanvasToppingPlaceEffect
 }
 
 @HiltViewModel
 class CanvasToppingPlaceViewModel
 @Inject constructor(
     private val toppingDraftRepository: ToppingDraftRepository,
+    private val addToppingUseCase: AddToppingUseCase,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
@@ -124,6 +145,9 @@ class CanvasToppingPlaceViewModel
                         toppingImagePath = draft?.subjectImagePath,
                         borderColorArgb = draft?.borderColorArgb,
                         borderWidthDp = draft?.borderWidthDp,
+                        groupId = draft?.groupId,
+                        parfaitId = draft?.parfaitId,
+                        nextPositionZ = draft?.nextPositionZ,
                         isDraftLoaded = true,
                     )
                 }
@@ -149,6 +173,10 @@ class CanvasToppingPlaceViewModel
 
             is CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured -> {
                 updateState { copy(toppingBaseSize = intent.baseSize).applyInitialPlacementIfNeeded() }
+            }
+
+            is CanvasToppingPlaceIntent.OnToppingImageReadyChanged -> {
+                updateState { copy(isToppingImageReady = intent.isReady) }
             }
         }
     }
@@ -239,25 +267,82 @@ class CanvasToppingPlaceViewModel
         return maxOf(overflowScale, TOPPING_MAX_SCALE_FALLBACK)
     }
 
+    /**
+     * 4단계(발급 → 전송 → 확인 → 배치)를 한 덩어리로 본다. 단계별 진행률을 표시하지 않는 것이
+     * 스펙의 결정이고, 실패하면 발급부터 전부 다시 탄다.
+     *
+     * ⚠️ 확정이 도는 동안 화면을 떠나면 `viewModelScope` 취소가 업로드를 끊는다. 확인까지
+     * 간 뒤 배치 전에 끊기면 **서버에 고아 이미지가 남는다** — 되돌리지 않기로 한 자리다
+     * (`specs/2026-08-20-c106-topping-place-api.md`).
+     */
     private fun handleOnClickConfirm() {
         val current = state.value
         if (!current.isDraftLoaded) return
 
         val imagePath = current.toppingImagePath
-        if (imagePath == null) {
+        val groupId = current.groupId
+        val parfaitId = current.parfaitId
+        val positionZ = current.nextPositionZ
+        if (imagePath == null || groupId == null || parfaitId == null || positionZ == null) {
             postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing)
             return
         }
 
-        // TODO: 캔버스에 토핑을 배치하는 저장 API 연동 필요 - 지금은 결과만 이펙트로 흘려보낸다
-        postSideEffect(
-            effect = CanvasToppingPlaceEffect.ToppingPlaced(
-                imagePath = imagePath,
-                offsetX = current.offsetX,
-                offsetY = current.offsetY,
-                scale = current.scale,
-                rotationDegrees = current.rotationDegrees,
-            ),
+        // 그림이 아직 없으면 실측이 폴백 크기다. 그것으로 계산한 배율이 서버에 굳는다
+        val canvasSize = current.canvasSize
+        val baseSize = current.toppingBaseSize
+        if (!current.isToppingImageReady || canvasSize == null || baseSize == null) return
+
+        val transform = toToppingTransform(
+            offsetX = current.offsetX,
+            offsetY = current.offsetY,
+            scale = current.scale,
+            rotationDegrees = current.rotationDegrees,
+            canvasSize = canvasSize,
+            toppingBaseSize = baseSize,
+            positionZ = positionZ,
         )
+        val border = toToppingBorder(current.borderColorArgb, current.borderWidthDp)
+
+        launch(key = CONFIRM_JOB_KEY, onError = { postSideEffect(CanvasToppingPlaceEffect.PlaceFailed) }) {
+            updateState { copy(isLoading = true) }
+
+            addToppingUseCase(
+                groupId = groupId,
+                parfaitId = parfaitId,
+                filePath = imagePath,
+                transform = transform,
+                border = border,
+            ).onSuccess {
+                // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
+                // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
+                postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
+                toppingDraftRepository.clear()
+                updateState { copy(isLoading = false) }
+            }.onFailure { throwable ->
+                val error = throwable as? AppError ?: AppError.Unexpected(throwable)
+                postSideEffect(
+                    effect = if (error.isPermanentPlaceFailure()) {
+                        CanvasToppingPlaceEffect.PlaceFailedPermanently
+                    } else {
+                        CanvasToppingPlaceEffect.PlaceFailed
+                    },
+                )
+                updateState { copy(isLoading = false) }
+            }
+        }
+    }
+
+    /** 색이나 두께가 빠진 `SOLID` 는 서버가 400 으로 거절한다 — 둘 다 있을 때만 만든다 */
+    private fun toToppingBorder(
+        colorArgb: Int?,
+        widthDp: Float?,
+    ): ToppingBorder = if (colorArgb != null && widthDp != null) {
+        ToppingBorder.Solid(color = colorArgb.toArgbHexString(), width = widthDp.toDouble())
+    } else {
+        ToppingBorder.None
     }
 }
+
+/** 확정 작업의 중복 실행 키. 연타로 두 번 올라가면 고아 이미지와 겹친 토핑이 함께 생긴다 */
+private const val CONFIRM_JOB_KEY = "canvas-topping-place-confirm"

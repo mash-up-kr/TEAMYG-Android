@@ -1,22 +1,36 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import java.io.IOException
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -46,9 +60,21 @@ class CanvasToppingPlaceViewModelTest {
         borderWidthDp = borderWidthDp,
     )
 
+    private val addToppingUseCase: AddToppingUseCase = mockk()
+
     private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
         every { toppingDraftRepository.draft } returns flowOf(draft)
-        return CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+        return CanvasToppingPlaceViewModel(
+            toppingDraftRepository = toppingDraftRepository,
+            addToppingUseCase = addToppingUseCase,
+        )
+    }
+
+    /** 확정이 나갈 수 있는 최소 조건을 갖춘 ViewModel — 실측 둘 + painter 준비 */
+    private fun readyViewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel = viewModel(draft).apply {
+        processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
+        processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))
+        processIntent(CanvasToppingPlaceIntent.OnToppingImageReadyChanged(isReady = true))
     }
 
     /** 회전 0/90/180/270도에서 핸들이 가리키는 바깥쪽 방향. [resizeOutwardDirection]과 같은 값이다 */
@@ -213,25 +239,161 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onClickConfirm_withASubjectImage_confirmsThePlacement() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 올릴 알맹이가 있다
-        val viewModel = viewModel()
+    fun onClickConfirm_whenImageNotReady_doesNotCallTheUseCase() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 실측은 끝났지만 그림은 아직 뜨지 않았다
+        val viewModel = viewModel().apply {
+            processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
+            processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))
+        }
         advanceUntilIdle()
 
-        // When 확인을 누른다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 폴백 크기로 계산된 배율이 서버에 올라가면 안 된다
+        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickConfirm_success_clearsDraftAndNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
             advanceUntilIdle()
 
-            // Then 배치를 확정한다(서버에 올리는 것은 다음 라운드다) — 위치·크기·각도도 그대로 실린다
-            val effect = awaitItem()
-            assertTrue(effect is CanvasToppingPlaceEffect.ToppingPlaced)
-            assertEquals("/cache/segmentation/subject.png", effect.imagePath)
-            assertEquals(0.dp, effect.offsetX)
-            assertEquals(0.dp, effect.offsetY)
-            assertEquals(1f, effect.scale, SCALE_DELTA)
-            assertEquals(0f, effect.rotationDegrees, SCALE_DELTA)
+            assertEquals(CanvasToppingPlaceEffect.PlaceSucceeded, awaitItem())
         }
+        // 성공한 흐름의 초안이 남으면 다음 진입까지 낡은 알맹이를 들고 있다
+        coVerify(exactly = 1) { toppingDraftRepository.clear() }
+    }
+
+    @Test
+    fun onClickConfirm_sendsDraftIdentityAndBorderAsServerFormat() = runTest(mainDispatcherRule.dispatcher) {
+        val groupIdSlot = slot<GroupId>()
+        val parfaitIdSlot = slot<ParfaitId>()
+        val transformSlot = slot<ToppingTransform>()
+        val borderSlot = slot<ToppingBorder>()
+        coEvery {
+            addToppingUseCase(
+                groupId = capture(groupIdSlot),
+                parfaitId = capture(parfaitIdSlot),
+                filePath = any(),
+                transform = capture(transformSlot),
+                border = capture(borderSlot),
+            )
+        } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+
+        val viewModel = readyViewModel(
+            draft(borderColorArgb = Color(0xFFFF6B00).toArgb(), borderWidthDp = 4f),
+        )
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // 캔버스 식별값은 흐름 진입 때 못 박은 초안 것이다 — 화면이 다시 고르지 않는다
+        assertEquals(GroupId(1L), groupIdSlot.captured)
+        assertEquals(ParfaitId(2L), parfaitIdSlot.captured)
+        assertEquals(3, transformSlot.captured.positionZ)
+        // 형식이 어긋나면 캔버스가 테두리를 조용히 안 그린다
+        assertEquals(ToppingBorder.Solid(color = "#FFFF6B00", width = 4.0), borderSlot.captured)
+    }
+
+    @Test
+    fun onClickConfirm_withoutBorderColor_sendsNone() = runTest(mainDispatcherRule.dispatcher) {
+        val borderSlot = slot<ToppingBorder>()
+        coEvery {
+            addToppingUseCase(any(), any(), any(), any(), border = capture(borderSlot))
+        } returns Result.success(mockk())
+        coEvery { toppingDraftRepository.clear() } returns Unit
+
+        val viewModel = readyViewModel(draft(borderColorArgb = null, borderWidthDp = null))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // 색이나 두께가 빠진 SOLID 는 서버가 400 INVALID_BORDER 로 거절한다
+        assertEquals(ToppingBorder.None, borderSlot.captured)
+    }
+
+    @Test
+    fun onClickConfirm_permanentFailure_rewindsAndKeepsDraftUncleaned() = runTest(mainDispatcherRule.dispatcher) {
+        // 스펙의 되감기 표는 세 코드를 든다. 하나만 넣으면 집합이 좁아진 회귀를 못 잡는다
+        listOf("PARFAIT_ALREADY_CLOSED", "GROUP_NOT_JOINED", "PARFAIT_NOT_FOUND").forEach { code ->
+            coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+                AppError.Server(code = code, statusCode = null, serverMessage = "서버 메시지"),
+            )
+            val viewModel = readyViewModel()
+            advanceUntilIdle()
+
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+                advanceUntilIdle()
+
+                assertEquals(CanvasToppingPlaceEffect.PlaceFailedPermanently, awaitItem(), code)
+            }
+        }
+        // 실패한 흐름의 초안은 남아야 한다 — 비우면 막 만든 토핑을 통째로 잃는다
+        coVerify(exactly = 0) { toppingDraftRepository.clear() }
+    }
+
+    @Test
+    fun onClickConfirm_transientFailure_staysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // 재시도가 의미 있는 갈래라 화면에 남는다
+            assertEquals(CanvasToppingPlaceEffect.PlaceFailed, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickConfirm_whileLoading_doesNotStartASecondUpload() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } coAnswers {
+            delay(1_000)
+            Result.success(mockk())
+        }
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // 연타로 두 번 올라가면 고아 이미지와 겹친 토핑이 함께 생긴다
+        coVerify(exactly = 1) { addToppingUseCase(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickConfirm_setsLoadingWhileInFlight() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } coAnswers {
+            delay(1_000)
+            Result.success(mockk())
+        }
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceTimeBy(500)
+        assertTrue(viewModel.state.value.isLoading)
+
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     @Test
@@ -239,7 +401,10 @@ class CanvasToppingPlaceViewModelTest {
         // Given 초안 흐름이 아직 한 번도 방출하지 않았다(DataStore 첫 방출 전 첫 프레임)
         val neverEmittedDraft = MutableSharedFlow<ToppingDraft?>()
         every { toppingDraftRepository.draft } returns neverEmittedDraft
-        val viewModel = CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+        val viewModel = CanvasToppingPlaceViewModel(
+            toppingDraftRepository = toppingDraftRepository,
+            addToppingUseCase = addToppingUseCase,
+        )
         advanceUntilIdle()
 
         // When 그 상태에서 확인을 누른다
@@ -275,7 +440,10 @@ class CanvasToppingPlaceViewModelTest {
     fun draft_throws_tellsTheUser_insteadOfDyingSilently() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초안 흐름이 던진다(DataStore 읽기 실패 등)
         every { toppingDraftRepository.draft } returns flow { throw IllegalStateException("boom") }
-        val viewModel = CanvasToppingPlaceViewModel(toppingDraftRepository = toppingDraftRepository)
+        val viewModel = CanvasToppingPlaceViewModel(
+            toppingDraftRepository = toppingDraftRepository,
+            addToppingUseCase = addToppingUseCase,
+        )
 
         // When 화면이 열린다
         viewModel.effect.test {
