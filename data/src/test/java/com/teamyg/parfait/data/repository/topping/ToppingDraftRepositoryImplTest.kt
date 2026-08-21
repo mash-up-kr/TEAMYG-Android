@@ -175,6 +175,29 @@ class ToppingDraftRepositoryImplTest {
     }
 
     @Test
+    fun record_withNullCutoutPath_keepsDraftWritable() = runTest {
+        // Given 흐름이 열려 있다
+        givenStoredDraft(draft(subjectImagePath = null, cutoutImagePath = null))
+        val repository = repository()
+
+        // When 재편집 마스크 없이 알맹이만 적는다
+        val recorded = repository.record(
+            subjectImagePath = "/data/files/recent_images/b.png",
+            cutoutImagePath = null,
+            borderColorArgb = null,
+            borderWidthDp = null,
+        )
+
+        // Then 적힌다 — 최근 목록에서 되살린 알맹이에는 마스크가 없다
+        assertTrue(recorded)
+
+        val saved = slot<ToppingDraft>()
+        coVerify { toppingDraftLocalDataSource.save(capture(saved)) }
+        assertEquals("/data/files/recent_images/b.png", saved.captured.subjectImagePath)
+        assertNull(saved.captured.cutoutImagePath)
+    }
+
+    @Test
     fun record_withNoOpenFlow_writesNothing() = runTest {
         // Given 흐름 밖이다(진입이 초안을 쓰지 못했거나 이미 비워졌다)
         givenStoredDraft(null)

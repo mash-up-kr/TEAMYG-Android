@@ -38,7 +38,7 @@ class ToppingDraftRepositoryImpl @Inject constructor(
     // 정규화는 파일 존재 확인 IO 를 태운다
     override suspend fun record(
         subjectImagePath: String,
-        cutoutImagePath: String,
+        cutoutImagePath: String?,
         borderColorArgb: Int?,
         borderWidthDp: Float?,
     ): Boolean {

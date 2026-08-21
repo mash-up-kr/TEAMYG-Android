@@ -30,7 +30,7 @@ interface ToppingDraftRepository {
      */
     suspend fun record(
         subjectImagePath: String,
-        cutoutImagePath: String,
+        cutoutImagePath: String?,
         borderColorArgb: Int?,
         borderWidthDp: Float?,
     ): Boolean

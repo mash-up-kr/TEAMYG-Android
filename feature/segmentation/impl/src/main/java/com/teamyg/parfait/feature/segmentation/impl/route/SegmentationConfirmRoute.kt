@@ -39,6 +39,7 @@ internal fun SegmentationConfirmRoute(
                 // 두 인자의 이름이 서로 반대 의미라 뒤바꾸기 쉽다(`ToppingEditResult` KDoc)
                 subjectImagePath = key.trimmedSubjectImagePath,
                 cutoutImagePath = key.subjectImagePath,
+                sourceImageUri = key.sourceImageUri,
             )
         },
     )
@@ -61,21 +62,27 @@ internal fun SegmentationConfirmRoute(
         }
     }
 
+    val sourceImageUri = uiState.sourceImageUri
+    val cutoutImagePath = uiState.cutoutImagePath
+
     YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
         SegmentationConfirmScreen(
             subjectImagePath = uiState.subjectImagePath,
             borderColorArgb = uiState.borderColorArgb,
             borderWidthDp = uiState.borderWidthDp,
             isNextEnabled = uiState.isDraftReady,
+            isEditPhotoEnabled = uiState.isEditPhotoEnabled,
             onClickBack = { navigator.onBack() },
             // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
             onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
             onClickEditPhoto = {
+                if (sourceImageUri == null || cutoutImagePath == null) return@SegmentationConfirmScreen
+
                 navigator.goTo(
                     NavKeyToppingEdit(
-                        sourceImageUri = key.sourceImageUri,
+                        sourceImageUri = sourceImageUri,
                         // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
-                        segmentationImageUri = File(uiState.cutoutImagePath).toUri().toString(),
+                        segmentationImageUri = File(cutoutImagePath).toUri().toString(),
                         borderLayers = uiState.borderLayers,
                     ),
                 )

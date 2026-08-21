@@ -24,6 +24,7 @@ import kotlin.test.assertTrue
 
 private const val SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
 private const val CUTOUT_PATH = "/cache/segmentation/subject.png"
+private const val REUSED_PATH = "/data/files/recent_images/b.png"
 
 class SegmentationConfirmViewModelTest {
     @get:Rule
@@ -53,6 +54,14 @@ class SegmentationConfirmViewModelTest {
     private fun viewModel() = SegmentationConfirmViewModel(
         subjectImagePath = SUBJECT_PATH,
         cutoutImagePath = CUTOUT_PATH,
+        sourceImageUri = "content://media/1",
+        toppingDraftRepository = toppingDraftRepository,
+    )
+
+    private fun reuseViewModel() = SegmentationConfirmViewModel(
+        subjectImagePath = REUSED_PATH,
+        cutoutImagePath = null,
+        sourceImageUri = null,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -190,5 +199,49 @@ class SegmentationConfirmViewModelTest {
             assertEquals(SegmentationConfirmEffect.DraftMissing, awaitItem())
         }
         assertFalse(viewModel.state.value.isDraftReady)
+    }
+
+    @Test
+    fun reuseEntry_withEmptyDraft_recordsBeforeObserving() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다
+        givenDraft(draft(subjectImagePath = null))
+
+        // When 화면이 열린다
+        reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 구독보다 먼저 적는다. 뒤집으면 첫 방출의 null 이 DraftMissing 토스트를 쏴
+        // 사용자가 없는 실패를 듣는다
+        coVerify(exactly = 1) {
+            toppingDraftRepository.record(REUSED_PATH, null, null, null)
+        }
+    }
+
+    @Test
+    fun reuseEntry_whenDraftAlreadyHasSubject_doesNotRecordAgain() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 이 알맹이가 적힌 초안 — 프로세스 사망 복원으로 돌아온 자리다
+        givenDraft(draft(subjectImagePath = REUSED_PATH, borderColorArgb = 0xFF00FF00.toInt()))
+
+        // When 화면이 다시 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 다시 적지 않는다 — record 는 테두리까지 통째로 덮어쓰므로 여기서 다시 적으면
+        // 사용자가 방금 두른 테두리가 사라진다
+        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        assertEquals(0xFF00FF00.toInt(), viewModel.state.value.borderColorArgb)
+    }
+
+    @Test
+    fun reuseEntry_disablesEditPhoto() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 최근 목록에서 고른 진입 — 원본도 재편집 마스크도 없다
+        givenDraft(draft(subjectImagePath = REUSED_PATH))
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then "사진 편집"이 잠긴다 — 지울 원본도 되살릴 마스크도 없다
+        assertFalse(viewModel.state.value.isEditPhotoEnabled)
     }
 }
