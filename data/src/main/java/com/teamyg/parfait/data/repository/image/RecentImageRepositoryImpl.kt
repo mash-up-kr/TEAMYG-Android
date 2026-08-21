@@ -30,8 +30,8 @@ constructor(
     }
 
     /**
-     * mapNotNull이 경로를 못 만든 항목을 뺀다 — 그 항목은 만료 정리의 시야에서도 사라져 저장소에
-     * 영영 남을 수 있다. 저장값이 항상 FileProvider content uri라 발생 조건이 거의 없어 감수한다.
+     * 빠진 항목은 만료 정리의 시야에서도 사라져 저장소에 영영 남을 수 있다. 저장값이 항상
+     * FileProvider content uri라 발생 조건이 거의 없어 감수한다.
      */
     override val recentCacheImages: Flow<List<RecentImage>> = recentImageLocalDataSource.values
         .map { entities ->
@@ -69,16 +69,7 @@ constructor(
     }
 
     override suspend fun removeCacheFileName(values: List<String>) {
-        if (values.isEmpty()) {
-            return
-        }
-
-        recentImageLocalDataSource.edit { prefs ->
-            val current: List<RecentImageEntity> = recentImageLocalDataSource.decodeValue(prefs.get())
-            val updated: List<RecentImageEntity> = current.filterNot { it.uri in values }
-
-            prefs.set(recentImageLocalDataSource.encodeValue(updated))
-        }
+        recentImageLocalDataSource.remove(values)
     }
 
     override suspend fun storeRecentImageInInternalStorage(

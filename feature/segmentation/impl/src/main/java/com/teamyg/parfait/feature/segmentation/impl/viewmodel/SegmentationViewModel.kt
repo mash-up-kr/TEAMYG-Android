@@ -9,6 +9,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
@@ -62,7 +63,7 @@ class SegmentationViewModel
             }
 
             // 디코드를 통과한 뒤에 기록한다 — 열리지 않는 이미지를 남기면 최근 목록의 자리만 차지한다
-            runSuspendCatching { addRecentImageUseCase(sourceImageUri) }
+            runSuspendCatching { addRecentImageUseCase(source = sourceImageUri, kind = RecentImageKind.SOURCE) }
 
             val originBitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
             updateState { copy(originBitmap = originBitmap) }

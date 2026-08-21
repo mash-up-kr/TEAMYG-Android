@@ -16,7 +16,7 @@ constructor(
     private val recentImageRepository: RecentImageRepository,
 ) {
     init {
-        useCaseLogger.i { "AddRecentImageUseCase::init" }
+        useCaseLogger.i { "GetRecentCacheImagesUseCase::init" }
     }
 
     operator fun invoke(): Flow<List<RecentImage>> = recentImageRepository.recentCacheImages

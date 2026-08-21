@@ -97,7 +97,7 @@ internal fun CustomGalleryPickerRoute(
                         NavKeySegmentationConfirm(
                             sourceImageUri = null,
                             subjectImagePath = null,
-                            trimmedSubjectImagePath = effect.cutoutFilePath,
+                            trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
                         ),
                     )
                 }
@@ -128,10 +128,11 @@ internal fun CustomGalleryPickerRoute(
             onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
             onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
             onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
-            onClickImage = { uri, kind ->
-                viewModel.processIntent(
-                    CustomGalleryPickerIntent.OnClickImage(uri = uri, kind = kind),
-                )
+            onClickImage = { uri ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
+            },
+            onClickCutoutImage = { recentImage ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
             },
             onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
             modifier = modifier.padding(innerPadding),

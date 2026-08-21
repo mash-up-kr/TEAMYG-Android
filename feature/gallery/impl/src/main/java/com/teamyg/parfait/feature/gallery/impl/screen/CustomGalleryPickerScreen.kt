@@ -37,7 +37,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
-import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
@@ -46,7 +45,8 @@ internal fun CustomGalleryPickerScreen(
     onClickGrantPermission: () -> Unit,
     onClickOpenSettings: () -> Unit,
     onClickManageMedia: () -> Unit,
-    onClickImage: (String, RecentImageKind) -> Unit,
+    onClickImage: (String) -> Unit,
+    onClickCutoutImage: (RecentImage) -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -59,6 +59,7 @@ internal fun CustomGalleryPickerScreen(
             recentImages = state.recentImages,
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
+            onClickCutoutImage = onClickCutoutImage,
             onClickCancel = onClickCancel,
             modifier = modifier,
         )
@@ -81,7 +82,8 @@ private fun GalleryContent(
     groups: List<GalleryImageGroup>,
     recentImages: List<RecentImage>,
     onClickManageMedia: () -> Unit,
-    onClickImage: (String, RecentImageKind) -> Unit,
+    onClickImage: (String) -> Unit,
+    onClickCutoutImage: (RecentImage) -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -138,6 +140,7 @@ private fun GalleryContent(
                         groups = groups,
                         recentImages = recentImages,
                         onClickImage = onClickImage,
+                        onClickCutoutImage = onClickCutoutImage,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -175,7 +178,8 @@ private fun PreviewCustomGalleryPickerScreen(
         onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickManageMedia = {},
-        onClickImage = { _, _ -> },
+        onClickImage = {},
+        onClickCutoutImage = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
     )

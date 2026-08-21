@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationResult
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
@@ -152,7 +153,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 최근 목록에 이 흐름이 쓴 원본을 남긴다
-        coVerify(exactly = 1) { addRecentImage(SOURCE_URI) }
+        coVerify(exactly = 1) { addRecentImage(SOURCE_URI, RecentImageKind.SOURCE) }
     }
 
     @Test
@@ -184,7 +185,7 @@ class SegmentationViewModelTest {
     @Test
     fun init_recentImageRecordIsCancelled_stopsBeforeSegmenting() = runTest {
         // Given 화면을 벗어나 최근 이미지 기록이 취소된 상황
-        coEvery { addRecentImage(SOURCE_URI) } throws CancellationException("scope gone")
+        coEvery { addRecentImage(SOURCE_URI, RecentImageKind.SOURCE) } throws CancellationException("scope gone")
 
         // When 화면이 열린다
         viewModel()
@@ -197,7 +198,7 @@ class SegmentationViewModelTest {
     @Test
     fun init_recentImageRecordThrows_stillSegments() = runTest {
         // Given 최근 이미지 기록이 실패하는 상황
-        coEvery { addRecentImage(SOURCE_URI) } throws IllegalStateException("cannot copy")
+        coEvery { addRecentImage(SOURCE_URI, RecentImageKind.SOURCE) } throws IllegalStateException("cannot copy")
 
         // When 화면이 열린다
         val viewModel = viewModel()

@@ -40,7 +40,7 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
     ) : CustomGalleryPickerEffect()
 
     data class NavigateToSegmentationConfirm(
-        val cutoutFilePath: String,
+        val trimmedSubjectImagePath: String,
     ) : CustomGalleryPickerEffect()
 
     data object NavigateToBack : CustomGalleryPickerEffect()
@@ -59,7 +59,10 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 
     data class OnClickImage(
         val uri: String,
-        val kind: RecentImageKind,
+    ) : CustomGalleryPickerIntent()
+
+    data class OnClickCutoutImage(
+        val recentImage: RecentImage,
     ) : CustomGalleryPickerIntent()
 
     data object OnCancel : CustomGalleryPickerIntent()
@@ -89,6 +92,7 @@ class CustomGalleryPickerViewModel
             is CustomGalleryPickerIntent.OnRequestOpenSettings -> handleOnRequestOpenSettings()
             is CustomGalleryPickerIntent.OnRequestManageMedia -> handleOnRequestManageMedia()
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
+            is CustomGalleryPickerIntent.OnClickCutoutImage -> handleOnClickCutoutImage(intent)
             is CustomGalleryPickerIntent.OnCancel -> handleOnCancel()
         }
     }
@@ -138,19 +142,14 @@ class CustomGalleryPickerViewModel
     }
 
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
-        when (intent.kind) {
-            RecentImageKind.SOURCE -> postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
+        postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
+    }
 
-            // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션을 건너뛴다
-            RecentImageKind.CUTOUT -> {
-                val filePath = state.value.recentImages
-                    .firstOrNull { it.uri == intent.uri }
-                    ?.filePath
-                    ?: return
-
-                postSideEffect(CustomGalleryPickerEffect.NavigateToSegmentationConfirm(filePath))
-            }
-        }
+    // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션을 건너뛴다
+    private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
+        postSideEffect(
+            CustomGalleryPickerEffect.NavigateToSegmentationConfirm(intent.recentImage.filePath),
+        )
     }
 
     private fun handleOnCancel() {

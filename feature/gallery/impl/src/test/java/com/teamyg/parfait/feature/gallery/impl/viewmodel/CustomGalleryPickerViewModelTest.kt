@@ -68,16 +68,14 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun onClickImage_withCutout_navigatesToSegmentationConfirmWithFilePath() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickCutoutImage_navigatesToSegmentationConfirmWithFilePath() = runTest(mainDispatcherRule.dispatcher) {
         // Given 토핑 만들기 진입
         val viewModel = createViewModel(returnResultOnly = false)
         advanceUntilIdle()
 
         // When 알맹이를 누른다
         viewModel.effect.test {
-            viewModel.processIntent(
-                CustomGalleryPickerIntent.OnClickImage(uri = cutout.uri, kind = RecentImageKind.CUTOUT),
-            )
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
 
             // Then 확인 화면으로 가고, 넘기는 것은 uri 가 아니라 절대경로다 — 초안 계약이 경로다
             assertEquals(
@@ -88,16 +86,14 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun onClickImage_withSource_navigatesToPictureConfirm() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickImage_navigatesToPictureConfirm() = runTest(mainDispatcherRule.dispatcher) {
         // Given 토핑 만들기 진입
         val viewModel = createViewModel(returnResultOnly = false)
         advanceUntilIdle()
 
         // When 원본 사진을 누른다
         viewModel.effect.test {
-            viewModel.processIntent(
-                CustomGalleryPickerIntent.OnClickImage(uri = source.uri, kind = RecentImageKind.SOURCE),
-            )
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = source.uri))
 
             // Then 지금까지의 경로 그대로다
             assertEquals(CustomGalleryPickerEffect.NavigateToConfirm(source.uri), awaitItem())

@@ -74,7 +74,10 @@ constructor(
                 json
                     .decodeFromString<List<String>>(raw)
                     .map { uri -> RecentImageEntity(uri = uri, kind = RecentImageKindEntity.SOURCE) }
-            }.getOrDefault(emptyList())
+            }.getOrElse { throwable ->
+                sourceLogger.e(throwable) { "decode - both formats failed, dropping recent image list" }
+                emptyList()
+            }
     }
 
     companion object {

@@ -35,7 +35,8 @@ import kotlinx.datetime.format
 internal fun GalleryImageGridComponent(
     groups: List<GalleryImageGroup>,
     recentImages: List<RecentImage>,
-    onClickImage: (String, RecentImageKind) -> Unit,
+    onClickImage: (String) -> Unit,
+    onClickCutoutImage: (RecentImage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -64,7 +65,12 @@ internal fun GalleryImageGridComponent(
                         RecentImageKind.SOURCE -> ContentScale.Crop
                         RecentImageKind.CUTOUT -> ContentScale.Fit
                     },
-                    onClickImage = { onClickImage(image.uri, image.kind) },
+                    onClickImage = {
+                        when (image.kind) {
+                            RecentImageKind.SOURCE -> onClickImage(image.uri)
+                            RecentImageKind.CUTOUT -> onClickCutoutImage(image)
+                        }
+                    },
                 )
             }
         }
@@ -84,7 +90,7 @@ internal fun GalleryImageGridComponent(
                 items = group.images,
                 key = { it },
             ) { uri ->
-                GalleryImageCell(uri = uri, onClickImage = { onClickImage(uri, RecentImageKind.SOURCE) })
+                GalleryImageCell(uri = uri, onClickImage = { onClickImage(uri) })
             }
         }
     }
@@ -179,6 +185,7 @@ private fun PreviewGalleryImageGridComponent() = PreviewBox {
             RecentImage(uri = "test1", filePath = "test1", kind = RecentImageKind.SOURCE),
             RecentImage(uri = "test3", filePath = "test3", kind = RecentImageKind.SOURCE),
         ),
-        onClickImage = { _, _ -> },
+        onClickImage = {},
+        onClickCutoutImage = {},
     )
 }

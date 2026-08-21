@@ -59,12 +59,8 @@ class SegmentationConfirmViewModel
 
     init {
         launch(onError = { reportMissingDraft() }) {
-            // 최근 목록에서 되살린 알맹이는 세그멘테이션을 타지 않아 초안을 적어 준 데가 없다.
-            // 구독보다 먼저 적어야 첫 방출의 null 이 없는 실패를 알리지 않는다.
-            // "초안이 비어 있는가"가 아니라 "초안이 이미 이 알맹이를 가리키는가"로 판정한다 —
-            // 프로세스 사망 복원은 경로가 같아 여전히 건너뛰어 테두리가 살아남지만, 캔버스로
-            // 돌아가 다른 최근 알맹이를 새로 고른 경우는 경로가 달라 다시 적는다. 옛 알맹이의
-            // 테두리는 새 알맹이에 설 자리가 없다
+            // "초안이 비어 있는가"가 아니라 "이 알맹이를 가리키는가"로 판정한다
+            // (`specs/2026-08-20-c106-topping-place-api.md`)
             val isReuseEntry = cutoutImagePath == null
             if (isReuseEntry) {
                 val draftSubjectPath = toppingDraftRepository.draft.first()?.subjectImagePath

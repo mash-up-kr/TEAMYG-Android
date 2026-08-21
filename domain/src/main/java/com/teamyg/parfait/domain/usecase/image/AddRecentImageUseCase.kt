@@ -17,7 +17,7 @@ constructor(
 
     suspend operator fun invoke(
         source: String,
-        kind: RecentImageKind = RecentImageKind.SOURCE,
+        kind: RecentImageKind,
     ) {
         val stableUri: String? = runSuspendCatching {
             recentImageRepository.storeRecentImageInInternalStorage(
