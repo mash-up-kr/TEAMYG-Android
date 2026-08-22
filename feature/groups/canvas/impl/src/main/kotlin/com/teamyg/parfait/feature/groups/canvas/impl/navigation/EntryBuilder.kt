@@ -14,6 +14,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasBGEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasEditRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasMainRoute
 import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasImageSelectRoute
+import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
@@ -39,7 +40,9 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
             )
         }
     }
-    entry<NavKeyCanvasEdit> { navKey ->
+    // 이 화면과 이미지 선택 화면은 사진 하나를 공유 요소로 이어 붙인다. 화면 전체가 옆으로
+    // 밀리면 정작 봐야 할 사진의 이동이 묻히므로 여기서만 제자리 전환으로 바꾼다
+    entry<NavKeyCanvasEdit>(metadata = NavTransition.Fade.metadata) { navKey ->
         YGScaffold { innerPadding ->
             CanvasEditRoute(
                 imageUri = navKey.imageUri,
