@@ -4,4 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object NavKeyCanvasBGEdit : NavKey
+data class NavKeyCanvasBGEdit(
+    val groupId: Long,
+    val parfaitId: Long,
+) : NavKey

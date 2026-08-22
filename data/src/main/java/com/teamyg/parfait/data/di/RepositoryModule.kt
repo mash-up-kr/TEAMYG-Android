@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
+import com.teamyg.parfait.data.repository.parfaitimage.ParfaitImageRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
 import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
@@ -18,6 +19,7 @@ import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import com.teamyg.parfait.domain.repository.parfaitimage.ParfaitImageRepository
 import com.teamyg.parfait.domain.repository.policy.PolicyRepository
 import com.teamyg.parfait.domain.util.NonceGenerator
 import dagger.Binds
@@ -72,4 +74,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindParfaitRepository(parfaitRepositoryImpl: ParfaitRepositoryImpl): ParfaitRepository
+
+    @Binds
+    @Singleton
+    fun bindParfaitImageRepository(parfaitImageRepositoryImpl: ParfaitImageRepositoryImpl): ParfaitImageRepository
 }

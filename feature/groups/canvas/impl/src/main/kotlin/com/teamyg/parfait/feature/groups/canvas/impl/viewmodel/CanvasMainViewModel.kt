@@ -138,7 +138,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     class NavigateToCanvas : CanvasMainEffect
 
-    class NavigateToCanvasBGEdit : CanvasMainEffect
+    data class NavigateToCanvasBGEdit(val parfaitId: Long) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
@@ -600,9 +600,12 @@ constructor(
         )
     }
 
+    /** BGEdit 는 언제나 오늘 캔버스를 대상으로 하므로([CanvasMainUiState.todayCanvas] 참고), 아직 못 받았으면 진입하지 않는다 */
     private fun handleOnClickCanvasEdit() {
+        val parfaitId = state.value.todayCanvas?.parfaitId ?: return
+
         postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvasBGEdit(),
+            effect = CanvasMainEffect.NavigateToCanvasBGEdit(parfaitId = parfaitId.value),
         )
     }
 

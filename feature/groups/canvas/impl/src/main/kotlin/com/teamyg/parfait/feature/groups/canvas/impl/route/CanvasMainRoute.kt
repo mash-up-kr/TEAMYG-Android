@@ -65,7 +65,7 @@ internal fun CanvasMainRoute(
                 )
 
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(
-                    destination = NavKeyCanvasBGEdit,
+                    destination = NavKeyCanvasBGEdit(groupId = groupId, parfaitId = effect.parfaitId),
                 )
 
                 is CanvasMainEffect.NavigateToGroupSetting -> navigator.goTo(

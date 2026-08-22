@@ -33,9 +33,11 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         }
     }
 
-    entry<NavKeyCanvasBGEdit> {
+    entry<NavKeyCanvasBGEdit> { navKey ->
         YGScaffold { innerPadding ->
             CanvasBGEditRoute(
+                groupId = navKey.groupId,
+                parfaitId = navKey.parfaitId,
                 navigator = navigator,
                 modifier = Modifier
                     .fillMaxSize()

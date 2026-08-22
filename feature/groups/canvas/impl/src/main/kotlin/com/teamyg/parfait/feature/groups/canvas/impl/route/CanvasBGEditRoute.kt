@@ -24,9 +24,15 @@ import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 
 @Composable
 internal fun CanvasBGEditRoute(
+    groupId: Long,
+    parfaitId: Long,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: CanvasBGEditViewModel = hiltViewModel(),
+    viewModel: CanvasBGEditViewModel = hiltViewModel(
+        creationCallback = { factory: CanvasBGEditViewModel.Factory ->
+            factory.create(groupIdValue = groupId, parfaitIdValue = parfaitId)
+        },
+    ),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
