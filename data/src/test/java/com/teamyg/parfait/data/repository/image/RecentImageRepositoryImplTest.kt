@@ -147,8 +147,8 @@ class RecentImageRepositoryImplTest {
         // When 배치까지 마친 알맹이를 추가한다
         repository().addAndGetEvictedCacheFileName(uri = "content://recent/new.png", kind = RecentImageKind.CUTOUT)
 
-        // Then 저장되는 엔티티가 CUTOUT 을 유지한다 — SOURCE 로 강등되면 목록 셀이 Crop 으로 잘려
-        // 그려지고, 눌렀을 때 확인 화면 대신 PictureConfirm 으로 새 나간다
+        // Then 저장되는 엔티티가 CUTOUT 을 유지한다 — SOURCE 로 강등되면 갤러리가 이 항목을
+        // 원본 사진으로 오인해 엉뚱한 화면으로 보낸다
         assertEquals(RecentImageKindEntity.CUTOUT, encoded.captured.single().kind)
     }
 

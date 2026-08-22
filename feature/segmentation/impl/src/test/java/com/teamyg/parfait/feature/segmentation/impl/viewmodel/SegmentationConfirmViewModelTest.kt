@@ -208,9 +208,8 @@ class SegmentationConfirmViewModelTest {
     @Test
     fun reuseEntry_withEmptyDraft_recordsBeforeObserving() = runTest(mainDispatcherRule.dispatcher) {
         // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다.
-        // 끝나지 않는 흐름을 준다 — flowOf 는 완결되므로 collectDraft() 를 먼저 불러도 그 뒤
-        // record() 가 결국 실행돼 순서 위반이 테스트를 통과해 버린다. MutableStateFlow 는
-        // collect 가 끝나지 않아, record 가 구독보다 먼저 불리지 않으면 영영 불리지 않는다
+        // flowOf 는 곧장 완결돼 순서가 뒤집혀도 record() 가 결국 불려 테스트를 속인다 —
+        // 끝나지 않는 MutableStateFlow 라야 순서 위반을 잡는다
         every { toppingDraftRepository.draft } returns MutableStateFlow(draft(subjectImagePath = null))
         coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
 

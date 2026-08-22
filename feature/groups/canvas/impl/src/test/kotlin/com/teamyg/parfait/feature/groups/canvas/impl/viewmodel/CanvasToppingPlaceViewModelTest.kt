@@ -331,9 +331,8 @@ class CanvasToppingPlaceViewModelTest {
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // 저장이 도는 순간 이펙트 채널에 이미 뭔가 나가 있으면 순서가 뒤집힌 것이다.
-            // 여기서 던지면 handleOnClickConfirm 의 runSuspendCatching 이 삼켜 조용히
-            // 로그만 남기므로, 던지는 대신 바깥에서 확인할 플래그에 결과만 남긴다
+            // 여기서 그냥 throw 하면 handleOnClickConfirm 의 runSuspendCatching 이 삼켜
+            // 로그만 남으므로, 결과를 플래그에 남겨 바깥에서 확인한다
             var effectAlreadyAnnouncedWhileSaving = false
             coEvery { addRecentImageUseCase(any(), any()) } coAnswers {
                 effectAlreadyAnnouncedWhileSaving = try {
@@ -348,10 +347,7 @@ class CanvasToppingPlaceViewModelTest {
             viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
             advanceUntilIdle()
 
-            // Then 저장이 알림보다 먼저 끝나 있었어야 한다 — 저장을 postSideEffect 뒤로 옮기면
-            // (브리프가 막으려는 회귀) 이 단언이 깨진다. awaitItem() 보다 먼저 확인하는 이유:
-            // 순서가 뒤집히면 위 expectNoEvents() 가 그 이벤트를 이미 소비해 버려, 뒤에
-            // awaitItem() 을 먼저 부르면 받을 게 없어 타임아웃으로 죽어 원인이 흐려진다
+            // Then 저장이 알림보다 먼저 끝나 있었어야 한다
             assertFalse(effectAlreadyAnnouncedWhileSaving)
             assertEquals(CanvasToppingPlaceEffect.PlaceSucceeded, awaitItem())
         }
