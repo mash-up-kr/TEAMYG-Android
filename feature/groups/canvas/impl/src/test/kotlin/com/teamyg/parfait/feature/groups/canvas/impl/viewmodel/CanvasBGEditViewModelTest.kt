@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.compose.ui.geometry.Offset
+import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -18,10 +20,12 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -36,6 +40,7 @@ import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -47,6 +52,7 @@ class CanvasBGEditViewModelTest {
     private val getGroupDetail: GetGroupDetailUseCase = mockk()
     private val refreshGroupDetail: RefreshGroupDetailUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
+    private val updateTopping: UpdateToppingUseCase = mockk()
 
     @Before
     fun stubTheHappyPath() {
@@ -62,6 +68,7 @@ class CanvasBGEditViewModelTest {
         getGroupDetailUseCase = getGroupDetail,
         refreshGroupDetailUseCase = refreshGroupDetail,
         deleteToppingUseCase = deleteTopping,
+        updateToppingUseCase = updateTopping,
     )
 
     /** 토핑 로딩(그룹 상세 + 캔버스 상세)이 끝날 때까지 기다린 상태로 시작한다 */
@@ -135,6 +142,80 @@ class CanvasBGEditViewModelTest {
 
         // Then API 를 부르지 않는다
         coVerify(exactly = 0) { deleteTopping(any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickConfirm_toppingMoved_updatesOnlyThatTopping() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮긴다
+        val viewModel = loadedViewModel()
+        val topping = viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(Offset(x = 0.1f, y = -0.05f)))
+        val moved = viewModel.state.value.toppings
+            .first { it.parfaitImageId == topping.parfaitImageId }
+
+        coEvery {
+            updateTopping(
+                groupId = GroupId(GROUP_ID),
+                parfaitId = ParfaitId(PARFAIT_ID),
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                positionX = moved.positionX.toDouble(),
+                positionY = moved.positionY.toDouble(),
+                scale = moved.scale.toDouble(),
+                rotation = moved.rotationDegrees.toDouble(),
+            )
+        } returns Result.success(mockk<UpdatedToppingVO>())
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 옮긴 토핑만 저장 요청이 나가고, 안 건드린 토핑은 나가지 않는다
+        coVerify(exactly = 1) {
+            updateTopping(
+                groupId = GroupId(GROUP_ID),
+                parfaitId = ParfaitId(PARFAIT_ID),
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                positionX = moved.positionX.toDouble(),
+                positionY = moved.positionY.toDouble(),
+                scale = moved.scale.toDouble(),
+                rotation = moved.rotationDegrees.toDouble(),
+            )
+        }
+        coVerify(exactly = 0) {
+            updateTopping(any(), any(), ParfaitImageId(OTHER_PARFAIT_IMAGE_ID), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun onClickConfirm_noToppingChanges_doesNotCallUpdate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아무 토핑도 건드리지 않는다
+        val viewModel = loadedViewModel()
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 저장할 게 없으니 API 를 부르지 않는다
+        coVerify(exactly = 0) { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickConfirm_updateFails_stillConfirmsBackground() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮겼는데 저장은 실패한다
+        val viewModel = loadedViewModel()
+        viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(Offset(x = 0.1f, y = 0f)))
+        coEvery {
+            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns Result.failure(RuntimeException("실패"))
+
+        // When 확인 버튼을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+
+            // Then 크래시 없이 배경 확인 이펙트는 그대로 나간다 — 화면은 닫힌다
+            assertIs<CanvasBGEditEffect.ConfirmBackground>(awaitItem())
+        }
     }
 
     private companion object {

@@ -19,6 +19,7 @@ import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
@@ -176,11 +177,18 @@ constructor(
     private val getGroupDetailUseCase: GetGroupDetailUseCase,
     private val refreshGroupDetailUseCase: RefreshGroupDetailUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
+    private val updateToppingUseCase: UpdateToppingUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
     private val groupId = GroupId(groupIdValue)
     private val parfaitId = ParfaitId(parfaitIdValue)
+
+    /**
+     * 서버에서 막 받아온 그대로의 스냅샷. 확인 버튼을 눌렀을 때 [CanvasBGEditUiState.toppings]와
+     * 대조해 실제로 바뀐 토핑만 골라 PATCH 하는 데 쓴다 — 화면 렌더링에는 쓰지 않는다.
+     */
+    private var confirmedToppings: List<CanvasToppingItem> = emptyList()
 
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
@@ -196,14 +204,12 @@ constructor(
                     val myGroupMemberId = canvas.members
                         .firstOrNull { it.nickname == myNickname }
                         ?.groupMemberId
+                    val toppings = canvas.toppings
+                        .sortedBy { it.transform.positionZ }
+                        .map { it.toCanvasToppingItem(isMine = it.placedBy.groupMemberId == myGroupMemberId) }
 
-                    updateState {
-                        copy(
-                            toppings = canvas.toppings
-                                .sortedBy { it.transform.positionZ }
-                                .map { it.toCanvasToppingItem(isMine = it.placedBy.groupMemberId == myGroupMemberId) },
-                        )
-                    }
+                    confirmedToppings = toppings
+                    updateState { copy(toppings = toppings) }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "토핑 목록을 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
                 }
@@ -393,14 +399,45 @@ constructor(
     }
 
     private fun handleOnClickConfirm() {
-        val imageUri = state.value.selectedImageUri
-        val background = if (imageUri != null) {
-            YGCanvasBackground.Image(url = imageUri)
-        } else {
-            YGCanvasBackground.Solid(state.value.selectedColor)
-        }
+        launch(key = CONFIRM_KEY) {
+            state.value.toppings.forEach { topping -> updateToppingIfChanged(topping) }
 
-        postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(background))
+            val imageUri = state.value.selectedImageUri
+            val background = if (imageUri != null) {
+                YGCanvasBackground.Image(url = imageUri)
+            } else {
+                YGCanvasBackground.Solid(state.value.selectedColor)
+            }
+
+            postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(background))
+        }
+    }
+
+    /**
+     * [confirmedToppings]과 비교해 실제로 바뀐 토핑만 PATCH 한다. 일부가 403/404 등으로
+     * 실패해도 나머지 토핑·배경 확인은 그대로 진행한다 — 실패 재시도 UI는 범위 밖이라
+     * 로그만 남긴다.
+     */
+    private suspend fun updateToppingIfChanged(topping: CanvasToppingItem) {
+        val original = confirmedToppings.find { it.parfaitImageId == topping.parfaitImageId }
+        val changed = original == null ||
+            topping.positionX != original.positionX ||
+            topping.positionY != original.positionY ||
+            topping.scale != original.scale ||
+            topping.rotationDegrees != original.rotationDegrees
+        if (!changed) return
+
+        updateToppingUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+            positionX = topping.positionX.toDouble(),
+            positionY = topping.positionY.toDouble(),
+            scale = topping.scale.toDouble(),
+            rotation = topping.rotationDegrees.toDouble(),
+        ).onFailure { throwable ->
+            viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
+        }
     }
 
     @AssistedFactory
@@ -414,5 +451,6 @@ constructor(
     private companion object {
         const val LOAD_TOPPINGS_KEY = "loadToppings"
         const val DELETE_TOPPING_KEY = "deleteTopping"
+        const val CONFIRM_KEY = "confirm"
     }
 }
