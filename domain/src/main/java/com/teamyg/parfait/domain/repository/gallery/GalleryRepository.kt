@@ -1,5 +1,6 @@
 package com.teamyg.parfait.domain.repository.gallery
 
+import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import kotlinx.datetime.LocalDate
 
 interface GalleryRepository {
@@ -14,4 +15,10 @@ interface GalleryRepository {
      * e.g. 6일 03:00 ~ 7일 02:59
      */
     suspend fun loadFilterYGGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>>
+
+    /** [bitmap] 을 기기 갤러리에 새 이미지로 저장한다. */
+    suspend fun saveImageToGallery(
+        bitmap: BitmapWrapper,
+        displayName: String,
+    ): Result<Unit>
 }

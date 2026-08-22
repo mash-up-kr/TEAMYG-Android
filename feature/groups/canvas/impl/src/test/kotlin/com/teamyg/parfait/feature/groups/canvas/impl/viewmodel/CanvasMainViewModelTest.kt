@@ -1,7 +1,8 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
-import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
+import android.graphics.Bitmap
 import app.cash.turbine.test
+import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -23,6 +24,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
@@ -64,6 +66,8 @@ class CanvasMainViewModelTest {
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
+    private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
+
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxUnitFun = true)
 
     private val today = parfaitToday()
@@ -109,6 +113,7 @@ class CanvasMainViewModelTest {
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
+        saveCanvasToGalleryUseCase = saveCanvasToGallery,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -286,6 +291,20 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun onClickSaveToGallery_requestsCanvasCapture() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태
+        val viewModel = enteredViewModel()
+
+        // When 저장 버튼을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+
+            // Then 캡처 자체는 화면만 할 수 있어 요청만 보낸다
+            assertEquals(CanvasMainEffect.RequestCanvasCapture, awaitItem())
+        }
+    }
+
+    @Test
     fun enter_todayCanvasFailsWithNothingOnScreen_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 한 번도 못 받은 화면
         coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
@@ -299,6 +318,24 @@ class CanvasMainViewModelTest {
             // Then 빈 캔버스와 조회 실패가 구분되지 않으므로 따로 알린다. 알리지 않으면
             // 토핑 추가 버튼이 왜 안 눌리는지까지 보이지 않는다
             assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
+        }
+    }
+
+    @Test
+    fun saveCapturedCanvas_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태(오늘을 보고 있다)이고 저장이 성공한다
+        val viewModel = enteredViewModel()
+        coEvery { saveCanvasToGallery(any(), any()) } returns Result.success(Unit)
+
+        // When 화면이 캡처한 비트맵을 돌려준다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(mockk<Bitmap>()))
+
+            // Then 지금 보고 있는 날짜와 함께 성공을 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today),
+                awaitItem(),
+            )
         }
     }
 
@@ -488,6 +525,24 @@ class CanvasMainViewModelTest {
                     groupId = GroupId(GROUP_ID),
                     parfaitId = ParfaitId(TODAY_PARFAIT_ID),
                 ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun saveCapturedCanvas_useCaseFails_showsFailure() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태이고 저장이 실패한다
+        val viewModel = enteredViewModel()
+        coEvery { saveCanvasToGallery(any(), any()) } returns Result.failure(RuntimeException("저장 실패"))
+
+        // When 화면이 캡처한 비트맵을 돌려준다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(mockk<Bitmap>()))
+
+            // Then 실패를 알린다 — 크래시 대신 토스트로 이어진다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
                 awaitItem(),
             )
         }

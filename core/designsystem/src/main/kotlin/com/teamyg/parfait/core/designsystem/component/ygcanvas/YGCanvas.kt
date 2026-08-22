@@ -21,7 +21,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +68,13 @@ fun YGCanvas(
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
     emptyMessage: String = "",
     calendarContent: @Composable () -> Unit = {},
+    /**
+     * 넘기면 배경+토핑(테두리·모서리 컷 모양, 빈 캔버스 문구, 날짜 버튼 같은 프레임 UI는 제외)을
+     * 그릴 때마다 이 레이어에도 함께 기록해, 호출부가 나중에 [GraphicsLayer.toImageBitmap]으로
+     * 캡처할 수 있게 한다.
+     */
+    captureGraphicsLayer: GraphicsLayer? = null,
+    /** 캔버스 프레임의 진짜 상단 테두리 선에 위쪽이 맞춰지는 오버레이 자리(토스트·얼럿 등)다 */
     overlayContent: @Composable BoxScope.() -> Unit = {},
     content: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -93,6 +103,7 @@ fun YGCanvas(
                     isEmpty = isEmpty,
                     emptyMessage = emptyMessage,
                     content = content,
+                    captureGraphicsLayer = captureGraphicsLayer,
                     dateSelect = {
                         if (isCalendarVisible.not()) {
                             YGCanvasDateSelectButton(
@@ -152,6 +163,8 @@ fun YGCanvas(
             }
         }
 
+        // metrics.verticalGap 은 캔버스 프레임(테두리 포함)의 실제 상단 위치라, 여기서 그대로
+        // 써야 오버레이 위쪽이 캔버스 상단 테두리 선에 정확히 걸린다
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -215,7 +228,20 @@ private fun CanvasArea(
     emptyMessage: String,
     dateSelect: @Composable () -> Unit,
     content: @Composable BoxScope.() -> Unit,
+    captureGraphicsLayer: GraphicsLayer? = null,
 ) {
+    // 캡처 대상은 배경+토핑뿐이다 — 테두리·모서리 컷 모양, 빈 캔버스 안내 문구, 날짜 버튼은
+    // 프레임(UI 크롬)이라 갤러리에 저장되는 이미지에는 안 들어가야 한다. 그래서 그 셋을 그리는
+    // 바깥 Box가 아니라, 배경+토핑만 담는 안쪽 Box에 캡처 레이어를 건다.
+    val captureModifier = if (captureGraphicsLayer != null) {
+        Modifier.drawWithContent {
+            captureGraphicsLayer.record { this@drawWithContent.drawContent() }
+            drawLayer(captureGraphicsLayer)
+        }
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -227,22 +253,24 @@ private fun CanvasArea(
                 shape = shape,
             ),
     ) {
-        when (background) {
-            is YGCanvasBackground.Solid -> Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(color = background.color),
-            )
+        Box(modifier = captureModifier.matchParentSize()) {
+            when (background) {
+                is YGCanvasBackground.Solid -> Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(color = background.color),
+                )
 
-            is YGCanvasBackground.Image -> AsyncImage(
-                model = background.url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize(),
-            )
+                is YGCanvasBackground.Image -> AsyncImage(
+                    model = background.url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+
+            content()
         }
-
-        content()
 
         if (isEmpty) {
             Text(
