@@ -135,9 +135,47 @@ class ToppingRepositoryImplTest {
         assertIs<AppError.Network>(result.exceptionOrNull())
     }
 
+    @Test
+    fun delete_dataSourceSucceeds_returnsUnit() = runTest {
+        // Given 서버가 성공을 준다
+        coEvery {
+            parfaitImageRemoteDataSource.deleteTopping(GROUP_ID, PARFAIT_ID, PARFAIT_IMAGE_ID)
+        } returns Result.success(Unit)
+
+        // When 토핑을 지운다
+        val result = repository.delete(groupId = GROUP_ID, parfaitId = PARFAIT_ID, parfaitImageId = PARFAIT_IMAGE_ID)
+
+        // Then 값을 가공 없이 그대로 전달한다
+        assertEquals(Unit, result.getOrThrow())
+    }
+
+    @Test
+    fun delete_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
+        // Given 본인이 배치한 토핑이 아니다
+        coEvery {
+            parfaitImageRemoteDataSource.deleteTopping(GROUP_ID, PARFAIT_ID, PARFAIT_IMAGE_ID)
+        } returns Result.failure(
+            ApiException.Business(
+                code = "PARFAIT_IMAGE_NOT_OWNED",
+                serverMessage = "본인이 배치한 토핑이 아닙니다",
+                statusCode = 403,
+                errorDetail = null,
+            ),
+        )
+
+        // When 토핑을 지운다
+        val result = repository.delete(groupId = GROUP_ID, parfaitId = PARFAIT_ID, parfaitImageId = PARFAIT_IMAGE_ID)
+
+        // Then 코드와 상태 코드가 함께 살아 있다
+        val error = assertIs<AppError.Server>(result.exceptionOrNull())
+        assertEquals("PARFAIT_IMAGE_NOT_OWNED", error.code)
+        assertEquals(403, error.statusCode)
+    }
+
     private companion object {
         val GROUP_ID = GroupId(1L)
         val PARFAIT_ID = ParfaitId(2L)
         val IMAGE_ID = ImageId(3L)
+        val PARFAIT_IMAGE_ID = ParfaitImageId(42L)
     }
 }

@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteData
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -32,4 +33,12 @@ class ToppingRepositoryImpl @Inject constructor(
             transform = transform,
             border = border,
         ).mapErrorToAppError()
+
+    override suspend fun delete(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+    ): Result<Unit> = parfaitImageRemoteDataSource
+        .deleteTopping(groupId = groupId, parfaitId = parfaitId, parfaitImageId = parfaitImageId)
+        .mapErrorToAppError()
 }

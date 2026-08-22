@@ -22,12 +22,14 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
@@ -69,7 +71,6 @@ data class CanvasToppingItem(
 )
 
 private const val TOPPING_MIN_SCALE = 0.5f
-private const val TOPPING_MAX_SCALE = 2.5f
 
 /** 세로로 이 픽셀만큼 드래그해야 배율이 1.0만큼 바뀐다 */
 private const val TOPPING_DRAG_PX_PER_SCALE = 300f
@@ -213,6 +214,7 @@ constructor(
     private val getMyAccountFlowUseCase: GetMyAccountFlowUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
+    private val deleteToppingUseCase: DeleteToppingUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
@@ -351,16 +353,23 @@ constructor(
         updateState { copy(selectedToppingId = null) }
     }
 
-    /** TODO(#271 대기): 지금은 화면에서만 사라진다 — 토핑 삭제 API 연동은 따로다 */
     private fun handleOnDeleteToppingDialogConfirm() {
         val selectedId = state.value.selectedToppingId ?: return
 
-        updateState {
-            copy(
-                toppings = toppings.filterNot { it.parfaitImageId == selectedId },
-                selectedToppingId = null,
-                showDeleteToppingDialog = false,
-            )
+        updateState { copy(showDeleteToppingDialog = false) }
+
+        launch(key = DELETE_TOPPING_KEY) {
+            deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(selectedId))
+                .onSuccess {
+                    updateState {
+                        copy(
+                            toppings = toppings.filterNot { it.parfaitImageId == selectedId },
+                            selectedToppingId = null,
+                        )
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $selectedId" }
+                }
         }
     }
 
@@ -371,7 +380,7 @@ constructor(
         // 핸들이 우측 상단 모서리에 있으므로, 그 모서리의 바깥쪽 방향으로 끌면 커지고 안쪽이면 작아진다
         val (outX, outY) = resizeOutwardDirection(current.rotationDegrees)
         val deltaScale = (intent.delta.x * outX + intent.delta.y * outY) / TOPPING_DRAG_PX_PER_SCALE
-        val newScale = (current.scale + deltaScale).coerceIn(TOPPING_MIN_SCALE, TOPPING_MAX_SCALE)
+        val newScale = (current.scale + deltaScale).coerceAtLeast(TOPPING_MIN_SCALE)
 
         applyToppingTransform(selectedId) { topping ->
             topping.copy(scale = newScale)
@@ -544,5 +553,7 @@ constructor(
         const val LOAD_CANVAS_KEY = "loadCanvas"
 
         const val SAVE_BACKGROUND_KEY = "saveBackground"
+
+        const val DELETE_TOPPING_KEY = "deleteTopping"
     }
 }

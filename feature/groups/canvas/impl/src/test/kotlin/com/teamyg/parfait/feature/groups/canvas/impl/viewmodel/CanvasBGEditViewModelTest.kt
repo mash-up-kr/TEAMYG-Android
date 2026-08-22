@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import io.mockk.Called
 import io.mockk.coEvery
@@ -68,6 +69,7 @@ class CanvasBGEditViewModelTest {
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
+    private val deleteTopping: DeleteToppingUseCase = mockk()
 
     @Before
     fun stubTheHappyPath() {
@@ -101,7 +103,15 @@ class CanvasBGEditViewModelTest {
         getMyAccountFlowUseCase = getMyAccountFlow,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
+        deleteToppingUseCase = deleteTopping,
     ).also { advanceUntilIdle() }
+
+    /** 실제 스텁 중 내 것 하나를 선택해 둔다 — 삭제는 내 토핑에서만 열린다 */
+    private fun CanvasBGEditViewModel.selectMyTopping(): CanvasToppingItem {
+        val topping = state.value.toppings.first { it.isMine }
+        processIntent(CanvasBGEditIntent.OnClickTopping(topping))
+        return topping
+    }
 
     @Test
     fun init_placesToppingsByTheStoredRatiosAndMarksMine() = runTest(mainDispatcherRule.dispatcher) {
@@ -182,6 +192,7 @@ class CanvasBGEditViewModelTest {
             getMyAccountFlowUseCase = getMyAccountFlow,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
+            deleteToppingUseCase = deleteTopping,
         )
 
         // Then 조용히 빈 화면을 두지 않고 실패를 알린다
@@ -356,6 +367,58 @@ class CanvasBGEditViewModelTest {
 
         // Then 남의 토핑은 고를 수 없다
         assertNull(viewModel.state.value.selectedToppingId)
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_useCaseSucceeds_removesTopping() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 선택했고, 삭제 API 는 성공한다
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        coEvery {
+            deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(topping.parfaitImageId))
+        } returns Result.success(Unit)
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+        advanceUntilIdle()
+
+        // Then 목록에서 사라지고 선택이 풀린다
+        assertTrue(
+            viewModel.state.value.toppings
+                .none { it.parfaitImageId == topping.parfaitImageId },
+        )
+        assertNull(viewModel.state.value.selectedToppingId)
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_useCaseFails_keepsTopping() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 선택했고, 삭제 API 는 실패한다
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        coEvery { deleteTopping(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+        advanceUntilIdle()
+
+        // Then 목록은 그대로다 — 서버에 반영되지 않았으므로 화면에서도 지우지 않는다. 크래시도 안 난다
+        assertTrue(
+            viewModel.state.value.toppings
+                .any { it.parfaitImageId == topping.parfaitImageId },
+        )
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_noSelection_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 선택된 토핑이 없다
+        val viewModel = viewModel()
+
+        // When 그래도 삭제 확인 인텐트가 온다(방어적 상황)
+        viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+        advanceUntilIdle()
+
+        // Then API 를 부르지 않는다
+        coVerify(exactly = 0) { deleteTopping(any(), any(), any()) }
     }
 
     @Test
