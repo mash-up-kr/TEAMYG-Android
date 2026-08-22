@@ -21,7 +21,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.group.GetGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
-import com.teamyg.parfait.domain.usecase.parfaitimage.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

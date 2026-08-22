@@ -2,11 +2,7 @@
 <resources>
     <string name="segmentation_guide_banner">토핑으로 사용할 대상을 하나 선택해 주세요</string>
 
-    <string name="segmentation_loading_title">사진을 편집하고 있어요</string>
-    <string name="segmentation_loading_description">잠시만 기다려주세요…</string>
-
-    <string name="segmentation_error_title">사진 편집에 실패했어요</string>
-    <string name="segmentation_error_description">잠시 후 다시 시도해 주세요</string>
+    <string name="segmentation_error_message">사진 편집에 실패했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <string name="segmentation_confirm_edit_photo">사진 편집</string>
     <string name="segmentation_confirm_next">다음</string>

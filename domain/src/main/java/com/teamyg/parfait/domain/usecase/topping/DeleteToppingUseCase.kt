@@ -1,19 +1,19 @@
-package com.teamyg.parfait.domain.usecase.parfaitimage
+package com.teamyg.parfait.domain.usecase.topping
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
-import com.teamyg.parfait.domain.repository.parfaitimage.ParfaitImageRepository
+import com.teamyg.parfait.domain.repository.topping.ToppingRepository
 import javax.inject.Inject
 
 class DeleteToppingUseCase @Inject constructor(
-    private val parfaitImageRepository: ParfaitImageRepository,
+    private val toppingRepository: ToppingRepository,
 ) {
     suspend operator fun invoke(
         groupId: GroupId,
         parfaitId: ParfaitId,
         parfaitImageId: ParfaitImageId,
-    ): Result<Unit> = parfaitImageRepository.deleteTopping(
+    ): Result<Unit> = toppingRepository.delete(
         groupId = groupId,
         parfaitId = parfaitId,
         parfaitImageId = parfaitImageId,
