@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
@@ -26,11 +27,13 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import io.mockk.Called
 import io.mockk.coEvery
@@ -70,6 +73,7 @@ class CanvasBGEditViewModelTest {
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
+    private val updateTopping: UpdateToppingUseCase = mockk()
 
     @Before
     fun stubTheHappyPath() {
@@ -104,9 +108,10 @@ class CanvasBGEditViewModelTest {
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
+        updateToppingUseCase = updateTopping,
     ).also { advanceUntilIdle() }
 
-    /** 실제 스텁 중 내 것 하나를 선택해 둔다 — 삭제는 내 토핑에서만 열린다 */
+    /** 실제 스텁 중 내 것 하나를 선택해 둔다 — 삭제·편집은 내 토핑에서만 열린다 */
     private fun CanvasBGEditViewModel.selectMyTopping(): CanvasToppingItem {
         val topping = state.value.toppings.first { it.isMine }
         processIntent(CanvasBGEditIntent.OnClickTopping(topping))
@@ -193,6 +198,7 @@ class CanvasBGEditViewModelTest {
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,
+            updateToppingUseCase = updateTopping,
         )
 
         // Then 조용히 빈 화면을 두지 않고 실패를 알린다
@@ -338,6 +344,83 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
+    fun onClickConfirm_toppingMoved_updatesOnlyThatTopping() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮긴다. 배경은 안 건드려 기본 팔레트 색 그대로다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = -0.05f))
+        val moved = viewModel.state.value.toppings
+            .first { it.parfaitImageId == topping.parfaitImageId }
+
+        coEvery {
+            updateTopping(
+                groupId = GroupId(GROUP_ID),
+                parfaitId = ParfaitId(PARFAIT_ID),
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                positionX = moved.positionX.toDouble(),
+                positionY = moved.positionY.toDouble(),
+                scale = moved.scale.toDouble(),
+                rotation = moved.rotationDegrees.toDouble(),
+            )
+        } returns Result.success(mockk<UpdatedToppingVO>())
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 옮긴 토핑만 저장 요청이 나가고, 안 건드린 토핑은 나가지 않는다
+        coVerify(exactly = 1) {
+            updateTopping(
+                groupId = GroupId(GROUP_ID),
+                parfaitId = ParfaitId(PARFAIT_ID),
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                positionX = moved.positionX.toDouble(),
+                positionY = moved.positionY.toDouble(),
+                scale = moved.scale.toDouble(),
+                rotation = moved.rotationDegrees.toDouble(),
+            )
+        }
+        coVerify(exactly = 0) {
+            updateTopping(any(), any(), ParfaitImageId(OTHER_PARFAIT_IMAGE_ID), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun onClickConfirm_noToppingChanges_doesNotCallUpdate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아무 토핑도 건드리지 않는다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 저장할 게 없으니 API 를 부르지 않는다
+        coVerify(exactly = 0) { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickConfirm_toppingUpdateFails_stillConfirmsBackground() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮겼는데 저장은 실패한다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        coEvery {
+            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns Result.failure(RuntimeException("실패"))
+
+        // When 확인 버튼을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+
+            // Then 크래시 없이 배경 확인은 그대로 진행된다
+            assertIs<CanvasBGEditEffect.ConfirmBackground>(awaitItem())
+        }
+    }
+
+    @Test
     fun toppingMoveDrag_movesByTheRatioItReceives() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 고른 상태
         val viewModel = viewModel()
@@ -367,6 +450,23 @@ class CanvasBGEditViewModelTest {
 
         // Then 남의 토핑은 고를 수 없다
         assertNull(viewModel.state.value.selectedToppingId)
+    }
+
+    @Test
+    fun toppingResizeDrag_largeDrag_isNoLongerClampedToTheOldMax() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 고른 상태
+        val viewModel = viewModel()
+        val mine = viewModel.selectMyTopping()
+
+        // When 배율이 3.0 만큼 커지도록 큰 폭으로 리사이즈 핸들을 끈다(핸들은 우측 상단, 바깥쪽이 +)
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingResizeDrag(Offset(x = 900f, y = -900f)),
+        )
+
+        // Then 예전 상한(2.5)에 걸리지 않고 그대로 커진다
+        val resized = viewModel.state.value.toppings
+            .first { it.parfaitImageId == mine.parfaitImageId }
+        assertTrue(resized.scale > 2.5f)
     }
 
     @Test
@@ -470,7 +570,7 @@ class CanvasBGEditViewModelTest {
         background: CanvasBackground? = null,
         toppings: List<CanvasToppingVO> = listOf(
             topping(parfaitImageId = 1L, groupMemberId = MY_GROUP_MEMBER_ID, positionZ = 1),
-            topping(parfaitImageId = 2L, groupMemberId = OTHER_GROUP_MEMBER_ID, positionZ = 2),
+            topping(parfaitImageId = OTHER_PARFAIT_IMAGE_ID, groupMemberId = OTHER_GROUP_MEMBER_ID, positionZ = 2),
         ),
     ) = CanvasVO(
         parfaitId = ParfaitId(PARFAIT_ID),
@@ -505,4 +605,8 @@ class CanvasBGEditViewModelTest {
         ),
         createdAt = LocalDateTime(2026, 8, 19, 9, 0),
     )
+
+    private companion object {
+        const val OTHER_PARFAIT_IMAGE_ID = 2L
+    }
 }

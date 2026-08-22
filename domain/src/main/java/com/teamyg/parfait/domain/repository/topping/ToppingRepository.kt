@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
 interface ToppingRepository {
     /**
@@ -34,4 +35,18 @@ interface ToppingRepository {
         parfaitId: ParfaitId,
         parfaitImageId: ParfaitImageId,
     ): Result<Unit>
+
+    /**
+     * 배치된 토핑의 위치·크기·각도를 부분 수정한다. 넘기지 않은 값은 서버가 유지한다.
+     */
+    suspend fun update(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+        positionX: Double? = null,
+        positionY: Double? = null,
+        positionZ: Int? = null,
+        scale: Double? = null,
+        rotation: Double? = null,
+    ): Result<UpdatedToppingVO>
 }

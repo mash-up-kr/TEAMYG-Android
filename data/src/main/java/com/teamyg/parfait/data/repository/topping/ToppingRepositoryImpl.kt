@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.repository.topping.ToppingRepository
 import javax.inject.Inject
 
@@ -41,4 +42,25 @@ class ToppingRepositoryImpl @Inject constructor(
     ): Result<Unit> = parfaitImageRemoteDataSource
         .deleteTopping(groupId = groupId, parfaitId = parfaitId, parfaitImageId = parfaitImageId)
         .mapErrorToAppError()
+
+    override suspend fun update(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+        positionX: Double?,
+        positionY: Double?,
+        positionZ: Int?,
+        scale: Double?,
+        rotation: Double?,
+    ): Result<UpdatedToppingVO> = parfaitImageRemoteDataSource
+        .updateTopping(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            parfaitImageId = parfaitImageId,
+            positionX = positionX,
+            positionY = positionY,
+            positionZ = positionZ,
+            scale = scale,
+            rotation = rotation,
+        ).mapErrorToAppError()
 }

@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
@@ -38,6 +39,8 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import java.io.File
 
@@ -215,6 +218,7 @@ constructor(
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
+    private val updateToppingUseCase: UpdateToppingUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
@@ -226,6 +230,12 @@ constructor(
      * 대상이 갈라지는 편이 더 나쁘다.
      */
     private var parfaitId = ParfaitId(parfaitIdValue)
+
+    /**
+     * 서버에서 막 받아온 그대로의 스냅샷. 확인 버튼을 눌렀을 때 [CanvasBGEditUiState.toppings]와
+     * 대조해 실제로 바뀐 토핑만 골라 PATCH 하는 데 쓴다 — 화면 렌더링에는 쓰지 않는다.
+     */
+    private var confirmedToppings: List<CanvasToppingItem> = emptyList()
 
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
@@ -252,7 +262,11 @@ constructor(
                         parfaitId = canvas.parfaitId
                     }
 
-                    updateState { withCanvas(canvas = canvas, myMemberId = myMemberId) }
+                    confirmedToppings = canvas.toppings
+                        .sortedBy { topping -> topping.transform.positionZ }
+                        .map { topping -> topping.toToppingItem(myMemberId) }
+
+                    updateState { withCanvas(canvas = canvas, toppings = confirmedToppings) }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
                     postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
@@ -266,11 +280,9 @@ constructor(
      */
     private fun CanvasBGEditUiState.withCanvas(
         canvas: CanvasVO,
-        myMemberId: MemberId?,
+        toppings: List<CanvasToppingItem>,
     ): CanvasBGEditUiState = copy(
-        toppings = canvas.toppings
-            .sortedBy { topping -> topping.transform.positionZ }
-            .map { topping -> topping.toToppingItem(myMemberId) },
+        toppings = toppings,
         selectedColor = (canvas.background as? CanvasBackground.Color)
             ?.value
             ?.toColorOrNull()
@@ -474,8 +486,50 @@ constructor(
     /**
      * 저장이 끝나야 화면을 넘긴다 — [CanvasBGEditEffect.ConfirmBackground] 를 먼저 쏘면 캔버스
      * 메인이 저장되지 않은 배경을 그린 채로 서 있게 되고, 다음 조회에서 슬그머니 되돌아간다.
+     *
+     * 토핑 저장을 배경 저장보다 먼저 완전히 기다리는 이유: 둘을 진짜 병렬로 얽으면 화면이
+     * 어느 한쪽만 실패했을 때를 갈라 다뤄야 해서 복잡해진다. 토핑 저장(들끼리는 병렬)을 먼저
+     * 끝내고, 그다음 기존 배경 저장 흐름을 그대로 태운다.
      */
     private fun handleOnClickConfirm() {
+        launch(key = CONFIRM_KEY) {
+            // 토핑마다 독립적인 네트워크 호출이라 순차로 기다리면 토핑 수만큼 확인 버튼이 느려진다
+            state.value.toppings
+                .map { topping -> async { updateToppingIfChanged(topping) } }
+                .awaitAll()
+
+            saveBackground()
+        }
+    }
+
+    /**
+     * [confirmedToppings]과 비교해 실제로 바뀐 토핑만 PATCH 한다. 일부가 403/404 등으로
+     * 실패해도 나머지 토핑·배경 확인은 그대로 진행한다 — 실패 재시도 UI는 범위 밖이라
+     * 로그만 남긴다.
+     */
+    private suspend fun updateToppingIfChanged(topping: CanvasToppingItem) {
+        val original = confirmedToppings.find { it.parfaitImageId == topping.parfaitImageId }
+        val changed = original == null ||
+            topping.positionX != original.positionX ||
+            topping.positionY != original.positionY ||
+            topping.scale != original.scale ||
+            topping.rotationDegrees != original.rotationDegrees
+        if (!changed) return
+
+        updateToppingUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+            positionX = topping.positionX.toDouble(),
+            positionY = topping.positionY.toDouble(),
+            scale = topping.scale.toDouble(),
+            rotation = topping.rotationDegrees.toDouble(),
+        ).onFailure { throwable ->
+            viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
+        }
+    }
+
+    private suspend fun saveBackground() {
         val current = state.value
         val imageUri = current.selectedImageUri
 
@@ -485,31 +539,29 @@ constructor(
             return
         }
 
-        launch(key = SAVE_BACKGROUND_KEY) {
-            val background = if (imageUri == null) {
-                CanvasBackgroundEdit.Color(current.selectedColor.toRgbHex())
-            } else {
-                CanvasBackgroundEdit.Image(
-                    imageId = uploadBackgroundImage(imageUri)
-                        .getOrElse { throwable -> return@launch failToSave(throwable) },
-                )
-            }
-
-            changeCanvasBackgroundUseCase(
-                groupId = groupId,
-                parfaitId = parfaitId,
-                background = background,
-            ).onSuccess { saved ->
-                postSideEffect(
-                    effect = CanvasBGEditEffect.ConfirmBackground(
-                        // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
-                        // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
-                        background = saved.toYGCanvasBackground()
-                            ?: fallbackBackground(imageUri = imageUri, color = current.selectedColor),
-                    ),
-                )
-            }.onFailure { throwable -> failToSave(throwable) }
+        val background = if (imageUri == null) {
+            CanvasBackgroundEdit.Color(current.selectedColor.toRgbHex())
+        } else {
+            CanvasBackgroundEdit.Image(
+                imageId = uploadBackgroundImage(imageUri)
+                    .getOrElse { throwable -> return failToSave(throwable) },
+            )
         }
+
+        changeCanvasBackgroundUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            background = background,
+        ).onSuccess { saved ->
+            postSideEffect(
+                effect = CanvasBGEditEffect.ConfirmBackground(
+                    // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
+                    // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
+                    background = saved.toYGCanvasBackground()
+                        ?: fallbackBackground(imageUri = imageUri, color = current.selectedColor),
+                ),
+            )
+        }.onFailure { throwable -> failToSave(throwable) }
     }
 
     private suspend fun uploadBackgroundImage(imageUri: String): Result<ImageId> = uploadImageUseCase(
@@ -552,7 +604,7 @@ constructor(
     private companion object {
         const val LOAD_CANVAS_KEY = "loadCanvas"
 
-        const val SAVE_BACKGROUND_KEY = "saveBackground"
+        const val CONFIRM_KEY = "confirm"
 
         const val DELETE_TOPPING_KEY = "deleteTopping"
     }
