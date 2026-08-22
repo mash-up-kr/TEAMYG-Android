@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -50,7 +49,6 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -99,7 +97,6 @@ internal fun ToppingEditScreen(
     onClickRedoArea: () -> Unit,
     onSelectBorderColor: (Color) -> Unit,
     onChangeBorderWidth: (Float) -> Unit,
-    onChangeOriginPxPerDp: (Float) -> Unit,
     onClickUndoBorder: () -> Unit,
     onClickRedoBorder: () -> Unit,
     onClickDone: () -> Unit,
@@ -117,7 +114,6 @@ internal fun ToppingEditScreen(
             onClickRedoArea = onClickRedoArea,
             onSelectBorderColor = onSelectBorderColor,
             onChangeBorderWidth = onChangeBorderWidth,
-            onChangeOriginPxPerDp = onChangeOriginPxPerDp,
             onClickUndoBorder = onClickUndoBorder,
             onClickRedoBorder = onClickRedoBorder,
             onClickDone = onClickDone,
@@ -142,7 +138,6 @@ private fun ToppingEditContent(
     onClickRedoArea: () -> Unit,
     onSelectBorderColor: (Color) -> Unit,
     onChangeBorderWidth: (Float) -> Unit,
-    onChangeOriginPxPerDp: (Float) -> Unit,
     onClickUndoBorder: () -> Unit,
     onClickRedoBorder: () -> Unit,
     onClickDone: () -> Unit,
@@ -151,9 +146,6 @@ private fun ToppingEditContent(
 ) {
     // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다. 화면 안에서만 쓰는 상태다
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
-
-    var editAreaSize by remember { mutableStateOf(IntSize.Zero) }
-    val density = LocalDensity.current.density
 
     Column(modifier = modifier) {
         val historyModifier = Modifier
@@ -183,22 +175,11 @@ private fun ToppingEditContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = YGTheme.layout.padding.padding7)
-                .weight(1f)
-                .onSizeChanged { size -> editAreaSize = size },
+                .weight(1f),
         ) {
             // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
             val originBitmap = state.originBitmap
             val segmentationBitmap = state.segmentationBitmap
-
-            // 테두리 굵기는 dp 로 들고 있다가 저장할 때 원본 좌표로 되돌려야 해서, 사진을 편집 영역에
-            // 맞춰 줄인 배율을 재는 즉시 올려보낸다. 탭을 열지 않아도 굵기를 환산할 수 있어야 한다
-            if (originBitmap != null && editAreaSize != IntSize.Zero) {
-                val scale = BitmapViewMapping
-                    .fitCenter(editAreaSize, originBitmap.width, originBitmap.height)
-                    .scale
-                val originPxPerDp = density / scale
-                LaunchedEffect(originPxPerDp) { onChangeOriginPxPerDp(originPxPerDp) }
-            }
 
             when {
                 originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
@@ -666,7 +647,6 @@ private fun PreviewToppingEditScreen(
         onClickRedoArea = {},
         onSelectBorderColor = {},
         onChangeBorderWidth = {},
-        onChangeOriginPxPerDp = {},
         onClickUndoBorder = {},
         onClickRedoBorder = {},
         onClickDone = {},

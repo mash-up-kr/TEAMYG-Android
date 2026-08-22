@@ -44,7 +44,12 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
-private const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
+/**
+ * Canvas-Area 종횡비. 캔버스를 그리는 화면과 그 위 좌표를 계산하는 화면이 **같은 값**을 써야
+ * 저장된 배치가 맞는 자리에 얹힌다 — 값이 갈리면 모든 토핑의 세로 위치가 조금씩 밀리고
+ * 컴파일은 깨지지 않는다.
+ */
+const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
 @Composable
 fun YGCanvas(

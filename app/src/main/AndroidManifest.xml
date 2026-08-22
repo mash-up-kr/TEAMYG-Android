@@ -14,10 +14,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TeamYg"
         android:usesCleartextTraffic="true">
+
+        <!--
+            Android 16(targetSdk 36)은 smallest width 600dp 이상 기기에서 screenOrientation을
+            무시한다. 이 opt-out이 그 예외를 되돌려 대화면에서도 세로 고정을 유지한다.
+            TODO: targetSdk 37부터 opt-out 자체가 제거돼 무력화된다. 그 전에 대화면 대응 방침을
+            정하고 이 속성을 지운다.
+        -->
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_ORIENTATION_AND_ASPECT_RATIO_OPT_OUT"
+            android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.TeamYg"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -29,7 +41,8 @@
 
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

@@ -1,6 +1,8 @@
 package com.teamyg.parfait.domain.usecase.parfait
 
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -48,6 +50,12 @@ class GetTodayParfaitUseCaseTest {
             groupId: GroupId,
             parfaitId: ParfaitId,
         ): Result<CanvasVO> = error("오늘 조회는 상세를 따로 부르지 않는다")
+
+        override suspend fun changeCanvasBackground(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+            background: CanvasBackgroundEdit,
+        ): Result<CanvasBackground?> = Result.failure(IllegalStateException("쓰이지 않는다"))
     }
 
     private fun fixedClock(iso: String): Clock = object : Clock {

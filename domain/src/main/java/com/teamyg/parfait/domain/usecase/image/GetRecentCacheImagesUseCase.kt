@@ -1,6 +1,7 @@
 package com.teamyg.parfait.domain.usecase.image
 
 import com.teamyg.parfait.domain.model.DayWindow
+import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import kotlinx.coroutines.flow.Flow
@@ -15,10 +16,10 @@ constructor(
     private val recentImageRepository: RecentImageRepository,
 ) {
     init {
-        useCaseLogger.i { "AddRecentImageUseCase::init" }
+        useCaseLogger.i { "GetRecentCacheImagesUseCase::init" }
     }
 
-    operator fun invoke(): Flow<List<String>> = recentImageRepository.recentCacheImages
+    operator fun invoke(): Flow<List<RecentImage>> = recentImageRepository.recentCacheImages
         .onStart { clearOutsideDayWindow() }
         .distinctUntilChanged()
 
@@ -28,18 +29,19 @@ constructor(
      */
     private suspend fun clearOutsideDayWindow() {
         val window: DayWindow = DayWindow.current()
-        val current: List<String> = recentImageRepository.recentCacheImages
+        val current: List<RecentImage> = recentImageRepository.recentCacheImages
             .first()
             .also { current ->
                 useCaseLogger.d { "clearOutsideDayWindow - current.size: ${current.size}" }
             }
 
         val outdated: List<String> = current
-            .filterNot { uri ->
-                val lastModified = recentImageRepository.getLastModifiedCacheFile(uri) ?: 0L
+            .filterNot { image ->
+                val lastModified = recentImageRepository.getLastModifiedCacheFile(image.uri) ?: 0L
 
                 lastModified in window
-            }.also { outdated ->
+            }.map(RecentImage::uri)
+            .also { outdated ->
                 useCaseLogger.d { "clearOutsideDayWindow - outdated.size: ${outdated.size}" }
             }
 
