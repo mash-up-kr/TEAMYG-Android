@@ -1,8 +1,14 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -15,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
@@ -46,6 +53,21 @@ internal fun CanvasMainRoute(
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
 
+    // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 캡처한 비트맵을 여기서
+    // 들고 있다가 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
+    var pendingGalleryBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        val bitmap = pendingGalleryBitmap
+        pendingGalleryBitmap = null
+        if (granted && bitmap != null) {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+        } else if (bitmap != null) {
+            toastPolicy.showError(gallerySaveFailureMessage)
+        }
+    }
+
     // 백스택 아래에 깔린 엔트리는 컴포지션에서 빠지므로 다시 앞에 설 때 한 번 더 돈다.
     // 매번 다시 묻는 이유는 CanvasMainIntent.Enter 에 있다
     LifecycleResumeEffect(viewModel) {
@@ -74,7 +96,12 @@ internal fun CanvasMainRoute(
 
                 is CanvasMainEffect.RequestCanvasCapture -> {
                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                    viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+                    if (GalleryWritePermissionManager.hasPermission(context)) {
+                        viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+                    } else {
+                        pendingGalleryBitmap = bitmap
+                        galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
+                    }
                 }
 
                 is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
