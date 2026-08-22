@@ -9,10 +9,9 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import androidx.core.graphics.createBitmap
 import com.teamyg.parfait.core.util.android.extension.toAndroidPath
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 
 /**
- * Segmentation 결과에 사용자의 획을 반영해 테두리를 두르기 전 알맹이를 만든다.
+ * Segmentation 결과에 사용자의 획을 반영해 알맹이를 만든다.
  *
  * 마스크를 알파 채널로 다루는 게 핵심이다.
  * 1. segmentation 결과를 그려 그 알파를 시작 마스크로 삼는다
@@ -20,8 +19,8 @@ import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
  * 3. 마지막에 원본을 SRC_IN 으로 얹으면 마스크가 남은 자리에만 원본 픽셀이 채워진다
  *
  * 3번 덕분에 지웠던 영역을 다시 ADD 로 칠하면 원본 픽셀이 그대로 복원된다.
- * 다만 3번이 알파만 물려받고 색은 원본에서 다시 채우므로, [segmentationBitmap] 에 테두리가 구워진
- * 이미지를 넘기면 그 색이 원본 픽셀로 덮인다. 마스크로는 테두리를 두르기 전 알맹이를 넘겨야 한다.
+ * 다만 3번이 알파만 물려받고 색은 원본에서 다시 채우므로, [segmentationBitmap] 에 색이 입혀진
+ * 이미지를 넘기면 그 색은 사라지고 원본 픽셀로 덮인다.
  *
  * 결과는 언제나 [originBitmap] 크기이며, [segmentationBitmap] 크기가 달라도 늘려서 맞춘다.
  */
@@ -49,33 +48,6 @@ internal fun buildCutoutBitmap(
     )
 
     return cutout
-}
-
-/**
- * 알맹이 실루엣에서 떨어진 거리를 재 두고, 겹마다 정해진 거리까지를 그 색으로 칠해 테두리를 만든다.
- * 화면 미리보기와 같은 방식이라 여기서 본 모습이 그대로 파일에 남는다.
- *
- * 알맹이는 원본 자리 그대로 두고 테두리만 바깥으로 번지므로,
- * 원본 밖으로 나간 테두리는 캔버스 경계에서 잘린다.
- *
- * 겹의 굵기는 dp 라 [originPxPerDp] 로 원본 좌표계 굵기를 얻는다. 미리보기가 화면에 그릴 때 쓰는
- * 배율을 되짚은 값이므로, 화면에서 본 굵기가 그대로 파일에 남는다.
- */
-internal fun Bitmap.withBorders(
-    borderLayers: List<ToppingBorderLayer>,
-    originPxPerDp: Float,
-): Bitmap {
-    if (borderLayers.isEmpty() || originPxPerDp <= 0f) return this
-
-    val bordered = toOutlineDistanceField().buildBorderBitmap(
-        targetWidth = width,
-        targetHeight = height,
-        bands = borderLayers.toBorderBands(originPxPerDp),
-    ) ?: return this
-
-    Canvas(bordered).drawBitmap(this, 0f, 0f, null)
-
-    return bordered
 }
 
 /**

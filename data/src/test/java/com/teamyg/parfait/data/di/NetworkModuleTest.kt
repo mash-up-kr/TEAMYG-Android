@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.network.AuthInterceptor
+import com.teamyg.parfait.data.network.SelectiveLoggingInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
 import io.mockk.mockk
@@ -8,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 /**
  * 자격증명을 붙이지 않는 클라이언트가 메인 클라이언트와 **무엇을 공유하지 않는지**를 못박는다.
@@ -68,5 +70,17 @@ class NetworkModuleTest {
         // 부모 디스패처를 그대로 물려받아 이 단언이 깨진다
         assertNotSame(mainClient.dispatcher, uploadClient.dispatcher)
         assertNotSame(unauthenticatedClient.dispatcher, uploadClient.dispatcher)
+    }
+
+    @Test
+    fun mainOkHttpClient_usesSelectiveLoggingInterceptor() {
+        // 이 인터셉터가 빠지면 @NoBodyLog 가 아무것도 못 가린다 — HttpLoggingInterceptor(BODY)로
+        // 되돌아가도 다른 스위트는 못 잡는다
+        assertTrue(mainClient.interceptors.any { it is SelectiveLoggingInterceptor })
+    }
+
+    @Test
+    fun unauthenticatedOkHttpClient_usesSelectiveLoggingInterceptor() {
+        assertTrue(unauthenticatedClient.interceptors.any { it is SelectiveLoggingInterceptor })
     }
 }

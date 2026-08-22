@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.segmentation.impl.screen
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,14 +9,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -32,6 +37,10 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 @Composable
 internal fun SegmentationConfirmScreen(
     subjectImagePath: String,
+    borderColorArgb: Int?,
+    borderWidthDp: Float?,
+    isNextEnabled: Boolean,
+    isEditPhotoEnabled: Boolean,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
     onClickEditPhoto: () -> Unit,
@@ -56,10 +65,18 @@ internal fun SegmentationConfirmScreen(
                 .fillMaxWidth()
                 .padding(horizontal = YGTheme.layout.padding.padding7),
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(model = subjectImagePath),
-                contentDescription = null,
+            val painter = rememberAsyncImagePainter(
+                model = subjectImagePath,
                 contentScale = ContentScale.Fit,
+            )
+            val painterState by painter.state.collectAsState()
+
+            YGToppingCutoutImage(
+                painter = painter,
+                borderColor = borderColorArgb
+                    ?.takeIf { painterState is AsyncImagePainter.State.Success }
+                    ?.let { argb -> Color(argb) },
+                borderWidth = (borderWidthDp ?: 0f).dp,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -78,14 +95,14 @@ internal fun SegmentationConfirmScreen(
             YGButton(
                 text = stringResource(R.string.segmentation_confirm_edit_photo),
                 buttonType = YGButtonType.Medium.Secondary,
-                isEnabled = true,
+                isEnabled = isEditPhotoEnabled,
                 onClick = onClickEditPhoto,
                 modifier = Modifier.weight(1f),
             )
             YGButton(
                 text = stringResource(R.string.segmentation_confirm_next),
                 buttonType = YGButtonType.Medium.Primary,
-                isEnabled = true,
+                isEnabled = isNextEnabled,
                 onClick = onClickNext,
                 modifier = Modifier.weight(1f),
             )
@@ -98,6 +115,10 @@ internal fun SegmentationConfirmScreen(
 private fun SegmentationConfirmScreenPreview() = PreviewBox {
     SegmentationConfirmScreen(
         subjectImagePath = "",
+        borderColorArgb = null,
+        borderWidthDp = null,
+        isNextEnabled = true,
+        isEditPhotoEnabled = true,
         onClickBack = {},
         onClickClose = {},
         onClickEditPhoto = {},

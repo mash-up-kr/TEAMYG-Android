@@ -25,6 +25,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.domain.model.image.RecentImage
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.feature.gallery.impl.R
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
@@ -32,8 +34,9 @@ import kotlinx.datetime.format
 @Composable
 internal fun GalleryImageGridComponent(
     groups: List<GalleryImageGroup>,
-    recentImages: List<String>,
+    recentImages: List<RecentImage>,
     onClickImage: (String) -> Unit,
+    onClickCutoutImage: (RecentImage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -53,11 +56,21 @@ internal fun GalleryImageGridComponent(
 
             items(
                 items = recentImages,
-                key = { "recent-$it" },
-            ) { uri ->
+                key = { "recent-${it.uri}" },
+            ) { image ->
                 GalleryImageCell(
-                    uri = uri,
-                    onClickImage = onClickImage,
+                    uri = image.uri,
+                    // 알맹이는 투명 여백을 걷어낸 객체라 잘라 채우면 잘린다
+                    contentScale = when (image.kind) {
+                        RecentImageKind.SOURCE -> ContentScale.Crop
+                        RecentImageKind.CUTOUT -> ContentScale.Fit
+                    },
+                    onClickImage = {
+                        when (image.kind) {
+                            RecentImageKind.SOURCE -> onClickImage(image.uri)
+                            RecentImageKind.CUTOUT -> onClickCutoutImage(image)
+                        }
+                    },
                 )
             }
         }
@@ -77,7 +90,7 @@ internal fun GalleryImageGridComponent(
                 items = group.images,
                 key = { it },
             ) { uri ->
-                GalleryImageCell(uri = uri, onClickImage = onClickImage)
+                GalleryImageCell(uri = uri, onClickImage = { onClickImage(uri) })
             }
         }
     }
@@ -86,19 +99,20 @@ internal fun GalleryImageGridComponent(
 @Composable
 private fun GalleryImageCell(
     uri: String,
-    onClickImage: (String) -> Unit,
+    onClickImage: () -> Unit,
     modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
 ) {
     Box(
         modifier = modifier
             .padding(bottom = YGTheme.layout.padding.padding5)
             .aspectRatio(1f)
-            .clickableYGNoRipple { onClickImage(uri) },
+            .clickableYGNoRipple { onClickImage() },
     ) {
         AsyncImage(
             model = uri,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -168,9 +182,10 @@ private fun PreviewGalleryImageGridComponent() = PreviewBox {
             ),
         ),
         recentImages = listOf(
-            "test1",
-            "test3",
+            RecentImage(uri = "test1", filePath = "test1", kind = RecentImageKind.SOURCE),
+            RecentImage(uri = "test3", filePath = "test3", kind = RecentImageKind.SOURCE),
         ),
         onClickImage = {},
+        onClickCutoutImage = {},
     )
 }

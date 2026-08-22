@@ -1,9 +1,9 @@
 package com.teamyg.parfait.data.source.file.local
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.teamyg.parfait.core.util.android.extension.readBytes
 import com.teamyg.parfait.core.util.jvm.extension.sha256
 import com.teamyg.parfait.data.utils.sourceLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,35 +32,32 @@ constructor(
 
     override fun mkdirs(): Boolean = dir.mkdirs()
 
-    override fun readBytes(sourceUri: String): ByteArray = context.contentResolver
-        .openInputStream(sourceUri.toUri())
-        .use { input ->
-            requireNotNull(input) { "Cannot open input stream for $sourceUri" }
+    override fun readBytes(sourceUri: String): ByteArray = context.contentResolver.readBytes(sourceUri.toUri())
 
-            input.readBytes()
-        }
+    override fun readFileBytes(filePath: String): ByteArray = File(filePath).readBytes()
 
-    override fun getTargetFile(name: String): File = File(
+    override fun getTargetFile(
+        bytes: ByteArray,
+        extension: String,
+    ): File = File(
         dir,
-        name,
+        bytes.sha256() + "." + extension,
     )
 
-    override fun getTargetFile(bytes: ByteArray): File = File(
-        dir,
-        fileName(bytes),
-    )
+    override fun getTargetFileFromUri(uri: String): File? = uri
+        .toUri()
+        .lastPathSegment
+        ?.let { name -> File(dir, name) }
 
-    override fun getUriForFile(target: File): Uri = FileProvider.getUriForFile(
-        context,
-        authority,
-        target,
-    )
-
-    private fun fileName(bytes: ByteArray): String = bytes.sha256() + FILE_EXTENSION
+    override fun getUriStringForFile(target: File): String = FileProvider
+        .getUriForFile(
+            context,
+            authority,
+            target,
+        ).toString()
 
     companion object {
         private const val DIR_NAME = "recent_images"
         private const val AUTHORITY_SUFFIX = ".recent.fileprovider"
-        private const val FILE_EXTENSION = ".jpg"
     }
 }

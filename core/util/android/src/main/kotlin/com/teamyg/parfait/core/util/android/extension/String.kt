@@ -25,3 +25,15 @@ fun String.toColorOrNull(): Color? {
 
     return Color(if (hex.length == HEX_LENGTH_RGB) argb or OPAQUE_ALPHA else argb)
 }
+
+/**
+ * ARGB 정수를 서버에 보내는 색 문자열로 쓴다. [toColorOrNull] 의 역함수(불투명 색만).
+ * 6자리인 이유는 `specs/2026-08-20-c106-topping-place-api.md`의 API/인터페이스 절 참고.
+ *
+ * 알파가 불투명이 아니면 여기서 막는다.
+ */
+fun Int.toRgbHexString(): String {
+    val alpha = (this ushr 24) and 0xFF
+    require(alpha == 0xFF) { "불투명 색만 지원한다: alpha=$alpha" }
+    return "#%06X".format(this and 0xFFFFFF)
+}

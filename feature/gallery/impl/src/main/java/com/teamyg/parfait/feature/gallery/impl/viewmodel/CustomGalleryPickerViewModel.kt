@@ -10,17 +10,21 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
+import com.teamyg.parfait.domain.model.image.RecentImage
+import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @Immutable
 data class CustomGalleryPickerState(
     val isLoading: Boolean = false,
     val access: GalleryPermissionManager.GalleryAccessLevel = GalleryPermissionManager.GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
-    val recentImages: List<String> = emptyList(),
+    val recentImages: List<RecentImage> = emptyList(),
 ) : UiState {
     val isEmpty: Boolean
         get() = groups.all { it.images.isEmpty() } && recentImages.isEmpty()
@@ -33,6 +37,10 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
 
     data class NavigateToConfirm(
         val uri: String,
+    ) : CustomGalleryPickerEffect()
+
+    data class NavigateToSegmentationConfirm(
+        val trimmedSubjectImagePath: String,
     ) : CustomGalleryPickerEffect()
 
     data object NavigateToBack : CustomGalleryPickerEffect()
@@ -53,13 +61,17 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
         val uri: String,
     ) : CustomGalleryPickerIntent()
 
+    data class OnClickCutoutImage(
+        val recentImage: RecentImage,
+    ) : CustomGalleryPickerIntent()
+
     data object OnCancel : CustomGalleryPickerIntent()
 }
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = CustomGalleryPickerViewModel.Factory::class)
 class CustomGalleryPickerViewModel
-@Inject
-constructor(
+@AssistedInject constructor(
+    @Assisted private val returnResultOnly: Boolean,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
@@ -80,6 +92,7 @@ constructor(
             is CustomGalleryPickerIntent.OnRequestOpenSettings -> handleOnRequestOpenSettings()
             is CustomGalleryPickerIntent.OnRequestManageMedia -> handleOnRequestManageMedia()
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
+            is CustomGalleryPickerIntent.OnClickCutoutImage -> handleOnClickCutoutImage(intent)
             is CustomGalleryPickerIntent.OnCancel -> handleOnCancel()
         }
     }
@@ -132,11 +145,29 @@ constructor(
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
+    // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션을 건너뛴다
+    private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
+        postSideEffect(
+            CustomGalleryPickerEffect.NavigateToSegmentationConfirm(intent.recentImage.filePath),
+        )
+    }
+
     private fun handleOnCancel() {
         postSideEffect(CustomGalleryPickerEffect.NavigateToBack)
     }
 
-    private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { uris ->
-        updateState { copy(recentImages = uris) }
+    private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { images ->
+        // 배경 선택처럼 결과만 돌려주는 진입에는 알맹이를 싣지 않는다
+        val visible = when (returnResultOnly) {
+            true -> images.filter { it.kind == RecentImageKind.SOURCE }
+            false -> images
+        }
+
+        updateState { copy(recentImages = visible) }
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(returnResultOnly: Boolean): CustomGalleryPickerViewModel
     }
 }
