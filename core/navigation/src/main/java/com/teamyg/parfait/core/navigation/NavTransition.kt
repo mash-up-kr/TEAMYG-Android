@@ -89,11 +89,6 @@ data class NavTransition(
             },
         )
 
-        /**
-         * **방향을 말할 수 없는 전환**에 쓴다 — 스플래시에서 첫 화면으로 넘어가는 것처럼 앞뒤
-         * 관계가 없는 경우, 또는 공유 요소(`sharedElement`)가 자리를 옮기는 전환처럼 화면
-         * 전체가 같이 움직이면 정작 봐야 할 요소의 이동이 묻히는 경우다.
-         */
         val Fade: NavTransition = NavTransition(
             push = { FadeTransform },
             pop = { FadeTransform },
