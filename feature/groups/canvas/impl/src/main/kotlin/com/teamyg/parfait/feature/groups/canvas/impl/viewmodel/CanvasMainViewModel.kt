@@ -25,6 +25,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
@@ -98,6 +99,13 @@ data class CanvasMainUiState(
     val isViewingToday: Boolean
         get() = selectedDate == today
 
+    /**
+     * 열어 두면 촬영·누끼·편집을 다 마친 뒤에야 올릴 데가 없다는 것을 알게 된다
+     * (`adr/0026-topping-draft-datastore-ssot.md`).
+     */
+    val isToppingAddEnabled: Boolean
+        get() = isViewingToday && todayCanvas != null
+
     val canvasDate: String
         get() = selectedDate.format(DateTextFormat.monthDayFormat)
 
@@ -138,7 +146,10 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     class NavigateToCanvas : CanvasMainEffect
 
-    class NavigateToCanvasBGEdit : CanvasMainEffect
+    data class NavigateToCanvasBGEdit(
+        val groupId: GroupId,
+        val parfaitId: ParfaitId,
+    ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
@@ -160,6 +171,11 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val nicknameColor: Color,
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
+
+    /** 보여 줄 캔버스가 없을 때만 온다 — 화면이 앞에 설 때마다 재조회하므로 매번 알리면 방해가 된다 */
+    data object ShowTodayCanvasError : CanvasMainEffect
+
+    data object ShowToppingFlowStartError : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -220,6 +236,7 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
+    private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -270,8 +287,9 @@ constructor(
                     viewedCanvas = null,
                 )
             } else {
-                // 지난 날을 보고 있었다면 그 캔버스는 그대로 유효하다
-                copy(today = today)
+                // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다 — 안 비우면
+                // "오늘의 파르페 가기"로 돌아갔을 때 어제 캔버스 위에 토핑이 올라간다
+                copy(today = today, todayCanvas = null)
             }
         }
     }
@@ -294,6 +312,9 @@ constructor(
                     }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                    if (state.value.todayCanvas == null) {
+                        postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
+                    }
                 }
         }
     }
@@ -517,7 +538,10 @@ constructor(
         }
     }
 
-    /** 달력도 오늘이 있는 달로 따라간다 */
+    /**
+     * 달력도 오늘이 있는 달로 따라간다. 다시 부르는 것은 [syncToday] 가 하루 경계에서 비워 둔
+     * 경우가 있어서다 — 그대로 돌아오면 캔버스 없이 버튼만 잠긴 화면이 된다.
+     */
     private fun handleClickGoToToday() {
         updateState {
             copy(
@@ -530,6 +554,9 @@ constructor(
         val current = state.value
         if (current.parfaitHistoriesByYear.containsKey(current.today.year).not()) {
             loadParfaitHistories(current.today.year)
+        }
+        if (current.todayCanvas == null) {
+            loadTodayCanvas()
         }
     }
 
@@ -589,20 +616,54 @@ constructor(
     }
 
     private fun handleOnClickCamera() {
-        postSideEffect(
-            effect = CanvasMainEffect.NavigateToCamera(),
-        )
+        startToppingFlow(effect = CanvasMainEffect.NavigateToCamera())
     }
 
     private fun handleOnClickCanvas() {
-        postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvas(),
-        )
+        startToppingFlow(effect = CanvasMainEffect.NavigateToCanvas())
     }
 
+    /**
+     * 흐름에 들어서는 순간 초안을 새로 쓴다. 그 뒤에야 화면을 옮긴다 — 이유는
+     * [CanvasMainUiState.isToppingAddEnabled] 참고.
+     */
+    private fun startToppingFlow(effect: CanvasMainEffect) {
+        val canvas = state.value.todayCanvas ?: return
+
+        launch(
+            key = START_TOPPING_FLOW_KEY,
+            onError = { error ->
+                viewModelLogger.e { "토핑 초안을 쓰지 못했다 - $error" }
+                postSideEffect(CanvasMainEffect.ShowToppingFlowStartError)
+            },
+        ) {
+            toppingDraftRepository.start(
+                groupId = groupId,
+                parfaitId = canvas.parfaitId,
+                nextPositionZ = canvas.nextPositionZ(),
+            )
+            postSideEffect(effect)
+        }
+    }
+
+    /** 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다 */
+    private fun CanvasVO.nextPositionZ(): Int = (toppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
+
+    /**
+     * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만
+     * 움직이고, 없는 id 를 지어내면 남의 날 캔버스를 고치게 된다.
+     */
     private fun handleOnClickCanvasEdit() {
+        val todayCanvas = state.value.todayCanvas ?: run {
+            viewModelLogger.e { "오늘 캔버스를 못 받은 채로 편집을 눌렀다 - groupId: ${groupId.value}" }
+            return
+        }
+
         postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvasBGEdit(),
+            effect = CanvasMainEffect.NavigateToCanvasBGEdit(
+                groupId = groupId,
+                parfaitId = todayCanvas.parfaitId,
+            ),
         )
     }
 
@@ -621,5 +682,7 @@ constructor(
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
 
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
+
+        const val START_TOPPING_FLOW_KEY = "startToppingFlow"
     }
 }

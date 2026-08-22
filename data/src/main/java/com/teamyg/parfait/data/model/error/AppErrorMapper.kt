@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.model.error
 
 import com.teamyg.parfait.data.model.exception.ApiException
+import com.teamyg.parfait.data.model.exception.UnsupportedImageException
 import com.teamyg.parfait.domain.model.error.AppError
 import kotlinx.coroutines.CancellationException
 
@@ -13,6 +14,8 @@ import kotlinx.coroutines.CancellationException
  */
 internal fun Throwable.toAppError(): AppError = when (this) {
     is CancellationException -> throw this
+
+    is UnsupportedImageException -> AppError.UnsupportedImage(this)
 
     is ApiException.Business -> AppError.Server(
         code = code,

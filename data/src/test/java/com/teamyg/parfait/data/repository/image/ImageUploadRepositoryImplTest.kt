@@ -258,8 +258,8 @@ class ImageUploadRepositoryImplTest {
         // When 업로드한다
         val result = repository.upload(filePath = gif.absolutePath, imageType = ImageType.NUKKI)
 
-        // Then 서버를 부르기 전에 끊는다
-        assertIs<AppError.Unexpected>(result.exceptionOrNull())
+        // Then 서버를 부르기 전에 끊고, 화면이 사진을 바꾸라고 말할 수 있는 갈래로 올린다
+        assertIs<AppError.UnsupportedImage>(result.exceptionOrNull())
         coVerify(exactly = 0) { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) }
         gif.delete()
     }

@@ -1,13 +1,9 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
-import android.content.Context
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.BaseViewModel
@@ -15,30 +11,61 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
+import com.teamyg.parfait.core.util.android.extension.toRgbHex
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ImageId
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import java.io.File
-import javax.inject.Inject
 
 enum class CanvasEditTab { BACKGROUND, TOPPING }
 
+/**
+ * 편집 화면이 다루는 토핑 하나.
+ *
+ * 위치·크기가 Dp 가 아니라 Canvas-Area 대비 0~1 비율인 이유: 저장된 배치가 그 단위이고
+ * (`CanvasToppingVO.transform`), ViewModel 은 화면 크기를 모른다. Dp 로 들고 있으면 기기마다
+ * 다른 자리에 놓이고 캔버스 메인([CanvasToppingLayer])과도 어긋난다 — 같은 캔버스가 두
+ * 화면에서 다르게 보이면 안 된다.
+ *
+ * @param imageUrl 서버에 저장된 토핑 이미지 주소.
+ * @param editedImagePath 테두리 편집을 거쳐 새로 구운 이미지의 로컬 경로. 있으면 [imageUrl]
+ *   대신 이걸 그린다 — 아직 서버에 올리기 전이라 이쪽이 최신이다.
+ * @param cutoutImagePath 테두리를 두르기 전 알맹이. 다시 편집할 때의 시작 마스크라
+ *   [editedImagePath] 로 대신할 수 없다 — 그쪽엔 테두리가 이미 구워져 있다.
+ */
 data class CanvasToppingItem(
     val parfaitImageId: Long,
     val isMine: Boolean,
-    val imageResId: Int,
-    val offsetX: Dp,
-    val offsetY: Dp,
-    val sourceImageUri: String,
-    val segmentationImageUri: String,
+    val imageUrl: String,
+    val positionX: Float,
+    val positionY: Float,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
     val borderLayers: List<ToppingBorderLayer> = emptyList(),
-    /** 테두리 편집을 거쳐 새로 구운 이미지 경로. 있으면 [imageResId] 대신 이걸 그린다. */
     val editedImagePath: String? = null,
+    val cutoutImagePath: String? = null,
 )
 
 private const val TOPPING_MIN_SCALE = 0.5f
@@ -61,9 +88,14 @@ val CanvasBackgroundPaletteColors = listOf(
     Color(0xFFDCC2FC),
 )
 
+/**
+ * @param selectedImageUri 배경으로 고른 이미지. 방금 기기에서 고른 사진일 수도, 이미 서버에
+ *   저장돼 있던 배경의 URL 일 수도 있다. 둘을 가르는 것은 [selectedImageSource] 다.
+ * @param selectedImageSource 이미지를 어디서 가져왔는지. **null 이면 서버에 이미 있는 배경**이라
+ *   확인을 눌러도 다시 올리지 않는다 — https 주소는 기기에서 읽을 수 없어 올릴 수도 없다.
+ */
 data class CanvasBGEditUiState(
     val selectedTab: CanvasEditTab = CanvasEditTab.BACKGROUND,
-    // TODO: 저장된 배경이 있으면 그 배경을, 없으면 첫 팔레트 색상을 기본값으로 불러와야 함
     val selectedColor: Color = CanvasBackgroundPaletteColors.first(),
     val selectedImageUri: String? = null,
     val selectedImageSource: PictureConfirmSource? = null,
@@ -129,9 +161,15 @@ sealed interface CanvasBGEditIntent : UiIntent {
         val delta: Offset,
     ) : CanvasBGEditIntent
 
-    /** 선택된 토핑 자신을 잡고 드래그한 만큼 넘어온다. 드래그한 그대로 위치를 옮긴다. */
+    /**
+     * 선택된 토핑 자신을 잡고 드래그한 만큼 넘어온다.
+     *
+     * 픽셀이 아니라 **Canvas-Area 대비 비율**이다 — 위치를 그 단위로 들고 있으므로
+     * ([CanvasToppingItem]) 화면 크기를 아는 쪽에서 미리 환산해 넘긴다.
+     */
     data class OnToppingMoveDrag(
-        val delta: DpOffset,
+        val deltaX: Float,
+        val deltaY: Float,
     ) : CanvasBGEditIntent
 
     /** 테두리 편집 화면에서 돌아온 결과. 편집을 시작한 토핑에 새 이미지·테두리를 반영한다. */
@@ -148,8 +186,13 @@ sealed interface CanvasBGEditEffect : UiSideEffect {
 
     data object NavigateBack : CanvasBGEditEffect
 
+    /** 배경이 **서버에 저장된 뒤에만** 나간다. 이 이펙트를 받은 화면은 저장된 것으로 여겨도 된다 */
     data class ConfirmBackground(
         val background: YGCanvasBackground,
+    ) : CanvasBGEditEffect
+
+    data class ShowError(
+        val error: CanvasBGEditError,
     ) : CanvasBGEditEffect
 
     data class NavigateToToppingEdit(
@@ -160,65 +203,110 @@ sealed interface CanvasBGEditEffect : UiSideEffect {
     ) : CanvasBGEditEffect
 }
 
-@HiltViewModel
+@HiltViewModel(assistedFactory = CanvasBGEditViewModel.Factory::class)
 class CanvasBGEditViewModel
-@Inject
+@AssistedInject
 constructor(
-    @ApplicationContext private val context: Context,
+    @Assisted("groupId") groupIdValue: Long,
+    @Assisted("parfaitId") parfaitIdValue: Long,
+    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getMyAccountFlowUseCase: GetMyAccountFlowUseCase,
+    private val uploadImageUseCase: UploadImageUseCase,
+    private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
+    private val groupId = GroupId(groupIdValue)
+
+    /**
+     * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 편집 중 자정을
+     * 넘겨 조회가 **새 날의 캔버스**를 주면 그쪽으로 옮긴다 — 화면에 그려진 토핑과 저장
+     * 대상이 갈라지는 편이 더 나쁘다.
+     */
+    private var parfaitId = ParfaitId(parfaitIdValue)
+
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
-        loadMockToppings()
+        loadCanvas()
     }
 
-    private fun loadMockToppings() {
-        // TODO: 실제 "캔버스에 놓인 토핑 목록 조회" API 연동 필요 - 지금은 mock, 위치도 하드코딩
-        fun mockUri(@Suppress("SameParameterValue") resId: Int) = "android.resource://${context.packageName}/$resId"
+    /**
+     * ⚠️ 오늘 조회는 캔버스가 없으면 만들어 저장한다. 여기서 불러도 캔버스 메인이 이미 만든
+     * 것을 다시 받을 뿐이라 늘어나지 않는다 — 이 화면은 그 메인을 거쳐야만 열린다.
+     *
+     * 조회를 또 하는 이유는 편집을 여는 사이 다른 멤버가 올린 토핑까지 그려야 해서다.
+     */
+    private fun loadCanvas() {
+        launch(key = LOAD_CANVAS_KEY) {
+            val myMemberId = getMyAccountFlowUseCase().first()?.memberId
 
-        updateState {
-            copy(
-                toppings = listOf(
-                    CanvasToppingItem(
-                        parfaitImageId = 1L,
-                        isMine = true,
-                        imageResId = DesignSystemR.drawable.img_topping_template_01,
-                        offsetX = 24.dp,
-                        offsetY = 40.dp,
-                        sourceImageUri = mockUri(DesignSystemR.drawable.img_topping_template_01),
-                        segmentationImageUri = mockUri(DesignSystemR.drawable.img_topping_template_01),
-                    ),
-                    CanvasToppingItem(
-                        parfaitImageId = 2L,
-                        isMine = false,
-                        imageResId = DesignSystemR.drawable.img_topping_template_02,
-                        offsetX = 140.dp,
-                        offsetY = 90.dp,
-                        sourceImageUri = mockUri(DesignSystemR.drawable.img_topping_template_02),
-                        segmentationImageUri = mockUri(DesignSystemR.drawable.img_topping_template_02),
-                    ),
-                    CanvasToppingItem(
-                        parfaitImageId = 3L,
-                        isMine = true,
-                        imageResId = DesignSystemR.drawable.img_topping_template_03,
-                        offsetX = 60.dp,
-                        offsetY = 220.dp,
-                        sourceImageUri = mockUri(DesignSystemR.drawable.img_topping_template_03),
-                        segmentationImageUri = mockUri(DesignSystemR.drawable.img_topping_template_03),
-                    ),
-                    CanvasToppingItem(
-                        parfaitImageId = 4L,
-                        isMine = false,
-                        imageResId = DesignSystemR.drawable.img_topping_template_04,
-                        offsetX = 160.dp,
-                        offsetY = 260.dp,
-                        sourceImageUri = mockUri(DesignSystemR.drawable.img_topping_template_04),
-                        segmentationImageUri = mockUri(DesignSystemR.drawable.img_topping_template_04),
-                    ),
-                ),
-            )
+            getTodayParfaitUseCase(groupId)
+                .onSuccess { canvas ->
+                    if (canvas.parfaitId != parfaitId) {
+                        viewModelLogger.e {
+                            "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
+                                " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
+                        }
+                        parfaitId = canvas.parfaitId
+                    }
+
+                    updateState { withCanvas(canvas = canvas, myMemberId = myMemberId) }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
+                    postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+                }
         }
+    }
+
+    /**
+     * 저장된 배경을 팔레트의 시작점으로 삼는다. 색을 못 읽으면 기본 색으로 두는데, 그때 확인을
+     * 누르면 배경이 팔레트 첫 색으로 바뀐다 — 못 읽는 색을 그대로 되돌려 보내는 것보다 낫다.
+     */
+    private fun CanvasBGEditUiState.withCanvas(
+        canvas: CanvasVO,
+        myMemberId: MemberId?,
+    ): CanvasBGEditUiState = copy(
+        toppings = canvas.toppings
+            .sortedBy { topping -> topping.transform.positionZ }
+            .map { topping -> topping.toToppingItem(myMemberId) },
+        selectedColor = (canvas.background as? CanvasBackground.Color)
+            ?.value
+            ?.toColorOrNull()
+            ?: selectedColor,
+        selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
+        selectedImageSource = null,
+    )
+
+    /**
+     * TODO(서버 응답 확장 대기): 캔버스 응답이 "내 토핑"을 표시해 주지 않아 id 로 가려낸다.
+     *  계약상 [MemberId] 는 계정 id 이고 토핑의 placedBy 는 그룹 멤버십 행 id 라 두 값은 서로
+     *  다른 축이다 — 서버가 둘을 같은 축으로 주는 동안에만 이 비교가 맞다. 응답에 isMine 이나
+     *  내 groupMemberId 가 실리면 그것으로 갈아탄다.
+     */
+    private fun CanvasToppingVO.toToppingItem(myMemberId: MemberId?): CanvasToppingItem = CanvasToppingItem(
+        parfaitImageId = parfaitImageId.value,
+        isMine = myMemberId != null && placedBy.groupMemberId.value == myMemberId.value,
+        imageUrl = imageUrl,
+        positionX = transform.positionX.toFloat(),
+        positionY = transform.positionY.toFloat(),
+        scale = transform.scale.toFloat(),
+        rotationDegrees = transform.rotation.toFloat(),
+        borderLayers = border.toBorderLayers(),
+    )
+
+    /**
+     * 서버는 테두리를 한 겹으로만 들고 있고 편집 화면은 겹의 목록으로 다룬다 — 한 겹짜리
+     * 목록으로 편다. 색을 못 읽으면 겹을 만들지 않는다(임의의 색을 두르는 것보다 낫다).
+     */
+    private fun ToppingBorder.toBorderLayers(): List<ToppingBorderLayer> = when (this) {
+        is ToppingBorder.None -> emptyList()
+
+        is ToppingBorder.Solid ->
+            color
+                .toColorOrNull()
+                ?.let { borderColor ->
+                    listOf(ToppingBorderLayer(colorArgb = borderColor.toArgb(), widthDp = width.toFloat()))
+                }.orEmpty()
     }
 
     override fun processIntent(intent: CanvasBGEditIntent) {
@@ -263,6 +351,7 @@ constructor(
         updateState { copy(selectedToppingId = null) }
     }
 
+    /** TODO(#271 대기): 지금은 화면에서만 사라진다 — 토핑 삭제 API 연동은 따로다 */
     private fun handleOnDeleteToppingDialogConfirm() {
         val selectedId = state.value.selectedToppingId ?: return
 
@@ -303,8 +392,8 @@ constructor(
 
         applyToppingTransform(selectedId) { topping ->
             topping.copy(
-                offsetX = topping.offsetX + intent.delta.x,
-                offsetY = topping.offsetY + intent.delta.y,
+                positionX = topping.positionX + intent.deltaX,
+                positionY = topping.positionY + intent.deltaY,
             )
         }
     }
@@ -326,14 +415,19 @@ constructor(
         }
     }
 
+    /**
+     * TODO(#274 대기): 서버 토핑은 https 주소라 편집 화면이 [android.content.ContentResolver] 로
+     *  열지 못한다. 이미지를 기기에 받아 그 경로를 넘기는 일은 토핑 편집 API 연동 쪽이다.
+     */
     private fun handleOnClickEditTopping() {
         val selected = state.value.toppings.find { it.parfaitImageId == state.value.selectedToppingId } ?: return
 
         postSideEffect(
             effect = CanvasBGEditEffect.NavigateToToppingEdit(
                 toppingId = selected.parfaitImageId,
-                sourceImageUri = selected.sourceImageUri,
-                segmentationImageUri = selected.segmentationImageUri,
+                // 서버는 잘라낸 결과만 들고 있어 원본과 누끼가 같은 그림이다
+                sourceImageUri = selected.cutoutImagePath ?: selected.imageUrl,
+                segmentationImageUri = selected.cutoutImagePath ?: selected.imageUrl,
                 borderLayers = selected.borderLayers,
             ),
         )
@@ -342,10 +436,9 @@ constructor(
     private fun handleOnToppingEditResult(intent: CanvasBGEditIntent.OnToppingEditResult) {
         applyToppingTransform(intent.toppingId) { topping ->
             topping.copy(
-                // 다시 편집을 열 때 이 사진에서 시작해야 방금 지운/되살린 영역이 유지된다
-                segmentationImageUri = File(intent.result.cutoutImagePath).toUri().toString(),
                 borderLayers = intent.result.borderLayers,
-                editedImagePath = intent.result.editedImagePath,
+                editedImagePath = intent.result.subjectImagePath,
+                cutoutImagePath = File(intent.result.cutoutImagePath).toUri().toString(),
             )
         }
     }
@@ -369,14 +462,87 @@ constructor(
         }
     }
 
+    /**
+     * 저장이 끝나야 화면을 넘긴다 — [CanvasBGEditEffect.ConfirmBackground] 를 먼저 쏘면 캔버스
+     * 메인이 저장되지 않은 배경을 그린 채로 서 있게 되고, 다음 조회에서 슬그머니 되돌아간다.
+     */
     private fun handleOnClickConfirm() {
-        val imageUri = state.value.selectedImageUri
-        val background = if (imageUri != null) {
-            YGCanvasBackground.Image(url = imageUri)
-        } else {
-            YGCanvasBackground.Solid(state.value.selectedColor)
+        val current = state.value
+        val imageUri = current.selectedImageUri
+
+        // 서버 배경을 그대로 둔 채 확인만 누른 경우다 — 바뀐 것이 없어 요청할 것도 없다
+        if (imageUri != null && current.selectedImageSource == null) {
+            postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(YGCanvasBackground.Image(imageUri)))
+            return
         }
 
-        postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(background))
+        launch(key = SAVE_BACKGROUND_KEY) {
+            val background = if (imageUri == null) {
+                CanvasBackgroundEdit.Color(current.selectedColor.toRgbHex())
+            } else {
+                CanvasBackgroundEdit.Image(
+                    imageId = uploadBackgroundImage(imageUri)
+                        .getOrElse { throwable -> return@launch failToSave(throwable) },
+                )
+            }
+
+            changeCanvasBackgroundUseCase(
+                groupId = groupId,
+                parfaitId = parfaitId,
+                background = background,
+            ).onSuccess { saved ->
+                postSideEffect(
+                    effect = CanvasBGEditEffect.ConfirmBackground(
+                        // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
+                        // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
+                        background = saved.toYGCanvasBackground()
+                            ?: fallbackBackground(imageUri = imageUri, color = current.selectedColor),
+                    ),
+                )
+            }.onFailure { throwable -> failToSave(throwable) }
+        }
+    }
+
+    private suspend fun uploadBackgroundImage(imageUri: String): Result<ImageId> = uploadImageUseCase(
+        uri = imageUri,
+        imageType = ImageType.BACKGROUND,
+    )
+
+    private fun failToSave(throwable: Throwable) {
+        viewModelLogger.e(throwable) { "배경을 저장하지 못했다 - parfaitId: ${parfaitId.value}" }
+        postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+    }
+
+    private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
+        null -> null
+        is CanvasBackground.Color -> value.toColorOrNull()?.let(YGCanvasBackground::Solid)
+        is CanvasBackground.Image -> YGCanvasBackground.Image(url)
+    }
+
+    private fun fallbackBackground(
+        imageUri: String?,
+        color: Color,
+    ): YGCanvasBackground = imageUri
+        ?.let(YGCanvasBackground::Image)
+        ?: YGCanvasBackground.Solid(color)
+
+    private fun Throwable.toCanvasBGEditError(): CanvasBGEditError = when (this) {
+        is AppError.Network -> CanvasBGEditError.NETWORK
+        is AppError.UnsupportedImage -> CanvasBGEditError.UNSUPPORTED_IMAGE
+        else -> CanvasBGEditError.UNKNOWN
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            @Assisted("groupId") groupIdValue: Long,
+            @Assisted("parfaitId") parfaitIdValue: Long,
+        ): CanvasBGEditViewModel
+    }
+
+    private companion object {
+        const val LOAD_CANVAS_KEY = "loadCanvas"
+
+        const val SAVE_BACKGROUND_KEY = "saveBackground"
     }
 }

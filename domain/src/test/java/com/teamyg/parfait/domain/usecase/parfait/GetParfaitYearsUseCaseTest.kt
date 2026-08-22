@@ -1,5 +1,7 @@
 package com.teamyg.parfait.domain.usecase.parfait
 
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -32,6 +34,12 @@ class GetParfaitYearsUseCaseTest {
             groupId: GroupId,
             parfaitId: ParfaitId,
         ): Result<CanvasVO> = Result.failure(IllegalStateException("쓰이지 않는다"))
+
+        override suspend fun changeCanvasBackground(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+            background: CanvasBackgroundEdit,
+        ): Result<CanvasBackground?> = Result.failure(IllegalStateException("쓰이지 않는다"))
     }
 
     private val thisYear = parfaitToday().year

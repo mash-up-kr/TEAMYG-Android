@@ -18,3 +18,10 @@ fun ContentResolver.decodeUriToBitmap(uri: Uri): Bitmap = if (Build.VERSION.SDK_
     @Suppress("DEPRECATION")
     MediaStore.Images.Media.getBitmap(this, uri)
 }
+
+/** [uri] 가 가리키는 내용 전부. `content://` 든 `file://` 든 열 수 없으면 던진다 */
+fun ContentResolver.readBytes(uri: Uri): ByteArray = openInputStream(uri).use { input ->
+    requireNotNull(input) { "입력 스트림을 열 수 없다 - uri: $uri" }
+
+    input.readBytes()
+}

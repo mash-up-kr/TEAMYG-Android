@@ -34,6 +34,7 @@ import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -41,10 +42,13 @@ internal fun CustomGalleryPickerRoute(
     modifier: Modifier = Modifier,
     showGuideToast: Boolean = true,
     returnResultOnly: Boolean = false,
-    viewModel: CustomGalleryPickerViewModel = hiltViewModel(),
 ) {
     val activity: Activity? = LocalActivity.current
     val context: Context = activity ?: LocalContext.current
+
+    val viewModel = hiltViewModel<CustomGalleryPickerViewModel, CustomGalleryPickerViewModel.Factory>(
+        creationCallback = { factory -> factory.create(returnResultOnly) },
+    )
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -88,6 +92,16 @@ internal fun CustomGalleryPickerRoute(
                     )
                 }
 
+                is CustomGalleryPickerEffect.NavigateToSegmentationConfirm -> {
+                    navigator.goTo(
+                        NavKeySegmentationConfirm(
+                            sourceImageUri = null,
+                            subjectImagePath = null,
+                            trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
+                        ),
+                    )
+                }
+
                 is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
             }
         }
@@ -114,7 +128,12 @@ internal fun CustomGalleryPickerRoute(
             onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
             onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
             onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
-            onClickImage = { viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(it)) },
+            onClickImage = { uri ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
+            },
+            onClickCutoutImage = { recentImage ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
+            },
             onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
             modifier = modifier.padding(innerPadding),
         )

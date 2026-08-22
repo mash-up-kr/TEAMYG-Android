@@ -12,8 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -24,37 +22,12 @@ import com.teamyg.parfait.feature.segmentation.impl.component.GuideBanner
 import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
+/**
+ * 실패해도 이 화면이 그대로 보인다 — 인식된 대상이 없으니 하이라이트만 빠진 채 원본
+ * 사진이 남고, 사용자는 토스트를 읽고 뒤로 가 다른 사진을 고른다.
+ */
 @Composable
 internal fun SegmentationScreen(
-    state: SegmentationState,
-    onClickBack: () -> Unit,
-    onClickClose: () -> Unit,
-    onClickSubject: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    when {
-        state.isLoading -> SegmentationLoadingScreen(
-            onClickClose = onClickClose,
-            modifier = modifier,
-        )
-
-        state.isError -> SegmentationErrorScreen(
-            onClickClose = onClickClose,
-            modifier = modifier,
-        )
-
-        else -> SegmentationContent(
-            state = state,
-            onClickBack = onClickBack,
-            onClickClose = onClickClose,
-            onClickSubject = onClickSubject,
-            modifier = modifier,
-        )
-    }
-}
-
-@Composable
-private fun SegmentationContent(
     state: SegmentationState,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
@@ -125,23 +98,11 @@ private fun SegmentationResultImage(
     }
 }
 
-private class SegmentationScreenPreviewParameterProvider :
-    PreviewParameterProvider<SegmentationState> {
-    override val values: Sequence<SegmentationState>
-        get() = sequenceOf(
-            SegmentationState(isLoading = true),
-            SegmentationState(isLoading = false, isError = true),
-            SegmentationState(isLoading = false),
-        )
-}
-
 @YGPreview
 @Composable
-private fun PreviewSegmentationScreen(
-    @PreviewParameter(SegmentationScreenPreviewParameterProvider::class) state: SegmentationState,
-) = PreviewBox {
+private fun PreviewSegmentationScreen() = PreviewBox {
     SegmentationScreen(
-        state = state,
+        state = SegmentationState(isLoading = false),
         onClickBack = {},
         onClickClose = {},
         onClickSubject = {},

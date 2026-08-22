@@ -8,6 +8,7 @@ data class YGCanvasMenuAction(
     val text: String,
     @DrawableRes val iconResource: Int?,
     val onClick: () -> Unit,
+    val isEnabled: Boolean = true,
 )
 
 @Immutable
