@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

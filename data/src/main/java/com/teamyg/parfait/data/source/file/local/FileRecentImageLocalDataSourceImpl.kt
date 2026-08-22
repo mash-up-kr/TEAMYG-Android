@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.source.file.local
 import android.content.Context
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import com.teamyg.parfait.core.util.android.extension.readBytes
 import com.teamyg.parfait.core.util.jvm.extension.sha256
 import com.teamyg.parfait.data.utils.sourceLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,13 +32,7 @@ constructor(
 
     override fun mkdirs(): Boolean = dir.mkdirs()
 
-    override fun readBytes(sourceUri: String): ByteArray = context.contentResolver
-        .openInputStream(sourceUri.toUri())
-        .use { input ->
-            requireNotNull(input) { "Cannot open input stream for $sourceUri" }
-
-            input.readBytes()
-        }
+    override fun readBytes(sourceUri: String): ByteArray = context.contentResolver.readBytes(sourceUri.toUri())
 
     override fun readFileBytes(filePath: String): ByteArray = File(filePath).readBytes()
 

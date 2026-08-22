@@ -30,15 +30,15 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         )
     }
 
-    entry<NavKeyCanvasBGEdit> {
-        YGScaffold { innerPadding ->
-            CanvasBGEditRoute(
-                navigator = navigator,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
+    // 배경 편집은 실패를 토스트로 알려 자기 Scaffold(YGScaffoldV2)를 직접 든다 —
+    // 여기서 한 겹 더 씌우면 인셋 패딩이 두 번 먹는다
+    entry<NavKeyCanvasBGEdit> { navKey ->
+        CanvasBGEditRoute(
+            groupId = navKey.groupId,
+            parfaitId = navKey.parfaitId,
+            navigator = navigator,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
     // 이 화면과 이미지 선택 화면은 사진 하나를 공유 요소로 이어 붙인다. 화면 전체가 옆으로
     // 밀리면 정작 봐야 할 사진의 이동이 묻히므로 여기서만 제자리 전환으로 바꾼다

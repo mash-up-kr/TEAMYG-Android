@@ -3,9 +3,10 @@ package com.teamyg.parfait.domain.model.error
 /**
  * 화면·UseCase 가 보는 도메인 에러.
  *
- * 갈래가 셋인 이유는 화면이 실제로 다르게 굴 수 있는 경우가 셋뿐이기 때문이다 —
- * 재시도를 권할 수 있는가([Network]), 서버가 말해준 이유를 보여줄 수 있는가([Server]),
- * 원인을 알 수 없어 일반 문구밖에 못 주는가([Unexpected]).
+ * 갈래를 나누는 기준은 화면이 실제로 다르게 굴 수 있는가다 — 재시도를 권할 수 있는가
+ * ([Network]), 서버가 말해준 이유를 보여줄 수 있는가([Server]), 고른 파일을 바꾸라고
+ * 말해야 하는가([UnsupportedImage]), 원인을 알 수 없어 일반 문구밖에 못 주는가
+ * ([Unexpected]).
  *
  * `Exception` 하위인 이유는 `Result.failure` 가 `Throwable` 을 요구해서다.
  * 데이터 레이어의 `ApiException` 을 Repository 경계에서 이 타입으로 바꾼다.
@@ -29,6 +30,17 @@ sealed class AppError(
         val statusCode: Int?,
         val serverMessage: String,
     ) : AppError(serverMessage, null)
+
+    /**
+     * 고른 이미지를 업로드에 쓸 수 없다 — 서버가 받지 않는 형식이거나 파일을 열지 못했다.
+     *
+     * [Unexpected] 와 갈라 두는 이유: 화면이 [cause] 의 예외 타입을 뒤져 "이 사진이
+     * 문제"라고 판정하게 두면, 데이터 레이어가 예외를 바꾸는 날 아무 실패도 없이 문구만
+     * 조용히 어긋난다. 판정은 그 사실을 아는 Repository 경계에서 한 번만 한다.
+     *
+     * 재시도해도 같은 결과다 — 사용자가 다른 사진을 골라야 풀린다.
+     */
+    data class UnsupportedImage(override val cause: Throwable?) : AppError(cause?.message, cause)
 
     /**
      * envelope 밖 HTTP 실패·빈 본문·파싱/매핑 실패 등 그 외 전부.

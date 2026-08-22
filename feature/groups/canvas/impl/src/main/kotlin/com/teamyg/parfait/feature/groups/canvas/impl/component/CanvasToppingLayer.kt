@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -24,14 +23,9 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-
-/**
- * `scale = 1.0` 일 때 토핑의 긴 변이 갖는 크기. Canvas-Area 너비 기준이다(CAN-007 §3.3).
- *
- * 짧은 변은 원본 비율을 따라간다 — 정사각 박스에 [ContentScale.Fit] 로 담으면 긴 변이 박스에
- * 꽉 차고 짧은 변이 비율대로 줄어들므로, 원본 크기를 몰라도 규칙이 지켜진다.
- */
-internal const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -87,6 +81,9 @@ internal fun CanvasToppingLayer(
 /**
  * positionX·positionY 는 Canvas-Area 대비 0~1 로 정규화된 **중심점**이라 [centeredAt] 으로 앉힌다.
  *
+ * 정사각 박스에 [ContentScale.Fit] 로 담으면 긴 변이 박스에 꽉 차고 짧은 변이 비율대로
+ * 줄어들므로, 원본 크기를 몰라도 [TOPPING_BASE_LONG_SIDE_RATIO] 규칙이 지켜진다.
+ *
  * 캔버스 밖으로 나간 배치도 그대로 둔다 — 되돌리거나 가장자리에 붙이지 않고, 넘친 픽셀은
  * Canvas-Area 의 clip 이 잘라 낸다(CAN-007 §3.6·§3.7).
  */
@@ -98,14 +95,16 @@ private fun CanvasTopping(
     onClick: () -> Unit,
 ) {
     val transform = topping.transform
-    val side = canvasWidth * TOPPING_BASE_LONG_SIDE_RATIO * transform.scale.toFloat()
+    val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
 
     Box(
         modifier = Modifier
             .centeredAt(
-                DpOffset(
-                    x = canvasWidth * transform.positionX.toFloat(),
-                    y = canvasHeight * transform.positionY.toFloat(),
+                toppingCenter(
+                    canvasWidth = canvasWidth,
+                    canvasHeight = canvasHeight,
+                    positionX = transform.positionX.toFloat(),
+                    positionY = transform.positionY.toFloat(),
                 ),
             )
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다

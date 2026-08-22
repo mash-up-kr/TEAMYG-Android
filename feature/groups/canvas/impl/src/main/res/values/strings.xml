@@ -24,6 +24,9 @@
     <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>
     <string name="canvas_bg_edit_topping_delete_dialog_confirm">삭제하기</string>
     <string name="canvas_bg_edit_topping_delete_dialog_cancel">그만두기</string>
+    <string name="canvas_bg_edit_save_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="canvas_bg_edit_save_error_unsupported_image">이 사진은 배경으로 쓸 수 없어요\n다른 사진을 골라 주세요</string>
+    <string name="canvas_bg_edit_save_error_unknown">배경을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
     <string name="canvas_topping_place_title">토핑배치</string>
     <string name="canvas_topping_place_draft_unavailable">올릴 토핑을 찾지 못했어요. 캔버스에서 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_failed">토핑을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>

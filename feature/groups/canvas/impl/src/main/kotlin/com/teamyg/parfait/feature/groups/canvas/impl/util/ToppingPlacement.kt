@@ -3,7 +3,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
-import com.teamyg.parfait.feature.groups.canvas.impl.component.TOPPING_BASE_LONG_SIDE_RATIO
 
 /**
  * 배치 화면의 화면 좌표를 서버가 저장하는 정규화 좌표로 바꾼다.

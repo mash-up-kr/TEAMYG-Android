@@ -472,6 +472,45 @@ class CanvasMainViewModelTest {
         assertTrue(viewModel.state.value.isToppingAddEnabled)
     }
 
+    @Test
+    fun clickCanvasEdit_emitsTheCanvasBeingEdited() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 띄운 화면
+        val viewModel = enteredViewModel()
+
+        // When 캔버스 편집
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit())
+
+            // Then 편집 화면은 대상 캔버스를 알아야 한다 — 스스로 오늘 조회를 부르면 캔버스가
+            // 없는 날에는 서버가 하나 더 만든다
+            assertEquals(
+                CanvasMainEffect.NavigateToCanvasBGEdit(
+                    groupId = GroupId(GROUP_ID),
+                    parfaitId = ParfaitId(TODAY_PARFAIT_ID),
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun clickCanvasEdit_beforeTheCanvasArrives_doesNotOpenTheEditor() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 아직 못 받은 화면
+        coEvery { getTodayParfait(any()) } returns Result.failure(IllegalStateException("실패"))
+        val viewModel = enteredViewModel()
+
+        // When 캔버스 편집
+        viewModel.effect.test {
+            // 조회 실패를 알린 효과가 먼저 밀려 있어 이것부터 걷어 낸다
+            assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
+
+            viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit())
+
+            // Then 없는 id 를 지어내 남의 날 캔버스를 고치게 두지 않는다
+            expectNoEvents()
+        }
+    }
+
     private companion object {
         const val GROUP_ID = 7L
         const val TODAY_PARFAIT_ID = 42L
