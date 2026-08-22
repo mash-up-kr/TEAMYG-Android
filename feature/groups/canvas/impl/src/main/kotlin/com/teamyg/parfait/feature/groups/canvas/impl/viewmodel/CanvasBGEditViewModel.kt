@@ -37,7 +37,12 @@ data class CanvasToppingItem(
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
     val borderLayers: List<ToppingBorderLayer> = emptyList(),
-    /** 테두리 편집을 거쳐 새로 구운 이미지 경로. 있으면 [imageResId] 대신 이걸 그린다. */
+    /**
+     * 편집을 거쳐 새로 만든 알맹이 경로. 있으면 [imageResId] 대신 이걸 그린다.
+     *
+     * ⚠️ 이 파일에 테두리는 없다. 테두리는 [borderLayers] 에 값으로 있고 이 화면은 아직 그리지
+     * 않는다 — 그래서 테두리 재편집이 이 화면에서 무반응이다(`synthesis/open-questions.md`).
+     */
     val editedImagePath: String? = null,
 )
 
@@ -345,7 +350,7 @@ constructor(
                 // 다시 편집을 열 때 이 사진에서 시작해야 방금 지운/되살린 영역이 유지된다
                 segmentationImageUri = File(intent.result.cutoutImagePath).toUri().toString(),
                 borderLayers = intent.result.borderLayers,
-                editedImagePath = intent.result.editedImagePath,
+                editedImagePath = intent.result.subjectImagePath,
             )
         }
     }

@@ -12,6 +12,8 @@ import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSourceImpl
 import com.teamyg.parfait.data.source.token.local.EncryptedTokenStore
 import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSource
+import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -50,4 +52,10 @@ interface LocalDataSourceModule {
     @Binds
     @Singleton
     fun bindGroupLocalDataSource(groupLocalDataSourceImpl: GroupLocalDataSourceImpl): GroupLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindToppingDraftLocalDataSource(
+        toppingDraftLocalDataSourceImpl: ToppingDraftLocalDataSourceImpl,
+    ): ToppingDraftLocalDataSource
 }

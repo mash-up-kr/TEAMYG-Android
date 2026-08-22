@@ -44,12 +44,14 @@ fun YGCanvasMenu(
                 text = addAction.text,
                 onClick = addAction.onClick,
                 iconResource = addAction.iconResource,
+                isEnabled = addAction.isEnabled,
                 modifier = Modifier.weight(1f),
             )
             YGStrokeButton(
                 text = editAction.text,
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
+                isEnabled = editAction.isEnabled,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -87,6 +89,19 @@ private fun YGCanvasMenuPreview() = PreviewBox {
             expandedItems = listOf(
                 YGCanvasMenuItem(text = "카메라로 촬영", onClick = {}),
                 YGCanvasMenuItem(text = "갤러리에서 선택", onClick = {}),
+            ),
+        )
+        YGCanvasMenu(
+            addAction = YGCanvasMenuAction(
+                text = "토핑 추가",
+                iconResource = R.drawable.ic_plus,
+                onClick = {},
+                isEnabled = false,
+            ),
+            editAction = YGCanvasMenuAction(
+                text = "캔버스 편집",
+                iconResource = R.drawable.ic_caret_right,
+                onClick = {},
             ),
         )
     }

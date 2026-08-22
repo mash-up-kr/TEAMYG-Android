@@ -61,6 +61,9 @@ object ServerErrorCode {
 
         /** 404 — 토큰의 memberId 가 서버에 없다. 같은 문자열이 인증 도메인에서는 401 이라 [Auth] 와 나눠 둔다 */
         const val MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND"
+
+        /** 403 — 그 그룹의 멤버가 아니다. 토핑 배치 POST 가 마감 검사보다 **먼저** 이 검사를 한다 */
+        const val GROUP_NOT_JOINED = "GROUP_NOT_JOINED"
     }
 
     /** 회원 도메인(`/api/v1/users/...`) — 서버 `MemberErrorCode` 에 대응한다 */
@@ -94,12 +97,33 @@ object ServerErrorCode {
          * 화면이 열려 있었을 때 나온다 — 앱은 오늘 캔버스만 편집 대상으로 두지만
          * (`CanvasMainUiState.todayCanvas`) 편집을 시작한 뒤 경계를 넘으면 그 방어를 지나간다.
          *
-         * 처분이 다른 실패와 다르다 — **되돌리지 않고 알린다.** 토핑 추가 흐름이 이 코드를
-         * 받으면 화면 이동은 그대로 진행하고 실패만 알린다(막 만든 토핑을 들고 갈 곳이 없어지면
-         * 사용자가 작업을 통째로 잃는다). 재시도해도 같은 결과이므로 재시도를 권하지 않고,
-         * 새 캔버스를 받으려면 오늘 조회를 다시 해야 한다.
+         * 처분이 다른 실패와 다르다 — **되돌리지 않고 알린다.** 업로드된 이미지를 롤백하지
+         * 않고 실패만 알린다(막 만든 토핑을 들고 갈 곳이 없어지면 사용자가 작업을 통째로
+         * 잃는다). 재시도해도 같은 결과이므로 재시도를 권하지 않고, 새 캔버스를 받으려면
+         * 오늘 조회를 다시 해야 한다. 알린 뒤 화면을 어떻게 다루는지(되감을지 남을지)는
+         * 소비처가 정한다 — 이 상수가 알 바가 아니다.
          */
         const val PARFAIT_ALREADY_CLOSED = "PARFAIT_ALREADY_CLOSED"
+    }
+
+    /** 서버 `ParfaitImageErrorCode` 에 대응한다 */
+    object ParfaitImage {
+        /**
+         * 404 — `parfaitId` 가 그 그룹의 파르페가 아니다.
+         *
+         * ⚠️ "존재하지 않음"과 "남의 그룹 것"을 구분하지 않는다 — 서버가
+         * `findByIdAndGroupId` 하나로 판정한다. 같은 문자열을 `ParfaitErrorCode` 도 갖지만
+         * (캔버스 상세 조회·배경 변경) 둘 다 404 라 와이어에서 구분되지 않는다 — 그래서 이
+         * 문자열을 보는 판정은 `code` 단독으로 한다. 검사 순서는 `api/parfait-image.md`.
+         */
+        const val PARFAIT_NOT_FOUND = "PARFAIT_NOT_FOUND"
+
+        /**
+         * 400 — `SOLID`인데 색·두께 중 하나가 없다. 토핑 배치 POST 가 던질 수 있는 코드다
+         * (`ToppingBorder` 가 그 조합을 표현 불가능하게 만들어 앱에서는 도달하지 않지만,
+         * 서버 계약에는 있다 — `api/parfait-image.md` 배치(POST) 실패 표).
+         */
+        const val INVALID_BORDER = "INVALID_BORDER"
     }
 
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */

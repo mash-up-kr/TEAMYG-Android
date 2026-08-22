@@ -4,10 +4,14 @@ import com.teamyg.parfait.data.di.NetworkModule
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.model.exception.PresignedUploadException
 import com.teamyg.parfait.data.model.qualifier.UploadClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.OkHttpClient
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -18,6 +22,7 @@ import kotlin.test.assertTrue
 
 class PresignedUploadDataSourceImplTest {
     private lateinit var server: MockWebServer
+    private lateinit var client: OkHttpClient
     private lateinit var dataSource: PresignedUploadDataSource
     private lateinit var file: File
 
@@ -25,7 +30,8 @@ class PresignedUploadDataSourceImplTest {
     fun setUp() {
         server = MockWebServer()
         server.start()
-        dataSource = PresignedUploadDataSourceImpl(NetworkModule.provideUploadOkHttpClient())
+        client = NetworkModule.provideUploadOkHttpClient()
+        dataSource = PresignedUploadDataSourceImpl(client)
         file = File.createTempFile("topping", ".png")
         file.writeBytes(ByteArray(FILE_SIZE) { index -> index.toByte() })
     }
@@ -153,8 +159,54 @@ class PresignedUploadDataSourceImplTest {
         assertIs<ApiException.Network>(result.exceptionOrNull())
     }
 
+    @Test
+    fun put_whenCallerIsCancelled_cancelsTheHttpCall() = runTest {
+        // Given 응답을 오래 붙잡고 놓지 않는 서버
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(200)
+                .headersDelay(HANG_SECONDS, TimeUnit.SECONDS)
+                .build(),
+        )
+
+        // When 전송이 시작된 뒤 호출자가 취소된다
+        val job = launch(Dispatchers.IO) {
+            dataSource.put(
+                uploadUrl = server.url("/upload").toString(),
+                contentType = "image/png",
+                file = file,
+            )
+        }
+        // 요청이 실제로 나간 뒤에 취소해야 "취소가 호출을 끊는지"를 보는 테스트가 된다
+        server.takeRequest()
+        // ⚠️ join 하지 않는다. 블로킹 execute() 를 쓰는 구현에서는 join 이 응답 도착까지
+        // 기다려 버려, 그 뒤에 세면 호출이 이미 걷힌 뒤라 구·신 구현이 똑같이 통과한다
+        job.cancel()
+
+        // Then 열린 호출이 사라진다. 취소가 안 이어지면 HANG_SECONDS 내내 1 로 남는다
+        assertTrue(awaitNoRunningCalls(), "취소 후에도 열린 업로드 호출이 남았다")
+    }
+
+    /**
+     * OkHttp 는 `cancel()` 직후가 아니라 전송 스레드가 취소를 알아챈 뒤에 호출을 걷는다.
+     * 그래서 즉시 단언하면 경합이 되고, 대신 짧은 상한 안에 0 이 되는지를 본다.
+     */
+    private fun awaitNoRunningCalls(): Boolean {
+        val deadline = System.nanoTime() + CANCEL_TIMEOUT_MILLIS * NANOS_PER_MILLI
+        while (System.nanoTime() < deadline) {
+            if (client.dispatcher.runningCallsCount() == 0) return true
+            Thread.sleep(POLL_INTERVAL_MILLIS)
+        }
+        return false
+    }
+
     private companion object {
         const val FILE_SIZE = 1024
+        const val HANG_SECONDS = 10L
+        const val CANCEL_TIMEOUT_MILLIS = 2_000L
+        const val POLL_INTERVAL_MILLIS = 10L
+        const val NANOS_PER_MILLI = 1_000_000L
 
         /** 특권 포트 1 은 어떤 서버도 듣지 않아 연결이 즉시 거절된다 */
         const val UNREACHABLE_URL = "http://127.0.0.1:1/upload"

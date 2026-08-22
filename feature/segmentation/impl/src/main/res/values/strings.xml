@@ -6,6 +6,7 @@
 
     <string name="segmentation_confirm_edit_photo">사진 편집</string>
     <string name="segmentation_confirm_next">다음</string>
+    <string name="segmentation_confirm_draft_unavailable">토핑을 이어서 만들 수 없어요. 캔버스에서 다시 시작해 주세요.</string>
 
     <string name="topping_edit_undo">실행 취소</string>
     <string name="topping_edit_redo">다시 실행</string>

@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.model.qualifier.UploadClient
 import com.teamyg.parfait.data.network.AuthInterceptor
+import com.teamyg.parfait.data.network.SelectiveLoggingInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
 import com.teamyg.parfait.data.network.TokenStoreTokenProvider
@@ -14,6 +15,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.Dispatcher
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -128,10 +130,17 @@ object NetworkModule {
         .build()
 
     /** 두 클라이언트가 같은 로깅·`Authorization` 마스킹 처리를 받는다 */
-    private fun loggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
-        redactHeader("Authorization")
-    }
+    private fun loggingInterceptor(): Interceptor = SelectiveLoggingInterceptor(
+        full = httpLoggingInterceptor(HttpLoggingInterceptor.Level.BODY),
+        // 본문만 뺀다. BASIC 은 헤더까지 통째로 버려 실패 원인을 좁힐 단서가 사라진다
+        redacted = httpLoggingInterceptor(HttpLoggingInterceptor.Level.HEADERS),
+    )
+
+    private fun httpLoggingInterceptor(debugLevel: HttpLoggingInterceptor.Level): HttpLoggingInterceptor =
+        HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) debugLevel else HttpLoggingInterceptor.Level.NONE
+            redactHeader("Authorization")
+        }
 
     private const val CONNECT_TIMEOUT_SECONDS = 10L
     private const val READ_TIMEOUT_SECONDS = 15L
