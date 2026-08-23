@@ -1,6 +1,7 @@
 package com.teamyg.parfait.domain.repository.image
 
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 
 interface ImageSegmentationRepository {
@@ -13,6 +14,14 @@ interface ImageSegmentationRepository {
     suspend fun decodeImage(uri: String): BitmapWrapper
 
     suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<SegmentationResult>
+
+    /**
+     * 고른 후보를 캐시에 PNG 두 장으로 떨군다.
+     *
+     * 두 장인 이유는 쓰는 곳이 요구하는 좌표계가 달라서다 — 수동 편집은 원본과 픽셀로 겹쳐
+     * 그려야 해서 원본 크기 판이 필요하고, 미리보기·배치는 여백 없는 실제 크기가 필요하다.
+     */
+    suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult>
 
     /**
      * 손으로 다듬은 결과 이미지를 캐시에 저장한다.

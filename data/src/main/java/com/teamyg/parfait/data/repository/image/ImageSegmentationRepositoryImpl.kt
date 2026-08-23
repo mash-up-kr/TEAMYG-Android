@@ -2,8 +2,10 @@ package com.teamyg.parfait.data.repository.image
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -130,6 +132,51 @@ constructor(
                 }
             } catch (e: CancellationException) {
                 // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
+                throw e
+            } catch (e: Exception) {
+                Result.failure(SegmentationException.Process(e))
+            }
+        }
+    }
+
+    override suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult> {
+        val trimmed: Bitmap = (candidate.bitmap as? AndroidBitmap)?.getRawData()
+            ?: return Result.failure(SegmentationException.ImageNotFound(null))
+
+        return withContext(Dispatchers.Default) {
+            try {
+                val trimmedFile = trimmed.saveToCacheAsPng()
+
+                // 원본과 같은 좌표계의 판. 편집 화면이 원본 위에 픽셀로 겹쳐 그린다
+                val canvas = Bitmap.createBitmap(
+                    candidate.canvasWidth,
+                    candidate.canvasHeight,
+                    Bitmap.Config.ARGB_8888,
+                )
+
+                val subjectFile = try {
+                    // 스케일하지 않고 그대로 얹는다 — ML Kit 가 준 치수와 bounds 가 어긋나더라도
+                    // 그림이 찌그러지지는 않게 한다
+                    Canvas(canvas).drawBitmap(
+                        trimmed,
+                        candidate.bounds.left.toFloat(),
+                        candidate.bounds.top.toFloat(),
+                        null,
+                    )
+                    canvas.saveToCacheAsPng()
+                } finally {
+                    canvas.recycle()
+                }
+
+                Result.success(
+                    SegmentationResult(
+                        subjectImagePath = subjectFile.absolutePath,
+                        trimmedSubjectImagePath = trimmedFile.absolutePath,
+                        // 이 필드는 Task 3 이 걷는다. 지금은 아직 있어서 넘겨야 컴파일된다
+                        subjectBounds = candidate.bounds,
+                    ),
+                )
+            } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Result.failure(SegmentationException.Process(e))
