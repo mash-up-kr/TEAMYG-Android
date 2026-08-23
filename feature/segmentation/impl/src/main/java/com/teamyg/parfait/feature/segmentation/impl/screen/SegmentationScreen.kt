@@ -34,6 +34,14 @@ internal fun SegmentationScreen(
     onClickCandidate: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (state.isError) {
+        SegmentationErrorScreen(
+            onClickClose = onClickClose,
+            modifier = modifier,
+        )
+        return
+    }
+
     Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
         YGFloatingBarBackClose(
             onBackClick = onClickBack,

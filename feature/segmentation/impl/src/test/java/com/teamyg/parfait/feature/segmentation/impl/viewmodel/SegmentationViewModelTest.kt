@@ -119,10 +119,11 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 크래시 대신 토스트로 알리고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 크래시 대신 실패 화면으로 바뀌고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
+        assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
         coVerify(exactly = 0) { segmentImage(any()) }
+        viewModel.effect.test { expectNoEvents() }
     }
 
     @Test
@@ -134,8 +135,8 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 토스트로 알리고 로딩 오버레이는 걷힌다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 실패 화면으로 바뀌고 로딩 오버레이는 걷힌다
+        assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
     }
 
@@ -148,8 +149,8 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 실패로 알린다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 실패 화면으로 바꾼다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
+        assertTrue(viewModel.state.value.isError)
     }
 
     @Test

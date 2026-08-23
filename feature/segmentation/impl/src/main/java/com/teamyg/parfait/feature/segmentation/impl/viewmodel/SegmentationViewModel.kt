@@ -26,6 +26,8 @@ data class SegmentationState(
     val isLoading: Boolean = true,
     val originBitmap: Bitmap? = null,
     val candidates: List<SegmentationCandidate> = emptyList(),
+    /** 잘라낼 대상을 못 얻은 상태. 화면 전체가 `C-103-Error` 로 바뀐다 */
+    val isError: Boolean = false,
 ) : UiState
 
 sealed interface SegmentationIntent : UiIntent {
@@ -33,7 +35,10 @@ sealed interface SegmentationIntent : UiIntent {
 }
 
 sealed interface SegmentationEffect : UiSideEffect {
-    /** 재시도 동선이 없는 실패라 상태로 남기지 않는다 — 토스트로 한 번 알리고 끝이다. */
+    /**
+     * 고른 뒤의 실패에만 쓴다. 후보 목록이 그대로 남아 다른 대상을 고를 수 있으므로 화면을 덮지 않고
+     * 토스트로 한 번 알린다. 대상을 아예 못 얻은 실패는 [SegmentationState.isError] 가 받는다.
+     */
     data object ShowError : SegmentationEffect
 
     data class GoToConfirm(
@@ -64,8 +69,7 @@ class SegmentationViewModel
             val bitmapWrapper = decodeImageUseCase(sourceImageUri).getOrNull()
 
             if (bitmapWrapper == null) {
-                postSideEffect(SegmentationEffect.ShowError)
-                updateState { copy(isLoading = false) }
+                updateState { copy(isLoading = false, isError = true) }
                 return@launch
             }
 
@@ -78,12 +82,12 @@ class SegmentationViewModel
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
                     if (candidates.isEmpty()) {
-                        postSideEffect(SegmentationEffect.ShowError)
+                        updateState { copy(isError = true) }
                         return@onSuccess
                     }
 
                     updateState { copy(candidates = candidates) }
-                }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
+                }.onFailure { updateState { copy(isError = true) } }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }
