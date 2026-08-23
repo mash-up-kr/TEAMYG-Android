@@ -107,8 +107,6 @@ constructor(
     }
 
     /**
-     * 세그멘터를 열고, optional module 을 확인하고, 한 장을 처리한 뒤 닫는다.
-     *
      * 모델은 APK 가 아니라 Play 서비스가 내려주는 optional module 이라, 받기 전에 process 하면 실패한다.
      */
     private suspend fun runSegmenter(
@@ -161,8 +159,6 @@ constructor(
         }
 
     /**
-     * 전경 마스크 결과를 후보 한 개로 옮긴다.
-     *
      * 마스크가 없거나 치수가 어긋나면 빈 목록이다 — 없는 후보를 지어내지 않는다.
      */
     private fun SubjectSegmentationResult.toForegroundCandidate(origin: Bitmap): List<SegmentationCandidate> {
@@ -210,7 +206,6 @@ constructor(
             try {
                 val trimmedFile = trimmed.saveToCacheAsPng()
 
-                // 원본과 같은 좌표계의 판. 편집 화면이 원본 위에 픽셀로 겹쳐 그린다
                 val canvasBitmap = Bitmap.createBitmap(
                     candidate.canvasWidth,
                     candidate.canvasHeight,

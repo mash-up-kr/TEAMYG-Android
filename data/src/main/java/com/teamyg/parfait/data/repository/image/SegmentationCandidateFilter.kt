@@ -5,7 +5,6 @@ import com.teamyg.parfait.domain.model.SegmentationCandidate
 /** 원본 면적 대비 이 비율 **미만** 인 후보는 버린다 */
 internal const val MIN_SUBJECT_AREA_RATIO = 0.01f
 
-/** 화면에 동시에 올리는 후보 수 상한 */
 internal const val MAX_SUBJECT_COUNT = 5
 
 /**

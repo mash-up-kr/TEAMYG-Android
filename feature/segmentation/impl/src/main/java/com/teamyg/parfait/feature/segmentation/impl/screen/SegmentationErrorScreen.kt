@@ -27,9 +27,8 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 /**
  * 대상을 잘라내지 못했을 때의 화면(Figma `C-103-Error`).
  *
- * 상단 바에 닫기만 두는 것은 디자인이 정한 것이다. 재시도·원본 사용 버튼은 없고 문구로만 안내한다 —
- * 위키 [[누끼-따기]] 가 말하는 "재시도 또는 원본 사용 옵션"과 갈리는 자리이며 그 판단은
- * `synthesis/open-questions.md` OQ-P-003 ① 에 남아 있다.
+ * 재시도·원본 사용 버튼이 없는 것은 정책과 갈리는 자리다
+ * (`specs/2026-08-23-c103-multi-subject-selection.md` 「실패 화면」 절).
  */
 @Composable
 internal fun SegmentationErrorScreen(
