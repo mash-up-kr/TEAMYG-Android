@@ -1,7 +1,7 @@
 package com.teamyg.parfait.domain.usecase.image
 
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.domain.model.SegmentationResult
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import javax.inject.Inject
@@ -15,6 +15,6 @@ constructor(
         useCaseLogger.i { "SegmentImageUseCase::init" }
     }
 
-    suspend operator fun invoke(bitmapWrapper: BitmapWrapper): Result<SegmentationResult> =
+    suspend operator fun invoke(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>> =
         repository.segmentImage(bitmapWrapper)
 }

@@ -13,7 +13,11 @@ interface ImageSegmentationRepository {
      */
     suspend fun decodeImage(uri: String): BitmapWrapper
 
-    suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<SegmentationResult>
+    /**
+     * 사진에서 고를 수 있는 피사체 후보를 찾는다. **디스크를 건드리지 않는다** — 고른 하나만
+     * [persistSubject] 로 떨군다.
+     */
+    suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>>
 
     /**
      * 고른 후보를 캐시에 PNG 두 장으로 떨군다.

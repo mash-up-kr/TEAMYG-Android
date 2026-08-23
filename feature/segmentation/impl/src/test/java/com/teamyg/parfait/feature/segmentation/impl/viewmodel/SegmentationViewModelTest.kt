@@ -4,12 +4,14 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
+import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -37,19 +39,27 @@ class SegmentationViewModelTest {
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
+    private val persistSubject: PersistSubjectUseCase = mockk()
 
     private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
+
+    private val candidate = SegmentationCandidate(
+        bounds = SegmentationBounds(left = 0, top = 0, right = 10, bottom = 10),
+        bitmap = bitmapWrapper,
+        canvasWidth = 100,
+        canvasHeight = 100,
+    )
 
     private val success = SegmentationResult(
         subjectImagePath = SUBJECT_PATH,
         trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
-        subjectBounds = SegmentationBounds(left = 0, top = 0, right = 10, bottom = 10),
     )
 
     @Before
     fun stubTheHappyPath() {
         coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
+        coEvery { persistSubject(candidate) } returns Result.success(success)
     }
 
     private fun viewModel() = SegmentationViewModel(
@@ -58,6 +68,7 @@ class SegmentationViewModelTest {
         clearSegmentationCacheUseCase = clearSegmentationCache,
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
+        persistSubjectUseCase = persistSubject,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -120,8 +131,8 @@ class SegmentationViewModelTest {
 
     @Test
     fun init_noSubjectDetected_tellsTheUser() = runTest {
-        // Given 성공했지만 감지된 객체가 없는 응답
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success.copy(subjectBounds = null))
+        // Given 성공했지만 후보가 하나도 없는 응답
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(emptyList())
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -129,6 +140,20 @@ class SegmentationViewModelTest {
 
         // Then 실패로 알린다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
         viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+    }
+
+    @Test
+    fun init_persistFails_tellsTheUser() = runTest {
+        // Given 후보는 잡혔지만 파일로 떨구는 데 실패하는 상황
+        coEvery { persistSubject(candidate) } returns Result.failure(IllegalStateException("no space"))
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 토스트로 알리고 로딩 오버레이는 걷힌다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     @Test
@@ -211,9 +236,7 @@ class SegmentationViewModelTest {
 
     @Test
     fun init_segmentationSucceeds_recordsTheDraft() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 세그멘테이션이 성공한다
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
-
+        // Given 정상 응답
         // When 화면이 돈다
         viewModel()
         advanceUntilIdle()

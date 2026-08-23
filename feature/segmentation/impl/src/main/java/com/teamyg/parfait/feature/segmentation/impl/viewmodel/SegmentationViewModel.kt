@@ -14,6 +14,7 @@ import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
+import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -44,6 +45,7 @@ class SegmentationViewModel
     private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
+    private val persistSubjectUseCase: PersistSubjectUseCase,
     private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
@@ -69,33 +71,36 @@ class SegmentationViewModel
             updateState { copy(originBitmap = originBitmap) }
 
             segmentImageUseCase(bitmapWrapper)
-                .onSuccess { result ->
-                    val subjectBounds = result.subjectBounds
+                .onSuccess { candidates ->
+                    // PR2 에서 사용자가 고르게 된다. 지금은 첫 후보를 자동으로 집어 화면 동작을 유지한다
+                    val candidate = candidates.firstOrNull()
 
-                    // bounds 가 없으면 하이라이트도 다음 화면으로 갈 방법도 없는 화면만 남는다
-                    if (subjectBounds == null) {
+                    if (candidate == null) {
                         postSideEffect(SegmentationEffect.ShowError)
                         return@onSuccess
                     }
 
-                    updateState {
-                        copy(
-                            subjectImagePath = result.subjectImagePath,
-                            trimmedSubjectImagePath = result.trimmedSubjectImagePath,
-                            subjectBounds = subjectBounds,
-                        )
-                    }
+                    persistSubjectUseCase(candidate)
+                        .onSuccess { result ->
+                            updateState {
+                                copy(
+                                    subjectImagePath = result.subjectImagePath,
+                                    trimmedSubjectImagePath = result.trimmedSubjectImagePath,
+                                    subjectBounds = candidate.bounds,
+                                )
+                            }
 
-                    // 흐름의 결과물은 초안이 나른다(`adr/0026-topping-draft-datastore-ssot.md`).
-                    // 미리보기·배치에 쓸 것은 여백을 걷은 판이고, 재편집 마스크는 좌표계를 지킨 판이다
-                    runSuspendCatching {
-                        toppingDraftRepository.record(
-                            subjectImagePath = result.trimmedSubjectImagePath,
-                            cutoutImagePath = result.subjectImagePath,
-                            borderColorArgb = null,
-                            borderWidthDp = null,
-                        )
-                    }
+                            // 흐름의 결과물은 초안이 나른다(`adr/0026-topping-draft-datastore-ssot.md`).
+                            // 미리보기·배치에 쓸 것은 여백을 걷은 판이고, 재편집 마스크는 좌표계를 지킨 판이다
+                            runSuspendCatching {
+                                toppingDraftRepository.record(
+                                    subjectImagePath = result.trimmedSubjectImagePath,
+                                    cutoutImagePath = result.subjectImagePath,
+                                    borderColorArgb = null,
+                                    borderWidthDp = null,
+                                )
+                            }
+                        }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
                 }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다

@@ -20,9 +20,11 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.exception.SegmentationException
+import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,7 +43,7 @@ constructor(
         return bitmap.toAndroidBitmap()
     }
 
-    override suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<SegmentationResult> {
+    override suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>> {
         val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData() ?: return Result.failure(
             SegmentationException.ImageNotFound(null),
         )
@@ -50,6 +52,13 @@ constructor(
 
         val options = SubjectSegmenterOptions
             .Builder()
+            .enableMultipleSubjects(
+                SubjectSegmenterOptions.SubjectResultOptions
+                    .Builder()
+                    .enableSubjectBitmap()
+                    .build(),
+            )
+            // 후보가 0건일 때 폴백이 쓴다
             .enableForegroundConfidenceMask()
             .build()
 
@@ -75,68 +84,84 @@ constructor(
         }
 
         return withContext(Dispatchers.Default) {
-            // 이 블록은 위 try 밖이라, 안에서 예외가 그대로 새어나가면 toSegmentationException
-            // 매핑을 타지 못하고 호출부(SegmentationViewModel init)의 코루틴을 그대로 죽인다.
-            // saveToCacheAsPng() 의 IOException(저장 공간 부족·캐시 회수 등)을 값으로 감싼다
             try {
-                // 마스크가 없으면 잘라낼 근거가 없다. 실패도 값으로 돌려준다
-                val foregroundMask = result.foregroundConfidenceMask
-                    ?: return@withContext Result.failure(SegmentationException.Process(null))
+                val candidates = filterCandidates(result.toCandidates(bitmap))
 
-                val width = bitmap.width
-                val height = bitmap.height
+                // 필터가 전부 걸러 낸 경우도 폴백을 태운다. 이 갈래를 빼면 지금 잘 되던 사진이
+                // 다중 전환 이후 실패로 바뀐다
+                val resolved = candidates.ifEmpty { result.fallbackCandidates(bitmap) }
 
-                // InputImage.fromBitmap(bitmap, 0) 이라 지금은 치수가 같지만 그 일치가 계약으로
-                // 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 객체로 오려낸다.
-                // absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼으므로(넘으면
-                // IndexOutOfBoundsException), 남은 유효 구간을 뜻하는 remaining() 으로 비교한다
-                if (foregroundMask.remaining() != width * height) {
-                    return@withContext Result.failure(SegmentationException.Process(null))
-                }
-
-                val pixels = IntArray(width * height)
-                bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-
-                val subjectBounds = maskSubjectPixels(pixels, foregroundMask, width, height)
-
-                val subjectBitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
-
-                // subjectBitmap 이 살아 있는 구간을 finally 로 감싸서, 저장 도중 실패해도
-                // 전체 해상도 비트맵이 GC 전까지 붙들려 있지 않게 한다
-                try {
-                    val file = subjectBitmap.saveToCacheAsPng()
-
-                    // 미리보기·배치는 투명 여백 없이 실제 객체 크기만 필요하므로, 이미 알고 있는 bounding box 로 바로 잘라 둔다
-                    val trimmedFile = subjectBounds?.let { bounds ->
-                        val trimmedBitmap = Bitmap.createBitmap(
-                            subjectBitmap,
-                            bounds.left,
-                            bounds.top,
-                            bounds.width,
-                            bounds.height,
-                        )
-                        val saved = trimmedBitmap.saveToCacheAsPng()
-                        if (trimmedBitmap !== subjectBitmap) trimmedBitmap.recycle()
-                        saved
-                    }
-
-                    val segmentationResult = SegmentationResult(
-                        subjectImagePath = file.absolutePath,
-                        trimmedSubjectImagePath = (trimmedFile ?: file).absolutePath,
-                        subjectBounds = subjectBounds,
-                    )
-
-                    Result.success(segmentationResult)
-                } finally {
-                    subjectBitmap.recycle()
-                }
+                Result.success(resolved)
             } catch (e: CancellationException) {
-                // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
                 throw e
             } catch (e: Exception) {
                 Result.failure(SegmentationException.Process(e))
             }
         }
+    }
+
+    /**
+     * `getBitmap()` 은 널을 돌려줄 수 있다 — `enableSubjectBitmap()` 을 켰다는 이유로 비널을
+     * 단정하지 않는다. 판이 없는 후보는 고를 수 없으므로 버린다.
+     */
+    private fun SubjectSegmentationResult.toCandidates(origin: Bitmap): List<SegmentationCandidate> =
+        subjects.mapNotNull { subject ->
+            val subjectBitmap = subject.bitmap ?: return@mapNotNull null
+
+            SegmentationCandidate(
+                // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다
+                bounds = SegmentationBounds(
+                    left = subject.startX,
+                    top = subject.startY,
+                    right = subject.startX + subject.width,
+                    bottom = subject.startY + subject.height,
+                ),
+                bitmap = subjectBitmap.toAndroidBitmap(),
+                canvasWidth = origin.width,
+                canvasHeight = origin.height,
+            )
+        }
+
+    /**
+     * 후보가 하나도 안 남았을 때 전경 마스크로 한 개를 만든다.
+     *
+     * 이 경로가 실제로 도달 가능한지는 아직 확인하지 못했다(`synthesis/open-questions.md` OQ-P-268).
+     */
+    private fun SubjectSegmentationResult.fallbackCandidates(origin: Bitmap): List<SegmentationCandidate> {
+        val foregroundMask = foregroundConfidenceMask ?: return emptyList()
+
+        val width = origin.width
+        val height = origin.height
+
+        // InputImage.fromBitmap(bitmap, 0) 이라 지금은 치수가 같지만 그 일치가 계약으로
+        // 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 객체로 오려낸다.
+        // absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼으므로(넘으면
+        // IndexOutOfBoundsException), 남은 유효 구간을 뜻하는 remaining() 으로 비교한다
+        if (foregroundMask.remaining() != width * height) return emptyList()
+
+        val pixels = IntArray(width * height)
+        origin.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        val bounds = maskSubjectPixels(pixels, foregroundMask, width, height) ?: return emptyList()
+
+        val masked = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+
+        // 잘라내야 한다 — 후보의 비트맵은 bounds 크기라는 것이 저장 쪽 전제다.
+        // 원본 크기 판을 그대로 실으면 (left, top) 만큼 밀려 그려진다
+        val trimmed = Bitmap.createBitmap(masked, bounds.left, bounds.top, bounds.width, bounds.height)
+
+        // createBitmap 은 자를 것이 없으면 원본 인스턴스를 그대로 돌려준다.
+        // 그때 회수하면 방금 만든 판이 사라진다
+        if (trimmed !== masked) masked.recycle()
+
+        return listOf(
+            SegmentationCandidate(
+                bounds = bounds,
+                bitmap = trimmed.toAndroidBitmap(),
+                canvasWidth = width,
+                canvasHeight = height,
+            ),
+        )
     }
 
     override suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult> {
@@ -172,8 +197,6 @@ constructor(
                     SegmentationResult(
                         subjectImagePath = subjectFile.absolutePath,
                         trimmedSubjectImagePath = trimmedFile.absolutePath,
-                        // 이 필드는 Task 3 이 걷는다. 지금은 아직 있어서 넘겨야 컴파일된다
-                        subjectBounds = candidate.bounds,
                     ),
                 )
             } catch (e: CancellationException) {
