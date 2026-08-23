@@ -50,6 +50,13 @@ class SegmentationViewModelTest {
         canvasHeight = 100,
     )
 
+    private val secondCandidate = SegmentationCandidate(
+        bounds = SegmentationBounds(left = 20, top = 20, right = 30, bottom = 30),
+        bitmap = bitmapWrapper,
+        canvasWidth = 100,
+        canvasHeight = 100,
+    )
+
     private val success = SegmentationResult(
         subjectImagePath = SUBJECT_PATH,
         trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
@@ -232,6 +239,21 @@ class SegmentationViewModelTest {
         // Then 곁다리 기록의 실패가 잘라내기 자체를 막지 않는다
         assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
         viewModel.effect.test { expectNoEvents() }
+    }
+
+    @Test
+    fun init_multipleCandidatesDetected_persistsOnlyTheFirstCandidate() = runTest {
+        // Given 세그멘테이션이 서로 다른 좌표의 후보 둘을 돌려주는 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 첫 후보로만 저장이 불리고, 상태에는 첫 후보의 좌표가 실린다
+        coVerify(exactly = 1) { persistSubject(candidate) }
+        coVerify(exactly = 0) { persistSubject(secondCandidate) }
+        assertEquals(candidate.bounds, viewModel.state.value.subjectBounds)
     }
 
     @Test

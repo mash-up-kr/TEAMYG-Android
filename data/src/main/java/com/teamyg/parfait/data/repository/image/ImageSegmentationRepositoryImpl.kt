@@ -92,9 +92,8 @@ constructor(
                 val resolved = candidates.ifEmpty { result.fallbackCandidates(bitmap) }
 
                 Result.success(resolved)
-            } catch (e: CancellationException) {
-                throw e
             } catch (e: Exception) {
+                // 필터·변환이 던질 수 있는 예상 밖 실패를 화면에 토스트로 전달할 수 있게 감싼다
                 Result.failure(SegmentationException.Process(e))
             }
         }
@@ -109,12 +108,14 @@ constructor(
             val subjectBitmap = subject.bitmap ?: return@mapNotNull null
 
             SegmentationCandidate(
-                // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다
+                // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다.
+                // ML Kit 문서는 getWidth()·getHeight() 가 getBitmap() 의 실제 치수와 같다고
+                // 보장하지 않으므로, subject 가 아니라 subjectBitmap 에서 치수를 뽑는다
                 bounds = SegmentationBounds(
                     left = subject.startX,
                     top = subject.startY,
-                    right = subject.startX + subject.width,
-                    bottom = subject.startY + subject.height,
+                    right = subject.startX + subjectBitmap.width,
+                    bottom = subject.startY + subjectBitmap.height,
                 ),
                 bitmap = subjectBitmap.toAndroidBitmap(),
                 canvasWidth = origin.width,
@@ -173,7 +174,7 @@ constructor(
                 val trimmedFile = trimmed.saveToCacheAsPng()
 
                 // 원본과 같은 좌표계의 판. 편집 화면이 원본 위에 픽셀로 겹쳐 그린다
-                val canvas = Bitmap.createBitmap(
+                val canvasBitmap = Bitmap.createBitmap(
                     candidate.canvasWidth,
                     candidate.canvasHeight,
                     Bitmap.Config.ARGB_8888,
@@ -182,15 +183,15 @@ constructor(
                 val subjectFile = try {
                     // 스케일하지 않고 그대로 얹는다 — ML Kit 가 준 치수와 bounds 가 어긋나더라도
                     // 그림이 찌그러지지는 않게 한다
-                    Canvas(canvas).drawBitmap(
+                    Canvas(canvasBitmap).drawBitmap(
                         trimmed,
                         candidate.bounds.left.toFloat(),
                         candidate.bounds.top.toFloat(),
                         null,
                     )
-                    canvas.saveToCacheAsPng()
+                    canvasBitmap.saveToCacheAsPng()
                 } finally {
-                    canvas.recycle()
+                    canvasBitmap.recycle()
                 }
 
                 Result.success(
