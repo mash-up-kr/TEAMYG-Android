@@ -9,23 +9,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.toSize
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.SegmentationBounds
-import kotlin.math.min
 
 /**
- * 감지된 객체를 dashed Rectangle 로 표시하고, 그 바깥 영역만 어둡게 덮는 오버레이.
+ * 감지된 후보들을 dashed Rectangle 로 표시하고, **모든 후보 바깥**을 어둡게 덮는 오버레이.
  *
- * [bounds] 는 원본 이미지의 픽셀 좌표라서, 이미지가 [androidx.compose.ui.layout.ContentScale.Fit]
+ * [boundsList] 는 원본 이미지의 픽셀 좌표라서, 이미지가 [androidx.compose.ui.layout.ContentScale.Fit]
  * 으로 그려진 위치에 맞춰 변환한 뒤 그린다. 따라서 이미지와 **같은 크기의 영역**에 겹쳐 놓아야 한다.
  *
  * @param imageWidth 원본 이미지 가로 픽셀 수
@@ -33,46 +32,55 @@ import kotlin.math.min
  */
 @Composable
 internal fun SegmentationSubjectHighlight(
-    bounds: SegmentationBounds,
+    boundsList: List<SegmentationBounds>,
     imageWidth: Int,
     imageHeight: Int,
-    onClickSubject: () -> Unit,
+    onClickCandidate: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
     borderWidth: Dp = SegmentationHighlightDefaults.BorderWidth,
     dashLength: Dp = SegmentationHighlightDefaults.DashLength,
     dashGap: Dp = SegmentationHighlightDefaults.DashGap,
 ) {
     Canvas(
-        modifier = modifier.pointerInput(bounds, imageWidth, imageHeight) {
+        modifier = modifier.pointerInput(boundsList, imageWidth, imageHeight) {
             detectTapGestures { tapOffset ->
-                val rect = subjectRect(
-                    bounds = bounds,
+                pickCandidateIndex(
+                    boundsList = boundsList,
                     imageWidth = imageWidth,
                     imageHeight = imageHeight,
-                    canvasSize = size.toSize(),
-                )
-
-                if (rect != null && rect.contains(tapOffset)) onClickSubject()
+                    canvasWidth = size.width.toFloat(),
+                    canvasHeight = size.height.toFloat(),
+                    tapX = tapOffset.x,
+                    tapY = tapOffset.y,
+                )?.let(onClickCandidate)
             }
         },
     ) {
-        subjectRect(
-            bounds = bounds,
-            imageWidth = imageWidth,
-            imageHeight = imageHeight,
-            canvasSize = size,
-        )?.let { rect ->
-            // Difference 로 잘라내서 객체 영역 안쪽에는 딤이 칠해지지 않게 한다
-            clipRect(
-                left = rect.left,
-                top = rect.top,
-                right = rect.right,
-                bottom = rect.bottom,
-                clipOp = ClipOp.Difference,
-            ) {
-                drawRect(color = YGAtomicColors.Transparency.Black25)
-            }
+        val rects = boundsList.mapNotNull { bounds ->
+            scaledRectOrNull(
+                bounds = bounds,
+                imageWidth = imageWidth,
+                imageHeight = imageHeight,
+                canvasWidth = size.width,
+                canvasHeight = size.height,
+            )
+        }
 
+        if (rects.isEmpty()) return@Canvas
+
+        // 후보를 모두 담은 하나의 Path 를 빼면, 후보 수만큼 clipRect 를 중첩한 것과 결과가 같으면서
+        // 재귀 없이 평평하다
+        val holes = Path().apply {
+            rects.forEach { rect ->
+                addRect(Rect(left = rect.left, top = rect.top, right = rect.right, bottom = rect.bottom))
+            }
+        }
+
+        clipPath(path = holes, clipOp = ClipOp.Difference) {
+            drawRect(color = YGAtomicColors.Transparency.Black25)
+        }
+
+        rects.forEach { rect ->
             drawRect(
                 color = YGAtomicColors.Gray.White,
                 topLeft = Offset(x = rect.left, y = rect.top),
@@ -88,32 +96,6 @@ internal fun SegmentationSubjectHighlight(
     }
 }
 
-/**
- * 원본 이미지 픽셀 좌표인 [bounds] 를 [androidx.compose.ui.layout.ContentScale.Fit] 으로 그려진
- * 화면 좌표로 옮긴다. 그리기와 터치 판정이 같은 계산을 쓰도록 한 곳에 모아둔다.
- *
- * @return 이미지 크기가 유효하지 않으면 null
- */
-private fun subjectRect(
-    bounds: SegmentationBounds,
-    imageWidth: Int,
-    imageHeight: Int,
-    canvasSize: Size,
-): Rect? = if (imageWidth <= 0 || imageHeight <= 0) {
-    null
-} else {
-    val scale = min(canvasSize.width / imageWidth, canvasSize.height / imageHeight)
-    val offsetX = (canvasSize.width - imageWidth * scale) / 2f
-    val offsetY = (canvasSize.height - imageHeight * scale) / 2f
-
-    Rect(
-        left = offsetX + bounds.left * scale,
-        top = offsetY + bounds.top * scale,
-        right = offsetX + bounds.right * scale,
-        bottom = offsetY + bounds.bottom * scale,
-    )
-}
-
 internal object SegmentationHighlightDefaults {
     val BorderWidth: Dp = SizeTokens.Size2.getDp()
     val DashLength: Dp = SizeTokens.Size6.getDp()
@@ -124,10 +106,13 @@ internal object SegmentationHighlightDefaults {
 @Composable
 private fun SegmentationSubjectHighlightPreview() = PreviewBox {
     SegmentationSubjectHighlight(
-        bounds = SegmentationBounds(left = 80, top = 120, right = 320, bottom = 480),
+        boundsList = listOf(
+            SegmentationBounds(left = 80, top = 120, right = 320, bottom = 480),
+            SegmentationBounds(left = 40, top = 40, right = 140, bottom = 110),
+        ),
         imageWidth = 400,
         imageHeight = 600,
-        onClickSubject = {},
+        onClickCandidate = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
