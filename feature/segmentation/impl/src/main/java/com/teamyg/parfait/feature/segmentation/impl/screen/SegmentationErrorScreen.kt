@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +56,8 @@ internal fun SegmentationErrorScreen(
                     painter = painterResource(DesignSystemR.drawable.ic_warning_round),
                     contentDescription = null,
                     modifier = Modifier.size(SizeTokens.Size44.getDp()),
+                    // drawable 자체는 검정이다 — 쓰는 쪽이 색을 정한다
+                    colorFilter = ColorFilter.tint(YGAtomicColors.Cherry.Cherry600),
                 )
 
                 Column(
