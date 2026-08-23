@@ -54,7 +54,7 @@ private fun Bitmap.rotatedToUpright(
 }
 
 /**
- * [ImageDecoder.createSource] 가 스트림을 소비하므로 EXIF 는 uri 를 한 번 더 열어서 읽는다.
+ * [MediaStore.Images.Media.getBitmap] 은 EXIF 를 적용하지 않으므로 태그를 따로 읽는다.
  *
  * 못 읽으면 0 이다 — 태그가 깨진 것과 이미지를 못 연 것은 다른 사건이라 디코드를 실패시키지
  * 않는다. 다만 이 갈래가 상시 참이 되면 보정이 조용히 무효가 되므로 남긴다.
@@ -62,6 +62,7 @@ private fun Bitmap.rotatedToUpright(
 private fun ContentResolver.readExifDegrees(uri: Uri): Int = try {
     openInputStream(uri).use { input ->
         if (input == null) {
+            coreUtilAndroidLogger.w { "입력 스트림이 없어 회전 보정을 건너뛴다 - uri: $uri" }
             0
         } else {
             exifOrientationToDegrees(
