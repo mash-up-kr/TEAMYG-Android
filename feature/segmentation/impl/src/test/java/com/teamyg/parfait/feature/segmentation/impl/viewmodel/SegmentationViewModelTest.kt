@@ -18,13 +18,16 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
@@ -302,6 +305,27 @@ class SegmentationViewModelTest {
     }
 
     @Test
+    fun clickCandidate_persisting_showsTheLoadingOverlay() = runTest {
+        // Given 저장이 도는 동안 시간이 걸리는 상황
+        coEvery { persistSubject(candidate) } coAnswers {
+            delay(1_000)
+            Result.success(success)
+        }
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        runCurrent()
+
+        // Then 저장이 끝나기 전엔 로딩이 켜져 있고, 끝나면 걷힌다
+        assertTrue(viewModel.state.value.isLoading)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun clickCandidate_persistFails_keepsTheCandidatesAndTellsTheUser() = runTest {
         // Given 저장이 실패하는 상황
         coEvery { persistSubject(candidate) } returns Result.failure(IllegalStateException("no space"))
@@ -362,5 +386,40 @@ class SegmentationViewModelTest {
         // Then 아무 일도 일어나지 않는다
         coVerify(exactly = 0) { persistSubject(any()) }
         viewModel.effect.test { expectNoEvents() }
+    }
+
+    @Test
+    fun clickCandidate_tapsTheSecondOfTwo_persistsTheTappedCandidate() = runTest {
+        // Given 후보가 둘 잡혀 있다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
+        coEvery { persistSubject(secondCandidate) } returns Result.success(success)
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 두 번째 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 1))
+        advanceUntilIdle()
+
+        // Then 탭한 후보로 저장되고 첫 번째는 저장되지 않는다
+        coVerify(exactly = 1) { persistSubject(secondCandidate) }
+        coVerify(exactly = 0) { persistSubject(candidate) }
+    }
+
+    @Test
+    fun clickCandidate_tappedAgainAfterCompletion_persistsAgain() = runTest {
+        // Given 첫 저장이 이미 끝난 상태
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // When 다시 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 중복 탭 가드는 작업이 도는 동안만 막고, 끝난 뒤에는 다시 저장한다
+        coVerify(exactly = 2) { persistSubject(candidate) }
     }
 }

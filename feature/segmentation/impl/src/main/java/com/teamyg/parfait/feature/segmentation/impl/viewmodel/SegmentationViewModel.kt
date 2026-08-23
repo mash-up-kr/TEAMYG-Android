@@ -102,13 +102,20 @@ class SegmentationViewModel
     }
 
     /**
-     * 저장 → 초안 기록 → 이동 순서를 지킨다. 확인 화면은 정상 진입에서 초안을 구독만 하므로,
-     * 기록을 마치기 전에 보내면 그 화면이 "다음"을 잠근 채 뜬다.
+     * 저장 → 초안 기록 → 이동 순서를 지킨다. 그 순서인 이유는
+     * `parfait/specs/2026-08-23-c103-multi-subject-selection.md`의 「선택 시점에 일어나는
+     * 일의 순서」절.
      */
     private fun selectCandidate(index: Int) {
         val candidate = state.value.candidates.getOrNull(index) ?: return
 
-        launch(key = SELECT_CANDIDATE_KEY) {
+        launch(
+            key = SELECT_CANDIDATE_KEY,
+            onError = {
+                releaseLoading()
+                postSideEffect(SegmentationEffect.ShowError)
+            },
+        ) {
             updateState { copy(isLoading = true) }
 
             persistSubjectUseCase(candidate)
@@ -123,7 +130,7 @@ class SegmentationViewModel
                     }.getOrDefault(false)
 
                     // 이동이 goTo 라 이 화면이 백스택에 남는다. 켠 채 나가면 돌아왔을 때 갇힌다
-                    updateState { copy(isLoading = false) }
+                    releaseLoading()
 
                     if (recorded) {
                         postSideEffect(
@@ -136,10 +143,14 @@ class SegmentationViewModel
                         postSideEffect(SegmentationEffect.ShowError)
                     }
                 }.onFailure {
-                    updateState { copy(isLoading = false) }
+                    releaseLoading()
                     postSideEffect(SegmentationEffect.ShowError)
                 }
         }
+    }
+
+    private fun releaseLoading() {
+        updateState { copy(isLoading = false) }
     }
 }
 
