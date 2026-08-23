@@ -31,7 +31,7 @@ internal fun SegmentationScreen(
     state: SegmentationState,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
-    onClickSubject: () -> Unit,
+    onClickCandidate: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
@@ -56,8 +56,8 @@ internal fun SegmentationScreen(
 
             SegmentationResultImage(
                 originBitmap = state.originBitmap,
-                subjectBounds = state.subjectBounds,
-                onClickSubject = onClickSubject,
+                boundsList = state.candidates.map { it.bounds },
+                onClickCandidate = onClickCandidate,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
@@ -72,8 +72,8 @@ internal fun SegmentationScreen(
 @Composable
 private fun SegmentationResultImage(
     originBitmap: Bitmap?,
-    subjectBounds: SegmentationBounds?,
-    onClickSubject: () -> Unit,
+    boundsList: List<SegmentationBounds>,
+    onClickCandidate: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -85,12 +85,12 @@ private fun SegmentationResultImage(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            if (subjectBounds != null) {
+            if (boundsList.isNotEmpty()) {
                 SegmentationSubjectHighlight(
-                    bounds = subjectBounds,
+                    boundsList = boundsList,
                     imageWidth = bitmap.width,
                     imageHeight = bitmap.height,
-                    onClickSubject = onClickSubject,
+                    onClickCandidate = onClickCandidate,
                     modifier = Modifier.matchParentSize(),
                 )
             }
@@ -105,7 +105,7 @@ private fun PreviewSegmentationScreen() = PreviewBox {
         state = SegmentationState(isLoading = false),
         onClickBack = {},
         onClickClose = {},
-        onClickSubject = {},
+        onClickCandidate = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

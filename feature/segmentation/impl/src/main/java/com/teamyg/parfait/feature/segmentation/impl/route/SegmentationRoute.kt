@@ -18,6 +18,7 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
 
 @Composable
@@ -37,6 +38,15 @@ internal fun SegmentationRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
+
+                // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
+                is SegmentationEffect.GoToConfirm -> navigator.goTo(
+                    NavKeySegmentationConfirm(
+                        sourceImageUri = key.sourceImageUri,
+                        subjectImagePath = effect.subjectImagePath,
+                        trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
+                    ),
+                )
             }
         }
     }
@@ -51,19 +61,8 @@ internal fun SegmentationRoute(
             onClickBack = { navigator.onBack() },
             // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
             onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
-            // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
-            onClickSubject = {
-                val subjectImagePath = state.subjectImagePath
-                val trimmedSubjectImagePath = state.trimmedSubjectImagePath
-                if (subjectImagePath != null && trimmedSubjectImagePath != null) {
-                    navigator.goTo(
-                        NavKeySegmentationConfirm(
-                            sourceImageUri = key.sourceImageUri,
-                            subjectImagePath = subjectImagePath,
-                            trimmedSubjectImagePath = trimmedSubjectImagePath,
-                        ),
-                    )
-                }
+            onClickCandidate = { index ->
+                viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
             },
         )
     }

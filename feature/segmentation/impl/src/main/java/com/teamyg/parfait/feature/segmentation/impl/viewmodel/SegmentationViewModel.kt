@@ -8,7 +8,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
-import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
@@ -25,16 +25,21 @@ import kotlinx.coroutines.launch
 data class SegmentationState(
     val isLoading: Boolean = true,
     val originBitmap: Bitmap? = null,
-    val subjectImagePath: String? = null,
-    val trimmedSubjectImagePath: String? = null,
-    val subjectBounds: SegmentationBounds? = null,
+    val candidates: List<SegmentationCandidate> = emptyList(),
 ) : UiState
 
-sealed interface SegmentationIntent : UiIntent
+sealed interface SegmentationIntent : UiIntent {
+    data class ClickCandidate(val index: Int) : SegmentationIntent
+}
 
 sealed interface SegmentationEffect : UiSideEffect {
     /** 재시도 동선이 없는 실패라 상태로 남기지 않는다 — 토스트로 한 번 알리고 끝이다. */
     data object ShowError : SegmentationEffect
+
+    data class GoToConfirm(
+        val subjectImagePath: String,
+        val trimmedSubjectImagePath: String,
+    ) : SegmentationEffect
 }
 
 @HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
@@ -72,35 +77,12 @@ class SegmentationViewModel
 
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
-                    // PR2 에서 사용자가 고르게 된다. 지금은 첫 후보를 자동으로 집어 화면 동작을 유지한다
-                    val candidate = candidates.firstOrNull()
-
-                    if (candidate == null) {
+                    if (candidates.isEmpty()) {
                         postSideEffect(SegmentationEffect.ShowError)
                         return@onSuccess
                     }
 
-                    persistSubjectUseCase(candidate)
-                        .onSuccess { result ->
-                            updateState {
-                                copy(
-                                    subjectImagePath = result.subjectImagePath,
-                                    trimmedSubjectImagePath = result.trimmedSubjectImagePath,
-                                    subjectBounds = candidate.bounds,
-                                )
-                            }
-
-                            // 흐름의 결과물은 초안이 나른다(`adr/0026-topping-draft-datastore-ssot.md`).
-                            // 미리보기·배치에 쓸 것은 여백을 걷은 판이고, 재편집 마스크는 좌표계를 지킨 판이다
-                            runSuspendCatching {
-                                toppingDraftRepository.record(
-                                    subjectImagePath = result.trimmedSubjectImagePath,
-                                    cutoutImagePath = result.subjectImagePath,
-                                    borderColorArgb = null,
-                                    borderWidthDp = null,
-                                )
-                            }
-                        }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
+                    updateState { copy(candidates = candidates) }
                 }.onFailure { postSideEffect(SegmentationEffect.ShowError) }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
@@ -113,5 +95,52 @@ class SegmentationViewModel
         fun create(sourceImageUri: String): SegmentationViewModel
     }
 
-    override fun processIntent(intent: SegmentationIntent) {}
+    override fun processIntent(intent: SegmentationIntent) {
+        when (intent) {
+            is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
+        }
+    }
+
+    /**
+     * 저장 → 초안 기록 → 이동 순서를 지킨다. 확인 화면은 정상 진입에서 초안을 구독만 하므로,
+     * 기록을 마치기 전에 보내면 그 화면이 "다음"을 잠근 채 뜬다.
+     */
+    private fun selectCandidate(index: Int) {
+        val candidate = state.value.candidates.getOrNull(index) ?: return
+
+        launch(key = SELECT_CANDIDATE_KEY) {
+            updateState { copy(isLoading = true) }
+
+            persistSubjectUseCase(candidate)
+                .onSuccess { result ->
+                    val recorded = runSuspendCatching {
+                        toppingDraftRepository.record(
+                            subjectImagePath = result.trimmedSubjectImagePath,
+                            cutoutImagePath = result.subjectImagePath,
+                            borderColorArgb = null,
+                            borderWidthDp = null,
+                        )
+                    }.getOrDefault(false)
+
+                    // 이동이 goTo 라 이 화면이 백스택에 남는다. 켠 채 나가면 돌아왔을 때 갇힌다
+                    updateState { copy(isLoading = false) }
+
+                    if (recorded) {
+                        postSideEffect(
+                            SegmentationEffect.GoToConfirm(
+                                subjectImagePath = result.subjectImagePath,
+                                trimmedSubjectImagePath = result.trimmedSubjectImagePath,
+                            ),
+                        )
+                    } else {
+                        postSideEffect(SegmentationEffect.ShowError)
+                    }
+                }.onFailure {
+                    updateState { copy(isLoading = false) }
+                    postSideEffect(SegmentationEffect.ShowError)
+                }
+        }
+    }
 }
+
+private const val SELECT_CANDIDATE_KEY = "select-candidate"
