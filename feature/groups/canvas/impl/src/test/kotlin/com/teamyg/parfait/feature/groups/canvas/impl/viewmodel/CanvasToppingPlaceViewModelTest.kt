@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -67,12 +68,21 @@ class CanvasToppingPlaceViewModelTest {
 
     private val addRecentImageUseCase: AddRecentImageUseCase = mockk(relaxed = true)
 
+    /** 이 테스트들은 캔버스 배경·기존 토핑을 다루지 않는다 — 조회는 조용히 실패시켜 둔다 */
+    private val getTodayParfaitUseCase: GetTodayParfaitUseCase = mockk()
+
+    init {
+        coEvery { getTodayParfaitUseCase(any(), any()) } returns
+            Result.failure(IllegalStateException("getTodayParfaitUseCase not stubbed in this test"))
+    }
+
     private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
         every { toppingDraftRepository.draft } returns flowOf(draft)
         return CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            getTodayParfaitUseCase = getTodayParfaitUseCase,
         )
     }
 
@@ -506,6 +516,7 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            getTodayParfaitUseCase = getTodayParfaitUseCase,
         )
         advanceUntilIdle()
 
@@ -546,6 +557,7 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            getTodayParfaitUseCase = getTodayParfaitUseCase,
         )
 
         // When 화면이 열린다
