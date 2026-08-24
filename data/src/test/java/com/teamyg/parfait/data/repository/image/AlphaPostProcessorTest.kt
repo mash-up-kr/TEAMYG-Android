@@ -97,6 +97,20 @@ class AlphaPostProcessorTest {
     }
 
     @Test
+    fun erodeEdge_verticalRamp_shiftsItInwardByOnePixelWithoutMakingAStep() {
+        // Given — 테스트 1의 전치판. previousRow 스냅샷이 깨지면 위에서부터 연쇄로 전멸해
+        // [0, 0, 0, 0, 0, 255] 가 나온다. up/down 이 최솟값을 결정하는 경로를 실행하는 유일한 테스트다
+        val alpha = alphaBytes(0, 64, 128, 191, 255, 255)
+
+        // When
+        val changed = erodeEdge(alpha, width = 1, height = 6)
+
+        // Then
+        assertEquals(true, changed)
+        assertContentEquals(intArrayOf(0, 0, 64, 128, 191, 255), alpha.asInts())
+    }
+
+    @Test
     fun erodeEdge_hardMatte_stillLosesOneLayer() {
         // Given — 알파가 0 아니면 255 뿐이다. "1~254 만 대상"이면 아무 일도 안 일어난다
         val alpha = alphaBytes(0, 255, 255, 255, 255, 0)
@@ -160,6 +174,7 @@ class AlphaPostProcessorTest {
     @Test
     fun erodeEdge_subjectTouchingTheFrame_keepsTheEdgeRow() {
         // Given — 판 전체가 불투명하다. 이미지 밖을 투명으로 치면 테두리가 깎인다
+        // 2x2
         val alpha = alphaBytes(
             255,
             255,
