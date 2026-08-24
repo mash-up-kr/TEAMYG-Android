@@ -19,6 +19,20 @@ private fun assertClose(
 /** 회색 픽셀. 휘도가 `value / 255` 다 */
 private fun gray(value: Int): Int = (0xFF shl 24) or (value shl 16) or (value shl 8) or value
 
+/** 왼쪽 [darkColumns] 칸이 검고 나머지가 흰 안내자 */
+private fun splitGuidance(
+    width: Int,
+    height: Int,
+    darkColumns: Int,
+) = IntArray(width * height) { index -> if (index % width < darkColumns) gray(0) else gray(255) }
+
+/** [opaqueFrom] 칸부터 오른쪽 끝까지 불투명한 알파 */
+private fun maskFrom(
+    width: Int,
+    height: Int,
+    opaqueFrom: Int,
+) = ByteArray(width * height) { index -> if (index % width >= opaqueFrom) 255.toByte() else 0 }
+
 class AlphaRefineTest {
     @Test
     fun boxMean_everyValueIsOne_staysOneEvenAtTheCorners() {
@@ -292,5 +306,121 @@ class AlphaRefineTest {
             assertTrue(values[index] >= values[index - 1], "index=$index values=${values.toList()}")
         }
         assertTrue(values.toSet().size > 2, "nearest 되올림이면 값이 둘뿐이다 values=${values.toList()}")
+    }
+
+    @Test
+    fun refineAlpha_maskOverhangsIntoTheDarkSide_pullsTheEdgeBackToTheColourEdge() {
+        // Given — 색 경계는 16 인데 마스크가 13 까지 넘어와 배경 3칸을 물고 있다
+        val guided = maskFrom(width = 32, height = 8, opaqueFrom = 13)
+        val flat = maskFrom(width = 32, height = 8, opaqueFrom = 13)
+
+        // When — 같은 마스크를 색 경계가 있는 안내자와 균일한 안내자로 각각 정련한다
+        refineAlpha(
+            alpha = guided,
+            guidance = splitGuidance(width = 32, height = 8, darkColumns = 16),
+            width = 32,
+            height = 8,
+            downscale = 1,
+            radius = 4,
+            epsilon = 1e-4f,
+        )
+        refineAlpha(
+            alpha = flat,
+            guidance = IntArray(32 * 8) { gray(255) },
+            width = 32,
+            height = 8,
+            downscale = 1,
+            radius = 4,
+            epsilon = 1e-4f,
+        )
+
+        // Then — 배경을 물고 있던 자리가 색 안내자 쪽에서 더 투명해진다.
+        // 안내자를 무시하는 구현이면 두 값이 같아 이 단언이 깨진다
+        val overhang = 4 * 32 + 14
+        assertTrue(
+            (guided[overhang].toInt() and 0xFF) < (flat[overhang].toInt() and 0xFF),
+            "guided=${guided[overhang].toInt() and 0xFF} flat=${flat[overhang].toInt() and 0xFF}",
+        )
+    }
+
+    @Test
+    fun refineAlpha_insideTheSubject_staysOpaque() {
+        // Given — 정련이 내부까지 반투명하게 만들면 안 된다.
+        // 탐침 자리를 경계에서 창 하나 안쪽(20)에 둔다 — 끝(28)에 두면 계수가 평탄해져
+        // 마지막 창 평균을 지우는 변이를 못 잡는다
+        val alpha = maskFrom(width = 32, height = 8, opaqueFrom = 13)
+
+        // When
+        refineAlpha(
+            alpha = alpha,
+            guidance = splitGuidance(width = 32, height = 8, darkColumns = 16),
+            width = 32,
+            height = 8,
+            downscale = 1,
+            radius = 4,
+            epsilon = 1e-4f,
+        )
+
+        // Then
+        val inside = 4 * 32 + 20
+        assertTrue((alpha[inside].toInt() and 0xFF) > 250, "value=${alpha[inside].toInt() and 0xFF}")
+    }
+
+    @Test
+    fun refineAlpha_misalignedHardEdge_becomesASoftTransition() {
+        // Given — 이 라운드의 목적이다. 정련 전에는 0 과 255 뿐이다.
+        // ⚠️ 마스크 경계를 색 경계와 어긋나게 둔다. 같은 자리(p ≡ I)면 가이드 필터는 경계를
+        // **일부러 보존하므로** 부분 알파가 생기지 않는다
+        val alpha = maskFrom(width = 32, height = 8, opaqueFrom = 13)
+
+        // When
+        refineAlpha(
+            alpha = alpha,
+            guidance = splitGuidance(width = 32, height = 8, darkColumns = 16),
+            width = 32,
+            height = 8,
+            downscale = 1,
+            radius = 4,
+            epsilon = 1e-4f,
+        )
+
+        // Then
+        val partial = alpha.count { (it.toInt() and 0xFF) in 1..254 }
+        assertTrue(partial > 0, "partial=$partial")
+    }
+
+    @Test
+    fun refineAlpha_downscaledCoefficients_keepTheEdgeAtTheSamePlace() {
+        // Given — 계수를 축소판에서 구해도 경계 위치가 밀리면 안 된다.
+        // 두 설정의 유효 창은 같지 않다(원본 기준 9 대 12). 그래도 경계는 2칸 안에 들어야 한다
+        val fullScale = maskFrom(width = 64, height = 16, opaqueFrom = 28)
+        val downscaled = maskFrom(width = 64, height = 16, opaqueFrom = 28)
+        val guidance = splitGuidance(width = 64, height = 16, darkColumns = 32)
+
+        // When
+        refineAlpha(
+            alpha = fullScale,
+            guidance = guidance,
+            width = 64,
+            height = 16,
+            downscale = 1,
+            radius = 4,
+            epsilon = 1e-4f,
+        )
+        refineAlpha(
+            alpha = downscaled,
+            guidance = guidance,
+            width = 64,
+            height = 16,
+            downscale = 4,
+            radius = 1,
+            epsilon = 1e-4f,
+        )
+
+        // Then — 가운데 행에서 알파가 128 을 넘는 첫 칸이 두 칸 이상 어긋나지 않는다
+        val row = 8 * 64
+        val fullCrossing = (0 until 64).first { (fullScale[row + it].toInt() and 0xFF) > 128 }
+        val downCrossing = (0 until 64).first { (downscaled[row + it].toInt() and 0xFF) > 128 }
+        assertTrue(abs(fullCrossing - downCrossing) <= 2, "full=$fullCrossing down=$downCrossing")
     }
 }
