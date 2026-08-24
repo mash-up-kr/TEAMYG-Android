@@ -309,6 +309,37 @@ class AlphaRefineTest {
     }
 
     @Test
+    fun applyCoefficients_horizontallyUpscaledCoefficients_interpolateBetweenColumns() {
+        // Given — 가로로만 변하는 계수. `subWidth = 1` 인 세로 테스트는 이 축을 전혀 보지 못한다
+        val alpha = ByteArray(8)
+        val guidance = IntArray(8) { gray(255) }
+        val coefficients = GuidedCoefficients(a = FloatArray(2), b = floatArrayOf(0f, 1f))
+
+        // When
+        applyCoefficients(
+            alpha = alpha,
+            guidance = guidance,
+            coefficients = coefficients,
+            width = 8,
+            height = 1,
+            subWidth = 2,
+            subHeight = 1,
+            factor = 4,
+        )
+
+        // Then — b 가 좌우 대칭(0→1)이므로 되올린 값도 중심에 대해 대칭이어야 한다.
+        // nearest 되올림이나 반픽셀 정렬 삭제는 이 대칭을 깬다
+        val values = IntArray(8) { alpha[it].toInt() and 0xFF }
+        for (index in 0 until 4) {
+            assertEquals(
+                255,
+                values[index] + values[7 - index],
+                "index=$index values=${values.toList()}",
+            )
+        }
+    }
+
+    @Test
     fun refineAlpha_maskOverhangsIntoTheDarkSide_pullsTheEdgeBackToTheColourEdge() {
         // Given — 색 경계는 16 인데 마스크가 13 까지 넘어와 배경 3칸을 물고 있다
         val guided = maskFrom(width = 32, height = 8, opaqueFrom = 13)

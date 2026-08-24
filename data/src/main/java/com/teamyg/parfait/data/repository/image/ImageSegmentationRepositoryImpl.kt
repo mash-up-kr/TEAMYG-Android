@@ -245,6 +245,14 @@ constructor(
             // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
             repositoryLogger.w(e) { "세그멘테이션 후처리가 메모리로 실패해 원본 후보로 되돌린다" }
             null
+        } catch (e: CancellationException) {
+            // CancellationException 은 Exception 을 상속하므로 아래 catch 보다 먼저 잡아 다시 던진다
+            throw e
+        } catch (e: Exception) {
+            // subject 와 origin 의 치수 불일치 등으로 getPixels 가 던질 수 있다 — 이 후보만
+            // 되돌리고 세그멘테이션 전체를 실패로 접지 않는다
+            repositoryLogger.w(e) { "세그멘테이션 후처리가 예외로 실패해 원본 후보로 되돌린다" }
+            null
         }
 
         return CandidatePair(
@@ -323,9 +331,9 @@ constructor(
             width,
             height,
             guidance = { bounds ->
-                IntArray(bounds.width * bounds.height).also { pixels ->
+                IntArray(bounds.width * bounds.height).also { guidancePixels ->
                     origin.getPixels(
-                        pixels,
+                        guidancePixels,
                         0,
                         bounds.width,
                         subject.startX + bounds.left,
@@ -401,9 +409,9 @@ constructor(
                 width,
                 height,
                 guidance = { bounds ->
-                    IntArray(bounds.width * bounds.height).also { pixels ->
+                    IntArray(bounds.width * bounds.height).also { guidancePixels ->
                         origin.getPixels(
-                            pixels,
+                            guidancePixels,
                             0,
                             bounds.width,
                             bounds.left,
