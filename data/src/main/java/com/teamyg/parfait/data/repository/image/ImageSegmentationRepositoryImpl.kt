@@ -104,6 +104,9 @@ constructor(
             return Result.failure(SegmentationException.Process(e))
         }
 
+        // 전멸이 아니라 일부만 걸러진 경우도 남긴다 — 전멸 로그만 있으면 극단값에서만 판정된다
+        repositoryLogger.i { "세그멘테이션 필터 통과 ${candidates.size}/${pairs.size}" }
+
         if (candidates.isNotEmpty()) return Result.success(candidates)
 
         repositoryLogger.i {
@@ -331,7 +334,12 @@ constructor(
 
         val inner = result.bounds
         val unchangedWholePlate = !result.changed && inner.width == width && inner.height == height
-        val trimmed = if (unchangedWholePlate) bitmap else cropWithAlpha(pixels, alpha, width, inner)
+        val trimmed = if (unchangedWholePlate) {
+            bitmap
+        } else {
+            val cropped = composeCroppedArgb(pixels, alpha, width, inner)
+            Bitmap.createBitmap(cropped, inner.width, inner.height, Bitmap.Config.ARGB_8888)
+        }
 
         require(trimmed.width == inner.width && trimmed.height == inner.height) {
             "trimmed ${trimmed.width}x${trimmed.height} does not match bounds ${inner.width}x${inner.height}"
@@ -349,26 +357,6 @@ constructor(
             canvasHeight = origin.height,
             coverageAlphaSum = result.alphaSum,
         )
-    }
-
-    /** 출력 판을 bounds 크기로 바로 만든다. 원본 크기로 만들고 나중에 자르면 큰 배열이 헛돈다 */
-    private fun cropWithAlpha(
-        pixels: IntArray,
-        alpha: ByteArray,
-        rowStride: Int,
-        bounds: SegmentationBounds,
-    ): Bitmap {
-        val cropped = IntArray(bounds.width * bounds.height)
-        for (y in 0 until bounds.height) {
-            val sourceRow = (bounds.top + y) * rowStride + bounds.left
-            val targetRow = y * bounds.width
-            for (x in 0 until bounds.width) {
-                val value = alpha[sourceRow + x].toInt() and 0xFF
-                cropped[targetRow + x] =
-                    if (value == 0) 0 else (value shl 24) or (pixels[sourceRow + x] and 0x00FFFFFF)
-            }
-        }
-        return Bitmap.createBitmap(cropped, bounds.width, bounds.height, Bitmap.Config.ARGB_8888)
     }
 
     /**
@@ -404,60 +392,48 @@ constructor(
 
         val bounds = masked.result.bounds
 
-        // 살아남은 영역만 읽는다. 원본 크기 픽셀 배열과 원본 크기 중간 판을 만들었다가 자르면
-        // 12MP 사진에서 그 둘만 100MB 가까이 든다
-        val trimmedPixels = IntArray(bounds.width * bounds.height)
-        origin.getPixels(
-            trimmedPixels,
-            0,
-            bounds.width,
-            bounds.left,
-            bounds.top,
-            bounds.width,
-            bounds.height,
-        )
-        applyAlphaInPlace(trimmedPixels, masked.alpha, width, bounds)
+        // ⚠️ 이 판이 이 폴백에서 가장 큰 두 할당이다 — bounds 크기 IntArray 와 그걸 감싸는
+        // 네이티브 비트맵. 위 maskSubjectAlpha 의 ByteArray(w*h) 보다 훨씬 커서(폴백은 항상
+        // 원본 해상도), OOM 가드를 여기까지 넓힌다. buildCandidatePair 의 KDoc 이 같은 이유를
+        // 적어 뒀다 — try 가 픽셀 배열 할당까지 감싸지 않으면 가장 위험한 자리가 가드 밖에 남는다
+        val candidate = try {
+            // 살아남은 영역만 읽는다. 원본 크기 픽셀 배열과 원본 크기 중간 판을 만들었다가 자르면
+            // 12MP 사진에서 그 둘만 100MB 가까이 든다
+            val trimmedPixels = IntArray(bounds.width * bounds.height)
+            origin.getPixels(
+                trimmedPixels,
+                0,
+                bounds.width,
+                bounds.left,
+                bounds.top,
+                bounds.width,
+                bounds.height,
+            )
+            applyAlphaInPlace(trimmedPixels, masked.alpha, width, bounds)
 
-        val trimmed = Bitmap.createBitmap(
-            trimmedPixels,
-            bounds.width,
-            bounds.height,
-            Bitmap.Config.ARGB_8888,
-        )
-        require(trimmed.width == bounds.width && trimmed.height == bounds.height) {
-            "trimmed ${trimmed.width}x${trimmed.height} does not match bounds ${bounds.width}x${bounds.height}"
-        }
+            val trimmed = Bitmap.createBitmap(
+                trimmedPixels,
+                bounds.width,
+                bounds.height,
+                Bitmap.Config.ARGB_8888,
+            )
+            require(trimmed.width == bounds.width && trimmed.height == bounds.height) {
+                "trimmed ${trimmed.width}x${trimmed.height} does not match bounds ${bounds.width}x${bounds.height}"
+            }
 
-        return listOf(
             SegmentationCandidate(
                 bounds = bounds,
                 bitmap = trimmed.toAndroidBitmap(),
                 canvasWidth = width,
                 canvasHeight = height,
                 coverageAlphaSum = masked.result.alphaSum,
-            ),
-        )
-    }
+            )
+        } catch (e: OutOfMemoryError) {
+            repositoryLogger.w(e) { "세그멘테이션 폴백 판 생성이 메모리로 실패했다" }
+            null
+        } ?: return emptyList()
 
-    /**
-     * 원본에서 잘라 온 [pixels] 에 후처리한 알파를 얹는다. [alpha] 는 원본 전체 좌표계라
-     * [bounds] 로 오프셋을 잡아 읽는다.
-     */
-    private fun applyAlphaInPlace(
-        pixels: IntArray,
-        alpha: ByteArray,
-        alphaRowStride: Int,
-        bounds: SegmentationBounds,
-    ) {
-        for (y in 0 until bounds.height) {
-            val alphaRow = (bounds.top + y) * alphaRowStride + bounds.left
-            val pixelRow = y * bounds.width
-            for (x in 0 until bounds.width) {
-                val value = alpha[alphaRow + x].toInt() and 0xFF
-                pixels[pixelRow + x] =
-                    if (value == 0) 0 else (value shl 24) or (pixels[pixelRow + x] and 0x00FFFFFF)
-            }
-        }
+        return listOf(candidate)
     }
 
     override suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult> {
