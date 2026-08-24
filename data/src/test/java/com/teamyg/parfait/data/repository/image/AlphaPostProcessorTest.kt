@@ -42,6 +42,21 @@ class AlphaPostProcessorTest {
     }
 
     @Test
+    fun applyKeepMask_alphaAlreadyZero_doesNotReportChanged() {
+        // Given — keep 이 거짓이어도 이미 0인 자리는 실제로 바뀌는 게 없다. changed 는 실제 변화만 세야
+        // 3단계의 원판 재사용 분기가 살아남는다
+        val alpha = alphaBytes(0, 0, 0, 0)
+        val keep = booleanArrayOf(false)
+
+        // When
+        val changed = applyKeepMask(alpha, width = 2, height = 2, keep = keep, maskWidth = 1, factor = 2)
+
+        // Then
+        assertContentEquals(intArrayOf(0, 0, 0, 0), alpha.asInts())
+        assertEquals(false, changed)
+    }
+
+    @Test
     fun measureAlpha_someOpaquePixels_returnsTightBoundsAndCoverage() {
         // Given — 4×3 에서 가운데 두 픽셀만 남았다
         val alpha = alphaBytes(
@@ -189,6 +204,38 @@ class AlphaPostProcessorTest {
         // Then
         assertEquals(false, changed)
         assertContentEquals(intArrayOf(255, 255, 255, 255), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_descendingVerticalRamp_downDeterminesTheMinimum() {
+        // Given — 내림 램프. 기존 세로 램프 테스트는 오름차순이라 up 이 항상 이긴다 — down 이 최솟값을
+        // 결정하는 배치는 이 테스트가 유일하다
+        val alpha = alphaBytes(255, 255, 191, 128, 64, 0)
+
+        // When
+        val changed = erodeEdge(alpha, width = 1, height = 6)
+
+        // Then
+        assertEquals(true, changed)
+        assertContentEquals(intArrayOf(255, 191, 128, 64, 0, 0), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_oneHorizontalOpaqueLine_isProtectedByTheUpDownRidgeRule() {
+        // Given — 폭 1 가로 불투명 선. 좌우는 0 이 아니라 left/right 능선 분기에서 안 걸린다.
+        // up·down 이 둘 다 0인 경우만 이 배치가 실행한다
+        val alpha = alphaBytes(
+            0, 0, 0,
+            255, 255, 255,
+            0, 0, 0,
+        )
+
+        // When
+        val changed = erodeEdge(alpha, width = 3, height = 3)
+
+        // Then
+        assertEquals(false, changed)
+        assertContentEquals(intArrayOf(0, 0, 0, 255, 255, 255, 0, 0, 0), alpha.asInts())
     }
 
     @Test
@@ -442,5 +489,57 @@ class AlphaPostProcessorTest {
 
         // Then
         assertEquals(SegmentationBounds(left = 0, top = 0, right = 2, bottom = 2), result?.bounds)
+    }
+
+    @Test
+    fun postProcessAlpha_nonSquarePlate_doesNotTransposeMaskDimensions() {
+        // Given — 지금까지의 postProcessAlpha 테스트가 전부 정사각이라 maskWidth·maskHeight 를 뒤바꿔
+        // 넘겨도 통과했다. 36×20 판(축소판 9×5)에서 원점과 먼 우하단 모서리 블록 하나만 불투명하게
+        // 둔다 — 행 스트라이드가 뒤바뀌면 이 블록의 keep 인덱스가 다른 자리를 가리켜 통째로 지워진다
+        val alpha = ByteArray(36 * 20)
+        for (y in 16 until 20) for (x in 32 until 36) alpha[y * 36 + x] = 255.toByte()
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 36,
+            height = 20,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 1,
+                erodeEdge = false,
+                minPixelsForDownscale = 0,
+            ),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 32, top = 16, right = 36, bottom = 20), result?.bounds)
+        assertEquals(255, alpha[19 * 36 + 35].toInt() and 0xFF)
+    }
+
+    @Test
+    fun postProcessAlpha_countingCancelledCallback_isCalledPastTheDownscaleStage() {
+        // Given — 기존 취소 테스트는 세 번째 호출에서 던지는데 그 호출은 항상 downscaleMask 안에서
+        // 난다. 나머지 단계의 checkCancelled 호출이 지워져도 그 테스트는 초록으로 남는다. 여기서는
+        // 던지지 않고 세기만 해서 뒤 단계가 실제로 콜백을 부르는지를 잡는다
+        val alpha = ByteArray(64) { 255.toByte() }
+        var calls = 0
+
+        // When
+        postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4),
+        ) {
+            calls++
+        }
+
+        // Then — 8×8·배율1이면 각 단계가 정확히 행 수만큼(또는 그 -1) 부른다: downscaleMask 8 +
+        // applyAreaOpening(행 쌍 union) 7 + dilateMask 8 + applyKeepMask 8 + erodeEdge 8 +
+        // measureAlpha 8 = 47. 느슨한 하한(> 8)은 뒤 단계 다섯을 통째로 지워야만 걸리고 그중 하나만
+        // 지워도(예: erodeEdge 의 호출 하나) 39로 여전히 8을 넘어 조용히 통과한다 — 그래서 정확한 값으로
+        // 고정해 다섯 단계 중 어느 한 곳의 누락도 잡는다
+        assertEquals(47, calls)
     }
 }
