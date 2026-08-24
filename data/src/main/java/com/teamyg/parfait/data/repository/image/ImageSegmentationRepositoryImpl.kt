@@ -23,10 +23,14 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ExecutionException
@@ -98,7 +102,12 @@ constructor(
         val result = runSegmenter(options, image).getOrNull() ?: return emptyList()
 
         return try {
-            withContext(Dispatchers.Default) { result.toForegroundCandidate(origin) }
+            withContext(Dispatchers.Default) {
+                val job = currentCoroutineContext()[Job]
+                // 타입을 명시하지 않으면 `() -> Unit?` 으로 추론돼 `() -> Unit` 자리에 못 들어간다
+                val checkCancelled: () -> Unit = { job?.ensureActive() }
+                result.toForegroundCandidate(origin, checkCancelled)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -170,7 +179,10 @@ constructor(
     /**
      * 마스크가 없거나 치수가 어긋나면 빈 목록이다 — 없는 후보를 지어내지 않는다.
      */
-    private fun SubjectSegmentationResult.toForegroundCandidate(origin: Bitmap): List<SegmentationCandidate> {
+    private fun SubjectSegmentationResult.toForegroundCandidate(
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): List<SegmentationCandidate> {
         val foregroundMask = foregroundConfidenceMask ?: return emptyList()
 
         val width = origin.width
@@ -182,20 +194,44 @@ constructor(
         // IndexOutOfBoundsException), 남은 유효 구간을 뜻하는 remaining() 으로 비교한다
         if (foregroundMask.remaining() != width * height) return emptyList()
 
-        val pixels = IntArray(width * height)
-        origin.getPixels(pixels, 0, width, 0, 0, width, height)
+        val masked = try {
+            maskSubjectAlpha(foregroundMask, width, height, checkCancelled = checkCancelled)
+        } catch (e: OutOfMemoryError) {
+            // 후처리는 개선 수단이라 실패했다고 흐름 전체를 실패로 접을 이유가 없다.
+            // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
+            repositoryLogger.w(e) { "세그멘테이션 폴백 후처리가 메모리로 실패했다" }
+            null
+        } ?: return emptyList()
 
-        val bounds = maskSubjectPixels(pixels, foregroundMask, width, height) ?: return emptyList()
+        repositoryLogger.i {
+            "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${width * height}"
+        }
 
-        val masked = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+        val bounds = masked.result.bounds
 
-        // 잘라내야 한다 — 후보의 비트맵은 bounds 크기라는 것이 저장 쪽 전제다.
-        // 원본 크기 판을 그대로 실으면 (left, top) 만큼 밀려 그려진다
-        val trimmed = Bitmap.createBitmap(masked, bounds.left, bounds.top, bounds.width, bounds.height)
+        // 살아남은 영역만 읽는다. 원본 크기 픽셀 배열과 원본 크기 중간 판을 만들었다가 자르면
+        // 12MP 사진에서 그 둘만 100MB 가까이 든다
+        val trimmedPixels = IntArray(bounds.width * bounds.height)
+        origin.getPixels(
+            trimmedPixels,
+            0,
+            bounds.width,
+            bounds.left,
+            bounds.top,
+            bounds.width,
+            bounds.height,
+        )
+        applyAlphaInPlace(trimmedPixels, masked.alpha, width, bounds)
 
-        // createBitmap 은 자를 것이 없으면 원본 인스턴스를 그대로 돌려준다.
-        // 그때 회수하면 방금 만든 판이 사라진다
-        if (trimmed !== masked) masked.recycle()
+        val trimmed = Bitmap.createBitmap(
+            trimmedPixels,
+            bounds.width,
+            bounds.height,
+            Bitmap.Config.ARGB_8888,
+        )
+        require(trimmed.width == bounds.width && trimmed.height == bounds.height) {
+            "trimmed ${trimmed.width}x${trimmed.height} does not match bounds ${bounds.width}x${bounds.height}"
+        }
 
         return listOf(
             SegmentationCandidate(
@@ -203,9 +239,30 @@ constructor(
                 bitmap = trimmed.toAndroidBitmap(),
                 canvasWidth = width,
                 canvasHeight = height,
-                coverageAlphaSum = sumAlpha(pixels),
+                coverageAlphaSum = masked.result.alphaSum,
             ),
         )
+    }
+
+    /**
+     * 원본에서 잘라 온 [pixels] 에 후처리한 알파를 얹는다. [alpha] 는 원본 전체 좌표계라
+     * [bounds] 로 오프셋을 잡아 읽는다.
+     */
+    private fun applyAlphaInPlace(
+        pixels: IntArray,
+        alpha: ByteArray,
+        alphaRowStride: Int,
+        bounds: SegmentationBounds,
+    ) {
+        for (y in 0 until bounds.height) {
+            val alphaRow = (bounds.top + y) * alphaRowStride + bounds.left
+            val pixelRow = y * bounds.width
+            for (x in 0 until bounds.width) {
+                val value = alpha[alphaRow + x].toInt() and 0xFF
+                pixels[pixelRow + x] =
+                    if (value == 0) 0 else (value shl 24) or (pixels[pixelRow + x] and 0x00FFFFFF)
+            }
+        }
     }
 
     override suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult> {
