@@ -106,8 +106,9 @@ private const val ABSENT = -1
  * **능선 보호**: 마주 보는 4-근방 쌍(좌·우 또는 상·하)이 둘 다 0이면 건너뛴다.
  * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」 참고
  *
- * 이미지 밖 이웃은 최소 계산에서도 능선 판정에서도 빠진다. 밖을 투명으로 치면 프레임에 걸친
- * 피사체의 테두리가 깎인다.
+ * 이미지 밖 이웃은 최소 계산에서는 빠진다(`ABSENT` 가 `-1` 이라 `in 0 until lowest` 에 걸리지 않는다).
+ * 반면 능선 판정에서는 0이 아닌 값으로 세어져 "이웃이 있다"고 본다 — 밖을 능선 판정에서도 빼면 한
+ * 행짜리 판에서 상·하 쌍이 공집합이라 공허참으로 보호되어 하드 매트가 아무 일도 안 하게 된다.
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
@@ -196,7 +197,8 @@ internal data class AlphaPostProcessResult(
  *
  * @param alpha 길이가 `width * height` 여야 한다
  * @param checkCancelled 행 경계마다 불린다. 이 함수는 코루틴을 모르므로 호출부가 넣어 준다
- * @return 남은 알파가 없으면 `null`
+ * @return 남은 알파가 없으면 `null`. 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로 `null` 이
+ *   나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고 반환하므로 다르다
  */
 internal fun postProcessAlpha(
     alpha: ByteArray,
