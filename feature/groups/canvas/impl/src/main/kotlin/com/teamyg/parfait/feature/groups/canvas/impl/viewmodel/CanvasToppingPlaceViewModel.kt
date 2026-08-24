@@ -12,8 +12,12 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
@@ -21,6 +25,7 @@ import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
@@ -62,8 +67,10 @@ data class CanvasToppingPlaceUiState(
     /** 확정 판정의 근거. 그림이 뜨기 전 실측은 폴백 크기라 그대로 올리면 배율이 틀어진다 */
     val isToppingImageReady: Boolean = false,
     val isLoading: Boolean = false,
-    // TODO: 캔버스의 실제 배경(색/이미지) 로드 API 연동 필요 - 지금은 기본 배경색만 보여준다
+    /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
     val backgroundColor: Color = YGAtomicColors.Gray.White,
+    val backgroundImageUrl: String? = null,
+    val existingToppings: List<CanvasToppingVO> = emptyList(),
     val offsetX: Dp = 0.dp,
     val offsetY: Dp = 0.dp,
     val scale: Float = 1f,
@@ -138,9 +145,13 @@ class CanvasToppingPlaceViewModel
     private val toppingDraftRepository: ToppingDraftRepository,
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
+    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
+    /** 캔버스(배경·기존 토핑)는 초안이 아니라 서버가 SSOT다 — groupId 하나당 한 번만 조회한다 */
+    private var canvasLoadedForGroupId: GroupId? = null
+
     init {
         observeDraft()
     }
@@ -159,9 +170,36 @@ class CanvasToppingPlaceViewModel
                         isDraftLoaded = true,
                     )
                 }
+                draft?.groupId?.let { groupId -> loadCanvasIfNeeded(groupId) }
             }
         }
     }
+
+    /**
+     * 배치 화면은 캔버스를 새로 만들지 않는다
+     */
+    private fun loadCanvasIfNeeded(groupId: GroupId) {
+        if (canvasLoadedForGroupId == groupId) return
+        canvasLoadedForGroupId = groupId
+
+        launch(key = LOAD_CANVAS_KEY) {
+            getTodayParfaitUseCase(groupId)
+                .onSuccess { canvas -> updateState { withCanvas(canvas) } }
+                .onFailure { throwable ->
+                    // 조회 실패는 토핑 배치 자체를 막지 않는다 — 기본 배경·빈 토핑 목록으로 그대로 둔다
+                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                }
+        }
+    }
+
+    private fun CanvasToppingPlaceUiState.withCanvas(canvas: CanvasVO): CanvasToppingPlaceUiState = copy(
+        backgroundColor = (canvas.background as? CanvasBackground.Color)
+            ?.value
+            ?.toColorOrNull()
+            ?: backgroundColor,
+        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
+        existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
+    )
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
@@ -371,3 +409,6 @@ class CanvasToppingPlaceViewModel
 
 /** 확정 작업의 중복 실행 키. 연타로 두 번 올라가면 고아 이미지와 겹친 토핑이 함께 생긴다 */
 private const val CONFIRM_JOB_KEY = "canvas-topping-place-confirm"
+
+/** 캔버스(배경·기존 토핑) 조회 작업의 중복 실행 키 */
+private const val LOAD_CANVAS_KEY = "canvas-topping-place-load-canvas"

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
@@ -127,13 +129,31 @@ internal fun CanvasToppingPlaceScreen(
                             onCanvasMeasured(DpSize(size.width.toDp(), size.height.toDp()))
                         }
                     }.clipToBounds()
-                    .background(uiState.backgroundColor)
+                    .let { if (uiState.backgroundImageUrl == null) it.background(uiState.backgroundColor) else it }
                     .border(
                         width = 1.dp,
                         color = YGAtomicColors.Gray.Gray500,
                     ),
             ) {
-                // 캔버스(배경) 전체를 딤 처리해, 지금 배치 중인 토핑만 도드라져 보이게 한다
+                uiState.backgroundImageUrl?.let { imageUrl ->
+                    Image(
+                        painter = rememberAsyncImagePainter(model = imageUrl),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                // 이미 캔버스에 놓인 토핑들. 지금 배치 중인 새 토핑과 같은 좌표계(Canvas-Area 대비 비율)다
+                CanvasToppingLayer(
+                    toppings = uiState.existingToppings,
+                    spotlightedToppingId = null,
+                    onClickTopping = {},
+                    onClickSpotlightDim = {},
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                // 캔버스(배경+기존 토핑) 전체를 딤 처리해, 지금 배치 중인 토핑만 도드라져 보이게 한다
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
