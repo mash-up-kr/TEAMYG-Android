@@ -30,6 +30,9 @@ import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ExecutionException
@@ -66,7 +69,9 @@ constructor(
 
         val pairs = try {
             withContext(Dispatchers.Default) {
-                result.toCandidatePairs(bitmap)
+                val job = currentCoroutineContext()[Job]
+                val checkCancelled: () -> Unit = { job?.ensureActive() }
+                result.toCandidatePairs(bitmap, checkCancelled)
             }
         } catch (e: CancellationException) {
             // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
@@ -133,7 +138,10 @@ constructor(
 
         return try {
             withContext(Dispatchers.Default) {
-                result.toForegroundCandidate(origin)
+                val job = currentCoroutineContext()[Job]
+                // 타입을 명시하지 않으면 `() -> Unit?` 으로 추론돼 `() -> Unit` 자리에 못 들어간다
+                val checkCancelled: () -> Unit = { job?.ensureActive() }
+                result.toForegroundCandidate(origin, checkCancelled)
             }
         } catch (e: CancellationException) {
             throw e
@@ -190,7 +198,10 @@ constructor(
      * 후처리 전에 bbox 로 값싸게 자르는 이유: bbox 픽셀 수는 커버리지의 상계라, 하한 미만이면
      * 커버리지도 하한 미만이다. 최종 판정을 바꾸지 않으면서 큰 판을 훑는 일을 건너뛴다.
      */
-    private suspend fun SubjectSegmentationResult.toCandidatePairs(origin: Bitmap): List<CandidatePair> {
+    private fun SubjectSegmentationResult.toCandidatePairs(
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): List<CandidatePair> {
         val floor = coverageFloorPixels(origin.width.toLong() * origin.height)
 
         val withBitmap = subjects.mapNotNull { subject -> subject.bitmap?.let { subject to it } }
@@ -213,7 +224,7 @@ constructor(
         }
 
         return considered.map { (subject, bitmap) ->
-            buildCandidatePair(subject, bitmap, origin)
+            buildCandidatePair(subject, bitmap, origin, checkCancelled)
         }
     }
 
@@ -221,13 +232,14 @@ constructor(
      * ⚠️ `try` 가 픽셀 배열 할당까지 감싼다. 12MP 후보에서 `OutOfMemoryError` 가 가장 잘 나는
      * 자리가 후처리 안이 아니라 그 할당이다.
      */
-    private suspend fun buildCandidatePair(
+    private fun buildCandidatePair(
         subject: Subject,
         bitmap: Bitmap,
         origin: Bitmap,
+        checkCancelled: () -> Unit,
     ): CandidatePair {
         val postProcessed = try {
-            postProcess(subject, bitmap, origin)
+            postProcess(subject, bitmap, origin, checkCancelled)
         } catch (e: OutOfMemoryError) {
             // 후처리는 개선 수단이라 실패했다고 흐름 전체를 실패로 접을 이유가 없다.
             // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
@@ -291,10 +303,11 @@ constructor(
      * 네이티브에서 온 비트맵이 immutable 이면 예외다. 소유권 논의는
      * `synthesis/open-questions.md` 의 OQ-P-266 에 있다.
      */
-    private suspend fun postProcess(
+    private fun postProcess(
         subject: Subject,
         bitmap: Bitmap,
         origin: Bitmap,
+        checkCancelled: () -> Unit,
     ): SegmentationCandidate? {
         val width = bitmap.width
         val height = bitmap.height
@@ -305,18 +318,36 @@ constructor(
         val alpha = ByteArray(width * height)
         for (index in pixels.indices) alpha[index] = (pixels[index] ushr 24).toByte()
 
-        val result = postProcessAlpha(alpha, width, height)
-            ?: run {
-                // 후처리 이전 알파는 있었는데(비었으면 애초에 후보가 안 됐다) 커널이 전부
-                // 잡티로 판정했다는 뜻이다 — OOM 되돌림과 달리 임계 튜닝 신호로 값이 있다
-                repositoryLogger.i {
-                    "세그멘테이션 후처리가 후보 ${width}x$height 판 전체를 잡티로 판정해 원본으로 되돌린다"
+        val result = postProcessAlpha(
+            alpha,
+            width,
+            height,
+            guidance = { bounds ->
+                IntArray(bounds.width * bounds.height).also { pixels ->
+                    origin.getPixels(
+                        pixels,
+                        0,
+                        bounds.width,
+                        subject.startX + bounds.left,
+                        subject.startY + bounds.top,
+                        bounds.width,
+                        bounds.height,
+                    )
                 }
-                return null
+            },
+            checkCancelled = checkCancelled,
+        ) ?: run {
+            // 후처리 이전 알파는 있었는데(비었으면 애초에 후보가 안 됐다) 커널이 전부 지웠다는
+            // 뜻이다 — OOM 되돌림과 달리 임계 튜닝 신호로 값이 있다
+            repositoryLogger.i {
+                "세그멘테이션 후처리가 후보 ${width}x$height 판의 알파를 전부 지워 원본으로 되돌린다"
             }
+            return null
+        }
 
         repositoryLogger.i {
-            "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}"
+            "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}, " +
+                "정련 ${result.refineElapsedNanos / 1_000_000}ms"
         }
 
         val inner = result.bounds
@@ -349,7 +380,10 @@ constructor(
     /**
      * 마스크가 없거나 치수가 어긋나면 빈 목록이다 — 없는 후보를 지어내지 않는다.
      */
-    private suspend fun SubjectSegmentationResult.toForegroundCandidate(origin: Bitmap): List<SegmentationCandidate> {
+    private fun SubjectSegmentationResult.toForegroundCandidate(
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): List<SegmentationCandidate> {
         val foregroundMask = foregroundConfidenceMask ?: return emptyList()
 
         val width = origin.width
@@ -362,7 +396,25 @@ constructor(
         if (foregroundMask.remaining() != width * height) return emptyList()
 
         val masked = try {
-            maskSubjectAlpha(foregroundMask, width, height)
+            maskSubjectAlpha(
+                foregroundMask,
+                width,
+                height,
+                guidance = { bounds ->
+                    IntArray(bounds.width * bounds.height).also { pixels ->
+                        origin.getPixels(
+                            pixels,
+                            0,
+                            bounds.width,
+                            bounds.left,
+                            bounds.top,
+                            bounds.width,
+                            bounds.height,
+                        )
+                    }
+                },
+                checkCancelled = checkCancelled,
+            )
         } catch (e: OutOfMemoryError) {
             // 후처리는 개선 수단이라 실패했다고 흐름 전체를 실패로 접을 이유가 없다.
             // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
@@ -371,7 +423,8 @@ constructor(
         } ?: return emptyList()
 
         repositoryLogger.i {
-            "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${width * height}"
+            "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${width * height}, " +
+                "정련 ${masked.result.refineElapsedNanos / 1_000_000}ms"
         }
 
         val bounds = masked.result.bounds
