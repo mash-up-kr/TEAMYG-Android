@@ -242,6 +242,64 @@ internal fun applyCoefficients(
     return changed
 }
 
+/**
+ * 원본 휘도를 안내자로 알파 경계를 정련한다. 알파를 **그 자리에서** 고친다.
+ *
+ * 계수는 [downscale] 배율 축소판에서 구하고 적용만 원본 해상도에서 한다. 근거와 전체 설계는
+ * `specs/2026-08-25-segmentation-alpha-refinement.md` 참고.
+ *
+ * @param guidance [alpha] 와 같은 크기·같은 좌표계의 ARGB. **ML Kit 이 배경을 도려낸 판이 아니라
+ *   원본 사진에서 읽은 것이어야 한다** — 도려낸 판을 주면 안내자 경계가 알파 경계와 겹쳐
+ *   정련이 지금 경계를 그대로 재현한다
+ * @return 알파가 한 픽셀이라도 바뀌었으면 true
+ */
+internal fun refineAlpha(
+    alpha: ByteArray,
+    guidance: IntArray,
+    width: Int,
+    height: Int,
+    downscale: Int,
+    radius: Int,
+    epsilon: Float,
+    checkCancelled: () -> Unit = {},
+): Boolean {
+    require(alpha.size == width * height) {
+        "alpha length ${alpha.size} does not match ${width}x$height"
+    }
+    require(guidance.size == alpha.size) {
+        "guidance length ${guidance.size} does not match alpha length ${alpha.size}"
+    }
+    require(downscale >= 1) { "downscale must be at least 1 but was $downscale" }
+    require(radius >= 1) { "radius must be at least 1 but was $radius" }
+    require(epsilon > 0f) { "epsilon must be positive but was $epsilon" }
+    if (width <= 0 || height <= 0) return false
+
+    val subWidth = ceilDiv(width, downscale)
+    val subHeight = ceilDiv(height, downscale)
+
+    val coefficients = guidedCoefficients(
+        guidance = downscaleLuminance(guidance, width, height, downscale, checkCancelled),
+        input = downscaleAlpha(alpha, width, height, downscale, checkCancelled),
+        width = subWidth,
+        height = subHeight,
+        radius = radius,
+        epsilon = epsilon,
+        checkCancelled = checkCancelled,
+    )
+
+    return applyCoefficients(
+        alpha = alpha,
+        guidance = guidance,
+        coefficients = coefficients,
+        width = width,
+        height = height,
+        subWidth = subWidth,
+        subHeight = subHeight,
+        factor = downscale,
+        checkCancelled = checkCancelled,
+    )
+}
+
 private fun bilinear(
     values: FloatArray,
     stride: Int,
