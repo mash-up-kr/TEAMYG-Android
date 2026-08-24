@@ -75,7 +75,6 @@ private fun SegmentationBounds.overlapsAsDuplicate(other: SegmentationBounds): B
 
     val intersection = overlapWidth.toLong() * overlapHeight
     val union = width.toLong() * height + other.width.toLong() * other.height - intersection
-    if (union <= 0L) return false
 
     return intersection * 10_000L >= DUPLICATE_IOU_PERMYRIAD * union
 }
