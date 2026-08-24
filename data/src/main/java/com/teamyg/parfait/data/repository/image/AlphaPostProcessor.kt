@@ -160,3 +160,75 @@ internal fun erodeEdge(
 
     return changed
 }
+
+/** 원본 픽셀 환산. 이 값 **미만** 크기의 성분은 잡티로 보고 버린다 */
+internal const val AREA_OPENING_MIN_PIXELS = 256
+
+/** 판정 버퍼를 줄이지 않는 크기 하한. 이 값 **미만** 픽셀 수의 판은 배율 1로 돈다 */
+internal const val MIN_PIXELS_FOR_DOWNSCALE = 2_000_000
+
+internal data class AlphaPostProcessOptions(
+    val downscaleFactor: Int = 4,
+    val binaryThreshold: Int = 127,
+    val areaOpeningMinPixels: Int = AREA_OPENING_MIN_PIXELS,
+    val erodeEdge: Boolean = true,
+    val minPixelsForDownscale: Int = MIN_PIXELS_FOR_DOWNSCALE,
+)
+
+internal data class AlphaPostProcessResult(
+    val bounds: SegmentationBounds,
+    val alphaSum: Long,
+    val partialAlphaPixels: Int,
+    /**
+     * 거짓이면 알파가 하나도 안 바뀌었다는 뜻이다. 원본 판을 그대로 쓰려면 [bounds] 가 판 전체와
+     * 같은지도 함께 봐야 한다 — 알파를 안 바꿔도 원판에 투명 여백이 있으면 판 치수와 [bounds]
+     * 치수가 어긋나 `SegmentationCandidate` 의 계약이 깨진다.
+     */
+    val changed: Boolean,
+)
+
+/**
+ * [alpha] 를 그 자리에서 다듬고 남은 영역을 돌려준다.
+ *
+ * 판정(이진화·성분·팽창)은 축소판에서, 적용과 측정은 원본 해상도에서 한다. 축소판이 정하는 것은
+ * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다. 근거는
+ * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」.
+ *
+ * @param alpha 길이가 `width * height` 여야 한다
+ * @param checkCancelled 행 경계마다 불린다. 이 함수는 코루틴을 모르므로 호출부가 넣어 준다
+ * @return 남은 알파가 없으면 `null`
+ */
+internal fun postProcessAlpha(
+    alpha: ByteArray,
+    width: Int,
+    height: Int,
+    options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
+    checkCancelled: () -> Unit = {},
+): AlphaPostProcessResult? {
+    require(alpha.size == width * height) {
+        "alpha length ${alpha.size} does not match ${width}x$height"
+    }
+    if (width <= 0 || height <= 0) return null
+
+    val factor = if (width.toLong() * height < options.minPixelsForDownscale) 1 else options.downscaleFactor
+    val maskWidth = ceilDiv(width, factor)
+    val maskHeight = ceilDiv(height, factor)
+
+    val mask = downscaleMask(alpha, width, height, factor, options.binaryThreshold, checkCancelled)
+
+    val minComponentPixels = maxOf(1, options.areaOpeningMinPixels / (factor * factor))
+    if (!applyAreaOpening(mask, maskWidth, maskHeight, minComponentPixels, checkCancelled)) return null
+
+    val keep = dilateMask(mask, maskWidth, maskHeight, checkCancelled)
+
+    val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor, checkCancelled)
+    val eroded = options.erodeEdge && erodeEdge(alpha, width, height, checkCancelled)
+    val measured = measureAlpha(alpha, width, height, checkCancelled) ?: return null
+
+    return AlphaPostProcessResult(
+        bounds = measured.bounds,
+        alphaSum = measured.alphaSum,
+        partialAlphaPixels = measured.partialAlphaPixels,
+        changed = applied || eroded,
+    )
+}
