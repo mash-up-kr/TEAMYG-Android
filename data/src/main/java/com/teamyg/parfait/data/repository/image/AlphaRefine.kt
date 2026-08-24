@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.repository.image
 
+import kotlin.math.roundToInt
+
 private const val OPAQUE = 255f
 
 /**
@@ -168,4 +170,93 @@ internal fun guidedCoefficients(
         a = boxMean(a, width, height, radius, checkCancelled),
         b = boxMean(b, width, height, radius, checkCancelled),
     )
+}
+
+/**
+ * 축소판 계수를 이중선형으로 되올려 원본 알파에 적용한다.
+ *
+ * **경계 선명도는 이 단계에서 나온다** — 계수는 저주파라 축소해도 되지만 곱해지는 안내자는 원본
+ * 해상도다. nearest 로 되올리면 계수 자체의 블록 경계가 알파에 찍힌다.
+ *
+ * @param guidance ARGB. 휘도를 픽셀마다 즉석 계산한다 — 원본 해상도 실수 배열을 만들지 않는다
+ * @return 알파가 한 픽셀이라도 바뀌었으면 true
+ */
+internal fun applyCoefficients(
+    alpha: ByteArray,
+    guidance: IntArray,
+    coefficients: GuidedCoefficients,
+    width: Int,
+    height: Int,
+    subWidth: Int,
+    subHeight: Int,
+    factor: Int,
+    checkCancelled: () -> Unit = {},
+): Boolean {
+    var changed = false
+
+    for (y in 0 until height) {
+        checkCancelled()
+        val sourceY = ((y + 0.5f) / factor - 0.5f).coerceIn(0f, (subHeight - 1).toFloat())
+        val topRow = sourceY.toInt()
+        val bottomRow = minOf(topRow + 1, subHeight - 1)
+        val weightY = sourceY - topRow
+        val rowOffset = y * width
+
+        for (x in 0 until width) {
+            val sourceX = ((x + 0.5f) / factor - 0.5f).coerceIn(0f, (subWidth - 1).toFloat())
+            val leftColumn = sourceX.toInt()
+            val rightColumn = minOf(leftColumn + 1, subWidth - 1)
+            val weightX = sourceX - leftColumn
+
+            val slope = bilinear(
+                values = coefficients.a,
+                stride = subWidth,
+                leftColumn = leftColumn,
+                rightColumn = rightColumn,
+                topRow = topRow,
+                bottomRow = bottomRow,
+                weightX = weightX,
+                weightY = weightY,
+            )
+            val offset = bilinear(
+                values = coefficients.b,
+                stride = subWidth,
+                leftColumn = leftColumn,
+                rightColumn = rightColumn,
+                topRow = topRow,
+                bottomRow = bottomRow,
+                weightX = weightX,
+                weightY = weightY,
+            )
+
+            val index = rowOffset + x
+            val refined = slope * luminanceOf(guidance[index]) + offset
+            val value = (refined * OPAQUE).roundToInt().coerceIn(0, 255)
+            if (value != (alpha[index].toInt() and 0xFF)) {
+                alpha[index] = value.toByte()
+                changed = true
+            }
+        }
+    }
+
+    return changed
+}
+
+private fun bilinear(
+    values: FloatArray,
+    stride: Int,
+    leftColumn: Int,
+    rightColumn: Int,
+    topRow: Int,
+    bottomRow: Int,
+    weightX: Float,
+    weightY: Float,
+): Float {
+    val topOffset = topRow * stride
+    val bottomOffset = bottomRow * stride
+    val top = values[topOffset + leftColumn] * (1f - weightX) +
+        values[topOffset + rightColumn] * weightX
+    val bottom = values[bottomOffset + leftColumn] * (1f - weightX) +
+        values[bottomOffset + rightColumn] * weightX
+    return top * (1f - weightY) + bottom * weightY
 }
