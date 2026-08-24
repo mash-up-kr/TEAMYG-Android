@@ -24,7 +24,6 @@ data class GroupListUiState(
     val groupList: List<MyParfaitGroupVO>? = null,
     val nickName: String? = null,
     val groupAddButtonSelected: Boolean = false,
-    /** 그룹이 0건일 때만 뜨는 온보딩 툴팁 */
     val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
     val isRefreshing: Boolean = false,

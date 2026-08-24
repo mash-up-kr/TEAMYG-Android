@@ -23,7 +23,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
  * pull-to-refresh 대상이 아니므로 두 화면 모두 스크롤 영역 바깥에 배치한다.
  *
  * @param onClickAddGroup null 이면 그룹 추가 칩과 툴팁을 함께 감춘다.
- * @param isTooltipVisible 툴팁은 칩에 매달려 있어, 칩이 없으면 켜 달라고 해도 뜨지 않는다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
