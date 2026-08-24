@@ -176,7 +176,10 @@ class CanvasToppingPlaceViewModel
     }
 
     /**
-     * 배치 화면은 캔버스를 새로 만들지 않는다
+     * 이 화면은 캔버스 생성을 의도하지 않는다 — 이미 이 흐름에 들어왔다는 것 자체가 오늘
+     * 캔버스가 있다는 뜻이다. 다만 [getTodayParfaitUseCase] 자체는 서버에서 그 날짜 파르페가
+     * 없으면 만들어 저장하는 부작용을 갖고 있다(`CanvasVO` 문서 참고) — 그 부작용이 여기서
+     * 발동할 일이 없다는 뜻이지, 호출 자체가 안전하다는 보장은 아니다.
      */
     private fun loadCanvasIfNeeded(groupId: GroupId) {
         if (canvasLoadedForGroupId == groupId) return
