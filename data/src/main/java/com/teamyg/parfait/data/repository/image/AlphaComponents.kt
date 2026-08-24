@@ -190,3 +190,35 @@ private fun union(
     val rightRoot = findRoot(parent, right)
     if (leftRoot != rightRoot) parent[rightRoot] = leftRoot
 }
+
+/**
+ * 8-근방으로 1픽셀 팽창한 새 마스크를 돌려준다.
+ *
+ * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」 참고
+ *
+ * 반경 1이 계약이다 — 8-연결 성분끼리는 최소 거리가 2라, 반경을 키우면 area opening 이 지운
+ * 성분이 되살아난다.
+ */
+internal fun dilateMask(
+    mask: BooleanArray,
+    width: Int,
+    height: Int,
+    checkCancelled: () -> Unit = {},
+): BooleanArray {
+    val dilated = BooleanArray(mask.size)
+
+    for (y in 0 until height) {
+        checkCancelled()
+        for (x in 0 until width) {
+            if (!mask[y * width + x]) continue
+
+            for (neighborY in maxOf(0, y - 1)..minOf(height - 1, y + 1)) {
+                for (neighborX in maxOf(0, x - 1)..minOf(width - 1, x + 1)) {
+                    dilated[neighborY * width + neighborX] = true
+                }
+            }
+        }
+    }
+
+    return dilated
+}
