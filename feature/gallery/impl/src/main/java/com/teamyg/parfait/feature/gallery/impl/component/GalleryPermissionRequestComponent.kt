@@ -6,14 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,10 +43,11 @@ internal fun GalleryPermissionRequestComponent(
             .background(YGAtomicColors.Gray.White),
     ) {
         if (isDeniedPermission) {
+            // 인셋은 이 화면을 띄우는 Scaffold 가 이미 물려 준다 — 여기서 한 번 더 물면
+            // 상태바 높이만큼 아래로 밀려 닫기 버튼이 설계보다 깊이 내려간다
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.systemBars)
                     .padding(
                         start = YGTheme.layout.padding.padding7,
                         end = YGTheme.layout.padding.padding7,
