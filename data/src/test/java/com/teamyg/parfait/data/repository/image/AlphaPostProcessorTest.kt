@@ -82,4 +82,96 @@ class AlphaPostProcessorTest {
         assertEquals(455L, measured?.alphaSum)
         assertEquals(SegmentationBounds(left = 0, top = 0, right = 2, bottom = 1), measured?.bounds)
     }
+
+    @Test
+    fun erodeEdge_ramp_shiftsItInwardByOnePixelWithoutMakingAStep() {
+        // Given — 한 행짜리 램프. 제자리에서 돌리면 왼쪽부터 연쇄로 전멸한다
+        val alpha = alphaBytes(0, 64, 128, 191, 255, 255)
+
+        // When
+        val changed = erodeEdge(alpha, width = 6, height = 1)
+
+        // Then
+        assertEquals(true, changed)
+        assertContentEquals(intArrayOf(0, 0, 64, 128, 191, 255), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_hardMatte_stillLosesOneLayer() {
+        // Given — 알파가 0 아니면 255 뿐이다. "1~254 만 대상"이면 아무 일도 안 일어난다
+        val alpha = alphaBytes(0, 255, 255, 255, 255, 0)
+
+        // When
+        erodeEdge(alpha, width = 6, height = 1)
+
+        // Then
+        assertContentEquals(intArrayOf(0, 0, 255, 255, 0, 0), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_oneVerticalOpaqueLine_isProtectedByTheRidgeRule() {
+        // Given — 폭 1 불투명 선. 좌우가 둘 다 0 이라 능선으로 보호한다
+        val alpha = alphaBytes(
+            0, 255, 0,
+            0, 255, 0,
+            0, 255, 0,
+        )
+
+        // When
+        val changed = erodeEdge(alpha, width = 3, height = 3)
+
+        // Then
+        assertEquals(false, changed)
+        assertContentEquals(intArrayOf(0, 255, 0, 0, 255, 0, 0, 255, 0), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_oneVerticalPartialAlphaLine_isProtectedToo() {
+        // Given — 값이 낮아도 능선이면 안 깎는다
+        val alpha = alphaBytes(
+            0, 100, 0,
+            0, 100, 0,
+            0, 100, 0,
+        )
+
+        // When
+        erodeEdge(alpha, width = 3, height = 3)
+
+        // Then
+        assertContentEquals(intArrayOf(0, 100, 0, 0, 100, 0, 0, 100, 0), alpha.asInts())
+    }
+
+    @Test
+    fun erodeEdge_twoPixelWideBar_disappears() {
+        // Given — 양쪽에서 한 겹씩 깎이므로 사라진다. 1픽셀 침식에 내재한 한계다
+        val alpha = alphaBytes(
+            0, 255, 255, 0,
+            0, 255, 255, 0,
+            0, 255, 255, 0,
+        )
+
+        // When
+        erodeEdge(alpha, width = 4, height = 3)
+
+        // Then
+        assertEquals(0, alpha.asInts().sum())
+    }
+
+    @Test
+    fun erodeEdge_subjectTouchingTheFrame_keepsTheEdgeRow() {
+        // Given — 판 전체가 불투명하다. 이미지 밖을 투명으로 치면 테두리가 깎인다
+        val alpha = alphaBytes(
+            255,
+            255,
+            255,
+            255,
+        )
+
+        // When
+        val changed = erodeEdge(alpha, width = 2, height = 2)
+
+        // Then
+        assertEquals(false, changed)
+        assertContentEquals(intArrayOf(255, 255, 255, 255), alpha.asInts())
+    }
 }
