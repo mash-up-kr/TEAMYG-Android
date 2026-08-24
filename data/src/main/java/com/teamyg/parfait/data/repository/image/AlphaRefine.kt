@@ -110,3 +110,62 @@ private fun luminanceOf(pixel: Int): Float {
     val blue = pixel and 0xFF
     return (0.299f * red + 0.587f * green + 0.114f * blue) / OPAQUE
 }
+
+internal class GuidedCoefficients(
+    val a: FloatArray,
+    val b: FloatArray,
+)
+
+/**
+ * 창마다 `q = a·I + b` 의 계수를 구하고 그 계수를 다시 창 평균한다.
+ *
+ * `a` 는 안내자와 입력의 공분산을 안내자의 분산으로 나눈 값이라 **안내자에 경계가 있는 자리에서만
+ * 커진다.** [epsilon] 이 크면 `a` 가 눌려 평균 필터로 퇴화한다.
+ *
+ * 근거는 `specs/2026-08-25-segmentation-alpha-refinement.md` 「설계 - 정련 알고리즘」에 있다.
+ */
+internal fun guidedCoefficients(
+    guidance: FloatArray,
+    input: FloatArray,
+    width: Int,
+    height: Int,
+    radius: Int,
+    epsilon: Float,
+    checkCancelled: () -> Unit = {},
+): GuidedCoefficients {
+    val meanGuidance = boxMean(guidance, width, height, radius, checkCancelled)
+    val meanInput = boxMean(input, width, height, radius, checkCancelled)
+    val meanSquare = boxMean(
+        FloatArray(guidance.size) { index -> guidance[index] * guidance[index] },
+        width,
+        height,
+        radius,
+        checkCancelled,
+    )
+    val meanProduct = boxMean(
+        FloatArray(guidance.size) { index -> guidance[index] * input[index] },
+        width,
+        height,
+        radius,
+        checkCancelled,
+    )
+
+    val a = FloatArray(guidance.size)
+    val b = FloatArray(guidance.size)
+    for (y in 0 until height) {
+        checkCancelled()
+        for (x in 0 until width) {
+            val index = y * width + x
+            // 부동소수 오차로 음수가 나올 수 있다. 음수 분산은 a 의 부호를 뒤집는다
+            val variance = maxOf(0f, meanSquare[index] - meanGuidance[index] * meanGuidance[index])
+            val covariance = meanProduct[index] - meanGuidance[index] * meanInput[index]
+            a[index] = covariance / (variance + epsilon)
+            b[index] = meanInput[index] - a[index] * meanGuidance[index]
+        }
+    }
+
+    return GuidedCoefficients(
+        a = boxMean(a, width, height, radius, checkCancelled),
+        b = boxMean(b, width, height, radius, checkCancelled),
+    )
+}

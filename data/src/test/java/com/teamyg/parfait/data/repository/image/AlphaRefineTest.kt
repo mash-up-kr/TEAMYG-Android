@@ -140,4 +140,53 @@ class AlphaRefineTest {
         assertClose(1f, sub[2], "bottom-left block is the trailing row")
         assertClose(1f, sub[3], "bottom-right block is the trailing row")
     }
+
+    @Test
+    fun guidedCoefficients_constantGuidance_degeneratesToADoubleMean() {
+        // Given — 안내자에 경계가 없으면 알파를 옮길 근거가 없다. a 는 0 이고 b 만 남는다
+        val guidance = FloatArray(16) { 0.5f }
+        val input = FloatArray(16) { index -> if (index % 4 < 2) 1f else 0f }
+
+        // When
+        val coefficients = guidedCoefficients(
+            guidance = guidance,
+            input = input,
+            width = 4,
+            height = 4,
+            radius = 1,
+            epsilon = 1e-4f,
+        )
+
+        // Then — b 는 창 평균을 **두 번** 거친 값이다. 한 번만 기대하면 가장자리에서 0.167 어긋난다
+        val once = boxMean(input, width = 4, height = 4, radius = 1)
+        val twice = boxMean(once, width = 4, height = 4, radius = 1)
+        for (index in coefficients.a.indices) {
+            assertClose(0f, coefficients.a[index], "a index=$index")
+            assertClose(twice[index], coefficients.b[index], "b index=$index")
+        }
+    }
+
+    @Test
+    fun guidedCoefficients_inputEqualsGuidance_reproducesTheGuidance() {
+        // Given — p 가 I 와 같으면 q = I 여야 하므로 a = 1, b = 0 이다.
+        // ⚠️ 안내자는 **모든 창에 분산이 있어야** 한다. 계단형이면 가장자리 창의 분산이 0 이라
+        // 그 자리 a 가 0 으로 떨어지고 두 번째 평균이 그것을 안쪽까지 번지게 한다
+        val guidance = FloatArray(16) { index -> (index % 4) * 0.3f }
+
+        // When
+        val coefficients = guidedCoefficients(
+            guidance = guidance,
+            input = guidance.copyOf(),
+            width = 4,
+            height = 4,
+            radius = 1,
+            epsilon = 1e-8f,
+        )
+
+        // Then
+        for (index in coefficients.a.indices) {
+            assertClose(1f, coefficients.a[index], "a index=$index")
+            assertClose(0f, coefficients.b[index], "b index=$index")
+        }
+    }
 }
