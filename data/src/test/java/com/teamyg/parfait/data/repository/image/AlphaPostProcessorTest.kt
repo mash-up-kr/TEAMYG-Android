@@ -4,6 +4,7 @@ import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 /** 각 값이 알파 하나. 행 구분은 호출부가 width 로 준다 */
@@ -188,5 +189,258 @@ class AlphaPostProcessorTest {
         // Then
         assertEquals(false, changed)
         assertContentEquals(intArrayOf(255, 255, 255, 255), alpha.asInts())
+    }
+
+    @Test
+    fun postProcessAlpha_speckAwayFromTheBlob_isRemovedAndBoundsTightenToTheBlob() {
+        // Given — 배율 1 층위. 8×8 에 4×4 덩어리와 떨어진 한 점
+        val alpha = ByteArray(64)
+        for (y in 0 until 4) for (x in 0 until 4) alpha[y * 8 + x] = 255.toByte()
+        alpha[7 * 8 + 7] = 255.toByte()
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4, erodeEdge = false),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 0, top = 0, right = 4, bottom = 4), result?.bounds)
+        assertEquals(0, alpha[7 * 8 + 7].toInt() and 0xFF)
+        assertEquals(true, result?.changed)
+    }
+
+    @Test
+    fun postProcessAlpha_everyPixelSurvives_reportsNoChangeAndCoversTheWholePlate() {
+        // Given — 판 전체가 불투명하다. 침식을 켜도 프레임 테두리는 안 깎인다
+        val alpha = ByteArray(64) { 255.toByte() }
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 0, top = 0, right = 8, bottom = 8), result?.bounds)
+        assertEquals(false, result?.changed)
+        assertEquals(64L * 255, result?.alphaSum)
+    }
+
+    @Test
+    fun postProcessAlpha_everythingIsSpeck_returnsNull() {
+        // Given
+        val alpha = ByteArray(64)
+        alpha[0] = 255.toByte()
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4),
+        )
+
+        // Then
+        assertNull(result)
+    }
+
+    @Test
+    fun postProcessAlpha_everythingIsTransparent_returnsNull() {
+        // Given
+        val alpha = ByteArray(64)
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 1),
+        )
+
+        // Then
+        assertNull(result)
+    }
+
+    @Test
+    fun postProcessAlpha_alphaLengthDoesNotMatch_failsFast() {
+        // Given — 호출부가 어긋난 배열을 넘기면 엉뚱한 자리를 읽는다. 조용히 틀리지 않게 막는다
+        val alpha = ByteArray(10)
+
+        // When · Then
+        assertFailsWith<IllegalArgumentException> { postProcessAlpha(alpha, width = 4, height = 4) }
+    }
+
+    @Test
+    fun postProcessAlpha_cancelledMidway_propagatesTheCallersThrow() {
+        // Given — 순수 커널에는 중단점이 없다. 콜백이 유일한 탈출구다
+        val alpha = ByteArray(64) { 255.toByte() }
+        var calls = 0
+
+        // When · Then
+        assertFailsWith<IllegalStateException> {
+            postProcessAlpha(
+                alpha,
+                width = 8,
+                height = 8,
+                options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4),
+            ) {
+                calls++
+                if (calls > 2) error("cancelled")
+            }
+        }
+    }
+
+    @Test
+    fun postProcessAlpha_downscaleFour_keepsTheBlobAndDropsTheDistantSpeck() {
+        // Given — 32×32 에 16×16 덩어리와 멀리 떨어진 4×4 점
+        val alpha = ByteArray(32 * 32)
+        for (y in 0 until 16) for (x in 0 until 16) alpha[y * 32 + x] = 255.toByte()
+        for (y in 28 until 32) for (x in 28 until 32) alpha[y * 32 + x] = 255.toByte()
+
+        // When — 원본 환산 임계 64px 이면 축소판 임계는 4px 이다. 4×4 점은 축소판 1px 이라 죽는다
+        val result = postProcessAlpha(
+            alpha,
+            width = 32,
+            height = 32,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 64,
+                erodeEdge = false,
+                minPixelsForDownscale = 0,
+            ),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 0, top = 0, right = 16, bottom = 16), result?.bounds)
+        assertEquals(0, alpha[31 * 32 + 31].toInt() and 0xFF)
+    }
+
+    @Test
+    fun postProcessAlpha_sameSizeSpeckOnAndOffTheBlockGrid_isCountedDifferently() {
+        // Given — 원본 4×4 잡티 둘. 하나는 블록에 정렬되고 하나는 한 칸 어긋났다.
+        // OR 풀링이라 어긋난 쪽이 축소판에서 더 넓게 잡힌다 — 위상 슬롭을 여기 고정한다
+        val aligned = ByteArray(32 * 32)
+        for (y in 0 until 4) for (x in 0 until 4) aligned[y * 32 + x] = 255.toByte()
+
+        val shifted = ByteArray(32 * 32)
+        for (y in 1 until 5) for (x in 1 until 5) shifted[y * 32 + x] = 255.toByte()
+
+        val options = AlphaPostProcessOptions(
+            downscaleFactor = 4,
+            areaOpeningMinPixels = 32,
+            erodeEdge = false,
+            minPixelsForDownscale = 0,
+        )
+
+        // When — 축소판 임계는 32 / 16 = 2 다. 정렬된 잡티는 1블록이라 죽고 어긋난 쪽은 4블록이라 산다
+        val alignedResult = postProcessAlpha(aligned, width = 32, height = 32, options = options)
+        val shiftedResult = postProcessAlpha(shifted, width = 32, height = 32, options = options)
+
+        // Then
+        assertNull(alignedResult)
+        assertEquals(SegmentationBounds(left = 1, top = 1, right = 5, bottom = 5), shiftedResult?.bounds)
+    }
+
+    @Test
+    fun postProcessAlpha_speckCloseToTheBlob_isNotRemovable() {
+        // Given — 잡티가 실루엣에서 배율의 두 배 이내다. OR 풀링이 본체와 같은 성분으로 묶는다.
+        // 제거할 수 없는 것이 한계이지 결함이 아니라는 사실을 여기 고정한다
+        val alpha = ByteArray(32 * 32)
+        for (y in 0 until 16) for (x in 0 until 16) alpha[y * 32 + x] = 255.toByte()
+        alpha[17] = 255.toByte()
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 32,
+            height = 32,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 64,
+                erodeEdge = false,
+                minPixelsForDownscale = 0,
+            ),
+        )
+
+        // Then — bounds 가 그 한 점까지 늘어난다
+        assertEquals(18, result?.bounds?.right)
+        assertEquals(255, alpha[17].toInt() and 0xFF)
+    }
+
+    @Test
+    fun postProcessAlpha_sizeIsNotAMultipleOfFactor_keepsTheTrailingEdgeAlpha() {
+        // Given — 33×33 전면 불투명. 축소를 내림하면 오른쪽·아래 한 줄이 판정에서 빠져 0이 된다
+        val alpha = ByteArray(33 * 33) { 255.toByte() }
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 33,
+            height = 33,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 64,
+                erodeEdge = false,
+                minPixelsForDownscale = 0,
+            ),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 0, top = 0, right = 33, bottom = 33), result?.bounds)
+        assertEquals(255, alpha[33 * 33 - 1].toInt() and 0xFF)
+    }
+
+    @Test
+    fun postProcessAlpha_belowTheDownscaleFloor_runsAtFactorOne() {
+        // Given — 하한 미만이면 배율 1 로 돈다. 축소했다면 이 3픽셀 성분이 한 블록에 뭉쳐 살아남는다
+        val alpha = ByteArray(64)
+        alpha[0] = 255.toByte()
+        alpha[1] = 255.toByte()
+        alpha[8] = 255.toByte()
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 4,
+                minPixelsForDownscale = 1_000,
+            ),
+        )
+
+        // Then
+        assertNull(result)
+    }
+
+    @Test
+    fun postProcessAlpha_atTheDownscaleFloor_runsAtTheConfiguredFactor() {
+        // Given — 같은 입력인데 하한을 낮춰 축소가 발동하게 만든다
+        val alpha = ByteArray(64)
+        alpha[0] = 255.toByte()
+        alpha[1] = 255.toByte()
+        alpha[8] = 255.toByte()
+
+        // When — 배율 4 면 세 픽셀이 한 블록에 뭉쳐 축소판 임계 1 을 넘는다
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = AlphaPostProcessOptions(
+                downscaleFactor = 4,
+                areaOpeningMinPixels = 4,
+                erodeEdge = false,
+                minPixelsForDownscale = 64,
+            ),
+        )
+
+        // Then
+        assertEquals(SegmentationBounds(left = 0, top = 0, right = 2, bottom = 2), result?.bounds)
     }
 }
