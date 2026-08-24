@@ -220,4 +220,85 @@ class SegmentationCandidateFilterTest {
         // Then 빈 목록이다
         assertTrue(filtered.isEmpty())
     }
+
+    @Test
+    fun filterCandidates_iouAboveTheThreshold_keepsTheOneWithMoreCoverage() {
+        // Given — 100×100 과 96×96(안쪽으로 2px). IoU = 9216 / 10000 = 0.9216
+        val bigger = candidate(
+            width = 100,
+            height = 100,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 9_000,
+        )
+        val nearlySame = candidate(
+            left = 2,
+            top = 2,
+            width = 96,
+            height = 96,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 8_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(nearlySame, bigger))
+
+        // Then
+        assertEquals(listOf(bigger), filtered)
+    }
+
+    @Test
+    fun filterCandidates_iouBelowTheThreshold_keepsBoth() {
+        // Given — 100×100 과 94×94(안쪽으로 3px). IoU = 8836 / 10000 = 0.8836
+        val bigger = candidate(
+            width = 100,
+            height = 100,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 9_000,
+        )
+        val overlapping = candidate(
+            left = 3,
+            top = 3,
+            width = 94,
+            height = 94,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 8_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(overlapping, bigger))
+
+        // Then
+        assertEquals(listOf(bigger, overlapping), filtered)
+    }
+
+    @Test
+    fun filterCandidates_smallSubjectInsideABigOne_keepsBoth() {
+        // Given — 사람 안의 든 물건. 포함 관계는 IoU 가 낮아 병합되지 않고, 그게 의도다
+        val person = candidate(
+            width = 300,
+            height = 900,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 100_000,
+        )
+        val heldItem = candidate(
+            left = 100,
+            top = 400,
+            width = 80,
+            height = 80,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 5_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(heldItem, person))
+
+        // Then
+        assertEquals(listOf(person, heldItem), filtered)
+    }
 }
