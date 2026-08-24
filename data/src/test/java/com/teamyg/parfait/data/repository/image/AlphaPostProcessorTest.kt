@@ -6,6 +6,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** 각 값이 알파 하나. 행 구분은 호출부가 width 로 준다 */
 private fun alphaBytes(vararg values: Int) = ByteArray(values.size) { values[it].toByte() }
@@ -539,7 +540,10 @@ class AlphaPostProcessorTest {
         // applyAreaOpening(행 쌍 union) 7 + dilateMask 8 + applyKeepMask 8 + erodeEdge 8 +
         // measureAlpha 8 = 47. 느슨한 하한(> 8)은 뒤 단계 다섯을 통째로 지워야만 걸리고 그중 하나만
         // 지워도(예: erodeEdge 의 호출 하나) 39로 여전히 8을 넘어 조용히 통과한다 — 그래서 정확한 값으로
-        // 고정해 다섯 단계 중 어느 한 곳의 누락도 잡는다
-        assertEquals(47, calls)
+        // 고정해 다섯 단계 중 어느 한 곳의 누락도 잡는다.
+        // 다만 정확한 값은 단계 구성·순회 입도·픽스처 크기가 바뀌면 기능 회귀 없이도 깨진다.
+        // 한 단계를 통째로 지웠을 때의 최대치는 area opening(7 손실)을 지운 40이다 — 그 위(> 40)를
+        // 요구하면 여섯 단계 각각의 삭제(39·40·39·39·39·39)를 전부 잡으면서 유지비도 준다
+        assertTrue(calls > 40)
     }
 }
