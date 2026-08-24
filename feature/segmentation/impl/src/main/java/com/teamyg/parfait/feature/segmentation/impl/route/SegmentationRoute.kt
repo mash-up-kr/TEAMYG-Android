@@ -16,8 +16,10 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.impl.R
+import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationErrorScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
 
 @Composable
@@ -37,34 +39,43 @@ internal fun SegmentationRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
+
+                // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
+                is SegmentationEffect.GoToConfirm -> navigator.goTo(
+                    NavKeySegmentationConfirm(
+                        sourceImageUri = key.sourceImageUri,
+                        subjectImagePath = effect.subjectImagePath,
+                        trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
+                    ),
+                )
             }
         }
     }
+
+    // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
+    val onClickClose: () -> Unit = { navigator.popUpTo<NavKeyCanvasMain>() }
 
     YGScaffoldV2(
         isLoading = state.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        SegmentationScreen(
-            state = state,
-            modifier = modifier.padding(innerPadding),
-            onClickBack = { navigator.onBack() },
-            // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-            onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
-            // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
-            onClickSubject = {
-                val subjectImagePath = state.subjectImagePath
-                val trimmedSubjectImagePath = state.trimmedSubjectImagePath
-                if (subjectImagePath != null && trimmedSubjectImagePath != null) {
-                    navigator.goTo(
-                        NavKeySegmentationConfirm(
-                            sourceImageUri = key.sourceImageUri,
-                            subjectImagePath = subjectImagePath,
-                            trimmedSubjectImagePath = trimmedSubjectImagePath,
-                        ),
-                    )
-                }
-            },
-        )
+        // 대상을 아예 못 얻은 실패는 화면 전체를 C-103-Error 로 바꾼다.
+        // 고른 뒤의 실패는 후보가 남아 있어 토스트로만 알린다(SegmentationEffect.ShowError)
+        if (state.isError) {
+            SegmentationErrorScreen(
+                onClickClose = onClickClose,
+                modifier = modifier.padding(innerPadding),
+            )
+        } else {
+            SegmentationScreen(
+                state = state,
+                modifier = modifier.padding(innerPadding),
+                onClickBack = { navigator.onBack() },
+                onClickClose = onClickClose,
+                onClickCandidate = { index ->
+                    viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
+                },
+            )
+        }
     }
 }

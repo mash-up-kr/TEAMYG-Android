@@ -4,25 +4,30 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
+import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
@@ -37,19 +42,34 @@ class SegmentationViewModelTest {
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
+    private val persistSubject: PersistSubjectUseCase = mockk()
 
     private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
+
+    private val candidate = SegmentationCandidate(
+        bounds = SegmentationBounds(left = 0, top = 0, right = 10, bottom = 10),
+        bitmap = bitmapWrapper,
+        canvasWidth = 100,
+        canvasHeight = 100,
+    )
+
+    private val secondCandidate = SegmentationCandidate(
+        bounds = SegmentationBounds(left = 20, top = 20, right = 30, bottom = 30),
+        bitmap = bitmapWrapper,
+        canvasWidth = 100,
+        canvasHeight = 100,
+    )
 
     private val success = SegmentationResult(
         subjectImagePath = SUBJECT_PATH,
         trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
-        subjectBounds = SegmentationBounds(left = 0, top = 0, right = 10, bottom = 10),
     )
 
     @Before
     fun stubTheHappyPath() {
         coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
+        coEvery { persistSubject(candidate) } returns Result.success(success)
     }
 
     private fun viewModel() = SegmentationViewModel(
@@ -58,19 +78,20 @@ class SegmentationViewModelTest {
         clearSegmentationCacheUseCase = clearSegmentationCache,
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
+        persistSubjectUseCase = persistSubject,
         toppingDraftRepository = toppingDraftRepository,
     )
 
     @Test
-    fun init_segmentationSucceeds_publishesSubjectImagePath() = runTest {
+    fun init_segmentationSucceeds_publishesCandidates() = runTest {
         // Given 정상 응답을 주는 유스케이스들
         // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 잘라낸 이미지 경로가 상태에 실린다
+        // Then 후보 목록이 상태에 실린다
         val state = viewModel.state.value
-        assertEquals(SUBJECT_PATH, state.subjectImagePath)
+        assertEquals(listOf(candidate), state.candidates)
         assertFalse(state.isLoading)
         viewModel.effect.test { expectNoEvents() }
     }
@@ -98,10 +119,11 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 크래시 대신 토스트로 알리고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 크래시 대신 실패 화면으로 바뀌고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
+        assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
         coVerify(exactly = 0) { segmentImage(any()) }
+        viewModel.effect.test { expectNoEvents() }
     }
 
     @Test
@@ -113,22 +135,22 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 토스트로 알리고 로딩 오버레이는 걷힌다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 실패 화면으로 바뀌고 로딩 오버레이는 걷힌다
+        assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
     }
 
     @Test
     fun init_noSubjectDetected_tellsTheUser() = runTest {
-        // Given 성공했지만 감지된 객체가 없는 응답
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success.copy(subjectBounds = null))
+        // Given 성공했지만 후보가 하나도 없는 응답
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(emptyList())
 
         // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 실패로 알린다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 실패 화면으로 바꾼다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
+        assertTrue(viewModel.state.value.isError)
     }
 
     @Test
@@ -141,7 +163,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 지난 파일을 못 지운 것이 이번 흐름을 막지 않는다
-        assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
         viewModel.effect.test { expectNoEvents() }
     }
 
@@ -205,21 +227,51 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 곁다리 기록의 실패가 잘라내기 자체를 막지 않는다
-        assertEquals(SUBJECT_PATH, viewModel.state.value.subjectImagePath)
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
         viewModel.effect.test { expectNoEvents() }
     }
 
     @Test
-    fun init_segmentationSucceeds_recordsTheDraft() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 세그멘테이션이 성공한다
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(success)
+    fun init_multipleCandidatesDetected_publishesAllCandidates() = runTest {
+        // Given 후보가 둘 잡히는 응답
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
 
-        // When 화면이 돈다
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 걸러지지 않은 후보가 모두 화면까지 온다 — 하나로 접히면 고를 수가 없다
+        assertEquals(listOf(candidate, secondCandidate), viewModel.state.value.candidates)
+    }
+
+    @Test
+    fun init_segmentationSucceeds_persistsNothingYet() = runTest {
+        // Given 후보가 잡히는 정상 응답
+        // When 화면이 열린다
         viewModel()
         advanceUntilIdle()
 
-        // Then 알맹이와 재편집 마스크가 초안에 적힌다. 이 시점엔 두른 테두리가 없다
-        coVerify(exactly = 1) {
+        // Then 아직 아무것도 떨구지 않는다 — 고르지도 않은 후보를 디스크에 쓰지 않는다
+        coVerify(exactly = 0) { persistSubject(any()) }
+        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun clickCandidate_succeeds_recordsTheDraftBeforeNavigating() = runTest {
+        // Given 화면이 열려 후보가 실려 있다
+        coEvery {
+            toppingDraftRepository.record(any(), any(), any(), any())
+        } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 초안을 다 적은 뒤에 이동한다 — 순서가 뒤집히면 확인 화면이 초안 없음으로 잠긴 채 뜬다
+        coVerifyOrder {
+            persistSubject(candidate)
             toppingDraftRepository.record(
                 subjectImagePath = TRIMMED_SUBJECT_PATH,
                 cutoutImagePath = SUBJECT_PATH,
@@ -227,18 +279,148 @@ class SegmentationViewModelTest {
                 borderWidthDp = null,
             )
         }
+        viewModel.effect.test {
+            assertEquals(
+                SegmentationEffect.GoToConfirm(
+                    subjectImagePath = SUBJECT_PATH,
+                    trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
+                ),
+                awaitItem(),
+            )
+        }
     }
 
     @Test
-    fun init_segmentationFails_recordsNothing() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 세그멘테이션이 실패한다
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException())
-
-        // When 화면이 돈다
-        viewModel()
+    fun clickCandidate_succeeds_releasesTheLoadingOverlay() = runTest {
+        // Given 화면이 열려 후보가 실려 있다
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 초안에 아무것도 적지 않는다 — 다음 화면으로 갈 수 없는 결과다
-        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 로딩이 걷힌다 — 이동이 goTo 라 이 화면이 백스택에 남고, 켠 채 나가면 돌아왔을 때 갇힌다
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun clickCandidate_persisting_showsTheLoadingOverlay() = runTest {
+        // Given 저장이 도는 동안 시간이 걸리는 상황
+        coEvery { persistSubject(candidate) } coAnswers {
+            delay(1_000)
+            Result.success(success)
+        }
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        runCurrent()
+
+        // Then 저장이 끝나기 전엔 로딩이 켜져 있고, 끝나면 걷힌다
+        assertTrue(viewModel.state.value.isLoading)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun clickCandidate_persistFails_keepsTheCandidatesAndTellsTheUser() = runTest {
+        // Given 저장이 실패하는 상황
+        coEvery { persistSubject(candidate) } returns Result.failure(IllegalStateException("no space"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 알리되 목록은 남긴다 — 사용자가 다른 후보를 고를 수 있어야 한다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun clickCandidate_draftIsNotOpen_doesNotNavigate() = runTest {
+        // Given 흐름이 열려 있지 않아 record 가 false 를 돌려주는 상황
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns false
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 이동하지 않고 알린다 — 초안 없이 보내면 확인 화면이 어차피 막힌다
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+    }
+
+    @Test
+    fun clickCandidate_tappedTwice_persistsOnlyOnce() = runTest {
+        // Given 화면이 열려 후보가 실려 있다
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 저장이 끝나기 전에 두 번 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 한 번만 떨군다 — 로딩 오버레이가 터치를 막아 주는지에 기대지 않는다
+        coVerify(exactly = 1) { persistSubject(any()) }
+    }
+
+    @Test
+    fun clickCandidate_indexIsOutOfRange_doesNothing() = runTest {
+        // Given 후보가 하나뿐인 상태
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 없는 자리를 가리키는 의도가 들어온다(상태 교체와 탭이 경합하면 생긴다)
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 3))
+        advanceUntilIdle()
+
+        // Then 아무 일도 일어나지 않는다
+        coVerify(exactly = 0) { persistSubject(any()) }
+        viewModel.effect.test { expectNoEvents() }
+    }
+
+    @Test
+    fun clickCandidate_tapsTheSecondOfTwo_persistsTheTappedCandidate() = runTest {
+        // Given 후보가 둘 잡혀 있다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
+        coEvery { persistSubject(secondCandidate) } returns Result.success(success)
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 두 번째 후보를 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 1))
+        advanceUntilIdle()
+
+        // Then 탭한 후보로 저장되고 첫 번째는 저장되지 않는다
+        coVerify(exactly = 1) { persistSubject(secondCandidate) }
+        coVerify(exactly = 0) { persistSubject(candidate) }
+    }
+
+    @Test
+    fun clickCandidate_tappedAgainAfterCompletion_persistsAgain() = runTest {
+        // Given 첫 저장이 이미 끝난 상태
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // When 다시 탭한다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 중복 탭 가드는 작업이 도는 동안만 막고, 끝난 뒤에는 다시 저장한다
+        coVerify(exactly = 2) { persistSubject(candidate) }
     }
 }
