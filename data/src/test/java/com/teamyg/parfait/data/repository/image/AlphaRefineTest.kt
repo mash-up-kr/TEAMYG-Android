@@ -16,6 +16,9 @@ private fun assertClose(
     assertTrue(abs(expected - actual) <= TOLERANCE, "$message expected=$expected actual=$actual")
 }
 
+/** 회색 픽셀. 휘도가 `value / 255` 다 */
+private fun gray(value: Int): Int = (0xFF shl 24) or (value shl 16) or (value shl 8) or value
+
 class AlphaRefineTest {
     @Test
     fun boxMean_everyValueIsOne_staysOneEvenAtTheCorners() {
@@ -188,5 +191,106 @@ class AlphaRefineTest {
             assertClose(1f, coefficients.a[index], "a index=$index")
             assertClose(0f, coefficients.b[index], "b index=$index")
         }
+    }
+
+    @Test
+    fun applyCoefficients_identityCoefficients_writeTheGuidanceAsAlpha() {
+        // Given — a = 1, b = 0 이면 알파가 안내자 휘도 그대로여야 한다
+        val alpha = ByteArray(4)
+        val guidance = intArrayOf(gray(0), gray(128), gray(255), gray(64))
+        val coefficients = GuidedCoefficients(a = FloatArray(4) { 1f }, b = FloatArray(4))
+
+        // When
+        val changed = applyCoefficients(
+            alpha = alpha,
+            guidance = guidance,
+            coefficients = coefficients,
+            width = 2,
+            height = 2,
+            subWidth = 2,
+            subHeight = 2,
+            factor = 1,
+        )
+
+        // Then
+        assertEquals(true, changed)
+        assertEquals(0, alpha[0].toInt() and 0xFF)
+        assertEquals(128, alpha[1].toInt() and 0xFF)
+        assertEquals(255, alpha[2].toInt() and 0xFF)
+        assertEquals(64, alpha[3].toInt() and 0xFF)
+    }
+
+    @Test
+    fun applyCoefficients_resultMatchesTheCurrentAlpha_reportsNoChange() {
+        // Given — 호출부가 이 값으로 원본 판 재사용을 판정한다. 늘 참이면 그 경로가 죽는다
+        val alpha = ByteArray(2) { 255.toByte() }
+        val guidance = intArrayOf(gray(255), gray(255))
+        val coefficients = GuidedCoefficients(a = FloatArray(2) { 1f }, b = FloatArray(2))
+
+        // When
+        val changed = applyCoefficients(
+            alpha = alpha,
+            guidance = guidance,
+            coefficients = coefficients,
+            width = 2,
+            height = 1,
+            subWidth = 2,
+            subHeight = 1,
+            factor = 1,
+        )
+
+        // Then
+        assertEquals(false, changed)
+    }
+
+    @Test
+    fun applyCoefficients_outOfRangeResult_isClampedInsteadOfWrapping() {
+        // Given — 자르지 않으면 바이트가 감겨 반대 값이 된다
+        val alpha = ByteArray(2)
+        val guidance = intArrayOf(gray(255), gray(255))
+        val coefficients = GuidedCoefficients(a = floatArrayOf(4f, -4f), b = FloatArray(2))
+
+        // When
+        applyCoefficients(
+            alpha = alpha,
+            guidance = guidance,
+            coefficients = coefficients,
+            width = 2,
+            height = 1,
+            subWidth = 2,
+            subHeight = 1,
+            factor = 1,
+        )
+
+        // Then
+        assertEquals(255, alpha[0].toInt() and 0xFF)
+        assertEquals(0, alpha[1].toInt() and 0xFF)
+    }
+
+    @Test
+    fun applyCoefficients_verticallyUpscaledCoefficients_interpolateBetweenRows() {
+        // Given — 세로로만 변하는 계수. 세로 보간을 빠뜨리면 계단 둘만 나온다
+        val alpha = ByteArray(8)
+        val guidance = IntArray(8) { gray(255) }
+        val coefficients = GuidedCoefficients(a = FloatArray(2), b = floatArrayOf(0f, 1f))
+
+        // When
+        applyCoefficients(
+            alpha = alpha,
+            guidance = guidance,
+            coefficients = coefficients,
+            width = 1,
+            height = 8,
+            subWidth = 1,
+            subHeight = 2,
+            factor = 4,
+        )
+
+        // Then
+        val values = IntArray(8) { alpha[it].toInt() and 0xFF }
+        for (index in 1 until 8) {
+            assertTrue(values[index] >= values[index - 1], "index=$index values=${values.toList()}")
+        }
+        assertTrue(values.toSet().size > 2, "nearest 되올림이면 값이 둘뿐이다 values=${values.toList()}")
     }
 }
