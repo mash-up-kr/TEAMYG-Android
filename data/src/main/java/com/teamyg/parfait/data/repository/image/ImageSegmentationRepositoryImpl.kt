@@ -17,6 +17,7 @@ import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.segmentation.subject.Subject
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
@@ -65,8 +66,12 @@ constructor(
 
         val result = runSegmenter(multipleSubjectOptions, image).getOrElse { return Result.failure(it) }
 
-        val candidates = try {
-            withContext(Dispatchers.Default) { filterCandidates(result.toCandidates(bitmap)) }
+        val pairs = try {
+            withContext(Dispatchers.Default) {
+                val job = currentCoroutineContext()[Job]
+                val checkCancelled: () -> Unit = { job?.ensureActive() }
+                result.toCandidatePairs(bitmap, checkCancelled)
+            }
         } catch (e: CancellationException) {
             // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
             throw e
@@ -75,8 +80,34 @@ constructor(
             return Result.failure(SegmentationException.Process(e))
         }
 
+        if (pairs.isEmpty()) {
+            repositoryLogger.i { "세그멘테이션: ML Kit 이 후보를 0건 줬다. 전경 마스크 폴백으로 내려간다" }
+            return Result.success(segmentForeground(image, bitmap))
+        }
+
+        val reverted = pairs.count { it.postProcessed == null }
+        if (reverted > 0) {
+            // 후처리는 개선 수단이지 후보를 없앨 권한이 아니다
+            repositoryLogger.i {
+                "세그멘테이션 후처리: ${pairs.size}개 중 ${reverted}개를 후처리 이전 후보로 되돌린다"
+            }
+        }
+
+        val candidates = try {
+            withContext(Dispatchers.Default) {
+                filterCandidates(pairs.map { it.postProcessed ?: it.original })
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return Result.failure(SegmentationException.Process(e))
+        }
+
         if (candidates.isNotEmpty()) return Result.success(candidates)
 
+        repositoryLogger.i {
+            "세그멘테이션: 필터가 후보 ${pairs.size}개를 전부 걸러 냈다. 전경 마스크 폴백으로 내려간다"
+        }
         return Result.success(segmentForeground(image, bitmap))
     }
 
@@ -143,38 +174,186 @@ constructor(
         }
     }
 
+    /** 후처리를 태울 후보 수 상한. 후처리는 `filterCandidates` 의 상한 절단 앞에 있다 */
+    private val maxPostProcessCandidates = MAX_SUBJECT_COUNT + 3
+
+    /**
+     * 후처리 전후 후보를 짝지어 들고 다닌다. 후처리가 실패하거나 알파를 전멸시킨 후보를
+     * **개별로** 되돌리기 위해서다 — 목록 전체가 비었을 때만 되돌리면 넷 중 하나만 전멸한 경우
+     * 그 후보가 조용히 사라진다.
+     */
+    private class CandidatePair(
+        val original: SegmentationCandidate,
+        val postProcessed: SegmentationCandidate?,
+    )
+
     /**
      * `getBitmap()` 은 널을 돌려줄 수 있다 — `enableSubjectBitmap()` 을 켰다는 이유로 비널을
      * 단정하지 않는다. 판이 없는 후보는 고를 수 없으므로 버린다.
+     *
+     * 후처리 전에 bbox 로 값싸게 자르는 이유: bbox 픽셀 수는 커버리지의 상계라, 하한 미만이면
+     * 커버리지도 하한 미만이다. 최종 판정을 바꾸지 않으면서 큰 판을 훑는 일을 건너뛴다.
      */
-    private fun SubjectSegmentationResult.toCandidates(origin: Bitmap): List<SegmentationCandidate> =
-        subjects.mapNotNull { subject ->
-            val subjectBitmap = subject.bitmap ?: return@mapNotNull null
+    private fun SubjectSegmentationResult.toCandidatePairs(
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): List<CandidatePair> {
+        val floor = coverageFloorPixels(origin.width.toLong() * origin.height)
 
-            // 합만 필요하므로 전면 IntArray 를 잡지 않고 행 단위로 읽어 누적한다
-            val row = IntArray(subjectBitmap.width)
-            var coverage = 0L
-            for (y in 0 until subjectBitmap.height) {
-                subjectBitmap.getPixels(row, 0, subjectBitmap.width, 0, y, subjectBitmap.width, 1)
-                coverage += sumAlpha(row)
+        val eligible = subjects
+            .mapNotNull { subject -> subject.bitmap?.let { subject to it } }
+            .filter { (_, bitmap) -> bitmap.width.toLong() * bitmap.height >= floor }
+            .sortedByDescending { (_, bitmap) -> bitmap.width.toLong() * bitmap.height }
+
+        val considered = eligible.take(maxPostProcessCandidates)
+        if (eligible.size > considered.size) {
+            repositoryLogger.i {
+                "세그멘테이션 후처리 대상을 ${eligible.size}개 중 ${considered.size}개로 자른다"
             }
-
-            SegmentationCandidate(
-                // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다.
-                // ML Kit 문서는 getWidth()·getHeight() 가 getBitmap() 의 실제 치수와 같다고
-                // 보장하지 않으므로, subject 가 아니라 subjectBitmap 에서 치수를 뽑는다
-                bounds = SegmentationBounds(
-                    left = subject.startX,
-                    top = subject.startY,
-                    right = subject.startX + subjectBitmap.width,
-                    bottom = subject.startY + subjectBitmap.height,
-                ),
-                bitmap = subjectBitmap.toAndroidBitmap(),
-                canvasWidth = origin.width,
-                canvasHeight = origin.height,
-                coverageAlphaSum = coverage,
-            )
         }
+
+        return considered.map { (subject, bitmap) ->
+            buildCandidatePair(subject, bitmap, origin, checkCancelled)
+        }
+    }
+
+    /**
+     * ⚠️ `try` 가 픽셀 배열 할당까지 감싼다. 12MP 후보에서 `OutOfMemoryError` 가 가장 잘 나는
+     * 자리가 후처리 안이 아니라 그 할당이다.
+     */
+    private fun buildCandidatePair(
+        subject: Subject,
+        bitmap: Bitmap,
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): CandidatePair {
+        val postProcessed = try {
+            postProcess(subject, bitmap, origin, checkCancelled)
+        } catch (e: OutOfMemoryError) {
+            // 후처리는 개선 수단이라 실패했다고 흐름 전체를 실패로 접을 이유가 없다.
+            // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
+            repositoryLogger.w(e) { "세그멘테이션 후처리가 메모리로 실패해 원본 후보로 되돌린다" }
+            null
+        }
+
+        return CandidatePair(
+            // 후처리가 성공하면 이 후보는 안 쓰이므로 커버리지 계산을 건너뛴다
+            original = originalCandidate(subject, bitmap, origin, countCoverage = postProcessed == null),
+            postProcessed = postProcessed,
+        )
+    }
+
+    /** 되돌리는 후보는 후처리 이전 알파로 커버리지를 채운다. 커널 결과가 없으므로 직접 센다 */
+    private fun originalCandidate(
+        subject: Subject,
+        bitmap: Bitmap,
+        origin: Bitmap,
+        countCoverage: Boolean,
+    ): SegmentationCandidate {
+        val coverage = if (countCoverage) {
+            // 행 단위로 읽는다 — 후보 판 전체 크기 버퍼를 잡으면 후처리가 메모리로 실패한 직후에
+            // 같은 크기를 한 번 더 요구하게 된다
+            val row = IntArray(bitmap.width)
+            var sum = 0L
+            for (y in 0 until bitmap.height) {
+                bitmap.getPixels(row, 0, bitmap.width, 0, y, bitmap.width, 1)
+                sum += sumAlpha(row)
+            }
+            sum
+        } else {
+            0L
+        }
+
+        val bounds = SegmentationBounds(
+            // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다.
+            // ML Kit 문서는 getWidth()·getHeight() 가 getBitmap() 의 실제 치수와 같다고
+            // 보장하지 않으므로, subject 가 아니라 bitmap 에서 치수를 뽑는다
+            left = subject.startX,
+            top = subject.startY,
+            right = subject.startX + bitmap.width,
+            bottom = subject.startY + bitmap.height,
+        )
+        require(bitmap.width == bounds.width && bitmap.height == bounds.height) {
+            "bitmap ${bitmap.width}x${bitmap.height} does not match bounds ${bounds.width}x${bounds.height}"
+        }
+
+        return SegmentationCandidate(
+            bounds = bounds,
+            bitmap = bitmap.toAndroidBitmap(),
+            canvasWidth = origin.width,
+            canvasHeight = origin.height,
+            coverageAlphaSum = coverage,
+        )
+    }
+
+    /**
+     * ⚠️ **자르기는 알파를 바꾸지 않는다.** 후처리 결과를 픽셀에 반영하려면 새 판을 만들어야 한다.
+     * ML Kit 판에 되쓰는 것은 안 된다 — 그 판의 수명은 `SubjectSegmentationResult` 가 쥐고 있고
+     * 네이티브에서 온 비트맵이 immutable 이면 예외다. 소유권 논의는
+     * `synthesis/open-questions.md` 의 OQ-P-266 에 있다.
+     */
+    private fun postProcess(
+        subject: Subject,
+        bitmap: Bitmap,
+        origin: Bitmap,
+        checkCancelled: () -> Unit,
+    ): SegmentationCandidate? {
+        val width = bitmap.width
+        val height = bitmap.height
+
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        val alpha = ByteArray(width * height)
+        for (index in pixels.indices) alpha[index] = (pixels[index] ushr 24).toByte()
+
+        val result = postProcessAlpha(alpha, width, height, checkCancelled = checkCancelled) ?: return null
+
+        repositoryLogger.i {
+            "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}"
+        }
+
+        val inner = result.bounds
+        val unchangedWholePlate = !result.changed && inner.width == width && inner.height == height
+        val trimmed = if (unchangedWholePlate) bitmap else cropWithAlpha(pixels, alpha, width, inner)
+
+        require(trimmed.width == inner.width && trimmed.height == inner.height) {
+            "trimmed ${trimmed.width}x${trimmed.height} does not match bounds ${inner.width}x${inner.height}"
+        }
+
+        return SegmentationCandidate(
+            bounds = SegmentationBounds(
+                left = subject.startX + inner.left,
+                top = subject.startY + inner.top,
+                right = subject.startX + inner.right,
+                bottom = subject.startY + inner.bottom,
+            ),
+            bitmap = trimmed.toAndroidBitmap(),
+            canvasWidth = origin.width,
+            canvasHeight = origin.height,
+            coverageAlphaSum = result.alphaSum,
+        )
+    }
+
+    /** 출력 판을 bounds 크기로 바로 만든다. 원본 크기로 만들고 나중에 자르면 큰 배열이 헛돈다 */
+    private fun cropWithAlpha(
+        pixels: IntArray,
+        alpha: ByteArray,
+        rowStride: Int,
+        bounds: SegmentationBounds,
+    ): Bitmap {
+        val cropped = IntArray(bounds.width * bounds.height)
+        for (y in 0 until bounds.height) {
+            val sourceRow = (bounds.top + y) * rowStride + bounds.left
+            val targetRow = y * bounds.width
+            for (x in 0 until bounds.width) {
+                val value = alpha[sourceRow + x].toInt() and 0xFF
+                cropped[targetRow + x] =
+                    if (value == 0) 0 else (value shl 24) or (pixels[sourceRow + x] and 0x00FFFFFF)
+            }
+        }
+        return Bitmap.createBitmap(cropped, bounds.width, bounds.height, Bitmap.Config.ARGB_8888)
+    }
 
     /**
      * 마스크가 없거나 치수가 어긋나면 빈 목록이다 — 없는 후보를 지어내지 않는다.
