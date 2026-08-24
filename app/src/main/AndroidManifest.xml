@@ -12,8 +12,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.TeamYg"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/Theme.TeamYg">
 
         <!--
             Android 16(targetSdk 36)은 smallest width 600dp 이상 기기에서 screenOrientation을
