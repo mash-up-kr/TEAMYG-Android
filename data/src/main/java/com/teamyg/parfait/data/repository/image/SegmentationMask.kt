@@ -52,7 +52,13 @@ internal fun maskSubjectAlpha(
         alpha[index] = confidenceToAlpha(mask[index]).toByte()
     }
 
-    val result = postProcessAlpha(alpha, width, height, options, checkCancelled) ?: return null
+    val result = postProcessAlpha(
+        alpha,
+        width,
+        height,
+        options,
+        checkCancelled = checkCancelled,
+    ) ?: return null
 
     return MaskedAlpha(alpha = alpha, result = result)
 }

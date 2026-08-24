@@ -168,12 +168,25 @@ internal const val AREA_OPENING_MIN_PIXELS = 256
 /** 판정 버퍼를 줄이지 않는 크기 하한. 이 값 **미만** 픽셀 수의 판은 배율 1로 돈다 */
 internal const val MIN_PIXELS_FOR_DOWNSCALE = 2_000_000
 
+/** 정련 계수를 구할 배율. 판정 버퍼 배율(`downscaleFactor`)과 **별개 값**이다 */
+internal const val REFINE_DOWNSCALE = 4
+
+/** 축소판 기준 창 반경. 값의 근거는 `synthesis/open-questions.md` OQ-P-298 */
+internal const val REFINE_RADIUS = 2
+
+/** 정칙화. 작을수록 안내자를 바싹 따라간다. 근거는 OQ-P-298 */
+internal const val REFINE_EPSILON = 1e-4f
+
 internal data class AlphaPostProcessOptions(
     val downscaleFactor: Int = 4,
     val binaryThreshold: Int = 127,
     val areaOpeningMinPixels: Int = AREA_OPENING_MIN_PIXELS,
     val erodeEdge: Boolean = true,
     val minPixelsForDownscale: Int = MIN_PIXELS_FOR_DOWNSCALE,
+    val refineEdges: Boolean = true,
+    val refineDownscale: Int = REFINE_DOWNSCALE,
+    val refineRadius: Int = REFINE_RADIUS,
+    val refineEpsilon: Float = REFINE_EPSILON,
 )
 
 internal data class AlphaPostProcessResult(
@@ -186,7 +199,18 @@ internal data class AlphaPostProcessResult(
      * 치수가 어긋나 `SegmentationCandidate` 의 계약이 깨진다.
      */
     val changed: Boolean,
+    /** 정련에 든 시간. 안 돌았으면 0 이다. 원본 해상도 적용이 감당 가능한지 판정할 근거다 */
+    val refineElapsedNanos: Long,
 )
+
+/**
+ * 정련이 쓸 안내자를 공급한다. 커널이 `Bitmap` 을 모른다는 원칙을 지키면서 두 경로가 서로 다른
+ * 방식으로 픽셀을 대게 하는 통로다.
+ */
+internal fun interface GuidanceProvider {
+    /** [bounds] 크기의 ARGB. 행 우선이고 stride 는 `bounds.width` 다 */
+    fun pixelsIn(bounds: SegmentationBounds): IntArray
+}
 
 /**
  * [alpha] 를 그 자리에서 다듬고 남은 영역을 돌려준다.
@@ -197,14 +221,16 @@ internal data class AlphaPostProcessResult(
  *
  * @param alpha 길이가 `width * height` 여야 한다
  * @param checkCancelled 행 경계마다 불린다. 이 함수는 코루틴을 모르므로 호출부가 넣어 준다
- * @return 남은 알파가 없으면 `null`. 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로 `null` 이
- *   나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고 반환하므로 다르다
+ * @return 남은 알파가 없으면 `null`. 정련이나 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로
+ *   `null` 이 나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고
+ *   반환하므로 다르다
  */
 internal fun postProcessAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
     options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
+    guidance: GuidanceProvider? = null,
     checkCancelled: () -> Unit = {},
 ): AlphaPostProcessResult? {
     require(alpha.size == width * height) {
@@ -224,13 +250,71 @@ internal fun postProcessAlpha(
     val keep = dilateMask(mask, maskWidth, maskHeight, checkCancelled)
 
     val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor, checkCancelled)
+
+    // 정련이 훑을 영역을 먼저 정한다. 창 통계를 내는 연산이라 빈 여백까지 훑으면 값 없이 비싸다
+    val beforeRefine = if (options.refineEdges && guidance != null) {
+        measureAlpha(alpha, width, height, checkCancelled) ?: return null
+    } else {
+        null
+    }
+
+    val startedAt = System.nanoTime()
+    val refined = beforeRefine != null &&
+        guidance != null &&
+        refineWithin(alpha, width, beforeRefine.bounds, guidance, options, checkCancelled)
+    val refineElapsedNanos = if (beforeRefine != null) System.nanoTime() - startedAt else 0L
+
     val eroded = options.erodeEdge && erodeEdge(alpha, width, height, checkCancelled)
-    val measured = measureAlpha(alpha, width, height, checkCancelled) ?: return null
+
+    val measured = if (beforeRefine != null && !refined && !eroded) {
+        beforeRefine
+    } else {
+        measureAlpha(alpha, width, height, checkCancelled) ?: return null
+    }
 
     return AlphaPostProcessResult(
         bounds = measured.bounds,
         alphaSum = measured.alphaSum,
         partialAlphaPixels = measured.partialAlphaPixels,
-        changed = applied || eroded,
+        changed = applied || refined || eroded,
+        refineElapsedNanos = refineElapsedNanos,
     )
+}
+
+/**
+ * [bounds] 사각형만 잘라 정련하고 되쓴다. 잘라 내는 이유는 [refineAlpha] 가 연속된 배열을
+ * 전제하기 때문이고, 그 전제를 유지하는 편이 stride 를 함수 넷에 실어 나르는 것보다 싸다.
+ */
+private fun refineWithin(
+    alpha: ByteArray,
+    rowStride: Int,
+    bounds: SegmentationBounds,
+    guidance: GuidanceProvider,
+    options: AlphaPostProcessOptions,
+    checkCancelled: () -> Unit,
+): Boolean {
+    val patch = ByteArray(bounds.width * bounds.height)
+    for (y in 0 until bounds.height) {
+        val source = (bounds.top + y) * rowStride + bounds.left
+        alpha.copyInto(patch, y * bounds.width, source, source + bounds.width)
+    }
+
+    val changed = refineAlpha(
+        alpha = patch,
+        guidance = guidance.pixelsIn(bounds),
+        width = bounds.width,
+        height = bounds.height,
+        downscale = options.refineDownscale,
+        radius = options.refineRadius,
+        epsilon = options.refineEpsilon,
+        checkCancelled = checkCancelled,
+    )
+    if (!changed) return false
+
+    for (y in 0 until bounds.height) {
+        val target = (bounds.top + y) * rowStride + bounds.left
+        patch.copyInto(alpha, target, y * bounds.width, y * bounds.width + bounds.width)
+    }
+
+    return true
 }
