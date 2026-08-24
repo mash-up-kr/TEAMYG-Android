@@ -194,4 +194,72 @@ class AlphaComponentsTest {
         // Then
         assertEquals(false, survived)
     }
+
+    @Test
+    fun dilateMask_singlePixel_growsToThreeByThree() {
+        // Given
+        val mask = maskOf(
+            ".....",
+            ".....",
+            "..#..",
+            ".....",
+            ".....",
+        )
+
+        // When
+        val dilated = dilateMask(mask, width = 5, height = 5)
+
+        // Then
+        assertEquals(
+            """
+            .....
+            .###.
+            .###.
+            .###.
+            .....
+            """.trimIndent(),
+            dilated.render(width = 5),
+        )
+    }
+
+    @Test
+    fun dilateMask_pixelAtTheCorner_doesNotWrapAround() {
+        // Given
+        val mask = maskOf(
+            "#..",
+            "...",
+            "...",
+        )
+
+        // When
+        val dilated = dilateMask(mask, width = 3, height = 3)
+
+        // Then
+        assertEquals(
+            """
+            ##.
+            ##.
+            ...
+            """.trimIndent(),
+            dilated.render(width = 3),
+        )
+    }
+
+    @Test
+    fun dilateMask_componentRemovedByAreaOpening_staysRemoved() {
+        // Given — 지워진 소성분이 살아남은 성분과 체비쇼프 거리 2 다. 8-연결이라 그보다 가까울 수 없다
+        val mask = maskOf(
+            "###..#",
+            "###...",
+            "###...",
+            "......",
+        )
+        applyAreaOpening(mask, width = 6, height = 4, minPixels = 4)
+
+        // When
+        val dilated = dilateMask(mask, width = 6, height = 4)
+
+        // Then — 오른쪽 위 한 점이 부활하지 않는다
+        assertEquals(false, dilated[5])
+    }
 }
