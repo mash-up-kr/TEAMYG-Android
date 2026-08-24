@@ -142,6 +142,17 @@ constructor(
         subjects.mapNotNull { subject ->
             val subjectBitmap = subject.bitmap ?: return@mapNotNull null
 
+            val pixels = IntArray(subjectBitmap.width * subjectBitmap.height)
+            subjectBitmap.getPixels(
+                pixels,
+                0,
+                subjectBitmap.width,
+                0,
+                0,
+                subjectBitmap.width,
+                subjectBitmap.height,
+            )
+
             SegmentationCandidate(
                 // right·bottom 은 exclusive 라 폭·높이를 그대로 더한다.
                 // ML Kit 문서는 getWidth()·getHeight() 가 getBitmap() 의 실제 치수와 같다고
@@ -155,6 +166,7 @@ constructor(
                 bitmap = subjectBitmap.toAndroidBitmap(),
                 canvasWidth = origin.width,
                 canvasHeight = origin.height,
+                coverageAlphaSum = sumAlpha(pixels),
             )
         }
 
@@ -194,6 +206,7 @@ constructor(
                 bitmap = trimmed.toAndroidBitmap(),
                 canvasWidth = width,
                 canvasHeight = height,
+                coverageAlphaSum = sumAlpha(pixels),
             ),
         )
     }
