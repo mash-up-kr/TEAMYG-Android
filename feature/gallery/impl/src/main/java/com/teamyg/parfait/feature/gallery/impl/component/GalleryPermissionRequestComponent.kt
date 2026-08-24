@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.gallery.impl.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,34 +39,15 @@ internal fun GalleryPermissionRequestComponent(
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    // 닫기 줄을 세로로 쌓지 않고 겹쳐 놓는다 — 줄이 자리를 차지하면 안내 블록이 그 아래
+    // 남은 공간의 가운데로 앉아, 화면 기준으로는 줄 높이의 절반만큼 내려가 보인다
+    Box(
         modifier = modifier
             .background(YGAtomicColors.Gray.White),
     ) {
         if (isDeniedPermission) {
-            // 인셋은 이 화면을 띄우는 Scaffold 가 이미 물려 준다 — 여기서 한 번 더 물면
-            // 상태바 높이만큼 아래로 밀려 닫기 버튼이 설계보다 깊이 내려간다
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                        top = YGTheme.layout.padding.padding6,
-                    ),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                YGCircleButton(
-                    iconResource = DesignSystemR.drawable.ic_close,
-                    type = YGCircleButtonType.Default,
-                    contentDescription = null,
-                    onClick = onClickCancel,
-                )
-            }
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -93,6 +75,26 @@ internal fun GalleryPermissionRequestComponent(
                     buttonType = YGButtonType.Medium.Primary,
                     isEnabled = true,
                     onClick = onClickOpenSettings,
+                )
+            }
+
+            // 인셋은 이 화면을 띄우는 Scaffold 가 이미 물려 준다 — 여기서 한 번 더 물면
+            // 상태바 높이만큼 아래로 밀려 닫기 버튼이 설계보다 깊이 내려간다
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                        top = YGTheme.layout.padding.padding6,
+                    ),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                YGCircleButton(
+                    iconResource = DesignSystemR.drawable.ic_close,
+                    type = YGCircleButtonType.Default,
+                    contentDescription = null,
+                    onClick = onClickCancel,
                 )
             }
         }
