@@ -47,7 +47,9 @@ internal fun GalleryPermissionRequestComponent(
     ) {
         if (isDeniedPermission) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = YGTheme.layout.padding.padding3),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
