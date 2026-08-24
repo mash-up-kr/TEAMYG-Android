@@ -81,7 +81,7 @@ constructor(
         }
 
         if (pairs.isEmpty()) {
-            repositoryLogger.i { "세그멘테이션: ML Kit 이 후보를 0건 줬다. 전경 마스크 폴백으로 내려간다" }
+            repositoryLogger.i { "세그멘테이션: 후처리 대상이 0건이다. 전경 마스크 폴백으로 내려간다" }
             return Result.success(segmentForeground(image, bitmap))
         }
 
@@ -200,10 +200,17 @@ constructor(
     ): List<CandidatePair> {
         val floor = coverageFloorPixels(origin.width.toLong() * origin.height)
 
-        val eligible = subjects
-            .mapNotNull { subject -> subject.bitmap?.let { subject to it } }
+        val withBitmap = subjects.mapNotNull { subject -> subject.bitmap?.let { subject to it } }
+        val eligible = withBitmap
             .filter { (_, bitmap) -> bitmap.width.toLong() * bitmap.height >= floor }
             .sortedByDescending { (_, bitmap) -> bitmap.width.toLong() * bitmap.height }
+
+        // 0건 원인을 가르는 데 쓴다 — subject 자체가 0건인지, bitmap 이 널이라 빠졌는지,
+        // bbox 사전 절단에서 하한 미만으로 빠졌는지가 로그 한 줄로 갈린다
+        repositoryLogger.i {
+            "세그멘테이션 후보 쌍 생성: subject ${subjects.size}개 중 판 있음 ${withBitmap.size}개, " +
+                "bbox 하한 통과 ${eligible.size}개"
+        }
 
         val considered = eligible.take(maxPostProcessCandidates)
         if (eligible.size > considered.size) {
@@ -307,7 +314,15 @@ constructor(
         val alpha = ByteArray(width * height)
         for (index in pixels.indices) alpha[index] = (pixels[index] ushr 24).toByte()
 
-        val result = postProcessAlpha(alpha, width, height, checkCancelled = checkCancelled) ?: return null
+        val result = postProcessAlpha(alpha, width, height, checkCancelled = checkCancelled)
+            ?: run {
+                // 후처리 이전 알파는 있었는데(비었으면 애초에 후보가 안 됐다) 커널이 전부
+                // 잡티로 판정했다는 뜻이다 — OOM 되돌림과 달리 임계 튜닝 신호로 값이 있다
+                repositoryLogger.i {
+                    "세그멘테이션 후처리가 후보 ${width}x$height 판 전체를 잡티로 판정해 원본으로 되돌린다"
+                }
+                return null
+            }
 
         repositoryLogger.i {
             "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}"
