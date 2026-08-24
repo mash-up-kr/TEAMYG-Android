@@ -42,15 +42,18 @@ internal fun CameraPermissionRequestComponent(
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 카메라 화면의 Scaffold 는 피드를 시스템바 밑까지 깔려고 인셋을 내려 주지 않는다 —
+    // 그래서 이 화면이 직접 문다. 무는 자리는 바깥 Column 이어야 한다: 닫기 줄에 물리면
+    // 하단 인셋이 버튼 **아래**의 빈칸으로 들어가 가운데 블록이 그만큼 위로 뜬다
     Column(
         modifier = modifier
-            .background(YGAtomicColors.Gray.White),
+            .background(YGAtomicColors.Gray.White)
+            .windowInsetsPadding(WindowInsets.systemBars),
     ) {
         if (isInit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.systemBars)
                     .padding(
                         start = YGTheme.layout.padding.padding7,
                         end = YGTheme.layout.padding.padding7,
