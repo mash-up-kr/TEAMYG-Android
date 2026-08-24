@@ -47,7 +47,7 @@ internal fun YGCanvasPreviewScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                PreviewSection("Status=Default (Solid 배경)") {
+                PreviewSection("Status=Default (배경 미설정 — 흰 바탕)") {
                     YGCanvas(
                         date = "May 20",
                         day = "(Wed)",
@@ -65,6 +65,20 @@ internal fun YGCanvasPreviewScreen(
                         onDateSelectClick = {},
                         addAction = PreviewAddAction,
                         editAction = PreviewEditAction,
+                        isEmpty = true,
+                        emptyMessage = "아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요",
+                    )
+                }
+            }
+            item {
+                PreviewSection("Status=Empty + 배경 지정 (안내 문구 없음)") {
+                    YGCanvas(
+                        date = "May 20",
+                        day = "(Wed)",
+                        onDateSelectClick = {},
+                        addAction = PreviewAddAction,
+                        editAction = PreviewEditAction,
+                        background = YGCanvasBackground.Solid(Color(0xFFC2E4FC)),
                         isEmpty = true,
                         emptyMessage = "아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요",
                     )
