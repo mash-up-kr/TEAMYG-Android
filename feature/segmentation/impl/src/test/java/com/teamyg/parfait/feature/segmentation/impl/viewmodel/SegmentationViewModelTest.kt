@@ -51,6 +51,7 @@ class SegmentationViewModelTest {
         bitmap = bitmapWrapper,
         canvasWidth = 100,
         canvasHeight = 100,
+        coverageAlphaSum = 255L * 10_000,
     )
 
     private val secondCandidate = SegmentationCandidate(
@@ -58,6 +59,7 @@ class SegmentationViewModelTest {
         bitmap = bitmapWrapper,
         canvasWidth = 100,
         canvasHeight = 100,
+        coverageAlphaSum = 255L * 10_000,
     )
 
     private val success = SegmentationResult(

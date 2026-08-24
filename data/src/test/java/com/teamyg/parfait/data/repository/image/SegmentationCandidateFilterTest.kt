@@ -13,12 +13,14 @@ private const val CANVAS_SIDE = 100
 private object FakeBitmap : BitmapWrapper
 
 class SegmentationCandidateFilterTest {
-    /** 원본은 100×100(면적 10000)이라, 한 변이 10이면 면적 100 = 정확히 1% 다 */
     private fun candidate(
         left: Int = 0,
         top: Int = 0,
         width: Int = 50,
         height: Int = 50,
+        canvasWidth: Int = CANVAS_SIDE,
+        canvasHeight: Int = CANVAS_SIDE,
+        coverageAlphaSum: Long = 255L * width * height,
     ) = SegmentationCandidate(
         bounds = SegmentationBounds(
             left = left,
@@ -27,8 +29,9 @@ class SegmentationCandidateFilterTest {
             bottom = top + height,
         ),
         bitmap = FakeBitmap,
-        canvasWidth = CANVAS_SIDE,
-        canvasHeight = CANVAS_SIDE,
+        canvasWidth = canvasWidth,
+        canvasHeight = canvasHeight,
+        coverageAlphaSum = coverageAlphaSum,
     )
 
     @Test
