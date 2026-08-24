@@ -15,6 +15,20 @@ private fun alphaBytes(vararg values: Int) = ByteArray(values.size) { values[it]
 
 private fun ByteArray.asInts() = IntArray(size) { this[it].toInt() and 0xFF }
 
+/** 왼쪽 위가 파인 마스크. bbox 안에 투명 픽셀이 남아야 정련이 일할 거리가 있다 */
+private fun notchedMask() = ByteArray(64) { index ->
+    val x = index % 8
+    val y = index / 8
+    if (x >= 3 && !(y < 2 && x < 6)) 255.toByte() else 0
+}
+
+/** 원본 좌표 x >= 4 가 흰 안내자 */
+private val splitGuidance = GuidanceProvider { bounds ->
+    IntArray(bounds.width * bounds.height) { index ->
+        if ((index % bounds.width) + bounds.left >= 4) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+    }
+}
+
 class AlphaPostProcessorTest {
     @Test
     fun alphaPostProcessOptions_downscaleFactorBelowOne_failsAtConstruction() = runTest {
@@ -595,5 +609,89 @@ class AlphaPostProcessorTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun postProcessAlpha_refineEnabledWithGuidance_producesPartialAlpha() {
+        // Given — 하드 매트에는 부분 알파가 없다
+        val alpha = notchedMask()
+        val options = AlphaPostProcessOptions(
+            downscaleFactor = 1,
+            areaOpeningMinPixels = 4,
+            erodeEdge = false,
+            refineEdges = true,
+            refineDownscale = 1,
+            refineRadius = 2,
+        )
+
+        // When
+        val result = postProcessAlpha(
+            alpha,
+            width = 8,
+            height = 8,
+            options = options,
+            guidance = splitGuidance,
+        )
+
+        // Then
+        assertEquals(true, result?.changed)
+        assertTrue((result?.partialAlphaPixels ?: 0) > 0, "partial=${result?.partialAlphaPixels}")
+    }
+
+    @Test
+    fun postProcessAlpha_refineDisabled_leavesTheAlphaUntouchedByRefinement() {
+        // Given — 같은 입력·같은 안내자로 켜고 끈다. 플래그가 무시되면 두 결과가 같아진다
+        val enabled = notchedMask()
+        val disabled = notchedMask()
+        val base = AlphaPostProcessOptions(
+            downscaleFactor = 1,
+            areaOpeningMinPixels = 4,
+            erodeEdge = false,
+            refineDownscale = 1,
+            refineRadius = 2,
+        )
+
+        // When
+        postProcessAlpha(
+            enabled,
+            width = 8,
+            height = 8,
+            options = base.copy(refineEdges = true),
+            guidance = splitGuidance,
+        )
+        postProcessAlpha(
+            disabled,
+            width = 8,
+            height = 8,
+            options = base.copy(refineEdges = false),
+            guidance = splitGuidance,
+        )
+
+        // Then
+        assertTrue(
+            !enabled.asInts().contentEquals(disabled.asInts()),
+            "refineEdges 가 무시됐다 enabled=${enabled.asInts().toList()}",
+        )
+    }
+
+    @Test
+    fun postProcessAlpha_refineEnabledWithoutGuidance_skipsRefinement() {
+        // Given — 안내자를 못 대는 호출부가 커널을 그대로 쓸 수 있어야 한다
+        val withoutGuidance = notchedMask()
+        val disabled = notchedMask()
+        val base = AlphaPostProcessOptions(
+            downscaleFactor = 1,
+            areaOpeningMinPixels = 4,
+            erodeEdge = false,
+            refineDownscale = 1,
+            refineRadius = 2,
+        )
+
+        // When
+        postProcessAlpha(withoutGuidance, width = 8, height = 8, options = base.copy(refineEdges = true))
+        postProcessAlpha(disabled, width = 8, height = 8, options = base.copy(refineEdges = false))
+
+        // Then
+        assertContentEquals(disabled.asInts(), withoutGuidance.asInts())
     }
 }

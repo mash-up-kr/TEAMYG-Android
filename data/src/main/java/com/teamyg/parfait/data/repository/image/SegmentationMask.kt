@@ -40,18 +40,25 @@ internal class MaskedAlpha(
  * @param mask 픽셀별 전경 신뢰도. 길이가 `width * height` 여야 한다 — 호출부가 검사한다
  * @return 남은 알파가 없으면 `null`
  */
-internal suspend fun maskSubjectAlpha(
+internal fun maskSubjectAlpha(
     mask: FloatBuffer,
     width: Int,
     height: Int,
     options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
+    checkCancelled: () -> Unit = {},
 ): MaskedAlpha? {
     val alpha = ByteArray(width * height)
     for (index in alpha.indices) {
         alpha[index] = confidenceToAlpha(mask[index]).toByte()
     }
 
-    val result = postProcessAlpha(alpha, width, height, options) ?: return null
+    val result = postProcessAlpha(
+        alpha,
+        width,
+        height,
+        options,
+        checkCancelled = checkCancelled,
+    ) ?: return null
 
     return MaskedAlpha(alpha = alpha, result = result)
 }
