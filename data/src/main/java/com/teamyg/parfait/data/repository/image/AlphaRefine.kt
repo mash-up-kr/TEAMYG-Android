@@ -50,3 +50,63 @@ internal fun boxMean(
 
     return mean
 }
+
+/**
+ * 안내자를 휘도로 바꾸며 [factor] 배율로 줄인다. 컬러 3채널을 쓰지 않는 이유는
+ * `specs/2026-08-25-segmentation-alpha-refinement.md` 「범위 - 제외」 참고.
+ */
+internal fun downscaleLuminance(
+    pixels: IntArray,
+    width: Int,
+    height: Int,
+    factor: Int,
+    checkCancelled: () -> Unit = {},
+): FloatArray = downscale(width, height, factor, checkCancelled) { index -> luminanceOf(pixels[index]) }
+
+internal fun downscaleAlpha(
+    alpha: ByteArray,
+    width: Int,
+    height: Int,
+    factor: Int,
+    checkCancelled: () -> Unit = {},
+): FloatArray = downscale(width, height, factor, checkCancelled) { index ->
+    (alpha[index].toInt() and 0xFF) / OPAQUE
+}
+
+/**
+ * 가장자리 블록은 **존재하는 칸만** 평균한다 — 없는 칸을 0으로 치면 오른쪽·아래 가장자리의
+ * 안내자가 어두워져 경계가 그쪽으로 끌린다.
+ */
+private inline fun downscale(
+    width: Int,
+    height: Int,
+    factor: Int,
+    checkCancelled: () -> Unit,
+    value: (Int) -> Float,
+): FloatArray {
+    val subWidth = ceilDiv(width, factor)
+    val sums = FloatArray(subWidth * ceilDiv(height, factor))
+    val counts = IntArray(sums.size)
+
+    for (y in 0 until height) {
+        checkCancelled()
+        val rowOffset = y * width
+        val subRowOffset = (y / factor) * subWidth
+        for (x in 0 until width) {
+            val index = subRowOffset + x / factor
+            sums[index] += value(rowOffset + x)
+            counts[index]++
+        }
+    }
+
+    for (index in sums.indices) sums[index] /= counts[index]
+
+    return sums
+}
+
+private fun luminanceOf(pixel: Int): Float {
+    val red = (pixel ushr 16) and 0xFF
+    val green = (pixel ushr 8) and 0xFF
+    val blue = pixel and 0xFF
+    return (0.299f * red + 0.587f * green + 0.114f * blue) / OPAQUE
+}
