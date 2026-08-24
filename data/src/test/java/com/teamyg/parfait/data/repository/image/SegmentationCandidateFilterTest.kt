@@ -35,86 +35,180 @@ class SegmentationCandidateFilterTest {
     )
 
     @Test
-    fun filterCandidates_areaIsExactlyTheThreshold_keepsIt() {
-        // Given 면적이 원본의 정확히 1% 인 후보
-        val onePercent = candidate(width = 10, height = 10)
+    fun filterCandidates_duplicateBounds_keepsOnlyOne() {
+        // Given — 기본 후보는 50×50 이라 커버리지가 정확히 하한(2,500px)이다
+        val first = candidate(left = 10, top = 10)
+        val second = candidate(left = 10, top = 10)
 
-        // When 거른다
-        val filtered = filterCandidates(listOf(onePercent))
+        // When
+        val filtered = filterCandidates(listOf(first, second))
 
-        // Then 임계 "미만" 만 버리므로 남는다
-        assertEquals(listOf(onePercent), filtered)
-    }
-
-    @Test
-    fun filterCandidates_areaIsBelowTheThreshold_dropsIt() {
-        // Given 면적이 원본의 0.99% 인 후보(99 픽셀)
-        val tooSmall = candidate(width = 9, height = 11)
-
-        // When 거른다
-        val filtered = filterCandidates(listOf(tooSmall))
-
-        // Then 손톱만 한 파편은 화면에 올리지 않는다
-        assertTrue(filtered.isEmpty())
-    }
-
-    @Test
-    fun filterCandidates_everyCandidateIsBelowTheThreshold_returnsEmpty() {
-        // Given 전부 임계 미만인 후보 셋
-        val all = listOf(
-            candidate(left = 0, width = 5, height = 5),
-            candidate(left = 20, width = 6, height = 6),
-            candidate(left = 40, width = 7, height = 7),
-        )
-
-        // When 거른다
-        val filtered = filterCandidates(all)
-
-        // Then 빈 목록이다 — 호출부가 이걸 보고 폴백을 태운다
-        assertTrue(filtered.isEmpty())
+        // Then
+        assertEquals(1, filtered.size)
     }
 
     @Test
     fun filterCandidates_moreThanTheLimit_keepsTheBiggestOnes() {
-        // Given 상한(5)보다 하나 많은 후보 여섯. 면적이 제각각이다
-        val sizes = listOf(20, 60, 30, 50, 40, 70)
-        val candidates = sizes.mapIndexed { index, side ->
-            candidate(left = index, top = index, width = side, height = side)
+        // Given — 겹치지 않게 떼어 놓은 여섯 후보. 커버리지 내림차순으로 다섯만 남아야 한다
+        val sides = listOf(50, 60, 70, 80, 90, 100)
+        val candidates = sides.mapIndexed { index, side ->
+            candidate(
+                left = index * 200,
+                top = 0,
+                width = side,
+                height = side,
+                canvasWidth = 2_000,
+                canvasHeight = 1_000,
+            )
         }
 
-        // When 거른다
+        // When
         val filtered = filterCandidates(candidates)
 
-        // Then 면적 큰 것부터 다섯만 남는다
-        assertEquals(5, filtered.size)
-        assertEquals(listOf(70, 60, 50, 40, 30), filtered.map { it.bounds.width })
+        // Then
+        assertEquals(listOf(100, 90, 80, 70, 60), filtered.map { it.bounds.width })
     }
 
     @Test
-    fun filterCandidates_sameArea_ordersByTopThenLeft() {
-        // Given 면적이 모두 같고 위치만 다른 후보 셋(입력 순서는 뒤섞여 있다)
-        val bottomLeft = candidate(left = 0, top = 40, width = 20, height = 20)
-        val topRight = candidate(left = 40, top = 0, width = 20, height = 20)
-        val topLeft = candidate(left = 0, top = 0, width = 20, height = 20)
+    fun filterCandidates_coverageIsExactlyTheFloor_keepsIt() {
+        // Given — 캔버스 1,000,000px 이면 하한은 max(2500, 500) = 2500px
+        val exactly = candidate(
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 2_500,
+        )
 
-        // When 거른다
-        val filtered = filterCandidates(listOf(bottomLeft, topRight, topLeft))
+        // When
+        val filtered = filterCandidates(listOf(exactly))
 
-        // Then top → left 오름차순으로 갈린다. ML Kit 반환 순서에 기대면 테스트가 흔들린다
-        assertEquals(listOf(topLeft, topRight, bottomLeft), filtered)
+        // Then
+        assertEquals(listOf(exactly), filtered)
     }
 
     @Test
-    fun filterCandidates_duplicateBounds_keepsOnlyOne() {
-        // Given 좌표가 완전히 같은 후보 둘
-        val first = candidate(left = 10, top = 10, width = 30, height = 30)
-        val second = candidate(left = 10, top = 10, width = 30, height = 30)
+    fun filterCandidates_coverageIsBelowTheFloor_dropsIt() {
+        // Given
+        val below = candidate(
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 2_499,
+        )
 
-        // When 거른다
-        val filtered = filterCandidates(listOf(first, second))
+        // When
+        val filtered = filterCandidates(listOf(below))
 
-        // Then 하나만 남는다 — 탭 판정이 겹친 둘 중 하나를 영영 못 고른다
-        assertEquals(1, filtered.size)
+        // Then
+        assertEquals(emptyList(), filtered)
+    }
+
+    @Test
+    fun filterCandidates_bigCanvas_ratioFloorTakesOverTheAbsoluteFloor() {
+        // Given — 12,000,000px 캔버스에서 비율 하한은 6,000px 이라 절대 하한 2,500 을 넘는다.
+        // 둘의 bounds 를 떼어 놓아야 중복 판정에 걸리지 않는다
+        val below = candidate(
+            left = 0,
+            width = 100,
+            height = 100,
+            canvasWidth = 4_000,
+            canvasHeight = 3_000,
+            coverageAlphaSum = 255L * 5_999,
+        )
+        val above = candidate(
+            left = 500,
+            width = 100,
+            height = 100,
+            canvasWidth = 4_000,
+            canvasHeight = 3_000,
+            coverageAlphaSum = 255L * 6_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(below, above))
+
+        // Then
+        assertEquals(listOf(above), filtered)
+    }
+
+    @Test
+    fun filterCandidates_thinButLargeSubject_survivesWhileTinyFragmentDoesNot() {
+        // Given — 같은 큰 사각형을 차지하지만 하나는 알맹이가 있고 하나는 파편이다
+        val pen = candidate(
+            width = 1_000,
+            height = 1_000,
+            canvasWidth = 4_000,
+            canvasHeight = 3_000,
+            coverageAlphaSum = 255L * 10_000,
+        )
+        val fragment = candidate(
+            width = 900,
+            height = 900,
+            canvasWidth = 4_000,
+            canvasHeight = 3_000,
+            coverageAlphaSum = 255L * 300,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(fragment, pen))
+
+        // Then
+        assertEquals(listOf(pen), filtered)
+    }
+
+    @Test
+    fun filterCandidates_twelveMegapixelOpaqueSubject_survivesTheIntBoundary() {
+        // Given — 12MP 전면 불투명 후보의 알파 총합은 30억이라 Int 를 넘는다.
+        // Int 로 누적하면 음수로 래핑되어 가장 큰 피사체가 조용히 삭제된다
+        val fullFrame = candidate(
+            width = 4_000,
+            height = 3_000,
+            canvasWidth = 4_000,
+            canvasHeight = 3_000,
+            coverageAlphaSum = 255L * 12_000_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(fullFrame))
+
+        // Then
+        assertEquals(listOf(fullFrame), filtered)
+    }
+
+    @Test
+    fun filterCandidates_sameCoverage_ordersByTopThenLeftThenBottomThenRight() {
+        // Given — 커버리지가 같고 좌상단도 같은데 크기가 다른 쌍을 섞는다
+        val shorter = candidate(
+            left = 1,
+            top = 1,
+            width = 60,
+            height = 60,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 3_000,
+        )
+        val taller = candidate(
+            left = 1,
+            top = 1,
+            width = 60,
+            height = 70,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 3_000,
+        )
+        val lower = candidate(
+            left = 1,
+            top = 9,
+            width = 60,
+            height = 70,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 3_000,
+        )
+
+        // When
+        val filtered = filterCandidates(listOf(lower, taller, shorter))
+
+        // Then
+        assertEquals(listOf(shorter, taller, lower), filtered)
     }
 
     @Test
