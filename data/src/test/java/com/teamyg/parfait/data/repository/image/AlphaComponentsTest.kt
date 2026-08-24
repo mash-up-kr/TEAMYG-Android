@@ -10,6 +10,16 @@ private fun alphaOf(vararg rows: String): ByteArray {
     return ByteArray(flat.length) { if (flat[it] == '#') 255.toByte() else 0 }
 }
 
+/** `#` 는 참, `.` 은 거짓 */
+private fun maskOf(vararg rows: String): BooleanArray {
+    val flat = rows.joinToString(separator = "")
+    return BooleanArray(flat.length) { flat[it] == '#' }
+}
+
+private fun BooleanArray.render(width: Int): String = toList().chunked(width).joinToString(separator = "\n") { row ->
+    row.joinToString(separator = "") { if (it) "#" else "." }
+}
+
 class AlphaComponentsTest {
     @Test
     fun downscaleMask_factorFour_orsEachBlock() {
@@ -67,5 +77,121 @@ class AlphaComponentsTest {
         // Then — 축소판 폭은 2 이고 두 번째 칸이 참이다
         assertEquals(2, mask.size)
         assertContentEquals(booleanArrayOf(false, true), mask)
+    }
+
+    @Test
+    fun applyAreaOpening_tinyComponentBesideABigOne_removesOnlyTheTinyOne() {
+        // Given — 왼쪽 4×4 덩어리(16px)와 오른쪽 아래 한 점
+        val mask = maskOf(
+            "####..",
+            "####..",
+            "####..",
+            "####..",
+            "......",
+            ".....#",
+        )
+
+        // When
+        val survived = applyAreaOpening(mask, width = 6, height = 6, minPixels = 4)
+
+        // Then
+        assertEquals(true, survived)
+        assertEquals(
+            """
+            ####..
+            ####..
+            ####..
+            ####..
+            ......
+            ......
+            """.trimIndent(),
+            mask.render(width = 6),
+        )
+    }
+
+    @Test
+    fun applyAreaOpening_componentExactlyAtThreshold_keepsIt() {
+        // Given — 정확히 4픽셀짜리 성분 하나
+        val mask = maskOf(
+            "##..",
+            "##..",
+            "....",
+            "....",
+        )
+
+        // When
+        val survived = applyAreaOpening(mask, width = 4, height = 4, minPixels = 4)
+
+        // Then
+        assertEquals(true, survived)
+        assertEquals(4, mask.count { it })
+    }
+
+    @Test
+    fun applyAreaOpening_componentOnePixelBelowThreshold_removesIt() {
+        // Given — 3픽셀짜리 성분 하나
+        val mask = maskOf(
+            "##..",
+            "#...",
+            "....",
+            "....",
+        )
+
+        // When
+        val survived = applyAreaOpening(mask, width = 4, height = 4, minPixels = 4)
+
+        // Then
+        assertEquals(false, survived)
+        assertEquals(0, mask.count { it })
+    }
+
+    @Test
+    fun applyAreaOpening_blobsTouchingOnlyDiagonally_countAsOneComponent() {
+        // Given — 두 2×2 가 대각선으로만 닿는다. 합치면 8픽셀이라 살고, 따로면 각 4픽셀이라 죽는다
+        val mask = maskOf(
+            "##....",
+            "##....",
+            "..##..",
+            "..##..",
+            "......",
+            "......",
+        )
+
+        // When
+        val survived = applyAreaOpening(mask, width = 6, height = 6, minPixels = 5)
+
+        // Then
+        assertEquals(true, survived)
+        assertEquals(8, mask.count { it })
+    }
+
+    @Test
+    fun applyAreaOpening_oneRunBridgesTwoRunsAbove_mergesAllThree() {
+        // Given — 윗행 두 런을 아랫행 한 런이 잇는다. 첫 매치에서 멈추는 구현이면 갈린다
+        val mask = maskOf(
+            "#.#.",
+            "###.",
+            "....",
+            "....",
+        )
+
+        // When — 전부 한 성분이면 5픽셀이라 산다. 갈리면 어느 조각도 5를 못 넘는다
+        val survived = applyAreaOpening(mask, width = 4, height = 4, minPixels = 5)
+
+        // Then
+        assertEquals(true, survived)
+        assertEquals(5, mask.count { it })
+    }
+
+    @Test
+    fun applyAreaOpening_everythingIsBackground_reportsNothingSurvived() {
+        // Given
+        val mask = maskOf("....", "....")
+
+        // When
+        val survived = applyAreaOpening(mask, width = 4, height = 2, minPixels = 1)
+
+        // Then
+        assertEquals(false, survived)
     }
 }
