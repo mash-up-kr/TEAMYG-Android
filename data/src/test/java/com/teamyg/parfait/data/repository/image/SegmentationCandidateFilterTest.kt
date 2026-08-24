@@ -301,4 +301,41 @@ class SegmentationCandidateFilterTest {
         // Then
         assertEquals(listOf(person, heldItem), filtered)
     }
+
+    @Test
+    fun filterCandidates_duplicateClusterExceedsTheLimit_keepsTheDistinctCandidate() {
+        // Given — 100×100 을 left=0..5 로 1px 씩 민 여섯 후보. 가장 먼 쌍(left=0 vs left=5)도
+        // overlapWidth=95, intersection=9,500, union=10,500 이라 IoU=9,500/10,500≈0.9048 ≥ 0.9 라
+        // 여섯 개가 서로 전부 중복 판정이다. 커버리지는 255×10,000(만점)으로 하한(255×2,500)을 훌쩍 넘는다.
+        // 정상 후보는 뭉치와 겹치지 않는 자리(left=500)에 두고, 커버리지는 255×3,000 으로 하한은
+        // 넘되 뭉치보다는 낮게 잡아 정렬에서 뭉치 뒤로 밀리게 한다.
+        // dropNearDuplicates 가 take 보다 앞이면 뭉치가 하나로 뭉쳐 정상 후보와 합쳐 2개가 남지만,
+        // take 가 앞이면 정렬 상위 5개(뭉치 중 5개)만 남아 dedup 후에도 정상 후보는 이미 잘려 나가 있다.
+        val cluster = (0..5).map { offset ->
+            candidate(
+                left = offset,
+                top = 0,
+                width = 100,
+                height = 100,
+                canvasWidth = 1_000,
+                canvasHeight = 1_000,
+                coverageAlphaSum = 255L * 10_000,
+            )
+        }
+        val distinct = candidate(
+            left = 500,
+            top = 500,
+            width = 100,
+            height = 100,
+            canvasWidth = 1_000,
+            canvasHeight = 1_000,
+            coverageAlphaSum = 255L * 3_000,
+        )
+
+        // When
+        val filtered = filterCandidates(cluster + distinct)
+
+        // Then
+        assertTrue(distinct in filtered)
+    }
 }
