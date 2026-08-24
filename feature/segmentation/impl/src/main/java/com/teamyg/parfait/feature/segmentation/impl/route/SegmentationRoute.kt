@@ -16,6 +16,7 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.impl.R
+import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationErrorScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
@@ -51,19 +52,30 @@ internal fun SegmentationRoute(
         }
     }
 
+    // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
+    val onClickClose: () -> Unit = { navigator.popUpTo<NavKeyCanvasMain>() }
+
     YGScaffoldV2(
         isLoading = state.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        SegmentationScreen(
-            state = state,
-            modifier = modifier.padding(innerPadding),
-            onClickBack = { navigator.onBack() },
-            // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-            onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
-            onClickCandidate = { index ->
-                viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
-            },
-        )
+        // 대상을 아예 못 얻은 실패는 화면 전체를 C-103-Error 로 바꾼다.
+        // 고른 뒤의 실패는 후보가 남아 있어 토스트로만 알린다(SegmentationEffect.ShowError)
+        if (state.isError) {
+            SegmentationErrorScreen(
+                onClickClose = onClickClose,
+                modifier = modifier.padding(innerPadding),
+            )
+        } else {
+            SegmentationScreen(
+                state = state,
+                modifier = modifier.padding(innerPadding),
+                onClickBack = { navigator.onBack() },
+                onClickClose = onClickClose,
+                onClickCandidate = { index ->
+                    viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
+                },
+            )
+        }
     }
 }

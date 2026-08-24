@@ -73,11 +73,11 @@ constructor(
 
         if (candidates.isNotEmpty()) return Result.success(candidates)
 
-        return Result.success(fallbackCandidates(image, bitmap))
+        return Result.success(segmentForeground(image, bitmap))
     }
 
     /**
-     * 후보가 하나도 안 남았을 때 전경 마스크로 한 개를 만든다.
+     * 전경 마스크로 후보 한 개를 만든다. 다중 후보가 하나도 안 남았을 때의 폴백이다.
      *
      * ⚠️ **세그멘테이션을 한 번 더 돌린다.** 전경 마스크 옵션을 다중 후보 옵션과 함께 켜면
      * ML Kit 모듈이 `SIGSEGV` 로 죽어서(2026-08-23 실기기 확인, Galaxy A35) 두 옵션을 한
@@ -86,7 +86,7 @@ constructor(
      * 여기서 실패하면 값으로 접는다 — 이미 1차가 성공한 흐름이고, 화면에는 "인식된 대상 없음"과
      * 같은 결과로 보이면 된다.
      */
-    private suspend fun fallbackCandidates(
+    private suspend fun segmentForeground(
         image: InputImage,
         origin: Bitmap,
     ): List<SegmentationCandidate> {
