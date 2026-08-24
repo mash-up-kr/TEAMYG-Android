@@ -24,6 +24,7 @@ data class GroupListUiState(
     val groupList: List<MyParfaitGroupVO>? = null,
     val nickName: String? = null,
     val groupAddButtonSelected: Boolean = false,
+    /** 그룹이 0건일 때만 뜨는 온보딩 툴팁 */
     val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -93,10 +94,16 @@ constructor(
     /**
      * 표시는 캐시가 맡는다 — 다른 화면이 그룹을 만들거나 나가면 이 화면이 다시 조회하지 않아도
      * 그 자리에서 반영된다.
+     *
+     * 툴팁도 같은 자리에서 따라간다 — 마지막 그룹을 나가면 다시, 첫 그룹을 만들면 사라지도록.
+     * 아직 한 번도 받지 못한(`null`) 동안에는 켜지 않는다 — 0건인지 모르는 채로 띄우면
+     * 그룹이 있는 사용자에게도 한 번 스쳤다 사라진다.
      */
     private fun observeGroups() {
         viewModelScope.launch {
-            getMyGroupsFlow().collect { groups -> updateState { copy(groupList = groups) } }
+            getMyGroupsFlow().collect { groups ->
+                updateState { copy(groupList = groups, isTooltipVisible = groups?.isEmpty() == true) }
+            }
         }
     }
 

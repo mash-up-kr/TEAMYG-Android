@@ -271,6 +271,62 @@ class GroupListViewModelTest {
     }
 
     @Test
+    fun noGroups_showsTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 가입한 그룹이 없어 빈 배열이 온다
+        every { getMyGroupsFlow() } returns flowOf(emptyList())
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 어디를 눌러 시작하는지 알려 줄 자리가 여기뿐이라 툴팁을 띄운다
+        assertTrue(viewModel.state.value.isTooltipVisible)
+    }
+
+    @Test
+    fun withGroups_hidesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 가입한 그룹이 있다
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 그룹을 만들 줄 아는 사용자이므로 목록을 가리지 않는다
+        assertFalse(viewModel.state.value.isTooltipVisible)
+    }
+
+    @Test
+    fun beforeTheFirstEmission_hidesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시가 아직 아무것도 내놓지 않았다
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+
+        // When 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 0건인지 모르는 채로 띄우면 그룹이 있는 사용자에게도 한 번 스친다
+        assertFalse(viewModel.state.value.isTooltipVisible)
+    }
+
+    @Test
+    fun firstGroupIsCreated_dismissesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹이 0건이라 툴팁이 떠 있는 화면
+        val cache = MutableStateFlow<List<MyParfaitGroupVO>?>(emptyList())
+        every { getMyGroupsFlow() } returns cache
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+        assertTrue(viewModel.state.value.isTooltipVisible)
+
+        // When 첫 그룹을 만들어 캐시가 바뀐다
+        cache.value = GROUPS
+        advanceUntilIdle()
+
+        // Then 다시 조회하지 않아도 그 자리에서 접힌다
+        assertFalse(viewModel.state.value.isTooltipVisible)
+    }
+
+    @Test
     fun refresh_reloadsAndClearsIndicator() = runTest(mainDispatcherRule.dispatcher) {
         // Given 첫 조회가 끝난 화면
         every { getMyGroupsFlow() } returns flowOf(GROUPS)
