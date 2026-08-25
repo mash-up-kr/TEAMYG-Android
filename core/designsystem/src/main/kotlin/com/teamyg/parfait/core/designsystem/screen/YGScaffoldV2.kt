@@ -17,8 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -52,7 +50,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
  *   비대칭을 막기 위해서다)
  * @param toastPolicy 토스트 큐. 화면이 실패를 알리려면 이 정책을 직접 만들어 넘기고
  *   `showError` 로 띄운다. 넘기지 않으면 스캐폴드가 자기 것을 만들어 쓴다
- * @param toastTopPadding 상태바 인셋 위에 더 얹는 여백.
  */
 @Composable
 fun YGScaffoldV2(
@@ -61,7 +58,6 @@ fun YGScaffoldV2(
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     isLoading: Boolean = false,
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
-    toastTopPadding: Dp = 0.dp,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -89,7 +85,6 @@ fun YGScaffoldV2(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = toastTopPadding)
                     .fillMaxWidth(),
             )
         }

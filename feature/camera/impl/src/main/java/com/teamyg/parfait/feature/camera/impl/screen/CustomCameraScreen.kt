@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
@@ -22,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
@@ -37,6 +41,7 @@ import kotlinx.datetime.format
 @Composable
 internal fun CustomCameraScreen(
     state: CustomCameraState,
+    toastPolicy: YGToastPolicy,
     onClickGrantPermission: () -> Unit,
     onClickOpenAppSettings: () -> Unit,
     onClickZoomLevel: (Float) -> Unit,
@@ -52,6 +57,7 @@ internal fun CustomCameraScreen(
         true -> CameraContent(
             zoomRatio = state.zoomRatio,
             zoomRange = state.zoomRange,
+            toastPolicy = toastPolicy,
             onClickZoomLevel = onClickZoomLevel,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
@@ -78,6 +84,7 @@ internal fun CustomCameraScreen(
 private fun CameraContent(
     zoomRatio: Float,
     zoomRange: ClosedFloatingPointRange<Float>,
+    toastPolicy: YGToastPolicy,
     onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
@@ -127,7 +134,14 @@ private fun CameraContent(
                     .onGloballyPositioned { coordinates ->
                         onViewfinderRectChange(coordinates.boundsInRoot())
                     },
-            )
+            ) {
+                YGToastHost(
+                    policy = toastPolicy,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth(),
+                )
+            }
 
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
@@ -154,6 +168,7 @@ private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
             isInit = true,
             hasPermission = false,
         ),
+        toastPolicy = rememberYGToastPolicy(),
         onClickGrantPermission = {},
         onClickOpenAppSettings = {},
         onClickZoomLevel = {},
@@ -176,6 +191,7 @@ private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox 
             hasPermission = false,
             permanentlyDenied = true,
         ),
+        toastPolicy = rememberYGToastPolicy(),
         onClickGrantPermission = {},
         onClickOpenAppSettings = {},
         onClickZoomLevel = {},
@@ -198,6 +214,7 @@ private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
             hasPermission = true,
             permanentlyDenied = false,
         ),
+        toastPolicy = rememberYGToastPolicy(),
         onClickGrantPermission = {},
         onClickOpenAppSettings = {},
         onClickZoomLevel = {},

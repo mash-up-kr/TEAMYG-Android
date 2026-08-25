@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -25,7 +24,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
-import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
@@ -124,14 +122,11 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 안내 토스트 윗변을 사진 그리드 프레임 윗변에 맞춘다
-    val toastTopPadding = YGTheme.layout.padding.padding6 +
-        CLOSE_BUTTON_SIZE +
-        YGTheme.layout.gap.gap5
-
-    YGScaffoldV2(toastPolicy = toastPolicy, toastTopPadding = toastTopPadding) { innerPadding ->
+    // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
+    YGScaffoldV2 { innerPadding ->
         CustomGalleryPickerScreen(
             state = state,
+            toastPolicy = toastPolicy,
             onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
             onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
             onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
@@ -146,6 +141,3 @@ internal fun CustomGalleryPickerRoute(
         )
     }
 }
-
-/** YGCircleButtonType.Default 원형 버튼의 실제 지름(아이콘 28.dp + 좌우 padding3 8.dp*2) */
-private val CLOSE_BUTTON_SIZE = 44.dp
