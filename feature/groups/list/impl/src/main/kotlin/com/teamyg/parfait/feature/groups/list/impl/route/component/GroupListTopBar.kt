@@ -32,16 +32,17 @@ internal fun GroupListTopBar(
     onClickSideMenu: () -> Unit,
     modifier: Modifier = Modifier,
     onClickAddGroup: (() -> Unit)? = null,
+    isTooltipVisible: Boolean = false,
 ) {
-    val isAddGroupVisible = onClickAddGroup != null
+    val showTooltip = onClickAddGroup != null && isTooltipVisible
 
     val tooltipState = rememberTooltipState(
         initialIsVisible = false,
         isPersistent = true,
     )
 
-    LaunchedEffect(isAddGroupVisible) {
-        if (isAddGroupVisible) {
+    LaunchedEffect(showTooltip) {
+        if (showTooltip) {
             tooltipState.show()
         } else {
             tooltipState.dismiss()
