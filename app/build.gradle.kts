@@ -84,8 +84,16 @@ dependencies {
     implementation(libs.bundles.navigation)
 
     implementation(libs.kakao.sdk.user)
+    // 매니페스트가 직접 선언한 Kakao AuthCodeHandlerActivity 의 상위 타입이 AppCompatActivity 다.
+    // 컴파일 클래스패스에 없으면 lint Instantiatable 이 상속 체인을 못 풀어 릴리스 빌드가 깨진다.
+    implementation(libs.androidx.appcompat)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    // AAR 로 들어오는 CameraX·DataStore 네이티브 라이브러리가 시그널로 죽으면 JVM 예외가 남지
+    // 않아 기본 수집기로는 잡히지 않는다. NDK 수집기를 붙여야 그 크래시가 리포트된다.
+    // nativeSymbolUploadEnabled 는 켜지 않는다. 자체 네이티브 빌드가 없어 업로드할
+    // 언스트립 심볼 자체가 없고, 서드파티 .so 는 주소만 남는다.
+    implementation(libs.firebase.crashlytics.ndk)
 }
