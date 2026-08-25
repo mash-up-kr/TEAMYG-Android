@@ -2,9 +2,11 @@ package com.teamyg.parfait.data.repository.image
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
@@ -29,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.ExecutionException
 
 @Singleton
@@ -36,12 +39,26 @@ class ImageSegmentationRepositoryImpl
 @Inject
 constructor(
     @ApplicationContext private val context: Context,
+    private val remoteImageDownloadDataSource: RemoteImageDownloadDataSource,
 ) : ImageSegmentationRepository {
+    /**
+     * 서버 토핑의 `imageUrl`은 `https://`다 — `ContentResolver`는 `content://`·`file://`만
+     * 열 수 있어 그대로 넘기면 항상 실패한다(`#274`). 원격 주소면 직접 받아 디코드하고,
+     * 그 외(기기 로컬 캐시)는 기존 `ContentResolver` 경로를 그대로 쓴다.
+     */
     override suspend fun decodeImage(uri: String): BitmapWrapper {
-        val bitmap: Bitmap = context.contentResolver.decodeUriToBitmap(uri.toUri())
+        val bitmap: Bitmap = if (uri.isRemoteImageUrl()) {
+            val bytes = remoteImageDownloadDataSource.download(uri)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                ?: throw IOException("이미지를 디코드하지 못했다 - uri: $uri")
+        } else {
+            context.contentResolver.decodeUriToBitmap(uri.toUri())
+        }
 
         return bitmap.toAndroidBitmap()
     }
+
+    private fun String.isRemoteImageUrl(): Boolean = startsWith("http://") || startsWith("https://")
 
     override suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>> {
         val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData() ?: return Result.failure(
