@@ -93,6 +93,8 @@ data class TodayParfaitImageResponse(
  *  올린다 — 소비자 없이 [com.teamyg.parfait.domain.model.topping.ToppingPlacerVO] 모양을 굳히지 않는다.
  *  ⚠️ 칩이 필요한 화면이라고 해서 자동으로 이 값은 아니다. 상단 멤버 칩을 그리는 자리는
  *  `groupMembers` 를 `GroupMemberId` 로 조인해 찾는다.
+ * @param ownerType 서버가 요청자 기준으로 판정한 소유(`"ME"`·`"OTHER"`). 판정 축이 계정 id 라
+ *  [groupMemberId] 로는 재현할 수 없다 — 소유를 가릴 때 그 값을 견주지 말 것.
  */
 @Serializable
 data class PlacedByResponse(
@@ -102,4 +104,6 @@ data class PlacedByResponse(
     val nickname: String,
     @SerialName("nameTagChip")
     val nameTagChip: String? = null,
+    @SerialName("ownerType")
+    val ownerType: String? = null,
 )
