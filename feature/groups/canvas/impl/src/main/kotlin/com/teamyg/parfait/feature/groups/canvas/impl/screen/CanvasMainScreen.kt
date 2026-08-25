@@ -51,9 +51,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val MAX_VISIBLE_MEMBER_CHIPS = 5
 
-/** [YGCanvas] 가 배경을 안 받았을 때 쓰는 값과 같다 */
-private val DEFAULT_CANVAS_BACKGROUND = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100)
-
 @Composable
 internal fun CanvasMainScreen(
     canvasState: CanvasMainUiState,
@@ -212,18 +209,12 @@ internal fun CanvasMainScreen(
 }
 
 /**
- * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 마찬가지로,
- * 셋 다 기본 배경으로 떨어뜨린다 — 캔버스를 못 그리는 것보다 낫다.
+ * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 미설정으로
+ * 떨어뜨린다 — 캔버스를 못 그리는 것보다 [YGCanvas] 의 기본 배경을 깔아 주는 편이 낫다.
  */
-private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground = when (this) {
-    null -> DEFAULT_CANVAS_BACKGROUND
-
-    is CanvasBackground.Color ->
-        value
-            .toColorOrNull()
-            ?.let(YGCanvasBackground::Solid)
-            ?: DEFAULT_CANVAS_BACKGROUND
-
+private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
+    null -> null
+    is CanvasBackground.Color -> value.toColorOrNull()?.let(YGCanvasBackground::Solid)
     is CanvasBackground.Image -> YGCanvasBackground.Image(url)
 }
 
