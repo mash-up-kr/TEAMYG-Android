@@ -84,6 +84,9 @@ dependencies {
     implementation(libs.bundles.navigation)
 
     implementation(libs.kakao.sdk.user)
+    // 매니페스트가 직접 선언한 Kakao AuthCodeHandlerActivity 의 상위 타입이 AppCompatActivity 다.
+    // 컴파일 클래스패스에 없으면 lint Instantiatable 이 상속 체인을 못 풀어 릴리스 빌드가 깨진다.
+    implementation(libs.androidx.appcompat)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
