@@ -12,24 +12,19 @@ import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
-import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
-import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
-import com.teamyg.parfait.domain.model.member.LoginProvider
-import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
-import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
@@ -39,10 +34,8 @@ import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -58,7 +51,7 @@ import kotlin.test.assertTrue
 private const val GROUP_ID = 1L
 private const val PARFAIT_ID = 100L
 
-private const val MY_GROUP_MEMBER_ID = 11L
+private const val PLACER_GROUP_MEMBER_ID = 11L
 private const val OTHER_GROUP_MEMBER_ID = 22L
 
 private const val LOCAL_IMAGE_URI = "content://media/external/images/media/42"
@@ -69,7 +62,6 @@ class CanvasBGEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getTodayParfait: GetTodayParfaitUseCase = mockk()
-    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
@@ -77,13 +69,6 @@ class CanvasBGEditViewModelTest {
 
     @Before
     fun stubTheHappyPath() {
-        every { getMyAccountFlow() } returns flowOf(
-            MyAccountVO(
-                memberId = MemberId(MY_GROUP_MEMBER_ID),
-                provider = LoginProvider.KAKAO,
-                nickname = GlobalNickname("나"),
-            ),
-        )
         coEvery { getTodayParfait(any()) } returns Result.success(canvas())
         coEvery { uploadImage(any(), any()) } returns Result.success(ImageId(7L))
     }
@@ -104,7 +89,6 @@ class CanvasBGEditViewModelTest {
         groupIdValue = GROUP_ID,
         parfaitIdValue = PARFAIT_ID,
         getTodayParfaitUseCase = getTodayParfait,
-        getMyAccountFlowUseCase = getMyAccountFlow,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
@@ -194,7 +178,6 @@ class CanvasBGEditViewModelTest {
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
             getTodayParfaitUseCase = getTodayParfait,
-            getMyAccountFlowUseCase = getMyAccountFlow,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,
@@ -569,8 +552,13 @@ class CanvasBGEditViewModelTest {
     private fun canvas(
         background: CanvasBackground? = null,
         toppings: List<CanvasToppingVO> = listOf(
-            topping(parfaitImageId = 1L, groupMemberId = MY_GROUP_MEMBER_ID, positionZ = 1),
-            topping(parfaitImageId = OTHER_PARFAIT_IMAGE_ID, groupMemberId = OTHER_GROUP_MEMBER_ID, positionZ = 2),
+            topping(parfaitImageId = 1L, groupMemberId = PLACER_GROUP_MEMBER_ID, isMine = true, positionZ = 1),
+            topping(
+                parfaitImageId = OTHER_PARFAIT_IMAGE_ID,
+                groupMemberId = OTHER_GROUP_MEMBER_ID,
+                isMine = false,
+                positionZ = 2,
+            ),
         ),
     ) = CanvasVO(
         parfaitId = ParfaitId(PARFAIT_ID),
@@ -584,7 +572,8 @@ class CanvasBGEditViewModelTest {
 
     private fun topping(
         parfaitImageId: Long = 1L,
-        groupMemberId: Long = MY_GROUP_MEMBER_ID,
+        groupMemberId: Long = PLACER_GROUP_MEMBER_ID,
+        isMine: Boolean = true,
         positionZ: Int = 1,
         border: ToppingBorder = ToppingBorder.None,
     ) = CanvasToppingVO(
@@ -603,6 +592,7 @@ class CanvasBGEditViewModelTest {
             groupMemberId = GroupMemberId(groupMemberId),
             nickname = GroupNickname("올린이"),
         ),
+        isMine = isMine,
         createdAt = LocalDateTime(2026, 8, 19, 9, 0),
     )
 
