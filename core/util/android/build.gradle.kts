@@ -22,4 +22,5 @@ dependencies {
     implementation(projects.core.util.jvm)
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.exifinterface)
 }
