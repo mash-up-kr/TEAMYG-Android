@@ -59,10 +59,12 @@ fun YGCanvas(
     addAction: YGCanvasMenuAction,
     editAction: YGCanvasMenuAction,
     modifier: Modifier = Modifier,
-    background: YGCanvasBackground = YGCanvasBackground.Solid(YGAtomicColors.Gray.Gray100),
+    /** 미설정이면 null — 그때는 흰 바탕이 깔린다 */
+    background: YGCanvasBackground? = null,
     isDimmed: Boolean = false,
     onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
+    /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyMessage] 안내판이 덮는다 */
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
@@ -223,7 +225,7 @@ private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
 @Composable
 private fun CanvasArea(
     shape: Shape,
-    background: YGCanvasBackground,
+    background: YGCanvasBackground?,
     isEmpty: Boolean,
     emptyMessage: String,
     dateSelect: @Composable () -> Unit,
@@ -255,6 +257,13 @@ private fun CanvasArea(
     ) {
         Box(modifier = captureModifier.matchParentSize()) {
             when (background) {
+                // 배경을 안 고른 캔버스에도 토핑은 흰 바탕 위에 깔린다
+                null -> Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(color = YGAtomicColors.Gray.White),
+                )
+
                 is YGCanvasBackground.Solid -> Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -272,16 +281,24 @@ private fun CanvasArea(
             content()
         }
 
-        if (isEmpty) {
-            Text(
-                text = emptyMessage,
-                style = YGTheme.typography.caption.c01M,
-                color = YGAtomicColors.Gray.Gray500,
-                textAlign = TextAlign.Center,
+        // 배경도 토핑도 없을 때만 회색 안내판이 덮는다 — 배경이 정해지는 순간 안내는 사라지고
+        // 고른 배경이 그대로 보여야 한다
+        if (isEmpty && background == null) {
+            Box(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = YGTheme.layout.padding.padding6),
-            )
+                    .matchParentSize()
+                    .background(color = YGAtomicColors.Gray.Gray100),
+            ) {
+                Text(
+                    text = emptyMessage,
+                    style = YGTheme.typography.caption.c01M,
+                    color = YGAtomicColors.Gray.Gray500,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = YGTheme.layout.padding.padding6),
+                )
+            }
         }
 
         dateSelect()

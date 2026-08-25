@@ -89,6 +89,46 @@ class RecentImageRepositoryImplTest {
     }
 
     @Test
+    fun store_sourceIsActuallyPng_namesItPngNotJpg() = runTest {
+        // Given 사용자가 갤러리에서 고른 PNG. SOURCE 경로로 들어온다
+        val bytes = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+        val target = File(dir, "abc.png")
+        every { fileDataSource.readBytes("content://media/2") } returns bytes
+        every { fileDataSource.getTargetFile(bytes, "png") } returns target
+        every { fileDataSource.getUriStringForFile(target) } returns "content://recent/abc.png"
+
+        // When 최근 이미지로 저장한다
+        val stored = repository().storeRecentImageInInternalStorage(
+            source = "content://media/2",
+            kind = RecentImageKind.SOURCE,
+        )
+
+        // Then 내용대로 png 다. jpg 로 굳으면 배경으로 다시 골랐을 때
+        // 확장자에서 유도된 image/jpeg 로 올라간다
+        verify { fileDataSource.getTargetFile(bytes, "png") }
+        assertEquals("content://recent/abc.png", stored)
+    }
+
+    @Test
+    fun store_sourceFormatIsUnknown_fallsBackToJpg() = runTest {
+        // Given 앞머리가 PNG 도 JPEG 도 아닌 바이트
+        val bytes = byteArrayOf(0x47, 0x49, 0x46, 0x38)
+        val target = File(dir, "def.jpg")
+        every { fileDataSource.readBytes("content://media/3") } returns bytes
+        every { fileDataSource.getTargetFile(bytes, "jpg") } returns target
+        every { fileDataSource.getUriStringForFile(target) } returns "content://recent/def.jpg"
+
+        // When 최근 이미지로 저장한다
+        repository().storeRecentImageInInternalStorage(
+            source = "content://media/3",
+            kind = RecentImageKind.SOURCE,
+        )
+
+        // Then 판정 실패가 저장 실패가 되지는 않는다. 종전 동작을 폴백으로 둔다
+        verify { fileDataSource.getTargetFile(bytes, "jpg") }
+    }
+
+    @Test
     fun recentCacheImages_attachesAbsolutePathToEachEntry() = runTest {
         // Given 종류가 섞인 저장 목록
         every { localDataSource.values } returns flowOf(

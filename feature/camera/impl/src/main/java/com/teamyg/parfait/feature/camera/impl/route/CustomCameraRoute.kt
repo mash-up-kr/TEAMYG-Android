@@ -84,8 +84,10 @@ internal fun CustomCameraRoute(
     val captureFailedMessage = stringResource(R.string.camera_capture_failed)
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        if (showGuideToast && !hasShownGuideToast) {
+    // 촬영 요령을 말하는 토스트라, 권한이 없어 찍을 수 없는 화면에서는 할 말이 아니다.
+    // 설정에서 권한을 켜고 돌아오면 그때 처음 뜬다
+    LaunchedEffect(state.hasPermission) {
+        if (showGuideToast && state.hasPermission && !hasShownGuideToast) {
             toastPolicy.show(YGToastType.Edit(guideToastMessage))
             hasShownGuideToast = true
         }
