@@ -184,17 +184,20 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ---
 
-## 6. ⚠️ 앱에서는 아직 이 서버를 호출할 수 없다
+## 6. ⚠️ base URL — 평문에서 HTTPS로 옮겨 가는 중이다
 
-개발 서버는 **평문 HTTP**(`https`가 아니다)인데, 이 앱은 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`도 `networkSecurityConfig`도 **없다.**
+서버가 도메인에 HTTPS를 적용했다(서버 PR #113, 서버 저장소 `docs/operations/https-setup.md`). 앞단 리버스 프록시가 TLS를 종단하고 애플리케이션 컨테이너의 평문 포트로 넘긴다. 그 런북은 **검증이 끝나면 평문 포트를 닫는 단계**를 두고 있다.
 
-Android 9(API 28)부터 평문 HTTP는 기본 차단이므로, 실제 연동을 시작하면 **모든 요청이 `CLEARTEXT communication not permitted`로 실패한다.**
+**앱이 해야 하는 일은 순서가 정해져 있다.**
 
-이 `.http` 파일들은 IntelliJ가 직접 보내는 것이라 영향받지 않는다 — 앱 코드에서 호출할 때만 문제가 된다. 해결은 둘 중 하나다:
-- 서버에 HTTPS 적용(권장)
-- debug 빌드에 한해 `network_security_config.xml`로 해당 호스트만 cleartext 허용
+1. `local.properties`의 `YG_BASE_URL`을 **새 HTTPS 주소로 바꾼다.** 이 키가 비어 있으면 앱은 placeholder로 빌드된다(`PropertySettingManager`의 fallback). 평문 포트가 닫히는 순간 옛 주소로 빌드된 앱은 전부 연결에 실패하므로, 이 교체가 그 시점보다 앞서야 한다.
+2. 그다음 `app/src/main/AndroidManifest.xml`의 `android:usesCleartextTraffic="true"`를 **지운다.** 평문 서버에 붙으려고 넣은 임시 조치이고(PR #241), main 매니페스트라 릴리즈 빌드까지 따라간다. 서버가 HTTPS를 갖춘 뒤로는 평문 다운그레이드만 허용하는 자리로 남는다.
 
-또 `local.properties`에 `YG_BASE_URL` 키가 **없어서** 앱은 지금 placeholder로 빌드되고 있다. 실제 연동 전에 채워야 한다.
+**순서를 뒤집으면 앱이 즉시 끊긴다** — 1번 전까지는 그 플래그가 유일한 통로다.
+
+지우기 전에 서버가 내려 주는 URL도 함께 본다. 이미지 presigned URL과 약관 `policies[].url`이 평문이면 그쪽도 같이 막힌다(위 "약관 응답의 `url`이 링크가 아닐 수 있다" 참고).
+
+이 `.http` 파일들은 IntelliJ가 직접 보내는 것이라 위 이야기와 무관하다 — 앱 코드에서 호출할 때만 걸린다. `http-client.env.json`의 `base_url`은 각자 채운다.
 
 ---
 
