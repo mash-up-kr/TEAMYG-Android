@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.repository.image
 
+import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.model.local.RecentImageEntity
 import com.teamyg.parfait.data.model.local.toEntity
 import com.teamyg.parfait.data.model.local.toVO
@@ -84,7 +85,7 @@ constructor(
 
             RecentImageKind.CUTOUT -> fileRecentImageLocalDataSource.readFileBytes(source)
         }
-        val target: File = fileRecentImageLocalDataSource.getTargetFile(bytes, kind.fileExtension())
+        val target: File = fileRecentImageLocalDataSource.getTargetFile(bytes, extensionOf(kind, bytes))
 
         if (target.exists().not()) {
             target
@@ -112,10 +113,16 @@ constructor(
         }
     }
 
-    /** 알맹이는 투명 PNG 다. 이름이 거짓이면 업로드가 content type 을 잘못 정한다 */
-    private fun RecentImageKind.fileExtension(): String = when (this) {
-        RecentImageKind.SOURCE -> "jpg"
-        RecentImageKind.CUTOUT -> "png"
+    /**
+     * 알맹이는 언제나 투명 PNG 라 종류로 정해지지만, 원본은 사용자가 고른 파일이라 내용을 봐야 한다.
+     * 이름이 거짓이면 업로드가 content type 을 잘못 정한다.
+     */
+    private fun extensionOf(
+        kind: RecentImageKind,
+        bytes: ByteArray,
+    ): String = when (kind) {
+        RecentImageKind.SOURCE -> UploadImageFormat.ofBytes(bytes)?.extension ?: UploadImageFormat.JPEG.extension
+        RecentImageKind.CUTOUT -> UploadImageFormat.PNG.extension
     }
 
     companion object {

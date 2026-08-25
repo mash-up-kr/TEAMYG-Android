@@ -5,5 +5,4 @@ data class SegmentationResult(
     val subjectImagePath: String,
     /** 투명한 여백을 걷어내 객체 크기만 남긴 이미지. 미리보기·배치처럼 실제 보이는 크기가 필요할 때 쓴다 */
     val trimmedSubjectImagePath: String,
-    val subjectBounds: SegmentationBounds?,
 )
