@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.camera.impl.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,33 +43,19 @@ internal fun CameraPermissionRequestComponent(
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    // 카메라 화면의 Scaffold 는 피드를 시스템바 밑까지 깔려고 인셋을 내려 주지 않는다 —
+    // 그래서 이 화면이 직접 문다. 무는 자리는 바깥 Box 여야 한다: 닫기 줄에 물리면
+    // 하단 인셋이 버튼 **아래**의 빈칸으로 들어가 가운데 블록이 그만큼 위로 뜬다
+    Box(
         modifier = modifier
-            .background(YGAtomicColors.Gray.White),
+            .background(YGAtomicColors.Gray.White)
+            .windowInsetsPadding(WindowInsets.systemBars),
     ) {
         if (isInit) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.systemBars)
-                    .padding(
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                        top = YGTheme.layout.padding.padding6,
-                    ),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                YGCircleButton(
-                    iconResource = DesignSystemR.drawable.ic_close,
-                    type = YGCircleButtonType.Default,
-                    contentDescription = null,
-                    onClick = onClickCancel,
-                )
-            }
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                    .fillMaxSize()
+                    .padding(bottom = YGTheme.layout.padding.padding3),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -96,6 +83,26 @@ internal fun CameraPermissionRequestComponent(
                     buttonType = YGButtonType.Medium.Primary,
                     isEnabled = true,
                     onClick = onClickOpenAppSettings,
+                )
+            }
+
+            // 닫기 줄은 쌓지 않고 겹쳐 놓는다 — 줄이 자리를 차지하면 안내 블록이 그 아래
+            // 남은 공간의 가운데로 앉아, 화면 기준으로는 줄 높이의 절반만큼 내려가 보인다
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        end = YGTheme.layout.padding.padding7,
+                        top = YGTheme.layout.padding.padding6,
+                    ),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                YGCircleButton(
+                    iconResource = DesignSystemR.drawable.ic_close,
+                    type = YGCircleButtonType.Default,
+                    contentDescription = null,
+                    onClick = onClickCancel,
                 )
             }
         }

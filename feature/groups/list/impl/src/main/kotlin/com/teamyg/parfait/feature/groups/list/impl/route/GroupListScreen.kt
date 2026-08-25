@@ -67,6 +67,7 @@ internal fun GroupListScreen(
                 day = uiState.dayOfWeekString,
                 onClickSideMenu = onClickSideMenu,
                 onClickAddGroup = onClickChip,
+                isTooltipVisible = uiState.isTooltipVisible,
             )
 
             GroupListPullToRefreshBox(
@@ -84,7 +85,8 @@ internal fun GroupListScreen(
                 ) {
                     item {
                         GroupListContent(
-                            // 0건 온보딩 툴팁이 결선되면 여기서 null(미조회)과 0건을 갈라 분기한다
+                            // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
+                            // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다
                             groupList = uiState.groupList.orEmpty(),
                             onClickTopping = onClickTopping,
                             modifier = Modifier.fillMaxWidth(),
