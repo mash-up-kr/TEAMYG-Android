@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -31,6 +32,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
@@ -190,9 +192,15 @@ internal fun CustomCameraRoute(
         onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
     )
 
+    // 토스트 윗변을 뷰파인더 프레임 윗변에 맞춘다
+    val toastTopPadding = YGTheme.layout.padding.padding6 +
+        YGTheme.layout.gap.gap5 +
+        CLOSE_BUTTON_SIZE +
+        VIEWFINDER_SPACER
+
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
     // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
-    YGScaffoldV2(toastPolicy = toastPolicy) { _ ->
+    YGScaffoldV2(toastPolicy = toastPolicy, toastTopPadding = toastTopPadding) { _ ->
         CustomCameraScreen(
             state = state,
             onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
@@ -216,3 +224,9 @@ internal fun CustomCameraRoute(
         )
     }
 }
+
+/** YGCircleButtonType.Secondary 원형 버튼의 지름 */
+private val CLOSE_BUTTON_SIZE = 44.dp
+
+/** CustomCameraScreen 이 날짜·닫기 버튼 행과 뷰파인더 사이에 두는 고정 간격 */
+private val VIEWFINDER_SPACER = 10.dp

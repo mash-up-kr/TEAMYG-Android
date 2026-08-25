@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -24,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
@@ -122,7 +124,12 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
+    // 안내 토스트 윗변을 사진 그리드 프레임 윗변에 맞춘다
+    val toastTopPadding = YGTheme.layout.padding.padding6 +
+        CLOSE_BUTTON_SIZE +
+        YGTheme.layout.gap.gap5
+
+    YGScaffoldV2(toastPolicy = toastPolicy, toastTopPadding = toastTopPadding) { innerPadding ->
         CustomGalleryPickerScreen(
             state = state,
             onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
@@ -139,3 +146,6 @@ internal fun CustomGalleryPickerRoute(
         )
     }
 }
+
+/** YGCircleButtonType.Default 원형 버튼의 실제 지름(아이콘 28.dp + 좌우 padding3 8.dp*2) */
+private val CLOSE_BUTTON_SIZE = 44.dp
