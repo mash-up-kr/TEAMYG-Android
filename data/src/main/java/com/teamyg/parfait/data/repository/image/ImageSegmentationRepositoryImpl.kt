@@ -244,6 +244,14 @@ constructor(
             // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
             repositoryLogger.w(e) { "세그멘테이션 후처리가 메모리로 실패해 원본 후보로 되돌린다" }
             null
+        } catch (e: CancellationException) {
+            // CancellationException 은 Exception 을 상속하므로 아래 catch 보다 먼저 잡아 다시 던진다
+            throw e
+        } catch (e: Exception) {
+            // subject 와 origin 의 치수 불일치 등으로 getPixels 가 던질 수 있다 — 이 후보만
+            // 되돌리고 세그멘테이션 전체를 실패로 접지 않는다
+            repositoryLogger.w(e) { "세그멘테이션 후처리가 예외로 실패해 원본 후보로 되돌린다" }
+            null
         }
 
         return CandidatePair(
@@ -317,18 +325,36 @@ constructor(
         val alpha = ByteArray(width * height)
         for (index in pixels.indices) alpha[index] = (pixels[index] ushr 24).toByte()
 
-        val result = postProcessAlpha(alpha, width, height, checkCancelled = checkCancelled)
-            ?: run {
-                // 후처리 이전 알파는 있었는데(비었으면 애초에 후보가 안 됐다) 커널이 전부
-                // 잡티로 판정했다는 뜻이다 — OOM 되돌림과 달리 임계 튜닝 신호로 값이 있다
-                repositoryLogger.i {
-                    "세그멘테이션 후처리가 후보 ${width}x$height 판 전체를 잡티로 판정해 원본으로 되돌린다"
+        val result = postProcessAlpha(
+            alpha,
+            width,
+            height,
+            guidance = { bounds ->
+                IntArray(bounds.width * bounds.height).also { guidancePixels ->
+                    origin.getPixels(
+                        guidancePixels,
+                        0,
+                        bounds.width,
+                        subject.startX + bounds.left,
+                        subject.startY + bounds.top,
+                        bounds.width,
+                        bounds.height,
+                    )
                 }
-                return null
+            },
+            checkCancelled = checkCancelled,
+        ) ?: run {
+            // 후처리 이전 알파는 있었는데(비었으면 애초에 후보가 안 됐다) 커널이 전부 지웠다는
+            // 뜻이다 — OOM 되돌림과 달리 임계 튜닝 신호로 값이 있다
+            repositoryLogger.i {
+                "세그멘테이션 후처리가 후보 ${width}x$height 판의 알파를 전부 지워 원본으로 되돌린다"
             }
+            return null
+        }
 
         repositoryLogger.i {
-            "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}"
+            "세그멘테이션 후보 부분 알파 ${result.partialAlphaPixels}/${width * height}, " +
+                "정련 ${result.refineElapsedNanos / 1_000_000}ms"
         }
 
         val inner = result.bounds
@@ -377,7 +403,25 @@ constructor(
         if (foregroundMask.remaining() != width * height) return emptyList()
 
         val masked = try {
-            maskSubjectAlpha(foregroundMask, width, height, checkCancelled = checkCancelled)
+            maskSubjectAlpha(
+                foregroundMask,
+                width,
+                height,
+                guidance = { bounds ->
+                    IntArray(bounds.width * bounds.height).also { guidancePixels ->
+                        origin.getPixels(
+                            guidancePixels,
+                            0,
+                            bounds.width,
+                            bounds.left,
+                            bounds.top,
+                            bounds.width,
+                            bounds.height,
+                        )
+                    }
+                },
+                checkCancelled = checkCancelled,
+            )
         } catch (e: OutOfMemoryError) {
             // 후처리는 개선 수단이라 실패했다고 흐름 전체를 실패로 접을 이유가 없다.
             // 기존 catch (e: Exception) 은 Error 를 안 잡으므로 여기서 따로 받는다
@@ -386,7 +430,8 @@ constructor(
         } ?: return emptyList()
 
         repositoryLogger.i {
-            "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${width * height}"
+            "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${width * height}, " +
+                "정련 ${masked.result.refineElapsedNanos / 1_000_000}ms"
         }
 
         val bounds = masked.result.bounds

@@ -45,6 +45,7 @@ internal fun maskSubjectAlpha(
     width: Int,
     height: Int,
     options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
+    guidance: GuidanceProvider? = null,
     checkCancelled: () -> Unit = {},
 ): MaskedAlpha? {
     val alpha = ByteArray(width * height)
@@ -52,7 +53,14 @@ internal fun maskSubjectAlpha(
         alpha[index] = confidenceToAlpha(mask[index]).toByte()
     }
 
-    val result = postProcessAlpha(alpha, width, height, options, checkCancelled) ?: return null
+    val result = postProcessAlpha(
+        alpha,
+        width,
+        height,
+        options,
+        guidance = guidance,
+        checkCancelled = checkCancelled,
+    ) ?: return null
 
     return MaskedAlpha(alpha = alpha, result = result)
 }
