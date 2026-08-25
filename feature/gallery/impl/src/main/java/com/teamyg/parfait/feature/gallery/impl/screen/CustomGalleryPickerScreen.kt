@@ -25,6 +25,9 @@ import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.gallery.impl.R
@@ -42,6 +45,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 @Composable
 internal fun CustomGalleryPickerScreen(
     state: CustomGalleryPickerState,
+    toastPolicy: YGToastPolicy,
     onClickGrantPermission: () -> Unit,
     onClickOpenSettings: () -> Unit,
     onClickManageMedia: () -> Unit,
@@ -57,6 +61,7 @@ internal fun CustomGalleryPickerScreen(
             isEmpty = state.isEmpty,
             groups = state.groups,
             recentImages = state.recentImages,
+            toastPolicy = toastPolicy,
             onClickManageMedia = onClickManageMedia,
             onClickImage = onClickImage,
             onClickCutoutImage = onClickCutoutImage,
@@ -81,6 +86,7 @@ private fun GalleryContent(
     isEmpty: Boolean,
     groups: List<GalleryImageGroup>,
     recentImages: List<RecentImage>,
+    toastPolicy: YGToastPolicy,
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
     onClickCutoutImage: (RecentImage) -> Unit,
@@ -145,6 +151,12 @@ private fun GalleryContent(
                     )
                 }
             }
+            YGToastHost(
+                policy = toastPolicy,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(),
+            )
         }
 
         if (isPartial) {
@@ -175,6 +187,7 @@ private fun PreviewCustomGalleryPickerScreen(
         state = CustomGalleryPickerState(
             access = access,
         ),
+        toastPolicy = rememberYGToastPolicy(),
         onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickManageMedia = {},

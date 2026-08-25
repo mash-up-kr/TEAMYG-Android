@@ -192,9 +192,11 @@ internal fun CustomCameraRoute(
 
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
     // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
-    YGScaffoldV2(toastPolicy = toastPolicy) { _ ->
+    // Box 안에 YGToastHost 를 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
+    YGScaffoldV2 { _ ->
         CustomCameraScreen(
             state = state,
+            toastPolicy = toastPolicy,
             onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
             onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
             onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },
