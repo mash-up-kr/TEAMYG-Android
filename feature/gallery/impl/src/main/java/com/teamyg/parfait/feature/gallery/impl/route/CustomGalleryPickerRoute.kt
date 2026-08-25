@@ -122,9 +122,11 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
+    // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
+    YGScaffoldV2 { innerPadding ->
         CustomGalleryPickerScreen(
             state = state,
+            toastPolicy = toastPolicy,
             onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
             onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
             onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
