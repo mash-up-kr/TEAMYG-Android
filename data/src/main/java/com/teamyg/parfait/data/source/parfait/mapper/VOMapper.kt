@@ -30,6 +30,7 @@ import kotlinx.datetime.LocalDateTime
 private const val BACKGROUND_TYPE_COLOR = "COLOR"
 private const val BACKGROUND_TYPE_IMAGE = "IMAGE"
 private const val BORDER_TYPE_SOLID = "SOLID"
+private const val OWNER_TYPE_ME = "ME"
 
 internal fun GetTodayParfaitResponse.toCanvasVO(): CanvasVO = CanvasVO(
     parfaitId = ParfaitId(parfaitId),
@@ -94,6 +95,7 @@ private fun GroupMemberResponse.toCanvasMemberVO(): CanvasMemberVO = CanvasMembe
     nametagChip = nameTagChip.toNametagChipType(),
 )
 
+/** 모르는 ownerType 은 남의 것으로 접는다 — 여는 쪽으로 틀리면 남의 토핑을 만지게 된다. */
 private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = CanvasToppingVO(
     parfaitImageId = ParfaitImageId(parfaitImageId),
     imageId = ImageId(imageId),
@@ -107,6 +109,7 @@ private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = Can
     ),
     border = toToppingBorder(),
     placedBy = placedBy.toToppingPlacerVO(),
+    isMine = placedBy.ownerType == OWNER_TYPE_ME,
     createdAt = LocalDateTime.parse(createdAt),
 )
 

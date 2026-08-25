@@ -447,14 +447,13 @@ constructor(
 
     /**
      * Default → Spotlighted 로만 전환한다.
-     * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어져야 하지만, 그 진입점은
+     * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어져야 하지만, 그 진입점이
      * 아직 없어 지금은 아무 동작도 하지 않는다.
-     * 경로가 없어 [isMine] 이 항상 false 다. 그 경로가 생기면 여기서 실제로 갈라야 한다.
      */
     private fun handleOnClickTopping(topping: CanvasToppingVO) {
         if (state.value.spotlightedToppingId != null) return
 
-        if (topping.isMine()) {
+        if (topping.isMine) {
             // TODO: C-305 토핑 편집 화면으로 이동
             return
         }
@@ -481,9 +480,6 @@ constructor(
             ),
         )
     }
-
-    /** TODO: 서버가 "내 groupMemberId" 를 알려주는 경로가 생기면 그것과 비교하도록 채운다 */
-    private fun CanvasToppingVO.isMine(): Boolean = false
 
     /**
      * 백그라운드 복귀·Pull-to-refresh 양쪽에서 재사용할 수 있도록 함수로 분리해 둔다.
