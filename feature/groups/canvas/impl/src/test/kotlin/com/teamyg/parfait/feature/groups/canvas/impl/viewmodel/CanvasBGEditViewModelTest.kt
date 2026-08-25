@@ -12,24 +12,20 @@ import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
-import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
-import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
-import com.teamyg.parfait.domain.model.member.LoginProvider
-import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
+import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
-import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
@@ -69,7 +65,7 @@ class CanvasBGEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getTodayParfait: GetTodayParfaitUseCase = mockk()
-    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val myGroupMemberIdRepository: MyGroupMemberIdRepository = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
@@ -77,13 +73,7 @@ class CanvasBGEditViewModelTest {
 
     @Before
     fun stubTheHappyPath() {
-        every { getMyAccountFlow() } returns flowOf(
-            MyAccountVO(
-                memberId = MemberId(MY_GROUP_MEMBER_ID),
-                provider = LoginProvider.KAKAO,
-                nickname = GlobalNickname("나"),
-            ),
-        )
+        every { myGroupMemberIdRepository.observe(GroupId(GROUP_ID)) } returns flowOf(GroupMemberId(MY_GROUP_MEMBER_ID))
         coEvery { getTodayParfait(any()) } returns Result.success(canvas())
         coEvery { uploadImage(any(), any()) } returns Result.success(ImageId(7L))
     }
@@ -104,7 +94,7 @@ class CanvasBGEditViewModelTest {
         groupIdValue = GROUP_ID,
         parfaitIdValue = PARFAIT_ID,
         getTodayParfaitUseCase = getTodayParfait,
-        getMyAccountFlowUseCase = getMyAccountFlow,
+        myGroupMemberIdRepository = myGroupMemberIdRepository,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
@@ -194,7 +184,7 @@ class CanvasBGEditViewModelTest {
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
             getTodayParfaitUseCase = getTodayParfait,
-            getMyAccountFlowUseCase = getMyAccountFlow,
+            myGroupMemberIdRepository = myGroupMemberIdRepository,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,

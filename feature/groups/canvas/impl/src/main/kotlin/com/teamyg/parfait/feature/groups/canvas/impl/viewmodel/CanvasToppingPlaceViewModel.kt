@@ -19,6 +19,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
@@ -138,6 +139,7 @@ class CanvasToppingPlaceViewModel
     private val toppingDraftRepository: ToppingDraftRepository,
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
+    private val myGroupMemberIdRepository: MyGroupMemberIdRepository,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
@@ -329,7 +331,17 @@ class CanvasToppingPlaceViewModel
                     filePath = imagePath,
                     transform = transform,
                     border = border,
-                ).onSuccess {
+                ).onSuccess { placed ->
+                    // 서버가 "내 groupMemberId" 를 알려주는 API 가 없다 — 방금 내가 놓은 토핑의
+                    // placedBy 가 곧 나 자신이므로, 여기서 한 번 확인될 때마다 로컬에 적어 둔다
+                    // (`MyGroupMemberIdRepository` 문서 참고). isMine 판정이 이 캐시에 기대므로,
+                    // 실패해도 배치 자체는 막지 않는다
+                    runSuspendCatching {
+                        myGroupMemberIdRepository.save(groupId, placed.placedBy.groupMemberId)
+                    }.onFailure { throwable ->
+                        viewModelLogger.d { "my group member id cache save failed - $throwable" }
+                    }
+
                     // 알림보다 먼저 남긴다 — PlaceSucceeded 를 받은 Route 가 popUpTo 로 이 화면을
                     // 걷어 내면 viewModelScope 가 취소되고, 그 뒤 코드는 실행되다 말고 끊긴다
                     runSuspendCatching {

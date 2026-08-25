@@ -8,12 +8,19 @@ import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.GroupMemberId
+import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
@@ -67,12 +74,15 @@ class CanvasToppingPlaceViewModelTest {
 
     private val addRecentImageUseCase: AddRecentImageUseCase = mockk(relaxed = true)
 
+    private val myGroupMemberIdRepository: MyGroupMemberIdRepository = mockk(relaxed = true)
+
     private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
         every { toppingDraftRepository.draft } returns flowOf(draft)
         return CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            myGroupMemberIdRepository = myGroupMemberIdRepository,
         )
     }
 
@@ -278,6 +288,36 @@ class CanvasToppingPlaceViewModelTest {
         }
         // 성공한 흐름의 초안이 남으면 다음 진입까지 낡은 알맹이를 들고 있다
         coVerify(exactly = 1) { toppingDraftRepository.clear() }
+    }
+
+    @Test
+    fun onClickConfirm_success_savesMyGroupMemberIdFromPlacedBy() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버는 "내 groupMemberId"를 따로 알려주지 않는다 — 방금 내가 놓은 토핑의
+        // placedBy 가 곧 나 자신이다(`MyGroupMemberIdRepository` 문서 참고)
+        val placed = PlacedToppingVO(
+            parfaitImageId = ParfaitImageId(9L),
+            imageId = ImageId(9L),
+            imageUrl = "https://cdn.example.com/topping-9.png",
+            transform = ToppingTransform(
+                positionX = 0.5,
+                positionY = 0.5,
+                positionZ = 3,
+                scale = 1.0,
+                rotation = 0.0,
+            ),
+            placedBy = ToppingPlacerVO(groupMemberId = GroupMemberId(77L), nickname = GroupNickname("나")),
+        )
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(placed)
+        coEvery { toppingDraftRepository.clear() } returns Unit
+        val viewModel = readyViewModel()
+        advanceUntilIdle()
+
+        // When 확인을 누른다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 그 groupMemberId 를 이 그룹의 "내 것"으로 로컬에 적어 둔다
+        coVerify(exactly = 1) { myGroupMemberIdRepository.save(GroupId(1L), GroupMemberId(77L)) }
     }
 
     @Test
@@ -506,6 +546,7 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            myGroupMemberIdRepository = myGroupMemberIdRepository,
         )
         advanceUntilIdle()
 
@@ -546,6 +587,7 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
+            myGroupMemberIdRepository = myGroupMemberIdRepository,
         )
 
         // When 화면이 열린다

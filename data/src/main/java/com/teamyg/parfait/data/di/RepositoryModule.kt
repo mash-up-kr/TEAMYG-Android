@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.repository.auth.AuthRepositoryImpl
 import com.teamyg.parfait.data.repository.camera.CameraCacheFileRepositoryImpl
+import com.teamyg.parfait.data.repository.canvas.MyGroupMemberIdRepositoryImpl
 import com.teamyg.parfait.data.repository.gallery.GalleryRepositoryImpl
 import com.teamyg.parfait.data.repository.group.ParfaitGroupRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
@@ -16,6 +17,7 @@ import com.teamyg.parfait.data.repository.topping.ToppingRepositoryImpl
 import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
+import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
@@ -96,4 +98,10 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindToppingDraftRepository(toppingDraftRepositoryImpl: ToppingDraftRepositoryImpl): ToppingDraftRepository
+
+    @Binds
+    @Singleton
+    fun bindMyGroupMemberIdRepository(
+        myGroupMemberIdRepositoryImpl: MyGroupMemberIdRepositoryImpl,
+    ): MyGroupMemberIdRepository
 }
