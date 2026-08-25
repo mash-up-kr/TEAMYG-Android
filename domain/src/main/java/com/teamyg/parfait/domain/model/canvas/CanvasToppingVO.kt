@@ -16,6 +16,9 @@ import kotlinx.datetime.LocalDateTime
  *
  * placedBy 의 groupMemberId 가 같은 응답의 members 에 없을 수 있다 — 탈퇴·이탈한 멤버의
  * 토핑은 남고 닉네임이 "(알수없음)"으로 온다(`api/parfait.md`).
+ *
+ * @param isMine 서버가 판정해 준 값. 판정 축이 계정 id 라 [placedBy] 의 groupMemberId 로는
+ *   재현할 수 없다.
  */
 data class CanvasToppingVO(
     val parfaitImageId: ParfaitImageId,
@@ -24,5 +27,6 @@ data class CanvasToppingVO(
     val transform: ToppingTransform,
     val border: ToppingBorder,
     val placedBy: ToppingPlacerVO,
+    val isMine: Boolean,
     val createdAt: LocalDateTime,
 )
