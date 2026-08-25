@@ -20,13 +20,11 @@ import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
-import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
-import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
@@ -41,7 +39,6 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.first
 import java.io.File
 
 enum class CanvasEditTab { BACKGROUND, TOPPING }
@@ -214,7 +211,6 @@ constructor(
     @Assisted("groupId") groupIdValue: Long,
     @Assisted("parfaitId") parfaitIdValue: Long,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
-    private val getMyAccountFlowUseCase: GetMyAccountFlowUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
@@ -250,8 +246,6 @@ constructor(
      */
     private fun loadCanvas() {
         launch(key = LOAD_CANVAS_KEY) {
-            val myMemberId = getMyAccountFlowUseCase().first()?.memberId
-
             getTodayParfaitUseCase(groupId)
                 .onSuccess { canvas ->
                     if (canvas.parfaitId != parfaitId) {
@@ -264,7 +258,7 @@ constructor(
 
                     confirmedToppings = canvas.toppings
                         .sortedBy { topping -> topping.transform.positionZ }
-                        .map { topping -> topping.toToppingItem(myMemberId) }
+                        .map { topping -> topping.toToppingItem() }
 
                     updateState { withCanvas(canvas = canvas, toppings = confirmedToppings) }
                 }.onFailure { throwable ->
@@ -291,15 +285,9 @@ constructor(
         selectedImageSource = null,
     )
 
-    /**
-     * TODO(서버 응답 확장 대기): 캔버스 응답이 "내 토핑"을 표시해 주지 않아 id 로 가려낸다.
-     *  계약상 [MemberId] 는 계정 id 이고 토핑의 placedBy 는 그룹 멤버십 행 id 라 두 값은 서로
-     *  다른 축이다 — 서버가 둘을 같은 축으로 주는 동안에만 이 비교가 맞다. 응답에 isMine 이나
-     *  내 groupMemberId 가 실리면 그것으로 갈아탄다.
-     */
-    private fun CanvasToppingVO.toToppingItem(myMemberId: MemberId?): CanvasToppingItem = CanvasToppingItem(
+    private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
         parfaitImageId = parfaitImageId.value,
-        isMine = myMemberId != null && placedBy.groupMemberId.value == myMemberId.value,
+        isMine = isMine,
         imageUrl = imageUrl,
         positionX = transform.positionX.toFloat(),
         positionY = transform.positionY.toFloat(),
