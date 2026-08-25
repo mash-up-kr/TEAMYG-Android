@@ -166,6 +166,7 @@ kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
+firebase-crashlytics-ndk = { group = "com.google.firebase", name = "firebase-crashlytics-ndk" }
 
 #Test - unit
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }

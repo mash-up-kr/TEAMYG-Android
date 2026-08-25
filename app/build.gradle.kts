@@ -91,4 +91,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    // AAR 로 들어오는 CameraX·DataStore 네이티브 라이브러리가 시그널로 죽으면 JVM 예외가 남지
+    // 않아 기본 수집기로는 잡히지 않는다. NDK 수집기를 붙여야 그 크래시가 리포트된다.
+    // nativeSymbolUploadEnabled 는 켜지 않는다. 자체 네이티브 빌드가 없어 업로드할
+    // 언스트립 심볼 자체가 없고, 서드파티 .so 는 주소만 남는다.
+    implementation(libs.firebase.crashlytics.ndk)
 }
