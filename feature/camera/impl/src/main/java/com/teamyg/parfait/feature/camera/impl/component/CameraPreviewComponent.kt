@@ -51,6 +51,9 @@ internal fun CameraPreviewViewComponent(
 
             val imageCapture: ImageCapture = ImageCapture
                 .Builder()
+                // 근거: parfait/specs/2026-08-23-segmentation-preprocessing.md 「1. 손실이 처음 생기는 자리」
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setJpegQuality(MAX_JPEG_QUALITY)
                 .build()
 
             val selector: CameraSelector = CameraSelector
@@ -93,3 +96,5 @@ internal fun CameraPreviewViewComponent(
         camera = cameraState,
     )
 }
+
+private const val MAX_JPEG_QUALITY = 100
