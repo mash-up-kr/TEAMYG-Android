@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import app.cash.turbine.test
@@ -23,26 +24,33 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
@@ -70,12 +78,19 @@ class CanvasBGEditViewModelTest {
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
     private val updateTopping: UpdateToppingUseCase = mockk()
+    private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
 
     @Before
     fun stubTheHappyPath() {
         every { myGroupMemberIdRepository.observe(GroupId(GROUP_ID)) } returns flowOf(GroupMemberId(MY_GROUP_MEMBER_ID))
         coEvery { getTodayParfait(any()) } returns Result.success(canvas())
         coEvery { uploadImage(any(), any()) } returns Result.success(ImageId(7L))
+    }
+
+    /** [mockkStatic] 은 JVM 전역 상태라 다음 테스트로 새지 않도록 매번 걷어 낸다 */
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     /**
@@ -99,6 +114,7 @@ class CanvasBGEditViewModelTest {
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
         updateToppingUseCase = updateTopping,
+        updateToppingBorderUseCase = updateToppingBorder,
     ).also { advanceUntilIdle() }
 
     /** 실제 스텁 중 내 것 하나를 선택해 둔다 — 삭제·편집은 내 토핑에서만 열린다 */
@@ -189,6 +205,7 @@ class CanvasBGEditViewModelTest {
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,
             updateToppingUseCase = updateTopping,
+            updateToppingBorderUseCase = updateToppingBorder,
         )
 
         // Then 조용히 빈 화면을 두지 않고 실패를 알린다
@@ -374,6 +391,44 @@ class CanvasBGEditViewModelTest {
         coVerify(exactly = 0) {
             updateTopping(any(), any(), ParfaitImageId(OTHER_PARFAIT_IMAGE_ID), any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun onClickConfirm_toppingBorderEdited_savesOnlyTheBorder() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 건드리지 않고, 테두리 편집 결과만 받는다
+        // handleOnToppingEditResult 가 File(...).toUri() 로 cutoutImagePath 를 적는데,
+        // 그 안의 Uri.fromFile 은 안드로이드 프레임워크 실물이라 JVM 유닛 테스트에서 스텁 없인 던진다
+        mockkStatic(Uri::class)
+        every { Uri.fromFile(any()) } returns mockk(relaxed = true)
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        val topping = viewModel.state.value.toppings
+            .first { it.isMine }
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingEditResult(
+                toppingId = topping.parfaitImageId,
+                result = ToppingEditResult(
+                    subjectImagePath = "/cache/segmentation/subject.png",
+                    cutoutImagePath = "/cache/segmentation/cutout.png",
+                    borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f)),
+                ),
+            ),
+        )
+        val newBorder = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)
+        val parfaitImageId = ParfaitImageId(topping.parfaitImageId)
+        coEvery {
+            updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), parfaitImageId, newBorder)
+        } returns Result.success(UpdatedToppingBorderVO(parfaitImageId, newBorder))
+
+        // When 확인 버튼을 누른다 — 위치는 안 바뀌었으니 updateTopping 은 부를 필요가 없다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 테두리만 저장 요청이 나간다
+        coVerify(exactly = 1) {
+            updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), parfaitImageId, newBorder)
+        }
+        coVerify(exactly = 0) { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

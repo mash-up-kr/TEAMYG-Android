@@ -49,6 +49,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandle
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
@@ -391,10 +392,13 @@ private fun CanvasToppingImage(
                 if (onDrag != null) Modifier.dragBy(topping.parfaitImageId, onDrag) else Modifier,
             ).graphicsLayer(rotationZ = topping.rotationDegrees),
     ) {
-        Image(
+        // 서버는 테두리를 픽셀에 굽지 않고 값으로 준다
+        // 마지막 겹이 가장 바깥쪽이라 화면에 보이는 테두리다
+        val border = topping.borderLayers.lastOrNull()
+        YGToppingCutoutImage(
             painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
+            borderColor = border?.let { layer -> Color(layer.colorArgb) },
+            borderWidth = (border?.widthDp ?: 0f).dp,
             modifier = Modifier.fillMaxSize(),
         )
     }
