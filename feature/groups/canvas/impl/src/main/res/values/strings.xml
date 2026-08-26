@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- TODO(접근성): 토핑을 무엇으로 읽어 줄지 정해지지 않았다(스펙 미결) -->
+    <string name="canvas_topping_content_description">토핑</string>
     <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요</string>
     <string name="canvas_main_topping_add">토핑 추가</string>
     <string name="canvas_main_canvas_edit">캔버스 편집</string>
@@ -38,6 +40,7 @@
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>
     <string name="canvas_spotlight_time_hours">%1$d시간 전</string>

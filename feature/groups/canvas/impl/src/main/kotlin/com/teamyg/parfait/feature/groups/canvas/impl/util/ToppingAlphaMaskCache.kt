@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import coil3.imageLoader
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
@@ -16,6 +17,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 
 /** 마스크 한 장의 긴 변. 올리면 판정이 외형에 가까워지고 디코딩·메모리가 는다. */
 private const val MASK_LONG_SIDE = 256
@@ -26,8 +28,8 @@ private const val MASK_CACHE_ENTRIES = 64
 private const val LOAD_FACTOR = 0.75f
 
 /**
- * 접근 순서 갱신이 곧 쓰기라 잠금 없이 건드리면 상태가 깨진다 — 디코딩은 백그라운드에서 끝나고
- * 읽기는 메인 스레드다. 모든 접근을 [maskCache] 자신에 대해 동기화한다.
+ * 접근 순서 갱신이 곧 쓰기라, 여럿이 잠금 없이 건드리면 상태가 깨진다. 로딩을 어느 컨텍스트에서
+ * 부르는지 이 파일이 정하지 않으므로 모든 접근을 [maskCache] 자신에 대해 동기화한다.
  */
 private val maskCache = object : LinkedHashMap<String, ToppingAlphaMask>(
     MASK_CACHE_ENTRIES,
@@ -86,23 +88,33 @@ private suspend fun decodeToppingAlphaMask(
         .data(model)
         .size(MASK_LONG_SIDE)
         .allowHardware(false)
+        // 비트셋으로 접고 나면 버릴 비트맵이다. 표시용과 크기가 달라 키도 다르니, 얹어 두면
+        // 토핑 수만큼 쓸모없는 항목이 표시용 비트맵을 밀어낸다
+        .memoryCachePolicy(CachePolicy.DISABLED)
         .build()
 
     val image = (context.imageLoader.execute(request) as? SuccessResult)?.image ?: return null
-    val bitmap = image.toBitmap()
 
-    val pixels = IntArray(bitmap.width * bitmap.height)
-    bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    // execute 는 자기 디스패처에서 돌지만 그 뒤는 부르는 쪽 컨텍스트다. 전 픽셀 순회를
+    // 그대로 두면 호출부가 메인 스레드일 때 토핑 수만큼 메인이 잡힌다
+    val mask = withContext(Dispatchers.Default) {
+        val bitmap = image.toBitmap()
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
-    val mask = ToppingAlphaMask.of(width = bitmap.width, height = bitmap.height) { x, y ->
-        pixels[y * bitmap.width + x] ushr 24
+        ToppingAlphaMask.of(width = bitmap.width, height = bitmap.height) { x, y ->
+            pixels[y * bitmap.width + x] ushr 24
+        }
     }
 
     synchronized(maskCache) { maskCache.put(model, mask) }
     return mask
 }
 
-/** 메모리 압박이나 테스트에서 캐시를 비우는 수단. */
+/**
+ * 메모리 압박이나 테스트에서 캐시를 비우는 수단. 아직 부르는 곳을 두지 않았다 — 항목 수에
+ * 상한이 있어 누수가 아니라서 호출부 신설을 미뤘다.
+ */
 fun clearToppingAlphaMasks() {
     synchronized(maskCache) { maskCache.clear() }
 }

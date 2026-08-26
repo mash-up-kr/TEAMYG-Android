@@ -1,7 +1,9 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** 왼쪽 절반만 불투명한 4x4 마스크. 좌우 비대칭이라 좌표 부호 실수가 드러난다. */
@@ -137,5 +139,55 @@ class ToppingHitTestTest {
 
         // Then
         assertFalse(bordered.containsPoint(100f, 76f))
+    }
+}
+
+/** 왼쪽 절반만 불투명한 40x40 그림. 마스크 한 칸이 10px 이라 자리마다 알파가 갈린다. */
+private fun targetCenteredAt(centerXPx: Float): ToppingHitTarget = ToppingHitTarget(
+    centerXPx = centerXPx,
+    centerYPx = 100f,
+    imageWidthPx = 40f,
+    imageHeightPx = 40f,
+    rotationDegrees = 0f,
+    borderWidthPx = 0f,
+    mask = leftHalfMask(),
+)
+
+class PickToppingHitTest {
+    @Test
+    fun pickToppingHit_topOpaque_picksTop() {
+        // Given 같은 자리에 겹친 둘. 목록은 아래에서 위 순서다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(100f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // When 둘 다 불투명한 자리를 누른다
+        // Then 위 것이 잡힌다
+        assertEquals("top", pickToppingHit(entries, 90f, 100f))
+    }
+
+    @Test
+    fun pickToppingHit_topTransparent_fallsThroughToBottom() {
+        // Given 위 것의 투명한 오른쪽 절반에, 아래 것의 불투명한 왼쪽 절반이 깔려 있다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(120f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // Then 위를 통과해 아래가 잡힌다
+        assertEquals("bottom", pickToppingHit(entries, 110f, 100f))
+    }
+
+    @Test
+    fun pickToppingHit_bothTransparent_picksNothing() {
+        // Given 둘 다 그림 사각형 안이지만 그 자리가 투명하다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(100f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // Then
+        assertNull(pickToppingHit(entries, 110f, 100f))
     }
 }
