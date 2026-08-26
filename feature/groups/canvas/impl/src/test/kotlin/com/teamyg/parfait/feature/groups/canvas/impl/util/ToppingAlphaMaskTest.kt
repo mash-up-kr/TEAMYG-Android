@@ -61,4 +61,46 @@ class ToppingAlphaMaskTest {
         assertTrue(mask.isOpaqueAt(9, 9))
         assertFalse(mask.isOpaqueAt(8, 9))
     }
+
+    @Test
+    fun hasAnyOpaque_withOpaquePixels_isTrue() {
+        // Given 불투명 픽셀이 하나 있는 마스크
+        val mask = toppingAlphaMaskOf(width = 2, height = 2) { x, y ->
+            if (x == 0 && y == 0) 255 else 0
+        }
+
+        // Then hasAnyOpaque는 참이어야 한다 — 뒤 태스크의 마스크 부재 판정에 쓰인다
+        assertTrue(mask.hasAnyOpaque)
+    }
+
+    @Test
+    fun isOpaqueAt_nonSquareMask_rowMajorIndexing() {
+        // Given 가로 3, 세로 5인 비정사각 마스크로 좌우·상하 비대칭 배치
+        // (x=2, y=0)과 (x=0, y=4)에만 불투명
+        val mask = toppingAlphaMaskOf(width = 3, height = 5) { x, y ->
+            when {
+                x == 2 && y == 0 -> 255
+                x == 0 && y == 4 -> 255
+                else -> 0
+            }
+        }
+
+        // Then 행 우선(row-major) 인덱싱이 맞아야 각 픽셀을 읽을 수 있다
+        assertTrue(mask.isOpaqueAt(2, 0))
+        assertTrue(mask.isOpaqueAt(0, 4))
+        assertFalse(mask.isOpaqueAt(0, 0))
+        assertFalse(mask.isOpaqueAt(2, 4))
+    }
+
+    @Test
+    fun isOpaqueAt_alphaAtThreshold_isTrue() {
+        // Given 임계값과 정확히 같은 알파값
+        val mask = toppingAlphaMaskOf(width = 2, height = 2) { _, _ ->
+            TOPPING_MASK_ALPHA_THRESHOLD
+        }
+
+        // Then 임계값 자체는 불투명으로 치한다
+        assertTrue(mask.isOpaqueAt(0, 0))
+        assertTrue(mask.isOpaqueAt(1, 1))
+    }
 }
