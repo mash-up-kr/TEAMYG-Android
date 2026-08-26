@@ -1,9 +1,19 @@
 package com.teamyg.parfait.data.repository.image
 
+/**
+ * [value] 를 [divisor] 로 나누고 올린다. [value] 는 0 이상, [divisor] 는 1 이상이어야 한다.
+ *
+ * 0 을 돌려주고 넘어가지 않는 이유: [divisor] 가 0 이면 `factor` 로 나누는 나머지 세 자리
+ * (`downscaleMask`·`applyKeepMask`·`minComponentPixels`)에서 같은 예외가 더 안쪽에서 난다.
+ */
 internal fun ceilDiv(
     value: Int,
     divisor: Int,
-): Int = (value + divisor - 1) / divisor
+): Int {
+    require(divisor > 0) { "divisor must be >= 1 but was $divisor" }
+
+    return (value + divisor - 1) / divisor
+}
 
 /**
  * 알파를 [threshold] 로 이진화하고 [factor] × [factor] 블록마다 OR 해서 축소 마스크를 만든다.

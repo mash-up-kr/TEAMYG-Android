@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.repository.image
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 /** `#` 는 불투명, `.` 은 투명. 한 줄이 한 행이다 */
 private fun alphaOf(vararg rows: String): ByteArray {
@@ -21,6 +22,26 @@ private fun BooleanArray.render(width: Int): String = toList().chunked(width).jo
 }
 
 class AlphaComponentsTest {
+    @Test
+    fun ceilDiv_roundsUpOnRemainder_andStaysExactOnMultiples() {
+        assertEquals(1000, ceilDiv(4000, 4))
+        assertEquals(1001, ceilDiv(4001, 4))
+        assertEquals(1001, ceilDiv(4004, 4))
+        assertEquals(0, ceilDiv(0, 4))
+    }
+
+    @Test
+    fun ceilDiv_zeroDivisor_failsAtTheCallInsteadOfDividing() {
+        // 0 을 돌려주면 factor 로 나누는 나머지 세 자리에서 같은 예외가 더 안쪽에서 난다
+        assertFailsWith<IllegalArgumentException> { ceilDiv(4000, 0) }
+    }
+
+    @Test
+    fun ceilDiv_negativeDivisor_fails() {
+        // 음수는 안 터지고 조용히 틀린 값을 내보내는 쪽이라 더 위험하다
+        assertFailsWith<IllegalArgumentException> { ceilDiv(4000, -4) }
+    }
+
     @Test
     fun downscaleMask_factorFour_orsEachBlock() {
         // Given — 8×8 에서 왼쪽 위 블록에 한 점만 있다

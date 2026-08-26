@@ -15,6 +15,20 @@ private fun ByteArray.asInts() = IntArray(size) { this[it].toInt() and 0xFF }
 
 class AlphaPostProcessorTest {
     @Test
+    fun alphaPostProcessOptions_downscaleFactorBelowOne_failsAtConstruction() {
+        // factor 는 ceilDiv 말고도 downscaleMask·applyKeepMask·minComponentPixels 에서 나눈다.
+        // 만들어지는 자리에서 막아야 네 곳이 한 번에 보호된다
+        assertFailsWith<IllegalArgumentException> { AlphaPostProcessOptions(downscaleFactor = 0) }
+        assertFailsWith<IllegalArgumentException> { AlphaPostProcessOptions(downscaleFactor = -1) }
+    }
+
+    @Test
+    fun alphaPostProcessOptions_downscaleFactorOne_isAllowed() {
+        // 배율 1 은 축소를 안 한다는 뜻이라 정상 값이다
+        assertEquals(1, AlphaPostProcessOptions(downscaleFactor = 1).downscaleFactor)
+    }
+
+    @Test
     fun applyKeepMask_maskIsFalse_clearsThatBlock() {
         // Given — 2×2 원본, 배율 2 라 축소판은 1픽셀이다
         val alpha = alphaBytes(255, 255, 255, 255)
