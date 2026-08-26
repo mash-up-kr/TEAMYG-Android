@@ -2,7 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import android.os.SystemClock
 
-/** `clickableYGNoRipple` 과 같은 창 길이. 판정을 레이어로 옮기면서 이 방어도 함께 옮겨 온다. */
+/** 판정을 레이어로 옮기면서 기존 연타 방어를 함께 옮겨 온다. */
 private const val DEFAULT_WINDOW_MILLIS = 300L
 
 /**

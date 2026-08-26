@@ -42,4 +42,25 @@ class ToppingClickThrottleTest {
         // Then 대상이 다르므로 즉시 통과한다 — 해제가 씹히면 안 된다
         assertTrue(throttle.tryPass("dim"))
     }
+
+    @Test
+    fun tryPass_threeCallSequence_correctlyUpdatesTimeOnly_onPass() {
+        // Given 시각을 손으로 미는 게이트
+        var now = 0L
+        val throttle = ToppingClickThrottle(windowMillis = 300L) { now }
+
+        // When 같은 대상을 세 번 누른다
+        // 1번: 창이 열린 시점에 통과한다
+        assertTrue(throttle.tryPass("a"))
+
+        // 2번: 창 안에서 다시 눌러 막힌다
+        now = 150L
+        assertFalse(throttle.tryPass("a"))
+
+        // 3번: 첫 통과로부터 창 길이가 지난 시점에 다시 눌러 통과해야 한다
+        now = 300L
+
+        // Then 막힌 호출이 마지막 시각을 갱신하지 않아야 통과한다
+        assertTrue(throttle.tryPass("a"))
+    }
 }

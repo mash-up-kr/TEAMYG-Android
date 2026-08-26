@@ -63,7 +63,7 @@ suspend fun loadToppingAlphaMask(
     return mask
 }
 
-/** 메모리 압박이나 테스트에서 캐시를 비우는 수단. 지금은 호출부가 없다. */
+/** 메모리 압박이나 테스트에서 캐시를 비우는 수단. */
 fun clearToppingAlphaMasks() {
     synchronized(maskCache) { maskCache.clear() }
 }
