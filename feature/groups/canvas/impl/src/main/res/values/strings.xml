@@ -40,6 +40,7 @@
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>
     <string name="canvas_spotlight_time_hours">%1$d시간 전</string>

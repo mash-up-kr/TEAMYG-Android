@@ -80,10 +80,22 @@ internal fun CanvasToppingLayer(
         }
 
         if (spotlighted != null) {
+            val dismissDescription = stringResource(R.string.canvas_spotlight_dismiss)
+
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(YGAtomicColors.Transparency.Black50),
+                    .background(YGAtomicColors.Transparency.Black50)
+                    // 딤 탭으로 강조를 푸는 일은 판정 오버레이의 onMiss 가 한다. 그 오버레이는
+                    // pointerInput 뿐이라 시맨틱이 없으니, 접근성 서비스가 쓸 등가 액션을 여기 남긴다
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = dismissDescription
+                        onClick {
+                            onClickSpotlightDim()
+                            true
+                        }
+                    },
             )
 
             CanvasTopping(
