@@ -59,10 +59,7 @@ fun ToppingHitTarget.containsPoint(
     }
 }
 
-/**
- * 그림 사각형 안의 좌표를 마스크 격자로 옮겨 읽는다. 격자 밖은
- * [ToppingAlphaMask]가 투명으로 답한다.
- */
+/** 그림 사각형 안의 좌표를 마스크 격자로 옮겨 읽는다. */
 private fun ToppingHitTarget.isOpaqueAtLocal(
     localX: Float,
     localY: Float,

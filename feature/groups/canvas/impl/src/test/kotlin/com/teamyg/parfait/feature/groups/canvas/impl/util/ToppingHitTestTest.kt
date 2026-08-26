@@ -55,6 +55,23 @@ class ToppingHitTestTest {
     }
 
     @Test
+    fun containsPoint_rotated90_opaqueSideMovesToTop() {
+        // Given 90도 시계방향 회전. containsPoint는 역변환(반시계방향)을 하므로
+        // 원본의 불투명한 왼쪽이 위로 온다.
+        // 계산: rotationDegrees=90 → radians=-π/2
+        // cos(-π/2)=0, sin(-π/2)=-1
+        // (100,90): dx=0, dy=-10 → localX=0-(-10)*(-1)=-10
+        // → maskX=((-10+20)/10)=1 < 2 → 불투명
+        // (100,110): dx=0, dy=10 → localX=0-10*(-1)=10
+        // → maskX=((10+20)/10)=3 >= 2 → 투명
+        val rotated = target(rotationDegrees = 90f)
+
+        // Then 불투명한 쪽이 위로 이동했다
+        assertTrue(rotated.containsPoint(100f, 90f))
+        assertFalse(rotated.containsPoint(100f, 110f))
+    }
+
+    @Test
     fun containsPoint_withBorder_extendsBeyondSilhouette() {
         // Given 테두리 8px 인 토핑. 투명한 오른쪽이지만 불투명 경계에서 8px 안쪽이다
         val bordered = target(borderWidthPx = 8f)
