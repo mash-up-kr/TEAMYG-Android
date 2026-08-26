@@ -75,7 +75,6 @@ internal fun CanvasToppingLayer(
                     canvasWidth = maxWidth,
                     canvasHeight = maxHeight,
                     onClick = { onClickTopping(entry.topping) },
-                    clickable = hitTestEnabled,
                 )
             }
         }
@@ -104,7 +103,6 @@ internal fun CanvasToppingLayer(
                 canvasWidth = maxWidth,
                 canvasHeight = maxHeight,
                 onClick = { onClickTopping(spotlighted.topping) },
-                clickable = hitTestEnabled,
             )
         }
 
@@ -134,8 +132,6 @@ internal fun CanvasToppingLayer(
  *
  * 캔버스 밖으로 나간 배치도 그대로 둔다 — 되돌리거나 가장자리에 붙이지 않고, 넘친 픽셀은
  * Canvas-Area 의 clip 이 잘라 낸다(CAN-007 §3.6·§3.7).
- *
- * @param clickable 판정을 끈 화면에서는 눌러도 아무 일이 없으므로 버튼으로 안내하지 않는다
  */
 @Composable
 private fun CanvasTopping(
@@ -143,7 +139,6 @@ private fun CanvasTopping(
     canvasWidth: Dp,
     canvasHeight: Dp,
     onClick: () -> Unit,
-    clickable: Boolean,
 ) {
     val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
@@ -162,21 +157,15 @@ private fun CanvasTopping(
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
             .requiredSize(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() }
-            .then(
-                // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
-                if (clickable) {
-                    Modifier.semantics(mergeDescendants = true) {
-                        role = Role.Button
-                        contentDescription = description
-                        onClick {
-                            onClick()
-                            true
-                        }
-                    }
-                } else {
-                    Modifier
-                },
-            ),
+            // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = description
+                onClick {
+                    onClick()
+                    true
+                }
+            },
     ) {
         ToppingImage(
             painter = entry.painter,
