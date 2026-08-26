@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
+import com.teamyg.parfait.core.util.jvm.extension.sumArgbAlpha
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
@@ -147,7 +148,7 @@ constructor(
             var coverage = 0L
             for (y in 0 until subjectBitmap.height) {
                 subjectBitmap.getPixels(row, 0, subjectBitmap.width, 0, y, subjectBitmap.width, 1)
-                coverage += sumAlpha(row)
+                coverage += row.sumArgbAlpha()
             }
 
             SegmentationCandidate(
@@ -203,7 +204,7 @@ constructor(
                 bitmap = trimmed.toAndroidBitmap(),
                 canvasWidth = width,
                 canvasHeight = height,
-                coverageAlphaSum = sumAlpha(pixels),
+                coverageAlphaSum = pixels.sumArgbAlpha(),
             ),
         )
     }
