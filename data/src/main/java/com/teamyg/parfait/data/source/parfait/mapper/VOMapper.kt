@@ -125,4 +125,5 @@ private fun TodayParfaitImageResponse.toToppingBorder(): ToppingBorder {
 private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
     groupMemberId = GroupMemberId(groupMemberId),
     nickname = GroupNickname(nickname),
+    isMine = ownerType == "ME",
 )

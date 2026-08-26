@@ -61,7 +61,7 @@ class ParfaitRemoteDataSourceImplTest {
         borderType = borderType,
         borderColor = borderColor,
         borderWidth = borderWidth,
-        placedBy = PlacedByResponse(groupMemberId = 5L, nickname = "행복한 판다"),
+        placedBy = PlacedByResponse(groupMemberId = 5L, nickname = "행복한 판다", ownerType = "ME"),
         createdAt = "2026-08-15T09:30:00",
     )
 
@@ -137,6 +137,7 @@ class ParfaitRemoteDataSourceImplTest {
         assertEquals(3, topping.transform.positionZ)
         assertEquals(ToppingBorder.Solid(color = "#FF0000", width = 4.0), topping.border)
         assertEquals(GroupMemberId(5L), topping.placedBy.groupMemberId)
+        assertTrue(topping.placedBy.isMine)
         assertEquals(LocalDateTime.parse("2026-08-15T09:30:00"), topping.createdAt)
     }
 
