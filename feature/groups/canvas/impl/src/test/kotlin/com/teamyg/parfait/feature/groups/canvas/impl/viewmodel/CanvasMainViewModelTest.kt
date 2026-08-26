@@ -618,6 +618,7 @@ class CanvasMainViewModelTest {
             placedBy = ToppingPlacerVO(
                 groupMemberId = GroupMemberId(1L),
                 nickname = GroupNickname("연경이"),
+                isMine = false,
             ),
             createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )

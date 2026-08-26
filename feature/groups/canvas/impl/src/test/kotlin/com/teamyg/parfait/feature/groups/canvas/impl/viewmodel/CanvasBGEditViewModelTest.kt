@@ -26,7 +26,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
-import com.teamyg.parfait.domain.repository.canvas.MyGroupMemberIdRepository
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
@@ -45,7 +44,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -73,7 +71,6 @@ class CanvasBGEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getTodayParfait: GetTodayParfaitUseCase = mockk()
-    private val myGroupMemberIdRepository: MyGroupMemberIdRepository = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
@@ -82,7 +79,6 @@ class CanvasBGEditViewModelTest {
 
     @Before
     fun stubTheHappyPath() {
-        every { myGroupMemberIdRepository.observe(GroupId(GROUP_ID)) } returns flowOf(GroupMemberId(MY_GROUP_MEMBER_ID))
         coEvery { getTodayParfait(any()) } returns Result.success(canvas())
         coEvery { uploadImage(any(), any()) } returns Result.success(ImageId(7L))
     }
@@ -109,7 +105,6 @@ class CanvasBGEditViewModelTest {
         groupIdValue = GROUP_ID,
         parfaitIdValue = PARFAIT_ID,
         getTodayParfaitUseCase = getTodayParfait,
-        myGroupMemberIdRepository = myGroupMemberIdRepository,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
@@ -200,7 +195,6 @@ class CanvasBGEditViewModelTest {
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
             getTodayParfaitUseCase = getTodayParfait,
-            myGroupMemberIdRepository = myGroupMemberIdRepository,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,
@@ -647,6 +641,7 @@ class CanvasBGEditViewModelTest {
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(groupMemberId),
             nickname = GroupNickname("올린이"),
+            isMine = groupMemberId == MY_GROUP_MEMBER_ID,
         ),
         createdAt = LocalDateTime(2026, 8, 19, 9, 0),
     )

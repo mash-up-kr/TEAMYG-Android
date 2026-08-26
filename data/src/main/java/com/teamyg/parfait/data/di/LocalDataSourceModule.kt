@@ -1,7 +1,5 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.source.canvas.local.MyGroupMemberIdLocalDataSource
-import com.teamyg.parfait.data.source.canvas.local.MyGroupMemberIdLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
@@ -68,10 +66,4 @@ interface LocalDataSourceModule {
     fun bindToppingDraftLocalDataSource(
         toppingDraftLocalDataSourceImpl: ToppingDraftLocalDataSourceImpl,
     ): ToppingDraftLocalDataSource
-
-    @Binds
-    @Singleton
-    fun bindMyGroupMemberIdLocalDataSource(
-        myGroupMemberIdLocalDataSourceImpl: MyGroupMemberIdLocalDataSourceImpl,
-    ): MyGroupMemberIdLocalDataSource
 }
