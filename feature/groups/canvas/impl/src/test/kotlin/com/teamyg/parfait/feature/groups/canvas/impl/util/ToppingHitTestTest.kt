@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 
 /** 왼쪽 절반만 불투명한 4x4 마스크. 좌우 비대칭이라 좌표 부호 실수가 드러난다. */
 private fun leftHalfMask(): ToppingAlphaMask =
-    toppingAlphaMaskOf(width = 4, height = 4) { x, _ -> if (x < 2) 255 else 0 }
+    ToppingAlphaMask.of(width = 4, height = 4) { x, _ -> if (x < 2) 255 else 0 }
 
 private fun target(
     rotationDegrees: Float = 0f,
@@ -103,7 +103,7 @@ class ToppingHitTestTest {
     @Test
     fun containsPoint_emptyMask_fallsBackToRectangle() {
         // Given 불투명 픽셀이 하나도 없는 마스크 — 부재로 봐야 영영 안 눌리는 일이 없다
-        val empty = target(mask = toppingAlphaMaskOf(4, 4) { _, _ -> 0 })
+        val empty = target(mask = ToppingAlphaMask.of(4, 4) { _, _ -> 0 })
 
         // Then
         assertTrue(empty.containsPoint(110f, 100f))
