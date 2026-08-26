@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
@@ -24,7 +27,10 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 
 /**
@@ -142,4 +148,79 @@ private fun ToppingImage(
         borderWidth = (solidBorder?.width?.toFloat() ?: 0f).dp,
         modifier = Modifier.fillMaxSize(),
     )
+}
+
+internal data class ToppingHitEntry(
+    val topping: CanvasToppingVO,
+    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
+    val painter: AsyncImagePainter,
+    val target: ToppingHitTarget,
+)
+
+/**
+ * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
+ *
+ * @param loadMasks 클릭을 받지 않는 화면은 꺼서 쓰지도 않을 디코딩을 막는다
+ */
+@Composable
+private fun rememberToppingHitEntries(
+    toppings: List<CanvasToppingVO>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    loadMasks: Boolean,
+): List<ToppingHitEntry> {
+    val masks = rememberToppingAlphaMasks(
+        if (loadMasks) toppings.map { it.imageUrl } else emptyList(),
+    )
+    val density = LocalDensity.current
+
+    return toppings.map { topping ->
+        key(topping.parfaitImageId.value) {
+            val painter = rememberAsyncImagePainter(
+                model = topping.imageUrl,
+                contentScale = ContentScale.Fit,
+            )
+            val painterState by painter.state.collectAsState()
+            val intrinsicSize = painter.intrinsicSize
+
+            val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
+                intrinsicSize.width / intrinsicSize.height
+            } else {
+                0f
+            }
+
+            val longSide = toppingLongSide(canvasWidth, topping.transform.scale.toFloat())
+            val imageSize = toppingImageSize(longSide = longSide, aspectRatio = aspectRatio)
+            val center = toppingCenter(
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                positionX = topping.transform.positionX.toFloat(),
+                positionY = topping.transform.positionY.toFloat(),
+            )
+
+            // 테두리는 색을 못 읽거나 그림이 안 떴으면 그려지지 않는다 — 판정도 같은 조건이어야 한다
+            val drawnBorderWidth = (topping.border as? ToppingBorder.Solid)
+                ?.takeIf { it.color.toColorOrNull() != null }
+                ?.takeIf { painterState is AsyncImagePainter.State.Success }
+                ?.width
+                ?.toFloat()
+                ?: 0f
+
+            ToppingHitEntry(
+                topping = topping,
+                painter = painter,
+                target = with(density) {
+                    ToppingHitTarget(
+                        centerXPx = center.x.toPx(),
+                        centerYPx = center.y.toPx(),
+                        imageWidthPx = imageSize.width.toPx(),
+                        imageHeightPx = imageSize.height.toPx(),
+                        rotationDegrees = topping.transform.rotation.toFloat(),
+                        borderWidthPx = drawnBorderWidth.dp.toPx(),
+                        mask = masks[topping.imageUrl],
+                    )
+                },
+            )
+        }
+    }
 }
