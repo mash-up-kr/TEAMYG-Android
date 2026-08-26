@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,8 +40,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
@@ -391,17 +394,23 @@ private fun CanvasToppingImage(
                 if (onDrag != null) Modifier.dragBy(topping.parfaitImageId, onDrag) else Modifier,
             ).graphicsLayer(rotationZ = topping.rotationDegrees),
     ) {
-        Image(
+        val painterState by painter.state.collectAsState()
+        val border = topping.borderLayers.firstOrNull()
+
+        YGToppingCutoutImage(
             painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
+            // 로딩·실패 상태에서 찍으면 플레이스홀더 실루엣이 테두리로 보인다
+            borderColor = border
+                ?.let { Color(it.colorArgb) }
+                ?.takeIf { painterState is AsyncImagePainter.State.Success },
+            borderWidth = (border?.widthDp ?: 0f).dp,
             modifier = Modifier.fillMaxSize(),
         )
     }
 }
 
 @Composable
-private fun rememberToppingPainter(topping: CanvasToppingItem): Painter =
+private fun rememberToppingPainter(topping: CanvasToppingItem): AsyncImagePainter =
     rememberAsyncImagePainter(model = topping.editedImagePath ?: topping.imageUrl)
 
 /**
