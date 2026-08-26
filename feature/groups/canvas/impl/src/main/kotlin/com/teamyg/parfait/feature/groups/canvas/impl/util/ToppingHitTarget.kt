@@ -79,3 +79,17 @@ data class ToppingHitTarget(
         private const val FULL_TURN_DEGREES = 360.0
     }
 }
+
+/**
+ * 겹친 것들 중 [xPx]·[yPx] 를 처음 받는 대상. 위 토핑의 투명한 자리는 통과해 아래가 잡힌다.
+ *
+ * @param entries 겹침 순서가 **아래에서 위**인 목록. 그리는 순서 그대로 넘기면 된다
+ */
+fun <T> pickToppingHit(
+    entries: List<Pair<T, ToppingHitTarget>>,
+    xPx: Float,
+    yPx: Float,
+): T? = entries
+    .asReversed()
+    .firstOrNull { (_, target) -> target.containsPoint(xPx, yPx) }
+    ?.first

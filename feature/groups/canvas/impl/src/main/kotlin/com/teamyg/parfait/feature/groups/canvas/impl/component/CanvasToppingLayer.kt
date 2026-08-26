@@ -46,9 +46,16 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
  * [toppings] 는 그리는 순서대로 받는다(positionZ 오름차순). 뒤에 오는 것이 위에 덮인다.
  *
  * Spotlight(C-106): [spotlightedToppingId] 가 있으면 그 토핑만 목록 순서를 벗어나 맨 위로
- * 옮기고, 그 바로 아래에 나머지 전체를 덮는 Dim 레이어를 끼워 넣는다 — 우선순위는
- * "Spotlight 토핑 → Dim 레이어 → 나머지 토핑 → 배경" 순이다(배경은 이 레이어 바깥,
- * 이 레이어를 감싸는 YGCanvas 가 그린다).
+ * 옮기고, 그 바로 아래에 나머지 전체를 덮는 Dim 레이어를 끼워 넣는다. "Spotlight 토핑 →
+ * Dim 레이어 → 나머지 토핑" 은 **그리는 순서일 뿐 클릭 경로가 아니다** — 딤은 클릭을 받지
+ * 않고, 판정은 전면에 깔린 입력 레이어가 혼자 한다.
+ *
+ * **포인터 계약**: 이 레이어가 캔버스 영역의 포인터를 독점한다. 어떤 토핑에도 맞지 않는
+ * 탭이어도 이벤트는 여기서 소비되고 아래로 흐르지 않는다. 앞으로 캔버스 아래쪽에 제스처를
+ * 붙이려면 이 레이어를 거쳐야 한다 — 그냥 달면 조용히 죽는다.
+ *
+ * @param hitTestEnabled 끄면 판정도 마스크 로딩도 달지 않는다. 클릭을 쓰지 않는 화면이
+ *   쓰지도 않을 디코딩과 보이지 않는 이벤트 싱크를 떠안지 않게 하는 스위치다
  */
 @Composable
 internal fun CanvasToppingLayer(
