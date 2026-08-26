@@ -394,6 +394,9 @@ private val CanvasToppingItem.drawnModel: String
 
 /**
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
+ *
+ * 마스크는 판정에 실제로 쓰는 내 토핑만 요청한다. 남의 토핑은 탭 대상도 드래그 대상도 아니고
+ * 그리는 데는 painter 만 있으면 되므로, 마스크가 없어도 화면이 달라지지 않는다.
  */
 @Composable
 private fun rememberBGEditHitEntries(
@@ -401,7 +404,9 @@ private fun rememberBGEditHitEntries(
     canvasWidth: Dp,
     canvasHeight: Dp,
 ): List<BGEditHitEntry> {
-    val masks = rememberToppingAlphaMasks(toppings.map { it.drawnModel })
+    val masks = rememberToppingAlphaMasks(
+        toppings.filter { it.isMine }.map { it.drawnModel },
+    )
     val density = LocalDensity.current
 
     return toppings.map { topping ->
