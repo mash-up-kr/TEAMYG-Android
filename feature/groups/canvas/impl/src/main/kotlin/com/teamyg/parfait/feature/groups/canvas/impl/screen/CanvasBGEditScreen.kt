@@ -51,6 +51,8 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingDragInput
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
@@ -180,6 +182,25 @@ internal fun CanvasBGEditScreen(
                                 onClick = { onClickTopping(entry.topping) },
                             )
                         }
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .toppingTapInput(
+                                    entries = { myEntries.map { it.topping to it.target } },
+                                    keyOf = { it.parfaitImageId },
+                                    onHit = onClickTopping,
+                                    onMiss = onClickDeselectTopping,
+                                ).toppingDragInput(
+                                    targetAt = { selectedEntry?.target },
+                                    onDrag = { amount ->
+                                        onToppingMoveDrag(
+                                            amount.x / canvasWidthPx,
+                                            amount.y / canvasHeightPx,
+                                        )
+                                    },
+                                ),
+                        )
 
                         selectedEntry?.let { entry ->
                             ToppingCornerButtons(
