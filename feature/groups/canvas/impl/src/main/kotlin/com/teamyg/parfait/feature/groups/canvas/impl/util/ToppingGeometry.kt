@@ -38,6 +38,20 @@ fun toppingCenter(
     y = canvasHeight * positionY,
 )
 
+/**
+ * 긴 변이 [longSide]가 되도록 원본 비율([aspectRatio] = 가로÷세로)을 편 크기.
+ *
+ * 비율을 아직 모르면(0 이하) 정사각으로 둔다 — 그림이 뜨기 전에 크기를 지어내면 뜬 뒤에 튄다.
+ */
+fun toppingImageSize(
+    longSide: Dp,
+    aspectRatio: Float,
+): DpSize = when {
+    aspectRatio <= 0f -> DpSize(longSide, longSide)
+    aspectRatio >= 1f -> DpSize(longSide, longSide / aspectRatio)
+    else -> DpSize(longSide * aspectRatio, longSide)
+}
+
 private val STROKE_MARGIN_HORIZONTAL = SizeTokens.Size8.getDp()
 private val STROKE_MARGIN_VERTICAL = SizeTokens.Size10.getDp()
 
