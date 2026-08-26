@@ -18,7 +18,7 @@ internal const val DUPLICATE_IOU_PERMYRIAD = 9_000L
  * 후보가 넘어야 하는 "실제로 칠해진 픽셀 수".
  *
  * 값의 근거와 이 지표를 고른 이유는
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
+ * `parfait/specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
  */
 internal fun coverageFloorPixels(canvasArea: Long): Long =
     maxOf(MIN_SUBJECT_COVERAGE_PIXELS, canvasArea * MIN_SUBJECT_COVERAGE_PERMYRIAD / 10_000L)
@@ -58,7 +58,7 @@ private fun SegmentationCandidate.isLargeEnough(): Boolean {
  *
  * ⚠️ **포함 관계는 병합하지 않는다.** 교집합을 작은 쪽 면적으로 나누는 지표로 바꾸면 사람이 든
  * 물건이 지워진다. 그 판단의 근거는
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
+ * `parfait/specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
  */
 private fun List<SegmentationCandidate>.dropNearDuplicates(): List<SegmentationCandidate> {
     val kept = mutableListOf<SegmentationCandidate>()
