@@ -111,7 +111,10 @@ private suspend fun decodeToppingAlphaMask(
     return mask
 }
 
-/** 메모리 압박이나 테스트에서 캐시를 비우는 수단. */
+/**
+ * 메모리 압박이나 테스트에서 캐시를 비우는 수단. 아직 부르는 곳을 두지 않았다 — 항목 수에
+ * 상한이 있어 누수가 아니라서 호출부 신설을 미뤘다.
+ */
 fun clearToppingAlphaMasks() {
     synchronized(maskCache) { maskCache.clear() }
 }

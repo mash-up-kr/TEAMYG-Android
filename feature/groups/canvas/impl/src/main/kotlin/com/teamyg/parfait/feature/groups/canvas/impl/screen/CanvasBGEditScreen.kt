@@ -432,7 +432,8 @@ private fun rememberBGEditHitEntries(
                 positionY = topping.positionY,
             )
 
-            // 캔버스 메인과 같은 조건이다 — 그림이 뜨기 전에는 테두리를 그리지도, 판정에 넣지도 않는다
+            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
+            // 판정이 외형과 어긋난다
             val drawnBorderWidth = topping.borderLayers
                 .firstOrNull()
                 ?.takeIf { painterState is AsyncImagePainter.State.Success }
