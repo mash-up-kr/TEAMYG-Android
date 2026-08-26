@@ -3,8 +3,8 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -16,12 +16,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingClickThrottle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.pickToppingHit
 
 private const val MISS_KEY = "miss"
 
 /**
- * 겹친 것부터 훑어 처음 맞는 것을 고른다. 아무것도 맞지 않으면 [onMiss] 다 —
- * 이벤트를 아래로 흘려보내지는 않는다. 레이어가 캔버스 영역의 포인터를 독점한다.
+ * 누른 자리로 대상을 정하고, 떼는 것이 확정되면 그 대상으로 [onHit] 을 부른다. 아무것도 맞지
+ * 않으면 [onMiss] 다 — 이벤트를 아래로 흘려보내지는 않는다. 레이어가 캔버스 영역의 포인터를
+ * 독점한다.
  *
  * 핸들러를 [remember] 로 붙잡는 이유는 포인터 입력이 핸들러를 참조로 비교하기 때문이다.
  * 매번 새 람다를 넘기면 진행 중인 제스처가 리셋된다.
@@ -44,13 +46,20 @@ internal fun <T> Modifier.toppingTapInput(
 
     val handler = remember {
         PointerInputEventHandler {
-            detectTapGestures { offset ->
-                val hit = latestEntries()
-                    .asReversed()
-                    .firstOrNull { (_, target) -> target.containsPoint(offset.x, offset.y) }
+            awaitEachGesture {
+                // 같은 노드에 달린 드래그 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
+                val down = awaitFirstDown(requireUnconsumed = false)
+                // 대상은 누른 자리로 고정한다. 뗀 자리를 보면 슬롭만큼 미끄러진 곳의 다른 토핑이
+                // 잡히거나, 투명한 자리로 떨어져 미스 분기가 발동한다
+                val hit = pickToppingHit(latestEntries(), down.position.x, down.position.y)
+                down.consume()
 
-                if (throttle.tryPass(hit?.let { latestKeyOf(it.first) } ?: MISS_KEY)) {
-                    hit?.let { latestOnHit(it.first) } ?: latestOnMiss()
+                // up 없이 끝나면(드래그가 이동을 소비했거나 손가락이 벗어남) 아무 콜백도 부르지 않는다
+                val up = waitForUpOrCancellation() ?: return@awaitEachGesture
+                up.consume()
+
+                if (throttle.tryPass(hit?.let(latestKeyOf) ?: MISS_KEY)) {
+                    hit?.let(latestOnHit) ?: latestOnMiss()
                 }
             }
         }
