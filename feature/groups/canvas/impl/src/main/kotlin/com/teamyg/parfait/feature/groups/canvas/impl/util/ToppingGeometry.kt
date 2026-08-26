@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingCorners
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -60,14 +61,6 @@ private val BUTTON_VISUAL_RADIUS = 14.dp
 
 /** 모서리 버튼의 가장자리와 스트로크 사이에 실제로 보여야 하는 간격. */
 private val BUTTON_CORNER_GAP = 7.dp
-
-/** 어떤 사각형(토핑 자신 또는 그 스트로크)의 회전이 반영된 네 꼭짓점. 캔버스 기준 절대 좌표. */
-data class ToppingCorners(
-    val topLeft: DpOffset,
-    val topRight: DpOffset,
-    val bottomLeft: DpOffset,
-    val bottomRight: DpOffset,
-)
 
 /**
  * 선택 시 보이는 스트로크·버튼이 놓이는 네 꼭짓점. 토핑의 실제 가장자리에 여백
