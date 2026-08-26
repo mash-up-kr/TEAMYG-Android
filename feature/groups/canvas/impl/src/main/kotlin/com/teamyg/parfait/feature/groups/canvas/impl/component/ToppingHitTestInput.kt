@@ -63,7 +63,8 @@ internal fun <T> Modifier.toppingTapInput(
  * 터치 다운 지점이 [targetAt] 의 실루엣 안일 때만 드래그를 소비한다.
  *
  * 판정은 down 좌표로 하고 이동은 슬롭을 넘긴 뒤부터 친다 — 슬롭을 버리면 탭이 미세 이동만으로
- * 이동으로 처리된다.
+ * 이동으로 처리된다. 슬롭을 넘긴 그 프레임의 이동량도 첫 델타로 흘려보낸다. 버리면 제스처마다
+ * 한 프레임씩 손가락 뒤로 처지고 오차가 쌓인다.
  */
 @Composable
 internal fun Modifier.toppingDragInput(
@@ -82,13 +83,17 @@ internal fun Modifier.toppingDragInput(
                     return@awaitEachGesture
                 }
 
-                val afterSlop = awaitTouchSlopOrCancellation(down.id) { change, _ ->
+                var overSlop = Offset.Zero
+                val afterSlop = awaitTouchSlopOrCancellation(down.id) { change, over ->
                     change.consume()
+                    overSlop = over
                 } ?: return@awaitEachGesture
 
+                latestOnDrag(overSlop)
                 drag(afterSlop.id) { change ->
-                    change.consume()
+                    // 소비한 change 의 positionChange() 는 Offset.Zero 다. 읽고 나서 소비한다
                     latestOnDrag(change.positionChange())
+                    change.consume()
                 }
             }
         }
