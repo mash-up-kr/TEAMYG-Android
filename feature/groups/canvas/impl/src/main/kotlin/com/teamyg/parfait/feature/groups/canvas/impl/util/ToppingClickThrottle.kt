@@ -2,9 +2,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import android.os.SystemClock
 
-/** 판정을 레이어로 옮기면서 기존 연타 방어를 함께 옮겨 온다. */
-private const val DEFAULT_WINDOW_MILLIS = 300L
-
 /**
  * 대상이 바뀌면 즉시 통과시키고, 같은 대상을 다시 누를 때만 창을 적용한다.
  *
@@ -24,5 +21,10 @@ class ToppingClickThrottle(
         lastKey = key
         lastAt = at
         return true
+    }
+
+    companion object {
+        /** 판정을 레이어로 옮기면서 기존 연타 방어를 함께 옮겨 온다. */
+        private const val DEFAULT_WINDOW_MILLIS = 300L
     }
 }
