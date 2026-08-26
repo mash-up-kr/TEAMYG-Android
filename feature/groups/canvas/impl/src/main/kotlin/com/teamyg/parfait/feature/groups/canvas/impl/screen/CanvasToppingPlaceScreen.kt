@@ -150,6 +150,7 @@ internal fun CanvasToppingPlaceScreen(
                     spotlightedToppingId = null,
                     onClickTopping = {},
                     onClickSpotlightDim = {},
+                    hitTestEnabled = false,
                     modifier = Modifier.fillMaxSize(),
                 )
 

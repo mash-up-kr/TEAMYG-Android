@@ -21,10 +21,8 @@ data class PlacedToppingVO(
 
 /**
  * @param nickname 전역 닉네임이 아니라 그룹 안에서 쓰는 이름이다.
- * @param isMine 이 토핑을 나 자신이 놓았는지 서버가 직접 알려주는 값이다.
  */
 data class ToppingPlacerVO(
     val groupMemberId: GroupMemberId,
     val nickname: GroupNickname,
-    val isMine: Boolean,
 )

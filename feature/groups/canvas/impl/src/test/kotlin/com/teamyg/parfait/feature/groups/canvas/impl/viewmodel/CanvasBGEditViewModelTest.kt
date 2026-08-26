@@ -39,7 +39,6 @@ import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -60,7 +59,7 @@ import kotlin.test.assertTrue
 private const val GROUP_ID = 1L
 private const val PARFAIT_ID = 100L
 
-private const val MY_GROUP_MEMBER_ID = 11L
+private const val PLACER_GROUP_MEMBER_ID = 11L
 private const val OTHER_GROUP_MEMBER_ID = 22L
 
 private const val LOCAL_IMAGE_URI = "content://media/external/images/media/42"
@@ -608,8 +607,13 @@ class CanvasBGEditViewModelTest {
     private fun canvas(
         background: CanvasBackground? = null,
         toppings: List<CanvasToppingVO> = listOf(
-            topping(parfaitImageId = 1L, groupMemberId = MY_GROUP_MEMBER_ID, positionZ = 1),
-            topping(parfaitImageId = OTHER_PARFAIT_IMAGE_ID, groupMemberId = OTHER_GROUP_MEMBER_ID, positionZ = 2),
+            topping(parfaitImageId = 1L, groupMemberId = PLACER_GROUP_MEMBER_ID, isMine = true, positionZ = 1),
+            topping(
+                parfaitImageId = OTHER_PARFAIT_IMAGE_ID,
+                groupMemberId = OTHER_GROUP_MEMBER_ID,
+                isMine = false,
+                positionZ = 2,
+            ),
         ),
     ) = CanvasVO(
         parfaitId = ParfaitId(PARFAIT_ID),
@@ -623,7 +627,8 @@ class CanvasBGEditViewModelTest {
 
     private fun topping(
         parfaitImageId: Long = 1L,
-        groupMemberId: Long = MY_GROUP_MEMBER_ID,
+        groupMemberId: Long = PLACER_GROUP_MEMBER_ID,
+        isMine: Boolean = true,
         positionZ: Int = 1,
         border: ToppingBorder = ToppingBorder.None,
     ) = CanvasToppingVO(
@@ -641,8 +646,8 @@ class CanvasBGEditViewModelTest {
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(groupMemberId),
             nickname = GroupNickname("올린이"),
-            isMine = groupMemberId == MY_GROUP_MEMBER_ID,
         ),
+        isMine = isMine,
         createdAt = LocalDateTime(2026, 8, 19, 9, 0),
     )
 

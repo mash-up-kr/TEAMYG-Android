@@ -63,9 +63,6 @@ internal fun PlaceParfaitImageResponse.toPlacedToppingVO(): PlacedToppingVO = Pl
 private fun PlaceParfaitImagePlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
     groupMemberId = GroupMemberId(groupMemberId),
     nickname = GroupNickname(nickname),
-    // 이 응답은 방금 내가 직접 부른 배치 호출의 결과라 항상 나 자신이다 — 이 API 는
-    // ownerType 을 안 준다(`GetTodayParfaitResponse.PlacedByResponse`와 달리)
-    isMine = true,
 )
 
 internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO = UpdatedToppingVO(

@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,21 +31,28 @@ import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
-import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingDragInput
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
@@ -57,8 +64,11 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
+import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBackgroundPaletteColors
@@ -138,9 +148,20 @@ internal fun CanvasBGEditScreen(
                         val canvasWidthPx = with(density) { canvasWidth.toPx() }
                         val canvasHeightPx = with(density) { canvasHeight.toPx() }
 
-                        uiState.toppings.filterNot { it.isMine }.forEach { topping ->
+                        val entries = rememberBGEditHitEntries(
+                            toppings = uiState.toppings,
+                            canvasWidth = canvasWidth,
+                            canvasHeight = canvasHeight,
+                        )
+                        val myEntries = entries.filter { it.topping.isMine }
+                        val selectedEntry = myEntries.firstOrNull {
+                            it.topping.parfaitImageId == uiState.selectedToppingId
+                        }
+
+                        // 남의 토핑
+                        entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
-                                topping = topping,
+                                entry = entry,
                                 canvasWidth = canvasWidth,
                                 canvasHeight = canvasHeight,
                                 onClick = onClickDeselectTopping,
@@ -150,35 +171,41 @@ internal fun CanvasBGEditScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(YGAtomicColors.Transparency.Black25)
-                                .clickableYGNoRipple(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    onClick = onClickDeselectTopping,
-                                ),
+                                .background(YGAtomicColors.Transparency.Black25),
                         )
 
-                        uiState.toppings.filter { it.isMine }.forEach { topping ->
+                        // 내 토핑
+                        myEntries.forEach { entry ->
                             CanvasToppingImage(
-                                topping = topping,
+                                entry = entry,
                                 canvasWidth = canvasWidth,
                                 canvasHeight = canvasHeight,
-                                onClick = { onClickTopping(topping) },
-                                onDrag = if (topping.parfaitImageId == uiState.selectedToppingId) {
-                                    { dragAmount ->
-                                        onToppingMoveDrag(
-                                            dragAmount.x / canvasWidthPx,
-                                            dragAmount.y / canvasHeightPx,
-                                        )
-                                    }
-                                } else {
-                                    null
-                                },
+                                onClick = { onClickTopping(entry.topping) },
                             )
                         }
 
-                        uiState.toppings.find { it.parfaitImageId == uiState.selectedToppingId }?.let { selected ->
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .toppingTapInput(
+                                    entries = { myEntries.map { it.topping to it.target } },
+                                    keyOf = { it.parfaitImageId },
+                                    onHit = onClickTopping,
+                                    onMiss = onClickDeselectTopping,
+                                ).toppingDragInput(
+                                    targetAt = { selectedEntry?.target },
+                                    onDrag = { amount ->
+                                        onToppingMoveDrag(
+                                            amount.x / canvasWidthPx,
+                                            amount.y / canvasHeightPx,
+                                        )
+                                    },
+                                ),
+                        )
+
+                        selectedEntry?.let { entry ->
                             ToppingCornerButtons(
-                                topping = selected,
+                                entry = entry,
                                 canvasWidth = canvasWidth,
                                 canvasHeight = canvasHeight,
                                 onClickDelete = onClickDeleteTopping,
@@ -355,25 +382,107 @@ private fun PaletteColorCircle(
     }
 }
 
+private data class BGEditHitEntry(
+    val topping: CanvasToppingItem,
+    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
+    val painter: AsyncImagePainter,
+    val target: ToppingHitTarget,
+)
+
+/** 배경 편집이 그리는 대상. 편집본이 있으면 그쪽이고, 그 파일은 투명 여백이 잘려 있다. */
+private val CanvasToppingItem.drawnModel: String
+    get() = editedImagePath ?: imageUrl
+
+/**
+ * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
+ *
+ * 마스크는 판정에 실제로 쓰는 내 토핑만 요청한다. 남의 토핑은 탭 대상도 드래그 대상도 아니고
+ * 그리는 데는 painter 만 있으면 되므로, 마스크가 없어도 화면이 달라지지 않는다.
+ */
+@Composable
+private fun rememberBGEditHitEntries(
+    toppings: List<CanvasToppingItem>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+): List<BGEditHitEntry> {
+    val masks = rememberToppingAlphaMasks(
+        toppings.filter { it.isMine }.map { it.drawnModel },
+    )
+    val density = LocalDensity.current
+
+    return toppings.map { topping ->
+        key(topping.parfaitImageId) {
+            val painter = rememberAsyncImagePainter(model = topping.drawnModel)
+            val painterState by painter.state.collectAsState()
+            val intrinsicSize = painter.intrinsicSize
+
+            val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
+                intrinsicSize.width / intrinsicSize.height
+            } else {
+                0f
+            }
+
+            val imageSize = toppingImageSize(
+                longSide = toppingLongSide(canvasWidth, topping.scale),
+                aspectRatio = aspectRatio,
+            )
+            val center = toppingCenter(
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                positionX = topping.positionX,
+                positionY = topping.positionY,
+            )
+
+            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
+            // 판정이 외형과 어긋난다
+            val drawnBorderWidth = topping.borderLayers
+                .firstOrNull()
+                ?.takeIf { painterState is AsyncImagePainter.State.Success }
+                ?.widthDp
+                ?: 0f
+
+            BGEditHitEntry(
+                topping = topping,
+                painter = painter,
+                target = with(density) {
+                    ToppingHitTarget(
+                        centerXPx = center.x.toPx(),
+                        centerYPx = center.y.toPx(),
+                        imageWidthPx = imageSize.width.toPx(),
+                        imageHeightPx = imageSize.height.toPx(),
+                        rotationDegrees = topping.rotationDegrees,
+                        borderWidthPx = drawnBorderWidth.dp.toPx(),
+                        mask = masks[topping.drawnModel],
+                    )
+                },
+            )
+        }
+    }
+}
+
 /**
  * 캔버스 미리보기 박스 안, 저장된 배치([CanvasToppingItem.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
  * [onClick]의 실제 동작(선택/선택 해제)은 호출하는 쪽에서 소유 여부에 따라 다르게 넘겨준다.
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
- * 별도로 그린다. [onDrag]가 있으면(선택된 토핑) 드래그한 만큼 위치를 옮긴다.
+ * 별도로 그린다.
  */
 @Composable
 private fun CanvasToppingImage(
-    topping: CanvasToppingItem,
+    entry: BGEditHitEntry,
     canvasWidth: Dp,
     canvasHeight: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onDrag: ((Offset) -> Unit)? = null,
 ) {
-    val painter = rememberToppingPainter(topping)
-    val size = rememberToppingSize(painter = painter, longSide = toppingLongSide(canvasWidth, topping.scale))
+    val density = LocalDensity.current
+    val size = with(density) {
+        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
+    }
+    val painterState by entry.painter.state.collectAsState()
+    val border = entry.topping.borderLayers.firstOrNull()
+    val description = stringResource(R.string.canvas_topping_content_description)
 
     Box(
         modifier = modifier
@@ -381,58 +490,30 @@ private fun CanvasToppingImage(
                 toppingCenter(
                     canvasWidth = canvasWidth,
                     canvasHeight = canvasHeight,
-                    positionX = topping.positionX,
-                    positionY = topping.positionY,
+                    positionX = entry.topping.positionX,
+                    positionY = entry.topping.positionY,
                 ),
             ).requiredSize(size)
-            .clickableYGNoRipple(
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onClick,
-            ).then(
-                if (onDrag != null) Modifier.dragBy(topping.parfaitImageId, onDrag) else Modifier,
-            ).graphicsLayer(rotationZ = topping.rotationDegrees),
+            .graphicsLayer(rotationZ = entry.topping.rotationDegrees)
+            // 판정은 입력 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = description
+                onClick {
+                    onClick()
+                    true
+                }
+            },
     ) {
-        // 서버는 테두리를 픽셀에 굽지 않고 값으로 준다
-        // 마지막 겹이 가장 바깥쪽이라 화면에 보이는 테두리다
-        val border = topping.borderLayers.lastOrNull()
         YGToppingCutoutImage(
-            painter = painter,
-            borderColor = border?.let { layer -> Color(layer.colorArgb) },
+            painter = entry.painter,
+            // 로딩·실패 상태에서 찍으면 플레이스홀더 실루엣이 테두리로 보인다
+            borderColor = border
+                ?.let { Color(it.colorArgb) }
+                ?.takeIf { painterState is AsyncImagePainter.State.Success },
             borderWidth = (border?.widthDp ?: 0f).dp,
             modifier = Modifier.fillMaxSize(),
         )
-    }
-}
-
-@Composable
-private fun rememberToppingPainter(topping: CanvasToppingItem): Painter =
-    rememberAsyncImagePainter(model = topping.editedImagePath ?: topping.imageUrl)
-
-/**
- * 긴 변이 [longSide]가 되도록 원본 비율을 편 크기. 짧은 변만 비율대로 줄어든다.
- *
- * [ContentScale.Fit] 이 정사각 박스에서 알아서 해 주는 일을 굳이 재는 이유는, 선택 스트로크와
- * 모서리 버튼이 **그림에 붙어야** 해서다 — 정사각 박스를 그대로 두르면 투명한 여백까지 감싼다.
- *
- * 아직 이미지를 못 받아 원본 비율을 모르는 동안은 정사각으로 둔다.
- */
-@Composable
-private fun rememberToppingSize(
-    painter: Painter,
-    longSide: Dp,
-): DpSize {
-    val intrinsicSize = painter.intrinsicSize
-
-    return remember(intrinsicSize, longSide) {
-        if (intrinsicSize.isSpecified && intrinsicSize.width > 0f && intrinsicSize.height > 0f) {
-            if (intrinsicSize.width >= intrinsicSize.height) {
-                DpSize(longSide, longSide * (intrinsicSize.height / intrinsicSize.width))
-            } else {
-                DpSize(longSide * (intrinsicSize.width / intrinsicSize.height), longSide)
-            }
-        } else {
-            DpSize(longSide, longSide)
-        }
     }
 }
 
@@ -442,7 +523,7 @@ private fun rememberToppingSize(
  */
 @Composable
 private fun ToppingCornerButtons(
-    topping: CanvasToppingItem,
+    entry: BGEditHitEntry,
     canvasWidth: Dp,
     canvasHeight: Dp,
     onClickDelete: () -> Unit,
@@ -451,29 +532,27 @@ private fun ToppingCornerButtons(
     onRotateDrag: (Offset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val painter = rememberToppingPainter(topping)
-    // 그림 크기에 배율이 이미 들어 있다 — 여기서 다시 곱하면 스트로크만 두 배로 커진다
-    val sizeAfterScale = rememberToppingSize(
-        painter = painter,
-        longSide = toppingLongSide(canvasWidth, topping.scale),
-    )
+    val density = LocalDensity.current
+    val sizeAfterScale = with(density) {
+        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
+    }
     val center = toppingCenter(
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,
-        positionX = topping.positionX,
-        positionY = topping.positionY,
+        positionX = entry.topping.positionX,
+        positionY = entry.topping.positionY,
     )
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
-        rotationDegrees = topping.rotationDegrees,
+        rotationDegrees = entry.topping.rotationDegrees,
     )
 
     Box(modifier = modifier) {
         ToppingSelectionStroke(
             center = center,
             sizeAfterScale = sizeAfterScale,
-            rotationDegrees = topping.rotationDegrees,
+            rotationDegrees = entry.topping.rotationDegrees,
         )
         YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_close,
@@ -486,7 +565,7 @@ private fun ToppingCornerButtons(
             iconRes = DesignSystemR.drawable.ic_scale,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.topRight,
-            key = topping.parfaitImageId,
+            key = entry.topping.parfaitImageId,
             onDrag = onResizeDrag,
         )
         YGCircleButton(
@@ -500,7 +579,7 @@ private fun ToppingCornerButtons(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.bottomRight,
-            key = topping.parfaitImageId,
+            key = entry.topping.parfaitImageId,
             onDrag = onRotateDrag,
         )
     }

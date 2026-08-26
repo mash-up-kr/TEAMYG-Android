@@ -1,0 +1,193 @@
+package com.teamyg.parfait.feature.groups.canvas.impl.util
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/** 왼쪽 절반만 불투명한 4x4 마스크. 좌우 비대칭이라 좌표 부호 실수가 드러난다. */
+private fun leftHalfMask(): ToppingAlphaMask =
+    ToppingAlphaMask.of(width = 4, height = 4) { x, _ -> if (x < 2) 255 else 0 }
+
+/**
+ * 왼쪽 한 칸(0번 열)의 가운데 두 행만 불투명한 4x4 마스크. 그림 사각형 왼쪽 밖을 짚었을 때
+ * 여덟 방향 되밀기가 모두 빗나가도록 위·아래 행을 비워 뒀다.
+ */
+private fun leftEdgeColumnMask(): ToppingAlphaMask =
+    ToppingAlphaMask.of(width = 4, height = 4) { x, y -> if (x == 0 && y in 1..2) 255 else 0 }
+
+/** 위 마스크를 90도 돌린 것과 같다 — 위쪽 밖 판정을 같은 방식으로 본다. */
+private fun topEdgeRowMask(): ToppingAlphaMask =
+    ToppingAlphaMask.of(width = 4, height = 4) { x, y -> if (y == 0 && x in 1..2) 255 else 0 }
+
+private fun target(
+    rotationDegrees: Float = 0f,
+    borderWidthPx: Float = 0f,
+    mask: ToppingAlphaMask? = leftHalfMask(),
+): ToppingHitTarget = ToppingHitTarget(
+    centerXPx = 100f,
+    centerYPx = 100f,
+    imageWidthPx = 40f,
+    imageHeightPx = 40f,
+    rotationDegrees = rotationDegrees,
+    borderWidthPx = borderWidthPx,
+    mask = mask,
+)
+
+class ToppingHitTestTest {
+    @Test
+    fun containsPoint_opaqueSide_isHit() {
+        // Given·When 왼쪽 절반(불투명)의 한가운데
+        // Then
+        assertTrue(target().containsPoint(90f, 100f))
+    }
+
+    @Test
+    fun containsPoint_transparentSide_isMiss() {
+        // Given·When 오른쪽 절반(투명)의 한가운데 — 그림 사각형 안이지만 안 눌려야 한다
+        // Then
+        assertFalse(target().containsPoint(110f, 100f))
+    }
+
+    @Test
+    fun containsPoint_outsideImageRect_isMiss() {
+        // Given·When 그림 사각형 밖
+        // Then
+        assertFalse(target().containsPoint(100f, 130f))
+    }
+
+    @Test
+    fun containsPoint_rotated180_opaqueSideMovesToRight() {
+        // Given 180도 돌리면 불투명한 왼쪽 절반이 오른쪽으로 온다
+        val rotated = target(rotationDegrees = 180f)
+
+        // Then
+        assertTrue(rotated.containsPoint(110f, 100f))
+        assertFalse(rotated.containsPoint(90f, 100f))
+    }
+
+    @Test
+    fun containsPoint_rotated90_opaqueSideMovesToTop() {
+        // Given 90도 시계방향 회전. containsPoint는 역변환(반시계방향)을 하므로
+        // 원본의 불투명한 왼쪽이 위로 온다.
+        // 계산: rotationDegrees=90 → radians=-π/2
+        // cos(-π/2)=0, sin(-π/2)=-1
+        // (100,90): dx=0, dy=-10 → localX=0-(-10)*(-1)=-10
+        // → maskX=((-10+20)/10)=1 < 2 → 불투명
+        // (100,110): dx=0, dy=10 → localX=0-10*(-1)=10
+        // → maskX=((10+20)/10)=3 >= 2 → 투명
+        val rotated = target(rotationDegrees = 90f)
+
+        // Then 불투명한 쪽이 위로 이동했다
+        assertTrue(rotated.containsPoint(100f, 90f))
+        assertFalse(rotated.containsPoint(100f, 110f))
+    }
+
+    @Test
+    fun containsPoint_withBorder_extendsBeyondSilhouette() {
+        // Given 테두리 8px 인 토핑. 투명한 오른쪽이지만 불투명 경계에서 8px 안쪽이다
+        val bordered = target(borderWidthPx = 8f)
+
+        // Then 테두리가 있으면 히트, 없으면 미스다
+        assertTrue(bordered.containsPoint(104f, 100f))
+        assertFalse(target(borderWidthPx = 0f).containsPoint(104f, 100f))
+    }
+
+    @Test
+    fun containsPoint_withBorder_farTransparentStillMiss() {
+        // Given 테두리 두께보다 훨씬 멀리 떨어진 투명한 자리
+        val bordered = target(borderWidthPx = 4f)
+
+        // Then
+        assertFalse(bordered.containsPoint(118f, 100f))
+    }
+
+    @Test
+    fun containsPoint_nullMask_fallsBackToRectangle() {
+        // Given 마스크가 아직 없는 토핑
+        val noMask = target(mask = null)
+
+        // Then 그림 사각형 안이면 투명한 자리여도 히트다 — 현행 판정과 같다
+        assertTrue(noMask.containsPoint(110f, 100f))
+        assertFalse(noMask.containsPoint(100f, 130f))
+    }
+
+    @Test
+    fun containsPoint_emptyMask_fallsBackToRectangle() {
+        // Given 불투명 픽셀이 하나도 없는 마스크 — 부재로 봐야 영영 안 눌리는 일이 없다
+        val empty = target(mask = ToppingAlphaMask.of(4, 4) { _, _ -> 0 })
+
+        // Then
+        assertTrue(empty.containsPoint(110f, 100f))
+    }
+
+    @Test
+    fun containsPoint_leftOfImageRect_isMissEvenWhenLeftColumnIsOpaque() {
+        // Given 테두리 15px 인 토핑. 0번 열만 불투명해서 그림 왼쪽 가장자리 바로 밖을 짚으면
+        // 마스크 좌표가 -1 칸(x=-0.4)으로 나온다 — 마스크 밖이라 투명으로 답해야 한다.
+        val bordered = target(borderWidthPx = 15f, mask = leftEdgeColumnMask())
+
+        // Then 여덟 방향 되밀기도 전부 빗나가므로 안 눌린다
+        assertFalse(bordered.containsPoint(76f, 100f))
+    }
+
+    @Test
+    fun containsPoint_aboveImageRect_isMissEvenWhenTopRowIsOpaque() {
+        // Given 위쪽 대칭 사례 — 0번 행만 불투명하고 그림 위 가장자리 바로 밖을 짚는다
+        val bordered = target(borderWidthPx = 15f, mask = topEdgeRowMask())
+
+        // Then
+        assertFalse(bordered.containsPoint(100f, 76f))
+    }
+}
+
+/** 왼쪽 절반만 불투명한 40x40 그림. 마스크 한 칸이 10px 이라 자리마다 알파가 갈린다. */
+private fun targetCenteredAt(centerXPx: Float): ToppingHitTarget = ToppingHitTarget(
+    centerXPx = centerXPx,
+    centerYPx = 100f,
+    imageWidthPx = 40f,
+    imageHeightPx = 40f,
+    rotationDegrees = 0f,
+    borderWidthPx = 0f,
+    mask = leftHalfMask(),
+)
+
+class PickToppingHitTest {
+    @Test
+    fun pickToppingHit_topOpaque_picksTop() {
+        // Given 같은 자리에 겹친 둘. 목록은 아래에서 위 순서다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(100f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // When 둘 다 불투명한 자리를 누른다
+        // Then 위 것이 잡힌다
+        assertEquals("top", pickToppingHit(entries, 90f, 100f))
+    }
+
+    @Test
+    fun pickToppingHit_topTransparent_fallsThroughToBottom() {
+        // Given 위 것의 투명한 오른쪽 절반에, 아래 것의 불투명한 왼쪽 절반이 깔려 있다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(120f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // Then 위를 통과해 아래가 잡힌다
+        assertEquals("bottom", pickToppingHit(entries, 110f, 100f))
+    }
+
+    @Test
+    fun pickToppingHit_bothTransparent_picksNothing() {
+        // Given 둘 다 그림 사각형 안이지만 그 자리가 투명하다
+        val entries = listOf(
+            "bottom" to targetCenteredAt(100f),
+            "top" to targetCenteredAt(100f),
+        )
+
+        // Then
+        assertNull(pickToppingHit(entries, 110f, 100f))
+    }
+}

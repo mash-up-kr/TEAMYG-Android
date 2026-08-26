@@ -14,7 +14,7 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 ```json
 {
   "dev": {
-    "base_url": "http://<개발-서버>:8080",
+    "base_url": "https://<개발-서버-도메인>",
 
     "id_token": "",
     "nonce": "",
@@ -184,17 +184,15 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ---
 
-## 6. ⚠️ 앱에서는 아직 이 서버를 호출할 수 없다
+## 6. `YG_BASE_URL`은 HTTPS 주소를 넣는다
 
-개발 서버는 **평문 HTTP**(`https`가 아니다)인데, 이 앱은 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`도 `networkSecurityConfig`도 **없다.**
+서버는 도메인에 TLS를 붙였고 앞단 리버스 프록시가 그것을 종단한다. 앱은 `AndroidManifest.xml`이 가리키는 `network_security_config.xml`을 따르는데, **릴리즈 빌드는 평문을 막고**(`cleartextTrafficPermitted="false"`) **디버그 빌드만** `debug-overrides`로 평문과 사용자 설치 인증서를 허용한다.
 
-Android 9(API 28)부터 평문 HTTP는 기본 차단이므로, 실제 연동을 시작하면 **모든 요청이 `CLEARTEXT communication not permitted`로 실패한다.**
+⚠️ **프록시를 우회하는 평문 포트 주소를 넣지 말 것.** 디버그 빌드에서는 당장 통하지만 릴리즈에서 `CLEARTEXT communication not permitted`로 전부 실패하고, 서버가 그 포트를 닫으면 디버그도 함께 끊긴다.
 
-이 `.http` 파일들은 IntelliJ가 직접 보내는 것이라 영향받지 않는다 — 앱 코드에서 호출할 때만 문제가 된다. 해결은 둘 중 하나다:
-- 서버에 HTTPS 적용(권장)
-- debug 빌드에 한해 `network_security_config.xml`로 해당 호스트만 cleartext 허용
+이 `.http` 파일들은 IntelliJ가 직접 보내는 것이라 앱의 network security config와 무관하다 — 위 제약은 앱 코드에서 호출할 때만 걸린다.
 
-또 `local.properties`에 `YG_BASE_URL` 키가 **없어서** 앱은 지금 placeholder로 빌드되고 있다. 실제 연동 전에 채워야 한다.
+`local.properties`에 `YG_BASE_URL`이 없으면 앱은 placeholder(`https://TODO.example.com/`)로 빌드된다. 추적되는 `local.default.properties`에는 이 키가 없으므로 클론한 뒤 직접 채워야 한다.
 
 ---
 

@@ -54,6 +54,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CanvasMainViewModelTest {
@@ -419,6 +420,43 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun clickTopping_placedBySomeoneElse_opensSpotlightWithTheAuthorToast() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 남이 올린 토핑 하나가 놓여 있다
+        val othersTopping = topping(positionZ = 1, isMine = false)
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(othersTopping)),
+        )
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그 토핑을 탭한다
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+
+            // Then 강조와 함께 작성자를 알린다
+            assertIs<CanvasMainEffect.ShowSpotlightToast>(awaitItem())
+        }
+        assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+    }
+
+    @Test
+    fun clickTopping_placedByMe_staysInDefault() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 내 것으로 판정한 토핑이 놓여 있다
+        val myTopping = topping(positionZ = 1, isMine = true)
+        coEvery { getTodayParfait(any()) } returns Result.success(
+            canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(myTopping)),
+        )
+        val viewModel = enteredViewModel()
+
+        // When 그 토핑을 탭한다
+        viewModel.processIntent(CanvasMainIntent.OnClickTopping(myTopping))
+        advanceUntilIdle()
+
+        // Then 내 토핑은 Spotlight 대상이 아니다
+        assertNull(viewModel.state.value.spotlightedToppingId)
+    }
+
+    @Test
     fun clickCamera_draftWriteFails_staysOnTheCanvasAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초안을 쓸 수 없는 상태
         coEvery { toppingDraftRepository.start(any(), any(), any()) } throws IOException("no space")
@@ -603,7 +641,10 @@ class CanvasMainViewModelTest {
             toppings = emptyList(),
         )
 
-        fun topping(positionZ: Int) = CanvasToppingVO(
+        fun topping(
+            positionZ: Int,
+            isMine: Boolean = false,
+        ) = CanvasToppingVO(
             parfaitImageId = ParfaitImageId(positionZ.toLong()),
             imageId = ImageId(positionZ.toLong()),
             imageUrl = "https://cdn.example.com/topping-$positionZ.png",
@@ -618,8 +659,8 @@ class CanvasMainViewModelTest {
             placedBy = ToppingPlacerVO(
                 groupMemberId = GroupMemberId(1L),
                 nickname = GroupNickname("연경이"),
-                isMine = false,
             ),
+            isMine = isMine,
             createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )
     }

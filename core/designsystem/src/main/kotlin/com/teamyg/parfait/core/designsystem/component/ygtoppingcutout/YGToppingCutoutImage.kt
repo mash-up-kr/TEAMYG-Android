@@ -22,8 +22,12 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** 누끼 외곽선을 찍는 방향 수. 8 방향이면 대각까지 메워져 이음매가 보이지 않는다 */
-private const val OUTLINE_STAMP_COUNT = 8
+/**
+ * 누끼 외곽선을 찍는 방향 수. 8 방향이면 대각까지 메워져 이음매가 보이지 않는다.
+ *
+ * 터치 판정이 같은 방향으로 되민 점을 읽어 판정 모양을 외형과 맞추므로, 이 값이 정본이다.
+ */
+const val TOPPING_OUTLINE_STAMP_COUNT = 8
 
 private const val FULL_TURN_DEGREES = 360.0
 
@@ -71,8 +75,8 @@ private fun ToppingOutline(
 ) {
     val widthPx = with(LocalDensity.current) { width.toPx() }
 
-    repeat(OUTLINE_STAMP_COUNT) { index ->
-        val radians = Math.toRadians(FULL_TURN_DEGREES / OUTLINE_STAMP_COUNT * index)
+    repeat(TOPPING_OUTLINE_STAMP_COUNT) { index ->
+        val radians = Math.toRadians(FULL_TURN_DEGREES / TOPPING_OUTLINE_STAMP_COUNT * index)
 
         Image(
             painter = painter,

@@ -34,6 +34,7 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -49,6 +50,7 @@ class ParfaitRemoteDataSourceImplTest {
         borderType: String = "SOLID",
         borderColor: String? = "#FF0000",
         borderWidth: Double? = 4.0,
+        ownerType: String? = "OTHER",
     ) = TodayParfaitImageResponse(
         parfaitImageId = 7L,
         imageId = 11L,
@@ -61,7 +63,11 @@ class ParfaitRemoteDataSourceImplTest {
         borderType = borderType,
         borderColor = borderColor,
         borderWidth = borderWidth,
-        placedBy = PlacedByResponse(groupMemberId = 5L, nickname = "행복한 판다", ownerType = "ME"),
+        placedBy = PlacedByResponse(
+            groupMemberId = 5L,
+            nickname = "행복한 판다",
+            ownerType = ownerType,
+        ),
         createdAt = "2026-08-15T09:30:00",
     )
 
@@ -137,8 +143,41 @@ class ParfaitRemoteDataSourceImplTest {
         assertEquals(3, topping.transform.positionZ)
         assertEquals(ToppingBorder.Solid(color = "#FF0000", width = 4.0), topping.border)
         assertEquals(GroupMemberId(5L), topping.placedBy.groupMemberId)
-        assertTrue(topping.placedBy.isMine)
+        assertFalse(topping.isMine)
         assertEquals(LocalDateTime.parse("2026-08-15T09:30:00"), topping.createdAt)
+    }
+
+    @Test
+    fun getTodayCanvas_ownerTypeIsMe_marksToppingAsMine() = runTest {
+        // Given 서버가 이 토핑을 요청자 본인의 것으로 판정했다
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsToday(1L)
+        } returns todaySuccess(images = listOf(toppingResponse(ownerType = "ME")))
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 서버 판정을 그대로 따른다
+        assertTrue(canvas.toppings.single().isMine)
+    }
+
+    @Test
+    fun getTodayCanvas_ownerTypeUnknownOrMissing_foldsToNotMine() = runTest {
+        // Given 서버가 모르는 값을 주거나 필드 자체를 안 준다
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsToday(1L)
+        } returns todaySuccess(
+            images = listOf(
+                toppingResponse(ownerType = null),
+                toppingResponse(ownerType = "SOMETHING_NEW"),
+            ),
+        )
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 둘 다 남의 것으로 접는다
+        assertTrue(canvas.toppings.none { topping -> topping.isMine })
     }
 
     @Test

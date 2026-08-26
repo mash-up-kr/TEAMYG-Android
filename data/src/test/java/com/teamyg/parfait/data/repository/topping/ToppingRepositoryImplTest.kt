@@ -47,7 +47,6 @@ class ToppingRepositoryImplTest {
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(10L),
             nickname = GroupNickname("연경이"),
-            isMine = true,
         ),
     )
 

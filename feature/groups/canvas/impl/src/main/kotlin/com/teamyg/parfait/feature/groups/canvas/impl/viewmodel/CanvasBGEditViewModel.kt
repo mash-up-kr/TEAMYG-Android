@@ -54,10 +54,11 @@ enum class CanvasEditTab { BACKGROUND, TOPPING }
  * 화면에서 다르게 보이면 안 된다.
  *
  * @param imageUrl 서버에 저장된 토핑 이미지 주소.
- * @param editedImagePath 테두리 편집을 거쳐 새로 구운 이미지의 로컬 경로. 있으면 [imageUrl]
- *   대신 이걸 그린다 — 아직 서버에 올리기 전이라 이쪽이 최신이다.
- * @param cutoutImagePath 테두리를 두르기 전 알맹이. 다시 편집할 때의 시작 마스크라
- *   [editedImagePath] 로 대신할 수 없다 — 그쪽엔 테두리가 이미 구워져 있다.
+ * @param editedImagePath 편집을 마치고 나온 알맹이의 로컬 경로. 투명 여백이 걷혀 있고,
+ *   테두리는 픽셀에 굽지 않고 [borderLayers] 로 따로 나른다(`adr/0025-topping-border-as-server-field.md`).
+ *   있으면 [imageUrl] 대신 이걸 그린다 — 아직 서버에 올리기 전이라 이쪽이 최신이다.
+ * @param cutoutImagePath 다시 편집할 때의 시작 마스크. 원본 좌표계를 지켜야 해 투명 여백을
+ *   걷지 않는다 — 여백이 걷힌 [editedImagePath] 로는 대신할 수 없다.
  */
 data class CanvasToppingItem(
     val parfaitImageId: Long,
@@ -288,10 +289,9 @@ constructor(
         selectedImageSource = null,
     )
 
-    /** 이 토핑을 내가 놓았는지는 서버가 `placedBy.isMine` 으로 직접 알려준다. */
     private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
         parfaitImageId = parfaitImageId.value,
-        isMine = placedBy.isMine,
+        isMine = isMine,
         imageUrl = imageUrl,
         positionX = transform.positionX.toFloat(),
         positionY = transform.positionY.toFloat(),
