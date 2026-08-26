@@ -8,6 +8,17 @@ import kotlin.test.assertTrue
 private fun leftHalfMask(): ToppingAlphaMask =
     ToppingAlphaMask.of(width = 4, height = 4) { x, _ -> if (x < 2) 255 else 0 }
 
+/**
+ * 왼쪽 한 칸(0번 열)의 가운데 두 행만 불투명한 4x4 마스크. 그림 사각형 왼쪽 밖을 짚었을 때
+ * 여덟 방향 되밀기가 모두 빗나가도록 위·아래 행을 비워 뒀다.
+ */
+private fun leftEdgeColumnMask(): ToppingAlphaMask =
+    ToppingAlphaMask.of(width = 4, height = 4) { x, y -> if (x == 0 && y in 1..2) 255 else 0 }
+
+/** 위 마스크를 90도 돌린 것과 같다 — 위쪽 밖 판정을 같은 방식으로 본다. */
+private fun topEdgeRowMask(): ToppingAlphaMask =
+    ToppingAlphaMask.of(width = 4, height = 4) { x, y -> if (y == 0 && x in 1..2) 255 else 0 }
+
 private fun target(
     rotationDegrees: Float = 0f,
     borderWidthPx: Float = 0f,
@@ -107,5 +118,24 @@ class ToppingHitTestTest {
 
         // Then
         assertTrue(empty.containsPoint(110f, 100f))
+    }
+
+    @Test
+    fun containsPoint_leftOfImageRect_isMissEvenWhenLeftColumnIsOpaque() {
+        // Given 테두리 15px 인 토핑. 0번 열만 불투명해서 그림 왼쪽 가장자리 바로 밖을 짚으면
+        // 마스크 좌표가 -1 칸(x=-0.4)으로 나온다 — 마스크 밖이라 투명으로 답해야 한다.
+        val bordered = target(borderWidthPx = 15f, mask = leftEdgeColumnMask())
+
+        // Then 여덟 방향 되밀기도 전부 빗나가므로 안 눌린다
+        assertFalse(bordered.containsPoint(76f, 100f))
+    }
+
+    @Test
+    fun containsPoint_aboveImageRect_isMissEvenWhenTopRowIsOpaque() {
+        // Given 위쪽 대칭 사례 — 0번 행만 불투명하고 그림 위 가장자리 바로 밖을 짚는다
+        val bordered = target(borderWidthPx = 15f, mask = topEdgeRowMask())
+
+        // Then
+        assertFalse(bordered.containsPoint(100f, 76f))
     }
 }

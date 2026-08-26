@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.TOPPING_OUTLINE_STAMP_COUNT
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.sin
 
 /**
@@ -56,16 +57,21 @@ data class ToppingHitTarget(
         }
     }
 
-    /** 그림 사각형 안의 좌표를 마스크 격자로 옮겨 읽는다. */
+    /**
+     * 그림 사각형 안의 좌표를 마스크 격자로 옮겨 읽는다.
+     *
+     * 칸 번호는 [floor]로 내린다 — [Float.toInt]는 0 쪽으로 버려서 그림 왼쪽·위쪽 밖의 음수
+     * 좌표가 전부 0번 칸으로 뭉개지고, 마스크의 범위 검사가 무력해진다.
+     */
     private fun isOpaqueAtLocal(
         localX: Float,
         localY: Float,
     ): Boolean {
         val usableMask = mask ?: return false
         val maskX =
-            ((localX + imageWidthPx / 2f) * usableMask.width / imageWidthPx).toInt()
+            floor((localX + imageWidthPx / 2f) * usableMask.width / imageWidthPx).toInt()
         val maskY =
-            ((localY + imageHeightPx / 2f) * usableMask.height / imageHeightPx).toInt()
+            floor((localY + imageHeightPx / 2f) * usableMask.height / imageHeightPx).toInt()
         return usableMask.isOpaqueAt(maskX, maskY)
     }
 
