@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- TODO(접근성): 토핑을 무엇으로 읽어 줄지 정해지지 않았다(스펙 미결) -->
+    <string name="canvas_topping_content_description">토핑</string>
     <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요</string>
     <string name="canvas_main_topping_add">토핑 추가</string>
     <string name="canvas_main_canvas_edit">캔버스 편집</string>

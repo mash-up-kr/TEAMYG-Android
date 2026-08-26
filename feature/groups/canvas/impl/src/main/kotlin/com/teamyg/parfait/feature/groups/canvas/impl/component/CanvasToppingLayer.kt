@@ -14,18 +14,24 @@ import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
@@ -51,34 +57,56 @@ internal fun CanvasToppingLayer(
     onClickTopping: (CanvasToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
     modifier: Modifier = Modifier,
+    hitTestEnabled: Boolean = true,
 ) {
-    val spotlightedTopping = toppings.firstOrNull { it.parfaitImageId == spotlightedToppingId }
-
     BoxWithConstraints(modifier = modifier) {
-        toppings.forEach { topping ->
-            if (topping.parfaitImageId != spotlightedToppingId) {
+        val entries = rememberToppingHitEntries(
+            toppings = toppings,
+            canvasWidth = maxWidth,
+            canvasHeight = maxHeight,
+            loadMasks = hitTestEnabled,
+        )
+        val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
+
+        entries.forEach { entry ->
+            if (entry.topping.parfaitImageId != spotlightedToppingId) {
                 CanvasTopping(
-                    topping = topping,
+                    entry = entry,
                     canvasWidth = maxWidth,
                     canvasHeight = maxHeight,
-                    onClick = { onClickTopping(topping) },
+                    onClick = { onClickTopping(entry.topping) },
                 )
             }
         }
 
-        if (spotlightedTopping != null) {
+        if (spotlighted != null) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(YGAtomicColors.Transparency.Black50)
-                    .clickableYGNoRipple(onClick = onClickSpotlightDim),
+                    .background(YGAtomicColors.Transparency.Black50),
             )
 
             CanvasTopping(
-                topping = spotlightedTopping,
+                entry = spotlighted,
                 canvasWidth = maxWidth,
                 canvasHeight = maxHeight,
-                onClick = { onClickTopping(spotlightedTopping) },
+                onClick = { onClickTopping(spotlighted.topping) },
+            )
+        }
+
+        if (hitTestEnabled) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .toppingTapInput(
+                        // 강조된 토핑이 있으면 그것만 본다. 딤이 전면을 덮어 나머지는 닿지 않는다
+                        entries = {
+                            (spotlighted?.let(::listOf) ?: entries).map { it.topping to it.target }
+                        },
+                        keyOf = { it.parfaitImageId },
+                        onHit = onClickTopping,
+                        onMiss = { if (spotlighted != null) onClickSpotlightDim() },
+                    ),
             )
         }
     }
@@ -95,13 +123,14 @@ internal fun CanvasToppingLayer(
  */
 @Composable
 private fun CanvasTopping(
-    topping: CanvasToppingVO,
+    entry: ToppingHitEntry,
     canvasWidth: Dp,
     canvasHeight: Dp,
     onClick: () -> Unit,
 ) {
-    val transform = topping.transform
+    val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
+    val description = stringResource(R.string.canvas_topping_content_description)
 
     Box(
         modifier = Modifier
@@ -116,24 +145,28 @@ private fun CanvasTopping(
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
             .requiredSize(side)
             .graphicsLayer { rotationZ = transform.rotation.toFloat() }
-            .clickableYGNoRipple(onClick = onClick),
+            // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = description
+                onClick {
+                    onClick()
+                    true
+                }
+            },
     ) {
         ToppingImage(
-            imageUrl = topping.imageUrl,
-            border = topping.border,
+            painter = entry.painter,
+            border = entry.topping.border,
         )
     }
 }
 
 @Composable
 private fun ToppingImage(
-    imageUrl: String,
+    painter: AsyncImagePainter,
     border: ToppingBorder,
 ) {
-    val painter = rememberAsyncImagePainter(
-        model = imageUrl,
-        contentScale = ContentScale.Fit,
-    )
     val painterState by painter.state.collectAsState()
     val solidBorder = border as? ToppingBorder.Solid
 
