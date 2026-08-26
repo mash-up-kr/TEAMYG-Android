@@ -374,9 +374,7 @@ private fun CanvasToppingImage(
     modifier: Modifier = Modifier,
     onDrag: ((Offset) -> Unit)? = null,
 ) {
-    val painter = rememberAsyncImagePainter(
-        model = topping.editedImagePath ?: topping.imageUrl,
-    )
+    val painter = rememberToppingPainter(topping)
     val size = rememberToppingSize(painter = painter, longSide = toppingLongSide(canvasWidth, topping.scale))
 
     Box(
@@ -412,7 +410,7 @@ private fun CanvasToppingImage(
 }
 
 @Composable
-private fun rememberToppingPainter(topping: CanvasToppingItem): Painter =
+private fun rememberToppingPainter(topping: CanvasToppingItem): AsyncImagePainter =
     rememberAsyncImagePainter(model = topping.editedImagePath ?: topping.imageUrl)
 
 /**
