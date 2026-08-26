@@ -429,8 +429,9 @@ constructor(
     }
 
     /**
-     * TODO(#274 대기): 서버 토핑은 https 주소라 편집 화면이 [android.content.ContentResolver] 로
-     *  열지 못한다. 이미지를 기기에 받아 그 경로를 넘기는 일은 토핑 편집 API 연동 쪽이다.
+     * 서버 토핑은 https 주소라 [android.content.ContentResolver] 로 열지 못하지만,
+     * `RemoteImageDownloadDataSource` 가 그 스킴을 갈라 기기에 받아 두므로 편집 화면은
+     * 이 URL 을 그대로 받아도 된다(`ImageSegmentationRepositoryImpl.decodeImage`).
      */
     private fun handleOnClickEditTopping() {
         val selected = state.value.toppings.find { it.parfaitImageId == state.value.selectedToppingId } ?: return
