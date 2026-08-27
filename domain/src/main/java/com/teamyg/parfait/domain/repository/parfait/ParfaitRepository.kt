@@ -60,6 +60,12 @@ interface ParfaitRepository {
     fun clearTodayCanvas()
 
     /**
+     * 폴러의 비동기 표면. 즉시 반환하므로 호출부의 되감기를 늦추지 않는다 — 갱신 자체는
+     * 폴러의 스코프에서 끝까지 간다(`adr/0029-canvas-today-ssot-polling.md`).
+     */
+    fun requestTodayCanvasRefresh(groupId: GroupId)
+
+    /**
      * 범위 안의 캔버스 목록. 상태로 거르지 않아 오늘의 ACTIVE 캔버스도 함께 온다.
      *
      * 범위를 생략하면 서버 기본값(오늘 - 30일 ~ 오늘)이다. from 이 to 보다 늦으면

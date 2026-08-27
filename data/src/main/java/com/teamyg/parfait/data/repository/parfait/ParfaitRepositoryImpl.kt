@@ -64,6 +64,10 @@ class ParfaitRepositoryImpl @Inject constructor(
         canvasLocalDataSource.clear()
     }
 
+    override fun requestTodayCanvasRefresh(groupId: GroupId) {
+        canvasPoller.refreshNowAsync(groupId)
+    }
+
     override suspend fun getPastCanvases(
         groupId: GroupId,
         from: LocalDate?,

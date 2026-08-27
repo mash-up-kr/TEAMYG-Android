@@ -41,6 +41,8 @@ class GetTodayParfaitFlowUseCaseTest {
 
         override fun clearTodayCanvas() = error("구독 유스케이스는 캐시를 지우지 않는다")
 
+        override fun requestTodayCanvasRefresh(groupId: GroupId) = error("구독 유스케이스는 갱신을 요청하지 않는다")
+
         override suspend fun getPastCanvases(
             groupId: GroupId,
             from: LocalDate?,

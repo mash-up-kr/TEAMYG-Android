@@ -25,13 +25,16 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
-import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
 
 // 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
@@ -57,6 +60,8 @@ data class CanvasToppingPlaceUiState(
     /** 흐름 진입 때 초안에 못 박힌 캔버스다. 화면이 다시 고르지 않는다 */
     val groupId: GroupId? = null,
     val parfaitId: ParfaitId? = null,
+    /** 구독 중인 오늘 캔버스의 id. 하루 경계를 넘기면 초안의 [parfaitId] 와 다를 수 있다 */
+    val observedParfaitId: ParfaitId? = null,
     val nextPositionZ: Int? = null,
     /** 확정 판정의 근거. 그림이 뜨기 전 실측은 폴백 크기라 그대로 올리면 배율이 틀어진다 */
     val isToppingImageReady: Boolean = false,
@@ -130,6 +135,7 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     data object ToppingImageNotReady : CanvasToppingPlaceEffect
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CanvasToppingPlaceViewModel
 @Inject constructor(
@@ -137,15 +143,20 @@ class CanvasToppingPlaceViewModel
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
-    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
+    private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
-    /** 초안이 그룹을 알려 준 뒤에야 구독을 열 수 있다. 그룹은 흐름 내내 바뀌지 않는다 */
-    private var canvasObserveJob: Job? = null
+    /**
+     * 초안이 그룹을 알려 주기 전엔 비어 있다. [state] 를 게이트로 쓰지 않는 이유는
+     * [launchWhileSubscribed] KDoc 참고 — 그 안에서 [state] 를 수집하면 그 수집 자체가
+     * 구독자로 세어져 계수가 0 으로 내려가지 않는다.
+     */
+    private val observedGroupId = MutableStateFlow<GroupId?>(null)
 
     init {
         observeDraft()
+        observeCanvas()
     }
 
     private fun observeDraft() {
@@ -162,32 +173,26 @@ class CanvasToppingPlaceViewModel
                         isDraftLoaded = true,
                     )
                 }
-                draft?.groupId?.let { groupId -> observeCanvasOnce(groupId) }
+                observedGroupId.value = draft?.groupId
             }
         }
     }
 
     /**
-     * ⚠️ 오늘 조회는 서버에서 그 날짜 파르페가 없으면 만들어 저장하는 부작용을 갖고 있다
-     * (`api/parfait.md`). 이 흐름에 들어왔다는 것 자체가 오늘 캔버스가 있다는 뜻이라 여기서
-     * 그 부작용이 발동할 일은 없다 — 호출 자체가 안전하다는 뜻은 아니다.
+     * 화면이 보이는 동안만 오늘 캔버스를 구독한다. 갱신은 구독 시작 즉시, 이후 주기마다
+     * 폴러가 맡는다(`adr/0029-canvas-today-ssot-polling.md`) — 여기서 따로 조회를 걸지 않는다.
      */
-    private fun observeCanvasOnce(groupId: GroupId) {
-        if (canvasObserveJob != null) return
-
-        canvasObserveJob = launch {
-            getTodayParfaitFlowUseCase(groupId).collect { canvas ->
-                // null 은 무시한다 — 비우면 배경이 흰색으로 튄다
-                if (canvas == null) return@collect
-                updateState { withCanvas(canvas) }
-            }
-        }
-
-        launch(key = LOAD_CANVAS_KEY) {
-            refreshTodayParfaitUseCase(groupId).onFailure { throwable ->
-                // 조회 실패는 토핑 배치 자체를 막지 않는다 — 기본 배경·빈 토핑 목록으로 그대로 둔다
-                viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-            }
+    private fun observeCanvas() {
+        launchWhileSubscribed(
+            source = {
+                observedGroupId
+                    .filterNotNull()
+                    .flatMapLatest { groupId -> getTodayParfaitFlowUseCase(groupId) }
+            },
+        ) { canvas ->
+            // null 은 무시한다 — 비우면 배경이 흰색으로 튄다
+            if (canvas == null) return@launchWhileSubscribed
+            updateState { withCanvas(canvas) }
         }
     }
 
@@ -198,7 +203,24 @@ class CanvasToppingPlaceViewModel
             ?: backgroundColor,
         backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
         existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
+        observedParfaitId = canvas.parfaitId,
     )
+
+    /**
+     * 흐름 진입 때 초안에 못 박은 값은 카메라·누끼를 거치는 사이 남이 토핑을 올리면 낡는다.
+     * 그래서 확정 시점에 다시 센다.
+     *
+     * **초안과 같은 캔버스일 때만이다** — 구독 값은 "오늘"로 걸러진 캔버스라 하루 경계를 넘기면
+     * 초안이 가리키는 캔버스와 다를 수 있고, 그때 재계산한 값을 초안의 캔버스에 실으면 사용자가
+     * 들어간 캔버스가 아닌 곳의 깊이를 쓰게 된다(`adr/0026-topping-draft-datastore-ssot.md`).
+     *
+     * 겹침의 해결이 아니라 완화다 — 폴링 주기 안에 두 사람이 확인을 누르면 여전히 겹친다
+     * (OQ-P-322).
+     */
+    private fun CanvasToppingPlaceUiState.resolvedPositionZ(): Int? {
+        if (observedParfaitId == null || observedParfaitId != parfaitId) return nextPositionZ
+        return (existingToppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
+    }
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
@@ -346,7 +368,7 @@ class CanvasToppingPlaceViewModel
             rotationDegrees = current.rotationDegrees,
             canvasSize = canvasSize,
             toppingBaseSize = baseSize,
-            positionZ = positionZ,
+            positionZ = current.resolvedPositionZ() ?: positionZ,
         )
         launch(key = CONFIRM_JOB_KEY, onError = { postSideEffect(CanvasToppingPlaceEffect.PlaceFailed) }) {
             updateState { copy(isLoading = true) }
@@ -372,6 +394,11 @@ class CanvasToppingPlaceViewModel
                     }.onFailure { throwable ->
                         viewModelLogger.d { "recent cutout save failed - $throwable" }
                     }
+
+                    // 즉시 반환하는 non-suspend 표면이라 되감기를 늦추지 않는다. suspend 로
+                    // 기다리면 확인 버튼을 누른 뒤 네트워크 왕복만큼 멈춘 것처럼 보이고,
+                    // PlaceSucceeded 뒤로 옮기면 되감기가 문 viewModelScope 취소로 아예 안 돈다
+                    requestTodayParfaitRefreshUseCase(groupId)
 
                     // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
@@ -406,6 +433,3 @@ class CanvasToppingPlaceViewModel
 
 /** 확정 작업의 중복 실행 키. 연타로 두 번 올라가면 고아 이미지와 겹친 토핑이 함께 생긴다 */
 private const val CONFIRM_JOB_KEY = "canvas-topping-place-confirm"
-
-/** 캔버스(배경·기존 토핑) 조회 작업의 중복 실행 키 */
-private const val LOAD_CANVAS_KEY = "canvas-topping-place-load-canvas"
