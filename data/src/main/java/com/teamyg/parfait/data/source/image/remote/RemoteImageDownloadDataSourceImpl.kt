@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.source.image.remote
 
-import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
+import com.teamyg.parfait.data.model.qualifier.DownloadClient
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
@@ -15,9 +15,7 @@ import kotlin.coroutines.resumeWithException
 class RemoteImageDownloadDataSourceImpl
 @Inject
 constructor(
-    // UnauthenticatedClient 는 원래 토큰 재발급 교착을 피하려고 격리해 둔 클라이언트지만,
-    // "자격증명을 붙이지 않는다"는 성질 자체는 여기서도 그대로 맞아 재사용한다.
-    @UnauthenticatedClient private val okHttpClient: OkHttpClient,
+    @DownloadClient private val okHttpClient: OkHttpClient,
 ) : RemoteImageDownloadDataSource {
     /**
      * `execute()` 가 아니라 `enqueue` 를 쓰는 것이 취소 전파의 전부다 — 블로킹 호출은
