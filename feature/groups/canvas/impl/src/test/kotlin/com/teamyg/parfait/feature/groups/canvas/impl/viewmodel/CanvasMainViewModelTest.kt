@@ -86,6 +86,8 @@ class CanvasMainViewModelTest {
 
     private val tomorrow = today.plus(DatePeriod(days = 1))
 
+    private val dayBeforeYesterday = today.minus(DatePeriod(days = 2))
+
     /**
      * 달력은 [GetParfaitHistoriesUseCase] 가 준 목록에서만 날짜를 열어 준다. 지난 날을 보는
      * 상태를 만들려면 그 목록에 어제가 들어 있어야 한다.
@@ -245,6 +247,44 @@ class CanvasMainViewModelTest {
         // 직전에 보던 것을 그대로 둔다
         assertFalse(viewModel.state.value.isCanvasEmpty)
     }
+
+    @Test
+    fun clickDate_returnToTodayThenAnotherPastDate_beforeDetailArrives_showsTodayNotThePreviousPastDate() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 어제(A)를 본 뒤 오늘로 돌아온 화면. 그저께(B)도 달력에 열려 있다
+            coEvery { getParfaitHistories(any(), any()) } returns Result.success(
+                listOf(
+                    PastCanvasVO(
+                        parfaitId = ParfaitId(YESTERDAY_PARFAIT_ID),
+                        date = yesterday,
+                        thumbnailUrl = null,
+                        toppingCount = 1,
+                    ),
+                    PastCanvasVO(
+                        parfaitId = ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID),
+                        date = dayBeforeYesterday,
+                        thumbnailUrl = null,
+                        toppingCount = 1,
+                    ),
+                ),
+            )
+            val viewModel = enteredViewModel()
+            viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
+            advanceUntilIdle()
+            viewModel.processIntent(CanvasMainIntent.OnClickGoToToday)
+            advanceUntilIdle()
+
+            // When 그저께(B)를 고르고, 상세가 도착하기 전이다
+            coEvery { getParfaitDetail(any(), any()) } coAnswers { awaitCancellation() }
+            viewModel.processIntent(CanvasMainIntent.ClickDate(dayBeforeYesterday))
+            advanceUntilIdle()
+
+            // Then 헤더는 B 날짜지만, 캔버스는 어제(A) 것이 아니라 오늘 것이어야 한다 — 오늘로
+            // 돌아올 때 pastCanvas 를 비우지 않으면 어제 캔버스가 계속 걸린다
+            val state = viewModel.state.value
+            assertEquals(dayBeforeYesterday, state.selectedDate)
+            assertEquals(ParfaitId(TODAY_PARFAIT_ID), state.displayedCanvas?.parfaitId)
+        }
 
     @Test
     fun enter_doesNotAskForTheYearsAgain() = runTest(mainDispatcherRule.dispatcher) {
@@ -616,6 +656,24 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun enter_whileViewingToday_dayChanges_clearsTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘을 보고 있는 화면
+        mockkStatic(::parfaitToday)
+        every { parfaitToday() } returns today
+        val viewModel = enteredViewModel()
+
+        // When 화면을 켜 둔 채 하루 경계를 넘기고 다른 화면에서 돌아온다
+        every { parfaitToday() } returns tomorrow
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 어제 캔버스가 오늘 것으로 오인되지 않도록 비워지고, 토핑 추가 버튼도 잠긴다
+        val state = viewModel.state.value
+        assertTrue(state.todayCanvas == null)
+        assertFalse(state.isToppingAddEnabled)
+    }
+
+    @Test
     fun clickGoToToday_afterTodayCanvasWasCleared_reloadsIt() = runTest(mainDispatcherRule.dispatcher) {
         // Given 어제를 보는 중 하루 경계를 넘겨 todayCanvas 가 빈 화면
         mockkStatic(::parfaitToday)
@@ -761,6 +819,7 @@ class CanvasMainViewModelTest {
         const val GROUP_ID = 7L
         const val TODAY_PARFAIT_ID = 42L
         const val YESTERDAY_PARFAIT_ID = 41L
+        const val DAY_BEFORE_YESTERDAY_PARFAIT_ID = 40L
         const val NEW_MEMBER_NICKNAME = "모카"
 
         val GROUP = MyParfaitGroupVO(

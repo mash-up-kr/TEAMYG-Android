@@ -562,7 +562,7 @@ constructor(
         if (date == current.selectedDate) return
 
         if (date == current.today) {
-            updateState { copy(selectedDate = date) }
+            updateState { copy(selectedDate = date, pastCanvas = null) }
             return
         }
 
@@ -600,6 +600,7 @@ constructor(
             copy(
                 selectedDate = today,
                 displayedMonth = today.toFirstDayOfMonth(),
+                pastCanvas = null,
             )
         }
 
