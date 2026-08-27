@@ -73,7 +73,10 @@ data class CanvasToppingItem(
     val cutoutImagePath: String? = null,
 )
 
-private const val TOPPING_MIN_SCALE = 0.5f
+/**
+ * 배율 하한 수정
+ */
+private const val TOPPING_MIN_SCALE = 0.05f
 
 /** 세로로 이 픽셀만큼 드래그해야 배율이 1.0만큼 바뀐다 */
 private const val TOPPING_DRAG_PX_PER_SCALE = 300f
