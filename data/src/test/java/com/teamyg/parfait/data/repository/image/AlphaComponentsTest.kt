@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 
 /** `#` 는 불투명, `.` 은 투명. 한 줄이 한 행이다 */
@@ -283,5 +284,61 @@ class AlphaComponentsTest {
 
         // Then — 오른쪽 위 한 점이 부활하지 않는다
         assertEquals(false, dilated[5])
+    }
+
+    @Test
+    fun downscaleMask_cancelledAtSecondRow_throwsAndStops() {
+        // Given — 4행짜리 판에서 둘째 확인 때 취소한다
+        val alpha = alphaOf(
+            "####",
+            "####",
+            "####",
+            "####",
+        )
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { downscaleMask(alpha, width = 4, height = 4, factor = 1, threshold = 127) }
+        }
+        // 확인이 행 루프 맨 위에 있으므로 4행을 다 돌지 못한다
+        assertEquals(2, job.calls)
+    }
+
+    @Test
+    fun applyAreaOpening_cancelledMidway_throws() {
+        // Given — union 단계가 행 쌍마다 확인한다
+        val mask = maskOf(
+            "####",
+            "####",
+            "####",
+            "####",
+        )
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { applyAreaOpening(mask, width = 4, height = 4, minPixels = 1) }
+        }
+    }
+
+    @Test
+    fun dilateMask_cancelledMidway_throws() {
+        // Given
+        val mask = maskOf(
+            "####",
+            "####",
+            "####",
+            "####",
+        )
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { dilateMask(mask, width = 4, height = 4) }
+        }
     }
 }

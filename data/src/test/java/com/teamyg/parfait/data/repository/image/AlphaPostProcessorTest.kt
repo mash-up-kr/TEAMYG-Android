@@ -7,6 +7,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 
 /** 각 값이 알파 하나. 행 구분은 호출부가 width 로 준다 */
@@ -532,5 +533,67 @@ class AlphaPostProcessorTest {
 
         // Then
         assertTrue(job.calls > 40)
+    }
+
+    @Test
+    fun applyKeepMask_cancelledMidway_throws() {
+        // Given
+        val alpha = ByteArray(16) { 255.toByte() }
+        val keep = BooleanArray(16) { true }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                applyKeepMask(alpha, width = 4, height = 4, keep = keep, maskWidth = 4, factor = 1)
+            }
+        }
+    }
+
+    @Test
+    fun measureAlpha_cancelledMidway_throws() {
+        // Given
+        val alpha = ByteArray(16) { 255.toByte() }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { measureAlpha(alpha, width = 4, height = 4) }
+        }
+    }
+
+    @Test
+    fun erodeEdge_cancelledMidway_throws() {
+        // Given
+        val alpha = ByteArray(16) { 255.toByte() }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { erodeEdge(alpha, width = 4, height = 4) }
+        }
+    }
+
+    @Test
+    fun postProcessAlpha_cancelledAtFirstCheck_throws() {
+        // Given
+        val alpha = ByteArray(64) { 255.toByte() }
+        val job = CountingJob()
+        job.cancelAfter = 0
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                postProcessAlpha(
+                    alpha,
+                    width = 8,
+                    height = 8,
+                    options = AlphaPostProcessOptions(downscaleFactor = 1, areaOpeningMinPixels = 4),
+                )
+            }
+        }
     }
 }
