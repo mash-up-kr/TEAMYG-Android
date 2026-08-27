@@ -106,9 +106,9 @@ object NetworkModule {
         .build()
 
     /**
-     * 서버 이미지 URL을 그대로 받아오는 전용 클라이언트.
-     * [UnauthenticatedClient] 를 재사용하지 않는 이유는 타임아웃이 다르기 때문이다 —
-     * 재발급과 달리 이미지 다운로드는 파일 크기·네트워크 상태에 따라 오래 걸릴 수 있다.
+     * 서버 이미지 URL을 그대로 받아오는 전용 클라이언트. 메인 클라이언트와 커넥션 풀·
+     * `Dispatcher` 를 공유하지 않는다는 것 말고는 [provideOkHttpClient] 와 같은 프로필이다 —
+     * 타임아웃을 늘려야 할 만큼 크다는 근거가 아직 없어 다르게 줄 이유가 없다.
      *
      * ⚠️ `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
      * 반드시 새 [OkHttpClient.Builder] 로 만든다.
@@ -121,8 +121,8 @@ object NetworkModule {
         .dispatcher(Dispatcher())
         .addInterceptor(loggingInterceptor())
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .readTimeout(DOWNLOAD_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .callTimeout(DOWNLOAD_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
     @Provides
@@ -168,6 +168,4 @@ object NetworkModule {
     private const val WRITE_TIMEOUT_SECONDS = 15L
     private const val UPLOAD_WRITE_TIMEOUT_SECONDS = 60L
     private const val UPLOAD_CALL_TIMEOUT_SECONDS = 120L
-    private const val DOWNLOAD_READ_TIMEOUT_SECONDS = 30L
-    private const val DOWNLOAD_CALL_TIMEOUT_SECONDS = 30L
 }
