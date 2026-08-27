@@ -6,18 +6,28 @@ import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.domain.model.error.AppError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initialState: S) : ViewModel() {
     private val _state = MutableStateFlow(initialState)
@@ -121,5 +131,49 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
             job.invokeOnCompletion { if (runningJobs[key] === job) runningJobs.remove(key) }
         }
         return job
+    }
+
+    /**
+     * 화면이 **실제로 보고 있는 동안에만** [source] 를 연다. 라우트가
+     * `collectAsStateWithLifecycle()` 로 [state] 를 구독하므로, 화면이 백그라운드로 가거나
+     * 컴포지션에서 빠지면 여기서 연 업스트림도 함께 끊긴다.
+     *
+     * [launch] 와 갈라 두는 이유는 수명이 다르기 때문이다 — [launch] 는 ViewModel 수명이라
+     * 백스택 아래에 깔린 화면에서도 계속 돈다(`architecture/state-management.md`).
+     *
+     * ⚠️ **[source] 안에서 [state] 를 수집하면 안 된다.** 활성 조건이 [state] 의 구독자 수라,
+     * 열린 업스트림 자신이 구독자로 세어져 계수가 0 으로 내려가지 않는다. 화면 조건으로 업스트림을
+     * 가르려면 [state] 가 아닌 별도 flow 를 둔다.
+     *
+     * @param stopTimeout 마지막 구독자가 떠난 뒤 업스트림을 닫기까지의 유예. 화면 전환·구성
+     *   변경의 짧은 공백에서 업스트림이 껐다 켜지지 않게 한다.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    protected fun <T> launchWhileSubscribed(
+        stopTimeout: Duration = SUBSCRIPTION_STOP_TIMEOUT,
+        source: () -> Flow<T>,
+        collector: suspend (T) -> Unit,
+    ): Job = viewModelScope.launch {
+        _state.subscriptionCount
+            .map { it > 0 }
+            .distinctUntilChanged()
+            .flatMapLatest { subscribed ->
+                // 구독이 끊겨도 유예 동안은 열어 둔다. 그 사이 다시 붙으면 아래 flatMapLatest 가
+                // 이 대기를 취소하므로 업스트림이 이어진다
+                if (subscribed) {
+                    flowOf(true)
+                } else {
+                    flow {
+                        delay(stopTimeout)
+                        emit(false)
+                    }
+                }
+            }.distinctUntilChanged()
+            .flatMapLatest { active -> if (active) source() else emptyFlow() }
+            .collect(collector)
+    }
+
+    private companion object {
+        val SUBSCRIPTION_STOP_TIMEOUT: Duration = 5.seconds
     }
 }
