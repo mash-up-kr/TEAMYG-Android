@@ -76,6 +76,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasEditTab
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingItem
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
+/** 배경 탭에서 토핑은 배경 선택의 참고로만 존재한다 — 고를 수 없다는 것을 불투명도로 알린다 */
+private const val BACKGROUND_TAB_TOPPING_ALPHA = 0.5f
+
 @Composable
 internal fun CanvasBGEditScreen(
     uiState: CanvasBGEditUiState,
@@ -162,9 +165,8 @@ internal fun CanvasBGEditScreen(
                         // 남의 토핑
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
-                                entry = entry,
-                                canvasWidth = canvasWidth,
-                                canvasHeight = canvasHeight,
+                                entry = entry.draw,
+                                alpha = 1f,
                                 onClick = onClickDeselectTopping,
                             )
                         }
@@ -178,9 +180,8 @@ internal fun CanvasBGEditScreen(
                         // 내 토핑
                         myEntries.forEach { entry ->
                             CanvasToppingImage(
-                                entry = entry,
-                                canvasWidth = canvasWidth,
-                                canvasHeight = canvasHeight,
+                                entry = entry.draw,
+                                alpha = 1f,
                                 onClick = { onClickTopping(entry.topping) },
                             )
                         }
@@ -484,50 +485,48 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
  * 캔버스 미리보기 박스 안, 저장된 배치([CanvasToppingItem.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
- * [onClick]의 실제 동작(선택/선택 해제)은 호출하는 쪽에서 소유 여부에 따라 다르게 넘겨준다.
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
  * 별도로 그린다.
+ *
+ * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
+ *   읽히면 안 된다.
  */
 @Composable
 private fun CanvasToppingImage(
-    entry: BGEditHitEntry,
-    canvasWidth: Dp,
-    canvasHeight: Dp,
-    onClick: () -> Unit,
+    entry: BGEditDrawEntry,
+    alpha: Float,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-    val size = with(density) {
-        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
-    }
-    val painterState by entry.draw.painter.state
-        .collectAsState()
+    val painterState by entry.painter.state.collectAsState()
     val border = entry.topping.borderLayers.firstOrNull()
     val description = stringResource(R.string.canvas_topping_content_description)
 
     Box(
         modifier = modifier
-            .centeredAt(
-                toppingCenter(
-                    canvasWidth = canvasWidth,
-                    canvasHeight = canvasHeight,
-                    positionX = entry.topping.positionX,
-                    positionY = entry.topping.positionY,
-                ),
-            ).requiredSize(size)
-            .graphicsLayer(rotationZ = entry.topping.rotationDegrees)
-            // 판정은 입력 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
-            .semantics(mergeDescendants = true) {
-                role = Role.Button
-                contentDescription = description
-                onClick {
-                    onClick()
-                    true
+            .centeredAt(entry.center)
+            .requiredSize(entry.size)
+            .graphicsLayer(
+                rotationZ = entry.topping.rotationDegrees,
+                alpha = alpha,
+            ).let { base ->
+                if (onClick == null) {
+                    base
+                } else {
+                    // 판정은 입력 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
+                    base.semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        contentDescription = description
+                        onClick {
+                            onClick()
+                            true
+                        }
+                    }
                 }
             },
     ) {
         YGToppingCutoutImage(
-            painter = entry.draw.painter,
+            painter = entry.painter,
             // 로딩·실패 상태에서 찍으면 플레이스홀더 실루엣이 테두리로 보인다
             borderColor = border
                 ?.let { Color(it.colorArgb) }
