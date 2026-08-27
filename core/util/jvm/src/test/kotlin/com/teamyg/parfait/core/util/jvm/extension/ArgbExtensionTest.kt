@@ -5,8 +5,32 @@ import kotlin.test.assertEquals
 
 private const val OPAQUE_RED = 0xFFFF0000.toInt()
 private const val OPAQUE_BLUE = 0xFF0000FF.toInt()
+private const val OPAQUE_WHITE = 0xFFFFFFFF.toInt()
+private const val TRANSPARENT = 0
 
 class ArgbExtensionTest {
+    @Test
+    fun argbAlpha_opaqueColor_isFullyOpaque() {
+        assertEquals(255, OPAQUE_RED.argbAlpha)
+    }
+
+    @Test
+    fun argbAlpha_partiallyFadedColor_readsThatAlpha() {
+        assertEquals(128, 0x80FF0000.toInt().argbAlpha)
+    }
+
+    @Test
+    fun argbAlpha_transparentColor_isZero() {
+        // RGB 가 남아 있어도 알파만 봐야 한다
+        assertEquals(0, 0x00FF0000.argbAlpha)
+    }
+
+    @Test
+    fun argbAlpha_topBitSet_staysPositive() {
+        // 최상위 비트가 켜진 색을 부호 있는 시프트로 꺼내면 음수가 된다
+        assertEquals(255, 0xFFFFFFFF.toInt().argbAlpha)
+    }
+
     @Test
     fun fadeArgb_fullRatio_keepsColor() {
         // Given 불투명한 색
@@ -75,5 +99,46 @@ class ArgbExtensionTest {
         val result = OPAQUE_RED.mixArgb(0x00FF0000, 0.5f)
 
         assertEquals(0x80FF0000.toInt(), result)
+    }
+
+    @Test
+    fun sumArgbAlpha_everyPixelIsOpaque_sumsTo255PerPixel() {
+        // Given
+        val pixels = IntArray(4) { OPAQUE_WHITE }
+
+        // When
+        val sum = pixels.sumArgbAlpha()
+
+        // Then
+        assertEquals(4L * 255, sum)
+    }
+
+    @Test
+    fun sumArgbAlpha_partialAlpha_countsTheActualValue() {
+        // Given — 알파 128·64 와 투명 둘
+        val pixels = intArrayOf(0x80FFFFFF.toInt(), 0x40FFFFFF, TRANSPARENT, TRANSPARENT)
+
+        // When
+        val sum = pixels.sumArgbAlpha()
+
+        // Then
+        assertEquals(192L, sum)
+    }
+
+    @Test
+    fun sumArgbAlpha_emptyArray_isZero() {
+        assertEquals(0L, IntArray(0).sumArgbAlpha())
+    }
+
+    @Test
+    fun sumArgbAlpha_wouldOverflowInt_staysCorrectInLong() {
+        // Given — Int.MAX_VALUE 를 넘는 합. 12MP 전면 불투명 판이 이 구간이다
+        val pixels = IntArray(10_000_000) { OPAQUE_WHITE }
+
+        // When
+        val sum = pixels.sumArgbAlpha()
+
+        // Then
+        assertEquals(10_000_000L * 255, sum)
     }
 }

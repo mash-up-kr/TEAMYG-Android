@@ -143,4 +143,37 @@ class SegmentationHighlightGeometryTest {
         // Then 고르지 않는다
         assertNull(picked)
     }
+
+    @Test
+    fun pickCandidateIndex_shrinkingOneBounds_flipsTheWinner() {
+        // Given — 후처리 전에는 A 가 작고, A 만 덜 줄어들면 후처리 후에는 B 가 작아진다
+        val beforeA = SegmentationBounds(left = 0, top = 0, right = 40, bottom = 40)
+        val beforeB = SegmentationBounds(left = 0, top = 0, right = 50, bottom = 50)
+        val afterA = SegmentationBounds(left = 0, top = 0, right = 38, bottom = 38)
+        val afterB = SegmentationBounds(left = 0, top = 0, right = 30, bottom = 30)
+
+        // When — 캔버스 좌표다. 이미지가 세로로 100 밀려 있으므로 y 는 그보다 커야 한다
+        val before = pick(listOf(beforeA, beforeB), tapX = 10f, tapY = 110f)
+        val after = pick(listOf(afterA, afterB), tapX = 10f, tapY = 110f)
+
+        // Then — 승자 규칙은 그대로 "면적 최소"다. 바뀌는 것은 어느 쪽이 작으냐다
+        assertEquals(0, before)
+        assertEquals(1, after)
+    }
+
+    @Test
+    fun pickCandidateIndex_lowAlphaResidueWidensBounds_alsoFlipsTheWinner() {
+        // Given — 팽창 띠에 남은 아주 낮은 알파가 bounds 를 넓히는 반대 방향도 성립한다
+        val tightA = SegmentationBounds(left = 0, top = 0, right = 30, bottom = 30)
+        val tightB = SegmentationBounds(left = 0, top = 0, right = 40, bottom = 40)
+        val widenedA = SegmentationBounds(left = 0, top = 0, right = 45, bottom = 45)
+
+        // When
+        val tight = pick(listOf(tightA, tightB), tapX = 10f, tapY = 110f)
+        val widened = pick(listOf(widenedA, tightB), tapX = 10f, tapY = 110f)
+
+        // Then
+        assertEquals(0, tight)
+        assertEquals(1, widened)
+    }
 }
