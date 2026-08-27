@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
 interface ToppingRepository {
@@ -49,4 +50,14 @@ interface ToppingRepository {
         scale: Double? = null,
         rotation: Double? = null,
     ): Result<UpdatedToppingVO>
+
+    /**
+     * 배치된 토핑의 테두리를 통째로 바꾼다. [update]와 달리 부분 병합이 아니다.
+     */
+    suspend fun updateBorder(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+        parfaitImageId: ParfaitImageId,
+        border: ToppingBorder,
+    ): Result<UpdatedToppingBorderVO>
 }

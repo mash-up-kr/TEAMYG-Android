@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.BuildConfig
+import com.teamyg.parfait.data.model.qualifier.DownloadClient
 import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.model.qualifier.UploadClient
@@ -102,6 +103,26 @@ object NetworkModule {
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(UPLOAD_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .callTimeout(UPLOAD_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .build()
+
+    /**
+     * 서버 이미지 URL을 그대로 받아오는 전용 클라이언트. 메인 클라이언트와 커넥션 풀·
+     * `Dispatcher` 를 공유하지 않는다는 것 말고는 [provideOkHttpClient] 와 같은 프로필이다 —
+     * 타임아웃을 늘려야 할 만큼 크다는 근거가 아직 없어 다르게 줄 이유가 없다.
+     *
+     * ⚠️ `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
+     * 반드시 새 [OkHttpClient.Builder] 로 만든다.
+     */
+    @Provides
+    @Singleton
+    @DownloadClient
+    fun provideDownloadOkHttpClient(): OkHttpClient = OkHttpClient
+        .Builder()
+        .dispatcher(Dispatcher())
+        .addInterceptor(loggingInterceptor())
+        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
     @Provides

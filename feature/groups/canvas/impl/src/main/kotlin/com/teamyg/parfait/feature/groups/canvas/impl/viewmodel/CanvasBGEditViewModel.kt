@@ -13,6 +13,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.android.extension.toRgbHex
+import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -28,6 +29,7 @@ import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
@@ -216,6 +218,7 @@ constructor(
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
     private val updateToppingUseCase: UpdateToppingUseCase,
+    private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
 ) {
@@ -426,8 +429,9 @@ constructor(
     }
 
     /**
-     * TODO(#274 대기): 서버 토핑은 https 주소라 편집 화면이 [android.content.ContentResolver] 로
-     *  열지 못한다. 이미지를 기기에 받아 그 경로를 넘기는 일은 토핑 편집 API 연동 쪽이다.
+     * 서버 토핑은 https 주소라 [android.content.ContentResolver] 로 열지 못하지만,
+     * `RemoteImageDownloadDataSource` 가 그 스킴을 갈라 기기에 받아 두므로 편집 화면은
+     * 이 URL 을 그대로 받아도 된다(`ImageSegmentationRepositoryImpl.decodeImage`).
      */
     private fun handleOnClickEditTopping() {
         val selected = state.value.toppings.find { it.parfaitImageId == state.value.selectedToppingId } ?: return
@@ -492,30 +496,50 @@ constructor(
     }
 
     /**
-     * [confirmedToppings]과 비교해 실제로 바뀐 토핑만 PATCH 한다. 일부가 403/404 등으로
-     * 실패해도 나머지 토핑·배경 확인은 그대로 진행한다 — 실패 재시도 UI는 범위 밖이라
-     * 로그만 남긴다.
+     * [confirmedToppings]과 비교해 실제로 바뀐 것만 PATCH 한다 — 위치·크기·각도와 테두리는
+     * 서버 API 자체가 갈라져 있어(`ToppingRepository.update` vs `updateBorder`) 독립적으로
+     * 비교하고 독립적으로 보낸다. 일부가 403/404 등으로 실패해도 나머지 토핑·배경 확인은
+     * 그대로 진행한다 — 실패 재시도 UI는 범위 밖이라 로그만 남긴다.
      */
     private suspend fun updateToppingIfChanged(topping: CanvasToppingItem) {
         val original = confirmedToppings.find { it.parfaitImageId == topping.parfaitImageId }
-        val changed = original == null ||
+
+        val transformChanged = original == null ||
             topping.positionX != original.positionX ||
             topping.positionY != original.positionY ||
             topping.scale != original.scale ||
             topping.rotationDegrees != original.rotationDegrees
-        if (!changed) return
-
-        updateToppingUseCase(
-            groupId = groupId,
-            parfaitId = parfaitId,
-            parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-            positionX = topping.positionX.toDouble(),
-            positionY = topping.positionY.toDouble(),
-            scale = topping.scale.toDouble(),
-            rotation = topping.rotationDegrees.toDouble(),
-        ).onFailure { throwable ->
-            viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
+        if (transformChanged) {
+            updateToppingUseCase(
+                groupId = groupId,
+                parfaitId = parfaitId,
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                positionX = topping.positionX.toDouble(),
+                positionY = topping.positionY.toDouble(),
+                scale = topping.scale.toDouble(),
+                rotation = topping.rotationDegrees.toDouble(),
+            ).onFailure { throwable ->
+                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
+            }
         }
+
+        val borderChanged = original == null || topping.borderLayers != original.borderLayers
+        if (borderChanged) {
+            updateToppingBorderUseCase(
+                groupId = groupId,
+                parfaitId = parfaitId,
+                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+                border = topping.borderLayers.toToppingBorder(),
+            ).onFailure { throwable ->
+                viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
+            }
+        }
+    }
+
+    /** 마지막 겹이 가장 바깥쪽, 즉 화면에 보이는 테두리다 — 서버는 그 한 겹만 값으로 받는다 */
+    private fun List<ToppingBorderLayer>.toToppingBorder(): ToppingBorder {
+        val layer = lastOrNull() ?: return ToppingBorder.None
+        return ToppingBorder.Solid(color = layer.colorArgb.toRgbHexString(), width = layer.widthDp.toDouble())
     }
 
     private suspend fun saveBackground() {

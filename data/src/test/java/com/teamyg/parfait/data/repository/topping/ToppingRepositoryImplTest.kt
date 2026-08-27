@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -225,6 +226,54 @@ class ToppingRepositoryImplTest {
             parfaitId = PARFAIT_ID,
             parfaitImageId = PARFAIT_IMAGE_ID,
             positionX = 100.0,
+        )
+
+        // Then 코드와 상태 코드가 함께 살아 있다
+        val error = assertIs<AppError.Server>(result.exceptionOrNull())
+        assertEquals("PARFAIT_IMAGE_NOT_OWNED", error.code)
+        assertEquals(403, error.statusCode)
+    }
+
+    @Test
+    fun updateBorder_dataSourceSucceeds_returnsSameValue() = runTest {
+        // Given 서버가 수정된 테두리를 준다
+        val updated = UpdatedToppingBorderVO(parfaitImageId = PARFAIT_IMAGE_ID, border = border)
+        coEvery {
+            parfaitImageRemoteDataSource.updateToppingBorder(GROUP_ID, PARFAIT_ID, PARFAIT_IMAGE_ID, border)
+        } returns Result.success(updated)
+
+        // When 테두리를 수정한다
+        val result = repository.updateBorder(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            parfaitImageId = PARFAIT_IMAGE_ID,
+            border = border,
+        )
+
+        // Then 값을 가공 없이 그대로 전달한다
+        assertEquals(updated, result.getOrThrow())
+    }
+
+    @Test
+    fun updateBorder_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
+        // Given 본인이 배치한 토핑이 아니다
+        coEvery {
+            parfaitImageRemoteDataSource.updateToppingBorder(any(), any(), any(), any())
+        } returns Result.failure(
+            ApiException.Business(
+                code = "PARFAIT_IMAGE_NOT_OWNED",
+                serverMessage = "본인이 배치한 토핑이 아닙니다",
+                statusCode = 403,
+                errorDetail = null,
+            ),
+        )
+
+        // When 테두리를 수정한다
+        val result = repository.updateBorder(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            parfaitImageId = PARFAIT_IMAGE_ID,
+            border = border,
         )
 
         // Then 코드와 상태 코드가 함께 살아 있다
