@@ -612,7 +612,7 @@ class AlphaPostProcessorTest {
     }
 
     @Test
-    fun postProcessAlpha_refineEnabledWithGuidance_producesPartialAlpha() {
+    fun postProcessAlpha_refineEnabledWithGuidance_producesPartialAlpha() = runTest {
         // Given — 하드 매트에는 부분 알파가 없다
         val alpha = notchedMask()
         val options = AlphaPostProcessOptions(
@@ -639,7 +639,7 @@ class AlphaPostProcessorTest {
     }
 
     @Test
-    fun postProcessAlpha_refineDisabled_leavesTheAlphaUntouchedByRefinement() {
+    fun postProcessAlpha_refineDisabled_leavesTheAlphaUntouchedByRefinement() = runTest {
         // Given — 같은 입력·같은 안내자로 켜고 끈다. 플래그가 무시되면 두 결과가 같아진다
         val enabled = notchedMask()
         val disabled = notchedMask()
@@ -675,7 +675,7 @@ class AlphaPostProcessorTest {
     }
 
     @Test
-    fun postProcessAlpha_refineEnabledWithoutGuidance_skipsRefinement() {
+    fun postProcessAlpha_refineEnabledWithoutGuidance_skipsRefinement() = runTest {
         // Given — 안내자를 못 대는 호출부가 커널을 그대로 쓸 수 있어야 한다
         val withoutGuidance = notchedMask()
         val disabled = notchedMask()

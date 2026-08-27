@@ -1,8 +1,11 @@
 package com.teamyg.parfait.data.repository.image
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /** 값이 0~1 범위라 이 정도면 충분하다 */
@@ -35,7 +38,7 @@ private fun maskFrom(
 
 class AlphaRefineTest {
     @Test
-    fun boxMean_everyValueIsOne_staysOneEvenAtTheCorners() {
+    fun boxMean_everyValueIsOne_staysOneEvenAtTheCorners() = runTest {
         // Given — 고정 개수로 나누면 모서리가 4/9 로 내려앉는다
         val src = FloatArray(9) { 1f }
 
@@ -47,7 +50,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun boxMean_radiusLargerThanTheArray_averagesEverything() {
+    fun boxMean_radiusLargerThanTheArray_averagesEverything() = runTest {
         // Given
         val src = floatArrayOf(0f, 1f, 0f, 1f)
 
@@ -59,7 +62,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun boxMean_singleSpike_spreadsOverTheWindowOnly() {
+    fun boxMean_singleSpike_spreadsOverTheWindowOnly() = runTest {
         // Given — 5×5 한가운데(2,2)만 1 이다
         val src = FloatArray(25)
         src[12] = 1f
@@ -74,7 +77,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun boxMean_windowClippedAtTheEdge_usesTheActualCount() {
+    fun boxMean_windowClippedAtTheEdge_usesTheActualCount() = runTest {
         // Given — 한 행짜리. 왼쪽 끝의 창은 두 칸만 포함한다
         val src = floatArrayOf(1f, 0f, 0f, 0f)
 
@@ -87,7 +90,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun downscaleLuminance_greenAndBlueWeights_areNotSwapped() {
+    fun downscaleLuminance_greenAndBlueWeights_areNotSwapped() = runTest {
         // Given — 순수색 셋. 계수를 맞바꾸면 회색·빨강 테스트로는 안 잡힌다
         val pixels = intArrayOf(0xFF00FF00.toInt(), 0xFF0000FF.toInt(), 0xFFFF0000.toInt())
 
@@ -101,7 +104,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun downscaleLuminance_ignoresTheAlphaChannel() {
+    fun downscaleLuminance_ignoresTheAlphaChannel() = runTest {
         // Given — 같은 빨강인데 알파만 다르다. 안내자는 색만 봐야 한다
         val pixels = intArrayOf(0xFFFF0000.toInt(), 0x00FF0000)
 
@@ -114,7 +117,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun downscaleAlpha_valueAbove127_isNotMisreadAsNegative() {
+    fun downscaleAlpha_valueAbove127_isNotMisreadAsNegative() = runTest {
         // Given — 부호 처리를 빠뜨리면 음수가 된다
         val alpha = byteArrayOf(0, 128.toByte(), 255.toByte())
 
@@ -128,7 +131,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun downscaleAlpha_widthIsNotAMultipleOfFactor_averagesTheShortBlock() {
+    fun downscaleAlpha_widthIsNotAMultipleOfFactor_averagesTheShortBlock() = runTest {
         // Given — 3×1 을 배율 2 로 줄이면 두 번째 블록에 한 칸만 든다
         val alpha = byteArrayOf(255.toByte(), 0, 255.toByte())
 
@@ -142,7 +145,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun downscaleAlpha_heightIsNotAMultipleOfFactor_keepsTheTrailingRow() {
+    fun downscaleAlpha_heightIsNotAMultipleOfFactor_keepsTheTrailingRow() = runTest {
         // Given — 3×3 을 배율 2 로 줄이면 2×2 다. 마지막 행·열은 한 칸짜리 블록이다.
         // 아래 행만 불투명하게 두면 세로 인덱싱이 틀렸을 때 값이 어긋난다
         val alpha = ByteArray(9) { index -> if (index >= 6) 255.toByte() else 0 }
@@ -159,7 +162,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun guidedCoefficients_constantGuidance_degeneratesToADoubleMean() {
+    fun guidedCoefficients_constantGuidance_degeneratesToADoubleMean() = runTest {
         // Given — 안내자에 경계가 없으면 알파를 옮길 근거가 없다. a 는 0 이고 b 만 남는다
         val guidance = FloatArray(16) { 0.5f }
         val input = FloatArray(16) { index -> if (index % 4 < 2) 1f else 0f }
@@ -184,7 +187,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun guidedCoefficients_inputEqualsGuidance_reproducesTheGuidance() {
+    fun guidedCoefficients_inputEqualsGuidance_reproducesTheGuidance() = runTest {
         // Given — p 가 I 와 같으면 q = I 여야 하므로 a = 1, b = 0 이다.
         // ⚠️ 안내자는 **모든 창에 분산이 있어야** 한다. 계단형이면 가장자리 창의 분산이 0 이라
         // 그 자리 a 가 0 으로 떨어지고 두 번째 평균이 그것을 안쪽까지 번지게 한다
@@ -208,7 +211,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun applyCoefficients_identityCoefficients_writeTheGuidanceAsAlpha() {
+    fun applyCoefficients_identityCoefficients_writeTheGuidanceAsAlpha() = runTest {
         // Given — a = 1, b = 0 이면 알파가 안내자 휘도 그대로여야 한다
         val alpha = ByteArray(4)
         val guidance = intArrayOf(gray(0), gray(128), gray(255), gray(64))
@@ -235,7 +238,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun applyCoefficients_resultMatchesTheCurrentAlpha_reportsNoChange() {
+    fun applyCoefficients_resultMatchesTheCurrentAlpha_reportsNoChange() = runTest {
         // Given — 호출부가 이 값으로 원본 판 재사용을 판정한다. 늘 참이면 그 경로가 죽는다
         val alpha = ByteArray(2) { 255.toByte() }
         val guidance = intArrayOf(gray(255), gray(255))
@@ -258,7 +261,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun applyCoefficients_outOfRangeResult_isClampedInsteadOfWrapping() {
+    fun applyCoefficients_outOfRangeResult_isClampedInsteadOfWrapping() = runTest {
         // Given — 자르지 않으면 바이트가 감겨 반대 값이 된다
         val alpha = ByteArray(2)
         val guidance = intArrayOf(gray(255), gray(255))
@@ -282,7 +285,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun applyCoefficients_verticallyUpscaledCoefficients_interpolateBetweenRows() {
+    fun applyCoefficients_verticallyUpscaledCoefficients_interpolateBetweenRows() = runTest {
         // Given — 세로로만 변하는 계수. 세로 보간을 빠뜨리면 계단 둘만 나온다
         val alpha = ByteArray(8)
         val guidance = IntArray(8) { gray(255) }
@@ -309,7 +312,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun applyCoefficients_horizontallyUpscaledCoefficients_interpolateBetweenColumns() {
+    fun applyCoefficients_horizontallyUpscaledCoefficients_interpolateBetweenColumns() = runTest {
         // Given — 가로로만 변하는 계수. `subWidth = 1` 인 세로 테스트는 이 축을 전혀 보지 못한다
         val alpha = ByteArray(8)
         val guidance = IntArray(8) { gray(255) }
@@ -340,7 +343,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun refineAlpha_maskOverhangsIntoTheDarkSide_pullsTheEdgeBackToTheColourEdge() {
+    fun refineAlpha_maskOverhangsIntoTheDarkSide_pullsTheEdgeBackToTheColourEdge() = runTest {
         // Given — 색 경계는 16 인데 마스크가 13 까지 넘어와 배경 3칸을 물고 있다
         val guided = maskFrom(width = 32, height = 8, opaqueFrom = 13)
         val flat = maskFrom(width = 32, height = 8, opaqueFrom = 13)
@@ -375,7 +378,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun refineAlpha_insideTheSubject_staysOpaque() {
+    fun refineAlpha_insideTheSubject_staysOpaque() = runTest {
         // Given — 정련이 내부까지 반투명하게 만들면 안 된다.
         // 탐침 자리를 경계에서 창 하나 안쪽(20)에 둔다 — 끝(28)에 두면 계수가 평탄해져
         // 마지막 창 평균을 지우는 변이를 못 잡는다
@@ -398,7 +401,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun refineAlpha_misalignedHardEdge_becomesASoftTransition() {
+    fun refineAlpha_misalignedHardEdge_becomesASoftTransition() = runTest {
         // Given — 이 라운드의 목적이다. 정련 전에는 0 과 255 뿐이다.
         // ⚠️ 마스크 경계를 색 경계와 어긋나게 둔다. 같은 자리(p ≡ I)면 가이드 필터는 경계를
         // **일부러 보존하므로** 부분 알파가 생기지 않는다
@@ -421,7 +424,7 @@ class AlphaRefineTest {
     }
 
     @Test
-    fun refineAlpha_downscaledCoefficients_keepTheEdgeAtTheSamePlace() {
+    fun refineAlpha_downscaledCoefficients_keepTheEdgeAtTheSamePlace() = runTest {
         // Given — 계수를 축소판에서 구해도 경계 위치가 밀리면 안 된다.
         // 두 설정의 유효 창은 같지 않다(원본 기준 9 대 12). 그래도 경계는 2칸 안에 들어야 한다
         val fullScale = maskFrom(width = 64, height = 16, opaqueFrom = 28)
@@ -453,5 +456,95 @@ class AlphaRefineTest {
         val fullCrossing = (0 until 64).first { (fullScale[row + it].toInt() and 0xFF) > 128 }
         val downCrossing = (0 until 64).first { (downscaled[row + it].toInt() and 0xFF) > 128 }
         assertTrue(abs(fullCrossing - downCrossing) <= 2, "full=$fullCrossing down=$downCrossing")
+    }
+
+    @Test
+    fun boxMean_cancelledMidway_throws() {
+        // Given
+        val src = FloatArray(16) { 1f }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) { boxMean(src, width = 4, height = 4, radius = 1) }
+        }
+    }
+
+    @Test
+    fun guidedCoefficients_cancelledMidway_throws() {
+        // Given
+        val guidance = FloatArray(16) { 0.5f }
+        val input = FloatArray(16) { 0.5f }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                guidedCoefficients(guidance, input, width = 4, height = 4, radius = 1, epsilon = 1e-4f)
+            }
+        }
+    }
+
+    @Test
+    fun applyCoefficients_cancelledMidway_throws() {
+        // Given
+        val alpha = ByteArray(16) { 255.toByte() }
+        val guidance = IntArray(16) { 0xFF808080.toInt() }
+        val coefficients = GuidedCoefficients(a = FloatArray(16), b = FloatArray(16) { 1f })
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                applyCoefficients(
+                    alpha = alpha,
+                    guidance = guidance,
+                    coefficients = coefficients,
+                    width = 4,
+                    height = 4,
+                    subWidth = 4,
+                    subHeight = 4,
+                    factor = 1,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun refineAlpha_countingChecks_visitsEveryStage() {
+        // Given — 4×4·배율1·반경1. boxMean 여섯 번(각 행·열 두 루프)·downscale 둘·계수 루프·
+        // applyCoefficients 가 각각 확인한다
+        val alpha = ByteArray(16) { 255.toByte() }
+        val guidance = IntArray(16) { 0xFF808080.toInt() }
+        val job = CountingJob()
+
+        // When
+        runKernelCounting(job) {
+            refineAlpha(
+                alpha = alpha,
+                guidance = guidance,
+                width = 4,
+                height = 4,
+                downscale = 1,
+                radius = 1,
+                epsilon = 1e-4f,
+            )
+        }
+
+        // Then — 실제 값을 재서 채우고, 한 단계를 통째로 지웠을 때의 최대치 위로 하한을 건다
+        assertTrue(job.calls > MEASURED_LOWER_BOUND)
+    }
+
+    private companion object {
+        /**
+         * 4×4·배율1·반경1 에서 실측한 총합은 64. 확인 지점을 하나씩 지우고 잰 총합은
+         * downscale 56, boxMean 행 루프 40, boxMean 열 루프 40, guidedCoefficients 계수 루프 60,
+         * applyCoefficients 루프 60 이다. 그중 최댓값(60)을 하한으로 쓴다 — 어느 한 확인 지점을
+         * 지워도 총합이 60 이하로 떨어져 이 하한에 잡힌다
+         */
+        const val MEASURED_LOWER_BOUND = 60
     }
 }

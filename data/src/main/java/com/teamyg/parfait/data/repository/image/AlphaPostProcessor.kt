@@ -1,6 +1,9 @@
 package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 
 private const val OPAQUE = 255
 
@@ -11,19 +14,19 @@ private const val OPAQUE = 255
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun applyKeepMask(
+internal suspend fun applyKeepMask(
     alpha: ByteArray,
     width: Int,
     height: Int,
     keep: BooleanArray,
     maskWidth: Int,
     factor: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
+    val job = currentCoroutineContext().job
     var changed = false
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         val maskRowOffset = (y / factor) * maskWidth
         for (x in 0 until width) {
@@ -54,12 +57,12 @@ internal data class AlphaMeasurement(
  *
  * @return 남은 알파가 없으면 `null`
  */
-internal fun measureAlpha(
+internal suspend fun measureAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
-    checkCancelled: () -> Unit = {},
 ): AlphaMeasurement? {
+    val job = currentCoroutineContext().job
     var left = Int.MAX_VALUE
     var top = Int.MAX_VALUE
     var right = -1
@@ -68,7 +71,7 @@ internal fun measureAlpha(
     var partial = 0
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         for (x in 0 until width) {
             val value = alpha[rowOffset + x].toInt() and 0xFF
@@ -112,20 +115,20 @@ private const val ABSENT = -1
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun erodeEdge(
+internal suspend fun erodeEdge(
     alpha: ByteArray,
     width: Int,
     height: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
     if (width <= 0 || height <= 0) return false
 
+    val job = currentCoroutineContext().job
     var previousRow = ByteArray(width)
     var currentRow = ByteArray(width)
     var changed = false
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         alpha.copyInto(currentRow, 0, rowOffset, rowOffset + width)
 
@@ -226,18 +229,16 @@ internal fun interface GuidanceProvider {
  * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」.
  *
  * @param alpha 길이가 `width * height` 여야 한다
- * @param checkCancelled 행 경계마다 불린다. 이 함수는 코루틴을 모르므로 호출부가 넣어 준다
  * @return 남은 알파가 없으면 `null`. 정련이나 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로
  *   `null` 이 나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고
  *   반환하므로 다르다
  */
-internal fun postProcessAlpha(
+internal suspend fun postProcessAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
     options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
     guidance: GuidanceProvider? = null,
-    checkCancelled: () -> Unit = {},
 ): AlphaPostProcessResult? {
     require(alpha.size == width * height) {
         "alpha length ${alpha.size} does not match ${width}x$height"
@@ -248,18 +249,18 @@ internal fun postProcessAlpha(
     val maskWidth = ceilDiv(width, factor)
     val maskHeight = ceilDiv(height, factor)
 
-    val mask = downscaleMask(alpha, width, height, factor, options.binaryThreshold, checkCancelled)
+    val mask = downscaleMask(alpha, width, height, factor, options.binaryThreshold)
 
     val minComponentPixels = maxOf(1, options.areaOpeningMinPixels / (factor * factor))
-    if (!applyAreaOpening(mask, maskWidth, maskHeight, minComponentPixels, checkCancelled)) return null
+    if (!applyAreaOpening(mask, maskWidth, maskHeight, minComponentPixels)) return null
 
-    val keep = dilateMask(mask, maskWidth, maskHeight, checkCancelled)
+    val keep = dilateMask(mask, maskWidth, maskHeight)
 
-    val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor, checkCancelled)
+    val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor)
 
     // 정련이 훑을 영역을 먼저 정한다. 창 통계를 내는 연산이라 빈 여백까지 훑으면 값 없이 비싸다
     val beforeRefine = if (options.refineEdges && guidance != null) {
-        measureAlpha(alpha, width, height, checkCancelled) ?: return null
+        measureAlpha(alpha, width, height) ?: return null
     } else {
         null
     }
@@ -267,15 +268,15 @@ internal fun postProcessAlpha(
     val startedAt = System.nanoTime()
     val refined = beforeRefine != null &&
         guidance != null &&
-        refineWithin(alpha, width, beforeRefine.bounds, guidance, options, checkCancelled)
+        refineWithin(alpha, width, beforeRefine.bounds, guidance, options)
     val refineElapsedNanos = if (beforeRefine != null) System.nanoTime() - startedAt else 0L
 
-    val eroded = options.erodeEdge && erodeEdge(alpha, width, height, checkCancelled)
+    val eroded = options.erodeEdge && erodeEdge(alpha, width, height)
 
     val measured = if (beforeRefine != null && !refined && !eroded) {
         beforeRefine
     } else {
-        measureAlpha(alpha, width, height, checkCancelled) ?: return null
+        measureAlpha(alpha, width, height) ?: return null
     }
 
     return AlphaPostProcessResult(
@@ -291,13 +292,12 @@ internal fun postProcessAlpha(
  * [bounds] 사각형만 잘라 정련하고 되쓴다. 잘라 내는 이유는 [refineAlpha] 가 연속된 배열을
  * 전제하기 때문이고, 그 전제를 유지하는 편이 stride 를 함수 넷에 실어 나르는 것보다 싸다.
  */
-private fun refineWithin(
+private suspend fun refineWithin(
     alpha: ByteArray,
     rowStride: Int,
     bounds: SegmentationBounds,
     guidance: GuidanceProvider,
     options: AlphaPostProcessOptions,
-    checkCancelled: () -> Unit,
 ): Boolean {
     val patch = ByteArray(bounds.width * bounds.height)
     for (y in 0 until bounds.height) {
@@ -313,7 +313,6 @@ private fun refineWithin(
         downscale = options.refineDownscale,
         radius = options.refineRadius,
         epsilon = options.refineEpsilon,
-        checkCancelled = checkCancelled,
     )
     if (!changed) return false
 

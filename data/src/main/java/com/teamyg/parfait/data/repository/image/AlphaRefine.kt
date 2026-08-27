@@ -1,5 +1,8 @@
 package com.teamyg.parfait.data.repository.image
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 import kotlin.math.roundToInt
 
 private const val OPAQUE = 255f
@@ -12,16 +15,16 @@ private const val OPAQUE = 255f
  *
  * 가장자리에서는 창이 잘리므로 **실제 포함된 픽셀 수로 나눈다.**
  */
-internal fun boxMean(
+internal suspend fun boxMean(
     src: FloatArray,
     width: Int,
     height: Int,
     radius: Int,
-    checkCancelled: () -> Unit = {},
 ): FloatArray {
+    val job = currentCoroutineContext().job
     val horizontal = FloatArray(src.size)
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         var sum = 0f
         for (x in 0..minOf(radius, width - 1)) sum += src[rowOffset + x]
@@ -36,7 +39,7 @@ internal fun boxMean(
 
     val mean = FloatArray(src.size)
     for (x in 0 until width) {
-        checkCancelled()
+        job.ensureActive()
         var sum = 0f
         for (y in 0..minOf(radius, height - 1)) sum += horizontal[y * width + x]
         val columns = minOf(width - 1, x + radius) - maxOf(0, x - radius) + 1
@@ -57,21 +60,19 @@ internal fun boxMean(
  * 안내자를 휘도로 바꾸며 [factor] 배율로 줄인다. 컬러 3채널을 쓰지 않는 이유는
  * `specs/2026-08-25-segmentation-alpha-refinement.md` 「범위 - 제외」 참고.
  */
-internal fun downscaleLuminance(
+internal suspend fun downscaleLuminance(
     pixels: IntArray,
     width: Int,
     height: Int,
     factor: Int,
-    checkCancelled: () -> Unit = {},
-): FloatArray = downscale(width, height, factor, checkCancelled) { index -> luminanceOf(pixels[index]) }
+): FloatArray = downscale(width, height, factor) { index -> luminanceOf(pixels[index]) }
 
-internal fun downscaleAlpha(
+internal suspend fun downscaleAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
     factor: Int,
-    checkCancelled: () -> Unit = {},
-): FloatArray = downscale(width, height, factor, checkCancelled) { index ->
+): FloatArray = downscale(width, height, factor) { index ->
     (alpha[index].toInt() and 0xFF) / OPAQUE
 }
 
@@ -79,19 +80,19 @@ internal fun downscaleAlpha(
  * 가장자리 블록은 **존재하는 칸만** 평균한다 — 없는 칸을 0으로 치면 오른쪽·아래 가장자리의
  * 안내자가 어두워져 경계가 그쪽으로 끌린다.
  */
-private inline fun downscale(
+private suspend inline fun downscale(
     width: Int,
     height: Int,
     factor: Int,
-    checkCancelled: () -> Unit,
     value: (Int) -> Float,
 ): FloatArray {
+    val job = currentCoroutineContext().job
     val subWidth = ceilDiv(width, factor)
     val sums = FloatArray(subWidth * ceilDiv(height, factor))
     val counts = IntArray(sums.size)
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         val subRowOffset = (y / factor) * subWidth
         for (x in 0 until width) {
@@ -126,36 +127,34 @@ internal class GuidedCoefficients(
  *
  * 근거는 `specs/2026-08-25-segmentation-alpha-refinement.md` 「설계 - 정련 알고리즘」에 있다.
  */
-internal fun guidedCoefficients(
+internal suspend fun guidedCoefficients(
     guidance: FloatArray,
     input: FloatArray,
     width: Int,
     height: Int,
     radius: Int,
     epsilon: Float,
-    checkCancelled: () -> Unit = {},
 ): GuidedCoefficients {
-    val meanGuidance = boxMean(guidance, width, height, radius, checkCancelled)
-    val meanInput = boxMean(input, width, height, radius, checkCancelled)
+    val job = currentCoroutineContext().job
+    val meanGuidance = boxMean(guidance, width, height, radius)
+    val meanInput = boxMean(input, width, height, radius)
     val meanSquare = boxMean(
         FloatArray(guidance.size) { index -> guidance[index] * guidance[index] },
         width,
         height,
         radius,
-        checkCancelled,
     )
     val meanProduct = boxMean(
         FloatArray(guidance.size) { index -> guidance[index] * input[index] },
         width,
         height,
         radius,
-        checkCancelled,
     )
 
     val a = FloatArray(guidance.size)
     val b = FloatArray(guidance.size)
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         for (x in 0 until width) {
             val index = y * width + x
             // 부동소수 오차로 음수가 나올 수 있다. 음수 분산은 a 의 부호를 뒤집는다
@@ -167,8 +166,8 @@ internal fun guidedCoefficients(
     }
 
     return GuidedCoefficients(
-        a = boxMean(a, width, height, radius, checkCancelled),
-        b = boxMean(b, width, height, radius, checkCancelled),
+        a = boxMean(a, width, height, radius),
+        b = boxMean(b, width, height, radius),
     )
 }
 
@@ -181,7 +180,7 @@ internal fun guidedCoefficients(
  * @param guidance ARGB. 휘도를 픽셀마다 즉석 계산한다 — 원본 해상도 실수 배열을 만들지 않는다
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun applyCoefficients(
+internal suspend fun applyCoefficients(
     alpha: ByteArray,
     guidance: IntArray,
     coefficients: GuidedCoefficients,
@@ -190,12 +189,12 @@ internal fun applyCoefficients(
     subWidth: Int,
     subHeight: Int,
     factor: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
+    val job = currentCoroutineContext().job
     var changed = false
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val sourceY = ((y + 0.5f) / factor - 0.5f).coerceIn(0f, (subHeight - 1).toFloat())
         val topRow = sourceY.toInt()
         val bottomRow = minOf(topRow + 1, subHeight - 1)
@@ -253,7 +252,7 @@ internal fun applyCoefficients(
  *   정련이 지금 경계를 그대로 재현한다
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun refineAlpha(
+internal suspend fun refineAlpha(
     alpha: ByteArray,
     guidance: IntArray,
     width: Int,
@@ -261,7 +260,6 @@ internal fun refineAlpha(
     downscale: Int,
     radius: Int,
     epsilon: Float,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
     require(alpha.size == width * height) {
         "alpha length ${alpha.size} does not match ${width}x$height"
@@ -278,13 +276,12 @@ internal fun refineAlpha(
     val subHeight = ceilDiv(height, downscale)
 
     val coefficients = guidedCoefficients(
-        guidance = downscaleLuminance(guidance, width, height, downscale, checkCancelled),
-        input = downscaleAlpha(alpha, width, height, downscale, checkCancelled),
+        guidance = downscaleLuminance(guidance, width, height, downscale),
+        input = downscaleAlpha(alpha, width, height, downscale),
         width = subWidth,
         height = subHeight,
         radius = radius,
         epsilon = epsilon,
-        checkCancelled = checkCancelled,
     )
 
     return applyCoefficients(
@@ -296,7 +293,6 @@ internal fun refineAlpha(
         subWidth = subWidth,
         subHeight = subHeight,
         factor = downscale,
-        checkCancelled = checkCancelled,
     )
 }
 
