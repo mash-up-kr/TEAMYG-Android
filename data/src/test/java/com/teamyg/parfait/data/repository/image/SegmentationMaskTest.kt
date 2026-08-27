@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.repository.image
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import java.nio.FloatBuffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +42,7 @@ class SegmentationMaskTest {
     }
 
     @Test
-    fun maskSubjectAlpha_confidentBlobWithASpeck_dropsTheSpeck() {
+    fun maskSubjectAlpha_confidentBlobWithASpeck_dropsTheSpeck() = runTest {
         // Given — 8×8. 왼쪽 위 4×4 는 확실하고 오른쪽 아래 한 점만 튄다
         val values = FloatArray(64)
         for (y in 0 until 4) for (x in 0 until 4) values[y * 8 + x] = 1f
@@ -62,7 +64,7 @@ class SegmentationMaskTest {
     }
 
     @Test
-    fun maskSubjectAlpha_everyPixelIsConfident_coversTheWholePlate() {
+    fun maskSubjectAlpha_everyPixelIsConfident_coversTheWholePlate() = runTest {
         // Given — 프레임에 걸친 피사체가 테두리를 잃지 않는지 본다
         val values = FloatArray(64) { 1f }
 
@@ -75,7 +77,7 @@ class SegmentationMaskTest {
     }
 
     @Test
-    fun maskSubjectAlpha_nothingIsConfident_returnsNull() {
+    fun maskSubjectAlpha_nothingIsConfident_returnsNull() = runTest {
         // Given
         val values = FloatArray(64) { 0.1f }
 
@@ -87,13 +89,29 @@ class SegmentationMaskTest {
     }
 
     @Test
-    fun maskSubjectAlpha_bufferLimitBelowCapacity_stopsAtLimitInsteadOfReadingPastIt() {
+    fun maskSubjectAlpha_bufferLimitBelowCapacity_stopsAtLimitInsteadOfReadingPastIt() = runTest {
         // Given — absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼는다
         val buffer = FloatBuffer.allocate(64).apply { limit(10) }
 
         // When · Then
         assertFailsWith<IndexOutOfBoundsException> {
             maskSubjectAlpha(buffer, width = 8, height = 8, options = TEST_OPTIONS)
+        }
+    }
+
+    @Test
+    fun maskSubjectAlpha_cancelledAtFirstCheck_throws() {
+        // Given
+        val values = FloatArray(64) { 1f }
+        val job = CountingJob()
+        job.cancelAfter = 0
+
+        // When · Then — maskSubjectAlpha 자체에는 확인 루프가 없다. postProcessAlpha 아래
+        // downscaleMask 의 첫 행에서 걸린다
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                maskSubjectAlpha(confidenceBuffer(values), width = 8, height = 8, options = TEST_OPTIONS)
+            }
         }
     }
 }
