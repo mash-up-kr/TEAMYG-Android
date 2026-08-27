@@ -46,6 +46,8 @@ class GetParfaitHistoriesUseCaseTest {
 
         override fun clearTodayCanvas() = error("기록 조회는 캐시를 지우지 않는다")
 
+        override fun requestTodayCanvasRefresh(groupId: GroupId) = error("기록 조회는 갱신을 요청하지 않는다")
+
         override suspend fun getCanvasDetail(
             groupId: GroupId,
             parfaitId: ParfaitId,

@@ -8,19 +8,25 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.GroupMemberId
+import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
-import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,12 +44,21 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDateTime
 import org.junit.Rule
 
 private const val SCALE_DELTA = 1e-4f
+
+/** 초안이 못 박은 캔버스와 구독 캔버스가 같은 경우를 표현하는 기본값 */
+private val PARFAIT_ID = ParfaitId(2L)
+
+/** 구독 캔버스가 초안과 다른 캔버스를 가리키는 경우(하루 경계를 넘긴 상황)를 표현한다 */
+private val OTHER_PARFAIT_ID = ParfaitId(99L)
 
 class CanvasToppingPlaceViewModelTest {
     @get:Rule
@@ -55,10 +70,12 @@ class CanvasToppingPlaceViewModelTest {
         subjectImagePath: String? = "/cache/segmentation/subject.png",
         borderColorArgb: Int? = null,
         borderWidthDp: Float? = null,
+        parfaitId: ParfaitId = PARFAIT_ID,
+        nextPositionZ: Int = 3,
     ) = ToppingDraft(
         groupId = GroupId(1L),
-        parfaitId = ParfaitId(2L),
-        nextPositionZ = 3,
+        parfaitId = parfaitId,
+        nextPositionZ = nextPositionZ,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = "/cache/segmentation/cutout.png",
         borderColorArgb = borderColorArgb,
@@ -71,37 +88,47 @@ class CanvasToppingPlaceViewModelTest {
 
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase = mockk()
 
-    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase = mockk()
+    private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
     init {
         every { getTodayParfaitFlowUseCase(any(), any()) } returns todayCanvases
-        coEvery { refreshTodayParfaitUseCase(any(), any()) } returns
-            Result.failure(IllegalStateException("refreshTodayParfaitUseCase not stubbed in this test"))
     }
 
-    private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
+    /**
+     * `launchWhileSubscribed` 는 [CanvasToppingPlaceViewModel.state] 의 구독자 수로 캔버스
+     * 구독 수명을 잰다 — 라우트의 `collectAsStateWithLifecycle()` 을 흉내 내 여기서 먼저 구독을
+     * 붙여야 오늘 캔버스 구독이 열린다.
+     */
+    private fun TestScope.viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
         every { toppingDraftRepository.draft } returns flowOf(draft)
         return CanvasToppingPlaceViewModel(
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
-            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
-        )
+            requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+        ).also { viewModel ->
+            backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+        }
+    }
+
+    /** `OnCanvasMeasured`·`OnToppingBaseSizeMeasured`·`OnToppingImageReadyChanged`를 순서대로 넣는다 */
+    private fun measureAndReady(viewModel: CanvasToppingPlaceViewModel) {
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingImageReadyChanged(isReady = true))
     }
 
     /** 확정이 나갈 수 있는 최소 조건을 갖춘 ViewModel — 실측 둘 + painter 준비 */
-    private fun readyViewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel = viewModel(draft).apply {
-        processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
-        processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))
-        processIntent(CanvasToppingPlaceIntent.OnToppingImageReadyChanged(isReady = true))
-    }
+    private fun TestScope.readyViewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel =
+        viewModel(draft).apply { measureAndReady(this) }
 
     @Test
-    fun onToppingResize_multipliesScale() {
+    fun onToppingResize_multipliesScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 배율 1배
         val viewModel = viewModel()
 
@@ -113,7 +140,7 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onToppingResize_accumulatesAcrossMultipleDrags() {
+    fun onToppingResize_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
 
         viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
@@ -123,7 +150,7 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onToppingResize_clampsAtMaxScale() {
+    fun onToppingResize_clampsAtMaxScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
 
@@ -135,7 +162,7 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onToppingResize_clampsAtMinScale() {
+    fun onToppingResize_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
 
@@ -147,7 +174,7 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onToppingRotate_accumulatesAcrossMultipleDrags() {
+    fun onToppingRotate_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 상태(회전 0도)
         val viewModel = viewModel()
 
@@ -326,7 +353,8 @@ class CanvasToppingPlaceViewModelTest {
 
         // 캔버스 식별값은 흐름 진입 때 못 박은 초안 것이다 — 화면이 다시 고르지 않는다
         assertEquals(GroupId(1L), groupIdSlot.captured)
-        assertEquals(ParfaitId(2L), parfaitIdSlot.captured)
+        assertEquals(PARFAIT_ID, parfaitIdSlot.captured)
+        // 구독 캔버스를 받지 못했으니 초안 값(nextPositionZ)으로 물러선다
         assertEquals(3, transformSlot.captured.positionZ)
         // 서버 형식은 Int.toRgbHexString() KDoc 참고
         assertEquals(ToppingBorder.Solid(color = "#FF6B00", width = 4.0), borderSlot.captured)
@@ -453,7 +481,7 @@ class CanvasToppingPlaceViewModelTest {
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
-            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
+            requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
         )
         advanceUntilIdle()
 
@@ -495,7 +523,7 @@ class CanvasToppingPlaceViewModelTest {
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
-            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
+            requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
         )
 
         // When 화면이 열린다
@@ -509,8 +537,6 @@ class CanvasToppingPlaceViewModelTest {
 
     @Test
     fun observeCanvas_nullEmission_keepsTheLastBackground() = runTest(mainDispatcherRule.dispatcher) {
-        every { getTodayParfaitFlowUseCase(any(), any()) } returns todayCanvases
-        coEvery { refreshTodayParfaitUseCase(any(), any()) } returns Result.success(Unit)
         todayCanvases.value = canvas(background = CanvasBackground.Color("#FF0000"))
 
         val viewModel = viewModel()
@@ -523,13 +549,76 @@ class CanvasToppingPlaceViewModelTest {
         assertEquals(seeded, viewModel.state.value.backgroundColor)
     }
 
-    private fun canvas(background: CanvasBackground? = null) = CanvasVO(
-        parfaitId = ParfaitId(2L),
+    @Test
+    fun confirm_sameCanvas_recomputesTheDepthFromTheSubscription() = runTest(mainDispatcherRule.dispatcher) {
+        // 초안 nextPositionZ = 3, 구독 캔버스(초안과 같은 parfaitId)에 z = 1..5 인 토핑
+        todayCanvases.value = canvas(parfaitId = PARFAIT_ID, toppings = (1..5).map { z -> topping(positionZ = z) })
+        val viewModel = readyViewModel(draft(nextPositionZ = 3, parfaitId = PARFAIT_ID))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 6 }, any()) }
+    }
+
+    @Test
+    fun confirm_differentCanvas_fallsBackToTheDraft() = runTest(mainDispatcherRule.dispatcher) {
+        // 구독 캔버스가 초안과 다른 parfaitId 다 — 하루 경계를 넘겨 오늘이 바뀐 상황
+        todayCanvases.value =
+            canvas(parfaitId = OTHER_PARFAIT_ID, toppings = (1..5).map { z -> topping(positionZ = z) })
+        val viewModel = readyViewModel(draft(nextPositionZ = 3, parfaitId = PARFAIT_ID))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any()) }
+    }
+
+    @Test
+    fun confirm_withoutACanvas_fallsBackToTheDraft() = runTest(mainDispatcherRule.dispatcher) {
+        todayCanvases.value = null
+        val viewModel = readyViewModel(draft(nextPositionZ = 3, parfaitId = PARFAIT_ID))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any()) }
+    }
+
+    private fun canvas(
+        background: CanvasBackground? = null,
+        parfaitId: ParfaitId = PARFAIT_ID,
+        toppings: List<CanvasToppingVO> = emptyList(),
+    ) = CanvasVO(
+        parfaitId = parfaitId,
         date = parfaitToday(),
         status = CanvasStatus.ACTIVE,
         lastClosedDate = null,
         members = emptyList(),
         background = background,
-        toppings = emptyList(),
+        toppings = toppings,
+    )
+
+    private fun topping(positionZ: Int) = CanvasToppingVO(
+        parfaitImageId = ParfaitImageId(positionZ.toLong()),
+        imageId = ImageId(positionZ.toLong()),
+        imageUrl = "https://cdn.example.com/topping-$positionZ.png",
+        transform = ToppingTransform(
+            positionX = 0.5,
+            positionY = 0.5,
+            positionZ = positionZ,
+            scale = 1.0,
+            rotation = 0.0,
+        ),
+        border = ToppingBorder.None,
+        placedBy = ToppingPlacerVO(
+            groupMemberId = GroupMemberId(1L),
+            nickname = GroupNickname("연경이"),
+        ),
+        isMine = false,
+        createdAt = LocalDateTime(2026, 8, 20, 12, 0),
     )
 }

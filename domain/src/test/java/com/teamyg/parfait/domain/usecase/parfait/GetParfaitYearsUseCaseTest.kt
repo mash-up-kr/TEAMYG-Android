@@ -41,6 +41,8 @@ class GetParfaitYearsUseCaseTest {
 
         override fun clearTodayCanvas() = error("연도 조회는 캐시를 지우지 않는다")
 
+        override fun requestTodayCanvasRefresh(groupId: GroupId) = error("연도 조회는 갱신을 요청하지 않는다")
+
         override suspend fun getCanvasDetail(
             groupId: GroupId,
             parfaitId: ParfaitId,
