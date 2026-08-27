@@ -1,6 +1,9 @@
 package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
 
 private const val OPAQUE = 255
 
@@ -11,19 +14,19 @@ private const val OPAQUE = 255
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun applyKeepMask(
+internal suspend fun applyKeepMask(
     alpha: ByteArray,
     width: Int,
     height: Int,
     keep: BooleanArray,
     maskWidth: Int,
     factor: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
+    val job = currentCoroutineContext().job
     var changed = false
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         val maskRowOffset = (y / factor) * maskWidth
         for (x in 0 until width) {
@@ -54,12 +57,12 @@ internal data class AlphaMeasurement(
  *
  * @return 남은 알파가 없으면 `null`
  */
-internal fun measureAlpha(
+internal suspend fun measureAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
-    checkCancelled: () -> Unit = {},
 ): AlphaMeasurement? {
+    val job = currentCoroutineContext().job
     var left = Int.MAX_VALUE
     var top = Int.MAX_VALUE
     var right = -1
@@ -68,7 +71,7 @@ internal fun measureAlpha(
     var partial = 0
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         for (x in 0 until width) {
             val value = alpha[rowOffset + x].toInt() and 0xFF
@@ -112,12 +115,12 @@ private const val ABSENT = -1
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
-internal fun erodeEdge(
+internal suspend fun erodeEdge(
     alpha: ByteArray,
     width: Int,
     height: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
+    val job = currentCoroutineContext().job
     if (width <= 0 || height <= 0) return false
 
     var previousRow = ByteArray(width)
@@ -125,7 +128,7 @@ internal fun erodeEdge(
     var changed = false
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         alpha.copyInto(currentRow, 0, rowOffset, rowOffset + width)
 
@@ -201,17 +204,17 @@ internal data class AlphaPostProcessResult(
  * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다. 근거는
  * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」.
  *
+ * 행 경계마다 취소를 확인하고, 취소되면 `CancellationException` 을 던진다. 순수 CPU 루프라
+ * 중단 지점이 없어서 `suspend` 표시만으로는 이 성질이 드러나지 않는다.
  * @param alpha 길이가 `width * height` 여야 한다
- * @param checkCancelled 행 경계마다 불린다. 이 함수는 코루틴을 모르므로 호출부가 넣어 준다
  * @return 남은 알파가 없으면 `null`. 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로 `null` 이
  *   나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고 반환하므로 다르다
  */
-internal fun postProcessAlpha(
+internal suspend fun postProcessAlpha(
     alpha: ByteArray,
     width: Int,
     height: Int,
     options: AlphaPostProcessOptions = AlphaPostProcessOptions(),
-    checkCancelled: () -> Unit = {},
 ): AlphaPostProcessResult? {
     require(alpha.size == width * height) {
         "alpha length ${alpha.size} does not match ${width}x$height"
@@ -222,16 +225,16 @@ internal fun postProcessAlpha(
     val maskWidth = ceilDiv(width, factor)
     val maskHeight = ceilDiv(height, factor)
 
-    val mask = downscaleMask(alpha, width, height, factor, options.binaryThreshold, checkCancelled)
+    val mask = downscaleMask(alpha, width, height, factor, options.binaryThreshold)
 
     val minComponentPixels = maxOf(1, options.areaOpeningMinPixels / (factor * factor))
-    if (!applyAreaOpening(mask, maskWidth, maskHeight, minComponentPixels, checkCancelled)) return null
+    if (!applyAreaOpening(mask, maskWidth, maskHeight, minComponentPixels)) return null
 
-    val keep = dilateMask(mask, maskWidth, maskHeight, checkCancelled)
+    val keep = dilateMask(mask, maskWidth, maskHeight)
 
-    val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor, checkCancelled)
-    val eroded = options.erodeEdge && erodeEdge(alpha, width, height, checkCancelled)
-    val measured = measureAlpha(alpha, width, height, checkCancelled) ?: return null
+    val applied = applyKeepMask(alpha, width, height, keep, maskWidth, factor)
+    val eroded = options.erodeEdge && erodeEdge(alpha, width, height)
+    val measured = measureAlpha(alpha, width, height) ?: return null
 
     return AlphaPostProcessResult(
         bounds = measured.bounds,

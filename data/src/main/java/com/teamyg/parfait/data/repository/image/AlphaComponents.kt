@@ -1,5 +1,9 @@
 package com.teamyg.parfait.data.repository.image
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
+
 /**
  * [value] 를 [divisor] 로 나누고 올린다. [value] 는 0 이상, [divisor] 는 1 이상이어야 한다.
  *
@@ -20,19 +24,19 @@ internal fun ceilDiv(
  *
  * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」 참고
  */
-internal fun downscaleMask(
+internal suspend fun downscaleMask(
     alpha: ByteArray,
     width: Int,
     height: Int,
     factor: Int,
     threshold: Int,
-    checkCancelled: () -> Unit = {},
 ): BooleanArray {
+    val job = currentCoroutineContext().job
     val maskWidth = ceilDiv(width, factor)
     val mask = BooleanArray(maskWidth * ceilDiv(height, factor))
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         val rowOffset = y * width
         val maskRowOffset = (y / factor) * maskWidth
         for (x in 0 until width) {
@@ -52,12 +56,11 @@ internal fun downscaleMask(
  *
  * @return 살아남은 성분이 하나라도 있으면 true
  */
-internal fun applyAreaOpening(
+internal suspend fun applyAreaOpening(
     mask: BooleanArray,
     width: Int,
     height: Int,
     minPixels: Int,
-    checkCancelled: () -> Unit = {},
 ): Boolean {
     val runCount = countRuns(mask, width, height)
     if (runCount == 0) return false
@@ -70,7 +73,7 @@ internal fun applyAreaOpening(
     fillRuns(mask, width, height, runRow, runStart, runEnd, rowFirstRun)
 
     val parent = IntArray(runCount) { it }
-    unionAdjacentRows(height, runStart, runEnd, rowFirstRun, parent, checkCancelled)
+    unionAdjacentRows(height, runStart, runEnd, rowFirstRun, parent)
 
     val componentPixels = IntArray(runCount)
     for (run in 0 until runCount) {
@@ -150,16 +153,16 @@ private fun fillRuns(
  *
  * `xEnd` 가 exclusive 라 8-근방 겹침은 `aStart <= bEnd && bStart <= aEnd` 다.
  */
-private fun unionAdjacentRows(
+private suspend fun unionAdjacentRows(
     height: Int,
     runStart: IntArray,
     runEnd: IntArray,
     rowFirstRun: IntArray,
     parent: IntArray,
-    checkCancelled: () -> Unit,
 ) {
+    val job = currentCoroutineContext().job
     for (y in 0 until height - 1) {
-        checkCancelled()
+        job.ensureActive()
         var upper = rowFirstRun[y]
         var lower = rowFirstRun[y + 1]
         val upperEnd = rowFirstRun[y + 1]
@@ -209,16 +212,16 @@ private fun union(
  * 반경 1이 계약이다 — 8-연결 성분끼리는 최소 거리가 2라, 반경을 키우면 area opening 이 지운
  * 성분이 되살아난다.
  */
-internal fun dilateMask(
+internal suspend fun dilateMask(
     mask: BooleanArray,
     width: Int,
     height: Int,
-    checkCancelled: () -> Unit = {},
 ): BooleanArray {
+    val job = currentCoroutineContext().job
     val dilated = BooleanArray(mask.size)
 
     for (y in 0 until height) {
-        checkCancelled()
+        job.ensureActive()
         for (x in 0 until width) {
             if (!mask[y * width + x]) continue
 

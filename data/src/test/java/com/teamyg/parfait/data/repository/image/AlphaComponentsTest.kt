@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlinx.coroutines.test.runTest
 
 /** `#` 는 불투명, `.` 은 투명. 한 줄이 한 행이다 */
 private fun alphaOf(vararg rows: String): ByteArray {
@@ -23,7 +24,7 @@ private fun BooleanArray.render(width: Int): String = toList().chunked(width).jo
 
 class AlphaComponentsTest {
     @Test
-    fun ceilDiv_roundsUpOnRemainder_andStaysExactOnMultiples() {
+    fun ceilDiv_roundsUpOnRemainder_andStaysExactOnMultiples() = runTest {
         assertEquals(1000, ceilDiv(4000, 4))
         assertEquals(1001, ceilDiv(4001, 4))
         assertEquals(1001, ceilDiv(4004, 4))
@@ -31,19 +32,19 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun ceilDiv_zeroDivisor_failsAtTheCallInsteadOfDividing() {
+    fun ceilDiv_zeroDivisor_failsAtTheCallInsteadOfDividing() = runTest {
         // 0 을 돌려주면 factor 로 나누는 나머지 세 자리에서 같은 예외가 더 안쪽에서 난다
         assertFailsWith<IllegalArgumentException> { ceilDiv(4000, 0) }
     }
 
     @Test
-    fun ceilDiv_negativeDivisor_fails() {
+    fun ceilDiv_negativeDivisor_fails() = runTest {
         // 음수는 안 터지고 조용히 틀린 값을 내보내는 쪽이라 더 위험하다
         assertFailsWith<IllegalArgumentException> { ceilDiv(4000, -4) }
     }
 
     @Test
-    fun downscaleMask_factorFour_orsEachBlock() {
+    fun downscaleMask_factorFour_orsEachBlock() = runTest {
         // Given — 8×8 에서 왼쪽 위 블록에 한 점만 있다
         val alpha = alphaOf(
             "#.......",
@@ -64,7 +65,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun downscaleMask_alphaAbove127_readsAsForegroundDespiteSignedByte() {
+    fun downscaleMask_alphaAbove127_readsAsForegroundDespiteSignedByte() = runTest {
         // Given — 128 은 Byte 로 담으면 음수다. and 0xFF 가 없으면 배경으로 오판한다
         val alpha = ByteArray(1) { 128.toByte() }
 
@@ -76,7 +77,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun downscaleMask_alphaExactlyAtThreshold_readsAsBackground() {
+    fun downscaleMask_alphaExactlyAtThreshold_readsAsBackground() = runTest {
         // Given
         val alpha = ByteArray(1) { 127.toByte() }
 
@@ -88,7 +89,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun downscaleMask_sizeIsNotAMultipleOfFactor_keepsTheTrailingEdge() {
+    fun downscaleMask_sizeIsNotAMultipleOfFactor_keepsTheTrailingEdge() = runTest {
         // Given — 5×1 에서 마지막 픽셀만 불투명하다. 내림하면 그 픽셀이 판정에서 빠진다
         val alpha = alphaOf("....#")
 
@@ -101,7 +102,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_tinyComponentBesideABigOne_removesOnlyTheTinyOne() {
+    fun applyAreaOpening_tinyComponentBesideABigOne_removesOnlyTheTinyOne() = runTest {
         // Given — 왼쪽 4×4 덩어리(16px)와 오른쪽 아래 한 점
         val mask = maskOf(
             "####..",
@@ -131,7 +132,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_componentExactlyAtThreshold_keepsIt() {
+    fun applyAreaOpening_componentExactlyAtThreshold_keepsIt() = runTest {
         // Given — 정확히 4픽셀짜리 성분 하나
         val mask = maskOf(
             "##..",
@@ -149,7 +150,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_componentOnePixelBelowThreshold_removesIt() {
+    fun applyAreaOpening_componentOnePixelBelowThreshold_removesIt() = runTest {
         // Given — 3픽셀짜리 성분 하나
         val mask = maskOf(
             "##..",
@@ -167,7 +168,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_blobsTouchingOnlyDiagonally_countAsOneComponent() {
+    fun applyAreaOpening_blobsTouchingOnlyDiagonally_countAsOneComponent() = runTest {
         // Given — 두 2×2 가 대각선으로만 닿는다. 합치면 8픽셀이라 살고, 따로면 각 4픽셀이라 죽는다
         val mask = maskOf(
             "##....",
@@ -187,7 +188,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_oneRunBridgesTwoRunsAbove_mergesAllThree() {
+    fun applyAreaOpening_oneRunBridgesTwoRunsAbove_mergesAllThree() = runTest {
         // Given — 윗행 두 런을 아랫행 한 런이 잇는다. 첫 매치에서 멈추는 구현이면 갈린다
         val mask = maskOf(
             "#.#.",
@@ -205,7 +206,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun applyAreaOpening_everythingIsBackground_reportsNothingSurvived() {
+    fun applyAreaOpening_everythingIsBackground_reportsNothingSurvived() = runTest {
         // Given
         val mask = maskOf("....", "....")
 
@@ -217,7 +218,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun dilateMask_singlePixel_growsToThreeByThree() {
+    fun dilateMask_singlePixel_growsToThreeByThree() = runTest {
         // Given
         val mask = maskOf(
             ".....",
@@ -244,7 +245,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun dilateMask_pixelAtTheCorner_doesNotWrapAround() {
+    fun dilateMask_pixelAtTheCorner_doesNotWrapAround() = runTest {
         // Given
         val mask = maskOf(
             "#..",
@@ -267,7 +268,7 @@ class AlphaComponentsTest {
     }
 
     @Test
-    fun dilateMask_componentRemovedByAreaOpening_staysRemoved() {
+    fun dilateMask_componentRemovedByAreaOpening_staysRemoved() = runTest {
         // Given — 지워진 소성분이 살아남은 성분과 체비쇼프 거리 2 다. 8-연결이라 그보다 가까울 수 없다
         val mask = maskOf(
             "###..#",
