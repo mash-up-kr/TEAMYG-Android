@@ -7,6 +7,7 @@ import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
 import io.mockk.coEvery
@@ -73,6 +74,7 @@ class TokenAuthenticatorTest {
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var groupLocalDataSource: GroupLocalDataSource
     private lateinit var canvasLocalDataSource: CanvasLocalDataSource
+    private lateinit var canvasPoller: CanvasPoller
     private lateinit var authenticator: TokenAuthenticator
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -87,6 +89,7 @@ class TokenAuthenticatorTest {
         userInfoLocalDataSource = mockk(relaxed = true)
         groupLocalDataSource = mockk(relaxed = true)
         canvasLocalDataSource = mockk(relaxed = true)
+        canvasPoller = mockk(relaxed = true)
 
         val authService = Retrofit
             .Builder()
@@ -104,6 +107,7 @@ class TokenAuthenticatorTest {
             userInfoLocalDataSource = userInfoLocalDataSource,
             groupLocalDataSource = groupLocalDataSource,
             canvasLocalDataSource = canvasLocalDataSource,
+            canvasPoller = canvasPoller,
         )
     }
 
@@ -220,9 +224,12 @@ class TokenAuthenticatorTest {
         // When 인증기가 응답을 받는다
         authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
 
-        // Then 인메모리 캐시(그룹·캔버스)를 먼저 지우고 계정 저장소는 나중에 지운다
+        // Then 인메모리 캐시(그룹·캔버스)를 먼저 지우고 계정 저장소는 나중에 지운다.
+        // 캔버스 캐시는 폴러를 먼저 세운 뒤 지운다 — 늦게 온 응답이 지운 캐시를 되살리지
+        // 못하게 트리거부터 끊는다
         coVerifyOrder {
             groupLocalDataSource.clear()
+            canvasPoller.stopAll()
             canvasLocalDataSource.clear()
             userInfoLocalDataSource.clear()
         }
