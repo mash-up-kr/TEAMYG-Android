@@ -267,7 +267,7 @@ constructor(
      * 오늘 캔버스를 화면으로 옮기는 유일한 길 — 갱신([loadTodayCanvas])은 값을 돌려주지 않고
      * 저장소만 채운다.
      *
-     * 멤버 칩도 같이 따라간다. 오늘 캔버스가 비워지는 하루 경계에서는 칩까지 지우지 않는다 —
+     * 오늘 캔버스가 비워지는 하루 경계에서도 멤버 칩은 지우지 않는다 —
      * 그룹 구성은 날이 바뀌었다고 달라지지 않아, 갱신이 올 때까지 이름표를 비워 둘 이유가 없다.
      */
     private fun observeTodayCanvas() {
@@ -321,7 +321,7 @@ constructor(
                     todayCanvas = null,
                 )
             } else {
-                // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다
+                // 보고 있던 지난 날은 마감돼 그대로 둔다
                 copy(today = today, todayCanvas = null)
             }
         }
