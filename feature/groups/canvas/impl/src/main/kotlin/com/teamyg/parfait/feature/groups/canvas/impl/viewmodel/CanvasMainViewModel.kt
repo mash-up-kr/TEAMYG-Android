@@ -32,7 +32,8 @@ import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -60,15 +61,20 @@ data class CanvasMainUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
     /**
-     * 오늘 캔버스. 아직 못 받았으면 null 이다 — 조회가 실패했거나 응답 전이다.
+     * 오늘 캔버스. 저장소 구독 값이다 — 아직 못 받았거나 조회가 실패했으면 null 이다
+     * (`adr/0029-canvas-today-ssot-polling.md`).
      *
-     * [viewedCanvas] 와 나눠 두는 이유는 토핑 추가·배경 편집이 언제나 오늘 것을 대상으로
-     * 해야 해서다. 지난 날을 보다가 그 캔버스를 고치면 서버가 409 로 되돌려주므로, 갈라 두지
-     * 않으면 사용자가 편집을 마친 뒤에야 실패를 보게 된다.
+     * [pastCanvas] 와 나눠 두는 이유는 토핑 추가·배경 편집이 언제나 오늘 것을 대상으로 해야
+     * 해서다. 지난 날을 보다가 그 캔버스를 고치면 서버가 409 로 되돌려준다(`api/parfait.md`).
      */
     val todayCanvas: CanvasVO? = null,
-    /** 달력에서 고른 날의 캔버스. 화면에 그려지는 것은 언제나 이쪽이다 */
-    val viewedCanvas: CanvasVO? = null,
+    /**
+     * 달력에서 고른 **지난** 날의 캔버스.
+     *
+     * "지금 그려지는 캔버스"는 [displayedCanvas] 가 맡는다 — 오늘 것은 구독이 채우므로, 둘을
+     * 한 칸에 겹쳐 두면 구독 방출이 보고 있던 지난 날을 덮는다.
+     */
+    val pastCanvas: CanvasVO? = null,
     val today: LocalDate = parfaitToday(),
     val selectedDate: LocalDate = today,
     val isCalendarVisible: Boolean = false,
@@ -87,13 +93,17 @@ data class CanvasMainUiState(
     /** Spotlight 로 강조된 토핑. Default 상태면 null */
     val spotlightedToppingId: ParfaitImageId? = null,
 ) : UiState {
+    /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
+    val displayedCanvas: CanvasVO?
+        get() = if (isViewingToday) todayCanvas else (pastCanvas ?: todayCanvas)
+
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground?
-        get() = viewedCanvas?.background
+        get() = displayedCanvas?.background
 
     /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
     val toppings: List<CanvasToppingVO>
-        get() = viewedCanvas?.toppings.orEmpty().sortedBy { it.transform.positionZ }
+        get() = displayedCanvas?.toppings.orEmpty().sortedBy { it.transform.positionZ }
 
     /** 지난 날에는 편집 대신 저장·오늘로 가기를 준다 */
     val isViewingToday: Boolean
@@ -233,7 +243,8 @@ constructor(
     @Assisted groupIdValue: Long,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
-    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
@@ -246,9 +257,30 @@ constructor(
 
     init {
         viewModelLogger.i { "CanvasMainViewModel::init" }
+        observeTodayCanvas()
         loadCanvasMainInfo()
         // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
+    }
+
+    /**
+     * 오늘 캔버스를 화면으로 옮기는 유일한 길 — 갱신([loadTodayCanvas])은 값을 돌려주지 않고
+     * 저장소만 채운다.
+     *
+     * 멤버 칩도 같이 따라간다. 오늘 캔버스가 비워지는 하루 경계에서는 칩까지 지우지 않는다 —
+     * 그룹 구성은 날이 바뀌었다고 달라지지 않아, 갱신이 올 때까지 이름표를 비워 둘 이유가 없다.
+     */
+    private fun observeTodayCanvas() {
+        launch {
+            getTodayParfaitFlowUseCase(groupId).collect { canvas ->
+                updateState {
+                    copy(
+                        todayCanvas = canvas,
+                        memberChips = canvas?.members?.toMemberChips() ?: memberChips,
+                    )
+                }
+            }
+        }
     }
 
     /**
@@ -278,15 +310,15 @@ constructor(
 
         // 시간이 지나면서 지금 보는 parfaitToday 가 어제가 되어버린 상황
         updateState {
+            // 캐시에 distinctUntilChanged 가 걸려 있어 경계를 넘겨도 재방출이 없다 — 구독의
+            // 날짜 필터는 이 자리를 대신하지 못하므로, 어제 것을 오늘로 착각해 그 위에 토핑을
+            // 올리는 일이 없도록 여기서 비운다. 갱신이 오면 구독이 다시 채운다
             if (isViewingToday) {
-                // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 비운다 — 곧 이어지는
-                // 오늘 조회가 채운다
                 copy(
                     today = today,
                     selectedDate = today,
                     displayedMonth = today.toFirstDayOfMonth(),
                     todayCanvas = null,
-                    viewedCanvas = null,
                 )
             } else {
                 // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다 — 안 비우면
@@ -297,27 +329,20 @@ constructor(
     }
 
     /**
+     * 받아 온 캔버스는 저장소에 실리고 [observeTodayCanvas] 가 화면으로 옮긴다 — 여기서
+     * 상태를 직접 쓰지 않는다.
+     *
      * ⚠️ 서버의 오늘 조회는 캔버스가 없으면 만들어 저장한다 — 화면을 여는 것만으로 그날 캔버스가
      * 생긴다. 재진입에 다시 불러도 첫 진입에서 이미 만들어진 것을 받을 뿐이라 늘어나지는 않는다.
      */
     private fun loadTodayCanvas() {
         launch(key = LOAD_TODAY_CANVAS_KEY) {
-            getTodayParfaitUseCase(groupId)
-                .onSuccess { canvas ->
-                    updateState {
-                        copy(
-                            todayCanvas = canvas,
-                            // 응답을 기다리는 사이 지난 날로 옮겼다면 그 화면을 덮지 않는다
-                            viewedCanvas = if (isViewingToday) canvas else viewedCanvas,
-                            memberChips = canvas.members.toMemberChips(),
-                        )
-                    }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-                    if (state.value.todayCanvas == null) {
-                        postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
-                    }
+            refreshTodayParfaitUseCase(groupId).onFailure { throwable ->
+                viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                if (state.value.todayCanvas == null) {
+                    postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
                 }
+            }
         }
     }
 
@@ -511,6 +536,7 @@ constructor(
     /**
      * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
      * 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
+     * 되돌리는 대입이 따로 없는 것은 [CanvasMainUiState.displayedCanvas] 가 파생값이라서다.
      *
      * 응답이 올 때까지 이전 날의 토핑을 그대로 둔다. 비워 두면 파르페가 있는 날인데도 잠깐
      * "캔버스가 비어 있다"고 말하게 된다 — 달력이 기록 있는 날만 열어 주므로 그건 늘 거짓이다.
@@ -523,7 +549,7 @@ constructor(
         if (date == current.selectedDate) return
 
         if (date == current.today) {
-            updateState { copy(selectedDate = date, viewedCanvas = todayCanvas) }
+            updateState { copy(selectedDate = date) }
             return
         }
 
@@ -544,7 +570,7 @@ constructor(
                 .onSuccess { canvas ->
                     updateState {
                         // 기다리는 사이 다른 날로 옮겼으면 그 날의 캔버스를 덮지 않는다
-                        if (selectedDate == date) copy(viewedCanvas = canvas) else this
+                        if (selectedDate == date) copy(pastCanvas = canvas) else this
                     }
                 }.onFailure { throwable ->
                     viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - date: $date" }
@@ -561,7 +587,6 @@ constructor(
             copy(
                 selectedDate = today,
                 displayedMonth = today.toFirstDayOfMonth(),
-                viewedCanvas = todayCanvas,
             )
         }
 
