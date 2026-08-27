@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import java.io.IOException
@@ -32,8 +33,18 @@ class GetParfaitHistoriesUseCaseTest {
             return listResult
         }
 
-        override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> =
-            Result.failure(IllegalStateException("쓰이지 않는다"))
+        override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = error("기록 조회는 오늘 캔버스를 보지 않는다")
+
+        override suspend fun refreshTodayCanvas(groupId: GroupId): Result<Unit> = error("기록 조회는 오늘 캔버스를 갱신하지 않는다")
+
+        override suspend fun refreshTodayCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<Unit> = error("기록 조회는 오늘 캔버스를 갱신하지 않는다")
+
+        override fun cachedTodayCanvasDate(groupId: GroupId): LocalDate? = error("기록 조회는 오늘 캔버스를 보지 않는다")
+
+        override fun clearTodayCanvas() = error("기록 조회는 캐시를 지우지 않는다")
 
         override suspend fun getCanvasDetail(
             groupId: GroupId,

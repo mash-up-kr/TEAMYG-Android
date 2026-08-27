@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -21,9 +22,9 @@ import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Instant
 
-class GetTodayParfaitUseCaseTest {
+class RefreshTodayParfaitUseCaseTest {
     /**
-     * 호출할 때마다 [results] 를 순서대로 돌려준다 — 재요청이 앞선 응답을 그대로 다시 받지
+     * 호출할 때마다 [results] 를 순서대로 실어 낸다 — 재요청이 앞선 응답을 그대로 다시 받지
      * 않아야 검증이 된다. 목록이 마르면 마지막 값을 계속 준다.
      */
     private class FakeParfaitRepository(
@@ -32,13 +33,29 @@ class GetTodayParfaitUseCaseTest {
         var callCount = 0
             private set
 
+        /** 갱신이 실제로 실은 값. 옛 테스트가 반환값으로 보던 것을 여기서 본다 */
+        var cached: CanvasVO? = null
+            private set
+
         override suspend fun getYears(groupId: GroupId): Result<List<Int>> = Result.success(emptyList())
 
-        override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> {
+        override suspend fun refreshTodayCanvas(groupId: GroupId): Result<Unit> {
             val result = results[minOf(callCount, results.lastIndex)]
             callCount++
-            return result
+            result.onSuccess { cached = it }
+            return result.map { }
         }
+
+        override fun cachedTodayCanvasDate(groupId: GroupId): LocalDate? = cached?.date
+
+        override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = error("이 유스케이스는 구독하지 않는다")
+
+        override suspend fun refreshTodayCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<Unit> = error("이 유스케이스는 상세를 갱신하지 않는다")
+
+        override fun clearTodayCanvas() = error("이 유스케이스는 캐시를 지우지 않는다")
 
         override suspend fun getPastCanvases(
             groupId: GroupId,
@@ -74,11 +91,11 @@ class GetTodayParfaitUseCaseTest {
         // Given 서버가 오늘 날짜 캔버스를 준다
         val repository = FakeParfaitRepository(listOf(Result.success(canvas(PARFAIT_ID, today))))
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
+        // When 오늘 파르페 갱신
+        RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
-        // Then 그대로 돌려주고 한 번만 부른다 — 부작용 있는 호출을 아낀다
-        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+        // Then 그대로 싣고 한 번만 부른다 — 부작용 있는 호출을 아낀다
+        assertEquals(ParfaitId(PARFAIT_ID), repository.cached?.parfaitId)
         assertEquals(1, repository.callCount)
     }
 
@@ -92,12 +109,12 @@ class GetTodayParfaitUseCaseTest {
             ),
         )
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
+        // When 오늘 파르페 갱신
+        RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
-        // Then 두 번째 응답을 쓴다
+        // Then 두 번째 응답을 싣는다
         assertEquals(2, repository.callCount)
-        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+        assertEquals(ParfaitId(PARFAIT_ID), repository.cached?.parfaitId)
     }
 
     @Test
@@ -105,12 +122,12 @@ class GetTodayParfaitUseCaseTest {
         // Given 다시 불러도 어제 캔버스다 — 기기와 서버의 날짜 기준이 다르다
         val repository = FakeParfaitRepository(listOf(Result.success(canvas(STALE_PARFAIT_ID, yesterday))))
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
+        // When 오늘 파르페 갱신
+        RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
-        // Then 더 부르지 않고 받은 것을 쓴다 — 계속 불러도 같은 답이 온다
+        // Then 더 부르지 않고 받은 것을 싣는다 — 계속 불러도 같은 답이 온다
         assertEquals(2, repository.callCount)
-        assertEquals(ParfaitId(STALE_PARFAIT_ID), result.getOrNull()?.parfaitId)
+        assertEquals(ParfaitId(STALE_PARFAIT_ID), repository.cached?.parfaitId)
     }
 
     @Test
@@ -123,11 +140,11 @@ class GetTodayParfaitUseCaseTest {
             listOf(Result.success(canvas(PARFAIT_ID, dayBeforeBoundaryDay))),
         )
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
+        // When 오늘 파르페 갱신
+        RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
 
-        // Then 옛 자정 경계였다면 재조회가 났을 상황이지만, 새벽 3시 경계에서는 그대로 받는다
-        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+        // Then 옛 자정 경계였다면 재조회가 났을 상황이지만, 새벽 3시 경계에서는 그대로 싣는다
+        assertEquals(ParfaitId(PARFAIT_ID), repository.cached?.parfaitId)
         assertEquals(1, repository.callCount)
     }
 
@@ -145,12 +162,12 @@ class GetTodayParfaitUseCaseTest {
             ),
         )
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
+        // When 오늘 파르페 갱신
+        RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), beforeBoundaryClock)
 
-        // Then 한 번 더 불러 두 번째 응답을 쓴다
+        // Then 한 번 더 불러 두 번째 응답을 싣는다
         assertEquals(2, repository.callCount)
-        assertEquals(ParfaitId(PARFAIT_ID), result.getOrNull()?.parfaitId)
+        assertEquals(ParfaitId(PARFAIT_ID), repository.cached?.parfaitId)
     }
 
     @Test
@@ -158,8 +175,8 @@ class GetTodayParfaitUseCaseTest {
         // Given 조회가 실패한다
         val repository = FakeParfaitRepository(listOf(Result.failure(IOException("네트워크"))))
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
+        // When 오늘 파르페 갱신
+        val result = RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID))
 
         // Then 실패를 그대로 올린다 — 재요청은 날짜가 어긋났을 때만이지 실패 복구가 아니다
         assertTrue(result.isFailure)
@@ -177,8 +194,8 @@ class GetTodayParfaitUseCaseTest {
             ),
         )
 
-        // When 오늘 파르페 조회
-        val result = GetTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
+        // When 오늘 파르페 갱신
+        val result = RefreshTodayParfaitUseCase(repository)(GroupId(GROUP_ID), clock)
 
         // Then 어제 캔버스로 눙치지 않고 실패로 남긴다
         assertIs<IOException>(result.exceptionOrNull())
