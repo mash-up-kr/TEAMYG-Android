@@ -24,12 +24,14 @@ import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 // 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
@@ -134,12 +136,13 @@ class CanvasToppingPlaceViewModel
     private val toppingDraftRepository: ToppingDraftRepository,
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
-    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
-    /** 캔버스(배경·기존 토핑)는 초안이 아니라 서버가 SSOT다 — groupId 하나당 한 번만 조회한다 */
-    private var canvasLoadedForGroupId: GroupId? = null
+    /** 초안이 그룹을 알려 준 뒤에야 구독을 열 수 있다. 그룹은 흐름 내내 바뀌지 않는다 */
+    private var canvasObserveJob: Job? = null
 
     init {
         observeDraft()
@@ -159,28 +162,32 @@ class CanvasToppingPlaceViewModel
                         isDraftLoaded = true,
                     )
                 }
-                draft?.groupId?.let { groupId -> loadCanvasIfNeeded(groupId) }
+                draft?.groupId?.let { groupId -> observeCanvasOnce(groupId) }
             }
         }
     }
 
     /**
-     * 이 화면은 캔버스 생성을 의도하지 않는다 — 이미 이 흐름에 들어왔다는 것 자체가 오늘
-     * 캔버스가 있다는 뜻이다. 다만 [getTodayParfaitUseCase] 자체는 서버에서 그 날짜 파르페가
-     * 없으면 만들어 저장하는 부작용을 갖고 있다(`CanvasVO` 문서 참고) — 그 부작용이 여기서
-     * 발동할 일이 없다는 뜻이지, 호출 자체가 안전하다는 보장은 아니다.
+     * ⚠️ 오늘 조회는 서버에서 그 날짜 파르페가 없으면 만들어 저장하는 부작용을 갖고 있다
+     * (`api/parfait.md`). 이 흐름에 들어왔다는 것 자체가 오늘 캔버스가 있다는 뜻이라 여기서
+     * 그 부작용이 발동할 일은 없다 — 호출 자체가 안전하다는 뜻은 아니다.
      */
-    private fun loadCanvasIfNeeded(groupId: GroupId) {
-        if (canvasLoadedForGroupId == groupId) return
-        canvasLoadedForGroupId = groupId
+    private fun observeCanvasOnce(groupId: GroupId) {
+        if (canvasObserveJob != null) return
+
+        canvasObserveJob = launch {
+            getTodayParfaitFlowUseCase(groupId).collect { canvas ->
+                // null 은 무시한다 — 비우면 배경이 흰색으로 튄다
+                if (canvas == null) return@collect
+                updateState { withCanvas(canvas) }
+            }
+        }
 
         launch(key = LOAD_CANVAS_KEY) {
-            getTodayParfaitUseCase(groupId)
-                .onSuccess { canvas -> updateState { withCanvas(canvas) } }
-                .onFailure { throwable ->
-                    // 조회 실패는 토핑 배치 자체를 막지 않는다 — 기본 배경·빈 토핑 목록으로 그대로 둔다
-                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-                }
+            refreshTodayParfaitUseCase(groupId).onFailure { throwable ->
+                // 조회 실패는 토핑 배치 자체를 막지 않는다 — 기본 배경·빈 토핑 목록으로 그대로 둔다
+                viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+            }
         }
     }
 

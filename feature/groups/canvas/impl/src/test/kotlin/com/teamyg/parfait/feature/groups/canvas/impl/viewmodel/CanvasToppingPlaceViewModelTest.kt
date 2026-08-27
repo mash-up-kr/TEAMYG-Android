@@ -6,16 +6,21 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,6 +35,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
@@ -63,12 +69,17 @@ class CanvasToppingPlaceViewModelTest {
 
     private val addRecentImageUseCase: AddRecentImageUseCase = mockk(relaxed = true)
 
-    /** 이 테스트들은 캔버스 배경·기존 토핑을 다루지 않는다 — 조회는 조용히 실패시켜 둔다 */
-    private val getTodayParfaitUseCase: GetTodayParfaitUseCase = mockk()
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase = mockk()
+
+    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase = mockk()
+
+    /** 저장소의 오늘 캔버스 캐시. 이 테스트들은 대부분 캔버스 배경·기존 토핑을 다루지 않는다 */
+    private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
     init {
-        coEvery { getTodayParfaitUseCase(any(), any()) } returns
-            Result.failure(IllegalStateException("getTodayParfaitUseCase not stubbed in this test"))
+        every { getTodayParfaitFlowUseCase(any(), any()) } returns todayCanvases
+        coEvery { refreshTodayParfaitUseCase(any(), any()) } returns
+            Result.failure(IllegalStateException("refreshTodayParfaitUseCase not stubbed in this test"))
     }
 
     private fun viewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel {
@@ -77,7 +88,8 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
-            getTodayParfaitUseCase = getTodayParfaitUseCase,
+            getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
+            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
         )
     }
 
@@ -440,7 +452,8 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
-            getTodayParfaitUseCase = getTodayParfaitUseCase,
+            getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
+            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
         )
         advanceUntilIdle()
 
@@ -481,7 +494,8 @@ class CanvasToppingPlaceViewModelTest {
             toppingDraftRepository = toppingDraftRepository,
             addToppingUseCase = addToppingUseCase,
             addRecentImageUseCase = addRecentImageUseCase,
-            getTodayParfaitUseCase = getTodayParfaitUseCase,
+            getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
+            refreshTodayParfaitUseCase = refreshTodayParfaitUseCase,
         )
 
         // When 화면이 열린다
@@ -492,4 +506,30 @@ class CanvasToppingPlaceViewModelTest {
             assertEquals(CanvasToppingPlaceEffect.DraftMissing, awaitItem())
         }
     }
+
+    @Test
+    fun observeCanvas_nullEmission_keepsTheLastBackground() = runTest(mainDispatcherRule.dispatcher) {
+        every { getTodayParfaitFlowUseCase(any(), any()) } returns todayCanvases
+        coEvery { refreshTodayParfaitUseCase(any(), any()) } returns Result.success(Unit)
+        todayCanvases.value = canvas(background = CanvasBackground.Color("#FF0000"))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        val seeded = viewModel.state.value.backgroundColor
+
+        todayCanvases.value = null
+        advanceUntilIdle()
+
+        assertEquals(seeded, viewModel.state.value.backgroundColor)
+    }
+
+    private fun canvas(background: CanvasBackground? = null) = CanvasVO(
+        parfaitId = ParfaitId(2L),
+        date = parfaitToday(),
+        status = CanvasStatus.ACTIVE,
+        lastClosedDate = null,
+        members = emptyList(),
+        background = background,
+        toppings = emptyList(),
+    )
 }
