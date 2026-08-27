@@ -54,6 +54,13 @@ class CanvasPoller @Inject constructor(
     /** [stopAll] 이 올린다. 그 전에 출발한 응답은 캐시에 싣지 않는다 */
     private var generation = 0
 
+    /** 테스트 전용 — 계수 경합 테스트가 구독자와 폴 잡의 최종 상태를 나눠 관찰하는 데 쓴다 */
+    internal fun hasSubscriberForTest(groupId: GroupId): Boolean =
+        synchronized(lock) { subscriberCounts.containsKey(groupId) }
+
+    /** 테스트 전용 — [hasSubscriberForTest] 참고 */
+    internal fun isPollingForTest(groupId: GroupId): Boolean = synchronized(lock) { pollJobs.containsKey(groupId) }
+
     fun acquire(groupId: GroupId) {
         val isFirst = synchronized(lock) {
             val next = (subscriberCounts[groupId] ?: 0) + 1
@@ -63,7 +70,7 @@ class CanvasPoller @Inject constructor(
         if (isFirst.not()) return
 
         restartPollTimer(groupId)
-        scope.launch { refresh(groupId, forceToday = false) }
+        scope.launch { refresh(groupId) }
     }
 
     fun release(groupId: GroupId) {
@@ -83,14 +90,15 @@ class CanvasPoller @Inject constructor(
      * 그러지 않으면 강제 갱신 직후에 주기 타이머가 또 터져 요청이 붙어 나간다.
      *
      * 실패해도 주기를 다시 세운다. 실패한 갱신 때문에 다음 주기가 앞당겨질 이유가 없다.
+     *
+     * 구독 확인과 재시작을 한 [synchronized] 안에서 한다 — 갈라 두면 그 사이에 마지막
+     * [release] 가 끼어들어 구독자가 없는데도 폴 잡이 살아난다.
      */
-    suspend fun refreshNow(
-        groupId: GroupId,
-        forceToday: Boolean = false,
-    ): Result<Unit> {
-        val result = refresh(groupId, forceToday)
-        val hasSubscriber = synchronized(lock) { subscriberCounts.containsKey(groupId) }
-        if (hasSubscriber) restartPollTimer(groupId)
+    suspend fun refreshNow(groupId: GroupId): Result<Unit> {
+        val result = refresh(groupId)
+        synchronized(lock) {
+            if (subscriberCounts.containsKey(groupId)) restartPollTimerLocked(groupId)
+        }
         return result
     }
 
@@ -98,11 +106,8 @@ class CanvasPoller @Inject constructor(
      * 화면이 곧 사라지는 자리에서 부른다 — 호출자 스코프에서 기다리면 되감기가 늦어지거나
      * `viewModelScope` 취소로 요청이 끊긴다.
      */
-    fun refreshNowAsync(
-        groupId: GroupId,
-        forceToday: Boolean = false,
-    ) {
-        scope.launch { refreshNow(groupId, forceToday) }
+    fun refreshNowAsync(groupId: GroupId) {
+        scope.launch { refreshNow(groupId) }
     }
 
     /** 세션이 끝날 때 부른다. 이미 출발한 응답이 캐시를 되살리지 못하게 세대를 올린다 */
@@ -117,13 +122,16 @@ class CanvasPoller @Inject constructor(
     }
 
     private fun restartPollTimer(groupId: GroupId) {
-        synchronized(lock) {
-            pollJobs.remove(groupId)?.cancel()
-            pollJobs[groupId] = scope.launch {
-                while (isActive) {
-                    delay(CANVAS_POLL_INTERVAL)
-                    refresh(groupId, forceToday = false)
-                }
+        synchronized(lock) { restartPollTimerLocked(groupId) }
+    }
+
+    /** [lock] 을 이미 쥔 자리에서만 부른다 — [synchronized] 는 재진입 가능해 중첩 호출도 안전하다 */
+    private fun restartPollTimerLocked(groupId: GroupId) {
+        pollJobs.remove(groupId)?.cancel()
+        pollJobs[groupId] = scope.launch {
+            while (isActive) {
+                delay(CANVAS_POLL_INTERVAL)
+                refresh(groupId)
             }
         }
     }
@@ -133,10 +141,7 @@ class CanvasPoller @Inject constructor(
      * 만들 필요가 있을 때만 쓴다. 캐시가 비었거나 실린 날짜가 오늘이 아니면(하루 경계를 넘겼다)
      * 그 경우다. 나머지는 부작용 없는 상세 조회를 쓴다.
      */
-    private suspend fun refresh(
-        groupId: GroupId,
-        forceToday: Boolean,
-    ): Result<Unit> {
+    private suspend fun refresh(groupId: GroupId): Result<Unit> {
         val startedGeneration = synchronized(lock) {
             if (refreshing.containsKey(groupId)) return Result.success(Unit)
             refreshing[groupId] = generation
@@ -146,9 +151,9 @@ class CanvasPoller @Inject constructor(
         try {
             val cached = local.cachedTodayCanvas(groupId)
             val cachedParfaitId = cached?.parfaitId
-            val needsToday = forceToday || cachedParfaitId == null || cached.date != parfaitToday(clock)
+            val needsToday = cachedParfaitId == null || cached.date != parfaitToday(clock)
 
-            val result = if (needsToday || cachedParfaitId == null) {
+            val result = if (needsToday) {
                 remote.getTodayCanvas(groupId)
             } else {
                 remote.getCanvasDetail(groupId = groupId, parfaitId = cachedParfaitId)

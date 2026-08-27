@@ -23,8 +23,8 @@ import javax.inject.Inject
  *
  * 오늘 캔버스는 [CanvasLocalDataSource] 인메모리 캐시가 SSoT 다
  * (`adr/0029-canvas-today-ssot-polling.md`) — 조회는 캐시를 읽는 [Flow] 하나, 서버 재조회는
- * [refreshTodayCanvas]·[refreshTodayCanvasDetail] 로 갈라 둔다. 주기 재조회는 [CanvasPoller] 가
- * 맡는다.
+ * [CanvasPoller] 가 맡고 이 층은 [refreshTodayCanvasDetail]·[requestTodayCanvasRefresh] 로
+ * 그 트리거만 낸다.
  */
 class ParfaitRepositoryImpl @Inject constructor(
     private val parfaitRemoteDataSource: ParfaitRemoteDataSource,
@@ -44,14 +44,7 @@ class ParfaitRepositoryImpl @Inject constructor(
         .onStart { canvasPoller.acquire(groupId) }
         .onCompletion { canvasPoller.release(groupId) }
 
-    override fun cachedTodayCanvasDate(groupId: GroupId): LocalDate? =
-        canvasLocalDataSource.cachedTodayCanvas(groupId)?.date
-
-    /** 폴러를 지나므로 이 갱신도 주기를 다시 세운다 */
-    override suspend fun refreshTodayCanvas(groupId: GroupId): Result<Unit> = canvasPoller
-        .refreshNow(groupId, forceToday = true)
-        .mapErrorToAppError()
-
+    /** [requestTodayCanvasRefresh] 의 suspend 판이다 — 호출부의 되감기 성질 차이만 다르다 */
     override suspend fun refreshTodayCanvasDetail(
         groupId: GroupId,
         parfaitId: ParfaitId,
@@ -64,6 +57,7 @@ class ParfaitRepositoryImpl @Inject constructor(
         canvasLocalDataSource.clear()
     }
 
+    /** [refreshTodayCanvasDetail] 의 async 판이다 — 호출부의 되감기 성질 차이만 다르다 */
     override fun requestTodayCanvasRefresh(groupId: GroupId) {
         canvasPoller.refreshNowAsync(groupId)
     }

@@ -30,14 +30,10 @@ class GetTodayParfaitFlowUseCaseTest {
 
         override suspend fun getYears(groupId: GroupId): Result<List<Int>> = error("구독 유스케이스는 연도를 보지 않는다")
 
-        override suspend fun refreshTodayCanvas(groupId: GroupId): Result<Unit> = error("구독 유스케이스는 갱신하지 않는다")
-
         override suspend fun refreshTodayCanvasDetail(
             groupId: GroupId,
             parfaitId: ParfaitId,
         ): Result<Unit> = error("구독 유스케이스는 상세를 갱신하지 않는다")
-
-        override fun cachedTodayCanvasDate(groupId: GroupId): LocalDate? = error("구독 유스케이스는 peek 하지 않는다")
 
         override fun clearTodayCanvas() = error("구독 유스케이스는 캐시를 지우지 않는다")
 

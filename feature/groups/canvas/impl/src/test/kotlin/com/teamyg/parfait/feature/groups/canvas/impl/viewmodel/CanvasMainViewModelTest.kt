@@ -9,7 +9,6 @@ import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
-import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -32,7 +31,6 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
-import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -68,7 +66,6 @@ class CanvasMainViewModelTest {
     private val getParfaitHistories: GetParfaitHistoriesUseCase = mockk()
     private val getParfaitYears: GetParfaitYearsUseCase = mockk()
     private val getTodayParfaitFlow: GetTodayParfaitFlowUseCase = mockk()
-    private val refreshTodayParfait: RefreshTodayParfaitUseCase = mockk()
     private val observeParfaitDayBoundary: ObserveParfaitDayBoundaryUseCase = mockk()
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
@@ -104,7 +101,6 @@ class CanvasMainViewModelTest {
             ),
         )
         every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
         every { observeParfaitDayBoundary(any()) } returns flowOf(today)
         todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
@@ -122,7 +118,6 @@ class CanvasMainViewModelTest {
         getParfaitHistoriesUseCase = getParfaitHistories,
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitFlowUseCase = getTodayParfaitFlow,
-        refreshTodayParfaitUseCase = refreshTodayParfait,
         observeParfaitDayBoundaryUseCase = observeParfaitDayBoundary,
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
@@ -280,21 +275,6 @@ class CanvasMainViewModelTest {
         // Then 오늘을 보고 있었으므로 today 와 selectedDate 가 함께 넘어간다
         assertEquals(LocalDate(2026, 8, 28), viewModel.state.value.today)
         assertEquals(LocalDate(2026, 8, 28), viewModel.state.value.selectedDate)
-    }
-
-    @Test
-    fun enter_doesNotRefreshTheTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 화면이 열려 있다
-        val viewModel = viewModel()
-        backgroundScope.launch { viewModel.state.collect { } }
-        advanceUntilIdle()
-
-        // When 다시 진입한다
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        advanceUntilIdle()
-
-        // Then 오늘 캔버스 갱신은 폴러의 구독 시작이 맡으므로 이 화면은 부르지 않는다
-        coVerify(exactly = 0) { refreshTodayParfait(any(), any()) }
     }
 
     @Test
@@ -634,7 +614,6 @@ class CanvasMainViewModelTest {
     fun clickCamera_withoutTodayCanvas_doesNotOpenTheFlow() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 못 받아 버튼이 잠긴 화면
         todayCanvases.value = null
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
         // When 그래도 의도가 들어온다(가드가 뚫렸거나 화면 밖에서 왔다)
@@ -649,14 +628,12 @@ class CanvasMainViewModelTest {
     fun toppingAdd_isEnabledOnlyWhenTodayCanvasIsInHand() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 못 받은 화면
         todayCanvases.value = null
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(cause = null))
         val failed = enteredViewModel()
 
         // Then 올릴 데가 없으므로 잠근다
         assertFalse(failed.state.value.isToppingAddEnabled)
 
         // Given, When 캔버스를 받은 화면
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
         todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
         val loaded = enteredViewModel()
 

@@ -151,6 +151,9 @@ class CanvasToppingPlaceViewModel
      * 초안이 그룹을 알려 주기 전엔 비어 있다. [state] 를 게이트로 쓰지 않는 이유는
      * [launchWhileSubscribed] KDoc 참고 — 그 안에서 [state] 를 수집하면 그 수집 자체가
      * 구독자로 세어져 계수가 0 으로 내려가지 않는다.
+     *
+     * 흐르는 내내 같은 그룹이라 가정하지 않는다 — [observeCanvas] 가 [flatMapLatest] 로 구독해
+     * 값이 바뀌면 업스트림을 갈아탄다.
      */
     private val observedGroupId = MutableStateFlow<GroupId?>(null)
 

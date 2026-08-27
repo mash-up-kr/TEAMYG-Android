@@ -59,7 +59,6 @@ internal fun CanvasMainRoute(
     val toastPolicy = rememberYGToastPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
-    val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 캡처한 비트맵을 여기서
@@ -131,8 +130,6 @@ internal fun CanvasMainRoute(
                         userNameColor = effect.nicknameColor,
                     ),
                 )
-
-                is CanvasMainEffect.ShowTodayCanvasError -> toastPolicy.showError(todayCanvasErrorMessage)
 
                 is CanvasMainEffect.ShowToppingFlowStartError ->
                     toastPolicy.showError(toppingFlowStartErrorMessage)
