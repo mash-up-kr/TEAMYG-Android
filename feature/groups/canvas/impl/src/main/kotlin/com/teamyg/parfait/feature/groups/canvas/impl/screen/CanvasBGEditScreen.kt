@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
@@ -147,11 +148,12 @@ internal fun CanvasBGEditScreen(
                         val canvasWidthPx = with(density) { canvasWidth.toPx() }
                         val canvasHeightPx = with(density) { canvasHeight.toPx() }
 
-                        val entries = rememberBGEditHitEntries(
+                        val drawEntries = rememberBGEditDrawEntries(
                             toppings = uiState.toppings,
                             canvasWidth = canvasWidth,
                             canvasHeight = canvasHeight,
                         )
+                        val entries = rememberBGEditHitEntries(drawEntries = drawEntries)
                         val myEntries = entries.filter { it.topping.isMine }
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
@@ -381,16 +383,71 @@ private fun PaletteColorCircle(
     }
 }
 
-private data class BGEditHitEntry(
-    val topping: CanvasToppingItem,
-    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
-    val painter: AsyncImagePainter,
-    val target: ToppingHitTarget,
-)
-
 /** 배경 편집이 그리는 대상. 편집본이 있으면 그쪽이고, 그 파일은 투명 여백이 잘려 있다. */
 private val CanvasToppingItem.drawnModel: String
     get() = editedImagePath ?: imageUrl
+
+/** 두 탭이 공유하는 그리기 정보. 판정(마스크·[ToppingHitTarget])은 여기 없다 */
+private data class BGEditDrawEntry(
+    val topping: CanvasToppingItem,
+    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
+    val painter: AsyncImagePainter,
+    val center: DpOffset,
+    val size: DpSize,
+    val drawnBorderWidthDp: Float,
+)
+
+/**
+ * 배경 탭에서도 부르므로 알파 마스크를 요청하지 않는다 — 마스크 준비는 비트맵 디코딩을
+ * 동반하는데 배경 탭은 판정을 하지 않는다.
+ */
+@Composable
+private fun rememberBGEditDrawEntries(
+    toppings: List<CanvasToppingItem>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+): List<BGEditDrawEntry> = toppings.map { topping ->
+    key(topping.parfaitImageId) {
+        val painter = rememberAsyncImagePainter(model = topping.drawnModel)
+        val painterState by painter.state.collectAsState()
+        val intrinsicSize = painter.intrinsicSize
+
+        val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
+            intrinsicSize.width / intrinsicSize.height
+        } else {
+            0f
+        }
+
+        BGEditDrawEntry(
+            topping = topping,
+            painter = painter,
+            center = toppingCenter(
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                positionX = topping.positionX,
+                positionY = topping.positionY,
+            ),
+            size = toppingImageSize(
+                longSide = toppingLongSide(canvasWidth, topping.scale),
+                aspectRatio = aspectRatio,
+            ),
+            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
+            // 판정이 외형과 어긋난다
+            drawnBorderWidthDp = topping.borderLayers
+                .firstOrNull()
+                ?.takeIf { painterState is AsyncImagePainter.State.Success }
+                ?.widthDp
+                ?: 0f,
+        )
+    }
+}
+
+private data class BGEditHitEntry(
+    val draw: BGEditDrawEntry,
+    val target: ToppingHitTarget,
+) {
+    val topping: CanvasToppingItem get() = draw.topping
+}
 
 /**
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
@@ -399,63 +456,27 @@ private val CanvasToppingItem.drawnModel: String
  * 그리는 데는 painter 만 있으면 되므로, 마스크가 없어도 화면이 달라지지 않는다.
  */
 @Composable
-private fun rememberBGEditHitEntries(
-    toppings: List<CanvasToppingItem>,
-    canvasWidth: Dp,
-    canvasHeight: Dp,
-): List<BGEditHitEntry> {
+private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<BGEditHitEntry> {
     val masks = rememberToppingAlphaMasks(
-        toppings.filter { it.isMine }.map { it.drawnModel },
+        drawEntries.filter { it.topping.isMine }.map { it.topping.drawnModel },
     )
     val density = LocalDensity.current
 
-    return toppings.map { topping ->
-        key(topping.parfaitImageId) {
-            val painter = rememberAsyncImagePainter(model = topping.drawnModel)
-            val painterState by painter.state.collectAsState()
-            val intrinsicSize = painter.intrinsicSize
-
-            val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
-                intrinsicSize.width / intrinsicSize.height
-            } else {
-                0f
-            }
-
-            val imageSize = toppingImageSize(
-                longSide = toppingLongSide(canvasWidth, topping.scale),
-                aspectRatio = aspectRatio,
-            )
-            val center = toppingCenter(
-                canvasWidth = canvasWidth,
-                canvasHeight = canvasHeight,
-                positionX = topping.positionX,
-                positionY = topping.positionY,
-            )
-
-            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
-            // 판정이 외형과 어긋난다
-            val drawnBorderWidth = topping.borderLayers
-                .firstOrNull()
-                ?.takeIf { painterState is AsyncImagePainter.State.Success }
-                ?.widthDp
-                ?: 0f
-
-            BGEditHitEntry(
-                topping = topping,
-                painter = painter,
-                target = with(density) {
-                    ToppingHitTarget(
-                        centerXPx = center.x.toPx(),
-                        centerYPx = center.y.toPx(),
-                        imageWidthPx = imageSize.width.toPx(),
-                        imageHeightPx = imageSize.height.toPx(),
-                        rotationDegrees = topping.rotationDegrees,
-                        borderWidthPx = drawnBorderWidth.dp.toPx(),
-                        mask = masks[topping.drawnModel],
-                    )
-                },
-            )
-        }
+    return drawEntries.map { entry ->
+        BGEditHitEntry(
+            draw = entry,
+            target = with(density) {
+                ToppingHitTarget(
+                    centerXPx = entry.center.x.toPx(),
+                    centerYPx = entry.center.y.toPx(),
+                    imageWidthPx = entry.size.width.toPx(),
+                    imageHeightPx = entry.size.height.toPx(),
+                    rotationDegrees = entry.topping.rotationDegrees,
+                    borderWidthPx = entry.drawnBorderWidthDp.dp.toPx(),
+                    mask = masks[entry.topping.drawnModel],
+                )
+            },
+        )
     }
 }
 
@@ -479,7 +500,8 @@ private fun CanvasToppingImage(
     val size = with(density) {
         DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
     }
-    val painterState by entry.painter.state.collectAsState()
+    val painterState by entry.draw.painter.state
+        .collectAsState()
     val border = entry.topping.borderLayers.firstOrNull()
     val description = stringResource(R.string.canvas_topping_content_description)
 
@@ -505,7 +527,7 @@ private fun CanvasToppingImage(
             },
     ) {
         YGToppingCutoutImage(
-            painter = entry.painter,
+            painter = entry.draw.painter,
             // 로딩·실패 상태에서 찍으면 플레이스홀더 실루엣이 테두리로 보인다
             borderColor = border
                 ?.let { Color(it.colorArgb) }
