@@ -19,4 +19,11 @@ data class SegmentationCandidate(
     val bitmap: BitmapWrapper,
     val canvasWidth: Int,
     val canvasHeight: Int,
+    /**
+     * [bitmap] 알파의 총합. 255로 나누면 "실제로 칠해진 픽셀 수"가 된다.
+     *
+     * 후보 판정이 [bounds] 사각형이 아니라 이 값을 보는 이유는
+     * `parfait/specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
+     */
+    val coverageAlphaSum: Long,
 )

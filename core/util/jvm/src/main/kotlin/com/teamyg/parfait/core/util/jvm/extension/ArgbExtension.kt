@@ -17,9 +17,13 @@ private const val RGB_MASK = 0x00FFFFFF
 
 private val ARGB_CHANNEL_SHIFTS = intArrayOf(24, 16, 8, 0)
 
+/** 알파 채널만 0~255 로 꺼낸다 */
+val Int.argbAlpha: Int
+    get() = this ushr CHANNEL_SHIFT_ALPHA and CHANNEL_MASK
+
 /** 색은 두고 알파만 [ratio] 만큼 남긴다 */
 fun Int.fadeArgb(ratio: Float): Int {
-    val alpha = ((this ushr CHANNEL_SHIFT_ALPHA and CHANNEL_MASK) * ratio).roundToInt().coerceIn(0, CHANNEL_MASK)
+    val alpha = (argbAlpha * ratio).roundToInt().coerceIn(0, CHANNEL_MASK)
     return (alpha shl CHANNEL_SHIFT_ALPHA) or (this and RGB_MASK)
 }
 
@@ -34,4 +38,15 @@ fun Int.mixArgb(
         mixed = mixed or (channel.roundToInt().coerceIn(0, CHANNEL_MASK) shl shift)
     }
     return mixed
+}
+
+/**
+ * 픽셀마다 알파를 더한다.
+ *
+ * `Long` 인 이유: 12MP 짜리 전면 불투명 판의 합이 `Int` 를 넘어 음수로 래핑된다.
+ */
+fun IntArray.sumArgbAlpha(): Long {
+    var sum = 0L
+    for (pixel in this) sum += pixel.argbAlpha.toLong()
+    return sum
 }
