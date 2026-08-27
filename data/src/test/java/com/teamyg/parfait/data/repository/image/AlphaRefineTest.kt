@@ -534,7 +534,7 @@ class AlphaRefineTest {
             )
         }
 
-        // Then — 실제 값을 재서 채우고, 한 단계를 통째로 지웠을 때의 최대치 위로 하한을 건다
+        // Then — 확인 지점 하나를 통째로 지우면 값이 하한 아래로 떨어져 여기 걸린다
         assertTrue(job.calls > MEASURED_LOWER_BOUND)
     }
 
