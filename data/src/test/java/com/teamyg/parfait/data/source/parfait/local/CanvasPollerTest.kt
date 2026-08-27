@@ -218,4 +218,73 @@ class CanvasPollerTest {
 
         assertNull(local.cachedTodayCanvas(GROUP))
     }
+
+    /**
+     * 호출 순서대로 다른 [CompletableDeferred] 에 붙들리는 오늘 조회 페이크. 세대가 다른 두
+     * 요청을 각자 원하는 시점에 풀어야 하는 경합 테스트 전용이라 [FakeRemote] 를 재사용하지
+     * 않는다.
+     */
+    private class SequencedGateRemote(
+        private val response: CanvasVO,
+        private val gates: List<CompletableDeferred<Unit>>,
+    ) : ParfaitRemoteDataSource {
+        var todayCallCount = 0
+            private set
+
+        override suspend fun getYears(groupId: GroupId): Result<List<Int>> = error("폴러가 부르지 않는다")
+
+        override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> {
+            val gate = gates[todayCallCount]
+            todayCallCount++
+            gate.await()
+            return Result.success(response)
+        }
+
+        override suspend fun getPastCanvases(
+            groupId: GroupId,
+            from: LocalDate?,
+            to: LocalDate?,
+        ): Result<List<PastCanvasVO>> = error("폴러가 부르지 않는다")
+
+        override suspend fun getCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<CanvasVO> = error("폴러가 부르지 않는다")
+
+        override suspend fun changeCanvasBackground(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+            background: CanvasBackgroundEdit,
+        ): Result<CanvasBackground?> = error("폴러가 부르지 않는다")
+    }
+
+    @Test
+    fun stopAll_thenReacquire_lateResponseFromPreviousGenerationDoesNotClearNewGenerationInProgressFlag() = runTest {
+        val gateGen0 = CompletableDeferred<Unit>()
+        val gateGen1 = CompletableDeferred<Unit>()
+        val remote = SequencedGateRemote(canvas(), listOf(gateGen0, gateGen1))
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        assertEquals(1, remote.todayCallCount)
+
+        // 이전 세대의 요청이 아직 걸려 있는 채로 stopAll 뒤 곧바로 재구독한다
+        poller.stopAll()
+        poller.acquire(GROUP)
+        runCurrent()
+        assertEquals(2, remote.todayCallCount)
+
+        // 이전 세대(gen0)의 지연 응답이 뒤늦게 도착한다
+        gateGen0.complete(Unit)
+        runCurrent()
+
+        // gen1이 아직 진행 중인데 세 번째 트리거가 들어와도 "진행 중" 가드에 걸려 건너뛰어야 한다
+        poller.refreshNow(GROUP)
+        runCurrent()
+        assertEquals(2, remote.todayCallCount)
+
+        gateGen1.complete(Unit)
+        runCurrent()
+    }
 }

@@ -43,7 +43,13 @@ class CanvasPoller @Inject constructor(
     private val lock = Any()
     private val subscriberCounts = mutableMapOf<GroupId, Int>()
     private val pollJobs = mutableMapOf<GroupId, Job>()
-    private val refreshing = mutableSetOf<GroupId>()
+
+    /**
+     * 그룹별 "진행 중" 표시. 값은 그 갱신을 시작한 [generation] 이다 — [stopAll] 로 세대가 바뀐
+     * 뒤 곧바로 재시작된 새 세대의 항목을, 이전 세대의 지연 응답이 자기 것인 줄 알고 지우는
+     * 사고를 막는다(세대가 다르면 자기 것이 아니므로 지우지 않는다).
+     */
+    private val refreshing = mutableMapOf<GroupId, Int>()
 
     /** [stopAll] 이 올린다. 그 전에 출발한 응답은 캐시에 싣지 않는다 */
     private var generation = 0
@@ -132,7 +138,8 @@ class CanvasPoller @Inject constructor(
         forceToday: Boolean,
     ): Result<Unit> {
         val startedGeneration = synchronized(lock) {
-            if (refreshing.add(groupId).not()) return Result.success(Unit)
+            if (refreshing.containsKey(groupId)) return Result.success(Unit)
+            refreshing[groupId] = generation
             generation
         }
 
@@ -154,7 +161,9 @@ class CanvasPoller @Inject constructor(
                     }
                 }.map { }
         } finally {
-            synchronized(lock) { refreshing.remove(groupId) }
+            synchronized(lock) {
+                if (refreshing[groupId] == startedGeneration) refreshing.remove(groupId)
+            }
         }
     }
 }
