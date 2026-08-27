@@ -116,7 +116,6 @@ class CanvasToppingPlaceViewModelTest {
         }
     }
 
-    /** `OnCanvasMeasured`·`OnToppingBaseSizeMeasured`·`OnToppingImageReadyChanged`를 순서대로 넣는다 */
     private fun measureAndReady(viewModel: CanvasToppingPlaceViewModel) {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
         viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))

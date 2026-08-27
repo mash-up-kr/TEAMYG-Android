@@ -22,12 +22,8 @@ import kotlin.time.Duration.Companion.seconds
 private val CANVAS_POLL_INTERVAL: Duration = 5.seconds
 
 /**
- * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다
- * (`adr/0029-canvas-today-ssot-polling.md`).
- *
- * 값이 아니라 **트리거**를 소유한다 — 나중에 푸시로 갈아 끼울 때 바뀌는 자리를 하나로 두기
- * 위해서다. 저장소(`ParfaitRepositoryImpl`)가 이쪽을 주입받으므로 반대로 저장소를 주입받지
- * 않는다.
+ * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다. 값이 아니라
+ * **트리거**를 소유한다(`adr/0029-canvas-today-ssot-polling.md`).
  *
  * 계수 조작에 코루틴 뮤텍스가 아니라 [synchronized] 를 쓰는 이유: [release] 가 `onCompletion`
  * 에서 불리는데 그 블록은 **취소된 코루틴에서 돈다** — 거기서 서스펜드하면 계수가 안 내려가
