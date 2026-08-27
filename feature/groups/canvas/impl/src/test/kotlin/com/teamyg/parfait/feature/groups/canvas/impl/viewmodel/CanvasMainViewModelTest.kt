@@ -440,19 +440,53 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun clickTopping_placedByMe_staysInDefault() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 내 것으로 판정한 토핑이 놓여 있다
+    fun clickTopping_placedByMe_navigatesToCanvasBGEditInsteadOfSpotlighting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 서버가 내 것으로 판정한 토핑이 놓여 있다
+            val myTopping = topping(positionZ = 1, isMine = true)
+            coEvery { getTodayParfait(any()) } returns Result.success(
+                canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(myTopping)),
+            )
+            val viewModel = enteredViewModel()
+
+            // When 그 토핑을 탭한다
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasMainIntent.OnClickTopping(myTopping))
+                advanceUntilIdle()
+
+                // Then Spotlight 가 아니라 C-305 토핑 편집으로, 탭한 토핑 id 를 실어 보낸다
+                assertEquals(
+                    CanvasMainEffect.NavigateToCanvasBGEdit(
+                        groupId = GroupId(GROUP_ID),
+                        parfaitId = ParfaitId(TODAY_PARFAIT_ID),
+                        toppingId = myTopping.parfaitImageId,
+                    ),
+                    awaitItem(),
+                )
+            }
+            assertNull(viewModel.state.value.spotlightedToppingId)
+        }
+
+    @Test
+    fun clickTopping_placedByMe_whileViewingAPastDate_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 지난 날의 내 토핑을 보고 있다 — CanvasBGEdit 은 넘겨받은 parfaitId 와 무관하게
+        // 항상 오늘 캔버스를 다시 조회하므로, 여기서 열면 지난 날이 아니라 오늘 것이 열린다
         val myTopping = topping(positionZ = 1, isMine = true)
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(myTopping)),
+        coEvery { getParfaitDetail(any(), any()) } returns Result.success(
+            canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(toppings = listOf(myTopping)),
         )
         val viewModel = enteredViewModel()
-
-        // When 그 토핑을 탭한다
-        viewModel.processIntent(CanvasMainIntent.OnClickTopping(myTopping))
+        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
         advanceUntilIdle()
 
-        // Then 내 토핑은 Spotlight 대상이 아니다
+        // When 그 토핑을 탭한다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(myTopping))
+            advanceUntilIdle()
+
+            // Then 아무 반응도 없다 — Spotlight 도, 편집 화면 이동도 아니다
+            expectNoEvents()
+        }
         assertNull(viewModel.state.value.spotlightedToppingId)
     }
 

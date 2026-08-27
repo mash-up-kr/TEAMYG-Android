@@ -213,6 +213,7 @@ class CanvasBGEditViewModel
 constructor(
     @Assisted("groupId") groupIdValue: Long,
     @Assisted("parfaitId") parfaitIdValue: Long,
+    @Assisted("initialToppingId") initialToppingIdValue: Long?,
     private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
@@ -223,6 +224,9 @@ constructor(
     initialState = CanvasBGEditUiState(),
 ) {
     private val groupId = GroupId(groupIdValue)
+
+    /** 특정 토핑을 탭해 들어온 경우 그 토핑 id. 첫 로드에서 토핑 탭·선택 상태를 여기서 채운다 */
+    private val initialToppingId = initialToppingIdValue
 
     /**
      * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 편집 중 자정을
@@ -280,6 +284,7 @@ constructor(
         canvas: CanvasVO,
         toppings: List<CanvasToppingItem>,
     ): CanvasBGEditUiState = copy(
+        selectedTab = if (initialToppingId != null) CanvasEditTab.TOPPING else selectedTab,
         toppings = toppings,
         selectedColor = (canvas.background as? CanvasBackground.Color)
             ?.value
@@ -287,6 +292,7 @@ constructor(
             ?: selectedColor,
         selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
         selectedImageSource = null,
+        selectedToppingId = initialToppingId ?: selectedToppingId,
     )
 
     private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
@@ -611,6 +617,7 @@ constructor(
         fun create(
             @Assisted("groupId") groupIdValue: Long,
             @Assisted("parfaitId") parfaitIdValue: Long,
+            @Assisted("initialToppingId") initialToppingIdValue: Long?,
         ): CanvasBGEditViewModel
     }
 

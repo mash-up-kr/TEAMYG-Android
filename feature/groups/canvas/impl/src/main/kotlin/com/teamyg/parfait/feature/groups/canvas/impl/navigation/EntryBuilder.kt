@@ -36,6 +36,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         CanvasBGEditRoute(
             groupId = navKey.groupId,
             parfaitId = navKey.parfaitId,
+            initialToppingId = navKey.initialToppingId,
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

@@ -101,9 +101,10 @@ class CanvasBGEditViewModelTest {
         coEvery { changeCanvasBackground(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), background) } returns result
     }
 
-    private fun TestScope.viewModel() = CanvasBGEditViewModel(
+    private fun TestScope.viewModel(initialToppingIdValue: Long? = null) = CanvasBGEditViewModel(
         groupIdValue = GROUP_ID,
         parfaitIdValue = PARFAIT_ID,
+        initialToppingIdValue = initialToppingIdValue,
         getTodayParfaitUseCase = getTodayParfait,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
@@ -130,6 +131,16 @@ class CanvasBGEditViewModelTest {
         assertEquals(listOf(true, false), toppings.map(CanvasToppingItem::isMine))
         assertEquals(0.25f, toppings.first().positionX)
         assertEquals(0.75f, toppings.first().positionY)
+    }
+
+    @Test
+    fun init_withInitialToppingId_opensToppingTabWithThatToppingSelected() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 캔버스 메인에서 내 토핑을 탭해 들어온다
+        val viewModel = viewModel(initialToppingIdValue = 1L)
+
+        // Then 배경 탭이 아니라 토핑 탭에서, 탭했던 그 토핑이 바로 선택돼 있다
+        assertEquals(CanvasEditTab.TOPPING, viewModel.state.value.selectedTab)
+        assertEquals(1L, viewModel.state.value.selectedToppingId)
     }
 
     @Test
@@ -194,6 +205,7 @@ class CanvasBGEditViewModelTest {
         val viewModel = CanvasBGEditViewModel(
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
+            initialToppingIdValue = null,
             getTodayParfaitUseCase = getTodayParfait,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
