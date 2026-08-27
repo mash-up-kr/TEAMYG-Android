@@ -228,6 +228,8 @@ internal fun interface GuidanceProvider {
  * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다. 근거는
  * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」.
  *
+ * 행 경계마다 취소를 확인하고, 취소되면 `CancellationException` 을 던진다. 순수 CPU 루프라
+ * 중단 지점이 없어서 `suspend` 표시만으로는 이 성질이 드러나지 않는다.
  * @param alpha 길이가 `width * height` 여야 한다
  * @return 남은 알파가 없으면 `null`. 정련이나 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로
  *   `null` 이 나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고

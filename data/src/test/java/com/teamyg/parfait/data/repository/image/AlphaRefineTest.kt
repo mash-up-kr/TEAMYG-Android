@@ -514,6 +514,30 @@ class AlphaRefineTest {
     }
 
     @Test
+    fun refineAlpha_cancelledMidway_throws() {
+        // Given
+        val alpha = ByteArray(16) { 255.toByte() }
+        val guidance = IntArray(16) { 0xFF808080.toInt() }
+        val job = CountingJob()
+        job.cancelAfter = 1
+
+        // When · Then
+        assertFailsWith<CancellationException> {
+            runKernelCounting(job) {
+                refineAlpha(
+                    alpha = alpha,
+                    guidance = guidance,
+                    width = 4,
+                    height = 4,
+                    downscale = 1,
+                    radius = 1,
+                    epsilon = 1e-4f,
+                )
+            }
+        }
+    }
+
+    @Test
     fun refineAlpha_countingChecks_visitsEveryStage() {
         // Given — 4×4·배율1·반경1. boxMean 여섯 번(각 행·열 두 루프)·downscale 둘·계수 루프·
         // applyCoefficients 가 각각 확인한다
