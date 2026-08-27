@@ -81,9 +81,6 @@ private const val TOPPING_MIN_SCALE = 0.05f
 /** 세로로 이 픽셀만큼 드래그해야 배율이 1.0만큼 바뀐다 */
 private const val TOPPING_DRAG_PX_PER_SCALE = 300f
 
-/** 가로로 1픽셀 드래그할 때 회전하는 각도 */
-private const val TOPPING_DRAG_DEGREES_PER_PX = 0.5f
-
 val CanvasBackgroundPaletteColors = listOf(
     YGAtomicColors.Gray.White,
     YGAtomicColors.Gray.Black,
@@ -163,9 +160,9 @@ sealed interface CanvasBGEditIntent : UiIntent {
         val delta: Offset,
     ) : CanvasBGEditIntent
 
-    /** 회전 아이콘을 잡고 드래그한 만큼 넘어온다. 가로 드래그 거리만큼 회전한다. */
-    data class OnToppingRotateDrag(
-        val delta: Offset,
+    /** 회전 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **각도**이며, 환산은 핸들 위치를 아는 화면 몫이다. */
+    data class OnToppingRotate(
+        val deltaDegrees: Float,
     ) : CanvasBGEditIntent
 
     /**
@@ -342,7 +339,7 @@ constructor(
             CanvasBGEditIntent.OnDeleteToppingDialogCancel -> updateState { copy(showDeleteToppingDialog = false) }
             CanvasBGEditIntent.OnClickEditTopping -> handleOnClickEditTopping()
             is CanvasBGEditIntent.OnToppingResizeDrag -> handleOnToppingResizeDrag(intent)
-            is CanvasBGEditIntent.OnToppingRotateDrag -> handleOnToppingRotateDrag(intent)
+            is CanvasBGEditIntent.OnToppingRotate -> handleOnToppingRotate(intent)
             is CanvasBGEditIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
             is CanvasBGEditIntent.OnToppingEditResult -> handleOnToppingEditResult(intent)
         }
@@ -400,12 +397,11 @@ constructor(
         }
     }
 
-    private fun handleOnToppingRotateDrag(intent: CanvasBGEditIntent.OnToppingRotateDrag) {
+    private fun handleOnToppingRotate(intent: CanvasBGEditIntent.OnToppingRotate) {
         val selectedId = state.value.selectedToppingId ?: return
 
-        val deltaDegrees = intent.delta.x * TOPPING_DRAG_DEGREES_PER_PX
         applyToppingTransform(selectedId) { topping ->
-            topping.copy(rotationDegrees = topping.rotationDegrees + deltaDegrees)
+            topping.copy(rotationDegrees = topping.rotationDegrees + intent.deltaDegrees)
         }
     }
 

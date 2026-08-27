@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
@@ -115,6 +116,24 @@ fun resizeOutwardDirection(rotationDegrees: Float): Pair<Float, Float> {
     val rotatedY = base * sinT + (-base) * cosT
 
     return rotatedX to rotatedY
+}
+
+/**
+ * 회전 핸들을 [dragDelta]만큼 끌었을 때 늘어나는 각도. [handleVector]는 토핑 중심에서 그 핸들까지의
+ * 벡터이며, 둘은 같은 단위이어야 한다.
+ *
+ * 드래그의 가로 성분만 보면 핸들이 놓인 모서리에 따라 회전 방향이 뒤집힌다(#383).
+ */
+fun rotationDeltaDegrees(
+    handleVector: Offset,
+    dragDelta: Offset,
+): Float {
+    val radiusSquared = handleVector.getDistanceSquared()
+    if (radiusSquared <= 0f) return 0f
+
+    // 화면 좌표계(y 아래)에서 시계방향 접선은 (-y, x) 이고, 그 방향 성분을 반지름으로 나누면 라디안이다
+    val tangentComponent = handleVector.x * dragDelta.y - handleVector.y * dragDelta.x
+    return Math.toDegrees((tangentComponent / radiusSquared).toDouble()).toFloat()
 }
 
 /** [center]를 기준으로 반너비 [halfWidth], 반높이 [halfHeight]인 사각형을 [rotationDegrees]만큼(시계방향) 돌린 네 꼭짓점. */

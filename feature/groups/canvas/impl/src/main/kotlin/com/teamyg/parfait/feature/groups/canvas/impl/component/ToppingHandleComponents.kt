@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -24,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleBut
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
+import com.teamyg.parfait.feature.groups.canvas.impl.util.rotationDeltaDegrees
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingStrokeSize
 
 /**
@@ -102,5 +104,36 @@ internal fun ToppingDragHandleButton(
         modifier = modifier
             .centeredAt(point)
             .dragBy(key, onDrag),
+    )
+}
+
+/** 잡고 돌리는 회전 핸들. 끈 거리를 각도로 바꿔 [onRotate]로 넘긴다. */
+@Composable
+internal fun ToppingRotateHandleButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    point: DpOffset,
+    center: DpOffset,
+    key: Any?,
+    onRotate: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+
+    // 돌리는 동안 핸들도 함께 도는데 [dragBy] 의 제스처 블록은 시작 시점 람다를 계속 쓴다 —
+    // State 로 읽지 않으면 처음 위치의 접선에 갇혀 한 바퀴를 못 돈다(#383).
+    val handleVector by rememberUpdatedState(
+        with(density) {
+            Offset(x = (point.x - center.x).toPx(), y = (point.y - center.y).toPx())
+        },
+    )
+
+    ToppingDragHandleButton(
+        iconRes = iconRes,
+        contentDescription = contentDescription,
+        point = point,
+        key = key,
+        onDrag = { drag -> onRotate(rotationDeltaDegrees(handleVector = handleVector, dragDelta = drag)) },
+        modifier = modifier,
     )
 }

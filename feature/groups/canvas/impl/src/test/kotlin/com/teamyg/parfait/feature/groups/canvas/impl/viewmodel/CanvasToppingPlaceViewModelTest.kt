@@ -39,9 +39,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 
-/** ViewModel 안의 private 상수(TOPPING_DRAG_PX_PER_SCALE=300f, TOPPING_DRAG_DEGREES_PER_PX=0.5f)와 맞춘 값 */
+/** ViewModel 안의 private 상수(TOPPING_DRAG_PX_PER_SCALE=300f)와 맞춘 값 */
 private const val DRAG_PX_PER_SCALE = 300f
-private const val DRAG_DEGREES_PER_PX = 0.5f
 private const val SCALE_DELTA = 1e-4f
 
 class CanvasToppingPlaceViewModelTest {
@@ -108,9 +107,7 @@ class CanvasToppingPlaceViewModelTest {
     private fun rotatedViewModel(rotationDegrees: Float): CanvasToppingPlaceViewModel {
         val viewModel = viewModel()
         if (rotationDegrees != 0f) {
-            viewModel.processIntent(
-                CanvasToppingPlaceIntent.OnToppingRotateDrag(Offset(x = rotationDegrees / DRAG_DEGREES_PER_PX, y = 0f)),
-            )
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(rotationDegrees))
         }
         return viewModel
     }
@@ -211,16 +208,16 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onToppingRotateDrag_accumulatesAcrossMultipleDrags() {
+    fun onToppingRotate_accumulatesAcrossMultipleDrags() {
         // Given 기본 상태(회전 0도)
         val viewModel = viewModel()
 
         // When 여러 번에 걸쳐 회전 핸들을 끈다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotateDrag(Offset(x = 40f, y = 0f)))
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotateDrag(Offset(x = 20f, y = 0f)))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 20f))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 10f))
 
         // Then 각 드래그의 각도 변화가 그대로 누적된다
-        assertEquals((40f + 20f) * DRAG_DEGREES_PER_PX, viewModel.state.value.rotationDegrees, SCALE_DELTA)
+        assertEquals(30f, viewModel.state.value.rotationDegrees, SCALE_DELTA)
     }
 
     @Test

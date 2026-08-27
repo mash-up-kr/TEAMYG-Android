@@ -50,6 +50,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingC
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingDragInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
@@ -93,7 +94,7 @@ internal fun CanvasBGEditScreen(
     onDeleteToppingDialogCancel: () -> Unit,
     onClickEditTopping: () -> Unit,
     onToppingResizeDrag: (Offset) -> Unit,
-    onToppingRotateDrag: (Offset) -> Unit,
+    onToppingRotate: (Float) -> Unit,
     onToppingMoveDrag: (deltaX: Float, deltaY: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -210,7 +211,7 @@ internal fun CanvasBGEditScreen(
                                 onClickDelete = onClickDeleteTopping,
                                 onClickEdit = onClickEditTopping,
                                 onResizeDrag = onToppingResizeDrag,
-                                onRotateDrag = onToppingRotateDrag,
+                                onRotate = onToppingRotate,
                             )
                         }
                     }
@@ -528,7 +529,7 @@ private fun ToppingCornerButtons(
     onClickDelete: () -> Unit,
     onClickEdit: () -> Unit,
     onResizeDrag: (Offset) -> Unit,
-    onRotateDrag: (Offset) -> Unit,
+    onRotate: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -574,12 +575,13 @@ private fun ToppingCornerButtons(
             onClick = onClickEdit,
             modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
         )
-        ToppingDragHandleButton(
+        ToppingRotateHandleButton(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.bottomRight,
+            center = center,
             key = entry.topping.parfaitImageId,
-            onDrag = onRotateDrag,
+            onRotate = onRotate,
         )
     }
 }
@@ -604,7 +606,7 @@ private fun PreviewCanvasBGEditScreen() = PreviewBox {
         onDeleteToppingDialogCancel = {},
         onClickEditTopping = {},
         onToppingResizeDrag = {},
-        onToppingRotateDrag = {},
+        onToppingRotate = {},
         onToppingMoveDrag = { _, _ -> },
         modifier = Modifier.fillMaxSize(),
     )

@@ -34,6 +34,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
@@ -65,7 +66,7 @@ internal fun CanvasToppingPlaceScreen(
     onClickConfirm: () -> Unit,
     onToppingMoveDrag: (DpOffset) -> Unit,
     onToppingResizeDrag: (Offset) -> Unit,
-    onToppingRotateDrag: (Offset) -> Unit,
+    onToppingRotate: (Float) -> Unit,
     onCanvasMeasured: (DpSize) -> Unit,
     onToppingBaseSizeMeasured: (DpSize) -> Unit,
     onToppingImageReadyChanged: (Boolean) -> Unit,
@@ -215,7 +216,7 @@ internal fun CanvasToppingPlaceScreen(
                     sizeAfterScale = sizeAfterScale,
                     rotationDegrees = uiState.rotationDegrees,
                     onResizeDrag = onToppingResizeDrag,
-                    onRotateDrag = onToppingRotateDrag,
+                    onRotate = onToppingRotate,
                 )
             }
         }
@@ -241,7 +242,7 @@ private fun ToppingPlaceCornerButtons(
     sizeAfterScale: DpSize,
     rotationDegrees: Float,
     onResizeDrag: (Offset) -> Unit,
-    onRotateDrag: (Offset) -> Unit,
+    onRotate: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val buttonPoints = computeToppingButtonPoints(
@@ -258,12 +259,13 @@ private fun ToppingPlaceCornerButtons(
             key = Unit,
             onDrag = onResizeDrag,
         )
-        ToppingDragHandleButton(
+        ToppingRotateHandleButton(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.bottomRight,
+            center = center,
             key = Unit,
-            onDrag = onRotateDrag,
+            onRotate = onRotate,
         )
     }
 }
@@ -277,7 +279,7 @@ private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
         onClickConfirm = {},
         onToppingMoveDrag = {},
         onToppingResizeDrag = {},
-        onToppingRotateDrag = {},
+        onToppingRotate = {},
         onCanvasMeasured = {},
         onToppingBaseSizeMeasured = {},
         onToppingImageReadyChanged = {},
