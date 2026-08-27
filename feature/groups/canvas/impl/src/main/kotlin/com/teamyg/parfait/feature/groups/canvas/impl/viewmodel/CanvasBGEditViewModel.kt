@@ -223,9 +223,12 @@ constructor(
     private val initialToppingId = initialToppingIdValue
 
     /**
-     * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 편집 중 자정을
-     * 넘겨 조회가 **새 날의 캔버스**를 주면 그쪽으로 옮긴다 — 화면에 그려진 토핑과 저장
-     * 대상이 갈라지는 편이 더 나쁘다.
+     * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 최초 방출이 다른
+     * parfaitId 를 주면 그쪽으로 옮긴다([hasSeededFromCanvas] 참고) — 화면에 그려진 토핑과
+     * 저장 대상이 갈라지는 편이 더 나쁘다.
+     *
+     * 그 뒤 날이 바뀌어 조회가 다른 날의 캔버스를 주는 경우는 여기서 옮기지 않는다 — 이 화면의
+     * 시간 축이 닫을 몫이다(`specs/2026-08-27-canvas-today-ssot-polling.md` 「하루 경계」).
      */
     private var parfaitId = ParfaitId(parfaitIdValue)
 
@@ -235,7 +238,11 @@ constructor(
      */
     private var confirmedToppings: List<CanvasToppingItem> = emptyList()
 
-    /** 최초 방출에만 서버 값을 시딩한다 — 이후 방출이 사용자의 선택을 덮으면 안 된다 */
+    /**
+     * 최초 방출에만 서버 값을 시딩하고, 편집 대상([parfaitId])도 최초 방출로만 정한다 — 이후
+     * 방출이 사용자의 선택을 덮거나, 화면에 그려진 토핑과 다른 캔버스로 저장 대상을 바꾸면
+     * 안 된다.
+     */
     private var hasSeededFromCanvas = false
 
     init {

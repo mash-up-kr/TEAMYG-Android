@@ -42,7 +42,8 @@ class LogoutUseCaseTest {
         // When 로그아웃한다
         LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository).invoke()
 
-        // Then 세 가지를 모두 지운다 — 하나만 남으면 계정 전환 때 이전 사용자 흔적이 남는다
+        // Then 계정 정보와 그룹 캐시를 함께 지운다 — 하나만 남으면 계정 전환 때 이전 사용자
+        // 흔적이 남는다
         coVerify(exactly = 1) { memberRepository.clearMyAccount() }
         verify(exactly = 1) { parfaitGroupRepository.clearGroups() }
     }

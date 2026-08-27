@@ -24,11 +24,12 @@ import javax.inject.Inject
  * [runSuspendCatching] 이 필요 없다. [ParfaitRepository.clearTodayCanvas] 도 같은
  * 인메모리 캐시라 마찬가지다.
  *
- * 그래서 [ParfaitGroupRepository.clearGroups] 를 먼저 부른다 — 던지지 않는 정리를 앞세워,
- * 뒤이은 [MemberRepository.clearMyAccount] 의 DataStore IO 가 취소를 재던지더라도(
- * [runSuspendCatching] 은 취소는 그대로 던진다) 그룹 캐시 정리까지 막지 않게 한다. 순서가
- * 반대면, 계정 정리 중 취소됐을 때 프로세스는 살아 있는 채 계정만 바뀌어 이전 계정의 그룹이
- * 캐시에 남는다. `TokenAuthenticator` 도 같은 근거로 같은 순서를 쓴다.
+ * 그래서 [ParfaitGroupRepository.clearGroups] 와 [ParfaitRepository.clearTodayCanvas] 를
+ * 먼저 부른다 — 던지지 않는 정리들을 앞세워, 뒤이은 [MemberRepository.clearMyAccount] 의
+ * DataStore IO 가 취소를 재던지더라도([runSuspendCatching] 은 취소는 그대로 던진다) 그
+ * 정리들까지 막지 않게 한다. 순서가 반대면, 계정 정리 중 취소됐을 때 프로세스는 살아 있는
+ * 채 계정만 바뀌어 이전 계정의 그룹·오늘 캔버스가 캐시에 남는다. `TokenAuthenticator` 도
+ * 같은 근거로 같은 순서를 쓴다.
  */
 class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,

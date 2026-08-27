@@ -310,9 +310,9 @@ constructor(
 
         // 시간이 지나면서 지금 보는 parfaitToday 가 어제가 되어버린 상황
         updateState {
-            // 캐시에 distinctUntilChanged 가 걸려 있어 경계를 넘겨도 재방출이 없다 — 구독의
-            // 날짜 필터는 이 자리를 대신하지 못하므로, 어제 것을 오늘로 착각해 그 위에 토핑을
-            // 올리는 일이 없도록 여기서 비운다. 갱신이 오면 구독이 다시 채운다
+            // 구독의 날짜 필터가 이 자리를 대신하지 못한다([GetTodayParfaitFlowUseCase] 참고) —
+            // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 여기서 비운다. 갱신이
+            // 오면 구독이 다시 채운다
             if (isViewingToday) {
                 copy(
                     today = today,
@@ -321,16 +321,14 @@ constructor(
                     todayCanvas = null,
                 )
             } else {
-                // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다 — 안 비우면
-                // "오늘의 파르페 가기"로 돌아갔을 때 어제 캔버스 위에 토핑이 올라간다
+                // 보고 있던 지난 날은 마감돼 그대로 두고, todayCanvas 만 비운다
                 copy(today = today, todayCanvas = null)
             }
         }
     }
 
     /**
-     * 받아 온 캔버스는 저장소에 실리고 [observeTodayCanvas] 가 화면으로 옮긴다 — 여기서
-     * 상태를 직접 쓰지 않는다.
+     * 받아 온 캔버스는 저장소에 실리고 [observeTodayCanvas] 가 화면으로 옮긴다.
      *
      * ⚠️ 서버의 오늘 조회는 캔버스가 없으면 만들어 저장한다 — 화면을 여는 것만으로 그날 캔버스가
      * 생긴다. 재진입에 다시 불러도 첫 진입에서 이미 만들어진 것을 받을 뿐이라 늘어나지는 않는다.
