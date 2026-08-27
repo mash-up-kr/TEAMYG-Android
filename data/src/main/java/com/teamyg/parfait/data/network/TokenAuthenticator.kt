@@ -9,6 +9,7 @@ import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
@@ -47,6 +48,7 @@ class TokenAuthenticator @Inject constructor(
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
     private val groupLocalDataSource: GroupLocalDataSource,
     private val canvasLocalDataSource: CanvasLocalDataSource,
+    private val canvasPoller: CanvasPoller,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -134,6 +136,9 @@ class TokenAuthenticator @Inject constructor(
                 // 정리를 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO
                 // 실패가 그 정리까지 막지 않게 한다.
                 groupLocalDataSource.clear()
+                // 캐시를 지우기 전에 폴러부터 세운다 — 순서가 반대면 이미 출발한 응답이
+                // clear() 직후의 빈 캐시를 되살릴 수 있다.
+                canvasPoller.stopAll()
                 canvasLocalDataSource.clear()
                 userInfoLocalDataSource.clear()
             } else {
