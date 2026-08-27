@@ -36,41 +36,26 @@ interface ParfaitRepository {
     fun todayCanvasRefreshFailures(groupId: GroupId): Flow<Unit>
 
     /**
-     * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
-     * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 부를 지점을 아껴야 한다.
+     * 오늘 캔버스 캐시를 갱신한다. 호출부가 응답을 기다려야 하는 자리(예: 되감기 직전)에서
+     * 쓴다 — 기다리지 않아도 되는 자리는 [requestTodayCanvasRefresh] 를 쓴다.
      *
-     * 오늘 날짜가 이미 마감돼 있으면 그것을 그대로 싣는다 — 그 캔버스에 쓰기를 보내면
-     * 409 PARFAIT_ALREADY_CLOSED 로 돌아온다(`api/parfait.md`).
-     */
-    suspend fun refreshTodayCanvas(groupId: GroupId): Result<Unit>
-
-    /**
-     * 상세 조회로 오늘 캔버스 캐시를 갱신한다. [refreshTodayCanvas] 와 달리 부작용이 없어
-     * 주기 갱신은 이쪽을 쓴다.
+     * [getCanvasDetail] 과 같은 엔드포인트를 부를 수 있지만 캐시에 싣는다는 점이 다르다 —
+     * 지난 날 조회가 오늘 캔버스를 덮지 않도록 표면을 갈라 둔다.
      *
-     * [getCanvasDetail] 과 같은 엔드포인트지만 캐시에 싣는다는 점이 다르다 — 지난 날 조회가
-     * 오늘 캔버스를 덮지 않도록 표면을 갈라 둔다.
+     * ⚠️ [parfaitId] 는 의도 표시일 뿐 실제로 조회할 대상은 아니다 — 실제 대상(오늘 날짜인지,
+     * 캐시된 캔버스인지)은 `:data` 의 폴러가 캐시 상태로 정한다.
      */
     suspend fun refreshTodayCanvasDetail(
         groupId: GroupId,
         parfaitId: ParfaitId,
     ): Result<Unit>
 
-    /**
-     * 캐시에 실린 오늘 캔버스의 날짜. 미조회면 `null`.
-     *
-     * 구독([todayCanvas])이 아닌 별도 표면인 이유: 그 [Flow] 는 나중에 폴링 수명을 나르게 되어,
-     * 한 번 구독하는 것만으로 조회가 나간다(`adr/0029-canvas-today-ssot-polling.md`).
-     * 날짜만 내므로 "값을 얻는 길은 하나"는 그대로다.
-     */
-    fun cachedTodayCanvasDate(groupId: GroupId): LocalDate?
-
     /** 세션 종료 정리. `:domain` 이 `:data` 를 볼 수 없어 저장소 표면으로 낸다 */
     fun clearTodayCanvas()
 
     /**
-     * 폴러의 비동기 표면. 즉시 반환하므로 호출부의 되감기를 늦추지 않는다 — 갱신 자체는
-     * 폴러의 스코프에서 끝까지 간다(`adr/0029-canvas-today-ssot-polling.md`).
+     * [refreshTodayCanvasDetail] 의 비동기 표면. 즉시 반환하므로 호출부의 되감기를 늦추지
+     * 않는다 — 갱신 자체는 폴러의 스코프에서 끝까지 간다(`adr/0029-canvas-today-ssot-polling.md`).
      */
     fun requestTodayCanvasRefresh(groupId: GroupId)
 
@@ -87,7 +72,8 @@ interface ParfaitRepository {
     ): Result<List<PastCanvasVO>>
 
     /**
-     * 특정 캔버스 상세. 부르는 엔드포인트는 [refreshTodayCanvas] 와 같지만 부작용이 없다.
+     * 특정 캔버스 상세. 부르는 엔드포인트는 [refreshTodayCanvasDetail] 과 같을 수 있지만
+     * 부작용이 없다(캐시에 싣지 않는다).
      *
      * 파르페가 없거나 다른 그룹 소속이면 PARFAIT_NOT_FOUND 다.
      */

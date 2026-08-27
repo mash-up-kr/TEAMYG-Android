@@ -35,7 +35,6 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
-import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -193,7 +192,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
 
-    /** 보여 줄 캔버스가 없을 때만 온다 — 화면이 앞에 설 때마다 재조회하므로 매번 알리면 방해가 된다 */
+    /** 첫 조회를 기다리는 동안 갱신이 실패했을 때만 온다 — 폴링은 5초마다 돌아 매번 알리면 방해가 된다 */
     data object ShowTodayCanvasError : CanvasMainEffect
 
     data object ShowToppingFlowStartError : CanvasMainEffect
@@ -254,7 +253,6 @@ constructor(
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
-    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
     private val observeParfaitDayBoundaryUseCase: ObserveParfaitDayBoundaryUseCase,
     private val observeTodayParfaitRefreshFailureUseCase: ObserveTodayParfaitRefreshFailureUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,

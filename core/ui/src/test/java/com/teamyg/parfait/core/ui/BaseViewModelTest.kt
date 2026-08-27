@@ -5,13 +5,10 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -57,10 +54,8 @@ private object ProbeIntent : UiIntent
 
 private object ProbeEffect : UiSideEffect
 
-@OptIn(ExperimentalCoroutinesApi::class)
 private class ProbeViewModel(
     private val upstream: Flow<Int>,
-    private val readsOwnState: Boolean = false,
 ) : BaseViewModel<ProbeState, ProbeIntent, ProbeEffect>(ProbeState()) {
     var openCount = 0
         private set
@@ -69,7 +64,7 @@ private class ProbeViewModel(
         launchWhileSubscribed(
             source = {
                 openCount++
-                if (readsOwnState) state.map { it.value }.flatMapLatest { upstream } else upstream
+                upstream
             },
             collector = { value -> updateState { copy(value = value) } },
         )

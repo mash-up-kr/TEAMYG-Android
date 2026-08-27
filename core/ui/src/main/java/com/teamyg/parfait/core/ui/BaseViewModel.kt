@@ -134,9 +134,10 @@ abstract class BaseViewModel<S : UiState, I : UiIntent, E : UiSideEffect>(initia
     }
 
     /**
-     * 화면이 **실제로 보고 있는 동안에만** [source] 를 연다. 라우트가
-     * `collectAsStateWithLifecycle()` 로 [state] 를 구독하므로, 화면이 백그라운드로 가거나
-     * 컴포지션에서 빠지면 여기서 연 업스트림도 함께 끊긴다.
+     * 화면이 **실제로 보고 있는 동안에만** [source] 를 연다. 활성 조건은 [state] 의 구독자
+     * 수다 — 이 헬퍼를 쓰는 화면의 라우트는 [state] 를 `collectAsStateWithLifecycle()` 로
+     * 구독해야 한다(그러지 않으면 화면이 백그라운드로 가도 폴링 등 업스트림이 조용히 안
+     * 멎는다). 근거는 `architecture/state-management.md`.
      *
      * [launch] 와 갈라 두는 이유는 수명이 다르기 때문이다 — [launch] 는 ViewModel 수명이라
      * 백스택 아래에 깔린 화면에서도 계속 돈다(`architecture/state-management.md`).

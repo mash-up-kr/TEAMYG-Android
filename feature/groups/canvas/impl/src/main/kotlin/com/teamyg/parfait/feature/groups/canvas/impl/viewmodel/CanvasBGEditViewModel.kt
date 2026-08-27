@@ -539,8 +539,9 @@ constructor(
     private fun handleOnClickConfirm() {
         launch(key = CONFIRM_KEY) {
             updateDirtyToppings()
-            // 성공·실패를 가리지 않고 비운다 — 화면이 이미 되감긴 뒤라 실패분을 되살릴 자리가
-            // 없다(현 as-built의 "토핑 저장 실패는 화면에 닿지 않는다"를 승계, 공백은 OQ-P-276 소관)
+            // 성공·실패를 가리지 않고, saveBackground() 보다 먼저 비운다 — 그래서 뒤이어
+            // 배경 저장이 실패해 화면이 남아도 재시도는 이 토핑들을 다시 대상으로 잡지 않는다
+            // (현 as-built의 "토핑 저장 실패는 화면에 닿지 않는다"를 승계, 공백은 OQ-P-276 소관)
             updateState { copy(dirtyToppingIds = emptySet()) }
 
             saveBackground()
