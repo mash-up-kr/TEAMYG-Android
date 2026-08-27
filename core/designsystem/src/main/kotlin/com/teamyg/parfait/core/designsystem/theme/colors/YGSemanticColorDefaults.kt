@@ -29,6 +29,7 @@ internal object YGSemanticColorDefaults {
         transparency = DefaultYGTransparency,
     )
 
-    // TODO 나중에 다크모드 추가할거면 변경 필요
+    // TODO 나중에 다크모드 추가할거면 변경 필요.
+    //  시스템바 아이콘도 같이 열어야 한다(parfait/adr/0028-system-bar-light-fixed.md).
     internal val YGDarkColorScheme: YGColorScheme = YGLightColorScheme
 }
