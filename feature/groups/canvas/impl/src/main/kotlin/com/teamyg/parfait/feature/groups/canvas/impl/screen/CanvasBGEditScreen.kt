@@ -497,6 +497,13 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
  * 별도로 그린다.
  *
+ * Box 를 [BGEditDrawEntry.drawnBorderWidthDp]만큼 사방으로 넓힌 뒤 그 폭을 다시 [padding]으로
+ * 덜어낸다. [YGToppingCutoutImage]의 테두리는 같은 그림을 8방향으로 그 폭만큼 밀어 찍는 방식이라
+ * 원래도 Box 경계 밖으로 삐져나가는데, `alpha`가 1 미만이면 `CompositingStrategy.Auto`가
+ * 오프스크린 버퍼를 만들어(겹치는 그리기에 alpha 를 한 번에 먹이려고) 그 버퍼, 즉 이 Box 크기에서
+ * 경계 밖으로 나간 부분이 잘린다. 넓힌 만큼을 안쪽 padding 으로 되돌려 이미지 자체의 위치·크기는
+ * 그대로 둔다.
+ *
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
  *   읽히면 안 된다.
  */
@@ -510,11 +517,12 @@ private fun CanvasToppingImage(
     val painterState by entry.painter.state.collectAsState()
     val border = entry.topping.borderLayers.firstOrNull()
     val description = stringResource(R.string.canvas_topping_content_description)
+    val outlineInset = entry.drawnBorderWidthDp.dp
 
     Box(
         modifier = modifier
             .centeredAt(entry.center)
-            .requiredSize(entry.size)
+            .requiredSize(entry.size + DpSize(outlineInset * 2, outlineInset * 2))
             .graphicsLayer(
                 rotationZ = entry.topping.rotationDegrees,
                 alpha = alpha,
@@ -541,7 +549,9 @@ private fun CanvasToppingImage(
                 ?.let { Color(it.colorArgb) }
                 ?.takeIf { painterState is AsyncImagePainter.State.Success },
             borderWidth = (border?.widthDp ?: 0f).dp,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(outlineInset),
         )
     }
 }
