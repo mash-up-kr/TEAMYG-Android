@@ -64,6 +64,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
@@ -615,11 +616,68 @@ private fun ToppingCornerButtons(
     }
 }
 
+/** Preview 전용 토핑 표본 이미지. 실제 리소스라야 painter 가 Success 에 닿아 테두리도 함께 그려진다 */
+private const val PREVIEW_TOPPING_MODEL =
+    "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
+
+private val previewToppings = listOf(
+    CanvasToppingItem(
+        parfaitImageId = 1L,
+        isMine = true,
+        imageUrl = PREVIEW_TOPPING_MODEL,
+        positionX = 0.3f,
+        positionY = 0.4f,
+        borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFFFFFF.toInt(), widthDp = 4f)),
+    ),
+    CanvasToppingItem(
+        parfaitImageId = 2L,
+        isMine = false,
+        imageUrl = PREVIEW_TOPPING_MODEL,
+        positionX = 0.7f,
+        positionY = 0.6f,
+        scale = 1.2f,
+        rotationDegrees = 15f,
+    ),
+)
+
 @YGPreview
 @Composable
-private fun PreviewCanvasBGEditScreen() = PreviewBox {
+private fun PreviewCanvasBGEditScreenBackgroundTab() = PreviewBox {
     CanvasBGEditScreen(
-        uiState = CanvasBGEditUiState(),
+        uiState = CanvasBGEditUiState(
+            selectedTab = CanvasEditTab.BACKGROUND,
+            toppings = previewToppings,
+        ),
+        onSelectTab = {},
+        onSelectColor = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickCloseButton = {},
+        onQuitDialogConfirm = {},
+        onQuitDialogCancel = {},
+        onClickConfirm = {},
+        onClickTopping = {},
+        onClickDeselectTopping = {},
+        onClickDeleteTopping = {},
+        onDeleteToppingDialogConfirm = {},
+        onDeleteToppingDialogCancel = {},
+        onClickEditTopping = {},
+        onToppingResize = {},
+        onToppingRotate = {},
+        onToppingMoveDrag = { _, _ -> },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCanvasBGEditScreenToppingTab() = PreviewBox {
+    CanvasBGEditScreen(
+        uiState = CanvasBGEditUiState(
+            selectedTab = CanvasEditTab.TOPPING,
+            toppings = previewToppings,
+            selectedToppingId = 1L,
+        ),
         onSelectTab = {},
         onSelectColor = {},
         onClickCamera = {},
