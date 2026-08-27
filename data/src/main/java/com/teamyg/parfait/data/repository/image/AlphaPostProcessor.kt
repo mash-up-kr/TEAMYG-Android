@@ -120,9 +120,9 @@ internal suspend fun erodeEdge(
     width: Int,
     height: Int,
 ): Boolean {
+    val job = currentCoroutineContext().job
     if (width <= 0 || height <= 0) return false
 
-    val job = currentCoroutineContext().job
     var previousRow = ByteArray(width)
     var currentRow = ByteArray(width)
     var changed = false
