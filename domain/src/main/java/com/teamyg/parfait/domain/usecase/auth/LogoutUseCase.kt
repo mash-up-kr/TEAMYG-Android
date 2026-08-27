@@ -4,6 +4,7 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import javax.inject.Inject
 
 /**
@@ -20,7 +21,8 @@ import javax.inject.Inject
  * [MemberRepository.clearMyAccount] 는 suspend 라 [runSuspendCatching] 으로 감싼다 —
  * 로컬 저장소 IO 가 실패해도 로그아웃 자체를 실패로 만들지 않는다(취소는 재던진다).
  * [ParfaitGroupRepository.clearGroups] 는 인메모리라 IO 실패 경로가 없어
- * [runSuspendCatching] 이 필요 없다.
+ * [runSuspendCatching] 이 필요 없다. [ParfaitRepository.clearTodayCanvas] 도 같은
+ * 인메모리 캐시라 마찬가지다.
  *
  * 그래서 [ParfaitGroupRepository.clearGroups] 를 먼저 부른다 — 던지지 않는 정리를 앞세워,
  * 뒤이은 [MemberRepository.clearMyAccount] 의 DataStore IO 가 취소를 재던지더라도(
@@ -32,10 +34,12 @@ class LogoutUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val memberRepository: MemberRepository,
     private val parfaitGroupRepository: ParfaitGroupRepository,
+    private val parfaitRepository: ParfaitRepository,
 ) {
     suspend operator fun invoke(): Result<Unit> {
         val result = authRepository.logout()
         parfaitGroupRepository.clearGroups()
+        parfaitRepository.clearTodayCanvas()
         runSuspendCatching { memberRepository.clearMyAccount() }
         return result
     }

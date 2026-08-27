@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
@@ -45,6 +46,7 @@ class TokenAuthenticator @Inject constructor(
     private val sessionEventBus: SessionEventBus,
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
     private val groupLocalDataSource: GroupLocalDataSource,
+    private val canvasLocalDataSource: CanvasLocalDataSource,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -128,10 +130,11 @@ class TokenAuthenticator @Inject constructor(
                 // 구독해 화면 쪽에서 지우게 하면 이벤트가 유실될 때 토큰은 없는데 계정
                 // 정보만 남는 상태가 생긴다 — `:data` 안에서 끝내면 그 경로 자체가 없다.
                 tokenStore.clear()
-                // 그룹 캐시는 인메모리(StateFlow 대입 두 번)라 던지지 않는다 — 던지지 않는 정리를
-                // 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO 실패가
-                // 그룹 캐시 정리까지 막지 않게 한다.
+                // 그룹 캐시·오늘 캔버스 캐시는 둘 다 인메모리라 던지지 않는다 — 던지지 않는
+                // 정리를 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO
+                // 실패가 그 정리까지 막지 않게 한다.
                 groupLocalDataSource.clear()
+                canvasLocalDataSource.clear()
                 userInfoLocalDataSource.clear()
             } else {
                 // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
