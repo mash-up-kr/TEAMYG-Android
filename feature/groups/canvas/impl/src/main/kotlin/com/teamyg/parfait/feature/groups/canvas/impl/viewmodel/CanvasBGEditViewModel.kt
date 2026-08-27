@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
@@ -32,7 +31,6 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
-import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeOutwardDirection
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
@@ -77,9 +75,6 @@ data class CanvasToppingItem(
  * 배율 하한 수정
  */
 private const val TOPPING_MIN_SCALE = 0.05f
-
-/** 세로로 이 픽셀만큼 드래그해야 배율이 1.0만큼 바뀐다 */
-private const val TOPPING_DRAG_PX_PER_SCALE = 300f
 
 val CanvasBackgroundPaletteColors = listOf(
     YGAtomicColors.Gray.White,
@@ -152,12 +147,9 @@ sealed interface CanvasBGEditIntent : UiIntent {
 
     data object OnClickEditTopping : CanvasBGEditIntent
 
-    /**
-     * 크기조절 아이콘을 잡고 드래그한 만큼 넘어온다. 토핑 바깥쪽(우측 상단 대각선) 방향으로 끌면 커지고
-     * 안쪽으로 끌면 작아진다.
-     */
-    data class OnToppingResizeDrag(
-        val delta: Offset,
+    /** 크기조절 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **배율에 곱할 값**이며, 환산은 화면 몫이다. */
+    data class OnToppingResize(
+        val scaleFactor: Float,
     ) : CanvasBGEditIntent
 
     /** 회전 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **각도**이며, 환산은 핸들 위치를 아는 화면 몫이다. */
@@ -338,7 +330,7 @@ constructor(
             CanvasBGEditIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
             CanvasBGEditIntent.OnDeleteToppingDialogCancel -> updateState { copy(showDeleteToppingDialog = false) }
             CanvasBGEditIntent.OnClickEditTopping -> handleOnClickEditTopping()
-            is CanvasBGEditIntent.OnToppingResizeDrag -> handleOnToppingResizeDrag(intent)
+            is CanvasBGEditIntent.OnToppingResize -> handleOnToppingResize(intent)
             is CanvasBGEditIntent.OnToppingRotate -> handleOnToppingRotate(intent)
             is CanvasBGEditIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
             is CanvasBGEditIntent.OnToppingEditResult -> handleOnToppingEditResult(intent)
@@ -383,17 +375,11 @@ constructor(
         }
     }
 
-    private fun handleOnToppingResizeDrag(intent: CanvasBGEditIntent.OnToppingResizeDrag) {
+    private fun handleOnToppingResize(intent: CanvasBGEditIntent.OnToppingResize) {
         val selectedId = state.value.selectedToppingId ?: return
-        val current = state.value.toppings.find { it.parfaitImageId == selectedId } ?: return
-
-        // 핸들이 우측 상단 모서리에 있으므로, 그 모서리의 바깥쪽 방향으로 끌면 커지고 안쪽이면 작아진다
-        val (outX, outY) = resizeOutwardDirection(current.rotationDegrees)
-        val deltaScale = (intent.delta.x * outX + intent.delta.y * outY) / TOPPING_DRAG_PX_PER_SCALE
-        val newScale = (current.scale + deltaScale).coerceAtLeast(TOPPING_MIN_SCALE)
 
         applyToppingTransform(selectedId) { topping ->
-            topping.copy(scale = newScale)
+            topping.copy(scale = (topping.scale * intent.scaleFactor).coerceAtLeast(TOPPING_MIN_SCALE))
         }
     }
 

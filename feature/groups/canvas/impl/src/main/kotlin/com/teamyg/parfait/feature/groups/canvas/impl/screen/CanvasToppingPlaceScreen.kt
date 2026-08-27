@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -33,7 +32,7 @@ import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
@@ -65,7 +64,7 @@ internal fun CanvasToppingPlaceScreen(
     onClickClose: () -> Unit,
     onClickConfirm: () -> Unit,
     onToppingMoveDrag: (DpOffset) -> Unit,
-    onToppingResizeDrag: (Offset) -> Unit,
+    onToppingResize: (Float) -> Unit,
     onToppingRotate: (Float) -> Unit,
     onCanvasMeasured: (DpSize) -> Unit,
     onToppingBaseSizeMeasured: (DpSize) -> Unit,
@@ -215,7 +214,7 @@ internal fun CanvasToppingPlaceScreen(
                     center = center,
                     sizeAfterScale = sizeAfterScale,
                     rotationDegrees = uiState.rotationDegrees,
-                    onResizeDrag = onToppingResizeDrag,
+                    onResize = onToppingResize,
                     onRotate = onToppingRotate,
                 )
             }
@@ -241,7 +240,7 @@ private fun ToppingPlaceCornerButtons(
     center: DpOffset,
     sizeAfterScale: DpSize,
     rotationDegrees: Float,
-    onResizeDrag: (Offset) -> Unit,
+    onResize: (Float) -> Unit,
     onRotate: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -252,12 +251,13 @@ private fun ToppingPlaceCornerButtons(
     )
 
     Box(modifier = modifier) {
-        ToppingDragHandleButton(
+        ToppingResizeHandleButton(
             iconRes = DesignSystemR.drawable.ic_scale,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.topRight,
+            center = center,
             key = Unit,
-            onDrag = onResizeDrag,
+            onResize = onResize,
         )
         ToppingRotateHandleButton(
             iconRes = DesignSystemR.drawable.ic_rotate,
@@ -278,7 +278,7 @@ private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
         onClickClose = {},
         onClickConfirm = {},
         onToppingMoveDrag = {},
-        onToppingResizeDrag = {},
+        onToppingResize = {},
         onToppingRotate = {},
         onCanvasMeasured = {},
         onToppingBaseSizeMeasured = {},

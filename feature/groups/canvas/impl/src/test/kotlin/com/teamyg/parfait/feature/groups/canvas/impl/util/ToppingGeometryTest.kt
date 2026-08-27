@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
-import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -10,47 +9,6 @@ import kotlin.test.assertEquals
 private const val DELTA = 1e-4f
 
 class ToppingGeometryTest {
-    @Test
-    fun resizeOutwardDirection_rotation0_pointsUpperRight() {
-        // Given·When 회전하지 않은 토핑 (핸들은 우측 상단 모서리에 있다)
-        val (x, y) = resizeOutwardDirection(0f)
-
-        // Then 바깥쪽은 우측·위쪽이다 — 화면 좌표계에서 위쪽은 y 가 음수
-        val base = 1f / sqrt(2f)
-        assertEquals(base, x, DELTA)
-        assertEquals(-base, y, DELTA)
-    }
-
-    @Test
-    fun resizeOutwardDirection_rotation90_pointsLowerRight() {
-        // Given·When 시계방향으로 90도 돌린 토핑 — 우측 상단 모서리가 우측 하단으로 온다
-        val (x, y) = resizeOutwardDirection(90f)
-
-        val base = 1f / sqrt(2f)
-        assertEquals(base, x, DELTA)
-        assertEquals(base, y, DELTA)
-    }
-
-    @Test
-    fun resizeOutwardDirection_rotation180_pointsLowerLeft() {
-        // Given·When 180도 돌린 토핑 — 우측 상단 모서리가 좌측 하단으로 온다
-        val (x, y) = resizeOutwardDirection(180f)
-
-        val base = 1f / sqrt(2f)
-        assertEquals(-base, x, DELTA)
-        assertEquals(base, y, DELTA)
-    }
-
-    @Test
-    fun resizeOutwardDirection_rotation270_pointsUpperLeft() {
-        // Given·When 270도 돌린 토핑 — 우측 상단 모서리가 좌측 상단으로 온다
-        val (x, y) = resizeOutwardDirection(270f)
-
-        val base = 1f / sqrt(2f)
-        assertEquals(-base, x, DELTA)
-        assertEquals(-base, y, DELTA)
-    }
-
     @Test
     fun toppingImageSize_landscape_longSideIsWidth() {
         // Given 가로가 긴 원본 (2:1)
@@ -150,5 +108,69 @@ class ToppingGeometryTest {
         val degrees = rotationDeltaDegrees(Offset.Zero, Offset(x = 10f, y = 10f))
 
         assertEquals(0f, degrees, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_dragOutward_growsByTheSameRatioAsTheHandleMoved() {
+        // Given 중심에서 우측 하단으로 떨어진 크기조절 핸들
+        val handleVector = Offset(x = 100f, y = 100f)
+
+        // When 핸들을 바깥 방향으로, 중심까지 거리의 10퍼센트만큼 끈다
+        val factor = resizeScaleFactor(handleVector = handleVector, dragDelta = Offset(x = 10f, y = 10f))
+
+        // Then 배율도 10퍼센트 늘어난다
+        assertEquals(1.1f, factor, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_dragInward_shrinksByTheSameRatio() {
+        val factor = resizeScaleFactor(
+            handleVector = Offset(x = 100f, y = 100f),
+            dragDelta = Offset(x = -10f, y = -10f),
+        )
+
+        assertEquals(0.9f, factor, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_dragAlongTangent_keepsScale() {
+        // Given·When 핸들을 궤도 접선 방향으로만 끈다 — 중심과의 거리가 그대로다
+        val factor = resizeScaleFactor(
+            handleVector = Offset(x = 100f, y = 100f),
+            dragDelta = Offset(x = -10f, y = 10f),
+        )
+
+        assertEquals(1f, factor, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_followsTheHandleDirectionNotFortyFiveDegrees() {
+        // Given 가로가 긴 토핑 — 핸들은 대각선 45도가 아니라 그보다 완만한 곳에 있다
+        val handleVector = Offset(x = 200f, y = 100f)
+
+        // When 45도 방향으로 끈다
+        val factor = resizeScaleFactor(handleVector = handleVector, dragDelta = Offset(x = 10f, y = 10f))
+
+        // Then 핸들 방향에 정사영한 만큼만 반영된다 (3000 / 50000)
+        assertEquals(1.06f, factor, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_draggedPastCenter_doesNotFlip() {
+        // Given·When 한 번에 중심 너머까지 끌어 배율이 음수로 갈 만한 드래그
+        val factor = resizeScaleFactor(
+            handleVector = Offset(x = 100f, y = 100f),
+            dragDelta = Offset(x = -300f, y = -300f),
+        )
+
+        // Then 뒤집힌 토핑 대신 0에서 멈춘다
+        assertEquals(0f, factor, DELTA)
+    }
+
+    @Test
+    fun resizeScaleFactor_handleAtCenter_keepsScale() {
+        val factor = resizeScaleFactor(Offset.Zero, Offset(x = 10f, y = 10f))
+
+        assertEquals(1f, factor, DELTA)
     }
 }

@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.DpSize
@@ -25,7 +24,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.io.IOException
-import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -39,8 +37,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 
-/** ViewModel 안의 private 상수(TOPPING_DRAG_PX_PER_SCALE=300f)와 맞춘 값 */
-private const val DRAG_PX_PER_SCALE = 300f
 private const val SCALE_DELTA = 1e-4f
 
 class CanvasToppingPlaceViewModelTest {
@@ -92,116 +88,47 @@ class CanvasToppingPlaceViewModelTest {
         processIntent(CanvasToppingPlaceIntent.OnToppingImageReadyChanged(isReady = true))
     }
 
-    /** 회전 0/90/180/270도에서 핸들이 가리키는 바깥쪽 방향. [resizeOutwardDirection]과 같은 값이다 */
-    private fun outwardDirectionAt(rotationDegrees: Float): Offset {
-        val base = 1f / sqrt(2f)
-        return when (rotationDegrees) {
-            0f -> Offset(base, -base)
-            90f -> Offset(base, base)
-            180f -> Offset(-base, base)
-            270f -> Offset(-base, -base)
-            else -> error("이 테스트는 0/90/180/270도만 다룬다: $rotationDegrees")
-        }
-    }
-
-    private fun rotatedViewModel(rotationDegrees: Float): CanvasToppingPlaceViewModel {
+    @Test
+    fun onToppingResize_multipliesScale() {
+        // Given 배율 1배
         val viewModel = viewModel()
-        if (rotationDegrees != 0f) {
-            viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(rotationDegrees))
-        }
-        return viewModel
+
+        // When 핸들이 중심에서 10퍼센트 멀어질 만큼 끈 결과가 넘어온다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+
+        // Then 배율에 그대로 곱해진다
+        assertEquals(1.1f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingResizeDrag_atRotation0_matchesExpectedFormula() {
-        // Given 회전하지 않은 토핑 (핸들은 우측 상단 모서리에 있다)
-        val viewModel = rotatedViewModel(0f)
-        val direction = outwardDirectionAt(0f)
-        val dragLength = 150f
+    fun onToppingResize_accumulatesAcrossMultipleDrags() {
+        val viewModel = viewModel()
 
-        // When 핸들을 바깥쪽(우측 상단 대각선)으로 끈다
-        viewModel.processIntent(
-            CanvasToppingPlaceIntent.OnToppingResizeDrag(
-                Offset(
-                    x = dragLength * direction.x,
-                    y =
-                    dragLength * direction.y,
-                ),
-            ),
-        )
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
 
-        // Then 드래그 거리를 바깥쪽 방향에 정사영한 만큼 커진다
-        val expectedDeltaScale = dragLength / DRAG_PX_PER_SCALE
-        assertEquals(1f + expectedDeltaScale, viewModel.state.value.scale, SCALE_DELTA)
+        assertEquals(1.21f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingResizeDrag_atEachBoundaryRotation_draggingOutwardIncreasesScale() {
-        // Given·When 회전 0/90/180/270도 각각에서, 그 회전에서의 바깥쪽 방향으로 핸들을 끈다
-        listOf(0f, 90f, 180f, 270f).forEach { rotationDegrees ->
-            val viewModel = rotatedViewModel(rotationDegrees)
-            val direction = outwardDirectionAt(rotationDegrees)
-            val dragLength = 150f
-
-            viewModel.processIntent(
-                CanvasToppingPlaceIntent.OnToppingResizeDrag(
-                    Offset(x = dragLength * direction.x, y = dragLength * direction.y),
-                ),
-            )
-
-            // Then 어느 회전에서든 바깥쪽으로 끌면 커진다
-            assertTrue(
-                viewModel.state.value.scale > 1f,
-                "rotation=$rotationDegrees 에서 바깥쪽 드래그가 커지지 않았다: ${viewModel.state.value.scale}",
-            )
-        }
-    }
-
-    @Test
-    fun onToppingResizeDrag_atEachBoundaryRotation_draggingInwardDecreasesScale() {
-        // Given·When 회전 0/90/180/270도 각각에서, 그 회전에서의 안쪽(바깥쪽의 반대) 방향으로 핸들을 끈다
-        listOf(0f, 90f, 180f, 270f).forEach { rotationDegrees ->
-            val viewModel = rotatedViewModel(rotationDegrees)
-            val direction = outwardDirectionAt(rotationDegrees)
-            val dragLength = 150f
-
-            viewModel.processIntent(
-                CanvasToppingPlaceIntent.OnToppingResizeDrag(
-                    Offset(x = -dragLength * direction.x, y = -dragLength * direction.y),
-                ),
-            )
-
-            // Then 어느 회전에서든 안쪽으로 끌면 작아진다
-            assertTrue(
-                viewModel.state.value.scale < 1f,
-                "rotation=$rotationDegrees 에서 안쪽 드래그가 작아지지 않았다: ${viewModel.state.value.scale}",
-            )
-        }
-    }
-
-    @Test
-    fun onToppingResizeDrag_clampsAtMaxScale() {
+    fun onToppingResize_clampsAtMaxScale() {
         // Given 기본 배율
         val viewModel = viewModel()
 
-        // When 최대 배율을 훌쩍 넘는 크기로 바깥쪽으로 끈다
-        viewModel.processIntent(
-            CanvasToppingPlaceIntent.OnToppingResizeDrag(Offset(x = 10_000f, y = -10_000f)),
-        )
+        // When 최대 배율을 훌쩍 넘도록 키운다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 100f))
 
         // Then 상한(2.5)에서 멈춘다
         assertEquals(2.5f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingResizeDrag_clampsAtMinScale() {
+    fun onToppingResize_clampsAtMinScale() {
         // Given 기본 배율
         val viewModel = viewModel()
 
-        // When 최소 배율보다 훨씬 작아지도록 안쪽으로 끈다
-        viewModel.processIntent(
-            CanvasToppingPlaceIntent.OnToppingResizeDrag(Offset(x = -10_000f, y = 10_000f)),
-        )
+        // When 중심 너머까지 끌어 배율이 0으로 떨어질 만한 값이 넘어온다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 0f))
 
         // Then 하한(0.5)에서 멈춘다
         assertEquals(0.5f, viewModel.state.value.scale, SCALE_DELTA)

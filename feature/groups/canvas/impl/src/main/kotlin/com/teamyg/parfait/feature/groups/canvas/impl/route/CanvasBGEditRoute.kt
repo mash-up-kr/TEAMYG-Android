@@ -126,7 +126,9 @@ internal fun CanvasBGEditRoute(
                 viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogCancel)
             },
             onClickEditTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickEditTopping) },
-            onToppingResizeDrag = { delta -> viewModel.processIntent(CanvasBGEditIntent.OnToppingResizeDrag(delta)) },
+            onToppingResize = { scaleFactor ->
+                viewModel.processIntent(CanvasBGEditIntent.OnToppingResize(scaleFactor))
+            },
             onToppingRotate = { deltaDegrees ->
                 viewModel.processIntent(CanvasBGEditIntent.OnToppingRotate(deltaDegrees))
             },
