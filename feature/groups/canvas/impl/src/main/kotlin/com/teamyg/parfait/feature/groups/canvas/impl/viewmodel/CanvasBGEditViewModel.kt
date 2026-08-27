@@ -315,9 +315,8 @@ constructor(
     }
 
     /**
-     * 구독 방출을 받을 때마다 돈다. 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어
-     * 결과가 통째 대입과 같아진다. 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지
-     * 구분하지 않는다.
+     * 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어 결과가 통째 대입과 같아진다.
+     * 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지 구분하지 않는다.
      */
     private fun CanvasBGEditUiState.mergeToppings(incoming: List<CanvasToppingItem>): CanvasBGEditUiState {
         val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }

@@ -777,8 +777,7 @@ class CanvasBGEditViewModelTest {
         todayCanvases.value = canvasWith(myTopping(MY_IMAGE_ID), myTopping(SECOND_IMAGE_ID))
         coEvery { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success(updatedTopping())
-        // 배경은 안 건드려 기본 팔레트 색 그대로다(stubBackgroundChange 문서 참고 — CanvasBackgroundEdit 에는
-        // MockK 가 any() 매처를 만들지 못한다)
+        // 배경은 안 건드려 기본 팔레트 색 그대로다(stubBackgroundChange 문서 참고)
         stubBackgroundChange(
             background = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()),
             result = Result.success(null),
