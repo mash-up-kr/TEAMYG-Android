@@ -34,10 +34,15 @@ internal fun CanvasBGEditRoute(
     groupId: Long,
     parfaitId: Long,
     navigator: Navigator,
+    initialToppingId: Long? = null,
     modifier: Modifier = Modifier,
     viewModel: CanvasBGEditViewModel = hiltViewModel(
         creationCallback = { factory: CanvasBGEditViewModel.Factory ->
-            factory.create(groupIdValue = groupId, parfaitIdValue = parfaitId)
+            factory.create(
+                groupIdValue = groupId,
+                parfaitIdValue = parfaitId,
+                initialToppingIdValue = initialToppingId,
+            )
         },
     ),
 ) {

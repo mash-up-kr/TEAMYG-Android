@@ -149,6 +149,8 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToCanvasBGEdit(
         val groupId: GroupId,
         val parfaitId: ParfaitId,
+        /** 특정 토핑을 탭해 들어온 경우에만 채운다 — 화면이 토핑 탭에서 그 토핑을 바로 선택해 연다 */
+        val toppingId: ParfaitImageId? = null,
     ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
@@ -446,15 +448,14 @@ constructor(
     }
 
     /**
+     * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어진다. 나머지는
      * Default → Spotlighted 로만 전환한다.
-     * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어져야 하지만, 그 진입점이
-     * 아직 없어 지금은 아무 동작도 하지 않는다.
      */
     private fun handleOnClickTopping(topping: CanvasToppingVO) {
         if (state.value.spotlightedToppingId != null) return
 
         if (topping.isMine) {
-            // TODO: C-305 토핑 편집 화면으로 이동
+            handleOnClickMyTopping(topping)
             return
         }
 
@@ -477,6 +478,23 @@ constructor(
                 elapsed = topping.createdAt
                     .toInstant(PARFAIT_TIME_ZONE)
                     .toElapsedTimeBucket(Clock.System.now()),
+            ),
+        )
+    }
+
+    /**
+     * 오늘 캔버스를 보고 있을 때만 C-305 로 보낸다. 탭한 토핑 id 를 실어 보내
+     * 편집 화면이 토핑 탭에서 그 토핑을 바로 선택한 채로 열리게 한다.
+     */
+    private fun handleOnClickMyTopping(topping: CanvasToppingVO) {
+        if (!state.value.isViewingToday) return
+        val todayCanvas = state.value.todayCanvas ?: return
+
+        postSideEffect(
+            effect = CanvasMainEffect.NavigateToCanvasBGEdit(
+                groupId = groupId,
+                parfaitId = todayCanvas.parfaitId,
+                toppingId = topping.parfaitImageId,
             ),
         )
     }

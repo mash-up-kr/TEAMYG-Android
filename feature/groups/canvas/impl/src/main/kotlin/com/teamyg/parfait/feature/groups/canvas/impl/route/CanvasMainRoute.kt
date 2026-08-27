@@ -99,6 +99,7 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCanvasBGEdit(
                         groupId = effect.groupId.value,
                         parfaitId = effect.parfaitId.value,
+                        initialToppingId = effect.toppingId?.value,
                     ),
                 )
 
