@@ -31,26 +31,27 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlinx.coroutines.CompletableDeferred
+import io.mockk.verify
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -70,6 +71,8 @@ class CanvasMainViewModelTest {
     private val getParfaitYears: GetParfaitYearsUseCase = mockk()
     private val getTodayParfaitFlow: GetTodayParfaitFlowUseCase = mockk()
     private val refreshTodayParfait: RefreshTodayParfaitUseCase = mockk()
+    private val observeParfaitDayBoundary: ObserveParfaitDayBoundaryUseCase = mockk()
+    private val observeTodayParfaitRefreshFailure: ObserveTodayParfaitRefreshFailureUseCase = mockk()
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
@@ -80,11 +83,12 @@ class CanvasMainViewModelTest {
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
+    /** 폴러의 갱신 실패 신호. 캐시는 실패했을 때 아무것도 방출하지 않아 이 축이 따로 있다 */
+    private val refreshFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
     private val today = parfaitToday()
 
     private val yesterday = today.minus(DatePeriod(days = 1))
-
-    private val tomorrow = today.plus(DatePeriod(days = 1))
 
     private val dayBeforeYesterday = today.minus(DatePeriod(days = 2))
 
@@ -107,13 +111,14 @@ class CanvasMainViewModelTest {
         )
         every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
         coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
+        every { observeParfaitDayBoundary(any()) } returns flowOf(today)
+        every { observeTodayParfaitRefreshFailure(any()) } returns refreshFailures
         todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
     }
 
-    /** [mockkStatic] 은 JVM 전역 상태라 다음 테스트로 새지 않도록 매번 걷어 낸다 */
     @After
     fun tearDown() {
         unmockkAll()
@@ -125,6 +130,8 @@ class CanvasMainViewModelTest {
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitFlowUseCase = getTodayParfaitFlow,
         refreshTodayParfaitUseCase = refreshTodayParfait,
+        observeParfaitDayBoundaryUseCase = observeParfaitDayBoundary,
+        observeTodayParfaitRefreshFailureUseCase = observeTodayParfaitRefreshFailure,
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
@@ -132,8 +139,13 @@ class CanvasMainViewModelTest {
         toppingDraftRepository = toppingDraftRepository,
     )
 
-    /** 화면에 서기 전에는 캔버스를 부르지 않으므로, 대부분의 테스트는 이 상태에서 시작한다 */
+    /**
+     * 대부분의 테스트는 화면이 떠 있는 상태에서 시작한다. `launchWhileSubscribed` 는 [state] 의
+     * 구독자 수로 폴링 수명을 재므로, 라우트의 `collectAsStateWithLifecycle()` 을 흉내 내
+     * 여기서 먼저 구독을 붙여야 오늘 캔버스·하루 경계 구독이 열린다.
+     */
     private fun TestScope.enteredViewModel() = viewModel().also { viewModel ->
+        backgroundScope.launch { viewModel.state.collect { } }
         viewModel.processIntent(CanvasMainIntent.Enter)
         advanceUntilIdle()
     }
@@ -155,30 +167,14 @@ class CanvasMainViewModelTest {
         // Given 저장소 캐시가 비어 있다(콜드 스타트)
         todayCanvases.value = null
 
-        // When ViewModel 만 만들어지고 화면은 아직 앞에 서지 않았다
+        // When ViewModel 만 만들어지고 [state] 를 구독하는 화면이 아직 없다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 오늘 조회는 캔버스를 만들어 저장하므로 화면이 설 때까지 미룬다
-        coVerify(exactly = 0) { refreshTodayParfait(any(), any()) }
+        // Then launchWhileSubscribed 가 업스트림을 열지 않아 폴링도 시작되지 않는다
+        verify(exactly = 0) { getTodayParfaitFlow(any(), any()) }
         val state = viewModel.state.value
         assertTrue(state.displayedCanvas == null)
-    }
-
-    @Test
-    fun enter_again_reloadsTheTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 오늘 캔버스를 띄운 화면
-        val viewModel = enteredViewModel()
-
-        // When 화면으로 돌아오고, 그때 나간 갱신이 새 멤버가 든 캔버스를 저장소에 싣는다
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today, members = listOf(member(NEW_MEMBER_NICKNAME)))
-        advanceUntilIdle()
-
-        // Then 새 멤버의 네임태그가 보인다
-        val chips = viewModel.state.value.memberChips
-        assertEquals(listOf(NEW_MEMBER_NICKNAME), chips.map(GroupMemberChip::nickname))
-        coVerify(exactly = 2) { refreshTodayParfait(any(), any()) }
     }
 
     @Test
@@ -192,11 +188,10 @@ class CanvasMainViewModelTest {
         viewModel.processIntent(CanvasMainIntent.Enter)
         advanceUntilIdle()
 
-        // Then 마감된 날은 더 바뀌지 않으므로 다시 묻지 않고, 보던 날도 그대로다
+        // Then 마감된 날은 더 바뀌지 않으므로 달력 기록을 다시 묻지 않고, 보던 날도 그대로다
         val state = viewModel.state.value
         assertEquals(yesterday, state.selectedDate)
         assertEquals(ParfaitId(YESTERDAY_PARFAIT_ID), state.displayedCanvas?.parfaitId)
-        coVerify(exactly = 1) { refreshTodayParfait(any(), any()) }
         coVerify(exactly = 1) { getParfaitHistories(any(), any()) }
     }
 
@@ -204,6 +199,7 @@ class CanvasMainViewModelTest {
     fun observeTodayCanvas_emission_landsOnTheScreen() = runTest(mainDispatcherRule.dispatcher) {
         // Given 화면이 열려 있다
         val viewModel = viewModel()
+        backgroundScope.launch { viewModel.state.collect { } }
         advanceUntilIdle()
 
         // When 다른 화면이 토핑을 올려 저장소의 오늘 캔버스가 바뀐다
@@ -230,6 +226,83 @@ class CanvasMainViewModelTest {
         // Then 보고 있던 날은 덮이지 않는다 — 오늘 것과 지난 날 것을 갈라 두는 이유다
         val state = viewModel.state.value
         assertEquals(ParfaitId(YESTERDAY_PARFAIT_ID), state.displayedCanvas?.parfaitId)
+    }
+
+    @Test
+    fun observeTodayCanvas_whenTheSpotlightedToppingDisappears_resetsTheSpotlight() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 남이 올린 토핑을 강조해 둔 화면
+            val othersTopping = topping(positionZ = 1, isMine = false)
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(othersTopping))
+            val viewModel = viewModel()
+            backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+
+            // When 강조하던 토핑이 캔버스에서 사라진다
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+            advanceUntilIdle()
+
+            // Then 딤을 지울 계기가 없어지므로 여기서 함께 해제한다
+            assertNull(viewModel.state.value.spotlightedToppingId)
+        }
+
+    @Test
+    fun observeTodayCanvas_whenTheSpotlightedToppingRemains_keepsTheSpotlight() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 남이 올린 토핑을 강조해 둔 화면
+            val othersTopping = topping(positionZ = 1, isMine = false)
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(othersTopping))
+            val viewModel = viewModel()
+            backgroundScope.launch { viewModel.state.collect { } }
+            advanceUntilIdle()
+
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+
+            // When 남이 토핑을 하나 더 올려도 강조는 그대로다
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+                .copy(toppings = listOf(othersTopping, topping(positionZ = 2, isMine = false)))
+            advanceUntilIdle()
+
+            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+        }
+
+    @Test
+    fun dayBoundary_movesTodayAndTheSelectedDate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 하루 경계 티커를 직접 흔들 수 있다
+        val days = MutableStateFlow(LocalDate(2026, 8, 27))
+        every { observeParfaitDayBoundary(any()) } returns days
+
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        // When 화면을 열어 둔 채 하루 경계를 넘긴다
+        days.value = LocalDate(2026, 8, 28)
+        advanceUntilIdle()
+
+        // Then 오늘을 보고 있었으므로 today 와 selectedDate 가 함께 넘어간다
+        assertEquals(LocalDate(2026, 8, 28), viewModel.state.value.today)
+        assertEquals(LocalDate(2026, 8, 28), viewModel.state.value.selectedDate)
+    }
+
+    @Test
+    fun enter_doesNotRefreshTheTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열려 있다
+        val viewModel = viewModel()
+        backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        // When 다시 진입한다
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 오늘 캔버스 갱신은 폴러의 구독 시작이 맡으므로 이 화면은 부르지 않는다
+        coVerify(exactly = 0) { refreshTodayParfait(any(), any()) }
     }
 
     @Test
@@ -405,24 +478,6 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun enter_todayCanvasFailsWithNothingOnScreen_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 오늘 캔버스를 한 번도 못 받은 화면
-        todayCanvases.value = null
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(cause = null))
-        val viewModel = viewModel()
-
-        viewModel.effect.test {
-            // When 화면이 앞에 서면서 나간 조회가 실패한다
-            viewModel.processIntent(CanvasMainIntent.Enter)
-            advanceUntilIdle()
-
-            // Then 빈 캔버스와 조회 실패가 구분되지 않으므로 따로 알린다. 알리지 않으면
-            // 토핑 추가 버튼이 왜 안 눌리는지까지 보이지 않는다
-            assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
-        }
-    }
-
-    @Test
     fun saveCapturedCanvas_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
         // Given 화면이 열린 상태(오늘을 보고 있다)이고 저장이 성공한다
         val viewModel = enteredViewModel()
@@ -438,24 +493,6 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
-    }
-
-    @Test
-    fun enter_todayCanvasFailsAfterOneIsShown_staysQuiet() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 오늘 캔버스를 그린 화면
-        val viewModel = enteredViewModel()
-
-        viewModel.effect.test {
-            // When 돌아오면서 저절로 나간 갱신이 실패한다. 캐시에 실린 것은 그대로다
-            coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(cause = null))
-            viewModel.processIntent(CanvasMainIntent.Enter)
-            advanceUntilIdle()
-
-            // Then 화면이 앞에 설 때마다 재조회하므로 매번 알리면 방해가 된다. 보여 줄
-            // 캔버스가 남아 있으면 조용히 넘어간다
-            expectNoEvents()
-        }
-        assertTrue(viewModel.state.value.todayCanvas != null)
     }
 
     @Test
@@ -636,96 +673,6 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun enter_whileViewingAPastDate_dayChanges_clearsTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 달력에서 어제로 옮겨 둔 화면
-        mockkStatic(::parfaitToday)
-        every { parfaitToday() } returns today
-        val viewModel = enteredViewModel()
-        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
-        advanceUntilIdle()
-
-        // When 화면을 켜 둔 채 하루 경계를 넘기고 다른 화면에서 돌아온다
-        every { parfaitToday() } returns tomorrow
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        advanceUntilIdle()
-
-        // Then 어제 캔버스가 오늘 것으로 오인되지 않도록 비워지고, 토핑 추가 버튼도 잠긴다
-        val state = viewModel.state.value
-        assertTrue(state.todayCanvas == null)
-        assertFalse(state.isToppingAddEnabled)
-    }
-
-    @Test
-    fun enter_whileViewingToday_dayChanges_clearsTodayCanvas() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 오늘을 보고 있는 화면
-        mockkStatic(::parfaitToday)
-        every { parfaitToday() } returns today
-        val viewModel = enteredViewModel()
-
-        // When 화면을 켜 둔 채 하루 경계를 넘기고 다른 화면에서 돌아온다
-        every { parfaitToday() } returns tomorrow
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        advanceUntilIdle()
-
-        // Then 어제 캔버스가 오늘 것으로 오인되지 않도록 비워지고, 토핑 추가 버튼도 잠긴다
-        val state = viewModel.state.value
-        assertTrue(state.todayCanvas == null)
-        assertFalse(state.isToppingAddEnabled)
-    }
-
-    @Test
-    fun clickGoToToday_afterTodayCanvasWasCleared_reloadsIt() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 어제를 보는 중 하루 경계를 넘겨 todayCanvas 가 빈 화면
-        mockkStatic(::parfaitToday)
-        every { parfaitToday() } returns today
-        val viewModel = enteredViewModel()
-        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
-        advanceUntilIdle()
-
-        every { parfaitToday() } returns tomorrow
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        advanceUntilIdle()
-
-        // When "오늘의 파르페 가기"를 누른다. 갱신이 새 날의 캔버스를 캐시에 싣는다
-        coEvery { refreshTodayParfait(any(), any()) } coAnswers {
-            todayCanvases.value = canvas(TODAY_PARFAIT_ID, tomorrow)
-            Result.success(Unit)
-        }
-        viewModel.processIntent(CanvasMainIntent.OnClickGoToToday)
-        advanceUntilIdle()
-
-        // Then 오늘 갱신이 다시 나가 토핑 추가 버튼이 다시 열린다
-        coVerify(exactly = 2) { refreshTodayParfait(any(), any()) }
-        assertTrue(viewModel.state.value.isToppingAddEnabled)
-    }
-
-    @Test
-    fun clickDate_today_afterTodayCanvasWasCleared_reloadsIt() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 어제를 보는 중 하루 경계를 넘겨 todayCanvas 가 빈 화면
-        mockkStatic(::parfaitToday)
-        every { parfaitToday() } returns today
-        val viewModel = enteredViewModel()
-        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
-        advanceUntilIdle()
-
-        every { parfaitToday() } returns tomorrow
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        advanceUntilIdle()
-
-        // When 달력에서 오늘 칸을 누른다. 갱신이 새 날의 캔버스를 캐시에 싣는다
-        coEvery { refreshTodayParfait(any(), any()) } coAnswers {
-            todayCanvases.value = canvas(TODAY_PARFAIT_ID, tomorrow)
-            Result.success(Unit)
-        }
-        viewModel.processIntent(CanvasMainIntent.ClickDate(tomorrow))
-        advanceUntilIdle()
-
-        // Then 오늘 갱신이 다시 나가 토핑 추가 버튼이 다시 열린다
-        coVerify(exactly = 2) { refreshTodayParfait(any(), any()) }
-        assertTrue(viewModel.state.value.isToppingAddEnabled)
-    }
-
-    @Test
     fun clickCanvasEdit_emitsTheCanvasBeingEdited() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 띄운 화면
         val viewModel = enteredViewModel()
@@ -768,14 +715,10 @@ class CanvasMainViewModelTest {
     fun clickCanvasEdit_beforeTheCanvasArrives_doesNotOpenTheEditor() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 아직 못 받은 화면
         todayCanvases.value = null
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(IllegalStateException("실패"))
         val viewModel = enteredViewModel()
 
         // When 캔버스 편집
         viewModel.effect.test {
-            // 조회 실패를 알린 효과가 먼저 밀려 있어 이것부터 걷어 낸다
-            assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
-
             viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit())
 
             // Then 없는 id 를 지어내 남의 날 캔버스를 고치게 두지 않는다
@@ -784,61 +727,63 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun enter_firstLoad_showsLoadingUntilTheCanvasArrives() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 아직 실린 캔버스가 없고, 갱신이 응답을 붙들고 있다
+    fun theScreenAppearsWithNoCanvasYet_showsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캐시에 아직 실린 캔버스가 없다(콜드 스타트)
         todayCanvases.value = null
-        val gate = CompletableDeferred<Unit>()
-        coEvery { refreshTodayParfait(any(), any()) } coAnswers {
-            gate.await()
-            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
-            Result.success(Unit)
-        }
 
-        // When 화면이 처음 앞에 선다
-        val viewModel = viewModel()
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        runCurrent()
+        // When 화면이 앞에 서서 오늘 캔버스 구독이 열린다
+        val viewModel = enteredViewModel()
 
-        // Then 빈 캔버스를 들여다보지 않도록 갱신이 도는 동안 로딩을 덮는다
+        // Then 빈 캔버스를 들여다보지 않도록 첫 캔버스가 실릴 때까지 덮는다
         assertTrue(viewModel.state.value.isInitialLoading)
 
-        gate.complete(Unit)
+        // 폴러가 받아 온 캔버스가 캐시에 실리면 덮개를 내린다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
         advanceUntilIdle()
         assertFalse(viewModel.state.value.isInitialLoading)
     }
 
     @Test
-    fun enter_againWithTheCanvasLoaded_doesNotShowLoading() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 오늘 캔버스를 이미 띄운 화면
+    fun theScreenAppearsWithTheCanvasLoaded_doesNotShowLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 이미 실린 오늘 캔버스를 들고 화면이 앞에 선다
         val viewModel = enteredViewModel()
-
-        // When 자리를 비웠다 돌아와 갱신이 다시 나가고, 그 응답이 아직 오지 않았다
-        val gate = CompletableDeferred<Unit>()
-        coEvery { refreshTodayParfait(any(), any()) } coAnswers {
-            gate.await()
-            Result.success(Unit)
-        }
-        viewModel.processIntent(CanvasMainIntent.Enter)
-        runCurrent()
 
         // Then 보고 있던 캔버스 위로 딤이 번쩍이지 않는다
         assertFalse(viewModel.state.value.isInitialLoading)
-
-        gate.complete(Unit)
-        advanceUntilIdle()
     }
 
     @Test
-    fun enter_firstLoadFails_clearsLoading() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 실린 캔버스가 없고, 오늘 캔버스 갱신이 실패한다
-        todayCanvases.value = null
-        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(cause = null))
+    fun refreshFails_whileWaitingForTheFirstCanvas_clearsLoadingAndTellsTheUser() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 캐시가 비어 있어 화면이 첫 조회를 기다린다
+            todayCanvases.value = null
+            val viewModel = enteredViewModel()
+            assertTrue(viewModel.state.value.isInitialLoading)
 
-        // When 화면이 처음 앞에 선다
+            viewModel.effect.test {
+                // When 갱신이 실패해 캐시에 아무것도 실리지 않는다
+                refreshFailures.emit(Unit)
+                advanceUntilIdle()
+
+                // Then 덮개를 내리고 실패를 말한다 — 그러지 않으면 화면이 로딩에 갇힌다
+                assertFalse(viewModel.state.value.isInitialLoading)
+                assertIs<CanvasMainEffect.ShowTodayCanvasError>(awaitItem())
+            }
+        }
+
+    @Test
+    fun refreshFails_withTheCanvasAlreadyShown_saysNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 이미 띄운 화면 — 덮개가 걸려 있지 않다
         val viewModel = enteredViewModel()
 
-        // Then 로딩이 걸린 채 남지 않는다 — 실패는 토스트가 말한다
-        assertFalse(viewModel.state.value.isInitialLoading)
+        viewModel.effect.test {
+            // When 폴링이 한 번 실패한다
+            refreshFailures.emit(Unit)
+            advanceUntilIdle()
+
+            // Then 5초마다 도는 폴링의 실패로 토스트를 쌓지 않는다 — 화면은 이미 캔버스를 그렸다
+            expectNoEvents()
+        }
     }
 
     private companion object {
@@ -846,7 +791,6 @@ class CanvasMainViewModelTest {
         const val TODAY_PARFAIT_ID = 42L
         const val YESTERDAY_PARFAIT_ID = 41L
         const val DAY_BEFORE_YESTERDAY_PARFAIT_ID = 40L
-        const val NEW_MEMBER_NICKNAME = "모카"
 
         val GROUP = MyParfaitGroupVO(
             groupId = GroupId(GROUP_ID),

@@ -10,6 +10,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
@@ -42,6 +43,7 @@ class CanvasPollerTest {
     private class FakeRemote(
         private val response: CanvasVO,
         private val gate: CompletableDeferred<Unit>? = null,
+        private val failure: Throwable? = null,
     ) : ParfaitRemoteDataSource {
         var todayCallCount = 0
             private set
@@ -53,7 +55,7 @@ class CanvasPollerTest {
         override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> {
             todayCallCount++
             gate?.await()
-            return Result.success(response)
+            return failure?.let { Result.failure(it) } ?: Result.success(response)
         }
 
         override suspend fun getPastCanvases(
@@ -68,7 +70,7 @@ class CanvasPollerTest {
         ): Result<CanvasVO> {
             detailCallCount++
             gate?.await()
-            return Result.success(response)
+            return failure?.let { Result.failure(it) } ?: Result.success(response)
         }
 
         override suspend fun changeCanvasBackground(
@@ -76,6 +78,40 @@ class CanvasPollerTest {
             parfaitId: ParfaitId,
             background: CanvasBackgroundEdit,
         ): Result<CanvasBackground?> = error("폴러가 부르지 않는다")
+    }
+
+    @Test
+    fun refresh_whenItFails_signalsTheFailure() = runTest {
+        val remote = FakeRemote(canvas(), failure = IllegalStateException("실패"))
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+        val failures = mutableListOf<GroupId>()
+        backgroundScope.launch { poller.refreshFailures.collect { failures += it } }
+        runCurrent()
+
+        poller.acquire(GROUP)
+        runCurrent()
+
+        // 실패하면 캐시에 아무것도 실리지 않아 구독만 보는 화면은 그 사실을 알 길이 없다
+        assertEquals(listOf(GROUP), failures)
+    }
+
+    @Test
+    fun refresh_afterStopAll_saysNothing() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val remote = FakeRemote(canvas(), gate = gate, failure = IllegalStateException("실패"))
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+        val failures = mutableListOf<GroupId>()
+        backgroundScope.launch { poller.refreshFailures.collect { failures += it } }
+        runCurrent()
+
+        poller.acquire(GROUP)
+        runCurrent()
+        poller.stopAll()
+        gate.complete(Unit)
+        runCurrent()
+
+        // 세션이 끝난 뒤 도착한 실패다 — 이미 버려진 갱신의 것이라 화면에 알리지 않는다
+        assertEquals(emptyList(), failures)
     }
 
     @Test

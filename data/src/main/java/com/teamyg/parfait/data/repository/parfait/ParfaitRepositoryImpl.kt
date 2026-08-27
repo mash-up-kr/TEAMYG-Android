@@ -12,6 +12,8 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.LocalDate
@@ -43,6 +45,11 @@ class ParfaitRepositoryImpl @Inject constructor(
         .todayCanvas(groupId)
         .onStart { canvasPoller.acquire(groupId) }
         .onCompletion { canvasPoller.release(groupId) }
+
+    override fun todayCanvasRefreshFailures(groupId: GroupId): Flow<Unit> = canvasPoller
+        .refreshFailures
+        .filter { it == groupId }
+        .map { }
 
     override fun cachedTodayCanvasDate(groupId: GroupId): LocalDate? =
         canvasLocalDataSource.cachedTodayCanvas(groupId)?.date

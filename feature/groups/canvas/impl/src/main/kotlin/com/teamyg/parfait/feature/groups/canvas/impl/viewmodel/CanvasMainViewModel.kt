@@ -33,6 +33,8 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
@@ -40,7 +42,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -238,6 +245,7 @@ sealed interface CanvasMainIntent : UiIntent {
     data object OnAppReturnedFromBackground : CanvasMainIntent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = CanvasMainViewModel.Factory::class)
 class CanvasMainViewModel
 @AssistedInject
@@ -247,6 +255,8 @@ constructor(
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
+    private val observeParfaitDayBoundaryUseCase: ObserveParfaitDayBoundaryUseCase,
+    private val observeTodayParfaitRefreshFailureUseCase: ObserveTodayParfaitRefreshFailureUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
@@ -257,104 +267,109 @@ constructor(
 ) {
     private val groupId = GroupId(groupIdValue)
 
+    /**
+     * 지난 날을 보는 동안 구독을 끊기 위한 게이트.
+     *
+     * [state] 를 읽지 않는 이유는 [launchWhileSubscribed] KDoc 에 있다 — 그 안에서 [state] 를
+     * 수집하면 그 수집 자체가 구독자로 세어진다.
+     */
+    private val isViewingToday = MutableStateFlow(true)
+
     init {
         viewModelLogger.i { "CanvasMainViewModel::init" }
         observeTodayCanvas()
+        observeTodayCanvasRefreshFailure()
+        observeDayBoundary()
         loadCanvasMainInfo()
         // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
     }
 
     /**
-     * 오늘 캔버스를 화면으로 옮기는 유일한 길 — 갱신([loadTodayCanvas])은 값을 돌려주지 않고
-     * 저장소만 채운다.
+     * 오늘 캔버스를 화면으로 옮기는 유일한 길 — 갱신은 폴러가 구독 시작에서 맡는다
+     * (`adr/0029-canvas-today-ssot-polling.md`).
      *
-     * 오늘 캔버스가 비워지는 하루 경계에서도 멤버 칩은 지우지 않는다 —
-     * 그룹 구성은 날이 바뀌었다고 달라지지 않아, 갱신이 올 때까지 이름표를 비워 둘 이유가 없다.
+     * 지난 날을 보는 동안은 [isViewingToday] 가 [emptyFlow] 로 갈아 끼운다 — 마감된 날은
+     * 바뀌지 않으므로 오늘 캔버스를 계속 부를 이유가 없다. 그 사이 받은 마지막 값은 그대로 둔다.
+     * 비우면 오늘로 돌아올 때 빈 캔버스가 깜빡인다.
      */
     private fun observeTodayCanvas() {
-        launch {
-            getTodayParfaitFlowUseCase(groupId).collect { canvas ->
-                updateState {
-                    copy(
-                        todayCanvas = canvas,
-                        memberChips = canvas?.members?.toMemberChips() ?: memberChips,
-                    )
-                }
+        launchWhileSubscribed(
+            // MutableStateFlow 는 이미 값이 바뀔 때만 emit 하므로 distinctUntilChanged 가 필요 없다
+            source = {
+                isViewingToday
+                    .flatMapLatest { viewingToday ->
+                        if (viewingToday) getTodayParfaitFlowUseCase(groupId) else emptyFlow()
+                    }.onStart {
+                        // 아직 받아 둔 캔버스가 없을 때만 덮는다 — 그러지 않으면 화면에 다시
+                        // 붙을 때마다 이미 그려진 캔버스 위로 덮개가 번쩍인다
+                        if (state.value.todayCanvas == null) updateState { copy(isInitialLoading = true) }
+                    }
+            },
+        ) { canvas ->
+            updateState {
+                copy(
+                    todayCanvas = canvas,
+                    memberChips = canvas?.members?.toMemberChips() ?: memberChips,
+                    // 캔버스가 실렸으면 덮개를 내린다. 갱신이 실패해 아무것도 실리지 않는 쪽은
+                    // observeTodayCanvasRefreshFailure 가 맡는다
+                    isInitialLoading = if (canvas == null) isInitialLoading else false,
+                    // 강조 중이던 토핑이 사라지면 딤도 사라져 Dim 탭이라는 해제 계기가 없어진다.
+                    // 상태값을 그대로 두면 handleOnClickTopping 가드에 걸려 탭이 전부 먹지 않는다
+                    spotlightedToppingId = spotlightedToppingId?.takeIf { id ->
+                        canvas?.toppings.orEmpty().any { it.parfaitImageId == id }
+                    },
+                )
             }
         }
     }
 
     /**
-     * 오늘을 보고 있을 때만 다시 물어본다 — 지난 날은 마감돼 바뀌지 않으므로 이미 받아 둔 것이
-     * 그대로 맞다.
+     * 갱신이 실패하면 캐시가 아무것도 내지 않아 [observeTodayCanvas] 만으로는 덮개를 내릴 계기가
+     * 없다 — 첫 조회를 기다리는 동안에만 그 실패를 화면으로 옮긴다.
      *
-     * 달력 기록도 함께 받는다. 다른 멤버가 오늘 토핑을 올리면 오늘 칸의 점이 생기는데, 연 단위
-     * 캐시는 그것을 스스로 알 방법이 없다. 바뀔 수 있는 해는 올해뿐이라 올해만 다시 받는다.
+     * 폴링은 5초마다 도므로 조건 없이 알리면 실패가 이어지는 동안 토스트가 계속 쌓인다.
+     * 덮개가 걸려 있을 때로 좁혀 첫 조회 실패 한 번만 말한다.
+     */
+    private fun observeTodayCanvasRefreshFailure() {
+        launchWhileSubscribed(source = { observeTodayParfaitRefreshFailureUseCase(groupId) }) {
+            if (state.value.isInitialLoading.not()) return@launchWhileSubscribed
+
+            updateState { copy(isInitialLoading = false) }
+            postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
+        }
+    }
+
+    /**
+     * 화면을 열어 둔 채 파르페 하루 경계를 넘기면 오늘을 다시 센다. 진입 시점만으로는 부족하다 —
+     * 그 사이 폴링이 받아 온 오늘 캔버스가 어제 날짜 헤더 아래 그려진다.
+     */
+    private fun observeDayBoundary() {
+        launchWhileSubscribed(source = { observeParfaitDayBoundaryUseCase() }) { today ->
+            updateState {
+                if (today == this.today) return@updateState this
+
+                if (this.isViewingToday) {
+                    copy(today = today, selectedDate = today, displayedMonth = today.toFirstDayOfMonth())
+                } else {
+                    copy(today = today)
+                }
+            }
+            isViewingToday.value = state.value.selectedDate == state.value.today
+        }
+    }
+
+    /**
+     * 화면이 앞에 섰다. 오늘 캔버스 갱신은 폴러가 구독 시작에서 이미 한다
+     * (`adr/0029-canvas-today-ssot-polling.md`).
+     *
+     * 달력 기록은 폴링 대상이 아니라 여기서 받는다 — 다른 멤버가 오늘 토핑을 올리면 오늘 칸의
+     * 점이 생기는데, 연 단위 캐시는 그것을 스스로 알 방법이 없다. 바뀔 수 있는 해는 올해뿐이다.
      */
     private fun handleEnter() {
-        syncToday()
         if (state.value.isViewingToday.not()) return
-
-        loadTodayCanvas()
-        loadParfaitHistories(state.value.today.year)
-    }
-
-    /**
-     * 화면을 열어 둔 채 파르페 하루 경계(새벽 3시)를 넘겼으면 오늘을 다시 센다.
-     *
-     * [CanvasMainUiState.today] 는 ViewModel 이 만들어질 때 한 번 셌을 뿐이라, 날이 바뀐 뒤
-     * 그대로 두면 오늘 조회가 가져온 **새 날의 캔버스**를 어제 날짜 아래에 그리게 된다.
-     */
-    private fun syncToday() {
-        val today = parfaitToday()
-        if (today == state.value.today) return
-
-        // 시간이 지나면서 지금 보는 parfaitToday 가 어제가 되어버린 상황
-        updateState {
-            // 구독의 날짜 필터가 이 자리를 대신하지 못한다([GetTodayParfaitFlowUseCase] 참고) —
-            // 어제 것을 오늘로 착각해 그 위에 토핑을 올리는 일이 없도록 여기서 비운다. 갱신이
-            // 오면 구독이 다시 채운다
-            if (isViewingToday) {
-                copy(
-                    today = today,
-                    selectedDate = today,
-                    displayedMonth = today.toFirstDayOfMonth(),
-                    todayCanvas = null,
-                )
-            } else {
-                // 보고 있던 지난 날은 마감돼 그대로 둔다
-                copy(today = today, todayCanvas = null)
-            }
-        }
-    }
-
-    /**
-     * 받아 온 캔버스는 저장소에 실리고 [observeTodayCanvas] 가 화면으로 옮긴다.
-     *
-     * ⚠️ 서버의 오늘 조회는 캔버스가 없으면 만들어 저장한다 — 화면을 여는 것만으로 그날 캔버스가
-     * 생긴다. 재진입에 다시 불러도 첫 진입에서 이미 만들어진 것을 받을 뿐이라 늘어나지는 않는다.
-     */
-    private fun loadTodayCanvas() {
-        launch(key = LOAD_TODAY_CANVAS_KEY) {
-            // 조회는 재진입마다 나가므로, 캔버스가 없을 때로 좁히지 않으면 돌아올 때마다 이미
-            // 그려진 캔버스 위로 덮개가 번쩍인다. 가드에 막히면 이 블록이 아예 돌지 않아,
-            // 밖에서 켜면 내려 줄 finally 가 없다.
-            if (state.value.todayCanvas == null) {
-                updateState { copy(isInitialLoading = true) }
-            }
-
-            try {
-                refreshTodayParfaitUseCase(groupId).onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-                    if (state.value.todayCanvas == null) {
-                        postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
-                    }
-                }
-            } finally {
-                updateState { copy(isInitialLoading = false) }
-            }
-        }
+        // 해가 바뀐 직후를 대비해 상태가 아니라 시계에서 읽는다
+        loadParfaitHistories(parfaitToday().year)
     }
 
     /**
@@ -545,12 +560,9 @@ constructor(
     }
 
     /**
-     * 오늘은 이미 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌린다 — 서버의 오늘 조회는
-     * 캔버스가 없으면 만들어 저장하므로 그냥 다시 부를 자리가 아니다. 되돌리는 대입이 따로
-     * 없는 것은 [CanvasMainUiState.displayedCanvas] 가 파생값이라서다.
-     *
-     * 비어 있으면 [handleClickGoToToday] 와 같이 다시 부른다. 오늘로 가는 두 동선의 결과가
-     * 달라지면 안 된다.
+     * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
+     * 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
+     * 되돌리는 대입이 따로 없는 것은 [CanvasMainUiState.displayedCanvas] 가 파생값이라서다.
      *
      * 응답이 올 때까지 이전 날의 토핑을 그대로 둔다. 비워 두면 파르페가 있는 날인데도 잠깐
      * "캔버스가 비어 있다"고 말하게 된다 — 달력이 기록 있는 날만 열어 주므로 그건 늘 거짓이다.
@@ -564,7 +576,7 @@ constructor(
 
         if (date == current.today) {
             updateState { copy(selectedDate = date, pastCanvas = null) }
-            if (current.todayCanvas == null) loadTodayCanvas()
+            isViewingToday.value = state.value.selectedDate == state.value.today
             return
         }
 
@@ -573,6 +585,7 @@ constructor(
         val parfaitId = current.parfaitHistories.firstOrNull { it.date == date }?.parfaitId ?: return
 
         updateState { copy(selectedDate = date) }
+        isViewingToday.value = state.value.selectedDate == state.value.today
         loadCanvasDetail(date = date, parfaitId = parfaitId)
     }
 
@@ -594,8 +607,8 @@ constructor(
     }
 
     /**
-     * 달력도 오늘이 있는 달로 따라간다. 다시 부르는 것은 [syncToday] 가 하루 경계에서 비워 둔
-     * 경우가 있어서다 — 그대로 돌아오면 캔버스 없이 버튼만 잠긴 화면이 된다.
+     * 달력도 오늘이 있는 달로 따라간다. 오늘 캔버스 갱신은 부르지 않는다 —
+     * [isViewingToday] 를 다시 세워 구독을 열면 폴러 재구독이 그 자리를 맡는다.
      */
     private fun handleClickGoToToday() {
         updateState {
@@ -605,13 +618,11 @@ constructor(
                 pastCanvas = null,
             )
         }
+        isViewingToday.value = true
 
         val current = state.value
         if (current.parfaitHistoriesByYear.containsKey(current.today.year).not()) {
             loadParfaitHistories(current.today.year)
-        }
-        if (current.todayCanvas == null) {
-            loadTodayCanvas()
         }
     }
 
@@ -729,8 +740,6 @@ constructor(
 
     private companion object {
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
-
-        const val LOAD_TODAY_CANVAS_KEY = "loadTodayCanvas"
 
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 

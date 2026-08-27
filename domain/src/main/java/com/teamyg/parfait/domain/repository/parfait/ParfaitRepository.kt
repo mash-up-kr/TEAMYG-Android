@@ -27,6 +27,15 @@ interface ParfaitRepository {
     fun todayCanvas(groupId: GroupId): Flow<CanvasVO?>
 
     /**
+     * 오늘 캔버스 갱신이 실패했다는 신호. 값은 흘리지 않아 "값을 얻는 길은 [todayCanvas] 하나"는
+     * 그대로다.
+     *
+     * 첫 조회를 기다리는 화면이 로딩을 푸는 계기로 쓴다 — 갱신이 실패하면 캐시가 아무것도
+     * 방출하지 않아, 구독만 보고 있으면 실패했다는 사실을 알 길이 없다.
+     */
+    fun todayCanvasRefreshFailures(groupId: GroupId): Flow<Unit>
+
+    /**
      * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
      * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 부를 지점을 아껴야 한다.
      *

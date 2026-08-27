@@ -7,6 +7,9 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -53,6 +56,17 @@ class CanvasPoller @Inject constructor(
 
     /** [stopAll] 이 올린다. 그 전에 출발한 응답은 캐시에 싣지 않는다 */
     private var generation = 0
+
+    private val _refreshFailures = MutableSharedFlow<GroupId>(extraBufferCapacity = FAILURE_BUFFER)
+
+    /**
+     * 갱신이 실패했다는 신호. 값이 아니라 실패 사실만 흘린다 — 값을 얻는 길은 캐시 하나라는
+     * 규칙(`adr/0029-canvas-today-ssot-polling.md`)은 그대로 둔다.
+     *
+     * 첫 조회를 기다리는 화면이 로딩을 풀 계기로 쓴다. 캐시는 실패했을 때 아무것도 방출하지
+     * 않아, 이 신호가 없으면 화면이 로딩에 갇힌다.
+     */
+    val refreshFailures: SharedFlow<GroupId> = _refreshFailures.asSharedFlow()
 
     fun acquire(groupId: GroupId) {
         val isFirst = synchronized(lock) {
@@ -159,11 +173,19 @@ class CanvasPoller @Inject constructor(
                     synchronized(lock) {
                         if (generation == startedGeneration) local.saveTodayCanvas(groupId, canvas)
                     }
+                }.onFailure {
+                    // 세대가 바뀌었으면 이미 버려진 갱신의 실패라 화면에 알리지 않는다
+                    if (synchronized(lock) { generation == startedGeneration }) _refreshFailures.tryEmit(groupId)
                 }.map { }
         } finally {
             synchronized(lock) {
                 if (refreshing[groupId] == startedGeneration) refreshing.remove(groupId)
             }
         }
+    }
+
+    private companion object {
+        /** 화면이 없는 사이 실패가 몰려도 방출이 막히지 않을 만큼만 든다 */
+        const val FAILURE_BUFFER = 16
     }
 }
