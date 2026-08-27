@@ -157,8 +157,7 @@ internal fun CanvasBGEditScreen(
                     )
 
                     if (uiState.selectedTab == CanvasEditTab.BACKGROUND) {
-                        // 배경을 고르는 화면이라 토핑은 참고로만 둔다 — 딤·입력 레이어·모서리 버튼·접근성
-                        // 클릭을 붙이지 않고, 저장된 z 순서 그대로 겹쳐 그린다
+                        // 딤·입력 레이어·모서리 버튼·접근성 클릭을 붙이지 않는다
                         drawEntries.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry,
@@ -397,7 +396,7 @@ private fun PaletteColorCircle(
 private val CanvasToppingItem.drawnModel: String
     get() = editedImagePath ?: imageUrl
 
-/** 두 탭이 공유하는 그리기 정보. 판정(마스크·[ToppingHitTarget])은 여기 없다 */
+/** 두 탭이 공유하는 그리기 정보. 마스크와 [ToppingHitTarget]은 [BGEditHitEntry]가 얹는다 */
 private data class BGEditDrawEntry(
     val topping: CanvasToppingItem,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
@@ -497,12 +496,9 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
  * 별도로 그린다.
  *
- * Box 를 [BGEditDrawEntry.drawnBorderWidthDp]만큼 사방으로 넓힌 뒤 그 폭을 다시 [padding]으로
- * 덜어낸다. [YGToppingCutoutImage]의 테두리는 같은 그림을 8방향으로 그 폭만큼 밀어 찍는 방식이라
- * 원래도 Box 경계 밖으로 삐져나가는데, `alpha`가 1 미만이면 `CompositingStrategy.Auto`가
- * 오프스크린 버퍼를 만들어(겹치는 그리기에 alpha 를 한 번에 먹이려고) 그 버퍼, 즉 이 Box 크기에서
- * 경계 밖으로 나간 부분이 잘린다. 넓힌 만큼을 안쪽 padding 으로 되돌려 이미지 자체의 위치·크기는
- * 그대로 둔다.
+ * Box 가 이미지보다 [BGEditDrawEntry.drawnBorderWidthDp]만큼 크고 그만큼 안쪽으로 덜어낸다.
+ * [YGToppingCutoutImage]의 테두리는 그 폭만큼 바깥으로 밀어 찍는데, `alpha`가 1 미만이면
+ * 오프스크린 버퍼가 생겨 레이어 밖으로 나간 부분이 잘리기 때문이다.
  *
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
  *   읽히면 안 된다.
@@ -626,7 +622,7 @@ private fun ToppingCornerButtons(
     }
 }
 
-/** Preview 전용 토핑 표본 이미지. 실제 리소스라야 painter 가 Success 에 닿아 테두리도 함께 그려진다 */
+/** 실제 리소스라야 painter 가 Success 에 닿아 테두리도 함께 그려진다 */
 private const val PREVIEW_TOPPING_MODEL =
     "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
 
