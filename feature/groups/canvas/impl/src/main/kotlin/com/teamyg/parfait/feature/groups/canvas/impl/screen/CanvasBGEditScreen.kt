@@ -141,28 +141,37 @@ internal fun CanvasBGEditScreen(
                     )
                 }
 
-                if (uiState.selectedTab == CanvasEditTab.TOPPING) {
-                    // 배치가 모두 이 영역 대비 비율이라, 캔버스 메인과 같은 자리에 그리려면
-                    // 실제 크기를 알아야 한다
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val canvasWidth = maxWidth
-                        val canvasHeight = maxHeight
-                        val density = LocalDensity.current
-                        val canvasWidthPx = with(density) { canvasWidth.toPx() }
-                        val canvasHeightPx = with(density) { canvasHeight.toPx() }
+                // 배치가 모두 이 영역 대비 비율이라, 캔버스 메인과 같은 자리에 그리려면 실제 크기를 알아야 한다
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val canvasWidth = maxWidth
+                    val canvasHeight = maxHeight
+                    val density = LocalDensity.current
+                    val canvasWidthPx = with(density) { canvasWidth.toPx() }
+                    val canvasHeightPx = with(density) { canvasHeight.toPx() }
 
-                        val drawEntries = rememberBGEditDrawEntries(
-                            toppings = uiState.toppings,
-                            canvasWidth = canvasWidth,
-                            canvasHeight = canvasHeight,
-                        )
+                    val drawEntries = rememberBGEditDrawEntries(
+                        toppings = uiState.toppings,
+                        canvasWidth = canvasWidth,
+                        canvasHeight = canvasHeight,
+                    )
+
+                    if (uiState.selectedTab == CanvasEditTab.BACKGROUND) {
+                        // 배경을 고르는 화면이라 토핑은 참고로만 둔다 — 딤·입력 레이어·모서리 버튼·접근성
+                        // 클릭을 붙이지 않고, 저장된 z 순서 그대로 겹쳐 그린다
+                        drawEntries.forEach { entry ->
+                            CanvasToppingImage(
+                                entry = entry,
+                                alpha = BACKGROUND_TAB_TOPPING_ALPHA,
+                                onClick = null,
+                            )
+                        }
+                    } else {
                         val entries = rememberBGEditHitEntries(drawEntries = drawEntries)
                         val myEntries = entries.filter { it.topping.isMine }
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
                         }
 
-                        // 남의 토핑
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry.draw,
@@ -177,7 +186,6 @@ internal fun CanvasBGEditScreen(
                                 .background(YGAtomicColors.Transparency.Black25),
                         )
 
-                        // 내 토핑
                         myEntries.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry.draw,
