@@ -73,7 +73,7 @@ class CanvasToppingPlaceViewModelTest {
 
     private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase = mockk()
 
-    /** 저장소의 오늘 캔버스 캐시. 이 테스트들은 대부분 캔버스 배경·기존 토핑을 다루지 않는다 */
+    /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
     init {

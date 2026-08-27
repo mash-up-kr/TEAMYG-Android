@@ -253,8 +253,7 @@ class CanvasBGEditViewModelTest {
 
     @Test
     fun observeCanvas_movesTheEditTargetOnlyOnTheFirstEmission() = runTest(mainDispatcherRule.dispatcher) {
-        // MockK 는 sealed interface + value class 조합인 CanvasBackgroundEdit 에 any() 를 못 만든다
-        // (stubBackgroundChange 문서 참고) — 배경을 안 건드려 기본 팔레트 색 그대로인 값을 그대로 적는다
+        // 배경을 안 건드려 기본 팔레트 색 그대로인 값을 적는다(stubBackgroundChange 문서 참고)
         val unchangedBackground = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex())
         every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
         coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)

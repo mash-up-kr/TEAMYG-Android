@@ -33,7 +33,7 @@ class RefreshTodayParfaitUseCaseTest {
         var callCount = 0
             private set
 
-        /** 갱신이 실제로 실은 값. 옛 테스트가 반환값으로 보던 것을 여기서 본다 */
+        /** 갱신이 실제로 실은 값. 갱신은 값을 돌려주지 않으므로 단언은 여기를 본다 */
         var cached: CanvasVO? = null
             private set
 
