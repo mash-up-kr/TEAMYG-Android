@@ -27,7 +27,8 @@ import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
@@ -43,6 +44,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -65,20 +67,29 @@ private const val OTHER_GROUP_MEMBER_ID = 22L
 private const val LOCAL_IMAGE_URI = "content://media/external/images/media/42"
 private const val SAVED_IMAGE_URL = "https://cdn.example.com/background.png"
 
+private const val OTHER_PARFAIT_ID = 200L
+private const val THIRD_PARFAIT_ID = 300L
+
 class CanvasBGEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val getTodayParfait: GetTodayParfaitUseCase = mockk()
+    private val getTodayParfaitFlow: GetTodayParfaitFlowUseCase = mockk()
+    private val refreshTodayParfait: RefreshTodayParfaitUseCase = mockk()
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
     private val updateTopping: UpdateToppingUseCase = mockk()
     private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
 
+    /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
+    private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
+
     @Before
     fun stubTheHappyPath() {
-        coEvery { getTodayParfait(any()) } returns Result.success(canvas())
+        every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
+        coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
+        todayCanvases.value = canvas()
         coEvery { uploadImage(any(), any()) } returns Result.success(ImageId(7L))
     }
 
@@ -104,7 +115,8 @@ class CanvasBGEditViewModelTest {
         groupIdValue = GROUP_ID,
         parfaitIdValue = PARFAIT_ID,
         initialToppingIdValue = initialToppingIdValue,
-        getTodayParfaitUseCase = getTodayParfait,
+        getTodayParfaitFlowUseCase = getTodayParfaitFlow,
+        refreshTodayParfaitUseCase = refreshTodayParfait,
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
@@ -145,12 +157,10 @@ class CanvasBGEditViewModelTest {
     @Test
     fun init_ordersToppingsByPositionZ() = runTest(mainDispatcherRule.dispatcher) {
         // Given 뒤에 그려야 할 토핑이 목록 앞쪽에 온다
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(
-                toppings = listOf(
-                    topping(parfaitImageId = 1L, positionZ = 5),
-                    topping(parfaitImageId = 2L, positionZ = 1),
-                ),
+        todayCanvases.value = canvas(
+            toppings = listOf(
+                topping(parfaitImageId = 1L, positionZ = 5),
+                topping(parfaitImageId = 2L, positionZ = 1),
             ),
         )
 
@@ -168,9 +178,7 @@ class CanvasBGEditViewModelTest {
     @Test
     fun init_savedColorBackground_opensOnThatColor() = runTest(mainDispatcherRule.dispatcher) {
         // Given 저장된 배경이 색이다
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(background = CanvasBackground.Color("#FF6B00")),
-        )
+        todayCanvases.value = canvas(background = CanvasBackground.Color("#FF6B00"))
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -183,9 +191,7 @@ class CanvasBGEditViewModelTest {
     @Test
     fun init_savedImageBackground_opensOnThatImageWithoutASource() = runTest(mainDispatcherRule.dispatcher) {
         // Given 저장된 배경이 이미지다
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL)),
-        )
+        todayCanvases.value = canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL))
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -197,15 +203,16 @@ class CanvasBGEditViewModelTest {
 
     @Test
     fun init_canvasFails_showsError() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캔버스 조회가 끊긴다
-        coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(null))
+        // Given 캔버스 갱신이 끊긴다
+        coEvery { refreshTodayParfait(any(), any()) } returns Result.failure(AppError.Network(null))
 
         // When 화면이 열린다
         val viewModel = CanvasBGEditViewModel(
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
             initialToppingIdValue = null,
-            getTodayParfaitUseCase = getTodayParfait,
+            getTodayParfaitFlowUseCase = getTodayParfaitFlow,
+            refreshTodayParfaitUseCase = refreshTodayParfait,
             uploadImageUseCase = uploadImage,
             changeCanvasBackgroundUseCase = changeCanvasBackground,
             deleteToppingUseCase = deleteTopping,
@@ -217,6 +224,56 @@ class CanvasBGEditViewModelTest {
         viewModel.effect.test {
             assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.NETWORK), awaitItem())
         }
+    }
+
+    @Test
+    fun observeCanvas_seedsBackgroundSelectionOnlyOnTheFirstEmission() = runTest(mainDispatcherRule.dispatcher) {
+        every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
+        coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
+        todayCanvases.value = canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL))
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(SAVED_IMAGE_URL, viewModel.state.value.selectedImageUri)
+
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnBackgroundImageResult(
+                uri = LOCAL_IMAGE_URI,
+                source = PictureConfirmSource.GALLERY,
+            ),
+        )
+        advanceUntilIdle()
+
+        todayCanvases.value = canvas(background = CanvasBackground.Image("https://cdn.example.com/other.png"))
+        advanceUntilIdle()
+
+        assertEquals(LOCAL_IMAGE_URI, viewModel.state.value.selectedImageUri)
+        assertEquals(PictureConfirmSource.GALLERY, viewModel.state.value.selectedImageSource)
+    }
+
+    @Test
+    fun observeCanvas_movesTheEditTargetOnlyOnTheFirstEmission() = runTest(mainDispatcherRule.dispatcher) {
+        // MockK 는 sealed interface + value class 조합인 CanvasBackgroundEdit 에 any() 를 못 만든다
+        // (stubBackgroundChange 문서 참고) — 배경을 안 건드려 기본 팔레트 색 그대로인 값을 그대로 적는다
+        val unchangedBackground = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex())
+        every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
+        coEvery { refreshTodayParfait(any(), any()) } returns Result.success(Unit)
+        coEvery {
+            changeCanvasBackground(GroupId(GROUP_ID), ParfaitId(OTHER_PARFAIT_ID), unchangedBackground)
+        } returns Result.success(null)
+        todayCanvases.value = canvas(parfaitId = OTHER_PARFAIT_ID)
+
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // 최초 방출로 편집 대상이 옮겨간 뒤, 다음 방출은 그것을 다시 옮기지 않는다
+        todayCanvases.value = canvas(parfaitId = THIRD_PARFAIT_ID)
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { changeCanvasBackground(GroupId(GROUP_ID), ParfaitId(OTHER_PARFAIT_ID), unchangedBackground) }
     }
 
     @Test
@@ -272,9 +329,7 @@ class CanvasBGEditViewModelTest {
     @Test
     fun clickConfirm_untouchedServerImage_doesNotCallTheServer() = runTest(mainDispatcherRule.dispatcher) {
         // Given 저장된 이미지 배경을 그대로 두고 열어 둔 화면
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL)),
-        )
+        todayCanvases.value = canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL))
         val viewModel = viewModel()
 
         // When 확인
@@ -572,11 +627,9 @@ class CanvasBGEditViewModelTest {
     @Test
     fun init_solidBorder_becomesOneEditableLayer() = runTest(mainDispatcherRule.dispatcher) {
         // Given 테두리를 두른 토핑
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(
-                toppings = listOf(
-                    topping(border = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)),
-                ),
+        todayCanvases.value = canvas(
+            toppings = listOf(
+                topping(border = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)),
             ),
         )
 
@@ -594,11 +647,9 @@ class CanvasBGEditViewModelTest {
     @Test
     fun init_unreadableBorderColor_drawsNoBorder() = runTest(mainDispatcherRule.dispatcher) {
         // Given 색 문자열을 읽을 수 없는 테두리
-        coEvery { getTodayParfait(any()) } returns Result.success(
-            canvas(
-                toppings = listOf(
-                    topping(border = ToppingBorder.Solid(color = "무지개", width = 4.0)),
-                ),
+        todayCanvases.value = canvas(
+            toppings = listOf(
+                topping(border = ToppingBorder.Solid(color = "무지개", width = 4.0)),
             ),
         )
 
@@ -615,6 +666,7 @@ class CanvasBGEditViewModelTest {
     }
 
     private fun canvas(
+        parfaitId: Long = PARFAIT_ID,
         background: CanvasBackground? = null,
         toppings: List<CanvasToppingVO> = listOf(
             topping(parfaitImageId = 1L, groupMemberId = PLACER_GROUP_MEMBER_ID, isMine = true, positionZ = 1),
@@ -626,7 +678,7 @@ class CanvasBGEditViewModelTest {
             ),
         ),
     ) = CanvasVO(
-        parfaitId = ParfaitId(PARFAIT_ID),
+        parfaitId = ParfaitId(parfaitId),
         date = parfaitToday(),
         status = CanvasStatus.ACTIVE,
         lastClosedDate = null,

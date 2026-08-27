@@ -26,7 +26,8 @@ import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
@@ -206,7 +207,8 @@ constructor(
     @Assisted("groupId") groupIdValue: Long,
     @Assisted("parfaitId") parfaitIdValue: Long,
     @Assisted("initialToppingId") initialToppingIdValue: Long?,
-    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val refreshTodayParfaitUseCase: RefreshTodayParfaitUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
@@ -233,59 +235,79 @@ constructor(
      */
     private var confirmedToppings: List<CanvasToppingItem> = emptyList()
 
+    /** 최초 방출에만 서버 값을 시딩한다 — 이후 방출이 사용자의 선택을 덮으면 안 된다 */
+    private var hasSeededFromCanvas = false
+
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
-        loadCanvas()
+        observeCanvas()
+        refreshCanvas()
     }
 
-    /**
-     * ⚠️ 오늘 조회는 캔버스가 없으면 만들어 저장한다. 여기서 불러도 캔버스 메인이 이미 만든
-     * 것을 다시 받을 뿐이라 늘어나지 않는다 — 이 화면은 그 메인을 거쳐야만 열린다.
-     *
-     * 조회를 또 하는 이유는 편집을 여는 사이 다른 멤버가 올린 토핑까지 그려야 해서다.
-     */
-    private fun loadCanvas() {
-        launch(key = LOAD_CANVAS_KEY) {
-            getTodayParfaitUseCase(groupId)
-                .onSuccess { canvas ->
-                    if (canvas.parfaitId != parfaitId) {
-                        viewModelLogger.e {
-                            "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
-                                " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
-                        }
-                        parfaitId = canvas.parfaitId
+    private fun observeCanvas() {
+        launch {
+            getTodayParfaitFlowUseCase(groupId).collect { canvas ->
+                if (canvas == null) return@collect
+
+                if (hasSeededFromCanvas.not() && canvas.parfaitId != parfaitId) {
+                    viewModelLogger.e {
+                        "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
+                            " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
                     }
-
-                    confirmedToppings = canvas.toppings
-                        .sortedBy { topping -> topping.transform.positionZ }
-                        .map { topping -> topping.toToppingItem() }
-
-                    updateState { withCanvas(canvas = canvas, toppings = confirmedToppings) }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
-                    postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+                    parfaitId = canvas.parfaitId
                 }
+
+                confirmedToppings = canvas.toppings
+                    .sortedBy { topping -> topping.transform.positionZ }
+                    .map { topping -> topping.toToppingItem() }
+
+                updateState { withCanvas(canvas = canvas, toppings = confirmedToppings) }
+                hasSeededFromCanvas = true
+            }
         }
     }
 
     /**
-     * 저장된 배경을 팔레트의 시작점으로 삼는다. 색을 못 읽으면 기본 색으로 두는데, 그때 확인을
-     * 누르면 배경이 팔레트 첫 색으로 바뀐다 — 못 읽는 색을 그대로 되돌려 보내는 것보다 낫다.
+     * 편집을 여는 사이 다른 멤버가 올린 토핑까지 그려야 해서 진입할 때 한 번 더 받는다.
+     *
+     * ⚠️ 오늘 조회는 캔버스가 없으면 서버가 만들어 저장한다(`api/parfait.md`). 여기서 불러도
+     * 캔버스 메인이 이미 만든 것을 다시 받을 뿐이라 늘어나지 않는다 — 이 화면은 그 메인을
+     * 거쳐야만 열린다.
+     */
+    private fun refreshCanvas() {
+        launch(key = LOAD_CANVAS_KEY) {
+            refreshTodayParfaitUseCase(groupId).onFailure { throwable ->
+                viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
+                postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+            }
+        }
+    }
+
+    /**
+     * 토핑 목록만 매번 갈아 끼우고 나머지는 **최초 방출에만** 시딩한다 — 이후 방출까지 대입하면
+     * 사용자가 방금 고른 배경이 되돌아가고, 옮긴 탭과 푼 선택도 다음 갱신에 되돌아간다.
+     *
+     * 저장된 배경 색을 못 읽으면 기본 색으로 두는데, 그때 확인을 누르면 배경이 팔레트 첫 색으로
+     * 바뀐다 — 못 읽는 색을 그대로 되돌려 보내는 것보다 낫다.
      */
     private fun CanvasBGEditUiState.withCanvas(
         canvas: CanvasVO,
         toppings: List<CanvasToppingItem>,
-    ): CanvasBGEditUiState = copy(
-        selectedTab = if (initialToppingId != null) CanvasEditTab.TOPPING else selectedTab,
-        toppings = toppings,
-        selectedColor = (canvas.background as? CanvasBackground.Color)
-            ?.value
-            ?.toColorOrNull()
-            ?: selectedColor,
-        selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
-        selectedImageSource = null,
-        selectedToppingId = initialToppingId ?: selectedToppingId,
-    )
+    ): CanvasBGEditUiState {
+        val withToppings = copy(toppings = toppings)
+        if (hasSeededFromCanvas) return withToppings
+
+        return withToppings.copy(
+            selectedTab = if (initialToppingId != null) CanvasEditTab.TOPPING else selectedTab,
+            selectedColor = (canvas.background as? CanvasBackground.Color)
+                ?.value
+                ?.toColorOrNull()
+                ?: selectedColor,
+            selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
+            selectedImageSource = null,
+            selectedToppingId = initialToppingId ?: selectedToppingId,
+        )
+    }
 
     private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
         parfaitImageId = parfaitImageId.value,
