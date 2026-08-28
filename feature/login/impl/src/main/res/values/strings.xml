@@ -11,4 +11,6 @@
     <string name="login_error_invalid_id_token">로그인 정보를 확인하지 못했어요. 다시 시도해 주세요</string>
     <string name="login_error_kakao_unavailable">카카오 로그인이 원활하지 않아요. 잠시 후 다시 시도해 주세요</string>
     <string name="login_error_unknown">로그인에 실패했어요. 잠시 후 다시 시도해 주세요</string>
+    <string name="login_debug_mode_badge">디버그 모드</string>
+    <string name="login_debug_mode_disable_label">디버그 모드 끄기</string>
 </resources>

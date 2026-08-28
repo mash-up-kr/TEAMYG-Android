@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.di
 
+import com.teamyg.parfait.data.source.debug.local.DebugModeLocalDataSource
+import com.teamyg.parfait.data.source.debug.local.DebugModeLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSource
 import com.teamyg.parfait.data.source.file.local.FileCameraCacheLocalDataSourceImpl
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
@@ -72,4 +74,10 @@ interface LocalDataSourceModule {
     fun bindToppingDraftLocalDataSource(
         toppingDraftLocalDataSourceImpl: ToppingDraftLocalDataSourceImpl,
     ): ToppingDraftLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindDebugModeLocalDataSource(
+        debugModeLocalDataSourceImpl: DebugModeLocalDataSourceImpl,
+    ): DebugModeLocalDataSource
 }
