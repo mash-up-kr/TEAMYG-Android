@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import android.net.Uri
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
@@ -504,15 +503,13 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun toppingResizeDrag_largeDrag_isNoLongerClampedToTheOldMax() = runTest(mainDispatcherRule.dispatcher) {
+    fun toppingResize_largeDrag_isNoLongerClampedToTheOldMax() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 고른 상태
         val viewModel = viewModel()
         val mine = viewModel.selectMyTopping()
 
-        // When 배율이 3.0 만큼 커지도록 큰 폭으로 리사이즈 핸들을 끈다(핸들은 우측 상단, 바깥쪽이 +)
-        viewModel.processIntent(
-            CanvasBGEditIntent.OnToppingResizeDrag(Offset(x = 900f, y = -900f)),
-        )
+        // When 예전 상한을 훌쩍 넘도록 크게 키운다
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingResize(scaleFactor = 10f))
 
         // Then 예전 상한(2.5)에 걸리지 않고 그대로 커진다
         val resized = viewModel.state.value.toppings

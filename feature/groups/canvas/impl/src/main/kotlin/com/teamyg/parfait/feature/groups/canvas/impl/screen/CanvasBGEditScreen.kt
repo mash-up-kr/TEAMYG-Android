@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -50,7 +49,8 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingC
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingDragHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingDragInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
@@ -92,8 +92,8 @@ internal fun CanvasBGEditScreen(
     onDeleteToppingDialogConfirm: () -> Unit,
     onDeleteToppingDialogCancel: () -> Unit,
     onClickEditTopping: () -> Unit,
-    onToppingResizeDrag: (Offset) -> Unit,
-    onToppingRotateDrag: (Offset) -> Unit,
+    onToppingResize: (Float) -> Unit,
+    onToppingRotate: (Float) -> Unit,
     onToppingMoveDrag: (deltaX: Float, deltaY: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -209,8 +209,8 @@ internal fun CanvasBGEditScreen(
                                 canvasHeight = canvasHeight,
                                 onClickDelete = onClickDeleteTopping,
                                 onClickEdit = onClickEditTopping,
-                                onResizeDrag = onToppingResizeDrag,
-                                onRotateDrag = onToppingRotateDrag,
+                                onResize = onToppingResize,
+                                onRotate = onToppingRotate,
                             )
                         }
                     }
@@ -527,8 +527,8 @@ private fun ToppingCornerButtons(
     canvasHeight: Dp,
     onClickDelete: () -> Unit,
     onClickEdit: () -> Unit,
-    onResizeDrag: (Offset) -> Unit,
-    onRotateDrag: (Offset) -> Unit,
+    onResize: (Float) -> Unit,
+    onRotate: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -560,12 +560,13 @@ private fun ToppingCornerButtons(
             onClick = onClickDelete,
             modifier = Modifier.centeredAt(buttonPoints.topLeft),
         )
-        ToppingDragHandleButton(
+        ToppingResizeHandleButton(
             iconRes = DesignSystemR.drawable.ic_scale,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.topRight,
+            center = center,
             key = entry.topping.parfaitImageId,
-            onDrag = onResizeDrag,
+            onResize = onResize,
         )
         YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_edit,
@@ -574,12 +575,13 @@ private fun ToppingCornerButtons(
             onClick = onClickEdit,
             modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
         )
-        ToppingDragHandleButton(
+        ToppingRotateHandleButton(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.bottomRight,
+            center = center,
             key = entry.topping.parfaitImageId,
-            onDrag = onRotateDrag,
+            onRotate = onRotate,
         )
     }
 }
@@ -603,8 +605,8 @@ private fun PreviewCanvasBGEditScreen() = PreviewBox {
         onDeleteToppingDialogConfirm = {},
         onDeleteToppingDialogCancel = {},
         onClickEditTopping = {},
-        onToppingResizeDrag = {},
-        onToppingRotateDrag = {},
+        onToppingResize = {},
+        onToppingRotate = {},
         onToppingMoveDrag = { _, _ -> },
         modifier = Modifier.fillMaxSize(),
     )
