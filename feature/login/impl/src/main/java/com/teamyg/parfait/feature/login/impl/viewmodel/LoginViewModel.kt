@@ -8,12 +8,14 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
+import com.teamyg.parfait.domain.repository.debug.DebugModeRepository
 import com.teamyg.parfait.domain.usecase.auth.LoginWithKakaoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 data class LoginState(
     val isLoading: Boolean = false,
+    val isDebugMode: Boolean = false,
 ) : UiState
 
 sealed interface LoginIntent : UiIntent {
@@ -31,10 +33,18 @@ sealed interface LoginIntent : UiIntent {
     data class LoginWithKakaoFailure(val throwable: Throwable?) : LoginIntent
 
     data object LoginWithKakaoCancel : LoginIntent
+
+    /** 로그인 화면 빈 영역 더블탭. 7회 뒤 롱프레스가 디버그 모드를 연다 */
+    data object DebugDoubleTap : LoginIntent
+
+    data object DebugLongPress : LoginIntent
+
+    data object DisableDebugMode : LoginIntent
 }
 
 sealed interface LoginSideEffect : UiSideEffect {
-    data object RequestLoginWithKakao : LoginSideEffect
+    /** @param forceAccountLogin 참이면 카카오톡을 건너뛰고 계정(웹) 로그인으로 간다 */
+    data class RequestLoginWithKakao(val forceAccountLogin: Boolean) : LoginSideEffect
 
     /** 신규 회원 — 약관 동의로 보낸다. 뒤로가기가 로그인으로 와야 하므로 백스택을 지우지 않는다 */
     data class NavigateToTermAgree(val registrationToken: String) : LoginSideEffect
@@ -54,9 +64,14 @@ class LoginViewModel
 @Inject
 constructor(
     private val loginWithKakaoUseCase: LoginWithKakaoUseCase,
+    private val debugModeRepository: DebugModeRepository,
 ) : BaseViewModel<LoginState, LoginIntent, LoginSideEffect>(initialState = LoginState()) {
+    /** 화면을 벗어나면 사라져도 되는 값이라 상태에 두지 않는다 — 탭마다 리컴포지션을 돌릴 이유가 없다 */
+    private var debugDoubleTapCount = 0
+
     init {
         viewModelLogger.i { "LoginViewModel::init" }
+        observeDebugMode()
     }
 
     override fun processIntent(intent: LoginIntent) {
@@ -80,6 +95,12 @@ constructor(
                 updateState { copy(isLoading = false) }
                 viewModelLogger.d { "사용자가 카카오 로그인을 취소했다" }
             }
+
+            is LoginIntent.DebugDoubleTap -> debugDoubleTapCount++
+
+            is LoginIntent.DebugLongPress -> enableDebugModeIfGestureMatched()
+
+            is LoginIntent.DisableDebugMode -> setDebugMode(enabled = false)
         }
     }
 
@@ -93,7 +114,7 @@ constructor(
             return
         }
         updateState { copy(isLoading = true) }
-        postSideEffect(LoginSideEffect.RequestLoginWithKakao)
+        postSideEffect(LoginSideEffect.RequestLoginWithKakao(forceAccountLogin = state.value.isDebugMode))
     }
 
     private fun requestServerLogin(
@@ -173,8 +194,38 @@ constructor(
         postSideEffect(LoginSideEffect.ShowError(error))
     }
 
+    private fun observeDebugMode() {
+        launch {
+            debugModeRepository.isEnabled.collect { enabled ->
+                updateState { copy(isDebugMode = enabled) }
+            }
+        }
+    }
+
+    /**
+     * 롱프레스는 성공하든 못 하든 카운터를 되돌린다 — 실패한 시도가 다음 시도에 누적되면
+     * 아무 데나 눌러도 열리는 제스처가 된다.
+     */
+    private fun enableDebugModeIfGestureMatched() {
+        val matched = debugDoubleTapCount == DEBUG_GESTURE_DOUBLE_TAP_COUNT
+        debugDoubleTapCount = 0
+
+        if (!matched) {
+            return
+        }
+
+        viewModelLogger.i { "디버그 모드를 켠다" }
+        setDebugMode(enabled = true)
+    }
+
+    private fun setDebugMode(enabled: Boolean) {
+        launch { debugModeRepository.setEnabled(enabled) }
+    }
+
     private companion object {
         /** [launch] 중복 실행 가드 키 — 이 ViewModel 의 서버 로그인 job 하나를 가리킨다 */
         const val KEY_KAKAO_LOGIN = "kakaoLogin"
+
+        const val DEBUG_GESTURE_DOUBLE_TAP_COUNT = 7
     }
 }
