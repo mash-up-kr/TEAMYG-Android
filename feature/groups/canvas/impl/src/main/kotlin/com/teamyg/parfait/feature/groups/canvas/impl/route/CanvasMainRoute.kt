@@ -34,6 +34,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import kotlinx.datetime.number
@@ -95,7 +96,7 @@ internal fun CanvasMainRoute(
                 )
 
                 is CanvasMainEffect.NavigateToCanvas -> navigator.goTo(
-                    destination = NavKeyCustomGalleryPicker(),
+                    destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
                 )
 
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(
