@@ -92,7 +92,7 @@ internal fun YGToppingGroupPreviewScreen(
                         chipType = YGGrouptagChipType.TYPE_3_4,
                         type = YGToppingGroupType.TYPE_2_RIGHT,
                     )
-                    // 가로로 긴 비정사각 원격 이미지가 96dp 밖으로 새지 않는지 확인용.
+                    // 가로로 긴 비정사각 원격 이미지가 잘리지 않고 96dp 안에 다 들어오는지 확인용.
                     YGToppingGroup(
                         image = YGToppingImage.Remote("https://picsum.photos/800/400"),
                         name = "비정사각",
