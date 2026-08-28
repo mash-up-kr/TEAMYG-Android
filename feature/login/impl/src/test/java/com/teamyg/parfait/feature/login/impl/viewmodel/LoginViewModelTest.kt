@@ -306,6 +306,7 @@ class LoginViewModelTest {
 
         // Then 켜지지 않는다
         assertFalse(repository.isEnabled.first())
+        assertFalse(viewModel.state.value.isDebugMode)
     }
 
     @Test

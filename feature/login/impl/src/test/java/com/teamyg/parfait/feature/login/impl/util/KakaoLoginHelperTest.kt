@@ -35,6 +35,36 @@ class KakaoLoginHelperTest {
         }
     }
 
+    /**
+     * `loginWithKakaoTalk` 도 콜백을 동기로 되돌려 줘야 `login` 이 매달리지 않는다.
+     * 실패를 돌려주면 프로덕션 코드가 계정 로그인으로 폴백하므로, 폴백까지 끝까지 보려면
+     * `stubAccountLoginWithFailure()` 도 함께 세워야 한다.
+     */
+    private fun stubKakaoTalkLoginWithFailure() {
+        every {
+            userApiClient.loginWithKakaoTalk(any(), any(), any(), any(), any(), any())
+        } answers {
+            val callback = lastArg<(OAuthToken?, Throwable?) -> Unit>()
+            callback(null, IllegalStateException("stub"))
+        }
+    }
+
+    @Test
+    fun login_default_usesKakaoTalkWhenAvailable() = runTest {
+        // Given 카카오톡을 쓸 수 있는 기기
+        every { userApiClient.isKakaoTalkLoginAvailable(any()) } returns true
+        stubKakaoTalkLoginWithFailure()
+        stubAccountLoginWithFailure()
+
+        // When 강제 없이 기본값으로 로그인한다
+        helper.login(activity = activity)
+
+        // Then 카카오톡 로그인 경로를 탄다 — 이 분기 조건이 이번 브랜치의 변경점이다
+        verify(exactly = 1) {
+            userApiClient.loginWithKakaoTalk(any(), any(), any(), any(), any(), any())
+        }
+    }
+
     @Test
     fun login_forceAccountLogin_skipsKakaoTalkEntirely() = runTest {
         // Given 카카오톡으로 로그인할 수 있는 기기

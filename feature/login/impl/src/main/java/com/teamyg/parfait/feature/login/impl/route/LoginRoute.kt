@@ -174,8 +174,8 @@ fun LoginRoute(
                     text = stringResource(R.string.login_debug_mode_badge),
                     style = YGTheme.typography.caption.c01R,
                     color = YGAtomicColors.Gray.Gray300,
-                    // `clickable` 을 `padding` 앞에 둬야 여백까지 탭 영역이 된다. 12sp 글자에
-                    // 사방 16dp 를 붙여야 최소 터치 타깃(48dp)에 닿는다 — 이 배지가 디버그
+                    // `clickable` 을 `padding` 앞에 둬야 여백까지 탭 영역이 된다 — 글자 자체는
+                    // 작아 최소 터치 타깃에 못 미치므로 패딩으로 넓혀야 한다. 이 배지가 디버그
                     // 모드를 끄는 유일한 경로다
                     modifier = Modifier
                         .align(Alignment.TopEnd)
