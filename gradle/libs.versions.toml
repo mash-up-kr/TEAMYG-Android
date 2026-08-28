@@ -5,8 +5,8 @@ targetSdk = "36"
 minSdk = "26"
 
 # App Version Setting
-appVersionCode = "4"
-appVersionName = "0.1.0"
+appVersionCode = "5"
+appVersionName = "0.1.1"
 previewVersionCode = "1"
 previewVersionName = "1.0.0"
 
