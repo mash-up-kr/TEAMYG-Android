@@ -25,11 +25,17 @@ constructor(
      * 로그인 1회분 nonce 를 만들어 SDK 요청에 넘기고, 성공 결과에 같은 값을 실어 돌려준다.
      * 카카오톡 로그인이 실패해 계정 로그인으로 넘어가도 **nonce 는 그대로 재사용**한다 —
      * 최종 성공한 로그인이 그 nonce 로 발급받은 ID 토큰을 주므로 서버 대조가 맞는다.
+     *
+     * @param forceAccountLogin 참이면 카카오톡 설치 여부를 묻지 않고 계정(웹) 로그인으로 간다.
+     *   디버그 모드가 이 값을 세운다(`specs/2026-08-28-login-debug-mode.md`).
      */
-    suspend fun login(activity: Activity): KakaoLoginResult {
+    suspend fun login(
+        activity: Activity,
+        forceAccountLogin: Boolean = false,
+    ): KakaoLoginResult {
         val nonce = nonceGenerator.generate()
 
-        return if (isKakaoTalkLoginAvailable(activity)) {
+        return if (!forceAccountLogin && isKakaoTalkLoginAvailable(activity)) {
             when (val result = loginWithKakaoTalk(activity, nonce)) {
                 is KakaoLoginResult.Success -> result
                 is KakaoLoginResult.Cancel -> result
