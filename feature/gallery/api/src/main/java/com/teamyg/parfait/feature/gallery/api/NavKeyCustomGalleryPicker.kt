@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NavKeyCustomGalleryPicker(
+    val recentImagePick: RecentImagePick,
     val showGuideToast: Boolean = true,
     val returnResultOnly: Boolean = false,
 ) : NavKey

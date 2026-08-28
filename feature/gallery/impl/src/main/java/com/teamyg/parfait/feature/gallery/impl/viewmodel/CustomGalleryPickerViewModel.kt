@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -72,6 +73,7 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 class CustomGalleryPickerViewModel
 @AssistedInject constructor(
     @Assisted private val returnResultOnly: Boolean,
+    @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
@@ -157,17 +159,19 @@ class CustomGalleryPickerViewModel
     }
 
     private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { images ->
-        // 배경 선택처럼 결과만 돌려주는 진입에는 알맹이를 싣지 않는다
-        val visible = when (returnResultOnly) {
-            true -> images.filter { it.kind == RecentImageKind.SOURCE }
-            false -> images
+        val wanted = when (recentImagePick) {
+            RecentImagePick.SOURCE -> RecentImageKind.SOURCE
+            RecentImagePick.CUTOUT -> RecentImageKind.CUTOUT
         }
 
-        updateState { copy(recentImages = visible) }
+        updateState { copy(recentImages = images.filter { it.kind == wanted }) }
     }
 
     @AssistedFactory
     interface Factory {
-        fun create(returnResultOnly: Boolean): CustomGalleryPickerViewModel
+        fun create(
+            returnResultOnly: Boolean,
+            recentImagePick: RecentImagePick,
+        ): CustomGalleryPickerViewModel
     }
 }
