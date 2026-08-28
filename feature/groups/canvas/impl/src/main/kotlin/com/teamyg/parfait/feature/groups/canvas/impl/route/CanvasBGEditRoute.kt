@@ -104,6 +104,7 @@ internal fun CanvasBGEditRoute(
 
     YGScaffoldV2(
         modifier = modifier,
+        isLoading = uiState.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
         CanvasBGEditScreen(

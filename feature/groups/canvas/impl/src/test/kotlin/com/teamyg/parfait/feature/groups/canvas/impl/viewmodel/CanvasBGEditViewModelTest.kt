@@ -44,6 +44,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -368,7 +369,7 @@ class CanvasBGEditViewModelTest {
             viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
 
             // Then 저장되지 않은 배경을 저장된 것처럼 넘기지 않는다
-            assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.UNKNOWN), awaitItem())
+            assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.BACKGROUND_SAVE_UNKNOWN), awaitItem())
         }
     }
 
@@ -491,7 +492,7 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun onClickConfirm_toppingUpdateFails_stillConfirmsBackground() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickConfirm_toppingUpdateFails_keepsTheScreenAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 옮겼는데 저장은 실패한다
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
@@ -505,9 +506,81 @@ class CanvasBGEditViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
 
-            // Then 크래시 없이 배경 확인은 그대로 진행된다
+            // Then 저장하지 못한 편집을 안은 채 화면을 닫지 않고, 실패만 알린다
+            assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.TOPPING_SAVE_UNKNOWN), awaitItem())
+            expectNoEvents()
+        }
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun onClickConfirm_toppingUpdateFails_keepsDirtyForRetry() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮겼는데 저장은 실패한다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        coEvery {
+            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns Result.failure(RuntimeException("실패"))
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 화면이 남아 다시 누를 수 있으므로, 못 보낸 토핑은 대상으로 남긴다
+        assertEquals(setOf(topping.parfaitImageId), viewModel.state.value.dirtyToppingIds)
+    }
+
+    @Test
+    fun onClickConfirm_everythingSaved_clearsDirtyAndConfirms() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮겼고 저장도 성공한다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        coEvery {
+            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns Result.success(mockk<UpdatedToppingVO>())
+
+        // When 확인 버튼을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+
+            // Then 화면을 넘긴다
             assertIs<CanvasBGEditEffect.ConfirmBackground>(awaitItem())
         }
+        assertTrue(
+            viewModel.state.value.dirtyToppingIds
+                .isEmpty(),
+        )
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun onClickConfirm_whileSaving_showsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 배경 저장이 아직 돌아오지 않는다
+        val pending = CompletableDeferred<Result<CanvasBackground?>>()
+        coEvery {
+            changeCanvasBackground(
+                GroupId(GROUP_ID),
+                ParfaitId(PARFAIT_ID),
+                CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()),
+            )
+        } coAnswers { pending.await() }
+        val viewModel = viewModel()
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 저장이 도는 동안 화면을 덮는다
+        assertEquals(true, viewModel.state.value.isLoading)
+
+        // 그리고 돌아오면 걷는다
+        pending.complete(Result.success(CanvasBackground.Color("#FF6B00")))
+        advanceUntilIdle()
+        assertEquals(false, viewModel.state.value.isLoading)
     }
 
     @Test
@@ -579,6 +652,30 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
+    fun deleteToppingDialogConfirm_useCaseSucceeds_refreshesThenLeaves() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 선택했고, 삭제 API 는 성공한다
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        coEvery {
+            deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(topping.parfaitImageId))
+        } returns Result.success(Unit)
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+
+            // Then 캔버스 화면으로 나간다
+            assertEquals(CanvasBGEditEffect.NavigateBack, awaitItem())
+        }
+        // 돌아간 캔버스가 지워진 목록을 보도록, 나가기 전에 갱신을 마친다
+        coVerifyOrder {
+            deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(topping.parfaitImageId))
+            refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
+        }
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun deleteToppingDialogConfirm_useCaseFails_keepsTopping() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 선택했고, 삭제 API 는 실패한다
         val viewModel = viewModel()
@@ -594,6 +691,46 @@ class CanvasBGEditViewModelTest {
             viewModel.state.value.toppings
                 .any { it.parfaitImageId == topping.parfaitImageId },
         )
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_useCaseFails_staysAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 선택했고, 삭제 API 는 실패한다
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        coEvery { deleteTopping(any(), any(), any()) } returns Result.failure(AppError.Network(null))
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+
+            // Then 화면을 넘기지 않고 실패만 알린다
+            assertEquals(CanvasBGEditEffect.ShowError(CanvasBGEditError.NETWORK), awaitItem())
+            expectNoEvents()
+        }
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_whileDeleting_showsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 삭제 요청이 아직 돌아오지 않는다
+        val pending = CompletableDeferred<Result<Unit>>()
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        coEvery { deleteTopping(any(), any(), any()) } coAnswers { pending.await() }
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+        advanceUntilIdle()
+
+        // Then 삭제가 도는 동안 화면을 덮고, 모달은 이미 닫혀 있다
+        assertEquals(true, viewModel.state.value.isLoading)
+        assertEquals(false, viewModel.state.value.showDeleteToppingDialog)
+
+        // 그리고 돌아오면 걷는다
+        pending.complete(Result.success(Unit))
+        advanceUntilIdle()
+        assertEquals(false, viewModel.state.value.isLoading)
     }
 
     @Test
