@@ -32,6 +32,9 @@
     <string name="invite_code_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="invite_code_error_unknown">잠시 후 다시 시도해 주세요</string>
 
+    <string name="group_create_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="group_create_error_unknown">잠시 후 다시 시도해 주세요</string>
+
     <string name="group_nickname_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="group_nickname_error_unknown">잠시 후 다시 시도해 주세요</string>
 </resources>
