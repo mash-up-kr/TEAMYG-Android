@@ -34,6 +34,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitSettledUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -42,6 +43,7 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -96,6 +98,8 @@ data class CanvasMainUiState(
     val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
     /** Spotlight 로 강조된 토핑. Default 상태면 null */
     val spotlightedToppingId: ParfaitImageId? = null,
+    /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
+    val isInitialLoading: Boolean = false,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -247,6 +251,7 @@ constructor(
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val observeParfaitDayBoundaryUseCase: ObserveParfaitDayBoundaryUseCase,
+    private val observeTodayParfaitSettledUseCase: ObserveTodayParfaitSettledUseCase,
     private val getParfaitDetailUseCase: GetParfaitDetailUseCase,
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
@@ -287,10 +292,18 @@ constructor(
             // MutableStateFlow 는 이미 값이 바뀔 때만 emit 하므로 distinctUntilChanged 가 필요 없다
             source = {
                 isViewingToday.flatMapLatest { viewingToday ->
-                    if (viewingToday) getTodayParfaitFlowUseCase(groupId) else emptyFlow()
+                    if (viewingToday) {
+                        combine(
+                            getTodayParfaitFlowUseCase(groupId),
+                            observeTodayParfaitSettledUseCase(groupId),
+                            ::Pair,
+                        )
+                    } else {
+                        emptyFlow()
+                    }
                 }
             },
-        ) { canvas ->
+        ) { (canvas, isSettled) ->
             updateState {
                 copy(
                     todayCanvas = canvas,
@@ -300,6 +313,9 @@ constructor(
                     spotlightedToppingId = spotlightedToppingId?.takeIf { id ->
                         canvas?.toppings.orEmpty().any { it.parfaitImageId == id }
                     },
+                    // 갱신의 결론이 나면 캔버스를 못 받았어도 덮개를 걷는다 — 덮개가 터치를
+                    // 삼키므로, 조회가 계속 실패하는 동안 남겨 두면 화면에서 빠져나갈 길이 없다
+                    isInitialLoading = canvas == null && isSettled.not(),
                 )
             }
         }

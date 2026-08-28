@@ -7,6 +7,11 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -50,6 +55,21 @@ class CanvasPoller @Inject constructor(
     /** [stopAll] 이 올린다. 그 전에 출발한 응답은 캐시에 싣지 않는다 */
     private var generation = 0
 
+    /**
+     * 구독이 시작된 뒤 갱신이 한 번은 끝난 그룹. [acquire] 가 빼고 [refresh] 가 끝나면 넣는다 —
+     * **성공과 실패를 가리지 않는다.**
+     *
+     * 화면이 초기 로딩 덮개를 걷는 근거다. 캐시에 캔버스가 실리기만 기다리면, 실패를 조용히
+     * 삼키는 이 구조에서는 네트워크가 막힌 동안 덮개가 터치를 삼킨 채 남아 사용자가 화면을
+     * 빠져나가지도 못한다.
+     */
+    private val settledGroups = MutableStateFlow<Set<GroupId>>(emptySet())
+
+    /** [settledGroups] 참고. 구독 시작 직후는 `false` 이고, 첫 갱신이 끝나면 `true` 가 된다 */
+    fun isSettled(groupId: GroupId): Flow<Boolean> = settledGroups
+        .map { groupId in it }
+        .distinctUntilChanged()
+
     /** 테스트 전용 — 계수 경합 테스트가 구독자와 폴 잡의 최종 상태를 나눠 관찰하는 데 쓴다 */
     internal fun hasSubscriberForTest(groupId: GroupId): Boolean =
         synchronized(lock) { subscriberCounts.containsKey(groupId) }
@@ -65,6 +85,8 @@ class CanvasPoller @Inject constructor(
         }
         if (isFirst.not()) return
 
+        // 이 구독의 첫 갱신은 아직 결론이 나지 않았다 — 덮개를 다시 씌울 근거를 만든다
+        settledGroups.update { it - groupId }
         restartPollTimer(groupId)
         scope.launch { refresh(groupId) }
     }
@@ -114,6 +136,7 @@ class CanvasPoller @Inject constructor(
             pollJobs.clear()
             subscriberCounts.clear()
             refreshing.clear()
+            settledGroups.value = emptySet()
         }
     }
 
@@ -164,6 +187,8 @@ class CanvasPoller @Inject constructor(
         } finally {
             synchronized(lock) {
                 if (refreshing[groupId] == startedGeneration) refreshing.remove(groupId)
+                // 세대가 바뀌었으면 이 응답은 남의 것이라 결론으로 세지 않는다
+                if (generation == startedGeneration) settledGroups.update { it + groupId }
             }
         }
     }

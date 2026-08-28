@@ -44,6 +44,8 @@ class ParfaitRepositoryImpl @Inject constructor(
         .onStart { canvasPoller.acquire(groupId) }
         .onCompletion { canvasPoller.release(groupId) }
 
+    override fun isTodayCanvasSettled(groupId: GroupId): Flow<Boolean> = canvasPoller.isSettled(groupId)
+
     /** [requestTodayCanvasRefresh] 의 suspend 판이다 — 호출부의 되감기 성질 차이만 다르다 */
     override suspend fun refreshTodayCanvasDetail(
         groupId: GroupId,

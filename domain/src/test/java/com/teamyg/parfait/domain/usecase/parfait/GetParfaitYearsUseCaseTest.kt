@@ -30,6 +30,8 @@ class GetParfaitYearsUseCaseTest {
 
         override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = error("연도 조회는 오늘 캔버스를 보지 않는다")
 
+        override fun isTodayCanvasSettled(groupId: GroupId): Flow<Boolean> = error("연도 조회는 오늘 캔버스를 보지 않는다")
+
         override suspend fun refreshTodayCanvasDetail(
             groupId: GroupId,
             parfaitId: ParfaitId,

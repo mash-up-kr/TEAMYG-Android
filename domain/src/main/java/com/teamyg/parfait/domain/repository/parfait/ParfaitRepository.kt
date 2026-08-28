@@ -27,6 +27,15 @@ interface ParfaitRepository {
     fun todayCanvas(groupId: GroupId): Flow<CanvasVO?>
 
     /**
+     * 구독이 시작된 뒤 오늘 캔버스 갱신이 한 번은 끝났는지. **성공과 실패를 가리지 않는다.**
+     *
+     * [todayCanvas] 만으로는 첫 조회가 아직 오는 중인지 실패해서 영영 오지 않는지 구분할 수
+     * 없다. 실패를 화면에 알리지 않기로 한 구조라 이 신호가 없으면 초기 로딩이 걷히지 않는다
+     * (`adr/0029-canvas-today-ssot-polling.md`).
+     */
+    fun isTodayCanvasSettled(groupId: GroupId): Flow<Boolean>
+
+    /**
      * 오늘 캔버스 캐시를 갱신한다. 호출부가 응답을 기다려야 하는 자리(예: 되감기 직전)에서
      * 쓴다 — 기다리지 않아도 되는 자리는 [requestTodayCanvasRefresh] 를 쓴다.
      *

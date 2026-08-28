@@ -35,6 +35,8 @@ class GetParfaitHistoriesUseCaseTest {
 
         override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = error("기록 조회는 오늘 캔버스를 보지 않는다")
 
+        override fun isTodayCanvasSettled(groupId: GroupId): Flow<Boolean> = error("기록 조회는 오늘 캔버스를 보지 않는다")
+
         override suspend fun refreshTodayCanvasDetail(
             groupId: GroupId,
             parfaitId: ParfaitId,

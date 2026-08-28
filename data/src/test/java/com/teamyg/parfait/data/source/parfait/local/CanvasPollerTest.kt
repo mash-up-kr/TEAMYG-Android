@@ -14,17 +14,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.minus
+import java.io.IOException
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 private val GROUP = GroupId(1L)
@@ -47,7 +50,9 @@ class CanvasPollerTest {
      */
     private class FakeRemote(
         private val response: CanvasVO,
-        private val gate: CompletableDeferred<Unit>? = null,
+        /** 도중에 바꿔 낄 수 있다 — 두 번째 구독의 갱신만 붙들어야 하는 테스트가 있다 */
+        var gate: CompletableDeferred<Unit>? = null,
+        private val failure: Throwable? = null,
     ) : ParfaitRemoteDataSource {
         var todayCallCount = 0
             private set
@@ -59,7 +64,7 @@ class CanvasPollerTest {
         override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> {
             todayCallCount++
             gate?.await()
-            return Result.success(response)
+            return failure?.let { Result.failure(it) } ?: Result.success(response)
         }
 
         override suspend fun getPastCanvases(
@@ -74,7 +79,7 @@ class CanvasPollerTest {
         ): Result<CanvasVO> {
             detailCallCount++
             gate?.await()
-            return Result.success(response)
+            return failure?.let { Result.failure(it) } ?: Result.success(response)
         }
 
         override suspend fun changeCanvasBackground(
@@ -94,6 +99,75 @@ class CanvasPollerTest {
 
         assertEquals(1, remote.todayCallCount)
         assertEquals(0, remote.detailCallCount)
+    }
+
+    @Test
+    fun isSettled_whileTheFirstRefreshIsInFlight_staysFalse() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val remote = FakeRemote(canvas(), gate = gate)
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+
+        assertFalse(poller.isSettled(GROUP).first())
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun isSettled_afterTheFirstRefreshFails_turnsTrue() = runTest {
+        // 실패해도 결론은 난다 — 화면은 이 신호로 초기 로딩 덮개를 걷는다
+        val remote = FakeRemote(canvas(), failure = IOException("네트워크가 막혔다"))
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+
+        assertTrue(poller.isSettled(GROUP).first())
+    }
+
+    @Test
+    fun isSettled_afterTheFirstRefreshSucceeds_turnsTrue() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+
+        assertTrue(poller.isSettled(GROUP).first())
+    }
+
+    @Test
+    fun acquire_afterAPreviousSubscription_makesTheNextRefreshUnsettledAgain() = runTest {
+        // 재진입마다 결론을 다시 낸다 — 낡은 결론이 남으면 새 구독의 로딩 덮개가 미리 걷힌다
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        assertTrue(poller.isSettled(GROUP).first())
+        poller.release(GROUP)
+
+        // 두 번째 구독의 갱신을 붙들어, 결론이 나기 전 상태를 관찰한다
+        val gate = CompletableDeferred<Unit>()
+        remote.gate = gate
+        poller.acquire(GROUP)
+        runCurrent()
+
+        assertFalse(poller.isSettled(GROUP).first())
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun stopAll_clearsTheSettledSignal() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        poller.stopAll()
+
+        assertFalse(poller.isSettled(GROUP).first())
     }
 
     @Test

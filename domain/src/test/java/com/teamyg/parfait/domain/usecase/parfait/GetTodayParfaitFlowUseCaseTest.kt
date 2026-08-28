@@ -28,6 +28,8 @@ class GetTodayParfaitFlowUseCaseTest {
     ) : ParfaitRepository {
         override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = canvas
 
+        override fun isTodayCanvasSettled(groupId: GroupId): Flow<Boolean> = error("이 유스케이스는 갱신 결론 신호를 보지 않는다")
+
         override suspend fun getYears(groupId: GroupId): Result<List<Int>> = error("구독 유스케이스는 연도를 보지 않는다")
 
         override suspend fun refreshTodayCanvasDetail(

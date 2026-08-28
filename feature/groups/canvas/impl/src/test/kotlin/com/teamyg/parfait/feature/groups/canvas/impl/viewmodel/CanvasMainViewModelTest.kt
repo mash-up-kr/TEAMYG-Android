@@ -31,6 +31,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
+import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitSettledUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -67,6 +68,7 @@ class CanvasMainViewModelTest {
     private val getParfaitYears: GetParfaitYearsUseCase = mockk()
     private val getTodayParfaitFlow: GetTodayParfaitFlowUseCase = mockk()
     private val observeParfaitDayBoundary: ObserveParfaitDayBoundaryUseCase = mockk()
+    private val observeTodayParfaitSettled: ObserveTodayParfaitSettledUseCase = mockk()
     private val getParfaitDetail: GetParfaitDetailUseCase = mockk()
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
@@ -76,6 +78,9 @@ class CanvasMainViewModelTest {
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
+
+    /** 오늘 캔버스 갱신의 결론이 났는지. 실패로 끝나도 `true` 라 [todayCanvases] 와 따로 움직인다 */
+    private val todayCanvasSettled = MutableStateFlow(true)
 
     private val today = parfaitToday()
 
@@ -102,6 +107,7 @@ class CanvasMainViewModelTest {
         )
         every { getTodayParfaitFlow(any(), any()) } returns todayCanvases
         every { observeParfaitDayBoundary(any()) } returns flowOf(today)
+        every { observeTodayParfaitSettled(any()) } returns todayCanvasSettled
         todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
@@ -119,6 +125,7 @@ class CanvasMainViewModelTest {
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitFlowUseCase = getTodayParfaitFlow,
         observeParfaitDayBoundaryUseCase = observeParfaitDayBoundary,
+        observeTodayParfaitSettledUseCase = observeTodayParfaitSettled,
         getParfaitDetailUseCase = getParfaitDetail,
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
@@ -693,6 +700,55 @@ class CanvasMainViewModelTest {
             // Then 없는 id 를 지어내 남의 날 캔버스를 고치게 두지 않는다
             expectNoEvents()
         }
+    }
+
+    @Test
+    fun enter_firstLoad_showsLoadingUntilTheCanvasArrives() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 콜드 스타트 — 캐시가 비어 있고 첫 갱신의 결론이 아직 나지 않았다
+        todayCanvases.value = null
+        todayCanvasSettled.value = false
+
+        // When 화면이 처음 앞에 선다
+        val viewModel = enteredViewModel()
+
+        // Then 빈 캔버스를 들여다보지 않도록 갱신이 도는 동안 로딩을 덮는다
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        // And 캔버스가 캐시에 실리면 덮개를 걷는다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+        todayCanvasSettled.value = true
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isInitialLoading)
+    }
+
+    @Test
+    fun enter_againWithTheCanvasLoaded_doesNotShowLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 이미 띄운 화면
+        val viewModel = enteredViewModel()
+
+        // When 자리를 비웠다 돌아와 갱신이 다시 나가고, 그 결론이 아직 나지 않았다
+        todayCanvasSettled.value = false
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        advanceUntilIdle()
+
+        // Then 보고 있던 캔버스 위로 딤이 번쩍이지 않는다
+        assertFalse(viewModel.state.value.isInitialLoading)
+    }
+
+    @Test
+    fun enter_firstLoadFails_clearsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 콜드 스타트에서 로딩이 덮인 채로 첫 갱신이 돌고 있다
+        todayCanvases.value = null
+        todayCanvasSettled.value = false
+        val viewModel = enteredViewModel()
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        // When 그 갱신이 실패로 끝나 캔버스가 실리지 않은 채 결론만 난다
+        todayCanvasSettled.value = true
+        advanceUntilIdle()
+
+        // Then 덮개가 터치를 삼킨 채 남지 않는다 — 남으면 화면에서 빠져나갈 길이 없다
+        assertFalse(viewModel.state.value.isInitialLoading)
     }
 
     private companion object {
