@@ -8,10 +8,13 @@ import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
+import dagger.Lazy
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -31,8 +34,11 @@ import javax.inject.Singleton
  * `OkHttpClient`** 를 탄다(`NetworkModule.provideUnauthenticatedOkHttpClient`). 그 클라이언트는 자기
  * `Dispatcher` 를 가져 `authenticate()` 가 점유한 메인 디스패처 슬롯과 경합하지 않고,
  * 인증기가 없으므로 재발급 자신의 401 이 이 인증기를 재진입시키지도 않는다.
- * 이 분리 덕분에 `Retrofit → OkHttpClient → Authenticator → AuthService` 순환도 사라져
- * `Provider` 지연 주입이 필요 없다.
+ * 이 분리 덕분에 `Retrofit → OkHttpClient → Authenticator → AuthService` 순환은 사라졌지만,
+ * [CanvasPoller] 가 세션 정리 때 필요해지면서 `TokenAuthenticator → CanvasPoller →
+ * ParfaitRemoteDataSource → 인증 Retrofit → OkHttpClient → TokenAuthenticator` 순환이
+ * 새로 생겼다. [canvasPoller] 를 [Lazy] 로 받는 이유가 그것이다 — 즉시 주입받으면 이 순환이
+ * 그대로 컴파일 타임에 걸린다.
  *
  * `runBlocking` 을 쓰는 이유: [Authenticator] 계약이 동기다. 저장소 읽기·재발급이 모두
  * `suspend` 라 다른 길이 없다 — `TokenStoreTokenProvider` 도 같은 이유로 같은 방식이다.
@@ -45,6 +51,8 @@ class TokenAuthenticator @Inject constructor(
     private val sessionEventBus: SessionEventBus,
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
     private val groupLocalDataSource: GroupLocalDataSource,
+    private val canvasLocalDataSource: CanvasLocalDataSource,
+    private val canvasPoller: Lazy<CanvasPoller>,
 ) : Authenticator {
     private val mutex = Mutex()
 
@@ -128,10 +136,14 @@ class TokenAuthenticator @Inject constructor(
                 // 구독해 화면 쪽에서 지우게 하면 이벤트가 유실될 때 토큰은 없는데 계정
                 // 정보만 남는 상태가 생긴다 — `:data` 안에서 끝내면 그 경로 자체가 없다.
                 tokenStore.clear()
-                // 그룹 캐시는 인메모리(StateFlow 대입 두 번)라 던지지 않는다 — 던지지 않는 정리를
-                // 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO 실패가
-                // 그룹 캐시 정리까지 막지 않게 한다.
+                // 그룹 캐시·오늘 캔버스 캐시는 둘 다 인메모리라 던지지 않는다 — 던지지 않는
+                // 정리를 먼저 해서, 뒤이은 userInfoLocalDataSource.clear() 의 DataStore IO
+                // 실패가 그 정리까지 막지 않게 한다.
                 groupLocalDataSource.clear()
+                // 캐시를 지우기 전에 폴러부터 세운다 — 순서가 반대면 이미 출발한 응답이
+                // clear() 직후의 빈 캐시를 되살릴 수 있다.
+                canvasPoller.get().stopAll()
+                canvasLocalDataSource.clear()
                 userInfoLocalDataSource.clear()
             } else {
                 // 연결 실패·서버 장애로 2주짜리 refresh token 을 버리지 않는다.
