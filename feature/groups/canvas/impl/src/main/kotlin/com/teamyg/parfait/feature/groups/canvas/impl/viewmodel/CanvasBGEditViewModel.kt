@@ -105,6 +105,11 @@ data class CanvasBGEditUiState(
     val selectedToppingId: Long? = null,
     val showDeleteToppingDialog: Boolean = false,
     /**
+     * 확인·삭제가 서버 왕복을 도는 동안 화면을 덮는다. 둘 다 그 왕복이 끝나야 캔버스로
+     * 넘어가므로, 덮지 않으면 누른 뒤 멈춘 것처럼 보이고 연타가 그대로 들어간다.
+     */
+    val isLoading: Boolean = false,
+    /**
      * 아직 서버에 반영되지 않은 로컬 변경. 이동·크기조절·회전·테두리 편집이 여기 든다.
      *
      * **삭제는 넣지 않는다** — 삭제 모달의 확인이 곧 DELETE 라 이미 서버에 반영돼 있고,
@@ -406,27 +411,38 @@ constructor(
         updateState { copy(selectedToppingId = null) }
     }
 
+    /**
+     * 지운 뒤에는 캔버스로 돌아간다 — 편집할 대상이 사라진 화면에 남을 이유가 없다.
+     *
+     * 되감기를 갱신 뒤로 미루는 이유는 [saveBackground] 와 같다. 먼저 쏘면 라우트가 되감기며
+     * `viewModelScope` 가 취소돼 갱신이 끊기고, 캔버스 메인이 방금 지운 토핑을 그대로 그린 채 선다.
+     * 그 왕복 동안은 화면을 덮어 연타를 막는다.
+     */
     private fun handleOnDeleteToppingDialogConfirm() {
         val selectedId = state.value.selectedToppingId ?: return
 
-        updateState { copy(showDeleteToppingDialog = false) }
+        updateState { copy(showDeleteToppingDialog = false, isLoading = true) }
 
         launch(key = DELETE_TOPPING_KEY) {
-            deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(selectedId))
-                .onSuccess {
-                    updateState {
-                        copy(
-                            toppings = toppings.filterNot { it.parfaitImageId == selectedId },
-                            deletedToppingIds = deletedToppingIds + selectedId,
-                            dirtyToppingIds = dirtyToppingIds - selectedId,
-                            selectedToppingId = null,
-                        )
+            try {
+                deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(selectedId))
+                    .onSuccess {
+                        updateState {
+                            copy(
+                                toppings = toppings.filterNot { it.parfaitImageId == selectedId },
+                                deletedToppingIds = deletedToppingIds + selectedId,
+                                dirtyToppingIds = dirtyToppingIds - selectedId,
+                                selectedToppingId = null,
+                            )
+                        }
+                        refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+                        postSideEffect(effect = CanvasBGEditEffect.NavigateBack)
+                    }.onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $selectedId" }
                     }
-                    // 화면이 아직 남아 있어 호출자 코루틴에서 기다려도 된다
-                    refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $selectedId" }
-                }
+            } finally {
+                updateState { copy(isLoading = false) }
+            }
         }
     }
 
@@ -537,13 +553,23 @@ constructor(
      */
     private fun handleOnClickConfirm() {
         launch(key = CONFIRM_KEY) {
-            updateDirtyToppings()
-            // 성공·실패를 가리지 않고, saveBackground() 보다 먼저 비운다 — 그래서 뒤이어
-            // 배경 저장이 실패해 화면이 남아도 재시도는 이 토핑들을 다시 대상으로 잡지 않는다
-            // (현 as-built의 "토핑 저장 실패는 화면에 닿지 않는다"를 승계, 공백은 OQ-P-276 소관)
-            updateState { copy(dirtyToppingIds = emptySet()) }
+            updateState { copy(isLoading = true) }
 
-            saveBackground()
+            try {
+                // 비우기 전에 기억해 둔다 — 배경을 손대지 않은 갈래에서 캐시 갱신이 필요한지는
+                // 이 값으로만 알 수 있다([saveBackground] 참고)
+                val hasSavedToppings = state.value.dirtyToppingIds.isNotEmpty()
+
+                updateDirtyToppings()
+                // 성공·실패를 가리지 않고, saveBackground() 보다 먼저 비운다 — 그래서 뒤이어
+                // 배경 저장이 실패해 화면이 남아도 재시도는 이 토핑들을 다시 대상으로 잡지 않는다
+                // (현 as-built의 "토핑 저장 실패는 화면에 닿지 않는다"를 승계, 공백은 OQ-P-276 소관)
+                updateState { copy(dirtyToppingIds = emptySet()) }
+
+                saveBackground(hasSavedToppings = hasSavedToppings)
+            } finally {
+                updateState { copy(isLoading = false) }
+            }
         }
     }
 
@@ -608,12 +634,21 @@ constructor(
         return ToppingBorder.Solid(color = layer.colorArgb.toRgbHexString(), width = layer.widthDp.toDouble())
     }
 
-    private suspend fun saveBackground() {
+    /**
+     * @param hasSavedToppings 확인이 토핑을 서버에 썼는지. 배경을 손대지 않으면 이 함수가 아무
+     *   요청도 보내지 않는데, 그 갈래에도 캐시 갱신은 필요하다 — 확인 버튼도 쓰기이기 때문이다.
+     */
+    private suspend fun saveBackground(hasSavedToppings: Boolean) {
         val current = state.value
         val imageUri = current.selectedImageUri
 
-        // 서버 배경을 그대로 둔 채 확인만 누른 경우다 — 바뀐 것이 없어 요청할 것도 없다
+        // 서버 배경을 그대로 둔 채 확인만 누른 경우다 — 배경은 요청할 것이 없다
         if (imageUri != null && current.selectedImageSource == null) {
+            // 토핑을 썼다면 캐시가 낡았다. 폴링 주기를 기다리면 돌아간 캔버스 메인이 방금
+            // 옮긴 토핑을 옛 자리에 그린 채 선다
+            if (hasSavedToppings) {
+                refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+            }
             postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(YGCanvasBackground.Image(imageUri)))
             return
         }

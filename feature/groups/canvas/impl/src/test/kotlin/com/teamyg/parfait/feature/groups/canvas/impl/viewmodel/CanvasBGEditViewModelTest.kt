@@ -44,10 +44,12 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import org.junit.After
@@ -55,6 +57,7 @@ import org.junit.Before
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -802,6 +805,92 @@ class CanvasBGEditViewModelTest {
         coVerify(exactly = 0) {
             updateTopping(any(), any(), ParfaitImageId(SECOND_IMAGE_ID), any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun clickConfirm_withDirtyToppingsAndUntouchedImageBackground_forcesTheRefresh() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 저장된 이미지 배경은 그대로 두고, 내 토핑만 옮겨 둔 화면
+            todayCanvases.value = canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL))
+            coEvery { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+                Result.success(updatedTopping())
+            val viewModel = viewModel()
+            viewModel.selectMyTopping()
+            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+
+            // When 확인
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then 배경 저장 경로를 타지 않아도 캐시를 갱신한다 — 돌아간 캔버스 메인이
+            // 폴링 주기만큼 낡은 토핑을 그리면 안 된다
+            coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
+        }
+
+    @Test
+    fun clickConfirm_whileSaving_coversTheScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑 저장이 응답을 붙들고 있다
+        todayCanvases.value = canvas(background = CanvasBackground.Image(SAVED_IMAGE_URL))
+        val gate = CompletableDeferred<Unit>()
+        coEvery { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) } coAnswers {
+            gate.await()
+            Result.success(updatedTopping())
+        }
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+
+        // When 확인을 눌렀는데 응답이 아직 오지 않았다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        runCurrent()
+
+        // Then 저장과 갱신이 끝날 때까지 화면을 덮는다 — 그 사이 연타가 들어가면 안 된다
+        assertTrue(viewModel.state.value.isLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_useCaseSucceeds_goesBackToTheCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 선택했고, 삭제 API 는 성공한다
+        val viewModel = viewModel()
+        val topping = viewModel.selectMyTopping()
+        coEvery {
+            deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(topping.parfaitImageId))
+        } returns Result.success(Unit)
+
+        // When 삭제 모달의 "삭제하기" 를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+
+            // Then 캔버스로 돌아간다 — 지운 토핑을 편집하러 남아 있을 이유가 없다
+            assertIs<CanvasBGEditEffect.NavigateBack>(awaitItem())
+        }
+    }
+
+    @Test
+    fun deleteToppingDialogConfirm_whileDeleting_coversTheScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 삭제 요청이 응답을 붙들고 있다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { deleteTopping(any(), any(), any()) } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+
+        // When 삭제하기를 눌렀는데 응답이 아직 오지 않았다
+        viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogConfirm)
+        runCurrent()
+
+        // Then 되감기까지 화면을 덮는다
+        assertTrue(viewModel.state.value.isLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isLoading)
     }
 
     private fun canvas(
