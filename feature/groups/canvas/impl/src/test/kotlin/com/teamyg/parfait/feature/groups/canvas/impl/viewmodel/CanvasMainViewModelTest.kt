@@ -37,9 +37,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -636,6 +638,61 @@ class CanvasMainViewModelTest {
             // Then 없는 id 를 지어내 남의 날 캔버스를 고치게 두지 않는다
             expectNoEvents()
         }
+    }
+
+    @Test
+    fun enter_firstLoad_showsLoadingUntilTheCanvasArrives() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스 조회가 응답을 붙들고 있다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { getTodayParfait(any()) } coAnswers {
+            gate.await()
+            Result.success(canvas(TODAY_PARFAIT_ID, today))
+        }
+
+        // When 화면이 처음 앞에 선다
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        runCurrent()
+
+        // Then 빈 캔버스를 들여다보지 않도록 조회가 도는 동안 로딩을 덮는다
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isInitialLoading)
+    }
+
+    @Test
+    fun enter_againWithTheCanvasLoaded_doesNotShowLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스를 이미 띄운 화면
+        val viewModel = enteredViewModel()
+
+        // When 자리를 비웠다 돌아와 조회가 다시 나가고, 그 응답이 아직 오지 않았다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { getTodayParfait(any()) } coAnswers {
+            gate.await()
+            Result.success(canvas(TODAY_PARFAIT_ID, today))
+        }
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        runCurrent()
+
+        // Then 보고 있던 캔버스 위로 딤이 번쩍이지 않는다
+        assertFalse(viewModel.state.value.isInitialLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun enter_firstLoadFails_clearsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 오늘 캔버스 조회가 실패한다
+        coEvery { getTodayParfait(any()) } returns Result.failure(AppError.Network(cause = null))
+
+        // When 화면이 처음 앞에 선다
+        val viewModel = enteredViewModel()
+
+        // Then 로딩이 걸린 채 남지 않는다 — 실패는 토스트가 말한다
+        assertFalse(viewModel.state.value.isInitialLoading)
     }
 
     private companion object {

@@ -86,6 +86,8 @@ data class CanvasMainUiState(
     val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
     /** Spotlight 로 강조된 토핑. Default 상태면 null */
     val spotlightedToppingId: ParfaitImageId? = null,
+    /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
+    val isInitialLoading: Boolean = false,
 ) : UiState {
     /** 미설정이면 null. 그때는 [YGCanvas] 의 기본 배경이 그려진다 */
     val canvasBackground: CanvasBackground?
@@ -302,22 +304,33 @@ constructor(
      */
     private fun loadTodayCanvas() {
         launch(key = LOAD_TODAY_CANVAS_KEY) {
-            getTodayParfaitUseCase(groupId)
-                .onSuccess { canvas ->
-                    updateState {
-                        copy(
-                            todayCanvas = canvas,
-                            // 응답을 기다리는 사이 지난 날로 옮겼다면 그 화면을 덮지 않는다
-                            viewedCanvas = if (isViewingToday) canvas else viewedCanvas,
-                            memberChips = canvas.members.toMemberChips(),
-                        )
+            // 조회는 재진입마다 나가므로, 캔버스가 없을 때로 좁히지 않으면 돌아올 때마다 이미
+            // 그려진 캔버스 위로 덮개가 번쩍인다. 가드에 막히면 이 블록이 아예 돌지 않아,
+            // 밖에서 켜면 내려 줄 finally 가 없다.
+            if (state.value.todayCanvas == null) {
+                updateState { copy(isInitialLoading = true) }
+            }
+
+            try {
+                getTodayParfaitUseCase(groupId)
+                    .onSuccess { canvas ->
+                        updateState {
+                            copy(
+                                todayCanvas = canvas,
+                                // 응답을 기다리는 사이 지난 날로 옮겼다면 그 화면을 덮지 않는다
+                                viewedCanvas = if (isViewingToday) canvas else viewedCanvas,
+                                memberChips = canvas.members.toMemberChips(),
+                            )
+                        }
+                    }.onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
+                        if (state.value.todayCanvas == null) {
+                            postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
+                        }
                     }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "오늘 캔버스를 불러오지 못했다 - groupId: ${groupId.value}" }
-                    if (state.value.todayCanvas == null) {
-                        postSideEffect(CanvasMainEffect.ShowTodayCanvasError)
-                    }
-                }
+            } finally {
+                updateState { copy(isInitialLoading = false) }
+            }
         }
     }
 
