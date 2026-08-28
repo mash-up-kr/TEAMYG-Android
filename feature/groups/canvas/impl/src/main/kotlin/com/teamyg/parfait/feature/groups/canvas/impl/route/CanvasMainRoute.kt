@@ -38,6 +38,9 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import kotlinx.datetime.number
 
+/** 작성자 정보는 지금 강조된 토핑의 것 하나만 보여야 한다. */
+private const val SPOTLIGHT_TOAST_TAG = "spotlight"
+
 @Composable
 internal fun CanvasMainRoute(
     groupId: Long,
@@ -125,11 +128,12 @@ internal fun CanvasMainRoute(
                 }
 
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
-                    YGToastType.Record(
+                    type = YGToastType.Record(
                         userName = effect.nickname,
                         time = effect.elapsed.toSpotlightTimeLabel(context),
                         userNameColor = effect.nicknameColor,
                     ),
+                    replaceTag = SPOTLIGHT_TOAST_TAG,
                 )
 
                 is CanvasMainEffect.ShowTodayCanvasError -> toastPolicy.showError(todayCanvasErrorMessage)
