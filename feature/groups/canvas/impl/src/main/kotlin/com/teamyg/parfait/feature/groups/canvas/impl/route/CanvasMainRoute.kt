@@ -146,7 +146,10 @@ internal fun CanvasMainRoute(
         onStopOrDispose { }
     }
 
-    YGScaffoldV2(modifier = modifier) { innerPadding ->
+    YGScaffoldV2(
+        modifier = modifier,
+        isLoading = canvasState.isInitialLoading,
+    ) { innerPadding ->
         CanvasMainScreen(
             canvasState = canvasState,
             onClickBack = { navigator.onBack() },
