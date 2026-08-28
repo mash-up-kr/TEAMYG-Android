@@ -193,8 +193,8 @@ class RecentImageRepositoryImplTest {
     }
 
     @Test
-    fun addAndGetEvictedCacheFileName_atMaxSize_evictsOldestAndKeepsSizeAtNine() = runTest {
-        // Given 이미 MAX_SIZE(9)개가 저장돼 있다
+    fun addAndGetEvictedCacheFileName_atMaxSizeOfSameKind_evictsOldestOfThatKind() = runTest {
+        // Given 원본이 정원(9)을 다 채우고 있다
         val existing = (1..9).map { index ->
             RecentImageEntity(uri = "content://recent/$index.jpg", kind = RecentImageKindEntity.SOURCE)
         }
@@ -214,5 +214,93 @@ class RecentImageRepositoryImplTest {
         assertEquals(9, encoded.captured.size)
         assertTrue(encoded.captured.none { it.uri == "content://recent/1.jpg" })
         assertTrue(encoded.captured.any { it.uri == "content://recent/10.jpg" })
+    }
+
+    @Test
+    fun addAndGetEvictedCacheFileName_atMaxSizeOfOtherKind_doesNotEvictAcrossKinds() = runTest {
+        // Given 원본이 정원(9)을 다 채우고 있다
+        val existing = (1..9).map { index ->
+            RecentImageEntity(uri = "content://recent/$index.jpg", kind = RecentImageKindEntity.SOURCE)
+        }
+        val encoded = slot<List<RecentImageEntity>>()
+        every { localDataSource.decodeValue(any()) } returns existing
+        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
+        stubEdit()
+
+        // When 알맹이 한 개를 추가한다
+        val evicted = repository().addAndGetEvictedCacheFileName(
+            uri = "content://recent/cutout.png",
+            kind = RecentImageKind.CUTOUT,
+        )
+
+        // Then 정원은 종류마다 따로라 원본은 하나도 밀려나지 않는다
+        assertEquals(emptyList(), evicted)
+        assertEquals(10, encoded.captured.size)
+        assertEquals(9, encoded.captured.count { it.kind == RecentImageKindEntity.SOURCE })
+        assertTrue(encoded.captured.any { it.uri == "content://recent/cutout.png" })
+    }
+
+    @Test
+    fun addAndGetEvictedCacheFileName_whenOneKindOverflows_keepsInsertionOrderAcrossKinds() = runTest {
+        // Given 원본이 정원을 채운 목록 사이에 알맹이 하나가 끼어 있다
+        val existing = listOf(
+            RecentImageEntity(uri = "content://recent/s1.jpg", kind = RecentImageKindEntity.SOURCE),
+            RecentImageEntity(uri = "content://recent/c1.png", kind = RecentImageKindEntity.CUTOUT),
+        ) + (2..9).map { index ->
+            RecentImageEntity(uri = "content://recent/s$index.jpg", kind = RecentImageKindEntity.SOURCE)
+        }
+        val encoded = slot<List<RecentImageEntity>>()
+        every { localDataSource.decodeValue(any()) } returns existing
+        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
+        stubEdit()
+
+        // When 원본을 하나 더 넣어 원본 쪽만 넘치게 한다
+        repository().addAndGetEvictedCacheFileName(
+            uri = "content://recent/s10.jpg",
+            kind = RecentImageKind.SOURCE,
+        )
+
+        // Then 종류별로 잘라도 시간순은 그대로다 — 종류끼리 뭉치면 최근 목록의 정렬이 깨진다
+        assertEquals(
+            listOf(
+                "content://recent/c1.png",
+                "content://recent/s2.jpg",
+                "content://recent/s3.jpg",
+                "content://recent/s4.jpg",
+                "content://recent/s5.jpg",
+                "content://recent/s6.jpg",
+                "content://recent/s7.jpg",
+                "content://recent/s8.jpg",
+                "content://recent/s9.jpg",
+                "content://recent/s10.jpg",
+            ),
+            encoded.captured.map(RecentImageEntity::uri),
+        )
+    }
+
+    @Test
+    fun addAndGetEvictedCacheFileName_atMaxSizeOfCutout_evictsOldestCutoutOnly() = runTest {
+        // Given 알맹이가 정원(9)을 채우고 원본도 둘 있다
+        val existing = (1..9).map { index ->
+            RecentImageEntity(uri = "content://recent/c$index.png", kind = RecentImageKindEntity.CUTOUT)
+        } + listOf(
+            RecentImageEntity(uri = "content://recent/s1.jpg", kind = RecentImageKindEntity.SOURCE),
+            RecentImageEntity(uri = "content://recent/s2.jpg", kind = RecentImageKindEntity.SOURCE),
+        )
+        val encoded = slot<List<RecentImageEntity>>()
+        every { localDataSource.decodeValue(any()) } returns existing
+        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
+        stubEdit()
+
+        // When 알맹이를 하나 더 넣는다
+        val evicted = repository().addAndGetEvictedCacheFileName(
+            uri = "content://recent/c10.png",
+            kind = RecentImageKind.CUTOUT,
+        )
+
+        // Then 밀려나는 것은 가장 오래된 알맹이 하나뿐이고 원본은 그대로다
+        assertEquals(listOf("content://recent/c1.png"), evicted)
+        assertEquals(9, encoded.captured.count { it.kind == RecentImageKindEntity.CUTOUT })
+        assertEquals(2, encoded.captured.count { it.kind == RecentImageKindEntity.SOURCE })
     }
 }
