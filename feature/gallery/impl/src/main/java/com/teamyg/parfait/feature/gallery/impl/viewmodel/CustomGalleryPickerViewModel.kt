@@ -157,13 +157,13 @@ class CustomGalleryPickerViewModel
     }
 
     private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { images ->
-        // 배경 선택처럼 결과만 돌려주는 진입에는 알맹이를 싣지 않는다
-        val visible = when (returnResultOnly) {
-            true -> images.filter { it.kind == RecentImageKind.SOURCE }
-            false -> images
+        // 배경엔 투명 알맹이가 오면 안 되고, 토핑엔 원본까지 실으면 같은 사진이 두 번 뜬다(OQ-P-258)
+        val wanted = when (returnResultOnly) {
+            true -> RecentImageKind.SOURCE
+            false -> RecentImageKind.CUTOUT
         }
 
-        updateState { copy(recentImages = visible) }
+        updateState { copy(recentImages = images.filter { it.kind == wanted }) }
     }
 
     @AssistedFactory

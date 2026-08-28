@@ -56,15 +56,15 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun recentImages_whenToppingFlow_showsBoth() = runTest(mainDispatcherRule.dispatcher) {
+    fun recentImages_whenToppingFlow_hidesSource() = runTest(mainDispatcherRule.dispatcher) {
         // Given 토핑 만들기 진입
         val viewModel = createViewModel(returnResultOnly = false)
 
         // When 목록이 흘러온다
         advanceUntilIdle()
 
-        // Then 종류를 가리지 않는다
-        assertEquals(listOf(source, cutout), viewModel.state.value.recentImages)
+        // Then 원본은 안 보인다 — 한 흐름이 남긴 두 장이 같은 사진으로 나란히 뜨는 것을 막는다
+        assertEquals(listOf(cutout), viewModel.state.value.recentImages)
     }
 
     @Test

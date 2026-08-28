@@ -56,11 +56,18 @@ constructor(
 
         recentImageLocalDataSource.edit { prefs ->
             val current: List<RecentImageEntity> = recentImageLocalDataSource.decodeValue(prefs.get())
-            val updated: List<RecentImageEntity> = (
-                current.filterNot { it.uri == uri } +
-                    listOf(RecentImageEntity(uri = uri, kind = kind.toEntity()))
-                ).takeLast(MAX_SIZE)
-            val keptUris: List<String> = updated.map(RecentImageEntity::uri)
+            val appended: List<RecentImageEntity> = current.filterNot { it.uri == uri } +
+                listOf(RecentImageEntity(uri = uri, kind = kind.toEntity()))
+
+            // 정원을 종류별로 나눈다 — 한 목록으로 자르면 원본이 알맹이를 밀어낸다.
+            // 자른 결과가 아니라 appended 를 다시 거르는 것은 순서 때문이다 — 종류끼리 뭉치면 시간순이 깨진다
+            val keptUris: Set<String> = appended
+                .groupBy(RecentImageEntity::kind)
+                .values
+                .flatMap { entities -> entities.takeLast(MAX_SIZE_PER_KIND) }
+                .map(RecentImageEntity::uri)
+                .toSet()
+            val updated: List<RecentImageEntity> = appended.filter { it.uri in keptUris }
 
             evicted = current.filterNot { it.uri in keptUris }.map(RecentImageEntity::uri)
             prefs.set(recentImageLocalDataSource.encodeValue(updated))
@@ -126,6 +133,6 @@ constructor(
     }
 
     companion object {
-        private const val MAX_SIZE: Int = 9
+        private const val MAX_SIZE_PER_KIND: Int = 9
     }
 }
