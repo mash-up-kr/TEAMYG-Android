@@ -132,36 +132,45 @@ class GroupNickNameViewModelTest {
             viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
             advanceUntilIdle()
 
-            // Then 닉네임은 보내지 않고 팝업을 닫은 뒤 사유가 붙는다
+            // Then 닉네임은 보내지 않고 사유만 알린 뒤 화면에 머문다
             coVerify(exactly = 0) { changeGroupNickname(any(), any()) }
+            assertEquals(
+                GroupNickNameSideEffect.ShowError(GroupNickNameError.MEMBER_LIMIT_REACHED),
+                awaitItem(),
+            )
             expectNoEvents()
-            val state = viewModel.state.value
-            assertFalse(state.isConfirmPopupVisible)
-            assertEquals(GroupNickNameError.MEMBER_LIMIT_REACHED, state.submitError)
+            assertFalse(viewModel.state.value.isConfirmPopupVisible)
         }
     }
 
     @Test
-    fun clickConfirmPopupEnter_nicknameFails_stillEntersTheGroup() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여는 됐지만 서버가 400 INVALID_GROUP_NICKNAME 으로 응답
-        givenJoinSucceeds()
-        coEvery { changeGroupNickname(any(), any()) } returns Result.failure(
-            AppError.Server(code = "INVALID_GROUP_NICKNAME", statusCode = 400, serverMessage = "…"),
-        )
-        val viewModel = confirmingViewModel()
+    fun clickConfirmPopupEnter_nicknameFails_tellsNicknameKeptBeforeMovingOn() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 참여는 됐지만 서버가 400 INVALID_GROUP_NICKNAME 으로 응답
+            givenJoinSucceeds()
+            coEvery { changeGroupNickname(any(), any()) } returns Result.failure(
+                AppError.Server(code = "INVALID_GROUP_NICKNAME", statusCode = 400, serverMessage = "…"),
+            )
+            val viewModel = confirmingViewModel()
 
-        viewModel.effect.test {
-            // When 팝업의 참여하기 클릭
-            viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
-            advanceUntilIdle()
+            viewModel.effect.test {
+                // When 팝업의 참여하기 클릭
+                viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
+                runCurrent()
 
-            // Then 참여 자체는 끝났으므로 전역 닉네임을 그대로 둔 채 다음 화면으로 간다
-            assertEquals(GroupNickNameSideEffect.NavigateToNext, awaitItem())
-            val state = viewModel.state.value
-            assertFalse(state.isConfirmPopupVisible)
-            assertNull(state.submitError)
+                // Then 안내를 띄우고, 그것이 사라지기 전에는 화면을 넘기지 않는다
+                assertEquals(
+                    GroupNickNameSideEffect.ShowError(GroupNickNameError.NICKNAME_NOT_APPLIED),
+                    awaitItem(),
+                )
+                expectNoEvents()
+
+                // 그리고 참여 자체는 끝났으므로 전역 닉네임을 그대로 둔 채 다음 화면으로 간다
+                advanceUntilIdle()
+                assertEquals(GroupNickNameSideEffect.NavigateToNext, awaitItem())
+                assertFalse(viewModel.state.value.isConfirmPopupVisible)
+            }
         }
-    }
 
     @Test
     fun clickConfirmPopupEnter_networkFails_showsNetworkError() = runTest(mainDispatcherRule.dispatcher) {
@@ -169,13 +178,57 @@ class GroupNickNameViewModelTest {
         coEvery { joinGroup(any()) } returns Result.failure(AppError.Network(cause = null))
         val viewModel = confirmingViewModel()
 
-        // When 팝업의 참여하기 클릭
-        viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
-        advanceUntilIdle()
+        viewModel.effect.test {
+            // When 팝업의 참여하기 클릭
+            viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
+            advanceUntilIdle()
 
-        // Then 네트워크 사유가 붙고 다시 시도할 수 있는 상태로 돌아온다
-        assertEquals(GroupNickNameError.NETWORK, viewModel.state.value.submitError)
-        assertFalse(viewModel.state.value.isEntering)
+            // Then 네트워크 사유를 알리고 다시 시도할 수 있는 상태로 돌아온다
+            assertEquals(GroupNickNameSideEffect.ShowError(GroupNickNameError.NETWORK), awaitItem())
+            assertFalse(viewModel.state.value.isEntering)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun clickConfirmPopupEnter_joinThrows_showsUnknownError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given UseCase 가 Result.failure 가 아니라 예외를 그대로 던진다
+        coEvery { joinGroup(any()) } throws IllegalStateException("boom")
+        val viewModel = confirmingViewModel()
+
+        viewModel.effect.test {
+            // When 팝업의 참여하기 클릭
+            viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
+            advanceUntilIdle()
+
+            // Then 로딩만 걷히고 끝나지 않도록 사유를 알린다
+            assertEquals(GroupNickNameSideEffect.ShowError(GroupNickNameError.UNKNOWN), awaitItem())
+            assertFalse(viewModel.state.value.isEntering)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun clickConfirmPopupEnter_closesPopupBeforeResponseArrives() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 응답이 아직 오지 않은 참여 요청
+        val gate = CompletableDeferred<Unit>()
+        coEvery { joinGroup(any()) } coAnswers {
+            gate.await()
+            Result.success(JoinedGroupVO(groupId = GroupId(GROUP_ID), groupName = GroupName(GROUP_NAME)))
+        }
+        givenChangeSucceeds()
+        val viewModel = confirmingViewModel()
+
+        // When 참여하기를 누른다
+        viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
+        runCurrent()
+
+        // Then 팝업은 곧바로 사라지고 로딩만 남는다
+        assertFalse(viewModel.state.value.isConfirmPopupVisible)
+        assertTrue(viewModel.state.value.isEntering)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
     }
 
     @Test
@@ -203,44 +256,16 @@ class GroupNickNameViewModelTest {
     }
 
     @Test
-    fun dismissConfirmPopup_whileEntering_keepsPopupOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여 요청이 도는 중
-        val gate = CompletableDeferred<Unit>()
-        coEvery { joinGroup(any()) } coAnswers {
-            gate.await()
-            Result.success(JoinedGroupVO(groupId = GroupId(GROUP_ID), groupName = GroupName(GROUP_NAME)))
-        }
-        givenChangeSucceeds()
-        val viewModel = confirmingViewModel()
-        viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
-        runCurrent()
-
-        // When 팝업 바깥을 눌러 닫으려 한다
-        viewModel.processIntent(GroupNickNameIntent.DismissConfirmPopup)
-        runCurrent()
-
-        // Then 요청이 도는 동안에는 닫히지 않는다 — 참여 결과를 못 본 채로 화면이 남으면 안 된다
-        assertTrue(viewModel.state.value.isConfirmPopupVisible)
-
-        gate.complete(Unit)
-        advanceUntilIdle()
-    }
-
-    @Test
-    fun inputWord_afterFailure_clearsBothErrors() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버 실패로 사유가 붙은 화면
-        coEvery { joinGroup(any()) } returns Result.failure(AppError.Network(cause = null))
-        val viewModel = confirmingViewModel()
-        viewModel.processIntent(GroupNickNameIntent.ClickConfirmPopupEnter)
-        advanceUntilIdle()
+    fun inputWord_afterInvalidNickname_clearsError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 규칙을 어겨 입력칸에 사유가 붙은 화면
+        val viewModel = viewModelWith(" 모카")
+        viewModel.processIntent(GroupNickNameIntent.ClickNextButton)
 
         // When 닉네임을 고친다
         viewModel.processIntent(GroupNickNameIntent.InputWord(OTHER_NICKNAME))
 
         // Then 표시된 사유가 사라진다
-        val state = viewModel.state.value
-        assertNull(state.submitError)
-        assertNull(state.nicknameError)
+        assertNull(viewModel.state.value.nicknameError)
     }
 
     private companion object {
