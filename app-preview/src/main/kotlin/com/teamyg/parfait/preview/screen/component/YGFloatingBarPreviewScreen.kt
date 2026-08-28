@@ -17,6 +17,7 @@ import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBa
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -56,6 +57,15 @@ internal fun YGFloatingBarPreviewScreen(
                         title = "토핑 편집",
                         onCloseClick = {},
                         onConfirmClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+            item {
+                PreviewSection("Title") {
+                    YGFloatingBarTitle(
+                        title = "오늘 찍은 사진",
+                        onCloseClick = {},
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
