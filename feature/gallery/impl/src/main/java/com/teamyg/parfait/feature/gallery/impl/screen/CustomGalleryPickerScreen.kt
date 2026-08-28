@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,8 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -94,21 +93,16 @@ private fun GalleryContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(YGAtomicColors.Gray.White)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = YGTheme.layout.padding.padding7,
-                    end = YGTheme.layout.padding.padding7,
-                    top = YGTheme.layout.padding.padding6,
-                ),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            YGCircleButton(
-                iconResource = DesignSystemR.drawable.ic_close,
-                type = YGCircleButtonType.Default,
-                contentDescription = null,
-                onClick = onClickCancel,
+        if (isEmpty) {
+            YGFloatingBarClose(
+                onCloseClick = onClickCancel,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            YGFloatingBarTitle(
+                title = stringResource(R.string.gallery_today_photos_title),
+                onCloseClick = onClickCancel,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
