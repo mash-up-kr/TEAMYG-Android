@@ -23,6 +23,7 @@ fun EntryProviderScope<NavKey>.featureCustomGalleryEntryBuilder(navigator: Navig
     entry<NavKeyCustomGalleryPicker> { navKey ->
         CustomGalleryPickerRoute(
             navigator = navigator,
+            recentImagePick = navKey.recentImagePick,
             showGuideToast = navKey.showGuideToast,
             returnResultOnly = navKey.returnResultOnly,
             modifier = Modifier.fillMaxSize(),

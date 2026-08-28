@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -72,6 +73,7 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
 class CustomGalleryPickerViewModel
 @AssistedInject constructor(
     @Assisted private val returnResultOnly: Boolean,
+    @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
@@ -157,10 +159,9 @@ class CustomGalleryPickerViewModel
     }
 
     private suspend fun collectRecentCacheImages() = getRecentCacheImagesUseCase().collect { images ->
-        // 배경엔 투명 알맹이가 오면 안 되고, 토핑엔 원본까지 실으면 같은 사진이 두 번 뜬다(OQ-P-258)
-        val wanted = when (returnResultOnly) {
-            true -> RecentImageKind.SOURCE
-            false -> RecentImageKind.CUTOUT
+        val wanted = when (recentImagePick) {
+            RecentImagePick.SOURCE -> RecentImageKind.SOURCE
+            RecentImagePick.CUTOUT -> RecentImageKind.CUTOUT
         }
 
         updateState { copy(recentImages = images.filter { it.kind == wanted }) }
@@ -168,6 +169,9 @@ class CustomGalleryPickerViewModel
 
     @AssistedFactory
     interface Factory {
-        fun create(returnResultOnly: Boolean): CustomGalleryPickerViewModel
+        fun create(
+            returnResultOnly: Boolean,
+            recentImagePick: RecentImagePick,
+        ): CustomGalleryPickerViewModel
     }
 }
