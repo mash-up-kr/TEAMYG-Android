@@ -43,7 +43,6 @@ sealed interface LoginIntent : UiIntent {
 }
 
 sealed interface LoginSideEffect : UiSideEffect {
-    /** @param forceAccountLogin 참이면 카카오톡을 건너뛰고 계정(웹) 로그인으로 간다 */
     data class RequestLoginWithKakao(val forceAccountLogin: Boolean) : LoginSideEffect
 
     /** 신규 회원 — 약관 동의로 보낸다. 뒤로가기가 로그인으로 와야 하므로 백스택을 지우지 않는다 */

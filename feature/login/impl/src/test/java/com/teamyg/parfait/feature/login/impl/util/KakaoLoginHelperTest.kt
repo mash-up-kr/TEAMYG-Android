@@ -18,7 +18,6 @@ class KakaoLoginHelperTest {
 
     private val helper = KakaoLoginHelper(
         userApiClient = userApiClient,
-        // `NonceGenerator` 는 `fun interface` 라 람다로 고정값을 준다
         nonceGenerator = NonceGenerator { "nonce-1" },
     )
 
@@ -36,8 +35,7 @@ class KakaoLoginHelperTest {
     }
 
     /**
-     * `loginWithKakaoTalk` 도 콜백을 동기로 되돌려 줘야 `login` 이 매달리지 않는다.
-     * 실패를 돌려주면 프로덕션 코드가 계정 로그인으로 폴백하므로, 폴백까지 끝까지 보려면
+     * 실패를 돌려주면 프로덕션 코드가 계정 로그인으로 폴백한다 — 끝까지 흘러가려면
      * `stubAccountLoginWithFailure()` 도 함께 세워야 한다.
      */
     private fun stubKakaoTalkLoginWithFailure() {

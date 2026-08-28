@@ -17,7 +17,7 @@ constructor(
     private val dataStore: DataStore<Preferences>,
 ) : DebugModeLocalDataSource {
     // 이 파일을 공유하는 다른 키가 바뀌어도 `data` 는 재방출한다 — 여기서 먼저 dedupe 하지
-    // 않으면 무관한 쓰기마다 구독자가 흔들린다(`ToppingDraftLocalDataSourceImpl` 과 같은 이유)
+    // 않으면 무관한 쓰기마다 구독자가 흔들린다
     override val isEnabled: Flow<Boolean> = dataStore.data
         .map { prefs -> prefs[DEBUG_MODE_KEY] == true }
         .distinctUntilChanged()
