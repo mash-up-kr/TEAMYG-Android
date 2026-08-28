@@ -1,19 +1,27 @@
 package com.teamyg.parfait.feature.login.impl.route
 
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.model.KakaoLoginResult
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
@@ -101,7 +109,12 @@ fun LoginRoute(
                     }
 
                     try {
-                        when (val result = kakaoLoginHelper.login(currentActivity)) {
+                        when (
+                            val result = kakaoLoginHelper.login(
+                                activity = currentActivity,
+                                forceAccountLogin = effect.forceAccountLogin,
+                            )
+                        ) {
                             is KakaoLoginResult.Success ->
                                 viewModel.processIntent(
                                     LoginIntent.LoginWithKakaoSuccess(
@@ -132,17 +145,45 @@ fun LoginRoute(
         isLoading = state.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        LoginScreen(
-            pages = tempPages,
-            isLoading = state.isLoading,
-            onClickKakaoButton = {
-                viewModel.processIntent(LoginIntent.LoginWithKakao)
-            },
-            // `fillMaxSize` 는 취향이 아니라 하중이다 — LoginScreen 의 Column 안에서
-            // OnboardingPager 가 weight(1f) 을 쓰므로 높이가 안 잡히면 레이아웃이 접힌다
+        // 제스처를 콘텐츠 **위에** 덮는 오버레이로 달면 카카오 버튼 탭까지 이 레이어가 먹는다.
+        // 부모에 달면 자식이 먼저 히트 테스트를 받으므로, 소비자가 없는 빈 영역의 탭만 온다
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-        )
+                .padding(innerPadding)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = { viewModel.processIntent(LoginIntent.DebugDoubleTap) },
+                        onLongPress = { viewModel.processIntent(LoginIntent.DebugLongPress) },
+                    )
+                },
+        ) {
+            LoginScreen(
+                pages = tempPages,
+                isLoading = state.isLoading,
+                onClickKakaoButton = {
+                    viewModel.processIntent(LoginIntent.LoginWithKakao)
+                },
+                // `fillMaxSize` 는 취향이 아니라 하중이다 — LoginScreen 의 Column 안에서
+                // OnboardingPager 가 weight(1f) 을 쓰므로 높이가 안 잡히면 레이아웃이 접힌다
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (state.isDebugMode) {
+                Text(
+                    text = stringResource(R.string.login_debug_mode_badge),
+                    style = YGTheme.typography.caption.c01R,
+                    color = YGAtomicColors.Gray.Gray300,
+                    // `clickable` 을 `padding` 앞에 둬야 여백까지 탭 영역이 된다. 12sp 글자에
+                    // 사방 16dp 를 붙여야 최소 터치 타깃(48dp)에 닿는다 — 이 배지가 디버그
+                    // 모드를 끄는 유일한 경로다
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .clickable(onClickLabel = stringResource(R.string.login_debug_mode_disable_label)) {
+                            viewModel.processIntent(LoginIntent.DisableDebugMode)
+                        }.padding(YGTheme.layout.padding.padding6),
+                )
+            }
+        }
     }
 }
