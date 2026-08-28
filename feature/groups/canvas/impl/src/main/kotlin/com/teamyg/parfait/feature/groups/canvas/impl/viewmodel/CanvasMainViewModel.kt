@@ -532,9 +532,12 @@ constructor(
     }
 
     /**
-     * 오늘만은 부르지 않는다 — 서버의 오늘 조회는 캔버스가 없으면 만들어 저장하므로, 이미
-     * 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌리는 것이 유일하게 안전한 길이다.
-     * 되돌리는 대입이 따로 없는 것은 [CanvasMainUiState.displayedCanvas] 가 파생값이라서다.
+     * 오늘은 이미 받아 둔 [CanvasMainUiState.todayCanvas] 로 되돌린다 — 서버의 오늘 조회는
+     * 캔버스가 없으면 만들어 저장하므로 그냥 다시 부를 자리가 아니다. 되돌리는 대입이 따로
+     * 없는 것은 [CanvasMainUiState.displayedCanvas] 가 파생값이라서다.
+     *
+     * 비어 있으면 [handleClickGoToToday] 와 같이 다시 부른다. 오늘로 가는 두 동선의 결과가
+     * 달라지면 안 된다.
      *
      * 응답이 올 때까지 이전 날의 토핑을 그대로 둔다. 비워 두면 파르페가 있는 날인데도 잠깐
      * "캔버스가 비어 있다"고 말하게 된다 — 달력이 기록 있는 날만 열어 주므로 그건 늘 거짓이다.
@@ -548,6 +551,7 @@ constructor(
 
         if (date == current.today) {
             updateState { copy(selectedDate = date, pastCanvas = null) }
+            if (current.todayCanvas == null) loadTodayCanvas()
             return
         }
 

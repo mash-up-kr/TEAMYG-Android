@@ -698,6 +698,32 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun clickDate_today_afterTodayCanvasWasCleared_reloadsIt() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 어제를 보는 중 하루 경계를 넘겨 todayCanvas 가 빈 화면
+        mockkStatic(::parfaitToday)
+        every { parfaitToday() } returns today
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
+        advanceUntilIdle()
+
+        every { parfaitToday() } returns tomorrow
+        viewModel.processIntent(CanvasMainIntent.Enter)
+        advanceUntilIdle()
+
+        // When 달력에서 오늘 칸을 누른다. 갱신이 새 날의 캔버스를 캐시에 싣는다
+        coEvery { refreshTodayParfait(any(), any()) } coAnswers {
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, tomorrow)
+            Result.success(Unit)
+        }
+        viewModel.processIntent(CanvasMainIntent.ClickDate(tomorrow))
+        advanceUntilIdle()
+
+        // Then 오늘 갱신이 다시 나가 토핑 추가 버튼이 다시 열린다
+        coVerify(exactly = 2) { refreshTodayParfait(any(), any()) }
+        assertTrue(viewModel.state.value.isToppingAddEnabled)
+    }
+
+    @Test
     fun clickCanvasEdit_emitsTheCanvasBeingEdited() = runTest(mainDispatcherRule.dispatcher) {
         // Given 오늘 캔버스를 띄운 화면
         val viewModel = enteredViewModel()
