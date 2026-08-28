@@ -59,8 +59,8 @@ constructor(
             val appended: List<RecentImageEntity> = current.filterNot { it.uri == uri } +
                 listOf(RecentImageEntity(uri = uri, kind = kind.toEntity()))
 
-            // 정원을 종류별로 나눈다 — 한 목록으로 자르면 원본이 알맹이를 밀어낸다.
-            // 자른 결과가 아니라 appended 를 다시 거르는 것은 순서 때문이다 — 종류끼리 뭉치면 시간순이 깨진다
+            // 한 목록으로 자르면 원본이 알맹이를 밀어낸다. 자른 결과가 아니라 appended 를 다시
+            // 거르는 것은 종류끼리 뭉치면 시간순이 깨지기 때문이다
             val keptUris: Set<String> = appended
                 .groupBy(RecentImageEntity::kind)
                 .values

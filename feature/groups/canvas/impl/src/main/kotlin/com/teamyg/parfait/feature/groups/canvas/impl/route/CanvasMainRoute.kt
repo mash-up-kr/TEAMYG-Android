@@ -95,6 +95,7 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCameraCustom(),
                 )
 
+                // 원본까지 실으면 한 흐름이 남긴 두 장이 같은 사진으로 나란히 뜬다(OQ-P-258)
                 is CanvasMainEffect.NavigateToCanvas -> navigator.goTo(
                     destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
                 )

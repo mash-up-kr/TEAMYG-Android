@@ -68,7 +68,7 @@ class CustomGalleryPickerViewModelTest {
         // When 목록이 흘러온다
         advanceUntilIdle()
 
-        // Then 원본은 안 보인다 — 한 흐름이 남긴 두 장이 같은 사진으로 나란히 뜨는 것을 막는다
+        // Then 원본은 안 보인다
         assertEquals(listOf(cutout), viewModel.state.value.recentImages)
     }
 

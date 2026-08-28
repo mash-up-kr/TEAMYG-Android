@@ -260,7 +260,7 @@ class RecentImageRepositoryImplTest {
             kind = RecentImageKind.SOURCE,
         )
 
-        // Then 종류별로 잘라도 시간순은 그대로다 — 종류끼리 뭉치면 최근 목록의 정렬이 깨진다
+        // Then 시간순은 그대로다 — 종류끼리 뭉치면 최근 목록의 정렬이 깨진다
         assertEquals(
             listOf(
                 "content://recent/c1.png",
