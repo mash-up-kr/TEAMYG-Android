@@ -15,10 +15,13 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 /**
  * Figma Canvas-Menu
+ *
+ * @param addAction 없으면(`null`) [editAction] 이 [expandedItems] 와 같은 단일 줄
+ *  [YGMenuItem] 로 전체 너비를 혼자 차지한다
  */
 @Composable
 fun YGCanvasMenu(
-    addAction: YGCanvasMenuAction,
+    addAction: YGCanvasMenuAction?,
     editAction: YGCanvasMenuAction,
     modifier: Modifier = Modifier,
     isExpanded: Boolean = false,
@@ -36,23 +39,31 @@ fun YGCanvasMenu(
                 )
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(-1.dp),
-        ) {
-            YGStrokeButton(
-                text = addAction.text,
-                onClick = addAction.onClick,
-                iconResource = addAction.iconResource,
-                isEnabled = addAction.isEnabled,
-                modifier = Modifier.weight(1f),
-            )
-            YGStrokeButton(
+        if (addAction != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(-1.dp),
+            ) {
+                YGStrokeButton(
+                    text = addAction.text,
+                    onClick = addAction.onClick,
+                    iconResource = addAction.iconResource,
+                    isEnabled = addAction.isEnabled,
+                    modifier = Modifier.weight(1f),
+                )
+                YGStrokeButton(
+                    text = editAction.text,
+                    onClick = editAction.onClick,
+                    iconResource = editAction.iconResource,
+                    isEnabled = editAction.isEnabled,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        } else {
+            YGMenuItem(
                 text = editAction.text,
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
-                isEnabled = editAction.isEnabled,
-                modifier = Modifier.weight(1f),
             )
         }
     }
