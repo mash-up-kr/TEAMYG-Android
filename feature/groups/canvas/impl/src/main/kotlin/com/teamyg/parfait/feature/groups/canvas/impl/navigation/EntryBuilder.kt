@@ -26,6 +26,8 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         CanvasMainRoute(
             groupId = navKey.groupId,
             navigator = navigator,
+            welcomeGroupName = navKey.welcomeGroupName,
+            welcomeInviteCode = navKey.welcomeInviteCode,
             modifier = Modifier.fillMaxSize(),
         )
     }

@@ -106,8 +106,13 @@ class CanvasMainViewModelTest {
         unmockkAll()
     }
 
-    private fun viewModel() = CanvasMainViewModel(
+    private fun viewModel(
+        welcomeGroupName: String? = null,
+        welcomeInviteCode: String? = null,
+    ) = CanvasMainViewModel(
         groupIdValue = GROUP_ID,
+        welcomeGroupName = welcomeGroupName,
+        welcomeInviteCode = welcomeInviteCode,
         getParfaitHistoriesUseCase = getParfaitHistories,
         getParfaitYearsUseCase = getParfaitYears,
         getTodayParfaitUseCase = getTodayParfait,
@@ -638,8 +643,47 @@ class CanvasMainViewModelTest {
         }
     }
 
+    @Test
+    fun init_withoutWelcomeGroupName_showsNoWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 그룹 목록에서 평범하게 진입한 화면(환영 문구 없음)
+        val viewModel = viewModel()
+
+        // Then 환영 배너 효과가 오지 않는다
+        viewModel.effect.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_withWelcomeGroupNameOnly_showsJoinedWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 초대코드 없이 그룹명만 실려 온 진입(기존 그룹 참여 직후)
+        viewModel(welcomeGroupName = GROUP_NAME).effect.test {
+            // Then 참여 환영 배너를 1회 띄운다
+            assertEquals(
+                CanvasMainEffect.ShowWelcome(CanvasWelcome.Joined(groupName = GROUP_NAME)),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun init_withWelcomeGroupNameAndInviteCode_showsCreatedWelcome() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 그룹명과 초대코드가 함께 실려 온 진입(그룹 생성 직후)
+        viewModel(welcomeGroupName = GROUP_NAME, welcomeInviteCode = INVITE_CODE).effect.test {
+            // Then 생성 환영 배너(초대코드 포함)를 1회 띄운다
+            assertEquals(
+                CanvasMainEffect.ShowWelcome(
+                    CanvasWelcome.Created(groupName = GROUP_NAME, inviteCode = INVITE_CODE),
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
     private companion object {
         const val GROUP_ID = 7L
+        const val GROUP_NAME = "모카의 파르페"
+        const val INVITE_CODE = "ABC123"
         const val TODAY_PARFAIT_ID = 42L
         const val YESTERDAY_PARFAIT_ID = 41L
         const val NEW_MEMBER_NICKNAME = "모카"

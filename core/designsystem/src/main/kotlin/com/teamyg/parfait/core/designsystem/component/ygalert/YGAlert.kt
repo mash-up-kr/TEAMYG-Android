@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygalert
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ fun YGAlert(
     modifier: Modifier = Modifier,
     buttonText: String? = null,
     onButtonClick: (() -> Unit)? = null,
+    @DrawableRes buttonIconResource: Int = R.drawable.ic_caret_right,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -48,7 +50,7 @@ fun YGAlert(
             YGChipButton(
                 text = buttonText,
                 colors = YGChipButtonColorsDefaults.CherrySolid,
-                endIconResource = R.drawable.ic_caret_right,
+                endIconResource = buttonIconResource,
                 onClick = onButtonClick ?: {},
             )
         }

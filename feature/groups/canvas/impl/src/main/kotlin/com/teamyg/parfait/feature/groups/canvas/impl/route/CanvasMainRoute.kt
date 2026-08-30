@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
+import android.content.ClipData
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,16 +11,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
@@ -33,34 +38,58 @@ import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
+import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasWelcome
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.ui.R as CoreUiR
+import kotlinx.coroutines.launch
 import kotlinx.datetime.number
+
+private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
 @Composable
 internal fun CanvasMainRoute(
     groupId: Long,
     navigator: Navigator,
     modifier: Modifier = Modifier,
+    welcomeGroupName: String? = null,
+    welcomeInviteCode: String? = null,
     viewModel: CanvasMainViewModel = hiltViewModel(
         creationCallback = { factory: CanvasMainViewModel.Factory ->
-            factory.create(groupIdValue = groupId)
+            factory.create(
+                groupIdValue = groupId,
+                welcomeGroupName = welcomeGroupName,
+                welcomeInviteCode = welcomeInviteCode,
+            )
         },
     ),
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
 
     // 이 화면의 토스트는 전부 캔버스 프레임 상단에 뜬다 — 작성자 알림이 그 자리에 고정돼 있고,
     // 실패만 화면 최상단으로 보내면 같은 화면에서 자리가 갈린다. 큐를 하나로 둬야 Toast 공통
     // 정책의 스택(나중 것이 위로)도 성립한다. 그래서 스캐폴드에는 정책을 넘기지 않는다
     val toastPolicy = rememberYGToastPolicy()
+    // 환영 배너는 Alert 한 자리만 쓴다 — 지난 캔버스 알림(TODO)이 실제로 붙기 전까지는 이 화면에서
+    // Alert 를 여기서만 띄운다
+    val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
+    val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
+    val welcomeJoinedSub = stringResource(R.string.canvas_welcome_joined_sub)
+    val welcomeCreatedTitleFormat = stringResource(R.string.canvas_welcome_created_title)
+    val welcomeCreatedSubFormat = stringResource(R.string.canvas_welcome_created_sub)
+    val welcomeInviteCopyText = stringResource(R.string.canvas_welcome_invite_copy)
+    val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
+    val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 캡처한 비트맵을 여기서
     // 들고 있다가 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
@@ -136,6 +165,39 @@ internal fun CanvasMainRoute(
 
                 is CanvasMainEffect.ShowToppingFlowStartError ->
                     toastPolicy.showError(toppingFlowStartErrorMessage)
+
+                is CanvasMainEffect.ShowWelcome -> when (val welcome = effect.welcome) {
+                    is CanvasWelcome.Joined -> alertPolicy.show(
+                        title = welcomeJoinedTitleFormat.format(welcome.groupName),
+                        sub = welcomeJoinedSub,
+                    )
+
+                    is CanvasWelcome.Created -> alertPolicy.show(
+                        title = welcomeCreatedTitleFormat.format(welcome.groupName),
+                        sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
+                        buttonText = welcomeInviteCopyText,
+                        buttonIconResource = DesignSystemR.drawable.ic_copy,
+                        onButtonClick = {
+                            scope.launch {
+                                clipboard.setClipEntry(
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            CLIP_LABEL_INVITE_MESSAGE,
+                                            inviteMessageTemplate.format(welcome.inviteCode),
+                                        ),
+                                    ),
+                                )
+                            }
+                            // 복사 확인 문구로 바꿔 다시 띄운다 — 같은 배너를 새 타이머로 한 번 더 보여준다
+                            alertPolicy.show(
+                                title = welcomeCreatedTitleFormat.format(welcome.groupName),
+                                sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
+                                buttonText = welcomeInviteCopiedText,
+                                buttonIconResource = DesignSystemR.drawable.ic_copy,
+                            )
+                        },
+                    )
+                }
             }
         }
     }
@@ -164,6 +226,7 @@ internal fun CanvasMainRoute(
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
             toastPolicy = toastPolicy,
+            alertPolicy = alertPolicy,
             graphicsLayer = graphicsLayer,
             modifier = Modifier
                 .fillMaxSize()

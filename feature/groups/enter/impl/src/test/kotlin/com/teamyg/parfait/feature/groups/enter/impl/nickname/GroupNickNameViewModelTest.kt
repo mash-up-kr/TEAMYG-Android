@@ -113,7 +113,10 @@ class GroupNickNameViewModelTest {
             coVerify(exactly = 1) {
                 changeGroupNickname(groupId = GroupId(GROUP_ID), groupNickname = GroupNickname(NICKNAME))
             }
-            assertEquals(GroupNickNameSideEffect.NavigateToNext, awaitItem())
+            assertEquals(
+                GroupNickNameSideEffect.NavigateToNext(groupId = GROUP_ID, groupName = GROUP_NAME),
+                awaitItem(),
+            )
             assertFalse(viewModel.state.value.isConfirmPopupVisible)
             assertFalse(viewModel.state.value.isEntering)
         }
@@ -156,7 +159,10 @@ class GroupNickNameViewModelTest {
             advanceUntilIdle()
 
             // Then 참여 자체는 끝났으므로 전역 닉네임을 그대로 둔 채 다음 화면으로 간다
-            assertEquals(GroupNickNameSideEffect.NavigateToNext, awaitItem())
+            assertEquals(
+                GroupNickNameSideEffect.NavigateToNext(groupId = GROUP_ID, groupName = GROUP_NAME),
+                awaitItem(),
+            )
             val state = viewModel.state.value
             assertFalse(state.isConfirmPopupVisible)
             assertNull(state.submitError)

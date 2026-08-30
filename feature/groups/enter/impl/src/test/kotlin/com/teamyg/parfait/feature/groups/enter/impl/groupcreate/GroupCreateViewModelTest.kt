@@ -81,7 +81,14 @@ class GroupCreateViewModelTest {
             advanceUntilIdle()
 
             // Then 다음 화면으로 가고 팝업·로딩이 정리된다
-            assertEquals(GroupCreateSideEffect.NavigateToNext, awaitItem())
+            assertEquals(
+                GroupCreateSideEffect.NavigateToNext(
+                    groupId = createdGroup.groupId.value,
+                    groupName = GROUP_NAME,
+                    inviteCode = createdGroup.inviteCode.value,
+                ),
+                awaitItem(),
+            )
             val state = viewModel.state.value
             assertFalse(state.isConfirmPopupVisible)
             assertFalse(state.isCreating)

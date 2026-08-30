@@ -42,7 +42,7 @@ sealed interface GroupNickNameIntent : UiIntent {
 sealed interface GroupNickNameSideEffect : UiSideEffect {
     data object NavigateToBack : GroupNickNameSideEffect
 
-    data object NavigateToNext : GroupNickNameSideEffect
+    data class NavigateToNext(val groupId: Long, val groupName: String) : GroupNickNameSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupNickNameViewModel.Factory::class)
@@ -109,7 +109,12 @@ constructor(
                     }
 
                 updateState { copy(isConfirmPopupVisible = false) }
-                postSideEffect(GroupNickNameSideEffect.NavigateToNext)
+                postSideEffect(
+                    GroupNickNameSideEffect.NavigateToNext(
+                        groupId = joined.groupId.value,
+                        groupName = joined.groupName.value,
+                    ),
+                )
             } finally {
                 // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
                 // 영구 비활성으로 남는 것을 여기서 막는다

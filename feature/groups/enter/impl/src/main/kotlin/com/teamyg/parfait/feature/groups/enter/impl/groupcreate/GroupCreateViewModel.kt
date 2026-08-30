@@ -46,7 +46,11 @@ sealed interface GroupCreateIntent : UiIntent {
 sealed interface GroupCreateSideEffect : UiSideEffect {
     data object NavigateToBack : GroupCreateSideEffect
 
-    data object NavigateToNext : GroupCreateSideEffect
+    data class NavigateToNext(
+        val groupId: Long,
+        val groupName: String,
+        val inviteCode: String,
+    ) : GroupCreateSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupCreateViewModel.Factory::class)
@@ -130,7 +134,13 @@ constructor(
     private fun onGroupCreated(createdGroup: CreatedGroupVO) {
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
         updateState { copy(isConfirmPopupVisible = false) }
-        postSideEffect(GroupCreateSideEffect.NavigateToNext)
+        postSideEffect(
+            GroupCreateSideEffect.NavigateToNext(
+                groupId = createdGroup.groupId.value,
+                groupName = createdGroup.groupName.value,
+                inviteCode = createdGroup.inviteCode.value,
+            ),
+        )
     }
 
     /**

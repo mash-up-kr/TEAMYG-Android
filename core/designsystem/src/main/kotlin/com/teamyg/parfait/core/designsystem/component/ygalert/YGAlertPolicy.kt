@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygalert
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
@@ -23,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
@@ -40,6 +42,7 @@ data class YGAlertItem(
     val sub: String,
     val buttonText: String? = null,
     val onButtonClick: (() -> Unit)? = null,
+    @DrawableRes val buttonIconResource: Int = R.drawable.ic_caret_right,
     val visible: Boolean = true,
 )
 
@@ -52,6 +55,7 @@ class YGAlertPolicy {
         sub: String,
         buttonText: String? = null,
         onButtonClick: (() -> Unit)? = null,
+        @DrawableRes buttonIconResource: Int = R.drawable.ic_caret_right,
     ) {
         alert = YGAlertItem(
             id = UUID.randomUUID().toString(),
@@ -59,6 +63,7 @@ class YGAlertPolicy {
             sub = sub,
             buttonText = buttonText,
             onButtonClick = onButtonClick,
+            buttonIconResource = buttonIconResource,
         )
     }
 
@@ -95,6 +100,7 @@ fun YGAlertHost(
                     sub = alert.sub,
                     buttonText = alert.buttonText,
                     onButtonClick = alert.onButtonClick,
+                    buttonIconResource = alert.buttonIconResource,
                     modifier = Modifier
                         .draggable(
                             orientation = Orientation.Vertical,

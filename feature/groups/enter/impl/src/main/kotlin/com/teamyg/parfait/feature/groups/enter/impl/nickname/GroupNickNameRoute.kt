@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 
 @Composable
 fun GroupNickNameRoute(
@@ -23,8 +23,15 @@ fun GroupNickNameRoute(
                     navigator.onBack()
                 }
 
-                GroupNickNameSideEffect.NavigateToNext -> {
-                    navigator.goToSingleClearTop(destination = NavKeyGroupList)
+                is GroupNickNameSideEffect.NavigateToNext -> {
+                    // 여기까지 쌓인 화면(초대코드, 닉네임)은 전부 이번 참여 흐름의 것이라
+                    // 되돌아갈 곳이 없다 — 백스택을 비우고 참여한 그룹의 캔버스만 남긴다
+                    navigator.replaceAll(
+                        destination = NavKeyCanvasMain(
+                            groupId = effect.groupId,
+                            welcomeGroupName = effect.groupName,
+                        ),
+                    )
                 }
             }
         }
