@@ -2,6 +2,7 @@ package com.teamyg.parfait.core.designsystem.component.ygfloatingbar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -20,6 +21,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleBut
 import com.teamyg.parfait.core.designsystem.component.ygedittabbutton.YGEditTabButton
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -111,6 +113,40 @@ fun YGFloatingBarEditTab(
     }
 }
 
+/**
+ * Figma Floating Bar / Status=Title
+ */
+@Composable
+fun YGFloatingBarTitle(
+    title: String,
+    onCloseClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.padding(
+            start = YGTheme.layout.padding.padding7,
+            top = YGTheme.layout.padding.padding6,
+            end = YGTheme.layout.padding.padding7,
+        ),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Text(
+            text = title,
+            style = YGTheme.typography.body.b01R,
+            color = YGAtomicColors.Gray.Gray800,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            // 좌우를 닫기 버튼 지름만큼 비워야 긴 제목이 버튼 아래로 깔리지 않고 잘린다
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = SizeTokens.Size44.getDp()),
+        )
+        YGFloatingBarCloseButton(onClick = onCloseClick)
+    }
+}
+
 @Composable
 private fun YGFloatingBarContent(
     modifier: Modifier = Modifier,
@@ -184,6 +220,16 @@ private fun YGFloatingBarPreview() = PreviewBox {
             onTabSelect = {},
             onCloseClick = {},
             onConfirmClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGFloatingBarTitle(
+            title = "오늘 찍은 사진",
+            onCloseClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGFloatingBarTitle(
+            title = "아주아주긴제목입니다정말로그렇습니다그리고더깁니다",
+            onCloseClick = {},
             modifier = Modifier.fillMaxWidth(),
         )
     }
