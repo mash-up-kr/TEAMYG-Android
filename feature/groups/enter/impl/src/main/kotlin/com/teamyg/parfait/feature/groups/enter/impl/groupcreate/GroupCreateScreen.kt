@@ -30,7 +30,9 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
 import com.teamyg.parfait.core.ui.text.NameFieldType
 import com.teamyg.parfait.core.ui.text.toStringResource
+import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
 import com.teamyg.parfait.domain.model.GroupCreateConfig
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -40,6 +42,7 @@ internal fun GroupCreateScreen(
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
     onGroupNameChanged: (newGroupName: String) -> Unit,
+    onNickNameChanged: (newNickName: String) -> Unit,
     onClickGroupNumber: (newSelectedNumber: Int) -> Unit,
     onClickConfirmPopupCreate: () -> Unit,
     onDismissConfirmPopup: () -> Unit,
@@ -55,11 +58,10 @@ internal fun GroupCreateScreen(
             primaryText = stringResource(R.string.group_create_confirm_create),
             onPrimaryClick = onClickConfirmPopupCreate,
             onDismissRequest = onDismissConfirmPopup,
-            isEnabledButton = uiState.isCreating.not(),
         )
     }
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.clearFocusOnTap()) {
         YGTopBarDetail(
             title = stringResource(R.string.group_create),
             onIconClick = onClickBackButton,
@@ -104,11 +106,13 @@ internal fun GroupCreateScreen(
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
                 YGTextFormField(
                     value = uiState.nickName,
-                    onValueChange = {}, // no-op
+                    onValueChange = onNickNameChanged,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
-                    enabled = false,
+                    enabled = true,
+                    isError = uiState.nickNameError != null,
                     maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
+                    errorDescription = uiState.nickNameError?.toStringResource(NameFieldType.NICKNAME),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -169,6 +173,12 @@ private class GroupCreateScreenPreviewParameterProvider :
             GroupCreateUiState(""),
             GroupCreateUiState("", "", null),
             GroupCreateUiState("가나", "하이하이", 3),
+            GroupCreateUiState(
+                "가나",
+                " 하이하이",
+                3,
+                nickNameError = NameValidResult.Error.SpaceAtEdge,
+            ),
             GroupCreateUiState("가나", "하이하이", 3, isConfirmPopupVisible = true),
         )
 }
@@ -183,6 +193,7 @@ private fun GroupCreateScreenPreview(
         onClickNextButton = {},
         onClickBackButton = {},
         onGroupNameChanged = {},
+        onNickNameChanged = {},
         onClickGroupNumber = {},
         onClickConfirmPopupCreate = {},
         onDismissConfirmPopup = {},

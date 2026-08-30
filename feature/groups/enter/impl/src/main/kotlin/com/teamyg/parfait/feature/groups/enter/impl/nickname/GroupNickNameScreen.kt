@@ -29,7 +29,9 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
+import com.teamyg.parfait.core.util.android.focus.clearFocusOnTap
 import com.teamyg.parfait.core.ui.text.toStringResource
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.GroupCreateConfig
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -63,7 +65,7 @@ internal fun GroupNickNameScreen(
         )
     }
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.clearFocusOnTap()) {
         YGTopBarDetail(
             title = stringResource(R.string.group_enter),
             onIconClick = onClickBackButton,
@@ -102,10 +104,9 @@ internal fun GroupNickNameScreen(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                     placeholder = stringResource(R.string.group_nickname_placeholder),
-                    isError = uiState.nicknameError != null || uiState.submitError != null,
+                    isError = uiState.nicknameError != null,
                     maxLength = GroupCreateConfig.NICKNAME_MAX_LENGTH,
-                    errorDescription = uiState.nicknameError?.toStringResource(NameFieldType.NICKNAME)
-                        ?: uiState.submitError?.toStringResource(),
+                    errorDescription = uiState.nicknameError?.toStringResource(NameFieldType.NICKNAME),
                     colors = YGTextFormFieldDefaults.colors(),
                 )
             }
@@ -132,8 +133,8 @@ private class GroupNickNameScreenPreviewParameterProvider :
             GroupNickNameUiState(groupName = GROUP_NAME, nickName = "hello"),
             GroupNickNameUiState(
                 groupName = GROUP_NAME,
-                nickName = "hello",
-                submitError = GroupNickNameError.MEMBER_LIMIT_REACHED,
+                nickName = " hello",
+                nicknameError = NameValidResult.Error.SpaceAtEdge,
             ),
             GroupNickNameUiState(
                 groupName = GROUP_NAME,

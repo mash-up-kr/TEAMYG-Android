@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.CreatedGroupVO
 import com.teamyg.parfait.domain.model.group.GroupName
@@ -19,6 +20,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GroupCreateViewModelTest {
@@ -110,14 +112,15 @@ class GroupCreateViewModelTest {
             viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
             advanceUntilIdle()
 
-            // Then 다음 화면으로 넘어가지 않는다(실패 안내는 정책 확정 전이라 아직 없다)
+            // Then 이동 대신 실패 토스트만 나간다
+            assertEquals(GroupCreateSideEffect.ShowError(GroupCreateError.UNKNOWN), awaitItem())
             expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun clickConfirmPopupCreate_networkFailure_keepsPopupOpenForRetry() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickConfirmPopupCreate_networkFailure_keepsFormForRetry() = runTest(mainDispatcherRule.dispatcher) {
         // Given 네트워크 단절
         coEvery { createGroupUseCase(any(), any(), any()) } returns Result.failure(AppError.Network(null))
         val viewModel = viewModel()
@@ -127,9 +130,9 @@ class GroupCreateViewModelTest {
         viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
         advanceUntilIdle()
 
-        // Then 팝업이 열린 채 로딩만 풀려 만들기 버튼으로 바로 다시 시도할 수 있다(입력값도 남는다)
+        // Then 로딩이 풀리고 입력값이 남아, 확인 버튼으로 팝업을 다시 띄워 재시도할 수 있다
         val state = viewModel.state.value
-        assertTrue(state.isConfirmPopupVisible)
+        assertFalse(state.isConfirmPopupVisible)
         assertFalse(state.isCreating)
         assertEquals(GROUP_NAME, state.groupName)
         assertEquals(MEMBER_LIMIT, state.groupNumber)
@@ -148,8 +151,8 @@ class GroupCreateViewModelTest {
                 viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
                 advanceUntilIdle()
 
-                // Then 넘어가지 않고, 로딩이 풀려 만들기 버튼이 영구 비활성으로 남지 않는다
-                expectNoEvents()
+                // Then 넘어가지 않고, 로딩이 풀려 화면이 오버레이에 갇히지 않는다
+                assertEquals(GroupCreateSideEffect.ShowError(GroupCreateError.UNKNOWN), awaitItem())
                 assertFalse(viewModel.state.value.isCreating)
                 cancelAndIgnoreRemainingEvents()
             }
@@ -186,20 +189,70 @@ class GroupCreateViewModelTest {
     }
 
     @Test
-    fun dismissConfirmPopup_whileCreating_keepsPopupOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 생성 요청이 아직 응답을 기다리는 중
+    fun clickConfirmPopupCreate_networkFailure_emitsNetworkError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 네트워크 단절
+        coEvery { createGroupUseCase(any(), any(), any()) } returns Result.failure(AppError.Network(null))
+        val viewModel = viewModel()
+        viewModel.fillFormAndOpenConfirmPopup()
+
+        viewModel.effect.test {
+            // When 만들기를 누른다
+            viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
+            advanceUntilIdle()
+
+            // Then 서버 오류와 구분되는 문구를 고를 수 있게 갈래가 실려 나간다
+            assertEquals(GroupCreateSideEffect.ShowError(GroupCreateError.NETWORK), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun clickConfirmPopupCreate_closesPopupBeforeResponseArrives() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 응답이 아직 오지 않은 생성 요청
         coEvery { createGroupUseCase(any(), any(), any()) } returns Result.success(createdGroup)
         val viewModel = viewModel()
         viewModel.fillFormAndOpenConfirmPopup()
-        // `isCreating` 은 코루틴 밖에서 켜지므로 디스패처를 돌리기 전 이 시점이 곧 진행 중 상태다
+
+        // When 만들기를 누르고 디스패처를 돌리지 않는다
         viewModel.processIntent(GroupCreateIntent.ClickConfirmPopupCreate)
-        assertTrue(viewModel.state.value.isCreating)
 
-        // When 바깥 탭·취소로 닫으려 한다
-        viewModel.processIntent(GroupCreateIntent.DismissConfirmPopup)
+        // Then 팝업은 곧바로 사라지고 로딩만 남는다
+        val state = viewModel.state.value
+        assertFalse(state.isConfirmPopupVisible)
+        assertTrue(state.isCreating)
+    }
 
-        // Then 진행 중에는 닫히지 않는다
-        assertTrue(viewModel.state.value.isConfirmPopupVisible)
+    @Test
+    fun inputNickName_replacesNickNameAndClearsPreviousError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 닉네임 규칙을 어겨 에러가 붙은 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupCreateIntent.InputNickName("체리!"))
+        viewModel.processIntent(GroupCreateIntent.ClickNextButton)
+        assertEquals(NameValidResult.Error.InvalidCharacter, viewModel.state.value.nickNameError)
+
+        // When 다시 입력한다
+        viewModel.processIntent(GroupCreateIntent.InputNickName("체리"))
+
+        // Then 새 값이 들어가고 에러는 지워진다
+        assertEquals("체리", viewModel.state.value.nickName)
+        assertNull(viewModel.state.value.nickNameError)
+    }
+
+    @Test
+    fun clickNextButton_invalidNickName_doesNotOpenPopup() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 그룹명·인원수는 멀쩡하고 닉네임만 규칙을 어긴 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupCreateIntent.InputGroupName(GROUP_NAME))
+        viewModel.processIntent(GroupCreateIntent.ClickGroupNumber(MEMBER_LIMIT))
+        viewModel.processIntent(GroupCreateIntent.InputNickName(" 체리"))
+
+        // When 확인을 누른다
+        viewModel.processIntent(GroupCreateIntent.ClickNextButton)
+
+        // Then 팝업 대신 닉네임 자리에 에러가 붙는다
+        val state = viewModel.state.value
+        assertFalse(state.isConfirmPopupVisible)
+        assertEquals(NameValidResult.Error.SpaceAtEdge, state.nickNameError)
     }
 
     private companion object {

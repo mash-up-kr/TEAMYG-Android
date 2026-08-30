@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -24,6 +25,8 @@ import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleBut
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resizeScaleFactor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.rotationDeltaDegrees
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingStrokeSize
 
 /**
@@ -103,4 +106,64 @@ internal fun ToppingDragHandleButton(
             .centeredAt(point)
             .dragBy(key, onDrag),
     )
+}
+
+/** 잡고 돌리는 회전 핸들. 끈 거리를 각도로 바꿔 [onRotate]로 넘긴다. */
+@Composable
+internal fun ToppingRotateHandleButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    point: DpOffset,
+    center: DpOffset,
+    key: Any?,
+    onRotate: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val handleVector by rememberUpdatedState(handleVectorPx(point = point, center = center))
+
+    ToppingDragHandleButton(
+        iconRes = iconRes,
+        contentDescription = contentDescription,
+        point = point,
+        key = key,
+        onDrag = { drag -> onRotate(rotationDeltaDegrees(handleVector = handleVector, dragDelta = drag)) },
+        modifier = modifier,
+    )
+}
+
+/** 잡고 늘리는 크기조절 핸들. 끈 거리를 배율에 곱할 값으로 바꿔 [onResize]로 넘긴다. */
+@Composable
+internal fun ToppingResizeHandleButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    point: DpOffset,
+    center: DpOffset,
+    key: Any?,
+    onResize: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val handleVector by rememberUpdatedState(handleVectorPx(point = point, center = center))
+
+    ToppingDragHandleButton(
+        iconRes = iconRes,
+        contentDescription = contentDescription,
+        point = point,
+        key = key,
+        onDrag = { drag -> onResize(resizeScaleFactor(handleVector = handleVector, dragDelta = drag)) },
+        modifier = modifier,
+    )
+}
+
+/**
+ * 토핑 중심에서 핸들까지의 벡터. 드래그 델타와 견주려면 픽셀이어야 한다.
+ *
+ * ⚠️ 조작하는 동안 핸들도 함께 움직이는데 [dragBy] 의 제스처 블록은 시작 시점 람다를 계속 쓴다.
+ * 부르는 쪽은 이 값을 State 로 읽어야 한다 — 값으로 잡으면 처음 위치에 갇힌다(#383).
+ */
+@Composable
+private fun handleVectorPx(
+    point: DpOffset,
+    center: DpOffset,
+): Offset = with(LocalDensity.current) {
+    Offset(x = (point.x - center.x).toPx(), y = (point.y - center.y).toPx())
 }

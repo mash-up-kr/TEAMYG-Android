@@ -32,6 +32,10 @@
     <string name="invite_code_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="invite_code_error_unknown">잠시 후 다시 시도해 주세요</string>
 
+    <string name="group_create_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="group_create_error_unknown">잠시 후 다시 시도해 주세요</string>
+
     <string name="group_nickname_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="group_nickname_error_unknown">잠시 후 다시 시도해 주세요</string>
+    <string name="group_nickname_error_not_applied">닉네임은 적용되지 않았어요\n그룹 설정에서 다시 바꿀 수 있어요</string>
 </resources>

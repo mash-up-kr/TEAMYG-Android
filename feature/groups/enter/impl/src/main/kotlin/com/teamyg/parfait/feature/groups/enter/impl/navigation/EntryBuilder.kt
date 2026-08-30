@@ -50,21 +50,12 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
             },
         )
 
-        YGScaffold(
-            contentWindowInsets = WindowInsets(0.dp),
+        // 형제 entry 와 달리 스캐폴드를 씌우지 않는다 — 로딩·토스트가 화면 상태를 봐야 해서 Route 가 쥔다
+        GroupNickNameRoute(
+            navigator = navigator,
+            viewModel = viewModel,
             modifier = Modifier.fillMaxSize(),
-        ) { innerPadding ->
-            GroupNickNameRoute(
-                navigator = navigator,
-                viewModel = viewModel,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(YGAtomicColors.Gray.White)
-                    .padding(innerPadding)
-                    .statusBarsPadding()
-                    .navigationBarsAndImePadding(),
-            )
-        }
+        )
     }
 }
 
@@ -74,20 +65,11 @@ fun EntryProviderScope<NavKey>.featureGroupCreateEntryBuilder(navigator: Navigat
             creationCallback = { factory -> factory.create(navKey.nickName) },
         )
 
-        YGScaffold(
-            containerColor = YGAtomicColors.Gray.White,
-            contentWindowInsets = WindowInsets(0.dp),
+        // 형제 entry 와 달리 스캐폴드를 씌우지 않는다 — 로딩·토스트가 화면 상태를 봐야 해서 Route 가 쥔다
+        GroupCreateRoute(
+            navigator = navigator,
+            viewModel = viewModel,
             modifier = Modifier.fillMaxSize(),
-        ) { innerPadding ->
-            GroupCreateRoute(
-                navigator = navigator,
-                viewModel = viewModel,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .statusBarsPadding()
-                    .navigationBarsAndImePadding(),
-            )
-        }
+        )
     }
 }

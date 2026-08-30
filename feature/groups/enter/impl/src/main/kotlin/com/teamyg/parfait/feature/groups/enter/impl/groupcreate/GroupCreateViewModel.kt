@@ -23,6 +23,7 @@ data class GroupCreateUiState(
     val nickName: String = "",
     val groupNumber: Int? = null,
     val groupNameError: NameValidResult.Error? = null,
+    val nickNameError: NameValidResult.Error? = null,
     val isConfirmPopupVisible: Boolean = false,
     val isCreating: Boolean = false,
 ) : UiState {
@@ -35,6 +36,8 @@ sealed interface GroupCreateIntent : UiIntent {
     data object ClickBackButton : GroupCreateIntent
 
     data class InputGroupName(val newGroupName: String) : GroupCreateIntent
+
+    data class InputNickName(val newNickName: String) : GroupCreateIntent
 
     data class ClickGroupNumber(val newSelectedNumber: Int) : GroupCreateIntent
 
@@ -51,6 +54,8 @@ sealed interface GroupCreateSideEffect : UiSideEffect {
         val groupName: String,
         val inviteCode: String,
     ) : GroupCreateSideEffect
+
+    data class ShowError(val error: GroupCreateError) : GroupCreateSideEffect
 }
 
 @HiltViewModel(assistedFactory = GroupCreateViewModel.Factory::class)
@@ -80,28 +85,18 @@ constructor(
                 }
             }
 
-            GroupCreateIntent.ClickNextButton -> {
-                when (val result = checkNameValid(state.value.groupName)) {
-                    NameValidResult.Success -> {
-                        updateState {
-                            copy(
-                                groupNameError = null,
-                                isConfirmPopupVisible = true,
-                            )
-                        }
-                    }
-
-                    is NameValidResult.Error -> {
-                        updateState {
-                            copy(groupNameError = result)
-                        }
-                    }
+            is GroupCreateIntent.InputNickName -> {
+                updateState {
+                    copy(
+                        nickName = intent.newNickName,
+                        nickNameError = null,
+                    )
                 }
             }
 
-            GroupCreateIntent.DismissConfirmPopup -> {
-                if (state.value.isCreating) return
+            GroupCreateIntent.ClickNextButton -> confirmForm()
 
+            GroupCreateIntent.DismissConfirmPopup -> {
                 updateState { copy(isConfirmPopupVisible = false) }
             }
 
@@ -109,11 +104,26 @@ constructor(
         }
     }
 
+    /** 두 이름을 함께 검사한다 — 한쪽만 보면 통과한 뒤 다른 쪽 에러가 뒤늦게 떠 두 번 걸린다 */
+    private fun confirmForm() {
+        val groupNameError = checkNameValid(state.value.groupName) as? NameValidResult.Error
+        val nickNameError = checkNameValid(state.value.nickName) as? NameValidResult.Error
+
+        updateState {
+            copy(
+                groupNameError = groupNameError,
+                nickNameError = nickNameError,
+                isConfirmPopupVisible = groupNameError == null && nickNameError == null,
+            )
+        }
+    }
+
     private fun requestCreateGroup() {
         val memberLimit = state.value.groupNumber ?: return
         if (state.value.isCreating) return
 
-        updateState { copy(isCreating = true) }
+        // 통신을 시작하기 전에 팝업을 걷는다 — 진행 중임은 `isCreating` 하나로만 말한다
+        updateState { copy(isConfirmPopupVisible = false, isCreating = true) }
         // `onError` 는 `Result.failure` 가 아니라 던져진 예외를 받는다 — 두 경로를 한곳으로
         // 모아야 실패가 조용히 사라지지 않는다
         launch(key = KEY_CREATE_GROUP, onError = ::onCreateGroupFailed) {
@@ -133,7 +143,6 @@ constructor(
 
     private fun onGroupCreated(createdGroup: CreatedGroupVO) {
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
-        updateState { copy(isConfirmPopupVisible = false) }
         postSideEffect(
             GroupCreateSideEffect.NavigateToNext(
                 groupId = createdGroup.groupId.value,
@@ -143,21 +152,26 @@ constructor(
         )
     }
 
-    /**
-     * TODO : 실패를 사용자에게 어떻게 알릴지 논의가 끝나지 않아 지금은 로그만 남긴다 — 추후 처리 예정.
-     *
-     * 팝업은 닫지 않는다. 안내가 없는 지금 닫으면 아무 일도 없던 것처럼 보인다.
-     */
+    /** 입력값은 지우지 않는다 — 실패는 대개 재시도로 풀린다 */
     private fun onCreateGroupFailed(throwable: Throwable) {
-        when (throwable) {
-            is AppError.Network ->
+        val error = when (throwable) {
+            is AppError.Network -> {
                 viewModelLogger.e(throwable) { "그룹 생성 실패 — 네트워크 단절" }
+                GroupCreateError.NETWORK
+            }
 
-            is AppError.Server -> logServerFailure(throwable)
+            is AppError.Server -> {
+                logServerFailure(throwable)
+                GroupCreateError.UNKNOWN
+            }
 
-            else ->
+            else -> {
                 viewModelLogger.e(throwable) { "그룹 생성 실패 — 예상하지 못한 오류" }
+                GroupCreateError.UNKNOWN
+            }
         }
+
+        postSideEffect(GroupCreateSideEffect.ShowError(error))
     }
 
     /** 400 세 갈래는 입력 검증·인원수 UI 가 이미 막으므로, 여기까지 왔다면 서버 규칙과 어긋난 것이다 */

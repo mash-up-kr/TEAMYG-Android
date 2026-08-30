@@ -39,6 +39,8 @@ fun YGToppingGroup(
         modifier = modifier.size(SizeTokens.Size160.getDp()),
         contentAlignment = Alignment.Center,
     ) {
+        // clip 은 이미지가 프레임을 넘어 인접 셀을 덮는 것을 막는 방어선이다.
+        // rotate 보다 안쪽이어야 한다. 바깥이면 회전 오버행까지 잘려 배치 변형이 깨진다
         val imageModifier = Modifier
             .size(SizeTokens.Size96.getDp())
             .offset(
@@ -48,10 +50,11 @@ fun YGToppingGroup(
             .clip(RectangleShape)
 
         when (image) {
+            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다
             is YGToppingImage.Remote -> AsyncImage(
                 model = image.url,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 error = painterResource(TOPPING_ERROR_DRAWABLE),
                 modifier = imageModifier,
             )
