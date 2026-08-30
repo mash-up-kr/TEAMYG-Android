@@ -154,6 +154,13 @@ data class CanvasMainUiState(
     val isCanvasEmpty: Boolean
         get() = toppings.isEmpty()
 
+    /**
+     * [YGCanvas] 의 빈 캔버스 안내판과 정확히 반대 조건이다 — 안내판이 덮고 있을 때는
+     * 저장할 배경도 토핑도 없으므로 저장 아이콘도 함께 감춘다.
+     */
+    val isCanvasSaveVisible: Boolean
+        get() = (isCanvasEmpty && canvasBackground == null).not()
+
     /** Default 상태(또는 스포트라이트된 토핑이 그 사이 지워졌을 때)면 null */
     val spotlightedTopping: CanvasToppingVO?
         get() = spotlightedToppingId?.let { id -> toppings.firstOrNull { it.parfaitImageId == id } }

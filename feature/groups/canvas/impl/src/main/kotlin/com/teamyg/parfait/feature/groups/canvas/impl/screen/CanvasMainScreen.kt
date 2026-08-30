@@ -145,6 +145,9 @@ internal fun CanvasMainScreen(
                 )
             },
             background = canvasState.canvasBackground.toYGCanvasBackground(),
+            isSaveVisible = canvasState.isCanvasSaveVisible,
+            onClickSave = onClickSaveToGallery,
+            saveContentDescription = stringResource(R.string.canvas_main_save_to_gallery),
             captureGraphicsLayer = graphicsLayer,
             // TODO: 전일 캔버스 알림 트리거를 실제로 붙일 때, 토스트·얼럿이 같은 타이밍에
             // 겹쳐 뜨지 않게 같이 처리한다 — 지금은 그냥 세로로 쌓아 둘 다 보일 수 있다
