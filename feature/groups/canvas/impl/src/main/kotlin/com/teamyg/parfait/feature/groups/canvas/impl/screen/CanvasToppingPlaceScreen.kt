@@ -251,21 +251,21 @@ private fun ToppingPlaceCornerButtons(
     )
 
     Box(modifier = modifier) {
-        ToppingResizeHandleButton(
-            iconRes = DesignSystemR.drawable.ic_scale,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
-            point = buttonPoints.topRight,
-            center = center,
-            key = Unit,
-            onResize = onResize,
-        )
         ToppingRotateHandleButton(
             iconRes = DesignSystemR.drawable.ic_rotate,
             contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
-            point = buttonPoints.bottomRight,
+            point = buttonPoints.topRight,
             center = center,
             key = Unit,
             onRotate = onRotate,
+        )
+        ToppingResizeHandleButton(
+            iconRes = DesignSystemR.drawable.ic_scale,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
+            point = buttonPoints.bottomRight,
+            center = center,
+            key = Unit,
+            onResize = onResize,
         )
     }
 }

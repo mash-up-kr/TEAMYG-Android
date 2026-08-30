@@ -518,7 +518,7 @@ private fun CanvasToppingImage(
 
 /**
  * 선택된 토핑의 스트로크와 그 네 모서리에 놓는 버튼들.
- * 좌측 상단=삭제, 우측 상단=크기조절(드래그 핸들), 좌측 하단=편집, 우측 하단=회전(드래그 핸들).
+ * 좌측 상단=삭제, 우측 상단=회전(드래그 핸들), 좌측 하단=편집, 우측 하단=크기조절(드래그 핸들).
  */
 @Composable
 private fun ToppingCornerButtons(
@@ -560,13 +560,13 @@ private fun ToppingCornerButtons(
             onClick = onClickDelete,
             modifier = Modifier.centeredAt(buttonPoints.topLeft),
         )
-        ToppingResizeHandleButton(
-            iconRes = DesignSystemR.drawable.ic_scale,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
+        ToppingRotateHandleButton(
+            iconRes = DesignSystemR.drawable.ic_rotate,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.topRight,
             center = center,
             key = entry.topping.parfaitImageId,
-            onResize = onResize,
+            onRotate = onRotate,
         )
         YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_edit,
@@ -575,13 +575,13 @@ private fun ToppingCornerButtons(
             onClick = onClickEdit,
             modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
         )
-        ToppingRotateHandleButton(
-            iconRes = DesignSystemR.drawable.ic_rotate,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
+        ToppingResizeHandleButton(
+            iconRes = DesignSystemR.drawable.ic_scale,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.bottomRight,
             center = center,
             key = entry.topping.parfaitImageId,
-            onRotate = onRotate,
+            onResize = onResize,
         )
     }
 }
