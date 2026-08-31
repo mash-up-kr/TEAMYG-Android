@@ -28,7 +28,7 @@ interface ParfaitImageService {
     ): ApiResponse<PlaceParfaitImageResponse>
 
     /**
-     * POST 와 경로가 같고 메서드만 다르다 — 서버에서도 두 컨트롤러가 이 URL 을 나눠 갖는다.
+     * POST 와 경로가 같고 메서드만 다르다. 서버 쪽 컨트롤러 구성은 `api/parfait-image.md` 참고.
      */
     @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images")
     suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImages(

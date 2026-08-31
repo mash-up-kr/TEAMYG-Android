@@ -77,6 +77,7 @@ private const val THIRD_PARFAIT_ID = 300L
 private const val MY_IMAGE_ID = 10L
 private const val SECOND_IMAGE_ID = 20L
 private const val OTHER_IMAGE_ID = 30L
+private const val THIRD_IMAGE_ID = 40L
 
 class CanvasBGEditViewModelTest {
     @get:Rule
@@ -581,6 +582,76 @@ class CanvasBGEditViewModelTest {
         // Then 서버가 전부 롤백했으므로 보낸 토핑 전부를 대상으로 남긴다
         assertEquals(setOf(MY_IMAGE_ID, SECOND_IMAGE_ID), viewModel.state.value.dirtyToppingIds)
     }
+
+    /**
+     * 위 테스트([onClickConfirm_batchFails_keepsEveryTransformToppingDirty])는 옮긴 토핑만
+     * dirty 라 dirty 집합과 "변형이 바뀐 토핑" 집합이 우연히 같다 — `saveTransforms` 가
+     * `transformChanged` 대신 `dirty` 전부를 실패로 남겨도 통과한다. 이 테스트는 그 둘을
+     * 가른다: 내 토핑 셋 중 하나는 변형만, 하나는 테두리만 바꾸고 하나는 안 건드린다.
+     */
+    @Test
+    fun onClickConfirm_batchFails_onlyTransformChangedToppingIsBatchedAndKeptDirty() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 내 토핑 셋: 변형만 바뀐 것, 테두리만 바뀐 것, 안 건드린 것
+            // handleOnToppingEditResult 가 File(...).toUri() 로 cutoutImagePath 를 적는데,
+            // 그 안의 Uri.fromFile 은 안드로이드 프레임워크 실물이라 JVM 유닛 테스트에서 스텁 없인 던진다
+            mockkStatic(Uri::class)
+            every { Uri.fromFile(any()) } returns mockk(relaxed = true)
+            stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+            todayCanvases.value = canvasWith(
+                myTopping(MY_IMAGE_ID),
+                myTopping(SECOND_IMAGE_ID),
+                myTopping(THIRD_IMAGE_ID),
+            )
+            val viewModel = viewModel()
+
+            // 변형만 바꾼다 — 드래그
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnClickTopping(
+                    viewModel.state.value.toppings
+                        .first { it.parfaitImageId == MY_IMAGE_ID },
+                ),
+            )
+            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+
+            // 테두리만 바꾼다 — 위치는 그대로 두고 테두리 편집 결과만 반영한다
+            val newBorder = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)
+            val borderParfaitImageId = ParfaitImageId(SECOND_IMAGE_ID)
+            coEvery {
+                updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), borderParfaitImageId, newBorder)
+            } returns Result.success(UpdatedToppingBorderVO(borderParfaitImageId, newBorder))
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnToppingEditResult(
+                    toppingId = SECOND_IMAGE_ID,
+                    result = ToppingEditResult(
+                        subjectImagePath = "/cache/segmentation/subject.png",
+                        cutoutImagePath = "/cache/segmentation/cutout.png",
+                        borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f)),
+                    ),
+                ),
+            )
+
+            // THIRD_IMAGE_ID 는 손대지 않는다
+
+            val updates = slot<List<ToppingTransformUpdate>>()
+            coEvery {
+                updateToppings(any(), any(), capture(updates))
+            } returns Result.failure(RuntimeException("실패"))
+
+            // When 확인 버튼을 누른다 — 일괄(변형)만 실패시킨다
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then ① 일괄 요청에는 변형만 바꾼 토핑만 실린다 — 테두리만 바뀐 것도, 안 건드린 것도 없다
+            assertEquals(
+                setOf(ParfaitImageId(MY_IMAGE_ID)),
+                updates.captured.map { it.parfaitImageId }.toSet(),
+            )
+
+            // ② 실패 뒤 변형 토핑은 dirty 로 남고, 성공한 테두리 토핑은 빠진다
+            // ③ 안 건드린 토핑은 어느 쪽에도 없다
+            assertEquals(setOf(MY_IMAGE_ID), viewModel.state.value.dirtyToppingIds)
+        }
 
     @Test
     fun onClickConfirm_everythingSaved_clearsDirtyAndConfirms() = runTest(mainDispatcherRule.dispatcher) {

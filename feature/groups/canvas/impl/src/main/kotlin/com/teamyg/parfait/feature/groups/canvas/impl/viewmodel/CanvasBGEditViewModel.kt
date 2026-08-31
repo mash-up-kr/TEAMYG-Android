@@ -620,7 +620,7 @@ constructor(
      * 응답에 없다(`api/parfait-image.md`). 그래서 실패하면 보낸 토핑 전부를 대상으로 남긴다.
      *
      * 되풀이되는 실패가 섞이면 나머지 토핑까지 계속 막히는 것을 감수한 설계다 — 근거는
-     * 스펙의 「주의」 절에 있다.
+     * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절에 있다.
      *
      * @return 저장하지 못한 토핑의 id.
      */
