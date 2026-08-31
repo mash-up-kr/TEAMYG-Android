@@ -2,11 +2,11 @@ package com.teamyg.parfait.data.service
 
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
-import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImagesRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
-import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImagesResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.PATCH
@@ -27,13 +27,15 @@ interface ParfaitImageService {
         @Body request: PlaceParfaitImageRequest,
     ): ApiResponse<PlaceParfaitImageResponse>
 
-    @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images/{parfaitImageId}")
-    suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
+    /**
+     * POST 와 경로가 같고 메서드만 다르다. 서버 쪽 컨트롤러 구성은 `api/parfait-image.md` 참고.
+     */
+    @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images")
+    suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImages(
         @Path("groupId") groupId: Long,
         @Path("parfaitId") parfaitId: Long,
-        @Path("parfaitImageId") parfaitImageId: Long,
-        @Body request: UpdateParfaitImageRequest,
-    ): ApiResponse<UpdateParfaitImageResponse>
+        @Body request: UpdateParfaitImagesRequest,
+    ): ApiResponse<UpdateParfaitImagesResponse>
 
     @PATCH("api/v1/groups/{groupId}/parfaits/{parfaitId}/images/{parfaitImageId}/border")
     suspend fun patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageIdBorder(

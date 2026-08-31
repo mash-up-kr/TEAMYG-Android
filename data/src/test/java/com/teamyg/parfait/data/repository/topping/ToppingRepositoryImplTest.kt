@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import io.mockk.coEvery
@@ -175,42 +176,50 @@ class ToppingRepositoryImplTest {
     }
 
     @Test
-    fun update_dataSourceSucceeds_returnsSameValue() = runTest {
-        // Given 서버가 수정된 배치를 준다
-        val updated = UpdatedToppingVO(parfaitImageId = PARFAIT_IMAGE_ID, transform = transform)
+    fun updateAll_dataSourceSucceeds_returnsSameValue() = runTest {
+        // Given 서버가 수정된 배치 둘을 준다
+        val updated = listOf(
+            UpdatedToppingVO(parfaitImageId = PARFAIT_IMAGE_ID, transform = transform),
+            UpdatedToppingVO(parfaitImageId = ParfaitImageId(43L), transform = transform),
+        )
+        val updates = listOf(
+            ToppingTransformUpdate(
+                parfaitImageId = PARFAIT_IMAGE_ID,
+                positionX = transform.positionX,
+                positionY = transform.positionY,
+                scale = transform.scale,
+                rotation = transform.rotation,
+            ),
+            ToppingTransformUpdate(parfaitImageId = ParfaitImageId(43L), scale = 2.0),
+        )
         coEvery {
-            parfaitImageRemoteDataSource.updateTopping(
-                GROUP_ID,
-                PARFAIT_ID,
-                PARFAIT_IMAGE_ID,
-                transform.positionX,
-                transform.positionY,
-                null,
-                transform.scale,
-                transform.rotation,
-            )
+            parfaitImageRemoteDataSource.updateToppings(GROUP_ID, PARFAIT_ID, updates)
         } returns Result.success(updated)
 
-        // When 위치·크기·각도를 수정한다
-        val result = repository.update(
-            groupId = GROUP_ID,
-            parfaitId = PARFAIT_ID,
-            parfaitImageId = PARFAIT_IMAGE_ID,
-            positionX = transform.positionX,
-            positionY = transform.positionY,
-            scale = transform.scale,
-            rotation = transform.rotation,
-        )
+        // When 둘을 한 번에 수정한다
+        val result = repository.updateAll(groupId = GROUP_ID, parfaitId = PARFAIT_ID, updates = updates)
 
         // Then 값을 가공 없이 그대로 전달한다
         assertEquals(updated, result.getOrThrow())
     }
 
     @Test
-    fun update_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
-        // Given 본인이 배치한 토핑이 아니다
+    fun updateAll_emptyUpdates_shortCircuitsWithoutCallingDataSource() = runTest {
+        // Given 보낼 것이 없다
+
+        // When 빈 목록으로 부른다
+        val result = repository.updateAll(groupId = GROUP_ID, parfaitId = PARFAIT_ID, updates = emptyList())
+
+        // Then 서버가 빈 items 를 200 으로 받아 주더라도 요청 자체를 안 만든다
+        assertEquals(emptyList(), result.getOrThrow())
+        coVerify(exactly = 0) { parfaitImageRemoteDataSource.updateToppings(any(), any(), any()) }
+    }
+
+    @Test
+    fun updateAll_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
+        // Given 항목 중 하나가 본인이 배치한 토핑이 아니다 — 서버가 전부 롤백한다
         coEvery {
-            parfaitImageRemoteDataSource.updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
+            parfaitImageRemoteDataSource.updateToppings(any(), any(), any())
         } returns Result.failure(
             ApiException.Business(
                 code = "PARFAIT_IMAGE_NOT_OWNED",
@@ -220,12 +229,11 @@ class ToppingRepositoryImplTest {
             ),
         )
 
-        // When 위치를 수정한다
-        val result = repository.update(
+        // When 수정한다
+        val result = repository.updateAll(
             groupId = GROUP_ID,
             parfaitId = PARFAIT_ID,
-            parfaitImageId = PARFAIT_IMAGE_ID,
-            positionX = 100.0,
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = PARFAIT_IMAGE_ID, positionX = 100.0)),
         )
 
         // Then 코드와 상태 코드가 함께 살아 있다

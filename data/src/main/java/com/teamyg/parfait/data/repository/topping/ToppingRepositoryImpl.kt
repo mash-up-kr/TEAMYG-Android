@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.repository.topping.ToppingRepository
@@ -44,26 +45,18 @@ class ToppingRepositoryImpl @Inject constructor(
         .deleteTopping(groupId = groupId, parfaitId = parfaitId, parfaitImageId = parfaitImageId)
         .mapErrorToAppError()
 
-    override suspend fun update(
+    override suspend fun updateAll(
         groupId: GroupId,
         parfaitId: ParfaitId,
-        parfaitImageId: ParfaitImageId,
-        positionX: Double?,
-        positionY: Double?,
-        positionZ: Int?,
-        scale: Double?,
-        rotation: Double?,
-    ): Result<UpdatedToppingVO> = parfaitImageRemoteDataSource
-        .updateTopping(
-            groupId = groupId,
-            parfaitId = parfaitId,
-            parfaitImageId = parfaitImageId,
-            positionX = positionX,
-            positionY = positionY,
-            positionZ = positionZ,
-            scale = scale,
-            rotation = rotation,
-        ).mapErrorToAppError()
+        updates: List<ToppingTransformUpdate>,
+    ): Result<List<UpdatedToppingVO>> {
+        // 서버가 빈 items 를 200 으로 받아 주지만 보낼 이유가 없다(`api/parfait-image.md`)
+        if (updates.isEmpty()) return Result.success(emptyList())
+
+        return parfaitImageRemoteDataSource
+            .updateToppings(groupId = groupId, parfaitId = parfaitId, updates = updates)
+            .mapErrorToAppError()
+    }
 
     override suspend fun updateBorder(
         groupId: GroupId,
