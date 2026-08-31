@@ -24,10 +24,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.route.CanvasToppingPlaceRou
 fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
     entry<NavKeyCanvasMain> { navKey ->
         CanvasMainRoute(
-            groupId = navKey.groupId,
+            navKey = navKey,
             navigator = navigator,
-            welcomeGroupName = navKey.welcomeGroupName,
-            welcomeInviteCode = navKey.welcomeInviteCode,
             modifier = Modifier.fillMaxSize(),
         )
     }

@@ -30,6 +30,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
@@ -51,17 +52,15 @@ private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
 @Composable
 internal fun CanvasMainRoute(
-    groupId: Long,
+    navKey: NavKeyCanvasMain,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    welcomeGroupName: String? = null,
-    welcomeInviteCode: String? = null,
     viewModel: CanvasMainViewModel = hiltViewModel(
         creationCallback = { factory: CanvasMainViewModel.Factory ->
             factory.create(
-                groupIdValue = groupId,
-                welcomeGroupName = welcomeGroupName,
-                welcomeInviteCode = welcomeInviteCode,
+                groupIdValue = navKey.groupId,
+                welcomeGroupName = navKey.welcomeGroupName,
+                welcomeInviteCode = navKey.welcomeInviteCode,
             )
         },
     ),
