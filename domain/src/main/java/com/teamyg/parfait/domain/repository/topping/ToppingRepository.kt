@@ -42,7 +42,7 @@ interface ToppingRepository {
      * 배치된 토핑 여럿의 위치·크기·각도를 한 요청으로 부분 수정한다. 넘기지 않은 축은 서버가 유지한다.
      *
      * 부분 성공이 없다 — 하나라도 걸리면 전부 롤백되고 실패한 항목이 무엇인지는 알 수 없다.
-     * [updates] 가 비면 요청을 보내지 않고 빈 목록으로 성공한다.
+     * [updates] 가 비면 요청 자체를 만들지 않는다.
      */
     suspend fun updateAll(
         groupId: GroupId,

@@ -13,8 +13,8 @@ data class PastParfaitsResponse(
 )
 
 /**
- * @param status 오늘 조회·상세와 같은 값 집합이다. EMPTY 는 "비어 있음"이 아니라
- * "빈 채로 마감됨"이라 imageCount == 0 과 뜻이 다르다(`api/parfait.md`).
+ * @param status 오늘 조회·상세와 같은 값 집합이고, EMPTY 는 imageCount == 0 과 뜻이
+ * 다르다(`api/parfait.md`).
  * @param thumbnailUrl 서버가 항상 null 을 넣는다. 채우는 코드가 없다(`api/parfait.md`).
  */
 @Serializable

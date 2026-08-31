@@ -594,8 +594,7 @@ constructor(
      * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 대조를 dirty 안에서만 하는 것이 요점이다:
      * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
      *
-     * 축으로 가르는 이유는 서버 API 가 갈라져 있어서다 — 변형은 한 요청에 접히지만
-     * (`ToppingRepository.updateAll`) 테두리는 토핑마다 따로 나간다(`updateBorder`).
+     * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
      *
      * @return 저장하지 못한 토핑의 id.
      */
@@ -616,11 +615,9 @@ constructor(
     }
 
     /**
-     * 일괄이라 부분 성공이 없다 — 하나가 걸리면 서버가 전부 롤백하고 실패한 항목이 무엇인지
-     * 응답에 없다(`api/parfait-image.md`). 그래서 실패하면 보낸 토핑 전부를 대상으로 남긴다.
-     *
-     * 되풀이되는 실패가 섞이면 나머지 토핑까지 계속 막히는 것을 감수한 설계다 — 근거는
-     * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절에 있다.
+     * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
+     * 섞이면 나머지까지 계속 막히는 것을 감수한 설계다 —
+     * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절.
      *
      * @return 저장하지 못한 토핑의 id.
      */
@@ -640,7 +637,6 @@ constructor(
         )
     }
 
-    /** @return 보냈고 성공했으면 `true`. */
     private suspend fun saveBorder(topping: CanvasToppingItem): Boolean = updateToppingBorderUseCase(
         groupId = groupId,
         parfaitId = parfaitId,
@@ -650,7 +646,7 @@ constructor(
         viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
     }.isSuccess
 
-    /** 스냅샷에 없으면 바뀐 것으로 본다 — 갱신이 들여온 토핑은 dirty 에 안 들어 여기 오지 않는다. */
+    /** 스냅샷에 없는 토핑을 바뀐 것으로 봐도 안전하다 — 갱신이 들여온 토핑은 dirty 에 안 들어온다. */
     private fun CanvasToppingItem.hasTransformChange(): Boolean {
         val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
         return positionX != original.positionX ||

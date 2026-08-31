@@ -32,10 +32,7 @@ interface ParfaitImageRemoteDataSource {
      *
      * 부분 성공이 없다 — 항목 하나가 걸리면 전부 롤백되고 어느 항목이었는지는 응답에 없다.
      * 테두리는 이 API 로 바꿀 수 없다(요청에 필드가 없다) — [updateToppingBorder] 가 맡는다.
-     *
-     * 그룹에 참여하지 않았을 때도 본인 배치가 아닐 때와 같은 코드(PARFAIT_IMAGE_NOT_OWNED,
-     * 403)가 온다. 그룹 멤버라면 마감된 캔버스가 항목별 소유권보다 먼저 걸려 409
-     * PARFAIT_ALREADY_CLOSED 다 — 그 둘의 순서가 단건 수정과 반대다(`api/parfait-image.md`).
+     * 실패 코드와 검사 순서는 `api/parfait-image.md` 참고.
      */
     suspend fun updateToppings(
         groupId: GroupId,
