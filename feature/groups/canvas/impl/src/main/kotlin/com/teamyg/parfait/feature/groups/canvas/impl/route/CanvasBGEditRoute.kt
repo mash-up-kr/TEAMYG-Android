@@ -19,6 +19,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasBGEditScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditError
@@ -75,7 +76,11 @@ internal fun CanvasBGEditRoute(
 
                 is CanvasBGEditEffect.NavigateToGallery -> {
                     navigator.goTo(
-                        destination = NavKeyCustomGalleryPicker(showGuideToast = false, returnResultOnly = true),
+                        destination = NavKeyCustomGalleryPicker(
+                            recentImagePick = RecentImagePick.SOURCE,
+                            showGuideToast = false,
+                            returnResultOnly = true,
+                        ),
                     )
                 }
 
