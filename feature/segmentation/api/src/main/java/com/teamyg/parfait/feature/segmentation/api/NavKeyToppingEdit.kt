@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
  * @param sourceImageUri 원본 이미지. 제거했던 영역을 다시 채울 때 이 픽셀을 가져온다
  * @param segmentationImageUri Segmentation 으로 잘라낸 이미지. 이 이미지의 알파가 편집의 시작 마스크가 된다
  * @param borderLayers 이미 두른 테두리 겹. 다시 편집할 때 벗겨진 채로 열리지 않도록 되살릴 재료다
- * @param borderOnly 이미 캔버스에 놓인 토핑을 다시 손볼 때는 영역(잘라내기)은 건드릴 수 없고 테두리만
- * 고칠 수 있어야 한다. true 면 영역|테두리 탭 전환 없이 테두리 편집만 열린다
+ * @param borderOnly 되살릴 원본이 없는 진입은 영역(잘라내기)을 건드릴 수 없고 테두리만 고칠 수
+ * 있어야 한다. true 면 영역|테두리 탭 전환 없이 테두리 편집만 열린다
  */
 @Serializable
 data class NavKeyToppingEdit(
