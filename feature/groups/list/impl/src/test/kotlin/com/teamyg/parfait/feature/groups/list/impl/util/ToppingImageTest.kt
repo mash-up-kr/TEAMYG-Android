@@ -23,7 +23,7 @@ class ToppingImageTest {
 
     @Test
     fun withRecentImage_isRemote() {
-        // Given 최근 토핑 이미지가 있는 그룹
+        // Given 오늘 캔버스에 토핑이 있는 그룹
         val group = group(groupId = 1L, recentImageUrl = "https://cdn.example.com/a.png")
 
         // When 띄울 이미지를 고른다
@@ -35,7 +35,7 @@ class ToppingImageTest {
 
     @Test
     fun withoutRecentImage_isTemplateNotError() {
-        // Given 아직 토핑이 올라오지 않은 그룹
+        // Given 오늘 캔버스에 토핑이 없는 그룹
         val group = group(groupId = 1L, recentImageUrl = null)
 
         // When 띄울 이미지를 고른다
