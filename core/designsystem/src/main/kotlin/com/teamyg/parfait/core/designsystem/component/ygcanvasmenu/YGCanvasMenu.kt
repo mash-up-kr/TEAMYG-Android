@@ -64,6 +64,7 @@ fun YGCanvasMenu(
                 text = editAction.text,
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
+                isEnabled = editAction.isEnabled,
             )
         }
     }

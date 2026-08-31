@@ -43,14 +43,25 @@ fun YGMenuItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     @DrawableRes iconResource: Int? = null,
+    isEnabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     val shape = YGTheme.shapes.radius.none
-    val backgroundColor = if (isPressed) {
+    val backgroundColor = if (isEnabled && isPressed) {
         YGAtomicColors.Gray.White
     } else {
         YGAtomicColors.Transparency.White75
+    }
+    val borderColor = if (isEnabled) {
+        YGAtomicColors.Gray.Gray500
+    } else {
+        YGAtomicColors.Gray.Gray200
+    }
+    val contentColor = if (isEnabled) {
+        YGAtomicColors.Gray.Gray700
+    } else {
+        YGAtomicColors.Gray.Gray300
     }
 
     Row(
@@ -63,9 +74,10 @@ fun YGMenuItem(
             ).clip(shape)
             .border(
                 width = 1.dp,
-                color = YGAtomicColors.Gray.Gray500,
+                color = borderColor,
                 shape = shape,
             ).clickableYGNoRipple(
+                enabled = isEnabled,
                 onClick = onClick,
                 interactionSource = interactionSource,
             ).semantics { role = Role.Button },
@@ -78,14 +90,14 @@ fun YGMenuItem(
         Text(
             text = text,
             style = YGTheme.typography.body.b02R,
-            color = YGAtomicColors.Gray.Gray700,
+            color = contentColor,
             textAlign = TextAlign.Center,
         )
         iconResource?.let {
             Image(
                 painter = painterResource(id = it),
                 contentDescription = null,
-                colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.Gray700),
+                colorFilter = ColorFilter.tint(color = contentColor),
                 modifier = Modifier.size(SizeTokens.Size20.getDp()),
             )
         }
@@ -108,6 +120,12 @@ private fun YGMenuItemPreview() = PreviewBox {
             text = "오늘의 파르페 가기",
             iconResource = R.drawable.ic_caret_right,
             onClick = {},
+        )
+        YGMenuItem(
+            text = "오늘의 파르페 가기",
+            iconResource = R.drawable.ic_caret_right,
+            onClick = {},
+            isEnabled = false,
         )
     }
 }
