@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,8 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
-import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -82,23 +80,10 @@ internal fun GalleryPermissionRequestComponent(
 
             // 인셋은 이 화면을 띄우는 Scaffold 가 이미 물려 준다 — 여기서 한 번 더 물면
             // 상태바 높이만큼 아래로 밀려 닫기 버튼이 설계보다 깊이 내려간다
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                        top = YGTheme.layout.padding.padding6,
-                    ),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                YGCircleButton(
-                    iconResource = DesignSystemR.drawable.ic_close,
-                    type = YGCircleButtonType.Default,
-                    contentDescription = null,
-                    onClick = onClickCancel,
-                )
-            }
+            YGFloatingBarClose(
+                onCloseClick = onClickCancel,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

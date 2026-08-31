@@ -41,18 +41,29 @@ data class YGToastItem(
     val id: String,
     val type: YGToastType,
     val visible: Boolean = true,
+    val tag: String? = null,
 )
 
 @Stable
 class YGToastPolicy {
     val toasts = mutableStateListOf<YGToastItem>()
 
-    fun show(type: YGToastType) {
+    /**
+     * @param replaceTag 같은 태그가 떠 있으면 닫고 이것만 남긴다. 주지 않으면 쌓인다.
+     *   [YGToastType] 으로 나누지 않는 이유는 같은 타입이라도 쌓여야 하는 토스트가 있어서다.
+     */
+    fun show(
+        type: YGToastType,
+        replaceTag: String? = null,
+    ) {
+        if (replaceTag != null) toasts.removeAll { it.tag == replaceTag }
+
         toasts.add(
             0,
             YGToastItem(
                 id = UUID.randomUUID().toString(),
                 type = type,
+                tag = replaceTag,
             ),
         )
     }

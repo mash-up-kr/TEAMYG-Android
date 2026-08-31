@@ -34,9 +34,13 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainIntent
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import kotlinx.datetime.number
+
+/** 작성자 정보는 지금 강조된 토핑의 것 하나만 보여야 한다. */
+private const val SPOTLIGHT_TOAST_TAG = "spotlight"
 
 @Composable
 internal fun CanvasMainRoute(
@@ -91,8 +95,9 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCameraCustom(),
                 )
 
+                // 원본까지 실으면 한 흐름이 남긴 두 장이 같은 사진으로 나란히 뜬다(OQ-P-258)
                 is CanvasMainEffect.NavigateToCanvas -> navigator.goTo(
-                    destination = NavKeyCustomGalleryPicker(),
+                    destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
                 )
 
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(
@@ -125,11 +130,12 @@ internal fun CanvasMainRoute(
                 }
 
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
-                    YGToastType.Record(
+                    type = YGToastType.Record(
                         userName = effect.nickname,
                         time = effect.elapsed.toSpotlightTimeLabel(context),
                         userNameColor = effect.nicknameColor,
                     ),
+                    replaceTag = SPOTLIGHT_TOAST_TAG,
                 )
 
                 is CanvasMainEffect.ShowTodayCanvasError -> toastPolicy.showError(todayCanvasErrorMessage)
@@ -146,7 +152,10 @@ internal fun CanvasMainRoute(
         onStopOrDispose { }
     }
 
-    YGScaffoldV2(modifier = modifier) { innerPadding ->
+    YGScaffoldV2(
+        modifier = modifier,
+        isLoading = canvasState.isInitialLoading,
+    ) { innerPadding ->
         CanvasMainScreen(
             canvasState = canvasState,
             onClickBack = { navigator.onBack() },

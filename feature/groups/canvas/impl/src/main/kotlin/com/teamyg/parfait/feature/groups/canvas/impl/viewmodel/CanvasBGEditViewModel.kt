@@ -26,7 +26,8 @@ import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
-import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitUseCase
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
@@ -39,6 +40,7 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import java.io.File
 
 enum class CanvasEditTab { BACKGROUND, TOPPING }
@@ -102,6 +104,23 @@ data class CanvasBGEditUiState(
     val toppings: List<CanvasToppingItem> = emptyList(),
     val selectedToppingId: Long? = null,
     val showDeleteToppingDialog: Boolean = false,
+    /**
+     * 아직 서버에 반영되지 않은 로컬 변경. 이동·크기조절·회전·테두리 편집이 여기 든다.
+     *
+     * **삭제는 넣지 않는다** — 삭제 모달의 확인이 곧 DELETE 라 이미 서버에 반영돼 있고,
+     * 확인 버튼은 삭제를 다루지 않는다.
+     *
+     * 같은 화면의 [selectedToppingId] 가 `Long` 이라 그것에 맞춘다. `ParfaitImageId` 로 감싸는
+     * 자리는 지금처럼 API 호출 직전 한 곳뿐이다.
+     */
+    val dirtyToppingIds: Set<Long> = emptySet(),
+    /**
+     * 지운 토핑의 툼스톤. 삭제 직전에 출발한 갱신 응답이 뒤늦게 도착하면 그 토핑이 아직 서버
+     * 목록에 있어서, 이게 없으면 방금 지운 토핑이 되살아난다.
+     */
+    val deletedToppingIds: Set<Long> = emptySet(),
+    /** 확인과 삭제가 한 깃발을 나눠 쓴다 — 덮개가 입력을 삼켜 둘이 겹칠 수 없다. */
+    val isLoading: Boolean = false,
 ) : UiState
 
 sealed interface CanvasBGEditIntent : UiIntent {
@@ -206,7 +225,8 @@ constructor(
     @Assisted("groupId") groupIdValue: Long,
     @Assisted("parfaitId") parfaitIdValue: Long,
     @Assisted("initialToppingId") initialToppingIdValue: Long?,
-    private val getTodayParfaitUseCase: GetTodayParfaitUseCase,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val refreshTodayParfaitDetailUseCase: RefreshTodayParfaitDetailUseCase,
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
@@ -221,71 +241,104 @@ constructor(
     private val initialToppingId = initialToppingIdValue
 
     /**
-     * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 편집 중 자정을
-     * 넘겨 조회가 **새 날의 캔버스**를 주면 그쪽으로 옮긴다 — 화면에 그려진 토핑과 저장
-     * 대상이 갈라지는 편이 더 나쁘다.
+     * 배경을 저장할 대상. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 최초 방출이 다른
+     * parfaitId 를 주면 그쪽으로 옮긴다([hasSeededFromCanvas] 참고) — 화면에 그려진 토핑과
+     * 저장 대상이 갈라지는 편이 더 나쁘다.
+     *
+     * 그 뒤 날이 바뀌어 조회가 다른 날의 캔버스를 주는 경우는 여기서 옮기지 않는다 — 이 화면의
+     * 시간 축이 닫을 몫이다(`specs/2026-08-27-canvas-today-ssot-polling.md` 「하루 경계」).
      */
     private var parfaitId = ParfaitId(parfaitIdValue)
 
     /**
-     * 서버에서 막 받아온 그대로의 스냅샷. 확인 버튼을 눌렀을 때 [CanvasBGEditUiState.toppings]와
-     * 대조해 실제로 바뀐 토핑만 골라 PATCH 하는 데 쓴다 — 화면 렌더링에는 쓰지 않는다.
+     * 최초 방출에만 서버 값을 시딩하고, 편집 대상([parfaitId])도 최초 방출로만 정한다 — 이후
+     * 방출이 사용자의 선택을 덮거나, 화면에 그려진 토핑과 다른 캔버스로 저장 대상을 바꾸면
+     * 안 된다.
      */
-    private var confirmedToppings: List<CanvasToppingItem> = emptyList()
+    private var hasSeededFromCanvas = false
+
+    /**
+     * 서버가 마지막으로 준 그대로의 토핑. 확인 때 손댄 토핑의 **어느 축**이 바뀌었는지 가리는 데만
+     * 쓴다 — 화면 렌더링에는 [CanvasBGEditUiState.toppings] 를 본다.
+     */
+    private var serverToppings: List<CanvasToppingItem> = emptyList()
 
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
-        loadCanvas()
+        observeCanvas()
     }
 
     /**
-     * ⚠️ 오늘 조회는 캔버스가 없으면 만들어 저장한다. 여기서 불러도 캔버스 메인이 이미 만든
-     * 것을 다시 받을 뿐이라 늘어나지 않는다 — 이 화면은 그 메인을 거쳐야만 열린다.
-     *
-     * 조회를 또 하는 이유는 편집을 여는 사이 다른 멤버가 올린 토핑까지 그려야 해서다.
+     * 화면이 보이는 동안만 오늘 캔버스를 구독한다. 갱신은 구독 시작 즉시, 이후 주기마다
+     * 폴러가 맡는다(`adr/0029-canvas-today-ssot-polling.md`) — 여기서 따로 조회를 걸지 않는다.
      */
-    private fun loadCanvas() {
-        launch(key = LOAD_CANVAS_KEY) {
-            getTodayParfaitUseCase(groupId)
-                .onSuccess { canvas ->
-                    if (canvas.parfaitId != parfaitId) {
-                        viewModelLogger.e {
-                            "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
-                                " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
-                        }
-                        parfaitId = canvas.parfaitId
-                    }
+    private fun observeCanvas() {
+        launchWhileSubscribed(source = { getTodayParfaitFlowUseCase(groupId) }) { canvas ->
+            if (canvas == null) return@launchWhileSubscribed
 
-                    confirmedToppings = canvas.toppings
-                        .sortedBy { topping -> topping.transform.positionZ }
-                        .map { topping -> topping.toToppingItem() }
-
-                    updateState { withCanvas(canvas = canvas, toppings = confirmedToppings) }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "캔버스를 불러오지 못했다 - parfaitId: ${parfaitId.value}" }
-                    postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+            if (hasSeededFromCanvas.not() && canvas.parfaitId != parfaitId) {
+                viewModelLogger.e {
+                    "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
+                        " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
                 }
+                parfaitId = canvas.parfaitId
+            }
+
+            val incoming = canvas.toppings
+                .sortedBy { topping -> topping.transform.positionZ }
+                .map { topping -> topping.toToppingItem() }
+
+            serverToppings = incoming
+            updateState { withCanvas(canvas).mergeToppings(incoming) }
+            hasSeededFromCanvas = true
         }
     }
 
     /**
-     * 저장된 배경을 팔레트의 시작점으로 삼는다. 색을 못 읽으면 기본 색으로 두는데, 그때 확인을
-     * 누르면 배경이 팔레트 첫 색으로 바뀐다 — 못 읽는 색을 그대로 되돌려 보내는 것보다 낫다.
+     * 토핑 목록만 매번 갈아 끼우고 나머지는 **최초 방출에만** 시딩한다 — 이후 방출까지 대입하면
+     * 사용자가 방금 고른 배경이 되돌아가고, 옮긴 탭과 푼 선택도 다음 갱신에 되돌아간다.
+     *
+     * 저장된 배경 색을 못 읽으면 기본 색으로 두는데, 그때 확인을 누르면 배경이 팔레트 첫 색으로
+     * 바뀐다 — 못 읽는 색을 그대로 되돌려 보내는 것보다 낫다.
      */
-    private fun CanvasBGEditUiState.withCanvas(
-        canvas: CanvasVO,
-        toppings: List<CanvasToppingItem>,
-    ): CanvasBGEditUiState = copy(
-        selectedTab = if (initialToppingId != null) CanvasEditTab.TOPPING else selectedTab,
-        toppings = toppings,
-        selectedColor = (canvas.background as? CanvasBackground.Color)
-            ?.value
-            ?.toColorOrNull()
-            ?: selectedColor,
-        selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
-        selectedImageSource = null,
-        selectedToppingId = initialToppingId ?: selectedToppingId,
-    )
+    private fun CanvasBGEditUiState.withCanvas(canvas: CanvasVO): CanvasBGEditUiState {
+        if (hasSeededFromCanvas) return this
+
+        return copy(
+            selectedTab = if (initialToppingId != null) CanvasEditTab.TOPPING else selectedTab,
+            selectedColor = (canvas.background as? CanvasBackground.Color)
+                ?.value
+                ?.toColorOrNull()
+                ?: selectedColor,
+            selectedImageUri = (canvas.background as? CanvasBackground.Image)?.url,
+            selectedImageSource = null,
+            selectedToppingId = initialToppingId ?: selectedToppingId,
+        )
+    }
+
+    /**
+     * 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어 결과가 통째 대입과 같아진다.
+     * 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지 구분하지 않는다.
+     */
+    private fun CanvasBGEditUiState.mergeToppings(incoming: List<CanvasToppingItem>): CanvasBGEditUiState {
+        val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }
+        val localById = toppings.associateBy { it.parfaitImageId }
+
+        val merged = incoming
+            .filterNot { it.parfaitImageId in deletedToppingIds }
+            .map { server ->
+                if (server.parfaitImageId in dirtyToppingIds) localById[server.parfaitImageId] ?: server else server
+            }
+
+        return copy(
+            toppings = merged,
+            // 서버 목록에서 사라진 것은 두 집합에서도 뺀다 — 없는 토핑에 PATCH 를 보낼 수 없고,
+            // 툼스톤도 제 역할을 다했다
+            dirtyToppingIds = dirtyToppingIds intersect incomingIds,
+            deletedToppingIds = deletedToppingIds intersect incomingIds,
+            selectedToppingId = selectedToppingId?.takeIf { it in incomingIds && it !in deletedToppingIds },
+        )
+    }
 
     private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
         parfaitImageId = parfaitImageId.value,
@@ -358,21 +411,42 @@ constructor(
     private fun handleOnDeleteToppingDialogConfirm() {
         val selectedId = state.value.selectedToppingId ?: return
 
-        updateState { copy(showDeleteToppingDialog = false) }
+        launch(key = DELETE_TOPPING_KEY, onError = { failToDeleteTopping(it, selectedId) }) {
+            // 상태를 블록 밖이 아니라 안에서 바꾼다 — `launch` 가 중복 호출을 걸러 아무것도
+            // 시작하지 않는 경우까지 모달이 닫히고 덮개만 남으면 안 된다
+            updateState { copy(showDeleteToppingDialog = false, isLoading = true) }
 
-        launch(key = DELETE_TOPPING_KEY) {
             deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(selectedId))
                 .onSuccess {
                     updateState {
                         copy(
                             toppings = toppings.filterNot { it.parfaitImageId == selectedId },
+                            deletedToppingIds = deletedToppingIds + selectedId,
+                            dirtyToppingIds = dirtyToppingIds - selectedId,
                             selectedToppingId = null,
+                            isLoading = false,
                         )
                     }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $selectedId" }
-                }
+                    // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
+                    // 취소돼 갱신이 끊긴다
+                    refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+
+                    postSideEffect(effect = CanvasBGEditEffect.NavigateBack)
+                }.onFailure { throwable -> failToDeleteTopping(throwable, selectedId) }
         }
+    }
+
+    private fun failToDeleteTopping(
+        throwable: Throwable,
+        toppingId: Long,
+    ) {
+        viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
+        updateState { copy(isLoading = false) }
+        postSideEffect(
+            effect = CanvasBGEditEffect.ShowError(
+                throwable.toCanvasBGEditError(unknown = CanvasBGEditError.TOPPING_DELETE_UNKNOWN),
+            ),
+        )
     }
 
     private fun handleOnToppingResize(intent: CanvasBGEditIntent.OnToppingResize) {
@@ -415,9 +489,12 @@ constructor(
                 toppings = toppings.map { topping ->
                     if (topping.parfaitImageId != toppingId) topping else transform(topping)
                 },
-            )
+            ).markDirty(toppingId)
         }
     }
+
+    private fun CanvasBGEditUiState.markDirty(toppingId: Long): CanvasBGEditUiState =
+        copy(dirtyToppingIds = dirtyToppingIds + toppingId)
 
     /**
      * 서버 토핑은 https 주소라 [android.content.ContentResolver] 로 열지 못하지만,
@@ -439,6 +516,8 @@ constructor(
     }
 
     private fun handleOnToppingEditResult(intent: CanvasBGEditIntent.OnToppingEditResult) {
+        // 테두리 PATCH 는 아직 소비처가 없지만(OQ-P-276) 이 토핑의 로컬 값이 갱신에 덮이면
+        // 안 되는 것은 같다 — applyToppingTransform 이 함께 미는 위치 PATCH 는 무해하다
         applyToppingTransform(intent.toppingId) { topping ->
             topping.copy(
                 borderLayers = intent.result.borderLayers,
@@ -471,36 +550,79 @@ constructor(
      * 저장이 끝나야 화면을 넘긴다 — [CanvasBGEditEffect.ConfirmBackground] 를 먼저 쏘면 캔버스
      * 메인이 저장되지 않은 배경을 그린 채로 서 있게 되고, 다음 조회에서 슬그머니 되돌아간다.
      *
-     * 토핑 저장을 배경 저장보다 먼저 완전히 기다리는 이유: 둘을 진짜 병렬로 얽으면 화면이
-     * 어느 한쪽만 실패했을 때를 갈라 다뤄야 해서 복잡해진다. 토핑 저장(들끼리는 병렬)을 먼저
-     * 끝내고, 그다음 기존 배경 저장 흐름을 그대로 태운다.
+     * 토핑 저장을 배경 저장보다 먼저 완전히 기다리는 이유: 둘을 진짜 병렬로 얽으면 어느 쪽이
+     * 실패했는지에 따라 화면을 닫을지 정하는 아래 분기를 짤 수 없다.
      */
     private fun handleOnClickConfirm() {
-        launch(key = CONFIRM_KEY) {
-            // 토핑마다 독립적인 네트워크 호출이라 순차로 기다리면 토핑 수만큼 확인 버튼이 느려진다
-            state.value.toppings
-                .map { topping -> async { updateToppingIfChanged(topping) } }
-                .awaitAll()
+        launch(key = CONFIRM_KEY, onError = ::failToSaveUnexpectedly) {
+            updateState { copy(isLoading = true) }
 
-            saveBackground()
+            val failedToppingIds = updateDirtyToppings()
+            // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다
+            updateState { copy(dirtyToppingIds = failedToppingIds) }
+
+            val savedBackground = saveBackground()
+
+            updateState { copy(isLoading = false) }
+
+            when {
+                // 실패 토스트는 saveBackground() 가 이미 내보냈다
+                savedBackground == null -> Unit
+
+                // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
+                failedToppingIds.isNotEmpty() -> postSideEffect(
+                    effect = CanvasBGEditEffect.ShowError(CanvasBGEditError.TOPPING_SAVE_UNKNOWN),
+                )
+
+                else -> postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(savedBackground))
+            }
         }
     }
 
+    private fun failToSaveUnexpectedly(throwable: Throwable) {
+        viewModelLogger.e(throwable) { "편집을 저장하지 못했다 - parfaitId: ${parfaitId.value}" }
+        updateState { copy(isLoading = false) }
+        postSideEffect(
+            effect = CanvasBGEditEffect.ShowError(
+                throwable.toCanvasBGEditError(unknown = CanvasBGEditError.BACKGROUND_SAVE_UNKNOWN),
+            ),
+        )
+    }
+
     /**
-     * [confirmedToppings]과 비교해 실제로 바뀐 것만 PATCH 한다 — 위치·크기·각도와 테두리는
-     * 서버 API 자체가 갈라져 있어(`ToppingRepository.update` vs `updateBorder`) 독립적으로
-     * 비교하고 독립적으로 보낸다. 일부가 403/404 등으로 실패해도 나머지 토핑·배경 확인은
-     * 그대로 진행한다 — 실패 재시도 UI는 범위 밖이라 로그만 남긴다.
+     * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 스냅샷 대조를 쓰면 갱신이 들여온
+     * 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡혀 남의 토핑에 PATCH 를 쏜다.
+     *
+     * 어느 축을 만져서 dirty 가 됐는지는 집합이 기억하지 않으므로, 토핑마다 [serverToppings] 와
+     * 대조해 실제로 바뀐 축만 보낸다 — 위치·크기·각도와 테두리는 서버 API 자체가 갈라져 있다
+     * (`ToppingRepository.update` vs `updateBorder`). 대조를 dirty 안에서만 하는 것이 요점이다:
+     * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
+     *
+     * 일부가 403/404 등으로 실패해도 나머지 토핑과 배경 저장은 그대로 시도한다 — 한 토핑이
+     * 막혔다고 나머지까지 보류할 이유가 없다. 화면을 닫을지는 [handleOnClickConfirm] 이 정한다.
+     *
+     * @return 저장하지 못한 토핑의 id.
      */
-    private suspend fun updateToppingIfChanged(topping: CanvasToppingItem) {
-        val original = confirmedToppings.find { it.parfaitImageId == topping.parfaitImageId }
+    private suspend fun updateDirtyToppings(): Set<Long> = coroutineScope {
+        val current = state.value
+        current.toppings
+            .filter { it.parfaitImageId in current.dirtyToppingIds }
+            .map { topping -> async { topping.parfaitImageId.takeIf { updateToppingIfChanged(topping).not() } } }
+            .awaitAll()
+            .filterNotNull()
+            .toSet()
+    }
+
+    /** @return 보낼 것을 모두 보냈으면 `true`. 보낼 것이 없었던 경우도 그렇다. */
+    private suspend fun updateToppingIfChanged(topping: CanvasToppingItem): Boolean {
+        val original = serverToppings.find { it.parfaitImageId == topping.parfaitImageId }
 
         val transformChanged = original == null ||
             topping.positionX != original.positionX ||
             topping.positionY != original.positionY ||
             topping.scale != original.scale ||
             topping.rotationDegrees != original.rotationDegrees
-        if (transformChanged) {
+        val transformSaved = transformChanged.not() ||
             updateToppingUseCase(
                 groupId = groupId,
                 parfaitId = parfaitId,
@@ -510,21 +632,21 @@ constructor(
                 scale = topping.scale.toDouble(),
                 rotation = topping.rotationDegrees.toDouble(),
             ).onFailure { throwable ->
-                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
-            }
-        }
+                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - ${topping.parfaitImageId}" }
+            }.isSuccess
 
         val borderChanged = original == null || topping.borderLayers != original.borderLayers
-        if (borderChanged) {
+        val borderSaved = borderChanged.not() ||
             updateToppingBorderUseCase(
                 groupId = groupId,
                 parfaitId = parfaitId,
                 parfaitImageId = ParfaitImageId(topping.parfaitImageId),
                 border = topping.borderLayers.toToppingBorder(),
             ).onFailure { throwable ->
-                viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - parfaitImageId: ${topping.parfaitImageId}" }
-            }
-        }
+                viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
+            }.isSuccess
+
+        return transformSaved && borderSaved
     }
 
     /** 마지막 겹이 가장 바깥쪽, 즉 화면에 보이는 테두리다 — 서버는 그 한 겹만 값으로 받는다 */
@@ -533,14 +655,16 @@ constructor(
         return ToppingBorder.Solid(color = layer.colorArgb.toRgbHexString(), width = layer.widthDp.toDouble())
     }
 
-    private suspend fun saveBackground() {
+    /**
+     * @return 저장된 배경. 실패하면 `null` 이고, 그때 실패 토스트는 여기서 이미 내보냈다.
+     */
+    private suspend fun saveBackground(): YGCanvasBackground? {
         val current = state.value
         val imageUri = current.selectedImageUri
 
         // 서버 배경을 그대로 둔 채 확인만 누른 경우다 — 바뀐 것이 없어 요청할 것도 없다
         if (imageUri != null && current.selectedImageSource == null) {
-            postSideEffect(effect = CanvasBGEditEffect.ConfirmBackground(YGCanvasBackground.Image(imageUri)))
-            return
+            return YGCanvasBackground.Image(imageUri)
         }
 
         val background = if (imageUri == null) {
@@ -548,24 +672,33 @@ constructor(
         } else {
             CanvasBackgroundEdit.Image(
                 imageId = uploadBackgroundImage(imageUri)
-                    .getOrElse { throwable -> return failToSave(throwable) },
+                    .getOrElse { throwable ->
+                        failToSave(throwable)
+                        return null
+                    },
             )
         }
 
-        changeCanvasBackgroundUseCase(
+        return changeCanvasBackgroundUseCase(
             groupId = groupId,
             parfaitId = parfaitId,
             background = background,
-        ).onSuccess { saved ->
-            postSideEffect(
-                effect = CanvasBGEditEffect.ConfirmBackground(
-                    // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
-                    // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
-                    background = saved.toYGCanvasBackground()
-                        ?: fallbackBackground(imageUri = imageUri, color = current.selectedColor),
-                ),
-            )
-        }.onFailure { throwable -> failToSave(throwable) }
+        ).fold(
+            onSuccess = { saved ->
+                // 되감기 전에 기다린다 — ConfirmBackground 를 먼저 쏘면 라우트가 되감기며
+                // viewModelScope 가 취소돼 launch 로 건 갱신이 끊긴다
+                refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+
+                // 이미지 배경의 URL 은 이 응답으로만 알 수 있다. 그것마저 없으면
+                // 고른 값으로 그린다 — 저장은 끝났으니 화면을 막을 이유는 없다
+                saved.toYGCanvasBackground()
+                    ?: fallbackBackground(imageUri = imageUri, color = current.selectedColor)
+            },
+            onFailure = { throwable ->
+                failToSave(throwable)
+                null
+            },
+        )
     }
 
     private suspend fun uploadBackgroundImage(imageUri: String): Result<ImageId> = uploadImageUseCase(
@@ -575,7 +708,11 @@ constructor(
 
     private fun failToSave(throwable: Throwable) {
         viewModelLogger.e(throwable) { "배경을 저장하지 못했다 - parfaitId: ${parfaitId.value}" }
-        postSideEffect(effect = CanvasBGEditEffect.ShowError(throwable.toCanvasBGEditError()))
+        postSideEffect(
+            effect = CanvasBGEditEffect.ShowError(
+                throwable.toCanvasBGEditError(unknown = CanvasBGEditError.BACKGROUND_SAVE_UNKNOWN),
+            ),
+        )
     }
 
     private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
@@ -591,10 +728,13 @@ constructor(
         ?.let(YGCanvasBackground::Image)
         ?: YGCanvasBackground.Solid(color)
 
-    private fun Throwable.toCanvasBGEditError(): CanvasBGEditError = when (this) {
+    /**
+     * @param unknown 갈래를 가리지 못했을 때 쓸 값. 무엇을 하다 실패했는지는 부르는 쪽만 안다.
+     */
+    private fun Throwable.toCanvasBGEditError(unknown: CanvasBGEditError): CanvasBGEditError = when (this) {
         is AppError.Network -> CanvasBGEditError.NETWORK
         is AppError.UnsupportedImage -> CanvasBGEditError.UNSUPPORTED_IMAGE
-        else -> CanvasBGEditError.UNKNOWN
+        else -> unknown
     }
 
     @AssistedFactory
@@ -607,8 +747,6 @@ constructor(
     }
 
     private companion object {
-        const val LOAD_CANVAS_KEY = "loadCanvas"
-
         const val CONFIRM_KEY = "confirm"
 
         const val DELETE_TOPPING_KEY = "deleteTopping"

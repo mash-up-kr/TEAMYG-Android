@@ -29,6 +29,7 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
@@ -39,6 +40,7 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 @Composable
 internal fun CustomGalleryPickerRoute(
     navigator: Navigator,
+    recentImagePick: RecentImagePick,
     modifier: Modifier = Modifier,
     showGuideToast: Boolean = true,
     returnResultOnly: Boolean = false,
@@ -47,7 +49,7 @@ internal fun CustomGalleryPickerRoute(
     val context: Context = activity ?: LocalContext.current
 
     val viewModel = hiltViewModel<CustomGalleryPickerViewModel, CustomGalleryPickerViewModel.Factory>(
-        creationCallback = { factory -> factory.create(returnResultOnly) },
+        creationCallback = { factory -> factory.create(returnResultOnly, recentImagePick) },
     )
 
     val lifecycleOwner = LocalLifecycleOwner.current

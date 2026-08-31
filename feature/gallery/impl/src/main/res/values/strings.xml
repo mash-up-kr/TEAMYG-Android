@@ -7,4 +7,5 @@
     <string name="gallery_custom_guide_toast">대상이 배경과 선명하게 구분될수록 깔끔하게 선택돼요</string>
     <string name="gallery_empty_today_description">오늘 찍은 사진이 없어요\n사진을 찍고 토핑을 추가해 보세요</string>
     <string name="gallery_recent_uploaded_header">최근 업로드한 사진</string>
+    <string name="gallery_today_photos_title">오늘 찍은 사진</string>
 </resources>

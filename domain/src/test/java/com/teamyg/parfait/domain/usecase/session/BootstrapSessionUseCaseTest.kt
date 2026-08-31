@@ -10,6 +10,7 @@ import com.teamyg.parfait.domain.model.session.SessionBootstrap
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,13 +23,14 @@ class BootstrapSessionUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
+    private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
 
     // 정리 경로는 실물 LogoutUseCase 를 통과시킨다 — mock 으로 바꾸면 "정리를 위임했다"만
     // 검증되고 정작 무엇이 지워지는지는 이 테스트가 놓친다.
     private val bootstrap = BootstrapSessionUseCase(
         authRepository = authRepository,
         memberRepository = memberRepository,
-        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository),
+        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository),
     )
 
     @Test

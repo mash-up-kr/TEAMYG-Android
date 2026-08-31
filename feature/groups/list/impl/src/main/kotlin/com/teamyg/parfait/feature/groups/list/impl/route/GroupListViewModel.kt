@@ -27,6 +27,8 @@ data class GroupListUiState(
     val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
     val isRefreshing: Boolean = false,
+    /** 아직 목록을 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
+    val isInitialLoading: Boolean = false,
     val dateString: String = "",
     val dayOfWeekString: String = "",
 ) : UiState
@@ -202,15 +204,27 @@ constructor(
         }
 
         launch(key = KEY_LOAD_GROUPS) {
+            // 가드에 막히면 이 블록이 아예 돌지 않아, 밖에서 켜면 내려 줄 finally 가 없다
+            if (isInitialLoad(isRefresh)) {
+                updateState { copy(isInitialLoading = true) }
+            }
+
             try {
                 refreshMyGroups()
                     .onSuccess { updateState { copy(isError = false) } }
                     .onFailure { throwable -> handleLoadFailure(throwable, isRefresh) }
             } finally {
-                updateState { copy(isRefreshing = false) }
+                updateState { copy(isRefreshing = false, isInitialLoading = false) }
             }
         }
     }
+
+    /**
+     * 조회는 재진입마다 나가므로, 보여 줄 것이 없을 때로 좁히지 않으면 돌아올 때마다 이미
+     * 그려진 목록 위로 덮개가 번쩍인다. 당겨서 새로고침을 빼는 것은 에러 화면에서도 당길 수
+     * 있어서다 — 그쪽은 자기 인디케이터를 돌리고 있어 덮개까지 얹으면 겹친다.
+     */
+    private fun isInitialLoad(isRefresh: Boolean): Boolean = isRefresh.not() && state.value.groupList == null
 
     /**
      * 조회는 [GroupListIntent.Enter] 로 화면에 돌아올 때마다 나가므로, 실패마다 에러 화면으로
