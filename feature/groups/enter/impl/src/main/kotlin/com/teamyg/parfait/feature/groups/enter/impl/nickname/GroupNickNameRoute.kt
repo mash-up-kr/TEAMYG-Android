@@ -18,6 +18,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
 @Composable
 fun GroupNickNameRoute(
@@ -40,8 +41,10 @@ fun GroupNickNameRoute(
 
                 is GroupNickNameSideEffect.NavigateToNext -> {
                     // 여기까지 쌓인 화면(초대코드, 닉네임)은 전부 이번 참여 흐름의 것이라
-                    // 되돌아갈 곳이 없다 — 백스택을 비우고 참여한 그룹의 캔버스만 남긴다
-                    navigator.replaceAll(
+                    // 되돌아갈 곳이 없다 — 백스택을 그룹 목록까지 비운 뒤 참여한 그룹의 캔버스를
+                    // 쌓는다. 캔버스만 남기면 백버튼이 앱 종료로 새 나간다
+                    navigator.replaceAll(destination = NavKeyGroupList)
+                    navigator.goTo(
                         destination = NavKeyCanvasMain(
                             groupId = effect.groupId,
                             welcomeGroupName = effect.groupName,
