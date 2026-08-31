@@ -80,7 +80,7 @@ fun YGCanvasDateSelectButton(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = YGTheme.layout.gap.gap2),
+                modifier = Modifier.padding(start = YGTheme.layout.padding.padding2),
             ) {
                 Text(
                     text = date,
