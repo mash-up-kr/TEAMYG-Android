@@ -7,7 +7,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -17,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
 
 private data class TestState(val count: Int = 0) : UiState
 
@@ -42,6 +46,31 @@ private class TestViewModel : BaseViewModel<TestState, TestIntent, TestSideEffec
         onError: ((AppError) -> Unit)? = null,
         block: suspend CoroutineScope.() -> Unit,
     ): Job? = launch(key = key, onError = onError, block = block)
+}
+
+private data class ProbeState(val value: Int = 0) : UiState
+
+private object ProbeIntent : UiIntent
+
+private object ProbeEffect : UiSideEffect
+
+private class ProbeViewModel(
+    private val upstream: Flow<Int>,
+) : BaseViewModel<ProbeState, ProbeIntent, ProbeEffect>(ProbeState()) {
+    var openCount = 0
+        private set
+
+    init {
+        launchWhileSubscribed(
+            source = {
+                openCount++
+                upstream
+            },
+            collector = { value -> updateState { copy(value = value) } },
+        )
+    }
+
+    override fun processIntent(intent: ProbeIntent) = Unit
 }
 
 class BaseViewModelTest {
@@ -210,4 +239,65 @@ class BaseViewModelTest {
         // Then 취소를 에러로 오분류하지 않는다
         assertNull(handled)
     }
+
+    @Test
+    fun launchWhileSubscribed_withoutSubscribers_doesNotOpenTheUpstream() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = ProbeViewModel(MutableStateFlow(1))
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.openCount)
+    }
+
+    @Test
+    fun launchWhileSubscribed_withASubscriber_opensTheUpstream() = runTest(mainDispatcherRule.dispatcher) {
+        val upstream = MutableStateFlow(1)
+        val viewModel = ProbeViewModel(upstream)
+
+        val job = backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.openCount)
+        assertEquals(1, viewModel.state.value.value)
+        job.cancel()
+    }
+
+    @Test
+    fun launchWhileSubscribed_afterTheTimeout_closesTheUpstream() = runTest(mainDispatcherRule.dispatcher) {
+        val upstream = MutableStateFlow(1)
+        val viewModel = ProbeViewModel(upstream)
+
+        val job = backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+        job.cancel()
+        advanceTimeBy(10.seconds)
+        advanceUntilIdle()
+
+        upstream.value = 2
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.state.value.value)
+    }
+
+    @Test
+    fun launchWhileSubscribed_resubscribedWithinTheTimeout_doesNotReopen() = runTest(mainDispatcherRule.dispatcher) {
+        val upstream = MutableStateFlow(1)
+        val viewModel = ProbeViewModel(upstream)
+
+        val first = backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+        first.cancel()
+        advanceTimeBy(1.seconds)
+
+        val second = backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.openCount)
+        second.cancel()
+    }
+
+    // launchWhileSubscribed_whenTheSourceReadsOwnState_stillCloses 는 여기 두지 않는다.
+    // source 가 state 를 구독하면 그 구독 자체가 subscriptionCount 를 다시 올려 유예 타이머가
+    // 영영 만료되지 않는다 — 헬퍼 구현만으로는 못 막는 자기 고착이다. 계약은 코드가 아니라
+    // BaseViewModel.launchWhileSubscribed 의 KDoc 경고("source 안에서 state 를 수집하면 안
+    // 된다")로 대신 세운다.
 }

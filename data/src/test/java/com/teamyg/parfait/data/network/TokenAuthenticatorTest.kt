@@ -6,10 +6,14 @@ import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.session.SessionEventBus
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.domain.model.session.SessionEvent
+import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
@@ -70,6 +74,8 @@ class TokenAuthenticatorTest {
     private lateinit var sessionEventBus: SessionEventBus
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var groupLocalDataSource: GroupLocalDataSource
+    private lateinit var canvasLocalDataSource: CanvasLocalDataSource
+    private lateinit var canvasPoller: CanvasPoller
     private lateinit var authenticator: TokenAuthenticator
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -83,6 +89,8 @@ class TokenAuthenticatorTest {
         sessionEventBus = SessionEventBus()
         userInfoLocalDataSource = mockk(relaxed = true)
         groupLocalDataSource = mockk(relaxed = true)
+        canvasLocalDataSource = mockk(relaxed = true)
+        canvasPoller = mockk(relaxed = true)
 
         val authService = Retrofit
             .Builder()
@@ -99,6 +107,8 @@ class TokenAuthenticatorTest {
             sessionEventBus = sessionEventBus,
             userInfoLocalDataSource = userInfoLocalDataSource,
             groupLocalDataSource = groupLocalDataSource,
+            canvasLocalDataSource = canvasLocalDataSource,
+            canvasPoller = Lazy { canvasPoller },
         )
     }
 
@@ -196,6 +206,34 @@ class TokenAuthenticatorTest {
         coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
         // Then 토큰·계정 정보와 함께 그룹 캐시도 지운다
         verify(exactly = 1) { groupLocalDataSource.clear() }
+        // Then 오늘 캔버스 캐시도 함께 지운다 — 안 지우면 다음 계정에 이전 계정의
+        // 캔버스가 보인다
+        verify(exactly = 1) { canvasLocalDataSource.clear() }
+    }
+
+    @Test
+    fun authenticate_reissueRejected_clearsInMemoryCachesBeforeTheAccountStore() = runTest {
+        // Given 서버가 refresh token 을 거절한다
+        server.enqueue(
+            MockResponse
+                .Builder()
+                .code(401)
+                .body("""{"success":false,"code":"INVALID_TOKEN","message":"…","data":null}""")
+                .build(),
+        )
+
+        // When 인증기가 응답을 받는다
+        authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
+
+        // Then 인메모리 캐시(그룹·캔버스)를 먼저 지우고 계정 저장소는 나중에 지운다.
+        // 캔버스 캐시는 폴러를 먼저 세운 뒤 지운다 — 늦게 온 응답이 지운 캐시를 되살리지
+        // 못하게 트리거부터 끊는다
+        coVerifyOrder {
+            groupLocalDataSource.clear()
+            canvasPoller.stopAll()
+            canvasLocalDataSource.clear()
+            userInfoLocalDataSource.clear()
+        }
     }
 
     @Test
@@ -221,10 +259,11 @@ class TokenAuthenticatorTest {
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
-        // Then 계정 정보 clear() 가 던져도 그룹 캐시는 이미 지워진 뒤다 — 던지지 않는 정리를
-        // 먼저 하므로 뒤이은 IO 실패가 그룹 캐시 정리를 막지 못한다(이전 계정 그룹이 남는
-        // 위험을 강제 로그아웃 경로에서도 막는다)
+        // Then 계정 정보 clear() 가 던져도 그룹·캔버스 캐시는 이미 지워진 뒤다 — 던지지
+        // 않는 정리를 먼저 하므로 뒤이은 IO 실패가 그 정리를 막지 못한다(이전 계정의
+        // 그룹·캔버스가 남는 위험을 강제 로그아웃 경로에서도 막는다)
         verify(exactly = 1) { groupLocalDataSource.clear() }
+        verify(exactly = 1) { canvasLocalDataSource.clear() }
     }
 
     @Test

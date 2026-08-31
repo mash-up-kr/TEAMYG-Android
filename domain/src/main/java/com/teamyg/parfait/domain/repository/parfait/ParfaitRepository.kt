@@ -6,6 +6,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
 interface ParfaitRepository {
@@ -18,13 +19,45 @@ interface ParfaitRepository {
     suspend fun getYears(groupId: GroupId): Result<List<Int>>
 
     /**
-     * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
-     * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
+     * 오늘 캔버스 구독. 아직 한 번도 못 받았으면 `null` 이다.
      *
-     * 오늘 날짜가 이미 마감돼 있으면 그것을 그대로 돌려준다 — status 가 ACTIVE 가 아닐 수 있다.
-     * 그 캔버스에 쓰기를 보내면 409 PARFAIT_ALREADY_CLOSED 로 돌아온다(`api/parfait.md`).
+     * 값을 얻는 길은 이것 하나뿐이다 — 갱신 함수가 값을 돌려주면 캐시가 곧 두 번째 출처가 된다
+     * (`adr/0029-canvas-today-ssot-polling.md`).
      */
-    suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
+    fun todayCanvas(groupId: GroupId): Flow<CanvasVO?>
+
+    /**
+     * 오늘 캔버스 갱신이 실패했다는 신호. 값은 흘리지 않아 "값을 얻는 길은 [todayCanvas] 하나"는
+     * 그대로다.
+     *
+     * 첫 조회를 기다리는 화면이 로딩을 푸는 계기로 쓴다 — 갱신이 실패하면 캐시가 아무것도
+     * 방출하지 않아, 구독만 보고 있으면 실패했다는 사실을 알 길이 없다.
+     */
+    fun todayCanvasRefreshFailures(groupId: GroupId): Flow<Unit>
+
+    /**
+     * 오늘 캔버스 캐시를 갱신한다. 호출부가 응답을 기다려야 하는 자리(예: 되감기 직전)에서
+     * 쓴다 — 기다리지 않아도 되는 자리는 [requestTodayCanvasRefresh] 를 쓴다.
+     *
+     * [getCanvasDetail] 과 같은 엔드포인트를 부를 수 있지만 캐시에 싣는다는 점이 다르다 —
+     * 지난 날 조회가 오늘 캔버스를 덮지 않도록 표면을 갈라 둔다.
+     *
+     * ⚠️ [parfaitId] 는 의도 표시일 뿐 실제로 조회할 대상은 아니다 — 실제 대상(오늘 날짜인지,
+     * 캐시된 캔버스인지)은 `:data` 의 폴러가 캐시 상태로 정한다.
+     */
+    suspend fun refreshTodayCanvasDetail(
+        groupId: GroupId,
+        parfaitId: ParfaitId,
+    ): Result<Unit>
+
+    /** 세션 종료 정리. `:domain` 이 `:data` 를 볼 수 없어 저장소 표면으로 낸다 */
+    fun clearTodayCanvas()
+
+    /**
+     * [refreshTodayCanvasDetail] 의 비동기 표면. 즉시 반환하므로 호출부의 되감기를 늦추지
+     * 않는다 — 갱신 자체는 폴러의 스코프에서 끝까지 간다(`adr/0029-canvas-today-ssot-polling.md`).
+     */
+    fun requestTodayCanvasRefresh(groupId: GroupId)
 
     /**
      * 범위 안의 캔버스 목록. 상태로 거르지 않아 오늘의 ACTIVE 캔버스도 함께 온다.
@@ -39,7 +72,8 @@ interface ParfaitRepository {
     ): Result<List<PastCanvasVO>>
 
     /**
-     * 특정 캔버스 상세. [getTodayCanvas] 와 결과 형태가 같지만 부작용이 없다.
+     * 특정 캔버스 상세. 부르는 엔드포인트는 [refreshTodayCanvasDetail] 과 같을 수 있지만
+     * 부작용이 없다(캐시에 싣지 않는다).
      *
      * 파르페가 없거나 다른 그룹 소속이면 PARFAIT_NOT_FOUND 다.
      */

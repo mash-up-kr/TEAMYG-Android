@@ -4,6 +4,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,9 +18,10 @@ class WithdrawUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
+    private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
     private val withdraw = WithdrawUseCase(
         memberRepository = memberRepository,
-        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository),
+        logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository),
     )
 
     @Test
