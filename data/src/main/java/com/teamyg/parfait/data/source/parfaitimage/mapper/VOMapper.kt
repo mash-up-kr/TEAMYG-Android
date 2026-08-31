@@ -80,19 +80,18 @@ internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO =
     ),
 )
 
-internal fun List<ToppingTransformUpdate>.toUpdateRequest(): UpdateParfaitImagesRequest =
-    UpdateParfaitImagesRequest(
-        items = map {
-            UpdateParfaitImageItemRequest(
-                parfaitImageId = it.parfaitImageId.value,
-                positionX = it.positionX,
-                positionY = it.positionY,
-                positionZ = it.positionZ,
-                scale = it.scale,
-                rotation = it.rotation,
-            )
-        },
-    )
+internal fun List<ToppingTransformUpdate>.toUpdateRequest(): UpdateParfaitImagesRequest = UpdateParfaitImagesRequest(
+    items = map {
+        UpdateParfaitImageItemRequest(
+            parfaitImageId = it.parfaitImageId.value,
+            positionX = it.positionX,
+            positionY = it.positionY,
+            positionZ = it.positionZ,
+            scale = it.scale,
+            rotation = it.rotation,
+        )
+    },
+)
 
 internal fun UpdateParfaitImagesResponse.toUpdatedToppingVOList(): List<UpdatedToppingVO> =
     images.map { it.toUpdatedToppingVO() }
