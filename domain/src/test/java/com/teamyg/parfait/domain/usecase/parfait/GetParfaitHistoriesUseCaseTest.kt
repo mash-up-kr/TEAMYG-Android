@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.usecase.parfait
 
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
+import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -61,6 +62,7 @@ class GetParfaitHistoriesUseCaseTest {
     private fun canvas(date: LocalDate) = PastCanvasVO(
         parfaitId = ParfaitId(date.toEpochDays()),
         date = date,
+        status = CanvasStatus.CLOSED,
         thumbnailUrl = null,
         toppingCount = 1,
     )
