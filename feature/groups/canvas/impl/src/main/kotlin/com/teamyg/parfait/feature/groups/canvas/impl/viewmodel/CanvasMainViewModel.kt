@@ -63,6 +63,13 @@ data class GroupMemberChip(
     val colorChipType: YGColorChipType,
 )
 
+/** 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 보여주는 환영 배너 */
+sealed interface CanvasWelcome {
+    data class Joined(val groupName: String) : CanvasWelcome
+
+    data class Created(val groupName: String, val inviteCode: String) : CanvasWelcome
+}
+
 data class CanvasMainUiState(
     val groupName: String = "",
     val memberChips: List<GroupMemberChip> = emptyList(),
@@ -203,6 +210,9 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data object ShowTodayCanvasError : CanvasMainEffect
 
     data object ShowToppingFlowStartError : CanvasMainEffect
+
+    /** 그룹 생성·참여 직후 진입일 때만 1회 온다 */
+    data class ShowWelcome(val welcome: CanvasWelcome) : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -257,6 +267,8 @@ class CanvasMainViewModel
 @AssistedInject
 constructor(
     @Assisted groupIdValue: Long,
+    @Assisted(ASSISTED_WELCOME_GROUP_NAME) welcomeGroupName: String? = null,
+    @Assisted(ASSISTED_WELCOME_INVITE_CODE) welcomeInviteCode: String? = null,
     private val getParfaitHistoriesUseCase: GetParfaitHistoriesUseCase,
     private val getParfaitYearsUseCase: GetParfaitYearsUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
@@ -288,6 +300,17 @@ constructor(
         loadCanvasMainInfo()
         // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
+
+        // 백스택 재진입에서는 ViewModel 이 새로 만들어지지 않으므로, 이 배너는 그룹 생성·참여
+        // 직후의 첫 진입에서 딱 한 번만 뜬다
+        if (welcomeGroupName != null) {
+            val welcome = if (welcomeInviteCode != null) {
+                CanvasWelcome.Created(groupName = welcomeGroupName, inviteCode = welcomeInviteCode)
+            } else {
+                CanvasWelcome.Joined(groupName = welcomeGroupName)
+            }
+            postSideEffect(CanvasMainEffect.ShowWelcome(welcome))
+        }
     }
 
     /**
@@ -740,10 +763,18 @@ constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(groupIdValue: Long): CanvasMainViewModel
+        fun create(
+            groupIdValue: Long,
+            @Assisted(ASSISTED_WELCOME_GROUP_NAME) welcomeGroupName: String?,
+            @Assisted(ASSISTED_WELCOME_INVITE_CODE) welcomeInviteCode: String?,
+        ): CanvasMainViewModel
     }
 
     private companion object {
+        const val ASSISTED_WELCOME_GROUP_NAME = "welcomeGroupName"
+
+        const val ASSISTED_WELCOME_INVITE_CODE = "welcomeInviteCode"
+
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
 
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"

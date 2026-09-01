@@ -49,7 +49,11 @@ sealed interface GroupCreateIntent : UiIntent {
 sealed interface GroupCreateSideEffect : UiSideEffect {
     data object NavigateToBack : GroupCreateSideEffect
 
-    data object NavigateToNext : GroupCreateSideEffect
+    data class NavigateToNext(
+        val groupId: Long,
+        val groupName: String,
+        val inviteCode: String,
+    ) : GroupCreateSideEffect
 
     data class ShowError(val error: GroupCreateError) : GroupCreateSideEffect
 }
@@ -139,7 +143,13 @@ constructor(
 
     private fun onGroupCreated(createdGroup: CreatedGroupVO) {
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
-        postSideEffect(GroupCreateSideEffect.NavigateToNext)
+        postSideEffect(
+            GroupCreateSideEffect.NavigateToNext(
+                groupId = createdGroup.groupId.value,
+                groupName = createdGroup.groupName.value,
+                inviteCode = createdGroup.inviteCode.value,
+            ),
+        )
     }
 
     /** 입력값은 지우지 않는다 — 실패는 대개 재시도로 풀린다 */

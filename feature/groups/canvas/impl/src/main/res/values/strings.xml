@@ -17,6 +17,14 @@
     <string name="canvas_main_closed_canvas_alert_button">보러가기</string>
     <string name="canvas_main_today_canvas_error">오늘의 캔버스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_main_topping_flow_start_error">토핑을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <!-- 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 뜨는 환영 배너 -->
+    <string name="canvas_welcome_joined_title">%1$s 그룹에 참여했어요</string>
+    <string name="canvas_welcome_joined_sub">+버튼을 눌러 토핑을 쌓아보세요</string>
+    <string name="canvas_welcome_created_title">%1$s 그룹을 만들었어요</string>
+    <string name="canvas_welcome_created_sub">초대코드는 %1$s이에요</string>
+    <string name="canvas_welcome_invite_copy">복사하기</string>
+    <string name="canvas_welcome_invite_copied">복사완료</string>
     <string name="canvas_bg_edit_tab_background">배경</string>
     <string name="canvas_bg_edit_tab_topping">토핑</string>
     <string name="canvas_bg_edit_quit_dialog_title">편집을 그만둘까요?</string>
