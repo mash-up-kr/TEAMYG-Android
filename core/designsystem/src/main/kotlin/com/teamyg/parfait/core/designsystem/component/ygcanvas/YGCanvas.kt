@@ -56,7 +56,8 @@ fun YGCanvas(
     date: String,
     day: String,
     onDateSelectClick: () -> Unit,
-    addAction: YGCanvasMenuAction,
+    /** 없으면(`null`) [YGCanvasMenu] 가 [editAction] 만 전체 너비로 보여준다 */
+    addAction: YGCanvasMenuAction?,
     editAction: YGCanvasMenuAction,
     modifier: Modifier = Modifier,
     /** 미설정이면 null — 그때는 흰 바탕이 깔린다 */

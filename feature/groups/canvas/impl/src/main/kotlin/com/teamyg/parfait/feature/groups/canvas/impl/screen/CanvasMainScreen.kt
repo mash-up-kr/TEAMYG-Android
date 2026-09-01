@@ -116,7 +116,8 @@ internal fun CanvasMainScreen(
             day = "(${canvasState.canvasDay})",
             onDateSelectClick = onClickDateSelect,
             // 지난 캔버스는 고치는 자리가 아니다 — 서버가 409 로 거부하므로, 실패를 보여 주기 전에
-            // 편집으로 가는 길 자체를 여기서 치운다
+            // 편집으로 가는 길 자체를 여기서 치운다. 저장도 날짜 버튼 옆 아이콘이 대신하므로
+            // 지난 캔버스에서는 아래 메뉴에 더 넣을 자리가 없다
             addAction = if (canvasState.isViewingToday) {
                 YGCanvasMenuAction(
                     text = stringResource(R.string.canvas_main_topping_add),
@@ -125,11 +126,7 @@ internal fun CanvasMainScreen(
                     isEnabled = canvasState.isToppingAddEnabled,
                 )
             } else {
-                YGCanvasMenuAction(
-                    text = stringResource(R.string.canvas_main_save_to_gallery),
-                    iconResource = null,
-                    onClick = onClickSaveToGallery,
-                )
+                null
             },
             editAction = if (canvasState.isViewingToday) {
                 YGCanvasMenuAction(
