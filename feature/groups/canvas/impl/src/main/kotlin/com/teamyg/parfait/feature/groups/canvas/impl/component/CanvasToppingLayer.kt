@@ -43,6 +43,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.allToppingsSettled
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
@@ -97,17 +98,20 @@ internal fun CanvasToppingLayer(
         // 사라졌다 나타나면 더 거슬린다. 화면을 떠나면 이 상태도 함께 사라져 다시 진입할 때
         // 다시 모아서 낸다.
         var revealed by remember { mutableStateOf(false) }
-        val allSettled = entries.all { it.settled }
+        val allSettled = allToppingsSettled(entries.map { it.settled })
 
         LaunchedEffect(allSettled) {
             if (allSettled) revealed = true
         }
 
+        // 토핑이 없는 캔버스는 기다릴 것도 없다 — 빈 화면 위에서 로딩만 계속 돌면 안 된다
+        val toppingsVisible = revealed || entries.isEmpty()
+
         // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .alpha(if (revealed) 1f else 0f),
+                .alpha(if (toppingsVisible) 1f else 0f),
         ) {
             entries.forEach { entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {
@@ -150,7 +154,7 @@ internal fun CanvasToppingLayer(
             }
         }
 
-        if (!revealed) {
+        if (!toppingsVisible) {
             YGLoadingLottie(
                 // Tone 은 화면 테마가 아니라 얹히는 바탕을 보고 고른다. 캔버스 기본 바탕이 흰색이다
                 tone = YGLoadingTone.Dark,
@@ -161,7 +165,7 @@ internal fun CanvasToppingLayer(
         }
 
         // 드러나기 전에는 판정을 달지 않는다 — 보이지 않는 토핑이 눌리면 안 된다
-        if (hitTestEnabled && revealed) {
+        if (hitTestEnabled && toppingsVisible) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
