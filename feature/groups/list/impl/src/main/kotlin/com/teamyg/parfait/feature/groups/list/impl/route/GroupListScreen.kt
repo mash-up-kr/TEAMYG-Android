@@ -19,8 +19,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.hideFromAccessibility
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -32,7 +30,9 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGr
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.reveal.isStaggerRevealed
 import com.teamyg.parfait.core.ui.reveal.rememberBatchReveal
+import com.teamyg.parfait.core.ui.reveal.rememberStaggeredReveal
 import com.teamyg.parfait.core.util.android.clickable.clickableYGScaleRipple
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -51,6 +51,9 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
+
+/** 토핑이 하나씩 쌓이는 간격 */
+private const val STAGGER_STEP_MILLIS = 300L
 
 // Todo : 로직 추후 변경하기
 private val TOPPING_PLACEMENT_TYPES = listOf(
@@ -82,12 +85,19 @@ internal fun GroupListScreen(
         settled = groupList.map { it.groupId in settledGroupIds },
     )
 
-    // 로딩 표시는 이 화면이 아니라 스캐폴드가 맡는다 — 딤·터치 차단·접근성 숨김을 한 벌로 쓴다
+    // 로딩 표시는 이 화면이 아니라 스캐폴드가 맡는다 — 딤·터치 차단·접근성 숨김을 한 벌로 쓴다.
+    // 덮개는 게이트가 풀리는 순간 걷혀야 토핑이 쌓이는 모습이 보인다
     val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
 
     LaunchedEffect(toppingsVisible) {
         currentOnToppingsVisibleChange(toppingsVisible)
     }
+
+    val revealedCount = rememberStaggeredReveal(
+        total = groupList.size,
+        started = toppingsVisible,
+        stepMillis = STAGGER_STEP_MILLIS,
+    )
 
     Box(modifier = modifier) {
         Column {
@@ -116,7 +126,7 @@ internal fun GroupListScreen(
                         GroupListContent(
                             groupList = groupList,
                             onClickTopping = onClickTopping,
-                            toppingsVisible = toppingsVisible,
+                            revealedCount = revealedCount,
                             onGroupSettled = { settledGroupIds = settledGroupIds + it },
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -132,7 +142,7 @@ internal fun GroupListContent(
     groupList: List<MyParfaitGroupVO>,
     onClickTopping: (GroupId) -> Unit,
     modifier: Modifier = Modifier,
-    toppingsVisible: Boolean = true,
+    revealedCount: Int = Int.MAX_VALUE,
     onGroupSettled: (GroupId) -> Unit = {},
 ) {
     GroupListParfaitLayout(
@@ -177,12 +187,7 @@ internal fun GroupListContent(
                 end = YGTheme.layout.padding.padding2,
                 start = YGTheme.layout.padding.padding2,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(if (toppingsVisible) 1f else 0f)
-                .then(
-                    if (toppingsVisible) Modifier else Modifier.semantics { hideFromAccessibility() },
-                ),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
             val now = remember(groupList) { Clock.System.now() }
@@ -192,6 +197,12 @@ internal fun GroupListContent(
                 // 결말 보고는 요청당 한 번뿐이라, 슬롯이 남의 그룹으로 바뀌면 그 그룹은 영영
                 // 결말로 세어지지 않고 화면이 로딩에 갇힌다
                 key(group.groupId) {
+                    val revealed = isStaggerRevealed(
+                        index = index,
+                        total = groupList.size,
+                        revealedCount = revealedCount,
+                    )
+
                     YGToppingGroup(
                         image = group.toToppingImage(),
                         name = group.groupName.value,
@@ -201,9 +212,13 @@ internal fun GroupListContent(
                         chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
                         type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                         onImageSettled = { onGroupSettled(group.groupId) },
-                        modifier = Modifier.clickableYGScaleRipple(enabled = toppingsVisible) {
-                            onClickTopping(group.groupId)
-                        },
+                        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야
+                        // 이미지 요청이 이어진다
+                        modifier = Modifier
+                            .alpha(if (revealed) 1f else 0f)
+                            .clickableYGScaleRipple(enabled = revealed) {
+                                onClickTopping(group.groupId)
+                            },
                     )
                 }
             }
