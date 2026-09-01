@@ -2,10 +2,13 @@ package com.teamyg.parfait.data.source.parfaitimage.mapper
 
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageItemRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImagesRequest
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImagesResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -14,6 +17,7 @@ import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
@@ -75,6 +79,22 @@ internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO =
         rotation = rotation,
     ),
 )
+
+internal fun List<ToppingTransformUpdate>.toUpdateRequest(): UpdateParfaitImagesRequest = UpdateParfaitImagesRequest(
+    items = map {
+        UpdateParfaitImageItemRequest(
+            parfaitImageId = it.parfaitImageId.value,
+            positionX = it.positionX,
+            positionY = it.positionY,
+            positionZ = it.positionZ,
+            scale = it.scale,
+            rotation = it.rotation,
+        )
+    },
+)
+
+internal fun UpdateParfaitImagesResponse.toUpdatedToppingVOList(): List<UpdatedToppingVO> =
+    images.map { it.toUpdatedToppingVO() }
 
 internal fun ToppingBorder.toUpdateBorderRequest(): UpdateParfaitImageBorderRequest {
     val (borderType, borderColor, borderWidth) = flatten()

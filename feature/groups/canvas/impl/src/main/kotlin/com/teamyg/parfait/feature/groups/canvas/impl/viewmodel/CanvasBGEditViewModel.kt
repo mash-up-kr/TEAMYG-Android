@@ -24,13 +24,14 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
-import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
@@ -230,7 +231,7 @@ constructor(
     private val uploadImageUseCase: UploadImageUseCase,
     private val changeCanvasBackgroundUseCase: ChangeCanvasBackgroundUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
-    private val updateToppingUseCase: UpdateToppingUseCase,
+    private val updateToppingsUseCase: UpdateToppingsUseCase,
     private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
 ) : BaseViewModel<CanvasBGEditUiState, CanvasBGEditIntent, CanvasBGEditEffect>(
     initialState = CanvasBGEditUiState(),
@@ -590,64 +591,83 @@ constructor(
     }
 
     /**
-     * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 스냅샷 대조를 쓰면 갱신이 들여온
-     * 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡혀 남의 토핑에 PATCH 를 쏜다.
-     *
-     * 어느 축을 만져서 dirty 가 됐는지는 집합이 기억하지 않으므로, 토핑마다 [serverToppings] 와
-     * 대조해 실제로 바뀐 축만 보낸다 — 위치·크기·각도와 테두리는 서버 API 자체가 갈라져 있다
-     * (`ToppingRepository.update` vs `updateBorder`). 대조를 dirty 안에서만 하는 것이 요점이다:
+     * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 대조를 dirty 안에서만 하는 것이 요점이다:
      * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
      *
-     * 일부가 403/404 등으로 실패해도 나머지 토핑과 배경 저장은 그대로 시도한다 — 한 토핑이
-     * 막혔다고 나머지까지 보류할 이유가 없다. 화면을 닫을지는 [handleOnClickConfirm] 이 정한다.
+     * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
      *
      * @return 저장하지 못한 토핑의 id.
      */
     private suspend fun updateDirtyToppings(): Set<Long> = coroutineScope {
         val current = state.value
-        current.toppings
-            .filter { it.parfaitImageId in current.dirtyToppingIds }
-            .map { topping -> async { topping.parfaitImageId.takeIf { updateToppingIfChanged(topping).not() } } }
+        val dirty = current.toppings.filter { it.parfaitImageId in current.dirtyToppingIds }
+
+        val transformChanged = dirty.filter { it.hasTransformChange() }
+        val borderChanged = dirty.filter { it.hasBorderChange() }
+
+        val transformFailures = saveTransforms(transformChanged)
+        val borderFailures = borderChanged
+            .map { topping -> async { topping.parfaitImageId.takeIf { saveBorder(topping).not() } } }
             .awaitAll()
             .filterNotNull()
-            .toSet()
+
+        transformFailures + borderFailures
     }
 
-    /** @return 보낼 것을 모두 보냈으면 `true`. 보낼 것이 없었던 경우도 그렇다. */
-    private suspend fun updateToppingIfChanged(topping: CanvasToppingItem): Boolean {
-        val original = serverToppings.find { it.parfaitImageId == topping.parfaitImageId }
+    /**
+     * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
+     * 섞이면 나머지까지 계속 막히는 것을 감수한 설계다 —
+     * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절.
+     *
+     * @return 저장하지 못한 토핑의 id.
+     */
+    private suspend fun saveTransforms(toppings: List<CanvasToppingItem>): Set<Long> {
+        if (toppings.isEmpty()) return emptySet()
 
-        val transformChanged = original == null ||
-            topping.positionX != original.positionX ||
-            topping.positionY != original.positionY ||
-            topping.scale != original.scale ||
-            topping.rotationDegrees != original.rotationDegrees
-        val transformSaved = transformChanged.not() ||
-            updateToppingUseCase(
-                groupId = groupId,
-                parfaitId = parfaitId,
-                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-                positionX = topping.positionX.toDouble(),
-                positionY = topping.positionY.toDouble(),
-                scale = topping.scale.toDouble(),
-                rotation = topping.rotationDegrees.toDouble(),
-            ).onFailure { throwable ->
-                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - ${topping.parfaitImageId}" }
-            }.isSuccess
-
-        val borderChanged = original == null || topping.borderLayers != original.borderLayers
-        val borderSaved = borderChanged.not() ||
-            updateToppingBorderUseCase(
-                groupId = groupId,
-                parfaitId = parfaitId,
-                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-                border = topping.borderLayers.toToppingBorder(),
-            ).onFailure { throwable ->
-                viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
-            }.isSuccess
-
-        return transformSaved && borderSaved
+        return updateToppingsUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            updates = toppings.map { it.toTransformUpdate() },
+        ).fold(
+            onSuccess = { emptySet() },
+            onFailure = { throwable ->
+                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - ${toppings.map { it.parfaitImageId }}" }
+                toppings.mapTo(mutableSetOf()) { it.parfaitImageId }
+            },
+        )
     }
+
+    private suspend fun saveBorder(topping: CanvasToppingItem): Boolean = updateToppingBorderUseCase(
+        groupId = groupId,
+        parfaitId = parfaitId,
+        parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+        border = topping.borderLayers.toToppingBorder(),
+    ).onFailure { throwable ->
+        viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
+    }.isSuccess
+
+    /** 스냅샷에 없는 토핑을 바뀐 것으로 봐도 안전하다 — 갱신이 들여온 토핑은 dirty 에 안 들어온다. */
+    private fun CanvasToppingItem.hasTransformChange(): Boolean {
+        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
+        return positionX != original.positionX ||
+            positionY != original.positionY ||
+            scale != original.scale ||
+            rotationDegrees != original.rotationDegrees
+    }
+
+    private fun CanvasToppingItem.hasBorderChange(): Boolean {
+        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
+        return borderLayers != original.borderLayers
+    }
+
+    /** 겹침 순서는 안 보낸다 — 앱에 z 조작 경로가 없어 서버 값을 그대로 둔다. */
+    private fun CanvasToppingItem.toTransformUpdate(): ToppingTransformUpdate = ToppingTransformUpdate(
+        parfaitImageId = ParfaitImageId(parfaitImageId),
+        positionX = positionX.toDouble(),
+        positionY = positionY.toDouble(),
+        scale = scale.toDouble(),
+        rotation = rotationDegrees.toDouble(),
+    )
 
     /** 마지막 겹이 가장 바깥쪽, 즉 화면에 보이는 테두리다 — 서버는 그 한 겹만 값으로 받는다 */
     private fun List<ToppingBorderLayer>.toToppingBorder(): ToppingBorder {

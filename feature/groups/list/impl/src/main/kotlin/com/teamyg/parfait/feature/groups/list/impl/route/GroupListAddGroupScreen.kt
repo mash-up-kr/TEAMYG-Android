@@ -62,7 +62,7 @@ fun GroupListAddGroupScreen(
                 .width(IntrinsicSize.Max)
                 .clip(YGTheme.shapes.radius.medium1)
                 .background(
-                    color = YGAtomicColors.Cherry.Cherry50,
+                    color = YGAtomicColors.Gray.White,
                     shape = YGTheme.shapes.radius.medium1,
                 ),
         ) {

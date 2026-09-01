@@ -23,6 +23,7 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
@@ -31,7 +32,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
-import com.teamyg.parfait.domain.usecase.topping.UpdateToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
@@ -42,6 +43,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
@@ -75,6 +77,7 @@ private const val THIRD_PARFAIT_ID = 300L
 private const val MY_IMAGE_ID = 10L
 private const val SECOND_IMAGE_ID = 20L
 private const val OTHER_IMAGE_ID = 30L
+private const val THIRD_IMAGE_ID = 40L
 
 class CanvasBGEditViewModelTest {
     @get:Rule
@@ -85,7 +88,7 @@ class CanvasBGEditViewModelTest {
     private val uploadImage: UploadImageUseCase = mockk()
     private val changeCanvasBackground: ChangeCanvasBackgroundUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
-    private val updateTopping: UpdateToppingUseCase = mockk()
+    private val updateToppings: UpdateToppingsUseCase = mockk()
     private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -131,7 +134,7 @@ class CanvasBGEditViewModelTest {
         uploadImageUseCase = uploadImage,
         changeCanvasBackgroundUseCase = changeCanvasBackground,
         deleteToppingUseCase = deleteTopping,
-        updateToppingUseCase = updateTopping,
+        updateToppingsUseCase = updateToppings,
         updateToppingBorderUseCase = updateToppingBorder,
     ).also { viewModel ->
         backgroundScope.launch { viewModel.state.collect { } }
@@ -397,7 +400,7 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun onClickConfirm_toppingMoved_updatesOnlyThatTopping() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickConfirm_toppingMoved_sendsOnlyThatToppingInOneRequest() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 옮긴다. 배경은 안 건드려 기본 팔레트 색 그대로다
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
@@ -406,37 +409,42 @@ class CanvasBGEditViewModelTest {
         val moved = viewModel.state.value.toppings
             .first { it.parfaitImageId == topping.parfaitImageId }
 
+        val updates = slot<List<ToppingTransformUpdate>>()
         coEvery {
-            updateTopping(
-                groupId = GroupId(GROUP_ID),
-                parfaitId = ParfaitId(PARFAIT_ID),
-                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-                positionX = moved.positionX.toDouble(),
-                positionY = moved.positionY.toDouble(),
-                scale = moved.scale.toDouble(),
-                rotation = moved.rotationDegrees.toDouble(),
-            )
-        } returns Result.success(mockk<UpdatedToppingVO>())
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), capture(updates))
+        } returns Result.success(emptyList<UpdatedToppingVO>())
 
         // When 확인 버튼을 누른다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 옮긴 토핑만 저장 요청이 나가고, 안 건드린 토핑은 나가지 않는다
-        coVerify(exactly = 1) {
-            updateTopping(
-                groupId = GroupId(GROUP_ID),
-                parfaitId = ParfaitId(PARFAIT_ID),
-                parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-                positionX = moved.positionX.toDouble(),
-                positionY = moved.positionY.toDouble(),
-                scale = moved.scale.toDouble(),
-                rotation = moved.rotationDegrees.toDouble(),
-            )
-        }
-        coVerify(exactly = 0) {
-            updateTopping(any(), any(), ParfaitImageId(OTHER_PARFAIT_IMAGE_ID), any(), any(), any(), any(), any())
-        }
+        // Then 요청은 한 번이고 옮긴 토핑만 항목으로 실린다
+        coVerify(exactly = 1) { updateToppings(any(), any(), any()) }
+        assertEquals(listOf(ParfaitImageId(topping.parfaitImageId)), updates.captured.map { it.parfaitImageId })
+        val item = updates.captured.single()
+        assertEquals(moved.positionX.toDouble(), item.positionX)
+        assertEquals(moved.positionY.toDouble(), item.positionY)
+        assertEquals(moved.scale.toDouble(), item.scale)
+        assertEquals(moved.rotationDegrees.toDouble(), item.rotation)
+    }
+
+    @Test
+    fun onClickConfirm_toppingMoved_doesNotSendPositionZ() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 옮긴다 — 앱에 z 조작 경로가 없다
+        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+        val viewModel = viewModel()
+        viewModel.selectMyTopping()
+        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+
+        val updates = slot<List<ToppingTransformUpdate>>()
+        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList<UpdatedToppingVO>())
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 겹침 순서는 null 로 남아 서버 값이 유지된다
+        assertNull(updates.captured.single().positionZ)
     }
 
     @Test
@@ -466,7 +474,7 @@ class CanvasBGEditViewModelTest {
             updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), parfaitImageId, newBorder)
         } returns Result.success(UpdatedToppingBorderVO(parfaitImageId, newBorder))
 
-        // When 확인 버튼을 누른다 — 위치는 안 바뀌었으니 updateTopping 은 부를 필요가 없다
+        // When 확인 버튼을 누른다 — 위치는 안 바뀌었으니 updateToppings 는 부를 필요가 없다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
         advanceUntilIdle()
 
@@ -474,12 +482,47 @@ class CanvasBGEditViewModelTest {
         coVerify(exactly = 1) {
             updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), parfaitImageId, newBorder)
         }
-        coVerify(exactly = 0) { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
     }
 
     @Test
-    fun onClickConfirm_noToppingChanges_doesNotCallUpdate() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 아무 토핑도 건드리지 않는다
+    fun onClickConfirm_multipleToppingsMoved_sendsOneRequestWithAllItems() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑 둘을 각각 옮긴다
+        todayCanvases.value = canvasWith(myTopping(MY_IMAGE_ID), myTopping(SECOND_IMAGE_ID))
+        stubBackgroundChange(
+            background = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()),
+            result = Result.success(null),
+        )
+        val viewModel = viewModel()
+
+        listOf(MY_IMAGE_ID, SECOND_IMAGE_ID).forEach { id ->
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnClickTopping(
+                    viewModel.state.value.toppings
+                        .first { it.parfaitImageId == id },
+                ),
+            )
+            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+        }
+
+        val updates = slot<List<ToppingTransformUpdate>>()
+        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList<UpdatedToppingVO>())
+
+        // When 확인 버튼을 누른다
+        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 토핑 수만큼 요청하지 않고 한 번에 보낸다
+        coVerify(exactly = 1) { updateToppings(any(), any(), any()) }
+        assertEquals(
+            setOf(ParfaitImageId(MY_IMAGE_ID), ParfaitImageId(SECOND_IMAGE_ID)),
+            updates.captured.map { it.parfaitImageId }.toSet(),
+        )
+    }
+
+    @Test
+    fun onClickConfirm_nothingDirty_sendsNoUpdateRequest() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑을 하나도 안 건드린다
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
 
@@ -487,20 +530,18 @@ class CanvasBGEditViewModelTest {
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 저장할 게 없으니 API 를 부르지 않는다
-        coVerify(exactly = 0) { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) }
+        // Then 빈 요청조차 보내지 않는다
+        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
     }
 
     @Test
-    fun onClickConfirm_toppingUpdateFails_keepsTheScreenAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickConfirm_batchFails_keepsTheScreenAndTellsWhy() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 옮겼는데 저장은 실패한다
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
         viewModel.selectMyTopping()
         viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
-        coEvery {
-            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
-        } returns Result.failure(RuntimeException("실패"))
+        coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
 
         // When 확인 버튼을 누른다
         viewModel.effect.test {
@@ -514,23 +555,103 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun onClickConfirm_toppingUpdateFails_keepsDirtyForRetry() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 내 토핑을 옮겼는데 저장은 실패한다
-        stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+    fun onClickConfirm_batchFails_keepsEveryTransformToppingDirty() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑 둘을 옮겼는데 일괄 저장이 실패한다
+        todayCanvases.value = canvasWith(myTopping(MY_IMAGE_ID), myTopping(SECOND_IMAGE_ID))
+        stubBackgroundChange(
+            background = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()),
+            result = Result.success(null),
+        )
         val viewModel = viewModel()
-        val topping = viewModel.selectMyTopping()
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
-        coEvery {
-            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
-        } returns Result.failure(RuntimeException("실패"))
+
+        listOf(MY_IMAGE_ID, SECOND_IMAGE_ID).forEach { id ->
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnClickTopping(
+                    viewModel.state.value.toppings
+                        .first { it.parfaitImageId == id },
+                ),
+            )
+            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+        }
+        coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
 
         // When 확인 버튼을 누른다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 화면이 남아 다시 누를 수 있으므로, 못 보낸 토핑은 대상으로 남긴다
-        assertEquals(setOf(topping.parfaitImageId), viewModel.state.value.dirtyToppingIds)
+        // Then 서버가 전부 롤백했으므로 보낸 토핑 전부를 대상으로 남긴다
+        assertEquals(setOf(MY_IMAGE_ID, SECOND_IMAGE_ID), viewModel.state.value.dirtyToppingIds)
     }
+
+    /**
+     * 위 테스트([onClickConfirm_batchFails_keepsEveryTransformToppingDirty])는 옮긴 토핑만
+     * dirty 라 dirty 집합과 "변형이 바뀐 토핑" 집합이 우연히 같다 — `saveTransforms` 가
+     * `transformChanged` 대신 `dirty` 전부를 실패로 남겨도 통과한다. 이 테스트는 그 둘을
+     * 가른다: 내 토핑 셋 중 하나는 변형만, 하나는 테두리만 바꾸고 하나는 안 건드린다.
+     */
+    @Test
+    fun onClickConfirm_batchFails_onlyTransformChangedToppingIsBatchedAndKeptDirty() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 내 토핑 셋: 변형만 바뀐 것, 테두리만 바뀐 것, 안 건드린 것
+            // handleOnToppingEditResult 가 File(...).toUri() 로 cutoutImagePath 를 적는데,
+            // 그 안의 Uri.fromFile 은 안드로이드 프레임워크 실물이라 JVM 유닛 테스트에서 스텁 없인 던진다
+            mockkStatic(Uri::class)
+            every { Uri.fromFile(any()) } returns mockk(relaxed = true)
+            stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
+            todayCanvases.value = canvasWith(
+                myTopping(MY_IMAGE_ID),
+                myTopping(SECOND_IMAGE_ID),
+                myTopping(THIRD_IMAGE_ID),
+            )
+            val viewModel = viewModel()
+
+            // 변형만 바꾼다 — 드래그
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnClickTopping(
+                    viewModel.state.value.toppings
+                        .first { it.parfaitImageId == MY_IMAGE_ID },
+                ),
+            )
+            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+
+            // 테두리만 바꾼다 — 위치는 그대로 두고 테두리 편집 결과만 반영한다
+            val newBorder = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)
+            val borderParfaitImageId = ParfaitImageId(SECOND_IMAGE_ID)
+            coEvery {
+                updateToppingBorder(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), borderParfaitImageId, newBorder)
+            } returns Result.success(UpdatedToppingBorderVO(borderParfaitImageId, newBorder))
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnToppingEditResult(
+                    toppingId = SECOND_IMAGE_ID,
+                    result = ToppingEditResult(
+                        subjectImagePath = "/cache/segmentation/subject.png",
+                        cutoutImagePath = "/cache/segmentation/cutout.png",
+                        borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f)),
+                    ),
+                ),
+            )
+
+            // THIRD_IMAGE_ID 는 손대지 않는다
+
+            val updates = slot<List<ToppingTransformUpdate>>()
+            coEvery {
+                updateToppings(any(), any(), capture(updates))
+            } returns Result.failure(RuntimeException("실패"))
+
+            // When 확인 버튼을 누른다 — 일괄(변형)만 실패시킨다
+            viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
+            advanceUntilIdle()
+
+            // Then ① 일괄 요청에는 변형만 바꾼 토핑만 실린다 — 테두리만 바뀐 것도, 안 건드린 것도 없다
+            assertEquals(
+                setOf(ParfaitImageId(MY_IMAGE_ID)),
+                updates.captured.map { it.parfaitImageId }.toSet(),
+            )
+
+            // ② 실패 뒤 변형 토핑은 dirty 로 남고, 성공한 테두리 토핑은 빠진다
+            // ③ 안 건드린 토핑은 어느 쪽에도 없다
+            assertEquals(setOf(MY_IMAGE_ID), viewModel.state.value.dirtyToppingIds)
+        }
 
     @Test
     fun onClickConfirm_everythingSaved_clearsDirtyAndConfirms() = runTest(mainDispatcherRule.dispatcher) {
@@ -539,9 +660,7 @@ class CanvasBGEditViewModelTest {
         val viewModel = viewModel()
         viewModel.selectMyTopping()
         viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
-        coEvery {
-            updateTopping(any(), any(), any(), any(), any(), any(), any(), any())
-        } returns Result.success(mockk<UpdatedToppingVO>())
+        coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList<UpdatedToppingVO>())
 
         // When 확인 버튼을 누른다
         viewModel.effect.test {
@@ -909,38 +1028,6 @@ class CanvasBGEditViewModelTest {
         )
     }
 
-    @Test
-    fun confirm_patchesOnlyDirtyToppings() = runTest(mainDispatcherRule.dispatcher) {
-        todayCanvases.value = canvasWith(myTopping(MY_IMAGE_ID), myTopping(SECOND_IMAGE_ID))
-        coEvery { updateTopping(any(), any(), any(), any(), any(), any(), any(), any()) } returns
-            Result.success(updatedTopping())
-        // 배경은 안 건드려 기본 팔레트 색 그대로다(stubBackgroundChange 문서 참고)
-        stubBackgroundChange(
-            background = CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()),
-            result = Result.success(null),
-        )
-        val viewModel = viewModel()
-        backgroundScope.launch { viewModel.state.collect { } }
-        advanceUntilIdle()
-
-        viewModel.processIntent(
-            CanvasBGEditIntent.OnClickTopping(
-                viewModel.state.value.toppings
-                    .first { it.parfaitImageId == MY_IMAGE_ID },
-            ),
-        )
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
-        viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) {
-            updateTopping(any(), any(), ParfaitImageId(MY_IMAGE_ID), any(), any(), any(), any(), any())
-        }
-        coVerify(exactly = 0) {
-            updateTopping(any(), any(), ParfaitImageId(SECOND_IMAGE_ID), any(), any(), any(), any(), any())
-        }
-    }
-
     private fun canvas(
         parfaitId: Long = PARFAIT_ID,
         background: CanvasBackground? = null,
@@ -1008,8 +1095,6 @@ class CanvasBGEditViewModelTest {
 
     private fun otherTopping(imageId: Long): CanvasToppingVO =
         topping(parfaitImageId = imageId, groupMemberId = OTHER_GROUP_MEMBER_ID, isMine = false)
-
-    private fun updatedTopping(): UpdatedToppingVO = mockk()
 
     private companion object {
         const val OTHER_PARFAIT_IMAGE_ID = 2L

@@ -101,6 +101,7 @@ class CanvasMainViewModelTest {
                 PastCanvasVO(
                     parfaitId = ParfaitId(YESTERDAY_PARFAIT_ID),
                     date = yesterday,
+                    status = CanvasStatus.CLOSED,
                     thumbnailUrl = null,
                     toppingCount = 1,
                 ),
@@ -310,12 +311,14 @@ class CanvasMainViewModelTest {
                     PastCanvasVO(
                         parfaitId = ParfaitId(YESTERDAY_PARFAIT_ID),
                         date = yesterday,
+                        status = CanvasStatus.CLOSED,
                         thumbnailUrl = null,
                         toppingCount = 1,
                     ),
                     PastCanvasVO(
                         parfaitId = ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID),
                         date = dayBeforeYesterday,
+                        status = CanvasStatus.CLOSED,
                         thumbnailUrl = null,
                         toppingCount = 1,
                     ),

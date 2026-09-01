@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -26,6 +27,7 @@ import kotlin.test.assertTrue
 private const val SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
 private const val CUTOUT_PATH = "/cache/segmentation/subject.png"
 private const val REUSED_PATH = "/data/files/recent_images/b.png"
+private const val EDITED_CUTOUT_PATH = "/cache/segmentation/edited-cutout.png"
 
 class SegmentationConfirmViewModelTest {
     @get:Rule
@@ -40,6 +42,7 @@ class SegmentationConfirmViewModelTest {
 
     private fun draft(
         subjectImagePath: String? = SUBJECT_PATH,
+        cutoutImagePath: String? = CUTOUT_PATH,
         borderColorArgb: Int? = null,
         borderWidthDp: Float? = null,
     ) = ToppingDraft(
@@ -47,7 +50,7 @@ class SegmentationConfirmViewModelTest {
         parfaitId = ParfaitId(2L),
         nextPositionZ = 3,
         subjectImagePath = subjectImagePath,
-        cutoutImagePath = CUTOUT_PATH,
+        cutoutImagePath = cutoutImagePath,
         borderColorArgb = borderColorArgb,
         borderWidthDp = borderWidthDp,
     )
@@ -56,13 +59,16 @@ class SegmentationConfirmViewModelTest {
         subjectImagePath = SUBJECT_PATH,
         cutoutImagePath = CUTOUT_PATH,
         sourceImageUri = "content://media/1",
+        savedStateHandle = SavedStateHandle(),
         toppingDraftRepository = toppingDraftRepository,
     )
 
-    private fun reuseViewModel() = SegmentationConfirmViewModel(
+    // 복원을 모사하는 테스트는 같은 handle 을 두 ViewModel 에 물린다
+    private fun reuseViewModel(handle: SavedStateHandle = SavedStateHandle()) = SegmentationConfirmViewModel(
         subjectImagePath = REUSED_PATH,
         cutoutImagePath = null,
         sourceImageUri = null,
+        savedStateHandle = handle,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -80,9 +86,6 @@ class SegmentationConfirmViewModelTest {
         assertEquals(0xFF00FF00.toInt(), state.borderColorArgb)
         assertEquals(4f, state.borderWidthDp)
         assertTrue(state.isDraftReady)
-
-        // Then 일반 진입은 원본·재편집 마스크가 둘 다 있으므로 "사진 편집"이 열려 있다
-        assertTrue(state.isEditPhotoEnabled)
     }
 
     @Test
@@ -210,7 +213,9 @@ class SegmentationConfirmViewModelTest {
         // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다.
         // flowOf 는 곧장 완결돼 순서가 뒤집혀도 record() 가 결국 불려 테스트를 속인다 —
         // 끝나지 않는 MutableStateFlow 라야 순서 위반을 잡는다
-        every { toppingDraftRepository.draft } returns MutableStateFlow(draft(subjectImagePath = null))
+        every { toppingDraftRepository.draft } returns MutableStateFlow(
+            draft(subjectImagePath = null, cutoutImagePath = null),
+        )
         coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
 
         // When 화면이 열린다
@@ -227,7 +232,7 @@ class SegmentationConfirmViewModelTest {
     @Test
     fun reuseEntry_whenDraftAlreadyHasSubject_doesNotRecordAgain() = runTest(mainDispatcherRule.dispatcher) {
         // Given 이미 이 알맹이가 적힌 초안 — 프로세스 사망 복원으로 돌아온 자리다
-        givenDraft(draft(subjectImagePath = REUSED_PATH, borderColorArgb = 0xFF00FF00.toInt()))
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null, borderColorArgb = 0xFF00FF00.toInt()))
 
         // When 화면이 다시 열린다
         val viewModel = reuseViewModel()
@@ -244,7 +249,11 @@ class SegmentationConfirmViewModelTest {
         // Given 캔버스 → 갤러리 → 다른 최근 알맹이를 이미 골라 적은 초안이 있다 — 뒤로가기로
         // 갤러리에 돌아가 이번에는 다른 알맹이를 고른 자리다
         givenDraft(
-            draft(subjectImagePath = "/data/files/recent_images/a.png", borderColorArgb = 0xFF00FF00.toInt()),
+            draft(
+                subjectImagePath = "/data/files/recent_images/a.png",
+                cutoutImagePath = null,
+                borderColorArgb = 0xFF00FF00.toInt(),
+            ),
         )
 
         // When 새 알맹이로 화면이 다시 열린다
@@ -259,15 +268,76 @@ class SegmentationConfirmViewModelTest {
     }
 
     @Test
-    fun reuseEntry_disablesEditPhoto() = runTest(mainDispatcherRule.dispatcher) {
+    fun reuseEntry_afterBorderEdit_survivesProcessDeath_withoutOverwritingTheEdit() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 재사용 진입이 알맹이를 적은 뒤, 사용자가 테두리를 고쳐 초안이 편집 결과를 든다
+            val draftFlow = MutableStateFlow(draft(subjectImagePath = null, cutoutImagePath = null))
+            every { toppingDraftRepository.draft } returns draftFlow
+            coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+
+            val savedStateHandle = SavedStateHandle()
+            reuseViewModel(savedStateHandle)
+            advanceUntilIdle()
+            draftFlow.value = draft(
+                subjectImagePath = "/cache/segmentation/edited.png",
+                cutoutImagePath = EDITED_CUTOUT_PATH,
+                borderColorArgb = 0xFFFF0000.toInt(),
+                borderWidthDp = 8f,
+            )
+
+            // When 프로세스가 죽었다 살아나 같은 진입 인자로 화면이 다시 열린다
+            reuseViewModel(savedStateHandle)
+            advanceUntilIdle()
+
+            // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 테두리와 편집 결과가
+            // 말없이 사라진다. 적는 것은 첫 진입의 한 번뿐이다
+            coVerify(exactly = 1) {
+                toppingDraftRepository.record(REUSED_PATH, null, null, null)
+            }
+        }
+
+    @Test
+    fun normalEntry_opensAreaAndBorderEdit_fromTheReeditMask() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 세그멘테이션을 거쳐 온 진입 — 원본도 재편집 마스크도 있다
+        givenDraft(draft())
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 지운 영역을 되살릴 수 있으므로 영역까지 여는 편집으로 간다
+        val state = viewModel.state.value
+        assertFalse(state.isBorderOnlyEdit)
+        assertEquals(CUTOUT_PATH, state.editImagePath)
+    }
+
+    @Test
+    fun reuseEntry_opensBorderOnlyEdit_fromTheSubject() = runTest(mainDispatcherRule.dispatcher) {
         // Given 최근 목록에서 고른 진입 — 원본도 재편집 마스크도 없다
-        givenDraft(draft(subjectImagePath = REUSED_PATH))
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
 
         // When 화면이 열린다
         val viewModel = reuseViewModel()
         advanceUntilIdle()
 
-        // Then "사진 편집"이 잠긴다 — 지울 원본도 되살릴 마스크도 없다
-        assertFalse(viewModel.state.value.isEditPhotoEnabled)
+        // Then 잠그지 않고 테두리만 고치는 편집으로 연다. 되살릴 원본이 없어 알맹이가 곧 재료다
+        val state = viewModel.state.value
+        assertTrue(state.isBorderOnlyEdit)
+        assertEquals(REUSED_PATH, state.editImagePath)
+    }
+
+    @Test
+    fun reuseEntry_afterBorderEdit_reopensFromTheEditedMask() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재사용 진입에서 테두리를 한 번 고쳐 초안에 마스크가 적혔다
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = EDITED_CUTOUT_PATH))
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 두 번째 편집은 그 마스크에서 이어간다. 원본은 여전히 없으므로 테두리 전용은 그대로다
+        val state = viewModel.state.value
+        assertTrue(state.isBorderOnlyEdit)
+        assertEquals(EDITED_CUTOUT_PATH, state.editImagePath)
     }
 }

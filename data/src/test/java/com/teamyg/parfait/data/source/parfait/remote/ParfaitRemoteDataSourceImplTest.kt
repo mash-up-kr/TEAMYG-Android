@@ -339,10 +339,17 @@ class ParfaitRemoteDataSourceImplTest {
                 PastParfaitResponse(
                     parfaitId = 3L,
                     date = "2026-08-14",
+                    status = "CLOSED",
                     thumbnailUrl = "https://example.com/thumb.png",
                     imageCount = 2,
                 ),
-                PastParfaitResponse(parfaitId = 2L, date = "2026-08-13", thumbnailUrl = null, imageCount = 0),
+                PastParfaitResponse(
+                    parfaitId = 2L,
+                    date = "2026-08-13",
+                    status = "EMPTY",
+                    thumbnailUrl = null,
+                    imageCount = 0,
+                ),
             ),
         )
 
@@ -354,6 +361,90 @@ class ParfaitRemoteDataSourceImplTest {
         assertEquals(listOf(2, 0), canvases.map { it.toppingCount })
         assertEquals(LocalDate.parse("2026-08-14"), canvases.first().date)
         assertEquals("https://example.com/thumb.png", canvases.first().thumbnailUrl)
+    }
+
+    @Test
+    fun getPastCanvases_mapsStatusOfEachElement() = runTest {
+        // Given 서버가 상태가 다른 캔버스 셋을 준다
+        coEvery { parfaitService.getGroupsByGroupIdParfaits(1L, null, null) } returns pastSuccess(
+            listOf(
+                PastParfaitResponse(
+                    parfaitId = 3L,
+                    date = "2026-08-14",
+                    status = "ACTIVE",
+                    thumbnailUrl = null,
+                    imageCount = 0,
+                ),
+                PastParfaitResponse(
+                    parfaitId = 2L,
+                    date = "2026-08-13",
+                    status = "CLOSED",
+                    thumbnailUrl = null,
+                    imageCount = 4,
+                ),
+                PastParfaitResponse(
+                    parfaitId = 1L,
+                    date = "2026-08-12",
+                    status = "EMPTY",
+                    thumbnailUrl = null,
+                    imageCount = 0,
+                ),
+            ),
+        )
+
+        // When 과거 목록 조회
+        val canvases = dataSource.getPastCanvases(GroupId(1L)).getOrThrow()
+
+        // Then 오늘 조회·상세와 같은 enum 으로 온다
+        assertEquals(
+            listOf(CanvasStatus.ACTIVE, CanvasStatus.CLOSED, CanvasStatus.EMPTY),
+            canvases.map { it.status },
+        )
+    }
+
+    @Test
+    fun getPastCanvases_unknownStatus_fallsBackToUnknown() = runTest {
+        // Given 서버가 앱이 모르는 상태를 준다
+        coEvery { parfaitService.getGroupsByGroupIdParfaits(1L, null, null) } returns pastSuccess(
+            listOf(
+                PastParfaitResponse(
+                    parfaitId = 3L,
+                    date = "2026-08-14",
+                    status = "ARCHIVED",
+                    thumbnailUrl = null,
+                    imageCount = 1,
+                ),
+            ),
+        )
+
+        // When 과거 목록 조회
+        val canvases = dataSource.getPastCanvases(GroupId(1L)).getOrThrow()
+
+        // Then 목록을 버리지 않고 UNKNOWN 으로 접는다
+        assertEquals(CanvasStatus.UNKNOWN, canvases.first().status)
+    }
+
+    @Test
+    fun getPastCanvases_activeCanvasWithNoToppings_isNotEmptyStatusButIsEmptyCount() = runTest {
+        // Given 오늘 캔버스가 아직 비어 있다 — 마감된 EMPTY 와 다른 상태다
+        coEvery { parfaitService.getGroupsByGroupIdParfaits(1L, null, null) } returns pastSuccess(
+            listOf(
+                PastParfaitResponse(
+                    parfaitId = 3L,
+                    date = "2026-08-14",
+                    status = "ACTIVE",
+                    thumbnailUrl = null,
+                    imageCount = 0,
+                ),
+            ),
+        )
+
+        // When 과거 목록 조회
+        val canvas = dataSource.getPastCanvases(GroupId(1L)).getOrThrow().first()
+
+        // Then 두 축이 갈린다 — 달력 점은 개수 축을 쓴다(api/parfait.md)
+        assertEquals(CanvasStatus.ACTIVE, canvas.status)
+        assertTrue(canvas.isEmpty)
     }
 
     @Test

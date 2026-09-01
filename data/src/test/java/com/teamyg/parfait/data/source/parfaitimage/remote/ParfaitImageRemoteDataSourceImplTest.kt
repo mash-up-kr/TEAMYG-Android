@@ -5,12 +5,13 @@ import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitImageRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
-import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImagesRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImagesResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
@@ -19,6 +20,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -253,124 +255,147 @@ class ParfaitImageRemoteDataSourceImplTest {
         assertEquals("SUCCESS", assertIs<ApiException.EmptyBody>(result.exceptionOrNull()).code)
     }
 
-    private fun updateSuccess() = ApiResponse(
+    private fun updateResponse(
+        parfaitImageId: Long,
+        positionX: Double = 200.0,
+        positionY: Double = 400.0,
+        positionZ: Int = 1,
+        scale: Double = 1.5,
+        rotation: Double = 45.0,
+    ) = UpdateParfaitImageResponse(
+        parfaitImageId = parfaitImageId,
+        positionX = positionX,
+        positionY = positionY,
+        positionZ = positionZ,
+        scale = scale,
+        rotation = rotation,
+    )
+
+    private fun updateSuccess(vararg images: UpdateParfaitImageResponse) = ApiResponse(
         success = true,
         code = "SUCCESS",
         message = "성공",
-        data = UpdateParfaitImageResponse(
-            parfaitImageId = 201L,
-            positionX = 200.0,
-            positionY = 400.0,
-            positionZ = 1,
-            scale = 1.5,
-            rotation = 45.0,
-        ),
+        data = UpdateParfaitImagesResponse(images = images.toList()),
     )
 
     @Test
-    fun updateTopping_serviceReturnsSuccess_returnsMergedTransform() = runTest {
-        // Given 서비스가 병합된 값을 준다
+    fun updateToppings_serviceReturnsSuccess_returnsMergedTransforms() = runTest {
+        // Given 서버가 병합된 값 둘을 준다
         coEvery {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } returns updateSuccess()
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
+        } returns updateSuccess(
+            updateResponse(parfaitImageId = 201L),
+            updateResponse(
+                parfaitImageId = 202L,
+                positionX = 10.0,
+                positionY = 20.0,
+                positionZ = 2,
+                scale = 1.0,
+                rotation = 0.0,
+            ),
+        )
 
-        // When 위치와 크기만 수정
-        val vo = dataSource
-            .updateTopping(
+        // When 토핑 둘을 한 번에 수정
+        val vos = dataSource
+            .updateToppings(
                 groupId = GroupId(1L),
                 parfaitId = ParfaitId(5L),
-                parfaitImageId = ParfaitImageId(201L),
-                positionX = 200.0,
-                positionY = 400.0,
-                scale = 1.5,
-                rotation = 45.0,
+                updates = listOf(
+                    ToppingTransformUpdate(
+                        parfaitImageId = ParfaitImageId(201L),
+                        positionX = 200.0,
+                        positionY = 400.0,
+                        scale = 1.5,
+                        rotation = 45.0,
+                    ),
+                    ToppingTransformUpdate(parfaitImageId = ParfaitImageId(202L), positionX = 10.0, positionY = 20.0),
+                ),
             ).getOrThrow()
 
-        // Then 응답은 부분이 아니라 전체 transform 이다
-        assertEquals(ParfaitImageId(201L), vo.parfaitImageId)
+        // Then 응답은 부분이 아니라 전체 transform 이고 원소 순서를 유지한다
+        assertEquals(listOf(ParfaitImageId(201L), ParfaitImageId(202L)), vos.map { it.parfaitImageId })
         assertEquals(
             ToppingTransform(positionX = 200.0, positionY = 400.0, positionZ = 1, scale = 1.5, rotation = 45.0),
-            vo.transform,
+            vos.first().transform,
         )
     }
 
     @Test
-    fun updateTopping_omittedFieldsAreSentAsNull() = runTest {
+    fun updateToppings_buildsOneItemPerUpdate() = runTest {
         // Given 요청 바디를 잡아둔다
-        val request = slot<UpdateParfaitImageRequest>()
+        val request = slot<UpdateParfaitImagesRequest>()
         coEvery {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                any(),
-                any(),
-                any(),
-                capture(request),
-            )
-        } returns updateSuccess()
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), capture(request))
+        } returns updateSuccess(updateResponse(parfaitImageId = 201L), updateResponse(parfaitImageId = 202L))
 
-        // When z-order 만 바꾼다
-        dataSource.updateTopping(
+        // When 토핑 둘을 수정
+        dataSource.updateToppings(
             groupId = GroupId(1L),
             parfaitId = ParfaitId(5L),
-            parfaitImageId = ParfaitImageId(201L),
-            positionZ = 3,
+            updates = listOf(
+                ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0),
+                ToppingTransformUpdate(parfaitImageId = ParfaitImageId(202L), scale = 2.0),
+            ),
         )
 
-        // Then 지정한 필드만 값이 있고 나머지는 null 이다 (서버가 null 을 미변경으로 읽는다)
-        assertEquals(3, request.captured.positionZ)
-        assertNull(request.captured.positionX)
-        assertNull(request.captured.positionY)
-        assertNull(request.captured.scale)
-        assertNull(request.captured.rotation)
-    }
-
-    @Test
-    fun updateTopping_unwrapsIdsForPathVariables() = runTest {
-        // Given 성공 응답
-        coEvery {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                any(),
-                any(),
-                any(),
-                any(),
-            )
-        } returns updateSuccess()
-
-        // When value class 로 감싼 id 로 수정
-        dataSource.updateTopping(
-            groupId = GroupId(1L),
-            parfaitId = ParfaitId(5L),
-            parfaitImageId = ParfaitImageId(201L),
-            positionX = 200.0,
-        )
-
-        // Then 경로 변수 셋에 raw Long 이 들어간다
+        // Then 요청 한 번에 항목 둘이 실린다 — 호출도 한 번뿐이다
+        assertEquals(listOf(201L, 202L), request.captured.items.map { it.parfaitImageId })
         coVerify(exactly = 1) {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                1L,
-                5L,
-                201L,
-                any(),
-            )
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         }
     }
 
     @Test
-    fun updateTopping_notOwned_returnsBusinessException() = runTest {
-        // Given 본인이 배치한 토핑이 아니다 (그룹 미참여도 같은 코드로 온다.
+    fun updateToppings_omittedFieldsAreSentAsNull() = runTest {
+        // Given 요청 바디를 잡아둔다
+        val request = slot<UpdateParfaitImagesRequest>()
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), capture(request))
+        } returns updateSuccess(updateResponse(parfaitImageId = 201L))
+
+        // When z-order 만 바꾼다
+        dataSource.updateToppings(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionZ = 3)),
+        )
+
+        // Then 지정한 필드만 값이 있고 나머지는 null 이다 (서버가 null 을 미변경으로 읽는다)
+        val item = request.captured.items.single()
+        assertEquals(3, item.positionZ)
+        assertNull(item.positionX)
+        assertNull(item.positionY)
+        assertNull(item.scale)
+        assertNull(item.rotation)
+    }
+
+    @Test
+    fun updateToppings_unwrapsIdsForPathVariablesAndItems() = runTest {
+        // Given 성공 응답
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
+        } returns updateSuccess(updateResponse(parfaitImageId = 201L))
+
+        // When value class 로 감싼 id 로 수정
+        dataSource.updateToppings(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0)),
+        )
+
+        // Then 경로 변수 둘에 raw Long 이 들어간다 — parfaitImageId 는 경로가 아니라 바디로 간다
+        coVerify(exactly = 1) {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(1L, 5L, any())
+        }
+    }
+
+    @Test
+    fun updateToppings_notOwned_returnsBusinessException() = runTest {
+        // Given 항목 중 하나가 본인 배치가 아니다 (그룹 미참여도 같은 코드로 온다.
         // HTTP status 축은 여기서 잡지 않는다 - 실제 서버의 403 은 Retrofit 이 HttpException 을
         // 던지는 별도 경로를 탄다)
         coEvery {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                any(),
-                any(),
-                any(),
-                any(),
-            )
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         } returns ApiResponse(
             success = false,
             code = "PARFAIT_IMAGE_NOT_OWNED",
@@ -379,14 +404,13 @@ class ParfaitImageRemoteDataSourceImplTest {
         )
 
         // When 수정
-        val result = dataSource.updateTopping(
+        val result = dataSource.updateToppings(
             groupId = GroupId(1L),
             parfaitId = ParfaitId(5L),
-            parfaitImageId = ParfaitImageId(201L),
-            positionX = 200.0,
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0)),
         )
 
-        // Then Business 예외로 실패한다
+        // Then Business 예외로 실패한다 — 서버가 전부 롤백했으므로 부분 성공이 없다
         assertTrue(result.isFailure)
         assertEquals(
             "PARFAIT_IMAGE_NOT_OWNED",
@@ -395,23 +419,64 @@ class ParfaitImageRemoteDataSourceImplTest {
     }
 
     @Test
-    fun updateTopping_ioException_returnsNetworkException() = runTest {
+    fun updateToppings_alreadyClosed_returnsBusinessException() = runTest {
+        // Given 마감된 캔버스다 — 일괄은 마감 검사가 항목별 소유권보다 앞이라 단건과 다른 코드가 온다
+        // (`api/parfait-image.md` 검사 순서)
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
+        } returns ApiResponse(
+            success = false,
+            code = "PARFAIT_ALREADY_CLOSED",
+            message = "이미 마감된 파르페입니다",
+            data = null,
+        )
+
+        // When 수정
+        val result = dataSource.updateToppings(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0)),
+        )
+
+        // Then Business 예외로 실패한다
+        assertTrue(result.isFailure)
+        assertEquals(
+            "PARFAIT_ALREADY_CLOSED",
+            assertIs<ApiException.Business>(result.exceptionOrNull()).code,
+        )
+    }
+
+    @Test
+    fun updateToppings_successButNullData_returnsEmptyBodyException() = runTest {
+        // Given 성공인데 본문이 비었다
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
+        } returns ApiResponse(success = true, code = "SUCCESS", message = "성공", data = null)
+
+        // When 수정
+        val result = dataSource.updateToppings(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0)),
+        )
+
+        // Then EmptyBody 예외
+        assertTrue(result.isFailure)
+        assertEquals("SUCCESS", assertIs<ApiException.EmptyBody>(result.exceptionOrNull()).code)
+    }
+
+    @Test
+    fun updateToppings_ioException_returnsNetworkException() = runTest {
         // Given 네트워크 단절
         coEvery {
-            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId(
-                any(),
-                any(),
-                any(),
-                any(),
-            )
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         } throws IOException("connection reset")
 
         // When 수정
-        val result = dataSource.updateTopping(
+        val result = dataSource.updateToppings(
             groupId = GroupId(1L),
             parfaitId = ParfaitId(5L),
-            parfaitImageId = ParfaitImageId(201L),
-            positionX = 200.0,
+            updates = listOf(ToppingTransformUpdate(parfaitImageId = ParfaitImageId(201L), positionX = 200.0)),
         )
 
         // Then Network 예외로 감싸진다

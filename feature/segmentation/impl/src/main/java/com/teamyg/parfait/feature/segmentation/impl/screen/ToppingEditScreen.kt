@@ -243,7 +243,7 @@ private fun ToppingEditContent(
         }
 
         if (state.isBorderOnly) {
-            // 캔버스에 이미 놓인 토핑을 다시 손보는 중이라 영역|테두리 탭 전환 없이 테두리 편집만 연다
+            // 되살릴 원본이 없는 진입이라 영역|테두리 탭 전환 없이 테두리 편집만 연다
             YGFloatingBarEdit(
                 title = stringResource(R.string.topping_edit_border_only_title),
                 onCloseClick = onClickBack,
