@@ -37,11 +37,10 @@ fun rememberStaggeredReveal(
 }
 
 /**
- * [index] 자리가 드러날 차례를 지났는가. **아래에서 위로 쌓인다** — 목록의 마지막 자리가
- * 화면 맨 아래라 그것부터 나온다.
+ * [index] 자리가 드러날 차례를 지났는가. **위에서 아래로 쌓인다** — 파르페가 체리에서
+ * 컵 쪽으로 자라므로 토핑도 그 순서로 따라간다.
  */
 fun isStaggerRevealed(
     index: Int,
-    total: Int,
     revealedCount: Int,
-): Boolean = total - index <= revealedCount
+): Boolean = index < revealedCount

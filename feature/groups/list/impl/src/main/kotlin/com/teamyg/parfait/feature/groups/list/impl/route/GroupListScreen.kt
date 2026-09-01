@@ -52,8 +52,8 @@ import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
-/** 토핑이 하나씩 쌓이는 간격 */
-private const val STAGGER_STEP_MILLIS = 300L
+/** 토핑이 하나씩 쌓이는 간격. 크림이 내려오는 시간(GroupListParfaitDefaults)과 맞춘다 */
+private const val STAGGER_STEP_MILLIS = 400L
 
 // Todo : 로직 추후 변경하기
 private val TOPPING_PLACEMENT_TYPES = listOf(
@@ -187,6 +187,7 @@ internal fun GroupListContent(
                 end = YGTheme.layout.padding.padding2,
                 start = YGTheme.layout.padding.padding2,
             ),
+            revealedCount = revealedCount,
             modifier = Modifier.fillMaxWidth(),
         ) {
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
@@ -197,11 +198,7 @@ internal fun GroupListContent(
                 // 결말 보고는 요청당 한 번뿐이라, 슬롯이 남의 그룹으로 바뀌면 그 그룹은 영영
                 // 결말로 세어지지 않고 화면이 로딩에 갇힌다
                 key(group.groupId) {
-                    val revealed = isStaggerRevealed(
-                        index = index,
-                        total = groupList.size,
-                        revealedCount = revealedCount,
-                    )
+                    val revealed = isStaggerRevealed(index = index, revealedCount = revealedCount)
 
                     YGToppingGroup(
                         image = group.toToppingImage(),
