@@ -1,19 +1,23 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -26,6 +30,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -38,6 +43,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMa
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
+
+private val PLACEHOLDER_SIDE = 80.dp
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -199,6 +206,29 @@ private fun ToppingImage(
 ) {
     val painterState by painter.state.collectAsState()
     val solidBorder = border as? ToppingBorder.Solid
+
+    // 토핑의 가로세로 비율은 이미지가 와야 정해져 자리표시를 실제 크기로 못 잡는다.
+    // 도착 전에는 그룹 목록이 조회 실패에 쓰는 물음표 그래픽을 고정 크기로 세운다 —
+    // 성공하는 순간 실제 크기의 토핑으로 바뀐다.
+    //
+    // requiredSize 가 아니라 size 인 이유: 부모가 준 제약 안으로 줄어 준다. 작게 배치된
+    // 토핑 자리에서 자리표시가 칸 밖으로 삐져나오지 않는다.
+    //
+    // 판정에 쓰는 painter 는 그리지 않아도 원본 크기로 요청을 이어 간다
+    if (painterState is AsyncImagePainter.State.Loading || painterState is AsyncImagePainter.State.Empty) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(DesignSystemR.drawable.img_topping_template_error),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(PLACEHOLDER_SIDE),
+            )
+        }
+        return
+    }
 
     YGToppingCutoutImage(
         painter = painter,
