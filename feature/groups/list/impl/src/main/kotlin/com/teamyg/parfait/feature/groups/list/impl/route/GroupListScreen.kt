@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
@@ -32,6 +31,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGr
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.reveal.rememberBatchReveal
 import com.teamyg.parfait.core.util.android.clickable.clickableYGScaleRipple
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -74,21 +74,11 @@ internal fun GroupListScreen(
     // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다
     val groupList = uiState.groupList.orEmpty()
 
-    // 토핑이 하나씩 따로 뜨는 대신, 전부 결말날 때까지 가렸다가 한 번에 드러낸다.
-    //
-    // 한 번 드러낸 뒤에는 다시 가리지 않는다 — 그룹을 새로 만들 때마다 목록 전체가
-    // 사라졌다 나타나면 더 거슬린다. 뒤늦게 들어온 그룹은 저 혼자 떠오른다.
     var settledGroupIds by remember { mutableStateOf(emptySet<GroupId>()) }
-    var revealed by remember { mutableStateOf(false) }
 
-    // 목록이 비어 있는 동안을 완료로 세면 안 된다 — 조회가 오기도 전에 빗장이 풀린다
-    val allSettled = groupList.isNotEmpty() && groupList.all { it.groupId in settledGroupIds }
-
-    LaunchedEffect(allSettled) {
-        if (allSettled) revealed = true
-    }
-
-    val toppingsVisible = revealed || groupList.isEmpty()
+    val toppingsVisible = rememberBatchReveal(
+        settled = groupList.map { it.groupId in settledGroupIds },
+    )
 
     Box(modifier = modifier) {
         Column {

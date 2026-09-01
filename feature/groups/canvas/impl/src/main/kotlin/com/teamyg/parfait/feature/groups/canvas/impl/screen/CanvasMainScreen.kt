@@ -202,6 +202,10 @@ internal fun CanvasMainScreen(
                 spotlightedToppingId = canvasState.spotlightedToppingId,
                 onClickTopping = onClickTopping,
                 onClickSpotlightDim = onClickSpotlightDim,
+                // 지난 날을 기다리는 동안에는 직전 캔버스를 그대로 두므로, 고른 날짜가 아니라
+                // 실제로 그리고 있는 캔버스가 바뀔 때 다시 모은다. 폴링으로 같은 캔버스가
+                // 다시 와도 id 는 그대로라 헛되이 가리지 않는다
+                revealResetKey = canvasState.displayedCanvas?.parfaitId,
                 modifier = Modifier.fillMaxSize(),
             )
         }

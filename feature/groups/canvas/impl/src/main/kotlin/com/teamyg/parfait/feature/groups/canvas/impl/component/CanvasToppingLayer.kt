@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -33,6 +29,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.ui.reveal.rememberBatchReveal
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -41,7 +38,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
-import com.teamyg.parfait.feature.groups.canvas.impl.util.allToppingsSettled
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
@@ -74,6 +70,7 @@ internal fun CanvasToppingLayer(
     modifier: Modifier = Modifier,
     hitTestEnabled: Boolean = true,
     revealTogether: Boolean = true,
+    revealResetKey: Any? = Unit,
 ) {
     BoxWithConstraints(modifier = modifier) {
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
@@ -88,20 +85,13 @@ internal fun CanvasToppingLayer(
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
-        // 토핑이 하나씩 따로 뜨는 대신, 전부 결말날 때까지 가렸다가 한 번에 드러낸다.
-        //
-        // 한 번 드러낸 뒤에는 다시 가리지 않는다 — 토핑이 하나 추가될 때마다 캔버스 전체가
-        // 사라졌다 나타나면 더 거슬린다. 화면을 떠나면 이 상태도 함께 사라져 다시 진입할 때
-        // 다시 모아서 낸다.
-        var revealed by remember { mutableStateOf(false) }
-        val allSettled = allToppingsSettled(entries.map { it.settled })
-
-        LaunchedEffect(allSettled) {
-            if (allSettled) revealed = true
-        }
-
-        // 토핑이 없는 캔버스는 기다릴 것도 없다 — 빈 화면 위에서 로딩만 계속 돌면 안 된다
-        val toppingsVisible = !revealTogether || revealed || entries.isEmpty()
+        // 날짜를 바꾸면 캔버스는 그대로 컴포지션에 남는다. resetKey 를 안 주면 빗장이 풀린
+        // 채라 다음 날짜의 토핑이 하나씩 따로 뜬다
+        val revealed = rememberBatchReveal(
+            settled = entries.map { it.settled },
+            resetKey = revealResetKey,
+        )
+        val toppingsVisible = !revealTogether || revealed
 
         // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다.
         // alpha 는 시맨틱을 지우지 않아, 이것 없이는 보이지 않는 토핑을 접근성 서비스가 누른다
