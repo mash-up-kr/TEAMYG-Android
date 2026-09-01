@@ -56,7 +56,8 @@ fun YGCanvas(
     date: String,
     day: String,
     onDateSelectClick: () -> Unit,
-    addAction: YGCanvasMenuAction,
+    /** 없으면(`null`) [YGCanvasMenu] 가 [editAction] 만 전체 너비로 보여준다 */
+    addAction: YGCanvasMenuAction?,
     editAction: YGCanvasMenuAction,
     modifier: Modifier = Modifier,
     /** 미설정이면 null — 그때는 흰 바탕이 깔린다 */
@@ -69,6 +70,9 @@ fun YGCanvas(
     isCalendarVisible: Boolean = false,
     expandedItems: List<YGCanvasMenuItem> = emptyList(),
     emptyMessage: String = "",
+    isSaveVisible: Boolean = false,
+    onClickSave: () -> Unit = {},
+    saveContentDescription: String? = null,
     calendarContent: @Composable () -> Unit = {},
     /**
      * 넘기면 배경+토핑(테두리·모서리 컷 모양, 빈 캔버스 문구, 날짜 버튼 같은 프레임 UI는 제외)을
@@ -112,6 +116,9 @@ fun YGCanvas(
                                 date = date,
                                 day = day,
                                 onClick = onDateSelectClick,
+                                isSaveVisible = isSaveVisible,
+                                onClickSave = onClickSave,
+                                saveContentDescription = saveContentDescription,
                             )
                         }
                     },
@@ -149,6 +156,9 @@ fun YGCanvas(
                         date = date,
                         day = day,
                         onClick = onDateSelectClick,
+                        isSaveVisible = isSaveVisible,
+                        onClickSave = onClickSave,
+                        saveContentDescription = saveContentDescription,
                     )
                     calendarContent()
                 }
