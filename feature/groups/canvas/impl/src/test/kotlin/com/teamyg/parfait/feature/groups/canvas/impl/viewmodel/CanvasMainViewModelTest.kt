@@ -452,16 +452,16 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun onClickSaveToGallery_requestsCanvasCapture() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickSaveToGallery_requestsCanvasCaptureForPreview() = runTest(mainDispatcherRule.dispatcher) {
         // Given 화면이 열린 상태
         val viewModel = enteredViewModel()
 
         // When 저장 버튼을 누른다
         viewModel.effect.test {
+            // Then 바로 저장하지 않는다 — 미리보기로 넘길 캡처만 요청한다
             viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
 
-            // Then 캡처 자체는 화면만 할 수 있어 요청만 보낸다
-            assertEquals(CanvasMainEffect.RequestCanvasCapture, awaitItem())
+            assertEquals(CanvasMainEffect.RequestCanvasCaptureForPreview, awaitItem())
         }
     }
 

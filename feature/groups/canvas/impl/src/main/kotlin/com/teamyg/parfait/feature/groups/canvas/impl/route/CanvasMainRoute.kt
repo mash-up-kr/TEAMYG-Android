@@ -25,18 +25,24 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
+import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasImageSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
+import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
@@ -50,7 +56,9 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
@@ -88,6 +96,7 @@ internal fun CanvasMainRoute(
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
+    val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
     val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
@@ -110,6 +119,27 @@ internal fun CanvasMainRoute(
             viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
         } else if (bitmap != null) {
             toastPolicy.showError(gallerySaveFailureMessage)
+        }
+    }
+
+    // 갤러리 저장은 권한을 물어야 시작할 수 있다 — 미리보기에서 돌아온 길과 권한 승인 뒤의
+    // 길이 같은 곳으로 모이도록 여기 한 번만 적는다
+    val saveWithPermission: (Bitmap) -> Unit = { bitmap ->
+        if (GalleryWritePermissionManager.hasPermission(context)) {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+        } else {
+            pendingGalleryBitmap = bitmap
+            galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
+        }
+    }
+
+    // 미리보기에서 저장을 확정하고 돌아왔다. 보여 준 그림 그대로 남겨야 하므로 캔버스를 다시
+    // 캡처하지 않고 미리보기가 쓰던 파일을 읽는다
+    ResultEffect<CanvasImageSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
+        scope.launch {
+            withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
+                .onSuccess(saveWithPermission)
+                .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
         }
     }
 
@@ -144,14 +174,19 @@ internal fun CanvasMainRoute(
                     destination = NavKeyGroupSetting(groupId = effect.groupId.value),
                 )
 
-                is CanvasMainEffect.RequestCanvasCapture -> {
+                is CanvasMainEffect.RequestCanvasCaptureForPreview -> {
                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                    if (GalleryWritePermissionManager.hasPermission(context)) {
-                        viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
-                    } else {
-                        pendingGalleryBitmap = bitmap
-                        galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
-                    }
+                    val selectedDate = viewModel.state.value.selectedDate
+
+                    withContext(Dispatchers.IO) { bitmap.writeToCanvasCaptureCache(context) }
+                        .onSuccess { file ->
+                            navigator.goTo(
+                                destination = NavKeyCanvasImageSave(
+                                    imagePath = file.absolutePath,
+                                    date = selectedDate.toString(),
+                                ),
+                            )
+                        }.onFailure { toastPolicy.showError(captureFailureMessage) }
                 }
 
                 is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
