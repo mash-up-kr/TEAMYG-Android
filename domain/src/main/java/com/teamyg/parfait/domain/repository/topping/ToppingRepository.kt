@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
@@ -38,21 +39,19 @@ interface ToppingRepository {
     ): Result<Unit>
 
     /**
-     * 배치된 토핑의 위치·크기·각도를 부분 수정한다. 넘기지 않은 값은 서버가 유지한다.
+     * 배치된 토핑 여럿의 위치·크기·각도를 한 요청으로 부분 수정한다. 넘기지 않은 축은 서버가 유지한다.
+     *
+     * 부분 성공이 없다 — 하나라도 걸리면 전부 롤백되고 실패한 항목이 무엇인지는 알 수 없다.
+     * [updates] 가 비면 요청 자체를 만들지 않는다.
      */
-    suspend fun update(
+    suspend fun updateAll(
         groupId: GroupId,
         parfaitId: ParfaitId,
-        parfaitImageId: ParfaitImageId,
-        positionX: Double? = null,
-        positionY: Double? = null,
-        positionZ: Int? = null,
-        scale: Double? = null,
-        rotation: Double? = null,
-    ): Result<UpdatedToppingVO>
+        updates: List<ToppingTransformUpdate>,
+    ): Result<List<UpdatedToppingVO>>
 
     /**
-     * 배치된 토핑의 테두리를 통째로 바꾼다. [update]와 달리 부분 병합이 아니다.
+     * 배치된 토핑의 테두리를 통째로 바꾼다. [updateAll]과 달리 부분 병합이 아니다.
      */
     suspend fun updateBorder(
         groupId: GroupId,

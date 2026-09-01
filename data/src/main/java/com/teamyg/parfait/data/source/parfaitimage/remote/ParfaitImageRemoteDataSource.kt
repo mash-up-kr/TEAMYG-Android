@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 
@@ -27,24 +28,17 @@ interface ParfaitImageRemoteDataSource {
     ): Result<PlacedToppingVO>
 
     /**
-     * 배치된 토핑의 위치·크기·각도를 부분 수정한다. 넘기지 않은 값은 서버가 유지한다.
+     * 배치된 토핑 여럿의 위치·크기·각도를 한 요청으로 부분 수정한다. 넘기지 않은 축은 서버가 유지한다.
      *
-     * 테두리는 이 API 로 바꿀 수 없다 — 서버 요청에 필드가 없다. 바꾸려면 같은 imageId 로
-     * placeTopping 을 다시 부르는 수밖에 없고, 그 경로는 소유자를 덮어쓴다.
-     *
-     * 그룹에 참여하지 않았을 때도 본인 배치가 아닐 때와 같은 코드(PARFAIT_IMAGE_NOT_OWNED,
-     * 403)가 온다 — placeTopping 이 미참여를 GROUP_NOT_JOINED 로 구분하는 것과 다르다.
+     * 부분 성공이 없다 — 항목 하나가 걸리면 전부 롤백되고 어느 항목이었는지는 응답에 없다.
+     * 테두리는 이 API 로 바꿀 수 없다(요청에 필드가 없다) — [updateToppingBorder] 가 맡는다.
+     * 실패 코드와 검사 순서는 `api/parfait-image.md` 참고.
      */
-    suspend fun updateTopping(
+    suspend fun updateToppings(
         groupId: GroupId,
         parfaitId: ParfaitId,
-        parfaitImageId: ParfaitImageId,
-        positionX: Double? = null,
-        positionY: Double? = null,
-        positionZ: Int? = null,
-        scale: Double? = null,
-        rotation: Double? = null,
-    ): Result<UpdatedToppingVO>
+        updates: List<ToppingTransformUpdate>,
+    ): Result<List<UpdatedToppingVO>>
 
     /**
      * 배치된 토핑의 테두리를 바꾼다.

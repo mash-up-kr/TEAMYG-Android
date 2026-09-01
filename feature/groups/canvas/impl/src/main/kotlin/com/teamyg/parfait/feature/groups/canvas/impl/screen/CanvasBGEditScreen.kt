@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
@@ -63,6 +64,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
@@ -74,6 +76,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBackgroundP
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasEditTab
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingItem
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+/** 배경 탭에서 토핑은 배경 선택의 참고로만 존재한다 — 고를 수 없다는 것을 불투명도로 알린다 */
+private const val BACKGROUND_TAB_TOPPING_ALPHA = 0.5f
 
 @Composable
 internal fun CanvasBGEditScreen(
@@ -137,32 +142,40 @@ internal fun CanvasBGEditScreen(
                     )
                 }
 
-                if (uiState.selectedTab == CanvasEditTab.TOPPING) {
-                    // 배치가 모두 이 영역 대비 비율이라, 캔버스 메인과 같은 자리에 그리려면
-                    // 실제 크기를 알아야 한다
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val canvasWidth = maxWidth
-                        val canvasHeight = maxHeight
-                        val density = LocalDensity.current
-                        val canvasWidthPx = with(density) { canvasWidth.toPx() }
-                        val canvasHeightPx = with(density) { canvasHeight.toPx() }
+                // 배치가 모두 이 영역 대비 비율이라, 캔버스 메인과 같은 자리에 그리려면 실제 크기를 알아야 한다
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val canvasWidth = maxWidth
+                    val canvasHeight = maxHeight
+                    val density = LocalDensity.current
+                    val canvasWidthPx = with(density) { canvasWidth.toPx() }
+                    val canvasHeightPx = with(density) { canvasHeight.toPx() }
 
-                        val entries = rememberBGEditHitEntries(
-                            toppings = uiState.toppings,
-                            canvasWidth = canvasWidth,
-                            canvasHeight = canvasHeight,
-                        )
+                    val drawEntries = rememberBGEditDrawEntries(
+                        toppings = uiState.toppings,
+                        canvasWidth = canvasWidth,
+                        canvasHeight = canvasHeight,
+                    )
+
+                    if (uiState.selectedTab == CanvasEditTab.BACKGROUND) {
+                        // 딤·입력 레이어·모서리 버튼·접근성 클릭을 붙이지 않는다
+                        drawEntries.forEach { entry ->
+                            CanvasToppingImage(
+                                entry = entry,
+                                alpha = BACKGROUND_TAB_TOPPING_ALPHA,
+                                onClick = null,
+                            )
+                        }
+                    } else {
+                        val entries = rememberBGEditHitEntries(drawEntries = drawEntries)
                         val myEntries = entries.filter { it.topping.isMine }
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
                         }
 
-                        // 남의 토핑
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
-                                entry = entry,
-                                canvasWidth = canvasWidth,
-                                canvasHeight = canvasHeight,
+                                entry = entry.draw,
+                                alpha = 1f,
                                 onClick = onClickDeselectTopping,
                             )
                         }
@@ -173,12 +186,10 @@ internal fun CanvasBGEditScreen(
                                 .background(YGAtomicColors.Transparency.Black25),
                         )
 
-                        // 내 토핑
                         myEntries.forEach { entry ->
                             CanvasToppingImage(
-                                entry = entry,
-                                canvasWidth = canvasWidth,
-                                canvasHeight = canvasHeight,
+                                entry = entry.draw,
+                                alpha = 1f,
                                 onClick = { onClickTopping(entry.topping) },
                             )
                         }
@@ -381,16 +392,71 @@ private fun PaletteColorCircle(
     }
 }
 
-private data class BGEditHitEntry(
-    val topping: CanvasToppingItem,
-    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
-    val painter: AsyncImagePainter,
-    val target: ToppingHitTarget,
-)
-
 /** 배경 편집이 그리는 대상. 편집본이 있으면 그쪽이고, 그 파일은 투명 여백이 잘려 있다. */
 private val CanvasToppingItem.drawnModel: String
     get() = editedImagePath ?: imageUrl
+
+/** 두 탭이 공유하는 그리기 정보. 마스크와 [ToppingHitTarget]은 [BGEditHitEntry]가 얹는다 */
+private data class BGEditDrawEntry(
+    val topping: CanvasToppingItem,
+    // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
+    val painter: AsyncImagePainter,
+    val center: DpOffset,
+    val size: DpSize,
+    val drawnBorderWidthDp: Float,
+)
+
+/**
+ * 배경 탭에서도 부르므로 알파 마스크를 요청하지 않는다 — 마스크 준비는 비트맵 디코딩을
+ * 동반하는데 배경 탭은 판정을 하지 않는다.
+ */
+@Composable
+private fun rememberBGEditDrawEntries(
+    toppings: List<CanvasToppingItem>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+): List<BGEditDrawEntry> = toppings.map { topping ->
+    key(topping.parfaitImageId) {
+        val painter = rememberAsyncImagePainter(model = topping.drawnModel)
+        val painterState by painter.state.collectAsState()
+        val intrinsicSize = painter.intrinsicSize
+
+        val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
+            intrinsicSize.width / intrinsicSize.height
+        } else {
+            0f
+        }
+
+        BGEditDrawEntry(
+            topping = topping,
+            painter = painter,
+            center = toppingCenter(
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                positionX = topping.positionX,
+                positionY = topping.positionY,
+            ),
+            size = toppingImageSize(
+                longSide = toppingLongSide(canvasWidth, topping.scale),
+                aspectRatio = aspectRatio,
+            ),
+            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
+            // 판정이 외형과 어긋난다
+            drawnBorderWidthDp = topping.borderLayers
+                .firstOrNull()
+                ?.takeIf { painterState is AsyncImagePainter.State.Success }
+                ?.widthDp
+                ?: 0f,
+        )
+    }
+}
+
+private data class BGEditHitEntry(
+    val draw: BGEditDrawEntry,
+    val target: ToppingHitTarget,
+) {
+    val topping: CanvasToppingItem get() = draw.topping
+}
 
 /**
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
@@ -399,63 +465,27 @@ private val CanvasToppingItem.drawnModel: String
  * 그리는 데는 painter 만 있으면 되므로, 마스크가 없어도 화면이 달라지지 않는다.
  */
 @Composable
-private fun rememberBGEditHitEntries(
-    toppings: List<CanvasToppingItem>,
-    canvasWidth: Dp,
-    canvasHeight: Dp,
-): List<BGEditHitEntry> {
+private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<BGEditHitEntry> {
     val masks = rememberToppingAlphaMasks(
-        toppings.filter { it.isMine }.map { it.drawnModel },
+        drawEntries.filter { it.topping.isMine }.map { it.topping.drawnModel },
     )
     val density = LocalDensity.current
 
-    return toppings.map { topping ->
-        key(topping.parfaitImageId) {
-            val painter = rememberAsyncImagePainter(model = topping.drawnModel)
-            val painterState by painter.state.collectAsState()
-            val intrinsicSize = painter.intrinsicSize
-
-            val aspectRatio = if (intrinsicSize.isSpecified && intrinsicSize.height > 0f) {
-                intrinsicSize.width / intrinsicSize.height
-            } else {
-                0f
-            }
-
-            val imageSize = toppingImageSize(
-                longSide = toppingLongSide(canvasWidth, topping.scale),
-                aspectRatio = aspectRatio,
-            )
-            val center = toppingCenter(
-                canvasWidth = canvasWidth,
-                canvasHeight = canvasHeight,
-                positionX = topping.positionX,
-                positionY = topping.positionY,
-            )
-
-            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
-            // 판정이 외형과 어긋난다
-            val drawnBorderWidth = topping.borderLayers
-                .firstOrNull()
-                ?.takeIf { painterState is AsyncImagePainter.State.Success }
-                ?.widthDp
-                ?: 0f
-
-            BGEditHitEntry(
-                topping = topping,
-                painter = painter,
-                target = with(density) {
-                    ToppingHitTarget(
-                        centerXPx = center.x.toPx(),
-                        centerYPx = center.y.toPx(),
-                        imageWidthPx = imageSize.width.toPx(),
-                        imageHeightPx = imageSize.height.toPx(),
-                        rotationDegrees = topping.rotationDegrees,
-                        borderWidthPx = drawnBorderWidth.dp.toPx(),
-                        mask = masks[topping.drawnModel],
-                    )
-                },
-            )
-        }
+    return drawEntries.map { entry ->
+        BGEditHitEntry(
+            draw = entry,
+            target = with(density) {
+                ToppingHitTarget(
+                    centerXPx = entry.center.x.toPx(),
+                    centerYPx = entry.center.y.toPx(),
+                    imageWidthPx = entry.size.width.toPx(),
+                    imageHeightPx = entry.size.height.toPx(),
+                    rotationDegrees = entry.topping.rotationDegrees,
+                    borderWidthPx = entry.drawnBorderWidthDp.dp.toPx(),
+                    mask = masks[entry.topping.drawnModel],
+                )
+            },
+        )
     }
 }
 
@@ -463,44 +493,48 @@ private fun rememberBGEditHitEntries(
  * 캔버스 미리보기 박스 안, 저장된 배치([CanvasToppingItem.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
- * [onClick]의 실제 동작(선택/선택 해제)은 호출하는 쪽에서 소유 여부에 따라 다르게 넘겨준다.
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
  * 별도로 그린다.
+ *
+ * Box 가 이미지보다 [BGEditDrawEntry.drawnBorderWidthDp]만큼 크고 그만큼 안쪽으로 덜어낸다.
+ * [YGToppingCutoutImage]의 테두리는 그 폭만큼 바깥으로 밀어 찍는데, `alpha`가 1 미만이면
+ * 오프스크린 버퍼가 생겨 레이어 밖으로 나간 부분이 잘리기 때문이다.
+ *
+ * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
+ *   읽히면 안 된다.
  */
 @Composable
 private fun CanvasToppingImage(
-    entry: BGEditHitEntry,
-    canvasWidth: Dp,
-    canvasHeight: Dp,
-    onClick: () -> Unit,
+    entry: BGEditDrawEntry,
+    alpha: Float,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-    val size = with(density) {
-        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
-    }
     val painterState by entry.painter.state.collectAsState()
     val border = entry.topping.borderLayers.firstOrNull()
     val description = stringResource(R.string.canvas_topping_content_description)
+    val outlineInset = entry.drawnBorderWidthDp.dp
 
     Box(
         modifier = modifier
-            .centeredAt(
-                toppingCenter(
-                    canvasWidth = canvasWidth,
-                    canvasHeight = canvasHeight,
-                    positionX = entry.topping.positionX,
-                    positionY = entry.topping.positionY,
-                ),
-            ).requiredSize(size)
-            .graphicsLayer(rotationZ = entry.topping.rotationDegrees)
-            // 판정은 입력 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
-            .semantics(mergeDescendants = true) {
-                role = Role.Button
-                contentDescription = description
-                onClick {
-                    onClick()
-                    true
+            .centeredAt(entry.center)
+            .requiredSize(entry.size + DpSize(outlineInset * 2, outlineInset * 2))
+            .graphicsLayer(
+                rotationZ = entry.topping.rotationDegrees,
+                alpha = alpha,
+            ).let { base ->
+                if (onClick == null) {
+                    base
+                } else {
+                    // 판정은 입력 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
+                    base.semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        contentDescription = description
+                        onClick {
+                            onClick()
+                            true
+                        }
+                    }
                 }
             },
     ) {
@@ -511,14 +545,16 @@ private fun CanvasToppingImage(
                 ?.let { Color(it.colorArgb) }
                 ?.takeIf { painterState is AsyncImagePainter.State.Success },
             borderWidth = (border?.widthDp ?: 0f).dp,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(outlineInset),
         )
     }
 }
 
 /**
  * 선택된 토핑의 스트로크와 그 네 모서리에 놓는 버튼들.
- * 좌측 상단=삭제, 우측 상단=크기조절(드래그 핸들), 좌측 하단=편집, 우측 하단=회전(드래그 핸들).
+ * 좌측 상단=삭제, 우측 상단=회전(드래그 핸들), 좌측 하단=편집, 우측 하단=크기조절(드래그 핸들).
  */
 @Composable
 private fun ToppingCornerButtons(
@@ -560,13 +596,13 @@ private fun ToppingCornerButtons(
             onClick = onClickDelete,
             modifier = Modifier.centeredAt(buttonPoints.topLeft),
         )
-        ToppingResizeHandleButton(
-            iconRes = DesignSystemR.drawable.ic_scale,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
+        ToppingRotateHandleButton(
+            iconRes = DesignSystemR.drawable.ic_rotate,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
             point = buttonPoints.topRight,
             center = center,
             key = entry.topping.parfaitImageId,
-            onResize = onResize,
+            onRotate = onRotate,
         )
         YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_edit,
@@ -575,22 +611,79 @@ private fun ToppingCornerButtons(
             onClick = onClickEdit,
             modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
         )
-        ToppingRotateHandleButton(
-            iconRes = DesignSystemR.drawable.ic_rotate,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
+        ToppingResizeHandleButton(
+            iconRes = DesignSystemR.drawable.ic_scale,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
             point = buttonPoints.bottomRight,
             center = center,
             key = entry.topping.parfaitImageId,
-            onRotate = onRotate,
+            onResize = onResize,
         )
     }
 }
 
+/** 실제 리소스라야 painter 가 Success 에 닿아 테두리도 함께 그려진다 */
+private const val PREVIEW_TOPPING_MODEL =
+    "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
+
+private val previewToppings = listOf(
+    CanvasToppingItem(
+        parfaitImageId = 1L,
+        isMine = true,
+        imageUrl = PREVIEW_TOPPING_MODEL,
+        positionX = 0.3f,
+        positionY = 0.4f,
+        borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFFFFFF.toInt(), widthDp = 4f)),
+    ),
+    CanvasToppingItem(
+        parfaitImageId = 2L,
+        isMine = false,
+        imageUrl = PREVIEW_TOPPING_MODEL,
+        positionX = 0.7f,
+        positionY = 0.6f,
+        scale = 1.2f,
+        rotationDegrees = 15f,
+    ),
+)
+
 @YGPreview
 @Composable
-private fun PreviewCanvasBGEditScreen() = PreviewBox {
+private fun PreviewCanvasBGEditScreenBackgroundTab() = PreviewBox {
     CanvasBGEditScreen(
-        uiState = CanvasBGEditUiState(),
+        uiState = CanvasBGEditUiState(
+            selectedTab = CanvasEditTab.BACKGROUND,
+            toppings = previewToppings,
+        ),
+        onSelectTab = {},
+        onSelectColor = {},
+        onClickCamera = {},
+        onClickGallery = {},
+        onClickCloseButton = {},
+        onQuitDialogConfirm = {},
+        onQuitDialogCancel = {},
+        onClickConfirm = {},
+        onClickTopping = {},
+        onClickDeselectTopping = {},
+        onClickDeleteTopping = {},
+        onDeleteToppingDialogConfirm = {},
+        onDeleteToppingDialogCancel = {},
+        onClickEditTopping = {},
+        onToppingResize = {},
+        onToppingRotate = {},
+        onToppingMoveDrag = { _, _ -> },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCanvasBGEditScreenToppingTab() = PreviewBox {
+    CanvasBGEditScreen(
+        uiState = CanvasBGEditUiState(
+            selectedTab = CanvasEditTab.TOPPING,
+            toppings = previewToppings,
+            selectedToppingId = 1L,
+        ),
         onSelectTab = {},
         onSelectColor = {},
         onClickCamera = {},

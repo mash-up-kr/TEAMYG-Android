@@ -72,6 +72,7 @@ internal fun GroupListRoute(
         containerColor = YGAtomicColors.Gray.Transparent,
         contentWindowInsets = WindowInsets.systemBars
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+        isLoading = uiState.isInitialLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
         // 두 화면 모두 LazyColumn 만 GroupListPullToRefreshBox 로 감싸 pull-to-refresh 동작이 동일하다.

@@ -40,7 +40,6 @@ internal fun SegmentationConfirmScreen(
     borderColorArgb: Int?,
     borderWidthDp: Float?,
     isNextEnabled: Boolean,
-    isEditPhotoEnabled: Boolean,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
     onClickEditPhoto: () -> Unit,
@@ -95,7 +94,7 @@ internal fun SegmentationConfirmScreen(
             YGButton(
                 text = stringResource(R.string.segmentation_confirm_edit_photo),
                 buttonType = YGButtonType.Medium.Secondary,
-                isEnabled = isEditPhotoEnabled,
+                isEnabled = true,
                 onClick = onClickEditPhoto,
                 modifier = Modifier.weight(1f),
             )
@@ -118,7 +117,6 @@ private fun SegmentationConfirmScreenPreview() = PreviewBox {
         borderColorArgb = null,
         borderWidthDp = null,
         isNextEnabled = true,
-        isEditPhotoEnabled = true,
         onClickBack = {},
         onClickClose = {},
         onClickEditPhoto = {},

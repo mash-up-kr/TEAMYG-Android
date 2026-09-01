@@ -14,9 +14,15 @@ import kotlinx.datetime.LocalDate
 data class PastCanvasVO(
     val parfaitId: ParfaitId,
     val date: LocalDate,
+    val status: CanvasStatus,
     val thumbnailUrl: String?,
     val toppingCount: Int,
 ) {
-    /** 캔버스만 열어 보고 토핑은 안 올린 날. 달력이 점을 찍으면 안 되는 날이다 */
+    /**
+     * 캔버스만 열어 보고 토핑은 안 올린 날. 달력이 점을 찍으면 안 되는 날이다.
+     *
+     * [status] 의 EMPTY 와 뜻이 다르니 갈아타지 말 것 — 그쪽은 "0건으로 마감된 날"이라
+     * 아직 진행 중인 오늘 캔버스가 빠진다. 점 기준을 토핑 개수로 두는 것은 C-201 정책이다.
+     */
     val isEmpty: Boolean get() = toppingCount == 0
 }

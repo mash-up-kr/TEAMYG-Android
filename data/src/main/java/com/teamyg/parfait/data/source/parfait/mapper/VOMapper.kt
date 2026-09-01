@@ -68,6 +68,7 @@ internal fun PastParfaitsResponse.toPastCanvasVOList(): List<PastCanvasVO> = par
     PastCanvasVO(
         parfaitId = ParfaitId(it.parfaitId),
         date = LocalDate.parse(it.date),
+        status = it.status.toCanvasStatus(),
         thumbnailUrl = it.thumbnailUrl,
         toppingCount = it.imageCount,
     )

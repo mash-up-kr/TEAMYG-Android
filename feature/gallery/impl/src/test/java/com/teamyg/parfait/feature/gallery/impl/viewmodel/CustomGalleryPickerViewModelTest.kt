@@ -5,6 +5,7 @@ import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
+import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
@@ -33,20 +34,24 @@ class CustomGalleryPickerViewModelTest {
         kind = RecentImageKind.CUTOUT,
     )
 
-    private fun createViewModel(returnResultOnly: Boolean): CustomGalleryPickerViewModel {
+    private fun createViewModel(
+        recentImagePick: RecentImagePick,
+        returnResultOnly: Boolean = false,
+    ): CustomGalleryPickerViewModel {
         every { getRecentCacheImages() } returns flowOf(listOf(source, cutout))
 
         return CustomGalleryPickerViewModel(
             returnResultOnly = returnResultOnly,
+            recentImagePick = recentImagePick,
             getRecentCacheImagesUseCase = getRecentCacheImages,
             loadFilterYGGalleryImageGroupsUseCase = loadGroups,
         )
     }
 
     @Test
-    fun recentImages_whenReturnResultOnly_hidesCutout() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 결과만 돌려주는 진입(배경 선택)
-        val viewModel = createViewModel(returnResultOnly = true)
+    fun recentImages_whenPickIsSource_hidesCutout() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 원본을 고르는 진입(배경 편집)
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.SOURCE, returnResultOnly = true)
 
         // When 목록이 흘러온다
         advanceUntilIdle()
@@ -56,21 +61,33 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun recentImages_whenToppingFlow_showsBoth() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑 만들기 진입
-        val viewModel = createViewModel(returnResultOnly = false)
+    fun recentImages_whenPickIsCutout_hidesSource() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 알맹이를 고르는 진입(토핑 만들기)
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
 
         // When 목록이 흘러온다
         advanceUntilIdle()
 
-        // Then 종류를 가리지 않는다
-        assertEquals(listOf(source, cutout), viewModel.state.value.recentImages)
+        // Then 원본은 안 보인다
+        assertEquals(listOf(cutout), viewModel.state.value.recentImages)
+    }
+
+    @Test
+    fun recentImages_whenReturnResultOnlyWithCutoutPick_followsPick() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 결과만 돌려주면서 알맹이를 고르는 진입
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT, returnResultOnly = true)
+
+        // When 목록이 흘러온다
+        advanceUntilIdle()
+
+        // Then 표시 종류는 returnResultOnly 가 아니라 고른 종류가 정한다
+        assertEquals(listOf(cutout), viewModel.state.value.recentImages)
     }
 
     @Test
     fun onClickCutoutImage_navigatesToSegmentationConfirmWithFilePath() = runTest(mainDispatcherRule.dispatcher) {
         // Given 토핑 만들기 진입
-        val viewModel = createViewModel(returnResultOnly = false)
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
         advanceUntilIdle()
 
         // When 알맹이를 누른다
@@ -88,7 +105,7 @@ class CustomGalleryPickerViewModelTest {
     @Test
     fun onClickImage_navigatesToPictureConfirm() = runTest(mainDispatcherRule.dispatcher) {
         // Given 토핑 만들기 진입
-        val viewModel = createViewModel(returnResultOnly = false)
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
         advanceUntilIdle()
 
         // When 원본 사진을 누른다

@@ -2,11 +2,13 @@ package com.teamyg.parfait.domain.usecase.parfait
 
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
+import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import java.io.IOException
@@ -32,8 +34,18 @@ class GetParfaitHistoriesUseCaseTest {
             return listResult
         }
 
-        override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> =
-            Result.failure(IllegalStateException("쓰이지 않는다"))
+        override fun todayCanvas(groupId: GroupId): Flow<CanvasVO?> = error("기록 조회는 오늘 캔버스를 보지 않는다")
+
+        override fun todayCanvasRefreshFailures(groupId: GroupId): Flow<Unit> = error("기록 조회는 갱신 실패를 보지 않는다")
+
+        override suspend fun refreshTodayCanvasDetail(
+            groupId: GroupId,
+            parfaitId: ParfaitId,
+        ): Result<Unit> = error("기록 조회는 오늘 캔버스를 갱신하지 않는다")
+
+        override fun clearTodayCanvas() = error("기록 조회는 캐시를 지우지 않는다")
+
+        override fun requestTodayCanvasRefresh(groupId: GroupId) = error("기록 조회는 갱신을 요청하지 않는다")
 
         override suspend fun getCanvasDetail(
             groupId: GroupId,
@@ -50,6 +62,7 @@ class GetParfaitHistoriesUseCaseTest {
     private fun canvas(date: LocalDate) = PastCanvasVO(
         parfaitId = ParfaitId(date.toEpochDays()),
         date = date,
+        status = CanvasStatus.CLOSED,
         thumbnailUrl = null,
         toppingCount = 1,
     )

@@ -520,6 +520,92 @@ class GroupListViewModelTest {
         }
     }
 
+    @Test
+    fun enter_firstLoad_showsLoadingUntilItReturns() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아직 목록을 한 번도 받지 못했고 조회가 응답을 붙들고 있다
+        val gate = CompletableDeferred<Unit>()
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+
+        // When 화면이 처음 앞에 선다
+        val viewModel = viewModel()
+        viewModel.processIntent(GroupListIntent.Enter)
+        runCurrent()
+
+        // Then 빈 화면을 들여다보지 않도록 조회가 도는 동안 로딩을 덮는다
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isInitialLoading)
+    }
+
+    @Test
+    fun enter_againWithLoadedGroups_doesNotShowLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 목록을 이미 띄워 둔 화면
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        // When 다른 화면에 갔다 돌아와 조회가 다시 나가고, 그 응답이 아직 오지 않았다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { refreshMyGroups() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        viewModel.processIntent(GroupListIntent.Enter)
+        runCurrent()
+
+        // Then 보고 있던 목록 위로 딤이 번쩍이지 않는다
+        assertFalse(viewModel.state.value.isInitialLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun enter_firstLoadFails_clearsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 목록을 한 번도 받지 못했는데 조회가 실패한다
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 화면이 처음 앞에 선다
+        val viewModel = enteredViewModel()
+
+        // Then 로딩이 걸린 채 남지 않고 에러 화면에 자리를 내준다
+        val state = viewModel.state.value
+        assertFalse(state.isInitialLoading)
+        assertTrue(state.isError)
+    }
+
+    @Test
+    fun refresh_onTheErrorScreen_doesNotCoverItWithLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 조회가 실패해 목록 없이 에러 화면을 보고 있다
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        val viewModel = enteredViewModel()
+
+        // When 그 화면에서 아래로 당겨 새로고침하고, 응답이 아직 오지 않았다
+        val gate = CompletableDeferred<Unit>()
+        coEvery { refreshMyGroups() } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        viewModel.processIntent(GroupListIntent.Refresh)
+        runCurrent()
+
+        // Then 에러 화면이 이미 자기 인디케이터를 돌리고 있어 덮개를 겹치지 않는다
+        val state = viewModel.state.value
+        assertTrue(state.isRefreshing)
+        assertFalse(state.isInitialLoading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+    }
+
     private companion object {
         val ACCOUNT = MyAccountVO(
             memberId = MemberId(1L),
