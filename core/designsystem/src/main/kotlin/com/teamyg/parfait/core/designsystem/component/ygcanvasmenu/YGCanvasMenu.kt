@@ -16,8 +16,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 /**
  * Figma Canvas-Menu
  *
- * @param addAction 없으면(`null`) [editAction] 이 [expandedItems] 와 같은 단일 줄
- *  [YGMenuItem] 로 전체 너비를 혼자 차지한다
+ * @param addAction 없으면(`null`) [editAction] 이 [YGStrokeButton] 하나로 전체 너비를 혼자 차지한다
  */
 @Composable
 fun YGCanvasMenu(
@@ -60,11 +59,12 @@ fun YGCanvasMenu(
                 )
             }
         } else {
-            YGMenuItem(
+            YGStrokeButton(
                 text = editAction.text,
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
                 isEnabled = editAction.isEnabled,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
