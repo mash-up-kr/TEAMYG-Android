@@ -52,6 +52,8 @@ fun YGCanvasDateSelectButton(
     saveContentDescription: String? = null,
 ) {
     val shape = canvasCutCornerShape()
+    val dateInteractionSource = remember { MutableInteractionSource() }
+    val isDatePressed by dateInteractionSource.collectIsPressedAsState()
 
     Row(
         modifier = modifier
@@ -74,9 +76,15 @@ fun YGCanvasDateSelectButton(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = YGTheme.layout.padding.padding6),
+            modifier = Modifier
+                .padding(start = YGTheme.layout.padding.padding6)
+                // 아이콘·텍스트를 하나의 클릭 영역으로 함께 감싼다
+                .clickableYGNoRipple(
+                    onClick = onClick,
+                    interactionSource = dateInteractionSource,
+                ),
         ) {
-            CalendarIconButton(onClick = onClick)
+            CalendarIcon(isPressed = isDatePressed)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                 verticalAlignment = Alignment.CenterVertically,
@@ -106,27 +114,18 @@ fun YGCanvasDateSelectButton(
 }
 
 /**
- * [YGIconButton] 을 그대로 쓰지 않는 이유: 그 컴포넌트는 그림보다 넓은 터치 영역을 항상
- * 따로 두는데, 이 버튼은 그림 크기(24dp) 자체가 곧 자리다. 이 화면에서만 한 번 쓰이므로,
- * [YGIconButton] 의 눌림 색상 로직만 그대로 옮겨와 여기 국소적으로 둔다.
+ * 클릭 영역은 부모([YGCanvasDateSelectButton])가 날짜 텍스트와 함께 하나로 묶어 갖고 있어
+ * 여기서는 [isPressed] 에 따른 눌림 색만 반영한다.
  */
 @Composable
-private fun CalendarIconButton(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
+private fun CalendarIcon(isPressed: Boolean) {
     Image(
         painter = painterResource(R.drawable.ic_calender),
         colorFilter = ColorFilter.tint(
             color = if (isPressed) YGAtomicColors.Gray.Gray400 else YGAtomicColors.Gray.Gray300,
         ),
         contentDescription = null,
-        modifier = Modifier
-            .size(CalendarIconSize)
-            .clickableYGNoRipple(
-                onClick = onClick,
-                interactionSource = interactionSource,
-            ),
+        modifier = Modifier.size(CalendarIconSize),
     )
 }
 
