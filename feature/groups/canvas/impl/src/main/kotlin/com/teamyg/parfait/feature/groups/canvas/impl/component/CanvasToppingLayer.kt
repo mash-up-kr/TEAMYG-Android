@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -8,16 +7,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -28,9 +31,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingLottie
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingTone
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -44,7 +48,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 
-private val PLACEHOLDER_SIDE = 80.dp
+// 공통 로딩 정책이 정한 애셋 원본 크기다 — 그 크기에서 다시 그리는 일이 없다
+private val LOADING_SIDE = 44.dp
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -74,6 +79,10 @@ internal fun CanvasToppingLayer(
     hitTestEnabled: Boolean = true,
 ) {
     BoxWithConstraints(modifier = modifier) {
+        // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
+        val areaWidth = maxWidth
+        val areaHeight = maxHeight
+
         val entries = rememberToppingHitEntries(
             toppings = toppings,
             canvasWidth = maxWidth,
@@ -82,47 +91,77 @@ internal fun CanvasToppingLayer(
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
-        entries.forEach { entry ->
-            if (entry.topping.parfaitImageId != spotlightedToppingId) {
+        // 토핑이 하나씩 따로 뜨는 대신, 전부 결말날 때까지 가렸다가 한 번에 드러낸다.
+        //
+        // 한 번 드러낸 뒤에는 다시 가리지 않는다 — 토핑이 하나 추가될 때마다 캔버스 전체가
+        // 사라졌다 나타나면 더 거슬린다. 화면을 떠나면 이 상태도 함께 사라져 다시 진입할 때
+        // 다시 모아서 낸다.
+        var revealed by remember { mutableStateOf(false) }
+        val allSettled = entries.all { it.settled }
+
+        LaunchedEffect(allSettled) {
+            if (allSettled) revealed = true
+        }
+
+        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .alpha(if (revealed) 1f else 0f),
+        ) {
+            entries.forEach { entry ->
+                if (entry.topping.parfaitImageId != spotlightedToppingId) {
+                    CanvasTopping(
+                        entry = entry,
+                        canvasWidth = areaWidth,
+                        canvasHeight = areaHeight,
+                        onClick = { onClickTopping(entry.topping) },
+                        clickable = hitTestEnabled,
+                    )
+                }
+            }
+
+            if (spotlighted != null) {
+                val dismissDescription = stringResource(R.string.canvas_spotlight_dismiss)
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(YGAtomicColors.Transparency.Black50)
+                        // 딤 탭으로 강조를 푸는 일은 판정 오버레이의 onMiss 가 한다. 그 오버레이는
+                        // pointerInput 뿐이라 시맨틱이 없으니, 접근성 서비스가 쓸 등가 액션을 여기 남긴다
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = dismissDescription
+                            onClick {
+                                onClickSpotlightDim()
+                                true
+                            }
+                        },
+                )
+
                 CanvasTopping(
-                    entry = entry,
-                    canvasWidth = maxWidth,
-                    canvasHeight = maxHeight,
-                    onClick = { onClickTopping(entry.topping) },
+                    entry = spotlighted,
+                    canvasWidth = areaWidth,
+                    canvasHeight = areaHeight,
+                    onClick = { onClickTopping(spotlighted.topping) },
                     clickable = hitTestEnabled,
                 )
             }
         }
 
-        if (spotlighted != null) {
-            val dismissDescription = stringResource(R.string.canvas_spotlight_dismiss)
-
-            Box(
+        if (!revealed) {
+            YGLoadingLottie(
+                // Tone 은 화면 테마가 아니라 얹히는 바탕을 보고 고른다. 캔버스 기본 바탕이 흰색이다
+                tone = YGLoadingTone.Dark,
                 modifier = Modifier
-                    .matchParentSize()
-                    .background(YGAtomicColors.Transparency.Black50)
-                    // 딤 탭으로 강조를 푸는 일은 판정 오버레이의 onMiss 가 한다. 그 오버레이는
-                    // pointerInput 뿐이라 시맨틱이 없으니, 접근성 서비스가 쓸 등가 액션을 여기 남긴다
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = dismissDescription
-                        onClick {
-                            onClickSpotlightDim()
-                            true
-                        }
-                    },
-            )
-
-            CanvasTopping(
-                entry = spotlighted,
-                canvasWidth = maxWidth,
-                canvasHeight = maxHeight,
-                onClick = { onClickTopping(spotlighted.topping) },
-                clickable = hitTestEnabled,
+                    .align(Alignment.Center)
+                    .size(LOADING_SIDE),
             )
         }
 
-        if (hitTestEnabled) {
+        // 드러나기 전에는 판정을 달지 않는다 — 보이지 않는 토핑이 눌리면 안 된다
+        if (hitTestEnabled && revealed) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -207,29 +246,6 @@ private fun ToppingImage(
     val painterState by painter.state.collectAsState()
     val solidBorder = border as? ToppingBorder.Solid
 
-    // 토핑의 가로세로 비율은 이미지가 와야 정해져 자리표시를 실제 크기로 못 잡는다.
-    // 도착 전에는 그룹 목록이 조회 실패에 쓰는 물음표 그래픽을 고정 크기로 세운다 —
-    // 성공하는 순간 실제 크기의 토핑으로 바뀐다.
-    //
-    // requiredSize 가 아니라 size 인 이유: 부모가 준 제약 안으로 줄어 준다. 작게 배치된
-    // 토핑 자리에서 자리표시가 칸 밖으로 삐져나오지 않는다.
-    //
-    // 판정에 쓰는 painter 는 그리지 않아도 원본 크기로 요청을 이어 간다
-    if (painterState is AsyncImagePainter.State.Loading || painterState is AsyncImagePainter.State.Empty) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(DesignSystemR.drawable.img_topping_template_error),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.size(PLACEHOLDER_SIDE),
-            )
-        }
-        return
-    }
-
     YGToppingCutoutImage(
         painter = painter,
         // 색을 못 읽으면 테두리를 걸러 낸다 — 임의의 색을 골라 칠하는 것보다 안 그리는 편이 덜 틀리다.
@@ -248,6 +264,8 @@ internal data class ToppingHitEntry(
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
     val target: ToppingHitTarget,
+    /** 성공이든 실패든 이 토핑의 이미지가 결말났는가. 레이어를 언제 드러낼지 세는 값이다 */
+    val settled: Boolean,
 )
 
 /**
@@ -302,6 +320,9 @@ private fun rememberToppingHitEntries(
             ToppingHitEntry(
                 topping = topping,
                 painter = painter,
+                // 실패도 결말이다 — 깨진 이미지 한 장이 캔버스 전체를 붙잡으면 안 된다
+                settled = painterState is AsyncImagePainter.State.Success ||
+                    painterState is AsyncImagePainter.State.Error,
                 target = with(density) {
                     ToppingHitTarget(
                         centerXPx = center.x.toPx(),

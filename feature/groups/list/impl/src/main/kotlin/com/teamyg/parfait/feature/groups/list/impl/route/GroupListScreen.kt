@@ -6,17 +6,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingLottie
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingTone
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -41,6 +50,9 @@ import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
+// 공통 로딩 정책이 정한 애셋 원본 크기다 — 그 크기에서 다시 그리는 일이 없다
+private val LOADING_SIDE = 44.dp
+
 // Todo : 로직 추후 변경하기
 private val TOPPING_PLACEMENT_TYPES = listOf(
     YGToppingGroupType.TYPE_1_LEFT,
@@ -60,6 +72,26 @@ internal fun GroupListScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
+    // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다
+    val groupList = uiState.groupList.orEmpty()
+
+    // 토핑이 하나씩 따로 뜨는 대신, 전부 결말날 때까지 가렸다가 한 번에 드러낸다.
+    //
+    // 한 번 드러낸 뒤에는 다시 가리지 않는다 — 그룹을 새로 만들 때마다 목록 전체가
+    // 사라졌다 나타나면 더 거슬린다. 뒤늦게 들어온 그룹은 저 혼자 떠오른다.
+    var settledGroupIds by remember { mutableStateOf(emptySet<GroupId>()) }
+    var revealed by remember { mutableStateOf(false) }
+
+    // 목록이 비어 있는 동안을 완료로 세면 안 된다 — 조회가 오기도 전에 빗장이 풀린다
+    val allSettled = groupList.isNotEmpty() && groupList.all { it.groupId in settledGroupIds }
+
+    LaunchedEffect(allSettled) {
+        if (allSettled) revealed = true
+    }
+
+    val toppingsVisible = revealed || groupList.isEmpty()
+
     Box(modifier = modifier) {
         Column {
             GroupListTopBar(
@@ -85,15 +117,25 @@ internal fun GroupListScreen(
                 ) {
                     item {
                         GroupListContent(
-                            // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
-                            // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다
-                            groupList = uiState.groupList.orEmpty(),
+                            groupList = groupList,
                             onClickTopping = onClickTopping,
+                            toppingsVisible = toppingsVisible,
+                            onGroupSettled = { settledGroupIds = settledGroupIds + it },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
+        }
+
+        if (!toppingsVisible) {
+            YGLoadingLottie(
+                // Tone 은 화면 테마가 아니라 얹히는 바탕을 보고 고른다. 목록 바탕이 밝다
+                tone = YGLoadingTone.Dark,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(LOADING_SIDE),
+            )
         }
     }
 }
@@ -103,6 +145,8 @@ internal fun GroupListContent(
     groupList: List<MyParfaitGroupVO>,
     onClickTopping: (GroupId) -> Unit,
     modifier: Modifier = Modifier,
+    toppingsVisible: Boolean = true,
+    onGroupSettled: (GroupId) -> Unit = {},
 ) {
     GroupListParfaitLayout(
         cherrySection = {
@@ -139,13 +183,16 @@ internal fun GroupListContent(
         },
         modifier = modifier,
     ) {
+        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다
         ToppingLayout(
             contentPadding = PaddingValues(
                 top = if (groupList.size <= SPECIAL_RULE_THRESHOLD) 108.dp else 96.dp,
                 end = YGTheme.layout.padding.padding2,
                 start = YGTheme.layout.padding.padding2,
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .alpha(if (toppingsVisible) 1f else 0f),
         ) {
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
             val now = remember(groupList) { Clock.System.now() }
@@ -159,8 +206,12 @@ internal fun GroupListContent(
                         .toStringResource(),
                     chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
                     type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
-                    modifier = Modifier.clickableYGScaleRipple {
-                        onClickTopping(group.groupId)
+                    onImageSettled = { onGroupSettled(group.groupId) },
+                    // 드러나기 전에는 누를 수 없다 — 보이지 않는 토핑이 눌리면 안 된다
+                    modifier = if (toppingsVisible) {
+                        Modifier.clickableYGScaleRipple { onClickTopping(group.groupId) }
+                    } else {
+                        Modifier
                     },
                 )
             }

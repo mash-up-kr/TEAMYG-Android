@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,8 +19,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
-import com.teamyg.parfait.core.designsystem.component.ygskeleton.YGSkeleton
+import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChip
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -35,7 +37,17 @@ fun YGToppingGroup(
     chipType: YGGrouptagChipType,
     type: YGToppingGroupType,
     modifier: Modifier = Modifier,
+    onImageSettled: () -> Unit = {},
 ) {
+    // 기다릴 원격 이미지가 없는 토핑은 곧바로 결말이다. 안 알리면 목록이 영원히 안 뜬다.
+    // 효과는 재시작하지 않으므로 콜백은 최신 것을 읽는다 — 목록 순서가 바뀌면 처음 잡은
+    // 람다가 남의 그룹을 결말로 보고한다
+    val currentOnImageSettled by rememberUpdatedState(onImageSettled)
+
+    if (image !is YGToppingImage.Remote) {
+        LaunchedEffect(image) { currentOnImageSettled() }
+    }
+
     Box(
         modifier = modifier.size(SizeTokens.Size160.getDp()),
         contentAlignment = Alignment.Center,
@@ -51,24 +63,15 @@ fun YGToppingGroup(
             .clip(RectangleShape)
 
         when (image) {
-            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다.
-            //
-            // AsyncImage 가 아니라 SubcomposeAsyncImage 인 이유: 로딩 자리에 움직이는 스켈레톤을
-            // 깔려면 Painter 가 아니라 컴포저블 슬롯이 필요하다. 서브컴포지션은 느리지만 이
-            // 컴포넌트를 얹는 그룹 목록은 Lazy 컨테이너가 아니라 그룹 수만큼만 한 번 구성된다
-            is YGToppingImage.Remote -> SubcomposeAsyncImage(
+            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다
+            is YGToppingImage.Remote -> AsyncImage(
                 model = image.url,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                loading = { YGSkeleton(modifier = Modifier.matchParentSize()) },
-                error = {
-                    Image(
-                        painter = painterResource(TOPPING_ERROR_DRAWABLE),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                },
+                error = painterResource(TOPPING_ERROR_DRAWABLE),
+                // 실패도 결말로 알린다 — 깨진 이미지 한 장이 목록 전체를 붙잡으면 안 된다
+                onSuccess = { onImageSettled() },
+                onError = { onImageSettled() },
                 modifier = imageModifier,
             )
 

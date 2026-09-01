@@ -5,6 +5,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import coil3.ColorImage
 import coil3.ImageLoader
 import coil3.decode.DataSource
+import coil3.request.ErrorResult
 import coil3.intercept.Interceptor
 import coil3.request.SuccessResult
 import kotlinx.coroutines.awaitCancellation
@@ -43,6 +44,26 @@ fun instantlySucceedingImageLoader(): ImageLoader {
                         ),
                         request = chain.request,
                         dataSource = DataSource.NETWORK,
+                    )
+                },
+            )
+        }.build()
+}
+
+/**
+ * 곧바로 실패하는 로더. 깨진 이미지 한 장이 화면 전체를 붙잡지 않는지 검사한다.
+ */
+fun instantlyFailingImageLoader(): ImageLoader {
+    val context = InstrumentationRegistry.getInstrumentation().targetContext
+    return ImageLoader
+        .Builder(context)
+        .components {
+            add(
+                Interceptor { chain ->
+                    ErrorResult(
+                        image = null,
+                        request = chain.request,
+                        throwable = IllegalStateException("테스트용 실패"),
                     )
                 },
             )
