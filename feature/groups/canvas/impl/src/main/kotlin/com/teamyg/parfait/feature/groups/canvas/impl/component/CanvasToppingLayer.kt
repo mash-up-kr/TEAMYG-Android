@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -14,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.isSpecified
@@ -24,6 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -31,8 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingLottie
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingTone
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.extension.centeredAt
@@ -48,9 +46,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMa
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
-
-// 공통 로딩 정책이 정한 애셋 원본 크기다 — 그 크기에서 다시 그리는 일이 없다
-private val LOADING_SIDE = 44.dp
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -78,6 +73,7 @@ internal fun CanvasToppingLayer(
     onClickSpotlightDim: () -> Unit,
     modifier: Modifier = Modifier,
     hitTestEnabled: Boolean = true,
+    revealTogether: Boolean = true,
 ) {
     BoxWithConstraints(modifier = modifier) {
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
@@ -105,13 +101,17 @@ internal fun CanvasToppingLayer(
         }
 
         // 토핑이 없는 캔버스는 기다릴 것도 없다 — 빈 화면 위에서 로딩만 계속 돌면 안 된다
-        val toppingsVisible = revealed || entries.isEmpty()
+        val toppingsVisible = !revealTogether || revealed || entries.isEmpty()
 
-        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다
+        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다.
+        // alpha 는 시맨틱을 지우지 않아, 이것 없이는 보이지 않는 토핑을 접근성 서비스가 누른다
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .alpha(if (toppingsVisible) 1f else 0f),
+                .alpha(if (toppingsVisible) 1f else 0f)
+                .then(
+                    if (toppingsVisible) Modifier else Modifier.semantics { hideFromAccessibility() },
+                ),
         ) {
             entries.forEach { entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {
@@ -155,13 +155,8 @@ internal fun CanvasToppingLayer(
         }
 
         if (!toppingsVisible) {
-            YGLoadingLottie(
-                // Tone 은 화면 테마가 아니라 얹히는 바탕을 보고 고른다. 캔버스 기본 바탕이 흰색이다
-                tone = YGLoadingTone.Dark,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(LOADING_SIDE),
-            )
+            // 딤과 터치 차단까지 오버레이가 맡는다 — alpha 0 은 눈만 가리지 입력은 막지 못한다
+            YGLoadingOverlay(modifier = Modifier.matchParentSize())
         }
 
         // 드러나기 전에는 판정을 달지 않는다 — 보이지 않는 토핑이 눌리면 안 된다

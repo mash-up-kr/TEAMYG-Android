@@ -15,7 +15,7 @@ import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygskeleton.YG_SKELETON_TEST_TAG
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
-import com.teamyg.parfait.core.designsystem.utils.instantlySucceedingImageLoader
+import com.teamyg.parfait.core.designsystem.utils.ControllableImageLoader
 import com.teamyg.parfait.core.designsystem.utils.neverFinishingImageLoader
 import org.junit.After
 import org.junit.Rule
@@ -79,16 +79,24 @@ class YGCanvasTest {
 
     @Test
     fun ygCanvas_backgroundImageLoaded_hidesSkeleton() {
-        // Given 곧바로 성공하는 로더
-        composeTestRule.mainClock.autoAdvance = false
-        SingletonImageLoader.setUnsafe(instantlySucceedingImageLoader())
+        // Given 성공 시점을 이 테스트가 쥐고 있는 로더
+        val loader = ControllableImageLoader()
+        SingletonImageLoader.setUnsafe(loader.imageLoader)
 
-        // When
+        // When 아직 풀지 않았으므로 배경은 로딩 상태다.
+        // 스켈레톤이 무한 애니메이션이라 이 구간에서는 시계를 손으로 돌린다
+        composeTestRule.mainClock.autoAdvance = false
         composeTestRule.setContent {
             EmptyYGCanvas(background = YGCanvasBackground.Image(BACKGROUND_URL))
         }
+        composeTestRule.mainClock.advanceTimeByFrame()
+        composeTestRule.onNodeWithTag(YG_SKELETON_TEST_TAG).assertIsDisplayed()
 
-        // Then 배경이 뜨고 나면 스켈레톤은 남지 않는다
+        // When 배경이 도착한다
+        composeTestRule.mainClock.autoAdvance = true
+        loader.succeed()
+
+        // Then 스켈레톤이 물러난다
         composeTestRule.waitUntil(WAIT_TIMEOUT_MILLIS) {
             composeTestRule.onAllNodesWithTag(YG_SKELETON_TEST_TAG).fetchSemanticsNodes().isEmpty()
         }

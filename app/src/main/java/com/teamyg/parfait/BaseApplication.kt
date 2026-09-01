@@ -23,6 +23,6 @@ class BaseApplication :
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
     }
 
-    // Coil 이 싱글턴 로더를 처음 만들 때 여기를 묻는다. 설정은 designsystem 한곳에 있다
+    // 설정은 designsystem 한곳에 있다
     override fun newImageLoader(context: PlatformContext): ImageLoader = newParfaitImageLoader(context)
 }

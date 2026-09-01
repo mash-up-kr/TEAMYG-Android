@@ -39,9 +39,7 @@ fun YGToppingGroup(
     modifier: Modifier = Modifier,
     onImageSettled: () -> Unit = {},
 ) {
-    // 기다릴 원격 이미지가 없는 토핑은 곧바로 결말이다. 안 알리면 목록이 영원히 안 뜬다.
-    // 효과는 재시작하지 않으므로 콜백은 최신 것을 읽는다 — 목록 순서가 바뀌면 처음 잡은
-    // 람다가 남의 그룹을 결말로 보고한다
+    // 기다릴 원격 이미지가 없는 토핑은 곧바로 결말이다. 안 알리면 세는 쪽이 영원히 못 채운다
     val currentOnImageSettled by rememberUpdatedState(onImageSettled)
 
     if (image !is YGToppingImage.Remote) {

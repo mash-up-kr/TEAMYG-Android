@@ -8,6 +8,7 @@ import coil3.decode.DataSource
 import coil3.request.ErrorResult
 import coil3.intercept.Interceptor
 import coil3.request.SuccessResult
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 
 private const val FAKE_IMAGE_SIDE_PX = 120
@@ -68,4 +69,38 @@ fun instantlyFailingImageLoader(): ImageLoader {
                 },
             )
         }.build()
+}
+
+/**
+ * 성공 시점을 테스트가 정하는 로더. 로딩 화면을 확인한 뒤 [succeed] 로 풀어,
+ * 로딩에서 성공으로 넘어가는 전이를 한 테스트 안에서 볼 수 있게 한다.
+ */
+class ControllableImageLoader {
+    private val gate = CompletableDeferred<Unit>()
+
+    val imageLoader: ImageLoader = run {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        ImageLoader
+            .Builder(context)
+            .components {
+                add(
+                    Interceptor { chain ->
+                        gate.await()
+                        SuccessResult(
+                            image = ColorImage(
+                                color = Color.RED,
+                                width = FAKE_IMAGE_SIDE_PX,
+                                height = FAKE_IMAGE_SIDE_PX,
+                            ),
+                            request = chain.request,
+                            dataSource = DataSource.NETWORK,
+                        )
+                    },
+                )
+            }.build()
+    }
+
+    fun succeed() {
+        gate.complete(Unit)
+    }
 }

@@ -18,6 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +34,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenu
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
@@ -255,6 +260,10 @@ private fun CanvasArea(
         Modifier
     }
 
+    var backgroundLoading by remember(background) {
+        mutableStateOf(background is YGCanvasBackground.Image)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -281,19 +290,25 @@ private fun CanvasArea(
                         .background(color = background.color),
                 )
 
-                // 로딩 자리에 움직이는 스켈레톤을 깔려면 Painter 가 아니라 컴포저블 슬롯이
-                // 필요해 SubcomposeAsyncImage 를 쓴다. 배경은 캔버스마다 한 장이라 서브컴포지션
-                // 비용이 목록처럼 쌓이지 않는다
-                is YGCanvasBackground.Image -> SubcomposeAsyncImage(
+                is YGCanvasBackground.Image -> AsyncImage(
                     model = background.url,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    loading = { YGSkeleton(modifier = Modifier.matchParentSize()) },
+                    onState = { state ->
+                        backgroundLoading = state is AsyncImagePainter.State.Loading ||
+                            state is AsyncImagePainter.State.Empty
+                    },
                     modifier = Modifier.matchParentSize(),
                 )
             }
 
             content()
+        }
+
+        // 스켈레톤은 캡처 Box 밖이다 — 안에 두면 갤러리에 저장한 이미지에 시머 회색면이 박힌다.
+        // 그 대가로 토핑 위를 덮는데, 배경이 아직 없는 캔버스를 토핑만 띄워 보여 주는 것보다 낫다
+        if (backgroundLoading) {
+            YGSkeleton(modifier = Modifier.matchParentSize())
         }
 
         // 배경도 토핑도 없을 때만 회색 안내판이 덮는다 — 배경이 정해지는 순간 안내는 사라지고

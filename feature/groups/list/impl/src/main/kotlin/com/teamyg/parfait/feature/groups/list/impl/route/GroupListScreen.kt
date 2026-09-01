@@ -13,19 +13,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingLottie
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingTone
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -49,9 +50,6 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
-
-// 공통 로딩 정책이 정한 애셋 원본 크기다 — 그 크기에서 다시 그리는 일이 없다
-private val LOADING_SIDE = 44.dp
 
 // Todo : 로직 추후 변경하기
 private val TOPPING_PLACEMENT_TYPES = listOf(
@@ -129,13 +127,8 @@ internal fun GroupListScreen(
         }
 
         if (!toppingsVisible) {
-            YGLoadingLottie(
-                // Tone 은 화면 테마가 아니라 얹히는 바탕을 보고 고른다. 목록 바탕이 밝다
-                tone = YGLoadingTone.Dark,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(LOADING_SIDE),
-            )
+            // 딤과 터치 차단까지 오버레이가 맡는다 — alpha 0 은 눈만 가리지 입력은 막지 못한다
+            YGLoadingOverlay()
         }
     }
 }
@@ -192,28 +185,33 @@ internal fun GroupListContent(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(if (toppingsVisible) 1f else 0f),
+                .alpha(if (toppingsVisible) 1f else 0f)
+                .then(
+                    if (toppingsVisible) Modifier else Modifier.semantics { hideFromAccessibility() },
+                ),
         ) {
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
             val now = remember(groupList) { Clock.System.now() }
 
             groupList.fastForEachIndexed { index, group ->
-                YGToppingGroup(
-                    image = group.toToppingImage(),
-                    name = group.groupName.value,
-                    timestamp = group.recentImageUploadedAt
-                        .toGroupTimestamp(now)
-                        .toStringResource(),
-                    chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
-                    type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
-                    onImageSettled = { onGroupSettled(group.groupId) },
-                    // 드러나기 전에는 누를 수 없다 — 보이지 않는 토핑이 눌리면 안 된다
-                    modifier = if (toppingsVisible) {
-                        Modifier.clickableYGScaleRipple { onClickTopping(group.groupId) }
-                    } else {
-                        Modifier
-                    },
-                )
+                // ToppingLayout 은 키 없는 Layout 이라 목록이 바뀌면 슬롯이 자리 기준으로 재사용된다.
+                // 결말 보고는 요청당 한 번뿐이라, 슬롯이 남의 그룹으로 바뀌면 그 그룹은 영영
+                // 결말로 세어지지 않고 화면이 로딩에 갇힌다
+                key(group.groupId) {
+                    YGToppingGroup(
+                        image = group.toToppingImage(),
+                        name = group.groupName.value,
+                        timestamp = group.recentImageUploadedAt
+                            .toGroupTimestamp(now)
+                            .toStringResource(),
+                        chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
+                        type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
+                        onImageSettled = { onGroupSettled(group.groupId) },
+                        modifier = Modifier.clickableYGScaleRipple(enabled = toppingsVisible) {
+                            onClickTopping(group.groupId)
+                        },
+                    )
+                }
             }
         }
     }
