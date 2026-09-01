@@ -68,6 +68,7 @@ internal fun CanvasMainScreen(
     onClickDate: (LocalDate) -> Unit,
     onClickTopping: (CanvasToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
+    onToppingsVisibleChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
@@ -206,6 +207,7 @@ internal fun CanvasMainScreen(
                 // 실제로 그리고 있는 캔버스가 바뀔 때 다시 모은다. 폴링으로 같은 캔버스가
                 // 다시 와도 id 는 그대로라 헛되이 가리지 않는다
                 revealResetKey = canvasState.displayedCanvas?.parfaitId,
+                onToppingsVisibleChange = onToppingsVisibleChange,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -275,6 +277,7 @@ private fun PreviewCanvasMainScreen(
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
+        onToppingsVisibleChange = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -309,6 +312,7 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
+        onToppingsVisibleChange = {},
         toastPolicy = toastPolicy,
         modifier = Modifier.fillMaxSize(),
     )
@@ -347,6 +351,7 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
+        onToppingsVisibleChange = {},
         alertPolicy = alertPolicy,
         modifier = Modifier.fillMaxSize(),
     )

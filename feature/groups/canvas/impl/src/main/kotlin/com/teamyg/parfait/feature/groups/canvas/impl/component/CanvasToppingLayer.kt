@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -26,7 +28,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.reveal.rememberBatchReveal
@@ -71,6 +72,7 @@ internal fun CanvasToppingLayer(
     hitTestEnabled: Boolean = true,
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
+    onToppingsVisibleChange: (Boolean) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
@@ -92,6 +94,14 @@ internal fun CanvasToppingLayer(
             resetKey = revealResetKey,
         )
         val toppingsVisible = !revealTogether || revealed
+
+        // 로딩 표시는 이 레이어가 아니라 화면이 맡는다 — 캔버스 영역에만 덮으면 그 밖의
+        // 날짜 선택과 메뉴가 그대로 눌린다
+        val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
+
+        LaunchedEffect(toppingsVisible) {
+            currentOnToppingsVisibleChange(toppingsVisible)
+        }
 
         // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다.
         // alpha 는 시맨틱을 지우지 않아, 이것 없이는 보이지 않는 토핑을 접근성 서비스가 누른다
@@ -142,11 +152,6 @@ internal fun CanvasToppingLayer(
                     clickable = hitTestEnabled,
                 )
             }
-        }
-
-        if (!toppingsVisible) {
-            // 딤과 터치 차단까지 오버레이가 맡는다 — alpha 0 은 눈만 가리지 입력은 막지 못한다
-            YGLoadingOverlay(modifier = Modifier.matchParentSize())
         }
 
         // 드러나기 전에는 판정을 달지 않는다 — 보이지 않는 토핑이 눌리면 안 된다

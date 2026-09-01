@@ -12,8 +12,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -25,7 +27,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -68,6 +69,7 @@ internal fun GroupListScreen(
     onClickSideMenu: () -> Unit,
     onClickTopping: (GroupId) -> Unit,
     onRefresh: () -> Unit,
+    onToppingsVisibleChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
@@ -79,6 +81,13 @@ internal fun GroupListScreen(
     val toppingsVisible = rememberBatchReveal(
         settled = groupList.map { it.groupId in settledGroupIds },
     )
+
+    // 로딩 표시는 이 화면이 아니라 스캐폴드가 맡는다 — 딤·터치 차단·접근성 숨김을 한 벌로 쓴다
+    val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
+
+    LaunchedEffect(toppingsVisible) {
+        currentOnToppingsVisibleChange(toppingsVisible)
+    }
 
     Box(modifier = modifier) {
         Column {
@@ -114,11 +123,6 @@ internal fun GroupListScreen(
                     }
                 }
             }
-        }
-
-        if (!toppingsVisible) {
-            // 딤과 터치 차단까지 오버레이가 맡는다 — alpha 0 은 눈만 가리지 입력은 막지 못한다
-            YGLoadingOverlay()
         }
     }
 }
@@ -270,5 +274,6 @@ private fun GroupListScreenPreview(
         onClickSideMenu = {},
         onClickTopping = {},
         onRefresh = {},
+        onToppingsVisibleChange = {},
     )
 }

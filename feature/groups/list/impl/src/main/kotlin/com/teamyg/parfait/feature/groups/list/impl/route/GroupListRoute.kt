@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -67,12 +70,16 @@ internal fun GroupListRoute(
         }
     }
 
+    // 토핑을 다 모으는 동안에도 화면 전체를 덮는다
+    var toppingsVisible by remember { mutableStateOf(true) }
+
     // 상단 인셋은 YGTopBarEmpty 가 직접 흡수하므로 Scaffold 는 하단/좌우 인셋만 내려준다.
     YGScaffoldV2(
         containerColor = YGAtomicColors.Gray.Transparent,
         contentWindowInsets = WindowInsets.systemBars
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
-        isLoading = uiState.isInitialLoading,
+        // 에러 화면은 목록을 아예 안 그려 게이트를 풀어 줄 쪽이 없다 — 덮개가 남으면 안 된다
+        isLoading = uiState.isInitialLoading || (!uiState.isError && !toppingsVisible),
         toastPolicy = toastPolicy,
     ) { innerPadding ->
         // 두 화면 모두 LazyColumn 만 GroupListPullToRefreshBox 로 감싸 pull-to-refresh 동작이 동일하다.
@@ -90,6 +97,7 @@ internal fun GroupListRoute(
                 onClickSideMenu = { viewModel.processIntent(GroupListIntent.ClickSideMenu) },
                 onClickTopping = { groupId -> viewModel.processIntent(GroupListIntent.ClickTopping(groupId)) },
                 onRefresh = { viewModel.processIntent(GroupListIntent.Refresh) },
+                onToppingsVisibleChange = { toppingsVisible = it },
                 modifier = modifier.padding(innerPadding),
             )
         }
