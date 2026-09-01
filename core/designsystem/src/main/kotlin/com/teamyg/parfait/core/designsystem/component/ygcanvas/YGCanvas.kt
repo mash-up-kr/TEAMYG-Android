@@ -30,12 +30,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenu
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcanvasdateselect.YGCanvasDateSelectButton
+import com.teamyg.parfait.core.designsystem.component.ygskeleton.YGSkeleton
 import com.teamyg.parfait.core.designsystem.shape.canvasCutCornerShape
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -280,10 +281,14 @@ private fun CanvasArea(
                         .background(color = background.color),
                 )
 
-                is YGCanvasBackground.Image -> AsyncImage(
+                // 로딩 자리에 움직이는 스켈레톤을 깔려면 Painter 가 아니라 컴포저블 슬롯이
+                // 필요해 SubcomposeAsyncImage 를 쓴다. 배경은 캔버스마다 한 장이라 서브컴포지션
+                // 비용이 목록처럼 쌓이지 않는다
+                is YGCanvasBackground.Image -> SubcomposeAsyncImage(
                     model = background.url,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    loading = { YGSkeleton(modifier = Modifier.matchParentSize()) },
                     modifier = Modifier.matchParentSize(),
                 )
             }

@@ -16,7 +16,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import com.teamyg.parfait.core.designsystem.component.ygskeleton.YGSkeleton
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChip
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -50,12 +51,24 @@ fun YGToppingGroup(
             .clip(RectangleShape)
 
         when (image) {
-            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다
-            is YGToppingImage.Remote -> AsyncImage(
+            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다.
+            //
+            // AsyncImage 가 아니라 SubcomposeAsyncImage 인 이유: 로딩 자리에 움직이는 스켈레톤을
+            // 깔려면 Painter 가 아니라 컴포저블 슬롯이 필요하다. 서브컴포지션은 느리지만 이
+            // 컴포넌트를 얹는 그룹 목록은 Lazy 컨테이너가 아니라 그룹 수만큼만 한 번 구성된다
+            is YGToppingImage.Remote -> SubcomposeAsyncImage(
                 model = image.url,
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                error = painterResource(TOPPING_ERROR_DRAWABLE),
+                loading = { YGSkeleton(modifier = Modifier.matchParentSize()) },
+                error = {
+                    Image(
+                        painter = painterResource(TOPPING_ERROR_DRAWABLE),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                },
                 modifier = imageModifier,
             )
 
