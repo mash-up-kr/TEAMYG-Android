@@ -59,6 +59,13 @@
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <!-- 갤러리에 저장하기 전, 무엇이 저장될지 보여 주는 미리보기 화면 -->
+    <string name="canvas_image_save_title">이미지 미리보기</string>
+    <string name="canvas_image_save_preview_content_description">저장할 캔버스 미리보기</string>
+    <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
+    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
+    <string name="canvas_image_save_confirm">갤러리에 저장</string>
+
     <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>
