@@ -8,10 +8,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
-const val INSTALL_TIMEOUT_MS = 20_000L
+internal const val INSTALL_TIMEOUT_MS = 20_000L
 
-/** `ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED` 와 같은 값 */
-const val STATE_COMPLETED = 4
+/**
+ * 완료 신호를 받았지만 재확인(`toOutcome`)에서 여전히 가용하지 않을 때 쓰는 값.
+ * `ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED` 와 값이 같다.
+ */
+internal const val STATE_COMPLETED_BUT_UNAVAILABLE = 4
 
 private const val LOG_PREFIX = "[MLKIT-MODULE]"
 
@@ -78,7 +81,7 @@ constructor(
         -> if (gateway.isAvailable()) {
             ModuleInstallOutcome.Ready
         } else {
-            ModuleInstallOutcome.Failed(installState = STATE_COMPLETED, errorCode = 0)
+            ModuleInstallOutcome.Failed(installState = STATE_COMPLETED_BUT_UNAVAILABLE, errorCode = 0)
         }
     }
 }

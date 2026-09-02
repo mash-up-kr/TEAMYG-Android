@@ -85,14 +85,14 @@ internal fun SegmentationErrorScreen(
                         color = YGAtomicColors.Gray.Gray500,
                         textAlign = TextAlign.Center,
                     )
-
-                    YGButton(
-                        text = stringResource(R.string.segmentation_error_retry),
-                        buttonType = YGButtonType.Medium.Primary,
-                        isEnabled = true,
-                        onClick = onClickRetry,
-                    )
                 }
+
+                YGButton(
+                    text = stringResource(R.string.segmentation_error_retry),
+                    buttonType = YGButtonType.Medium.Primary,
+                    isEnabled = true,
+                    onClick = onClickRetry,
+                )
             }
         }
     }

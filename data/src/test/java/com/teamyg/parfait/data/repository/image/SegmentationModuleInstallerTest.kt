@@ -23,7 +23,10 @@ private class FakeModuleInstallGateway(private var available: Boolean = false) :
     }
 
     /** 게이트웨이가 신호를 흘리는 순간을 테스트가 정한다 */
-    fun emit(signal: ModuleInstallSignal, becomesAvailable: Boolean = false) {
+    fun emit(
+        signal: ModuleInstallSignal,
+        becomesAvailable: Boolean = false,
+    ) {
         available = becomesAvailable
         listener?.invoke(signal)
     }
@@ -97,7 +100,7 @@ class SegmentationModuleInstallerTest {
         gateway.emit(ModuleInstallSignal.Completed, becomesAvailable = false)
 
         val failed = assertIs<ModuleInstallOutcome.Failed>(outcome.await())
-        assertEquals(STATE_COMPLETED, failed.installState)
+        assertEquals(STATE_COMPLETED_BUT_UNAVAILABLE, failed.installState)
     }
 
     @Test

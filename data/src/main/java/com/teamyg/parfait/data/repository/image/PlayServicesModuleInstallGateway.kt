@@ -2,11 +2,13 @@ package com.teamyg.parfait.data.repository.image
 
 import android.content.Context
 import com.google.android.gms.common.Feature
+import com.google.android.gms.common.api.ApiException as GmsApiException
 import com.google.android.gms.common.api.OptionalModuleApi
 import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState.STATE_CANCELED
+import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState.STATE_FAILED
 import com.google.android.gms.tasks.Tasks
 import com.teamyg.parfait.data.utils.repositoryLogger
@@ -56,12 +58,12 @@ constructor(
                     "세션 ${update.sessionId}"
             }
 
-            // STATE_COMPLETED 는 같은 패키지 SegmentationModuleInstaller.kt 의 상수다
-            // (GMS 상수와 값이 같고, 설치기가 재확인 실패를 표시할 때도 쓴다)
             when (update.installState) {
                 STATE_COMPLETED -> onSignal(ModuleInstallSignal.Completed)
+
                 STATE_FAILED, STATE_CANCELED ->
                     onSignal(ModuleInstallSignal.Failed(update.installState, update.errorCode))
+
                 else -> return@InstallStatusListener
             }
 
@@ -82,9 +84,10 @@ constructor(
                     onSignal(ModuleInstallSignal.AlreadyInstalled)
                 }
             }.addOnFailureListener { throwable ->
-                repositoryLogger.w(throwable) { "[MLKIT-MODULE] 설치 요청 자체가 실패했다" }
+                val statusCode = (throwable as? GmsApiException)?.statusCode ?: 0
+                repositoryLogger.w(throwable) { "[MLKIT-MODULE] 설치 요청 자체가 실패했다, 상태 코드 $statusCode" }
                 client.unregisterListener(listener)
-                onSignal(ModuleInstallSignal.Failed(installState = STATE_FAILED, errorCode = 0))
+                onSignal(ModuleInstallSignal.Failed(installState = STATE_FAILED, errorCode = statusCode))
             }
     }
 }
