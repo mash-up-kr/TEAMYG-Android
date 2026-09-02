@@ -83,6 +83,8 @@ private const val MAX_ZOOM = 3f
 /** 지워진 자리에 남겨 둘 원본의 불투명도 */
 private const val ERASED_AREA_ALPHA = 0.5f
 
+private const val MASK_TINT_ALPHA = 0.5f
+
 private const val BRUSH_PREVIEW_FILL_ALPHA = 0.5f
 private val BRUSH_PREVIEW_BORDER_WIDTH = 1.dp
 
@@ -484,6 +486,14 @@ private fun ToppingEditCanvas(
                     dstOffset = dstOffset,
                     dstSize = dstSize,
                     blendMode = BlendMode.SrcIn,
+                )
+
+                // 남는 영역을 색으로 알아보게 한다. SrcAtop 은 알파가 있는 자리에만 닿아서 마스크 경계를 그대로 탄다
+                drawRect(
+                    color = YGAtomicColors.Cherry.Cherry500.copy(alpha = MASK_TINT_ALPHA),
+                    topLeft = Offset(dstOffset.x.toFloat(), dstOffset.y.toFloat()),
+                    size = Size(dstSize.width.toFloat(), dstSize.height.toFloat()),
+                    blendMode = BlendMode.SrcAtop,
                 )
             }
 
