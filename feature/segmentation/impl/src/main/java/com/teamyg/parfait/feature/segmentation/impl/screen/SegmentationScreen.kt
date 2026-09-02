@@ -24,7 +24,7 @@ import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
 /**
  * 대상을 하나 이상 얻은 뒤의 화면만 그린다 — 못 얻은 실패는 [SegmentationErrorScreen] 이
- * 받고, 둘 중 무엇을 띄울지는 상위 Route 가 [SegmentationState.isError] 로 고른다.
+ * 받고, 둘 중 무엇을 띄울지는 상위 Route 가 [SegmentationState.errorKind] 로 고른다.
  */
 @Composable
 internal fun SegmentationScreen(

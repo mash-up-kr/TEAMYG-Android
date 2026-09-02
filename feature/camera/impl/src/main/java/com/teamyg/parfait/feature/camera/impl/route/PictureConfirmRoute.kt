@@ -2,13 +2,16 @@ package com.teamyg.parfait.feature.camera.impl.route
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
+import com.teamyg.parfait.feature.camera.impl.viewmodel.PictureConfirmViewModel
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
@@ -22,6 +25,12 @@ internal fun PictureConfirmRoute(
     modifier: Modifier = Modifier,
 ) {
     val resultEventBus = LocalResultEventBus.current
+    val viewModel: PictureConfirmViewModel = hiltViewModel()
+
+    // 배경 편집에서 온 경로는 세그멘테이션으로 가지 않으므로 헛일을 안 한다
+    LaunchedEffect(returnResultOnly) {
+        if (!returnResultOnly) viewModel.prepareSegmentationModule()
+    }
 
     YGScaffoldV2 { innerPadding ->
         PictureConfirmScreen(

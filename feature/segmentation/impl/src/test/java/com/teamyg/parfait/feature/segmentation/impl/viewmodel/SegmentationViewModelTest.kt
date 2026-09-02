@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
@@ -27,6 +28,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val SOURCE_URI = "content://media/external/images/1"
@@ -122,7 +124,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 크래시 대신 실패 화면으로 바뀌고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
-        assertTrue(viewModel.state.value.isError)
+        assertEquals(SegmentationErrorKind.SubjectNotFound, viewModel.state.value.errorKind)
         assertFalse(viewModel.state.value.isLoading)
         coVerify(exactly = 0) { segmentImage(any()) }
         viewModel.effect.test { expectNoEvents() }
@@ -138,7 +140,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 실패 화면으로 바뀌고 로딩 오버레이는 걷힌다
-        assertTrue(viewModel.state.value.isError)
+        assertEquals(SegmentationErrorKind.SubjectNotFound, viewModel.state.value.errorKind)
         assertFalse(viewModel.state.value.isLoading)
     }
 
@@ -152,7 +154,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 실패 화면으로 바꾼다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
-        assertTrue(viewModel.state.value.isError)
+        assertEquals(SegmentationErrorKind.SubjectNotFound, viewModel.state.value.errorKind)
     }
 
     @Test
@@ -424,5 +426,59 @@ class SegmentationViewModelTest {
 
         // Then 중복 탭 가드는 작업이 도는 동안만 막고, 끝난 뒤에는 다시 저장한다
         coVerify(exactly = 2) { persistSubject(candidate) }
+    }
+
+    @Test
+    fun retry_afterFailure_runsTheFlowAgainAndClearsTheError() = runTest {
+        // Given 첫 시도가 실패한 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(SegmentationErrorKind.SubjectNotFound, viewModel.state.value.errorKind)
+
+        // When 다음 시도는 성공하도록 바꾸고 재시도를 누른다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // Then 실패 표시가 걷히고 후보가 실린다 — 안 걷으면 성공해도 에러 화면이 남는다
+        val state = viewModel.state.value
+        assertNull(state.errorKind)
+        assertEquals(listOf(candidate), state.candidates)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun retry_pressedTwiceWhileRunning_runsOnce() = runTest {
+        // Given 세그멘테이션이 오래 걸리는 상황
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000)
+            Result.success(listOf(candidate))
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 연달아 두 번 누른다
+        viewModel.processIntent(SegmentationIntent.Retry)
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // Then 흐름은 진입 1회 + 재시도 1회로 끝난다 — 두 번째 누름은 버려진다
+        coVerify(exactly = 2) { segmentImage(bitmapWrapper) }
+    }
+
+    @Test
+    fun init_moduleNotReady_marksModuleError() = runTest {
+        // Given 모듈을 못 받아 실패한 상황
+        coEvery { segmentImage(bitmapWrapper) } returns
+            Result.failure(SegmentationException.ModuleNotReady(null))
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 대상 못 찾음과 다른 안내를 줄 수 있게 갈라 둔다
+        assertEquals(SegmentationErrorKind.ModuleNotReady, viewModel.state.value.errorKind)
     }
 }

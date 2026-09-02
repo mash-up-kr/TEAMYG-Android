@@ -13,7 +13,7 @@ import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.policy.PolicyRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingDraftRepositoryImpl
 import com.teamyg.parfait.data.repository.topping.ToppingRepositoryImpl
-import com.teamyg.parfait.data.util.SecureRandomNonceGenerator
+import com.teamyg.parfait.data.utils.SecureRandomNonceGenerator
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.camera.CameraCacheFileRepository
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
