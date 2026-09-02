@@ -25,10 +25,8 @@ fun neverFinishingImageLoader(): ImageLoader {
 }
 
 /**
- * 네트워크를 타지 않고 곧바로 성공하는 로더. 성공 이후의 화면을 검사한다.
- *
- * `DataSource.NETWORK` 로 돌려주는 이유: 메모리 캐시 출처면 Coil 이 크로스페이드를
- * 건너뛰어, 페이드를 켠 뒤에도 이 테스트가 그 경로를 지나지 않게 된다.
+ * 곧바로 성공하는 로더. 메모리 캐시 출처로 돌려주면 크로스페이드가 생략돼
+ * 테스트가 그 경로를 지나지 않으므로 `DataSource.NETWORK` 로 둔다.
  */
 fun instantlySucceedingImageLoader(): ImageLoader {
     val context = InstrumentationRegistry.getInstrumentation().targetContext

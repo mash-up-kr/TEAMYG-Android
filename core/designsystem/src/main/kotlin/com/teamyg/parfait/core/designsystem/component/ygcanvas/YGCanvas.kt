@@ -305,8 +305,7 @@ private fun CanvasArea(
             content()
         }
 
-        // 스켈레톤은 캡처 Box 밖이다 — 안에 두면 갤러리에 저장한 이미지에 시머 회색면이 박힌다.
-        // 그 대가로 토핑 위를 덮는데, 배경이 아직 없는 캔버스를 토핑만 띄워 보여 주는 것보다 낫다
+        // 캡처 Box 안에 두면 갤러리에 저장한 이미지에 시머 회색면이 박힌다
         if (backgroundLoading) {
             YGSkeleton(modifier = Modifier.matchParentSize())
         }

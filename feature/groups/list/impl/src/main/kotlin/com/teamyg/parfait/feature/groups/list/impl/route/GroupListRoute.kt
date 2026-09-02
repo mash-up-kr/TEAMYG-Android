@@ -70,7 +70,6 @@ internal fun GroupListRoute(
         }
     }
 
-    // 토핑을 다 모으는 동안에도 화면 전체를 덮는다
     var toppingsVisible by remember { mutableStateOf(true) }
 
     // 상단 인셋은 YGTopBarEmpty 가 직접 흡수하므로 Scaffold 는 하단/좌우 인셋만 내려준다.

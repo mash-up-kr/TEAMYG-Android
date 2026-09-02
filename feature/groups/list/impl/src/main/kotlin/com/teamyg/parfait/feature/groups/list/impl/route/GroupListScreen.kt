@@ -52,7 +52,7 @@ import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
-/** 토핑이 하나씩 쌓이는 간격. 크림이 내려오는 시간(GroupListParfaitDefaults)과 맞춘다 */
+/** 크림이 내려오는 시간과 맞춘다 — 크림이 자리를 잡은 뒤 다음 토핑이 뜬다 */
 private const val STAGGER_STEP_MILLIS = 400L
 
 // Todo : 로직 추후 변경하기
@@ -85,7 +85,6 @@ internal fun GroupListScreen(
         settled = groupList.map { it.groupId in settledGroupIds },
     )
 
-    // 로딩 표시는 이 화면이 아니라 스캐폴드가 맡는다 — 딤·터치 차단·접근성 숨김을 한 벌로 쓴다.
     // 덮개는 게이트가 풀리는 순간 걷혀야 토핑이 쌓이는 모습이 보인다
     val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
 
@@ -94,8 +93,7 @@ internal fun GroupListScreen(
     }
 
     // 조회는 재진입마다 나가므로 좁히지 않으면 돌아올 때마다 파르페가 다시 쌓인다.
-    // GroupListViewModel.isInitialLoad 가 덮개에 쓰는 기준(groupList == null)과 같은 기준이다.
-    // 묶음 노출은 그대로 둔다 — 캐시가 빠졌을 때 토핑이 하나씩 따로 뜨는 것은 여전히 막아야 한다
+    // 덮개가 쓰는 기준(GroupListViewModel.isInitialLoad)에 맞춘다
     val staggerOnEntry = remember { uiState.groupList == null }
 
     val staggeredCount = rememberStaggeredReveal(
@@ -186,7 +184,6 @@ internal fun GroupListContent(
         },
         modifier = modifier,
     ) {
-        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다
         ToppingLayout(
             contentPadding = PaddingValues(
                 top = if (groupList.size <= SPECIAL_RULE_THRESHOLD) 108.dp else 96.dp,
@@ -200,9 +197,8 @@ internal fun GroupListContent(
             val now = remember(groupList) { Clock.System.now() }
 
             groupList.fastForEachIndexed { index, group ->
-                // ToppingLayout 은 키 없는 Layout 이라 목록이 바뀌면 슬롯이 자리 기준으로 재사용된다.
-                // 결말 보고는 요청당 한 번뿐이라, 슬롯이 남의 그룹으로 바뀌면 그 그룹은 영영
-                // 결말로 세어지지 않고 화면이 로딩에 갇힌다
+                // 키가 없으면 목록이 바뀔 때 슬롯이 자리 기준으로 재사용된다. 결말 보고는
+                // 요청당 한 번뿐이라, 그 그룹은 영영 세어지지 않고 화면이 로딩에 갇힌다
                 key(group.groupId) {
                     val revealed = isStaggerRevealed(index = index, revealedCount = revealedCount)
 
@@ -215,8 +211,6 @@ internal fun GroupListContent(
                         chipType = group.lastPlacedByNametagChip.toGrouptagChipType(),
                         type = TOPPING_PLACEMENT_TYPES[index % TOPPING_PLACEMENT_TYPES.size],
                         onImageSettled = { onGroupSettled(group.groupId) },
-                        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야
-                        // 이미지 요청이 이어진다
                         modifier = Modifier
                             .alpha(if (revealed) 1f else 0f)
                             .clickableYGScaleRipple(enabled = revealed) {

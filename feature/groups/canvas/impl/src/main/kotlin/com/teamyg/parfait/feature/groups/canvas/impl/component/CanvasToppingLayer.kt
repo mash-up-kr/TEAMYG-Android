@@ -87,16 +87,14 @@ internal fun CanvasToppingLayer(
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
-        // 날짜를 바꾸면 캔버스는 그대로 컴포지션에 남는다. resetKey 를 안 주면 빗장이 풀린
-        // 채라 다음 날짜의 토핑이 하나씩 따로 뜬다
+        // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다
         val revealed = rememberBatchReveal(
             settled = entries.map { it.settled },
             resetKey = revealResetKey,
         )
         val toppingsVisible = !revealTogether || revealed
 
-        // 로딩 표시는 이 레이어가 아니라 화면이 맡는다 — 캔버스 영역에만 덮으면 그 밖의
-        // 날짜 선택과 메뉴가 그대로 눌린다
+        // 로딩 표시는 이 레이어가 아니라 화면이 맡는다
         val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
 
         LaunchedEffect(toppingsVisible) {
@@ -104,7 +102,7 @@ internal fun CanvasToppingLayer(
         }
 
         // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다.
-        // alpha 는 시맨틱을 지우지 않아, 이것 없이는 보이지 않는 토핑을 접근성 서비스가 누른다
+        // alpha 는 시맨틱을 지우지 않아 접근성 숨김을 따로 걸어야 한다
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -258,7 +256,6 @@ internal data class ToppingHitEntry(
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
     val target: ToppingHitTarget,
-    /** 성공이든 실패든 이 토핑의 이미지가 결말났는가. 레이어를 언제 드러낼지 세는 값이다 */
     val settled: Boolean,
 )
 

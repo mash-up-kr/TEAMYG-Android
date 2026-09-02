@@ -10,9 +10,7 @@ import kotlinx.coroutines.delay
 
 /**
  * 한 묶음을 한꺼번에 내지 않고 [stepMillis] 간격으로 하나씩 드러낸다.
- * [rememberBatchReveal] 로 다 모은 뒤 이어서 쓴다.
  *
- * 드러난 개수만 돌려주고 어느 자리가 그 개수에 드는지는 [isStaggerRevealed] 가 정한다.
  * 개수는 줄지 않는다 — 항목이 늘면 이미 나온 것은 두고 새 것만 이어서 쌓인다.
  */
 @Composable

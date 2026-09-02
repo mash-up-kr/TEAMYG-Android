@@ -213,8 +213,7 @@ internal fun CanvasMainRoute(
         onStopOrDispose { }
     }
 
-    // 토핑을 다 모으는 동안에도 화면 전체를 덮는다 — 캔버스 영역만 덮으면 그 밖의
-    // 날짜 선택과 메뉴가 그대로 눌린다
+    // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
     var toppingsVisible by remember { mutableStateOf(true) }
 
     YGScaffoldV2(

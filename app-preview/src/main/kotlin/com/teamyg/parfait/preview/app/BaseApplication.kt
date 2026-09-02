@@ -11,6 +11,5 @@ import dagger.hilt.android.HiltAndroidApp
 class BaseApplication :
     Application(),
     SingletonImageLoader.Factory {
-    // 프리뷰 앱도 같은 로더를 써야 이미지가 뜨는 모습이 갈리지 않는다
     override fun newImageLoader(context: PlatformContext): ImageLoader = newParfaitImageLoader(context)
 }

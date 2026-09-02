@@ -23,6 +23,5 @@ class BaseApplication :
         KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
     }
 
-    // 설정은 designsystem 한곳에 있다
     override fun newImageLoader(context: PlatformContext): ImageLoader = newParfaitImageLoader(context)
 }

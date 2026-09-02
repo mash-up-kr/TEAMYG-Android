@@ -39,7 +39,6 @@ class YGToppingGroupTest {
         SingletonImageLoader.setUnsafe(instantlySucceedingImageLoader())
         var settled = false
 
-        // When
         composeTestRule.setContent {
             RemoteYGToppingGroup(onImageSettled = { settled = true })
         }
@@ -54,7 +53,6 @@ class YGToppingGroupTest {
         SingletonImageLoader.setUnsafe(instantlyFailingImageLoader())
         var settled = false
 
-        // When
         composeTestRule.setContent {
             RemoteYGToppingGroup(onImageSettled = { settled = true })
         }
@@ -69,7 +67,6 @@ class YGToppingGroupTest {
         SingletonImageLoader.setUnsafe(neverFinishingImageLoader())
         var settled = false
 
-        // When
         composeTestRule.setContent {
             RemoteYGToppingGroup(onImageSettled = { settled = true })
         }
@@ -84,7 +81,6 @@ class YGToppingGroupTest {
         // Given 원격 이미지가 없는 템플릿 토핑
         var settled = false
 
-        // When
         composeTestRule.setContent {
             YGCustomTheme {
                 YGToppingGroup(

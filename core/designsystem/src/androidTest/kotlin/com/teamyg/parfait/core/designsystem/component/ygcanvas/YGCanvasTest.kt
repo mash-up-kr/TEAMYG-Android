@@ -62,12 +62,10 @@ class YGCanvasTest {
 
     @Test
     fun ygCanvas_backgroundImageLoading_showsSkeleton() {
-        // Given 끝나지 않는 로더라 배경은 로딩 상태에 머문다.
-        // 스켈레톤이 무한 애니메이션이라 시계를 손으로 돌린다 — 자동이면 대기가 끝나지 않는다
+        // Given 끝나지 않는 로더. 스켈레톤이 무한 애니메이션이라 시계를 손으로 돌린다
         composeTestRule.mainClock.autoAdvance = false
         SingletonImageLoader.setUnsafe(neverFinishingImageLoader())
 
-        // When
         composeTestRule.setContent {
             EmptyYGCanvas(background = YGCanvasBackground.Image(BACKGROUND_URL))
         }
@@ -83,8 +81,7 @@ class YGCanvasTest {
         val loader = ControllableImageLoader()
         SingletonImageLoader.setUnsafe(loader.imageLoader)
 
-        // When 아직 풀지 않았으므로 배경은 로딩 상태다.
-        // 스켈레톤이 무한 애니메이션이라 이 구간에서는 시계를 손으로 돌린다
+        // When 아직 풀지 않아 로딩 상태다. 무한 애니메이션이라 시계를 손으로 돌린다
         composeTestRule.mainClock.autoAdvance = false
         composeTestRule.setContent {
             EmptyYGCanvas(background = YGCanvasBackground.Image(BACKGROUND_URL))
