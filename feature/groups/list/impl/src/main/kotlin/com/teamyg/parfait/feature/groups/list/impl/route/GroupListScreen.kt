@@ -93,11 +93,17 @@ internal fun GroupListScreen(
         currentOnToppingsVisibleChange(toppingsVisible)
     }
 
-    val revealedCount = rememberStaggeredReveal(
+    // 조회는 재진입마다 나가므로 좁히지 않으면 돌아올 때마다 파르페가 다시 쌓인다.
+    // GroupListViewModel.isInitialLoad 가 덮개에 쓰는 기준(groupList == null)과 같은 기준이다.
+    // 묶음 노출은 그대로 둔다 — 캐시가 빠졌을 때 토핑이 하나씩 따로 뜨는 것은 여전히 막아야 한다
+    val staggerOnEntry = remember { uiState.groupList == null }
+
+    val staggeredCount = rememberStaggeredReveal(
         total = groupList.size,
         started = toppingsVisible,
         stepMillis = STAGGER_STEP_MILLIS,
     )
+    val revealedCount = if (staggerOnEntry) staggeredCount else Int.MAX_VALUE
 
     Box(modifier = modifier) {
         Column {
