@@ -4,21 +4,21 @@ import android.content.Intent
 import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
 
 /**
- * 알림의 `PendingIntent` 가 [MainActivity][com.teamyg.parfait.MainActivity] 를 이 extras 로
- * 띄운다. 알림을 실제로 만드는 쪽(FCM 메시징 서비스, 아직 없음)이 여기 키로 extras 를 채워야
- * 알림 탭이 이 파서와 맞는다.
+ * 키 이름을 FCM `data` payload 그대로 쓴다(FCM 페이로드 스펙 v1 §3).
+ * `type`(TOPPING/REMIND_AM/REMIND_PM)과 `date`는 여기서 안 쓴다 — 목적지는 서버가 이미
+ * `route`로 정해 보내고, P-01은 정책상 알림에 담긴 날짜가 아니라 항상 최신 캔버스로 연다.
  */
-private const val EXTRA_PUSH_TYPE = "push_type"
-private const val EXTRA_GROUP_ID = "push_group_id"
+private const val EXTRA_ROUTE = "route"
+private const val EXTRA_GROUP_ID = "groupId"
 
 /** extras 가 알려진 푸시 딥링크 모양이 아니면(일반 실행 등) `null`. */
-fun Intent.toPushDeepLinkOrNull(): PushDeepLink? = when (getStringExtra(EXTRA_PUSH_TYPE)) {
-    "add_topping" -> {
-        val groupId = getLongExtra(EXTRA_GROUP_ID, -1L)
-        if (groupId <= 0) null else PushDeepLink.AddTopping(groupId)
+fun Intent.toPushDeepLinkOrNull(): PushDeepLink? = when (getStringExtra(EXTRA_ROUTE)) {
+    "canvas" -> {
+        val groupId = getStringExtra(EXTRA_GROUP_ID)?.toLongOrNull()
+        if (groupId == null || groupId <= 0) null else PushDeepLink.AddTopping(groupId)
     }
 
-    "reminder" -> PushDeepLink.Reminder
+    "group" -> PushDeepLink.Reminder
 
     else -> null
 }
