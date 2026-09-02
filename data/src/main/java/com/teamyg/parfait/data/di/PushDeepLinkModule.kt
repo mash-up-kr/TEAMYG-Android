@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.di
 
 import com.teamyg.parfait.data.pushdeeplink.PushDeepLinkBus
+import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkPublisher
 import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
 import dagger.Module
 import dagger.Provides
@@ -14,4 +15,8 @@ object PushDeepLinkModule {
     @Provides
     @Singleton
     fun providePushDeepLinkSource(pushDeepLinkBus: PushDeepLinkBus): PushDeepLinkSource = pushDeepLinkBus
+
+    @Provides
+    @Singleton
+    fun providePushDeepLinkPublisher(pushDeepLinkBus: PushDeepLinkBus): PushDeepLinkPublisher = pushDeepLinkBus
 }

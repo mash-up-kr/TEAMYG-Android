@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.pushdeeplink
 
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkPublisher
 import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -16,12 +17,12 @@ import javax.inject.Singleton
  * 탭해도 마지막 것 하나로 접히는 것도 의도한 동작이다 — 화면은 결국 한 곳에만 도착한다.
  */
 @Singleton
-class PushDeepLinkBus @Inject constructor() : PushDeepLinkSource {
+class PushDeepLinkBus @Inject constructor() : PushDeepLinkSource, PushDeepLinkPublisher {
     private val channel = Channel<PushDeepLink>(Channel.CONFLATED)
 
     override val deepLinks: Flow<PushDeepLink> = channel.receiveAsFlow()
 
-    fun post(deepLink: PushDeepLink) {
+    override fun post(deepLink: PushDeepLink) {
         if (channel.trySend(deepLink).isFailure) {
             sourceLogger.e { "PushDeepLink 를 전달하지 못했다" }
         }
