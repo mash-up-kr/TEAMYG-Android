@@ -17,9 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-private const val SUBJECT_SEGMENTATION_FEATURE = "mlkit.segmentation.subject"
-private const val SUBJECT_SEGMENTATION_FEATURE_VERSION = 1L
-
 class PlayServicesModuleInstallGateway
 @Inject
 constructor(
@@ -89,5 +86,10 @@ constructor(
                 client.unregisterListener(listener)
                 onSignal(ModuleInstallSignal.Failed(installState = STATE_FAILED, errorCode = statusCode))
             }
+    }
+
+    companion object {
+        private const val SUBJECT_SEGMENTATION_FEATURE = "mlkit.segmentation.subject"
+        private const val SUBJECT_SEGMENTATION_FEATURE_VERSION = 1L
     }
 }

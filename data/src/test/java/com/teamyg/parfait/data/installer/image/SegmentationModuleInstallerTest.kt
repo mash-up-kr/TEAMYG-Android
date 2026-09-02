@@ -100,7 +100,7 @@ class SegmentationModuleInstallerTest {
         gateway.emit(ModuleInstallSignal.Completed, becomesAvailable = false)
 
         val failed = assertIs<ModuleInstallOutcome.Failed>(outcome.await())
-        assertEquals(STATE_COMPLETED_BUT_UNAVAILABLE, failed.installState)
+        assertEquals(SegmentationModuleInstaller.STATE_COMPLETED_BUT_UNAVAILABLE, failed.installState)
     }
 
     @Test
@@ -109,7 +109,7 @@ class SegmentationModuleInstallerTest {
         val installer = SegmentationModuleInstaller(gateway)
 
         val first = async { installer.ensureInstalled() }
-        advanceTimeBy(INSTALL_TIMEOUT_MS + 1)
+        advanceTimeBy(SegmentationModuleInstaller.INSTALL_TIMEOUT_MS + 1)
         advanceUntilIdle()
 
         assertEquals(ModuleInstallOutcome.TimedOut, first.await())
