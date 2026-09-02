@@ -17,8 +17,8 @@
 
 <br />
 
-<a href="https://github.com/mash-up-kr/TJYG-Android/actions/workflows/test.yml"><img alt="test" src="https://github.com/mash-up-kr/TJYG-Android/actions/workflows/test.yml/badge.svg"/></a>
-<a href="https://github.com/mash-up-kr/TJYG-Android/actions/workflows/ktlint.yml"><img alt="ktlint" src="https://github.com/mash-up-kr/TJYG-Android/actions/workflows/ktlint.yml/badge.svg"/></a>
+<a href="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/test.yml"><img alt="test" src="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/test.yml/badge.svg"/></a>
+<a href="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/ktlint.yml"><img alt="ktlint" src="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/ktlint.yml/badge.svg"/></a>
 
 </div>
 
