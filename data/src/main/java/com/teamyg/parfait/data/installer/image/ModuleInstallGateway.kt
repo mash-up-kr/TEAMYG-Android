@@ -12,20 +12,3 @@ interface ModuleInstallGateway {
      */
     fun install(onSignal: (ModuleInstallSignal) -> Unit)
 }
-
-sealed interface ModuleInstallSignal {
-    data object AlreadyInstalled : ModuleInstallSignal
-
-    data object Completed : ModuleInstallSignal
-
-    /** 취소는 `errorCode` 가 0이라 코드만으로는 실패와 안 갈린다 — 상태를 함께 싣는다 */
-    data class Failed(val installState: Int, val errorCode: Int) : ModuleInstallSignal
-}
-
-sealed interface ModuleInstallOutcome {
-    data object Ready : ModuleInstallOutcome
-
-    data class Failed(val installState: Int, val errorCode: Int) : ModuleInstallOutcome
-
-    data object TimedOut : ModuleInstallOutcome
-}
