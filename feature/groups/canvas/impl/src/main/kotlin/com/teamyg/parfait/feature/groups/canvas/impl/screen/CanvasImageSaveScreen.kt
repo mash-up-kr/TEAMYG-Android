@@ -1,13 +1,17 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -57,30 +62,32 @@ internal fun CanvasImageSaveScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // TODO(#423): 상단 멤버 칩과 인스타그램 스토리 규격(9:16) 프레임을 붙인다
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = YGTheme.layout.padding.padding7),
-        ) {
-            AsyncImage(
-                model = imagePath,
-                contentDescription = stringResource(R.string.canvas_image_save_preview_content_description),
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .fillMaxWidth()
+                .weight(1f)
                 .padding(YGTheme.layout.padding.padding7),
         ) {
-            // 요일만 흐리게 물러나야 해 한 문장을 세 조각으로 나눠 세운다
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(width = 198.dp, height = 352.dp)
+                    .border(width = (0.59).dp, color = YGAtomicColors.Gray.Gray500)
+                    .padding(horizontal = YGTheme.layout.padding.padding7),
+            ) {
+                AsyncImage(
+                    model = imagePath,
+                    contentDescription = stringResource(R.string.canvas_image_save_preview_content_description),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                 verticalAlignment = Alignment.CenterVertically,
@@ -103,6 +110,8 @@ internal fun CanvasImageSaveScreen(
                     color = YGAtomicColors.Gray.Gray900,
                 )
             }
+
+            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
             Text(
                 text = stringResource(R.string.canvas_image_save_description),
