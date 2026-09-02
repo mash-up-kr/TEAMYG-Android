@@ -15,8 +15,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
+import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallClient
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
+import com.google.android.gms.common.moduleinstall.ModuleInstallResponse
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
@@ -32,10 +35,20 @@ import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ExecutionException
+
+/** 진단 로그를 한 번에 걸러 내려고 붙이는 접두사다 */
+private const val MODULE_DIAGNOSTIC_PREFIX = "[MLKIT-MODULE]"
+
+/** 진단용 재확인 횟수. 아래 간격과 곱해 최대 대기 시간이 된다 */
+private const val MODULE_AVAILABILITY_POLL_COUNT = 30
+
+/** 진단용 재확인 간격(ms) */
+private const val MODULE_AVAILABILITY_POLL_INTERVAL_MS = 1_000L
 
 @Singleton
 class ImageSegmentationRepositoryImpl
@@ -175,6 +188,7 @@ constructor(
         return try {
             segmenter.use { segmenter ->
                 if (!ensureModuleInstalled(segmenter)) {
+                    repositoryLogger.w { "$MODULE_DIAGNOSTIC_PREFIX 모듈 미준비로 process 를 건너뛴다" }
                     return Result.failure(SegmentationException.ModuleNotReady(null))
                 }
 
@@ -561,18 +575,71 @@ constructor(
     private suspend fun ensureModuleInstalled(segmenter: SubjectSegmenter): Boolean = withContext(Dispatchers.IO) {
         val moduleInstallClient = ModuleInstall.getClient(context)
 
-        if (Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()) {
+        val availableBefore = Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()
+        repositoryLogger.i { "$MODULE_DIAGNOSTIC_PREFIX 설치 요청 전 가용 여부 $availableBefore" }
+        if (availableBefore) {
             return@withContext true
+        }
+
+        // 리스너가 없으면 설치가 어디서 멈췄는지 알 길이 없다 — 실패 코드가 여기로만 온다
+        val listener = InstallStatusListener { update ->
+            repositoryLogger.i {
+                "$MODULE_DIAGNOSTIC_PREFIX 설치 상태 ${update.installState}, 오류 코드 ${update.errorCode}, " +
+                    "내려받음 ${update.progressInfo?.bytesDownloaded}/${update.progressInfo?.totalBytesToDownload}, " +
+                    "세션 ${update.sessionId}"
+            }
         }
 
         val request = ModuleInstallRequest
             .newBuilder()
             .addApi(segmenter)
+            .setListener(listener)
             .build()
-        Tasks.await(moduleInstallClient.installModules(request))
 
-        Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()
+        val startedAt = System.nanoTime()
+        try {
+            val response: ModuleInstallResponse? = Tasks.await(moduleInstallClient.installModules(request))
+            repositoryLogger.i {
+                "$MODULE_DIAGNOSTIC_PREFIX installModules 반환 ${startedAt.elapsedMs()}ms, " +
+                    "이미 설치됨 ${response?.areModulesAlreadyInstalled()}"
+            }
+
+            awaitModuleAvailable(moduleInstallClient, segmenter, startedAt)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 지금까지는 이 예외가 바깥 catch 에서 Process 로 뭉개져 모듈 실패와 구분되지 않았다
+            repositoryLogger.w(e) { "$MODULE_DIAGNOSTIC_PREFIX installModules 실패 ${startedAt.elapsedMs()}ms" }
+            false
+        } finally {
+            moduleInstallClient.unregisterListener(listener)
+        }
     }
+
+    /**
+     * ⚠️ **진단용이다.** `installModules` 의 반환이 다운로드 완료를 뜻하는지 가리려고 넣었다 —
+     * 완료가 아니라면 몇 번째 재확인에 가용으로 바뀌는지가, 끝내 안 바뀌면 그 사실이 로그에 남는다.
+     */
+    private suspend fun awaitModuleAvailable(
+        moduleInstallClient: ModuleInstallClient,
+        segmenter: SubjectSegmenter,
+        startedAt: Long,
+    ): Boolean {
+        repeat(MODULE_AVAILABILITY_POLL_COUNT) { attempt ->
+            val available = Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()
+            repositoryLogger.i {
+                "$MODULE_DIAGNOSTIC_PREFIX ${attempt + 1}번째 재확인 가용 여부 $available, " +
+                    "경과 ${startedAt.elapsedMs()}ms"
+            }
+            if (available) return true
+
+            delay(MODULE_AVAILABILITY_POLL_INTERVAL_MS)
+        }
+
+        return false
+    }
+
+    private fun Long.elapsedMs(): Long = (System.nanoTime() - this) / 1_000_000
 
     /**
      * 모듈 다운로드가 끝나지 않아 실패한 경우와 그 외 처리 실패를 구분한다.
@@ -580,6 +647,11 @@ constructor(
      */
     private fun Throwable.toSegmentationException(): SegmentationException {
         val cause = (this as? ExecutionException)?.cause ?: this
+
+        repositoryLogger.w(cause) {
+            "$MODULE_DIAGNOSTIC_PREFIX process 실패 ${cause::class.simpleName}, " +
+                "MlKit 오류 코드 ${(cause as? MlKitException)?.errorCode}"
+        }
 
         return if (cause is MlKitException && cause.errorCode == MlKitException.UNAVAILABLE) {
             SegmentationException.ModuleNotReady(cause)

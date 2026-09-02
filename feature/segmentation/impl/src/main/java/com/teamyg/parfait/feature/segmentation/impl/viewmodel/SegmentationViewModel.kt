@@ -6,6 +6,7 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.SegmentationCandidate
@@ -87,7 +88,13 @@ class SegmentationViewModel
                     }
 
                     updateState { copy(candidates = candidates) }
-                }.onFailure { updateState { copy(isError = true) } }
+                }.onFailure { throwable ->
+                    // 실패 원인을 여기서 삼키면 모듈 미설치와 처리 실패가 화면에서 똑같아 보인다
+                    viewModelLogger.e(throwable) {
+                        "세그멘테이션 실패 ${throwable::class.simpleName}, 원인 ${throwable.cause}"
+                    }
+                    updateState { copy(isError = true) }
+                }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }
