@@ -61,7 +61,7 @@ internal fun SegmentationRoute(
     ) { innerPadding ->
         // 대상을 아예 못 얻은 실패는 화면 전체를 C-103-Error 로 바꾼다.
         // 고른 뒤의 실패는 후보가 남아 있어 토스트로만 알린다(SegmentationEffect.ShowError)
-        if (state.isError) {
+        if (state.errorKind != null) {
             SegmentationErrorScreen(
                 onClickClose = onClickClose,
                 modifier = modifier.padding(innerPadding),

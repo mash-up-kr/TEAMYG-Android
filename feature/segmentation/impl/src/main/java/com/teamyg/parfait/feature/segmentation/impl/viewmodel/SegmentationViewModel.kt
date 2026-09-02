@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
-import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -9,6 +8,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
@@ -21,24 +21,34 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
+
+/** 실패 화면이 무엇을 말할지 가른다 */
+enum class SegmentationErrorKind {
+    /** 후보도 폴백도 못 얻었다 */
+    SubjectNotFound,
+
+    /** 세그멘테이션 모델을 못 받았다 */
+    ModuleNotReady,
+}
 
 data class SegmentationState(
     val isLoading: Boolean = true,
     val originBitmap: Bitmap? = null,
     val candidates: List<SegmentationCandidate> = emptyList(),
-    /** 잘라낼 대상을 못 얻은 상태. 화면 전체가 `C-103-Error` 로 바뀐다 */
-    val isError: Boolean = false,
+    /** 널이 아니면 화면 전체가 `C-103-Error` 로 바뀐다 */
+    val errorKind: SegmentationErrorKind? = null,
 ) : UiState
 
 sealed interface SegmentationIntent : UiIntent {
     data class ClickCandidate(val index: Int) : SegmentationIntent
+
+    data object Retry : SegmentationIntent
 }
 
 sealed interface SegmentationEffect : UiSideEffect {
     /**
      * 고른 뒤의 실패에만 쓴다. 후보 목록이 그대로 남아 다른 대상을 고를 수 있으므로 화면을 덮지 않고
-     * 토스트로 한 번 알린다. 대상을 아예 못 얻은 실패는 [SegmentationState.isError] 가 받는다.
+     * 토스트로 한 번 알린다. 대상을 아예 못 얻은 실패는 [SegmentationState.errorKind] 가 받는다.
      */
     data object ShowError : SegmentationEffect
 
@@ -62,7 +72,18 @@ class SegmentationViewModel
     initialState = SegmentationState(),
 ) {
     init {
-        viewModelScope.launch {
+        loadCandidates()
+    }
+
+    /**
+     * ⚠️ 진입과 재시도가 **같은 키**를 쓴다. 진입만 다른 경로로 띄우면 진입 흐름이 도는 중에
+     * 누른 재시도를 막지 못한다.
+     */
+    private fun loadCandidates() {
+        launch(key = LOAD_CANDIDATES_KEY) {
+            // 실패 표시를 걷지 않으면 재시도가 성공해도 에러 화면이 그대로 남는다
+            updateState { copy(isLoading = true, errorKind = null, candidates = emptyList()) }
+
             // 이번 흐름이 파일을 만들기 전에 지운다 — 뒤에 두면 방금 만든 것을 지운다
             // 지난 흐름의 파일을 못 지워도 이번 흐름은 진행돼야 한다 — 남은 파일은 다음 진입에서 다시 지운다
             runSuspendCatching { clearSegmentationCacheUseCase() }
@@ -70,7 +91,7 @@ class SegmentationViewModel
             val bitmapWrapper = decodeImageUseCase(sourceImageUri).getOrNull()
 
             if (bitmapWrapper == null) {
-                updateState { copy(isLoading = false, isError = true) }
+                updateState { copy(isLoading = false, errorKind = SegmentationErrorKind.SubjectNotFound) }
                 return@launch
             }
 
@@ -83,22 +104,27 @@ class SegmentationViewModel
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
                     if (candidates.isEmpty()) {
-                        updateState { copy(isError = true) }
+                        updateState { copy(errorKind = SegmentationErrorKind.SubjectNotFound) }
                         return@onSuccess
                     }
 
                     updateState { copy(candidates = candidates) }
                 }.onFailure { throwable ->
-                    // 실패 원인을 여기서 삼키면 모듈 미설치와 처리 실패가 화면에서 똑같아 보인다
+                    // 원인을 삼키면 모듈 미설치와 처리 실패가 화면에서 똑같아 보인다
                     viewModelLogger.e(throwable) {
                         "세그멘테이션 실패 ${throwable::class.simpleName}, 원인 ${throwable.cause}"
                     }
-                    updateState { copy(isError = true) }
+                    updateState { copy(errorKind = throwable.toErrorKind()) }
                 }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
             updateState { copy(isLoading = false) }
         }
+    }
+
+    private fun Throwable.toErrorKind(): SegmentationErrorKind = when (this) {
+        is SegmentationException.ModuleNotReady -> SegmentationErrorKind.ModuleNotReady
+        else -> SegmentationErrorKind.SubjectNotFound
     }
 
     @AssistedFactory
@@ -109,6 +135,7 @@ class SegmentationViewModel
     override fun processIntent(intent: SegmentationIntent) {
         when (intent) {
             is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
+            SegmentationIntent.Retry -> loadCandidates()
         }
     }
 
@@ -166,3 +193,4 @@ class SegmentationViewModel
 }
 
 private const val SELECT_CANDIDATE_KEY = "select-candidate"
+private const val LOAD_CANDIDATES_KEY = "loadCandidates"
