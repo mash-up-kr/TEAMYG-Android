@@ -80,9 +80,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 private const val MIN_ZOOM = 1f
 private const val MAX_ZOOM = 3f
 
-/** 지워진 자리에 남겨 둘 원본의 불투명도 */
 private const val ERASED_AREA_ALPHA = 0.5f
-
 private const val MASK_TINT_ALPHA = 0.5f
 
 private const val BRUSH_PREVIEW_FILL_ALPHA = 0.5f
@@ -146,7 +144,7 @@ private fun ToppingEditContent(
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다. 화면 안에서만 쓰는 상태다
+    // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
@@ -332,7 +330,7 @@ private fun ToppingEditCanvas(
     // 스냅샷 리스트라 점을 덧붙여도 리스트를 통째로 베끼지 않으면서 다시 그리기는 그대로 걸린다
     val drawingPoints = remember { mutableStateListOf<Offset>() }
 
-    // 두 손가락으로 조절하는 확대 배율과 이동량. 사진이 바뀌면 처음 배치로 되돌린다
+    // 사진이 바뀌면 처음 배치로 되돌린다
     var zoom by remember(originBitmap) { mutableFloatStateOf(MIN_ZOOM) }
     var pan by remember(originBitmap) { mutableStateOf(Offset.Zero) }
 
@@ -500,7 +498,6 @@ private fun ToppingEditCanvas(
             canvas.restore()
         }
 
-        // 굵기를 고르는 동안에만 실제 붓 크기를 캔버스 한가운데에 미리 보여준다
         if (isBrushPreviewVisible) {
             drawCircle(
                 color = YGAtomicColors.Cherry.Cherry500.copy(alpha = BRUSH_PREVIEW_FILL_ALPHA),
