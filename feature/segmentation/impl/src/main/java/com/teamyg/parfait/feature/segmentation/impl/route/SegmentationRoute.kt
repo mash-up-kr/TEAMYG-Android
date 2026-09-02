@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,7 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationErrorScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationErrorKind
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
 
@@ -61,8 +63,13 @@ internal fun SegmentationRoute(
     ) { innerPadding ->
         // 대상을 아예 못 얻은 실패는 화면 전체를 C-103-Error 로 바꾼다.
         // 고른 뒤의 실패는 후보가 남아 있어 토스트로만 알린다(SegmentationEffect.ShowError)
-        if (state.errorKind != null) {
+        val errorKind = state.errorKind
+
+        if (errorKind != null) {
             SegmentationErrorScreen(
+                title = stringResource(errorKind.titleRes()),
+                description = stringResource(errorKind.descriptionRes()),
+                onClickRetry = { viewModel.processIntent(SegmentationIntent.Retry) },
                 onClickClose = onClickClose,
                 modifier = modifier.padding(innerPadding),
             )
@@ -78,4 +85,16 @@ internal fun SegmentationRoute(
             )
         }
     }
+}
+
+@StringRes
+private fun SegmentationErrorKind.titleRes(): Int = when (this) {
+    SegmentationErrorKind.SubjectNotFound -> R.string.segmentation_error_title
+    SegmentationErrorKind.ModuleNotReady -> R.string.segmentation_module_error_title
+}
+
+@StringRes
+private fun SegmentationErrorKind.descriptionRes(): Int = when (this) {
+    SegmentationErrorKind.SubjectNotFound -> R.string.segmentation_error_description
+    SegmentationErrorKind.ModuleNotReady -> R.string.segmentation_module_error_description
 }
