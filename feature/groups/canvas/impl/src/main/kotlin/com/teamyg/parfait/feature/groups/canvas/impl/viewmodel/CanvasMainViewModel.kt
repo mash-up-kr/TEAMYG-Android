@@ -656,7 +656,6 @@ constructor(
         }
     }
 
-    /** 바로 저장하지 않는다 — 무엇이 저장될지 미리보기 화면이 먼저 보여 준다 */
     private fun handleClickSaveToGallery() {
         postSideEffect(effect = CanvasMainEffect.RequestCanvasCaptureForPreview)
     }

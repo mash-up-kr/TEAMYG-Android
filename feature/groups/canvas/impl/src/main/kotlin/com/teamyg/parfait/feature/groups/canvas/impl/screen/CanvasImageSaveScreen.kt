@@ -121,7 +121,6 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        // 버튼이 가로를 다 먹지 않는다 — 폭은 문구가 정하고, 자리만 가운데로 잡는다
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier

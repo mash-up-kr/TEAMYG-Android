@@ -57,8 +57,6 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         }
     }
 
-    // 미리보기는 자기 Scaffold(YGScaffoldV2)를 직접 든다 — 여기서 한 겹 더 씌우면 인셋
-    // 패딩이 두 번 먹는다
     entry<NavKeyCanvasImageSave> { navKey ->
         CanvasImageSaveRoute(
             navKey = navKey,
