@@ -1,11 +1,15 @@
 # Parfait
 
+
 <div align="center">
+<img width="100%" alt="우리가 쌓을 하루" src="docs/images/graphic_image.png"/>
+</div>
 
-<img width="500" height="541" alt="parfait" src="https://github.com/user-attachments/assets/7d5a8757-e73c-40a4-a7e0-bde2bf511e2a" />
+<div align="center">
+<img width="400" alt="파르페 미리보기" src="docs/images/phone_screen_shot_1.png"/>
+</div>
 
-<br />
-
+<div align="center">
 **Parfait 사진 공유 캔버스 SNS**
 
 친구들과 함께 일상을 공유해요. 오늘의 사진을 찍어 토핑으로 기록해요. 서로의 하루가 하나씩 쌓여, 하나의 캔버스로 완성돼요.
@@ -20,22 +24,14 @@
 <a href="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/test.yml"><img alt="test" src="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/test.yml/badge.svg"/></a>
 <a href="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/ktlint.yml"><img alt="ktlint" src="https://github.com/mash-up-kr/TEAMYG-Android/actions/workflows/ktlint.yml/badge.svg"/></a>
 
-</div>
 
 <br />
 
+</div>
 
 ## 📥 다운로드
 
 [Google Play 스토어](https://play.google.com/store/apps/details?id=com.teamyg.parfait)에서 받을 수 있습니다.
-
-<div align="center">
-<img width="100%" alt="우리가 쌓을 하루" src="docs/images/graphic_image.png"/>
-</div>
-
-<div align="center">
-<img width="400" alt="파르페 미리보기" src="docs/images/phone_screen_shot_1.png"/>
-</div>
 
 <br />
 
@@ -65,6 +61,12 @@ https://github.com/user-attachments/assets/98fd44c5-935f-4207-a45a-6282f05b0d05
 
 
 ## 👥 팀원
+
+<div align="center">
+<img width="500" height="541" alt="parfait" src="https://github.com/user-attachments/assets/7d5a8757-e73c-40a4-a7e0-bde2bf511e2a" />
+</div>
+
+<br />
 
 <div align="center">
 
