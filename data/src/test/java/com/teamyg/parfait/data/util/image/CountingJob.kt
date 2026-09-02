@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.repository.image
+package com.teamyg.parfait.data.util.image
 
 import kotlinx.coroutines.InternalForInheritanceCoroutinesApi
 import kotlinx.coroutines.Job

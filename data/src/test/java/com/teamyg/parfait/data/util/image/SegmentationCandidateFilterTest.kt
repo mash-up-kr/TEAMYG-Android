@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.repository.image
+package com.teamyg.parfait.data.util.image
 
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationBounds

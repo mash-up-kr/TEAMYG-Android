@@ -24,6 +24,15 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.data.util.image.MAX_SUBJECT_COUNT
+import com.teamyg.parfait.data.util.image.SEGMENTATION_CACHE_DIR_NAME
+import com.teamyg.parfait.data.util.image.applyAlphaInPlace
+import com.teamyg.parfait.data.util.image.clearFiles
+import com.teamyg.parfait.data.util.image.composeCroppedArgb
+import com.teamyg.parfait.data.util.image.coverageFloorPixels
+import com.teamyg.parfait.data.util.image.filterCandidates
+import com.teamyg.parfait.data.util.image.maskSubjectAlpha
+import com.teamyg.parfait.data.util.image.postProcessAlpha
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
