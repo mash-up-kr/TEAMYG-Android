@@ -1,5 +1,6 @@
 package com.teamyg.parfait
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,7 +13,9 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.data.pushdeeplink.PushDeepLinkBus
 import com.teamyg.parfait.domain.repository.session.SessionEventSource
+import com.teamyg.parfait.pushdeeplink.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -30,8 +33,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var sessionEventSource: SessionEventSource
 
+    @Inject
+    lateinit var pushDeepLinkBus: PushDeepLinkBus
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        consumePushDeepLink(intent)
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
         // 근거는 parfait/adr/0028-system-bar-light-fixed.md 에 있다.
         enableEdgeToEdge(
@@ -44,9 +51,21 @@ class MainActivity : ComponentActivity() {
                     navigator = navigator,
                     entryBuilders = entryBuilders,
                     sessionEventSource = sessionEventSource,
+                    pushDeepLinkSource = pushDeepLinkBus,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
         }
+    }
+
+    // 앱이 이미 떠 있을 때(백그라운드 포함) 알림을 탭하면 새 인스턴스 대신 여기로 온다
+    // (매니페스트의 launchMode="singleTop"). 콜드 스타트는 onCreate 의 intent 로 잡힌다.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        consumePushDeepLink(intent)
+    }
+
+    private fun consumePushDeepLink(intent: Intent) {
+        intent.toPushDeepLinkOrNull()?.let(pushDeepLinkBus::post)
     }
 }
