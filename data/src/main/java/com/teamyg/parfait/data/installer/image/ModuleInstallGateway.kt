@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.repository.image
+package com.teamyg.parfait.data.installer.image
 
 /**
  * 모듈 설치의 GMS 쪽 표면. 이 뒤로 Play 서비스 타입이 하나도 새지 않아야 JVM 테스트가 닿는다.

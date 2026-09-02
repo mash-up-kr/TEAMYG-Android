@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.repository.image
+package com.teamyg.parfait.data.installer.image
 
 import com.teamyg.parfait.data.utils.repositoryLogger
 import kotlinx.coroutines.CompletableDeferred

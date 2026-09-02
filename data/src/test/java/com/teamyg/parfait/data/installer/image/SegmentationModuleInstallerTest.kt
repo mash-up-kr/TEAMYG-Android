@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.repository.image
+package com.teamyg.parfait.data.installer.image
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceTimeBy
