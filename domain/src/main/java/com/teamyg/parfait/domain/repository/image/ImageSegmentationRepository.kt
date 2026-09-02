@@ -6,6 +6,12 @@ import com.teamyg.parfait.domain.model.SegmentationResult
 
 interface ImageSegmentationRepository {
     /**
+     * 세그멘테이션 모델을 미리 받아 둔다. 결과를 돌려주지 않는 이유는 부르는 화면이 그 결과로
+     * 할 일이 없어서다 — 실패는 실제로 세그멘테이션을 시도하는 화면이 받는다.
+     */
+    suspend fun prepareSegmentationModule()
+
+    /**
      * [uri] 가 가리키는 이미지를 비트맵으로 읽는다.
      *
      * **실패하면 던진다.** URI 가 만료됐거나 파일이 깨졌으면 디코더의 예외가 그대로 올라오므로
