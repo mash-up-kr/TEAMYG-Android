@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_duplicated_space">공백은 글자 사이에 1칸만 사용할 수 있어요</string>
+    <string name="error_invalid_character">한글, 영문, 숫자, 띄어쓰기만 사용할 수 있어요</string>
+    <string name="error_space_at_edge_nickname">닉네임의 처음과 끝에는 공백을 사용할 수 없어요</string>
+    <string name="error_space_at_edge_groupname">그룹명의 처음과 끝에는 공백을 사용할 수 없어요</string>
+    <string name="error_empty_space_nickname">닉네임은 비워둘 수 없어요</string>
+    <string name="error_empty_space_groupname">그룹명은 비워둘 수 없어요</string>
+
+    <!-- 초대코드 복사(그룹 설정)와 붙여넣기 감지(초대코드 입력)가 같은 템플릿을 공유한다 -->
+    <string name="group_invite_message">친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s</string>
+
+    <string name="login_provider_kakao">Kakao</string>
+    <string name="login_provider_apple">Apple</string>
+    <string name="login_provider_unknown">알 수 없음</string>
+</resources>

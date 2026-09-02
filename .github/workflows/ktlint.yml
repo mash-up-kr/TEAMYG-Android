@@ -1,0 +1,23 @@
+name: ktlint
+
+on:
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-android-build
+
+      - name: Restore app secrets
+        uses: ./.github/actions/restore-app-secrets
+        with:
+          kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
+          google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      # Formatting 검사
+      - name: ktlint with Gradle
+        run: ./gradlew ktlintCheck

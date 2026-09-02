@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_term_agree">서비스 이용 약관에\n동의해 주세요</string>
+    <string name="agree_all">모두 동의하기</string>
+    <string name="prefix_required">(필수)</string>
+    <string name="submit">확인</string>
+
+    <string name="term_agree_load_failed">약관을 불러오지 못했어요</string>
+    <string name="term_agree_retry">다시 시도</string>
+
+    <string name="term_agree_signup_error_network">네트워크 연결을 확인해 주세요</string>
+    <string name="term_agree_signup_error_unknown">가입에 실패했어요. 잠시 후 다시 시도해 주세요</string>
+</resources>

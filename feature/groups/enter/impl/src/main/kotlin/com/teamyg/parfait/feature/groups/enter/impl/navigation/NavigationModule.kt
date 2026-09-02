@@ -1,0 +1,32 @@
+package com.teamyg.parfait.feature.groups.enter.impl.navigation
+
+import androidx.navigation3.runtime.EntryProviderScope
+import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.navigation.Navigator
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityRetainedComponent
+import dagger.multibindings.IntoSet
+
+@Module
+@InstallIn(ActivityRetainedComponent::class)
+object NavigationModule {
+    @IntoSet
+    @Provides
+    fun provideFeatureGroupInviteCodeEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureGroupInviteCodeEntryBuilder(navigator = it)
+    }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureGroupNickNameEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureGroupNickNameEntryBuilder(navigator = it)
+    }
+
+    @IntoSet
+    @Provides
+    fun provideFeatureGroupCreateEntryBuilder(): EntryProviderScope<NavKey>.(Navigator) -> Unit = {
+        featureGroupCreateEntryBuilder(navigator = it)
+    }
+}

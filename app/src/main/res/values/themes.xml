@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Tjyg" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        스플래시 아이콘을 따로 지정하지 않는다. 비워 두면 Android 12+ 시스템 스플래시가
+        런처 아이콘을 그대로 쓰므로 아이콘을 두 벌 관리하지 않아도 된다.
+        앱이 직접 그리는 스플래시는 feature:intro 의 SplashScreen 이 맡는다.
+    -->
+    <style name="Theme.TeamYg" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

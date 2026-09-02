@@ -1,0 +1,258 @@
+### 토핑 배치(배치 확정 / 위치·크기·각도 수정 / 테두리 수정 / 삭제) API
+#
+# ⚠️ 선행 요청이 있다. 다른 파일과 다른 점이다.
+#    1) auth.http 로 로그인해 access_token 을 채운다
+#    2) parfait-group.http 로 group_id 를 채운다
+#    3) images.http 로 발급 -> S3 PUT -> confirm 까지 돌려 image_id 를 COMPLETED 로 만든다
+#       (PENDING 인 imageId 로 배치하면 409 IMAGE_NOT_CONFIRMED 다)
+#
+#    4) parfait.http 의 "오늘의 캔버스 조회"를 돌려 parfait_id 를 채운다
+#       (2026-08-15 이전에는 조회 API 가 없어 리터럴 1 을 손으로 바꿔야 했다)
+#
+# ⚠️ 경로의 images 세그먼트는 최상위 /api/v1/images(업로드)와 다른 도메인이다.
+#    여기 imageId 와 parfaitImageId 는 서로 다른 키다.
+
+### 1. 토핑 배치 확정 (테두리 없음)
+# 생성 POST 라 201 CREATED 다. 같은 서버의 이미지 발급(다른 도메인)이 200 인 것과 다르다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 120.5,
+  "positionY": 340.2,
+  "positionZ": 1,
+  "scale": 1.0,
+  "rotation": 0.0,
+  "borderType": "NONE",
+  "borderColor": null,
+  "borderWidth": null
+}
+
+> {%
+    client.test("201", function() {
+        client.assert(response.status === 201, "status: " + response.status);
+        client.assert(response.body.code === "CREATED", "code: " + response.body.code);
+    });
+    client.global.set("parfait_image_id", response.body.data.parfaitImageId);
+    client.log("placedBy=" + JSON.stringify(response.body.data.placedBy));
+%}
+
+### 2. 같은 imageId 로 다시 배치 (upsert 확인)
+# ⚠️ 새 배치가 생기지 않는다. 기존 배치가 이동하고 소유자가 호출자로 바뀐다.
+#    1번 응답과 parfaitImageId 가 같으면 upsert 가 맞다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 999.0,
+  "positionY": 999.0,
+  "positionZ": 9,
+  "scale": 2.0,
+  "rotation": 90.0,
+  "borderType": "NONE",
+  "borderColor": null,
+  "borderWidth": null
+}
+
+> {%
+    client.test("201 이고 같은 parfaitImageId", function() {
+        client.assert(response.status === 201, "status: " + response.status);
+        client.assert(
+            String(response.body.data.parfaitImageId) === String(client.global.get("parfait_image_id")),
+            "새 행이 생겼다: " + response.body.data.parfaitImageId
+        );
+    });
+%}
+
+### 3. 위치·크기·각도 부분 수정 (z-order 만)
+# 보내지 않은 필드는 서버가 유지한다. 응답은 부분이 아니라 전체 값이다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images/{{parfait_image_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "positionZ": 3
+}
+
+> {%
+    client.test("200 이고 positionZ 만 바뀐다", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.data.positionZ === 3, "positionZ: " + response.body.data.positionZ);
+        client.assert(response.body.data.positionX === 999.0, "positionX 가 바뀌었다: " + response.body.data.positionX);
+    });
+%}
+
+### 4. 빈 바디로 수정
+# 전 필드 null 인 빈 패치도 에러가 아니다. updatedAt 만 올라간다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images/{{parfait_image_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}
+
+### 5. (대조용) SOLID 인데 색·두께 없음 → 400 INVALID_BORDER
+# 앱은 ToppingBorder sealed 로 보내므로 이 상태를 만들 수 없다. 서버 제약 확인용이다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 10.0,
+  "positionY": 10.0,
+  "positionZ": 1,
+  "scale": 1.0,
+  "rotation": 0.0,
+  "borderType": "SOLID",
+  "borderColor": null,
+  "borderWidth": null
+}
+
+> {%
+    client.test("400 INVALID_BORDER", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_BORDER", "code: " + response.body.code);
+    });
+%}
+
+### 6. (대조용) borderType 이 enum 밖 값 → 400 INVALID_REQUEST
+# 도메인 코드가 아니라 공통 코드다. Jackson 역직렬화가 먼저 깨지기 때문이다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 10.0,
+  "positionY": 10.0,
+  "positionZ": 1,
+  "scale": 1.0,
+  "rotation": 0.0,
+  "borderType": "DOTTED",
+  "borderColor": null,
+  "borderWidth": null
+}
+
+> {%
+    client.test("400 INVALID_REQUEST", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_REQUEST", "code: " + response.body.code);
+    });
+%}
+
+### 7. (대조용) 서버에 좌표 범위 검증이 없다
+# 음수 scale 과 캔버스 밖 좌표가 그대로 저장된다. 보정은 앱 책임이다(C-305).
+# 이 요청이 200 이면 "서버가 막아주겠지"라는 가정이 틀렸다는 뜻이다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images/{{parfait_image_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "positionX": -99999.0,
+  "scale": -1.0,
+  "rotation": 720.0
+}
+
+> {%
+    client.test("200 - 서버가 막지 않는다", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.data.scale === -1.0, "scale: " + response.body.data.scale);
+    });
+%}
+
+### 8. (대조용) 참여하지 않은 그룹으로 수정 → 403 PARFAIT_IMAGE_NOT_OWNED
+# ⚠️ 배치(POST)는 미참여를 GROUP_NOT_JOINED 로 구분하는데 수정(PATCH)은 안 한다.
+#    "그룹에서 나갔다"와 "남의 토핑이다"를 코드만으로 구분할 수 없다.
+PATCH {{base_url}}/api/v1/groups/999999/parfaits/{{parfait_id}}/images/{{parfait_image_id}}
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "positionX": 1.0
+}
+
+> {%
+    client.test("403 PARFAIT_IMAGE_NOT_OWNED", function() {
+        client.assert(response.status === 403, "status: " + response.status);
+        client.assert(response.body.code === "PARFAIT_IMAGE_NOT_OWNED", "code: " + response.body.code);
+    });
+%}
+
+### 9. 토핑 테두리 두께/색깔 수정
+# 위치 수정과 달리 부분 병합이 아니다 — 세 필드를 통째로 덮는다.
+# 이 응답이 서버가 테두리를 돌려주는 유일한 자리다(배치 확정·위치 수정 응답에는 없다).
+#
+# ⚠️ borderType 이 SOLID 인데 borderColor 나 borderWidth 가 없으면 400 INVALID_BORDER 다.
+PATCH {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images/{{parfait_image_id}}/border
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "borderType": "SOLID",
+  "borderColor": "#FF0000",
+  "borderWidth": 4.0
+}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.data.borderType === "SOLID", "borderType: " + response.body.data.borderType);
+    });
+%}
+
+### 10. 토핑 삭제
+# 되돌릴 수 없다. 서버가 배치 행을 지우면서 이미지 참조 수를 줄이고,
+# 그것이 0이 되면 S3 객체까지 지운다.
+#
+# ⚠️ 성공이 204 가 아니라 200 + data: null 이다. 회원 탈퇴(users.http)는 204 라 서로 다르다.
+# ⚠️ 멱등이 아니다 — 같은 요청을 두 번 보내면 두 번째는 404 PARFAIT_IMAGE_NOT_FOUND 다.
+DELETE {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images/{{parfait_image_id}}
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200 + data null", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+        client.assert(response.body.data === null, "data: " + JSON.stringify(response.body.data));
+    });
+%}
+
+### 11. (대조용) 마감된 캔버스에 배치 → 409 PARFAIT_ALREADY_CLOSED
+# 선행: parfait.http 의 "(테스트 전용) 캔버스 강제 회전"으로 이 캔버스를 마감시킨다.
+#       ⚠️ 그 요청은 **전 그룹**의 캔버스를 마감한다 — 경고를 먼저 읽을 것.
+#
+# 2026-08-20 서버 delta로 생긴 가드다. 그전에는 이 요청이 **201 로 성공**했고, 뒤이은 오늘
+# 조회가 새 캔버스를 줘서 사용자에게는 배치가 사라진 것처럼 보였다.
+# 수정·테두리·삭제 셋도 같은 코드로 거부된다 — 다만 그 셋은 마감 검사가 **소유권 뒤**라
+# 남의 토핑을 지목하면 409 가 아니라 403 PARFAIT_IMAGE_NOT_OWNED 가 먼저 나온다.
+#
+# ⚠️ 이 코드는 자기 도메인 enum 이 아니라 서버 ParfaitErrorCode 의 값이다.
+POST {{base_url}}/api/v1/groups/{{group_id}}/parfaits/{{parfait_id}}/images
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "imageId": {{image_id}},
+  "positionX": 0.5,
+  "positionY": 0.5,
+  "positionZ": 0,
+  "scale": 1.0,
+  "rotation": 0.0,
+  "borderType": "NONE"
+}
+
+> {%
+    client.test("409 PARFAIT_ALREADY_CLOSED", function() {
+        client.assert(response.status === 409, "status: " + response.status);
+        client.assert(response.body.code === "PARFAIT_ALREADY_CLOSED", "code: " + response.body.code);
+    });
+%}

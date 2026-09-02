@@ -1,0 +1,35 @@
+### 헬스체크
+#
+# 앱이 호출하는 API 는 아니다. 서버가 살아 있는지, base_url 이 맞는지 확인하는 용도다.
+
+### GET /health
+# ⚠️ 인증이 필요하다. SecurityConfig 화이트리스트에는 `/actuator/health` 만 있고
+#    `/health`(HealthController) 는 없다 — 경로가 달라 인증 대상으로 남는다.
+#    토큰 없이 부르면 401 UNAUTHORIZED 가 온다.
+GET {{base_url}}/health
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("status=" + response.body.data.status);
+%}
+
+### (대조용) 토큰 없이 호출 — 401 이 정상
+GET {{base_url}}/health
+
+> {%
+    client.test("401 인증 필요", function() {
+        client.assert(response.status === 401, "status: " + response.status);
+    });
+%}
+
+### actuator 헬스체크 — 이쪽은 화이트리스트라 토큰이 필요 없다
+GET {{base_url}}/actuator/health
+
+> {%
+    client.test("200", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}

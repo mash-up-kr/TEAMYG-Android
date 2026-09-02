@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="terms_webview_error_message">페이지를 불러오지 못했어요</string>
+    <string name="terms_webview_retry">다시 시도</string>
+</resources>

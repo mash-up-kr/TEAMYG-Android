@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!--
+        프록시로 트래픽을 들여다보는 작업과 HTTPS 이전 주소로 붙어 보는 경우를 위해 열어 둔다.
+        ⚠️ 호스트를 가리지 않아 디버그 빌드가 부르는 모든 주소가 열린다 — 개발 서버 한정이 아니다.
+    -->
+    <debug-overrides cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".app.BaseApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TeamYg">
+
+        <!--
+            Android 16(targetSdk 36)은 smallest width 600dp 이상 기기에서 screenOrientation을
+            무시한다. 이 opt-out이 그 예외를 되돌려 대화면에서도 세로 고정을 유지한다.
+            TODO: targetSdk 37부터 opt-out 자체가 제거돼 무력화된다. 그 전에 대화면 대응 방침을
+            정하고 이 속성을 지운다.
+        -->
+        <property
+            android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_ORIENTATION_AND_ASPECT_RATIO_OPT_OUT"
+            android:value="true" />
+
+        <activity
+            android:name=".activity.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.TeamYg">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

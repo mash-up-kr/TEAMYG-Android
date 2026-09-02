@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_profile_label">내 프로필</string>
+    <string name="setting_item_account">계정 정보</string>
+    <string name="setting_item_service_terms">서비스 이용약관</string>
+    <string name="setting_item_privacy_policy">개인정보 처리 방침</string>
+    <string name="setting_item_version">버전 정보</string>
+    <string name="setting_item_version_value">v%1$s</string>
+    <string name="setting_logout">로그아웃</string>
+    <string name="setting_withdraw">서비스 탈퇴하기</string>
+    <string name="setting_withdraw_dialog_title">파르페에서 탈퇴하시겠어요?</string>
+    <string name="setting_withdraw_dialog_body">지금까지 올린 사진은 익명으로 표시되며,\n삭제되지 않아요.</string>
+    <string name="setting_withdraw_dialog_confirm">탈퇴하기</string>
+    <string name="setting_dialog_cancel">그만두기</string>
+    <string name="setting_withdraw_error">탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요</string>
+    <string name="account_info_title">계정 정보</string>
+    <string name="account_info_nickname_label">닉네임</string>
+    <string name="account_info_submit">확인</string>
+    <string name="account_info_error_invalid">사용할 수 없는 닉네임이에요</string>
+    <string name="account_info_error_account_gone">계정을 찾을 수 없어요. 다시 로그인해 주세요</string>
+    <string name="account_info_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="account_info_error_unknown">잠시 후 다시 시도해 주세요</string>
+    <string name="account_info_discard_dialog_title">닉네임 수정을 취소할까요?</string>
+    <string name="account_info_discard_dialog_body">수정 사항이 저장되지 않으며\n기존 닉네임이 그대로 적용돼요</string>
+    <string name="account_info_discard_dialog_cancel">취소하기</string>
+    <string name="account_info_discard_dialog_confirm">그만두기</string>
+
+    <string name="setting_profile_loading">불러오는 중</string>
+</resources>

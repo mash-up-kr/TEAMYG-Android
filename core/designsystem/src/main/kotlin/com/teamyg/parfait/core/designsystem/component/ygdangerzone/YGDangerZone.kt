@@ -1,0 +1,65 @@
+package com.teamyg.parfait.core.designsystem.component.ygdangerzone
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import com.teamyg.parfait.core.designsystem.border.dashedBorder
+import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDashedDivider
+import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+
+@Composable
+fun YGDangerZone(
+    topZone: @Composable () -> Unit,
+    bottomZone: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .width(IntrinsicSize.Max)
+            .dashedBorder()
+            .padding(vertical = YGTheme.layout.padding.padding2),
+    ) {
+        topZone()
+        YGHorizontalDashedDivider(
+            modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding6),
+        )
+        bottomZone()
+    }
+}
+
+@YGPreview
+@Composable
+private fun YGDangerZonePreview() = PreviewBox {
+    Box(
+        modifier = Modifier
+            .background(Color.Black),
+    ) {
+        YGDangerZone(
+            topZone = {
+                YGActionItem(
+                    text = "로그아웃",
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            bottomZone = {
+                YGActionItem(
+                    text = "서비스 탈퇴하기",
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}

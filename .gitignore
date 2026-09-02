@@ -1,15 +1,16 @@
 *.iml
 .gradle
+.idea/
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
-/build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+debug.keystore
+parfait-release.keystore
+google-services.json
+
+# IntelliJ HTTP Client — 실제 토큰·서버 주소가 들어가므로 커밋 금지
+http-client.private.env.json

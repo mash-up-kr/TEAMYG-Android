@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TODO(접근성): 토핑을 무엇으로 읽어 줄지 정해지지 않았다(스펙 미결) -->
+    <string name="canvas_topping_content_description">토핑</string>
+    <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n첫번째 토핑을 올려 캔버스를 채워보세요</string>
+    <string name="canvas_main_topping_add">토핑 추가</string>
+    <string name="canvas_main_canvas_edit">캔버스 편집</string>
+    <string name="canvas_main_save_to_gallery">갤러리에 저장</string>
+    <string name="canvas_main_go_to_today">오늘의 파르페 가기</string>
+    <string name="canvas_main_camera_capture">카메라로 촬영</string>
+    <string name="canvas_main_gallery_select">갤러리에서 선택</string>
+    <string name="canvas_main_member_overflow_count">+%1$d</string>
+    <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
+    <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요.</string>
+    <string name="canvas_main_closed_canvas_alert_title">%1$d월 %2$d일의 파르페 완성</string>
+    <string name="canvas_main_closed_canvas_alert_sub">%1$d명의 친구들과 함께했어요</string>
+    <string name="canvas_main_closed_canvas_alert_button">보러가기</string>
+    <string name="canvas_main_today_canvas_error">오늘의 캔버스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="canvas_main_topping_flow_start_error">토핑을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <!-- 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 뜨는 환영 배너 -->
+    <string name="canvas_welcome_joined_title">%1$s 그룹에 참여했어요</string>
+    <string name="canvas_welcome_joined_sub">+버튼을 눌러 토핑을 쌓아보세요</string>
+    <string name="canvas_welcome_created_title">%1$s 그룹을 만들었어요</string>
+    <string name="canvas_welcome_created_sub">초대코드는 %1$s이에요</string>
+    <string name="canvas_welcome_invite_copy">복사하기</string>
+    <string name="canvas_welcome_invite_copied">복사완료</string>
+    <string name="canvas_bg_edit_tab_background">배경</string>
+    <string name="canvas_bg_edit_tab_topping">토핑</string>
+    <string name="canvas_bg_edit_quit_dialog_title">편집을 그만둘까요?</string>
+    <string name="canvas_bg_edit_quit_dialog_body">기존 편집 내용은 모두 사라지며\n캔버스 화면으로 돌아가요</string>
+    <string name="canvas_bg_edit_quit_dialog_confirm">그만두기</string>
+    <string name="canvas_bg_edit_quit_dialog_cancel">계속 편집하기</string>
+    <string name="canvas_bg_edit_topping_delete">삭제</string>
+    <string name="canvas_bg_edit_topping_edit">편집</string>
+    <string name="canvas_bg_edit_topping_resize">크기조절</string>
+    <string name="canvas_bg_edit_topping_rotate">회전</string>
+    <string name="canvas_bg_edit_topping_delete_dialog_title">토핑을 삭제할까요?</string>
+    <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>
+    <string name="canvas_bg_edit_topping_delete_dialog_confirm">삭제하기</string>
+    <string name="canvas_bg_edit_topping_delete_dialog_cancel">그만두기</string>
+    <string name="canvas_bg_edit_save_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
+    <string name="canvas_bg_edit_save_error_unsupported_image">이 사진은 배경으로 쓸 수 없어요\n다른 사진을 골라 주세요</string>
+    <string name="canvas_bg_edit_save_error_unknown">배경을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
+    <string name="canvas_bg_edit_topping_save_error_unknown">토핑 편집을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
+    <string name="canvas_bg_edit_topping_delete_error_unknown">토핑을 삭제하지 못했어요\n잠시 후 다시 시도해 주세요</string>
+    <string name="canvas_topping_place_title">토핑배치</string>
+    <string name="canvas_topping_place_draft_unavailable">올릴 토핑을 찾지 못했어요. 캔버스에서 다시 시작해 주세요.</string>
+    <string name="canvas_topping_place_failed">토핑을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
+    <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
+    <string name="canvas_spotlight_time_just_now">방금 전</string>
+    <string name="canvas_spotlight_time_minutes">%1$d분 전</string>
+    <string name="canvas_spotlight_time_hours">%1$d시간 전</string>
+    <string name="canvas_spotlight_time_days">%1$d일 전</string>
+    <string name="canvas_spotlight_time_long_ago">오래전</string>
+
+    <!-- 캘린더 요일 머리글. 순서가 곧 일요일 시작 주차 배열이므로 바꾸지 않는다 -->
+    <string-array name="canvas_calendar_day_of_week">
+        <item>일</item>
+        <item>월</item>
+        <item>화</item>
+        <item>수</item>
+        <item>목</item>
+        <item>금</item>
+        <item>토</item>
+    </string-array>
+</resources>
