@@ -30,8 +30,6 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 /**
  * 대상을 잘라내지 못했을 때의 화면(Figma `C-103-Error`).
  *
- * [title]·[description]은 실패 원인에 따라 호출부(SegmentationRoute)가 고른다.
- *
  * ⚠️ 재시도 버튼은 디자인 검토를 받으려고 먼저 놓은 시안이다
  * (`specs/2026-09-02-segmentation-module-install.md` 「재시도」 절). 검토 결과에 따라 사라지거나
  * 모양이 바뀔 수 있어 새 컴포넌트를 만들지 않았다.

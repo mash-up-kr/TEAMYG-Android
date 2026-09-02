@@ -5,10 +5,7 @@ import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 
 interface ImageSegmentationRepository {
-    /**
-     * 세그멘테이션 모델을 미리 받아 둔다. 결과를 돌려주지 않는 이유는 부르는 화면이 그 결과로
-     * 할 일이 없어서다 — 실패는 실제로 세그멘테이션을 시도하는 화면이 받는다.
-     */
+    /** 세그멘테이션 모델을 미리 받아 둔다. 결과가 없는 것은 부르는 쪽이 그것으로 할 일이 없어서다 */
     suspend fun prepareSegmentationModule()
 
     /**

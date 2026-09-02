@@ -25,14 +25,9 @@ constructor(
     private val client = ModuleInstall.getClient(context)
 
     /**
-     * 판정에 `SubjectSegmenter`(`SubjectSegmentation.getClient`)를 쓰지 않는다 — 그건 그
-     * 자체로 네이티브 그래프와 EGL 컨텍스트를 띄운다. 판정용 그래프가 닫히는 도중 실제
-     * 세그멘테이션 클라이언트가 또 하나의 그래프를 띄우면서 겹쳐 Galaxy Z Flip 3(Android 15)
-     * 실기기에서 SIGBUS로 죽는 것을 확인했다. `OptionalModuleApi`는 feature 배열만 돌려주면
-     * 되므로 그래프를 띄우지 않고 판정만 한다.
-     *
-     * feature 이름·버전의 근거: 실기기 logcat과
-     * `parfait/specs/2026-09-02-segmentation-module-install.md`.
+     * ⚠️ 판정에 `SubjectSegmenter` 를 쓰지 않는다 — `getClient` 가 네이티브 그래프를 띄워
+     * 실제 세그멘테이션의 그래프와 겹치면 실기기에서 SIGBUS 로 죽는다. feature 이름·버전의
+     * 근거까지 `parfait/specs/2026-09-02-segmentation-module-install.md` 에 있다.
      */
     private val segmentationModule = OptionalModuleApi {
         arrayOf(Feature(SUBJECT_SEGMENTATION_FEATURE, SUBJECT_SEGMENTATION_FEATURE_VERSION))
