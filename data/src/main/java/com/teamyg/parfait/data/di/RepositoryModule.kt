@@ -7,6 +7,8 @@ import com.teamyg.parfait.data.repository.group.ParfaitGroupRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageSegmentationRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageFileRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageUploadRepositoryImpl
+import com.teamyg.parfait.data.repository.image.ModuleInstallGateway
+import com.teamyg.parfait.data.repository.image.PlayServicesModuleInstallGateway
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
@@ -96,4 +98,8 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindToppingDraftRepository(toppingDraftRepositoryImpl: ToppingDraftRepositoryImpl): ToppingDraftRepository
+
+    @Binds
+    @Singleton
+    fun bindModuleInstallGateway(gateway: PlayServicesModuleInstallGateway): ModuleInstallGateway
 }
