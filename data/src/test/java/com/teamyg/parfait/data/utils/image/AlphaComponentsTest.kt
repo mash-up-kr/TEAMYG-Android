@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.util.image
+package com.teamyg.parfait.data.utils.image
 
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.util
+package com.teamyg.parfait.data.utils
 
 import com.teamyg.parfait.domain.util.NonceGenerator
 import java.security.SecureRandom

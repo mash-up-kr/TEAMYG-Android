@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.util.image
+package com.teamyg.parfait.data.utils.image
 
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.currentCoroutineContext
