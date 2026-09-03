@@ -69,7 +69,12 @@ class MainActivity : ComponentActivity() {
         consumePushDeepLink(intent)
     }
 
+    // 소비한 뒤 반드시 비운다 — 안 비우면 화면 회전 없이도 재구성이 일어나는 경로(다크모드
+    // 토글, 폰트·언어 설정 변경, 폴더블·멀티윈도우 리사이즈)에서 onCreate 가 같은 intent 를
+    // 다시 받아 이미 처리한 딥링크를 또 post 하고, MainRoute 가 엉뚱하게 재이동한다.
     private fun consumePushDeepLink(intent: Intent) {
-        intent.toPushDeepLinkOrNull()?.let(pushDeepLinkPublisher::post)
+        val deepLink = intent.toPushDeepLinkOrNull() ?: return
+        setIntent(Intent())
+        pushDeepLinkPublisher.post(deepLink)
     }
 }
