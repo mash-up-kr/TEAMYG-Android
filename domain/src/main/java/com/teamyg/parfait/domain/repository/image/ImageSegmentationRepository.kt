@@ -5,6 +5,9 @@ import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 
 interface ImageSegmentationRepository {
+    /** 세그멘테이션 모델을 미리 받아 둔다. 결과가 없는 것은 부르는 쪽이 그것으로 할 일이 없어서다 */
+    suspend fun prepareSegmentationModule()
+
     /**
      * [uri] 가 가리키는 이미지를 비트맵으로 읽는다.
      *

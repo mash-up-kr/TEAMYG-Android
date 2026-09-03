@@ -12,6 +12,8 @@ import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
 import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSourceImpl
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSource
+import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteDataSource
@@ -70,4 +72,10 @@ interface RemoteDataSourceModule {
     fun bindRemoteImageDownloadDataSource(
         remoteImageDownloadDataSourceImpl: RemoteImageDownloadDataSourceImpl,
     ): RemoteImageDownloadDataSource
+
+    @Binds
+    @Singleton
+    fun bindNotificationRemoteDataSource(
+        notificationRemoteDataSourceImpl: NotificationRemoteDataSourceImpl,
+    ): NotificationRemoteDataSource
 }
