@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -74,7 +77,8 @@ internal fun CanvasImageSaveScreen(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .size(width = 198.dp, height = 352.dp)
+                    .width(width = 198.dp)
+                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .border(width = (0.59).dp, color = YGAtomicColors.Gray.Gray500)
                     .padding(horizontal = YGTheme.layout.padding.padding7),
             ) {
