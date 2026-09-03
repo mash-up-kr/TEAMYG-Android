@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.model.qualifier
+package com.teamyg.parfait.domain.model.qualifier
 
 import javax.inject.Qualifier
 

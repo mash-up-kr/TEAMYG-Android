@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.model.qualifier.ApplicationScope
+import com.teamyg.parfait.domain.model.qualifier.ApplicationScope
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
