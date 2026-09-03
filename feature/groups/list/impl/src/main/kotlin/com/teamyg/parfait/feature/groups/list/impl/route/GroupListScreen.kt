@@ -76,8 +76,11 @@ internal fun GroupListScreen(
     modifier: Modifier = Modifier,
 ) {
     // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
-    // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다
-    val groupList = uiState.groupList.orEmpty()
+    // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다.
+    //
+    // 새로고침을 캐시나 UiState 가 아니라 여기서 비우는 이유: StateFlow 인 캐시는 같은 목록을
+    // 다시 받으면 재방출하지 않아, 비운 값이 그대로 굳는다
+    val groupList = if (uiState.isRefreshing) emptyList() else uiState.groupList.orEmpty()
 
     var settledGroupIds by remember { mutableStateOf(emptySet<GroupId>()) }
 
