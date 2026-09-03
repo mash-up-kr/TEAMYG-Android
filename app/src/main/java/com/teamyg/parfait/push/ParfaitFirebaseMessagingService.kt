@@ -12,6 +12,13 @@ import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
+import com.teamyg.parfait.domain.model.notification.DeviceToken
+import com.teamyg.parfait.domain.model.qualifier.ApplicationScope
+import com.teamyg.parfait.domain.usecase.notification.RegisterDeviceTokenUseCase
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /** 모든 알림에 보내는 채널. [BaseApplication] 이 앱 시작 시 만든다. */
 const val PUSH_NOTIFICATION_CHANNEL_ID = "parfait_default"
@@ -31,7 +38,18 @@ private val pushLogger = Loggers.create("Push")
  * payload(예: 알림 없이 상태만 조용히 갱신)가 스펙에 생기면, 그 분기를 여기 추가해야 한다 —
  * 지금은 처리하지 않는다.
  */
+@AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
+    @Inject
+    lateinit var registerDeviceTokenUseCase: RegisterDeviceTokenUseCase
+
+    // 프로세스 수명 스코프를 쓴다 — 이 서비스는 짧게 살고 onNewToken 직후 곧 onDestroy 될 수
+    // 있어(FCM 전달용 Service 는 오래 안 붙어 있는다), 서비스 스코프를 직접 만들어 쓰면 등록
+    // 네트워크 호출이 끝나기 전에 onDestroy 가 취소해 버릴 수 있다.
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
@@ -46,8 +64,10 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // TODO: 디바이스 토큰 등록 API 스펙이 아직 배포되지 않았다. 확정되면 여기서 서버에 등록한다.
-        pushLogger.i { "새 FCM 토큰을 받았지만 등록 API가 아직 없어 아무 것도 하지 않는다" }
+        applicationScope.launch {
+            registerDeviceTokenUseCase(DeviceToken(token))
+                .onFailure { pushLogger.e(it) { "새 FCM 토큰 등록에 실패했다" } }
+        }
     }
 
     private fun showNotification(
