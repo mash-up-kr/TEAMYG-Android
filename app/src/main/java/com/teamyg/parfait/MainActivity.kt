@@ -13,8 +13,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkPublisher
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.repository.session.SessionEventSource
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,10 +34,7 @@ class MainActivity : ComponentActivity() {
     lateinit var sessionEventSource: SessionEventSource
 
     @Inject
-    lateinit var pushDeepLinkSource: PushDeepLinkSource
-
-    @Inject
-    lateinit var pushDeepLinkPublisher: PushDeepLinkPublisher
+    lateinit var pushDeepLinkEventBus: PushDeepLinkEventBus
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +51,7 @@ class MainActivity : ComponentActivity() {
                     navigator = navigator,
                     entryBuilders = entryBuilders,
                     sessionEventSource = sessionEventSource,
-                    pushDeepLinkSource = pushDeepLinkSource,
+                    pushDeepLinkEventBus = pushDeepLinkEventBus,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -75,6 +71,6 @@ class MainActivity : ComponentActivity() {
     private fun consumePushDeepLink(intent: Intent) {
         val deepLink = intent.toPushDeepLinkOrNull() ?: return
         setIntent(Intent())
-        pushDeepLinkPublisher.post(deepLink)
+        pushDeepLinkEventBus.post(deepLink)
     }
 }

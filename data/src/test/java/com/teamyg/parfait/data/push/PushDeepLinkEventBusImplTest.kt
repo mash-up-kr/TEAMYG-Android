@@ -6,11 +6,11 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class PushDeepLinkBusTest {
+class PushDeepLinkEventBusImplTest {
     @Test
     fun post_beforeSubscribe_stillDelivers() = runTest {
         // Given 아직 아무도 구독하지 않은 버스
-        val bus = PushDeepLinkBus()
+        val bus = PushDeepLinkEventBusImpl()
 
         // When 딥링크를 발행한 뒤에 구독한다
         bus.post(PushDeepLink.AddTopping(groupId = 1L))
@@ -24,7 +24,7 @@ class PushDeepLinkBusTest {
     @Test
     fun post_calledTwice_deliversOnlyTheLatest() = runTest {
         // Given 알림을 연달아 두 번 탭한 상황
-        val bus = PushDeepLinkBus()
+        val bus = PushDeepLinkEventBusImpl()
         bus.post(PushDeepLink.AddTopping(groupId = 1L))
         bus.post(PushDeepLink.Reminder)
 

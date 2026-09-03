@@ -17,7 +17,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.repository.session.SessionEventSource
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
@@ -28,7 +28,7 @@ fun MainRoute(
     navigator: Navigator,
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
     sessionEventSource: SessionEventSource,
-    pushDeepLinkSource: PushDeepLinkSource,
+    pushDeepLinkEventBus: PushDeepLinkEventBus,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
@@ -46,7 +46,7 @@ fun MainRoute(
     // 딥링크도 세션 사건과 같은 이유로 여기 한 곳에서만 수집한다. 로그인 전에 탭했다면
     // 이 collect 가 시작되는 시점(로그인·부트스트랩이 끝난 뒤) 까지 채널에 남아 있다가 온다.
     LaunchedEffect(Unit) {
-        pushDeepLinkSource.deepLinks.collect { deepLink ->
+        pushDeepLinkEventBus.deepLinks.collect { deepLink ->
             when (deepLink) {
                 is PushDeepLink.AddTopping -> navigator.goTo(
                     destination = NavKeyCanvasMain(groupId = deepLink.groupId),

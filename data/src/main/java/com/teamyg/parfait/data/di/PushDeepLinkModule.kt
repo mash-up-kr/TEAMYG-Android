@@ -1,8 +1,7 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.push.PushDeepLinkBus
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkPublisher
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
+import com.teamyg.parfait.data.push.PushDeepLinkEventBusImpl
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -14,9 +13,5 @@ import javax.inject.Singleton
 object PushDeepLinkModule {
     @Provides
     @Singleton
-    fun providePushDeepLinkSource(pushDeepLinkBus: PushDeepLinkBus): PushDeepLinkSource = pushDeepLinkBus
-
-    @Provides
-    @Singleton
-    fun providePushDeepLinkPublisher(pushDeepLinkBus: PushDeepLinkBus): PushDeepLinkPublisher = pushDeepLinkBus
+    fun providePushDeepLinkEventBus(impl: PushDeepLinkEventBusImpl): PushDeepLinkEventBus = impl
 }
