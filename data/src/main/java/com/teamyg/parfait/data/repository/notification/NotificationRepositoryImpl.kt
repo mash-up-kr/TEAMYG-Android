@@ -9,8 +9,7 @@ import javax.inject.Inject
 class NotificationRepositoryImpl @Inject constructor(
     private val notificationRemoteDataSource: NotificationRemoteDataSource,
 ) : NotificationRepository {
-    override suspend fun registerDeviceToken(deviceToken: DeviceToken): Result<Unit> =
-        notificationRemoteDataSource
-            .registerDeviceToken(deviceToken)
-            .mapErrorToAppError()
+    override suspend fun registerDeviceToken(deviceToken: DeviceToken): Result<Unit> = notificationRemoteDataSource
+        .registerDeviceToken(deviceToken)
+        .mapErrorToAppError()
 }

@@ -10,8 +10,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class FirebaseDeviceTokenProvider @Inject constructor() : DeviceTokenProvider {
-    override suspend fun currentToken(): DeviceToken? =
-        FirebaseMessaging.getInstance().token.await()?.let(::DeviceToken)
+    override suspend fun currentToken(): DeviceToken? = FirebaseMessaging
+        .getInstance()
+        .token
+        .await()
+        ?.let(::DeviceToken)
 
     /**
      * `com.google.android.gms:play-services-tasks` 의 [Task] 를 suspend 로 바꾼다.
