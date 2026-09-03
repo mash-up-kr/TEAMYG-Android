@@ -26,12 +26,15 @@ import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.CompleteCanvasTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetCanvasTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -74,6 +77,8 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
+    private val getCanvasTutorialVisible: GetCanvasTutorialVisibleFlowUseCase = mockk()
+    private val completeCanvasTutorial: CompleteCanvasTutorialUseCase = mockk(relaxed = true)
 
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxUnitFun = true)
 
@@ -82,6 +87,9 @@ class CanvasMainViewModelTest {
 
     /** 폴러의 갱신 실패 신호. 캐시는 실패했을 때 아무것도 방출하지 않아 이 축이 따로 있다 */
     private val refreshFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
+    private val canvasTutorialVisible = MutableStateFlow(false)
 
     private val today = parfaitToday()
 
@@ -114,6 +122,7 @@ class CanvasMainViewModelTest {
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
+        every { getCanvasTutorialVisible() } returns canvasTutorialVisible
     }
 
     @After
@@ -137,6 +146,8 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
+        getCanvasTutorialVisibleFlowUseCase = getCanvasTutorialVisible,
+        completeCanvasTutorialUseCase = completeCanvasTutorial,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -149,6 +160,61 @@ class CanvasMainViewModelTest {
         backgroundScope.launch { viewModel.state.collect { } }
         viewModel.processIntent(CanvasMainIntent.Enter)
         advanceUntilIdle()
+    }
+
+    @Test
+    fun tutorial_onFirstLaunch_opensAtTheFirstStep() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아직 튜토리얼을 보지 않은 사용자
+        canvasTutorialVisible.value = true
+
+        // When 캔버스 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 첫 장이 뜬다
+        assertEquals(CanvasTutorialStep.first, viewModel.state.value.tutorialStep)
+    }
+
+    @Test
+    fun tutorial_alreadySeen_doesNotOpen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 튜토리얼을 끝낸 사용자(기본 스텁)
+
+        // When 캔버스 화면이 열린다
+        val viewModel = enteredViewModel()
+
+        // Then 아무것도 덮지 않는다
+        assertNull(viewModel.state.value.tutorialStep)
+    }
+
+    @Test
+    fun tutorial_clickingNextBeforeTheLastStep_doesNotMarkItSeen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 첫 장이 떠 있다
+        canvasTutorialVisible.value = true
+        val viewModel = enteredViewModel()
+
+        // When 칩을 한 번 누른다
+        viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext)
+        advanceUntilIdle()
+
+        // Then 다음 장으로 넘어갈 뿐, 중간에 끊긴 튜토리얼을 봤다고 남기지 않는다
+        assertEquals(CanvasTutorialStep.first.next, viewModel.state.value.tutorialStep)
+        coVerify(exactly = 0) { completeCanvasTutorial() }
+    }
+
+    @Test
+    fun tutorial_clickingNextOnTheLastStep_closesItAndMarksItSeen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 튜토리얼이 떠 있다
+        canvasTutorialVisible.value = true
+        val viewModel = enteredViewModel()
+
+        // When 마지막 장까지 칩을 눌러 넘긴다
+        repeat(CanvasTutorialStep.totalCount) {
+            viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext)
+            advanceUntilIdle()
+        }
+
+        // Then 튜토리얼이 닫히고, 다음 진입부터 뜨지 않도록 저장한다
+        assertNull(viewModel.state.value.tutorialStep)
+        coVerify(exactly = 1) { completeCanvasTutorial() }
     }
 
     @Test

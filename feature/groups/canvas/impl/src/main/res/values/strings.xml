@@ -83,4 +83,14 @@
         <item>목</item>
         <item>금</item>
         <item>토</item>
-    </string-array></resources>
+    </string-array>
+
+    <!-- 앱 설치 후 캔버스 첫 진입에서 1회만 도는 튜토리얼 -->
+    <string name="canvas_tutorial_step">%1$d/%2$d</string>
+    <string name="canvas_tutorial_calendar_title">지난 캔버스 보기</string>
+    <string name="canvas_tutorial_calendar_description">상단 날짜 버튼을 눌러\n지난 날의 캔버스를 다시 볼 수 있어요</string>
+    <string name="canvas_tutorial_topping_add_title">캔버스 토핑 추가</string>
+    <string name="canvas_tutorial_topping_add_description">캔버스 하단 토핑 추가 버튼을 눌러\n카메라 또는 갤러리에서 사진을 업로드 할 수 있어요</string>
+    <string name="canvas_tutorial_canvas_edit_title">캔버스 편집</string>
+    <string name="canvas_tutorial_canvas_edit_description">캔버스 편집 버튼을 눌러\n배경과 토핑을 자유롭게 꾸밀 수 있어요</string>
+</resources>
