@@ -11,7 +11,11 @@ import com.teamyg.parfait.domain.model.push.PushNotificationType
  */
 object PushDeepLinkParser {
     /** `route`/`groupId`/`type` 이 알려진 푸시 딥링크 모양이 아니면(일반 실행 등) `null`. */
-    fun parse(route: String?, groupId: String?, type: String?): PushDeepLink? = when (route) {
+    fun parse(
+        route: String?,
+        groupId: String?,
+        type: String?,
+    ): PushDeepLink? = when (route) {
         "canvas" -> {
             val id = groupId?.toLongOrNull()
             if (id == null || id <= 0) null else PushDeepLink.AddTopping(id)
