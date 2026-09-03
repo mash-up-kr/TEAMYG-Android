@@ -12,19 +12,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.addLastModifiedToFileCacheKey
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
@@ -83,7 +85,13 @@ internal fun CanvasImageSaveScreen(
                     .padding(horizontal = YGTheme.layout.padding.padding7),
             ) {
                 AsyncImage(
-                    model = imagePath,
+                    model = ImageRequest
+                        .Builder(LocalContext.current)
+                        .data(imagePath)
+                        // 캡처 파일명이 고정이라(CanvasCaptureCache) 경로만으로는 캐시 키가
+                        // 안 갈린다 — 다시 저장한 캔버스를 열어도 이전 캡처가 뜰 수 있다
+                        .addLastModifiedToFileCacheKey(true)
+                        .build(),
                     contentDescription = stringResource(R.string.canvas_image_save_preview_content_description),
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
