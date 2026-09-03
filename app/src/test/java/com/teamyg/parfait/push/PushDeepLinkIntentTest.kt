@@ -1,7 +1,7 @@
-package com.teamyg.parfait.pushdeeplink
+package com.teamyg.parfait.push
 
 import android.content.Intent
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test

@@ -13,10 +13,10 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkPublisher
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkPublisher
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
 import com.teamyg.parfait.domain.repository.session.SessionEventSource
-import com.teamyg.parfait.pushdeeplink.toPushDeepLinkOrNull
+import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

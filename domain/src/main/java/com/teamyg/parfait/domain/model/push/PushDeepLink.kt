@@ -1,4 +1,4 @@
-package com.teamyg.parfait.domain.model.pushdeeplink
+package com.teamyg.parfait.domain.model.push
 
 /**
  * 푸시 알림을 탭했을 때 가야 할 목적지. 화면 하나가 결정할 수 없어 앱 루트에서 다룬다.

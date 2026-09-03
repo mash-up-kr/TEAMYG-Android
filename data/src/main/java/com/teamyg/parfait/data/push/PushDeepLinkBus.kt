@@ -1,9 +1,9 @@
-package com.teamyg.parfait.data.pushdeeplink
+package com.teamyg.parfait.data.push
 
 import com.teamyg.parfait.data.utils.sourceLogger
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkPublisher
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
+import com.teamyg.parfait.domain.model.push.PushDeepLink
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkPublisher
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow

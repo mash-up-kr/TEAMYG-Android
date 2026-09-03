@@ -1,7 +1,7 @@
-package com.teamyg.parfait.pushdeeplink
+package com.teamyg.parfait.push
 
 import android.content.Intent
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 
 /**
  * 키 이름을 FCM `data` payload 그대로 쓴다(FCM 페이로드 스펙 v1 §3).

@@ -1,7 +1,7 @@
-package com.teamyg.parfait.data.pushdeeplink
+package com.teamyg.parfait.data.push
 
 import app.cash.turbine.test
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

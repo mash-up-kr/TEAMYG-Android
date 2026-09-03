@@ -1,6 +1,6 @@
-package com.teamyg.parfait.domain.repository.pushdeeplink
+package com.teamyg.parfait.domain.repository.push
 
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 
 /**
  * 푸시 딥링크 발행구. [PushDeepLinkSource] 와 나눠 둔 이유: 발행자(Android `Intent` 를 처음

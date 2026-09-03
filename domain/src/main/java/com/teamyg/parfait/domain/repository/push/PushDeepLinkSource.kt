@@ -1,6 +1,6 @@
-package com.teamyg.parfait.domain.repository.pushdeeplink
+package com.teamyg.parfait.domain.repository.push
 
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 import kotlinx.coroutines.flow.Flow
 
 /**

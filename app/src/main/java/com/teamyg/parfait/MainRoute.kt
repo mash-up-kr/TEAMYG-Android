@@ -15,9 +15,9 @@ import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
-import com.teamyg.parfait.domain.model.pushdeeplink.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
 import com.teamyg.parfait.domain.repository.session.SessionEventSource
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList

@@ -1,8 +1,8 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.pushdeeplink.PushDeepLinkBus
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkPublisher
-import com.teamyg.parfait.domain.repository.pushdeeplink.PushDeepLinkSource
+import com.teamyg.parfait.data.push.PushDeepLinkBus
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkPublisher
+import com.teamyg.parfait.domain.repository.push.PushDeepLinkSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
