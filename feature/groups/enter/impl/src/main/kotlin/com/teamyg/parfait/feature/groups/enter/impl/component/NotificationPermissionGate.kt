@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -21,7 +22,10 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
  * [onFinished] 는 허용·거부·"나중에" 세 갈래 모두에서 호출된다.
  */
 @Composable
-internal fun NotificationPermissionGate(onFinished: () -> Unit) {
+internal fun NotificationPermissionGate(
+    onFinished: () -> Unit,
+    viewModel: NotificationPermissionViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
     val alreadyGranted = remember {
         ContextCompat.checkSelfPermission(
@@ -37,7 +41,12 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-    ) { onFinished() }
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.onNotificationPermissionGranted()
+        }
+        onFinished()
+    }
 
     YGModalPopup(
         title = stringResource(R.string.notification_permission_rationale_title),
