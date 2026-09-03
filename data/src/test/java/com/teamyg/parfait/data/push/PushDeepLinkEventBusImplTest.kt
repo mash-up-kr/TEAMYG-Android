@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.push
 
 import app.cash.turbine.test
 import com.teamyg.parfait.domain.model.push.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushNotificationType
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,12 +27,12 @@ class PushDeepLinkEventBusImplTest {
         // Given 알림을 연달아 두 번 탭한 상황
         val bus = PushDeepLinkEventBusImpl()
         bus.post(PushDeepLink.AddTopping(groupId = 1L))
-        bus.post(PushDeepLink.Reminder)
+        bus.post(PushDeepLink.Reminder(type = PushNotificationType.REMIND_AM))
 
         // When 구독한다
         bus.deepLinks.test {
             // Then 마지막 것 하나로 접힌다 — 화면은 결국 한 곳에만 도착해야 한다
-            assertEquals(PushDeepLink.Reminder, awaitItem())
+            assertEquals(PushDeepLink.Reminder(type = PushNotificationType.REMIND_AM), awaitItem())
             expectNoEvents()
         }
     }

@@ -52,7 +52,7 @@ fun MainRoute(
                     destination = NavKeyCanvasMain(groupId = deepLink.groupId),
                 )
 
-                PushDeepLink.Reminder -> navigator.goTo(destination = NavKeyGroupList)
+                is PushDeepLink.Reminder -> navigator.goTo(destination = NavKeyGroupList)
             }
         }
     }
