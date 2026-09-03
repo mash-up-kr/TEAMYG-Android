@@ -27,12 +27,12 @@ class PushDeepLinkEventBusImplTest {
         // Given 알림을 연달아 두 번 탭한 상황
         val bus = PushDeepLinkEventBusImpl()
         bus.post(PushDeepLink.AddTopping(groupId = 1L))
-        bus.post(PushDeepLink.Reminder(type = PushNotificationType.REMIND_AM))
+        bus.post(PushDeepLink.GroupList(type = PushNotificationType.REMIND_AM))
 
         // When 구독한다
         bus.deepLinks.test {
             // Then 마지막 것 하나로 접힌다 — 화면은 결국 한 곳에만 도착해야 한다
-            assertEquals(PushDeepLink.Reminder(type = PushNotificationType.REMIND_AM), awaitItem())
+            assertEquals(PushDeepLink.GroupList(type = PushNotificationType.REMIND_AM), awaitItem())
             expectNoEvents()
         }
     }

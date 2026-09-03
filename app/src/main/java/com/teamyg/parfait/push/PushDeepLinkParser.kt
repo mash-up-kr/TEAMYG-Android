@@ -17,7 +17,7 @@ object PushDeepLinkParser {
             if (id == null || id <= 0) null else PushDeepLink.AddTopping(id)
         }
 
-        "group" -> PushDeepLink.Reminder(type = type.toPushNotificationType())
+        "group" -> PushDeepLink.GroupList(type = type.toPushNotificationType())
 
         else -> null
     }

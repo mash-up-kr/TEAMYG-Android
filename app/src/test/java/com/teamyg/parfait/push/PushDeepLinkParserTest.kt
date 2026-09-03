@@ -53,39 +53,39 @@ class PushDeepLinkParserTest {
     }
 
     @Test
-    fun parse_routeGroupWithTypeRemindAm_returnsReminderWithThatType() {
+    fun parse_routeGroupWithTypeRemindAm_returnsGroupListWithThatType() {
         // Given, When route=group, type=REMIND_AM
         val result = PushDeepLinkParser.parse(route = "group", groupId = null, type = "REMIND_AM")
 
-        // Then type 을 그대로 들고 있는 Reminder — 라우팅엔 안 쓰지만 탭 분석 등에 남겨 둔다
-        assertEquals(PushDeepLink.Reminder(type = PushNotificationType.REMIND_AM), result)
+        // Then type 을 그대로 들고 있는 GroupList — 라우팅엔 안 쓰지만 탭 분석 등에 남겨 둔다
+        assertEquals(PushDeepLink.GroupList(type = PushNotificationType.REMIND_AM), result)
     }
 
     @Test
-    fun parse_routeGroupWithTypeRemindPm_returnsReminderWithThatType() {
+    fun parse_routeGroupWithTypeRemindPm_returnsGroupListWithThatType() {
         // Given, When route=group, type=REMIND_PM
         val result = PushDeepLinkParser.parse(route = "group", groupId = null, type = "REMIND_PM")
 
         // Then
-        assertEquals(PushDeepLink.Reminder(type = PushNotificationType.REMIND_PM), result)
+        assertEquals(PushDeepLink.GroupList(type = PushNotificationType.REMIND_PM), result)
     }
 
     @Test
-    fun parse_routeGroupWithUnknownType_returnsReminderWithNullType() {
+    fun parse_routeGroupWithUnknownType_returnsGroupListWithNullType() {
         // Given, When type 이 앞으로 서버가 추가할 값이라 지금 모르는 문자열
         val result = PushDeepLinkParser.parse(route = "group", groupId = null, type = "REMIND_NOON")
 
         // Then 라우팅 자체는 route 만으로 이미 결정돼 있어 실패하지 않는다
-        assertEquals(PushDeepLink.Reminder(type = null), result)
+        assertEquals(PushDeepLink.GroupList(type = null), result)
     }
 
     @Test
-    fun parse_routeGroupWithMissingType_returnsReminderWithNullType() {
+    fun parse_routeGroupWithMissingType_returnsGroupListWithNullType() {
         // Given, When type 자체가 없음
         val result = PushDeepLinkParser.parse(route = "group", groupId = null, type = null)
 
         // Then
-        assertEquals(PushDeepLink.Reminder(type = null), result)
+        assertEquals(PushDeepLink.GroupList(type = null), result)
     }
 
     @Test

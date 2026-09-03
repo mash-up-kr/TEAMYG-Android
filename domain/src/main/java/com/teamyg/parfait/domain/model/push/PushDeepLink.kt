@@ -18,6 +18,8 @@ sealed interface PushDeepLink {
         override val type: PushNotificationType get() = PushNotificationType.TOPPING
     }
 
-    /** P-02/P-03 리마인드 알림. 그룹 목록으로 연다 — 어느 쪽이든 목적지는 같다. */
-    data class Reminder(override val type: PushNotificationType?) : PushDeepLink
+    /**
+     * P-02/P-03 리마인드 알림. 그룹 목록으로 연다.
+     */
+    data class GroupList(override val type: PushNotificationType?) : PushDeepLink
 }
