@@ -70,3 +70,7 @@ GET {{base_url}}/actuator/health
     client.log("parfait_id       : " + (client.global.get("parfait_id") || "(비어 있음)"));
     client.log("parfait_image_id : " + (client.global.get("parfait_image_id") || "(비어 있음)"));
 %}
+
+# fcm_project_id·fcm_access_token·fcm_device_token 은 여기서 다루지 않는다 - 응답에서 뽑는
+# 값이 아니라 손으로 넣는 값이라 global 에 들어가지 않는다(http-client.private.env.json 에서
+# 그대로 온다). 채워졌는지는 fcm-test.http 를 실행해 응답으로 확인한다 - README 8-4 참고.

@@ -1,0 +1,307 @@
+### FCM 푸시 직접 발송 (서버를 거치지 않는다)
+#
+# 여기 요청은 우리 서버가 아니라 **FCM v1 API 로 직접** 나간다. 서버가 실제로 보내는 것과
+# 같은 모양의 메시지를 손으로 쏴서, 앱이 그것을 어떻게 받는지 확인하는 용도다.
+#
+# 서버 발송 경로는 "토핑을 새로 배치하면 그룹의 나머지 구성원에게 나간다" 하나뿐이라,
+# 앱만 손볼 때마다 토핑을 올리고 다른 계정으로 기다릴 수는 없다. 이 파일이 그 자리를 대신한다.
+#
+# ⚠️ **지금 develop 에는 받을 쪽이 없다.** firebase-messaging 의존도, 수신 서비스도,
+#    알림 채널 생성도 0건이다(2026-08-22 에 걷어냈고 되살리는 작업이 아직 머지 전이다).
+#    그래서 이 파일을 지금 그대로 돌리면 이렇게 된다.
+#      - fcm_device_token 을 앱 로그에서 얻을 수 없다(Firebase Console 로 발급해야 한다)
+#      - 채널 parfait_default 가 없어 알림이 표시되지 않는다
+#      - 탭해도 딥링크가 동작하지 않는다
+#    수신부가 develop 에 들어온 뒤에 이 파일이 온전히 쓰인다. 그 전에는 서버가 보내는
+#    페이로드가 무엇인지 읽는 용도로 본다.
+#
+# ⚠️ 서버 계약과 **어긋나게 보내는 것도 가능하다.** 아래 3·4·5번이 그런 대조군이고,
+#    1·2번만이 서버가 실제로 만드는 모양이다. 새 필드를 추가할 때는 서버 코드
+#    (NotificationMessageFactory · FcmNotificationSender)를 정본으로 삼는다.
+#
+# ---------------------------------------------------------------------------
+# 준비 (자세한 절차는 README "FCM 푸시 테스트" 절)
+#
+# 1. fcm_project_id      - Firebase 프로젝트 id. google-services.json 이 gitignore 라
+#                          이 저장소에 없다. http-client.private.env.json 에 넣는다.
+# 2. fcm_access_token    - Google OAuth 액세스 토큰(유효기간 1시간).
+#                          gcloud auth application-default print-access-token
+# 3. fcm_device_token    - 받을 기기의 FCM 등록 토큰. 앱 로그 또는 Firebase Console.
+#
+# ⚠️ fcm_access_token 은 서버 access_token 과 다른 것이다. 이름이 비슷하니 헷갈리지 말 것.
+# ---------------------------------------------------------------------------
+
+### 1. 토핑 등록 알림 - 서버가 실제로 보내는 모양
+# NotificationMessageFactory.toppingPlaced + FcmNotificationSender 조립을 그대로 옮겼다.
+#   - notification 과 data 를 **둘 다** 싣는다. 그래서 앱이 백그라운드·종료 상태면
+#     시스템이 알림을 직접 띄우고 앱 코드는 돌지 않는다(포그라운드에서만 onMessageReceived).
+#   - data 값은 전부 문자열이다. groupId 가 숫자여도 "1" 로 온다.
+#   - channel_id 는 앱이 만들어 둔 채널과 같아야 한다. 다르면 발송은 성공인데 표시가 안 된다.
+< {%
+    request.variables.set("apns_expiration", Math.floor(Date.now() / 1000) + 21600);
+%}
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "notification": {
+      "title": "테스트그룹 파르페에 체리 얹을 타이밍!",
+      "body": "부지런한 수달님이 새 토핑을 쌓았어요"
+    },
+    "data": {
+      "type": "TOPPING",
+      "route": "canvas",
+      "groupId": "{{group_id}}",
+      "date": "2026-09-04"
+    },
+    "android": {
+      "priority": "high",
+      "ttl": "21600s",
+      "notification": {
+        "channel_id": "parfait_default"
+      }
+    },
+    "apns": {
+      "headers": {
+        "apns-priority": "10",
+        "apns-expiration": "{{apns_expiration}}"
+      },
+      "payload": {
+        "aps": {
+          "sound": "default"
+        }
+      }
+    }
+  }
+}
+
+> {%
+    client.test("200 발송 접수", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("messageId=" + response.body.name);
+%}
+
+### 2. 토핑 등록 알림 - 작성자가 그룹을 나간 경우
+# 서버는 발송 직전에 작성자를 다시 조회한다. 이미 나갔으면 닉네임 대신 익명 문구를 쓴다.
+# 알림 자체는 취소되지 않는다 - 취소되는 것은 그룹 삭제·수신자 탈퇴·수신자 토큰 0건 셋뿐이다.
+< {%
+    request.variables.set("apns_expiration", Math.floor(Date.now() / 1000) + 21600);
+%}
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "notification": {
+      "title": "테스트그룹 파르페에 체리 얹을 타이밍!",
+      "body": "누군가 새 토핑을 쌓았어요"
+    },
+    "data": {
+      "type": "TOPPING",
+      "route": "canvas",
+      "groupId": "{{group_id}}",
+      "date": "2026-09-04"
+    },
+    "android": {
+      "priority": "high",
+      "ttl": "21600s",
+      "notification": {
+        "channel_id": "parfait_default"
+      }
+    },
+    "apns": {
+      "headers": {
+        "apns-priority": "10",
+        "apns-expiration": "{{apns_expiration}}"
+      },
+      "payload": {
+        "aps": {
+          "sound": "default"
+        }
+      }
+    }
+  }
+}
+
+> {%
+    client.test("200 발송 접수", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}
+
+### 3. (대조용) 채널 id 가 앱과 다를 때 - 발송은 성공인데 알림이 안 뜬다
+# 서버가 channel_id 를 못 박아 보내므로, 같은 id 의 채널이 앱에 없으면 표시되지 않는다.
+# 그런데 이 요청의 응답은 200 이다 - **보내는 쪽에서는 실패로 보이지 않는다.**
+# 서버·앱 어느 쪽 테스트도 상대편 상수를 모르므로, 이 어긋남은 실기기로만 드러난다.
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "notification": {
+      "title": "채널 id 가 틀린 알림",
+      "body": "이 알림은 화면에 뜨지 않아야 정상이다"
+    },
+    "data": {
+      "type": "TOPPING",
+      "route": "canvas",
+      "groupId": "{{group_id}}",
+      "date": "2026-09-04"
+    },
+    "android": {
+      "priority": "high",
+      "notification": {
+        "channel_id": "존재하지_않는_채널"
+      }
+    }
+  }
+}
+
+> {%
+    client.test("200 이지만 표시는 안 된다", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+    client.log("발송은 접수됐다. 기기에 알림이 뜨면 채널 id 검사가 헐거운 것이니 확인할 것");
+%}
+
+### 4. (대조용) data-only - 서버는 이렇게 보내지 않는다
+# notification 블록이 없으면 시스템이 알림을 만들지 않고, 앱이 백그라운드여도
+# onMessageReceived 가 불린다. 앱 수신 코드를 직접 밟아 보고 싶을 때 쓴다.
+#
+# ⚠️ 앱이 이 갈래를 어떻게 다루는지는 수신부 구현에 달렸다. 알림을 직접 만들지 않는
+#    구현이라면 이 요청으로는 아무것도 뜨지 않는 것이 정상이고, 코드가 도는지는 로그로 본다.
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "data": {
+      "type": "TOPPING",
+      "route": "canvas",
+      "groupId": "{{group_id}}",
+      "date": "2026-09-04"
+    },
+    "android": {
+      "priority": "high"
+    }
+  }
+}
+
+> {%
+    client.test("200 발송 접수", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}
+
+### 5. (대조용) 모르는 route - 앱이 딥링크로 읽지 않아야 한다
+# 알림은 뜨지만 탭해도 특정 화면으로 가지 않고 앱만 열리는 것이 정상이다.
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "notification": {
+      "title": "모르는 route",
+      "body": "탭해도 특정 화면으로 가지 않아야 한다"
+    },
+    "data": {
+      "type": "UNKNOWN_TYPE",
+      "route": "somewhere",
+      "groupId": "{{group_id}}"
+    },
+    "android": {
+      "priority": "high",
+      "notification": {
+        "channel_id": "parfait_default"
+      }
+    }
+  }
+}
+
+> {%
+    client.test("200 발송 접수", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}
+
+### 6. (대조용) 같은 알림 두 번 - 중복 수신이 어떻게 보이는지
+# 서버는 최소 한 번(at-least-once) 보장이라 같은 알림이 두 번 도착할 수 있다.
+# 5번과 이 요청을 연달아 실행해 알림이 두 개 쌓이는지, 하나로 합쳐지는지 확인한다.
+#
+# 서버가 보내는 data 에는 **안정적인 중복 판별 키가 없다**(토핑 id 가 실리지 않는다).
+# 알림 id 를 messageId 로 만들면 두 개로 쌓이고, groupId+date 로 만들면 같은 날 다른 토핑
+# 알림까지 덮어쓴다 - 어느 쪽을 택할지는 앱 혼자 정할 수 없는 자리다.
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "{{fcm_device_token}}",
+    "notification": {
+      "title": "테스트그룹 파르페에 체리 얹을 타이밍!",
+      "body": "부지런한 수달님이 새 토핑을 쌓았어요"
+    },
+    "data": {
+      "type": "TOPPING",
+      "route": "canvas",
+      "groupId": "{{group_id}}",
+      "date": "2026-09-04"
+    },
+    "android": {
+      "priority": "high",
+      "ttl": "21600s",
+      "notification": {
+        "channel_id": "parfait_default"
+      }
+    }
+  }
+}
+
+> {%
+    client.test("200 발송 접수", function() {
+        client.assert(response.status === 200, "status: " + response.status);
+    });
+%}
+
+### 7. (대조용) 죽은 토큰 → 404 NOT_FOUND
+# 서버는 이 응답(UNREGISTERED 등)을 받으면 그 토큰 행을 스스로 지운다.
+# 여기서는 서버를 거치지 않으므로 DB 는 그대로다 - 응답 모양만 확인하는 요청이다.
+POST https://fcm.googleapis.com/v1/projects/{{fcm_project_id}}/messages:send
+Authorization: Bearer {{fcm_access_token}}
+Content-Type: application/json
+
+{
+  "message": {
+    "token": "존재하지-않는-토큰",
+    "notification": {
+      "title": "죽은 토큰",
+      "body": "이 요청은 실패해야 정상이다"
+    },
+    "android": {
+      "priority": "high",
+      "notification": {
+        "channel_id": "parfait_default"
+      }
+    }
+  }
+}
+
+> {%
+    client.test("4xx 실패", function() {
+        client.assert(response.status >= 400, "status: " + response.status);
+    });
+    client.log("error=" + JSON.stringify(response.body.error));
+%}
