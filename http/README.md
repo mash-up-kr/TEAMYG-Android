@@ -33,7 +33,11 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
     "image_upload_url": "",
 
     "parfait_image_id": "",
-    "parfait_id": ""
+    "parfait_id": "",
+
+    "fcm_project_id": "",
+    "fcm_access_token": "",
+    "fcm_device_token": ""
   }
 }
 ```
@@ -42,6 +46,9 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 > 각 `.http` 파일의 응답 핸들러가 `client.global.set`으로 런타임에 채운다. 여기 구조로 적어 두는 것은
 > "이 체계에 어떤 변수가 있는가"를 한곳에서 보기 위해서고, `_reset.http`가 도메인별로 비우는 목록과
 > 짝을 이룬다.
+>
+> 반면 **`fcm_*` 셋은 손으로 채운다.** 응답에서 뽑을 수 있는 값이 아니고 출처가 서버 API 밖이다
+> (Firebase 프로젝트·Google OAuth·기기). 채우는 방법은 아래 [FCM 푸시 테스트](#8-fcm-푸시-테스트).
 
 ### 두 가지 사용법
 
@@ -80,6 +87,8 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 | `images.http` | 이미지 업로드 URL 발급 · 업로드 확인(**2번 요청만 서버가 아니라 S3로 나간다**) |
 | `users.http` | 내 계정 조회 · 전역 닉네임 변경 · **탈퇴**(선행: `auth.http`만) |
 | `parfait-image.http` | 토핑 배치 확정 · 위치/크기/각도 수정 · **테두리 수정** · **삭제**(**선행이 넷** — `auth.http` → `parfait-group.http` → `images.http` → `parfait.http`) |
+| `notifications.http` | 기기 FCM 토큰 등록(선행: `auth.http`). 등록 해제는 서버에 없다 |
+| `fcm-test.http` | **서버가 아니라 FCM으로 직접** 푸시를 쏜다 — 서버가 보내는 것과 같은 모양을 재현해 앱 수신을 확인한다([아래](#8-fcm-푸시-테스트)) |
 
 **권장 순서**: `auth.http` 1 → `policy.http` 1 → `auth.http` 2 → `parfait-group.http` 2(생성) → 나머지 → `auth.http` 4(로그아웃)
 
@@ -222,7 +231,101 @@ Android Studio 내장 HTTP Client로 서버 API를 직접 호출한다. 스웨�
 
 ---
 
-## 8. 파일 구조
+## 8. FCM 푸시 테스트
+
+서버는 **토핑이 새로 배치되면** 그 그룹의 나머지 구성원에게 푸시를 보낸다(재배치는 보내지 않는다).
+앱 쪽을 고칠 때마다 토핑을 올리고 다른 계정으로 기다릴 수는 없으므로, `fcm-test.http`가
+**서버가 만드는 것과 같은 모양의 메시지를 FCM으로 직접** 쏜다.
+
+두 파일의 역할이 다르다.
+
+| 파일 | 나가는 곳 | 무엇을 확인하나 |
+|---|---|---|
+| `notifications.http` | 우리 서버 | 이 기기의 토큰이 서버에 등록되는가 |
+| `fcm-test.http` | FCM (서버를 거치지 않음) | 앱이 알림을 어떻게 표시·처리하는가 |
+
+> ⚠️ **지금 `develop`에는 받을 쪽이 없다.** `firebase-messaging` 의존도, 수신 서비스도, 알림 채널
+> 생성도 0건이다 — 2026-08-22에 걷어냈고 되살리는 작업이 아직 머지 전이다. 그래서 `fcm-test.http`를
+> 지금 돌리면 **발송은 200인데 기기에는 아무것도 뜨지 않는다.** `fcm_device_token`도 앱 로그에서
+> 얻을 수 없어 Firebase Console로 발급해야 한다. 수신부가 들어오기 전까지는 **서버가 어떤 페이로드를
+> 보내는지 읽는 용도**로 본다.
+
+### 8-1. 준비 — 변수 셋
+
+**전부 `http-client.private.env.json`에 넣는다.** 커밋되는 `http-client.env.json`에는 빈 값만 둔다.
+
+**`fcm_project_id`** — Firebase 프로젝트 id다. `google-services.json`이 gitignore라 이 저장소에는
+없다. 그 파일의 `project_info.project_id`를 보거나 Firebase Console 프로젝트 설정에서 확인한다.
+
+**`fcm_access_token`** — Google OAuth 액세스 토큰이고 **유효기간이 1시간**이다.
+
+```bash
+# 1) gcloud 설치 (macOS)
+brew install --cask google-cloud-sdk
+
+# 2) 서비스 계정 키를 받아 지정한다
+#    Firebase Console → 프로젝트 설정 → 서비스 계정 → "새 비공개 키 생성"
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+
+# 3) 토큰 발급
+gcloud auth application-default print-access-token
+```
+
+⚠️ **서비스 계정 키 JSON은 저장소 안에 두지 않는다.** 이 저장소는 공개다.
+
+⚠️ **`access_token`(서버)과 다른 값이다.** 이름이 비슷하니 붙여넣을 때 주의한다.
+
+**`fcm_device_token`** — 알림을 받을 기기의 FCM 등록 토큰이다. 앱에 수신부가 붙어 있으면
+`onNewToken` 로그에서 뽑고, 없으면 Firebase Console에서 테스트 토큰을 발급받는다.
+
+### 8-2. 페이로드는 서버 코드가 정본이다
+
+`fcm-test.http`의 1·2번이 서버가 실제로 만드는 모양이고, 3번 이후는 **일부러 어긋나게 보내는
+대조군**이다. 필드를 고칠 때는 서버 `NotificationMessageFactory`(문구·`data` 키)와
+`FcmNotificationSender`(플랫폼 봉투)를 기준으로 삼는다.
+
+| 자리 | 값 |
+|---|---|
+| `notification.title` | `{그룹명} 파르페에 체리 얹을 타이밍!` |
+| `notification.body` | `{작성자 닉네임}님이 새 토핑을 쌓았어요` (작성자가 나갔으면 `누군가 …`) |
+| `data.type` | `TOPPING` |
+| `data.route` | `canvas` |
+| `data.groupId` · `data.date` | 그룹 id · `yyyy-MM-dd` — **둘 다 문자열로 온다** |
+| `android` | priority `high` · TTL 6시간 · **채널 id `parfait_default`** |
+| `apns` | `apns-priority: 10` · `apns-expiration`(절대 epoch 초) · sound `default` |
+
+⚠️ **`notification` 블록이 함께 실린다.** 앱이 백그라운드·종료 상태면 **시스템이 알림을 직접
+띄우고 앱 코드는 돌지 않는다.** `onMessageReceived`를 밟아 보려면 포그라운드에서 받거나
+4번(data-only)을 쓴다.
+
+⚠️ **채널 id는 앱이 만들어 둔 채널과 같아야 한다.** 다르면 **발송은 200인데 알림이 뜨지 않는다** —
+보내는 쪽에서는 실패로 보이지 않는 자리다. 3번이 그 상황을 재현한다.
+
+⚠️ **같은 알림이 두 번 올 수 있다.** 서버가 최소 한 번(at-least-once) 보장이라 재시도가 중복
+도착으로 이어진다. 6번으로 앱이 어떻게 보이는지 확인한다.
+
+### 8-3. 확인 순서
+
+1. `auth.http` 1번으로 로그인
+2. `notifications.http` 1번으로 이 기기 토큰 등록
+3. `parfait-group.http`로 그룹을 만들어 `group_id`를 채운다(딥링크 목적지가 된다)
+4. `fcm-test.http` 1번 발송 → 기기에서 알림 확인 → 탭해서 그 그룹 캔버스로 가는지 확인
+
+앱을 **포그라운드 / 백그라운드 / 완전 종료** 세 상태에서 각각 받아 본다 — 위 경고대로 처리 경로가
+갈리므로 한 상태에서만 되는 것을 전체가 된다고 볼 수 없다.
+
+### 8-4. 자주 나오는 실패
+
+| 응답 | 원인 |
+|---|---|
+| `401 UNAUTHENTICATED` | `fcm_access_token` 만료(1시간). 재발급한다 |
+| `404 NOT_FOUND` | `fcm_device_token`이 무효다. 앱 재설치·데이터 삭제로 바뀌었을 수 있다 |
+| `400 INVALID_ARGUMENT` | 페이로드 모양이 틀렸다. `data` 값에 문자열이 아닌 것을 넣었는지 본다 |
+| 200인데 알림이 안 뜸 | 채널 id 불일치, 알림 권한 거부, 또는 `notification` 없이 보낸 경우 |
+
+---
+
+## 9. 파일 구조
 
 ```
 http/
@@ -236,6 +339,8 @@ http/
 ├── images.http                   # 이미지 업로드 2종 (+ S3 PUT)
 ├── users.http                    # 내 계정 조회 · 전역 닉네임 변경 · 탈퇴
 ├── parfait-image.http            # 토핑 배치 확정 · 위치/크기/각도 수정 · 테두리 수정 · 삭제
+├── notifications.http            # 기기 FCM 토큰 등록
+├── fcm-test.http                 # FCM 직접 발송 (서버를 거치지 않음)
 ├── http-client.env.json          # 환경 변수 구조(값 비움, 커밋됨)
 └── http-client.private.env.json  # 실제 값 (gitignore — 커밋되지 않음)
 ```
