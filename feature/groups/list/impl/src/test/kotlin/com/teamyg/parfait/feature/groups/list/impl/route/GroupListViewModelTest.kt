@@ -516,10 +516,11 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_firstLoad_showsLoadingUntilItReturns() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_firstLoad_showsLoadingUntilGroupsArrive() = runTest(mainDispatcherRule.dispatcher) {
         // Given 아직 목록을 한 번도 받지 못했고 조회가 응답을 붙들고 있다
         val gate = CompletableDeferred<Unit>()
-        every { getMyGroupsFlow() } returns flowOf(null)
+        val groups = MutableStateFlow<List<MyParfaitGroupVO>?>(null)
+        every { getMyGroupsFlow() } returns groups
         coEvery { refreshMyGroups() } coAnswers {
             gate.await()
             Result.success(Unit)
@@ -533,8 +534,17 @@ class GroupListViewModelTest {
         // Then 빈 화면을 들여다보지 않도록 조회가 도는 동안 로딩을 덮는다
         assertTrue(viewModel.state.value.isInitialLoading)
 
+        // When 조회는 끝났지만 캐시가 아직 목록을 내지 않았다
         gate.complete(Unit)
         advanceUntilIdle()
+
+        // Then 여기서 걷으면 빈 파르페가 드러난다 — 캐시 방출은 조회가 반환한 뒤에 온다
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        // When 목록이 도착한다
+        groups.value = GROUPS
+        advanceUntilIdle()
+
         assertFalse(viewModel.state.value.isInitialLoading)
     }
 

@@ -88,6 +88,9 @@ constructor(
      * 표시는 캐시가 맡는다 — 다른 화면이 그룹을 만들거나 나가면 이 화면이 다시 조회하지 않아도
      * 그 자리에서 반영된다.
      *
+     * 덮개도 여기서 걷는다. 조회가 반환한 시점에 걷으면 캐시 방출이 그보다 늦어, 그 틈에
+     * 토핑 없는 빈 파르페가 드러난다.
+     *
      * 툴팁도 같은 자리에서 따라간다 — 마지막 그룹을 나가면 다시, 첫 그룹을 만들면 사라지도록.
      * 아직 한 번도 받지 못한(`null`) 동안에는 켜지 않는다 — 0건인지 모르는 채로 띄우면
      * 그룹이 있는 사용자에게도 한 번 스쳤다 사라진다.
@@ -95,7 +98,14 @@ constructor(
     private fun observeGroups() {
         viewModelScope.launch {
             getMyGroupsFlow().collect { groups ->
-                updateState { copy(groupList = groups, isTooltipVisible = groups?.isEmpty() == true) }
+                updateState {
+                    copy(
+                        groupList = groups,
+                        isTooltipVisible = groups?.isEmpty() == true,
+                        // 캐시는 구독하자마자 null 을 한 번 내므로 목록이 실제로 온 때만 걷는다
+                        isInitialLoading = if (groups == null) isInitialLoading else false,
+                    )
+                }
             }
         }
     }
@@ -204,9 +214,13 @@ constructor(
             try {
                 refreshMyGroups()
                     .onSuccess { updateState { copy(isError = false) } }
-                    .onFailure { throwable -> handleLoadFailure(throwable, isRefresh) }
+                    .onFailure { throwable ->
+                        handleLoadFailure(throwable, isRefresh)
+                        // 실패하면 캐시가 아무것도 내지 않아 덮개를 걷어 줄 쪽이 없다
+                        updateState { copy(isInitialLoading = false) }
+                    }
             } finally {
-                updateState { copy(isRefreshing = false, isInitialLoading = false) }
+                updateState { copy(isRefreshing = false) }
             }
         }
     }

@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,15 +34,7 @@ fun YGToppingGroup(
     chipType: YGGrouptagChipType,
     type: YGToppingGroupType,
     modifier: Modifier = Modifier,
-    onImageSettled: () -> Unit = {},
 ) {
-    // 기다릴 원격 이미지가 없는 토핑은 곧바로 결말이다. 안 알리면 세는 쪽이 영원히 못 채운다
-    val currentOnImageSettled by rememberUpdatedState(onImageSettled)
-
-    if (image !is YGToppingImage.Remote) {
-        LaunchedEffect(image) { currentOnImageSettled() }
-    }
-
     Box(
         modifier = modifier.size(SizeTokens.Size160.getDp()),
         contentAlignment = Alignment.Center,
@@ -67,9 +56,6 @@ fun YGToppingGroup(
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 error = painterResource(TOPPING_ERROR_DRAWABLE),
-                // 실패도 결말로 알린다 — 깨진 이미지 한 장이 목록 전체를 붙잡으면 안 된다
-                onSuccess = { onImageSettled() },
-                onError = { onImageSettled() },
                 modifier = imageModifier,
             )
 

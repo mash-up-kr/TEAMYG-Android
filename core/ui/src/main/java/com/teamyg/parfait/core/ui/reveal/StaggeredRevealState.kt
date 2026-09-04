@@ -43,17 +43,13 @@ class StaggeredRevealState(
 @Composable
 fun rememberStaggeredRevealState(
     total: Int,
-    started: Boolean,
     stepMillis: Long,
     staggered: Boolean = true,
 ): StaggeredRevealState {
     val state = remember(stepMillis) { StaggeredRevealState(stepMillis) }
 
-    LaunchedEffect(state, started, total, staggered) {
-        when {
-            !staggered -> state.revealAll()
-            started -> state.reveal(total)
-        }
+    LaunchedEffect(state, total, staggered) {
+        if (staggered) state.reveal(total) else state.revealAll()
     }
 
     return state
