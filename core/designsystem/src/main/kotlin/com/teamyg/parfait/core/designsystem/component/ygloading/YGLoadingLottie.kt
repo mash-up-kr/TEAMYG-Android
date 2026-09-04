@@ -4,6 +4,9 @@ import androidx.annotation.RawRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -11,15 +14,24 @@ import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.teamyg.parfait.core.designsystem.R
 
-/** 로딩 애니메이션의 색. 화면 테마가 아니라 **애니메이션이 얹히는 바탕**을 보고 고른다 */
-enum class YGLoadingTone(
-    @get:RawRes internal val rawRes: Int,
-) {
-    /** 밝은 색 애니메이션. 어두운 바탕 위에 쓴다 */
-    Light(R.raw.loading_light),
+const val YG_LOADING_LOTTIE_TEST_TAG = "yg_loading_lottie"
 
-    /** 어두운 색 애니메이션. 밝은 바탕 위에 쓴다 */
-    Dark(R.raw.loading_dark),
+/**
+ * 로딩 애니메이션 애셋. 색만 다른 것과 그림 자체가 다른 것을 함께 고른다.
+ *
+ * @param intrinsicSize 이 크기로 그리면 다시 그리는 일이 없다
+ */
+enum class YGLoadingArt(
+    @get:RawRes internal val rawRes: Int,
+    internal val intrinsicSize: DpSize,
+) {
+    /** 어두운 바탕 위에 쓴다 */
+    Light(R.raw.loading_light, DpSize(44.dp, 44.dp)),
+
+    /** 밝은 바탕 위에 쓴다 */
+    Dark(R.raw.loading_dark, DpSize(44.dp, 44.dp)),
+
+    Topping(R.raw.loading_topping, DpSize(90.dp, 106.dp)),
 }
 
 /**
@@ -32,11 +44,11 @@ enum class YGLoadingTone(
 @Composable
 fun YGLoadingLottie(
     modifier: Modifier = Modifier,
-    tone: YGLoadingTone = YGLoadingTone.Light,
+    art: YGLoadingArt = YGLoadingArt.Light,
     progress: (() -> Float)? = null,
 ) {
     val composition by rememberLottieComposition(
-        spec = LottieCompositionSpec.RawRes(tone.rawRes),
+        spec = LottieCompositionSpec.RawRes(art.rawRes),
     )
     val loopingProgress by animateLottieCompositionAsState(
         composition = composition,
@@ -48,6 +60,6 @@ fun YGLoadingLottie(
     LottieAnimation(
         composition = composition,
         progress = progress ?: { loopingProgress },
-        modifier = modifier,
+        modifier = modifier.testTag(YG_LOADING_LOTTIE_TEST_TAG),
     )
 }

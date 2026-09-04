@@ -30,7 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.util.lerp
 import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingLottie
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingTone
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingArt
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -123,7 +123,7 @@ private fun BoxScope.GroupListRefreshIndicator(
     ) {
         YGLoadingLottie(
             modifier = Modifier.size(INDICATOR_SIZE),
-            tone = YGLoadingTone.Dark,
+            art = YGLoadingArt.Dark,
             progress = if (isRefreshing) null else pulledFraction,
         )
 

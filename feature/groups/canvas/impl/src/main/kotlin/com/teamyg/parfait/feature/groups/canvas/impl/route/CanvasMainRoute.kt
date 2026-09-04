@@ -24,6 +24,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingArt
 import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -219,6 +220,7 @@ internal fun CanvasMainRoute(
     YGScaffoldV2(
         modifier = modifier,
         isLoading = canvasState.isInitialLoading || !toppingsVisible,
+        loadingArt = YGLoadingArt.Topping,
     ) { innerPadding ->
         CanvasMainScreen(
             canvasState = canvasState,

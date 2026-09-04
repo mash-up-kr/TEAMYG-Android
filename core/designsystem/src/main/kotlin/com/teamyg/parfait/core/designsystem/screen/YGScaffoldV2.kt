@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
+import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingArt
 import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -57,6 +58,7 @@ fun YGScaffoldV2(
     containerColor: Color = YGAtomicColors.Gray.White,
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     isLoading: Boolean = false,
+    loadingArt: YGLoadingArt = YGLoadingArt.Light,
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -77,7 +79,7 @@ fun YGScaffoldV2(
             }
 
             if (isLoading) {
-                YGLoadingOverlay()
+                YGLoadingOverlay(art = loadingArt)
             }
 
             YGToastHost(
