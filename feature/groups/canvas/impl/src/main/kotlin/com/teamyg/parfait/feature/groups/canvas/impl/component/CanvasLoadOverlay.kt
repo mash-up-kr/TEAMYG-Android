@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygdimoverlay.YGDimOverlay
@@ -25,6 +27,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+private val RETRY_BUTTON_WIDTH = 161.5.dp
 
 @Composable
 internal fun CanvasLoadingOverlay(modifier: Modifier = Modifier) {
@@ -70,6 +74,7 @@ internal fun CanvasLoadErrorOverlay(
             buttonType = YGButtonType.Medium.Secondary,
             isEnabled = true,
             onClick = onClickRetry,
+            modifier = Modifier.width(RETRY_BUTTON_WIDTH),
         )
     }
 }
