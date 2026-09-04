@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.parfait.android.application)
     alias(libs.plugins.parfait.android.application.signing)
     alias(libs.plugins.parfait.jetpack.compose)
+    alias(libs.plugins.parfait.test.unit)
     alias(libs.plugins.google.dagger.hilt)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.google.firebase)
