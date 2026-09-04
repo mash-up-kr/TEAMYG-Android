@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class BatchRevealTest {
+class BatchRevealStateTest {
     @Test
     fun isBatchReady_nothingLoadedYet_isNotReady() {
         // Given 조회가 오기 전이라 기다릴 대상 자체가 아직 없다

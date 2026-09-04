@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,7 +25,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingArt
 import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -32,6 +32,9 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasToppingLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
@@ -215,12 +218,20 @@ internal fun CanvasMainRoute(
     }
 
     // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
-    var toppingsVisible by remember { mutableStateOf(true) }
+    var loadState by remember { mutableStateOf(CanvasToppingLoadState.Loaded) }
+
+    var retryKey by remember { mutableIntStateOf(0) }
 
     YGScaffoldV2(
         modifier = modifier,
-        isLoading = canvasState.isInitialLoading || !toppingsVisible,
-        loadingArt = YGLoadingArt.Topping,
+        isLoading = canvasState.isInitialLoading || loadState != CanvasToppingLoadState.Loaded,
+        loadingOverlay = {
+            if (loadState == CanvasToppingLoadState.Failed) {
+                CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
+            } else {
+                CanvasLoadingOverlay()
+            }
+        },
     ) { innerPadding ->
         CanvasMainScreen(
             canvasState = canvasState,
@@ -238,7 +249,8 @@ internal fun CanvasMainRoute(
             onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
-            onToppingsVisibleChange = { toppingsVisible = it },
+            onLoadStateChange = { loadState = it },
+            retryKey = retryKey,
             toastPolicy = toastPolicy,
             alertPolicy = alertPolicy,
             graphicsLayer = graphicsLayer,

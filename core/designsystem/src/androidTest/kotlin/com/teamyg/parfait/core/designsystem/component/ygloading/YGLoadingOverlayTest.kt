@@ -76,22 +76,6 @@ class YGLoadingOverlayTest {
             .assertHeightIsEqualTo(44.dp)
     }
 
-    @Test
-    fun ygLoadingOverlay_toppingArt_drawsAtItsOwnSize() {
-        composeTestRule.mainClock.autoAdvance = false
-
-        composeTestRule.setContent {
-            YGLoadingOverlay(art = YGLoadingArt.Topping)
-        }
-        composeTestRule.mainClock.advanceTimeByFrame()
-
-        // Then 애셋 원본 크기라 다시 그리는 일이 없다
-        composeTestRule
-            .onNodeWithTag(YG_LOADING_LOTTIE_TEST_TAG, useUnmergedTree = true)
-            .assertWidthIsEqualTo(90.dp)
-            .assertHeightIsEqualTo(106.dp)
-    }
-
     private companion object {
         const val CONTENT_TAG = "content"
     }

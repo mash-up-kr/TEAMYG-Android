@@ -1,6 +1,7 @@
 package com.teamyg.parfait.core.designsystem.component.ygloading
 
 import androidx.annotation.RawRes
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -18,8 +19,6 @@ const val YG_LOADING_LOTTIE_TEST_TAG = "yg_loading_lottie"
 
 /**
  * 로딩 애니메이션 애셋. 색만 다른 것과 그림 자체가 다른 것을 함께 고른다.
- *
- * @param intrinsicSize 이 크기로 그리면 다시 그리는 일이 없다
  */
 enum class YGLoadingArt(
     @get:RawRes internal val rawRes: Int,
@@ -39,7 +38,7 @@ enum class YGLoadingArt(
  *
  * @param progress 그릴 지점을 직접 정한다. 당겨서 새로고침처럼 **손가락을 따라가야 할 때** 쓴다.
  *   넘기지 않으면 스스로 무한 반복한다 — 로딩은 끝나는 시점을 스스로 모르기 때문이다.
- * @param modifier 크기를 묶어 두는 것은 쓰는 쪽 몫이다. 비워 두면 놓인 자리만큼 늘어난다
+ * @param modifier 비워 두면 애셋 원본 크기로 그린다 — 그 크기에서 다시 그리는 일이 없다
  */
 @Composable
 fun YGLoadingLottie(
@@ -60,6 +59,9 @@ fun YGLoadingLottie(
     LottieAnimation(
         composition = composition,
         progress = progress ?: { loopingProgress },
-        modifier = modifier.testTag(YG_LOADING_LOTTIE_TEST_TAG),
+        modifier = Modifier
+            .size(art.intrinsicSize)
+            .then(modifier)
+            .testTag(YG_LOADING_LOTTIE_TEST_TAG),
     )
 }

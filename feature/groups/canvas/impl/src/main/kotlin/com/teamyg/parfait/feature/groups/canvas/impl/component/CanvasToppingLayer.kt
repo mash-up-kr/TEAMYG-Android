@@ -37,7 +37,10 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasToppingLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingImageState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasToppingLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
@@ -71,7 +74,8 @@ internal fun CanvasToppingLayer(
     hitTestEnabled: Boolean = true,
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
-    onToppingsVisibleChange: (Boolean) -> Unit = {},
+    retryKey: Int = 0,
+    onLoadStateChange: (CanvasToppingLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
@@ -83,21 +87,23 @@ internal fun CanvasToppingLayer(
             canvasWidth = maxWidth,
             canvasHeight = maxHeight,
             loadMasks = hitTestEnabled,
+            retryKey = retryKey,
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
-        // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다
+        // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
+        // 다시 시도할 때도 처음부터 모아야 한다
         val reveal = rememberBatchRevealState(
-            settled = entries.map { it.settled },
-            resetKey = revealResetKey,
+            settled = entries.map { it.imageState != ToppingImageState.Loading },
+            resetKey = revealResetKey to retryKey,
         )
         val toppingsVisible = !revealTogether || reveal.shown
 
-        // 로딩 표시는 이 레이어가 아니라 화면이 맡는다
-        val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
+        val loadState = canvasToppingLoadState(entries.map { it.imageState })
+        val currentOnLoadStateChange by rememberUpdatedState(onLoadStateChange)
 
-        LaunchedEffect(toppingsVisible) {
-            currentOnToppingsVisibleChange(toppingsVisible)
+        LaunchedEffect(loadState) {
+            currentOnLoadStateChange(loadState)
         }
 
         Box(
@@ -250,13 +256,15 @@ internal data class ToppingHitEntry(
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
     val target: ToppingHitTarget,
-    val settled: Boolean,
+    val imageState: ToppingImageState,
 )
 
 /**
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
  *
  * @param loadMasks 클릭을 받지 않는 화면은 꺼서 쓰지도 않을 디코딩을 막는다
+ * @param retryKey 올리면 painter 를 새로 만든다. 같은 url 로 다시 그리기만 하면 실패한
+ *   painter 가 그대로 남아 재요청이 나가지 않는다. 알파 마스크는 여기 딸려 오지 않는다
  */
 @Composable
 private fun rememberToppingHitEntries(
@@ -264,6 +272,7 @@ private fun rememberToppingHitEntries(
     canvasWidth: Dp,
     canvasHeight: Dp,
     loadMasks: Boolean,
+    retryKey: Int,
 ): List<ToppingHitEntry> {
     val masks = rememberToppingAlphaMasks(
         if (loadMasks) toppings.map { it.imageUrl } else emptyList(),
@@ -271,7 +280,7 @@ private fun rememberToppingHitEntries(
     val density = LocalDensity.current
 
     return toppings.map { topping ->
-        key(topping.parfaitImageId.value) {
+        key(topping.parfaitImageId.value, retryKey) {
             val painter = rememberAsyncImagePainter(
                 model = topping.imageUrl,
                 contentScale = ContentScale.Fit,
@@ -305,9 +314,11 @@ private fun rememberToppingHitEntries(
             ToppingHitEntry(
                 topping = topping,
                 painter = painter,
-                // 실패도 결말이다 — 깨진 이미지 한 장이 캔버스 전체를 붙잡으면 안 된다
-                settled = painterState is AsyncImagePainter.State.Success ||
-                    painterState is AsyncImagePainter.State.Error,
+                imageState = when (painterState) {
+                    is AsyncImagePainter.State.Success -> ToppingImageState.Loaded
+                    is AsyncImagePainter.State.Error -> ToppingImageState.Failed
+                    else -> ToppingImageState.Loading
+                },
                 target = with(density) {
                     ToppingHitTarget(
                         centerXPx = center.x.toPx(),

@@ -15,9 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.hideFromAccessibility
-import androidx.compose.ui.semantics.semantics
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingArt
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -46,9 +44,11 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
  * `YGTheme.layout` 을 읽는데, 테마 밖에서는 실제로 토스트를 띄우는 순간에야
  * `IllegalStateException("Not Init Layout")` 이 터진다. 컴포지션 시점엔 조용해서 놓치기 쉽다.
  *
- * @param isLoading `true` 면 [content] 위에 [YGLoadingOverlay] 를 덮어 터치를 삼키고,
- *   [content] 서브트리를 접근성 트리에서 숨긴다(터치만 막고 TalkBack 은 통과시키는
- *   비대칭을 막기 위해서다)
+ * @param loadingOverlay 덮개로 그릴 것. **터치를 삼키는 것은 이 슬롯의 몫이다** — 스캐폴드는
+ *   어디에 겹칠지만 정하고, 그냥 그리기만 하는 것을 넘기면 아래가 그대로 눌린다
+ * @param isLoading `true` 면 [content] 위에 [loadingOverlay] 를 덮고, [content] 서브트리를
+ *   접근성 트리에서 지운다. 터치만 막고 TalkBack 은 통과시키는 비대칭을 막기 위해서다 —
+ *   `hideFromAccessibility` 는 그 노드 하나만 감추고 자식은 트리에 남아 이 일을 못 한다
  * @param toastPolicy 토스트 큐. 화면이 실패를 알리려면 이 정책을 직접 만들어 넘기고
  *   `showError` 로 띄운다. 넘기지 않으면 스캐폴드가 자기 것을 만들어 쓴다
  */
@@ -58,7 +58,7 @@ fun YGScaffoldV2(
     containerColor: Color = YGAtomicColors.Gray.White,
     contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     isLoading: Boolean = false,
-    loadingArt: YGLoadingArt = YGLoadingArt.Light,
+    loadingOverlay: @Composable () -> Unit = { YGLoadingOverlay() },
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -70,7 +70,7 @@ fun YGScaffoldV2(
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = if (isLoading) {
-                    Modifier.fillMaxSize().semantics { hideFromAccessibility() }
+                    Modifier.fillMaxSize().clearAndSetSemantics { }
                 } else {
                     Modifier.fillMaxSize()
                 },
@@ -79,7 +79,7 @@ fun YGScaffoldV2(
             }
 
             if (isLoading) {
-                YGLoadingOverlay(art = loadingArt)
+                loadingOverlay()
             }
 
             YGToastHost(

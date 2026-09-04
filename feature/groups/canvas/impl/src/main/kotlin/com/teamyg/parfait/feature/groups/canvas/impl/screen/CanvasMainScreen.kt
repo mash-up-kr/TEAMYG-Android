@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasToppingLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
@@ -68,7 +69,8 @@ internal fun CanvasMainScreen(
     onClickDate: (LocalDate) -> Unit,
     onClickTopping: (CanvasToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
-    onToppingsVisibleChange: (Boolean) -> Unit,
+    onLoadStateChange: (CanvasToppingLoadState) -> Unit,
+    retryKey: Int,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
@@ -206,7 +208,8 @@ internal fun CanvasMainScreen(
                 // 고른 날짜가 아니라 실제로 그리는 캔버스를 기준으로 삼는다 — 지난 날을
                 // 기다리는 동안에는 직전 캔버스가 그대로 걸려 있다
                 revealResetKey = canvasState.displayedCanvas?.parfaitId,
-                onToppingsVisibleChange = onToppingsVisibleChange,
+                retryKey = retryKey,
+                onLoadStateChange = onLoadStateChange,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -276,7 +279,8 @@ private fun PreviewCanvasMainScreen(
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
-        onToppingsVisibleChange = {},
+        onLoadStateChange = {},
+        retryKey = 0,
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -311,7 +315,8 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
-        onToppingsVisibleChange = {},
+        onLoadStateChange = {},
+        retryKey = 0,
         toastPolicy = toastPolicy,
         modifier = Modifier.fillMaxSize(),
     )
@@ -350,7 +355,8 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickDate = {},
         onClickTopping = {},
         onClickSpotlightDim = {},
-        onToppingsVisibleChange = {},
+        onLoadStateChange = {},
+        retryKey = 0,
         alertPolicy = alertPolicy,
         modifier = Modifier.fillMaxSize(),
     )
