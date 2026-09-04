@@ -12,7 +12,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -20,7 +19,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -30,7 +28,8 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.ui.reveal.rememberBatchReveal
+import com.teamyg.parfait.core.ui.reveal.rememberBatchRevealState
+import com.teamyg.parfait.core.ui.reveal.revealed
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -88,11 +87,11 @@ internal fun CanvasToppingLayer(
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다
-        val revealed = rememberBatchReveal(
+        val reveal = rememberBatchRevealState(
             settled = entries.map { it.settled },
             resetKey = revealResetKey,
         )
-        val toppingsVisible = !revealTogether || revealed
+        val toppingsVisible = !revealTogether || reveal.shown
 
         // 로딩 표시는 이 레이어가 아니라 화면이 맡는다
         val currentOnToppingsVisibleChange by rememberUpdatedState(onToppingsVisibleChange)
@@ -101,15 +100,10 @@ internal fun CanvasToppingLayer(
             currentOnToppingsVisibleChange(toppingsVisible)
         }
 
-        // 그리지 않고 감추면 안 된다. 감춘 자리도 배치는 살아 있어야 이미지 요청이 이어진다.
-        // alpha 는 시맨틱을 지우지 않아 접근성 숨김을 따로 걸어야 한다
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .alpha(if (toppingsVisible) 1f else 0f)
-                .then(
-                    if (toppingsVisible) Modifier else Modifier.semantics { hideFromAccessibility() },
-                ),
+                .revealed(toppingsVisible),
         ) {
             entries.forEach { entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {

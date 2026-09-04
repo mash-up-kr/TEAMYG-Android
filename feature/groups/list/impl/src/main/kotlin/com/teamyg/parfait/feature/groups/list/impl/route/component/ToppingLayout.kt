@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
-import com.teamyg.parfait.core.ui.reveal.isStaggerRevealed
+import com.teamyg.parfait.core.ui.reveal.RevealState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import kotlinx.coroutines.launch
@@ -33,7 +33,7 @@ fun ToppingLayout(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     overlap: Dp = 12.dp,
     alternateOffsetY: Dp = 86.dp,
-    revealedCount: Int = Int.MAX_VALUE,
+    reveal: RevealState = RevealState.AllRevealed,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -94,7 +94,7 @@ fun ToppingLayout(
                 // 왼쪽
                 positions += paddingLeft to leftY
 
-                if (isStaggerRevealed(index = index, revealedCount = revealedCount)) {
+                if (reveal.isRevealed(index)) {
                     contentBottom = maxOf(contentBottom, leftY + placeable.height)
                 }
                 leftY += placeable.height - overlapPx
@@ -106,7 +106,7 @@ fun ToppingLayout(
                         placeable.width
                     ) to rightY
 
-                if (isStaggerRevealed(index = index, revealedCount = revealedCount)) {
+                if (reveal.isRevealed(index)) {
                     contentBottom = maxOf(contentBottom, rightY + placeable.height)
                 }
                 rightY += placeable.height - overlapPx
