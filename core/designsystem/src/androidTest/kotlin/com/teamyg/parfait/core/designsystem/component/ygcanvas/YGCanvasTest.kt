@@ -1,6 +1,9 @@
 package com.teamyg.parfait.core.designsystem.component.ygcanvas
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -153,11 +156,40 @@ class YGCanvasTest {
             assertEquals(YGCanvasBackgroundState.Loaded, reported)
         }
     }
+
+    @Test
+    fun ygCanvas_reloadKeyChanged_requestsBackgroundAgain() {
+        // Given 배경을 못 받아 실패로 굳은 캔버스
+        SingletonImageLoader.setUnsafe(instantlyFailingImageLoader())
+        var reported: YGCanvasBackgroundState? = null
+        var reloadKey by mutableIntStateOf(0)
+
+        composeTestRule.setContent {
+            EmptyYGCanvas(
+                background = YGCanvasBackground.Image(BACKGROUND_URL),
+                reloadKey = reloadKey,
+                onBackgroundStateChange = { reported = it },
+            )
+        }
+        composeTestRule.waitUntil(WAIT_TIMEOUT_MILLIS) {
+            reported == YGCanvasBackgroundState.Failed
+        }
+
+        // When 끝나지 않는 로더로 바꾸고 키를 올린다 — 재요청이 나가야만 이 로더를 만난다
+        SingletonImageLoader.setUnsafe(neverFinishingImageLoader())
+        composeTestRule.runOnIdle { reloadKey += 1 }
+
+        // Then 실패에 굳지 않고 다시 기다리는 상태로 돌아간다
+        composeTestRule.waitUntil(WAIT_TIMEOUT_MILLIS) {
+            reported == YGCanvasBackgroundState.Loading
+        }
+    }
 }
 
 @Composable
 private fun EmptyYGCanvas(
     background: YGCanvasBackground?,
+    reloadKey: Int = 0,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
 ) = YGCustomTheme {
     YGCanvas(
@@ -177,6 +209,7 @@ private fun EmptyYGCanvas(
         background = background,
         isEmpty = true,
         emptyMessage = EMPTY_MESSAGE,
+        reloadKey = reloadKey,
         onBackgroundStateChange = onBackgroundStateChange,
     )
 }

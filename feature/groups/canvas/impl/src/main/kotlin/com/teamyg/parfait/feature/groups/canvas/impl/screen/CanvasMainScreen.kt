@@ -126,6 +126,7 @@ internal fun CanvasMainScreen(
         }
 
         YGCanvas(
+            reloadKey = retryKey,
             onBackgroundStateChange = { backgroundState = it.toCanvasLoadState() },
             date = canvasState.canvasDate,
             day = "(${canvasState.canvasDay})",

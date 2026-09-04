@@ -24,13 +24,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.remember
-import coil3.compose.LocalPlatformContext
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.reveal.rememberBatchRevealState
 import com.teamyg.parfait.core.ui.reveal.revealed
@@ -254,30 +251,6 @@ private fun ToppingImage(
     )
 }
 
-/**
- * 다시 시도할 때는 캐시를 건너뛴다. painter 를 새로 만들어도 디스크에 앉은 깨진 바이트를
- * 그대로 읽으면 몇 번을 눌러도 같은 실패다.
- */
-@Composable
-private fun retryableImageRequest(
-    url: String?,
-    retryKey: Int,
-): ImageRequest {
-    val context = LocalPlatformContext.current
-
-    return remember(url, retryKey) {
-        ImageRequest
-            .Builder(context)
-            .data(url)
-            .apply {
-                if (retryKey > 0) {
-                    memoryCachePolicy(CachePolicy.DISABLED)
-                    diskCachePolicy(CachePolicy.DISABLED)
-                }
-            }.build()
-    }
-}
-
 internal data class ToppingHitEntry(
     val topping: CanvasToppingVO,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
@@ -290,8 +263,7 @@ internal data class ToppingHitEntry(
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
  *
  * @param loadMasks 클릭을 받지 않는 화면은 꺼서 쓰지도 않을 디코딩을 막는다
- * @param retryKey 올리면 painter 를 새로 만든다. 같은 url 로 다시 그리기만 하면 실패한
- *   painter 가 그대로 남아 재요청이 나가지 않는다. 알파 마스크는 여기 딸려 오지 않는다
+ * @param retryKey 올리면 이미지를 다시 받아 온다. 알파 마스크는 여기 딸려 오지 않는다
  */
 @Composable
 private fun rememberToppingHitEntries(
@@ -309,7 +281,7 @@ private fun rememberToppingHitEntries(
     return toppings.map { topping ->
         key(topping.parfaitImageId.value, retryKey) {
             val painter = rememberAsyncImagePainter(
-                model = retryableImageRequest(topping.imageUrl, retryKey),
+                model = rememberReloadableImageRequest(topping.imageUrl, retryKey),
                 contentScale = ContentScale.Fit,
             )
             val painterState by painter.state.collectAsState()

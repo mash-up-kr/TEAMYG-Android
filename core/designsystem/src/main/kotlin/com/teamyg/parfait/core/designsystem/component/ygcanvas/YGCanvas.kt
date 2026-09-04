@@ -44,6 +44,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuA
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcanvasdateselect.YGCanvasDateSelectButton
 import com.teamyg.parfait.core.designsystem.component.ygskeleton.YGSkeleton
+import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.shape.canvasCutCornerShape
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -76,6 +77,7 @@ fun YGCanvas(
     isDimmed: Boolean = false,
     onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
+    reloadKey: Int = 0,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
     /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyMessage] 안내판이 덮는다 */
     isEmpty: Boolean = false,
@@ -118,6 +120,7 @@ fun YGCanvas(
                 CanvasArea(
                     shape = shape,
                     background = background,
+                    reloadKey = reloadKey,
                     onBackgroundStateChange = onBackgroundStateChange,
                     isEmpty = isEmpty,
                     emptyMessage = emptyMessage,
@@ -249,6 +252,7 @@ private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
 private fun CanvasArea(
     shape: Shape,
     background: YGCanvasBackground?,
+    reloadKey: Int,
     onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit,
     isEmpty: Boolean,
     emptyMessage: String,
@@ -268,7 +272,7 @@ private fun CanvasArea(
         Modifier
     }
 
-    var backgroundState by remember(background) {
+    var backgroundState by remember(background, reloadKey) {
         mutableStateOf(
             if (background is YGCanvasBackground.Image) {
                 YGCanvasBackgroundState.Loading
@@ -310,7 +314,7 @@ private fun CanvasArea(
                 )
 
                 is YGCanvasBackground.Image -> AsyncImage(
-                    model = background.url,
+                    model = rememberReloadableImageRequest(background.url, reloadKey),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     onState = { state ->
