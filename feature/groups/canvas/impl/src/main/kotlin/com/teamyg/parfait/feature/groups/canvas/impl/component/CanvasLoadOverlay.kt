@@ -3,6 +3,8 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,6 +71,8 @@ internal fun CanvasLoadErrorOverlay(
             description = stringResource(R.string.canvas_main_load_error_description),
         )
 
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
+
         YGButton(
             text = stringResource(R.string.canvas_main_load_error_retry),
             buttonType = YGButtonType.Medium.Secondary,
@@ -87,7 +91,8 @@ private fun OverlayMessage(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
-        modifier = Modifier.padding(vertical = YGTheme.layout.gap.gap3),
+        // 아래 간격은 쓰는 쪽이 정한다 — 로딩은 여기서 끝나고 에러는 버튼이 뒤따른다
+        modifier = Modifier.padding(top = YGTheme.layout.gap.gap3),
     ) {
         Text(
             text = title,
