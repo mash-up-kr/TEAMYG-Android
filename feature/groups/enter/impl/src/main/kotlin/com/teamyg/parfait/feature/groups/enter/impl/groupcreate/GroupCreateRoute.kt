@@ -8,7 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,6 +24,23 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.enter.impl.component.NotificationPermissionGate
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
+private val NavigateToNextSaver = listSaver<GroupCreateSideEffect.NavigateToNext?, Any>(
+    save = { value ->
+        if (value == null) emptyList() else listOf(value.groupId, value.groupName, value.inviteCode)
+    },
+    restore = { saved ->
+        if (saved.isEmpty()) {
+            null
+        } else {
+            GroupCreateSideEffect.NavigateToNext(
+                groupId = saved[0] as Long,
+                groupName = saved[1] as String,
+                inviteCode = saved[2] as String,
+            )
+        }
+    },
+)
+
 @Composable
 fun GroupCreateRoute(
     navigator: Navigator,
@@ -36,8 +54,10 @@ fun GroupCreateRoute(
     val errorMessages = GroupCreateError.entries.associateWith { it.toStringResource() }
 
     // 그룹 생성 직후 알림 권한 안내(정책 §3.1)를 한 번 거쳐야 캔버스로 넘어간다 —
-    // 안내가 끝나기 전까지는 목적지 정보만 들고 대기한다
-    var pendingNavigation by remember { mutableStateOf<GroupCreateSideEffect.NavigateToNext?>(null) }
+    // 안내가 끝나기 전까지는 목적지 정보만 들고 대기한다.
+    var pendingNavigation by rememberSaveable(stateSaver = NavigateToNextSaver) {
+        mutableStateOf<GroupCreateSideEffect.NavigateToNext?>(null)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
