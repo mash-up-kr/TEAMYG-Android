@@ -167,6 +167,7 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics" }
 firebase-crashlytics-ndk = { group = "com.google.firebase", name = "firebase-crashlytics-ndk" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
 
 #Test - unit
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
