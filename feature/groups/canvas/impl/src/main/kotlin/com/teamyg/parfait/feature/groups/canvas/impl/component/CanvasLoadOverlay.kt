@@ -67,7 +67,7 @@ internal fun CanvasLoadErrorOverlay(
 
         YGButton(
             text = stringResource(R.string.canvas_main_load_error_retry),
-            buttonType = YGButtonType.Medium.Primary,
+            buttonType = YGButtonType.Medium.Secondary,
             isEnabled = true,
             onClick = onClickRetry,
         )
