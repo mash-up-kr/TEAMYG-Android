@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,7 +22,9 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasToppingLoadState
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackgroundState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
@@ -69,7 +72,7 @@ internal fun CanvasMainScreen(
     onClickDate: (LocalDate) -> Unit,
     onClickTopping: (CanvasToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
-    onLoadStateChange: (CanvasToppingLoadState) -> Unit,
+    onLoadStateChange: (CanvasLoadState) -> Unit,
     retryKey: Int,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
@@ -114,7 +117,16 @@ internal fun CanvasMainScreen(
             },
         )
 
+        // 배경과 토핑은 서로 다른 곳에서 결말나므로 여기서 하나로 접는다
+        var backgroundState by remember { mutableStateOf(CanvasLoadState.Loaded) }
+        var toppingState by remember { mutableStateOf(CanvasLoadState.Loaded) }
+
+        LaunchedEffect(backgroundState, toppingState) {
+            onLoadStateChange(canvasLoadState(listOf(backgroundState, toppingState)))
+        }
+
         YGCanvas(
+            onBackgroundStateChange = { backgroundState = it.toCanvasLoadState() },
             date = canvasState.canvasDate,
             day = "(${canvasState.canvasDay})",
             onDateSelectClick = onClickDateSelect,
@@ -209,7 +221,7 @@ internal fun CanvasMainScreen(
                 // 기다리는 동안에는 직전 캔버스가 그대로 걸려 있다
                 revealResetKey = canvasState.displayedCanvas?.parfaitId,
                 retryKey = retryKey,
-                onLoadStateChange = onLoadStateChange,
+                onLoadStateChange = { toppingState = it },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -360,4 +372,10 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         alertPolicy = alertPolicy,
         modifier = Modifier.fillMaxSize(),
     )
+}
+
+private fun YGCanvasBackgroundState.toCanvasLoadState(): CanvasLoadState = when (this) {
+    YGCanvasBackgroundState.Loading -> CanvasLoadState.Loading
+    YGCanvasBackgroundState.Loaded -> CanvasLoadState.Loaded
+    YGCanvasBackgroundState.Failed -> CanvasLoadState.Failed
 }

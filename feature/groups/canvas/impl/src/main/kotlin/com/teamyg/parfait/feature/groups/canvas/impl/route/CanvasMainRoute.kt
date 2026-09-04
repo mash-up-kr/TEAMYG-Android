@@ -34,7 +34,7 @@ import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionMan
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasToppingLoadState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
@@ -218,15 +218,15 @@ internal fun CanvasMainRoute(
     }
 
     // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
-    var loadState by remember { mutableStateOf(CanvasToppingLoadState.Loaded) }
+    var loadState by remember { mutableStateOf(CanvasLoadState.Loaded) }
 
     var retryKey by remember { mutableIntStateOf(0) }
 
     YGScaffoldV2(
         modifier = modifier,
-        isLoading = canvasState.isInitialLoading || loadState != CanvasToppingLoadState.Loaded,
+        isLoading = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
         loadingOverlay = {
-            if (loadState == CanvasToppingLoadState.Failed) {
+            if (loadState == CanvasLoadState.Failed) {
                 CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
             } else {
                 CanvasLoadingOverlay()

@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,6 +59,9 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
  */
 const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
+/** 이미지 배경이 아니면 기다릴 것이 없어 [Loaded] 다 */
+enum class YGCanvasBackgroundState { Loading, Loaded, Failed }
+
 @Composable
 fun YGCanvas(
     date: String,
@@ -71,6 +76,7 @@ fun YGCanvas(
     isDimmed: Boolean = false,
     onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
+    onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
     /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyMessage] 안내판이 덮는다 */
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
@@ -112,6 +118,7 @@ fun YGCanvas(
                 CanvasArea(
                     shape = shape,
                     background = background,
+                    onBackgroundStateChange = onBackgroundStateChange,
                     isEmpty = isEmpty,
                     emptyMessage = emptyMessage,
                     content = content,
@@ -242,6 +249,7 @@ private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
 private fun CanvasArea(
     shape: Shape,
     background: YGCanvasBackground?,
+    onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit,
     isEmpty: Boolean,
     emptyMessage: String,
     dateSelect: @Composable () -> Unit,
@@ -260,8 +268,19 @@ private fun CanvasArea(
         Modifier
     }
 
-    var backgroundLoading by remember(background) {
-        mutableStateOf(background is YGCanvasBackground.Image)
+    var backgroundState by remember(background) {
+        mutableStateOf(
+            if (background is YGCanvasBackground.Image) {
+                YGCanvasBackgroundState.Loading
+            } else {
+                YGCanvasBackgroundState.Loaded
+            },
+        )
+    }
+    val currentOnBackgroundStateChange by rememberUpdatedState(onBackgroundStateChange)
+
+    LaunchedEffect(backgroundState) {
+        currentOnBackgroundStateChange(backgroundState)
     }
 
     Box(
@@ -295,8 +314,11 @@ private fun CanvasArea(
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     onState = { state ->
-                        backgroundLoading = state is AsyncImagePainter.State.Loading ||
-                            state is AsyncImagePainter.State.Empty
+                        backgroundState = when (state) {
+                            is AsyncImagePainter.State.Success -> YGCanvasBackgroundState.Loaded
+                            is AsyncImagePainter.State.Error -> YGCanvasBackgroundState.Failed
+                            else -> YGCanvasBackgroundState.Loading
+                        }
                     },
                     modifier = Modifier.matchParentSize(),
                 )
@@ -306,7 +328,7 @@ private fun CanvasArea(
         }
 
         // 캡처 Box 안에 두면 갤러리에 저장한 이미지에 시머 회색면이 박힌다
-        if (backgroundLoading) {
+        if (backgroundState == YGCanvasBackgroundState.Loading) {
             YGSkeleton(modifier = Modifier.matchParentSize())
         }
 

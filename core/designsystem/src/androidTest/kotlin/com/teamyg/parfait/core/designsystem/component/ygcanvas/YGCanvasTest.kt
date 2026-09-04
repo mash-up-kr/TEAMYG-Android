@@ -16,8 +16,11 @@ import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuA
 import com.teamyg.parfait.core.designsystem.component.ygskeleton.YG_SKELETON_TEST_TAG
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.designsystem.utils.ControllableImageLoader
+import com.teamyg.parfait.core.designsystem.utils.instantlyFailingImageLoader
+import com.teamyg.parfait.core.designsystem.utils.instantlySucceedingImageLoader
 import com.teamyg.parfait.core.designsystem.utils.neverFinishingImageLoader
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -98,10 +101,65 @@ class YGCanvasTest {
             composeTestRule.onAllNodesWithTag(YG_SKELETON_TEST_TAG).fetchSemanticsNodes().isEmpty()
         }
     }
+
+    @Test
+    fun ygCanvas_backgroundImageFailed_reportsFailed() {
+        // Given 배경을 못 받는 로더
+        SingletonImageLoader.setUnsafe(instantlyFailingImageLoader())
+        var reported: YGCanvasBackgroundState? = null
+
+        composeTestRule.setContent {
+            EmptyYGCanvas(
+                background = YGCanvasBackground.Image(BACKGROUND_URL),
+                onBackgroundStateChange = { reported = it },
+            )
+        }
+
+        // Then 조용히 넘어가면 배경 빠진 그림이 저장된다
+        composeTestRule.waitUntil(WAIT_TIMEOUT_MILLIS) {
+            reported == YGCanvasBackgroundState.Failed
+        }
+    }
+
+    @Test
+    fun ygCanvas_backgroundImageLoaded_reportsLoaded() {
+        // Given 배경이 바로 오는 로더
+        SingletonImageLoader.setUnsafe(instantlySucceedingImageLoader())
+        var reported: YGCanvasBackgroundState? = null
+
+        composeTestRule.setContent {
+            EmptyYGCanvas(
+                background = YGCanvasBackground.Image(BACKGROUND_URL),
+                onBackgroundStateChange = { reported = it },
+            )
+        }
+
+        composeTestRule.waitUntil(WAIT_TIMEOUT_MILLIS) {
+            reported == YGCanvasBackgroundState.Loaded
+        }
+    }
+
+    @Test
+    fun ygCanvas_noImageBackground_reportsLoadedRightAway() {
+        // Given 기다릴 배경이 없는 캔버스
+        var reported: YGCanvasBackgroundState? = null
+
+        composeTestRule.setContent {
+            EmptyYGCanvas(background = null, onBackgroundStateChange = { reported = it })
+        }
+
+        // Then 기다릴 것이 없으니 로딩에 갇히면 안 된다
+        composeTestRule.runOnIdle {
+            assertEquals(YGCanvasBackgroundState.Loaded, reported)
+        }
+    }
 }
 
 @Composable
-private fun EmptyYGCanvas(background: YGCanvasBackground?) = YGCustomTheme {
+private fun EmptyYGCanvas(
+    background: YGCanvasBackground?,
+    onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
+) = YGCustomTheme {
     YGCanvas(
         date = "May 20",
         day = "(Wed)",
@@ -119,5 +177,6 @@ private fun EmptyYGCanvas(background: YGCanvasBackground?) = YGCustomTheme {
         background = background,
         isEmpty = true,
         emptyMessage = EMPTY_MESSAGE,
+        onBackgroundStateChange = onBackgroundStateChange,
     )
 }
