@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
+import com.teamyg.parfait.core.ui.reveal.RevealState
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.round
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ fun ToppingLayout(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     overlap: Dp = 12.dp,
     alternateOffsetY: Dp = 86.dp,
+    reveal: RevealState = RevealState.AllRevealed,
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -78,7 +80,10 @@ fun ToppingLayout(
         var leftY = paddingTop
         var rightY = paddingTop + alternateOffsetYPx
 
-        // 마지막 아이템에도 overlap 이 빠진 leftY/rightY 대신, 실제로 놓인 아이템의 하단 중 가장 아래를 높이로 쓴다
+        // 마지막 아이템에도 overlap 이 빠진 leftY/rightY 대신, 실제로 놓인 아이템의 하단 중 가장 아래를 높이로 쓴다.
+        //
+        // 아직 안 드러난 아이템은 높이에서만 뺀다. 파르페가 이 높이로 크림 개수를 정하므로
+        // 높이가 한 칸씩 자라야 크림도 따라 붙고, 측정·배치를 그대로 둬야 이미지 요청이 이어진다
         var contentBottom = paddingTop
 
         val positions = mutableListOf<Pair<Int, Int>>()
@@ -89,7 +94,9 @@ fun ToppingLayout(
                 // 왼쪽
                 positions += paddingLeft to leftY
 
-                contentBottom = maxOf(contentBottom, leftY + placeable.height)
+                if (reveal.isRevealed(index)) {
+                    contentBottom = maxOf(contentBottom, leftY + placeable.height)
+                }
                 leftY += placeable.height - overlapPx
             } else {
                 // 오른쪽
@@ -99,7 +106,9 @@ fun ToppingLayout(
                         placeable.width
                     ) to rightY
 
-                contentBottom = maxOf(contentBottom, rightY + placeable.height)
+                if (reveal.isRevealed(index)) {
+                    contentBottom = maxOf(contentBottom, rightY + placeable.height)
+                }
                 rightY += placeable.height - overlapPx
             }
         }

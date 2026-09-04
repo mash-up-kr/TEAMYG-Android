@@ -201,58 +201,53 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun refresh_failsWithLoadedGroups_tellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
+    fun refresh_failsWithLoadedGroups_showsTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
         // Given 캐시에 그룹이 있어 이미 띄운 화면
         every { getMyGroupsFlow() } returns flowOf(GROUPS)
         coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
 
-        viewModel.effect.test {
-            // When 사용자가 직접 당긴 새로고침이 실패한다
-            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
-            viewModel.processIntent(GroupListIntent.Refresh)
-            advanceUntilIdle()
+        // When 사용자가 직접 당긴 새로고침이 실패한다
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceUntilIdle()
 
-            // Then 목록은 남기되, 목록이 그대로인 것은 성공과 구분되지 않으므로 따로 알린다
-            assertEquals(GroupListSideEffect.ShowRefreshError, awaitItem())
-            assertEquals(GROUPS, viewModel.state.value.groupList)
-        }
+        // Then 당기는 동안 화면이 목록을 비워 실패를 받아 줄 자리가 에러 화면뿐이다
+        assertTrue(viewModel.state.value.isError)
     }
 
     @Test
-    fun enter_failsWithLoadedGroups_staysSilent() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캐시에 그룹이 있어 이미 띄운 화면
+    fun enter_failsOnTheErrorScreen_staysThere() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 목록은 있지만 당겨서 새로고침이 실패해 에러 화면이 뜬 상태
         every { getMyGroupsFlow() } returns flowOf(GROUPS)
         coEvery { refreshMyGroups() } returns Result.success(Unit)
         val viewModel = enteredViewModel()
+        coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceUntilIdle()
 
-        viewModel.effect.test {
-            // When 돌아오면서 저절로 나간 조회가 실패한다
-            coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
-            viewModel.processIntent(GroupListIntent.Enter)
-            advanceUntilIdle()
+        // When 백그라운드에 다녀오며 나간 조회도 실패한다
+        viewModel.processIntent(GroupListIntent.Enter)
+        advanceUntilIdle()
 
-            // Then 사용자가 시킨 일이 아니므로 토스트로 방해하지 않는다
-            expectNoEvents()
-        }
+        // Then 실패는 앞선 실패를 덮지 않는다 — 낡은 목록이 아무 표시 없이 돌아오면 안 된다
+        assertTrue(viewModel.state.value.isError)
     }
 
     @Test
-    fun refresh_failsWithNoGroups_doesNotStackAToastOnTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
+    fun refresh_succeeds_leavesTheErrorScreen() = runTest(mainDispatcherRule.dispatcher) {
         // Given 캐시가 비어 있고 조회도 실패해 에러 화면이 뜬 상태
         every { getMyGroupsFlow() } returns flowOf(null)
         coEvery { refreshMyGroups() } returns Result.failure(AppError.Network(cause = null))
         val viewModel = enteredViewModel()
 
-        viewModel.effect.test {
-            // When 에러 화면에서 당겨 새로고침했는데 또 실패한다
-            viewModel.processIntent(GroupListIntent.Refresh)
-            advanceUntilIdle()
+        // When 에러 화면에서 당겨 새로고침이 이번에는 성공한다
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceUntilIdle()
 
-            // Then 에러 화면이 이미 실패를 말하고 있어 토스트를 겹치지 않는다
-            assertTrue(viewModel.state.value.isError)
-            expectNoEvents()
-        }
+        // Then 실패가 남으면 성공한 조회를 볼 자리가 없다
+        assertFalse(viewModel.state.value.isError)
     }
 
     @Test
@@ -521,10 +516,11 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_firstLoad_showsLoadingUntilItReturns() = runTest(mainDispatcherRule.dispatcher) {
+    fun enter_firstLoad_showsLoadingUntilGroupsArrive() = runTest(mainDispatcherRule.dispatcher) {
         // Given 아직 목록을 한 번도 받지 못했고 조회가 응답을 붙들고 있다
         val gate = CompletableDeferred<Unit>()
-        every { getMyGroupsFlow() } returns flowOf(null)
+        val groups = MutableStateFlow<List<MyParfaitGroupVO>?>(null)
+        every { getMyGroupsFlow() } returns groups
         coEvery { refreshMyGroups() } coAnswers {
             gate.await()
             Result.success(Unit)
@@ -538,8 +534,17 @@ class GroupListViewModelTest {
         // Then 빈 화면을 들여다보지 않도록 조회가 도는 동안 로딩을 덮는다
         assertTrue(viewModel.state.value.isInitialLoading)
 
+        // When 조회는 끝났지만 캐시가 아직 목록을 내지 않았다
         gate.complete(Unit)
         advanceUntilIdle()
+
+        // Then 여기서 걷으면 빈 파르페가 드러난다 — 캐시 방출은 조회가 반환한 뒤에 온다
+        assertTrue(viewModel.state.value.isInitialLoading)
+
+        // When 목록이 도착한다
+        groups.value = GROUPS
+        advanceUntilIdle()
+
         assertFalse(viewModel.state.value.isInitialLoading)
     }
 

@@ -5,11 +5,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
@@ -20,6 +24,9 @@ import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+
+private const val COVERED_BUTTON_DESCRIPTION = "덮개 아래 버튼"
+private const val CUSTOM_OVERLAY_TAG = "custom_overlay"
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
@@ -43,6 +50,51 @@ class YGScaffoldV2Test {
     }
 
     @Test
+    fun ygScaffoldV2_isLoadingTrue_hidesContentDescendantsFromAccessibility() {
+        // Given · When 덮개 아래에 누를 수 있는 것이 있다
+        composeTestRule.setContent {
+            YGCustomTheme {
+                YGScaffoldV2(isLoading = true) { innerPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = COVERED_BUTTON_DESCRIPTION
+                                onClick { true }
+                            },
+                    )
+                }
+            }
+        }
+
+        // Then 덮개가 터치를 막는 동안 스크린리더만 아래에 닿으면 안 된다
+        composeTestRule.onNodeWithContentDescription(COVERED_BUTTON_DESCRIPTION).assertDoesNotExist()
+    }
+
+    @Test
+    fun ygScaffoldV2_customLoadingOverlay_isUsedInsteadOfDefault() {
+        // Given · When 화면이 자기 덮개를 넘긴다
+        composeTestRule.setContent {
+            YGCustomTheme {
+                YGScaffoldV2(
+                    isLoading = true,
+                    loadingOverlay = {
+                        Box(modifier = Modifier.fillMaxSize().testTag(CUSTOM_OVERLAY_TAG))
+                    },
+                ) { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                }
+            }
+        }
+
+        // Then 넘긴 것이 그려지고 기본 덮개는 그려지지 않는다
+        composeTestRule.onNodeWithTag(CUSTOM_OVERLAY_TAG).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(YG_LOADING_OVERLAY_TEST_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun ygScaffoldV2_isLoadingFalse_hidesOverlay() {
         // Given · When 로딩을 끈 채 컴포지션
         composeTestRule.setContent {
@@ -58,7 +110,7 @@ class YGScaffoldV2Test {
     }
 
     @Test
-    fun ygScaffoldV2_isLoadingTrue_marksContentHiddenFromAccessibility() {
+    fun ygScaffoldV2_isLoadingTrue_hidesContentFromAccessibility() {
         // Given · When 로딩을 켠 채, 컨텐츠 안에 태그를 단 노드를 넣어 컴포지션
         composeTestRule.setContent {
             YGCustomTheme {
@@ -73,10 +125,8 @@ class YGScaffoldV2Test {
             }
         }
 
-        // Then 컨텐츠를 감싼 서브트리에 hideFromAccessibility 시맨틱스가 붙는다.
-        // (Compose UI 테스트 트리는 접근성 숨김 여부와 무관하게 노드를 계속 찾아내므로
-        // 노드 존재 유무가 아니라 시맨틱스 프로퍼티 자체를 단언해야 한다.)
-        composeTestRule.onNode(hideFromAccessibilityMatcher).assertExists()
+        // Then 컨텐츠가 시맨틱 트리에서 사라진다
+        composeTestRule.onNodeWithTag(CONTENT_TAG).assertDoesNotExist()
     }
 
     @Test
@@ -95,8 +145,7 @@ class YGScaffoldV2Test {
             }
         }
 
-        // Then hideFromAccessibility 시맨틱스가 트리 어디에도 없고, 컨텐츠 노드는 그대로 보인다
-        composeTestRule.onNode(hideFromAccessibilityMatcher).assertDoesNotExist()
+        // Then 컨텐츠 노드가 그대로 보인다
         composeTestRule.onNodeWithTag(CONTENT_TAG).assertIsDisplayed()
     }
 
@@ -129,10 +178,5 @@ class YGScaffoldV2Test {
 
         /** `YGToastPolicy` 의 진입 애니메이션(300ms)보다 크고 자동 소멸(2000ms)보다 작아야 한다 */
         const val TOAST_ENTER_ANIMATION_MILLIS = 500L
-
-        /** 트리 안 어딘가에 `hideFromAccessibility()` 시맨틱스가 붙어 있는지 확인한다 */
-        val hideFromAccessibilityMatcher = SemanticsMatcher(
-            "hideFromAccessibility 시맨틱스를 가진다",
-        ) { it.config.contains(SemanticsProperties.HideFromAccessibility) }
     }
 }
