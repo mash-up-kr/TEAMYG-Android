@@ -4,7 +4,7 @@ import com.teamyg.parfait.domain.model.notification.DeviceToken
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import javax.inject.Inject
 
-/** 이미 알고 있는 토큰 하나를 서버에 등록한다 — FCM `onNewToken` 콜백처럼 토큰이 주어지는 자리용. */
+/** 토큰 값이 이미 손에 있는 자리용. 값 없이 부르려면 [RegisterCurrentDeviceTokenUseCase]. */
 class RegisterDeviceTokenUseCase @Inject constructor(
     private val notificationRepository: NotificationRepository,
 ) {

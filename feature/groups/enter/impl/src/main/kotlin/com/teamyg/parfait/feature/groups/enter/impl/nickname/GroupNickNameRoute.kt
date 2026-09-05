@@ -29,10 +29,10 @@ import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
  * [GroupNickNameSideEffect.NavigateToNext] 는 Parcelable/Serializable 이 아니라 `rememberSaveable`
  * 이 기본으로 못 담는다 — 필드가 전부 기본 타입이라 리스트로 풀어 담는다.
  *
- * 왜 저장해야 하는가: 알림 권한 안내가 끝나기 전까지 이 값을 들고 대기하는데, 그 사이 시스템
- * 권한 다이얼로그가 포커스를 쥔 채로 저사양 기기가 메모리 압박으로 프로세스를 죽이면
- * `remember` 는 유실된다 — 그룹은 이미 서버에서 참여 처리됐는데 앱만 재시작 후 원래 화면에
- * 멈추는 사고로 이어진다.
+ * 왜 저장해야 하는가: 알림 권한 안내가 끝나기 전까지 이 값을 들고 대기하는데, 그 사이
+ * 다크모드·폰트 크기 변경 같은 구성 변경이 Activity 를 다시 세우면 `remember` 는 유실된다.
+ * 이펙트는 `Channel` 이라 다시 오지 않으므로, 그룹은 이미 서버에서 참여 처리됐는데 사용자는
+ * 이 화면에 갇힌다.
  */
 private val NavigateToNextSaver = listSaver<GroupNickNameSideEffect.NavigateToNext?, Any>(
     save = { value -> if (value == null) emptyList() else listOf(value.groupId, value.groupName) },
