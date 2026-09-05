@@ -1,16 +1,14 @@
 package com.teamyg.parfait.push
 
-import android.Manifest
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
+import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.model.notification.DeviceToken
 import com.teamyg.parfait.data.model.qualifier.ApplicationScope
@@ -75,13 +73,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         data: Map<String, String>,
         notificationId: Int,
     ) {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        if (!NotificationPermissionManager.hasPermission(context = this)) return
 
         val contentIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK

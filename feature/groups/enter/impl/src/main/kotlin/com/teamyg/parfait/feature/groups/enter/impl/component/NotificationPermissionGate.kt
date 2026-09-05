@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.enter.impl.component
 
 import android.Manifest
-import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -9,10 +8,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -28,14 +27,9 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 @Composable
 internal fun NotificationPermissionGate(onFinished: () -> Unit) {
     val context = LocalContext.current
-    val alreadyGranted = remember {
-        ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ) == PackageManager.PERMISSION_GRANTED
-    }
+    val hasPermission = remember { NotificationPermissionManager.hasPermission(context) }
 
-    if (alreadyGranted) {
+    if (hasPermission) {
         LaunchedEffect(Unit) { onFinished() }
         return
     }
