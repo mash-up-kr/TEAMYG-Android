@@ -51,13 +51,11 @@ fun MainRoute(
     // 딥링크도 세션 사건과 같은 이유로 여기 한 곳에서만 수집한다.
     LaunchedEffect(Unit) {
         pushDeepLinkEventBus.deepLinks.collect { deepLink ->
-            // 스플래시가 replaceAll 로 목적지를 확정하기 전에 쌓으면 그 replaceAll 이 딥링크를
-            // 지운다. 이미 스플래시를 벗어난 뒤라면 이 대기는 그대로 통과한다.
+            // 스플래시가 replaceAll 로 목적지를 확정하기 전에 쌓으면 그 replaceAll 이 딥링크를 지운다.
             snapshotFlow { navigator.backStack.lastOrNull() }.first { it != NavKeySplash }
 
-            // 두 목적지 모두 로그인이 필요하다. 세션이 없으면 딥링크를 버린다 — 로그인을
-            // 마쳐도 원래 목적지로 이어가지 않는다. 판정을 대기 뒤에 두는 이유는 부트스트랩이
-            // 인증 거절로 토큰을 지우는 경우가 있어서다.
+            // 두 목적지 모두 로그인이 필요하다. 버린 딥링크는 로그인 후에도 이어가지 않는다.
+            // 판정이 대기 뒤에 있는 이유는 부트스트랩이 인증 거절을 받으면 토큰을 지우기 때문이다.
             if (!hasActiveSession()) return@collect
 
             when (deepLink) {

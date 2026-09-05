@@ -12,7 +12,6 @@ enum class PushNotificationRouteType(val key: String) {
     ;
 
     companion object {
-        /** 서버가 보낸 `route` 가 아는 값이 아니면(딥링크가 아닌 평범한 실행 등) `null`. */
         fun fromKeyOrNull(key: String?): PushNotificationRouteType? = entries.firstOrNull { it.key == key }
     }
 }

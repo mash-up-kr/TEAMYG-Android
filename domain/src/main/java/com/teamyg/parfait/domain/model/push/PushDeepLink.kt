@@ -18,10 +18,7 @@ sealed interface PushDeepLink {
         override val type: PushNotificationType get() = PushNotificationType.TOPPING
 
         companion object {
-            /**
-             * @param groupId FCM `data` 는 전부 String 이라 숫자가 아닌 값도 올 수 있다.
-             *   양수로 읽히지 않으면 딥링크로 보지 않고 `null` 을 준다.
-             */
+            /** @param groupId FCM `data` 는 전부 String 이라 숫자가 아닌 값도 온다. */
             fun parse(groupId: String?): AddTopping? {
                 val id = groupId?.toLongOrNull() ?: return null
 
