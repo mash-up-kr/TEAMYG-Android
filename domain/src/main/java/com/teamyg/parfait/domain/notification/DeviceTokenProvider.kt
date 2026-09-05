@@ -1,4 +1,4 @@
-package com.teamyg.parfait.domain.repository.notification
+package com.teamyg.parfait.domain.notification
 
 import com.teamyg.parfait.domain.model.notification.DeviceToken
 

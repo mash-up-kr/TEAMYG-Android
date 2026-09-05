@@ -8,7 +8,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
@@ -16,8 +19,11 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
+import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+private val gateLogger = Loggers.create("NotificationPermissionGate")
 
 /**
  * 정책: A-004(그룹 참여)·A-005(그룹 생성) 완료 직후, 캔버스 진입 전 보여준다.
@@ -34,16 +40,21 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
     val context: Context = activity ?: LocalContext.current
     val hasPermission = remember { NotificationPermissionManager.hasPermission(context) }
 
-    // 아래 조기 return 밑으로 내리면 hasPermission 이 관찰 가능한 상태로 바뀌는 날
-    // 런처 등록이 조용히 사라진다.
+    // 요청 직전 값을 들고 있다가 콜백 값과 비교한다 — 한 번만 읽으면 "아직 안 물어봤다"와
+    // "영구 거부"가 같은 false 라 처음 온 사용자까지 설정으로 보낸다.
+    var rationaleBeforeRequest by remember { mutableStateOf(false) }
+
+    // 컴포저블 호출은 조기 return 위에 두어 호출 순서를 고정한다.
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
-        // 눌러도 아무 일 없는 버튼으로 끝나지 않도록 설정으로 보낸다.
-        val isPermanentlyDenied = activity?.let(NotificationPermissionManager::isPermanentlyDenied) == true
+        val deniedThisRequest = rationaleBeforeRequest &&
+            activity?.let { !NotificationPermissionManager.shouldShowRationale(it) } == true
 
-        if (!isGranted && isPermanentlyDenied) {
-            context.startActivity(context.buildAppSettingsIntent())
+        // 눌러도 아무 일 없는 버튼으로 끝나지 않도록 설정으로 보낸다. 실패해도 흐름은 잇는다.
+        if (!isGranted && deniedThisRequest) {
+            runCatching { context.startActivity(context.buildAppSettingsIntent()) }
+                .onFailure { gateLogger.w(it) { "앱 설정 화면을 열지 못했다" } }
         }
 
         onFinished()
@@ -55,7 +66,10 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
     }
 
     NotificationPermissionModal(
-        onGrantClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+        onGrantClick = {
+            rationaleBeforeRequest = activity?.let(NotificationPermissionManager::shouldShowRationale) == true
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        },
         onLaterClick = onFinished,
         onDismissRequest = onFinished,
     )

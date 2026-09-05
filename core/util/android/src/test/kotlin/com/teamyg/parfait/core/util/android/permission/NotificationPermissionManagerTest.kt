@@ -3,7 +3,6 @@ package com.teamyg.parfait.core.util.android.permission
 import android.content.Context
 import io.mockk.mockk
 import kotlin.test.Test
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class NotificationPermissionManagerTest {
@@ -11,27 +10,15 @@ class NotificationPermissionManagerTest {
     private val context: Context = mockk()
 
     @Test
-    fun isRuntimePermissionRequired_belowTiramisu_isFalse() {
-        // POST_NOTIFICATIONS 가 아직 없는 플랫폼이다
-        assertFalse(NotificationPermissionManager.isRuntimePermissionRequired(sdkInt = 26))
-        assertFalse(NotificationPermissionManager.isRuntimePermissionRequired(sdkInt = 32))
-    }
-
-    @Test
-    fun isRuntimePermissionRequired_tiramisuAndAbove_isTrue() {
-        // 런타임 권한으로 물어야 한다
-        assertTrue(NotificationPermissionManager.isRuntimePermissionRequired(sdkInt = 33))
-        assertTrue(NotificationPermissionManager.isRuntimePermissionRequired(sdkInt = 36))
-    }
-
-    @Test
     fun hasPermission_belowTiramisu_isTrueWithoutCheckingContext() {
-        // Given API 32 기기 — 알림은 OS 설정에서 기본으로 켜져 있다
+        // Given minSdk(26)과 API 32 — POST_NOTIFICATIONS 가 아직 없는 플랫폼이다
 
         // When 권한 보유를 묻는다
-        val result = NotificationPermissionManager.hasPermission(context = context, sdkInt = 32)
+        val atMinSdk = NotificationPermissionManager.hasPermission(context = context, sdkInt = 26)
+        val belowTiramisu = NotificationPermissionManager.hasPermission(context = context, sdkInt = 32)
 
-        // Then 허용으로 본다. checkSelfPermission 을 물으면 항상 거부가 나와 정반대가 된다
-        assertTrue(result)
+        // Then 허용으로 본다. checkSelfPermission 을 물으면 항상 거부가 나와 판정이 정반대가 된다
+        assertTrue(atMinSdk)
+        assertTrue(belowTiramisu)
     }
 }

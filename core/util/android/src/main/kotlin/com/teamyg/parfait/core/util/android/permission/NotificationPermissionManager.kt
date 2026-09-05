@@ -16,8 +16,7 @@ import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
  * `sdkInt` 를 인자로 받는 이유는 이 갈림을 기기 없이 테스트하기 위해서다.
  */
 object NotificationPermissionManager {
-    fun isRuntimePermissionRequired(sdkInt: Int = Build.VERSION.SDK_INT): Boolean =
-        sdkInt >= Build.VERSION_CODES.TIRAMISU
+    private fun isRuntimePermissionRequired(sdkInt: Int): Boolean = sdkInt >= Build.VERSION_CODES.TIRAMISU
 
     fun hasPermission(
         context: Context,
@@ -29,10 +28,10 @@ object NotificationPermissionManager {
     }
 
     /**
-     * **요청 콜백 안에서만 의미가 있다.** 첫 요청 전에도 `false` 라서 그 밖에서 부르면
-     * "아직 안 물어봤다"와 "영구 거부"를 구분하지 못한다. 거부로 돌아온 직후라면 `false`
-     * 는 영구 거부뿐이다.
+     * 한 번 읽은 값만으로는 영구 거부를 판정할 수 없다 — 첫 요청 전에도, 두 번 거부된 뒤에도
+     * `false` 다. 요청 직전과 콜백에서 두 번 읽어 `true` → `false` 로 떨어진 경우만 이번
+     * 요청에서 거부가 확정된 것이다.
      */
-    fun isPermanentlyDenied(activity: Activity): Boolean =
-        !activity.shouldShowRationale(permission = Manifest.permission.POST_NOTIFICATIONS)
+    fun shouldShowRationale(activity: Activity): Boolean =
+        activity.shouldShowRationale(permission = Manifest.permission.POST_NOTIFICATIONS)
 }

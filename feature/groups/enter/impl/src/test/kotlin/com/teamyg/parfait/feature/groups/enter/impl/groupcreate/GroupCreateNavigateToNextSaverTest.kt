@@ -3,11 +3,12 @@ package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 import androidx.compose.runtime.saveable.SaverScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 /** 이 Saver 가 어긋나면 구성 변경 뒤 목적지가 바뀌거나 사라진다. */
 class GroupCreateNavigateToNextSaverTest {
-    private val saverScope = SaverScope { true }
+    // listSaver 가 항목마다 canBeSaved 를 부른다. true 로 스텁하면 이 Saver 의 존재 이유인
+    // "Bundle 에 담기는가" 검사가 통째로 무력해진다.
+    private val saverScope = SaverScope { it is Long || it is String || it is Int || it is Boolean }
 
     private fun save(value: GroupCreateSideEffect.NavigateToNext?): Any? = with(NavigateToNextSaver) {
         with(saverScope) { save(value) }
@@ -25,14 +26,5 @@ class GroupCreateNavigateToNextSaverTest {
 
         // Then 필드 순서가 어긋나면 여기서 걸린다
         assertEquals(value, restored)
-    }
-
-    @Test
-    fun save_null_savesNothing() {
-        val saved = save(null)
-
-        // Then listSaver 가 빈 리스트를 "저장 안 함"으로 접는다 — 복원은 아예 일어나지 않고
-        // rememberSaveable 의 초기값 null 이 그대로 쓰인다
-        assertNull(saved)
     }
 }

@@ -19,6 +19,7 @@ import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -243,8 +244,11 @@ class SignUpUseCaseTest {
             agreedTermsIds = setOf(TermsId(1L)),
         )
 
-        // Then 이 세션의 기기 토큰을 등록한다 — 알림 권한과 무관하게 세션마다 다시 올린다
-        coVerify(exactly = 1) { registerCurrentDeviceToken() }
+        // Then 세션이 저장된 뒤에 등록한다 — 이 엔드포인트는 인증이 필요하다(화이트리스트 밖)
+        coVerifyOrder {
+            authRepository.saveSession(session)
+            registerCurrentDeviceToken()
+        }
     }
 
     @Test

@@ -3,7 +3,7 @@ package com.teamyg.parfait.push
 import com.google.android.gms.tasks.Task
 import com.google.firebase.messaging.FirebaseMessaging
 import com.teamyg.parfait.domain.model.notification.DeviceToken
-import com.teamyg.parfait.domain.repository.notification.DeviceTokenProvider
+import com.teamyg.parfait.domain.notification.DeviceTokenProvider
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import kotlin.coroutines.resume

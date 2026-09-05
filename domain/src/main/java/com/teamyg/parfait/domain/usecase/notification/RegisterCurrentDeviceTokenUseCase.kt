@@ -2,7 +2,7 @@ package com.teamyg.parfait.domain.usecase.notification
 
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.useCaseLogger
-import com.teamyg.parfait.domain.repository.notification.DeviceTokenProvider
+import com.teamyg.parfait.domain.notification.DeviceTokenProvider
 import javax.inject.Inject
 
 /**

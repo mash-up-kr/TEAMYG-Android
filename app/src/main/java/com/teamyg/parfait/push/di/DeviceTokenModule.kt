@@ -1,6 +1,6 @@
 package com.teamyg.parfait.push.di
 
-import com.teamyg.parfait.domain.repository.notification.DeviceTokenProvider
+import com.teamyg.parfait.domain.notification.DeviceTokenProvider
 import com.teamyg.parfait.push.FirebaseDeviceTokenProvider
 import dagger.Binds
 import dagger.Module

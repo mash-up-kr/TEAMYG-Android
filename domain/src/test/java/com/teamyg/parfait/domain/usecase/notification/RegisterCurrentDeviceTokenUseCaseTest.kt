@@ -1,12 +1,13 @@
 package com.teamyg.parfait.domain.usecase.notification
 
 import com.teamyg.parfait.domain.model.notification.DeviceToken
-import com.teamyg.parfait.domain.repository.notification.DeviceTokenProvider
+import com.teamyg.parfait.domain.notification.DeviceTokenProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertSame
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -70,6 +71,6 @@ class RegisterCurrentDeviceTokenUseCaseTest {
         val result = registerCurrentDeviceToken()
 
         // Then 그 실패를 그대로 돌려준다
-        assertTrue(result.isFailure)
+        assertSame(failure, result.exceptionOrNull())
     }
 }

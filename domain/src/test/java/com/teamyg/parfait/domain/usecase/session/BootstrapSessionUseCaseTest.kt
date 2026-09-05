@@ -195,6 +195,20 @@ class BootstrapSessionUseCaseTest {
     }
 
     @Test
+    fun invoke_refreshFails_doesNotRegisterDeviceToken() = runTest {
+        // Given 토큰은 있으나 조회가 실패한다 — 세션이 살아있다고 볼 수 없다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns
+            Result.failure(AppError.Network(cause = null))
+
+        // When 부트스트랩한다
+        bootstrap()
+
+        // Then 등록은 성공 분기에서만 돈다
+        coVerify(exactly = 0) { registerCurrentDeviceToken() }
+    }
+
+    @Test
     fun invoke_noToken_doesNotRegisterDeviceToken() = runTest {
         // Given 저장된 토큰이 없다
         coEvery { authRepository.hasSession() } returns false
