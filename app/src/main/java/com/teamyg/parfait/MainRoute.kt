@@ -4,6 +4,7 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
@@ -17,11 +18,14 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
+import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
+import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun MainRoute(
@@ -29,6 +33,7 @@ fun MainRoute(
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
     sessionEventBus: SessionEventBus,
     pushDeepLinkEventBus: PushDeepLinkEventBus,
+    hasActiveSession: HasActiveSessionUseCase,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
@@ -43,10 +48,16 @@ fun MainRoute(
         }
     }
 
-    // 딥링크도 세션 사건과 같은 이유로 여기 한 곳에서만 수집한다. 로그인 전에 탭했다면
-    // 이 collect 가 시작되는 시점(로그인·부트스트랩이 끝난 뒤) 까지 채널에 남아 있다가 온다.
+    // 딥링크도 세션 사건과 같은 이유로 여기 한 곳에서만 수집한다.
     LaunchedEffect(Unit) {
         pushDeepLinkEventBus.deepLinks.collect { deepLink ->
+            // 스플래시가 replaceAll 로 목적지를 확정하기 전에 쌓으면 그 replaceAll 이 딥링크를 지운다.
+            snapshotFlow { navigator.backStack.lastOrNull() }.first { it != NavKeySplash }
+
+            // 두 목적지 모두 로그인이 필요하다. 버린 딥링크는 로그인 후에도 이어가지 않는다.
+            // 판정이 대기 뒤에 있는 이유는 부트스트랩이 인증 거절을 받으면 토큰을 지우기 때문이다.
+            if (!hasActiveSession()) return@collect
+
             when (deepLink) {
                 is PushDeepLink.AddTopping -> navigator.goTo(
                     destination = NavKeyCanvasMain(groupId = deepLink.groupId),

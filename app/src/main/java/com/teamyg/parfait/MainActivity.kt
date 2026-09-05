@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
+import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -36,6 +37,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var pushDeepLinkEventBus: PushDeepLinkEventBus
 
+    @Inject
+    lateinit var hasActiveSession: HasActiveSessionUseCase
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumePushDeepLink(intent)
@@ -52,6 +56,7 @@ class MainActivity : ComponentActivity() {
                     entryBuilders = entryBuilders,
                     sessionEventBus = sessionEventBus,
                     pushDeepLinkEventBus = pushDeepLinkEventBus,
+                    hasActiveSession = hasActiveSession,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

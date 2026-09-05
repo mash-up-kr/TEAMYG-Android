@@ -9,7 +9,7 @@ import coil3.SingletonImageLoader
 import com.kakao.sdk.common.KakaoSdk
 import com.teamyg.parfait.core.designsystem.image.newParfaitImageLoader
 import com.teamyg.parfait.core.util.jvm.analytics.LoggerInitializer
-import com.teamyg.parfait.push.PUSH_NOTIFICATION_CHANNEL_ID
+import com.teamyg.parfait.push.ParfaitFirebaseMessagingService
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -31,7 +31,7 @@ class BaseApplication :
     // minSdk 가 이미 26(O) 이라 버전 분기 없이 항상 만들 수 있다.
     private fun createPushNotificationChannel() {
         val channel = NotificationChannel(
-            PUSH_NOTIFICATION_CHANNEL_ID,
+            ParfaitFirebaseMessagingService.PUSH_NOTIFICATION_CHANNEL_ID,
             getString(R.string.notification_channel_default_name),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {

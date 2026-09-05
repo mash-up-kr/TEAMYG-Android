@@ -1,5 +1,6 @@
 package com.teamyg.parfait.push
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import androidx.core.app.NotificationCompat
@@ -13,9 +14,6 @@ import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-
-/** 모든 알림에 보내는 채널. [BaseApplication] 이 앱 시작 시 만든다. */
-const val PUSH_NOTIFICATION_CHANNEL_ID = "parfait_default"
 
 private val pushLogger = Loggers.create("Push")
 
@@ -62,6 +60,14 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         deviceTokenRegistrar.register()
     }
 
+    /**
+     * 바로 위에서 [NotificationPermissionManager.hasPermission] 으로 막고 있는데도 lint 가
+     * `MissingPermission` 을 띄운다 — 판정이 이 파일 밖에 있어 데이터 흐름을 못 따라간다.
+     * 검사를 여기 인라인하면 안 된다: `POST_NOTIFICATIONS` 는 API 33 에 생긴 권한이라 그 아래
+     * 에서는 `checkSelfPermission` 이 항상 거부로 답하고, 그러면 알림이 켜져 있는 기기에서도
+     * 표시가 막힌다. 버전 갈림은 그 판정구가 들고 있다.
+     */
+    @SuppressLint("MissingPermission")
     private fun showNotification(
         title: String,
         body: String,
@@ -83,7 +89,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
 
         val notification = NotificationCompat
             .Builder(this, PUSH_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(pendingIntent)
@@ -91,5 +97,10 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
             .build()
 
         NotificationManagerCompat.from(this).notify(notificationId, notification)
+    }
+
+    companion object {
+        /** 모든 알림에 보내는 채널. [BaseApplication] 이 앱 시작 시 만든다. */
+        const val PUSH_NOTIFICATION_CHANNEL_ID = "parfait_default"
     }
 }
