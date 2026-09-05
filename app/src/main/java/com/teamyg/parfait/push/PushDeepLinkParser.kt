@@ -1,6 +1,7 @@
 package com.teamyg.parfait.push
 
 import com.teamyg.parfait.domain.model.push.PushDeepLink
+import com.teamyg.parfait.domain.model.push.PushNotificationRouteType
 import com.teamyg.parfait.domain.model.push.PushNotificationType
 
 /**
@@ -15,14 +16,13 @@ object PushDeepLinkParser {
         route: String?,
         groupId: String?,
         type: String?,
-    ): PushDeepLink? = when (route) {
-        "canvas" -> {
-            val id = groupId?.toLongOrNull()
-            if (id == null || id <= 0) null else PushDeepLink.AddTopping(id)
-        }
+    ): PushDeepLink? = when (PushNotificationRouteType.fromKeyOrNull(route)) {
+        PushNotificationRouteType.CANVAS -> PushDeepLink.AddTopping.parse(groupId)
 
-        "group" -> PushDeepLink.GroupList(type = PushNotificationType.fromKeyOrNull(type))
+        PushNotificationRouteType.GROUP -> PushDeepLink.GroupList(
+            type = PushNotificationType.fromKeyOrNull(type),
+        )
 
-        else -> null
+        null -> null
     }
 }
