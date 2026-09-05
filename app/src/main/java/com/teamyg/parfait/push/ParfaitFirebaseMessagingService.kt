@@ -13,7 +13,7 @@ import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.model.notification.DeviceToken
-import com.teamyg.parfait.domain.model.qualifier.ApplicationScope
+import com.teamyg.parfait.data.model.qualifier.ApplicationScope
 import com.teamyg.parfait.domain.usecase.notification.RegisterDeviceTokenUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -43,9 +43,8 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var registerDeviceTokenUseCase: RegisterDeviceTokenUseCase
 
-    // 프로세스 수명 스코프를 쓴다 — 이 서비스는 짧게 살고 onNewToken 직후 곧 onDestroy 될 수
-    // 있어(FCM 전달용 Service 는 오래 안 붙어 있는다), 서비스 스코프를 직접 만들어 쓰면 등록
-    // 네트워크 호출이 끝나기 전에 onDestroy 가 취소해 버릴 수 있다.
+    // 서비스 스코프를 직접 만들면 onNewToken 직후의 onDestroy 가 등록 네트워크 호출을
+    // 끝나기 전에 취소한다 — FCM 전달용 Service 는 오래 붙어 있지 않는다.
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
