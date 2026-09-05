@@ -4,11 +4,13 @@ import android.content.ClipData
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,15 +26,25 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
+import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasImageSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTutorialOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
+import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
@@ -46,7 +58,9 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
@@ -84,6 +98,7 @@ internal fun CanvasMainRoute(
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
+    val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
     val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
@@ -106,6 +121,27 @@ internal fun CanvasMainRoute(
             viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
         } else if (bitmap != null) {
             toastPolicy.showError(gallerySaveFailureMessage)
+        }
+    }
+
+    // 갤러리 저장은 권한을 물어야 시작할 수 있다 — 미리보기에서 돌아온 길과 권한 승인 뒤의
+    // 길이 같은 곳으로 모이도록 여기 한 번만 적는다
+    val saveWithPermission: (Bitmap) -> Unit = { bitmap ->
+        if (GalleryWritePermissionManager.hasPermission(context)) {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+        } else {
+            pendingGalleryBitmap = bitmap
+            galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
+        }
+    }
+
+    // 미리보기에서 저장을 확정하고 돌아왔다. 보여 준 그림 그대로 남겨야 하므로 캔버스를 다시
+    // 캡처하지 않고 미리보기가 쓰던 파일을 읽는다
+    ResultEffect<CanvasImageSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
+        scope.launch {
+            withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
+                .onSuccess(saveWithPermission)
+                .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
         }
     }
 
@@ -140,14 +176,19 @@ internal fun CanvasMainRoute(
                     destination = NavKeyGroupSetting(groupId = effect.groupId.value),
                 )
 
-                is CanvasMainEffect.RequestCanvasCapture -> {
+                is CanvasMainEffect.RequestCanvasCaptureForPreview -> {
                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                    if (GalleryWritePermissionManager.hasPermission(context)) {
-                        viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
-                    } else {
-                        pendingGalleryBitmap = bitmap
-                        galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
-                    }
+                    val selectedDate = viewModel.state.value.selectedDate
+
+                    withContext(Dispatchers.IO) { bitmap.writeToCanvasCaptureCache(context) }
+                        .onSuccess { file ->
+                            navigator.goTo(
+                                destination = NavKeyCanvasImageSave(
+                                    imagePath = file.absolutePath,
+                                    date = selectedDate.toString(),
+                                ),
+                            )
+                        }.onFailure { toastPolicy.showError(captureFailureMessage) }
                 }
 
                 is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
@@ -213,32 +254,56 @@ internal fun CanvasMainRoute(
         onStopOrDispose { }
     }
 
-    YGScaffoldV2(
-        modifier = modifier,
-        isLoading = canvasState.isInitialLoading,
-    ) { innerPadding ->
-        CanvasMainScreen(
-            canvasState = canvasState,
-            onClickBack = { navigator.onBack() },
-            onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
-            onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
-            onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
-            onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
-            onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
-            onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
-            onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
-            onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
-            onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
-            onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
-            onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
-            onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
-            onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
-            toastPolicy = toastPolicy,
-            alertPolicy = alertPolicy,
-            graphicsLayer = graphicsLayer,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-        )
+    // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
+    var loadState by remember { mutableStateOf(CanvasLoadState.Loaded) }
+
+    var retryKey by remember { mutableIntStateOf(0) }
+
+    // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
+    // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
+    Box(modifier = modifier.fillMaxSize()) {
+        YGScaffoldV2(
+            isLoading = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
+            loadingOverlay = {
+                if (loadState == CanvasLoadState.Failed) {
+                    CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
+                } else {
+                    CanvasLoadingOverlay()
+                }
+            },
+        ) { innerPadding ->
+            CanvasMainScreen(
+                canvasState = canvasState,
+                onClickBack = { navigator.onBack() },
+                onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
+                onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
+                onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
+                onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
+                onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
+                onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
+                onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
+                onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
+                onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
+                onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
+                onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
+                onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
+                onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
+                onLoadStateChange = { loadState = it },
+                retryKey = retryKey,
+                toastPolicy = toastPolicy,
+                alertPolicy = alertPolicy,
+                graphicsLayer = graphicsLayer,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            )
+        }
+
+        canvasState.tutorialStep?.let { step ->
+            CanvasTutorialOverlay(
+                step = step,
+                onClickNext = { viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext) },
+            )
+        }
     }
 }

@@ -23,18 +23,22 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -107,6 +111,11 @@ data class CanvasMainUiState(
     val spotlightedToppingId: ParfaitImageId? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
+    /**
+     * 지금 보여 주는 튜토리얼 장. `null` 이면 튜토리얼이 떠 있지 않다 — 이미 본 사람과
+     * 마지막 장을 닫은 사람이 같은 상태다.
+     */
+    val tutorialStep: CanvasTutorialStep? = null,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -188,11 +197,13 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
     /**
-     * 지금 보고 있는 캔버스 프레임을 이미지로 캡처해 달라는 요청. 캡처(Compose
-     * GraphicsLayer) 자체는 화면만 할 수 있어, ViewModel 은 요청만 보내고 화면이 캡처한
-     * 결과를 [CanvasMainIntent.SaveCapturedCanvas] 로 다시 돌려받는다.
+     * 지금 보고 있는 캔버스 프레임을 캡처해 미리보기 화면으로 넘겨 달라는 요청.
+     *
+     * 캡처(Compose GraphicsLayer)도 캐시 파일 쓰기도 화면만 할 수 있어 ViewModel 은 요청만
+     * 보낸다. 갤러리 저장은 미리보기에서 확정하고 돌아온 뒤에야
+     * [CanvasMainIntent.SaveCapturedCanvas] 로 이어진다.
      */
-    data object RequestCanvasCapture : CanvasMainEffect
+    data object RequestCanvasCaptureForPreview : CanvasMainEffect
 
     data class ShowGallerySaveResult(
         val isSuccess: Boolean,
@@ -248,7 +259,7 @@ sealed interface CanvasMainIntent : UiIntent {
 
     data object OnClickGoToToday : CanvasMainIntent
 
-    /** [CanvasMainEffect.RequestCanvasCapture] 에 대한 응답으로, 화면이 캡처한 비트맵을 돌려준다 */
+    /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
     data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
@@ -259,6 +270,9 @@ sealed interface CanvasMainIntent : UiIntent {
 
     /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제한다 */
     data object OnAppReturnedFromBackground : CanvasMainIntent
+
+    /** 튜토리얼 칩을 눌렀다. 다음 장으로 넘기고, 마지막 장이었으면 튜토리얼을 끝낸다 */
+    data object OnClickTutorialNext : CanvasMainIntent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -278,6 +292,8 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
+    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
+    private val completeTutorialUseCase: CompleteTutorialUseCase,
     private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -300,6 +316,7 @@ constructor(
         loadCanvasMainInfo()
         // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
+        observeCanvasTutorial()
 
         // 백스택 재진입에서는 ViewModel 이 새로 만들어지지 않으므로, 이 배너는 그룹 생성·참여
         // 직후의 첫 진입에서 딱 한 번만 뜬다
@@ -523,6 +540,39 @@ constructor(
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
 
             is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
+
+            is CanvasMainIntent.OnClickTutorialNext -> handleClickTutorialNext()
+        }
+    }
+
+    /**
+     * 앱을 설치하고 캔버스에 처음 들어온 사람에게만 튜토리얼을 연다.
+     *
+     * 진행 중인 장을 덮지 않는 이유: 저장분이 다시 방출되는 계기(다른 설정 변경 등)마다
+     * 보고 있던 장이 첫 장으로 되감기면, 사용자는 튜토리얼에서 빠져나올 수 없다.
+     */
+    private fun observeCanvasTutorial() {
+        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.CANVAS) }) { isVisible ->
+            updateState {
+                when {
+                    isVisible.not() -> copy(tutorialStep = null)
+                    tutorialStep == null -> copy(tutorialStep = CanvasTutorialStep.first)
+                    else -> this
+                }
+            }
+        }
+    }
+
+    /**
+     * 마지막 장을 닫는 순간에만 "봤다"로 남긴다 — 중간에 앱을 접은 사람에게는 다음 진입에서
+     * 처음부터 다시 보여 주는 편이 낫다.
+     */
+    private fun handleClickTutorialNext() {
+        val next = (state.value.tutorialStep ?: return).next
+        updateState { copy(tutorialStep = next) }
+
+        if (next == null) {
+            launch(key = COMPLETE_CANVAS_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.CANVAS) }
         }
     }
 
@@ -654,9 +704,8 @@ constructor(
         }
     }
 
-    /** 캡처(Compose GraphicsLayer)는 화면만 할 수 있어, 화면에 요청만 보낸다 */
     private fun handleClickSaveToGallery() {
-        postSideEffect(effect = CanvasMainEffect.RequestCanvasCapture)
+        postSideEffect(effect = CanvasMainEffect.RequestCanvasCaptureForPreview)
     }
 
     private fun handleSaveCapturedCanvas(bitmap: Bitmap) {
@@ -784,5 +833,7 @@ constructor(
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
+
+        const val COMPLETE_CANVAS_TUTORIAL_KEY = "completeCanvasTutorial"
     }
 }

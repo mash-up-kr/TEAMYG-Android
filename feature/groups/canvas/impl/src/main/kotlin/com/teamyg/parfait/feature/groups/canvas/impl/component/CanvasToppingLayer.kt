@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -25,7 +27,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.ui.reveal.rememberBatchRevealState
+import com.teamyg.parfait.core.ui.reveal.revealed
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -33,7 +38,9 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
@@ -65,57 +72,88 @@ internal fun CanvasToppingLayer(
     onClickSpotlightDim: () -> Unit,
     modifier: Modifier = Modifier,
     hitTestEnabled: Boolean = true,
+    revealTogether: Boolean = true,
+    revealResetKey: Any? = Unit,
+    retryKey: Int = 0,
+    onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
+        // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
+        val areaWidth = maxWidth
+        val areaHeight = maxHeight
+
         val entries = rememberToppingHitEntries(
             toppings = toppings,
             canvasWidth = maxWidth,
             canvasHeight = maxHeight,
             loadMasks = hitTestEnabled,
+            retryKey = retryKey,
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
 
-        entries.forEach { entry ->
-            if (entry.topping.parfaitImageId != spotlightedToppingId) {
+        // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
+        // 다시 시도할 때도 처음부터 모아야 한다
+        val reveal = rememberBatchRevealState(
+            settled = entries.map { it.imageState != CanvasLoadState.Loading },
+            resetKey = revealResetKey to retryKey,
+        )
+        val toppingsVisible = !revealTogether || reveal.shown
+
+        val loadState = canvasLoadState(entries.map { it.imageState })
+        val currentOnLoadStateChange by rememberUpdatedState(onLoadStateChange)
+
+        LaunchedEffect(loadState) {
+            currentOnLoadStateChange(loadState)
+        }
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .revealed(toppingsVisible),
+        ) {
+            entries.forEach { entry ->
+                if (entry.topping.parfaitImageId != spotlightedToppingId) {
+                    CanvasTopping(
+                        entry = entry,
+                        canvasWidth = areaWidth,
+                        canvasHeight = areaHeight,
+                        onClick = { onClickTopping(entry.topping) },
+                        clickable = hitTestEnabled,
+                    )
+                }
+            }
+
+            if (spotlighted != null) {
+                val dismissDescription = stringResource(R.string.canvas_spotlight_dismiss)
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(YGAtomicColors.Transparency.Black50)
+                        // 딤 탭으로 강조를 푸는 일은 판정 오버레이의 onMiss 가 한다. 그 오버레이는
+                        // pointerInput 뿐이라 시맨틱이 없으니, 접근성 서비스가 쓸 등가 액션을 여기 남긴다
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = dismissDescription
+                            onClick {
+                                onClickSpotlightDim()
+                                true
+                            }
+                        },
+                )
+
                 CanvasTopping(
-                    entry = entry,
-                    canvasWidth = maxWidth,
-                    canvasHeight = maxHeight,
-                    onClick = { onClickTopping(entry.topping) },
+                    entry = spotlighted,
+                    canvasWidth = areaWidth,
+                    canvasHeight = areaHeight,
+                    onClick = { onClickTopping(spotlighted.topping) },
                     clickable = hitTestEnabled,
                 )
             }
         }
 
-        if (spotlighted != null) {
-            val dismissDescription = stringResource(R.string.canvas_spotlight_dismiss)
-
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(YGAtomicColors.Transparency.Black50)
-                    // 딤 탭으로 강조를 푸는 일은 판정 오버레이의 onMiss 가 한다. 그 오버레이는
-                    // pointerInput 뿐이라 시맨틱이 없으니, 접근성 서비스가 쓸 등가 액션을 여기 남긴다
-                    .semantics {
-                        role = Role.Button
-                        contentDescription = dismissDescription
-                        onClick {
-                            onClickSpotlightDim()
-                            true
-                        }
-                    },
-            )
-
-            CanvasTopping(
-                entry = spotlighted,
-                canvasWidth = maxWidth,
-                canvasHeight = maxHeight,
-                onClick = { onClickTopping(spotlighted.topping) },
-                clickable = hitTestEnabled,
-            )
-        }
-
-        if (hitTestEnabled) {
+        // 드러나기 전에는 판정을 달지 않는다 — 보이지 않는 토핑이 눌리면 안 된다
+        if (hitTestEnabled && toppingsVisible) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -218,12 +256,14 @@ internal data class ToppingHitEntry(
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
     val target: ToppingHitTarget,
+    val imageState: CanvasLoadState,
 )
 
 /**
  * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
  *
  * @param loadMasks 클릭을 받지 않는 화면은 꺼서 쓰지도 않을 디코딩을 막는다
+ * @param retryKey 올리면 이미지를 다시 받아 온다. 알파 마스크는 여기 딸려 오지 않는다
  */
 @Composable
 private fun rememberToppingHitEntries(
@@ -231,6 +271,7 @@ private fun rememberToppingHitEntries(
     canvasWidth: Dp,
     canvasHeight: Dp,
     loadMasks: Boolean,
+    retryKey: Int,
 ): List<ToppingHitEntry> {
     val masks = rememberToppingAlphaMasks(
         if (loadMasks) toppings.map { it.imageUrl } else emptyList(),
@@ -238,9 +279,9 @@ private fun rememberToppingHitEntries(
     val density = LocalDensity.current
 
     return toppings.map { topping ->
-        key(topping.parfaitImageId.value) {
+        key(topping.parfaitImageId.value, retryKey) {
             val painter = rememberAsyncImagePainter(
-                model = topping.imageUrl,
+                model = rememberReloadableImageRequest(topping.imageUrl, retryKey),
                 contentScale = ContentScale.Fit,
             )
             val painterState by painter.state.collectAsState()
@@ -272,6 +313,11 @@ private fun rememberToppingHitEntries(
             ToppingHitEntry(
                 topping = topping,
                 painter = painter,
+                imageState = when (painterState) {
+                    is AsyncImagePainter.State.Success -> CanvasLoadState.Loaded
+                    is AsyncImagePainter.State.Error -> CanvasLoadState.Failed
+                    else -> CanvasLoadState.Loading
+                },
                 target = with(density) {
                     ToppingHitTarget(
                         centerXPx = center.x.toPx(),

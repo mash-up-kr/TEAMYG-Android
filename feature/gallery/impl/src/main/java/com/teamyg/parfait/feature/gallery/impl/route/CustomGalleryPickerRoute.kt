@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,6 +25,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialBoxPlacement
+import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialOverlay
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
@@ -124,22 +128,37 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
-    YGScaffoldV2 { innerPadding ->
-        CustomGalleryPickerScreen(
-            state = state,
-            toastPolicy = toastPolicy,
-            onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
-            onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
-            onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
-            onClickImage = { uri ->
-                viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
-            },
-            onClickCutoutImage = { recentImage ->
-                viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
-            },
-            onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
-            modifier = modifier.padding(innerPadding),
-        )
+    // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
+    // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
+        YGScaffoldV2 { innerPadding ->
+            CustomGalleryPickerScreen(
+                state = state,
+                toastPolicy = toastPolicy,
+                onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
+                onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
+                onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
+                onClickImage = { uri ->
+                    viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
+                },
+                onClickCutoutImage = { recentImage ->
+                    viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
+                },
+                onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
+                modifier = modifier.padding(innerPadding),
+            )
+        }
+
+        if (state.isTutorialVisible) {
+            // 강조 대상이 화면 위쪽(오늘 찍은 사진 목록)이라 카드는 아래에 붙인다
+            YGTutorialOverlay(
+                imageResource = R.drawable.img_upload_tutorial,
+                title = stringResource(R.string.gallery_upload_tutorial_title),
+                description = stringResource(R.string.gallery_upload_tutorial_description),
+                onClickButton = { viewModel.processIntent(CustomGalleryPickerIntent.OnConfirmTutorial) },
+                placement = YGTutorialBoxPlacement.Bottom,
+            )
+        }
     }
 }

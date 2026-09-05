@@ -15,18 +15,26 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.core.net.toUri
-import com.google.android.gms.common.moduleinstall.ModuleInstall
-import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.Subject
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.data.installer.image.ModuleInstallOutcome
+import com.teamyg.parfait.data.installer.image.SegmentationModuleInstaller
+import com.teamyg.parfait.data.utils.image.MAX_SUBJECT_COUNT
+import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
+import com.teamyg.parfait.data.utils.image.applyAlphaInPlace
+import com.teamyg.parfait.data.utils.image.clearFiles
+import com.teamyg.parfait.data.utils.image.composeCroppedArgb
+import com.teamyg.parfait.data.utils.image.coverageFloorPixels
+import com.teamyg.parfait.data.utils.image.filterCandidates
+import com.teamyg.parfait.data.utils.image.maskSubjectAlpha
+import com.teamyg.parfait.data.utils.image.postProcessAlpha
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
@@ -43,7 +51,12 @@ class ImageSegmentationRepositoryImpl
 constructor(
     @ApplicationContext private val context: Context,
     private val remoteImageDownloadDataSource: RemoteImageDownloadDataSource,
+    private val moduleInstaller: SegmentationModuleInstaller,
 ) : ImageSegmentationRepository {
+    override suspend fun prepareSegmentationModule() {
+        moduleInstaller.ensureInstalled()
+    }
+
     /**
      * 서버 토핑의 `imageUrl`은 `https://`다 — `ContentResolver`는 `content://`·`file://`만
      * 열 수 있어 그대로 넘기면 항상 실패한다(`#274`). 원격 주소면 직접 받아 디코드하고,
@@ -166,6 +179,12 @@ constructor(
         options: SubjectSegmenterOptions,
         image: InputImage,
     ): Result<SubjectSegmentationResult> {
+        val outcome = moduleInstaller.ensureInstalled()
+        if (outcome != ModuleInstallOutcome.Ready) {
+            repositoryLogger.w { "[MLKIT-MODULE] 모듈 미준비($outcome)로 process 를 건너뛴다" }
+            return Result.failure(SegmentationException.ModuleNotReady(null))
+        }
+
         val segmenter = try {
             SubjectSegmentation.getClient(options)
         } catch (e: Exception) {
@@ -174,10 +193,6 @@ constructor(
 
         return try {
             segmenter.use { segmenter ->
-                if (!ensureModuleInstalled(segmenter)) {
-                    return Result.failure(SegmentationException.ModuleNotReady(null))
-                }
-
                 withContext(Dispatchers.IO) {
                     Result.success(Tasks.await(segmenter.process(image)))
                 }
@@ -522,7 +537,7 @@ constructor(
         }
     }
 
-    override suspend fun saveEditedImage(bitmapWrapper: BitmapWrapper): Result<String> {
+    override suspend fun saveBitmap(bitmapWrapper: BitmapWrapper): Result<String> {
         // 넘겨받은 비트맵의 수명은 넘겨준 쪽이 쥐고 있으므로 여기서 recycle 하지 않는다
         val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
             ?: return Result.failure(SegmentationException.ImageNotFound(null))
@@ -551,35 +566,16 @@ constructor(
     }
 
     /**
-     * 세그멘테이션 optional module 이 준비됐는지 확인하고, 없으면 설치를 요청한 뒤 완료를 기다린다.
-     *
-     * 매니페스트의 `com.google.mlkit.vision.DEPENDENCIES` 는 설치 시점에 다운로드를 시작해달라는
-     * 힌트일 뿐 보장이 없어서, 실제 사용 직전에 한 번 더 확인한다.
-     *
-     * @return 모듈을 바로 쓸 수 있으면 true
-     */
-    private suspend fun ensureModuleInstalled(segmenter: SubjectSegmenter): Boolean = withContext(Dispatchers.IO) {
-        val moduleInstallClient = ModuleInstall.getClient(context)
-
-        if (Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()) {
-            return@withContext true
-        }
-
-        val request = ModuleInstallRequest
-            .newBuilder()
-            .addApi(segmenter)
-            .build()
-        Tasks.await(moduleInstallClient.installModules(request))
-
-        Tasks.await(moduleInstallClient.areModulesAvailable(segmenter)).areModulesAvailable()
-    }
-
-    /**
      * 모듈 다운로드가 끝나지 않아 실패한 경우와 그 외 처리 실패를 구분한다.
      * [Tasks.await] 는 원인을 [ExecutionException] 으로 감싸서 던지므로 한 겹 벗겨서 확인한다.
      */
     private fun Throwable.toSegmentationException(): SegmentationException {
         val cause = (this as? ExecutionException)?.cause ?: this
+
+        repositoryLogger.w(cause) {
+            "[MLKIT-MODULE] process 실패 ${cause::class.simpleName}, " +
+                "MlKit 오류 코드 ${(cause as? MlKitException)?.errorCode}"
+        }
 
         return if (cause is MlKitException && cause.errorCode == MlKitException.UNAVAILABLE) {
             SegmentationException.ModuleNotReady(cause)

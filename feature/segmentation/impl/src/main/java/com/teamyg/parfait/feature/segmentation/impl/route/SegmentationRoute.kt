@@ -40,6 +40,8 @@ internal fun SegmentationRoute(
             when (effect) {
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
 
+                is SegmentationEffect.GoBack -> navigator.onBack()
+
                 // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
                 is SegmentationEffect.GoToConfirm -> navigator.goTo(
                     NavKeySegmentationConfirm(
@@ -59,10 +61,10 @@ internal fun SegmentationRoute(
         isLoading = state.isLoading,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        // 대상을 아예 못 얻은 실패는 화면 전체를 C-103-Error 로 바꾼다.
-        // 고른 뒤의 실패는 후보가 남아 있어 토스트로만 알린다(SegmentationEffect.ShowError)
         if (state.isError) {
             SegmentationErrorScreen(
+                onClickRetry = { viewModel.processIntent(SegmentationIntent.Retry) },
+                onClickUseOriginal = { viewModel.processIntent(SegmentationIntent.UseOriginal) },
                 onClickClose = onClickClose,
                 modifier = modifier.padding(innerPadding),
             )

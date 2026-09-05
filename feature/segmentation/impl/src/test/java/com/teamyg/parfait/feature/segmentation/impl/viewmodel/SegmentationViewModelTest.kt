@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
+import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
@@ -12,6 +13,7 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
+import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -32,6 +34,7 @@ import kotlin.test.assertTrue
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
 private const val TRIMMED_SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
+private const val ORIGIN_PATH = "/cache/segmentation/origin.png"
 
 class SegmentationViewModelTest {
     @get:Rule
@@ -43,6 +46,7 @@ class SegmentationViewModelTest {
     private val segmentImage: SegmentImageUseCase = mockk()
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
+    private val saveBitmap: SaveBitmapUseCase = mockk()
 
     private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
 
@@ -72,6 +76,7 @@ class SegmentationViewModelTest {
         coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
         coEvery { persistSubject(candidate) } returns Result.success(success)
+        coEvery { saveBitmap(bitmapWrapper) } returns Result.success(ORIGIN_PATH)
     }
 
     private fun viewModel() = SegmentationViewModel(
@@ -81,6 +86,7 @@ class SegmentationViewModelTest {
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
         persistSubjectUseCase = persistSubject,
+        saveBitmapUseCase = saveBitmap,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -113,7 +119,7 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun init_decodeFails_tellsTheUserWithoutSegmenting() = runTest {
+    fun init_decodeFails_goesBackWithoutSegmenting() = runTest {
         // Given URI 가 만료돼 디코드가 실패를 돌려주는 상황
         coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
 
@@ -121,11 +127,11 @@ class SegmentationViewModelTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 크래시 대신 실패 화면으로 바뀌고, 로딩에 갇히지 않으며 세그멘테이션은 시도하지 않는다
-        assertTrue(viewModel.state.value.isError)
+        // Then 실패 화면 대신 뒤로 보낸다 — 원본이 없으면 이 화면에서 할 수 있는 일이 없다
+        assertFalse(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
         coVerify(exactly = 0) { segmentImage(any()) }
-        viewModel.effect.test { expectNoEvents() }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoBack, awaitItem()) }
     }
 
     @Test
@@ -424,5 +430,134 @@ class SegmentationViewModelTest {
 
         // Then 중복 탭 가드는 작업이 도는 동안만 막고, 끝난 뒤에는 다시 저장한다
         coVerify(exactly = 2) { persistSubject(candidate) }
+    }
+
+    @Test
+    fun retry_afterFailure_runsTheFlowAgainAndClearsTheError() = runTest {
+        // Given 첫 시도가 실패한 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isError)
+
+        // When 다음 시도는 성공하도록 바꾸고 재시도를 누른다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // Then 실패 표시가 걷히고 후보가 실린다 — 안 걷으면 성공해도 에러 화면이 남는다
+        val state = viewModel.state.value
+        assertFalse(state.isError)
+        assertEquals(listOf(candidate), state.candidates)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun retry_pressedTwiceWhileRunning_runsOnce() = runTest {
+        // Given 세그멘테이션이 오래 걸리는 상황
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000)
+            Result.success(listOf(candidate))
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 연달아 두 번 누른다
+        viewModel.processIntent(SegmentationIntent.Retry)
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // Then 흐름은 진입 1회 + 재시도 1회로 끝난다 — 두 번째 누름은 버려진다
+        coVerify(exactly = 2) { segmentImage(bitmapWrapper) }
+    }
+
+    @Test
+    fun init_moduleNotReady_marksErrorLikeAnyOtherFailure() = runTest {
+        // Given 모듈을 못 받아 실패한 상황
+        coEvery { segmentImage(bitmapWrapper) } returns
+            Result.failure(SegmentationException.ModuleNotReady(null))
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // Then 대상 못 찾음과 같은 실패로 접는다 — 디자인이 문구를 한 벌로 요구한다
+        assertTrue(viewModel.state.value.isError)
+    }
+
+    @Test
+    fun useOriginal_savesOnceAndGoesToConfirm() = runTest {
+        // Given 세그멘테이션이 실패해 실패 화면이 떠 있다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 편집 없이 사용을 누른다
+        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        advanceUntilIdle()
+
+        // Then 원본은 잘린 판과 캔버스 판이 같은 그림이라 한 번만 저장하고 같은 경로를 두 자리에 싣는다
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+        coVerify(exactly = 0) { persistSubject(any()) }
+        coVerify(exactly = 1) {
+            toppingDraftRepository.record(
+                subjectImagePath = ORIGIN_PATH,
+                cutoutImagePath = ORIGIN_PATH,
+                borderColorArgb = null,
+                borderWidthDp = null,
+            )
+        }
+        viewModel.effect.test {
+            assertEquals(
+                SegmentationEffect.GoToConfirm(
+                    subjectImagePath = ORIGIN_PATH,
+                    trimmedSubjectImagePath = ORIGIN_PATH,
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun useOriginal_saveFails_showsToastAndStaysOnErrorScreen() = runTest {
+        // Given 실패 화면이 떠 있고 원본 저장이 실패하는 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { saveBitmap(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 편집 없이 사용을 누른다
+        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        advanceUntilIdle()
+
+        // Then 토스트로 알리고 실패 화면에 머문다 — 로딩에 갇히지도 않는다
+        assertTrue(viewModel.state.value.isError)
+        assertFalse(viewModel.state.value.isLoading)
+        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+    }
+
+    @Test
+    fun useOriginal_pressedTwiceWhileRunning_runsOnce() = runTest {
+        // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { saveBitmap(bitmapWrapper) } coAnswers {
+            delay(1_000)
+            Result.success(ORIGIN_PATH)
+        }
+        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 연달아 두 번 누른다
+        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        advanceUntilIdle()
+
+        // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
     }
 }

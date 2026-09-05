@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.model.useCaseLogger
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import javax.inject.Inject
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class SignUpUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val refreshMyAccountUseCase: RefreshMyAccountUseCase,
+    private val deviceTokenRegistrar: DeviceTokenRegistrar,
 ) {
     /**
      * 서버는 동의하지 않은 약관도 `agreed = false` 로 함께 받아야 하므로
@@ -58,6 +60,8 @@ class SignUpUseCase @Inject constructor(
         refreshMyAccountUseCase().onFailure {
             useCaseLogger.w(it) { "SignUpUseCase - refreshMyAccount failed" }
         }
+
+        deviceTokenRegistrar.register()
 
         return Result.success(session)
     }

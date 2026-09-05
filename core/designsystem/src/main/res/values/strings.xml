@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="yg_loading_overlay_description">로딩 중</string>
+
+    <!-- 튜토리얼 카드. 진행 표시와 버튼 라벨은 YGTutorialBox 가 몇 번째 장인지 보고 고른다 -->
+    <string name="yg_tutorial_step">%1$d/%2$d</string>
+    <string name="yg_tutorial_next">다음</string>
+    <string name="yg_tutorial_start">시작하기</string>
 </resources>

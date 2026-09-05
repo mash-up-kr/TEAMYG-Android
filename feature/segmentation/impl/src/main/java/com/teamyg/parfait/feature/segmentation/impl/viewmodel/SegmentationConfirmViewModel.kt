@@ -5,7 +5,10 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
@@ -27,6 +30,8 @@ data class SegmentationConfirmState(
     val borderWidthDp: Float? = null,
     val borderLayers: List<ToppingBorderLayer> = emptyList(),
     val isDraftReady: Boolean = false,
+    /** 앱 설치 후 이 화면 첫 진입에서만 `true`. 화면 전체를 덮는다 */
+    val isTutorialVisible: Boolean = false,
 ) : UiState {
     /** 되살릴 원본이 없으면 영역은 손댈 수 없고 테두리만 고칠 수 있다 */
     val isBorderOnlyEdit: Boolean
@@ -39,6 +44,9 @@ data class SegmentationConfirmState(
 
 sealed interface SegmentationConfirmIntent : UiIntent {
     data class OnEditResult(val result: ToppingEditResult) : SegmentationConfirmIntent
+
+    /** 튜토리얼 칩을 눌렀다. 한 장뿐이라 그대로 닫고 다시 뜨지 않게 남긴다 */
+    data object OnConfirmTutorial : SegmentationConfirmIntent
 }
 
 sealed interface SegmentationConfirmEffect : UiSideEffect {
@@ -55,6 +63,8 @@ class SegmentationConfirmViewModel
     @Assisted("sourceImageUri") sourceImageUri: String?,
     private val savedStateHandle: SavedStateHandle,
     private val toppingDraftRepository: ToppingDraftRepository,
+    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
+    private val completeTutorialUseCase: CompleteTutorialUseCase,
 ) : BaseViewModel<SegmentationConfirmState, SegmentationConfirmIntent, SegmentationConfirmEffect>(
     initialState = SegmentationConfirmState(
         subjectImagePath = subjectImagePath,
@@ -100,12 +110,26 @@ class SegmentationConfirmViewModel
 
             collectDraft()
         }
+
+        observeTutorial()
     }
 
     override fun processIntent(intent: SegmentationConfirmIntent) {
         when (intent) {
             is SegmentationConfirmIntent.OnEditResult -> record(intent.result)
+            is SegmentationConfirmIntent.OnConfirmTutorial -> handleConfirmTutorial()
         }
+    }
+
+    private fun observeTutorial() {
+        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.SEGMENTATION) }) { isVisible ->
+            updateState { copy(isTutorialVisible = isVisible) }
+        }
+    }
+
+    private fun handleConfirmTutorial() {
+        updateState { copy(isTutorialVisible = false) }
+        launch(key = COMPLETE_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.SEGMENTATION) }
     }
 
     private suspend fun collectDraft() {
@@ -166,5 +190,9 @@ class SegmentationConfirmViewModel
             @Assisted("cutoutImagePath") cutoutImagePath: String?,
             @Assisted("sourceImageUri") sourceImageUri: String?,
         ): SegmentationConfirmViewModel
+    }
+
+    private companion object {
+        const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
     }
 }

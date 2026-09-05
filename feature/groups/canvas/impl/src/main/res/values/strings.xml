@@ -12,11 +12,21 @@
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
     <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요.</string>
+    <string name="canvas_main_capture_failure">미리보기를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_main_closed_canvas_alert_title">%1$d월 %2$d일의 파르페 완성</string>
     <string name="canvas_main_closed_canvas_alert_sub">%1$d명의 친구들과 함께했어요</string>
     <string name="canvas_main_closed_canvas_alert_button">보러가기</string>
     <string name="canvas_main_today_canvas_error">오늘의 캔버스를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_main_topping_flow_start_error">토핑을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <!-- C-001-Loading -->
+    <string name="canvas_main_loading_title">캔버스를 불러오는 중이에요</string>
+    <string name="canvas_main_loading_description">고화질일수록 더 오래 걸릴 수 있어요</string>
+
+    <!-- C-001-Error -->
+    <string name="canvas_main_load_error_title">캔버스를 불러오지 못했어요</string>
+    <string name="canvas_main_load_error_description">아래 버튼을 눌러 다시 시도해 주세요</string>
+    <string name="canvas_main_load_error_retry">다시 시도</string>
 
     <!-- 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 뜨는 환영 배너 -->
     <string name="canvas_welcome_joined_title">%1$s 그룹에 참여했어요</string>
@@ -50,6 +60,13 @@
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <!-- 갤러리에 저장하기 전, 무엇이 저장될지 보여 주는 미리보기 화면 -->
+    <string name="canvas_image_save_title">이미지 미리보기</string>
+    <string name="canvas_image_save_preview_content_description">저장할 캔버스 미리보기</string>
+    <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
+    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
+    <string name="canvas_image_save_confirm">갤러리에 저장</string>
+
     <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
     <string name="canvas_spotlight_time_minutes">%1$d분 전</string>
@@ -67,4 +84,12 @@
         <item>금</item>
         <item>토</item>
     </string-array>
+
+    <!-- 앱 설치 후 캔버스 첫 진입에서 1회만 도는 튜토리얼 -->
+    <string name="canvas_tutorial_calendar_title">지난 캔버스 보기</string>
+    <string name="canvas_tutorial_calendar_description">상단 날짜 버튼을 눌러\n지난 날의 캔버스를 다시 볼 수 있어요</string>
+    <string name="canvas_tutorial_topping_add_title">캔버스 토핑 추가</string>
+    <string name="canvas_tutorial_topping_add_description">캔버스 하단 토핑 추가 버튼을 눌러\n카메라 또는 갤러리에서 사진을 업로드 할 수 있어요</string>
+    <string name="canvas_tutorial_canvas_edit_title">캔버스 편집</string>
+    <string name="canvas_tutorial_canvas_edit_description">캔버스 편집 버튼을 눌러\n배경과 토핑을 자유롭게 꾸밀 수 있어요</string>
 </resources>

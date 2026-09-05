@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.session
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
@@ -34,12 +35,16 @@ class BootstrapSessionUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val memberRepository: MemberRepository,
     private val logout: LogoutUseCase,
+    private val deviceTokenRegistrar: DeviceTokenRegistrar,
 ) {
     suspend operator fun invoke(): SessionBootstrap {
         if (!authRepository.hasSession()) return SessionBootstrap.ToLogin
 
         return memberRepository.refreshMyAccount().fold(
-            onSuccess = { SessionBootstrap.ToGroupList },
+            onSuccess = {
+                deviceTokenRegistrar.register()
+                SessionBootstrap.ToGroupList
+            },
             onFailure = { error -> handleRefreshFailure(error) },
         )
     }
