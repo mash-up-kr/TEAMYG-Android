@@ -13,7 +13,7 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
-import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
+import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,7 +46,7 @@ class SegmentationViewModelTest {
     private val segmentImage: SegmentImageUseCase = mockk()
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
-    private val saveEditedImage: SaveEditedImageUseCase = mockk()
+    private val saveBitmap: SaveBitmapUseCase = mockk()
 
     private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
 
@@ -76,7 +76,7 @@ class SegmentationViewModelTest {
         coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
         coEvery { persistSubject(candidate) } returns Result.success(success)
-        coEvery { saveEditedImage(bitmapWrapper) } returns Result.success(ORIGIN_PATH)
+        coEvery { saveBitmap(bitmapWrapper) } returns Result.success(ORIGIN_PATH)
     }
 
     private fun viewModel() = SegmentationViewModel(
@@ -86,7 +86,7 @@ class SegmentationViewModelTest {
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
         persistSubjectUseCase = persistSubject,
-        saveEditedImageUseCase = saveEditedImage,
+        saveBitmapUseCase = saveBitmap,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -499,7 +499,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 원본은 잘린 판과 캔버스 판이 같은 그림이라 한 번만 저장하고 같은 경로를 두 자리에 싣는다
-        coVerify(exactly = 1) { saveEditedImage(bitmapWrapper) }
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
         coVerify(exactly = 0) { persistSubject(any()) }
         coVerify(exactly = 1) {
             toppingDraftRepository.record(
@@ -524,7 +524,7 @@ class SegmentationViewModelTest {
     fun useOriginal_saveFails_showsToastAndStaysOnErrorScreen() = runTest {
         // Given 실패 화면이 떠 있고 원본 저장이 실패하는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveEditedImage(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
+        coEvery { saveBitmap(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -543,7 +543,7 @@ class SegmentationViewModelTest {
     fun useOriginal_pressedTwiceWhileRunning_runsOnce() = runTest {
         // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveEditedImage(bitmapWrapper) } coAnswers {
+        coEvery { saveBitmap(bitmapWrapper) } coAnswers {
             delay(1_000)
             Result.success(ORIGIN_PATH)
         }
@@ -558,6 +558,6 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
-        coVerify(exactly = 1) { saveEditedImage(bitmapWrapper) }
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
     }
 }

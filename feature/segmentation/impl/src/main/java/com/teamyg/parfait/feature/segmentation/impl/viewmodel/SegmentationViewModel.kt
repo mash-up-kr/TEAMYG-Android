@@ -16,7 +16,7 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
-import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
+import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -64,7 +64,7 @@ class SegmentationViewModel
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
-    private val saveEditedImageUseCase: SaveEditedImageUseCase,
+    private val saveBitmapUseCase: SaveBitmapUseCase,
     private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
@@ -205,7 +205,7 @@ class SegmentationViewModel
         ) {
             updateState { copy(isLoading = true) }
 
-            val path = saveEditedImageUseCase(originBitmapWrapper).getOrElse {
+            val path = saveBitmapUseCase(originBitmapWrapper).getOrElse {
                 releaseLoading()
                 postSideEffect(SegmentationEffect.ShowError)
                 return@launch
