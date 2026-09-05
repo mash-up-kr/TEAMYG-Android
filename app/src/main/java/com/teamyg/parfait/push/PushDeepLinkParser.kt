@@ -21,15 +21,8 @@ object PushDeepLinkParser {
             if (id == null || id <= 0) null else PushDeepLink.AddTopping(id)
         }
 
-        "group" -> PushDeepLink.GroupList(type = type.toPushNotificationType())
+        "group" -> PushDeepLink.GroupList(type = PushNotificationType.fromKeyOrNull(type))
 
-        else -> null
-    }
-
-    private fun String?.toPushNotificationType(): PushNotificationType? = when (this) {
-        "TOPPING" -> PushNotificationType.TOPPING
-        "REMIND_AM" -> PushNotificationType.REMIND_AM
-        "REMIND_PM" -> PushNotificationType.REMIND_PM
         else -> null
     }
 }
