@@ -52,7 +52,11 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     /**
      * 전달받은 [token] 을 그대로 쓰지 않고 등록구를 부른다 — 그쪽이 지금 값을 다시 읽는다.
      * 세션 축 등록과 같은 뮤텍스를 타야 같은 토큰이 동시에 두 번 올라가지 않는다.
+     *
+     * deprecated 인 이유는 대체가 FID 기반 `onRegistered` 이기 때문이다. 지금 옮기지 않는
+     * 근거와 전환 조건은 specs/2026-09-05-push-notification-permission-and-device-token 결정 6.
      */
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         deviceTokenRegistrar.register()
