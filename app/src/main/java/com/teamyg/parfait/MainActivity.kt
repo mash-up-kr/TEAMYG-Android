@@ -13,8 +13,8 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
-import com.teamyg.parfait.domain.repository.session.SessionEventSource
+import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
+import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
     lateinit var navigator: Navigator
 
     @Inject
-    lateinit var sessionEventSource: SessionEventSource
+    lateinit var sessionEventBus: SessionEventBus
 
     @Inject
     lateinit var pushDeepLinkEventBus: PushDeepLinkEventBus
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                 MainRoute(
                     navigator = navigator,
                     entryBuilders = entryBuilders,
-                    sessionEventSource = sessionEventSource,
+                    sessionEventBus = sessionEventBus,
                     pushDeepLinkEventBus = pushDeepLinkEventBus,
                     modifier = Modifier.fillMaxSize(),
                 )

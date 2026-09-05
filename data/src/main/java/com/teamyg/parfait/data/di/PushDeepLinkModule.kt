@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.di
 
-import com.teamyg.parfait.data.push.PushDeepLinkEventBusImpl
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
+import com.teamyg.parfait.data.event.PushDeepLinkEventBusImpl
+import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

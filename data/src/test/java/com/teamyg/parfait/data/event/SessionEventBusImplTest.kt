@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.session
+package com.teamyg.parfait.data.event
 
 import app.cash.turbine.test
 import com.teamyg.parfait.domain.model.session.SessionEvent
@@ -6,11 +6,11 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SessionEventBusTest {
+class SessionEventBusImplTest {
     @Test
     fun postForcedLogout_beforeSubscribe_stillDelivers() = runTest {
         // Given 아직 아무도 구독하지 않은 버스
-        val bus = SessionEventBus()
+        val bus = SessionEventBusImpl()
 
         // When 이벤트를 발행한 뒤에 구독한다
         bus.postForcedLogout()
@@ -30,7 +30,7 @@ class SessionEventBusTest {
     @Test
     fun postForcedLogout_calledTwice_deliversOnce() = runTest {
         // Given 401 이 연달아 터져 이벤트가 두 번 발행된 버스
-        val bus = SessionEventBus()
+        val bus = SessionEventBusImpl()
         bus.postForcedLogout()
         bus.postForcedLogout()
 

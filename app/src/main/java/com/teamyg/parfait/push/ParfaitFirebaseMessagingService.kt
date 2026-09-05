@@ -1,17 +1,18 @@
 package com.teamyg.parfait.push
 
-import android.Manifest
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
+import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /** 모든 알림에 보내는 채널. [BaseApplication] 이 앱 시작 시 만든다. */
 const val PUSH_NOTIFICATION_CHANNEL_ID = "parfait_default"
@@ -31,7 +32,11 @@ private val pushLogger = Loggers.create("Push")
  * payload(예: 알림 없이 상태만 조용히 갱신)가 스펙에 생기면, 그 분기를 여기 추가해야 한다 —
  * 지금은 처리하지 않는다.
  */
+@AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
+    @Inject
+    lateinit var deviceTokenRegistrar: DeviceTokenRegistrar
+
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
@@ -44,10 +49,17 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         )
     }
 
+    /**
+     * 전달받은 [token] 을 그대로 쓰지 않고 등록구를 부른다 — 그쪽이 지금 값을 다시 읽는다.
+     * 세션 축 등록과 같은 뮤텍스를 타야 같은 토큰이 동시에 두 번 올라가지 않는다.
+     *
+     * deprecated 인 이유는 대체가 FID 기반 `onRegistered` 이기 때문이다. 지금 옮기지 않는
+     * 근거와 전환 조건은 specs/2026-09-05-push-notification-permission-and-device-token 결정 6.
+     */
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // TODO: 디바이스 토큰 등록 API 스펙이 아직 배포되지 않았다. 확정되면 여기서 서버에 등록한다.
-        pushLogger.i { "새 FCM 토큰을 받았지만 등록 API가 아직 없어 아무 것도 하지 않는다" }
+        deviceTokenRegistrar.register()
     }
 
     private fun showNotification(
@@ -56,13 +68,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         data: Map<String, String>,
         notificationId: Int,
     ) {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        if (!NotificationPermissionManager.hasPermission(context = this)) return
 
         val contentIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK

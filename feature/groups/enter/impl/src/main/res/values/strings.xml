@@ -38,4 +38,9 @@
     <string name="group_nickname_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="group_nickname_error_unknown">잠시 후 다시 시도해 주세요</string>
     <string name="group_nickname_error_not_applied">닉네임은 적용되지 않았어요\n그룹 설정에서 다시 바꿀 수 있어요</string>
+
+    <string name="notification_permission_rationale_title">그룹원이 토핑을 쌓으면 알려드릴까요?</string>
+    <string name="notification_permission_rationale_body">새 토핑 소식과 캔버스 마감 안내를 받을 수 있어요.\n알림은 언제든 기기 설정에서 끌 수 있어요.</string>
+    <string name="notification_permission_rationale_grant">알림 받기</string>
+    <string name="notification_permission_rationale_later">나중에</string>
 </resources>
