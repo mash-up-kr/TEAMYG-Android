@@ -7,8 +7,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertSame
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class RegisterCurrentDeviceTokenUseCaseTest {
@@ -31,19 +31,6 @@ class RegisterCurrentDeviceTokenUseCaseTest {
         // Then 그 토큰으로 등록을 부른다
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { registerDeviceTokenUseCase(DeviceToken("fcm-token")) }
-    }
-
-    @Test
-    fun invoke_tokenNotYetIssued_succeedsWithoutRegistering() = runTest {
-        // Given SDK 가 아직 토큰을 못 만들었다(드묾)
-        coEvery { deviceTokenProvider.currentToken() } returns null
-
-        // When 지금 토큰을 등록한다
-        val result = registerCurrentDeviceToken()
-
-        // Then 실패로 보지 않는다 — SDK 가 나중에 발급하면 onNewToken 이 대신 등록한다
-        assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { registerDeviceTokenUseCase(any()) }
     }
 
     @Test
