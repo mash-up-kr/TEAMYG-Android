@@ -5,8 +5,11 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
@@ -16,6 +19,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -34,6 +39,15 @@ class SegmentationConfirmViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val toppingDraftRepository: ToppingDraftRepository = mockk()
+    private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
+    private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
+
+    /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
+    private val tutorialVisible = MutableStateFlow(false)
+
+    init {
+        every { getTutorialVisible(TutorialKind.SEGMENTATION) } returns tutorialVisible
+    }
 
     private fun givenDraft(draft: ToppingDraft?) {
         every { toppingDraftRepository.draft } returns flowOf(draft)
@@ -61,6 +75,8 @@ class SegmentationConfirmViewModelTest {
         sourceImageUri = "content://media/1",
         savedStateHandle = SavedStateHandle(),
         toppingDraftRepository = toppingDraftRepository,
+        getTutorialVisibleFlowUseCase = getTutorialVisible,
+        completeTutorialUseCase = completeTutorial,
     )
 
     // 복원을 모사하는 테스트는 같은 handle 을 두 ViewModel 에 물린다
@@ -70,7 +86,59 @@ class SegmentationConfirmViewModelTest {
         sourceImageUri = null,
         savedStateHandle = handle,
         toppingDraftRepository = toppingDraftRepository,
+        getTutorialVisibleFlowUseCase = getTutorialVisible,
+        completeTutorialUseCase = completeTutorial,
     )
+
+    /**
+     * 튜토리얼 구독은 `launchWhileSubscribed` 라 [SegmentationConfirmViewModel.state] 를 보는
+     * 쪽이 있어야 열린다 — 라우트의 `collectAsStateWithLifecycle()` 을 여기서 흉내 낸다.
+     */
+    private fun TestScope.shownViewModel() = viewModel().also { viewModel ->
+        backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun tutorial_onFirstEntry_coversTheScreen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아직 누끼 튜토리얼을 보지 않은 사용자
+        givenDraft(draft())
+        tutorialVisible.value = true
+
+        // When 화면이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 튜토리얼이 뜬다
+        assertTrue(viewModel.state.value.isTutorialVisible)
+    }
+
+    @Test
+    fun tutorial_alreadySeen_doesNotOpen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 본 사용자(기본 스텁)
+        givenDraft(draft())
+
+        // When 화면이 열린다
+        val viewModel = shownViewModel()
+
+        // Then 아무것도 덮지 않는다
+        assertFalse(viewModel.state.value.isTutorialVisible)
+    }
+
+    @Test
+    fun tutorial_onConfirm_closesItAndMarksItSeen() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 튜토리얼이 떠 있다
+        givenDraft(draft())
+        tutorialVisible.value = true
+        val viewModel = shownViewModel()
+
+        // When 칩을 누른다
+        viewModel.processIntent(SegmentationConfirmIntent.OnConfirmTutorial)
+        advanceUntilIdle()
+
+        // Then 닫히고, 다음 진입부터 뜨지 않도록 저장한다
+        assertFalse(viewModel.state.value.isTutorialVisible)
+        coVerify(exactly = 1) { completeTutorial(TutorialKind.SEGMENTATION) }
+    }
 
     @Test
     fun state_followsTheDraft_notTheEntryArguments() = runTest(mainDispatcherRule.dispatcher) {
