@@ -1,4 +1,4 @@
-package com.teamyg.parfait.domain.repository.push
+package com.teamyg.parfait.domain.event
 
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import kotlinx.coroutines.flow.Flow

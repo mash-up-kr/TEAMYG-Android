@@ -17,8 +17,8 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
-import com.teamyg.parfait.domain.repository.push.PushDeepLinkEventBus
-import com.teamyg.parfait.domain.repository.session.SessionEventSource
+import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
+import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
@@ -27,14 +27,14 @@ import com.teamyg.parfait.feature.login.api.NavKeyLogin
 fun MainRoute(
     navigator: Navigator,
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
-    sessionEventSource: SessionEventSource,
+    sessionEventBus: SessionEventBus,
     pushDeepLinkEventBus: PushDeepLinkEventBus,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
     // 화면마다 구독하면 한 이벤트로 이동이 여러 번 일어난다.
     LaunchedEffect(Unit) {
-        sessionEventSource.events.collect { event ->
+        sessionEventBus.events.collect { event ->
             when (event) {
                 SessionEvent.ForcedLogout -> {
                     navigator.replaceAll(NavKeyLogin)

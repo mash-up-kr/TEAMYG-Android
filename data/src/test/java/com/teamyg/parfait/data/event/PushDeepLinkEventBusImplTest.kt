@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.push
+package com.teamyg.parfait.data.event
 
 import app.cash.turbine.test
 import com.teamyg.parfait.domain.model.push.PushDeepLink

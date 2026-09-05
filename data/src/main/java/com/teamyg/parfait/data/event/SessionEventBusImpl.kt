@@ -1,8 +1,8 @@
-package com.teamyg.parfait.data.session
+package com.teamyg.parfait.data.event
 
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.session.SessionEvent
-import com.teamyg.parfait.domain.repository.session.SessionEventSource
+import com.teamyg.parfait.domain.event.SessionEventBus
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -23,7 +23,7 @@ import javax.inject.Singleton
  * 건 그 성질뿐이고, `CONFLATED` 는 그걸 만족하는 가장 단순한 선택이라는 근거다.
  */
 @Singleton
-class SessionEventBus @Inject constructor() : SessionEventSource {
+class SessionEventBusImpl @Inject constructor() : SessionEventBus {
     private val channel = Channel<SessionEvent>(Channel.CONFLATED)
 
     override val events: Flow<SessionEvent> = channel.receiveAsFlow()
