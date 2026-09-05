@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.component
+package com.teamyg.parfait.core.designsystem.component.ygtutorial
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
@@ -20,26 +19,28 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.ui.R as CoreUiR
 
 /**
- * 튜토리얼 한 장의 설명 카드. 칩이 곧 "다음" 버튼이라 카드 안에 다른 조작부가 없다.
+ * 튜토리얼 한 장의 설명 카드. 칩이 곧 진행 버튼이라 카드 안에 다른 조작부가 없다.
  *
  * 딤 위에 올라가므로 배경을 불투명 White 로 둔다 — 반투명이면 뒤의 목업 이미지가 글자에 비친다.
+ *
+ * @param stepLabel 여러 장짜리 튜토리얼의 진행 표시(`1/3`). 한 장뿐이면 넘기지 않는다 —
+ *   그때는 그 자리가 비고 칩만 오른쪽에 남는다
  */
 @Composable
-internal fun TutorialBox(
-    stepLabel: String,
+fun YGTutorialBox(
+    buttonText: String,
     title: String,
     description: String,
-    onClickStep: () -> Unit,
+    onClickButton: () -> Unit,
     modifier: Modifier = Modifier,
+    stepLabel: String? = null,
 ) {
     Column(
         modifier = modifier
-            .background(
-                color = YGAtomicColors.Gray.White,
-            ).padding(
+            .background(color = YGAtomicColors.Gray.White)
+            .padding(
                 top = YGTheme.layout.padding.padding5,
                 end = YGTheme.layout.padding.padding5,
                 bottom = YGTheme.layout.padding.padding6,
@@ -50,16 +51,21 @@ internal fun TutorialBox(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                text = stepLabel,
-                style = YGTheme.typography.caption.c01M,
-                color = YGAtomicColors.Gray.Gray500,
-                modifier = Modifier.weight(1f),
-            )
+            if (stepLabel == null) {
+                Spacer(modifier = Modifier.weight(1f))
+            } else {
+                Text(
+                    text = stepLabel,
+                    style = YGTheme.typography.caption.c01M,
+                    color = YGAtomicColors.Gray.Gray500,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
             YGChipButton(
-                text = stringResource(CoreUiR.string.next),
+                text = buttonText,
                 colors = YGChipButtonColorsDefaults.CherrySolid,
-                onClick = onClickStep,
+                onClick = onClickButton,
             )
         }
 
@@ -81,38 +87,39 @@ internal fun TutorialBox(
     }
 }
 
-private data class TutorialBoxPreviewData(
-    val stepLabel: String,
+private data class YGTutorialBoxPreviewData(
+    val stepLabel: String?,
     val title: String,
     val description: String,
 )
 
-private class TutorialBoxPreviewParameterProvider : PreviewParameterProvider<TutorialBoxPreviewData> {
-    override val values: Sequence<TutorialBoxPreviewData>
+private class YGTutorialBoxPreviewParameterProvider : PreviewParameterProvider<YGTutorialBoxPreviewData> {
+    override val values: Sequence<YGTutorialBoxPreviewData>
         get() = sequenceOf(
-            TutorialBoxPreviewData(
+            YGTutorialBoxPreviewData(
                 stepLabel = "1/3",
                 title = "지난 캔버스 보기",
                 description = "상단 날짜 버튼을 눌러\n지난 날의 캔버스를 다시 볼 수 있어요",
             ),
-            TutorialBoxPreviewData(
-                stepLabel = "2/3",
-                title = "캔버스 토핑 추가",
-                description = "캔버스 하단 토핑 추가 버튼을 눌러\n카메라 또는 갤러리에서 사진을 업로드 할 수 있어요",
+            YGTutorialBoxPreviewData(
+                stepLabel = null,
+                title = "오늘의 사진 업로드",
+                description = "매일의 순간을 그대로 기록할 수 있도록\n오늘 찍은 사진만 업로드할 수 있어요",
             ),
         )
 }
 
 @YGPreview
 @Composable
-private fun PreviewTutorialBox(
-    @PreviewParameter(TutorialBoxPreviewParameterProvider::class) data: TutorialBoxPreviewData,
+private fun YGTutorialBoxPreview(
+    @PreviewParameter(YGTutorialBoxPreviewParameterProvider::class) data: YGTutorialBoxPreviewData,
 ) = PreviewBox {
-    TutorialBox(
-        stepLabel = data.stepLabel,
+    YGTutorialBox(
+        buttonText = "다음",
         title = data.title,
         description = data.description,
-        onClickStep = {},
+        onClickButton = {},
+        stepLabel = data.stepLabel,
         modifier = Modifier.fillMaxWidth(),
     )
 }
