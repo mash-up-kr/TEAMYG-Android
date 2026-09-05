@@ -5,11 +5,9 @@
     <string name="segmentation_error_message">사진 편집에 실패했어요. 잠시 후 다시 시도해 주세요.</string>
 
     <string name="segmentation_error_title">사진 편집에 실패했어요</string>
-    <string name="segmentation_error_description">다른 사진을 선택하거나 다시 시도해 주세요</string>
-
-    <string name="segmentation_module_error_title">사진 편집 기능을 준비하지 못했어요</string>
-    <string name="segmentation_module_error_description">네트워크 상태를 확인하고 잠시 후 다시 시도해 주세요</string>
+    <string name="segmentation_error_description">다시 시도하거나 편집 없이 사용할 수 있어요</string>
     <string name="segmentation_error_retry">다시 시도</string>
+    <string name="segmentation_error_use_original">편집 없이 사용</string>
 
     <string name="segmentation_confirm_edit_photo">사진 편집</string>
     <string name="segmentation_confirm_next">다음</string>

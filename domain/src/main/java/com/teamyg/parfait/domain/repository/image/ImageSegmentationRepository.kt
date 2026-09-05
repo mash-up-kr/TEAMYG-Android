@@ -31,13 +31,13 @@ interface ImageSegmentationRepository {
     suspend fun persistSubject(candidate: SegmentationCandidate): Result<SegmentationResult>
 
     /**
-     * 손으로 다듬은 결과 이미지를 캐시에 저장한다.
+     * 비트맵 한 장을 캐시에 PNG 로 떨군다.
      *
-     * 화면 사이에서는 비트맵 대신 경로를 주고받아야 해서, 편집을 마칠 때 한 번 파일로 떨군다.
+     * 화면 사이에서는 비트맵 대신 경로를 주고받아야 해서 한 번 파일로 떨군다.
      *
      * @return 저장된 파일의 절대 경로
      */
-    suspend fun saveEditedImage(bitmapWrapper: BitmapWrapper): Result<String>
+    suspend fun saveBitmap(bitmapWrapper: BitmapWrapper): Result<String>
 
     /**
      * 세그멘테이션이 만든 캐시 파일을 전부 지운다.

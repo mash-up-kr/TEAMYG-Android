@@ -537,7 +537,7 @@ constructor(
         }
     }
 
-    override suspend fun saveEditedImage(bitmapWrapper: BitmapWrapper): Result<String> {
+    override suspend fun saveBitmap(bitmapWrapper: BitmapWrapper): Result<String> {
         // 넘겨받은 비트맵의 수명은 넘겨준 쪽이 쥐고 있으므로 여기서 recycle 하지 않는다
         val bitmap: Bitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
             ?: return Result.failure(SegmentationException.ImageNotFound(null))
