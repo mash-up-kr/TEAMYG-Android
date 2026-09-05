@@ -40,7 +40,6 @@ import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffe
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
-import com.teamyg.parfait.core.ui.R as CoreUiR
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -155,7 +154,6 @@ internal fun CustomGalleryPickerRoute(
             // 강조 대상이 화면 위쪽(오늘 찍은 사진 목록)이라 카드는 아래에 붙인다
             YGTutorialOverlay(
                 imageResource = R.drawable.img_upload_tutorial,
-                buttonText = stringResource(CoreUiR.string.next),
                 title = stringResource(R.string.gallery_upload_tutorial_title),
                 description = stringResource(R.string.gallery_upload_tutorial_description),
                 onClickButton = { viewModel.processIntent(CustomGalleryPickerIntent.OnConfirmTutorial) },

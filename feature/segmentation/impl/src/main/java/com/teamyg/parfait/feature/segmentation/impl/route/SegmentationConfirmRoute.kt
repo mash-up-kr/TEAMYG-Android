@@ -30,7 +30,6 @@ import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfir
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmViewModel
 import java.io.File
-import com.teamyg.parfait.core.ui.R as CoreUiR
 
 @Composable
 internal fun SegmentationConfirmRoute(
@@ -105,7 +104,6 @@ internal fun SegmentationConfirmRoute(
             // 강조 대상이 화면 아래쪽(사진 편집 버튼)이라 카드는 위에 붙인다 — 기본 배치가 그것이다
             YGTutorialOverlay(
                 imageResource = R.drawable.img_segmentation_tutorial,
-                buttonText = stringResource(CoreUiR.string.next),
                 title = stringResource(R.string.segmentation_confirm_tutorial_title),
                 description = stringResource(R.string.segmentation_confirm_tutorial_description),
                 onClickButton = { viewModel.processIntent(SegmentationConfirmIntent.OnConfirmTutorial) },

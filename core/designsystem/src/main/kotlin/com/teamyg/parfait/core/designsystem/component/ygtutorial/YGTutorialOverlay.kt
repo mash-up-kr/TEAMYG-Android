@@ -37,12 +37,11 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 @Composable
 fun YGTutorialOverlay(
     @DrawableRes imageResource: Int,
-    buttonText: String,
     title: String,
     description: String,
     onClickButton: () -> Unit,
     modifier: Modifier = Modifier,
-    stepLabel: String? = null,
+    progress: YGTutorialProgress? = null,
     placement: YGTutorialBoxPlacement = YGTutorialBoxPlacement.Top,
 ) {
     val isBottomPlacement = placement == YGTutorialBoxPlacement.Bottom
@@ -63,11 +62,10 @@ fun YGTutorialOverlay(
         )
 
         YGTutorialBox(
-            buttonText = buttonText,
             title = title,
             description = description,
             onClickButton = onClickButton,
-            stepLabel = stepLabel,
+            progress = progress,
             modifier = Modifier
                 .align(if (isBottomPlacement) Alignment.BottomCenter else Alignment.TopCenter)
                 .windowInsetsPadding(

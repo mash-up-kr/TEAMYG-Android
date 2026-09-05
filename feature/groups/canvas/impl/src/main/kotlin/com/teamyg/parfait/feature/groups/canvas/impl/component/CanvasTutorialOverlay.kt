@@ -7,11 +7,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialOverlay
+import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialProgress
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
-import com.teamyg.parfait.core.ui.R as CoreUiR
 
 /**
  * 앱 설치 후 캔버스 첫 진입에서 한 번 도는 튜토리얼. 겹치는 방식은 [YGTutorialOverlay] 가 정하고,
@@ -25,14 +24,12 @@ internal fun CanvasTutorialOverlay(
 ) {
     YGTutorialOverlay(
         imageResource = step.imageResource,
-        buttonText = stringResource(CoreUiR.string.next),
         title = stringResource(step.titleResource),
         description = stringResource(step.descriptionResource),
         onClickButton = onClickNext,
-        stepLabel = stringResource(
-            R.string.canvas_tutorial_step,
-            step.stepNumber,
-            CanvasTutorialStep.totalCount,
+        progress = YGTutorialProgress(
+            step = step.stepNumber,
+            total = CanvasTutorialStep.totalCount,
         ),
         placement = step.boxPlacement,
         modifier = modifier,
