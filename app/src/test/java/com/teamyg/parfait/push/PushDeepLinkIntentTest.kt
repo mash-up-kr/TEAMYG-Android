@@ -20,13 +20,12 @@ class PushDeepLinkIntentTest {
 
     @Test
     fun toPushDeepLinkOrNull_relaunchedFromHistory_returnsNull() {
-        // Given, When 같은 인텐트가 태스크의 base intent 로 다시 전달됐다 — 뒤로가기로 나간 뒤
-        // 최근 앱·런처로 되살린 경우다. extras 는 그대로 살아 있고 이 플래그만 더 붙는다
+        // Given, When 같은 인텐트가 태스크의 base intent 로 다시 전달됐다(최근 앱·런처로 되살림)
         val result = pushIntent(
             flags = FLAGS_FRESH_TAP or Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY,
         ).toPushDeepLinkOrNull()
 
-        // Then 사용자가 지금 알림을 탭한 것이 아니므로 딥링크로 보지 않는다
+        // Then 지금 알림을 탭한 것이 아니므로 딥링크로 보지 않는다
         assertNull(result)
     }
 
@@ -38,7 +37,7 @@ class PushDeepLinkIntentTest {
     }
 
     private companion object {
-        /** 실기기에서 알림을 탭했을 때 실제로 찍힌 값(NEW_TASK | RESET_TASK_IF_NEEDED | BROUGHT_TO_FRONT). */
+        /** 실기기에서 알림을 탭했을 때 실제로 찍힌 값. */
         const val FLAGS_FRESH_TAP = 0x14000000
     }
 }
