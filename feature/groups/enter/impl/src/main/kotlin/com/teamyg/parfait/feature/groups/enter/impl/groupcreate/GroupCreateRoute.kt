@@ -24,7 +24,7 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.enter.impl.component.NotificationPermissionGate
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 
-private val NavigateToNextSaver = listSaver<GroupCreateSideEffect.NavigateToNext?, Any>(
+internal val NavigateToNextSaver = listSaver<GroupCreateSideEffect.NavigateToNext?, Any>(
     save = { value ->
         if (value == null) emptyList() else listOf(value.groupId, value.groupName, value.inviteCode)
     },

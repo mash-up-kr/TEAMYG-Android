@@ -34,7 +34,7 @@ import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
  * 이펙트는 `Channel` 이라 다시 오지 않으므로, 그룹은 이미 서버에서 참여 처리됐는데 사용자는
  * 이 화면에 갇힌다.
  */
-private val NavigateToNextSaver = listSaver<GroupNickNameSideEffect.NavigateToNext?, Any>(
+internal val NavigateToNextSaver = listSaver<GroupNickNameSideEffect.NavigateToNext?, Any>(
     save = { value -> if (value == null) emptyList() else listOf(value.groupId, value.groupName) },
     restore = { saved ->
         if (saved.isEmpty()) {

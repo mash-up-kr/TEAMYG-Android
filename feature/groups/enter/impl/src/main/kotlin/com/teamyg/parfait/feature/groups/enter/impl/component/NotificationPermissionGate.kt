@@ -34,11 +34,8 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
     val context: Context = activity ?: LocalContext.current
     val hasPermission = remember { NotificationPermissionManager.hasPermission(context) }
 
-    if (hasPermission) {
-        LaunchedEffect(Unit) { onFinished() }
-        return
-    }
-
+    // 아래 조기 return 밑으로 내리면 hasPermission 이 관찰 가능한 상태로 바뀌는 날
+    // 런처 등록이 조용히 사라진다.
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { isGranted ->
@@ -50,6 +47,11 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
         }
 
         onFinished()
+    }
+
+    if (hasPermission) {
+        LaunchedEffect(Unit) { onFinished() }
+        return
     }
 
     NotificationPermissionModal(
