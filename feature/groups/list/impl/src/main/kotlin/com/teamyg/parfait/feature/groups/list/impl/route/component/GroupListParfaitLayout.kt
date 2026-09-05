@@ -172,7 +172,7 @@ internal fun GroupListParfaitLayout(
     }
 }
 
-private const val MIN_MIDDLE_COUNT = 1
+private const val MIN_MIDDLE_COUNT = 2
 
 // 아직 measure 가 한 번도 돌지 않았음을 뜻하는 값
 private const val NOT_MEASURED = 0
