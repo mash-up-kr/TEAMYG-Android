@@ -1,9 +1,11 @@
 package com.teamyg.parfait.core.util.android.permission
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.os.Build
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
+import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 
 /**
  * `POST_NOTIFICATIONS` 는 API 33 에 생긴 권한이라 그 아래 플랫폼에는 아예 정의돼 있지 않다.
@@ -25,4 +27,12 @@ object NotificationPermissionManager {
     } else {
         true
     }
+
+    /**
+     * **요청 콜백 안에서만 의미가 있다.** 첫 요청 전에도 `false` 라서 그 밖에서 부르면
+     * "아직 안 물어봤다"와 "영구 거부"를 구분하지 못한다. 거부로 돌아온 직후라면 `false`
+     * 는 영구 거부뿐이다.
+     */
+    fun isPermanentlyDenied(activity: Activity): Boolean =
+        !activity.shouldShowRationale(permission = Manifest.permission.POST_NOTIFICATIONS)
 }

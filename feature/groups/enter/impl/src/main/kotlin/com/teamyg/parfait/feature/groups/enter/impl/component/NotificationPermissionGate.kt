@@ -1,6 +1,9 @@
 package com.teamyg.parfait.feature.groups.enter.impl.component
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -11,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -26,7 +30,8 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
  */
 @Composable
 internal fun NotificationPermissionGate(onFinished: () -> Unit) {
-    val context = LocalContext.current
+    val activity: Activity? = LocalActivity.current
+    val context: Context = activity ?: LocalContext.current
     val hasPermission = remember { NotificationPermissionManager.hasPermission(context) }
 
     if (hasPermission) {
@@ -36,7 +41,16 @@ internal fun NotificationPermissionGate(onFinished: () -> Unit) {
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-    ) { onFinished() }
+    ) { isGranted ->
+        // 눌러도 아무 일 없는 버튼으로 끝나지 않도록 설정으로 보낸다.
+        val isPermanentlyDenied = activity?.let(NotificationPermissionManager::isPermanentlyDenied) == true
+
+        if (!isGranted && isPermanentlyDenied) {
+            context.startActivity(context.buildAppSettingsIntent())
+        }
+
+        onFinished()
+    }
 
     NotificationPermissionModal(
         onGrantClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
