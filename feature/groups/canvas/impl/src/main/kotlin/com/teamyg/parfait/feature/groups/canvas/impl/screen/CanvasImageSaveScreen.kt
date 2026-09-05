@@ -81,8 +81,7 @@ internal fun CanvasImageSaveScreen(
                     .align(Alignment.CenterHorizontally)
                     .width(width = 198.dp)
                     .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
-                    .border(width = (0.59).dp, color = YGAtomicColors.Gray.Gray500)
-                    .padding(horizontal = YGTheme.layout.padding.padding7),
+                    .border(width = (0.59).dp, color = YGAtomicColors.Gray.Gray500),
             ) {
                 AsyncImage(
                     model = ImageRequest
