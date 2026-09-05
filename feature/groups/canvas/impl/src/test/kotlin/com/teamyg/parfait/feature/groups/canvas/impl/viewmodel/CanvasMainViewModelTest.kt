@@ -18,6 +18,7 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -26,8 +27,8 @@ import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteCanvasTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetCanvasTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -77,8 +78,8 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
-    private val getCanvasTutorialVisible: GetCanvasTutorialVisibleFlowUseCase = mockk()
-    private val completeCanvasTutorial: CompleteCanvasTutorialUseCase = mockk(relaxed = true)
+    private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
+    private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
     private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxUnitFun = true)
 
@@ -122,7 +123,7 @@ class CanvasMainViewModelTest {
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
-        every { getCanvasTutorialVisible() } returns canvasTutorialVisible
+        every { getTutorialVisible(TutorialKind.CANVAS) } returns canvasTutorialVisible
     }
 
     @After
@@ -146,8 +147,8 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
-        getCanvasTutorialVisibleFlowUseCase = getCanvasTutorialVisible,
-        completeCanvasTutorialUseCase = completeCanvasTutorial,
+        getTutorialVisibleFlowUseCase = getTutorialVisible,
+        completeTutorialUseCase = completeTutorial,
         toppingDraftRepository = toppingDraftRepository,
     )
 
@@ -197,7 +198,7 @@ class CanvasMainViewModelTest {
 
         // Then 다음 장으로 넘어갈 뿐, 중간에 끊긴 튜토리얼을 봤다고 남기지 않는다
         assertEquals(CanvasTutorialStep.first.next, viewModel.state.value.tutorialStep)
-        coVerify(exactly = 0) { completeCanvasTutorial() }
+        coVerify(exactly = 0) { completeTutorial(TutorialKind.CANVAS) }
     }
 
     @Test
@@ -214,7 +215,7 @@ class CanvasMainViewModelTest {
 
         // Then 튜토리얼이 닫히고, 다음 진입부터 뜨지 않도록 저장한다
         assertNull(viewModel.state.value.tutorialStep)
-        coVerify(exactly = 1) { completeCanvasTutorial() }
+        coVerify(exactly = 1) { completeTutorial(TutorialKind.CANVAS) }
     }
 
     @Test

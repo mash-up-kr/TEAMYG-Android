@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.repository.member
 
 import com.teamyg.parfait.data.source.member.local.UserConfigLocalDataSource
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.member.UserConfigVO
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -18,33 +19,38 @@ class UserConfigRepositoryImplTest {
     private val localDataSource: UserConfigLocalDataSource = mockk {
         every { userConfig } returns flowOf(null)
     }
-    private val repository = UserConfigRepositoryImpl(localDataSource)
 
     @Test
-    fun updateIsShowCanvasTutorial_withNothingStored_stillWrites() = runTest {
+    fun markTutorialSeen_withNothingStored_stillWrites() = runTest {
         // Given 앱을 막 설치해 저장분이 없다
-        coEvery { localDataSource.save(any()) } returns Unit
-
-        // When 튜토리얼을 끝까지 본 것으로 남긴다
-        repository.updateIsShowCanvasTutorial(false)
-
-        // Then 저장분이 없어도 써야 한다 — 안 쓰면 다음 진입에서 튜토리얼이 다시 뜬다
-        coVerify(exactly = 1) { localDataSource.save(UserConfigVO(isShowCanvasTutorial = false)) }
-    }
-
-    @Test
-    fun updateIsShowCanvasTutorial_withStoredConfig_keepsTheRestOfIt() = runTest {
-        // Given 이미 저장된 설정이 있다
-        every { localDataSource.userConfig } returns flowOf(UserConfigVO(isShowCanvasTutorial = true))
         val repository = UserConfigRepositoryImpl(localDataSource)
         coEvery { localDataSource.save(any()) } returns Unit
 
-        // When 튜토리얼 항목만 끈다
-        repository.updateIsShowCanvasTutorial(false)
+        // When 캔버스 튜토리얼을 끝까지 본 것으로 남긴다
+        repository.markTutorialSeen(TutorialKind.CANVAS)
 
-        // Then 나머지 항목이 늘어나도 이 갱신이 그것들을 초기화하지 않는다
+        // Then 저장분이 없어도 써야 한다 — 안 쓰면 다음 진입에서 튜토리얼이 다시 뜬다
         coVerify(exactly = 1) {
-            localDataSource.save(UserConfigVO(isShowCanvasTutorial = true).copy(isShowCanvasTutorial = false))
+            localDataSource.save(UserConfigVO(seenTutorials = setOf(TutorialKind.CANVAS)))
+        }
+    }
+
+    @Test
+    fun markTutorialSeen_keepsTutorialsSeenEarlier() = runTest {
+        // Given 캔버스 튜토리얼은 이미 봤다
+        every { localDataSource.userConfig } returns
+            flowOf(UserConfigVO(seenTutorials = setOf(TutorialKind.CANVAS)))
+        val repository = UserConfigRepositoryImpl(localDataSource)
+        coEvery { localDataSource.save(any()) } returns Unit
+
+        // When 업로드 튜토리얼을 마친다
+        repository.markTutorialSeen(TutorialKind.UPLOAD)
+
+        // Then 먼저 끝낸 기록을 덮지 않는다 — 덮으면 이미 본 튜토리얼이 되살아난다
+        coVerify(exactly = 1) {
+            localDataSource.save(
+                UserConfigVO(seenTutorials = setOf(TutorialKind.CANVAS, TutorialKind.UPLOAD)),
+            )
         }
     }
 }

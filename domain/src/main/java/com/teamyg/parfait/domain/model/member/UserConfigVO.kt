@@ -3,9 +3,11 @@ package com.teamyg.parfait.domain.model.member
 /**
  * 서버가 아니라 기기에만 남는 사용자 설정.
  *
- * @param isShowCanvasTutorial 캔버스 튜토리얼을 아직 보여줘야 하는가. 앱을 막 설치해 저장분이
- *   없는 상태와 같은 뜻이 되도록 기본값이 `true` 다
+ * @param seenTutorials 끝까지 본 튜토리얼. 목록에 없으면 아직 보여줘야 한다 — 화면이 늘 때마다
+ *   설정에 boolean 을 하나씩 붙이지 않으려고 목록 하나로 둔다
  */
 data class UserConfigVO(
-    val isShowCanvasTutorial: Boolean = true,
-)
+    val seenTutorials: Set<TutorialKind> = emptySet(),
+) {
+    fun isTutorialVisible(tutorial: TutorialKind): Boolean = tutorial !in seenTutorials
+}

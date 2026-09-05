@@ -23,14 +23,15 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteCanvasTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetCanvasTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -291,8 +292,8 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
-    private val getCanvasTutorialVisibleFlowUseCase: GetCanvasTutorialVisibleFlowUseCase,
-    private val completeCanvasTutorialUseCase: CompleteCanvasTutorialUseCase,
+    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
+    private val completeTutorialUseCase: CompleteTutorialUseCase,
     private val toppingDraftRepository: ToppingDraftRepository,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -551,7 +552,7 @@ constructor(
      * 보고 있던 장이 첫 장으로 되감기면, 사용자는 튜토리얼에서 빠져나올 수 없다.
      */
     private fun observeCanvasTutorial() {
-        launchWhileSubscribed(source = { getCanvasTutorialVisibleFlowUseCase() }) { isVisible ->
+        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.CANVAS) }) { isVisible ->
             updateState {
                 when {
                     isVisible.not() -> copy(tutorialStep = null)
@@ -571,7 +572,7 @@ constructor(
         updateState { copy(tutorialStep = next) }
 
         if (next == null) {
-            launch(key = COMPLETE_CANVAS_TUTORIAL_KEY) { completeCanvasTutorialUseCase() }
+            launch(key = COMPLETE_CANVAS_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.CANVAS) }
         }
     }
 
