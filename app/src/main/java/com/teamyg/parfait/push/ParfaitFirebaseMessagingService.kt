@@ -10,12 +10,8 @@ import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
-import com.teamyg.parfait.domain.model.notification.DeviceToken
-import com.teamyg.parfait.data.model.qualifier.ApplicationScope
-import com.teamyg.parfait.domain.usecase.notification.RegisterDeviceTokenUseCase
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** 모든 알림에 보내는 채널. [BaseApplication] 이 앱 시작 시 만든다. */
@@ -39,13 +35,7 @@ private val pushLogger = Loggers.create("Push")
 @AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
-    lateinit var registerDeviceTokenUseCase: RegisterDeviceTokenUseCase
-
-    // 서비스 스코프를 직접 만들면 onNewToken 직후의 onDestroy 가 등록 네트워크 호출을
-    // 끝나기 전에 취소한다 — FCM 전달용 Service 는 오래 붙어 있지 않는다.
-    @Inject
-    @ApplicationScope
-    lateinit var applicationScope: CoroutineScope
+    lateinit var deviceTokenRegistrar: DeviceTokenRegistrar
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -59,12 +49,13 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         )
     }
 
+    /**
+     * 전달받은 [token] 을 그대로 쓰지 않고 등록구를 부른다 — 그쪽이 지금 값을 다시 읽는다.
+     * 세션 축 등록과 같은 뮤텍스를 타야 같은 토큰이 동시에 두 번 올라가지 않는다.
+     */
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        applicationScope.launch {
-            registerDeviceTokenUseCase(DeviceToken(token))
-                .onFailure { pushLogger.e(it) { "새 FCM 토큰 등록에 실패했다" } }
-        }
+        deviceTokenRegistrar.register()
     }
 
     private fun showNotification(

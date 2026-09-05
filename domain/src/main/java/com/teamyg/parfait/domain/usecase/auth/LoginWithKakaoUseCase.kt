@@ -4,9 +4,9 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.useCaseLogger
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
-import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import javax.inject.Inject
 
 /**
@@ -18,7 +18,7 @@ import javax.inject.Inject
 class LoginWithKakaoUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val refreshMyAccountUseCase: RefreshMyAccountUseCase,
-    private val registerCurrentDeviceTokenUseCase: RegisterCurrentDeviceTokenUseCase,
+    private val deviceTokenRegistrar: DeviceTokenRegistrar,
 ) {
     suspend operator fun invoke(
         idToken: String,
@@ -39,9 +39,7 @@ class LoginWithKakaoUseCase @Inject constructor(
                 useCaseLogger.w(it) { "LoginWithKakaoUseCase - refreshMyAccount failed" }
             }
 
-            registerCurrentDeviceTokenUseCase().onFailure {
-                useCaseLogger.w(it) { "LoginWithKakaoUseCase - registerCurrentDeviceToken failed" }
-            }
+            deviceTokenRegistrar.register()
         }
 
         return Result.success(member)

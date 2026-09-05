@@ -14,13 +14,14 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
-import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,8 +32,8 @@ import kotlin.time.Duration.Companion.seconds
 class SignUpUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase = mockk(relaxed = true)
-    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, registerCurrentDeviceToken)
+    private val deviceTokenRegistrar: DeviceTokenRegistrar = mockk(relaxed = true)
+    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, deviceTokenRegistrar)
 
     private val registrationToken = RegistrationToken("registration-token")
 
@@ -247,26 +248,8 @@ class SignUpUseCaseTest {
         // Then 세션이 저장된 뒤에 등록한다 — 이 엔드포인트는 인증이 필요하다(화이트리스트 밖)
         coVerifyOrder {
             authRepository.saveSession(session)
-            registerCurrentDeviceToken()
+            deviceTokenRegistrar.register()
         }
-    }
-
-    @Test
-    fun invoke_deviceTokenRegistrationFails_signUpStillSucceeds() = runTest {
-        // Given 가입은 성공하나 기기 토큰 등록이 실패한다
-        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
-        coEvery { refreshMyAccount() } returns Result.success(myAccount)
-        coEvery { registerCurrentDeviceToken() } returns Result.failure(AppError.Network(cause = null))
-
-        // When 가입 요청
-        val result = useCase(
-            registrationToken = registrationToken,
-            policies = listOf(requiredPolicy),
-            agreedTermsIds = setOf(TermsId(1L)),
-        )
-
-        // Then 가입 결과는 성공이다 — 등록 실패는 다음 등록 시점이 메운다
-        assertTrue(result.isSuccess)
     }
 
     @Test
@@ -281,6 +264,6 @@ class SignUpUseCaseTest {
         )
 
         // Then 세션이 없으니 등록도 부르지 않는다
-        coVerify(exactly = 0) { registerCurrentDeviceToken() }
+        verify(exactly = 0) { deviceTokenRegistrar.register() }
     }
 }

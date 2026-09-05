@@ -3,11 +3,10 @@ package com.teamyg.parfait.domain.usecase.session
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
-import com.teamyg.parfait.domain.model.useCaseLogger
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
-import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import javax.inject.Inject
 
 /**
@@ -36,30 +35,18 @@ class BootstrapSessionUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val memberRepository: MemberRepository,
     private val logout: LogoutUseCase,
-    private val registerCurrentDeviceTokenUseCase: RegisterCurrentDeviceTokenUseCase,
+    private val deviceTokenRegistrar: DeviceTokenRegistrar,
 ) {
     suspend operator fun invoke(): SessionBootstrap {
         if (!authRepository.hasSession()) return SessionBootstrap.ToLogin
 
         return memberRepository.refreshMyAccount().fold(
             onSuccess = {
-                registerDeviceToken()
+                deviceTokenRegistrar.register()
                 SessionBootstrap.ToGroupList
             },
             onFailure = { error -> handleRefreshFailure(error) },
         )
-    }
-
-    /**
-     * 서버가 `token` 을 유일 키로 upsert 하므로(api/notification.md 등록 절) 앱 진입마다
-     * 다시 올리는 것이 지난 등록 실패와 재로그인으로 끊긴 매핑을 메우는 수단이다.
-     *
-     * 실패해도 라우팅은 바꾸지 않는다 — 푸시를 못 받는 것과 앱에 못 들어가는 것은 다르다.
-     */
-    private suspend fun registerDeviceToken() {
-        registerCurrentDeviceTokenUseCase().onFailure {
-            useCaseLogger.w(it) { "BootstrapSessionUseCase - registerCurrentDeviceToken failed" }
-        }
     }
 
     /**
