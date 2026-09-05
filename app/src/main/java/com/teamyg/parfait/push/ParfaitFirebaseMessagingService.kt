@@ -89,7 +89,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
 
         val notification = NotificationCompat
             .Builder(this, PUSH_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setContentIntent(pendingIntent)
