@@ -10,6 +10,8 @@ import com.teamyg.parfait.data.source.image.local.ImageFileLocalDataSource
 import com.teamyg.parfait.data.source.image.local.ImageFileLocalDataSourceImpl
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSourceImpl
+import com.teamyg.parfait.data.source.member.local.UserConfigLocalDataSource
+import com.teamyg.parfait.data.source.member.local.UserConfigLocalDataSourceImpl
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
@@ -58,6 +60,12 @@ interface LocalDataSourceModule {
     @Binds
     @Singleton
     fun bindUserInfoLocalDataSource(userInfoLocalDataSourceImpl: UserInfoLocalDataSourceImpl): UserInfoLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindUserConfigLocalDataSource(
+        userConfigLocalDataSourceImpl: UserConfigLocalDataSourceImpl,
+    ): UserConfigLocalDataSource
 
     @Binds
     @Singleton
