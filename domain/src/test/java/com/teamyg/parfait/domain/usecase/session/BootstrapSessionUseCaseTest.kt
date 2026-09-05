@@ -12,6 +12,7 @@ import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,6 +25,7 @@ class BootstrapSessionUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
     private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
+    private val registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase = mockk(relaxed = true)
 
     // 정리 경로는 실물 LogoutUseCase 를 통과시킨다 — mock 으로 바꾸면 "정리를 위임했다"만
     // 검증되고 정작 무엇이 지워지는지는 이 테스트가 놓친다.
@@ -31,6 +33,7 @@ class BootstrapSessionUseCaseTest {
         authRepository = authRepository,
         memberRepository = memberRepository,
         logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository),
+        registerCurrentDeviceTokenUseCase = registerCurrentDeviceToken,
     )
 
     @Test
@@ -162,5 +165,44 @@ class BootstrapSessionUseCaseTest {
             provider = LoginProvider.KAKAO,
             nickname = GlobalNickname("모카"),
         )
+    }
+
+    @Test
+    fun invoke_sessionAlive_registersDeviceToken() = runTest {
+        // Given 토큰이 있고 조회가 성공한다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns Result.success(ACCOUNT)
+
+        // When 부트스트랩한다
+        bootstrap()
+
+        // Then 이 세션의 기기 토큰을 등록한다 — 등록 유실을 앱 진입마다 메우는 자리다
+        coVerify(exactly = 1) { registerCurrentDeviceToken() }
+    }
+
+    @Test
+    fun invoke_deviceTokenRegistrationFails_stillGoesToGroupList() = runTest {
+        // Given 세션은 살아있으나 기기 토큰 등록이 실패한다
+        coEvery { authRepository.hasSession() } returns true
+        coEvery { memberRepository.refreshMyAccount() } returns Result.success(ACCOUNT)
+        coEvery { registerCurrentDeviceToken() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 부트스트랩한다
+        val result = bootstrap()
+
+        // Then 라우팅은 영향을 받지 않는다 — 등록 실패로 앱 진입을 막을 이유가 없다
+        assertEquals(SessionBootstrap.ToGroupList, result)
+    }
+
+    @Test
+    fun invoke_noToken_doesNotRegisterDeviceToken() = runTest {
+        // Given 저장된 토큰이 없다
+        coEvery { authRepository.hasSession() } returns false
+
+        // When 부트스트랩한다
+        bootstrap()
+
+        // Then 인증이 필요한 등록을 부르지 않는다
+        coVerify(exactly = 0) { registerCurrentDeviceToken() }
     }
 }

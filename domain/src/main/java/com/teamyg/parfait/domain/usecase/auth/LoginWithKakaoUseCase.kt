@@ -6,6 +6,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import javax.inject.Inject
 
 /**
@@ -17,6 +18,7 @@ import javax.inject.Inject
 class LoginWithKakaoUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val refreshMyAccountUseCase: RefreshMyAccountUseCase,
+    private val registerCurrentDeviceTokenUseCase: RegisterCurrentDeviceTokenUseCase,
 ) {
     suspend operator fun invoke(
         idToken: String,
@@ -35,6 +37,10 @@ class LoginWithKakaoUseCase @Inject constructor(
             // 되돌릴 곳이 없다. 값은 다음 앱 진입(스플래시)에서 채워진다.
             refreshMyAccountUseCase().onFailure {
                 useCaseLogger.w(it) { "LoginWithKakaoUseCase - refreshMyAccount failed" }
+            }
+
+            registerCurrentDeviceTokenUseCase().onFailure {
+                useCaseLogger.w(it) { "LoginWithKakaoUseCase - registerCurrentDeviceToken failed" }
             }
         }
 

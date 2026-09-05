@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -29,7 +30,8 @@ import kotlin.time.Duration.Companion.seconds
 class SignUpUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val useCase = SignUpUseCase(authRepository, refreshMyAccount)
+    private val registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase = mockk(relaxed = true)
+    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, registerCurrentDeviceToken)
 
     private val registrationToken = RegistrationToken("registration-token")
 
@@ -226,5 +228,55 @@ class SignUpUseCaseTest {
 
         // Then 가입 결과는 성공이다 — 그 시점에 되돌릴 곳이 없고 값은 다음 진입에서 채워진다
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun invoke_signUpSucceeds_registersDeviceToken() = runTest {
+        // Given 가입이 성공한다
+        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+
+        // When 가입 요청
+        useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = setOf(TermsId(1L)),
+        )
+
+        // Then 이 세션의 기기 토큰을 등록한다 — 알림 권한과 무관하게 세션마다 다시 올린다
+        coVerify(exactly = 1) { registerCurrentDeviceToken() }
+    }
+
+    @Test
+    fun invoke_deviceTokenRegistrationFails_signUpStillSucceeds() = runTest {
+        // Given 가입은 성공하나 기기 토큰 등록이 실패한다
+        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+        coEvery { registerCurrentDeviceToken() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 가입 요청
+        val result = useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = setOf(TermsId(1L)),
+        )
+
+        // Then 가입 결과는 성공이다 — 등록 실패는 다음 등록 시점이 메운다
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun invoke_requiredPolicyNotAgreed_doesNotRegisterDeviceToken() = runTest {
+        // Given 필수 약관에 동의하지 않아 가입 자체가 성립하지 않는다
+
+        // When 가입 요청
+        useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = emptySet(),
+        )
+
+        // Then 세션이 없으니 등록도 부르지 않는다
+        coVerify(exactly = 0) { registerCurrentDeviceToken() }
     }
 }

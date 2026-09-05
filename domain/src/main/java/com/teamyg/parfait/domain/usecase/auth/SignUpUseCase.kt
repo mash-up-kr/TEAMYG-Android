@@ -11,6 +11,7 @@ import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.model.useCaseLogger
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import javax.inject.Inject
 
 /**
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class SignUpUseCase @Inject constructor(
     private val authRepository: AuthRepository,
     private val refreshMyAccountUseCase: RefreshMyAccountUseCase,
+    private val registerCurrentDeviceTokenUseCase: RegisterCurrentDeviceTokenUseCase,
 ) {
     /**
      * 서버는 동의하지 않은 약관도 `agreed = false` 로 함께 받아야 하므로
@@ -57,6 +59,10 @@ class SignUpUseCase @Inject constructor(
         // 되돌릴 곳이 없다. 값은 다음 앱 진입(스플래시)에서 채워진다.
         refreshMyAccountUseCase().onFailure {
             useCaseLogger.w(it) { "SignUpUseCase - refreshMyAccount failed" }
+        }
+
+        registerCurrentDeviceTokenUseCase().onFailure {
+            useCaseLogger.w(it) { "SignUpUseCase - registerCurrentDeviceToken failed" }
         }
 
         return Result.success(session)

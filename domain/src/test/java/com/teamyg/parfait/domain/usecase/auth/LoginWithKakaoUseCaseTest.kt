@@ -12,6 +12,7 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,7 +25,8 @@ import kotlin.time.Duration.Companion.seconds
 class LoginWithKakaoUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val useCase = LoginWithKakaoUseCase(authRepository, refreshMyAccount)
+    private val registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase = mockk(relaxed = true)
+    private val useCase = LoginWithKakaoUseCase(authRepository, refreshMyAccount, registerCurrentDeviceToken)
 
     private val session = AuthSessionVO(
         accessToken = AccessToken("access-1"),
@@ -78,6 +80,48 @@ class LoginWithKakaoUseCaseTest {
 
         // Then 로그인 결과는 성공이다 — 그 시점에 되돌릴 곳이 없고 값은 다음 진입에서 채워진다
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun invoke_existingMember_registersDeviceToken() = runTest {
+        // Given 기존 회원 로그인이 성공한다
+        coEvery { authRepository.loginWithKakao(any(), any()) } returns
+            Result.success(KakaoLoginVO.ExistingMember(session))
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+
+        // When 로그인한다
+        useCase(idToken = "id-1", nonce = "nonce-1")
+
+        // Then 이 세션의 기기 토큰을 등록한다 — 알림 권한과 무관하게 세션마다 다시 올린다
+        coVerify(exactly = 1) { registerCurrentDeviceToken() }
+    }
+
+    @Test
+    fun invoke_deviceTokenRegistrationFails_loginStillSucceeds() = runTest {
+        // Given 로그인은 성공하나 기기 토큰 등록이 실패한다
+        coEvery { authRepository.loginWithKakao(any(), any()) } returns
+            Result.success(KakaoLoginVO.ExistingMember(session))
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+        coEvery { registerCurrentDeviceToken() } returns Result.failure(AppError.Network(cause = null))
+
+        // When 로그인한다
+        val result = useCase(idToken = "id-1", nonce = "nonce-1")
+
+        // Then 로그인 결과는 성공이다 — 등록 실패는 다음 등록 시점이 메운다
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun invoke_newUser_doesNotRegisterDeviceToken() = runTest {
+        // Given 신규 회원 응답(아직 세션이 없어 인증이 필요한 등록을 부를 수 없다)
+        coEvery { authRepository.loginWithKakao(any(), any()) } returns
+            Result.success(KakaoLoginVO.NewUser(RegistrationToken("reg-1")))
+
+        // When 로그인한다
+        useCase(idToken = "id-1", nonce = "nonce-1")
+
+        // Then 등록 호출이 없다
+        coVerify(exactly = 0) { registerCurrentDeviceToken() }
     }
 
     @Test
