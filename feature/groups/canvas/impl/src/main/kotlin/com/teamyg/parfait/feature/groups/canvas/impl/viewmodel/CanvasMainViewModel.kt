@@ -188,11 +188,13 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
 
     /**
-     * 지금 보고 있는 캔버스 프레임을 이미지로 캡처해 달라는 요청. 캡처(Compose
-     * GraphicsLayer) 자체는 화면만 할 수 있어, ViewModel 은 요청만 보내고 화면이 캡처한
-     * 결과를 [CanvasMainIntent.SaveCapturedCanvas] 로 다시 돌려받는다.
+     * 지금 보고 있는 캔버스 프레임을 캡처해 미리보기 화면으로 넘겨 달라는 요청.
+     *
+     * 캡처(Compose GraphicsLayer)도 캐시 파일 쓰기도 화면만 할 수 있어 ViewModel 은 요청만
+     * 보낸다. 갤러리 저장은 미리보기에서 확정하고 돌아온 뒤에야
+     * [CanvasMainIntent.SaveCapturedCanvas] 로 이어진다.
      */
-    data object RequestCanvasCapture : CanvasMainEffect
+    data object RequestCanvasCaptureForPreview : CanvasMainEffect
 
     data class ShowGallerySaveResult(
         val isSuccess: Boolean,
@@ -248,7 +250,7 @@ sealed interface CanvasMainIntent : UiIntent {
 
     data object OnClickGoToToday : CanvasMainIntent
 
-    /** [CanvasMainEffect.RequestCanvasCapture] 에 대한 응답으로, 화면이 캡처한 비트맵을 돌려준다 */
+    /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
     data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
@@ -654,9 +656,8 @@ constructor(
         }
     }
 
-    /** 캡처(Compose GraphicsLayer)는 화면만 할 수 있어, 화면에 요청만 보낸다 */
     private fun handleClickSaveToGallery() {
-        postSideEffect(effect = CanvasMainEffect.RequestCanvasCapture)
+        postSideEffect(effect = CanvasMainEffect.RequestCanvasCaptureForPreview)
     }
 
     private fun handleSaveCapturedCanvas(bitmap: Bitmap) {

@@ -12,6 +12,7 @@
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
     <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요.</string>
+    <string name="canvas_main_capture_failure">미리보기를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_main_closed_canvas_alert_title">%1$d월 %2$d일의 파르페 완성</string>
     <string name="canvas_main_closed_canvas_alert_sub">%1$d명의 친구들과 함께했어요</string>
     <string name="canvas_main_closed_canvas_alert_button">보러가기</string>
@@ -58,6 +59,13 @@
     <string name="canvas_topping_place_failed">토핑을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">토핑 이미지를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+
+    <!-- 갤러리에 저장하기 전, 무엇이 저장될지 보여 주는 미리보기 화면 -->
+    <string name="canvas_image_save_title">이미지 미리보기</string>
+    <string name="canvas_image_save_preview_content_description">저장할 캔버스 미리보기</string>
+    <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
+    <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
+    <string name="canvas_image_save_confirm">갤러리에 저장</string>
 
     <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
