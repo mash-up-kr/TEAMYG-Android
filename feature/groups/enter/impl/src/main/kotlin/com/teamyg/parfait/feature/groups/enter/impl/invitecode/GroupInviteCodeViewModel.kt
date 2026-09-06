@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.domain.usecase.group.GetGroupJoinPreviewUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -19,6 +20,7 @@ data class GroupInviteCodeUiState(
     val inviteCodeError: InviteCodeError? = null,
     val isSubmitting: Boolean = false,
     val clipboardInviteCode: String? = null,
+    val nickName: String? = null,
 ) : UiState {
     val codeLength = InviteCode.LENGTH
 
@@ -61,6 +63,7 @@ sealed interface GroupInviteCodeSideEffect : UiSideEffect {
     data class NavigateToNext(
         val inviteCode: String,
         val groupName: String,
+        val nickName: String,
     ) : GroupInviteCodeSideEffect
 }
 
@@ -69,9 +72,23 @@ class GroupInviteCodeViewModel
 @Inject
 constructor(
     private val getGroupJoinPreview: GetGroupJoinPreviewUseCase,
+    private val getMyAccountFlow: GetMyAccountFlowUseCase,
 ) : BaseViewModel<GroupInviteCodeUiState, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
     initialState = GroupInviteCodeUiState(),
 ) {
+    init {
+        observeMyAccount()
+    }
+
+    /** 그룹 내 닉네임의 초기값은 계정 공통 값을 재사용한다 — 그룹마다 새로 뽑지 않는다 */
+    private fun observeMyAccount() {
+        launch {
+            getMyAccountFlow().collect { account ->
+                updateState { copy(nickName = account?.nickname?.value) }
+            }
+        }
+    }
+
     override fun processIntent(intent: GroupInviteCodeIntent) {
         when (intent) {
             GroupInviteCodeIntent.ClickBackButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToBack)
@@ -162,10 +179,18 @@ constructor(
             try {
                 getGroupJoinPreview(InviteCode(inviteCode))
                     .onSuccess { groupName ->
+                        // 닉네임이 없다고 넘어가는 것까지 막지는 않는다 — 조회를 이미 마친
+                        // 뒤라 여기서 되돌리면 사용자는 아무 반응 없는 실패로 본다
+                        val nickName = state.value.nickName
+                        if (nickName == null) {
+                            viewModelLogger.w { "앱 닉네임이 아직 없어 닉네임 초기값 없이 넘어간다" }
+                        }
+
                         postSideEffect(
                             GroupInviteCodeSideEffect.NavigateToNext(
                                 inviteCode = inviteCode,
                                 groupName = groupName.value,
+                                nickName = nickName.orEmpty(),
                             ),
                         )
                     }.onFailure(::handleFailure)

@@ -47,6 +47,7 @@ fun GroupInviteCodeRoute(
                         NavKeyGroupNickName(
                             inviteCode = effect.inviteCode,
                             groupName = effect.groupName,
+                            nickName = effect.nickName,
                         ),
                     )
                 }
