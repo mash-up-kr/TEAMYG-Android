@@ -4,7 +4,7 @@ import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
-import com.teamyg.parfait.data.session.SessionEventBus
+import com.teamyg.parfait.data.event.SessionEventBusImpl
 import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
@@ -48,7 +48,7 @@ class TokenAuthenticator @Inject constructor(
     private val tokenStore: TokenStore,
     @UnauthenticatedClient private val authService: AuthService,
     private val apiCaller: ApiCaller,
-    private val sessionEventBus: SessionEventBus,
+    private val sessionEventBus: SessionEventBusImpl,
     private val userInfoLocalDataSource: UserInfoLocalDataSource,
     private val groupLocalDataSource: GroupLocalDataSource,
     private val canvasLocalDataSource: CanvasLocalDataSource,

@@ -14,11 +14,14 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
+import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +32,8 @@ import kotlin.time.Duration.Companion.seconds
 class SignUpUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val useCase = SignUpUseCase(authRepository, refreshMyAccount)
+    private val deviceTokenRegistrar: DeviceTokenRegistrar = mockk(relaxed = true)
+    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, deviceTokenRegistrar)
 
     private val registrationToken = RegistrationToken("registration-token")
 
@@ -226,5 +230,40 @@ class SignUpUseCaseTest {
 
         // Then 가입 결과는 성공이다 — 그 시점에 되돌릴 곳이 없고 값은 다음 진입에서 채워진다
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun invoke_signUpSucceeds_registersDeviceToken() = runTest {
+        // Given 가입이 성공한다
+        coEvery { authRepository.signUp(any(), any()) } returns Result.success(session)
+        coEvery { refreshMyAccount() } returns Result.success(myAccount)
+
+        // When 가입 요청
+        useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = setOf(TermsId(1L)),
+        )
+
+        // Then 세션이 저장된 뒤에 등록한다 — 이 엔드포인트는 인증이 필요하다(화이트리스트 밖)
+        coVerifyOrder {
+            authRepository.saveSession(session)
+            deviceTokenRegistrar.register()
+        }
+    }
+
+    @Test
+    fun invoke_requiredPolicyNotAgreed_doesNotRegisterDeviceToken() = runTest {
+        // Given 필수 약관에 동의하지 않아 가입 자체가 성립하지 않는다
+
+        // When 가입 요청
+        useCase(
+            registrationToken = registrationToken,
+            policies = listOf(requiredPolicy),
+            agreedTermsIds = emptySet(),
+        )
+
+        // Then 세션이 없으니 등록도 부르지 않는다
+        verify(exactly = 0) { deviceTokenRegistrar.register() }
     }
 }

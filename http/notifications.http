@@ -1,0 +1,127 @@
+### 알림(기기 FCM 토큰 등록) API
+#
+# 인증 필요. 먼저 auth.http 로 로그인해 access_token 을 채운다.
+# 회원과 세션은 요청이 아니라 토큰에서 정해진다 - 남의 기기를 지정할 경로가 없다.
+#
+# ⚠️ 이 파일은 "서버에 토큰을 등록하는" 쪽이다. 등록한 기기로 실제 푸시를 받아 보려면
+#    fcm-test.http 를 쓴다(그쪽은 서버가 아니라 FCM 으로 직접 나간다).
+#
+# ⚠️ 성공이 204 이고 본문이 없다 - 서버 전체에서 envelope 없는 응답은 logout·회원 탈퇴와
+#    이것뿐이다.
+
+### 1. 기기 토큰 등록
+# 등록은 token 을 유일 키로 하는 upsert 다. 같은 토큰으로 다시 부르면 소유자·세션·플랫폼·
+# 갱신 시각이 덮어써진다 - 그래서 앱 시작·onNewToken·권한 허용마다 반복 호출해도 된다.
+#
+# device_token 은 손으로 채우는 값이다. 앱 로그(Push 태그) 또는 아래 두 방법으로 얻는다.
+#   - 앱에 수신부가 붙어 있으면 onNewToken 로그
+#   - 없으면 Firebase Console 에서 테스트 기기 토큰 발급
+POST {{base_url}}/api/v1/notifications/devices
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "token": "{{fcm_device_token}}",
+  "platform": "ANDROID"
+}
+
+> {%
+    client.test("204 본문 없음", function() {
+        client.assert(response.status === 204, "status: " + response.status);
+    });
+%}
+
+### 2. (대조용) 같은 토큰 재등록 → 그대로 204
+# 새 행이 생기지 않고 기존 행이 갱신된다. 반복 호출이 정상이라는 계약의 확인이다.
+POST {{base_url}}/api/v1/notifications/devices
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "token": "{{fcm_device_token}}",
+  "platform": "ANDROID"
+}
+
+> {%
+    client.test("204 본문 없음", function() {
+        client.assert(response.status === 204, "status: " + response.status);
+    });
+%}
+
+### 3. (대조용) 빈 토큰 → 400 INVALID_REQUEST
+# @NotBlank 에 걸린다. 도메인 전용 에러 코드가 없어 전역 코드로 나온다.
+POST {{base_url}}/api/v1/notifications/devices
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "token": "",
+  "platform": "ANDROID"
+}
+
+> {%
+    client.test("400 INVALID_REQUEST", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_REQUEST", "code: " + response.body.code);
+    });
+%}
+
+### 4. (대조용) 없는 platform → 400 INVALID_REQUEST
+# DevicePlatform 은 IOS·ANDROID 두 값뿐이다. 열거형 밖 값은 역직렬화에서 먼저 깨진다.
+POST {{base_url}}/api/v1/notifications/devices
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "token": "{{fcm_device_token}}",
+  "platform": "WINDOWS"
+}
+
+> {%
+    client.test("400 INVALID_REQUEST", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+        client.assert(response.body.code === "INVALID_REQUEST", "code: " + response.body.code);
+    });
+%}
+
+### 5. (대조용) platform 필드 자체를 뺌 → 400
+# @NotNull 이 없지만 Kotlin 비널 프로퍼티라 역직렬화 단계에서 거절된다.
+POST {{base_url}}/api/v1/notifications/devices
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "token": "{{fcm_device_token}}"
+}
+
+> {%
+    client.test("400", function() {
+        client.assert(response.status === 400, "status: " + response.status);
+    });
+%}
+
+### 6. (대조용) 토큰 없이 호출 → 401 UNAUTHORIZED
+# 화이트리스트 밖이라 인증 대상이다.
+POST {{base_url}}/api/v1/notifications/devices
+Content-Type: application/json
+
+{
+  "token": "{{fcm_device_token}}",
+  "platform": "ANDROID"
+}
+
+> {%
+    client.test("401 UNAUTHORIZED", function() {
+        client.assert(response.status === 401, "status: " + response.status);
+        client.assert(response.body.code === "UNAUTHORIZED", "code: " + response.body.code);
+    });
+%}
+
+### 7. 등록 해제는 이 파일에 없다 - 삭제 엔드포인트가 서버에 없기 때문이다
+# 지워지는 경로는 셋이고 전부 부수 효과다.
+#   - auth.http 4번 로그아웃  → 그 세션이 등록한 행
+#   - users.http 7번 회원 탈퇴 → 그 회원의 전 행
+#   - 푸시 발송이 죽은 토큰을 만났을 때 → 그 토큰 행(서버가 스스로 회수)
+#
+# ⚠️ 로그아웃하면 서버가 이 기기의 행을 지운다. 다시 로그인해도 FCM 토큰 자체는 그대로라
+#    onNewToken 이 불리지 않으므로, 알림을 계속 받으려면 1번을 다시 실행해야 한다.

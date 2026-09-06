@@ -12,7 +12,10 @@ import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
+import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -26,6 +29,8 @@ data class CustomGalleryPickerState(
     val access: GalleryPermissionManager.GalleryAccessLevel = GalleryPermissionManager.GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
     val recentImages: List<RecentImage> = emptyList(),
+    /** 앱 설치 후 이 화면 첫 진입에서만 `true`. 화면 전체를 덮는다 */
+    val isTutorialVisible: Boolean = false,
 ) : UiState {
     val isEmpty: Boolean
         get() = groups.all { it.images.isEmpty() } && recentImages.isEmpty()
@@ -67,6 +72,9 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
     ) : CustomGalleryPickerIntent()
 
     data object OnCancel : CustomGalleryPickerIntent()
+
+    /** 튜토리얼 칩을 눌렀다. 한 장뿐이라 그대로 닫고 다시 뜨지 않게 남긴다 */
+    data object OnConfirmTutorial : CustomGalleryPickerIntent()
 }
 
 @HiltViewModel(assistedFactory = CustomGalleryPickerViewModel.Factory::class)
@@ -76,6 +84,8 @@ class CustomGalleryPickerViewModel
     @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
+    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
+    private val completeTutorialUseCase: CompleteTutorialUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
@@ -85,6 +95,19 @@ class CustomGalleryPickerViewModel
         viewModelScope.launch {
             collectRecentCacheImages()
         }
+
+        observeTutorial()
+    }
+
+    private fun observeTutorial() {
+        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.UPLOAD) }) { isVisible ->
+            updateState { copy(isTutorialVisible = isVisible) }
+        }
+    }
+
+    private fun handleConfirmTutorial() {
+        updateState { copy(isTutorialVisible = false) }
+        launch(key = COMPLETE_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.UPLOAD) }
     }
 
     override fun processIntent(intent: CustomGalleryPickerIntent) {
@@ -96,6 +119,7 @@ class CustomGalleryPickerViewModel
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
             is CustomGalleryPickerIntent.OnClickCutoutImage -> handleOnClickCutoutImage(intent)
             is CustomGalleryPickerIntent.OnCancel -> handleOnCancel()
+            is CustomGalleryPickerIntent.OnConfirmTutorial -> handleConfirmTutorial()
         }
     }
 
@@ -173,5 +197,9 @@ class CustomGalleryPickerViewModel
             returnResultOnly: Boolean,
             recentImagePick: RecentImagePick,
         ): CustomGalleryPickerViewModel
+    }
+
+    private companion object {
+        const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
     }
 }

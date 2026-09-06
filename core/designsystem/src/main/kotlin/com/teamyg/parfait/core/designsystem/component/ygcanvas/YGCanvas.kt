@@ -18,6 +18,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,11 +37,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenu
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuAction
 import com.teamyg.parfait.core.designsystem.component.ygcanvasmenu.YGCanvasMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygcanvasdateselect.YGCanvasDateSelectButton
+import com.teamyg.parfait.core.designsystem.component.ygskeleton.YGSkeleton
+import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.shape.canvasCutCornerShape
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -51,6 +60,9 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
  */
 const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
+/** 이미지 배경이 아니면 기다릴 것이 없어 [Loaded] 다 */
+enum class YGCanvasBackgroundState { Loading, Loaded, Failed }
+
 @Composable
 fun YGCanvas(
     date: String,
@@ -65,6 +77,8 @@ fun YGCanvas(
     isDimmed: Boolean = false,
     onDimClick: () -> Unit = {},
     isMenuExpanded: Boolean = false,
+    reloadKey: Int = 0,
+    onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit = {},
     /** 토핑이 하나도 없는 캔버스. [background] 까지 미설정일 때만 [emptyMessage] 안내판이 덮는다 */
     isEmpty: Boolean = false,
     isCalendarVisible: Boolean = false,
@@ -106,6 +120,8 @@ fun YGCanvas(
                 CanvasArea(
                     shape = shape,
                     background = background,
+                    reloadKey = reloadKey,
+                    onBackgroundStateChange = onBackgroundStateChange,
                     isEmpty = isEmpty,
                     emptyMessage = emptyMessage,
                     content = content,
@@ -236,6 +252,8 @@ private fun BoxWithConstraintsScope.calculateCanvasLayoutMetrics(
 private fun CanvasArea(
     shape: Shape,
     background: YGCanvasBackground?,
+    reloadKey: Int,
+    onBackgroundStateChange: (YGCanvasBackgroundState) -> Unit,
     isEmpty: Boolean,
     emptyMessage: String,
     dateSelect: @Composable () -> Unit,
@@ -252,6 +270,21 @@ private fun CanvasArea(
         }
     } else {
         Modifier
+    }
+
+    var backgroundState by remember(background, reloadKey) {
+        mutableStateOf(
+            if (background is YGCanvasBackground.Image) {
+                YGCanvasBackgroundState.Loading
+            } else {
+                YGCanvasBackgroundState.Loaded
+            },
+        )
+    }
+    val currentOnBackgroundStateChange by rememberUpdatedState(onBackgroundStateChange)
+
+    LaunchedEffect(backgroundState) {
+        currentOnBackgroundStateChange(backgroundState)
     }
 
     Box(
@@ -281,14 +314,26 @@ private fun CanvasArea(
                 )
 
                 is YGCanvasBackground.Image -> AsyncImage(
-                    model = background.url,
+                    model = rememberReloadableImageRequest(background.url, reloadKey),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    onState = { state ->
+                        backgroundState = when (state) {
+                            is AsyncImagePainter.State.Success -> YGCanvasBackgroundState.Loaded
+                            is AsyncImagePainter.State.Error -> YGCanvasBackgroundState.Failed
+                            else -> YGCanvasBackgroundState.Loading
+                        }
+                    },
                     modifier = Modifier.matchParentSize(),
                 )
             }
 
             content()
+        }
+
+        // 캡처 Box 안에 두면 갤러리에 저장한 이미지에 시머 회색면이 박힌다
+        if (backgroundState == YGCanvasBackgroundState.Loading) {
+            YGSkeleton(modifier = Modifier.matchParentSize())
         }
 
         // 배경도 토핑도 없을 때만 회색 안내판이 덮는다 — 배경이 정해지는 순간 안내는 사라지고

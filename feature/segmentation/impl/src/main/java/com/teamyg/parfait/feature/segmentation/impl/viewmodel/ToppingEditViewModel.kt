@@ -11,7 +11,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
-import com.teamyg.parfait.domain.usecase.image.SaveEditedImageUseCase
+import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
@@ -154,7 +154,7 @@ class ToppingEditViewModel
     @Assisted("borderLayers") private val initialBorderLayers: List<ToppingBorderLayer>,
     @Assisted("borderOnly") borderOnly: Boolean,
     private val decodeImageUseCase: DecodeImageUseCase,
-    private val saveEditedImageUseCase: SaveEditedImageUseCase,
+    private val saveBitmapUseCase: SaveBitmapUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
     initialState = ToppingEditState(
         tab = if (borderOnly) ToppingEditTab.BORDER else ToppingEditTab.AREA,
@@ -272,8 +272,8 @@ class ToppingEditViewModel
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
             // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
             val (cutoutPath, subjectPath) = try {
-                val savedCutoutPath = saveEditedImageUseCase(cutout.toAndroidBitmap()).getOrNull()
-                val savedSubjectPath = saveEditedImageUseCase(trimmedCutout.toAndroidBitmap()).getOrNull()
+                val savedCutoutPath = saveBitmapUseCase(cutout.toAndroidBitmap()).getOrNull()
+                val savedSubjectPath = saveBitmapUseCase(trimmedCutout.toAndroidBitmap()).getOrNull()
                 savedCutoutPath to savedSubjectPath
             } finally {
                 if (trimmedCutout !== cutout) trimmedCutout.recycle()

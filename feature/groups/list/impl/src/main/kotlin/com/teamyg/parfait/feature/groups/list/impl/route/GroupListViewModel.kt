@@ -66,14 +66,6 @@ sealed interface GroupListSideEffect : UiSideEffect {
     /** 닉네임이 없으면 나가지 않는 이펙트라, 갈 화면이 받을 값을 실어 보낸다 */
     data class NavigateToCreateGroup(val nickName: String) : GroupListSideEffect
 
-    /**
-     * 당겨서 새로고침이 실패했는데 보여 줄 목록은 남아 있다.
-     *
-     * 화면은 그대로 두고 토스트로만 알린다 — 목록이 바뀌지 않은 것은 "받아 봤는데 새 소식이
-     * 없다"와 구분되지 않아, 사용자가 직접 시킨 일이 실패했다는 것을 말해 줄 자리가 따로 필요하다.
-     */
-    data object ShowRefreshError : GroupListSideEffect
-
     data object NavigateToInviteCode : GroupListSideEffect
 }
 
@@ -96,6 +88,9 @@ constructor(
      * 표시는 캐시가 맡는다 — 다른 화면이 그룹을 만들거나 나가면 이 화면이 다시 조회하지 않아도
      * 그 자리에서 반영된다.
      *
+     * 덮개도 여기서 걷는다. 조회가 반환한 시점에 걷으면 캐시 방출이 그보다 늦어, 그 틈에
+     * 토핑 없는 빈 파르페가 드러난다.
+     *
      * 툴팁도 같은 자리에서 따라간다 — 마지막 그룹을 나가면 다시, 첫 그룹을 만들면 사라지도록.
      * 아직 한 번도 받지 못한(`null`) 동안에는 켜지 않는다 — 0건인지 모르는 채로 띄우면
      * 그룹이 있는 사용자에게도 한 번 스쳤다 사라진다.
@@ -103,7 +98,14 @@ constructor(
     private fun observeGroups() {
         viewModelScope.launch {
             getMyGroupsFlow().collect { groups ->
-                updateState { copy(groupList = groups, isTooltipVisible = groups?.isEmpty() == true) }
+                updateState {
+                    copy(
+                        groupList = groups,
+                        isTooltipVisible = groups?.isEmpty() == true,
+                        // 캐시는 구독하자마자 null 을 한 번 내므로 목록이 실제로 온 때만 걷는다
+                        isInitialLoading = if (groups == null) isInitialLoading else false,
+                    )
+                }
             }
         }
     }
@@ -212,9 +214,13 @@ constructor(
             try {
                 refreshMyGroups()
                     .onSuccess { updateState { copy(isError = false) } }
-                    .onFailure { throwable -> handleLoadFailure(throwable, isRefresh) }
+                    .onFailure { throwable ->
+                        handleLoadFailure(throwable, isRefresh)
+                        // 실패하면 캐시가 아무것도 내지 않아 덮개를 걷어 줄 쪽이 없다
+                        updateState { copy(isInitialLoading = false) }
+                    }
             } finally {
-                updateState { copy(isRefreshing = false, isInitialLoading = false) }
+                updateState { copy(isRefreshing = false) }
             }
         }
     }
@@ -227,25 +233,18 @@ constructor(
     private fun isInitialLoad(isRefresh: Boolean): Boolean = isRefresh.not() && state.value.groupList == null
 
     /**
-     * 조회는 [GroupListIntent.Enter] 로 화면에 돌아올 때마다 나가므로, 실패마다 에러 화면으로
+     * 조회는 [GroupListIntent.Enter] 로 화면에 돌아올 때마다 나가므로, 그 실패까지 에러 화면으로
      * 넘기면 뒤로 온 것만으로 보던 목록이 통째로 사라진다. 낡아도 남겨 두는 편이 낫다.
      *
-     * 대신 남겨 두면 실패가 화면에서 사라지므로, 사용자가 **직접 시킨** 새로고침이었을 때는
-     * 토스트로 따로 알린다. 목록이 비어 에러 화면으로 넘어가는 경우는 그 화면이 이미 실패를
-     * 말하고 있어 토스트를 겹치지 않는다.
+     * 당겨서 새로고침은 화면이 이미 목록을 비운 뒤라 실패를 받아 줄 자리가 에러 화면뿐이다.
      */
     private fun handleLoadFailure(
         throwable: Throwable,
         isRefresh: Boolean,
     ) {
-        // 미조회(null)와 0건을 함께 "보여 줄 것이 없다"로 본다 — 둘 다 에러 화면이 맞다
-        val hasList = state.value.groupList
-            .isNullOrEmpty()
-            .not()
-        updateState { copy(isError = hasList.not()) }
-
-        if (isRefresh && hasList) {
-            postSideEffect(GroupListSideEffect.ShowRefreshError)
+        // 켜기만 하고 끄지 않는다 — 여기서 끄면 실패한 재진입 조회가 앞선 실패를 덮는다
+        if (isRefresh || state.value.groupList.isNullOrEmpty()) {
+            updateState { copy(isError = true) }
         }
 
         when (throwable) {

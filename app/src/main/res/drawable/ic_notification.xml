@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림 상태바 small icon 전용. 런처 아이콘(ic_launcher_monochrome)은 어댑티브 세이프존
+     여백 탓에 24dp에서 콘텐츠가 37%까지 줄어 재사용하지 않는다.
+     시스템이 알파만 쓰고 색은 덮어쓰므로 흰 실루엣으로 둔다.
+     group 변환은 원본 SVG의 4~5dp 여백을 규격인 2dp로 줄여 20dp 라이브 영역을 채우는 용도다.
+     디자인이 여백을 조인 에셋을 다시 주면 이 group을 걷어내라. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="1.28011"
+        android:scaleY="1.28011"
+        android:translateX="-3.33137"
+        android:translateY="-3.22050">
+        <path
+            android:pathData="M7.02859 11.1752L7.9682 4.07816C7.9682 4.07816 10.4472 4.28725 11.6067 4.59794C12.7662 4.90864 13.306 6.20728 13.306 6.20728L17.1544 5.64751L17.5643 8.66628L16.4847 8.80622L16.8945 11.5351L17.5543 11.4451L17.7042 12.6247L18.5239 12.5247L18.8438 15.0836L18.0941 15.1836L18.4539 17.8325L15.725 18.2424L15.4152 18.5422L14.9553 19.7018L11.8566 19.2819C11.8566 19.2819 11.2169 19.7018 10.2173 19.5418C9.21769 19.3819 8.458 18.5422 8.458 18.5422L5.67914 18.3423L5.84907 15.8133L5.10938 15.7634L5.2893 12.9845L7.02859 11.1752Z"
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="0.065625" />
+    </group>
+</vector>

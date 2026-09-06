@@ -3,7 +3,7 @@ package com.teamyg.parfait.data.network
 import app.cash.turbine.test
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
-import com.teamyg.parfait.data.session.SessionEventBus
+import com.teamyg.parfait.data.event.SessionEventBusImpl
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
@@ -71,7 +71,7 @@ private class FakeTokenStore(
 class TokenAuthenticatorTest {
     private lateinit var server: MockWebServer
     private lateinit var tokenStore: FakeTokenStore
-    private lateinit var sessionEventBus: SessionEventBus
+    private lateinit var sessionEventBus: SessionEventBusImpl
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var groupLocalDataSource: GroupLocalDataSource
     private lateinit var canvasLocalDataSource: CanvasLocalDataSource
@@ -86,7 +86,7 @@ class TokenAuthenticatorTest {
         server.start()
 
         tokenStore = FakeTokenStore(accessToken = OLD_ACCESS_TOKEN, refreshToken = REFRESH_TOKEN)
-        sessionEventBus = SessionEventBus()
+        sessionEventBus = SessionEventBusImpl()
         userInfoLocalDataSource = mockk(relaxed = true)
         groupLocalDataSource = mockk(relaxed = true)
         canvasLocalDataSource = mockk(relaxed = true)

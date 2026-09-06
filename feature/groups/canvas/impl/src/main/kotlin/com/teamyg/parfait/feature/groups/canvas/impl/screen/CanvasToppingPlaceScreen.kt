@@ -151,6 +151,8 @@ internal fun CanvasToppingPlaceScreen(
                     onClickTopping = {},
                     onClickSpotlightDim = {},
                     hitTestEnabled = false,
+                    // 배경으로만 까는 자리다. 게이트를 켜면 배치 중인 토핑 옆에서 로딩이 돈다
+                    revealTogether = false,
                     modifier = Modifier.fillMaxSize(),
                 )
 

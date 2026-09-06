@@ -8,4 +8,8 @@
     <string name="gallery_empty_today_description">오늘 찍은 사진이 없어요\n사진을 찍고 토핑을 추가해 보세요</string>
     <string name="gallery_recent_uploaded_header">최근 업로드한 사진</string>
     <string name="gallery_today_photos_title">오늘 찍은 사진</string>
+
+    <!-- 앱 설치 후 사진 업로드 화면 첫 진입에서 1회만 뜨는 튜토리얼 -->
+    <string name="gallery_upload_tutorial_title">오늘의 사진 업로드</string>
+    <string name="gallery_upload_tutorial_description">매일의 순간을 그대로 기록할 수 있도록\n오늘 찍은 사진만 업로드할 수 있어요</string>
 </resources>

@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import org.junit.Assert.assertEquals
@@ -54,6 +57,23 @@ class YGLoadingOverlayTest {
 
         // Then 클릭이 오버레이에서 멎어 콜백이 불리지 않는다
         composeTestRule.runOnIdle { assertEquals(0, clickCount) }
+    }
+
+    @Test
+    fun ygLoadingOverlay_defaultArt_drawsAtCommonLoadingSize() {
+        // Given 로띠가 무한 반복이라 시계를 손으로 돌린다
+        composeTestRule.mainClock.autoAdvance = false
+
+        composeTestRule.setContent {
+            YGLoadingOverlay()
+        }
+        composeTestRule.mainClock.advanceTimeByFrame()
+
+        // Then 공통 로딩은 44×44 그대로다
+        composeTestRule
+            .onNodeWithTag(YG_LOADING_LOTTIE_TEST_TAG, useUnmergedTree = true)
+            .assertWidthIsEqualTo(44.dp)
+            .assertHeightIsEqualTo(44.dp)
     }
 
     private companion object {

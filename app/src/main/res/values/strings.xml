@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Parfait</string>
+
+    <string name="notification_channel_default_name">파르페 알림</string>
+    <string name="notification_channel_default_description">새 토핑, 캔버스 마감 안내 알림</string>
 </resources>
