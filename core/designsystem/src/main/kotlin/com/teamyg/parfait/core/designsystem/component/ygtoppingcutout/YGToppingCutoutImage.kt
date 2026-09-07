@@ -123,13 +123,7 @@ private fun BoxScope.ToppingBorder(
             )
 
             outline.toBorderAlphaBitmap(target, outsetPx)?.asImageBitmap()?.let { image ->
-                ToppingBorderPlate(
-                    image = image,
-                    offset = IntOffset(
-                        x = (box.width - subject.width) / 2 - padding,
-                        y = (box.height - subject.height) / 2 - padding,
-                    ),
-                )
+                ToppingBorderPlate(image = image, padding = padding)
             }
         }
     }
@@ -140,19 +134,28 @@ private fun BoxScope.ToppingBorder(
             .onSizeChanged { size -> boxSize = size },
     ) {
         val current = plate ?: return@Canvas
+        // 판이 낡았어도 자리는 지금 상자 기준으로 다시 잰다 — 그래야 크기가 바뀌는 동안에도
+        // 알맹이(Fit 으로 즉시 새 상자에 다시 앉는다)에서 띠가 떨어져 나가지 않는다
+        val currentBoxWidth = size.width.roundToInt()
+        val currentBoxHeight = size.height.roundToInt()
+        val subjectWidth = current.image.width - current.padding * 2
+        val subjectHeight = current.image.height - current.padding * 2
         drawImage(
             image = current.image,
-            dstOffset = current.offset,
+            dstOffset = IntOffset(
+                x = (currentBoxWidth - subjectWidth) / 2 - current.padding,
+                y = (currentBoxHeight - subjectHeight) / 2 - current.padding,
+            ),
             dstSize = IntSize(current.image.width, current.image.height),
             colorFilter = ColorFilter.tint(color),
         )
     }
 }
 
-/** 알맹이와 여백을 함께 담은 띠 한 장과 그것을 놓을 자리 */
+/** 알맹이와 여백을 함께 담은 띠 한 장. [padding]으로 알맹이 자리를 지금 상자 기준으로 다시 잰다 */
 private data class ToppingBorderPlate(
     val image: ImageBitmap,
-    val offset: IntOffset,
+    val padding: Int,
 )
 
 private fun fitSize(
