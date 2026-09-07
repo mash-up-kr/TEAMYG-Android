@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygtoppingcutout
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -7,11 +8,12 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
@@ -31,18 +33,17 @@ import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.util.android.outline.toBorderAlphaBitmap
 import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
-
-/** 알맹이 긴 변을 이 격자로 반올림한 값이 바뀔 때만 띠를 다시 만든다 */
-private const val BORDER_SIZE_QUANTUM_PX = 16
 
 /** 판의 알맹이가 거리판의 이 배수를 넘지 않는다. 그 위로는 같은 거리판을 다시 표본화할 뿐이다 */
 private const val BORDER_PLATE_FIELD_MULTIPLE = 2
@@ -91,6 +92,7 @@ private fun BoxScope.ToppingBorder(
     val outsetPx = with(LocalDensity.current) { width.toPx() }
 
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
+    var plate by remember { mutableStateOf<ToppingBorderPlate?>(null) }
 
     // Image 가 painter 의 intrinsic 비율로 앉으므로 띠도 같은 비율을 봐야 어긋나지 않는다.
     // 비율을 못 구할 때(비동기 painter가 아직 안 떴을 때)만 거리판 비율로 떨어진다
@@ -106,51 +108,20 @@ private fun BoxScope.ToppingBorder(
         outline.width.toFloat() / outline.height
     }
 
-    // 실측 boxSize 는 여기서만 읽는다 — 격자([BORDER_SIZE_QUANTUM_PX])로 반올림한 "가상 표시
-    // 크기"의 긴 변만 produceState 의 키로 넘긴다. 실측 그대로를 키로 두면 드래그 중 매 프레임
-    // 재생성이라 격자 한 칸을 넘을 때만 다시 만들게 한다
-    val quantizedSubjectLongSide = if (boxSize.width > 0 && boxSize.height > 0) {
-        val subjectNow = fitSize(aspectRatio, boxSize)
-        quantizeLongSide(max(subjectNow.width, subjectNow.height))
-    } else {
-        0
-    }
-
-    val plate: ToppingBorderPlate? by produceState<ToppingBorderPlate?>(
-        initialValue = null,
-        outline,
-        quantizedSubjectLongSide,
-        outsetPx,
-        aspectRatio,
-    ) {
-        if (quantizedSubjectLongSide <= 0) return@produceState
-
-        value = withContext(Dispatchers.Default) {
-            // quantizedSubjectLongSide 를 "가상 표시 크기"의 긴 변으로 여기고 판을 만든다.
-            // 판 해상도 상한 — 거리판을 표본화할 뿐인 지점 위로는 판을 키워도 선명해지지 않는다
-            val fieldLongSide = max(outline.width, outline.height)
-            val plateLongSide = min(quantizedSubjectLongSide, fieldLongSide * BORDER_PLATE_FIELD_MULTIPLE)
-            val plateSubject = sizeForLongSide(aspectRatio, plateLongSide)
-
-            // 판이 가상 표시 크기보다 작게 만들어진 만큼(상한에 걸렸을 때만 1보다 작다),
-            // 판 좌표계에서 쓰는 굵기·여백도 같은 비율로 줄인다 — 안 줄이면 늘려 그릴 때 두꺼워진다
-            val plateScale = plateLongSide.toFloat() / quantizedSubjectLongSide
-            val plateOutsetPx = outsetPx * plateScale
-            val platePadding = ceil(plateOutsetPx).toInt() + 1
-
-            val target = ToppingBorderTarget(
-                width = plateSubject.width + platePadding * 2,
-                height = plateSubject.height + platePadding * 2,
-                subjectLeft = platePadding,
-                subjectTop = platePadding,
-                subjectWidth = plateSubject.width,
-                subjectHeight = plateSubject.height,
-            )
-
-            outline.toBorderAlphaBitmap(target, plateOutsetPx)?.asImageBitmap()?.let { image ->
-                ToppingBorderPlate(image = image, padding = platePadding)
+    // 크기를 이펙트의 키로 두면 크기가 바뀔 때마다 만들던 판을 취소하고 처음부터 다시 시작한다.
+    // 판 한 장을 만드는 데 한 프레임보다 오래 걸리면 드래그하는 내내 어느 판도 끝을 못 봐서 띠가
+    // 멈춘 채로 남는다. 그래서 크기는 키가 아니라 conflate 한 흐름으로 받아, 판은 언제나 한 번에
+    // 한 장씩 끝까지 만들고 그동안 지나간 중간 크기는 버린다 — 드래그가 멎으면 마지막 크기 한
+    // 장만 남아 실측 크기로 수렴한다
+    LaunchedEffect(outline, outsetPx, aspectRatio) {
+        snapshotFlow { boxSize }
+            .conflate()
+            .collect { size ->
+                val built = withContext(Dispatchers.Default) {
+                    buildBorderPlate(outline, aspectRatio, outsetPx, size) { isActive }
+                }
+                if (built != null) plate = built
             }
-        }
     }
 
     Canvas(
@@ -162,7 +133,7 @@ private fun BoxScope.ToppingBorder(
         val currentBoxWidth = size.width.roundToInt()
         val currentBoxHeight = size.height.roundToInt()
 
-        // 판은 양자화·해상도 상한 때문에 지금 상자보다 작게(가상 크기로) 만들어졌을 수 있다.
+        // 판은 해상도 상한이나 만드는 사이에 바뀐 크기 때문에 지금 상자와 다른 크기일 수 있다.
         // 자리와 크기를 둘 다 지금 상자 기준 실측으로 다시 재, 판을 그 실제 알맹이 크기로 늘려 그린다
         val realSubject = fitSize(aspectRatio, IntSize(currentBoxWidth, currentBoxHeight))
         val plateSubjectWidth = current.image.width - current.padding * 2
@@ -185,13 +156,56 @@ private fun BoxScope.ToppingBorder(
 }
 
 /**
- * 알맹이와 여백을 함께 담은 띠 한 장. 양자화·해상도 상한을 적용한 가상 크기로 만들어져 실제
- * 상자보다 작을 수 있다 — [padding]을 포함한 판 전체를, 그릴 때 실제 알맹이 크기에 맞춰 늘린다
+ * 알맹이와 여백을 함께 담은 띠 한 장. 해상도 상한에 걸리면 알맹이보다 작게 만들어지므로,
+ * [padding]을 포함한 판 전체를 그릴 때 실제 알맹이 크기에 맞춰 늘린다
  */
 private data class ToppingBorderPlate(
     val image: ImageBitmap,
     val padding: Int,
 )
+
+/**
+ * [boxSize] 안에 앉을 알맹이에 맞는 띠 한 장을 만든다. 그리는 스레드 밖에서 부른다.
+ *
+ * @param shouldContinue `false` 를 답하면 훑던 판을 버리고 `null` 을 돌려준다
+ */
+private fun buildBorderPlate(
+    outline: ToppingOutline,
+    aspectRatio: Float,
+    outsetPx: Float,
+    boxSize: IntSize,
+    shouldContinue: () -> Boolean,
+): ToppingBorderPlate? {
+    val subject = fitSize(aspectRatio, boxSize)
+    val subjectLongSide = max(subject.width, subject.height)
+    if (subjectLongSide <= 0) return null
+
+    // 판 해상도 상한 — 거리판을 표본화할 뿐인 지점 위로는 판을 키워도 선명해지지 않는다
+    val fieldLongSide = max(outline.width, outline.height)
+    val plateLongSide = min(subjectLongSide, fieldLongSide * BORDER_PLATE_FIELD_MULTIPLE)
+    val plateSubject = sizeForLongSide(aspectRatio, plateLongSide)
+
+    // 판이 알맹이보다 작게 만들어진 만큼(상한에 걸렸을 때만 1보다 작다), 판 좌표계에서 쓰는
+    // 굵기·여백도 같은 비율로 줄인다 — 안 줄이면 늘려 그릴 때 두꺼워진다
+    val plateScale = plateLongSide.toFloat() / subjectLongSide
+    val plateOutsetPx = outsetPx * plateScale
+    val platePadding = ceil(plateOutsetPx).toInt() + 1
+
+    val target = ToppingBorderTarget(
+        width = plateSubject.width + platePadding * 2,
+        height = plateSubject.height + platePadding * 2,
+        subjectLeft = platePadding,
+        subjectTop = platePadding,
+        subjectWidth = plateSubject.width,
+        subjectHeight = plateSubject.height,
+    )
+
+    val alpha = outline.buildBorderAlpha(target, plateOutsetPx, shouldContinue) ?: return null
+    val bitmap = Bitmap.createBitmap(target.width, target.height, Bitmap.Config.ALPHA_8)
+    bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(alpha))
+
+    return ToppingBorderPlate(image = bitmap.asImageBitmap(), padding = platePadding)
+}
 
 private fun fitSize(
     aspectRatio: Float,
@@ -200,12 +214,6 @@ private fun fitSize(
     IntSize(box.width, (box.width / aspectRatio).roundToInt())
 } else {
     IntSize((box.height * aspectRatio).roundToInt(), box.height)
-}
-
-/** 알맹이 긴 변을 [BORDER_SIZE_QUANTUM_PX] 격자로 반올림한다. 항상 격자 한 칸 이상을 돌려준다 */
-private fun quantizeLongSide(longSide: Int): Int {
-    val rounded = (longSide + BORDER_SIZE_QUANTUM_PX / 2) / BORDER_SIZE_QUANTUM_PX * BORDER_SIZE_QUANTUM_PX
-    return rounded.coerceAtLeast(BORDER_SIZE_QUANTUM_PX)
 }
 
 /** [aspectRatio] 를 지키며 긴 변이 [longSide] 인 크기를 만든다 — [fitSize] 의 역방향이다 */

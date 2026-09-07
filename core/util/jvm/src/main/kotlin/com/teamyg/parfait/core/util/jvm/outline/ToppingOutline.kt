@@ -104,28 +104,35 @@ class ToppingOutline internal constructor(
     /**
      * 색을 태우지 않은 단색 띠. 칸마다 0~255 의 덮은 정도만 담는다.
      *
-     * @return 실루엣이 없거나 판이 비었으면 `null`
+     * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그 자리에서 그만둔다
+     * @return 실루엣이 없거나 판이 비었으면, 그리고 다 훑기 전에 그만두었으면 `null` — 반쯤 칠한
+     *   판은 띠가 잘려 보이므로 내보내지 않는다
      */
     fun buildBorderAlpha(
         target: ToppingBorderTarget,
         outsetPx: Float,
+        shouldContinue: () -> Boolean = { true },
     ): ByteArray? {
         if (!hasAnySeed || !target.isUsable || outsetPx <= 0f) return null
 
         val alpha = ByteArray(target.width * target.height)
-        forEachBandPixel(target, floatArrayOf(outsetPx)) { index, _, coverage ->
+        val completed = forEachBandPixel(target, floatArrayOf(outsetPx), shouldContinue) { index, _, coverage ->
             alpha[index] = (coverage * ALPHA_MAX).roundToInt().toByte()
         }
-        return alpha
+        return if (completed) alpha else null
     }
 
     /**
      * 겹을 안쪽부터 겹겹이 칠한 그림. 알맹이는 이 위에 원래 자리 그대로 얹히므로 실루엣 안쪽도
      * 가장 안쪽 겹 색으로 채워 둔다.
+     *
+     * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그 자리에서 그만둔다
+     * @return 다 훑기 전에 그만두었으면 반쯤 칠한 판 대신 `null`
      */
     fun buildBorderPixels(
         target: ToppingBorderTarget,
         bands: List<ToppingBorderBand>,
+        shouldContinue: () -> Boolean = { true },
     ): IntArray? {
         if (!hasAnySeed || bands.isEmpty() || bands.all { it.outsetPx <= 0f } || !target.isUsable) return null
 
@@ -133,7 +140,7 @@ class ToppingOutline internal constructor(
         val outsets = FloatArray(bands.size) { index -> bands[index].outsetPx }
         val pixels = IntArray(target.width * target.height)
 
-        forEachBandPixel(target, outsets) { index, bandIndex, coverage ->
+        val completed = forEachBandPixel(target, outsets, shouldContinue) { index, bandIndex, coverage ->
             // 겹의 끝에 걸친 자리는 반씩 물려, 가장 바깥이면 투명하게 안쪽이면 다음 겹 색으로 이어 준다
             pixels[index] = if (bandIndex == colors.lastIndex) {
                 colors[bandIndex].fadeArgb(coverage)
@@ -141,7 +148,7 @@ class ToppingOutline internal constructor(
                 colors[bandIndex].mixArgb(colors[bandIndex + 1], coverage)
             }
         }
-        return pixels
+        return if (completed) pixels else null
     }
 
     /**
@@ -149,12 +156,16 @@ class ToppingOutline internal constructor(
      *
      * 목표 좌표를 판 좌표로 옮길 때 알맹이가 놓인 자리를 빼고 축마다 따로 배율을 잰다. 굵기는
      * 등방이라 한 축으로만 환산하는데, 알맹이가 실루엣 비율을 지켜 앉으므로 두 배율이 거의 같다.
+     *
+     * @param shouldContinue 행을 시작하기 전에만 묻는다 — 칸마다 물으면 묻는 값이 본 계산을 넘는다
+     * @return 끝까지 훑었으면 `true`
      */
     private inline fun forEachBandPixel(
         target: ToppingBorderTarget,
         outsetsPx: FloatArray,
+        shouldContinue: () -> Boolean,
         onPixel: (index: Int, bandIndex: Int, coverage: Float) -> Unit,
-    ) {
+    ): Boolean {
         val fieldPerTargetX = width.toFloat() / target.subjectWidth
         val fieldPerTargetY = height.toFloat() / target.subjectHeight
         val targetPxPerField = 1f / fieldPerTargetX
@@ -163,6 +174,8 @@ class ToppingOutline internal constructor(
         val outermostEdge = edges.last() + EDGE_FEATHER_PX * fieldPerTargetX
 
         for (y in 0 until target.height) {
+            if (!shouldContinue()) return false
+
             val fieldY = (y + 0.5f - target.subjectTop) * fieldPerTargetY - 0.5f
             val rowStart = y * target.width
 
@@ -179,6 +192,7 @@ class ToppingOutline internal constructor(
                 onPixel(rowStart + x, bandIndex, coverage)
             }
         }
+        return true
     }
 
     /** 판 밖 보정을 태우지 않는 안쪽 전용 읽기. 네 칸을 섞어 칸 사이도 이어지게 한다 */
