@@ -32,8 +32,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.ui.outline.loadToppingOutline
-import com.teamyg.parfait.core.ui.outline.peekToppingOutline
+import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
 import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
@@ -79,11 +78,11 @@ internal fun SegmentationConfirmScreen(
 
             val context = LocalContext.current
             var outline by remember(subjectImagePath) {
-                mutableStateOf(peekToppingOutline(subjectImagePath, retryKey = 0))
+                mutableStateOf(ToppingOutlineCache.peek(subjectImagePath, retryKey = 0))
             }
 
             LaunchedEffect(subjectImagePath) {
-                if (outline == null) outline = loadToppingOutline(context, subjectImagePath, retryKey = 0)
+                if (outline == null) outline = ToppingOutlineCache.load(context, subjectImagePath, retryKey = 0)
             }
 
             YGToppingCutoutImage(

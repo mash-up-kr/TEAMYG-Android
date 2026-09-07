@@ -107,13 +107,13 @@ private fun BoxScope.ToppingBorder(
     // 굵기·비율을 키로 두면 안 된다 — 그 둘이 바뀌는 순간에는 캐시가 반드시 미스라, 상태를 비우면
     // 새 판이 올 때까지 테두리가 사라진다. 옛 판을 두고 아래 이펙트가 갈아 끼운다
     var plate by remember(outline) {
-        mutableStateOf(cachedToppingBorderPlate(outline, outsetPx, aspectRatio))
+        mutableStateOf(ToppingBorderPlateCache.get(outline, outsetPx, aspectRatio))
     }
 
     // 크기를 키로 두면 바뀔 때마다 만들던 판을 버리고 다시 시작해, 판 한 장이 한 프레임보다 오래
     // 걸리는 드래그 중에는 어느 판도 끝을 못 본다. conflate 로 받아 한 번에 한 장씩 끝까지 만든다
     LaunchedEffect(outline, outsetPx, aspectRatio) {
-        cachedToppingBorderPlate(outline, outsetPx, aspectRatio)?.let { cached -> plate = cached }
+        ToppingBorderPlateCache.get(outline, outsetPx, aspectRatio)?.let { cached -> plate = cached }
 
         snapshotFlow { boxSize }
             .conflate()
@@ -121,7 +121,7 @@ private fun BoxScope.ToppingBorder(
                 // 돌아온 뒤에 넣으면 그사이 취소됐을 때 다 만든 판이 버려진다
                 val built = withContext(Dispatchers.Default) {
                     buildBorderPlate(outline, aspectRatio, outsetPx, size) { isActive }
-                        ?.also { made -> cacheToppingBorderPlate(outline, outsetPx, aspectRatio, made) }
+                        ?.also { made -> ToppingBorderPlateCache.put(outline, outsetPx, aspectRatio, made) }
                 }
                 if (built != null) plate = built
             }
