@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
+import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
@@ -110,10 +110,7 @@ internal fun CanvasToppingPlaceScreen(
                 if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
             }
 
-            // 스트로크·핸들과 정확히 같은 자리·크기를 그리려면 이미지도 이 값을 그대로 써야 한다 —
-            // 이미지는 graphicsLayer(scale), 스트로크는 requiredSize(sizeAfterScale)처럼
-            // 서로 다른 방식으로 "같은 배율"을 표현하면, 그 둘이 실제로 같은 값을 내는지는
-            // Compose 내부 구현에 기대는 셈이라 어긋나기 쉽다. 여기서 한 번만 계산해서 그대로 넘긴다.
+            // 이미지·스트로크·핸들이 같은 자리에 오려면 셋이 같은 값을 봐야 한다. 여기서 한 번만 계산한다
             val center = DpOffset(
                 x = uiState.offsetX + baseSize.width / 2,
                 y = uiState.offsetY + baseSize.height / 2,
@@ -163,16 +160,12 @@ internal fun CanvasToppingPlaceScreen(
                         .background(YGAtomicColors.Transparency.Black25),
                 )
 
-                // Image()는 painter.intrinsicSize를 다시 읽어 스스로 크기를 맞추려 한다
-                // (sizeToIntrinsics) — 그 시점이 requiredSize(sizeAfterScale)와 어긋나면 실제
-                // 그려지는 크기가 스트로크·핸들 계산과 달라진다. 크기는 이 바깥 Box가 고정하고,
-                // Image 자신은 그 Box를 꽉 채우기만 하도록 둬서 intrinsic 기반 자체 사이징을 막는다.
+                // Image()를 그냥 두면 painter.intrinsicSize로 스스로 크기를 맞춰(sizeToIntrinsics)
+                // 스트로크·핸들 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
                 Box(
                     modifier = Modifier
-                        .offset(
-                            x = center.x - sizeAfterScale.width / 2,
-                            y = center.y - sizeAfterScale.height / 2,
-                        ).requiredSize(sizeAfterScale)
+                        .centeredAt(center)
+                        .requiredSize(sizeAfterScale)
                         .dragBy(Unit) { delta ->
                             onToppingMoveDrag(
                                 with(density) { DpOffset(delta.x.toDp(), delta.y.toDp()) },
