@@ -21,19 +21,25 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.outline.toBorderArgbBitmap
+import com.teamyg.parfait.core.util.android.outline.toToppingOutline
+import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.impl.component.toppingBorderPreviewLayoutOrNull
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
-import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingOutlineDistanceField
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.toBorderBands
-import com.teamyg.parfait.feature.segmentation.impl.editor.toOutlineDistanceField
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.MAX_BORDER_WIDTH_DP
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
-/** 사방에 남겨 두는 여백. 가장 굵은 테두리도 다 받아낼 크기다 */
-private const val MAX_BORDER_PADDING_DP = 50f
+/** 사방에 남겨 두는 여백. 가장 굵은 테두리도 다 받아낸다 */
+private const val MAX_BORDER_PADDING_DP = MAX_BORDER_WIDTH_DP
+
+/** 미리보기 거리판의 긴 변 상한. 원본 해상도로 재면 사진 크기에 비례해 무거워진다 */
+private const val PREVIEW_FIELD_LONG_SIDE = 1440
 
 /**
  * 테두리 탭의 내용. 잘라낸 알맹이에 [borderLayers] 를 겹겹이 둘러 보여준다.
@@ -92,7 +98,7 @@ internal fun ToppingBorderEditScreen(
 
             ToppingBorderStamp(
                 image = padded.asImageBitmap(),
-                distanceField = padded.toOutlineDistanceField(),
+                outline = padded.toToppingOutline(fieldLongSide = PREVIEW_FIELD_LONG_SIDE),
                 offset = IntOffset(layout.offsetX, layout.offsetY),
             )
         }
@@ -104,10 +110,17 @@ internal fun ToppingBorderEditScreen(
         val current = stamp ?: return@produceState
 
         value = withContext(Dispatchers.Default) {
-            current.distanceField
-                .buildBorderBitmap(
-                    targetWidth = current.image.width,
-                    targetHeight = current.image.height,
+            current.outline
+                .toBorderArgbBitmap(
+                    target = ToppingBorderTarget(
+                        width = current.image.width,
+                        height = current.image.height,
+                        // 거리판이 여백까지 포함한 판에서 나왔으므로 알맹이가 목표 전체다
+                        subjectLeft = 0,
+                        subjectTop = 0,
+                        subjectWidth = current.image.width,
+                        subjectHeight = current.image.height,
+                    ),
                     bands = borderLayers.toBorderBands(density),
                 )?.asImageBitmap()
         }
@@ -135,7 +148,7 @@ internal fun ToppingBorderEditScreen(
  */
 private data class ToppingBorderStamp(
     val image: ImageBitmap,
-    val distanceField: ToppingOutlineDistanceField,
+    val outline: ToppingOutline,
     val offset: IntOffset,
 )
 

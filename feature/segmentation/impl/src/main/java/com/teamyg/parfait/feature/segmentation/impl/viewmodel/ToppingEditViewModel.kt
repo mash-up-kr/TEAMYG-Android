@@ -46,7 +46,9 @@ private const val MAX_BRUSH_WIDTH_DP = 50f
  */
 private const val DEFAULT_BORDER_WIDTH_DP = 10f
 private const val MIN_BORDER_WIDTH_DP = 2f
-private const val MAX_BORDER_WIDTH_DP = 50f
+
+/** 편집 미리보기 여백이 이 값을 따라간다 — 상한이 올라가면 여백도 함께 올라가야 한다 */
+internal const val MAX_BORDER_WIDTH_DP = 50f
 
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
