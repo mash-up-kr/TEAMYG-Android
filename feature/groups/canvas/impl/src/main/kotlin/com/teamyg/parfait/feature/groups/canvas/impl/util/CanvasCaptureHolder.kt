@@ -19,7 +19,6 @@ internal object CanvasCaptureHolder {
 
     fun peek(): Bitmap? = captured
 
-    /** 테스트가 전역 상태를 되돌리는 수단. 앱 코드에서 부르는 곳은 두지 않는다. */
     fun clear() {
         captured = null
     }

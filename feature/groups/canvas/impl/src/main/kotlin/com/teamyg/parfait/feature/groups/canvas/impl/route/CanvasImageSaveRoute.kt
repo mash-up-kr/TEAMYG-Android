@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.route
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -29,6 +30,13 @@ internal fun CanvasImageSaveRoute(
     val resultEventBus = LocalResultEventBus.current
 
     val capturedBitmap = remember { CanvasCaptureHolder.peek()?.asImageBitmap() }
+
+    DisposableEffect(navKey) {
+        onDispose {
+            // 키가 남아 있으면 잠깐 내려간 것이라 돌아왔을 때 그림이 있어야 한다
+            if (navKey !in navigator.backStack) CanvasCaptureHolder.clear()
+        }
+    }
 
     YGScaffoldV2(modifier = modifier) { innerPadding ->
         CanvasImageSaveScreen(
