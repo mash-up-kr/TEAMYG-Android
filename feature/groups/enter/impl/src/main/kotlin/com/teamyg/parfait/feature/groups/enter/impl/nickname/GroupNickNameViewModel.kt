@@ -53,11 +53,12 @@ class GroupNickNameViewModel
 constructor(
     @Assisted(ASSISTED_INVITE_CODE) inviteCodeValue: String,
     @Assisted(ASSISTED_GROUP_NAME) groupName: String,
+    @Assisted(ASSISTED_NICK_NAME) nickName: String,
     private val checkNickNameValid: CheckNameValidUseCase,
     private val joinGroup: JoinGroupUseCase,
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
-    initialState = GroupNickNameUiState(groupName = groupName),
+    initialState = GroupNickNameUiState(groupName = groupName, nickName = nickName),
 ) {
     private val inviteCode = InviteCode(inviteCodeValue)
 
@@ -164,6 +165,7 @@ constructor(
         fun create(
             @Assisted(ASSISTED_INVITE_CODE) inviteCodeValue: String,
             @Assisted(ASSISTED_GROUP_NAME) groupName: String,
+            @Assisted(ASSISTED_NICK_NAME) nickName: String,
         ): GroupNickNameViewModel
     }
 
@@ -171,6 +173,8 @@ constructor(
         const val ASSISTED_INVITE_CODE = "inviteCode"
 
         const val ASSISTED_GROUP_NAME = "groupName"
+
+        const val ASSISTED_NICK_NAME = "nickName"
 
         /** [launch] 중복 실행 가드 키 — 참여·닉네임 적용을 묶은 job 하나를 가리킨다 */
         const val KEY_ENTER_GROUP = "enterGroup"

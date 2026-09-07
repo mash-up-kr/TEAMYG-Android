@@ -35,9 +35,10 @@ class GroupNickNameViewModelTest {
     private val joinGroup: JoinGroupUseCase = mockk()
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
 
-    private fun viewModel() = GroupNickNameViewModel(
+    private fun viewModel(nickName: String = "") = GroupNickNameViewModel(
         inviteCodeValue = INVITE_CODE,
         groupName = GROUP_NAME,
+        nickName = nickName,
         checkNickNameValid = CheckNameValidUseCase(),
         joinGroup = joinGroup,
         changeGroupNickname = changeGroupNickname,
@@ -272,6 +273,25 @@ class GroupNickNameViewModelTest {
 
         // Then 표시된 사유가 사라진다
         assertNull(viewModel.state.value.nicknameError)
+    }
+
+    @Test
+    fun init_withAppNickName_startsWithItFilled() = runTest(mainDispatcherRule.dispatcher) {
+        // Given·When 앞 화면이 앱 닉네임을 실어 보낸 채로 화면이 선다
+        val viewModel = viewModel(nickName = NICKNAME)
+
+        // Then 입력칸을 앱 닉네임으로 채워 두고 사유는 붙이지 않는다
+        assertEquals(NICKNAME, viewModel.state.value.nickName)
+        assertNull(viewModel.state.value.nicknameError)
+    }
+
+    @Test
+    fun init_withoutAppNickName_startsEmpty() = runTest(mainDispatcherRule.dispatcher) {
+        // Given·When 앞 화면이 닉네임을 구하지 못한 채로 화면이 선다
+        val viewModel = viewModel()
+
+        // Then 빈 입력칸으로 시작해 사용자가 직접 적게 둔다
+        assertEquals("", viewModel.state.value.nickName)
     }
 
     private companion object {

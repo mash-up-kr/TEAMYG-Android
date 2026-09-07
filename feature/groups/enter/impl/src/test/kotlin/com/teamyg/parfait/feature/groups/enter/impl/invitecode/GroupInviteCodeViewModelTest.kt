@@ -5,11 +5,20 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.member.GlobalNickname
+import com.teamyg.parfait.domain.model.member.LoginProvider
+import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.usecase.group.GetGroupJoinPreviewUseCase
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -24,13 +33,21 @@ class GroupInviteCodeViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getGroupJoinPreview: GetGroupJoinPreviewUseCase = mockk()
+    private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
 
-    private fun viewModel() = GroupInviteCodeViewModel(getGroupJoinPreview = getGroupJoinPreview)
+    private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupInviteCodeViewModel {
+        every { getMyAccountFlow() } returns accountFlow
+        return GroupInviteCodeViewModel(
+            getGroupJoinPreview = getGroupJoinPreview,
+            getMyAccountFlow = getMyAccountFlow,
+        )
+    }
 
     /** 초대코드를 다 채운 화면을 만든다 — 조회는 코드가 다 차야 나간다 */
-    private fun filledViewModel(): GroupInviteCodeViewModel = viewModel().apply {
-        processIntent(GroupInviteCodeIntent.InputWord(index = 0, word = INVITE_CODE))
-    }
+    private fun filledViewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupInviteCodeViewModel =
+        viewModel(accountFlow).apply {
+            processIntent(GroupInviteCodeIntent.InputWord(index = 0, word = INVITE_CODE))
+        }
 
     private fun givenPreviewSucceeds() {
         coEvery { getGroupJoinPreview(any()) } returns Result.success(GroupName(GROUP_NAME))
@@ -49,7 +66,11 @@ class GroupInviteCodeViewModelTest {
 
             // Then 참여는 다음 화면에서 하므로, 초대코드와 그룹명을 들고 바로 넘어간다
             assertEquals(
-                GroupInviteCodeSideEffect.NavigateToNext(inviteCode = INVITE_CODE, groupName = GROUP_NAME),
+                GroupInviteCodeSideEffect.NavigateToNext(
+                    inviteCode = INVITE_CODE,
+                    groupName = GROUP_NAME,
+                    nickName = NICKNAME,
+                ),
                 awaitItem(),
             )
             assertNull(viewModel.state.value.inviteCodeError)
@@ -272,8 +293,55 @@ class GroupInviteCodeViewModelTest {
         assertEquals(0, viewModel.state.value.focusedIndex)
     }
 
+    @Test
+    fun clickNextButton_accountNotEmitted_navigatesWithEmptyNickName() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 스트림이 아직 값을 내지 않은 화면
+        givenPreviewSucceeds()
+        val viewModel = filledViewModel(accountFlow = flowOf(null))
+
+        viewModel.effect.test {
+            // When 확인 버튼 클릭
+            viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton)
+            advanceUntilIdle()
+
+            // Then 참여를 막지 않고 닉네임만 비운 채 넘어간다
+            assertEquals(
+                GroupInviteCodeSideEffect.NavigateToNext(
+                    inviteCode = INVITE_CODE,
+                    groupName = GROUP_NAME,
+                    nickName = "",
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun accountStreamEmitsAgain_followsNewNickName() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 계정 SSoT 를 구독해 첫 값을 받은 화면
+        val accountFlow = MutableStateFlow<MyAccountVO?>(ACCOUNT)
+        val viewModel = viewModel(accountFlow)
+        advanceUntilIdle()
+        assertEquals(NICKNAME, viewModel.state.value.nickName)
+
+        // When 다른 화면에서 닉네임을 바꿔 SSoT 가 새 값을 밀어 준다
+        accountFlow.value = ACCOUNT.copy(nickname = GlobalNickname(OTHER_NICKNAME))
+        advanceUntilIdle()
+
+        // Then 다음 화면으로 실려 갈 값이 낡지 않도록 구독이 따라간다
+        assertEquals(OTHER_NICKNAME, viewModel.state.value.nickName)
+    }
+
     private companion object {
         const val INVITE_CODE = "ABCDEF"
         const val GROUP_NAME = "모카의 파르페"
+        const val NICKNAME = "모카"
+        const val OTHER_NICKNAME = "바닐라"
+
+        val ACCOUNT = MyAccountVO(
+            memberId = MemberId(1L),
+            provider = LoginProvider.KAKAO,
+            nickname = GlobalNickname(NICKNAME),
+        )
     }
 }

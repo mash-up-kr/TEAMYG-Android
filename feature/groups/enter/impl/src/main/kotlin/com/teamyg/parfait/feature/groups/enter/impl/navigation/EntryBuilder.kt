@@ -46,7 +46,11 @@ fun EntryProviderScope<NavKey>.featureGroupNickNameEntryBuilder(navigator: Navig
     entry<NavKeyGroupNickName> { navKey ->
         val viewModel = hiltViewModel<GroupNickNameViewModel, GroupNickNameViewModel.Factory>(
             creationCallback = { factory ->
-                factory.create(inviteCodeValue = navKey.inviteCode, groupName = navKey.groupName)
+                factory.create(
+                    inviteCodeValue = navKey.inviteCode,
+                    groupName = navKey.groupName,
+                    nickName = navKey.nickName,
+                )
             },
         )
 
