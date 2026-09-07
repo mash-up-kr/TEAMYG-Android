@@ -2,7 +2,9 @@ package com.teamyg.parfait.domain.model.group
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class InviteCodeTest {
     private val messageTemplate = "친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1\$s"
@@ -145,5 +147,23 @@ class InviteCodeTest {
 
         // Then 임의의 문서에서 코드를 주워오지 않는다
         assertNull(inviteCode)
+    }
+
+    @Test
+    fun isCodeChar_asciiLetterOrDigit_returnsTrue() {
+        // Given 초대코드에 쓰이는 글자들
+        val chars = listOf('A', 'z', '0', '9')
+
+        // When·Then 전부 코드 글자로 인정한다
+        chars.forEach { char -> assertTrue(InviteCode.isCodeChar(char), "$char") }
+    }
+
+    @Test
+    fun isCodeChar_koreanOrSymbolOrWhitespace_returnsFalse() {
+        // Given 초대코드에 들어올 수 없는 글자들
+        val chars = listOf('가', 'ㄱ', '!', '-', ' ', '\n', 'é')
+
+        // When·Then 전부 걸러낸다 — 한글은 isLetterOrDigit 로는 통과하므로 별도 판정이 필요하다
+        chars.forEach { char -> assertFalse(InviteCode.isCodeChar(char), "$char") }
     }
 }
