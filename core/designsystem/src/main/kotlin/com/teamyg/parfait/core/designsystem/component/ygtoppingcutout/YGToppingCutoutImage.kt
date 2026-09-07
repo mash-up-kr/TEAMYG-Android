@@ -13,6 +13,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
@@ -65,11 +66,11 @@ fun YGToppingCutoutImage(
     borderColor: Color?,
     borderWidth: Dp,
     modifier: Modifier = Modifier,
-    outline: ToppingOutline? = null,
+    outline: ToppingOutline?,
 ) {
     Box(modifier = modifier) {
         if (outline != null && borderColor != null && borderWidth > 0.dp) {
-            ToppingBorder(outline = outline, color = borderColor, width = borderWidth)
+            ToppingBorder(outline = outline, painter = painter, color = borderColor, width = borderWidth)
         }
 
         Image(
@@ -84,6 +85,7 @@ fun YGToppingCutoutImage(
 @Composable
 private fun BoxScope.ToppingBorder(
     outline: ToppingOutline,
+    painter: Painter,
     color: Color,
     width: Dp,
 ) {
@@ -92,11 +94,26 @@ private fun BoxScope.ToppingBorder(
 
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
 
+    // Image 가 painter 의 intrinsic 비율로 앉으므로 띠도 같은 비율을 봐야 어긋나지 않는다.
+    // 비율을 못 구할 때(비동기 painter가 아직 안 떴을 때)만 거리판 비율로 떨어진다
+    val intrinsicSize = painter.intrinsicSize
+    val aspectRatio = if (
+        intrinsicSize.isSpecified &&
+        intrinsicSize.width.isFinite() &&
+        intrinsicSize.height.isFinite() &&
+        intrinsicSize.height > 0f
+    ) {
+        intrinsicSize.width / intrinsicSize.height
+    } else {
+        outline.width.toFloat() / outline.height
+    }
+
     val plate: ToppingBorderPlate? by produceState<ToppingBorderPlate?>(
         initialValue = null,
         outline,
         boxSize,
         outsetPx,
+        aspectRatio,
     ) {
         val box = boxSize
         if (box.width <= 0 || box.height <= 0) return@produceState
@@ -104,8 +121,7 @@ private fun BoxScope.ToppingBorder(
         delay(BORDER_REBUILD_DELAY_MS)
 
         value = withContext(Dispatchers.Default) {
-            // 알맹이는 Fit 으로 앉으므로 상자가 아니라 실루엣 비율로 그려질 자리를 구한다
-            val subject = fitSize(outline.width.toFloat() / outline.height, box)
+            val subject = fitSize(aspectRatio, box)
             val target = ToppingBorderTarget(
                 width = subject.width + padding * 2,
                 height = subject.height + padding * 2,
@@ -163,10 +179,22 @@ private fun fitSize(
 @YGPreview
 @Composable
 private fun YGToppingCutoutImagePreview() = PreviewBox {
+    // 프리뷰 전용 합성 실루엣 — 그림(R.drawable.ic_plus)과 종횡비를 맞출 필요는 없다, 목적은 테두리를
+    // 눈에 보이게 하는 것이다
+    val previewOutline = remember {
+        val side = 40
+        ToppingOutline.of(side, side) { x, y ->
+            val dx = x - side / 2f
+            val dy = y - side / 2f
+            if (dx * dx + dy * dy <= (side / 2f) * (side / 2f)) 255 else 0
+        }
+    }
+
     YGToppingCutoutImage(
         painter = painterResource(R.drawable.ic_plus),
         borderColor = YGAtomicColors.Cherry.Cherry200,
         borderWidth = 6.dp,
         modifier = Modifier.size(120.dp),
+        outline = previewOutline,
     )
 }
