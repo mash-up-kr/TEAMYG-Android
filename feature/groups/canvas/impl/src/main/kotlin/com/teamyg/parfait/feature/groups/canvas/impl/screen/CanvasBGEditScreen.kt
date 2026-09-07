@@ -157,7 +157,6 @@ internal fun CanvasBGEditScreen(
                         canvasHeight = canvasHeight,
                     )
 
-                    // 그리기와 판정이 같은 판을 봐야 띠와 눌리는 자리가 어긋나지 않는다
                     val outlines = rememberToppingOutlines(
                         models = drawEntries.map { it.topping.drawnModel },
                         retryKey = 0,
@@ -466,9 +465,6 @@ private data class BGEditHitEntry(
 }
 
 /**
- * 그리기와 판정이 같은 painter 와 같은 거리판을 본다. 각각 만들면 비율이 서로 다른 시점의 값이
- * 될 수 있다.
- *
  * @param outlines [CanvasToppingItem.drawnModel] 로 찾는다 — 그리는 대상과 다른 키를 쓰면
  *   편집본의 잘린 여백만큼 실루엣이 어긋난다
  */

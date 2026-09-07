@@ -104,9 +104,7 @@ class ToppingOutline internal constructor(
     /**
      * 색을 태우지 않은 단색 띠. 칸마다 0~255 의 덮은 정도만 담는다.
      *
-     * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그 자리에서 그만둔다
-     * @return 실루엣이 없거나 판이 비었으면, 그리고 다 훑기 전에 그만두었으면 `null` — 반쯤 칠한
-     *   판은 띠가 잘려 보이므로 내보내지 않는다
+     * @return 다 훑기 전에 그만두었으면 `null` — 반쯤 칠한 판은 띠가 잘려 보인다
      */
     fun buildBorderAlpha(
         target: ToppingBorderTarget,
@@ -126,8 +124,7 @@ class ToppingOutline internal constructor(
      * 겹을 안쪽부터 겹겹이 칠한 그림. 알맹이는 이 위에 원래 자리 그대로 얹히므로 실루엣 안쪽도
      * 가장 안쪽 겹 색으로 채워 둔다.
      *
-     * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그 자리에서 그만둔다
-     * @return 다 훑기 전에 그만두었으면 반쯤 칠한 판 대신 `null`
+     * @return 다 훑기 전에 그만두었으면 `null`
      */
     fun buildBorderPixels(
         target: ToppingBorderTarget,

@@ -35,11 +35,7 @@ fun Bitmap.toToppingOutline(fieldLongSide: Int): ToppingOutline {
     }
 }
 
-/**
- * 색을 태우지 않은 띠. 그리는 쪽이 `ColorFilter` 로 물들인다
- *
- * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그만두고 `null` 을 돌려준다
- */
+/** 색을 태우지 않은 띠. 그리는 쪽이 `ColorFilter` 로 물들인다 */
 fun ToppingOutline.toBorderAlphaBitmap(
     target: ToppingBorderTarget,
     outsetPx: Float,
@@ -51,11 +47,7 @@ fun ToppingOutline.toBorderAlphaBitmap(
     }
 }
 
-/**
- * 색까지 태운 띠. 겹이 여럿이거나 알파 판이 안 통하는 자리가 쓴다
- *
- * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그만두고 `null` 을 돌려준다
- */
+/** 색까지 태운 띠. 겹이 여럿이거나 알파 판이 안 통하는 자리가 쓴다 */
 fun ToppingOutline.toBorderArgbBitmap(
     target: ToppingBorderTarget,
     bands: List<ToppingBorderBand>,
