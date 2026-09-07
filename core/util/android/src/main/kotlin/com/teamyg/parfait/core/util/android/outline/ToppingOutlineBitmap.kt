@@ -35,23 +35,33 @@ fun Bitmap.toToppingOutline(fieldLongSide: Int): ToppingOutline {
     }
 }
 
-/** 색을 태우지 않은 띠. 그리는 쪽이 `ColorFilter` 로 물들인다 */
+/**
+ * 색을 태우지 않은 띠. 그리는 쪽이 `ColorFilter` 로 물들인다
+ *
+ * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그만두고 `null` 을 돌려준다
+ */
 fun ToppingOutline.toBorderAlphaBitmap(
     target: ToppingBorderTarget,
     outsetPx: Float,
+    shouldContinue: () -> Boolean = { true },
 ): Bitmap? {
-    val alpha = buildBorderAlpha(target, outsetPx) ?: return null
+    val alpha = buildBorderAlpha(target, outsetPx, shouldContinue) ?: return null
     return createBitmap(target.width, target.height, Bitmap.Config.ALPHA_8).apply {
         copyPixelsFromBuffer(ByteBuffer.wrap(alpha))
     }
 }
 
-/** 색까지 태운 띠. 겹이 여럿이거나 알파 판이 안 통하는 자리가 쓴다 */
+/**
+ * 색까지 태운 띠. 겹이 여럿이거나 알파 판이 안 통하는 자리가 쓴다
+ *
+ * @param shouldContinue 판을 훑는 도중 행마다 물어, `false` 를 답하면 그만두고 `null` 을 돌려준다
+ */
 fun ToppingOutline.toBorderArgbBitmap(
     target: ToppingBorderTarget,
     bands: List<ToppingBorderBand>,
+    shouldContinue: () -> Boolean = { true },
 ): Bitmap? {
-    val pixels = buildBorderPixels(target, bands) ?: return null
+    val pixels = buildBorderPixels(target, bands, shouldContinue) ?: return null
     return createBitmap(target.width, target.height)
         .apply { setPixels(pixels, 0, target.width, 0, 0, target.width, target.height) }
 }

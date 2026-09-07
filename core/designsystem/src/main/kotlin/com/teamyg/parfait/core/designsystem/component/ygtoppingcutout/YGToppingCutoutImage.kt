@@ -1,6 +1,5 @@
 package com.teamyg.parfait.core.designsystem.component.ygtoppingcutout
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -33,13 +32,13 @@ import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.outline.toBorderAlphaBitmap
 import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import java.nio.ByteBuffer
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -200,9 +199,7 @@ private fun buildBorderPlate(
         subjectHeight = plateSubject.height,
     )
 
-    val alpha = outline.buildBorderAlpha(target, plateOutsetPx, shouldContinue) ?: return null
-    val bitmap = Bitmap.createBitmap(target.width, target.height, Bitmap.Config.ALPHA_8)
-    bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(alpha))
+    val bitmap = outline.toBorderAlphaBitmap(target, plateOutsetPx, shouldContinue) ?: return null
 
     return ToppingBorderPlate(image = bitmap.asImageBitmap(), padding = platePadding)
 }
