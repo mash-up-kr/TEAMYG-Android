@@ -3,20 +3,13 @@ package com.teamyg.parfait.feature.groups.enter.impl.invitecode.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -27,38 +20,26 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
+/**
+ * 초대코드 한 글자를 그리는 칸.
+ *
+ * 입력은 [InviteCodeInputField] 의 텍스트 필드 하나가 받는다.
+ */
 @Composable
 internal fun InviteCodeInputFieldElement(
     word: String,
     isFocus: Boolean,
     isError: Boolean,
-    onValueChanged: (String) -> Unit,
-    onClickTextFieldElement: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(isFocus) {
-        if (isFocus) {
-            focusRequester.requestFocus()
-        }
-    }
-
-    Box(modifier = modifier) {
-        BasicTextField(
-            value = word,
-            textStyle = YGTheme.typography.title.t02SB
-                .copy(textAlign = TextAlign.Center),
-            cursorBrush = SolidColor(Color.Transparent),
-            onValueChange = { value -> onValueChanged(value) },
-            modifier = Modifier
-                .focusRequester(focusRequester)
-                .align(Alignment.Center),
-        )
-        Spacer(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickableYGNoRipple { onClickTextFieldElement() },
+    Box(modifier = modifier.clickableYGNoRipple(onClick = onClick)) {
+        Text(
+            text = word,
+            color = YGAtomicColors.Gray.Black,
+            style = YGTheme.typography.title.t02SB,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.Center),
         )
         Spacer(
             modifier = Modifier
@@ -103,8 +84,7 @@ private fun InviteCodeInputFieldElementPreview(
         word = param.word,
         isFocus = param.isFocus,
         isError = param.isError,
-        onValueChanged = {},
-        onClickTextFieldElement = {},
+        onClick = {},
         modifier = Modifier.size(100.dp, 150.dp),
     )
 }

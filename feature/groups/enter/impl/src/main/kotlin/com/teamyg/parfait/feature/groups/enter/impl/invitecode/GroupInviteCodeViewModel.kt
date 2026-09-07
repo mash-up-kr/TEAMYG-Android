@@ -15,8 +15,9 @@ import javax.inject.Inject
 
 data class GroupInviteCodeUiState(
     val text: String = "",
-    val focusedIndex: Int? = null,
-    val inputMode: InputMode = InputMode.ADD,
+    /** 밑줄을 칠 칸(0..[codeLength]-1) — 입력한 글자 수만큼 뒤로 가되 마지막 칸에서 멈춘다 */
+    val focusedIndex: Int = 0,
+    val isFocused: Boolean = false,
     val inviteCodeError: InviteCodeError? = null,
     val isSubmitting: Boolean = false,
     val clipboardInviteCode: String? = null,
@@ -25,18 +26,22 @@ data class GroupInviteCodeUiState(
     val codeLength = InviteCode.LENGTH
 
     /**
+     * 텍스트 필드에 넘길 커서 자리.
+     *
+     * 지우기는 커서 앞 글자를 지운다. 포커스 칸이 차 있으면 그 뒤, 비어 있으면 그 자리에 두어
+     * "찬 칸은 그 칸이, 빈 칸은 앞 칸이" 지워지게 한다.
+     */
+    val cursor: Int
+        get() = if (focusedIndex < text.length) focusedIndex + 1 else focusedIndex
+
+    /**
      * 붙여넣기 바에 노출할 초대코드.
      *
      * 클립보드에서 초대코드를 찾았고, 키보드가 올라와 있으며,
      * 아직 그 코드가 입력되지 않았을 때만 값이 있다.
      */
     val pasteBarInviteCode: String?
-        get() = clipboardInviteCode?.takeIf { code -> focusedIndex != null && code != text }
-}
-
-enum class InputMode {
-    ADD,
-    EDIT,
+        get() = clipboardInviteCode?.takeIf { code -> isFocused && code != text }
 }
 
 sealed interface GroupInviteCodeIntent : UiIntent {
@@ -44,13 +49,17 @@ sealed interface GroupInviteCodeIntent : UiIntent {
 
     data object ClickBackButton : GroupInviteCodeIntent
 
-    data class InputWord(val index: Int, val word: String) : GroupInviteCodeIntent
+    /** 추가·삭제·붙여넣기가 모두 이 인텐트 하나로 들어온다 */
+    data class ChangeText(val text: String, val cursor: Int) : GroupInviteCodeIntent
 
     data class SelectedTextFieldElement(val index: Int) : GroupInviteCodeIntent
 
     data object HideKeyboard : GroupInviteCodeIntent
 
-    data object FocusedFirstIndex : GroupInviteCodeIntent
+    data object RequestFocus : GroupInviteCodeIntent
+
+    /** 칸 사이 여백을 누르면 필드가 스스로 포커스를 가져가므로, 그 사실을 화면이 따라가야 한다 */
+    data class FocusChanged(val isFocused: Boolean) : GroupInviteCodeIntent
 
     data class ClipboardCodeDetected(val code: String?) : GroupInviteCodeIntent
 
@@ -93,58 +102,50 @@ constructor(
         when (intent) {
             GroupInviteCodeIntent.ClickBackButton -> postSideEffect(GroupInviteCodeSideEffect.NavigateToBack)
 
-            GroupInviteCodeIntent.ClickNextButton -> requestJoinPreview()
-
-            is GroupInviteCodeIntent.InputWord -> {
-                updateState {
-                    val addedWord = when (inputMode) {
-                        InputMode.ADD -> intent.word.trim()
-                        InputMode.EDIT -> intent.word.drop(1).trim()
-                    }
-                    val newFocusedIndex = intent.index.plus(addedWord.length).takeIf { it < codeLength }
-                    val newText = (text.take(intent.index) + addedWord).take(codeLength)
-                    if (text == newText) {
-                        return@updateState this
-                    }
-
-                    when (inputMode) {
-                        InputMode.ADD -> {
-                            copy(
-                                text = newText,
-                                focusedIndex = newFocusedIndex,
-                                inputMode = InputMode.ADD,
-                                inviteCodeError = null,
-                            )
-                        }
-
-                        InputMode.EDIT -> {
-                            copy(
-                                text = newText,
-                                focusedIndex = newFocusedIndex,
-                                inputMode = if (newFocusedIndex == newText.length) InputMode.ADD else InputMode.EDIT,
-                                inviteCodeError = null,
-                            )
-                        }
-                    }
-                }
+            GroupInviteCodeIntent.ClickNextButton -> {
+                updateState { copy(isFocused = false) }
+                requestJoinPreview()
             }
 
-            is GroupInviteCodeIntent.SelectedTextFieldElement -> {
+            // 커서를 기준으로 앞뒤를 나눠 각각 거른 뒤 다시 붙인다. 통째로 거르면 걸러진 글자가
+            // 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
+            is GroupInviteCodeIntent.ChangeText -> {
                 updateState {
-                    val focusedIndex = intent.index.coerceAtMost(text.trim().length)
+                    val cursor = intent.cursor.coerceIn(0, intent.text.length)
+                    val head = intent.text
+                        .take(cursor)
+                        .filter(InviteCode::isCodeChar)
+                        .take(codeLength)
+                    val tail = intent.text
+                        .drop(cursor)
+                        .filter(InviteCode::isCodeChar)
+                    val newText = (head + tail).take(codeLength)
                     copy(
-                        focusedIndex = focusedIndex,
-                        inputMode = if (focusedIndex == text.trim().length) InputMode.ADD else InputMode.EDIT,
+                        text = newText,
+                        focusedIndex = newText.focusedIndex(),
+                        // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
+                        inviteCodeError = inviteCodeError.takeIf { newText == text },
                     )
                 }
             }
 
-            is GroupInviteCodeIntent.HideKeyboard -> {
-                updateState { copy(focusedIndex = null) }
+            // 빈 칸을 눌러도 글자 끝까지만 간다 — 중간에 빈칸이 생기지 않는다
+            is GroupInviteCodeIntent.SelectedTextFieldElement -> {
+                updateState {
+                    copy(focusedIndex = intent.index.coerceIn(0, text.focusedIndex()), isFocused = true)
+                }
             }
 
-            is GroupInviteCodeIntent.FocusedFirstIndex -> {
-                updateState { copy(focusedIndex = 0) }
+            is GroupInviteCodeIntent.HideKeyboard -> {
+                updateState { copy(isFocused = false) }
+            }
+
+            is GroupInviteCodeIntent.RequestFocus -> {
+                updateState { copy(focusedIndex = 0, isFocused = true) }
+            }
+
+            is GroupInviteCodeIntent.FocusChanged -> {
+                updateState { copy(isFocused = intent.isFocused) }
             }
 
             is GroupInviteCodeIntent.ClipboardCodeDetected -> {
@@ -154,11 +155,12 @@ constructor(
             GroupInviteCodeIntent.ClickPasteInviteCode -> {
                 updateState {
                     val pastedCode = clipboardInviteCode ?: return@updateState this
-                    // 코드가 모두 채워지므로 focusedIndex 를 비워 키보드를 내린다
+                    val newText = pastedCode.take(codeLength)
+                    // 코드가 모두 채워지므로 포커스를 놓아 키보드를 내린다
                     copy(
-                        text = pastedCode.take(codeLength),
-                        focusedIndex = null,
-                        inputMode = InputMode.ADD,
+                        text = newText,
+                        focusedIndex = newText.focusedIndex(),
+                        isFocused = false,
                         inviteCodeError = null,
                         clipboardInviteCode = null,
                     )
@@ -223,6 +225,8 @@ constructor(
         viewModelLogger.e(throwable) { "초대코드 조회 실패 — $error" }
         updateState { copy(inviteCodeError = error) }
     }
+
+    private fun String.focusedIndex(): Int = length.coerceAtMost(InviteCode.LENGTH - 1)
 
     private companion object {
         /** [launch] 중복 실행 가드 키 — 초대코드 조회 job 하나를 가리킨다 */

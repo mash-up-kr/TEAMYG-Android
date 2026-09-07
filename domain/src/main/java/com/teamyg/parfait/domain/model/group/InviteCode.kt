@@ -14,9 +14,16 @@ value class InviteCode(val value: String) {
         /** 초대 메시지 템플릿의 초대코드 자리 표시자 */
         private const val CODE_PLACEHOLDER = "%1\$s"
 
-        private const val CODE_PATTERN = "[A-Za-z0-9]{$LENGTH}"
+        private const val CODE_CHAR_PATTERN = "[A-Za-z0-9]"
+
+        private const val CODE_PATTERN = "$CODE_CHAR_PATTERN{$LENGTH}"
 
         private val CODE_REGEX = Regex(CODE_PATTERN)
+
+        private val CODE_CHAR_REGEX = Regex(CODE_CHAR_PATTERN)
+
+        /** `Char.isLetterOrDigit()` 은 한글도 참이라 쓸 수 없어 [CODE_CHAR_PATTERN] 으로 판정한다. */
+        fun isCodeChar(char: Char): Boolean = CODE_CHAR_REGEX.matches(char.toString())
 
         /**
          * 클립보드처럼 초대코드 외의 문구가 섞인 텍스트에서 초대코드를 추출한다.
