@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,7 +33,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.loadToppingOutline
-import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
+import com.teamyg.parfait.core.ui.outline.peekToppingOutline
 import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
@@ -75,8 +78,12 @@ internal fun SegmentationConfirmScreen(
             val painterState by painter.state.collectAsState()
 
             val context = LocalContext.current
-            val outline by produceState<ToppingOutline?>(initialValue = null, subjectImagePath) {
-                value = loadToppingOutline(context, subjectImagePath, retryKey = 0)
+            var outline by remember(subjectImagePath) {
+                mutableStateOf(peekToppingOutline(subjectImagePath, retryKey = 0))
+            }
+
+            LaunchedEffect(subjectImagePath) {
+                if (outline == null) outline = loadToppingOutline(context, subjectImagePath, retryKey = 0)
             }
 
             YGToppingCutoutImage(

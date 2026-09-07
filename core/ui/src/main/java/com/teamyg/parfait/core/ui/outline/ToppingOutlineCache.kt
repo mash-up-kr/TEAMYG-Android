@@ -54,6 +54,15 @@ private val inFlightOutlines = mutableMapOf<String, Deferred<ToppingOutline?>>()
 private val outlineLoadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 /**
+ * 이미 받아 둔 거리판을 기다리지 않고 꺼낸다. [loadToppingOutline] 은 `suspend` 라 캐시가 적중해도
+ * 값이 첫 컴포지션 뒤에나 오고, 그 사이 테두리가 빠진 채로 한 프레임이 그려진다.
+ */
+fun peekToppingOutline(
+    model: String,
+    retryKey: Int,
+): ToppingOutline? = synchronized(outlineCache) { outlineCache["$retryKey|$model"] }
+
+/**
  * [model] 은 그 화면이 **실제로 그리는** 대상이어야 한다. 편집본을 그리는 화면에 원본 주소를
  * 넘기면 투명 여백이 잘려 비율이 달라 실루엣이 통째로 어긋난다.
  *
@@ -126,7 +135,18 @@ fun rememberToppingOutlines(
     retryKey: Int,
 ): Map<String, ToppingOutline> {
     val context = LocalContext.current
-    val loaded = remember { mutableStateMapOf<String, ToppingOutline>() }
+
+    // 캐시에 있는 것부터 채우고 들어간다 — 비운 채로 시작하면 화면을 다시 그릴 때마다 테두리가
+    // 한 프레임 늦게 붙어 깜빡인다.
+    // 키를 안 주는 것은 의도다. [retryKey] 가 오르면 새 열쇠로는 캐시가 반드시 미스라, 맵을 다시
+    // 만들면 재시도하는 동안 이미 받아 둔 거리판까지 사라진다
+    val loaded = remember {
+        mutableStateMapOf<String, ToppingOutline>().apply {
+            models.distinct().forEach { model ->
+                peekToppingOutline(model, retryKey)?.let { outline -> put(model, outline) }
+            }
+        }
+    }
 
     LaunchedEffect(models, retryKey) {
         models

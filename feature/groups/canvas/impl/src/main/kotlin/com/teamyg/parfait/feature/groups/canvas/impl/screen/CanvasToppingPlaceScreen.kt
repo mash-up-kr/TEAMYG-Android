@@ -14,8 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -32,26 +33,26 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
-import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.ui.outline.loadToppingOutline
+import com.teamyg.parfait.core.ui.outline.peekToppingOutline
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
-import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import java.io.File
 
 /**
@@ -104,9 +105,15 @@ internal fun CanvasToppingPlaceScreen(
             val baseSize = rememberToppingBaseSize(painter)
 
             val context = LocalContext.current
-            val outline by produceState<ToppingOutline?>(initialValue = null, toppingImageModel) {
-                val model = toppingImageModel ?: return@produceState
-                value = loadToppingOutline(context, model, retryKey = 0)
+            // produceState 로는 캐시를 못 쓴다 — 초안이 비동기로 와서 첫 컴포지션의 모델이 언제나
+            // null 이고, initialValue 는 그때 한 번만 읽힌다
+            var outline by remember(toppingImageModel) {
+                mutableStateOf(toppingImageModel?.let { model -> peekToppingOutline(model, retryKey = 0) })
+            }
+
+            LaunchedEffect(toppingImageModel) {
+                val model = toppingImageModel ?: return@LaunchedEffect
+                if (outline == null) outline = loadToppingOutline(context, model, retryKey = 0)
             }
 
             // 확정 판정의 근거를 ViewModel 자기 어휘로 올린다 — 실측 방출 가드에 기대면
