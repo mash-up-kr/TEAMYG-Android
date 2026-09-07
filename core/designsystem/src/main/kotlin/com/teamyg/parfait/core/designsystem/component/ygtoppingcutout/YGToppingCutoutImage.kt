@@ -91,8 +91,7 @@ private fun BoxScope.ToppingBorder(
 
     var boxSize by remember { mutableStateOf(IntSize.Zero) }
 
-    // Image 가 painter 의 intrinsic 비율로 앉으므로 띠도 같은 비율을 봐야 어긋나지 않는다.
-    // 비율을 못 구할 때(비동기 painter가 아직 안 떴을 때)만 거리판 비율로 떨어진다
+    // Image 가 painter 의 intrinsic 비율로 앉으므로 띠도 같은 비율을 봐야 어긋나지 않는다
     val intrinsicSize = painter.intrinsicSize
     val aspectRatio = if (
         intrinsicSize.isSpecified &&
@@ -105,28 +104,21 @@ private fun BoxScope.ToppingBorder(
         outline.width.toFloat() / outline.height
     }
 
-    // 컴포지션 밖에 남은 판이 있으면 그것부터 그린다 — 화면 전환·Spotlight 로 이 컴포저블이 다시
-    // 만들어질 때마다 판을 처음부터 만들면 그동안 테두리가 없어 깜빡인다.
-    // 굵기·비율은 키가 아니다. 그 둘이 바뀌면 아직 만든 판이 없어 캐시가 미스이고, 상태를 비우면
-    // 새 판이 올 때까지 테두리가 사라진다. 옛 판을 그대로 두고 아래 이펙트가 갈아 끼운다
+    // 굵기·비율을 키로 두면 안 된다 — 그 둘이 바뀌는 순간에는 캐시가 반드시 미스라, 상태를 비우면
+    // 새 판이 올 때까지 테두리가 사라진다. 옛 판을 두고 아래 이펙트가 갈아 끼운다
     var plate by remember(outline) {
         mutableStateOf(cachedToppingBorderPlate(outline, outsetPx, aspectRatio))
     }
 
-    // 크기를 이펙트의 키로 두면 크기가 바뀔 때마다 만들던 판을 취소하고 처음부터 다시 시작한다.
-    // 판 한 장을 만드는 데 한 프레임보다 오래 걸리면 드래그하는 내내 어느 판도 끝을 못 봐서 띠가
-    // 멈춘 채로 남는다. 그래서 크기는 키가 아니라 conflate 한 흐름으로 받아, 판은 언제나 한 번에
-    // 한 장씩 끝까지 만들고 그동안 지나간 중간 크기는 버린다 — 드래그가 멎으면 마지막 크기 한
-    // 장만 남아 실측 크기로 수렴한다
+    // 크기를 키로 두면 바뀔 때마다 만들던 판을 버리고 다시 시작해, 판 한 장이 한 프레임보다 오래
+    // 걸리는 드래그 중에는 어느 판도 끝을 못 본다. conflate 로 받아 한 번에 한 장씩 끝까지 만든다
     LaunchedEffect(outline, outsetPx, aspectRatio) {
-        // 굵기·비율이 바뀌었을 때 그 조합으로 만들어 둔 판이 있으면 기다리지 않고 바로 쓴다
         cachedToppingBorderPlate(outline, outsetPx, aspectRatio)?.let { cached -> plate = cached }
 
         snapshotFlow { boxSize }
             .conflate()
             .collect { size ->
-                // 캐시에 넣는 것도 만든 자리에서 한다. 돌아온 뒤에 넣으면 그사이 취소됐을 때
-                // 다 만든 판이 버려진다
+                // 돌아온 뒤에 넣으면 그사이 취소됐을 때 다 만든 판이 버려진다
                 val built = withContext(Dispatchers.Default) {
                     buildBorderPlate(outline, aspectRatio, outsetPx, size) { isActive }
                         ?.also { made -> cacheToppingBorderPlate(outline, outsetPx, aspectRatio, made) }
@@ -144,12 +136,10 @@ private fun BoxScope.ToppingBorder(
         val currentBoxWidth = size.width.roundToInt()
         val currentBoxHeight = size.height.roundToInt()
 
-        // 판은 해상도 상한이나 만드는 사이에 바뀐 크기 때문에 지금 상자와 다른 크기일 수 있다.
-        // 자리와 크기를 둘 다 지금 상자 기준 실측으로 다시 재, 판을 그 실제 알맹이 크기로 늘려 그린다
+        // 판은 지금 상자와 크기가 다를 수 있어, 자리와 크기를 지금 상자 기준으로 다시 잰다
         val realSubject = fitSize(aspectRatio, IntSize(currentBoxWidth, currentBoxHeight))
 
-        // 굵기가 판에 구워져 있어 늘려 그리면 화면상 굵기도 같은 배율로 늘어난다. 너무 어긋난
-        // 판을 그리면 굵기 dp 고정 계약이 깨지므로, 그럴 때는 새 판이 올 때까지 안 그린다
+        // 너무 어긋난 판을 늘려 그리면 굵기 dp 고정이 깨진다 — 새 판이 올 때까지 안 그린다
         if (!current.fitsSubject(max(realSubject.width, realSubject.height))) return@Canvas
 
         val plateSubjectWidth = current.image.width - current.padding * 2
@@ -192,8 +182,7 @@ private fun buildBorderPlate(
     val plateLongSide = min(subjectLongSide, fieldLongSide * BORDER_PLATE_FIELD_MULTIPLE)
     val plateSubject = sizeForLongSide(aspectRatio, plateLongSide)
 
-    // 판이 알맹이보다 작게 만들어진 만큼(상한에 걸렸을 때만 1보다 작다), 판 좌표계에서 쓰는
-    // 굵기·여백도 같은 비율로 줄인다 — 안 줄이면 늘려 그릴 때 두꺼워진다
+    // 판이 알맹이보다 작아진 만큼 굵기·여백도 줄인다 — 안 줄이면 늘려 그릴 때 두꺼워진다
     val plateScale = plateLongSide.toFloat() / subjectLongSide
     val plateOutsetPx = outsetPx * plateScale
     val platePadding = ceil(plateOutsetPx).toInt() + 1

@@ -105,8 +105,8 @@ internal fun CanvasToppingPlaceScreen(
             val baseSize = rememberToppingBaseSize(painter)
 
             val context = LocalContext.current
-            // produceState 로는 캐시를 못 쓴다 — 초안이 비동기로 와서 첫 컴포지션의 모델이 언제나
-            // null 이고, initialValue 는 그때 한 번만 읽힌다
+            // 초안이 비동기로 와서 첫 컴포지션의 모델이 언제나 null 이라, initialValue 를 한 번만
+            // 읽는 produceState 로는 캐시를 못 쓴다
             var outline by remember(toppingImageModel) {
                 mutableStateOf(toppingImageModel?.let { model -> peekToppingOutline(model, retryKey = 0) })
             }
