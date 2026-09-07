@@ -30,26 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * 화면에 보이는 붓 굵기. 사진 해상도나 기기 밀도가 달라도 체감 굵기가 같도록 dp 로 잡는다.
- * 획을 확정할 때 화면이 원본 비트맵 좌표계 굵기로 환산한다.
- */
-private const val DEFAULT_BRUSH_WIDTH_DP = 10f
-private const val MIN_BRUSH_WIDTH_DP = 2f
-private const val MAX_BRUSH_WIDTH_DP = 50f
-
-/**
- * 화면에 보이는 테두리 굵기. 기획 정책(C-104)이 정한 2~50 범위를 붓과 같은 dp 기준으로 잡는다.
- *
- * 원본 좌표로 재면 사진 해상도에 따라 같은 값이 전혀 다른 굵기로 보이므로 붓과 단위를 맞춘다.
- * 저장할 때 편집 화면이 미리보기에 쓴 배율을 되짚어 원본 비트맵 좌표계 굵기로 환산한다.
- */
-private const val DEFAULT_BORDER_WIDTH_DP = 10f
-private const val MIN_BORDER_WIDTH_DP = 2f
-
-/** 편집 미리보기 여백이 이 값을 따라간다 — 상한이 올라가면 여백도 함께 올라가야 한다 */
-internal const val MAX_BORDER_WIDTH_DP = 50f
-
 data class ToppingEditState(
     val originBitmap: Bitmap? = null,
     val segmentationBitmap: Bitmap? = null,
@@ -105,6 +85,28 @@ data class ToppingEditState(
     val minBorderWidthDp: Float get() = MIN_BORDER_WIDTH_DP
 
     val maxBorderWidthDp: Float get() = MAX_BORDER_WIDTH_DP
+
+    companion object {
+        /**
+         * 화면에 보이는 붓 굵기. 사진 해상도나 기기 밀도가 달라도 체감 굵기가 같도록 dp 로 잡는다.
+         * 획을 확정할 때 화면이 원본 비트맵 좌표계 굵기로 환산한다.
+         */
+        private const val DEFAULT_BRUSH_WIDTH_DP = 10f
+        private const val MIN_BRUSH_WIDTH_DP = 2f
+        private const val MAX_BRUSH_WIDTH_DP = 50f
+
+        /**
+         * 화면에 보이는 테두리 굵기. 기획 정책(C-104)이 정한 2~50 범위를 붓과 같은 dp 기준으로 잡는다.
+         *
+         * 원본 좌표로 재면 사진 해상도에 따라 같은 값이 전혀 다른 굵기로 보이므로 붓과 단위를 맞춘다.
+         * 저장할 때 편집 화면이 미리보기에 쓴 배율을 되짚어 원본 비트맵 좌표계 굵기로 환산한다.
+         */
+        private const val DEFAULT_BORDER_WIDTH_DP = 10f
+        private const val MIN_BORDER_WIDTH_DP = 2f
+
+        /** 편집 미리보기 여백이 이 값을 따라간다 — 상한이 올라가면 여백도 함께 올라가야 한다 */
+        internal const val MAX_BORDER_WIDTH_DP = 50f
+    }
 }
 
 /**
@@ -178,7 +180,7 @@ class ToppingEditViewModel
             }
 
             is ToppingEditIntent.ChangeBrushWidth -> {
-                updateState { copy(brushWidthDp = intent.width.coerceIn(MIN_BRUSH_WIDTH_DP, MAX_BRUSH_WIDTH_DP)) }
+                updateState { copy(brushWidthDp = intent.width.coerceIn(minBrushWidthDp, maxBrushWidthDp)) }
             }
 
             is ToppingEditIntent.AddStroke -> {

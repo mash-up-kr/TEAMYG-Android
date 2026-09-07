@@ -30,13 +30,13 @@ import com.teamyg.parfait.feature.segmentation.impl.component.toppingBorderPrevi
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.toBorderBands
-import com.teamyg.parfait.feature.segmentation.impl.viewmodel.MAX_BORDER_WIDTH_DP
+import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /** 사방에 남겨 두는 여백. 가장 굵은 테두리도 다 받아낸다 */
-private const val MAX_BORDER_PADDING_DP = MAX_BORDER_WIDTH_DP
+private const val MAX_BORDER_PADDING_DP = ToppingEditState.MAX_BORDER_WIDTH_DP
 
 /** 미리보기 거리판의 긴 변 상한. 원본 해상도로 재면 사진 크기에 비례해 무거워진다 */
 private const val PREVIEW_FIELD_LONG_SIDE = 1440
