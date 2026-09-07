@@ -200,4 +200,63 @@ class ToppingOutlineTest {
         assertNotEquals(red, boundary)
         assertNotEquals(blue, boundary)
     }
+
+    @Test
+    fun buildBorderAlpha_scalesTheOutsetByTheSubjectToFieldRatio() {
+        // Given 왼쪽 열 전체가 불투명한 8x8 판을 subjectWidth 4 에 앉힌다 — 배율 2.0(필드픽셀/목표픽셀).
+        // 왼쪽 열 전체가 씨앗이라 어느 행에서 재도 거리는 그 칸의 x 좌표 그대로다
+        val outline = outlineOf(
+            "#.......",
+            "#.......",
+            "#.......",
+            "#.......",
+            "#.......",
+            "#.......",
+            "#.......",
+            "#.......",
+        )
+        val target = ToppingBorderTarget(
+            width = 4,
+            height = 4,
+            subjectLeft = 0,
+            subjectTop = 0,
+            subjectWidth = 4,
+            subjectHeight = 4,
+        )
+
+        // When 목표 좌표계로 1px 만큼 두른다 — 필드 좌표로는 1 * 2.0 = 2.0
+        val alpha = outline.buildBorderAlpha(target, outsetPx = 1f)
+
+        // Then 목표 x=0..3 이 필드 x=0.5,2.5,4.5,6.5 로 옮겨진다(배율 2, 반 픽셀 오프셋).
+        // 거리는 필드 x 그대로이므로:
+        //   x=0: 거리 0.5, coverage=(2.0-0.5)*0.5+0.5=1.25 → 1.0 로 잘려 알파 255
+        //   x=1: 거리 2.5, coverage=(2.0-2.5)*0.5+0.5=0.25 → 알파 round(0.25*255)=64
+        //   x=2: 거리 4.5 > outermostEdge(2.0+0.5*2=3.0) → 칸 밖, 알파 0
+        //   x=3: 거리 6.5 > 3.0 → 알파 0
+        // 배율을 뒤집어 0.5 를 썼다면 x=1 이 이미 outermostEdge 밖으로 나가 0 이 되므로
+        // 이 네 값이 배율이 맞게 곱해졌는지를 그대로 가른다
+        assertNotNull(alpha)
+        assertEquals(255, alpha.alphaAt(0), "필드 거리 0.5 인 x=0 이 완전히 칠해지지 않았다")
+        assertEquals(64, alpha.alphaAt(1), "필드 거리 2.5 인 x=1 의 부분 커버리지가 어긋났다")
+        assertEquals(0, alpha.alphaAt(2), "필드 거리 4.5 인 x=2 는 outermostEdge 밖이라 비어야 한다")
+        assertEquals(0, alpha.alphaAt(3), "필드 거리 6.5 인 x=3 은 outermostEdge 밖이라 비어야 한다")
+    }
+
+    @Test
+    fun buildBorderPixels_isNullWhenEveryBandHasNoOutset() {
+        // Given 씨앗은 있지만 겹이 굵기 0 하나뿐이다 — 두를 폭이 없다
+        val outline = outlineOf(
+            "...",
+            ".#.",
+            "...",
+        )
+
+        val pixels = outline.buildBorderPixels(
+            target = wholeTarget(3, 3),
+            bands = listOf(ToppingBorderBand(outsetPx = 0f, colorArgb = 0xFFFF0000.toInt())),
+        )
+
+        // Then 굵기 0 을 요청했으니 반투명 테두리가 아니라 null 이어야 한다
+        assertNull(pixels)
+    }
 }

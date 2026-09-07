@@ -127,7 +127,7 @@ class ToppingOutline internal constructor(
         target: ToppingBorderTarget,
         bands: List<ToppingBorderBand>,
     ): IntArray? {
-        if (!hasAnySeed || bands.isEmpty() || !target.isUsable) return null
+        if (!hasAnySeed || bands.isEmpty() || bands.all { it.outsetPx <= 0f } || !target.isUsable) return null
 
         val colors = IntArray(bands.size) { index -> bands[index].colorArgb }
         val outsets = FloatArray(bands.size) { index -> bands[index].outsetPx }
