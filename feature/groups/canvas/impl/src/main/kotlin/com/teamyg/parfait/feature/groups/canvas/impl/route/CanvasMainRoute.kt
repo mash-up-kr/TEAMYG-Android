@@ -42,6 +42,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOver
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTutorialOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
@@ -182,6 +183,9 @@ internal fun CanvasMainRoute(
 
                     withContext(Dispatchers.IO) { bitmap.writeToCanvasCaptureCache(context) }
                         .onSuccess { file ->
+                            // ⚠️ 홀더에 건넸다고 파일 쓰기를 지우면 안 된다 — 위 ResultEffect 가
+                            // 저장할 때 그 파일을 읽는다
+                            CanvasCaptureHolder.put(bitmap)
                             navigator.goTo(
                                 destination = NavKeyCanvasImageSave(
                                     imagePath = file.absolutePath,
