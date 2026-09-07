@@ -29,10 +29,12 @@ import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.core.ui.reveal.rememberBatchRevealState
 import com.teamyg.parfait.core.ui.reveal.revealed
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
@@ -41,7 +43,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
-import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -61,8 +62,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
  * 탭이어도 이벤트는 여기서 소비되고 아래로 흐르지 않는다. 앞으로 캔버스 아래쪽에 제스처를
  * 붙이려면 이 레이어를 거쳐야 한다 — 그냥 달면 조용히 죽는다.
  *
- * @param hitTestEnabled 끄면 판정도 마스크 로딩도 달지 않는다. 클릭을 쓰지 않는 화면이
- *   쓰지도 않을 디코딩과 보이지 않는 이벤트 싱크를 떠안지 않게 하는 스위치다
+ * @param hitTestEnabled 끄면 판정과 보이지 않는 이벤트 싱크를 달지 않는다. 거리판은 테두리를
+ *   그리는 데 쓰이므로 이 스위치와 무관하게 뜬다
  */
 @Composable
 internal fun CanvasToppingLayer(
@@ -86,7 +87,6 @@ internal fun CanvasToppingLayer(
             toppings = toppings,
             canvasWidth = maxWidth,
             canvasHeight = maxHeight,
-            loadMasks = hitTestEnabled,
             retryKey = retryKey,
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
@@ -225,6 +225,7 @@ private fun CanvasTopping(
     ) {
         ToppingImage(
             painter = entry.painter,
+            outline = entry.outline,
             border = entry.topping.border,
         )
     }
@@ -233,6 +234,7 @@ private fun CanvasTopping(
 @Composable
 private fun ToppingImage(
     painter: AsyncImagePainter,
+    outline: ToppingOutline?,
     border: ToppingBorder,
 ) {
     val painterState by painter.state.collectAsState()
@@ -248,6 +250,7 @@ private fun ToppingImage(
             ?.takeIf { painterState is AsyncImagePainter.State.Success },
         borderWidth = (solidBorder?.width?.toFloat() ?: 0f).dp,
         modifier = Modifier.fillMaxSize(),
+        outline = outline,
     )
 }
 
@@ -255,26 +258,27 @@ internal data class ToppingHitEntry(
     val topping: CanvasToppingVO,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
+    val outline: ToppingOutline?,
     val target: ToppingHitTarget,
     val imageState: CanvasLoadState,
 )
 
 /**
- * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
+ * 그리기와 판정이 같은 painter 와 같은 거리판을 본다. 각각 만들면 비율이 서로 다른 시점의 값이
+ * 될 수 있다.
  *
- * @param loadMasks 클릭을 받지 않는 화면은 꺼서 쓰지도 않을 디코딩을 막는다
- * @param retryKey 올리면 이미지를 다시 받아 온다. 알파 마스크는 여기 딸려 오지 않는다
+ * @param retryKey 올리면 이미지와 거리판을 함께 다시 받아 온다
  */
 @Composable
 private fun rememberToppingHitEntries(
     toppings: List<CanvasToppingVO>,
     canvasWidth: Dp,
     canvasHeight: Dp,
-    loadMasks: Boolean,
     retryKey: Int,
 ): List<ToppingHitEntry> {
-    val masks = rememberToppingAlphaMasks(
-        if (loadMasks) toppings.map { it.imageUrl } else emptyList(),
+    val outlines = rememberToppingOutlines(
+        models = toppings.map { it.imageUrl },
+        retryKey = retryKey,
     )
     val density = LocalDensity.current
 
@@ -313,6 +317,7 @@ private fun rememberToppingHitEntries(
             ToppingHitEntry(
                 topping = topping,
                 painter = painter,
+                outline = outlines[topping.imageUrl],
                 imageState = when (painterState) {
                     is AsyncImagePainter.State.Success -> CanvasLoadState.Loaded
                     is AsyncImagePainter.State.Error -> CanvasLoadState.Failed
@@ -326,7 +331,7 @@ private fun rememberToppingHitEntries(
                         imageHeightPx = imageSize.height.toPx(),
                         rotationDegrees = topping.transform.rotation.toFloat(),
                         borderWidthPx = drawnBorderWidth.dp.toPx(),
-                        mask = masks[topping.imageUrl],
+                        outline = outlines[topping.imageUrl],
                     )
                 },
             )

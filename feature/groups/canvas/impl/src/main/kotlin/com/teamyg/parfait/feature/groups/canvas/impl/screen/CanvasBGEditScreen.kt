@@ -47,8 +47,10 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.core.util.android.extension.centeredAt
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
@@ -67,7 +69,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
-import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberToppingAlphaMasks
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -156,17 +157,24 @@ internal fun CanvasBGEditScreen(
                         canvasHeight = canvasHeight,
                     )
 
+                    // 그리기와 판정이 같은 판을 봐야 띠와 눌리는 자리가 어긋나지 않는다
+                    val outlines = rememberToppingOutlines(
+                        models = drawEntries.map { it.topping.drawnModel },
+                        retryKey = 0,
+                    )
+
                     if (uiState.selectedTab == CanvasEditTab.BACKGROUND) {
                         // 딤·입력 레이어·모서리 버튼·접근성 클릭을 붙이지 않는다
                         drawEntries.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry,
+                                outline = outlines[entry.topping.drawnModel],
                                 alpha = BACKGROUND_TAB_TOPPING_ALPHA,
                                 onClick = null,
                             )
                         }
                     } else {
-                        val entries = rememberBGEditHitEntries(drawEntries = drawEntries)
+                        val entries = rememberBGEditHitEntries(drawEntries, outlines)
                         val myEntries = entries.filter { it.topping.isMine }
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
@@ -175,6 +183,7 @@ internal fun CanvasBGEditScreen(
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry.draw,
+                                outline = outlines[entry.topping.drawnModel],
                                 alpha = 1f,
                                 onClick = onClickDeselectTopping,
                             )
@@ -189,6 +198,7 @@ internal fun CanvasBGEditScreen(
                         myEntries.forEach { entry ->
                             CanvasToppingImage(
                                 entry = entry.draw,
+                                outline = outlines[entry.topping.drawnModel],
                                 alpha = 1f,
                                 onClick = { onClickTopping(entry.topping) },
                             )
@@ -396,7 +406,7 @@ private fun PaletteColorCircle(
 private val CanvasToppingItem.drawnModel: String
     get() = editedImagePath ?: imageUrl
 
-/** 두 탭이 공유하는 그리기 정보. 마스크와 [ToppingHitTarget]은 [BGEditHitEntry]가 얹는다 */
+/** 두 탭이 공유하는 그리기 정보. [ToppingHitTarget]은 [BGEditHitEntry]가 얹는다 */
 private data class BGEditDrawEntry(
     val topping: CanvasToppingItem,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
@@ -406,10 +416,7 @@ private data class BGEditDrawEntry(
     val drawnBorderWidthDp: Float,
 )
 
-/**
- * 배경 탭에서도 부르므로 알파 마스크를 요청하지 않는다 — 마스크 준비는 비트맵 디코딩을
- * 동반하는데 배경 탭은 판정을 하지 않는다.
- */
+/** 배치와 크기만 잰다. 거리판은 두 탭이 함께 보므로 호출부가 따로 띄워 넘긴다 */
 @Composable
 private fun rememberBGEditDrawEntries(
     toppings: List<CanvasToppingItem>,
@@ -459,16 +466,17 @@ private data class BGEditHitEntry(
 }
 
 /**
- * 그리기와 판정이 같은 painter 를 본다. 각각 만들면 비율이 서로 다른 시점의 값이 될 수 있다.
+ * 그리기와 판정이 같은 painter 와 같은 거리판을 본다. 각각 만들면 비율이 서로 다른 시점의 값이
+ * 될 수 있다.
  *
- * 마스크는 판정에 실제로 쓰는 내 토핑만 요청한다. 남의 토핑은 탭 대상도 드래그 대상도 아니고
- * 그리는 데는 painter 만 있으면 되므로, 마스크가 없어도 화면이 달라지지 않는다.
+ * @param outlines [CanvasToppingItem.drawnModel] 로 찾는다 — 그리는 대상과 다른 키를 쓰면
+ *   편집본의 잘린 여백만큼 실루엣이 어긋난다
  */
 @Composable
-private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<BGEditHitEntry> {
-    val masks = rememberToppingAlphaMasks(
-        drawEntries.filter { it.topping.isMine }.map { it.topping.drawnModel },
-    )
+private fun rememberBGEditHitEntries(
+    drawEntries: List<BGEditDrawEntry>,
+    outlines: Map<String, ToppingOutline>,
+): List<BGEditHitEntry> {
     val density = LocalDensity.current
 
     return drawEntries.map { entry ->
@@ -482,7 +490,7 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
                     imageHeightPx = entry.size.height.toPx(),
                     rotationDegrees = entry.topping.rotationDegrees,
                     borderWidthPx = entry.drawnBorderWidthDp.dp.toPx(),
-                    mask = masks[entry.topping.drawnModel],
+                    outline = outlines[entry.topping.drawnModel],
                 )
             },
         )
@@ -497,8 +505,8 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
  * 별도로 그린다.
  *
  * Box 가 이미지보다 [BGEditDrawEntry.drawnBorderWidthDp]만큼 크고 그만큼 안쪽으로 덜어낸다.
- * [YGToppingCutoutImage]의 테두리는 그 폭만큼 바깥으로 밀어 찍는데, `alpha`가 1 미만이면
- * 오프스크린 버퍼가 생겨 레이어 밖으로 나간 부분이 잘리기 때문이다.
+ * [YGToppingCutoutImage]가 거리판으로 만든 띠는 그 폭만큼 상자 밖으로 나가는데, `alpha`가
+ * 1 미만이면 오프스크린 버퍼가 생겨 레이어 밖으로 나간 부분이 잘리기 때문이다.
  *
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
  *   읽히면 안 된다.
@@ -506,6 +514,7 @@ private fun rememberBGEditHitEntries(drawEntries: List<BGEditDrawEntry>): List<B
 @Composable
 private fun CanvasToppingImage(
     entry: BGEditDrawEntry,
+    outline: ToppingOutline?,
     alpha: Float,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -548,6 +557,7 @@ private fun CanvasToppingImage(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(outlineInset),
+            outline = outline,
         )
     }
 }
