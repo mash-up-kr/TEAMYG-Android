@@ -3,8 +3,8 @@ package com.teamyg.parfait.core.util.android.outline
 import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
-import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderBand
-import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import java.nio.ByteBuffer
 import kotlin.math.max

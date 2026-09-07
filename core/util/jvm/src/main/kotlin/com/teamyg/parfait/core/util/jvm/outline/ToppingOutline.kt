@@ -4,49 +4,12 @@ import com.teamyg.parfait.core.util.jvm.extension.SQUARED_DISTANCE_UNSET
 import com.teamyg.parfait.core.util.jvm.extension.fadeArgb
 import com.teamyg.parfait.core.util.jvm.extension.fillWithSquaredDistance
 import com.teamyg.parfait.core.util.jvm.extension.mixArgb
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
+import com.teamyg.parfait.core.util.jvm.model.ToppingOutlineSpec
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
-
-/** 실루엣 안으로 볼 알파 문턱. 이보다 옅은 자리는 실루엣 바깥으로 친다 */
-const val OUTLINE_ALPHA_THRESHOLD = 128
-
-/** 1 필드픽셀을 이 수만큼 쪼개 담는다 */
-private const val DISTANCE_STEPS_PER_PX = 8
-
-/** 담을 수 있는 가장 먼 거리(필드픽셀). 판의 대각선보다 한참 크다 */
-private const val MAX_STORED_DISTANCE_PX = Short.MAX_VALUE / DISTANCE_STEPS_PER_PX
-
-/** 가장자리 한 겹을 반 픽셀씩 물려 칠해 계단이 지지 않게 한다 */
-private const val EDGE_FEATHER_PX = 0.5f
-
-private const val ALPHA_MAX = 255
-
-/**
- * 테두리 한 겹이 차지하는 구간.
- *
- * @param outsetPx 실루엣에서 이 겹의 바깥 끝까지 거리. 겹은 아래 겹을 감싸며 쌓이므로
- *   자기 굵기가 아니라 자기까지의 굵기를 모두 더한 값이다
- */
-data class ToppingBorderBand(
-    val outsetPx: Float,
-    val colorArgb: Int,
-)
-
-/**
- * 띠를 칠할 판과, 그 판 안에서 알맹이가 놓이는 자리.
- *
- * 알맹이 자리를 따로 받는 것이 핵심이다 — 판은 알맹이보다 사방으로 넓고, 실루엣은 판 전체가
- * 아니라 그 안쪽 사각형에 대응한다. 이 값이 없으면 실루엣이 여백까지 채우도록 늘어난다.
- */
-data class ToppingBorderTarget(
-    val width: Int,
-    val height: Int,
-    val subjectLeft: Int,
-    val subjectTop: Int,
-    val subjectWidth: Int,
-    val subjectHeight: Int,
-)
 
 /**
  * 실루엣에서 떨어진 거리를 픽셀마다 담아 둔 판.
@@ -60,7 +23,7 @@ data class ToppingBorderTarget(
 class ToppingOutline internal constructor(
     val width: Int,
     val height: Int,
-    /** 실루엣까지의 거리를 [DISTANCE_STEPS_PER_PX] 눈금으로 담는다 */
+    /** 실루엣까지의 거리를 [ToppingOutlineSpec.DISTANCE_STEPS_PER_PX] 눈금으로 담는다 */
     private val distances: ShortArray,
 ) {
     val hasAnySeed: Boolean = distances.any { step -> step.toInt() == 0 }
@@ -115,7 +78,7 @@ class ToppingOutline internal constructor(
 
         val alpha = ByteArray(target.width * target.height)
         val completed = forEachBandPixel(target, floatArrayOf(outsetPx), shouldContinue) { index, _, coverage ->
-            alpha[index] = (coverage * ALPHA_MAX).roundToInt().toByte()
+            alpha[index] = (coverage * ToppingOutlineSpec.ALPHA_MAX).roundToInt().toByte()
         }
         return if (completed) alpha else null
     }
@@ -168,7 +131,7 @@ class ToppingOutline internal constructor(
         val targetPxPerField = 1f / fieldPerTargetX
 
         val edges = FloatArray(outsetsPx.size) { index -> outsetsPx[index] * fieldPerTargetX }
-        val outermostEdge = edges.last() + EDGE_FEATHER_PX * fieldPerTargetX
+        val outermostEdge = edges.last() + ToppingOutlineSpec.EDGE_FEATHER_PX * fieldPerTargetX
 
         for (y in 0 until target.height) {
             if (!shouldContinue()) return false
@@ -184,7 +147,7 @@ class ToppingOutline internal constructor(
                 var bandIndex = 0
                 while (bandIndex < edges.lastIndex && distance > edges[bandIndex]) bandIndex++
 
-                val coverage = ((edges[bandIndex] - distance) * targetPxPerField + EDGE_FEATHER_PX)
+                val coverage = ((edges[bandIndex] - distance) * targetPxPerField + ToppingOutlineSpec.EDGE_FEATHER_PX)
                     .coerceIn(0f, 1f)
                 onPixel(rowStart + x, bandIndex, coverage)
             }
@@ -213,7 +176,13 @@ class ToppingOutline internal constructor(
         return lerp(top, bottom, bottomWeight)
     }
 
-    private fun rawAt(index: Int): Float = distances[index].toInt().toFloat() / DISTANCE_STEPS_PER_PX
+    private fun rawAt(index: Int): Float = distances[index].toInt().toFloat() / ToppingOutlineSpec.DISTANCE_STEPS_PER_PX
+
+    private fun lerp(
+        start: Float,
+        stop: Float,
+        fraction: Float,
+    ): Float = start + (stop - start) * fraction
 
     companion object {
         /**
@@ -225,28 +194,21 @@ class ToppingOutline internal constructor(
             alphaAt: (x: Int, y: Int) -> Int,
         ): ToppingOutline {
             val squared = FloatArray(width * height) { index ->
-                val opaque = alphaAt(index % width, index / width) >= OUTLINE_ALPHA_THRESHOLD
+                val opaque = alphaAt(index % width, index / width) >= ToppingOutlineSpec.ALPHA_THRESHOLD
                 if (opaque) 0f else SQUARED_DISTANCE_UNSET
             }
             squared.fillWithSquaredDistance(width, height)
+
+            val maxDistance = ToppingOutlineSpec.MAX_STORED_DISTANCE_PX.toFloat()
 
             return ToppingOutline(
                 width = width,
                 height = height,
                 distances = ShortArray(squared.size) { index ->
-                    val distance = sqrt(squared[index]).coerceAtMost(MAX_STORED_DISTANCE_PX.toFloat())
-                    (distance * DISTANCE_STEPS_PER_PX).roundToInt().toShort()
+                    val distance = sqrt(squared[index]).coerceAtMost(maxDistance)
+                    (distance * ToppingOutlineSpec.DISTANCE_STEPS_PER_PX).roundToInt().toShort()
                 },
             )
         }
     }
 }
-
-private val ToppingBorderTarget.isUsable: Boolean
-    get() = width > 0 && height > 0 && subjectWidth > 0 && subjectHeight > 0
-
-private fun lerp(
-    start: Float,
-    stop: Float,
-    fraction: Float,
-): Float = start + (stop - start) * fraction

@@ -23,7 +23,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.outline.toBorderArgbBitmap
 import com.teamyg.parfait.core.util.android.outline.toToppingOutline
-import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.impl.component.toppingBorderPreviewLayoutOrNull

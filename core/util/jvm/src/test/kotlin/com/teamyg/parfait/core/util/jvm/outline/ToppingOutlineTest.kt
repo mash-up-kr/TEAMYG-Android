@@ -1,5 +1,7 @@
 package com.teamyg.parfait.core.util.jvm.outline
 
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
 import kotlin.math.hypot
 import kotlin.math.sqrt
 import kotlin.test.Test

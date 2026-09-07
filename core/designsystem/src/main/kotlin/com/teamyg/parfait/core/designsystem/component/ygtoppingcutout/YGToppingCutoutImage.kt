@@ -32,7 +32,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.outline.toBorderAlphaBitmap
-import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderTarget
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate

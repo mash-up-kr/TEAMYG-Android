@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.editor
 
-import com.teamyg.parfait.core.util.jvm.outline.ToppingBorderBand
+import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 
 /**
