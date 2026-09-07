@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
@@ -42,8 +44,10 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
+import com.teamyg.parfait.core.ui.outline.loadToppingOutline
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
@@ -87,16 +91,23 @@ internal fun CanvasToppingPlaceScreen(
             contentAlignment = Alignment.Center,
         ) {
             val toppingImagePath = uiState.toppingImagePath
+            // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
+            val toppingImageModel = remember(toppingImagePath) {
+                toppingImagePath?.let { path -> File(path).toUri().toString() }
+            }
             val painter = rememberAsyncImagePainter(
-                // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
-                model = remember(toppingImagePath) {
-                    toppingImagePath?.let { path -> File(path).toUri().toString() }
-                },
+                model = toppingImageModel,
                 contentScale = ContentScale.Fit,
             )
             val painterState by painter.state.collectAsState()
             val isToppingImageLoaded = painterState is AsyncImagePainter.State.Success
             val baseSize = rememberToppingBaseSize(painter)
+
+            val context = LocalContext.current
+            val outline by produceState<ToppingOutline?>(initialValue = null, toppingImageModel) {
+                val model = toppingImageModel ?: return@produceState
+                value = loadToppingOutline(context, model, retryKey = 0)
+            }
 
             // 확정 판정의 근거를 ViewModel 자기 어휘로 올린다 — 실측 방출 가드에 기대면
             // 그 가드를 걷는 순간 확인 버튼이 폴백 크기로 확정을 내보낸다
@@ -180,6 +191,7 @@ internal fun CanvasToppingPlaceScreen(
                             ?.let { argb -> Color(argb) },
                         borderWidth = (uiState.borderWidthDp ?: 0f).dp,
                         modifier = Modifier.fillMaxSize(),
+                        outline = outline,
                     )
                 }
             }

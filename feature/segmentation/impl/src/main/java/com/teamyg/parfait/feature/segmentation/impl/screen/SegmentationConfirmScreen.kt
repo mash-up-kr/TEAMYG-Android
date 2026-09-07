@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
@@ -27,6 +29,8 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.outline.loadToppingOutline
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.segmentation.impl.R
 
 /**
@@ -70,6 +74,11 @@ internal fun SegmentationConfirmScreen(
             )
             val painterState by painter.state.collectAsState()
 
+            val context = LocalContext.current
+            val outline by produceState<ToppingOutline?>(initialValue = null, subjectImagePath) {
+                value = loadToppingOutline(context, subjectImagePath, retryKey = 0)
+            }
+
             YGToppingCutoutImage(
                 painter = painter,
                 borderColor = borderColorArgb
@@ -77,6 +86,7 @@ internal fun SegmentationConfirmScreen(
                     ?.let { argb -> Color(argb) },
                 borderWidth = (borderWidthDp ?: 0f).dp,
                 modifier = Modifier.fillMaxSize(),
+                outline = outline,
             )
         }
 
