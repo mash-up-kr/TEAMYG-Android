@@ -23,6 +23,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.groups.enter.impl.R
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputField
 import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteCodeInputFieldElement
@@ -31,14 +32,17 @@ import com.teamyg.parfait.feature.groups.enter.impl.invitecode.component.InviteC
 @Composable
 internal fun GroupInviteCodeScreen(
     uiState: GroupInviteCodeUiState,
-    onValueChanged: (index: Int, word: String) -> Unit,
+    onTextChanged: (text: String, cursor: Int) -> Unit,
     onClickTextFieldElement: (index: Int) -> Unit,
     onClickNextButton: () -> Unit,
     onClickBackButton: () -> Unit,
     onClickPasteBar: () -> Unit,
+    onFocusChanged: (isFocused: Boolean) -> Unit,
+    onClickBackground: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    // 상단바·입력칸·버튼은 각자 클릭을 먹으므로 그 바깥을 눌렀을 때만 걸린다
+    Column(modifier = modifier.clickableYGNoRipple(onClick = onClickBackground)) {
         YGTopBarDetail(
             title = stringResource(R.string.group_enter),
             onIconClick = onClickBackButton,
@@ -71,16 +75,20 @@ internal fun GroupInviteCodeScreen(
                 Spacer(modifier = Modifier.height(69.dp))
                 InviteCodeInputField(
                     text = uiState.text,
+                    cursor = uiState.cursor,
+                    isFocused = uiState.isFocused,
                     maxLength = uiState.codeLength,
                     horizontalSpace = YGTheme.layout.gap.gap3,
+                    onTextChanged = onTextChanged,
+                    onFocusChanged = onFocusChanged,
+                    onDone = onClickNextButton,
                     modifier = Modifier.fillMaxWidth(),
                     elementContent = { word, index ->
                         InviteCodeInputFieldElement(
                             word = word,
-                            isFocus = index == uiState.focusedIndex,
+                            isFocus = uiState.isFocused && index == uiState.focusedIndex,
                             isError = uiState.inviteCodeError != null,
-                            onValueChanged = { changed -> onValueChanged(index, changed) },
-                            onClickTextFieldElement = { onClickTextFieldElement(index) },
+                            onClick = { onClickTextFieldElement(index) },
                             modifier = Modifier
                                 .weight(1f)
                                 .aspectRatio(7 / 8f),
@@ -129,12 +137,13 @@ private class GroupInviteCodeScreenPreviewParameterProvider :
     override val values: Sequence<GroupInviteCodeUiState>
         get() = sequenceOf(
             GroupInviteCodeUiState(""),
-            GroupInviteCodeUiState(text = "he"),
-            GroupInviteCodeUiState(text = "hello"),
+            GroupInviteCodeUiState(text = "he", focusedIndex = 2, isFocused = true),
+            GroupInviteCodeUiState(text = "hello", focusedIndex = 5, isFocused = true),
             GroupInviteCodeUiState(text = "", inviteCodeError = InviteCodeError.MEMBER_LIMIT_REACHED),
             GroupInviteCodeUiState(
                 text = "",
                 focusedIndex = 0,
+                isFocused = true,
                 clipboardInviteCode = "E54W1A",
             ),
         )
@@ -147,11 +156,13 @@ private fun GroupInviteCodeScreenPreview(
 ) = PreviewBox {
     GroupInviteCodeScreen(
         uiState = uiState,
-        onValueChanged = { _, _ -> },
+        onTextChanged = { _, _ -> },
         onClickTextFieldElement = {},
         onClickNextButton = {},
         onClickBackButton = {},
         onClickPasteBar = {},
+        onFocusChanged = {},
+        onClickBackground = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
