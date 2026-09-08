@@ -50,34 +50,67 @@ internal fun buildCutoutBitmap(
     return cutout
 }
 
-/**
- * 투명한 여백을 걷어내고 실제로 보이는(알파가 있는) 픽셀의 최소 사각형만 남긴다.
- * 완전히 투명한 이미지처럼 자를 기준이 없으면 원본을 그대로 돌려준다.
- */
-internal fun Bitmap.trimTransparentBounds(): Bitmap {
-    val pixels = IntArray(width * height)
-    getPixels(pixels, 0, width, 0, 0, width, height)
+/** [isEmpty] 면 자를 기준이 없다는 뜻이라 좌표 넷은 읽지 않는다 */
+internal data class SubjectMeasure(
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+    val alphaSum: Long,
+) {
+    val isEmpty: Boolean get() = right < left || bottom < top
+}
 
+/**
+ * 경계와 알파 합을 한 번의 스캔으로 잰다 — 나눠 재면 원본 해상도를 두 번 훑는다.
+ * 알파 합이 `Long` 인 것은 12MP 불투명 이미지의 합이 `Int` 를 넘기 때문이다.
+ */
+internal fun measureSubject(
+    pixels: IntArray,
+    width: Int,
+    height: Int,
+): SubjectMeasure {
     var left = width
     var top = height
     var right = -1
     var bottom = -1
+    var alphaSum = 0L
 
     for (y in 0 until height) {
         val rowOffset = y * width
         for (x in 0 until width) {
-            if (pixels[rowOffset + x] ushr 24 != 0) {
-                if (x < left) left = x
-                if (x > right) right = x
-                if (y < top) top = y
-                if (y > bottom) bottom = y
-            }
+            val alpha = pixels[rowOffset + x] ushr 24
+            if (alpha == 0) continue
+
+            alphaSum += alpha.toLong()
+            if (x < left) left = x
+            if (x > right) right = x
+            if (y < top) top = y
+            if (y > bottom) bottom = y
         }
     }
 
-    if (right < left || bottom < top) return this
+    return SubjectMeasure(left = left, top = top, right = right, bottom = bottom, alphaSum = alphaSum)
+}
 
-    return Bitmap.createBitmap(this, left, top, right - left + 1, bottom - top + 1)
+internal fun Bitmap.measureSubject(): SubjectMeasure {
+    val pixels = IntArray(width * height)
+    getPixels(pixels, 0, width, 0, 0, width, height)
+
+    return measureSubject(pixels = pixels, width = width, height = height)
+}
+
+/** 자를 기준이 없으면 원본을 **그대로** 돌려준다 — 호출부가 항등 비교로 이중 해제를 막는다 */
+internal fun Bitmap.trimTo(measure: SubjectMeasure): Bitmap {
+    if (measure.isEmpty) return this
+
+    return Bitmap.createBitmap(
+        this,
+        measure.left,
+        measure.top,
+        measure.right - measure.left + 1,
+        measure.bottom - measure.top + 1,
+    )
 }
 
 private fun strokePaint(stroke: ToppingEditStroke): Paint = Paint().apply {
