@@ -2,26 +2,12 @@ package com.teamyg.parfait.data.utils.image
 
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
-
-/** 캔버스 면적 대비 이 비율 **미만** 커버리지의 후보는 버린다 (만분율) */
-internal const val MIN_SUBJECT_COVERAGE_PERMYRIAD = 5L
-
-/** 작은 사진에서 비율만으로는 너무 헐거워지므로 두는 하한 (원본 픽셀) */
-internal const val MIN_SUBJECT_COVERAGE_PIXELS = 2_500L
+import com.teamyg.parfait.domain.model.SubjectCoverage
 
 internal const val MAX_SUBJECT_COUNT = 5
 
 /** 이 값 **이상** 겹치는 후보 쌍은 같은 것으로 본다 (만분율) */
 internal const val DUPLICATE_IOU_PERMYRIAD = 9_000L
-
-/**
- * 후보가 넘어야 하는 "실제로 칠해진 픽셀 수".
- *
- * 값의 근거와 이 지표를 고른 이유는
- * `parfait/specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
- */
-internal fun coverageFloorPixels(canvasArea: Long): Long =
-    maxOf(MIN_SUBJECT_COVERAGE_PIXELS, canvasArea * MIN_SUBJECT_COVERAGE_PERMYRIAD / 10_000L)
 
 /**
  * 정렬이 결정적이어야 하는 이유가 둘이다 — 테스트가 ML Kit 반환 순서에 흔들리지 않아야 하고,
@@ -45,13 +31,10 @@ internal fun filterCandidates(candidates: List<SegmentationCandidate>): List<Seg
     .dropNearDuplicates()
     .take(MAX_SUBJECT_COUNT)
 
-private fun SegmentationCandidate.isLargeEnough(): Boolean {
-    val canvasArea = canvasWidth.toLong() * canvasHeight
-    if (canvasArea <= 0L) return false
-
-    // coverage = coverageAlphaSum / 255 이므로 양변에 255를 곱해 부동소수를 거치지 않는다
-    return coverageAlphaSum >= 255L * coverageFloorPixels(canvasArea)
-}
+private fun SegmentationCandidate.isLargeEnough(): Boolean = SubjectCoverage.isLargeEnough(
+    alphaSum = coverageAlphaSum,
+    canvasArea = canvasWidth.toLong() * canvasHeight,
+)
 
 /**
  * 앞에서부터 훑으며 이미 채택한 것과 크게 겹치는 후보를 버린다. 정렬이 전순서라 결과가 매번 같다.
