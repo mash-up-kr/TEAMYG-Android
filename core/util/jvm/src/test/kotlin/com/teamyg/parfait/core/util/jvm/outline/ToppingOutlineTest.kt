@@ -2,6 +2,7 @@ package com.teamyg.parfait.core.util.jvm.outline
 
 import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
 import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.sqrt
 import kotlin.test.Test
@@ -150,6 +151,83 @@ class ToppingOutlineTest {
         // Then 판 왼쪽 밖 2 칸은 거리 0 이 아니라 2 다.
         // 가장자리 값으로 고정하면 실루엣이 판 변에 닿은 토핑에서 여백이 통째로 칠해진다
         assertEquals(2f, outline.distanceAt(-2f, 0f), TOLERANCE)
+    }
+
+    @Test
+    fun distanceAt_outsideTheField_measuresToTheSeedNotToTheEdge() {
+        // Given 한가운데 한 칸만 불투명한 7x7 판 — 씨앗이 판 변에서 3 칸 안쪽이다
+        val outline = ToppingOutline.of(7, 7) { x, y ->
+            if (x == 3 && y == 3) OPAQUE else TRANSPARENT
+        }
+
+        // Then 판 오른쪽 밖 4 칸은 씨앗까지 7 이다 — 직각으로 합치면 5 가 나온다
+        assertEquals(7f, outline.distanceAt(10f, 3f), TOLERANCE)
+    }
+
+    @Test
+    fun distanceAt_outsideTheField_changesSmoothlyAlongTheEdge() {
+        // Given 머리와 손잡이가 붙은 실루엣 — 변을 따라 내려가면 가장 가까운 씨앗이 머리에서
+        // 손잡이 끝으로 건너뛴다
+        val field = 96
+        val outline = ToppingOutline.of(field, field) { x, y ->
+            val head = hypot(x - 48f, y - 30f) <= 18f
+            val grip = x in 43..52 && y in 30..72
+            if (head || grip) OPAQUE else TRANSPARENT
+        }
+
+        // Then 거리 함수는 1-Lipschitz 라 움직인 만큼보다 더 뛰지 못한다. 뛰면 띠에 톱니가 진다
+        val outsideX = field + 19f
+        val step = 0.25f
+        var previous = outline.distanceAt(outsideX, -20f)
+        var y = -20f + step
+        while (y <= field + 20f) {
+            val current = outline.distanceAt(outsideX, y)
+            assertTrue(
+                abs(current - previous) <= step + TOLERANCE,
+                "y=$y 에서 거리가 한 번에 ${abs(current - previous)} 만큼 뛰었다",
+            )
+            previous = current
+            y += step
+        }
+    }
+
+    @Test
+    fun buildBorderAlpha_keepsTheSilhouetteWhenTheBandRunsOffTheField() {
+        // Given 한가운데 반지름 5 인 원 하나만 있는 21x21 판
+        val field = 21
+        val center = 10f
+        val radius = 5f
+        val outline = ToppingOutline.of(field, field) { x, y ->
+            if (hypot(x - center, y - center) <= radius) OPAQUE else TRANSPARENT
+        }
+
+        // When 판 밖까지 나가도록 굵게 두른다
+        val padding = 13
+        val outset = 12f
+        val alpha = outline.buildBorderAlpha(
+            ToppingBorderTarget(
+                width = field + padding * 2,
+                height = field + padding * 2,
+                subjectLeft = padding,
+                subjectTop = padding,
+                subjectWidth = field,
+                subjectHeight = field,
+            ),
+            outsetPx = outset,
+        )
+
+        // Then 판 밖에서도 띠가 원을 따라간다 — 판 모양으로 퍼지면 모서리까지 칠해진다.
+        // 경계 한 칸은 양자화와 가장자리 물림 때문에 어느 쪽으로도 판정하지 않는다
+        assertNotNull(alpha)
+        val plateWidth = field + padding * 2
+        for (y in 0 until plateWidth) {
+            for (x in 0 until plateWidth) {
+                val distance = hypot(x - padding - center, y - padding - center) - radius
+                val painted = alpha.alphaAt(y * plateWidth + x) > 0
+                if (distance <= outset - 1f) assertTrue(painted, "굵기 안쪽 ($x,$y) 이 비었다")
+                if (distance >= outset + 1f) assertFalse(painted, "굵기 밖 ($x,$y) 이 칠해졌다")
+            }
+        }
     }
 
     @Test

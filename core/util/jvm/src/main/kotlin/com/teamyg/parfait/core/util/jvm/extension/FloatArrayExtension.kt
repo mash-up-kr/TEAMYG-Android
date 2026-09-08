@@ -13,29 +13,51 @@ const val SQUARED_DISTANCE_UNSET = 1e10f
  *
  * 가로로 한 번 세로로 한 번 훑는 방식이라 판이 아무리 커도 칸 수에 비례한 시간만 든다.
  * 결과를 돌려주지 않고 받은 배열을 고치는 것은, 판만 한 배열을 한 벌 더 잡지 않기 위해서다.
+ *
+ * @param seedX 주면 씨앗 자리를 함께 담는다. [seedY] 와 짝이고 둘 다 판 크기여야 한다
  */
 fun FloatArray.fillWithSquaredDistance(
     width: Int,
     height: Int,
+    seedX: ShortArray? = null,
+    seedY: ShortArray? = null,
 ) {
+    val tracksSeed = seedX != null && seedY != null
     val longest = max(width, height)
     val line = FloatArray(longest)
     val transformed = FloatArray(longest)
     val nearestIndices = IntArray(longest)
     val nearestBoundaries = FloatArray(longest + 1)
+    val nearestOf = if (tracksSeed) IntArray(longest) else null
 
     for (x in 0 until width) {
         for (y in 0 until height) line[y] = this[y * width + x]
-        fillLine(line, height, transformed, nearestIndices, nearestBoundaries)
-        for (y in 0 until height) this[y * width + x] = transformed[y]
+        fillLine(line, height, transformed, nearestIndices, nearestBoundaries, nearestOf)
+        for (y in 0 until height) {
+            this[y * width + x] = transformed[y]
+            // 이 세로줄 안에서 가장 가까운 씨앗의 y. 가로 패스가 열을 고르면 그 열의 값이 답이 된다
+            if (nearestOf != null) seedY!![y * width + x] = nearestOf[y].toShort()
+        }
     }
+
+    // 가로 패스가 같은 행의 seedY 를 덮어쓰며 읽으면 이미 고친 값을 보게 된다. 행 한 벌만 떠 둔다
+    val rowSeedY = if (tracksSeed) ShortArray(width) else null
 
     // 세로줄에서 잰 거리를 그대로 물려받아 가로로 한 번 더 훑으면 두 방향을 함께 잰 거리가 남는다
     for (y in 0 until height) {
         val rowStart = y * width
         for (x in 0 until width) line[x] = this[rowStart + x]
-        fillLine(line, width, transformed, nearestIndices, nearestBoundaries)
-        for (x in 0 until width) this[rowStart + x] = transformed[x]
+        if (rowSeedY != null) seedY!!.copyInto(rowSeedY, 0, rowStart, rowStart + width)
+
+        fillLine(line, width, transformed, nearestIndices, nearestBoundaries, nearestOf)
+        for (x in 0 until width) {
+            this[rowStart + x] = transformed[x]
+            if (nearestOf != null) {
+                val nearestColumn = nearestOf[x]
+                seedX!![rowStart + x] = nearestColumn.toShort()
+                seedY!![rowStart + x] = rowSeedY!![nearestColumn]
+            }
+        }
     }
 }
 
@@ -54,6 +76,7 @@ private fun fillLine(
     transformed: FloatArray,
     nearestIndices: IntArray,
     nearestBoundaries: FloatArray,
+    nearestOf: IntArray?,
 ) {
     var nearestCount = 0
     nearestIndices[0] = 0
@@ -82,5 +105,6 @@ private fun fillLine(
         val nearest = nearestIndices[nearestCount]
         val gap = (index - nearest).toFloat()
         transformed[index] = gap * gap + line[nearest]
+        nearestOf?.set(index, nearest)
     }
 }

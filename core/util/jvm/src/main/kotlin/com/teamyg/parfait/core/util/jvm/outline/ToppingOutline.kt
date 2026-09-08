@@ -8,6 +8,8 @@ import com.teamyg.parfait.core.util.jvm.model.ToppingBorderBand
 import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
 import com.teamyg.parfait.core.util.jvm.model.ToppingOutlineSpec
 import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -25,15 +27,23 @@ class ToppingOutline internal constructor(
     val height: Int,
     /** 실루엣까지의 거리를 [ToppingOutlineSpec.DISTANCE_STEPS_PER_PX] 눈금으로 담는다 */
     private val distances: ShortArray,
+    /**
+     * 판 변에 붙은 칸마다 가장 가까운 씨앗의 자리를 [packSeed] 로 묶어 담는다. 판 밖 거리를
+     * 재는 데만 쓰므로 판 전체가 아니라 변 한 줄이면 된다.
+     */
+    private val edgeSeeds: IntArray,
 ) {
     val hasAnySeed: Boolean = distances.any { step -> step.toInt() == 0 }
+
+    private val edgeSeedNeighbors: Int =
+        max(MIN_EDGE_SEED_NEIGHBORS, max(width, height) / EDGE_SEED_NEIGHBOR_DIVISOR)
 
     /**
      * 판 좌표계 거리.
      *
-     * 판 밖 좌표는 가장자리 값으로 고정하지 않고 벗어난 만큼을 함께 잰다. 씨앗이 모두 판 안에
-     * 있으므로 `√(가장자리 거리² + 벗어난 거리²)` 가 참값의 하한이고, 가장 가까운 씨앗이 축에
-     * 나란할 때 참값과 같다. 고정하면 실루엣이 판 변에 닿은 토핑에서 판 밖이 통째로 거리 0 이 된다.
+     * 판 밖 좌표는 변에 붙은 칸이 기억해 둔 씨앗까지 곧바로 잰다. 가장자리 값으로 고정하면
+     * 실루엣이 판 변에 닿은 토핑에서 판 밖이 통째로 거리 0 이 되고, 가장자리 거리와 벗어난
+     * 거리를 직각으로 합치면 참값에 한참 못 미쳐 굵은 띠가 실루엣을 잃고 판 모양으로 퍼진다.
      */
     fun distanceAt(
         x: Float,
@@ -41,13 +51,37 @@ class ToppingOutline internal constructor(
     ): Float {
         val clampedX = x.coerceIn(0f, (width - 1).toFloat())
         val clampedY = y.coerceIn(0f, (height - 1).toFloat())
-        val inside = interpolatedAt(clampedX, clampedY)
+        if ((x == clampedX && y == clampedY) || !hasAnySeed) return interpolatedAt(clampedX, clampedY)
 
-        val overflowX = x - clampedX
-        val overflowY = y - clampedY
-        if (overflowX == 0f && overflowY == 0f) return inside
+        val cellX = cellIndexOf(clampedX, width)
+        val cellY = cellIndexOf(clampedY, height)
+        var nearestSquared = Float.MAX_VALUE
 
-        return sqrt(inside * inside + overflowX * overflowX + overflowY * overflowY)
+        // 칸 하나만 보면 답이 머리에서 손잡이 끝으로 건너뛰는 자리에서 거리가 뚝 끊겨 띠에 톱니가 진다
+        if (y != clampedY) {
+            for (offset in -edgeSeedNeighbors..edgeSeedNeighbors) {
+                val neighborX = (cellX + offset).coerceIn(0, width - 1)
+                nearestSquared = min(nearestSquared, squaredSeedDistance(edgeSeedIndex(neighborX, cellY), x, y))
+            }
+        }
+        if (x != clampedX) {
+            for (offset in -edgeSeedNeighbors..edgeSeedNeighbors) {
+                val neighborY = (cellY + offset).coerceIn(0, height - 1)
+                nearestSquared = min(nearestSquared, squaredSeedDistance(edgeSeedIndex(cellX, neighborY), x, y))
+            }
+        }
+        return sqrt(nearestSquared)
+    }
+
+    private fun squaredSeedDistance(
+        edgeSeedIndex: Int,
+        x: Float,
+        y: Float,
+    ): Float {
+        val seed = edgeSeeds[edgeSeedIndex]
+        val gapX = x - unpackSeedX(seed)
+        val gapY = y - unpackSeedY(seed)
+        return gapX * gapX + gapY * gapY
     }
 
     /**
@@ -176,6 +210,20 @@ class ToppingOutline internal constructor(
         return lerp(top, bottom, bottomWeight)
     }
 
+    /**
+     * 판 변 한 바퀴를 위·아래·왼쪽·오른쪽 네 토막으로 이어 붙인 자리. 판 밖 좌표를 판 안으로
+     * 당기면 x 나 y 중 하나는 반드시 변에 닿으므로 네 토막이 모든 경우를 덮는다.
+     */
+    private fun edgeSeedIndex(
+        cellX: Int,
+        cellY: Int,
+    ): Int = when {
+        cellY == 0 -> cellX
+        cellY == height - 1 -> width + cellX
+        cellX == 0 -> 2 * width + cellY
+        else -> 2 * width + height + cellY
+    }
+
     private fun rawAt(index: Int): Float = distances[index].toInt().toFloat() / ToppingOutlineSpec.DISTANCE_STEPS_PER_PX
 
     private fun lerp(
@@ -197,7 +245,9 @@ class ToppingOutline internal constructor(
                 val opaque = alphaAt(index % width, index / width) >= ToppingOutlineSpec.ALPHA_THRESHOLD
                 if (opaque) 0f else SQUARED_DISTANCE_UNSET
             }
-            squared.fillWithSquaredDistance(width, height)
+            val seedX = ShortArray(squared.size)
+            val seedY = ShortArray(squared.size)
+            squared.fillWithSquaredDistance(width, height, seedX, seedY)
 
             val maxDistance = ToppingOutlineSpec.MAX_STORED_DISTANCE_PX.toFloat()
 
@@ -208,7 +258,53 @@ class ToppingOutline internal constructor(
                     val distance = sqrt(squared[index]).coerceAtMost(maxDistance)
                     (distance * ToppingOutlineSpec.DISTANCE_STEPS_PER_PX).roundToInt().toShort()
                 },
+                edgeSeeds = edgeSeedsOf(width, height, seedX, seedY),
             )
+        }
+
+        /** 판 변 네 토막을 [ToppingOutline.edgeSeedIndex] 가 세는 순서 그대로 이어 담는다 */
+        private fun edgeSeedsOf(
+            width: Int,
+            height: Int,
+            seedX: ShortArray,
+            seedY: ShortArray,
+        ): IntArray {
+            val seeds = IntArray(2 * width + 2 * height)
+            val bottomRow = (height - 1) * width
+
+            for (x in 0 until width) {
+                seeds[x] = packSeed(seedX[x], seedY[x])
+                seeds[width + x] = packSeed(seedX[bottomRow + x], seedY[bottomRow + x])
+            }
+            for (y in 0 until height) {
+                val leftIndex = y * width
+                val rightIndex = leftIndex + width - 1
+                seeds[2 * width + y] = packSeed(seedX[leftIndex], seedY[leftIndex])
+                seeds[2 * width + height + y] = packSeed(seedX[rightIndex], seedY[rightIndex])
+            }
+            return seeds
         }
     }
 }
+
+/** 답이 다른 씨앗으로 넘어가는 폭이 실루엣 크기를 따라가므로, 볼 이웃 칸 수도 판 크기에서 정한다 */
+private const val EDGE_SEED_NEIGHBOR_DIVISOR = 8
+private const val MIN_EDGE_SEED_NEIGHBORS = 8
+
+/** 씨앗 자리 두 개를 [Int] 하나에 담는다. 자리 값이 판 크기라 각각 16 비트면 넉넉하다 */
+private const val SEED_X_SHIFT = 16
+private const val SEED_Y_MASK = 0xFFFF
+
+private fun packSeed(
+    x: Short,
+    y: Short,
+): Int = (x.toInt() shl SEED_X_SHIFT) or (y.toInt() and SEED_Y_MASK)
+
+private fun unpackSeedX(seed: Int): Float = (seed shr SEED_X_SHIFT).toFloat()
+
+private fun unpackSeedY(seed: Int): Float = (seed and SEED_Y_MASK).toFloat()
+
+private fun cellIndexOf(
+    coordinate: Float,
+    count: Int,
+): Int = floor(coordinate + 0.5f).toInt().coerceIn(0, count - 1)
