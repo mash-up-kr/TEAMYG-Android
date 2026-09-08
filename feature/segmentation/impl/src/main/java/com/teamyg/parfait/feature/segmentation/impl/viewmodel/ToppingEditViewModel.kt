@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
@@ -96,16 +97,17 @@ data class ToppingEditState(
         private const val MAX_BRUSH_WIDTH_DP = 50f
 
         /**
-         * 화면에 보이는 테두리 굵기. 기획 정책(C-104)이 정한 2~50 범위를 붓과 같은 dp 기준으로 잡는다.
-         *
-         * 원본 좌표로 재면 사진 해상도에 따라 같은 값이 전혀 다른 굵기로 보이므로 붓과 단위를 맞춘다.
+         * 화면에 보이는 테두리 굵기. 붓과 같은 dp 기준이라 사진 해상도가 달라도 체감 굵기가 같다.
          * 저장할 때 편집 화면이 미리보기에 쓴 배율을 되짚어 원본 비트맵 좌표계 굵기로 환산한다.
+         *
+         * 슬라이더가 내주는 값과 서버에서 받은 값을 가두는 범위가 갈리면, 편집에서 정한 굵기가
+         * 다시 받아올 때 달라진다.
          */
         private const val DEFAULT_BORDER_WIDTH_DP = 10f
-        private const val MIN_BORDER_WIDTH_DP = 2f
+        private val MIN_BORDER_WIDTH_DP = ToppingBorder.WIDTH_RANGE_DP.start.toFloat()
 
         /** 편집 미리보기 여백이 이 값을 따라간다 — 상한이 올라가면 여백도 함께 올라가야 한다 */
-        internal const val MAX_BORDER_WIDTH_DP = 50f
+        internal val MAX_BORDER_WIDTH_DP = ToppingBorder.WIDTH_RANGE_DP.endInclusive.toFloat()
     }
 }
 
