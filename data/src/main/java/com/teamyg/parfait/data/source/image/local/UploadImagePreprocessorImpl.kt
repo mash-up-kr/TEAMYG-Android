@@ -41,9 +41,12 @@ constructor() : UploadImagePreprocessor {
 
                 is UploadImagePlan.Reencode -> {
                     val reencoded = writeReencoded(file, plan)
+                    // 90·270 도 회전은 축소본을 돌려 만들어 가로세로가 plan.targetSize 와
+                    // 다를 수 있다 — 실제로 구운 파일의 치수를 다시 읽어 찍는다
+                    val reencodedSize = decodeSize(reencoded)
                     sourceLogger.i {
                         "업로드 이미지를 줄였다 - ${sourceSize.width}x${sourceSize.height} ${file.length()}B " +
-                            "→ ${plan.targetSize.width}x${plan.targetSize.height} ${reencoded.length()}B " +
+                            "→ ${reencodedSize.width}x${reencodedSize.height} ${reencoded.length()}B " +
                             "(${plan.format.contentType})"
                     }
                     PreparedUploadImage(file = reencoded, format = plan.format, isTemporary = true)
@@ -64,12 +67,11 @@ constructor() : UploadImagePreprocessor {
 
     /**
      * 다 쓴 판을 그때그때 놓아주는 이유: 원본 해상도 비트맵 둘이 동시에 살아 있으면 줄이려다
-     * OOM 이 난다.
-     *
-     * EXIF 회전은 축소 전에 픽셀로 굽는다(출력에는 태그를 쓰지 않는다 — 재인코딩된 파일에
-     * 원본 EXIF 가 그대로 남는다는 보장이 없다). [plan]의 `targetSize` 는 회전 전 원본 축
-     * 기준이라, 90·270 도로 가로세로가 뒤집히는 경우에는 세운 뒤 목표 치수도 함께 맞바꾼다 —
-     * 안 그러면 세운 사진에 뒤집힌 치수를 억지로 맞춰 눌리거나 늘어난다.
+     * OOM 이 난다. 그래서 EXIF 회전도 축소 **다음에** 굽는다 — 원본 해상도 판을 먼저 돌리면
+     * 그 순간 원본 해상도 판이 두 장(회전 전·후) 동시에 산다. 축소본을 돌리면 90·270 도에서도
+     * 가로세로가 그 축소본 그대로 뒤집혀 나와 `plan.targetSize` 를 따로 맞바꿀 필요가 없다.
+     * 출력에는 태그를 쓰지 않는다 — 재인코딩된 파일에 원본 EXIF 가 그대로 남는다는 보장이
+     * 없어서다.
      */
     private fun writeReencoded(
         source: File,
@@ -80,27 +82,22 @@ constructor() : UploadImagePreprocessor {
         val options = BitmapFactory.Options().apply { inSampleSize = plan.sampleSize }
         val decoded = BitmapFactory.decodeFile(source.absolutePath, options)
             ?: throw UnsupportedImageException("이미지를 디코드하지 못했다 - ${source.name}")
-        val upright = rotateToUpright(decoded, degrees)
 
-        val targetSize = if (degrees == 90 || degrees == 270) {
-            UploadImageSize(width = plan.targetSize.height, height = plan.targetSize.width)
-        } else {
-            plan.targetSize
-        }
-
-        val scaled = if (upright.width == targetSize.width && upright.height == targetSize.height) {
-            upright
+        val scaled = if (decoded.width == plan.targetSize.width && decoded.height == plan.targetSize.height) {
+            decoded
         } else {
             Bitmap
-                .createScaledBitmap(upright, targetSize.width, targetSize.height, true)
-                .also { if (it !== upright) upright.recycle() }
+                .createScaledBitmap(decoded, plan.targetSize.width, plan.targetSize.height, true)
+                .also { if (it !== decoded) decoded.recycle() }
         }
 
+        val upright = rotateToUpright(scaled, degrees)
+
         // JPEG 에는 알파가 없다. 합성하지 않으면 투명한 자리가 검게 앉는다
-        val encodable = if (plan.format == UploadImageFormat.JPEG && scaled.hasAlpha()) {
-            flattenOnWhite(scaled).also { if (it !== scaled) scaled.recycle() }
+        val encodable = if (plan.format == UploadImageFormat.JPEG && upright.hasAlpha()) {
+            flattenOnWhite(upright).also { if (it !== upright) upright.recycle() }
         } else {
-            scaled
+            upright
         }
 
         val target = File(source.parentFile, "${UUID.randomUUID()}.${plan.format.extension}")
