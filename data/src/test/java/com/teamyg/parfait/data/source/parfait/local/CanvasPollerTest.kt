@@ -6,6 +6,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.parfaitToday
@@ -33,6 +34,7 @@ private val GROUP = GroupId(1L)
 class CanvasPollerTest {
     private fun canvas(date: LocalDate = parfaitToday()) = CanvasVO(
         parfaitId = ParfaitId(100L),
+        groupName = GroupName("아메리카노"),
         date = date,
         status = CanvasStatus.ACTIVE,
         lastClosedDate = null,
