@@ -50,11 +50,7 @@ internal fun buildCutoutBitmap(
     return cutout
 }
 
-/**
- * 알파가 있는 픽셀의 최소 사각형과 알파 총합.
- *
- * [isEmpty] 면 자를 기준이 없다는 뜻이고, 그때 [left]·[top]·[right]·[bottom] 은 읽지 않는다.
- */
+/** [isEmpty] 면 자를 기준이 없다는 뜻이라 좌표 넷은 읽지 않는다 */
 internal data class SubjectMeasure(
     val left: Int,
     val top: Int,
@@ -66,9 +62,8 @@ internal data class SubjectMeasure(
 }
 
 /**
- * 경계와 알파 합을 **한 번의 스캔**으로 잰다. 둘을 나눠 재면 원본 해상도를 두 번 훑는다.
- *
- * 알파 합이 `Long` 인 이유는 12MP 불투명 이미지의 합이 `Int` 범위를 넘기 때문이다.
+ * 경계와 알파 합을 한 번의 스캔으로 잰다 — 나눠 재면 원본 해상도를 두 번 훑는다.
+ * 알파 합이 `Long` 인 것은 12MP 불투명 이미지의 합이 `Int` 를 넘기 때문이다.
  */
 internal fun measureSubject(
     pixels: IntArray,
@@ -105,10 +100,7 @@ internal fun Bitmap.measureSubject(): SubjectMeasure {
     return measureSubject(pixels = pixels, width = width, height = height)
 }
 
-/**
- * 투명한 여백을 걷어내고 [measure] 가 가리키는 사각형만 남긴다.
- * 자를 기준이 없으면 원본을 그대로 돌려준다.
- */
+/** 자를 기준이 없으면 원본을 **그대로** 돌려준다 — 호출부가 항등 비교로 이중 해제를 막는다 */
 internal fun Bitmap.trimTo(measure: SubjectMeasure): Bitmap {
     if (measure.isEmpty) return this
 
