@@ -5,10 +5,8 @@ import com.teamyg.parfait.domain.model.image.ImageType
 import java.io.File
 
 /**
- * 업로드 직전에 이미지를 서버로 보낼 형태로 맞춘다.
- *
- * @param isTemporary 이 전처리가 새로 만든 파일이라 부른 쪽이 지워야 한다는 뜻이다.
- *   거짓이면 넘겨받은 파일 그대로라 수명은 여전히 부른 쪽 밖에 있다.
+ * @param isTemporary 전처리가 새로 만든 파일이라 부른 쪽이 지워야 한다. 거짓이면 넘겨받은
+ *   파일 그대로라 수명은 부른 쪽 밖에 있다.
  */
 data class PreparedUploadImage(
     val file: File,
@@ -16,6 +14,7 @@ data class PreparedUploadImage(
     val isTemporary: Boolean,
 )
 
+/** 업로드 직전에 이미지를 서버로 보낼 형태로 맞춘다 */
 interface UploadImagePreprocessor {
     suspend fun prepare(
         file: File,

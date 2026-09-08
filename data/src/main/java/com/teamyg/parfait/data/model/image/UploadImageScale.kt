@@ -4,9 +4,8 @@ import com.teamyg.parfait.domain.model.image.ImageType
 import kotlin.math.roundToInt
 
 /**
- * 업로드 이미지의 긴 변 상한. iOS 의 `ToppingImageEncoder.maximumLongEdge` ·
- * `BackgroundImageLoader.maximumLongEdge` 와 맞춘 값이다 — 같은 서버에 같은 기능으로 올리므로
- * 플랫폼마다 다르면 같은 캔버스가 기기별로 다른 화질이 된다(`specs/2026-09-08-upload-image-downscale.md`).
+ * 긴 변 상한. iOS 와 맞춘 값이라 한쪽만 바꾸면 같은 캔버스가 기기별로 다른 화질이 된다
+ * (근거는 `specs/2026-09-08-upload-image-downscale.md` 「결정 표」).
  */
 private const val NUKKI_LONG_SIDE_LIMIT = 1500
 private const val BACKGROUND_LONG_SIDE_LIMIT = 2048
@@ -20,12 +19,9 @@ data class UploadImageSize(
 )
 
 sealed interface UploadImagePlan {
-    /** 원본 파일을 그대로 올린다 */
     data object Passthrough : UploadImagePlan
 
-    /**
-     * @param sampleSize 디코드 단계에서 미리 줄일 배수. 원본을 통째로 힙에 올리지 않으려는 것이다
-     */
+    /** @param sampleSize 디코드 단계에서 미리 줄일 배수 */
     data class Reencode(
         val targetSize: UploadImageSize,
         val sampleSize: Int,
