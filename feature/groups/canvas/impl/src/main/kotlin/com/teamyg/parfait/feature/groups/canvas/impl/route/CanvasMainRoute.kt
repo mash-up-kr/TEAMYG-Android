@@ -94,12 +94,16 @@ internal fun CanvasMainRoute(
     // 실패만 화면 최상단으로 보내면 같은 화면에서 자리가 갈린다. 큐를 하나로 둬야 Toast 공통
     // 정책의 스택(나중 것이 위로)도 성립한다. 그래서 스캐폴드에는 정책을 넘기지 않는다
     val toastPolicy = rememberYGToastPolicy()
-    // 환영 배너는 Alert 한 자리만 쓴다 — 지난 캔버스 알림(TODO)이 실제로 붙기 전까지는 이 화면에서
-    // Alert 를 여기서만 띄운다
+    // 환영 배너와 지난 캔버스 알림이 Alert 한 자리를 같이 쓴다 — 겹치지 않는다. 지난 캔버스
+    // 알림은 이 기기·이 그룹 조합을 처음 확인할 때는 절대 뜨지 않는데(기존 사용자를 위한
+    // 알림이라 기준선만 세운다), 환영 배너는 정확히 그 "처음 확인하는 순간"에만 뜬다
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
     val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
+    val closedCanvasAlertTitleFormat = stringResource(R.string.canvas_main_closed_canvas_alert_title)
+    val closedCanvasAlertSubFormat = stringResource(R.string.canvas_main_closed_canvas_alert_sub)
+    val closedCanvasAlertButtonText = stringResource(R.string.canvas_main_closed_canvas_alert_button)
     val todayCanvasErrorMessage = stringResource(R.string.canvas_main_today_canvas_error)
     val toppingFlowStartErrorMessage = stringResource(R.string.canvas_main_topping_flow_start_error)
     val welcomeJoinedTitleFormat = stringResource(R.string.canvas_welcome_joined_title)
@@ -248,6 +252,15 @@ internal fun CanvasMainRoute(
                         },
                     )
                 }
+
+                is CanvasMainEffect.ShowPastCanvasAlert -> alertPolicy.show(
+                    title = closedCanvasAlertTitleFormat.format(effect.date.month.number, effect.date.day),
+                    sub = closedCanvasAlertSubFormat.format(effect.memberCount),
+                    buttonText = closedCanvasAlertButtonText,
+                    onButtonClick = {
+                        viewModel.processIntent(CanvasMainIntent.ClickPastCanvasAlertDate(effect.date))
+                    },
+                )
             }
         }
     }
