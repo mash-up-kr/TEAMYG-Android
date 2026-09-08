@@ -273,17 +273,21 @@ class ToppingEditViewModel
         viewModelScope.launch {
             updateState { copy(isSaving = true) }
 
-            val cutout = withContext(Dispatchers.Default) {
-                buildCutoutBitmap(
+            val (cutout, measure) = withContext(Dispatchers.Default) {
+                val built = buildCutoutBitmap(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
                     strokes = current.strokes,
                 )
+                built to built.measureSubject()
             }
-            val measure = withContext(Dispatchers.Default) { cutout.measureSubject() }
 
             // 파일을 쓰기 전에 판정한다 — 뒤로 미루면 쓸모없는 캐시 파일 두 장이 남는다
-            if (!SubjectCoverage.isLargeEnough(
+            // borderOnly 진입은 영역 탭이 없어 사용자가 알맹이를 비울 수 없으니 이 판정에서 뺀다.
+            // 서버가 하한 도입 이전에 만들었거나 하한이 없는 다른 플랫폼이 올린 알맹이를 열었을 때
+            // 되돌릴 방법 없이 화면을 벗어나는 것 말고 길이 없어지는 걸 막는다
+            if (!current.isBorderOnly &&
+                !SubjectCoverage.isLargeEnough(
                     alphaSum = measure.alphaSum,
                     canvasArea = cutout.width.toLong() * cutout.height,
                 )

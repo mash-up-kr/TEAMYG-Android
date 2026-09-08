@@ -41,7 +41,7 @@ private fun SegmentationCandidate.isLargeEnough(): Boolean = SubjectCoverage.isL
  *
  * ⚠️ **포함 관계는 병합하지 않는다.** 교집합을 작은 쪽 면적으로 나누는 지표로 바꾸면 사람이 든
  * 물건이 지워진다. 그 판단의 근거는
- * `parfait/specs/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
+ * `parfait/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
  */
 private fun List<SegmentationCandidate>.dropNearDuplicates(): List<SegmentationCandidate> {
     val kept = mutableListOf<SegmentationCandidate>()

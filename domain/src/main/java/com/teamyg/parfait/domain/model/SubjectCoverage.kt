@@ -16,7 +16,6 @@ object SubjectCoverage {
     /** 작은 사진에서 비율만으로는 너무 헐거워지므로 두는 하한 (원본 픽셀) */
     private const val MIN_COVERAGE_PIXELS = 2_500L
 
-    /** 알파 한 픽셀의 최대값 */
     private const val MAX_ALPHA = 255L
 
     private const val PERMYRIAD_BASE = 10_000L

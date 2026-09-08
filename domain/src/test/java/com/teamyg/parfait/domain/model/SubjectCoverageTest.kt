@@ -1,9 +1,9 @@
 package com.teamyg.parfait.domain.model
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.test.assertEquals
 
 /** 100×100 캔버스는 비율 하한이 5px 이라 절대 하한(2,500px)이 이긴다 */
 private const val SMALL_CANVAS_AREA = 100L * 100L
