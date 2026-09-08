@@ -16,6 +16,8 @@ import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSourceImpl
+import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSource
+import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSourceImpl
 import com.teamyg.parfait.data.source.token.local.EncryptedTokenStore
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSource
@@ -74,6 +76,12 @@ interface LocalDataSourceModule {
     @Binds
     @Singleton
     fun bindCanvasLocalDataSource(canvasLocalDataSourceImpl: CanvasLocalDataSourceImpl): CanvasLocalDataSource
+
+    @Binds
+    @Singleton
+    fun bindPastCanvasAlertLocalDataSource(
+        pastCanvasAlertLocalDataSourceImpl: PastCanvasAlertLocalDataSourceImpl,
+    ): PastCanvasAlertLocalDataSource
 
     @Binds
     @Singleton
