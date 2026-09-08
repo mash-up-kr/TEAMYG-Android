@@ -55,7 +55,7 @@ constructor(
                 }
 
                 is UploadImagePlan.Reencode -> {
-                    val reencoded = writeReencoded(file, plan)
+                    val reencoded = writeReencoded(file, sourceSize, plan)
                     sourceLogger.i {
                         "업로드 이미지를 줄였다 - ${sourceSize.width}x${sourceSize.height} ${file.length()}B " +
                             "→ ${reencoded.size.width}x${reencoded.size.height} ${reencoded.file.length()}B " +
@@ -67,14 +67,8 @@ constructor(
         }
     }
 
-    private fun decodeSize(
-        file: File,
-        sampleSize: Int = 1,
-    ): UploadImageSize {
-        val options = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-            inSampleSize = sampleSize
-        }
+    private fun decodeSize(file: File): UploadImageSize {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, options)
 
         if (options.outWidth <= 0 || options.outHeight <= 0) {
@@ -101,18 +95,25 @@ constructor(
      */
     private fun writeReencoded(
         source: File,
+        sourceSize: UploadImageSize,
         plan: UploadImagePlan.Reencode,
     ): ReencodedImage {
         val degrees = source.readExifDegrees()
 
-        val decoded = decodeDownscaled(source, plan)
+        val decoded = decodeDownscaled(source, sourceSize, plan)
 
-        val scaled = if (decoded.width == plan.targetSize.width && decoded.height == plan.targetSize.height) {
-            decoded
-        } else {
-            Bitmap
-                .createScaledBitmap(decoded, plan.targetSize.width, plan.targetSize.height, true)
-                .also { if (it !== decoded) decoded.recycle() }
+        // 방어선: decodeDownscaled 가 계산대로면 두 축 다 target 이상이라 여기 걸릴 일이
+        // 없어야 한다. 그래도 어느 축이든 target 보다 작아졌으면 절대 createScaledBitmap 을
+        // 부르지 않는다 — 그건 확대이고, 이 브랜치의 핵심 불변식(확대 금지) 위반이다.
+        val scaled = when {
+            decoded.width == plan.targetSize.width && decoded.height == plan.targetSize.height -> decoded
+
+            decoded.width < plan.targetSize.width || decoded.height < plan.targetSize.height -> decoded
+
+            else ->
+                Bitmap
+                    .createScaledBitmap(decoded, plan.targetSize.width, plan.targetSize.height, true)
+                    .also { if (it !== decoded) decoded.recycle() }
         }
 
         val upright = rotateToUpright(scaled, degrees)
@@ -157,12 +158,22 @@ constructor(
      * 이상이다(반올림은 내림보다 크거나 같고, 내림도 정수 target 이상인 실수를 내리면
      * target 이하로 내려가지 않는다). 그래서 이 함수의 결과는 두 축 모두 [plan.targetSize]
      * 이상임이 보장되고, 뒤따르는 `createScaledBitmap` 은 줄이기만 하지 키우지 않는다.
+     *
+     * [sampled] 는 `inJustDecodeBounds` + `inSampleSize` 의 `outWidth`/`outHeight` 로 얻지
+     * 않는다 — 공개 문서(`BitmapFactory.Options.outWidth`)가 "스케일을 반영하지 않은
+     * 입력 이미지의 너비"라고 못박고 있어, 실제 동작이 어느 쪽이든 그 값에 기대면 안 된다.
+     * 대신 [sourceSize](이미 알고 있는 원본 치수)를 `sampleSize` 로 정수 나눗셈해 `BitmapFactory`
+     * 의 floor 동작을 그대로 흉내 낸다.
      */
     private fun decodeDownscaled(
         source: File,
+        sourceSize: UploadImageSize,
         plan: UploadImagePlan.Reencode,
     ): Bitmap {
-        val sampled = decodeSize(source, plan.sampleSize)
+        val sampled = UploadImageSize(
+            width = sourceSize.width / plan.sampleSize,
+            height = sourceSize.height / plan.sampleSize,
+        )
         val target = plan.targetSize
 
         // 교차곱으로 비교한다 — target.width / sampled.width 와 target.height / sampled.height
@@ -175,7 +186,17 @@ constructor(
             inTargetDensity = if (useWidthAsBasis) target.width else target.height
             inScaled = true
         }
-        return BitmapFactory.decodeFile(source.absolutePath, options)
+        return BitmapFactory
+            .decodeFile(source.absolutePath, options)
+            ?.also {
+                // BitmapFactory 가 inTargetDensity 값을 그대로 결과 비트맵의 density 로
+                // 남긴다. 그 density 는 createScaledBitmap·rotateToUpright 를 그대로 타고
+                // 전파되는데, flattenOnWhite 가 새로 만드는 흰 배경 비트맵은 기기 기본
+                // density 다 — 둘이 다르고 둘 다 0 이 아니면 Canvas.drawBitmap 이 두 density
+                // 비율로 그림을 자동 스케일해 버려, 합성 결과가 엉뚱한 배율로 찌그러진다.
+                // DENSITY_NONE(0) 으로 되돌리면 그 자동 스케일 분기 자체가 열리지 않는다.
+                it.density = Bitmap.DENSITY_NONE
+            }
             ?: throw UnsupportedImageException("이미지를 디코드하지 못했다 - ${source.name}")
     }
 
