@@ -412,13 +412,32 @@ constructor(
             if (lastSeenClosedDate == null) return@launch
             if (lastClosedDate != canvas.date.minus(DatePeriod(days = 1))) return@launch
 
+            val memberCount = closedCanvasParticipantCount(lastClosedDate) ?: return@launch
+
             postSideEffect(
                 CanvasMainEffect.ShowPastCanvasAlert(
                     date = lastClosedDate,
-                    memberCount = canvas.members.size,
+                    memberCount = memberCount,
                 ),
             )
         }
+    }
+
+    /**
+     * [date] 에 실제로 토핑을 올린 사람 수(고유 [GroupId] 아님, [GroupMemberId] 기준).
+     *
+     * [canvas]([CanvasVO]) 의 members 는 "지금 이 순간의 그룹 로스터"라 마감된 날 이후 합류·
+     * 탈퇴가 있으면 그날의 참여자 수와 어긋난다 — 그래서 오늘 캔버스 값을 그대로 쓰지 않고,
+     * 그 날짜의 캔버스를 지난 캔버스 조회 API로 따로 불러와 토핑을 올린 사람만 센다.
+     */
+    private suspend fun closedCanvasParticipantCount(date: LocalDate): Int? {
+        val parfaitId = findParfaitId(date) ?: return null
+
+        return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+            .getOrNull()
+            ?.toppings
+            ?.mapTo(mutableSetOf()) { it.placedBy.groupMemberId }
+            ?.size
     }
 
     /**
@@ -727,29 +746,36 @@ constructor(
      * 있어 [CanvasMainUiState.parfaitHistories]([CanvasMainUiState.displayedMonth] 기준 연도)로
      * 찾지만, 이 알럿은 달력과 무관하게 아무 때나 뜬다 — 새해 첫날의 마감일은 작년
      * 12월 31일일 수 있어 [date] 의 해가 [CanvasMainUiState.displayedMonth] 의 해와 다를 수
-     * 있다. 그래서 [date] 의 해를 직접 기준으로 찾고, 캐시에 없으면 그 해만 따로 받아온다.
+     * 있다. 그래서 [findParfaitId] 로 [date] 의 해를 직접 기준으로 찾는다.
      */
     private fun handleClickPastCanvasAlertDate(date: LocalDate) {
-        val current = state.value
-        if (date == current.selectedDate) return
-
-        val cachedHistories = current.parfaitHistoriesByYear[date.year]
-        if (cachedHistories != null) {
-            val parfaitId = cachedHistories.firstOrNull { it.date == date }?.parfaitId ?: return
-            navigateToPastCanvas(date, parfaitId)
-            return
-        }
+        if (date == state.value.selectedDate) return
 
         launch(key = LOAD_PAST_CANVAS_ALERT_YEAR_KEY) {
-            getParfaitHistoriesUseCase(groupId = groupId, year = date.year)
-                .onSuccess { histories ->
-                    updateState { copy(parfaitHistoriesByYear = parfaitHistoriesByYear + (date.year to histories)) }
-                    val parfaitId = histories.firstOrNull { it.date == date }?.parfaitId ?: return@onSuccess
-                    navigateToPastCanvas(date, parfaitId)
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "지난 캔버스 알럿의 날짜를 불러오지 못했다 - date: $date" }
-                }
+            val parfaitId = findParfaitId(date) ?: return@launch
+            navigateToPastCanvas(date, parfaitId)
         }
+    }
+
+    /**
+     * [date] 가 속한 해의 기록에서 그 날의 parfaitId 를 찾는다. 이미 받아 둔 해면 캐시에서,
+     * 아니면 그 해만 따로 받아와 캐시에 남긴 뒤 찾는다. 기록에 없는 날(달력이 열어 주지 않는
+     * 날)이거나 조회 자체가 실패하면 `null`.
+     */
+    private suspend fun findParfaitId(date: LocalDate): ParfaitId? {
+        val cachedHistories = state.value.parfaitHistoriesByYear[date.year]
+        if (cachedHistories != null) {
+            return cachedHistories.firstOrNull { it.date == date }?.parfaitId
+        }
+
+        return getParfaitHistoriesUseCase(groupId = groupId, year = date.year)
+            .onSuccess { histories ->
+                updateState { copy(parfaitHistoriesByYear = parfaitHistoriesByYear + (date.year to histories)) }
+            }.onFailure { throwable ->
+                viewModelLogger.e(throwable) { "파르페 기록을 불러오지 못했다 - year: ${date.year}" }
+            }.getOrNull()
+            ?.firstOrNull { it.date == date }
+            ?.parfaitId
     }
 
     private fun navigateToPastCanvas(
