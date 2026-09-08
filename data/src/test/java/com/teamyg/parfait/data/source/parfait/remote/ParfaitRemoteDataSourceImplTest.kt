@@ -293,6 +293,22 @@ class ParfaitRemoteDataSourceImplTest {
     }
 
     @Test
+    fun getTodayCanvas_borderWidthAboveTheRange_isClamped() = runTest {
+        // Given 서버가 범위를 검증하지 않아 상한 밖 굵기로 저장된 행이 있다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns
+            todaySuccess(images = listOf(toppingResponse(borderWidth = 50.0)))
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 상한으로 갇힌다
+        assertEquals(
+            ToppingBorder.Solid(color = "#FF0000", width = ToppingBorder.WIDTH_RANGE_DP.endInclusive),
+            canvas.toppings.single().border,
+        )
+    }
+
+    @Test
     fun getTodayCanvas_groupNotJoined_returnsBusinessFailure() = runTest {
         // Given 참여하지 않은 그룹이다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns

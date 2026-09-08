@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
@@ -30,24 +33,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
-import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
+import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import java.io.File
 
 /**
@@ -87,16 +91,29 @@ internal fun CanvasToppingPlaceScreen(
             contentAlignment = Alignment.Center,
         ) {
             val toppingImagePath = uiState.toppingImagePath
+            // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
+            val toppingImageModel = remember(toppingImagePath) {
+                toppingImagePath?.let { path -> File(path).toUri().toString() }
+            }
             val painter = rememberAsyncImagePainter(
-                // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
-                model = remember(toppingImagePath) {
-                    toppingImagePath?.let { path -> File(path).toUri().toString() }
-                },
+                model = toppingImageModel,
                 contentScale = ContentScale.Fit,
             )
             val painterState by painter.state.collectAsState()
             val isToppingImageLoaded = painterState is AsyncImagePainter.State.Success
             val baseSize = rememberToppingBaseSize(painter)
+
+            val context = LocalContext.current
+            // 초안이 비동기로 와서 첫 컴포지션의 모델이 언제나 null 이라, initialValue 를 한 번만
+            // 읽는 produceState 로는 캐시를 못 쓴다
+            var outline by remember(toppingImageModel) {
+                mutableStateOf(toppingImageModel?.let { model -> ToppingOutlineCache.peek(model, retryKey = 0) })
+            }
+
+            LaunchedEffect(toppingImageModel) {
+                val model = toppingImageModel ?: return@LaunchedEffect
+                if (outline == null) outline = ToppingOutlineCache.load(context, model, retryKey = 0)
+            }
 
             // 확정 판정의 근거를 ViewModel 자기 어휘로 올린다 — 실측 방출 가드에 기대면
             // 그 가드를 걷는 순간 확인 버튼이 폴백 크기로 확정을 내보낸다
@@ -180,6 +197,7 @@ internal fun CanvasToppingPlaceScreen(
                             ?.let { argb -> Color(argb) },
                         borderWidth = (uiState.borderWidthDp ?: 0f).dp,
                         modifier = Modifier.fillMaxSize(),
+                        outline = outline,
                     )
                 }
             }

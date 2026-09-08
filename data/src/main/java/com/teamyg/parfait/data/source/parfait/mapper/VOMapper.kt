@@ -123,7 +123,7 @@ private fun TodayParfaitImageResponse.toToppingBorder(): ToppingBorder {
     if (borderType != BORDER_TYPE_SOLID) return ToppingBorder.None
     val color = borderColor ?: return ToppingBorder.None
     val width = borderWidth ?: return ToppingBorder.None
-    return ToppingBorder.Solid(color = color, width = width)
+    return ToppingBorder.solidClamped(color = color, width = width)
 }
 
 private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(

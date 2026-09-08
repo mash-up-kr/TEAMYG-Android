@@ -13,4 +13,18 @@ sealed interface ToppingBorder {
     data object None : ToppingBorder
 
     data class Solid(val color: String, val width: Double) : ToppingBorder
+
+    companion object {
+        /**
+         * 굵기가 들 수 있는 화면 dp 범위. 서버가 범위를 검증하지 않으므로(`api/parfait-image.md`)
+         * 앱이 가두고, 플랫폼마다 상한이 다르면 같은 캔버스가 기기마다 다르게 보인다.
+         */
+        val WIDTH_RANGE_DP = 2.0..30.0
+
+        /** 서버에 이미 범위 밖으로 저장된 행이 있어, 슬라이더만 좁히면 그 행이 계속 굵게 그려진다 */
+        fun solidClamped(
+            color: String,
+            width: Double,
+        ): Solid = Solid(color = color, width = width.coerceIn(WIDTH_RANGE_DP))
+    }
 }
