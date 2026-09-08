@@ -41,15 +41,12 @@ constructor() : UploadImagePreprocessor {
 
                 is UploadImagePlan.Reencode -> {
                     val reencoded = writeReencoded(file, plan)
-                    // 90·270 도 회전은 축소본을 돌려 만들어 가로세로가 plan.targetSize 와
-                    // 다를 수 있다 — 실제로 구운 파일의 치수를 다시 읽어 찍는다
-                    val reencodedSize = decodeSize(reencoded)
                     sourceLogger.i {
                         "업로드 이미지를 줄였다 - ${sourceSize.width}x${sourceSize.height} ${file.length()}B " +
-                            "→ ${reencodedSize.width}x${reencodedSize.height} ${reencoded.length()}B " +
-                            "(${plan.format.contentType})"
+                            "→ ${reencoded.size.width}x${reencoded.size.height} ${reencoded.file.length()}B " +
+                            "(${plan.format.contentType}, 회전 ${reencoded.rotationDegrees}도)"
                     }
-                    PreparedUploadImage(file = reencoded, format = plan.format, isTemporary = true)
+                    PreparedUploadImage(file = reencoded.file, format = plan.format, isTemporary = true)
                 }
             }
         }
@@ -72,11 +69,15 @@ constructor() : UploadImagePreprocessor {
      * 가로세로가 그 축소본 그대로 뒤집혀 나와 `plan.targetSize` 를 따로 맞바꿀 필요가 없다.
      * 출력에는 태그를 쓰지 않는다 — 재인코딩된 파일에 원본 EXIF 가 그대로 남는다는 보장이
      * 없어서다.
+     *
+     * 실제로 구운 치수를 [ReencodedImage.size] 로 함께 돌려주는 이유: 호출부가 로그를 남기려고
+     * 파일을 다시 디코드하면, 그 디코드가 던지는 예외로 이미 멀쩡히 구운 업로드가 실패할 수
+     * 있다. `encodable` 이 이미 메모리에 들고 있는 치수를 recycle 전에 그대로 읽어 돌려준다.
      */
     private fun writeReencoded(
         source: File,
         plan: UploadImagePlan.Reencode,
-    ): File {
+    ): ReencodedImage {
         val degrees = source.readExifDegrees()
 
         val options = BitmapFactory.Options().apply { inSampleSize = plan.sampleSize }
@@ -99,6 +100,7 @@ constructor() : UploadImagePreprocessor {
         } else {
             upright
         }
+        val outputSize = UploadImageSize(width = encodable.width, height = encodable.height)
 
         val target = File(source.parentFile, "${UUID.randomUUID()}.${plan.format.extension}")
         try {
@@ -115,7 +117,7 @@ constructor() : UploadImagePreprocessor {
             encodable.recycle()
         }
 
-        return target
+        return ReencodedImage(file = target, size = outputSize, rotationDegrees = degrees)
     }
 
     /** `core.util.android` 의 `ContentResolver.rotatedToUpright` 와 같은 규약이다 */
@@ -139,6 +141,13 @@ constructor() : UploadImagePreprocessor {
         }
         return flattened
     }
+
+    /** [writeReencoded] 가 구운 파일과, 로깅에 쓸 실제 출력 치수·적용한 회전 각도 */
+    private data class ReencodedImage(
+        val file: File,
+        val size: UploadImageSize,
+        val rotationDegrees: Int,
+    )
 }
 
 /**
