@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.image.local
+package com.teamyg.parfait.data.utils.image
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -8,9 +8,11 @@ import android.graphics.Color
 import android.graphics.Matrix
 import com.teamyg.parfait.core.util.android.extension.readExifDegrees
 import com.teamyg.parfait.data.model.exception.UnsupportedImageException
+import com.teamyg.parfait.data.model.image.PreparedUploadImage
 import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.model.image.UploadImagePlan
 import com.teamyg.parfait.data.model.image.UploadImageSize
+import com.teamyg.parfait.data.source.image.local.ImageFileLocalDataSourceImpl
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.image.ImageType
 import dagger.hilt.android.qualifiers.ApplicationContext

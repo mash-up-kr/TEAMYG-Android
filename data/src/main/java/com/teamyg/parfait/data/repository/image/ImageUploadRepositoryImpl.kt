@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.error.mapErrorToAppError
 import com.teamyg.parfait.data.model.error.toAppError
-import com.teamyg.parfait.data.source.image.local.UploadImagePreprocessor
+import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
 import com.teamyg.parfait.domain.model.id.ImageId

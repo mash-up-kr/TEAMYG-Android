@@ -2,11 +2,11 @@ package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.model.exception.UnsupportedImageException
+import com.teamyg.parfait.data.model.image.PreparedUploadImage
 import com.teamyg.parfait.data.model.image.UploadImageFormat
-import com.teamyg.parfait.data.source.image.local.PreparedUploadImage
-import com.teamyg.parfait.data.source.image.local.UploadImagePreprocessor
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
+import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ConfirmedImageVO
