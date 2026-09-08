@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
@@ -22,7 +23,8 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.color
-import com.teamyg.parfait.feature.segmentation.impl.editor.trimTransparentBounds
+import com.teamyg.parfait.feature.segmentation.impl.editor.measureSubject
+import com.teamyg.parfait.feature.segmentation.impl.editor.trimTo
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -149,6 +151,14 @@ sealed interface ToppingEditEffect : UiSideEffect {
 
     data object SaveFailed : ToppingEditEffect
 
+    /**
+     * 남은 영역이 하한에 못 미쳐 저장하지 않았다.
+     *
+     * [SaveFailed] 와 합치지 않는 이유는 사용자가 할 일이 다르기 때문이다 — 저장 실패는 재시도이고
+     * 이쪽은 되돌리기다.
+     */
+    data object SubjectTooSmall : ToppingEditEffect
+
     data class EditCompleted(val result: ToppingEditResult) : ToppingEditEffect
 }
 
@@ -270,9 +280,23 @@ class ToppingEditViewModel
                     strokes = current.strokes,
                 )
             }
+            val measure = withContext(Dispatchers.Default) { cutout.measureSubject() }
+
+            // 파일을 쓰기 전에 판정한다 — 뒤로 미루면 쓸모없는 캐시 파일 두 장이 남는다
+            if (!SubjectCoverage.isLargeEnough(
+                    alphaSum = measure.alphaSum,
+                    canvasArea = cutout.width.toLong() * cutout.height,
+                )
+            ) {
+                cutout.recycle()
+                updateState { copy(isSaving = false) }
+                postSideEffect(ToppingEditEffect.SubjectTooSmall)
+                return@launch
+            }
+
             // cutout 은 재편집 좌표계를 지키려고 원본 크기를 유지해야 하고, 보여 주고 올릴 알맹이는
             // 투명 여백 없이 실제 토핑 크기여야 한다. 여백이 붙은 채로 올라가면 배치 좌표가 어긋난다
-            val trimmedCutout = withContext(Dispatchers.Default) { cutout.trimTransparentBounds() }
+            val trimmedCutout = withContext(Dispatchers.Default) { cutout.trimTo(measure) }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
