@@ -442,6 +442,33 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun init_cacheAndCanvasDisagree_prefersCachedName() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스 응답과 목록 캐시가 서로 다른 이름을 들고 있다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(groupName = GroupName("카페라떼"))
+        every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
+
+        // When 화면이 열려 캔버스 구독이 붙는다
+        val viewModel = enteredViewModel()
+
+        // Then 그룹명의 정본인 목록 쪽 이름이 온다
+        assertEquals("아메리카노", viewModel.state.value.groupName)
+    }
+
+    @Test
+    fun init_cacheEmpty_bootstrapsGroupNameFromCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 목록 캐시가 비어 있고(푸시로 바로 들어온 진입) 캔버스만 이름을 들고 있다
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(groupName = GroupName("카페라떼"))
+        every { getMyGroupsFlow() } returns flowOf(null)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+
+        // When 화면이 열려 캔버스 구독이 붙는다
+        val viewModel = enteredViewModel()
+
+        // Then 상단 바가 비지 않는다
+        assertEquals("카페라떼", viewModel.state.value.groupName)
+    }
+
+    @Test
     fun init_cacheEmpty_refreshesListOnce() = runTest(mainDispatcherRule.dispatcher) {
         // Given 캐시가 비어 있다(프로세스 재시작 후 캔버스로 복귀)
         every { getMyGroupsFlow() } returns flowOf(null)
@@ -906,6 +933,7 @@ class CanvasMainViewModelTest {
             members: List<CanvasMemberVO> = emptyList(),
         ) = CanvasVO(
             parfaitId = ParfaitId(parfaitId),
+            groupName = GroupName("아메리카노"),
             date = date,
             status = CanvasStatus.ACTIVE,
             lastClosedDate = null,

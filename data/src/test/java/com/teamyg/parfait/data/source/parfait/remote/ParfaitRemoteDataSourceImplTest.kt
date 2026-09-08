@@ -16,6 +16,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageR
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -83,6 +84,7 @@ class ParfaitRemoteDataSourceImplTest {
         message = "성공",
         data = GetTodayParfaitResponse(
             parfaitId = 100L,
+            groupName = "아메리카노",
             date = "2026-08-15",
             status = status,
             lastClosedDate = lastClosedDate,
@@ -130,6 +132,7 @@ class ParfaitRemoteDataSourceImplTest {
 
         // Then 3층 중첩이 전부 제자리에 들어간다
         assertEquals(ParfaitId(100L), canvas.parfaitId)
+        assertEquals(GroupName("아메리카노"), canvas.groupName)
         assertEquals(LocalDate.parse("2026-08-15"), canvas.date)
         assertEquals(CanvasStatus.ACTIVE, canvas.status)
         assertEquals(LocalDate.parse("2026-08-14"), canvas.lastClosedDate)
