@@ -8,11 +8,9 @@ import android.graphics.Color
 import android.graphics.Matrix
 import com.teamyg.parfait.core.util.android.extension.readExifDegrees
 import com.teamyg.parfait.data.model.exception.UnsupportedImageException
-import com.teamyg.parfait.data.model.image.UPLOAD_JPEG_QUALITY
 import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.model.image.UploadImagePlan
 import com.teamyg.parfait.data.model.image.UploadImageSize
-import com.teamyg.parfait.data.model.image.planUploadImage
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.image.ImageType
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,7 +46,7 @@ constructor(
                 ?: throw UnsupportedImageException("서버가 받지 않는 확장자다 - ${file.extension}")
             val sourceSize = decodeSize(file)
 
-            when (val plan = planUploadImage(sourceSize, imageType, sourceFormat)) {
+            when (val plan = UploadImagePlan.of(sourceSize, imageType, sourceFormat)) {
                 UploadImagePlan.Passthrough -> {
                     PreparedUploadImage(file = file, format = sourceFormat, isTemporary = false)
                 }
@@ -120,7 +118,7 @@ constructor(
         try {
             target.outputStream().use { output ->
                 // compress 는 던지지 않고 false 를 준다 — 안 보면 잘린 파일이 그대로 올라간다
-                check(encodable.compress(plan.format.compressFormat, UPLOAD_JPEG_QUALITY, output)) {
+                check(encodable.compress(plan.format.compressFormat, UploadImagePlan.JPEG_QUALITY, output)) {
                     "축소본을 굽지 못했다 - ${target.name}"
                 }
             }
