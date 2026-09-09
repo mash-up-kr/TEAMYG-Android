@@ -172,7 +172,7 @@ class SegmentationConfirmViewModel
                 cutoutImagePath = result.cutoutImagePath,
                 borderColorArgb = border?.colorArgb,
                 borderWidthDp = border?.widthDp,
-                sourceLongSide = null,
+                sourceLongSide = result.sourceLongSide,
             )
             if (!recorded) postSideEffect(SegmentationConfirmEffect.DraftWriteFailed)
         }

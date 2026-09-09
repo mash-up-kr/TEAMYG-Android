@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -195,6 +196,7 @@ class SegmentationConfirmViewModelTest {
                     subjectImagePath = "/cache/segmentation/edited.png",
                     cutoutImagePath = "/cache/segmentation/edited-cutout.png",
                     borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF0000.toInt(), widthDp = 8f)),
+                    sourceLongSide = null,
                 ),
             ),
         )
@@ -208,6 +210,38 @@ class SegmentationConfirmViewModelTest {
                 borderColorArgb = 0xFFFF0000.toInt(),
                 borderWidthDp = 8f,
                 sourceLongSide = null,
+            )
+        }
+    }
+
+    @Test
+    fun onEditResult_recordsSourceLongSideFromResult() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 편집 결과가 원본 긴 변을 함께 돌려준다
+        givenDraft(draft())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 편집 결과를 받는다
+        viewModel.processIntent(
+            SegmentationConfirmIntent.OnEditResult(
+                ToppingEditResult(
+                    subjectImagePath = "/cache/edited-trimmed.png",
+                    cutoutImagePath = "/cache/edited-canvas.png",
+                    borderLayers = emptyList(),
+                    sourceLongSide = SourceLongSide(3024),
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        // Then 그 값이 초안에 실린다
+        coVerify {
+            recordToppingDraft(
+                subjectImagePath = "/cache/edited-trimmed.png",
+                cutoutImagePath = "/cache/edited-canvas.png",
+                borderColorArgb = null,
+                borderWidthDp = null,
+                sourceLongSide = SourceLongSide(3024),
             )
         }
     }

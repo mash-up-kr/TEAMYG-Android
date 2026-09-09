@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "com.teamyg.parfait.feature.segmentation.api"
 }
+
+dependencies {
+    implementation(projects.domain)
+}

@@ -466,6 +466,7 @@ class CanvasBGEditViewModelTest {
                     subjectImagePath = "/cache/segmentation/subject.png",
                     cutoutImagePath = "/cache/segmentation/cutout.png",
                     borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f)),
+                    sourceLongSide = null,
                 ),
             ),
         )
@@ -628,6 +629,7 @@ class CanvasBGEditViewModelTest {
                         subjectImagePath = "/cache/segmentation/subject.png",
                         cutoutImagePath = "/cache/segmentation/cutout.png",
                         borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f)),
+                        sourceLongSide = null,
                     ),
                 ),
             )

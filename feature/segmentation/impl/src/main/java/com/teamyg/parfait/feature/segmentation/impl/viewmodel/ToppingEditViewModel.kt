@@ -11,6 +11,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SubjectCoverage
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
@@ -301,6 +302,14 @@ class ToppingEditViewModel
             // 투명 여백 없이 실제 토핑 크기여야 한다. 여백이 붙은 채로 올라가면 배치 좌표가 어긋난다
             val trimmedCutout = withContext(Dispatchers.Default) { cutout.trimTo(measure) }
 
+            // borderOnly 진입의 cutout 은 사진이 아니라 되살린 알맹이라 배율의 분모가 못 된다.
+            // 그 밖의 진입에서는 cutout 이 원본 좌표계를 유지한 판이라 긴 변이 그대로 쓰인다
+            val sourceLongSide = if (current.isBorderOnly) {
+                null
+            } else {
+                SourceLongSide(maxOf(cutout.width, cutout.height))
+            }
+
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.
             // 저장 전용으로 만든 비트맵이라 화면이 잡고 있지 않고, 원본 해상도라 수십 MB 에
             // 이르기도 해서 파일로 떨구는 즉시 메모리를 돌려준다
@@ -325,6 +334,7 @@ class ToppingEditViewModel
                         subjectImagePath = subjectPath,
                         cutoutImagePath = cutoutPath,
                         borderLayers = current.borderLayers,
+                        sourceLongSide = sourceLongSide,
                     ),
                 ),
             )
