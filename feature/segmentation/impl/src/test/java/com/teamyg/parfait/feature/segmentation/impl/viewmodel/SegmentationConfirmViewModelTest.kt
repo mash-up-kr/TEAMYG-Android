@@ -320,8 +320,8 @@ class SegmentationConfirmViewModelTest {
 
     @Test
     fun reuseEntry_whenEnsureFails_reportsMissingDraft() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 초안 흐름이 열려 있지 않아 알맹이를 맞추지 못한다
-        givenDraft(draft(subjectImagePath = null, cutoutImagePath = null))
+        // Given 알맹이를 맞추지 못한다. 초안은 정상값이라 DraftMissing 의 출처는 판정 실패뿐이다
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
         coEvery { ensureDraftSubjectRecorded(any()) } returns false
 
         // When 화면이 열린다
