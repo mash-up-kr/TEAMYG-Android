@@ -27,7 +27,6 @@ import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
@@ -39,6 +38,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
@@ -311,7 +311,7 @@ constructor(
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val startToppingDraft: StartToppingDraftUseCase,
     private val pastCanvasAlertRepository: PastCanvasAlertRepository,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
@@ -900,7 +900,7 @@ constructor(
                 postSideEffect(CanvasMainEffect.ShowToppingFlowStartError)
             },
         ) {
-            toppingDraftRepository.start(
+            startToppingDraft(
                 groupId = groupId,
                 parfaitId = canvas.parfaitId,
                 nextPositionZ = canvas.nextPositionZ(),
