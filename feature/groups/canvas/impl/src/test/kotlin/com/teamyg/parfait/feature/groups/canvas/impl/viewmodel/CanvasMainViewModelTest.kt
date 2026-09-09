@@ -441,15 +441,12 @@ class CanvasMainViewModelTest {
     @Test
     fun todayCanvas_lastClosedDateChangedFromPreviouslySeenDate_showsPastCanvasAlertAndMarksSeen() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 이 그룹은 그저께까지는 확인한 적이 있고, 어제 캔버스에는 서로 다른 두 사람이
-            // 토핑을 올렸다 — 오늘 시점 그룹원 수(예: 그 뒤 합류·탈퇴)와는 별개다
+            // Given 이 그룹은 그저께까지는 확인한 적이 있고, 어제 마감 당시 그룹원은 두 명이었다
+            // — 오늘 시점 그룹원 수(예: 그 뒤 합류·탈퇴)와는 별개다
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
-                    toppings = listOf(
-                        topping(1, placedByGroupMemberId = 1L),
-                        topping(2, placedByGroupMemberId = 2L),
-                    ),
+                    members = listOf(member("모카"), member("연경이")),
                 ),
             )
             val viewModel = enteredViewModel()
@@ -458,7 +455,7 @@ class CanvasMainViewModelTest {
                 // When 03시 회전으로 어제까지 마감된 오늘 캔버스를 받아 온다
                 todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
 
-                // Then 새로 마감된 날과, 그 날 실제로 토핑을 올린 사람 수를 실어 알린다
+                // Then 새로 마감된 날과, 그날 마감 당시 그룹원 수를 실어 알린다
                 assertEquals(
                     CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, memberCount = 2),
                     awaitItem(),
@@ -470,42 +467,64 @@ class CanvasMainViewModelTest {
         }
 
     @Test
-    fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlert() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 참여자 수를 세려고 어제 캔버스를 조회하는데 실패한다
-        coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
-        coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns
-            Result.failure(IOException("network"))
-        val viewModel = enteredViewModel()
+    fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlertAndDoesNotMarkSeen() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 그룹원 수를 세려고 어제 캔버스를 조회하는데 실패한다
+            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns
+                Result.failure(IOException("network"))
+            val viewModel = enteredViewModel()
 
-        viewModel.effect.test {
-            // When
-            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
-            advanceUntilIdle()
+            viewModel.effect.test {
+                // When
+                todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
+                advanceUntilIdle()
 
-            // Then 정확한 인원 수를 모르니 알리지 않는다 — 틀린 숫자를 보여주는 것보다 낫다
-            expectNoEvents()
+                // Then 정확한 인원 수를 모르니 알리지 않는다 — 틀린 숫자를 보여주는 것보다 낫다
+                expectNoEvents()
+            }
+
+            // 그리고 "봤다"로 남기지 않는다 — 그래야 다음 확인에서 다시 조회를 시도한다
+            coVerify(exactly = 0) { pastCanvasAlertRepository.markSeen(any(), any()) }
         }
-    }
 
     @Test
-    fun todayCanvas_lastClosedDateOlderThanYesterday_doesNotShowAlertButStillMarksSeen() =
+    fun todayCanvas_lastClosedDateOlderThanYesterday_showsPastCanvasAlertAndMarksSeen() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 며칠 앱을 안 연 사이(또는 중간에 토핑 0건인 날이 껴서), 새로 확인한
-            // 마감일이 어제가 아니라 그저께다
+            // 마감일이 어제가 아니라 그저께다 — 그래도 이 마감을 처음 확인하는 순간이므로 알린다
             val threeDaysAgo = today.minus(DatePeriod(days = 3))
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns threeDaysAgo
+            coEvery { getParfaitHistories(any(), any()) } returns Result.success(
+                listOf(
+                    PastCanvasVO(
+                        parfaitId = ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID),
+                        date = dayBeforeYesterday,
+                        status = CanvasStatus.CLOSED,
+                        thumbnailUrl = null,
+                        toppingCount = 1,
+                    ),
+                ),
+            )
+            coEvery { getParfaitDetail(any(), ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID)) } returns Result.success(
+                canvas(DAY_BEFORE_YESTERDAY_PARFAIT_ID, dayBeforeYesterday).copy(
+                    members = listOf(member("모카")),
+                ),
+            )
             val viewModel = enteredViewModel()
 
             viewModel.effect.test {
                 // When 오늘 캔버스의 마감일이 그저께로 갱신된다 — 어제는 아니다
                 todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = dayBeforeYesterday)
-                advanceUntilIdle()
 
-                // Then "방금 회전됐다"는 전제가 깨지므로 알리지 않는다
-                expectNoEvents()
+                // Then 그저께 마감을 알린다 — "처음 확인하는 순간"이면 며칠이 지났어도 보여준다
+                assertEquals(
+                    CanvasMainEffect.ShowPastCanvasAlert(date = dayBeforeYesterday, memberCount = 1),
+                    awaitItem(),
+                )
             }
 
-            // 그래도 다음 확인 때 다시 검사하지 않도록 기준은 갱신해 둔다
+            // 같은 마감일로는 다시 알리지 않도록 기준을 갱신해 둔다
             coVerify(exactly = 1) { pastCanvasAlertRepository.markSeen(GroupId(GROUP_ID), dayBeforeYesterday) }
         }
 

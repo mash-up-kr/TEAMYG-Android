@@ -56,7 +56,6 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
-import kotlinx.datetime.minus
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
@@ -387,32 +386,38 @@ constructor(
                     },
                 )
             }
-            canvas?.let(::maybeShowPastCanvasAlert)
+            canvas?.let(::checkShowPastCanvasAlert)
         }
     }
 
     /**
      * [CanvasVO.lastClosedDate] 는 03시 회전으로 캔버스가 마감될 때만 새 값이 된다. 그 값을
-     * 그룹별로 기억해 뒀다가, 직전에 기억해 둔 마감일과 달라졌을 때만 검사한다 — 폴링이
-     * 5초마다 같은 값을 다시 흘려도 저장된 값과 같으므로 두 번째부터는 조용하다.
+     * 그룹별로 기억해 뒀다가, 직전에 기억해 둔 마감일과 달라졌을 때만 알린다 — 폴링이 5초마다
+     * 같은 값을 다시 흘려도 저장된 값과 같으므로 두 번째부터는 조용하다.
      *
-     * 딱 **어제** 마감된 경우에만 알린다(`canvas.date - 1`). 며칠 앱을 안 연 사이 최근 마감일이
-     * 여러 날 전으로 바뀌었거나(중간에 토핑 0건인 날이 껴 있어도 마찬가지), 이 기기·이 그룹
-     * 조합을 처음 확인하는 경우([lastSeenClosedDate] 가 `null`)는 "방금 회전됐다"는 알럿의
-     * 전제가 깨지므로 기준선만 조용히 세운다.
+     * 마감일이 어제가 아니어도(며칠 앱을 안 연 사이 여러 날 전으로 갱신됐어도) 알린다 — "그
+     * 마감을 처음 확인하는 순간"이면 며칠이 지났어도 보여준다는 정책이다. 다만 이 기기·이
+     * 그룹 조합을 처음 확인하는 경우([lastSeenClosedDate] 가 `null`)는 기준선만 조용히 세운다
+     * — 배포 직후 이미 알던 마감일까지 알럿으로 뜨는 것을 막는다.
+     *
+     * [markSeen] 은 알럿을 띄우기로 확정된 뒤(또는 기준선만 세우는 경우)에만 부른다. 인원 수
+     * 조회가 실패해 알럿을 못 띄운 경우까지 "봤다"로 남기면, 다음 확인에서
+     * [lastSeenClosedDate] 가 이미 같은 값이라 재시도할 계기가 없어져 그 마감을 영영 못 본다.
      */
-    private fun maybeShowPastCanvasAlert(canvas: CanvasVO) {
+    private fun checkShowPastCanvasAlert(canvas: CanvasVO) {
         val lastClosedDate = canvas.lastClosedDate ?: return
 
         launch(key = PAST_CANVAS_ALERT_KEY) {
             val lastSeenClosedDate = pastCanvasAlertRepository.lastSeenClosedDate(groupId)
             if (lastSeenClosedDate == lastClosedDate) return@launch
 
-            pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
-            if (lastSeenClosedDate == null) return@launch
-            if (lastClosedDate != canvas.date.minus(DatePeriod(days = 1))) return@launch
+            if (lastSeenClosedDate == null) {
+                pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
+                return@launch
+            }
 
-            val memberCount = closedCanvasParticipantCount(lastClosedDate) ?: return@launch
+            val memberCount = closedCanvasMemberCount(lastClosedDate) ?: return@launch
+            pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
 
             postSideEffect(
                 CanvasMainEffect.ShowPastCanvasAlert(
@@ -424,19 +429,14 @@ constructor(
     }
 
     /**
-     * [date] 에 실제로 토핑을 올린 사람 수(고유 [GroupId] 아님, [GroupMemberId] 기준).
-     *
-     * [canvas]([CanvasVO]) 의 members 는 "지금 이 순간의 그룹 로스터"라 마감된 날 이후 합류·
-     * 탈퇴가 있으면 그날의 참여자 수와 어긋난다 — 그래서 오늘 캔버스 값을 그대로 쓰지 않고,
-     * 그 날짜의 캔버스를 지난 캔버스 조회 API로 따로 불러와 토핑을 올린 사람만 센다.
+     * [date] 마감 당시의 그룹원 수. 지난 캔버스 조회 API로 따로 불러와 그 응답의 members 를 쓴다.
      */
-    private suspend fun closedCanvasParticipantCount(date: LocalDate): Int? {
+    private suspend fun closedCanvasMemberCount(date: LocalDate): Int? {
         val parfaitId = findParfaitId(date) ?: return null
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.toppings
-            ?.mapTo(mutableSetOf()) { it.placedBy.groupMemberId }
+            ?.members
             ?.size
     }
 
