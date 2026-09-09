@@ -536,7 +536,7 @@ class CanvasMainViewModelTest {
             val viewModel = enteredViewModel()
 
             viewModel.effect.test {
-                // When 폴링이 같은 마감일을 다시 흘린다 — 5초마다 도는 폴링이면 매번 일어난다
+                // When 폴링이 같은 마감일을 다시 흘린다 — 주기마다 도는 폴링이면 매번 일어난다
                 todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
                 advanceUntilIdle()
 
@@ -1078,7 +1078,7 @@ class CanvasMainViewModelTest {
             refreshFailures.emit(Unit)
             advanceUntilIdle()
 
-            // Then 5초마다 도는 폴링의 실패로 토스트를 쌓지 않는다 — 화면은 이미 캔버스를 그렸다
+            // Then 주기마다 도는 폴링의 실패로 토스트를 쌓지 않는다 — 화면은 이미 캔버스를 그렸다
             expectNoEvents()
         }
     }

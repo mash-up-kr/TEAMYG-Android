@@ -15,11 +15,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-
-/** 실측 전 값이다(OQ-P-320) */
-private val CANVAS_POLL_INTERVAL: Duration = 5.seconds
 
 /**
  * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다. 값이 아니라
@@ -38,6 +33,7 @@ class CanvasPoller @Inject constructor(
     private val remote: ParfaitRemoteDataSource,
     private val local: CanvasLocalDataSource,
     private val clock: Clock = Clock.System,
+    private val interval: CanvasPollInterval = CanvasPollInterval(),
 ) {
     private val lock = Any()
     private val subscriberCounts = mutableMapOf<GroupId, Int>()
@@ -140,7 +136,8 @@ class CanvasPoller @Inject constructor(
         pollJobs.remove(groupId)?.cancel()
         pollJobs[groupId] = scope.launch {
             while (isActive) {
-                delay(CANVAS_POLL_INTERVAL)
+                // 대기 직전마다 다시 묻는다 — 도는 중에 단계가 바뀌어도 다음 회차부터 반영된다
+                delay(synchronized(lock) { interval.current(groupId) })
                 refresh(groupId)
             }
         }

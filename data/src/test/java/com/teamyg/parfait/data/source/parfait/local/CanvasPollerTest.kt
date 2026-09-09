@@ -141,7 +141,7 @@ class CanvasPollerTest {
 
         poller.acquire(GROUP)
         runCurrent()
-        advanceTimeBy(5.seconds)
+        advanceTimeBy(10.seconds)
         runCurrent()
 
         assertEquals(1, remote.todayCallCount)
@@ -156,7 +156,7 @@ class CanvasPollerTest {
 
         poller.acquire(GROUP)
         runCurrent()
-        advanceTimeBy(5.seconds)
+        advanceTimeBy(10.seconds)
         runCurrent()
 
         // 캐시에 실린 날짜가 어제라 다음 주기도 오늘 조회를 고른다
@@ -172,7 +172,7 @@ class CanvasPollerTest {
         poller.acquire(GROUP)
         poller.acquire(GROUP)
         runCurrent()
-        advanceTimeBy(5.seconds)
+        advanceTimeBy(10.seconds)
         runCurrent()
 
         assertEquals(2, remote.todayCallCount + remote.detailCallCount)
@@ -215,7 +215,7 @@ class CanvasPollerTest {
         poller.acquire(GROUP)
         runCurrent()
 
-        advanceTimeBy(4.seconds)
+        advanceTimeBy(9.seconds)
         poller.refreshNow(GROUP)
         runCurrent()
         val afterForced = remote.todayCallCount + remote.detailCallCount
@@ -238,7 +238,7 @@ class CanvasPollerTest {
         assertEquals(1, remote.todayCallCount)
 
         // 첫 요청이 아직 안 끝난 채로 주기를 두 번 민다
-        advanceTimeBy(11.seconds)
+        advanceTimeBy(25.seconds)
         runCurrent()
 
         assertEquals(1, remote.todayCallCount + remote.detailCallCount)
