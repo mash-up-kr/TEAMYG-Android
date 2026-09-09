@@ -283,8 +283,22 @@ internal fun CanvasMainRoute(
 
     var retryKey by remember { mutableIntStateOf(0) }
 
+    // 폴링이 남이 올린 토핑을 실어 올 때마다 보고 있던 캔버스가 덮개 뒤로 사라져서다
+    val displayedCanvasId = canvasState.displayedCanvas?.parfaitId
+    var sawLoading by remember(displayedCanvasId) { mutableStateOf(false) }
+    var firstPaintDone by remember(displayedCanvasId) { mutableStateOf(false) }
+
+    LaunchedEffect(displayedCanvasId, canvasState.isInitialLoading, loadState) {
+        // loadState 는 아직 아무 이미지도 안 붙은 첫 컴포지션에서도 Loaded 다. 로딩을 한 번
+        // 본 뒤로 좁히지 않으면 캐시된 캔버스로 들어올 때 덮개가 아예 안 뜬다
+        when {
+            canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded -> sawLoading = true
+            sawLoading -> firstPaintDone = true
+        }
+    }
+
     val isCanvasLoading = rememberMinimumVisible(
-        visible = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
+        visible = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
         minimumMillis = CANVAS_LOADING_MINIMUM_VISIBLE_MILLIS,
     )
 
