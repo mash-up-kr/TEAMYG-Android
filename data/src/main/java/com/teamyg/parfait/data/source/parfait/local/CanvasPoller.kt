@@ -67,16 +67,21 @@ class CanvasPoller @Inject constructor(
     /** 테스트 전용 — [hasSubscriberForTest] 참고 */
     internal fun isPollingForTest(groupId: GroupId): Boolean = synchronized(lock) { pollJobs.containsKey(groupId) }
 
+    /**
+     * 구독자 판정과 재시작을 한 [synchronized] 안에서 한다 — 갈라 두면 그 사이에 마지막
+     * [release] 가 끼어들어 구독자가 없는데도 폴 잡이 살아난다.
+     */
     fun acquire(groupId: GroupId) {
-        val isFirst = synchronized(lock) {
+        synchronized(lock) {
             val next = (subscriberCounts[groupId] ?: 0) + 1
             subscriberCounts[groupId] = next
-            next == 1
-        }
-        if (isFirst.not()) return
+            if (next > 1) return
 
-        synchronized(lock) { interval.onReset(groupId) }
-        restartPollTimer(groupId)
+            // 화면 밖에서 나간 푸시 갱신은 release 를 거치지 않아 단계가 남는다 — 진입
+            // 시점만은 이 줄이 가장 촘촘한 단계에서 시작함을 보장한다
+            interval.onReset(groupId)
+            restartPollTimerLocked(groupId)
+        }
         scope.launch { refresh(groupId) }
     }
 
@@ -86,6 +91,7 @@ class CanvasPoller @Inject constructor(
             if (next <= 0) {
                 subscriberCounts.remove(groupId)
                 pollJobs.remove(groupId)?.cancel()
+                // 다시 오지 않을 그룹의 단계가 맵에 쌓이지 않게 한다
                 interval.forget(groupId)
             } else {
                 subscriberCounts[groupId] = next
@@ -132,10 +138,6 @@ class CanvasPoller @Inject constructor(
             subscriberCounts.clear()
             refreshing.clear()
         }
-    }
-
-    private fun restartPollTimer(groupId: GroupId) {
-        synchronized(lock) { restartPollTimerLocked(groupId) }
     }
 
     /** [lock] 을 이미 쥔 자리에서만 부른다 — [synchronized] 는 재진입 가능해 중첩 호출도 안전하다 */
