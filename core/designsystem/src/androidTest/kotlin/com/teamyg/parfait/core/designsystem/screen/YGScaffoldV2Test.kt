@@ -3,6 +3,9 @@ package com.teamyg.parfait.core.designsystem.screen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -12,6 +15,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -150,6 +154,47 @@ class YGScaffoldV2Test {
     }
 
     @Test
+    fun ygScaffoldV2_isLoadingTurnsFalseAtOnce_keepsTheOverlayForTheMinimumTime() {
+        // Given 로딩을 켠 채 컴포지션
+        var isLoading by mutableStateOf(true)
+        composeTestRule.setContent {
+            YGCustomTheme {
+                YGScaffoldV2(isLoading = isLoading) { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                }
+            }
+        }
+        composeTestRule.onNodeWithTag(YG_LOADING_OVERLAY_TEST_TAG).assertIsDisplayed()
+
+        // When 통신이 눈 깜짝할 새 끝나 로딩이 곧바로 꺼진다
+        composeTestRule.runOnUiThread { isLoading = false }
+
+        // Then 덮개가 깜빡이기만 하고 사라지면 무엇을 기다렸는지 알 수 없다
+        composeTestRule.onNodeWithTag(YG_LOADING_OVERLAY_TEST_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun ygScaffoldV2_afterTheMinimumTime_hidesTheOverlay() {
+        // Given 로딩을 켠 채 컴포지션
+        var isLoading by mutableStateOf(true)
+        composeTestRule.setContent {
+            YGCustomTheme {
+                YGScaffoldV2(isLoading = isLoading) { innerPadding ->
+                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                }
+            }
+        }
+
+        // When 로딩을 끄고 최소 노출 시간이 지나기를 기다린다
+        composeTestRule.runOnUiThread { isLoading = false }
+
+        // Then 최소 노출 시간은 걷을 시점을 미룰 뿐이라, 다 채우면 더 붙잡지 않는다
+        composeTestRule.waitUntil(timeoutMillis = OVERLAY_HIDE_TIMEOUT_MILLIS) {
+            composeTestRule.onAllNodesWithTag(YG_LOADING_OVERLAY_TEST_TAG).fetchSemanticsNodes().isEmpty()
+        }
+    }
+
+    @Test
     fun ygScaffoldV2_showErrorWhileLoading_displaysFailToast() {
         // Given 토스트 정책을 테스트가 쥐고, 로딩을 켠 채 컴포지션한다
         val toastPolicy = YGToastPolicy()
@@ -178,5 +223,8 @@ class YGScaffoldV2Test {
 
         /** `YGToastPolicy` 의 진입 애니메이션(300ms)보다 크고 자동 소멸(2000ms)보다 작아야 한다 */
         const val TOAST_ENTER_ANIMATION_MILLIS = 500L
+
+        /** 최소 노출 시간보다 넉넉해야 느린 기기에서도 헛되이 깨지지 않는다 */
+        const val OVERLAY_HIDE_TIMEOUT_MILLIS = 3000L
     }
 }

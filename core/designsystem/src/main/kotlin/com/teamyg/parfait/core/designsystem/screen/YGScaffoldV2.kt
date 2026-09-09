@@ -12,6 +12,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +29,13 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import kotlinx.coroutines.delay
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
+
+/** 덮개가 깜빡이기만 하고 사라지면 무엇을 기다렸는지 알 수 없다 */
+const val YG_LOADING_MINIMUM_VISIBLE_MILLIS = 500L
 
 /**
  * [YGScaffold] 에 공통 로딩 오버레이와 공통 에러 토스트 자리를 더한 신판.
@@ -48,7 +60,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
  *   어디에 겹칠지만 정하고, 그냥 그리기만 하는 것을 넘기면 아래가 그대로 눌린다
  * @param isLoading `true` 면 [content] 위에 [loadingOverlay] 를 덮고, [content] 서브트리를
  *   접근성 트리에서 지운다. 터치만 막고 TalkBack 은 통과시키는 비대칭을 막기 위해서다 —
- *   `hideFromAccessibility` 는 그 노드 하나만 감추고 자식은 트리에 남아 이 일을 못 한다
+ *   `hideFromAccessibility` 는 그 노드 하나만 감추고 자식은 트리에 남아 이 일을 못 한다.
+ *   켠 뒤 [YG_LOADING_MINIMUM_VISIBLE_MILLIS] 안에 꺼도 그때까지는 덮여 있다
  * @param toastPolicy 토스트 큐. 화면이 실패를 알리려면 이 정책을 직접 만들어 넘기고
  *   `showError` 로 띄운다. 넘기지 않으면 스캐폴드가 자기 것을 만들어 쓴다
  */
@@ -62,6 +75,11 @@ fun YGScaffoldV2(
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val isCovered = rememberMinimumVisible(
+        visible = isLoading,
+        minimumMillis = YG_LOADING_MINIMUM_VISIBLE_MILLIS,
+    )
+
     Scaffold(
         modifier = modifier,
         containerColor = containerColor,
@@ -69,7 +87,7 @@ fun YGScaffoldV2(
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
-                modifier = if (isLoading) {
+                modifier = if (isCovered) {
                     Modifier.fillMaxSize().clearAndSetSemantics { }
                 } else {
                     Modifier.fillMaxSize()
@@ -78,7 +96,7 @@ fun YGScaffoldV2(
                 content(innerPadding)
             }
 
-            if (isLoading) {
+            if (isCovered) {
                 loadingOverlay()
             }
 
@@ -91,6 +109,30 @@ fun YGScaffoldV2(
             )
         }
     }
+}
+
+/** [visible] 가 참이 된 순간부터 [minimumMillis] 가 지나기 전에는 거짓이 되어도 참을 유지한다 */
+@Composable
+private fun rememberMinimumVisible(
+    visible: Boolean,
+    minimumMillis: Long,
+): Boolean {
+    var held by remember { mutableStateOf(false) }
+    var shownAt by remember { mutableStateOf<TimeSource.Monotonic.ValueTimeMark?>(null) }
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            shownAt = TimeSource.Monotonic.markNow()
+            held = true
+        } else {
+            shownAt?.let { shown ->
+                delay((minimumMillis.milliseconds - shown.elapsedNow()).coerceAtLeast(Duration.ZERO))
+            }
+            held = false
+        }
+    }
+
+    return visible || held
 }
 
 @YGPreview
