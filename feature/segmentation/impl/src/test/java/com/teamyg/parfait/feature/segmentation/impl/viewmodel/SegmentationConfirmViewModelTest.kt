@@ -7,13 +7,16 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
 import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +41,9 @@ class SegmentationConfirmViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val toppingDraftRepository: ToppingDraftRepository = mockk()
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk()
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase = mockk()
+    private val recordToppingDraft: RecordToppingDraftUseCase = mockk()
     private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
     private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
@@ -50,8 +55,9 @@ class SegmentationConfirmViewModelTest {
     }
 
     private fun givenDraft(draft: ToppingDraft?) {
-        every { toppingDraftRepository.draft } returns flowOf(draft)
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        every { getToppingDraftFlow() } returns flowOf(draft)
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
+        coEvery { ensureDraftSubjectRecorded(any()) } returns true
     }
 
     private fun draft(
@@ -74,7 +80,9 @@ class SegmentationConfirmViewModelTest {
         cutoutImagePath = CUTOUT_PATH,
         sourceImageUri = "content://media/1",
         savedStateHandle = SavedStateHandle(),
-        toppingDraftRepository = toppingDraftRepository,
+        ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
+        getToppingDraftFlow = getToppingDraftFlow,
+        recordToppingDraft = recordToppingDraft,
         getTutorialVisibleFlowUseCase = getTutorialVisible,
         completeTutorialUseCase = completeTutorial,
     )
@@ -85,7 +93,9 @@ class SegmentationConfirmViewModelTest {
         cutoutImagePath = null,
         sourceImageUri = null,
         savedStateHandle = handle,
-        toppingDraftRepository = toppingDraftRepository,
+        ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
+        getToppingDraftFlow = getToppingDraftFlow,
+        recordToppingDraft = recordToppingDraft,
         getTutorialVisibleFlowUseCase = getTutorialVisible,
         completeTutorialUseCase = completeTutorial,
     )
@@ -167,7 +177,7 @@ class SegmentationConfirmViewModelTest {
 
         // Then 화면이 열렸다는 이유로 초안에 쓰지 않는다 — 프로세스 사망 복원에서 진입 인자가
         // 편집 결과를 덮어쓰는 경로가 그렇게 생긴다
-        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { ensureDraftSubjectRecorded(any()) }
     }
 
     @Test
@@ -191,7 +201,7 @@ class SegmentationConfirmViewModelTest {
 
         // Then 테두리는 굽지 않고 값으로 적힌다
         coVerify(exactly = 1) {
-            toppingDraftRepository.record(
+            recordToppingDraft(
                 subjectImagePath = "/cache/segmentation/edited.png",
                 cutoutImagePath = "/cache/segmentation/edited-cutout.png",
                 borderColorArgb = 0xFFFF0000.toInt(),
@@ -240,8 +250,8 @@ class SegmentationConfirmViewModelTest {
             // 돌아왔다가 또 빈다 — 화면이 떠 있는 동안 저장소가 이 순서로 재방출할 수 있다
             val normal = draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f)
             val empty = draft(subjectImagePath = null)
-            every { toppingDraftRepository.draft } returns flowOf(normal, empty, empty, normal, empty)
-            coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+            every { getToppingDraftFlow() } returns flowOf(normal, empty, empty, normal, empty)
+            coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
 
             // When 화면이 열린다
             val viewModel = viewModel()
@@ -263,7 +273,7 @@ class SegmentationConfirmViewModelTest {
     @Test
     fun draft_throws_tellsTheUser_insteadOfDyingSilently() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초안 흐름이 던진다(DataStore 읽기 실패 등)
-        every { toppingDraftRepository.draft } returns flow { throw IllegalStateException("boom") }
+        every { getToppingDraftFlow() } returns flow { throw IllegalStateException("boom") }
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -277,61 +287,50 @@ class SegmentationConfirmViewModelTest {
     }
 
     @Test
-    fun reuseEntry_withEmptyDraft_recordsBeforeObserving() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다.
-        // flowOf 는 곧장 완결돼 순서가 뒤집혀도 record() 가 결국 불려 테스트를 속인다 —
-        // 끝나지 않는 MutableStateFlow 라야 순서 위반을 잡는다
-        every { toppingDraftRepository.draft } returns MutableStateFlow(
-            draft(subjectImagePath = null, cutoutImagePath = null),
-        )
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+    fun reuseEntry_ensuresTheDraftPointsToTheSubject() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 최근 목록에서 고른 진입 — 초안에는 앞서 두른 테두리가 실려 있다
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null, borderColorArgb = 0xFF00FF00.toInt()))
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 진입 인자로 초안을 맞춘다. 이미 가리키던 초안을 덮어써 테두리를 지우지 않는 것은
+        // 판정을 든 UseCase 가 지킨다
+        coVerify(exactly = 1) { ensureDraftSubjectRecorded(REUSED_PATH) }
+        assertEquals(0xFF00FF00.toInt(), viewModel.state.value.borderColorArgb)
+    }
+
+    @Test
+    fun reuseEntry_ensuresBeforeObserving() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스가 흐름은 열었지만 알맹이는 아직 없는 초안 — 최근 목록에서 고른 진입이다
+        givenDraft(draft(subjectImagePath = null, cutoutImagePath = null))
 
         // When 화면이 열린다
         reuseViewModel()
         advanceUntilIdle()
 
-        // Then 구독보다 먼저 적는다. 뒤집으면 첫 방출의 null 이 DraftMissing 토스트를 쏴
+        // Then 구독보다 먼저 맞춘다. 뒤집으면 첫 방출의 null 이 DraftMissing 토스트를 쏴
         // 사용자가 없는 실패를 듣는다
-        coVerify(exactly = 1) {
-            toppingDraftRepository.record(REUSED_PATH, null, null, null)
+        coVerifyOrder {
+            ensureDraftSubjectRecorded(REUSED_PATH)
+            getToppingDraftFlow()
         }
     }
 
     @Test
-    fun reuseEntry_whenDraftAlreadyHasSubject_doesNotRecordAgain() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 이 알맹이가 적힌 초안 — 프로세스 사망 복원으로 돌아온 자리다
-        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null, borderColorArgb = 0xFF00FF00.toInt()))
+    fun reuseEntry_whenEnsureFails_reportsMissingDraft() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 흐름이 열려 있지 않아 알맹이를 맞추지 못한다
+        givenDraft(draft(subjectImagePath = null, cutoutImagePath = null))
+        coEvery { ensureDraftSubjectRecorded(any()) } returns false
 
-        // When 화면이 다시 열린다
+        // When 화면이 열린다
         val viewModel = reuseViewModel()
-        advanceUntilIdle()
 
-        // Then 다시 적지 않는다 — record 는 테두리까지 통째로 덮어쓰므로 여기서 다시 적으면
-        // 사용자가 방금 두른 테두리가 사라진다
-        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
-        assertEquals(0xFF00FF00.toInt(), viewModel.state.value.borderColorArgb)
-    }
-
-    @Test
-    fun reuseEntry_whenDraftHasDifferentSubject_recordsTheNewOne() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캔버스 → 갤러리 → 다른 최근 알맹이를 이미 골라 적은 초안이 있다 — 뒤로가기로
-        // 갤러리에 돌아가 이번에는 다른 알맹이를 고른 자리다
-        givenDraft(
-            draft(
-                subjectImagePath = "/data/files/recent_images/a.png",
-                cutoutImagePath = null,
-                borderColorArgb = 0xFF00FF00.toInt(),
-            ),
-        )
-
-        // When 새 알맹이로 화면이 다시 열린다
-        reuseViewModel()
-        advanceUntilIdle()
-
-        // Then 초안이 가리키는 경로가 다르므로 새로 적는다 — "초안이 비어 있는가"로 판정하면
-        // 이 경우를 놓쳐 옛 알맹이가 그대로 배치된다
-        coVerify(exactly = 1) {
-            toppingDraftRepository.record(REUSED_PATH, null, null, null)
+        // Then 조용히 넘어가지 않고 알린다 — 못 맞춘 채로 두면 다음 화면에서 올릴 데가 없다
+        viewModel.effect.test {
+            advanceUntilIdle()
+            assertEquals(SegmentationConfirmEffect.DraftMissing, awaitItem())
         }
     }
 
@@ -340,8 +339,8 @@ class SegmentationConfirmViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             // Given 재사용 진입이 알맹이를 적은 뒤, 사용자가 테두리를 고쳐 초안이 편집 결과를 든다
             val draftFlow = MutableStateFlow(draft(subjectImagePath = null, cutoutImagePath = null))
-            every { toppingDraftRepository.draft } returns draftFlow
-            coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+            every { getToppingDraftFlow() } returns draftFlow
+            coEvery { ensureDraftSubjectRecorded(any()) } returns true
 
             val savedStateHandle = SavedStateHandle()
             reuseViewModel(savedStateHandle)
@@ -358,10 +357,8 @@ class SegmentationConfirmViewModelTest {
             advanceUntilIdle()
 
             // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 테두리와 편집 결과가
-            // 말없이 사라진다. 적는 것은 첫 진입의 한 번뿐이다
-            coVerify(exactly = 1) {
-                toppingDraftRepository.record(REUSED_PATH, null, null, null)
-            }
+            // 말없이 사라진다. 맞추는 것은 첫 진입의 한 번뿐이다
+            coVerify(exactly = 1) { ensureDraftSubjectRecorded(REUSED_PATH) }
         }
 
     @Test
