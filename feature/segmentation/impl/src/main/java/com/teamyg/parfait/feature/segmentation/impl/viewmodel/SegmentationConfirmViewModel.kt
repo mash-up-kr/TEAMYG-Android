@@ -6,16 +6,17 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.domain.model.member.TutorialKind
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
 import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.first
 
 private const val KEY_RECORDED_ENTRY_SUBJECT = "recorded_entry_subject"
 
@@ -62,7 +63,9 @@ class SegmentationConfirmViewModel
     @Assisted("cutoutImagePath") private val cutoutImagePath: String?,
     @Assisted("sourceImageUri") sourceImageUri: String?,
     private val savedStateHandle: SavedStateHandle,
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
+    private val recordToppingDraft: RecordToppingDraftUseCase,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
 ) : BaseViewModel<SegmentationConfirmState, SegmentationConfirmIntent, SegmentationConfirmEffect>(
@@ -87,24 +90,15 @@ class SegmentationConfirmViewModel
 
     init {
         launch(onError = { reportMissingDraft() }) {
-            // "초안이 비어 있는가"가 아니라 "이 알맹이를 가리키는가"로 판정한다
-            // (`specs/2026-08-20-c106-topping-place-api.md`)
             val isReuseEntry = cutoutImagePath == null
             if (isReuseEntry && !hasRecordedEntrySubject) {
-                val draftSubjectPath = toppingDraftRepository.draft.first()?.subjectImagePath
-                if (draftSubjectPath == subjectImagePath) {
+                // 못 맞춰도 구독은 그대로 연다 — 첫 방출이 비어 있으면 같은
+                // reportMissingDraft 가드가 중복 없이 알린다
+                if (ensureDraftSubjectRecorded(subjectImagePath)) {
                     hasRecordedEntrySubject = true
                 } else {
-                    val recorded = toppingDraftRepository.record(
-                        subjectImagePath = subjectImagePath,
-                        cutoutImagePath = null,
-                        borderColorArgb = null,
-                        borderWidthDp = null,
-                    )
-                    // 여기서 못 적어도 구독은 그대로 연다 — 이어지는 초안 흐름의 첫 방출이
-                    // 비어 있으면 같은 reportMissingDraft 가드가 중복 없이 알린다.
-                    // 못 적었으면 표시를 남기지 않아 복원된 화면이 다시 적어 본다
-                    if (recorded) hasRecordedEntrySubject = true else reportMissingDraft()
+                    // 표시를 남기지 않아 복원된 화면이 다시 맞춰 본다
+                    reportMissingDraft()
                 }
             }
 
@@ -133,7 +127,7 @@ class SegmentationConfirmViewModel
     }
 
     private suspend fun collectDraft() {
-        toppingDraftRepository.draft.collect { draft ->
+        getToppingDraftFlow().collect { draft ->
             val subjectImagePath = draft?.subjectImagePath
             if (subjectImagePath == null) {
                 reportMissingDraft()
@@ -173,7 +167,7 @@ class SegmentationConfirmViewModel
     private fun record(result: ToppingEditResult) {
         launch(onError = { postSideEffect(SegmentationConfirmEffect.DraftWriteFailed) }) {
             val border = result.borderLayers.lastOrNull()
-            val recorded = toppingDraftRepository.record(
+            val recorded = recordToppingDraft(
                 subjectImagePath = result.subjectImagePath,
                 cutoutImagePath = result.cutoutImagePath,
                 borderColorArgb = border?.colorArgb,

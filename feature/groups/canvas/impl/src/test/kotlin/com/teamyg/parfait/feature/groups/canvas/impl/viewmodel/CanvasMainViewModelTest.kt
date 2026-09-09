@@ -24,7 +24,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
@@ -36,6 +35,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -82,7 +82,7 @@ class CanvasMainViewModelTest {
     private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
     private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
-    private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxUnitFun = true)
+    private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
     private val pastCanvasAlertRepository: PastCanvasAlertRepository = mockk(relaxUnitFun = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -152,7 +152,7 @@ class CanvasMainViewModelTest {
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
         getTutorialVisibleFlowUseCase = getTutorialVisible,
         completeTutorialUseCase = completeTutorial,
-        toppingDraftRepository = toppingDraftRepository,
+        startToppingDraft = startToppingDraft,
         pastCanvasAlertRepository = pastCanvasAlertRepository,
     )
 
@@ -775,7 +775,7 @@ class CanvasMainViewModelTest {
         // 그리고 진입 시점의 캔버스가 초안에 못 박힌다 — 도중에 하루 경계를 넘어도 다른 캔버스로
         // 조용히 옮겨 가지 않는다. 토핑이 없는 캔버스라 다음 z 는 1 이다
         coVerify(exactly = 1) {
-            toppingDraftRepository.start(
+            startToppingDraft(
                 groupId = GroupId(GROUP_ID),
                 parfaitId = ParfaitId(TODAY_PARFAIT_ID),
                 nextPositionZ = 1,
@@ -798,7 +798,7 @@ class CanvasMainViewModelTest {
         }
 
         // 카메라와 같은 흐름이라 초안도 같이 열린다
-        coVerify(exactly = 1) { toppingDraftRepository.start(any(), any(), any()) }
+        coVerify(exactly = 1) { startToppingDraft(any(), any(), any()) }
     }
 
     @Test
@@ -813,7 +813,7 @@ class CanvasMainViewModelTest {
 
         // Then 맨 위 z 보다 하나 크다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 겹친다
         coVerify(exactly = 1) {
-            toppingDraftRepository.start(any(), any(), nextPositionZ = 8)
+            startToppingDraft(any(), any(), nextPositionZ = 8)
         }
     }
 
@@ -887,7 +887,7 @@ class CanvasMainViewModelTest {
     @Test
     fun clickCamera_draftWriteFails_staysOnTheCanvasAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초안을 쓸 수 없는 상태
-        coEvery { toppingDraftRepository.start(any(), any(), any()) } throws IOException("no space")
+        coEvery { startToppingDraft(any(), any(), any()) } throws IOException("no space")
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
@@ -912,7 +912,7 @@ class CanvasMainViewModelTest {
         advanceUntilIdle()
 
         // Then 캔버스 식별값 없이 초안을 열지 않는다 — 그 초안으로는 올릴 데를 정할 수 없다
-        coVerify(exactly = 0) { toppingDraftRepository.start(any(), any(), any()) }
+        coVerify(exactly = 0) { startToppingDraft(any(), any(), any()) }
     }
 
     @Test
