@@ -19,6 +19,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
@@ -237,12 +238,12 @@ class CanvasToppingPlaceViewModelTest {
             // Then 조용히 아무 일도 안 하지 않는다 — 알리고, 폴백 크기로 계산된 배율은 서버에 올리지 않는다
             assertEquals(CanvasToppingPlaceEffect.ToppingImageNotReady, awaitItem())
         }
-        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun onClickConfirm_success_clearsDraftAndNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
         val viewModel = readyViewModel()
         advanceUntilIdle()
@@ -260,7 +261,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_afterSuccess_savesCutoutBeforeClearingDraft() = runTest(mainDispatcherRule.dispatcher) {
         // Given 배치가 성공하는 상태
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
         val viewModel = readyViewModel()
         advanceUntilIdle()
@@ -283,7 +284,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_whenRecentImageSaveThrows_stillReportsSuccess() = runTest(mainDispatcherRule.dispatcher) {
         // Given 최근 목록 저장이 던진다
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
         coEvery { addRecentImageUseCase(any(), any()) } throws IllegalStateException("disk full")
         val viewModel = readyViewModel()
@@ -302,7 +303,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_savesCutout_beforeAnnouncingSuccess() = runTest(mainDispatcherRule.dispatcher) {
         // Given 배치가 성공하는 상태
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
         val viewModel = readyViewModel()
         advanceUntilIdle()
@@ -343,6 +344,7 @@ class CanvasToppingPlaceViewModelTest {
                 filePath = any(),
                 transform = capture(transformSlot),
                 border = capture(borderSlot),
+                sourceLongSide = any(),
             )
         } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
@@ -368,7 +370,7 @@ class CanvasToppingPlaceViewModelTest {
     fun onClickConfirm_withoutBorderColor_sendsNone() = runTest(mainDispatcherRule.dispatcher) {
         val borderSlot = slot<ToppingBorder>()
         coEvery {
-            addToppingUseCase(any(), any(), any(), any(), border = capture(borderSlot))
+            addToppingUseCase(any(), any(), any(), any(), border = capture(borderSlot), sourceLongSide = any())
         } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
 
@@ -397,7 +399,7 @@ class CanvasToppingPlaceViewModelTest {
             assertEquals(CanvasToppingPlaceEffect.PlaceFailed, awaitItem())
         }
         // 업로드가 시작되기 전에 끊겨 서버에 고아 이미지가 안 남는다
-        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { addToppingUseCase(any(), any(), any(), any(), any(), any()) }
         assertFalse(viewModel.state.value.isLoading)
     }
 
@@ -405,7 +407,7 @@ class CanvasToppingPlaceViewModelTest {
     fun onClickConfirm_permanentFailure_rewindsAndKeepsDraftUncleaned() = runTest(mainDispatcherRule.dispatcher) {
         // 스펙의 되감기 표는 세 코드를 든다. 하나만 넣으면 집합이 좁아진 회귀를 못 잡는다
         listOf("PARFAIT_ALREADY_CLOSED", "GROUP_NOT_JOINED", "PARFAIT_NOT_FOUND").forEach { code ->
-            coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+            coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.failure(
                 AppError.Server(code = code, statusCode = null, serverMessage = "서버 메시지"),
             )
             val viewModel = readyViewModel()
@@ -424,7 +426,7 @@ class CanvasToppingPlaceViewModelTest {
 
     @Test
     fun onClickConfirm_transientFailure_staysOnScreen() = runTest(mainDispatcherRule.dispatcher) {
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } returns Result.failure(
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.failure(
             AppError.Network(IOException("connection reset")),
         )
         val viewModel = readyViewModel()
@@ -441,7 +443,7 @@ class CanvasToppingPlaceViewModelTest {
 
     @Test
     fun onClickConfirm_whileLoading_doesNotStartASecondUpload() = runTest(mainDispatcherRule.dispatcher) {
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } coAnswers {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
             delay(1_000)
             Result.success(mockk())
         }
@@ -454,12 +456,12 @@ class CanvasToppingPlaceViewModelTest {
         advanceUntilIdle()
 
         // CONFIRM_JOB_KEY 의 존재 이유(ViewModel KDoc 참고)
-        coVerify(exactly = 1) { addToppingUseCase(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { addToppingUseCase(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun onClickConfirm_setsLoadingWhileInFlight() = runTest(mainDispatcherRule.dispatcher) {
-        coEvery { addToppingUseCase(any(), any(), any(), any(), any()) } coAnswers {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
             delay(1_000)
             Result.success(mockk())
         }
@@ -565,7 +567,7 @@ class CanvasToppingPlaceViewModelTest {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 6 }, any()) }
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 6 }, any(), any()) }
     }
 
     @Test
@@ -579,7 +581,7 @@ class CanvasToppingPlaceViewModelTest {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any()) }
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any(), any()) }
     }
 
     @Test
@@ -591,7 +593,32 @@ class CanvasToppingPlaceViewModelTest {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any()) }
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any(), any()) }
+    }
+
+    @Test
+    fun confirm_passesDraftSourceLongSideToUseCase() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안이 원본 긴 변을 들고 있다
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.success(mockk())
+        coEvery { clearToppingDraft() } returns Unit
+        val viewModel = readyViewModel(draft().copy(sourceLongSide = SourceLongSide(4032)))
+        advanceUntilIdle()
+
+        // When 배치를 확정한다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 그 값이 업로드까지 내려간다
+        coVerify {
+            addToppingUseCase(
+                groupId = any(),
+                parfaitId = any(),
+                filePath = any(),
+                transform = any(),
+                border = any(),
+                sourceLongSide = SourceLongSide(4032),
+            )
+        }
     }
 
     private fun canvas(

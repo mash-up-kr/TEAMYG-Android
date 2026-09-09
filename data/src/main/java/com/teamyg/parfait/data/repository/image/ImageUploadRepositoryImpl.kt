@@ -7,6 +7,7 @@ import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import java.io.File
 import javax.inject.Inject
@@ -19,6 +20,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
     override suspend fun upload(
         filePath: String,
         imageType: ImageType,
+        sourceLongSide: SourceLongSide?,
     ): Result<ImageId> {
         val file = File(filePath)
         // 발급을 먼저 부르면 올릴 것도 없는데 PENDING 행과 S3 키만 남고, 재시도해도 영원히
@@ -30,7 +32,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
         // 축소본이 원본보다 메모리를 덜 쓰므로 실패한 자리에서 원본으로 되돌리는 것은 더 큰
         // 메모리를 요구하는 선택이다. 폴백하지 않는다
         val prepared = uploadImagePreprocessor
-            .prepare(file = file, imageType = imageType, sourceLongSide = null)
+            .prepare(file = file, imageType = imageType, sourceLongSide = sourceLongSide)
             .getOrElse { return Result.failure(it.toAppError()) }
 
         return try {

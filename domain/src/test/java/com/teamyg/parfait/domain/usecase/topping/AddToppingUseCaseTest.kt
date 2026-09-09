@@ -53,7 +53,7 @@ class AddToppingUseCaseTest {
     )
 
     private fun givenBothStepsSucceed() {
-        coEvery { imageUploadRepository.upload(any(), any()) } returns Result.success(CONFIRMED_IMAGE_ID)
+        coEvery { imageUploadRepository.upload(any(), any(), any()) } returns Result.success(CONFIRMED_IMAGE_ID)
         coEvery {
             toppingRepository.place(any(), any(), any(), any(), any())
         } returns Result.success(placed)
@@ -66,6 +66,7 @@ class AddToppingUseCaseTest {
         filePath = FILE_PATH,
         transform = transform,
         border = border,
+        sourceLongSide = null,
     )
 
     @Test
@@ -104,7 +105,7 @@ class AddToppingUseCaseTest {
         val sentTransform = slot<ToppingTransform>()
         val sentBorder = slot<ToppingBorder>()
         coEvery {
-            imageUploadRepository.upload(capture(sentFilePath), any())
+            imageUploadRepository.upload(capture(sentFilePath), any(), any())
         } returns Result.success(CONFIRMED_IMAGE_ID)
         coEvery {
             toppingRepository.place(
@@ -132,7 +133,7 @@ class AddToppingUseCaseTest {
         givenBothStepsSucceed()
         val uploadedType = slot<ImageType>()
         coEvery {
-            imageUploadRepository.upload(any(), capture(uploadedType))
+            imageUploadRepository.upload(any(), capture(uploadedType), any())
         } returns Result.success(CONFIRMED_IMAGE_ID)
 
         // When 토핑을 추가한다
@@ -146,7 +147,7 @@ class AddToppingUseCaseTest {
     @Test
     fun invoke_uploadFails_doesNotPlace() = runTest {
         // Given 업로드가 실패한다
-        coEvery { imageUploadRepository.upload(any(), any()) } returns Result.failure(
+        coEvery { imageUploadRepository.upload(any(), any(), any()) } returns Result.failure(
             AppError.Network(cause = null),
         )
 

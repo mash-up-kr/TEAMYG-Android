@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.repository.image
 
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 
 interface ImageUploadRepository {
     /**
@@ -12,9 +13,11 @@ interface ImageUploadRepository {
      * 경로가 없다(`parfait/api/image.md`). 다시 부르면 발급부터 전부 다시 탄다.
      *
      * @param filePath 파일 시스템 절대경로다. `file://` uri 가 아니다.
+     * @param sourceLongSide 모르면 null 이다 — 그때는 잘린 판 상한만 걸린다
      */
     suspend fun upload(
         filePath: String,
         imageType: ImageType,
+        sourceLongSide: SourceLongSide?,
     ): Result<ImageId>
 }

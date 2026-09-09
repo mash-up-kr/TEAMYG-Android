@@ -87,7 +87,7 @@ class ImageUploadRepositoryImplTest {
         givenAllStepsSucceed()
 
         // When 업로드한다
-        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 발급 id 가 아니라 확인까지 마친 id 가 나온다
         assertEquals(CONFIRMED_IMAGE_ID, result.getOrNull())
@@ -100,7 +100,7 @@ class ImageUploadRepositoryImplTest {
         givenAllStepsSucceed()
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 서버 계약이 정한 순서 그대로다 — 발급 전 PUT 은 서명이 없고, 전송 전 확인은 빈 객체를 굳힌다
         coVerifyOrder {
@@ -121,7 +121,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(Unit)
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 표시용 imageUrl 이 아니라 서명된 uploadUrl 로, 그리고 넘겨받은 그 파일로 나간다
         assertEquals(issued.uploadUrl, putUrl.captured)
@@ -142,7 +142,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(Unit)
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 두 값이 같다. 어긋나면 S3 가 서명 불일치로 거절하고 서버 로그에 안 남는다
         assertEquals("image/png", issuedContentType.captured)
@@ -159,7 +159,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(issued)
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 더미가 아니라 실제 파일명을 보낸다
         assertEquals(file.name, fileName.captured)
@@ -175,7 +175,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(issued)
 
         // When NUKKI 가 아닌 imageType 으로 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND, sourceLongSide = null)
 
         // Then 넘긴 값이 그대로 발급 요청까지 간다 — 하드코딩되면 서버가 엉뚱한 S3 키 접두사로 저장한다
         assertEquals(ImageType.BACKGROUND, imageType.captured)
@@ -194,7 +194,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(issued)
 
         // When 업로드한다
-        repository.upload(filePath = jpgFile.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = jpgFile.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then image/jpg 가 아니라 image/jpeg 다 — image/jpg 는 서버가 INVALID_CONTENT_TYPE 으로 거절한다
         assertEquals("image/jpeg", issuedContentType.captured)
@@ -209,7 +209,7 @@ class ImageUploadRepositoryImplTest {
         )
 
         // When 업로드한다
-        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 다음 단계로 넘어가지 않고 도메인 에러로 바뀌어 나온다
         assertIs<AppError.Network>(result.exceptionOrNull())
@@ -227,7 +227,7 @@ class ImageUploadRepositoryImplTest {
         )
 
         // When 업로드한다
-        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 확인을 부르지 않는다. 부르면 S3 에 없는 객체가 COMPLETED 로 굳는다
         assertIs<AppError.Network>(result.exceptionOrNull())
@@ -248,7 +248,7 @@ class ImageUploadRepositoryImplTest {
         )
 
         // When 업로드한다
-        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then ApiException 이 도메인까지 새지 않는다
         val error = assertIs<AppError.Server>(result.exceptionOrNull())
@@ -261,7 +261,11 @@ class ImageUploadRepositoryImplTest {
         val missing = File(file.parentFile, "gone.png")
 
         // When 업로드한다
-        val result = repository.upload(filePath = missing.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(
+            filePath = missing.absolutePath,
+            imageType = ImageType.NUKKI,
+            sourceLongSide = null,
+        )
 
         // Then 발급을 부르지 않는다 — 부르면 올릴 것도 없는데 PENDING 행과 S3 키만 남는다
         assertIs<AppError.Unexpected>(result.exceptionOrNull())
@@ -276,7 +280,7 @@ class ImageUploadRepositoryImplTest {
         )
 
         // When 업로드한다
-        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 원본으로 폴백하지 않고, 화면이 사진을 바꾸라고 말할 수 있는 갈래로 올린다
         assertIs<AppError.UnsupportedImage>(result.exceptionOrNull())
@@ -302,7 +306,7 @@ class ImageUploadRepositoryImplTest {
         } returns Result.success(Unit)
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND, sourceLongSide = null)
 
         // Then 원본이 아니라 축소본이, 그리고 발급과 PUT 이 같은 contentType 으로 나간다
         assertEquals(prepared.absolutePath, putFile.captured.absolutePath)
@@ -320,7 +324,7 @@ class ImageUploadRepositoryImplTest {
         )
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND, sourceLongSide = null)
 
         // Then 축소본은 남지 않는다 - 캐시가 쌓이기만 하는 자리를 늘리지 않는다
         assertEquals(false, prepared.exists())
@@ -337,7 +341,7 @@ class ImageUploadRepositoryImplTest {
         coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(IOException("boom"))
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND, sourceLongSide = null)
 
         // Then 실패해도 지운다
         assertEquals(false, prepared.exists())
@@ -349,7 +353,7 @@ class ImageUploadRepositoryImplTest {
         givenAllStepsSucceed()
 
         // When 업로드한다
-        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI, sourceLongSide = null)
 
         // Then 남의 파일을 지우지 않는다 - 그 수명은 부른 쪽이 쥐고 있다
         assertEquals(true, file.exists())
