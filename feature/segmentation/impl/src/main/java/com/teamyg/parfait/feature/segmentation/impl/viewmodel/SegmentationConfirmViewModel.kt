@@ -92,12 +92,12 @@ class SegmentationConfirmViewModel
         launch(onError = { reportMissingDraft() }) {
             val isReuseEntry = cutoutImagePath == null
             if (isReuseEntry && !hasRecordedEntrySubject) {
-                // 여기서 못 맞춰도 구독은 그대로 연다 — 이어지는 초안 흐름의 첫 방출이
-                // 비어 있으면 같은 reportMissingDraft 가드가 중복 없이 알린다.
-                // 못 맞췄으면 표시를 남기지 않아 복원된 화면이 다시 맞춰 본다
+                // 못 맞춰도 구독은 그대로 연다 — 첫 방출이 비어 있으면 같은
+                // reportMissingDraft 가드가 중복 없이 알린다
                 if (ensureDraftSubjectRecorded(subjectImagePath)) {
                     hasRecordedEntrySubject = true
                 } else {
+                    // 표시를 남기지 않아 복원된 화면이 다시 맞춰 본다
                     reportMissingDraft()
                 }
             }

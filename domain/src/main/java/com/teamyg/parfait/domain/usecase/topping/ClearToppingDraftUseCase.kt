@@ -3,7 +3,6 @@ package com.teamyg.parfait.domain.usecase.topping
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import javax.inject.Inject
 
-/** 토핑 만들기 흐름을 닫는다 */
 class ClearToppingDraftUseCase @Inject constructor(
     private val toppingDraftRepository: ToppingDraftRepository,
 ) {
