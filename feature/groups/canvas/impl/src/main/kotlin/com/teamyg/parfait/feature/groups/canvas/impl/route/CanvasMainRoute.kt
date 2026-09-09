@@ -351,10 +351,7 @@ internal fun CanvasMainRoute(
     }
 }
 
-/**
- * [visible] 가 참이 된 순간부터 [minimumMillis] 가 지나기 전에는 거짓이 되어도 참을 유지한다.
- * 이미 그 시간을 넘긴 뒤에는 붙잡지 않는다.
- */
+/** [visible] 가 참이 된 순간부터 [minimumMillis] 가 지나기 전에는 거짓이 되어도 참을 유지한다 */
 @Composable
 private fun rememberMinimumVisible(
     visible: Boolean,
