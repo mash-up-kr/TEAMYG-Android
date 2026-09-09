@@ -38,6 +38,7 @@ import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SubjectCoverage
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -527,6 +528,9 @@ constructor(
                     SegmentationResult(
                         subjectImagePath = subjectFile.absolutePath,
                         trimmedSubjectImagePath = trimmedFile.absolutePath,
+                        sourceLongSide = SourceLongSide(
+                            maxOf(candidate.canvasWidth, candidate.canvasHeight),
+                        ),
                     ),
                 )
             } catch (e: CancellationException) {

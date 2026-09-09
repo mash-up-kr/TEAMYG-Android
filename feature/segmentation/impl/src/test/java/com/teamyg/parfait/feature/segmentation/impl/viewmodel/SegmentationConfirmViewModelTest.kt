@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -56,7 +57,7 @@ class SegmentationConfirmViewModelTest {
 
     private fun givenDraft(draft: ToppingDraft?) {
         every { getToppingDraftFlow() } returns flowOf(draft)
-        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
         coEvery { ensureDraftSubjectRecorded(any()) } returns true
     }
 
@@ -178,7 +179,7 @@ class SegmentationConfirmViewModelTest {
         // Then 화면이 열렸다는 이유로 초안에 쓰지 않는다 — 프로세스 사망 복원에서 진입 인자가
         // 편집 결과를 덮어쓰는 경로가 그렇게 생긴다
         coVerify(exactly = 0) { ensureDraftSubjectRecorded(any()) }
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -195,6 +196,7 @@ class SegmentationConfirmViewModelTest {
                     subjectImagePath = "/cache/segmentation/edited.png",
                     cutoutImagePath = "/cache/segmentation/edited-cutout.png",
                     borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF0000.toInt(), widthDp = 8f)),
+                    sourceLongSide = null,
                 ),
             ),
         )
@@ -207,6 +209,39 @@ class SegmentationConfirmViewModelTest {
                 cutoutImagePath = "/cache/segmentation/edited-cutout.png",
                 borderColorArgb = 0xFFFF0000.toInt(),
                 borderWidthDp = 8f,
+                sourceLongSide = null,
+            )
+        }
+    }
+
+    @Test
+    fun onEditResult_recordsSourceLongSideFromResult() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 편집 결과가 원본 긴 변을 함께 돌려준다
+        givenDraft(draft())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 편집 결과를 받는다
+        viewModel.processIntent(
+            SegmentationConfirmIntent.OnEditResult(
+                ToppingEditResult(
+                    subjectImagePath = "/cache/edited-trimmed.png",
+                    cutoutImagePath = "/cache/edited-canvas.png",
+                    borderLayers = emptyList(),
+                    sourceLongSide = 3024,
+                ),
+            ),
+        )
+        advanceUntilIdle()
+
+        // Then 그 값이 초안에 실린다
+        coVerify {
+            recordToppingDraft(
+                subjectImagePath = "/cache/edited-trimmed.png",
+                cutoutImagePath = "/cache/edited-canvas.png",
+                borderColorArgb = null,
+                borderWidthDp = null,
+                sourceLongSide = SourceLongSide(3024),
             )
         }
     }
@@ -252,7 +287,7 @@ class SegmentationConfirmViewModelTest {
             val normal = draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f)
             val empty = draft(subjectImagePath = null)
             every { getToppingDraftFlow() } returns flowOf(normal, empty, empty, normal, empty)
-            coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
+            coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
 
             // When 화면이 열린다
             val viewModel = viewModel()

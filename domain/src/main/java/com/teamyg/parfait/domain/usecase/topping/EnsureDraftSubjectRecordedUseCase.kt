@@ -21,6 +21,9 @@ class EnsureDraftSubjectRecordedUseCase @Inject constructor(
             cutoutImagePath = null,
             borderColorArgb = null,
             borderWidthDp = null,
+            // 최근 목록에서 되살린 알맹이는 세그멘테이션을 타지 않아 오려낸 사진의
+            // 치수를 알 방법이 없다. 배율을 지어내지 않고 방어선에만 맡긴다
+            sourceLongSide = null,
         )
     }
 }

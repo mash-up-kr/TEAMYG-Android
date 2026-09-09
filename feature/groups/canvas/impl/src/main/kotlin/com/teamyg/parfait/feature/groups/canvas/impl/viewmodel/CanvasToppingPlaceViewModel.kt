@@ -21,6 +21,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
@@ -54,6 +55,7 @@ private val MIN_TOPPING_SHORT_SIDE = 48.dp
 data class CanvasToppingPlaceUiState(
     /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
     val toppingImagePath: String? = null,
+    val toppingSourceLongSide: SourceLongSide? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
     /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
@@ -170,6 +172,7 @@ class CanvasToppingPlaceViewModel
                 updateState {
                     copy(
                         toppingImagePath = draft?.subjectImagePath,
+                        toppingSourceLongSide = draft?.sourceLongSide,
                         borderColorArgb = draft?.borderColorArgb,
                         borderWidthDp = draft?.borderWidthDp,
                         groupId = draft?.groupId,
@@ -391,6 +394,7 @@ class CanvasToppingPlaceViewModel
                     filePath = imagePath,
                     transform = transform,
                     border = border,
+                    sourceLongSide = current.toppingSourceLongSide,
                 ).onSuccess {
                     // 알림보다 먼저 남긴다 — PlaceSucceeded 를 받은 Route 가 popUpTo 로 이 화면을
                     // 걷어 내면 viewModelScope 가 취소되고, 그 뒤 코드는 실행되다 말고 끊긴다
