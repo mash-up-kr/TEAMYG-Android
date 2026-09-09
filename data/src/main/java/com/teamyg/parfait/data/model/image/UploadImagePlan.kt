@@ -69,6 +69,7 @@ sealed interface UploadImagePlan {
             sourceLongSide: SourceLongSide?,
         ): UploadImageSize = when (imageType) {
             ImageType.BACKGROUND -> scaledSize(fileSize, BACKGROUND_LONG_SIDE_LIMIT)
+
             // 방어선을 겹치는 이유는 배율 갈래가 아니라 그것을 건너뛴 갈래들 때문이다
             ImageType.NUKKI -> scaledSize(scaledBySource(fileSize, sourceLongSide), NUKKI_LONG_SIDE_LIMIT)
         }

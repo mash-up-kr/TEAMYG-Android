@@ -166,10 +166,16 @@ class UploadImagePlanTest {
 
         // When 각각 계획을 세운다
         val smaller = UploadImagePlan.of(
-            UploadImageSize(640, 400), ImageType.NUKKI, UploadImageFormat.PNG, sourceLongSide,
+            UploadImageSize(640, 400),
+            ImageType.NUKKI,
+            UploadImageFormat.PNG,
+            sourceLongSide,
         )
         val larger = UploadImagePlan.of(
-            UploadImageSize(641, 400), ImageType.NUKKI, UploadImageFormat.PNG, sourceLongSide,
+            UploadImageSize(641, 400),
+            ImageType.NUKKI,
+            UploadImageFormat.PNG,
+            sourceLongSide,
         )
 
         // Then 큰 알맹이가 작은 알맹이보다 작게 올라가지 않는다 - 하한을 입력에 걸면 깨지던 성질이다
