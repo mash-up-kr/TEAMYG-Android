@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.image
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.repository.image.ImageFileRepository
 import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import io.mockk.coEvery
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 private const val URI = "content://media/external/images/media/1"
 private const val FILE_PATH = "/data/user/0/com.teamyg.parfait/cache/upload/abc.png"
@@ -64,6 +66,19 @@ class UploadImageUseCaseTest {
 
         coVerify { imageUploadRepository.upload(any(), capture(uploadedType), any()) }
         assertEquals(ImageType.BACKGROUND, uploadedType.captured)
+    }
+
+    @Test
+    fun invoke_doesNotForwardASourceLongSide() = runTest {
+        // 배경은 원본 배율을 쓰지 않는다(UploadImageUseCase KDoc·구현 참고) — 이 화면이
+        // sourceLongSide 를 알 방법이 없으므로 값을 지어내지 않고 null 을 명시해야 한다
+        givenBothStepsSucceed()
+        val sentSourceLongSide = slot<SourceLongSide?>()
+
+        uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
+
+        coVerify { imageUploadRepository.upload(any(), any(), captureNullable(sentSourceLongSide)) }
+        assertNull(sentSourceLongSide.captured)
     }
 
     @Test

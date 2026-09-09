@@ -8,6 +8,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -60,13 +61,15 @@ class AddToppingUseCaseTest {
     }
 
     // 프로퍼티 addTopping 과 이름을 나눠 둔다. 겹치면 호출부가 어느 쪽을 부르는지 읽기 어렵다
+    // non-null 로 고정한다 — null 을 넘기면 이 층이 값을 그대로 넘기는지, 아니면 떨어뜨리고도
+    // null 이라 우연히 통과하는지 구분이 안 된다
     private suspend fun addToppingWithFixtures() = addTopping(
         groupId = GROUP_ID,
         parfaitId = PARFAIT_ID,
         filePath = FILE_PATH,
         transform = transform,
         border = border,
-        sourceLongSide = null,
+        sourceLongSide = SOURCE_LONG_SIDE,
     )
 
     @Test
@@ -101,12 +104,8 @@ class AddToppingUseCaseTest {
     fun invoke_bothStepsSucceed_forwardsEveryArgumentVerbatim() = runTest {
         // Given 업로드와 배치가 모두 성공한다
         givenBothStepsSucceed()
-        val sentFilePath = slot<String>()
         val sentTransform = slot<ToppingTransform>()
         val sentBorder = slot<ToppingBorder>()
-        coEvery {
-            imageUploadRepository.upload(capture(sentFilePath), any(), any())
-        } returns Result.success(CONFIRMED_IMAGE_ID)
         coEvery {
             toppingRepository.place(
                 groupId = GROUP_ID,
@@ -122,9 +121,9 @@ class AddToppingUseCaseTest {
 
         // Then 캔버스 식별값·경로·좌표·테두리가 손대지 않은 채 그대로 나간다. 이 층이 하는 일은
         // 순서를 정하는 것뿐인데, 값을 지어내면 서버는 200 을 주고 엉뚱한 자리에 토핑이 앉는다
-        assertEquals(FILE_PATH, sentFilePath.captured)
         assertEquals(transform, sentTransform.captured)
         assertEquals(border, sentBorder.captured)
+        coVerify { imageUploadRepository.upload(FILE_PATH, ImageType.NUKKI, SOURCE_LONG_SIDE) }
     }
 
     @Test
@@ -186,5 +185,6 @@ class AddToppingUseCaseTest {
         val PARFAIT_ID = ParfaitId(2L)
         val CONFIRMED_IMAGE_ID = ImageId(99L)
         const val FILE_PATH = "/data/user/0/com.teamyg.parfait/cache/segmentation/subject.png"
+        val SOURCE_LONG_SIDE = SourceLongSide(4032)
     }
 }
