@@ -11,7 +11,6 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SubjectCoverage
-import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
@@ -307,7 +306,7 @@ class ToppingEditViewModel
             val sourceLongSide = if (current.isBorderOnly) {
                 null
             } else {
-                SourceLongSide(maxOf(cutout.width, cutout.height))
+                maxOf(cutout.width, cutout.height)
             }
 
             // 화면 사이에서는 비트맵 대신 경로를 주고받으므로 여기서 파일로 떨군다.

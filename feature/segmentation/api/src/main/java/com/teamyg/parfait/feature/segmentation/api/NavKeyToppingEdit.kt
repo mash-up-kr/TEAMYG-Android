@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.api
 
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.parfait.domain.model.image.SourceLongSide
 import kotlinx.serialization.Serializable
 
 /**
@@ -29,13 +28,14 @@ data class NavKeyToppingEdit(
  *
  * @param subjectImagePath 테두리를 두르지 않은 알맹이. 투명 여백을 걷어 실제 토핑 크기다
  * @param cutoutImagePath 다시 편집할 때의 시작 마스크. 원본 좌표계를 지켜야 해 여백을 걷지 않는다
- * @param sourceLongSide 원본 사진이 남아 있지 않은 진입에서는 null 이다
+ * @param sourceLongSide 원본 사진 전체의 긴 변(px). 원본 사진이 남아 있지 않은 진입에서는 null 이다.
+ * 이 모듈은 `domain`을 의존하지 않으므로 `SourceLongSide` 값 타입이 아니라 벌거벗은 `Int`로 나른다
  */
 data class ToppingEditResult(
     val subjectImagePath: String,
     val cutoutImagePath: String,
     val borderLayers: List<ToppingBorderLayer>,
-    val sourceLongSide: SourceLongSide?,
+    val sourceLongSide: Int?,
 )
 
 /**

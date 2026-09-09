@@ -228,7 +228,7 @@ class SegmentationConfirmViewModelTest {
                     subjectImagePath = "/cache/edited-trimmed.png",
                     cutoutImagePath = "/cache/edited-canvas.png",
                     borderLayers = emptyList(),
-                    sourceLongSide = SourceLongSide(3024),
+                    sourceLongSide = 3024,
                 ),
             ),
         )
