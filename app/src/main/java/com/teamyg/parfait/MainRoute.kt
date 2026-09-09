@@ -70,9 +70,7 @@ fun MainRoute(
         }
     }
 
-    // 화면 진입도 앞의 둘과 같은 이유로 여기 한 곳에서만 본다 — 화면마다 보면 한 전환이 여러 번 찍힌다.
-    // 크기를 함께 보는 이유와 중복 판정이 트래커에 있는 이유는
-    // parfait/adr/0031-analytics-central-screen-mapping.md 에 있다.
+    // 화면 진입도 같은 이유로 여기 한 곳에서만 본다. 크기를 함께 보는 이유는 ScreenViewTracker 에 있다.
     LaunchedEffect(navigator, screenViewTracker) {
         snapshotFlow { navigator.backStack.size to navigator.backStack.lastOrNull() }
             .collect { (size, top) -> screenViewTracker.track(backStackSize = size, top = top) }

@@ -30,11 +30,10 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 
 /**
- * 화면 ID 체계와 각 값의 근거는 `parfait/specs/2026-09-09-release-analytics-screen-tracking.md`
- * 매핑표에 있다.
+ * 각 값의 근거는 `parfait/specs/2026-09-09-release-analytics-screen-tracking.md` 매핑표에 있다.
  *
- * `NavKey` 는 sealed 가 아니라 `when` 이 빠짐없음을 강제하지 못한다. 대응이 없으면 `null` 이고,
- * 부르는 쪽이 그것을 경고로 남긴다.
+ * `NavKey` 는 sealed 가 아니라 `when` 이 빠짐없음을 강제하지 못한다. 빠뜨린 화면의 처리는
+ * [ScreenViewTracker] 에 있다.
  */
 fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeySplash -> AnalyticsScreen("A-001", "NavKeySplash")

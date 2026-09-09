@@ -1,11 +1,6 @@
 package com.teamyg.parfait.analytics
 
-/**
- * 분석 도구로 나가는 유일한 창구.
- *
- * [setCollectionEnabled] 가 여기 있는 이유는 수집을 켜는 자리(`BaseApplication`)가
- * `FirebaseAnalytics` 를 직접 잡지 않게 하기 위해서다.
- */
+/** 분석 도구로 나가는 유일한 창구 — `parfait/adr/0031-analytics-central-screen-mapping.md` */
 interface AnalyticsLogger {
     fun setCollectionEnabled(enabled: Boolean)
 

@@ -4,8 +4,7 @@ val localProperties = Properties().apply {
     rootProject.file("local.properties").inputStream().use { load(it) }
 }
 
-// 기본값은 빌드 타입을 따르되 -Panalytics.isDebug 로 덮어쓴다. debug 빌드로도 운영과 같은
-// 조건을 만들어 GA4 에서 확인하기 위한 것이다.
+// debug 빌드로 전송을 확인할 때 -Panalytics.isDebug=false 로 덮어쓴다.
 val analyticsIsDebugOverride: String? =
     providers.gradleProperty("analytics.isDebug").orNull?.let { if (it == "true") "true" else "false" }
 

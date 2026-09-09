@@ -48,9 +48,8 @@ class BaseApplication :
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    // debug 는 수집 자체를 끈다. 같은 GA4 속성을 쓰기 때문이다(applicationIdSuffix 가 없다).
-    // 그 빌드로 전송을 확인하려면 -Panalytics.isDebug=false 로 빌드한다
-    // — parfait/adr/0031-analytics-central-screen-mapping.md.
+    // debug 와 release 가 같은 GA4 속성을 쓴다(applicationIdSuffix 가 없다).
+    // 게이트를 덮어쓰는 법은 parfait/adr/0031-analytics-central-screen-mapping.md.
     private fun setUpAnalytics() {
         analyticsLogger.setCollectionEnabled(!BuildConfig.ANALYTICS_IS_DEBUG)
 
