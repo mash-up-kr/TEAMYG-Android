@@ -4,6 +4,10 @@ val localProperties = Properties().apply {
     rootProject.file("local.properties").inputStream().use { load(it) }
 }
 
+// debug 빌드로 전송을 확인할 때 -Panalytics.isDebug=false 로 덮어쓴다.
+val analyticsIsDebugOverride: String? =
+    providers.gradleProperty("analytics.isDebug").orNull?.let { if (it == "true") "true" else "false" }
+
 plugins {
     alias(libs.plugins.parfait.android.application)
     alias(libs.plugins.parfait.android.application.signing)
@@ -33,6 +37,23 @@ android {
             "KAKAO_NATIVE_APP_KEY",
             "\"${localProperties.getProperty("kakao.native.app.key")}\"",
         )
+    }
+
+    buildTypes {
+        release {
+            buildConfigField(
+                "boolean",
+                "ANALYTICS_IS_DEBUG",
+                analyticsIsDebugOverride ?: "false",
+            )
+        }
+        debug {
+            buildConfigField(
+                "boolean",
+                "ANALYTICS_IS_DEBUG",
+                analyticsIsDebugOverride ?: "true",
+            )
+        }
     }
 
     buildFeatures {
