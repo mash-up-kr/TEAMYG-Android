@@ -6,8 +6,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 폴링 주기를 그룹별로 재는 자. 변화 없는 조회가 이어지면 성기게, 변화가 오면 다시 촘촘하게
- * 만든다(`specs/2026-09-10-canvas-adaptive-polling.md`).
+ * 폴링 주기를 그룹별로 잰다(`specs/2026-09-10-canvas-adaptive-polling.md`).
  *
  * 스스로 락을 들지 않는다 — [CanvasPoller] 의 `synchronized(lock)` 안에서만 불린다. 락을 둘로
  * 나누면 주기를 읽는 것과 타이머를 다시 세우는 것 사이가 갈라진다.
@@ -17,7 +16,6 @@ class CanvasPollInterval @Inject constructor() {
 
     fun current(groupId: GroupId): Duration = STAGES[stages[groupId] ?: 0]
 
-    /** 조회 결과가 캐시와 달랐다 */
     fun onChanged(groupId: GroupId) {
         stages[groupId] = 0
     }

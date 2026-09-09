@@ -41,7 +41,6 @@ class PushDeepLinkIntentTest {
     fun mapToPushDeepLinkOrNull_remindPayload_isNotAddTopping() {
         val data = mapOf("route" to "group", "type" to "REMIND_AM")
 
-        // 리마인드에는 groupId 가 없다 — 이 갈림이 없으면 하루 두 번 엉뚱한 그룹이 되살아난다
         assertIs<PushDeepLink.GroupList>(data.toPushDeepLinkOrNull())
     }
 

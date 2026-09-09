@@ -67,10 +67,7 @@ class CanvasPoller @Inject constructor(
     /** 테스트 전용 — [hasSubscriberForTest] 참고 */
     internal fun isPollingForTest(groupId: GroupId): Boolean = synchronized(lock) { pollJobs.containsKey(groupId) }
 
-    /**
-     * 구독자 판정과 재시작을 한 [synchronized] 안에서 한다 — 갈라 두면 그 사이에 마지막
-     * [release] 가 끼어들어 구독자가 없는데도 폴 잡이 살아난다.
-     */
+    /** 구독자 판정과 재시작을 한 [synchronized] 안에서 하는 이유는 [refreshNow] 참고 */
     fun acquire(groupId: GroupId) {
         synchronized(lock) {
             val next = (subscriberCounts[groupId] ?: 0) + 1
@@ -145,7 +142,7 @@ class CanvasPoller @Inject constructor(
         pollJobs.remove(groupId)?.cancel()
         pollJobs[groupId] = scope.launch {
             while (isActive) {
-                // 대기 직전마다 다시 묻는다 — 도는 중에 단계가 바뀌어도 다음 회차부터 반영된다
+                // 도는 중에 단계가 바뀌어도 이미 시작된 대기는 끊지 않는다
                 delay(synchronized(lock) { interval.current(groupId) })
                 refresh(groupId)
             }
@@ -179,8 +176,8 @@ class CanvasPoller @Inject constructor(
                 .onSuccess { canvas ->
                     synchronized(lock) {
                         if (generation == startedGeneration) {
-                            // 구독자가 없는 갱신(화면 밖 푸시)이 단계를 올려 두면 다음 진입의 첫
-                            // 주기가 10초가 아니게 된다. 첫 조회(cached == null)는 변화로 친다
+                            // 구독자 없이 나간 갱신(화면 밖 푸시)이 단계를 올려 두면 다음
+                            // 진입이 가장 촘촘한 단계에서 시작하지 못한다
                             if (subscriberCounts.containsKey(groupId)) {
                                 if (cached != canvas) interval.onChanged(groupId) else interval.onUnchanged(groupId)
                             }
