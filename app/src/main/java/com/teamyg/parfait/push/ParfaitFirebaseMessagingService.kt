@@ -12,7 +12,6 @@ import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,9 +53,8 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
         )
 
         // 남이 토핑을 올렸다는 신호다 — 폴링 주기를 기다리지 않고 바로 받아 온다
-        val deepLink = message.data.toPushDeepLinkOrNull()
-        if (deepLink is PushDeepLink.AddTopping) {
-            requestTodayParfaitRefresh(GroupId(deepLink.groupId))
+        message.data.toppingGroupIdOrNull()?.let { groupId ->
+            requestTodayParfaitRefresh(GroupId(groupId))
         }
     }
 

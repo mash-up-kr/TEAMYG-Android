@@ -50,6 +50,28 @@ class PushDeepLinkIntentTest {
         assertNull(mapOf("route" to "nowhere").toPushDeepLinkOrNull())
     }
 
+    @Test
+    fun toppingGroupIdOrNull_toppingPayload_returnsTheGroupId() {
+        val data = mapOf("route" to "canvas", "groupId" to "34", "type" to "TOPPING")
+
+        assertEquals(34L, data.toppingGroupIdOrNull())
+    }
+
+    @Test
+    fun toppingGroupIdOrNull_remindPayload_isNull() {
+        val data = mapOf("route" to "group", "type" to "REMIND_AM")
+
+        // 리마인드가 여기서 안 걸리면 하루 두 번 엉뚱한 그룹의 주기가 되돌아간다
+        assertNull(data.toppingGroupIdOrNull())
+    }
+
+    @Test
+    fun toppingGroupIdOrNull_malformedGroupId_isNull() {
+        val data = mapOf("route" to "canvas", "groupId" to "0", "type" to "TOPPING")
+
+        assertNull(data.toppingGroupIdOrNull())
+    }
+
     private fun pushIntent(flags: Int): Intent = mockk {
         every { this@mockk.flags } returns flags
         every { getStringExtra("route") } returns "canvas"

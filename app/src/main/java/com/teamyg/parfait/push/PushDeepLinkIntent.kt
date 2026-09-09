@@ -34,3 +34,6 @@ fun Map<String, String>.toPushDeepLinkOrNull(): PushDeepLink? = PushDeepLinkPars
     groupId = this[EXTRA_GROUP_ID],
     type = this[EXTRA_TYPE],
 )
+
+/** 토핑 알림이면 그 그룹 id, 아니면 `null`. 리마인드 알림은 여기서 걸러진다 */
+fun Map<String, String>.toppingGroupIdOrNull(): Long? = (toPushDeepLinkOrNull() as? PushDeepLink.AddTopping)?.groupId
