@@ -60,9 +60,16 @@ import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
+
+/** 캔버스가 순식간에 실리면 로딩 로티가 깜빡이기만 하고 사라져 무엇을 기다렸는지 알 수 없다 */
+private const val CANVAS_LOADING_MINIMUM_VISIBLE_MILLIS = 500L
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
@@ -276,11 +283,16 @@ internal fun CanvasMainRoute(
 
     var retryKey by remember { mutableIntStateOf(0) }
 
+    val isCanvasLoading = rememberMinimumVisible(
+        visible = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
+        minimumMillis = CANVAS_LOADING_MINIMUM_VISIBLE_MILLIS,
+    )
+
     // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
     // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
     Box(modifier = modifier.fillMaxSize()) {
         YGScaffoldV2(
-            isLoading = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
+            isLoading = isCanvasLoading,
             loadingOverlay = {
                 if (loadState == CanvasLoadState.Failed) {
                     CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
@@ -323,4 +335,31 @@ internal fun CanvasMainRoute(
             )
         }
     }
+}
+
+/**
+ * [visible] 가 참이 된 순간부터 [minimumMillis] 가 지나기 전에는 거짓이 되어도 참을 유지한다.
+ * 이미 그 시간을 넘긴 뒤에는 붙잡지 않는다.
+ */
+@Composable
+private fun rememberMinimumVisible(
+    visible: Boolean,
+    minimumMillis: Long,
+): Boolean {
+    var held by remember { mutableStateOf(false) }
+    var shownAt by remember { mutableStateOf<TimeSource.Monotonic.ValueTimeMark?>(null) }
+
+    LaunchedEffect(visible) {
+        if (visible) {
+            shownAt = TimeSource.Monotonic.markNow()
+            held = true
+        } else {
+            shownAt?.let { shown ->
+                delay((minimumMillis.milliseconds - shown.elapsedNow()).coerceAtLeast(Duration.ZERO))
+            }
+            held = false
+        }
+    }
+
+    return visible || held
 }
