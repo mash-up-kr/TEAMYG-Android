@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.model.local
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.serialization.Serializable
 
@@ -15,6 +16,7 @@ internal data class ToppingDraftEntity(
     val cutoutImagePath: String? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
+    val sourceLongSide: Int? = null,
 )
 
 internal fun ToppingDraft.toEntity(): ToppingDraftEntity = ToppingDraftEntity(
@@ -25,6 +27,7 @@ internal fun ToppingDraft.toEntity(): ToppingDraftEntity = ToppingDraftEntity(
     cutoutImagePath = cutoutImagePath,
     borderColorArgb = borderColorArgb,
     borderWidthDp = borderWidthDp,
+    sourceLongSide = sourceLongSide?.px,
 )
 
 internal fun ToppingDraftEntity.toVO(): ToppingDraft = ToppingDraft(
@@ -35,4 +38,5 @@ internal fun ToppingDraftEntity.toVO(): ToppingDraft = ToppingDraft(
     cutoutImagePath = cutoutImagePath,
     borderColorArgb = borderColorArgb,
     borderWidthDp = borderWidthDp,
+    sourceLongSide = sourceLongSide?.let(::SourceLongSide),
 )

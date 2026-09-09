@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.repository.topping
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.coroutines.flow.Flow
 
@@ -36,5 +37,6 @@ interface ToppingDraftRepository {
         cutoutImagePath: String?,
         borderColorArgb: Int?,
         borderWidthDp: Float?,
+        sourceLongSide: SourceLongSide?,
     ): Boolean
 }

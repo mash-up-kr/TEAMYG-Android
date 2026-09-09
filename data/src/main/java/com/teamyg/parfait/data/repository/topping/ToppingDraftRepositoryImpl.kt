@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.repository.topping
 import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +42,7 @@ class ToppingDraftRepositoryImpl @Inject constructor(
         cutoutImagePath: String?,
         borderColorArgb: Int?,
         borderWidthDp: Float?,
+        sourceLongSide: SourceLongSide?,
     ): Boolean {
         val current = toppingDraftLocalDataSource.draft.first() ?: return false
 
@@ -50,6 +52,7 @@ class ToppingDraftRepositoryImpl @Inject constructor(
                 cutoutImagePath = cutoutImagePath,
                 borderColorArgb = borderColorArgb,
                 borderWidthDp = borderWidthDp,
+                sourceLongSide = sourceLongSide,
             ),
         )
         return true

@@ -21,6 +21,7 @@ class EnsureDraftSubjectRecordedUseCase @Inject constructor(
             cutoutImagePath = null,
             borderColorArgb = null,
             borderWidthDp = null,
+            sourceLongSide = null,
         )
     }
 }

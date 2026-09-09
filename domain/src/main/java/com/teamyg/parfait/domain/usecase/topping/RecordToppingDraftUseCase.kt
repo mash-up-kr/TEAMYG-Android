@@ -1,5 +1,6 @@
 package com.teamyg.parfait.domain.usecase.topping
 
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import javax.inject.Inject
 
@@ -12,10 +13,12 @@ class RecordToppingDraftUseCase @Inject constructor(
         cutoutImagePath: String?,
         borderColorArgb: Int?,
         borderWidthDp: Float?,
+        sourceLongSide: SourceLongSide?,
     ): Boolean = toppingDraftRepository.record(
         subjectImagePath = subjectImagePath,
         cutoutImagePath = cutoutImagePath,
         borderColorArgb = borderColorArgb,
         borderWidthDp = borderWidthDp,
+        sourceLongSide = sourceLongSide,
     )
 }

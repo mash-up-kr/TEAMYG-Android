@@ -56,7 +56,7 @@ class SegmentationConfirmViewModelTest {
 
     private fun givenDraft(draft: ToppingDraft?) {
         every { getToppingDraftFlow() } returns flowOf(draft)
-        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
         coEvery { ensureDraftSubjectRecorded(any()) } returns true
     }
 
@@ -178,7 +178,7 @@ class SegmentationConfirmViewModelTest {
         // Then 화면이 열렸다는 이유로 초안에 쓰지 않는다 — 프로세스 사망 복원에서 진입 인자가
         // 편집 결과를 덮어쓰는 경로가 그렇게 생긴다
         coVerify(exactly = 0) { ensureDraftSubjectRecorded(any()) }
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -207,6 +207,7 @@ class SegmentationConfirmViewModelTest {
                 cutoutImagePath = "/cache/segmentation/edited-cutout.png",
                 borderColorArgb = 0xFFFF0000.toInt(),
                 borderWidthDp = 8f,
+                sourceLongSide = null,
             )
         }
     }
@@ -252,7 +253,7 @@ class SegmentationConfirmViewModelTest {
             val normal = draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f)
             val empty = draft(subjectImagePath = null)
             every { getToppingDraftFlow() } returns flowOf(normal, empty, empty, normal, empty)
-            coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
+            coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
 
             // When 화면이 열린다
             val viewModel = viewModel()

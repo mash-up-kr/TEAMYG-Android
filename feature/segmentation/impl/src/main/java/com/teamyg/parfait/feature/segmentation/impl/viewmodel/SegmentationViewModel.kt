@@ -163,6 +163,7 @@ class SegmentationViewModel
                             cutoutImagePath = result.subjectImagePath,
                             borderColorArgb = null,
                             borderWidthDp = null,
+                            sourceLongSide = null,
                         )
                     }.getOrDefault(false)
 
@@ -217,6 +218,7 @@ class SegmentationViewModel
                     cutoutImagePath = path,
                     borderColorArgb = null,
                     borderWidthDp = null,
+                    sourceLongSide = null,
                 )
             }.getOrDefault(false)
 
