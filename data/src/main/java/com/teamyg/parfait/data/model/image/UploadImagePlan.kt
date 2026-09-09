@@ -21,8 +21,11 @@ sealed interface UploadImagePlan {
         private const val NUKKI_LONG_SIDE_LIMIT = 1500
         private const val BACKGROUND_LONG_SIDE_LIMIT = 2048
 
-        /** PNG 는 무손실이라 이 값을 보지 않는다 */
-        const val JPEG_QUALITY = 90
+        /**
+         * PNG 는 무손실이라 이 값을 보지 않는다. 긴 변 상한과 같은 이유로 iOS 와 맞춘 값이다
+         * (근거는 `specs/2026-09-08-upload-image-downscale.md` 「결정 표」).
+         */
+        const val JPEG_QUALITY = 70
 
         /**
          * 치수와 포맷 둘 다 그대로여도 되는지 판정한다. 어느 한쪽이라도 바뀌어야 다시 굽는다 —
