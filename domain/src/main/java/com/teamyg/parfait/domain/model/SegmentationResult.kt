@@ -7,6 +7,6 @@ data class SegmentationResult(
     val subjectImagePath: String,
     /** 투명한 여백을 걷어내 객체 크기만 남긴 이미지. 미리보기·배치처럼 실제 보이는 크기가 필요할 때 쓴다 */
     val trimmedSubjectImagePath: String,
-    /** 위 둘을 오려낸 사진 전체의 긴 변. 업로드 배율의 분모다 */
+    /** 위 둘을 오려낸 사진 전체의 긴 변 */
     val sourceLongSide: SourceLongSide,
 )

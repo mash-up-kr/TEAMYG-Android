@@ -43,7 +43,6 @@ sealed interface UploadImagePlan {
          * 이미 JPEG 이고 상한 이하인 배경을 다시 구우면 손실만 더해진다.
          *
          * @param fileSize 올릴 파일의 치수. 누끼면 여백을 걷어낸 알맹이다
-         * @param sourceLongSide 누끼를 오려낸 사진 전체의 긴 변. 배경은 보지 않는다
          */
         fun of(
             fileSize: UploadImageSize,
@@ -100,7 +99,7 @@ sealed interface UploadImagePlan {
             )
         }
 
-        /** 로그용 — 실제 축소 판정에는 쓰이지 않는다. [NUKKI_SOURCE_LONG_SIDE] 를 밖으로 열지 않고 값만 넘긴다 */
+        /** 로그용 — 실제 축소 판정에는 쓰이지 않는다 */
         fun ruleScaleOf(sourceLongSide: SourceLongSide): Double = NUKKI_SOURCE_LONG_SIDE.toDouble() / sourceLongSide.px
 
         /** 배경은 캔버스를 덮는 불투명 이미지라 알파를 버려도 잃는 것이 없다 */

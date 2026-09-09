@@ -70,8 +70,6 @@ class UploadImageUseCaseTest {
 
     @Test
     fun invoke_doesNotForwardASourceLongSide() = runTest {
-        // 배경은 원본 배율을 쓰지 않는다(UploadImageUseCase KDoc·구현 참고) — 이 화면이
-        // sourceLongSide 를 알 방법이 없으므로 값을 지어내지 않고 null 을 명시해야 한다
         givenBothStepsSucceed()
         val sentSourceLongSide = slot<SourceLongSide?>()
 

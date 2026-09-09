@@ -55,8 +55,7 @@ class SegmentationViewModelTest {
     private val persistSubject: PersistSubjectUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
 
-    // AndroidBitmap 캐스팅이 성공해야(useOriginal 의 긴 변 계산 경로) 하므로 일반 mockk 대신
-    // 실제 android.graphics.Bitmap 을 감싼다. width·height 는 useOriginal 경로에서만 읽힌다
+    // useOriginal 의 긴 변 계산이 AndroidBitmap 캐스팅에 걸리므로 일반 mockk 로는 그 경로를 못 탄다
     private val originBitmap: Bitmap = mockk<Bitmap> {
         every { width } returns 3024
         every { height } returns ORIGIN_LONG_SIDE

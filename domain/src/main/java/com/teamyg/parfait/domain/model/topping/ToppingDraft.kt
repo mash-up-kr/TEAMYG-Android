@@ -10,7 +10,6 @@ import com.teamyg.parfait.domain.model.image.SourceLongSide
  *
  * @param subjectImagePath 파일 시스템 절대경로다. `file://` uri 가 아니다.
  * @param cutoutImagePath 재편집 시작 마스크. 좌표계를 지켜야 해 트리밍하지 않는다.
- * @param sourceLongSide 알맹이를 오려낸 사진 전체의 긴 변. 업로드 배율의 분모다
  */
 data class ToppingDraft(
     val groupId: GroupId,
