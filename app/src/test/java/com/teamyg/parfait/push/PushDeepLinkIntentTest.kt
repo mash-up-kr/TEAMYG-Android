@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 
 class PushDeepLinkIntentTest {
@@ -27,6 +28,26 @@ class PushDeepLinkIntentTest {
 
         // Then 지금 알림을 탭한 것이 아니므로 딥링크로 보지 않는다
         assertNull(result)
+    }
+
+    @Test
+    fun mapToPushDeepLinkOrNull_toppingPayload_readsTheGroupId() {
+        val data = mapOf("route" to "canvas", "groupId" to "34", "type" to "TOPPING")
+
+        assertEquals(PushDeepLink.AddTopping(groupId = 34L), data.toPushDeepLinkOrNull())
+    }
+
+    @Test
+    fun mapToPushDeepLinkOrNull_remindPayload_isNotAddTopping() {
+        val data = mapOf("route" to "group", "type" to "REMIND_AM")
+
+        // 리마인드에는 groupId 가 없다 — 이 갈림이 없으면 하루 두 번 엉뚱한 그룹이 되살아난다
+        assertIs<PushDeepLink.GroupList>(data.toPushDeepLinkOrNull())
+    }
+
+    @Test
+    fun mapToPushDeepLinkOrNull_unknownRoute_isNull() {
+        assertNull(mapOf("route" to "nowhere").toPushDeepLinkOrNull())
     }
 
     private fun pushIntent(flags: Int): Intent = mockk {

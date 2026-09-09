@@ -24,3 +24,13 @@ fun Intent.toPushDeepLinkOrNull(): PushDeepLink? {
         type = getStringExtra(EXTRA_TYPE),
     )
 }
+
+/**
+ * 포그라운드에서 받은 FCM `data` 를 읽는다. `Intent` 판과 달리 태스크 되살리기 검사가 없다 —
+ * 방금 도착한 메시지라 과거의 것일 수 없다.
+ */
+fun Map<String, String>.toPushDeepLinkOrNull(): PushDeepLink? = PushDeepLinkParser.parse(
+    route = this[EXTRA_ROUTE],
+    groupId = this[EXTRA_GROUP_ID],
+    type = this[EXTRA_TYPE],
+)

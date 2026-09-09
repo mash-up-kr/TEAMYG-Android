@@ -11,7 +11,10 @@ import com.teamyg.parfait.MainActivity
 import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
+import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -26,14 +29,18 @@ private val pushLogger = Loggers.create("Push")
  *
  * FCM 페이로드 스펙 v1은 세 알림(P-01/P-02/P-03) 모두 `notification` 블록을 항상 함께
  * 보낸다 — `data` 만 있는 payload는 지금 스펙에 없다. 그래서 [onMessageReceived] 는
- * `message.notification` 이 없으면 곧장 return 하고 `data` 는 안 본다. 나중에 `data`-only
- * payload(예: 알림 없이 상태만 조용히 갱신)가 스펙에 생기면, 그 분기를 여기 추가해야 한다 —
- * 지금은 처리하지 않는다.
+ * `message.notification` 이 없으면 곧장 return 한다. 알림을 띄운 뒤에는 같은 `data` 를
+ * 읽어 토핑 알림이면 오늘 캔버스 갱신을 요청한다
+ * (`specs/2026-09-10-canvas-adaptive-polling.md`). 나중에 `data`-only payload 가 스펙에
+ * 생기면 그 분기를 여기 추가해야 한다 — 지금은 처리하지 않는다.
  */
 @AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var deviceTokenRegistrar: DeviceTokenRegistrar
+
+    @Inject
+    lateinit var requestTodayParfaitRefresh: RequestTodayParfaitRefreshUseCase
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -45,6 +52,12 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
             data = message.data,
             notificationId = message.messageId?.hashCode() ?: System.currentTimeMillis().toInt(),
         )
+
+        // 남이 토핑을 올렸다는 신호다 — 폴링 주기를 기다리지 않고 바로 받아 온다
+        val deepLink = message.data.toPushDeepLinkOrNull()
+        if (deepLink is PushDeepLink.AddTopping) {
+            requestTodayParfaitRefresh(GroupId(deepLink.groupId))
+        }
     }
 
     /**
