@@ -8,7 +8,7 @@ import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -44,7 +44,7 @@ class SegmentationViewModelTest {
     private val clearSegmentationCache: ClearSegmentationCacheUseCase = mockk(relaxed = true)
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
-    private val toppingDraftRepository: ToppingDraftRepository = mockk(relaxed = true)
+    private val recordToppingDraft: RecordToppingDraftUseCase = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
 
@@ -87,7 +87,7 @@ class SegmentationViewModelTest {
         segmentImageUseCase = segmentImage,
         persistSubjectUseCase = persistSubject,
         saveBitmapUseCase = saveBitmap,
-        toppingDraftRepository = toppingDraftRepository,
+        recordToppingDraft = recordToppingDraft,
     )
 
     @Test
@@ -261,14 +261,14 @@ class SegmentationViewModelTest {
 
         // Then 아직 아무것도 떨구지 않는다 — 고르지도 않은 후보를 디스크에 쓰지 않는다
         coVerify(exactly = 0) { persistSubject(any()) }
-        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any()) }
     }
 
     @Test
     fun clickCandidate_succeeds_recordsTheDraftBeforeNavigating() = runTest {
         // Given 화면이 열려 후보가 실려 있다
         coEvery {
-            toppingDraftRepository.record(any(), any(), any(), any())
+            recordToppingDraft(any(), any(), any(), any())
         } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
@@ -280,7 +280,7 @@ class SegmentationViewModelTest {
         // Then 초안을 다 적은 뒤에 이동한다 — 순서가 뒤집히면 확인 화면이 초안 없음으로 잠긴 채 뜬다
         coVerifyOrder {
             persistSubject(candidate)
-            toppingDraftRepository.record(
+            recordToppingDraft(
                 subjectImagePath = TRIMMED_SUBJECT_PATH,
                 cutoutImagePath = SUBJECT_PATH,
                 borderColorArgb = null,
@@ -301,7 +301,7 @@ class SegmentationViewModelTest {
     @Test
     fun clickCandidate_succeeds_releasesTheLoadingOverlay() = runTest {
         // Given 화면이 열려 후보가 실려 있다
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -320,7 +320,7 @@ class SegmentationViewModelTest {
             delay(1_000)
             Result.success(success)
         }
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -354,7 +354,7 @@ class SegmentationViewModelTest {
     @Test
     fun clickCandidate_draftIsNotOpen_doesNotNavigate() = runTest {
         // Given 흐름이 열려 있지 않아 record 가 false 를 돌려주는 상황
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns false
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns false
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -369,7 +369,7 @@ class SegmentationViewModelTest {
     @Test
     fun clickCandidate_tappedTwice_persistsOnlyOnce() = runTest {
         // Given 화면이 열려 후보가 실려 있다
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -402,7 +402,7 @@ class SegmentationViewModelTest {
         // Given 후보가 둘 잡혀 있다
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
         coEvery { persistSubject(secondCandidate) } returns Result.success(success)
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -418,7 +418,7 @@ class SegmentationViewModelTest {
     @Test
     fun clickCandidate_tappedAgainAfterCompletion_persistsAgain() = runTest {
         // Given 첫 저장이 이미 끝난 상태
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
@@ -490,7 +490,7 @@ class SegmentationViewModelTest {
     fun useOriginal_savesOnceAndGoesToConfirm() = runTest {
         // Given 세그멘테이션이 실패해 실패 화면이 떠 있다
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -502,7 +502,7 @@ class SegmentationViewModelTest {
         coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
         coVerify(exactly = 0) { persistSubject(any()) }
         coVerify(exactly = 1) {
-            toppingDraftRepository.record(
+            recordToppingDraft(
                 subjectImagePath = ORIGIN_PATH,
                 cutoutImagePath = ORIGIN_PATH,
                 borderColorArgb = null,
@@ -535,7 +535,7 @@ class SegmentationViewModelTest {
         // Then 토스트로 알리고 실패 화면에 머문다 — 로딩에 갇히지도 않는다
         assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
-        coVerify(exactly = 0) { toppingDraftRepository.record(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any()) }
         viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
     }
 
@@ -547,7 +547,7 @@ class SegmentationViewModelTest {
             delay(1_000)
             Result.success(ORIGIN_PATH)
         }
-        coEvery { toppingDraftRepository.record(any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 

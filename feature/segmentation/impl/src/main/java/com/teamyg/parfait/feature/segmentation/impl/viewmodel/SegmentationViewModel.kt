@@ -11,13 +11,13 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -65,7 +65,7 @@ class SegmentationViewModel
     private val segmentImageUseCase: SegmentImageUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
@@ -158,7 +158,7 @@ class SegmentationViewModel
             persistSubjectUseCase(candidate)
                 .onSuccess { result ->
                     val recorded = runSuspendCatching {
-                        toppingDraftRepository.record(
+                        recordToppingDraft(
                             subjectImagePath = result.trimmedSubjectImagePath,
                             cutoutImagePath = result.subjectImagePath,
                             borderColorArgb = null,
@@ -212,7 +212,7 @@ class SegmentationViewModel
             }
 
             val recorded = runSuspendCatching {
-                toppingDraftRepository.record(
+                recordToppingDraft(
                     subjectImagePath = path,
                     cutoutImagePath = path,
                     borderColorArgb = null,
