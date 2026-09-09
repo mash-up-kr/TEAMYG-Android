@@ -75,6 +75,7 @@ class CanvasPoller @Inject constructor(
         }
         if (isFirst.not()) return
 
+        synchronized(lock) { interval.onReset(groupId) }
         restartPollTimer(groupId)
         scope.launch { refresh(groupId) }
     }
@@ -85,6 +86,7 @@ class CanvasPoller @Inject constructor(
             if (next <= 0) {
                 subscriberCounts.remove(groupId)
                 pollJobs.remove(groupId)?.cancel()
+                interval.forget(groupId)
             } else {
                 subscriberCounts[groupId] = next
             }
@@ -103,7 +105,10 @@ class CanvasPoller @Inject constructor(
     suspend fun refreshNow(groupId: GroupId): Result<Unit> {
         val result = refresh(groupId)
         synchronized(lock) {
-            if (subscriberCounts.containsKey(groupId)) restartPollTimerLocked(groupId)
+            if (subscriberCounts.containsKey(groupId)) {
+                interval.onReset(groupId)
+                restartPollTimerLocked(groupId)
+            }
         }
         return result
     }
@@ -122,6 +127,8 @@ class CanvasPoller @Inject constructor(
             generation++
             pollJobs.values.forEach(Job::cancel)
             pollJobs.clear()
+            // 구독자 없이 단계만 남은 그룹도 있으므로 키 순회로는 부족하다
+            interval.forgetAll()
             subscriberCounts.clear()
             refreshing.clear()
         }

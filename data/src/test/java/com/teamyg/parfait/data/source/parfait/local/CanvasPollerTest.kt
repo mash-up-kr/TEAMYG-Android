@@ -285,6 +285,50 @@ class CanvasPollerTest {
     }
 
     @Test
+    fun refreshNow_returnsToTheShortestInterval() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        advanceTimeBy(10.seconds)
+        runCurrent()
+
+        // 강제 갱신도 조회라, 이 회차까지 세면 되돌리기가 없을 때의 다음 주기는 20초다
+        poller.refreshNow(GROUP)
+        runCurrent()
+        val afterForced = remote.todayCallCount + remote.detailCallCount
+
+        // 되돌렸으니 10초에 나간다 — 되돌리지 않았다면 아직이다
+        advanceTimeBy(11.seconds)
+        runCurrent()
+
+        assertEquals(afterForced + 1, remote.todayCallCount + remote.detailCallCount)
+    }
+
+    @Test
+    fun release_thenAcquireAgain_startsFromTheShortestInterval() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        advanceTimeBy(10.seconds)
+        runCurrent()
+        poller.release(GROUP)
+
+        poller.acquire(GROUP)
+        runCurrent()
+        val afterReacquire = remote.todayCallCount + remote.detailCallCount
+
+        // 단계가 남아 있었다면 15초짜리라 아직 안 나갔을 시점이다
+        advanceTimeBy(11.seconds)
+        runCurrent()
+
+        assertEquals(afterReacquire + 1, remote.todayCallCount + remote.detailCallCount)
+    }
+
+    @Test
     fun refresh_whileAnotherIsInFlight_skipsThisRound() = runTest {
         val gate = CompletableDeferred<Unit>()
         val remote = FakeRemote(canvas(), gate)
