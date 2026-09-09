@@ -1,8 +1,12 @@
 package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.exception.ApiException
+import com.teamyg.parfait.data.model.exception.UnsupportedImageException
+import com.teamyg.parfait.data.model.image.PreparedUploadImage
+import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
+import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ConfirmedImageVO
@@ -27,9 +31,11 @@ import kotlin.time.Duration.Companion.seconds
 class ImageUploadRepositoryImplTest {
     private val imageRemoteDataSource: ImageRemoteDataSource = mockk()
     private val presignedUploadDataSource: PresignedUploadDataSource = mockk()
+    private val uploadImagePreprocessor: UploadImagePreprocessor = mockk()
     private val repository = ImageUploadRepositoryImpl(
         imageRemoteDataSource = imageRemoteDataSource,
         presignedUploadDataSource = presignedUploadDataSource,
+        uploadImagePreprocessor = uploadImagePreprocessor,
     )
 
     private lateinit var file: File
@@ -53,6 +59,16 @@ class ImageUploadRepositoryImplTest {
     }
 
     private fun givenAllStepsSucceed() {
+        coEvery { uploadImagePreprocessor.prepare(any(), any()) } answers {
+            val source = firstArg<File>()
+            Result.success(
+                PreparedUploadImage(
+                    file = source,
+                    format = UploadImageFormat.ofExtension(source.extension) ?: UploadImageFormat.PNG,
+                    isTemporary = false,
+                ),
+            )
+        }
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.success(issued)
         coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.success(Unit)
         // 확인 응답의 id 를 발급 id 와 다르게 둔다 — 같은 값이면 확인을 건너뛴 구현도 통과한다
@@ -187,6 +203,7 @@ class ImageUploadRepositoryImplTest {
     @Test
     fun upload_issueFails_doesNotPutOrConfirm() = runTest {
         // Given 발급이 실패한다
+        givenAllStepsSucceed()
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.failure(
             ApiException.Network(IOException("connection reset")),
         )
@@ -203,6 +220,7 @@ class ImageUploadRepositoryImplTest {
     @Test
     fun upload_putFails_doesNotConfirm() = runTest {
         // Given 발급은 되고 전송이 실패한다
+        givenAllStepsSucceed()
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.success(issued)
         coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(
             ApiException.Network(IOException("broken pipe")),
@@ -251,17 +269,90 @@ class ImageUploadRepositoryImplTest {
     }
 
     @Test
-    fun upload_unsupportedExtension_failsWithoutCallingServer() = runTest {
-        // Given 서버가 받지 않는 확장자다
-        val gif = File.createTempFile("topping", ".gif")
+    fun upload_preprocessorFails_failsWithoutCallingServer() = runTest {
+        // Given 전처리가 실패한다
+        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.failure(
+            UnsupportedImageException("서버가 받지 않는 확장자다 - heic"),
+        )
 
         // When 업로드한다
-        val result = repository.upload(filePath = gif.absolutePath, imageType = ImageType.NUKKI)
+        val result = repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
 
-        // Then 서버를 부르기 전에 끊고, 화면이 사진을 바꾸라고 말할 수 있는 갈래로 올린다
+        // Then 원본으로 폴백하지 않고, 화면이 사진을 바꾸라고 말할 수 있는 갈래로 올린다
         assertIs<AppError.UnsupportedImage>(result.exceptionOrNull())
         coVerify(exactly = 0) { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) }
-        gif.delete()
+    }
+
+    @Test
+    fun upload_preprocessorReencoded_usesPreparedFileAndFormat() = runTest {
+        // Given 전처리가 JPEG 축소본을 새로 만들었다
+        givenAllStepsSucceed()
+        val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
+        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+            PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
+        )
+        val issuedContentType = slot<String>()
+        val putContentType = slot<String>()
+        val putFile = slot<File>()
+        coEvery {
+            imageRemoteDataSource.issueUploadUrl(any(), capture(issuedContentType), any())
+        } returns Result.success(issued)
+        coEvery {
+            presignedUploadDataSource.put(any(), capture(putContentType), capture(putFile))
+        } returns Result.success(Unit)
+
+        // When 업로드한다
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+
+        // Then 원본이 아니라 축소본이, 그리고 발급과 PUT 이 같은 contentType 으로 나간다
+        assertEquals(prepared.absolutePath, putFile.captured.absolutePath)
+        assertEquals("image/jpeg", issuedContentType.captured)
+        assertEquals(issuedContentType.captured, putContentType.captured)
+    }
+
+    @Test
+    fun upload_temporaryPreparedFile_isDeletedAfterUpload() = runTest {
+        // Given 전처리가 임시 파일을 만들었고 업로드가 성공한다
+        givenAllStepsSucceed()
+        val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
+        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+            PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
+        )
+
+        // When 업로드한다
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+
+        // Then 축소본은 남지 않는다 - 캐시가 쌓이기만 하는 자리를 늘리지 않는다
+        assertEquals(false, prepared.exists())
+    }
+
+    @Test
+    fun upload_temporaryPreparedFile_isDeletedEvenWhenPutFails() = runTest {
+        // Given 전처리는 임시 파일을 만들었으나 전송이 실패한다
+        givenAllStepsSucceed()
+        val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
+        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+            PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
+        )
+        coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(IOException("boom"))
+
+        // When 업로드한다
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND)
+
+        // Then 실패해도 지운다
+        assertEquals(false, prepared.exists())
+    }
+
+    @Test
+    fun upload_passthroughFile_isNotDeleted() = runTest {
+        // Given 전처리가 원본을 그대로 통과시켰다
+        givenAllStepsSucceed()
+
+        // When 업로드한다
+        repository.upload(filePath = file.absolutePath, imageType = ImageType.NUKKI)
+
+        // Then 남의 파일을 지우지 않는다 - 그 수명은 부른 쪽이 쥐고 있다
+        assertEquals(true, file.exists())
     }
 
     private companion object {
