@@ -405,7 +405,7 @@ class CanvasToppingPlaceViewModel
                     // PlaceSucceeded 뒤로 옮기면 되감기가 문 viewModelScope 취소로 아예 안 돈다
                     requestTodayParfaitRefreshUseCase(groupId)
 
-                    // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
+                    // 되감기를 먼저 알린다 — clearToppingDraft() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
                     postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
                     clearToppingDraft()

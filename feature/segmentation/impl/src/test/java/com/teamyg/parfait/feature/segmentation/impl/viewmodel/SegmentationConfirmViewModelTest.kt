@@ -178,6 +178,7 @@ class SegmentationConfirmViewModelTest {
         // Then 화면이 열렸다는 이유로 초안에 쓰지 않는다 — 프로세스 사망 복원에서 진입 인자가
         // 편집 결과를 덮어쓰는 경로가 그렇게 생긴다
         coVerify(exactly = 0) { ensureDraftSubjectRecorded(any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any()) }
     }
 
     @Test
