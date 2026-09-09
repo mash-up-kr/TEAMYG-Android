@@ -30,7 +30,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
         // 축소본이 원본보다 메모리를 덜 쓰므로 실패한 자리에서 원본으로 되돌리는 것은 더 큰
         // 메모리를 요구하는 선택이다. 폴백하지 않는다
         val prepared = uploadImagePreprocessor
-            .prepare(file = file, imageType = imageType)
+            .prepare(file = file, imageType = imageType, sourceLongSide = null)
             .getOrElse { return Result.failure(it.toAppError()) }
 
         return try {

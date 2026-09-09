@@ -59,7 +59,7 @@ class ImageUploadRepositoryImplTest {
     }
 
     private fun givenAllStepsSucceed() {
-        coEvery { uploadImagePreprocessor.prepare(any(), any()) } answers {
+        coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } answers {
             val source = firstArg<File>()
             Result.success(
                 PreparedUploadImage(
@@ -271,7 +271,7 @@ class ImageUploadRepositoryImplTest {
     @Test
     fun upload_preprocessorFails_failsWithoutCallingServer() = runTest {
         // Given 전처리가 실패한다
-        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.failure(
+        coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } returns Result.failure(
             UnsupportedImageException("서버가 받지 않는 확장자다 - heic"),
         )
 
@@ -288,7 +288,7 @@ class ImageUploadRepositoryImplTest {
         // Given 전처리가 JPEG 축소본을 새로 만들었다
         givenAllStepsSucceed()
         val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
-        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+        coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } returns Result.success(
             PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
         )
         val issuedContentType = slot<String>()
@@ -315,7 +315,7 @@ class ImageUploadRepositoryImplTest {
         // Given 전처리가 임시 파일을 만들었고 업로드가 성공한다
         givenAllStepsSucceed()
         val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
-        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+        coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } returns Result.success(
             PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
         )
 
@@ -331,7 +331,7 @@ class ImageUploadRepositoryImplTest {
         // Given 전처리는 임시 파일을 만들었으나 전송이 실패한다
         givenAllStepsSucceed()
         val prepared = File.createTempFile("prepared", ".jpg").also { it.writeBytes(ByteArray(FILE_SIZE)) }
-        coEvery { uploadImagePreprocessor.prepare(any(), any()) } returns Result.success(
+        coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } returns Result.success(
             PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
         )
         coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(IOException("boom"))
