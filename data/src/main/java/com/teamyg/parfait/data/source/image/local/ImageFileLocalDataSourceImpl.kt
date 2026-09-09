@@ -60,7 +60,7 @@ constructor(
         return sniffed
     }
 
-    private companion object {
+    internal companion object {
         const val UPLOAD_DIR_NAME = "upload"
     }
 }
