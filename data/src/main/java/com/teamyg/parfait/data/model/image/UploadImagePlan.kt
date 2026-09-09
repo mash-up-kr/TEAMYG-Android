@@ -78,7 +78,7 @@ sealed interface UploadImagePlan {
          * 원본이 [NUKKI_SOURCE_LONG_SIDE] 였다면 이 알맹이가 가졌을 크기. 결과가 너무 잘아지면
          * [NUKKI_MIN_LONG_SIDE] 까지 되돌리되, **되돌림의 상한이 `fileSize` 자신이라 확대가 아니다.**
          *
-         * 하한을 입력이 아니라 결과에 거는 이유는 `specs/…-topping-upload-source-scaled.md` 「하한」.
+         * 하한을 입력이 아니라 결과에 거는 이유는 `specs/2026-09-09-topping-upload-source-scaled.md` 「하한」.
          */
         private fun scaledBySource(
             fileSize: UploadImageSize,
@@ -99,6 +99,9 @@ sealed interface UploadImagePlan {
                 height = (fileSize.height * ratio).roundToInt().coerceAtLeast(1),
             )
         }
+
+        /** 로그용 — 실제 축소 판정에는 쓰이지 않는다. [NUKKI_SOURCE_LONG_SIDE] 를 밖으로 열지 않고 값만 넘긴다 */
+        fun ruleScaleOf(sourceLongSide: SourceLongSide): Double = NUKKI_SOURCE_LONG_SIDE.toDouble() / sourceLongSide.px
 
         /** 배경은 캔버스를 덮는 불투명 이미지라 알파를 버려도 잃는 것이 없다 */
         private fun uploadFormatOf(

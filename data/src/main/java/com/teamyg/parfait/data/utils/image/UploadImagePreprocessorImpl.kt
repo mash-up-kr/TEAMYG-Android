@@ -52,18 +52,26 @@ constructor(
 
             when (val plan = UploadImagePlan.of(fileSize, imageType, sourceFormat, sourceLongSide)) {
                 UploadImagePlan.Passthrough -> {
+                    sourceLogger.i {
+                        "업로드 이미지를 줄이지 않았다 - ${fileSize.width}x${fileSize.height}, " +
+                            "원본 긴 변 ${sourceLongSide?.px ?: "모름"}"
+                    }
                     PreparedUploadImage(file = file, format = sourceFormat, isTemporary = false)
                 }
 
                 is UploadImagePlan.Reencode -> {
                     val reencoded = writeReencoded(file, fileSize, plan)
+                    val effectiveScale = maxOf(plan.targetSize.width, plan.targetSize.height).toDouble() /
+                        maxOf(fileSize.width, fileSize.height)
+                    val ruleScaleText = sourceLongSide
+                        ?.let { "%.3f".format(UploadImagePlan.ruleScaleOf(it)) }
+                        ?: "모름"
                     sourceLogger.i {
                         "업로드 이미지를 줄였다 - ${fileSize.width}x${fileSize.height} ${file.length()}B " +
                             "→ ${reencoded.size.width}x${reencoded.size.height} ${reencoded.file.length()}B " +
                             "(${plan.format.contentType}, 회전 ${reencoded.rotationDegrees}도, " +
                             "원본 긴 변 ${sourceLongSide?.px ?: "모름"}, " +
-                            "배율 ${maxOf(plan.targetSize.width, plan.targetSize.height).toDouble() /
-                                maxOf(fileSize.width, fileSize.height)})"
+                            "규칙 배율 $ruleScaleText, 실효 배율 ${"%.3f".format(effectiveScale)})"
                     }
                     PreparedUploadImage(file = reencoded.file, format = plan.format, isTemporary = true)
                 }
@@ -82,7 +90,7 @@ constructor(
     }
 
     /**
-     * 축소 → 회전 → 합성 순서와 그 근거는 `specs/2026-09-08-upload-image-downscale.md` 의
+     * 축소 → 회전 → 합성 순서와 그 근거는 `specs/archive/2026-09-08-upload-image-downscale.md` 의
      * 「EXIF 회전」·「메모리」 절에 있다. 순서를 바꾸면 원본 해상도 판이 두 장 동시에 산다.
      *
      * 구운 치수를 함께 돌려주는 이유: 호출부가 로그를 남기려고 파일을 다시 디코드하면
@@ -142,7 +150,7 @@ constructor(
     /**
      * `inSampleSize` 는 2 의 거듭제곱 계단이라 목표보다 훨씬 큰 판이 남을 수 있다 — 배경의
      * 2049~4095 구간이 `sampleSize` 1 에 걸려 원본 해상도 그대로다. 밀도 비로 디코드 시점에
-     * 목표까지 마저 줄인다(근거는 `specs/2026-09-08-upload-image-downscale.md` 「메모리」).
+     * 목표까지 마저 줄인다(근거는 `specs/archive/2026-09-08-upload-image-downscale.md` 「메모리」).
      *
      * 기준 축은 **덜 줄여도 되는 쪽**이다. 그 축은 정확히 목표가 되고 남는 축은 반올림이
      * 어느 쪽으로 가든 목표 이상이라, 뒤따르는 `createScaledBitmap` 이 확대로 돌 수 없다.

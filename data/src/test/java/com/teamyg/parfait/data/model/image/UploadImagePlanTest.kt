@@ -36,12 +36,12 @@ class UploadImagePlanTest {
 
     @Test
     fun of_limitDiffersByImageType() {
-        // Given 두 상한 사이에 놓인 크기다 - 누끼 1500 초과, 배경 2048 이하
-        val sourceSize = UploadImageSize(width = 1600, height = 1200)
+        // Given 두 상한 사이에 놓인 크기다 - 누끼 1280 초과, 배경 2048 이하
+        val fileSize = UploadImageSize(width = 1600, height = 1200)
 
         // When 같은 크기를 두 용도로 계획한다
-        val nukkiPlan = UploadImagePlan.of(sourceSize, ImageType.NUKKI, UploadImageFormat.JPEG, null)
-        val backgroundPlan = UploadImagePlan.of(sourceSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
+        val nukkiPlan = UploadImagePlan.of(fileSize, ImageType.NUKKI, UploadImageFormat.JPEG, null)
+        val backgroundPlan = UploadImagePlan.of(fileSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
 
         // Then 용도마다 상한이 달라 결과가 갈린다
         assertIs<UploadImagePlan.Reencode>(nukkiPlan)
@@ -51,24 +51,24 @@ class UploadImagePlanTest {
     @Test
     fun of_backgroundPngUnderLimit_reencodesToJpeg() {
         // Given 상한 이하인 PNG 스크린샷을 배경으로 고른다
-        val sourceSize = UploadImageSize(width = 1080, height = 1920)
+        val fileSize = UploadImageSize(width = 1080, height = 1920)
 
         // When 계획을 세운다
-        val plan = UploadImagePlan.of(sourceSize, ImageType.BACKGROUND, UploadImageFormat.PNG, null)
+        val plan = UploadImagePlan.of(fileSize, ImageType.BACKGROUND, UploadImageFormat.PNG, null)
 
         // Then 치수는 그대로지만 포맷 때문에 다시 굽는다
         val reencode = assertIs<UploadImagePlan.Reencode>(plan)
-        assertEquals(sourceSize, reencode.targetSize)
+        assertEquals(fileSize, reencode.targetSize)
         assertEquals(UploadImageFormat.JPEG, reencode.format)
     }
 
     @Test
     fun of_backgroundJpegAtExactLimit_passesThrough() {
         // Given 긴 변이 배경 상한과 정확히 같다
-        val sourceSize = UploadImageSize(width = 2048, height = 1000)
+        val fileSize = UploadImageSize(width = 2048, height = 1000)
 
         // When 계획을 세운다
-        val plan = UploadImagePlan.of(sourceSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
+        val plan = UploadImagePlan.of(fileSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
 
         // Then 경계값은 축소 대상이 아니다
         assertEquals(UploadImagePlan.Passthrough, plan)
@@ -77,10 +77,10 @@ class UploadImagePlanTest {
     @Test
     fun of_backgroundJpegOneOverLimit_scales() {
         // Given 긴 변이 상한보다 1px 크다
-        val sourceSize = UploadImageSize(width = 2049, height = 1000)
+        val fileSize = UploadImageSize(width = 2049, height = 1000)
 
         // When 계획을 세운다
-        val plan = UploadImagePlan.of(sourceSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
+        val plan = UploadImagePlan.of(fileSize, ImageType.BACKGROUND, UploadImageFormat.JPEG, null)
 
         // Then 축소한다
         val reencode = assertIs<UploadImagePlan.Reencode>(plan)
