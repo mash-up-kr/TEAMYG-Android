@@ -169,7 +169,14 @@ class CanvasPoller @Inject constructor(
             return result
                 .onSuccess { canvas ->
                     synchronized(lock) {
-                        if (generation == startedGeneration) local.saveTodayCanvas(groupId, canvas)
+                        if (generation == startedGeneration) {
+                            // 구독자가 없는 갱신(화면 밖 푸시)이 단계를 올려 두면 다음 진입의 첫
+                            // 주기가 10초가 아니게 된다. 첫 조회(cached == null)는 변화로 친다
+                            if (subscriberCounts.containsKey(groupId)) {
+                                if (cached != canvas) interval.onChanged(groupId) else interval.onUnchanged(groupId)
+                            }
+                            local.saveTodayCanvas(groupId, canvas)
+                        }
                     }
                 }.onFailure {
                     // 세대가 바뀌었으면 이미 버려진 갱신의 실패라 화면에 알리지 않는다

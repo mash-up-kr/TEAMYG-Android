@@ -49,10 +49,12 @@ class CanvasPollerTest {
      * `error("폴러가 부르지 않는다")` 로 채운다.
      */
     private class FakeRemote(
-        private val response: CanvasVO,
+        response: CanvasVO,
         private val gate: CompletableDeferred<Unit>? = null,
         private val failure: Throwable? = null,
     ) : ParfaitRemoteDataSource {
+        /** 폴링 도중에 서버가 다른 값을 주는 상황을 만드는 데 쓴다 */
+        var response: CanvasVO = response
         var todayCallCount = 0
             private set
         var detailCallCount = 0
@@ -132,6 +134,61 @@ class CanvasPollerTest {
 
         assertEquals(1, remote.todayCallCount)
         assertEquals(0, remote.detailCallCount)
+    }
+
+    @Test
+    fun poll_whenNothingChanges_stretchesTheInterval() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        val afterFirst = remote.todayCallCount + remote.detailCallCount
+
+        // 첫 주기 10초, 그다음 15초 — 24초로는 두 번째 주기가 아직 차지 않는다
+        advanceTimeBy(24.seconds)
+        runCurrent()
+
+        assertEquals(afterFirst + 1, remote.todayCallCount + remote.detailCallCount)
+    }
+
+    @Test
+    fun poll_whenTheCanvasChanges_returnsToTheShortestInterval() = runTest {
+        val remote = FakeRemote(canvas())
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        advanceTimeBy(10.seconds)
+        runCurrent()
+
+        // 같은 값이 두 번 왔으니 다음 주기는 15초다. 그 회차에서 값이 달라진다
+        remote.response = canvas().copy(lastClosedDate = LocalDate(2026, 1, 1))
+        advanceTimeBy(15.seconds)
+        runCurrent()
+        val afterChange = remote.todayCallCount + remote.detailCallCount
+
+        // 변화를 봤으니 10초로 돌아온다 — 15초짜리 주기였다면 아직 안 나갔을 시점이다
+        advanceTimeBy(11.seconds)
+        runCurrent()
+
+        assertEquals(afterChange + 1, remote.todayCallCount + remote.detailCallCount)
+    }
+
+    @Test
+    fun poll_whenItFails_doesNotStretchTheInterval() = runTest {
+        val remote = FakeRemote(canvas(), failure = IllegalStateException("실패"))
+        val poller = CanvasPoller(backgroundScope, remote, CanvasLocalDataSourceImpl())
+
+        poller.acquire(GROUP)
+        runCurrent()
+        val afterFirst = remote.todayCallCount + remote.detailCallCount
+
+        // 실패를 변화 없음으로 세면 두 번째 주기가 15초가 되어 24초에 두 번이 안 나간다
+        advanceTimeBy(24.seconds)
+        runCurrent()
+
+        assertEquals(afterFirst + 2, remote.todayCallCount + remote.detailCallCount)
     }
 
     @Test
