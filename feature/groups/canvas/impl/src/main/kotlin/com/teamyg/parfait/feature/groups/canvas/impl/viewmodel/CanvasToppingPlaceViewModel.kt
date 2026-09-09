@@ -22,11 +22,12 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
@@ -139,7 +140,8 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
 @HiltViewModel
 class CanvasToppingPlaceViewModel
 @Inject constructor(
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
+    private val clearToppingDraft: ClearToppingDraftUseCase,
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
@@ -164,7 +166,7 @@ class CanvasToppingPlaceViewModel
 
     private fun observeDraft() {
         launch(onError = { postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing) }) {
-            toppingDraftRepository.draft.collect { draft ->
+            getToppingDraftFlow().collect { draft ->
                 updateState {
                     copy(
                         toppingImagePath = draft?.subjectImagePath,
@@ -406,7 +408,7 @@ class CanvasToppingPlaceViewModel
                     // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
                     postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
-                    toppingDraftRepository.clear()
+                    clearToppingDraft()
                 }.onFailure { throwable ->
                     val error = throwable as? AppError ?: AppError.Unexpected(throwable)
                     postSideEffect(
