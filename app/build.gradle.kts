@@ -4,6 +4,10 @@ val localProperties = Properties().apply {
     rootProject.file("local.properties").inputStream().use { load(it) }
 }
 
+// 기본값은 빌드 타입을 따르되 -Panalytics.isDebug 로 덮어쓴다. debug 빌드로도 운영과 같은
+// 조건을 만들어 GA4 에서 확인하기 위한 것이다.
+val analyticsIsDebugOverride: String? = providers.gradleProperty("analytics.isDebug").orNull
+
 plugins {
     alias(libs.plugins.parfait.android.application)
     alias(libs.plugins.parfait.android.application.signing)
@@ -33,6 +37,23 @@ android {
             "KAKAO_NATIVE_APP_KEY",
             "\"${localProperties.getProperty("kakao.native.app.key")}\"",
         )
+    }
+
+    buildTypes {
+        release {
+            buildConfigField(
+                "boolean",
+                "ANALYTICS_IS_DEBUG",
+                analyticsIsDebugOverride ?: "false",
+            )
+        }
+        debug {
+            buildConfigField(
+                "boolean",
+                "ANALYTICS_IS_DEBUG",
+                analyticsIsDebugOverride ?: "true",
+            )
+        }
     }
 
     buildFeatures {
