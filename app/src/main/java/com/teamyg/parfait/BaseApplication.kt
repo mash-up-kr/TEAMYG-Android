@@ -49,7 +49,7 @@ class BaseApplication :
     }
 
     // debug 와 release 가 같은 GA4 속성으로 들어간다(applicationIdSuffix 가 없다).
-    // 둘을 가르는 것은 IS_DEBUG 뿐이다 — adr/0031-analytics-central-screen-mapping.md.
+    // 둘을 가르는 것은 IS_DEBUG 뿐이다 — parfait/adr/0031-analytics-central-screen-mapping.md.
     private fun setUpAnalytics() {
         analyticsLogger.setCollectionEnabled(true)
 

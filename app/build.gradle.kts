@@ -6,7 +6,8 @@ val localProperties = Properties().apply {
 
 // 기본값은 빌드 타입을 따르되 -Panalytics.isDebug 로 덮어쓴다. debug 빌드로도 운영과 같은
 // 조건을 만들어 GA4 에서 확인하기 위한 것이다.
-val analyticsIsDebugOverride: String? = providers.gradleProperty("analytics.isDebug").orNull
+val analyticsIsDebugOverride: String? =
+    providers.gradleProperty("analytics.isDebug").orNull?.let { if (it == "true") "true" else "false" }
 
 plugins {
     alias(libs.plugins.parfait.android.application)
