@@ -9,6 +9,9 @@ internal enum class CanvasLoadState { Loading, Loaded, Failed }
  *
  * 실패가 있으면 나머지를 기다리지 않는다 — 다 기다린 뒤에 말하면 그만큼 늦는다.
  * 빈 목록은 실패가 아니다 — 기다릴 것이 없는 캔버스도 온전한 캔버스다.
+ *
+ * 이 접기 결과를 전체 덮개로 옮기는 것은 `CanvasMainRoute`의 `firstPaintDone`이 서기
+ * 전까지다. 그 뒤에 온 `Failed`는 덮개를 띄우지 않고, 실패한 토핑만 그려지지 않는다.
  */
 internal fun canvasLoadState(states: List<CanvasLoadState>): CanvasLoadState = when {
     states.any { it == CanvasLoadState.Failed } -> CanvasLoadState.Failed

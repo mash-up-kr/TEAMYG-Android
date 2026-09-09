@@ -278,10 +278,21 @@ internal fun CanvasMainRoute(
 
     // 폴링이 남이 올린 토핑을 실어 올 때마다 보고 있던 캔버스가 덮개 뒤로 사라져서다
     val displayedCanvasId = canvasState.displayedCanvas?.parfaitId
-    var sawLoading by remember(displayedCanvasId) { mutableStateOf(false) }
-    var firstPaintDone by remember(displayedCanvasId) { mutableStateOf(false) }
+    var sawLoading by remember { mutableStateOf(false) }
+    var firstPaintDone by remember { mutableStateOf(false) }
+    var paintedCanvasId by remember { mutableStateOf(displayedCanvasId) }
 
     LaunchedEffect(displayedCanvasId, canvasState.isInitialLoading, loadState) {
+        // 캔버스가 처음 실리는 null -> id 전이에서 초기화하면, 진입 로딩에서 얻어 둔 관측을
+        // 잃는다. 토핑도 배경도 없는 캔버스는 loadState 가 Loaded 를 안 벗어나 다시 못 얻는다
+        if (displayedCanvasId != null && paintedCanvasId != null && displayedCanvasId != paintedCanvasId) {
+            sawLoading = false
+            firstPaintDone = false
+        }
+        if (displayedCanvasId != null) {
+            paintedCanvasId = displayedCanvasId
+        }
+
         // loadState 는 아직 아무 이미지도 안 붙은 첫 컴포지션에서도 Loaded 다. 로딩을 한 번
         // 본 뒤로 좁히지 않으면 캐시된 캔버스로 들어올 때 덮개가 아예 안 뜬다
         when {
