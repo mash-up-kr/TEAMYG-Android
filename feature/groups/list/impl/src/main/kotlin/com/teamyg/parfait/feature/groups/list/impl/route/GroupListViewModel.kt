@@ -15,6 +15,8 @@ import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.format
 import javax.inject.Inject
@@ -199,6 +201,9 @@ constructor(
     /**
      * 새로고침 표시를 [launch] 밖에서 켜는 이유: 당겨서 새로고침이 [KEY_LOAD_GROUPS] 가드에
      * 막혀도 인디케이터는 돌아야 하고, 실제로도 조회가 돌고 있다.
+     *
+     * 최소 노출 타이머를 조회 뒤가 아니라 옆에 세우는 이유: 뒤에 붙이면 이미 느린 통신에
+     * 그만큼이 더 얹힌다.
      */
     private fun loadGroups(isRefresh: Boolean) {
         if (isRefresh) {
@@ -212,13 +217,19 @@ constructor(
             }
 
             try {
-                refreshMyGroups()
-                    .onSuccess { updateState { copy(isError = false) } }
-                    .onFailure { throwable ->
-                        handleLoadFailure(throwable, isRefresh)
-                        // 실패하면 캐시가 아무것도 내지 않아 덮개를 걷어 줄 쪽이 없다
-                        updateState { copy(isInitialLoading = false) }
+                coroutineScope {
+                    if (isRefresh) {
+                        launch { delay(REFRESH_MINIMUM_VISIBLE_MILLIS) }
                     }
+
+                    refreshMyGroups()
+                        .onSuccess { updateState { copy(isError = false) } }
+                        .onFailure { throwable ->
+                            handleLoadFailure(throwable, isRefresh)
+                            // 실패하면 캐시가 아무것도 내지 않아 덮개를 걷어 줄 쪽이 없다
+                            updateState { copy(isInitialLoading = false) }
+                        }
+                }
             } finally {
                 updateState { copy(isRefreshing = false) }
             }
@@ -259,5 +270,8 @@ constructor(
 
     private companion object {
         const val KEY_LOAD_GROUPS = "loadGroups"
+
+        /** 통신이 순식간에 끝나면 인디케이터가 깜빡이기만 하고 사라져 새로고침이 돈 것을 알 수 없다 */
+        const val REFRESH_MINIMUM_VISIBLE_MILLIS = 500L
     }
 }

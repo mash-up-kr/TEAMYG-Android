@@ -19,10 +19,12 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -248,6 +250,59 @@ class GroupListViewModelTest {
 
         // Then 실패가 남으면 성공한 조회를 볼 자리가 없다
         assertFalse(viewModel.state.value.isError)
+    }
+
+    @Test
+    fun refresh_returnsInstantly_keepsTheIndicatorUntilTheMinimumTime() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 통신이 눈 깜짝할 새 끝나는 상황
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        // When 당겨서 새로고침을 하고 최소 노출 시간이 차기 직전까지만 시간을 흘린다
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS - 1)
+        runCurrent()
+
+        // Then 조회가 끝났다고 바로 걷으면 인디케이터가 깜빡이기만 하고 사라진다
+        assertTrue(viewModel.state.value.isRefreshing)
+    }
+
+    @Test
+    fun refresh_afterTheMinimumTime_stopsTheIndicator() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 통신이 눈 깜짝할 새 끝나는 상황
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        // When 당겨서 새로고침을 하고 최소 노출 시간을 채운다
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS)
+        runCurrent()
+
+        // Then 최소 노출 시간은 걷을 시점을 미룰 뿐이라, 다 채우면 더 붙잡지 않는다
+        assertFalse(viewModel.state.value.isRefreshing)
+    }
+
+    @Test
+    fun refresh_slowerThanTheMinimumTime_doesNotWaitAnyLonger() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 최소 노출 시간보다 오래 걸리는 통신
+        val slowQueryMillis = REFRESH_MINIMUM_VISIBLE_MILLIS * 2
+        every { getMyGroupsFlow() } returns flowOf(GROUPS)
+        coEvery { refreshMyGroups() } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        // When 조회가 끝나는 시점까지만 시간을 흘린다
+        coEvery { refreshMyGroups() } coAnswers {
+            delay(slowQueryMillis)
+            Result.success(Unit)
+        }
+        viewModel.processIntent(GroupListIntent.Refresh)
+        advanceTimeBy(slowQueryMillis)
+        runCurrent()
+
+        // Then 이미 최소 노출 시간을 넘겼으므로 조회 뒤에 지연을 더 얹지 않는다
+        assertFalse(viewModel.state.value.isRefreshing)
     }
 
     @Test
@@ -612,6 +667,8 @@ class GroupListViewModelTest {
     }
 
     private companion object {
+        const val REFRESH_MINIMUM_VISIBLE_MILLIS = 500L
+
         val ACCOUNT = MyAccountVO(
             memberId = MemberId(1L),
             provider = LoginProvider.KAKAO,
