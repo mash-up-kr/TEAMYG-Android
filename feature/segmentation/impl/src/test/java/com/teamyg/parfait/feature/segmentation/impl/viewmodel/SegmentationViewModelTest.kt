@@ -1,13 +1,16 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
+import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
@@ -18,6 +21,7 @@ import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -36,6 +40,9 @@ private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
 private const val TRIMMED_SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
 private const val ORIGIN_PATH = "/cache/segmentation/origin.png"
 
+/** [bitmapWrapper]가 감싸는 원본 판의 긴 변. 「편집 없이 사용」에서 곧 사진 전체의 긴 변이 된다 */
+private const val ORIGIN_LONG_SIDE = 4032
+
 class SegmentationViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -48,7 +55,13 @@ class SegmentationViewModelTest {
     private val persistSubject: PersistSubjectUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
 
-    private val bitmapWrapper: BitmapWrapper = mockk(relaxed = true)
+    // AndroidBitmap 캐스팅이 성공해야(useOriginal 의 긴 변 계산 경로) 하므로 일반 mockk 대신
+    // 실제 android.graphics.Bitmap 을 감싼다. width·height 는 useOriginal 경로에서만 읽힌다
+    private val originBitmap: Bitmap = mockk<Bitmap> {
+        every { width } returns 3024
+        every { height } returns ORIGIN_LONG_SIDE
+    }
+    private val bitmapWrapper: BitmapWrapper = originBitmap.toAndroidBitmap()
 
     private val candidate = SegmentationCandidate(
         bounds = SegmentationBounds(left = 0, top = 0, right = 10, bottom = 10),
@@ -69,6 +82,7 @@ class SegmentationViewModelTest {
     private val success = SegmentationResult(
         subjectImagePath = SUBJECT_PATH,
         trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
+        sourceLongSide = SourceLongSide(2048),
     )
 
     @Before
@@ -285,7 +299,7 @@ class SegmentationViewModelTest {
                 cutoutImagePath = SUBJECT_PATH,
                 borderColorArgb = null,
                 borderWidthDp = null,
-                sourceLongSide = null,
+                sourceLongSide = success.sourceLongSide,
             )
         }
         viewModel.effect.test {
@@ -295,6 +309,36 @@ class SegmentationViewModelTest {
                     trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
                 ),
                 awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun selectCandidate_recordsSourceLongSideFromResult() = runTest {
+        // Given 누끼 저장이 원본 긴 변을 함께 돌려준다
+        coEvery { persistSubject(any()) } returns Result.success(
+            SegmentationResult(
+                subjectImagePath = "/cache/canvas.png",
+                trimmedSubjectImagePath = "/cache/trimmed.png",
+                sourceLongSide = SourceLongSide(4032),
+            ),
+        )
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 후보를 고른다
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
+        advanceUntilIdle()
+
+        // Then 그 값이 초안에 실린다
+        coVerify {
+            recordToppingDraft(
+                subjectImagePath = "/cache/trimmed.png",
+                cutoutImagePath = "/cache/canvas.png",
+                borderColorArgb = null,
+                borderWidthDp = null,
+                sourceLongSide = SourceLongSide(4032),
             )
         }
     }
@@ -508,7 +552,7 @@ class SegmentationViewModelTest {
                 cutoutImagePath = ORIGIN_PATH,
                 borderColorArgb = null,
                 borderWidthDp = null,
-                sourceLongSide = null,
+                sourceLongSide = SourceLongSide(ORIGIN_LONG_SIDE),
             )
         }
         viewModel.effect.test {
@@ -518,6 +562,30 @@ class SegmentationViewModelTest {
                     trimmedSubjectImagePath = ORIGIN_PATH,
                 ),
                 awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun useOriginal_recordsSourceLongSideFromOriginBitmap() = runTest {
+        // Given 원본 판을 그대로 토핑 재료로 쓴다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 편집 없이 사용을 고른다
+        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        advanceUntilIdle()
+
+        // Then 원본이 곧 알맹이라 그 비트맵의 긴 변이 실린다
+        coVerify {
+            recordToppingDraft(
+                subjectImagePath = any(),
+                cutoutImagePath = any(),
+                borderColorArgb = null,
+                borderWidthDp = null,
+                sourceLongSide = SourceLongSide(ORIGIN_LONG_SIDE),
             )
         }
     }

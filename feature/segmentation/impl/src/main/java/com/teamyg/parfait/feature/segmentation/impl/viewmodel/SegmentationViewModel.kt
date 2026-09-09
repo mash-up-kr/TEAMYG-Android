@@ -11,6 +11,7 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -163,7 +164,7 @@ class SegmentationViewModel
                             cutoutImagePath = result.subjectImagePath,
                             borderColorArgb = null,
                             borderWidthDp = null,
-                            sourceLongSide = null,
+                            sourceLongSide = result.sourceLongSide,
                         )
                     }.getOrDefault(false)
 
@@ -206,6 +207,11 @@ class SegmentationViewModel
         ) {
             updateState { copy(isLoading = true) }
 
+            // 이 경로는 원본이 곧 알맹이라 사진 전체의 긴 변이 비트맵의 긴 변이다
+            val sourceLongSide = (originBitmapWrapper as? AndroidBitmap)
+                ?.getRawData()
+                ?.let { SourceLongSide(maxOf(it.width, it.height)) }
+
             val path = saveBitmapUseCase(originBitmapWrapper).getOrElse {
                 releaseLoading()
                 postSideEffect(SegmentationEffect.ShowError)
@@ -218,7 +224,7 @@ class SegmentationViewModel
                     cutoutImagePath = path,
                     borderColorArgb = null,
                     borderWidthDp = null,
-                    sourceLongSide = null,
+                    sourceLongSide = sourceLongSide,
                 )
             }.getOrDefault(false)
 
