@@ -48,10 +48,11 @@ class BaseApplication :
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    // debug 와 release 가 같은 GA4 속성으로 들어간다(applicationIdSuffix 가 없다).
-    // 둘을 가르는 것은 IS_DEBUG 뿐이다 — parfait/adr/0031-analytics-central-screen-mapping.md.
+    // debug 는 수집 자체를 끈다. 같은 GA4 속성을 쓰기 때문이다(applicationIdSuffix 가 없다).
+    // 그 빌드로 전송을 확인하려면 -Panalytics.isDebug=false 로 빌드한다
+    // — parfait/adr/0031-analytics-central-screen-mapping.md.
     private fun setUpAnalytics() {
-        analyticsLogger.setCollectionEnabled(true)
+        analyticsLogger.setCollectionEnabled(!BuildConfig.ANALYTICS_IS_DEBUG)
 
         val deviceInfo = currentDeviceInfo()
         with(analyticsLogger) {
