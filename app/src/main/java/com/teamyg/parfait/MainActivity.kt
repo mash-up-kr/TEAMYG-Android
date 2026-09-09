@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
@@ -40,6 +41,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var hasActiveSession: HasActiveSessionUseCase
 
+    @Inject
+    lateinit var screenViewTracker: ScreenViewTracker
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumePushDeepLink(intent)
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity() {
                     sessionEventBus = sessionEventBus,
                     pushDeepLinkEventBus = pushDeepLinkEventBus,
                     hasActiveSession = hasActiveSession,
+                    screenViewTracker = screenViewTracker,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
