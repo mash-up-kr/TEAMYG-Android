@@ -93,6 +93,20 @@ internal fun resolveTargetSize(
     )
 }
 
+/**
+ * 하한과 상한이 충돌했을 때(극단 종횡비) 상한이 실제로 걸렸는지. [resolveTargetSize] 와 같은 배율 계산을
+ * 쓴다 — 그쪽 계산이 바뀌면 이쪽도 맞춰야 한다.
+ */
+internal fun isLongSideCapped(
+    width: Int,
+    height: Int,
+): Boolean {
+    val floorScale = maxOf(1f, DETECTION_MIN_SHORT_SIDE.toFloat() / minOf(width, height))
+    val flooredLongSide = maxOf(width, height) * floorScale
+
+    return flooredLongSide > DETECTION_MAX_LONG_SIDE
+}
+
 /** 크롭 없는 1단계. 목표 치수가 원본과 같고 대비도 안 걸면 1차 경로의 재실행일 뿐이라 널이다 */
 internal fun normalizeStage(
     width: Int,

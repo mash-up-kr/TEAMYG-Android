@@ -39,6 +39,7 @@ import com.teamyg.parfait.data.utils.image.focusCrop
 import com.teamyg.parfait.data.utils.image.focusStage
 import com.teamyg.parfait.data.utils.image.harvestForeground
 import com.teamyg.parfait.data.utils.image.harvestSubjects
+import com.teamyg.parfait.data.utils.image.isLongSideCapped
 import com.teamyg.parfait.data.utils.image.normalizeForDetection
 import com.teamyg.parfait.data.utils.image.normalizeStage
 import com.teamyg.parfait.data.utils.repositoryLogger
@@ -159,6 +160,8 @@ constructor(
 
         return try {
             val harvest = withContext(Dispatchers.Default) {
+                // InputImage.fromBitmap(bitmap, 0) 이라 지금은 마스크 치수가 origin 과 같지만, 그 일치는
+                // 계약으로 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 오려낸다
                 harvestForeground(mask, origin.width, origin.height, origin, projection = null, hintThreshold = null)
             }
             Result.success(harvest.candidates)
@@ -231,27 +234,35 @@ constructor(
         stage: RecoveryStage,
     ): StageOutcome {
         val startedAt = SystemClock.elapsedRealtime()
-        val plate = try {
-            withContext(Dispatchers.Default) { normalizeForDetection(origin, stage) }
-        } catch (e: OutOfMemoryError) {
-            repositoryLogger.w(e) { "회복 $name: 검출 판을 만들다 메모리로 실패해 이 단계를 포기한다" }
-            return StageOutcome.Empty(hint = null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            repositoryLogger.w(e) { "회복 $name: 검출 판을 만들다 실패해 이 단계를 포기한다" }
-            return StageOutcome.Empty(hint = null)
-        }
 
         val whole = SegmentationBounds(0, 0, origin.width, origin.height)
         val source = stage.cropRect ?: whole
         val projection = DetectionProjection(stage.transform, clip = source)
-        val capped = stage.targetSize.width < source.width
+        val capped = isLongSideCapped(source.width, source.height)
 
-        // 철회 조건이 요구하는 목표 치수·상한 여부를 여기서 한 번만 남긴다 — 아래 어느 탈출 경로를 타도
-        // 이 단계가 어떤 조건으로 돌았는지는 남는다
+        // 철회 조건이 요구하는 원본·목표 치수·상한 여부를 여기서 한 번만 남긴다 — 검출 판 생성이 실패해도
+        // 시작한 단계는 전부 기록에 남아야 한다
         repositoryLogger.i {
-            "회복 $name: 목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped"
+            "회복 $name: 원본 ${source.width}x${source.height}, " +
+                "목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped"
+        }
+
+        val plate = try {
+            withContext(Dispatchers.Default) { normalizeForDetection(origin, stage) }
+        } catch (e: OutOfMemoryError) {
+            repositoryLogger.w(e) {
+                "회복 $name: 검출 판을 만들다 메모리로 실패해 이 단계를 포기한다, " +
+                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
+            }
+            return StageOutcome.Empty(hint = null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            repositoryLogger.w(e) {
+                "회복 $name: 검출 판을 만들다 실패해 이 단계를 포기한다, " +
+                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
+            }
+            return StageOutcome.Empty(hint = null)
         }
 
         try {
@@ -390,6 +401,8 @@ constructor(
                     Result.success(Tasks.await(segmenter.process(image)))
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e.toSegmentationException())
         }

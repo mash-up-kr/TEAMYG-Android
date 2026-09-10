@@ -38,6 +38,31 @@ class SegmentationRecoveryPlanTest {
     }
 
     @Test
+    fun isLongSideCapped_plainDownscale_isTrue() {
+        assertTrue(isLongSideCapped(width = 4032, height = 3024))
+    }
+
+    @Test
+    fun isLongSideCapped_floorAndCeilingCollide_isTrue() {
+        // Given 하한을 맞추면 긴 변이 상한을 넘는 극단 종횡비 — resolveTargetSize 가 실제로 상한에
+        // 걸리는지 픽스처가 진짜로 충돌하는지 함께 확인한다
+        val target = resolveTargetSize(width = 400, height = 1800)
+        assertEquals(2048, maxOf(target.width, target.height))
+
+        assertTrue(isLongSideCapped(width = 400, height = 1800))
+    }
+
+    @Test
+    fun isLongSideCapped_noCap_isFalse() {
+        assertFalse(isLongSideCapped(width = 1920, height = 1080))
+    }
+
+    @Test
+    fun isLongSideCapped_exactlyAtTheCeilingWithShortSideAtOrAboveTheFloor_isFalse() {
+        assertFalse(isLongSideCapped(width = 2048, height = 1536))
+    }
+
+    @Test
     fun normalizeStage_targetEqualsSourceAndNoContrast_isNull() {
         assertNull(normalizeStage(width = 1920, height = 1080, applyContrast = false))
     }
