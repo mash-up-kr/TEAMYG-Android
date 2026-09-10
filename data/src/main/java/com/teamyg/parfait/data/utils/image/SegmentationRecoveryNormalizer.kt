@@ -6,6 +6,7 @@ package com.teamyg.parfait.data.utils.image
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import com.teamyg.parfait.data.model.image.RecoveryStage
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job

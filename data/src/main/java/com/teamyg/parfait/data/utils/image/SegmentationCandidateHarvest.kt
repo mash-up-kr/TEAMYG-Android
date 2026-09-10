@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import com.google.mlkit.vision.segmentation.subject.Subject
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.sumArgbAlpha
+import com.teamyg.parfait.data.model.image.DetectionBounds
+import com.teamyg.parfait.data.model.image.DetectionProjection
+import com.teamyg.parfait.data.model.image.ProjectedRegion
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate

@@ -25,12 +25,12 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.data.installer.image.ModuleInstallOutcome
 import com.teamyg.parfait.data.installer.image.SegmentationModuleInstaller
+import com.teamyg.parfait.data.model.image.DetectionBounds
+import com.teamyg.parfait.data.model.image.DetectionProjection
+import com.teamyg.parfait.data.model.image.RecoveryStage
+import com.teamyg.parfait.data.model.image.RecoveryTransform
 import com.teamyg.parfait.data.utils.image.AlphaPostProcessOptions
-import com.teamyg.parfait.data.utils.image.DetectionBounds
-import com.teamyg.parfait.data.utils.image.DetectionProjection
 import com.teamyg.parfait.data.utils.image.RELAXED_FLOOR_LOG_DIVISOR
-import com.teamyg.parfait.data.utils.image.RecoveryStage
-import com.teamyg.parfait.data.utils.image.RecoveryTransform
 import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
 import com.teamyg.parfait.data.utils.image.clearFiles
 import com.teamyg.parfait.data.utils.image.cropAreaPercent

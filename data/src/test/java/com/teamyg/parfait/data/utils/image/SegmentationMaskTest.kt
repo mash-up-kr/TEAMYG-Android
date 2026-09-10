@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.utils.image
 
+import com.teamyg.parfait.data.model.image.ProjectedRegion
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest

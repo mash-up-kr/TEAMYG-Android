@@ -1,5 +1,11 @@
 package com.teamyg.parfait.data.utils.image
 
+import com.teamyg.parfait.data.model.image.DetectionBounds
+import com.teamyg.parfait.data.model.image.DetectionProjection
+import com.teamyg.parfait.data.model.image.ProjectedRegion
+import com.teamyg.parfait.data.model.image.RecoveryStage
+import com.teamyg.parfait.data.model.image.RecoveryTransform
+import com.teamyg.parfait.data.model.image.ScaledSize
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlin.math.roundToInt
 
@@ -18,60 +24,6 @@ private const val FOCUS_MARGIN_RATIO = 0.20f
 private const val FOCUS_SHRINK_CEILING_PERCENT = 70
 
 private const val CENTER_CROP_RATIO = 0.70f
-
-/**
- * 검출 공간의 사각형.
- *
- * `SegmentationBounds` 는 KDoc 이 원본 좌표를 단정하고 있어, 같은 타입으로 두 좌표계를 겸하면 짝이 안 맞는
- * 조합이 컴파일된다.
- */
-internal data class DetectionBounds(
-    val left: Int,
-    val top: Int,
-    val right: Int,
-    val bottom: Int,
-)
-
-internal data class ScaledSize(val width: Int, val height: Int)
-
-/**
- * 검출 공간의 좌표를 원본 공간으로 되돌린다.
- *
- * 축마다 배율이 다른 것은 목표 치수를 정수로 반올림하기 때문이다.
- */
-internal data class RecoveryTransform(
-    val scaleX: Float,
-    val scaleY: Float,
-    val offsetX: Int,
-    val offsetY: Int,
-) {
-    fun toOrigin(bounds: DetectionBounds): SegmentationBounds = SegmentationBounds(
-        left = offsetX + (bounds.left * scaleX).roundToInt(),
-        top = offsetY + (bounds.top * scaleY).roundToInt(),
-        right = offsetX + (bounds.right * scaleX).roundToInt(),
-        bottom = offsetY + (bounds.bottom * scaleY).roundToInt(),
-    )
-}
-
-internal data class RecoveryStage(
-    /** 널이면 원본 전체를 쓴다. 좌표는 원본 기준이다 */
-    val cropRect: SegmentationBounds?,
-    val targetSize: ScaledSize,
-    val applyContrast: Boolean,
-    val transform: RecoveryTransform,
-)
-
-/** 검출 공간이 원본에 어떻게 놓이는가. 1차 경로에는 없다 */
-internal data class DetectionProjection(
-    val transform: RecoveryTransform,
-    val clip: SegmentationBounds,
-)
-
-/** 재표본은 [mapped] 크기로 하고, 그다음 [clipped] 로 자른다. 순서를 뒤집으면 알파가 어긋난다 */
-internal data class ProjectedRegion(
-    val mapped: SegmentationBounds,
-    val clipped: SegmentationBounds,
-)
 
 /**
  * 검출에 쓸 치수. 하한과 상한이 충돌하면 상한이 이긴다 — 확대는 정보를 늘리지 않지만 상한 초과는

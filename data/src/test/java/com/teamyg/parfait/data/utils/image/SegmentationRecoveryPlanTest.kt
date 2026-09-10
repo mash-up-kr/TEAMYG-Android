@@ -1,5 +1,9 @@
 package com.teamyg.parfait.data.utils.image
 
+import com.teamyg.parfait.data.model.image.DetectionBounds
+import com.teamyg.parfait.data.model.image.DetectionProjection
+import com.teamyg.parfait.data.model.image.RecoveryTransform
+import com.teamyg.parfait.data.model.image.ScaledSize
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlin.math.abs
 import kotlin.test.Test
