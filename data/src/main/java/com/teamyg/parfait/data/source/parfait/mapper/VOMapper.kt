@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -34,6 +35,7 @@ private const val OWNER_TYPE_ME = "ME"
 
 internal fun GetTodayParfaitResponse.toCanvasVO(): CanvasVO = CanvasVO(
     parfaitId = ParfaitId(parfaitId),
+    groupName = GroupName(groupName),
     date = LocalDate.parse(date),
     status = status.toCanvasStatus(),
     lastClosedDate = lastClosedDate?.let(LocalDate::parse),
@@ -123,7 +125,7 @@ private fun TodayParfaitImageResponse.toToppingBorder(): ToppingBorder {
     if (borderType != BORDER_TYPE_SOLID) return ToppingBorder.None
     val color = borderColor ?: return ToppingBorder.None
     val width = borderWidth ?: return ToppingBorder.None
-    return ToppingBorder.Solid(color = color, width = width)
+    return ToppingBorder.solidClamped(color = color, width = width)
 }
 
 private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(

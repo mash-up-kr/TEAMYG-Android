@@ -14,6 +14,8 @@ import kotlinx.serialization.Serializable
 data class GetTodayParfaitResponse(
     @SerialName("parfaitId")
     val parfaitId: Long,
+    @SerialName("groupName")
+    val groupName: String,
     @SerialName("date")
     val date: String,
     @SerialName("status")

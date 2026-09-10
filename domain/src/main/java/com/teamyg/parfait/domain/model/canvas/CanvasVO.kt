@@ -1,5 +1,6 @@
 package com.teamyg.parfait.domain.model.canvas
 
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import kotlinx.datetime.LocalDate
 
@@ -20,6 +21,7 @@ import kotlinx.datetime.LocalDate
  */
 data class CanvasVO(
     val parfaitId: ParfaitId,
+    val groupName: GroupName,
     val date: LocalDate,
     val status: CanvasStatus,
     val lastClosedDate: LocalDate?,

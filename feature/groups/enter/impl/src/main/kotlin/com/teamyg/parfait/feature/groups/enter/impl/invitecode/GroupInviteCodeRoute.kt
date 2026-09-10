@@ -47,6 +47,7 @@ fun GroupInviteCodeRoute(
                         NavKeyGroupNickName(
                             inviteCode = effect.inviteCode,
                             groupName = effect.groupName,
+                            nickName = effect.nickName,
                         ),
                     )
                 }
@@ -70,26 +71,32 @@ fun GroupInviteCodeRoute(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.processIntent(GroupInviteCodeIntent.FocusedFirstIndex)
+        viewModel.processIntent(GroupInviteCodeIntent.RequestFocus)
     }
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.focusedIndex == null) {
-            keyboardController?.hide()
-        } else {
+    LaunchedEffect(uiState.isFocused) {
+        if (uiState.isFocused) {
             keyboardController?.show()
+        } else {
+            keyboardController?.hide()
         }
     }
 
     GroupInviteCodeScreen(
         uiState = uiState,
-        onValueChanged = { index, word -> viewModel.processIntent(GroupInviteCodeIntent.InputWord(index, word)) },
+        onTextChanged = { text, cursor ->
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = text, cursor = cursor))
+        },
         onClickTextFieldElement = { index ->
             viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index))
         },
         onClickNextButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton) },
         onClickBackButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickBackButton) },
         onClickPasteBar = { viewModel.processIntent(GroupInviteCodeIntent.ClickPasteInviteCode) },
+        onFocusChanged = { isFocused ->
+            viewModel.processIntent(GroupInviteCodeIntent.FocusChanged(isFocused = isFocused))
+        },
+        onClickBackground = { viewModel.processIntent(GroupInviteCodeIntent.HideKeyboard) },
         modifier = modifier,
     )
 }

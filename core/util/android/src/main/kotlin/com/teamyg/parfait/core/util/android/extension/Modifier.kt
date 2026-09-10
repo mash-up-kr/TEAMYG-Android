@@ -164,7 +164,13 @@ private fun getTrianglePath(
     close()
 }
 
-/** [point](부모 기준 절대 Dp 좌표)에 이 컴포저블 자신의 중심이 오도록 배치한다. */
+/**
+ * [point](부모 기준 절대 Dp 좌표)에 이 컴포저블 자신의 중심이 오도록 배치한다.
+ *
+ * 부모보다 큰 자식도 중심이 맞는다. 좌상단을 직접 계산해 `offset` 으로 넘기면 그렇지 않다 —
+ * Compose 는 부모 제약으로 잘린 겉크기 안에 실제 내용을 가운데 정렬하므로, 넘친 양의 절반만큼
+ * 밀린다(#313).
+ */
 fun Modifier.centeredAt(point: DpOffset): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)
     layout(placeable.width, placeable.height) {

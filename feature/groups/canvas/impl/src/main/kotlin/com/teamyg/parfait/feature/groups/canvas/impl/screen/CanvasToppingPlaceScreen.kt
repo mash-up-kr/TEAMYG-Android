@@ -8,14 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpOffset
@@ -31,23 +33,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
-import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
+import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
+import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import java.io.File
 
 /**
@@ -87,16 +91,29 @@ internal fun CanvasToppingPlaceScreen(
             contentAlignment = Alignment.Center,
         ) {
             val toppingImagePath = uiState.toppingImagePath
+            // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
+            val toppingImageModel = remember(toppingImagePath) {
+                toppingImagePath?.let { path -> File(path).toUri().toString() }
+            }
             val painter = rememberAsyncImagePainter(
-                // 초안은 절대경로를 담는다. Coil 에는 file 스킴 uri 로 바꿔 넘긴다
-                model = remember(toppingImagePath) {
-                    toppingImagePath?.let { path -> File(path).toUri().toString() }
-                },
+                model = toppingImageModel,
                 contentScale = ContentScale.Fit,
             )
             val painterState by painter.state.collectAsState()
             val isToppingImageLoaded = painterState is AsyncImagePainter.State.Success
             val baseSize = rememberToppingBaseSize(painter)
+
+            val context = LocalContext.current
+            // 초안이 비동기로 와서 첫 컴포지션의 모델이 언제나 null 이라, initialValue 를 한 번만
+            // 읽는 produceState 로는 캐시를 못 쓴다
+            var outline by remember(toppingImageModel) {
+                mutableStateOf(toppingImageModel?.let { model -> ToppingOutlineCache.peek(model, retryKey = 0) })
+            }
+
+            LaunchedEffect(toppingImageModel) {
+                val model = toppingImageModel ?: return@LaunchedEffect
+                if (outline == null) outline = ToppingOutlineCache.load(context, model, retryKey = 0)
+            }
 
             // 확정 판정의 근거를 ViewModel 자기 어휘로 올린다 — 실측 방출 가드에 기대면
             // 그 가드를 걷는 순간 확인 버튼이 폴백 크기로 확정을 내보낸다
@@ -110,10 +127,7 @@ internal fun CanvasToppingPlaceScreen(
                 if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
             }
 
-            // 스트로크·핸들과 정확히 같은 자리·크기를 그리려면 이미지도 이 값을 그대로 써야 한다 —
-            // 이미지는 graphicsLayer(scale), 스트로크는 requiredSize(sizeAfterScale)처럼
-            // 서로 다른 방식으로 "같은 배율"을 표현하면, 그 둘이 실제로 같은 값을 내는지는
-            // Compose 내부 구현에 기대는 셈이라 어긋나기 쉽다. 여기서 한 번만 계산해서 그대로 넘긴다.
+            // 이미지·스트로크·핸들이 같은 자리에 오려면 셋이 같은 값을 봐야 한다. 여기서 한 번만 계산한다
             val center = DpOffset(
                 x = uiState.offsetX + baseSize.width / 2,
                 y = uiState.offsetY + baseSize.height / 2,
@@ -163,16 +177,12 @@ internal fun CanvasToppingPlaceScreen(
                         .background(YGAtomicColors.Transparency.Black25),
                 )
 
-                // Image()는 painter.intrinsicSize를 다시 읽어 스스로 크기를 맞추려 한다
-                // (sizeToIntrinsics) — 그 시점이 requiredSize(sizeAfterScale)와 어긋나면 실제
-                // 그려지는 크기가 스트로크·핸들 계산과 달라진다. 크기는 이 바깥 Box가 고정하고,
-                // Image 자신은 그 Box를 꽉 채우기만 하도록 둬서 intrinsic 기반 자체 사이징을 막는다.
+                // Image()를 그냥 두면 painter.intrinsicSize로 스스로 크기를 맞춰(sizeToIntrinsics)
+                // 스트로크·핸들 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
                 Box(
                     modifier = Modifier
-                        .offset(
-                            x = center.x - sizeAfterScale.width / 2,
-                            y = center.y - sizeAfterScale.height / 2,
-                        ).requiredSize(sizeAfterScale)
+                        .centeredAt(center)
+                        .requiredSize(sizeAfterScale)
                         .dragBy(Unit) { delta ->
                             onToppingMoveDrag(
                                 with(density) { DpOffset(delta.x.toDp(), delta.y.toDp()) },
@@ -187,6 +197,7 @@ internal fun CanvasToppingPlaceScreen(
                             ?.let { argb -> Color(argb) },
                         borderWidth = (uiState.borderWidthDp ?: 0f).dp,
                         modifier = Modifier.fillMaxSize(),
+                        outline = outline,
                     )
                 }
             }

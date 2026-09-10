@@ -12,6 +12,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
@@ -1042,6 +1043,7 @@ class CanvasBGEditViewModelTest {
         ),
     ) = CanvasVO(
         parfaitId = ParfaitId(parfaitId),
+        groupName = GroupName("아메리카노"),
         date = parfaitToday(),
         status = CanvasStatus.ACTIVE,
         lastClosedDate = null,

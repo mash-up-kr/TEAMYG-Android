@@ -564,6 +564,44 @@ class ParfaitImageRemoteDataSourceImplTest {
     }
 
     @Test
+    fun updateToppingBorder_responseWidthAboveTheRange_isClamped() = runTest {
+        // Given 서버가 범위를 검증하지 않아 상한 밖 굵기를 돌려준다
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageIdBorder(
+                groupId = 1L,
+                parfaitId = 2L,
+                parfaitImageId = 3L,
+                request = any(),
+            )
+        } returns ApiResponse(
+            success = true,
+            code = "SUCCESS",
+            message = "성공",
+            data = UpdateParfaitImageBorderResponse(
+                parfaitImageId = 3L,
+                borderType = "SOLID",
+                borderColor = "#FF0000",
+                borderWidth = 50.0,
+            ),
+        )
+
+        // When SOLID 테두리로 바꾼다
+        val vo = dataSource
+            .updateToppingBorder(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(2L),
+                parfaitImageId = ParfaitImageId(3L),
+                border = ToppingBorder.Solid(color = "#FF0000", width = 50.0),
+            ).getOrThrow()
+
+        // Then 상한으로 갇힌다
+        assertEquals(
+            ToppingBorder.Solid(color = "#FF0000", width = ToppingBorder.WIDTH_RANGE_DP.endInclusive),
+            vo.border,
+        )
+    }
+
+    @Test
     fun updateToppingBorder_solidResponseMissingWidth_fallsBackToNone() = runTest {
         // Given 서버가 SOLID 라면서 두께를 빠뜨렸다
         coEvery {

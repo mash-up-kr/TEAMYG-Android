@@ -23,7 +23,12 @@ internal fun Bitmap.writeToCanvasCaptureCache(context: Context): Result<File> = 
     val directory = File(context.cacheDir, CAPTURE_DIR_NAME).apply { mkdirs() }
 
     File(directory, CAPTURE_FILE_NAME).also { file ->
-        file.outputStream().use { output -> compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, output) }
+        file.outputStream().use { output ->
+            // compress 는 던지지 않고 false 를 준다 — 안 보면 잘린 파일이 성공으로 나간다
+            check(compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, output)) {
+                "캡처한 캔버스를 굽지 못했다: ${file.absolutePath}"
+            }
+        }
     }
 }
 

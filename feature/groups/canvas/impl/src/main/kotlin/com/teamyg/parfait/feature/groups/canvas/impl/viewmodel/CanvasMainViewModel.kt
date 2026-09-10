@@ -355,6 +355,8 @@ constructor(
             updateState {
                 copy(
                     todayCanvas = canvas,
+                    // 정본은 [loadCanvasMainInfo] 의 목록 캐시다 — 그것이 아직 없을 때만 채운다
+                    groupName = groupName.ifEmpty { canvas?.groupName?.value.orEmpty() },
                     memberChips = canvas?.members?.toMemberChips() ?: memberChips,
                     // 캔버스가 실렸으면 덮개를 내린다. 갱신이 실패해 아무것도 실리지 않는 쪽은
                     // observeTodayCanvasRefreshFailure 가 맡는다
@@ -440,20 +442,22 @@ constructor(
     }
 
     /**
-     * 캔버스 응답에는 그룹명이 없어 그룹 목록 캐시에서 가져온다. 캐시가 비어 있는 진입
-     * (프로세스 재시작 후 캔버스로 복귀)에서만 목록을 한 번 받아 온다 — 이름 한 줄 때문에
-     * 캔버스를 막지 않으므로 그 조회의 실패는 로그로만 남긴다.
+     * 그룹명은 그룹 목록 캐시가 정본이다 — 캔버스 응답이 같은 값을 싣고 오지만 그쪽은 캔버스
+     * SSoT(`adr/0029-canvas-today-ssot-polling.md`)라 그룹의 값을 그 캐시로 옮기지 않는다.
+     * 캐시가 비어 있는 진입(프로세스 재시작 후 캔버스로 복귀)에서만 목록을 한 번 받아 온다 —
+     * 이름 한 줄 때문에 캔버스를 막지 않으므로 그 조회의 실패는 로그로만 남긴다.
      */
     private fun loadCanvasMainInfo() {
         viewModelScope.launch {
             getMyGroupsFlowUseCase().collect { groups ->
                 if (groups == null) return@collect
 
+                // 목록에 없는 그룹이면 이미 들고 있는 이름을 지우지 않는다
                 val groupName = groups
                     .firstOrNull { it.groupId == groupId }
                     ?.groupName
                     ?.value
-                    .orEmpty()
+                    ?: return@collect
                 updateState { copy(groupName = groupName) }
             }
         }

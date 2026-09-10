@@ -1,8 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
-import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.TOPPING_OUTLINE_STAMP_COUNT
+import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.sin
 
 /**
@@ -10,7 +9,7 @@ import kotlin.math.sin
  *
  * @param borderWidthPx 테두리 색이 실제로 정해졌을 때만 0 보다 크다. 그리지 않은 테두리만큼
  *   판정이 넓어지면 안 된다.
- * @param mask 아직 없거나 불투명 픽셀이 하나도 없으면 사각형 판정으로 떨어진다.
+ * @param outline 아직 없거나 실루엣이 하나도 없으면 사각형 판정으로 떨어진다.
  */
 data class ToppingHitTarget(
     val centerXPx: Float,
@@ -19,7 +18,7 @@ data class ToppingHitTarget(
     val imageHeightPx: Float,
     val rotationDegrees: Float,
     val borderWidthPx: Float,
-    val mask: ToppingAlphaMask?,
+    val outline: ToppingOutline?,
 ) {
     fun containsPoint(
         xPx: Float,
@@ -39,44 +38,17 @@ data class ToppingHitTarget(
         if (localX < -halfWidth || localX > halfWidth) return false
         if (localY < -halfHeight || localY > halfHeight) return false
 
-        // 마스크가 없거나 비어 있으면 사각형 판정이다 — 여기까지 왔으면 사각형 안이다
-        if (mask?.hasAnyOpaque != true) return true
+        // 실루엣을 못 읽으면 사각형 판정이다 — 여기까지 왔으면 사각형 안이다
+        val usableOutline = outline?.takeIf { it.hasAnySeed } ?: return true
 
-        if (isOpaqueAtLocal(localX, localY)) return true
-        if (borderWidthPx <= 0f) return false
+        // 테두리는 실루엣에서 굵기만큼 떨어진 자리까지라, 판정도 같은 거리로 답한다
+        val fieldX = (localX + imageWidthPx / 2f) * usableOutline.width / imageWidthPx - 0.5f
+        val fieldY = (localY + imageHeightPx / 2f) * usableOutline.height / imageHeightPx - 0.5f
 
-        // 테두리는 원본을 여덟 방향으로 밀어 찍은 것이라, 같은 방향으로 되민 점의 원본 알파를
-        // 본다
-        return (0 until TOPPING_OUTLINE_STAMP_COUNT).any { index ->
-            val stampRadians = Math.toRadians(
-                FULL_TURN_DEGREES / TOPPING_OUTLINE_STAMP_COUNT * index,
-            )
-            val offsetX = (cos(stampRadians) * borderWidthPx).toFloat()
-            val offsetY = (sin(stampRadians) * borderWidthPx).toFloat()
-            isOpaqueAtLocal(localX - offsetX, localY - offsetY)
-        }
-    }
+        if (borderWidthPx <= 0f) return usableOutline.isOpaqueAt(fieldX, fieldY)
 
-    /**
-     * 그림 사각형 안의 좌표를 마스크 격자로 옮겨 읽는다.
-     *
-     * 칸 번호는 [floor]로 내린다 — [Float.toInt]는 0 쪽으로 버려서 그림 왼쪽·위쪽 밖의 음수
-     * 좌표가 전부 0번 칸으로 뭉개지고, 마스크의 범위 검사가 무력해진다.
-     */
-    private fun isOpaqueAtLocal(
-        localX: Float,
-        localY: Float,
-    ): Boolean {
-        val usableMask = mask ?: return false
-        val maskX =
-            floor((localX + imageWidthPx / 2f) * usableMask.width / imageWidthPx).toInt()
-        val maskY =
-            floor((localY + imageHeightPx / 2f) * usableMask.height / imageHeightPx).toInt()
-        return usableMask.isOpaqueAt(maskX, maskY)
-    }
-
-    companion object {
-        private const val FULL_TURN_DEGREES = 360.0
+        val fieldPerImagePx = usableOutline.width / imageWidthPx
+        return usableOutline.distanceAt(fieldX, fieldY) <= borderWidthPx * fieldPerImagePx
     }
 }
 
