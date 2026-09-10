@@ -27,8 +27,8 @@ import com.teamyg.parfait.data.installer.image.SegmentationModuleInstaller
 import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
 import com.teamyg.parfait.data.utils.image.clearFiles
 import com.teamyg.parfait.data.utils.image.filterCandidates
-import com.teamyg.parfait.data.utils.image.toCandidatePairs
-import com.teamyg.parfait.data.utils.image.toForegroundCandidate
+import com.teamyg.parfait.data.utils.image.harvestForeground
+import com.teamyg.parfait.data.utils.image.harvestSubjects
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.image.SourceLongSide
@@ -88,35 +88,28 @@ constructor(
 
         val result = runSegmenter(multipleSubjectOptions, image).getOrElse { return Result.failure(it) }
 
-        val pairs = try {
-            withContext(Dispatchers.Default) {
-                result.toCandidatePairs(bitmap)
-            }
+        val harvested = try {
+            withContext(Dispatchers.Default) { harvestSubjects(result.subjects, bitmap, projection = null) }
         } catch (e: CancellationException) {
             // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
             throw e
         } catch (e: Exception) {
-            // 필터·변환이 던질 수 있는 예상 밖 실패를 화면에 토스트로 전달할 수 있게 감싼다
             return Result.failure(SegmentationException.Process(e))
         }
 
-        if (pairs.isEmpty()) {
+        if (harvested.isEmpty()) {
             repositoryLogger.i { "세그멘테이션: 후처리 대상이 0건이다. 전경 마스크 폴백으로 내려간다" }
-            return Result.success(segmentForeground(image, bitmap))
+            return segmentForeground(image, bitmap)
         }
 
-        val reverted = pairs.count { it.postProcessed == null }
+        val reverted = harvested.count { it.reverted }
         if (reverted > 0) {
             // 후처리는 개선 수단이지 후보를 없앨 권한이 아니다
-            repositoryLogger.i {
-                "세그멘테이션 후처리: ${pairs.size}개 중 ${reverted}개를 후처리 이전 후보로 되돌린다"
-            }
+            repositoryLogger.i { "세그멘테이션 후처리: ${harvested.size}개 중 ${reverted}개를 후처리 이전 후보로 되돌린다" }
         }
 
         val candidates = try {
-            withContext(Dispatchers.Default) {
-                filterCandidates(pairs.map { it.postProcessed ?: it.original })
-            }
+            withContext(Dispatchers.Default) { filterCandidates(harvested.map { it.candidate }) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -124,14 +117,12 @@ constructor(
         }
 
         // 전멸이 아니라 일부만 걸러진 경우도 남긴다 — 전멸 로그만 있으면 극단값에서만 판정된다
-        repositoryLogger.i { "세그멘테이션 필터 통과 ${candidates.size}/${pairs.size}" }
+        repositoryLogger.i { "세그멘테이션 필터 통과 ${candidates.size}/${harvested.size}" }
 
         if (candidates.isNotEmpty()) return Result.success(candidates)
 
-        repositoryLogger.i {
-            "세그멘테이션: 필터가 후보 ${pairs.size}개를 전부 걸러 냈다. 전경 마스크 폴백으로 내려간다"
-        }
-        return Result.success(segmentForeground(image, bitmap))
+        repositoryLogger.i { "세그멘테이션: 필터가 후보 ${harvested.size}개를 전부 걸러 냈다. 전경 마스크 폴백으로 내려간다" }
+        return segmentForeground(image, bitmap)
     }
 
     /**
@@ -141,28 +132,36 @@ constructor(
      * ML Kit 모듈이 `SIGSEGV` 로 죽어서(2026-08-23 실기기 확인, Galaxy A35) 두 옵션을 한
      * 요청에 실을 수 없다. 대신 이 비용은 후보가 0건인 사진에서만 든다.
      *
-     * 여기서 실패하면 값으로 접는다 — 이미 1차가 성공한 흐름이고, 화면에는 "인식된 대상 없음"과
-     * 같은 결과로 보이면 된다.
+     * 모듈이 없으면 위로 올린다. 그 밖의 실패는 종전처럼 「인식된 대상 없음」으로 접는다 — 모두 올리면
+     * 1차의 처리 실패가 빈 목록에서 예외로 분류가 바뀌어 그 사진의 재시도가 회복 경로로 못 간다.
      */
     private suspend fun segmentForeground(
         image: InputImage,
         origin: Bitmap,
-    ): List<SegmentationCandidate> {
+    ): Result<List<SegmentationCandidate>> {
         val options = SubjectSegmenterOptions
             .Builder()
             .enableForegroundConfidenceMask()
             .build()
 
-        val result = runSegmenter(options, image).getOrNull() ?: return emptyList()
+        val result = runSegmenter(options, image).getOrElse { cause ->
+            return if (cause is SegmentationException.ModuleNotReady) {
+                Result.failure(cause)
+            } else {
+                Result.success(emptyList())
+            }
+        }
+        val mask = result.foregroundConfidenceMask ?: return Result.success(emptyList())
 
         return try {
-            withContext(Dispatchers.Default) {
-                result.toForegroundCandidate(origin)
+            val harvest = withContext(Dispatchers.Default) {
+                harvestForeground(mask, origin.width, origin.height, origin, projection = null, hintThreshold = null)
             }
+            Result.success(harvest.candidates)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            emptyList()
+            Result.success(emptyList())
         }
     }
 
