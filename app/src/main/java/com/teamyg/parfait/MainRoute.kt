@@ -13,6 +13,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
@@ -34,6 +35,7 @@ fun MainRoute(
     sessionEventBus: SessionEventBus,
     pushDeepLinkEventBus: PushDeepLinkEventBus,
     hasActiveSession: HasActiveSessionUseCase,
+    screenViewTracker: ScreenViewTracker,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
@@ -66,6 +68,12 @@ fun MainRoute(
                 is PushDeepLink.GroupList -> navigator.goTo(destination = NavKeyGroupList)
             }
         }
+    }
+
+    // 화면 진입도 같은 이유로 여기 한 곳에서만 본다. 크기를 함께 보는 이유는 ScreenViewTracker 에 있다.
+    LaunchedEffect(navigator, screenViewTracker) {
+        snapshotFlow { navigator.backStack.size to navigator.backStack.lastOrNull() }
+            .collect { (size, top) -> screenViewTracker.track(backStackSize = size, top = top) }
     }
 
     SharedTransitionLayout(modifier = modifier) {

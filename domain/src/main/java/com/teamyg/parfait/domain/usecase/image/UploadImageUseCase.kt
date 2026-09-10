@@ -24,6 +24,12 @@ constructor(
             .copyToCache(uri)
             .getOrElse { throwable -> return Result.failure(throwable) }
 
-        return imageUploadRepository.upload(filePath = filePath, imageType = imageType)
+        // 배경은 원본 배율을 쓰지 않는다
+        // (`specs/2026-09-09-topping-upload-source-scaled.md` 「동작 / 상태」)
+        return imageUploadRepository.upload(
+            filePath = filePath,
+            imageType = imageType,
+            sourceLongSide = null,
+        )
     }
 }

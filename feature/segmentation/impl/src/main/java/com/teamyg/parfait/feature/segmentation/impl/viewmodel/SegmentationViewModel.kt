@@ -11,13 +11,14 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -65,7 +66,7 @@ class SegmentationViewModel
     private val segmentImageUseCase: SegmentImageUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
@@ -158,11 +159,12 @@ class SegmentationViewModel
             persistSubjectUseCase(candidate)
                 .onSuccess { result ->
                     val recorded = runSuspendCatching {
-                        toppingDraftRepository.record(
+                        recordToppingDraft(
                             subjectImagePath = result.trimmedSubjectImagePath,
                             cutoutImagePath = result.subjectImagePath,
                             borderColorArgb = null,
                             borderWidthDp = null,
+                            sourceLongSide = result.sourceLongSide,
                         )
                     }.getOrDefault(false)
 
@@ -205,6 +207,11 @@ class SegmentationViewModel
         ) {
             updateState { copy(isLoading = true) }
 
+            // 이 경로는 원본이 곧 알맹이라 사진 전체의 긴 변이 비트맵의 긴 변이다
+            val sourceLongSide = (originBitmapWrapper as? AndroidBitmap)
+                ?.getRawData()
+                ?.let { SourceLongSide(maxOf(it.width, it.height)) }
+
             val path = saveBitmapUseCase(originBitmapWrapper).getOrElse {
                 releaseLoading()
                 postSideEffect(SegmentationEffect.ShowError)
@@ -212,11 +219,12 @@ class SegmentationViewModel
             }
 
             val recorded = runSuspendCatching {
-                toppingDraftRepository.record(
+                recordToppingDraft(
                     subjectImagePath = path,
                     cutoutImagePath = path,
                     borderColorArgb = null,
                     borderWidthDp = null,
+                    sourceLongSide = sourceLongSide,
                 )
             }.getOrDefault(false)
 

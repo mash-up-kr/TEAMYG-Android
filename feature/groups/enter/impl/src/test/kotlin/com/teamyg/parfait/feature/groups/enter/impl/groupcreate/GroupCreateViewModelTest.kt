@@ -88,6 +88,8 @@ class GroupCreateViewModelTest {
                     groupId = createdGroup.groupId.value,
                     groupName = GROUP_NAME,
                     inviteCode = createdGroup.inviteCode.value,
+                    // 화면이 알림 권한을 물을지 이 값으로 가른다 — 빠지면 정원 1 그룹에도 모달이 뜬다
+                    memberLimit = createdGroup.memberLimit,
                 ),
                 awaitItem(),
             )

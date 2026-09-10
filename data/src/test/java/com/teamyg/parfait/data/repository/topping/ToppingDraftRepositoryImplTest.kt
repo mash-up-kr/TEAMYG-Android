@@ -133,6 +133,7 @@ class ToppingDraftRepositoryImplTest {
             cutoutImagePath = "/cache/segmentation/cutout.png",
             borderColorArgb = null,
             borderWidthDp = null,
+            sourceLongSide = null,
         )
 
         // Then 진입 때 못 박은 캔버스 식별값은 건드리지 않는다 — 그것이 이 배치의 전제다
@@ -167,6 +168,7 @@ class ToppingDraftRepositoryImplTest {
             cutoutImagePath = "/cache/segmentation/new-cutout.png",
             borderColorArgb = null,
             borderWidthDp = null,
+            sourceLongSide = null,
         )
 
         // Then 지난 테두리가 살아남지 않는다 — 병합하면 방금 벗긴 테두리가 배치까지 따라간다
@@ -186,6 +188,7 @@ class ToppingDraftRepositoryImplTest {
             cutoutImagePath = null,
             borderColorArgb = null,
             borderWidthDp = null,
+            sourceLongSide = null,
         )
 
         // Then 적힌다 — 최근 목록에서 되살린 알맹이에는 마스크가 없다
@@ -208,6 +211,7 @@ class ToppingDraftRepositoryImplTest {
             cutoutImagePath = "/cache/segmentation/cutout.png",
             borderColorArgb = null,
             borderWidthDp = null,
+            sourceLongSide = null,
         )
 
         // Then 캔버스 식별값 없는 초안을 지어내지 않는다 — 그걸 만들면 배치까지 가서야 올릴 데가

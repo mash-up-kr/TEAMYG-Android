@@ -21,12 +21,14 @@ import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
@@ -53,6 +55,7 @@ private val MIN_TOPPING_SHORT_SIDE = 48.dp
 data class CanvasToppingPlaceUiState(
     /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
     val toppingImagePath: String? = null,
+    val toppingSourceLongSide: SourceLongSide? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
     /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
@@ -139,7 +142,8 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
 @HiltViewModel
 class CanvasToppingPlaceViewModel
 @Inject constructor(
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
+    private val clearToppingDraft: ClearToppingDraftUseCase,
     private val addToppingUseCase: AddToppingUseCase,
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
@@ -164,10 +168,11 @@ class CanvasToppingPlaceViewModel
 
     private fun observeDraft() {
         launch(onError = { postSideEffect(effect = CanvasToppingPlaceEffect.DraftMissing) }) {
-            toppingDraftRepository.draft.collect { draft ->
+            getToppingDraftFlow().collect { draft ->
                 updateState {
                     copy(
                         toppingImagePath = draft?.subjectImagePath,
+                        toppingSourceLongSide = draft?.sourceLongSide,
                         borderColorArgb = draft?.borderColorArgb,
                         borderWidthDp = draft?.borderWidthDp,
                         groupId = draft?.groupId,
@@ -389,6 +394,7 @@ class CanvasToppingPlaceViewModel
                     filePath = imagePath,
                     transform = transform,
                     border = border,
+                    sourceLongSide = current.toppingSourceLongSide,
                 ).onSuccess {
                     // 알림보다 먼저 남긴다 — PlaceSucceeded 를 받은 Route 가 popUpTo 로 이 화면을
                     // 걷어 내면 viewModelScope 가 취소되고, 그 뒤 코드는 실행되다 말고 끊긴다
@@ -403,10 +409,10 @@ class CanvasToppingPlaceViewModel
                     // PlaceSucceeded 뒤로 옮기면 되감기가 문 viewModelScope 취소로 아예 안 돈다
                     requestTodayParfaitRefreshUseCase(groupId)
 
-                    // 되감기를 먼저 알린다 — clear() 가 초안을 비우면 구독이 알맹이를 null 로
+                    // 되감기를 먼저 알린다 — clearToppingDraft() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
                     postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
-                    toppingDraftRepository.clear()
+                    clearToppingDraft()
                 }.onFailure { throwable ->
                     val error = throwable as? AppError ?: AppError.Unexpected(throwable)
                     postSideEffect(

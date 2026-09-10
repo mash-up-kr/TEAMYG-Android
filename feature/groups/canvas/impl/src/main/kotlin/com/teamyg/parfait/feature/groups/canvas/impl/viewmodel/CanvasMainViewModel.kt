@@ -26,7 +26,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
-import com.teamyg.parfait.domain.repository.topping.ToppingDraftRepository
+import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
@@ -38,6 +38,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
@@ -217,13 +218,22 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
 
-    /** 첫 조회를 기다리는 동안 갱신이 실패했을 때만 온다 — 폴링은 5초마다 돌아 매번 알리면 방해가 된다 */
+    /** 첫 조회를 기다리는 동안 갱신이 실패했을 때만 온다 — 폴링이 주기마다 돌아 매번 알리면 방해가 된다 */
     data object ShowTodayCanvasError : CanvasMainEffect
 
     data object ShowToppingFlowStartError : CanvasMainEffect
 
     /** 그룹 생성·참여 직후 진입일 때만 1회 온다 */
     data class ShowWelcome(val welcome: CanvasWelcome) : CanvasMainEffect
+
+    /**
+     * 03시 캔버스가 마감된 뒤, 그 마감일을 처음 보는 순간(오늘을 보고 있을 때) 1회 온다.
+     * 그룹별로 기록해 두므로 같은 마감일로는 다시 오지 않는다.
+     */
+    data class ShowPastCanvasAlert(
+        val date: LocalDate,
+        val memberCount: Int,
+    ) : CanvasMainEffect
 }
 
 sealed interface CanvasMainIntent : UiIntent {
@@ -254,6 +264,13 @@ sealed interface CanvasMainIntent : UiIntent {
     data class SelectMonth(val month: LocalDate) : CanvasMainIntent
 
     data class ClickDate(val date: LocalDate) : CanvasMainIntent
+
+    /**
+     * [CanvasMainEffect.ShowPastCanvasAlert] 의 "보러가기"에서 온다. 달력 탭([ClickDate])과
+     * 달리 [CanvasMainUiState.displayedMonth] 가 이 날짜와 같은 해라는 보장이 없다 — 새해
+     * 첫날의 마감일은 작년 12월 31일일 수 있다. 그 해 기록이 아직 없으면 먼저 받아온다.
+     */
+    data class ClickPastCanvasAlertDate(val date: LocalDate) : CanvasMainIntent
 
     data object OnClickSaveToGallery : CanvasMainIntent
 
@@ -294,7 +311,8 @@ constructor(
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
-    private val toppingDraftRepository: ToppingDraftRepository,
+    private val startToppingDraft: StartToppingDraftUseCase,
+    private val pastCanvasAlertRepository: PastCanvasAlertRepository,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -368,14 +386,65 @@ constructor(
                     },
                 )
             }
+            canvas?.let(::checkShowPastCanvasAlert)
         }
+    }
+
+    /**
+     * [CanvasVO.lastClosedDate] 는 03시 회전으로 캔버스가 마감될 때만 새 값이 된다. 그 값을
+     * 그룹별로 기억해 뒀다가, 직전에 기억해 둔 마감일과 달라졌을 때만 알린다 — 폴링이 주기마다
+     * 같은 값을 다시 흘려도 저장된 값과 같으므로 두 번째부터는 조용하다.
+     *
+     * 마감일이 어제가 아니어도(며칠 앱을 안 연 사이 여러 날 전으로 갱신됐어도) 알린다 — "그
+     * 마감을 처음 확인하는 순간"이면 며칠이 지났어도 보여준다는 정책이다. 다만 이 기기·이
+     * 그룹 조합을 처음 확인하는 경우([lastSeenClosedDate] 가 `null`)는 기준선만 조용히 세운다
+     * — 배포 직후 이미 알던 마감일까지 알럿으로 뜨는 것을 막는다.
+     *
+     * [markSeen] 은 알럿을 띄우기로 확정된 뒤(또는 기준선만 세우는 경우)에만 부른다. 인원 수
+     * 조회가 실패해 알럿을 못 띄운 경우까지 "봤다"로 남기면, 다음 확인에서
+     * [lastSeenClosedDate] 가 이미 같은 값이라 재시도할 계기가 없어져 그 마감을 영영 못 본다.
+     */
+    private fun checkShowPastCanvasAlert(canvas: CanvasVO) {
+        val lastClosedDate = canvas.lastClosedDate ?: return
+
+        launch(key = PAST_CANVAS_ALERT_KEY) {
+            val lastSeenClosedDate = pastCanvasAlertRepository.lastSeenClosedDate(groupId)
+            if (lastSeenClosedDate == lastClosedDate) return@launch
+
+            if (lastSeenClosedDate == null) {
+                pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
+                return@launch
+            }
+
+            val memberCount = closedCanvasMemberCount(lastClosedDate) ?: return@launch
+            pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
+
+            postSideEffect(
+                CanvasMainEffect.ShowPastCanvasAlert(
+                    date = lastClosedDate,
+                    memberCount = memberCount,
+                ),
+            )
+        }
+    }
+
+    /**
+     * [date] 마감 당시의 그룹원 수. 지난 캔버스 조회 API로 따로 불러와 그 응답의 members 를 쓴다.
+     */
+    private suspend fun closedCanvasMemberCount(date: LocalDate): Int? {
+        val parfaitId = findParfaitId(date) ?: return null
+
+        return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+            .getOrNull()
+            ?.members
+            ?.size
     }
 
     /**
      * 갱신이 실패하면 캐시가 아무것도 내지 않아 [observeTodayCanvas] 만으로는 덮개를 내릴 계기가
      * 없다 — 첫 조회를 기다리는 동안에만 그 실패를 화면으로 옮긴다.
      *
-     * 폴링은 5초마다 도므로 조건 없이 알리면 실패가 이어지는 동안 토스트가 계속 쌓인다.
+     * 폴링은 주기마다 도므로 조건 없이 알리면 실패가 이어지는 동안 토스트가 계속 쌓인다.
      * 덮개가 걸려 있을 때로 좁혀 첫 조회 실패 한 번만 말한다.
      */
     private fun observeTodayCanvasRefreshFailure() {
@@ -533,6 +602,8 @@ constructor(
 
             is CanvasMainIntent.ClickDate -> handleClickDate(intent.date)
 
+            is CanvasMainIntent.ClickPastCanvasAlertDate -> handleClickPastCanvasAlertDate(intent.date)
+
             is CanvasMainIntent.OnClickSaveToGallery -> handleClickSaveToGallery()
 
             is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
@@ -665,7 +736,52 @@ constructor(
         // 달력이 기록 있는 날만 열어 주므로 여기까지 오면 있어야 한다. 없으면 그냥 두는 편이
         // 빈 캔버스를 보여 주는 것보다 낫다
         val parfaitId = current.parfaitHistories.firstOrNull { it.date == date }?.parfaitId ?: return
+        navigateToPastCanvas(date, parfaitId)
+    }
 
+    /**
+     * [CanvasMainEffect.ShowPastCanvasAlert] 의 "보러가기"에서 온다.
+     *
+     * [handleClickDate] 는 달력이 이미 그 해를 펼쳐 기록을 받아 둔 상태에서만 눌린다는 전제가
+     * 있어 [CanvasMainUiState.parfaitHistories]([CanvasMainUiState.displayedMonth] 기준 연도)로
+     * 찾지만, 이 알럿은 달력과 무관하게 아무 때나 뜬다 — 새해 첫날의 마감일은 작년
+     * 12월 31일일 수 있어 [date] 의 해가 [CanvasMainUiState.displayedMonth] 의 해와 다를 수
+     * 있다. 그래서 [findParfaitId] 로 [date] 의 해를 직접 기준으로 찾는다.
+     */
+    private fun handleClickPastCanvasAlertDate(date: LocalDate) {
+        if (date == state.value.selectedDate) return
+
+        launch(key = LOAD_PAST_CANVAS_ALERT_YEAR_KEY) {
+            val parfaitId = findParfaitId(date) ?: return@launch
+            navigateToPastCanvas(date, parfaitId)
+        }
+    }
+
+    /**
+     * [date] 가 속한 해의 기록에서 그 날의 parfaitId 를 찾는다. 이미 받아 둔 해면 캐시에서,
+     * 아니면 그 해만 따로 받아와 캐시에 남긴 뒤 찾는다. 기록에 없는 날(달력이 열어 주지 않는
+     * 날)이거나 조회 자체가 실패하면 `null`.
+     */
+    private suspend fun findParfaitId(date: LocalDate): ParfaitId? {
+        val cachedHistories = state.value.parfaitHistoriesByYear[date.year]
+        if (cachedHistories != null) {
+            return cachedHistories.firstOrNull { it.date == date }?.parfaitId
+        }
+
+        return getParfaitHistoriesUseCase(groupId = groupId, year = date.year)
+            .onSuccess { histories ->
+                updateState { copy(parfaitHistoriesByYear = parfaitHistoriesByYear + (date.year to histories)) }
+            }.onFailure { throwable ->
+                viewModelLogger.e(throwable) { "파르페 기록을 불러오지 못했다 - year: ${date.year}" }
+            }.getOrNull()
+            ?.firstOrNull { it.date == date }
+            ?.parfaitId
+    }
+
+    private fun navigateToPastCanvas(
+        date: LocalDate,
+        parfaitId: ParfaitId,
+    ) {
         updateState { copy(selectedDate = date) }
         isViewingToday.value = state.value.selectedDate == state.value.today
         loadCanvasDetail(date = date, parfaitId = parfaitId)
@@ -784,7 +900,7 @@ constructor(
                 postSideEffect(CanvasMainEffect.ShowToppingFlowStartError)
             },
         ) {
-            toppingDraftRepository.start(
+            startToppingDraft(
                 groupId = groupId,
                 parfaitId = canvas.parfaitId,
                 nextPositionZ = canvas.nextPositionZ(),
@@ -830,6 +946,8 @@ constructor(
 
         const val LOAD_PARFAIT_HISTORIES_KEY = "loadParfaitHistories"
 
+        const val LOAD_PAST_CANVAS_ALERT_YEAR_KEY = "loadPastCanvasAlertYear"
+
         const val LOAD_CANVAS_DETAIL_KEY = "loadCanvasDetail"
 
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
@@ -839,5 +957,7 @@ constructor(
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 
         const val COMPLETE_CANVAS_TUTORIAL_KEY = "completeCanvasTutorial"
+
+        const val PAST_CANVAS_ALERT_KEY = "pastCanvasAlert"
     }
 }

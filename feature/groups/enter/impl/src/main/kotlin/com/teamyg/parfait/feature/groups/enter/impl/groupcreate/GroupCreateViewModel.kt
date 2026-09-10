@@ -49,10 +49,12 @@ sealed interface GroupCreateIntent : UiIntent {
 sealed interface GroupCreateSideEffect : UiSideEffect {
     data object NavigateToBack : GroupCreateSideEffect
 
+    /** @param memberLimit 화면이 알림 권한을 물을지 가르는 데 쓴다 */
     data class NavigateToNext(
         val groupId: Long,
         val groupName: String,
         val inviteCode: String,
+        val memberLimit: Int,
     ) : GroupCreateSideEffect
 
     data class ShowError(val error: GroupCreateError) : GroupCreateSideEffect
@@ -148,6 +150,7 @@ constructor(
                 groupId = createdGroup.groupId.value,
                 groupName = createdGroup.groupName.value,
                 inviteCode = createdGroup.inviteCode.value,
+                memberLimit = createdGroup.memberLimit,
             ),
         )
     }

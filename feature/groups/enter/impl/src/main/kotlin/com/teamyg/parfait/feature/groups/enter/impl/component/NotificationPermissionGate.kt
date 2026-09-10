@@ -29,6 +29,11 @@ private val gateLogger = Loggers.create("NotificationPermissionGate")
  * 정책: A-004(그룹 참여)·A-005(그룹 생성) 완료 직후, 캔버스 진입 전 보여준다.
  * 이미 허용돼 있으면 안내 없이 곧장 [onFinished] 로 넘어간다.
  *
+ * **정원 1로 만든 그룹에서는 부르지 않는다** — 토핑 알림은 서버가 작성자를 빼고 보내므로
+ * (`ToppingPlacedNotifier`) 혼자인 그룹에서는 영영 오지 않는다. 데일리 리마인드는 인원수를
+ * 보지 않아 그 사용자도 대상이지만, 실익이 적은 자리에서 한 번뿐인 권한 요청을 소진하지
+ * 않는다. 가르는 곳은 [GroupCreateRoute][com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateRoute] 다.
+ *
  * **기기 토큰 등록을 여기에 매달지 마라** — 토큰은 알림 권한과 무관하게 발급되고 등록은
  * 세션 축이 맡는다([RegisterCurrentDeviceTokenUseCase][com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase]).
  *

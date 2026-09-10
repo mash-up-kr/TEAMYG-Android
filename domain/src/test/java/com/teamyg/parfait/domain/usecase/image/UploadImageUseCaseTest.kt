@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.image
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.repository.image.ImageFileRepository
 import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import io.mockk.coEvery
@@ -13,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 private const val URI = "content://media/external/images/media/1"
 private const val FILE_PATH = "/data/user/0/com.teamyg.parfait/cache/upload/abc.png"
@@ -27,7 +29,7 @@ class UploadImageUseCaseTest {
 
     private fun givenBothStepsSucceed() {
         coEvery { imageFileRepository.copyToCache(any()) } returns Result.success(FILE_PATH)
-        coEvery { imageUploadRepository.upload(any(), any()) } returns Result.success(CONFIRMED_IMAGE_ID)
+        coEvery { imageUploadRepository.upload(any(), any(), any()) } returns Result.success(CONFIRMED_IMAGE_ID)
     }
 
     @Test
@@ -49,7 +51,7 @@ class UploadImageUseCaseTest {
         uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
 
         // Then 업로드는 uri 를 그대로 받으면 파일을 찾지 못한다 — 떨군 경로가 가야 한다
-        coVerify { imageUploadRepository.upload(capture(sentFilePath), any()) }
+        coVerify { imageUploadRepository.upload(capture(sentFilePath), any(), any()) }
         assertEquals(FILE_PATH, sentFilePath.captured)
     }
 
@@ -62,8 +64,19 @@ class UploadImageUseCaseTest {
 
         uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
 
-        coVerify { imageUploadRepository.upload(any(), capture(uploadedType)) }
+        coVerify { imageUploadRepository.upload(any(), capture(uploadedType), any()) }
         assertEquals(ImageType.BACKGROUND, uploadedType.captured)
+    }
+
+    @Test
+    fun invoke_doesNotForwardASourceLongSide() = runTest {
+        givenBothStepsSucceed()
+        val sentSourceLongSide = slot<SourceLongSide?>()
+
+        uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
+
+        coVerify { imageUploadRepository.upload(any(), any(), captureNullable(sentSourceLongSide)) }
+        assertNull(sentSourceLongSide.captured)
     }
 
     @Test
@@ -74,7 +87,7 @@ class UploadImageUseCaseTest {
         val result = uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
 
         // Then 발급을 부르지 않는다 — 올릴 것도 없는데 서버에 PENDING 행만 남는다
-        coVerify(exactly = 0) { imageUploadRepository.upload(any(), any()) }
+        coVerify(exactly = 0) { imageUploadRepository.upload(any(), any(), any()) }
         assertIs<AppError.Network>(result.exceptionOrNull())
     }
 
@@ -82,7 +95,7 @@ class UploadImageUseCaseTest {
     fun invoke_uploadFails_liftsTheFailure() = runTest {
         // Given 떨구기는 됐지만 업로드가 실패한다
         coEvery { imageFileRepository.copyToCache(any()) } returns Result.success(FILE_PATH)
-        coEvery { imageUploadRepository.upload(any(), any()) } returns Result.failure(AppError.Network(null))
+        coEvery { imageUploadRepository.upload(any(), any(), any()) } returns Result.failure(AppError.Network(null))
 
         val result = uploadImage(uri = URI, imageType = ImageType.BACKGROUND)
 

@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.source.toppingdraft.local
 import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -27,6 +28,7 @@ class ToppingDraftLocalDataSourceImplTest {
         cutoutImagePath = "/data/user/0/com.teamyg.parfait/cache/segmentation/cutout.png",
         borderColorArgb = 0xFFFF6B6B.toInt(),
         borderWidthDp = 4f,
+        sourceLongSide = SourceLongSide(4032),
     )
 
     @Test
@@ -86,5 +88,20 @@ class ToppingDraftLocalDataSourceImplTest {
 
         // Then 터지지 않고 초안이 없는 것으로 본다 — 흐름은 진입에서 다시 열린다
         assertNull(dataSource.draft.first())
+    }
+
+    @Test
+    fun read_legacyJsonWithoutSourceLongSide_keepsDraftAndNullsTheField() = runTest {
+        // Given 이 필드가 생기기 전에 저장된 JSON 이 남아 있다
+        val legacyJson = """{"groupId":1,"parfaitId":2,"nextPositionZ":4,""" +
+            """"subjectImagePath":"/cache/segmentation/subject.png"}"""
+        dataStore.putRaw(ToppingDraftLocalDataSourceImpl.TOPPING_DRAFT_KEY_NAME, legacyJson)
+
+        // When 읽는다
+        val restored = dataSource.draft.first()
+
+        // Then 초안을 통째로 버리지 않고 이 필드만 비운다 - 흐름 도중 앱을 껐다 켠 사용자를 잃지 않는다
+        assertEquals("/cache/segmentation/subject.png", restored?.subjectImagePath)
+        assertNull(restored?.sourceLongSide)
     }
 }

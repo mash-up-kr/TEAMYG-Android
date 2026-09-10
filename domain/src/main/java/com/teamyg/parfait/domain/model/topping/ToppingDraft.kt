@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.model.topping
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 
 /**
  * 토핑 만들기 흐름의 상태 한 벌. 흐름당 하나만 존재하고, 이미지와 테두리가 빈 초안은 흐름에
@@ -18,4 +19,5 @@ data class ToppingDraft(
     val cutoutImagePath: String? = null,
     val borderColorArgb: Int? = null,
     val borderWidthDp: Float? = null,
+    val sourceLongSide: SourceLongSide? = null,
 )

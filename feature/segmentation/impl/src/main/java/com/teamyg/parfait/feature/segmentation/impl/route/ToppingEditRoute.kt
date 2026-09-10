@@ -54,6 +54,11 @@ internal fun ToppingEditRoute(
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
 
+                is ToppingEditEffect.SubjectTooSmall -> {
+                    val message = context.getString(R.string.topping_edit_subject_too_small)
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+
                 is ToppingEditEffect.EditCompleted -> {
                     resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.result)
                     navigator.onBack()

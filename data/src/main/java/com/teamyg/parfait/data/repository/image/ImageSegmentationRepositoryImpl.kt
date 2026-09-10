@@ -31,13 +31,14 @@ import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
 import com.teamyg.parfait.data.utils.image.applyAlphaInPlace
 import com.teamyg.parfait.data.utils.image.clearFiles
 import com.teamyg.parfait.data.utils.image.composeCroppedArgb
-import com.teamyg.parfait.data.utils.image.coverageFloorPixels
 import com.teamyg.parfait.data.utils.image.filterCandidates
 import com.teamyg.parfait.data.utils.image.maskSubjectAlpha
 import com.teamyg.parfait.data.utils.image.postProcessAlpha
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.SubjectCoverage
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -223,7 +224,7 @@ constructor(
      * 커버리지도 하한 미만이다. 최종 판정을 바꾸지 않으면서 큰 판을 훑는 일을 건너뛴다.
      */
     private suspend fun SubjectSegmentationResult.toCandidatePairs(origin: Bitmap): List<CandidatePair> {
-        val floor = coverageFloorPixels(origin.width.toLong() * origin.height)
+        val floor = SubjectCoverage.floorPixels(origin.width.toLong() * origin.height)
 
         val withBitmap = subjects.mapNotNull { subject -> subject.bitmap?.let { subject to it } }
         val eligible = withBitmap
@@ -527,6 +528,9 @@ constructor(
                     SegmentationResult(
                         subjectImagePath = subjectFile.absolutePath,
                         trimmedSubjectImagePath = trimmedFile.absolutePath,
+                        sourceLongSide = SourceLongSide(
+                            maxOf(candidate.canvasWidth, candidate.canvasHeight),
+                        ),
                     ),
                 )
             } catch (e: CancellationException) {

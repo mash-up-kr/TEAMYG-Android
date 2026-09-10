@@ -15,11 +15,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-
-/** 실측 전 값이다(OQ-P-320) */
-private val CANVAS_POLL_INTERVAL: Duration = 5.seconds
 
 /**
  * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다. 값이 아니라
@@ -38,6 +33,7 @@ class CanvasPoller @Inject constructor(
     private val remote: ParfaitRemoteDataSource,
     private val local: CanvasLocalDataSource,
     private val clock: Clock = Clock.System,
+    private val interval: CanvasPollInterval = CanvasPollInterval(),
 ) {
     private val lock = Any()
     private val subscriberCounts = mutableMapOf<GroupId, Int>()
@@ -71,15 +67,18 @@ class CanvasPoller @Inject constructor(
     /** 테스트 전용 — [hasSubscriberForTest] 참고 */
     internal fun isPollingForTest(groupId: GroupId): Boolean = synchronized(lock) { pollJobs.containsKey(groupId) }
 
+    /** 구독자 판정과 재시작을 한 [synchronized] 안에서 하는 이유는 [refreshNow] 참고 */
     fun acquire(groupId: GroupId) {
-        val isFirst = synchronized(lock) {
+        synchronized(lock) {
             val next = (subscriberCounts[groupId] ?: 0) + 1
             subscriberCounts[groupId] = next
-            next == 1
-        }
-        if (isFirst.not()) return
+            if (next > 1) return
 
-        restartPollTimer(groupId)
+            // 화면 밖에서 나간 푸시 갱신은 release 를 거치지 않아 단계가 남는다 — 진입
+            // 시점만은 이 줄이 가장 촘촘한 단계에서 시작함을 보장한다
+            interval.onReset(groupId)
+            restartPollTimerLocked(groupId)
+        }
         scope.launch { refresh(groupId) }
     }
 
@@ -89,6 +88,8 @@ class CanvasPoller @Inject constructor(
             if (next <= 0) {
                 subscriberCounts.remove(groupId)
                 pollJobs.remove(groupId)?.cancel()
+                // 다시 오지 않을 그룹의 단계가 맵에 쌓이지 않게 한다
+                interval.forget(groupId)
             } else {
                 subscriberCounts[groupId] = next
             }
@@ -107,7 +108,10 @@ class CanvasPoller @Inject constructor(
     suspend fun refreshNow(groupId: GroupId): Result<Unit> {
         val result = refresh(groupId)
         synchronized(lock) {
-            if (subscriberCounts.containsKey(groupId)) restartPollTimerLocked(groupId)
+            if (subscriberCounts.containsKey(groupId)) {
+                interval.onReset(groupId)
+                restartPollTimerLocked(groupId)
+            }
         }
         return result
     }
@@ -126,13 +130,11 @@ class CanvasPoller @Inject constructor(
             generation++
             pollJobs.values.forEach(Job::cancel)
             pollJobs.clear()
+            // 구독자 없이 단계만 남은 그룹도 있으므로 키 순회로는 부족하다
+            interval.forgetAll()
             subscriberCounts.clear()
             refreshing.clear()
         }
-    }
-
-    private fun restartPollTimer(groupId: GroupId) {
-        synchronized(lock) { restartPollTimerLocked(groupId) }
     }
 
     /** [lock] 을 이미 쥔 자리에서만 부른다 — [synchronized] 는 재진입 가능해 중첩 호출도 안전하다 */
@@ -140,7 +142,8 @@ class CanvasPoller @Inject constructor(
         pollJobs.remove(groupId)?.cancel()
         pollJobs[groupId] = scope.launch {
             while (isActive) {
-                delay(CANVAS_POLL_INTERVAL)
+                // 도는 중에 단계가 바뀌어도 이미 시작된 대기는 끊지 않는다
+                delay(synchronized(lock) { interval.current(groupId) })
                 refresh(groupId)
             }
         }
@@ -172,7 +175,14 @@ class CanvasPoller @Inject constructor(
             return result
                 .onSuccess { canvas ->
                     synchronized(lock) {
-                        if (generation == startedGeneration) local.saveTodayCanvas(groupId, canvas)
+                        if (generation == startedGeneration) {
+                            // 구독자 없이 나간 갱신(화면 밖 푸시)이 단계를 올려 두면 다음
+                            // 진입이 가장 촘촘한 단계에서 시작하지 못한다
+                            if (subscriberCounts.containsKey(groupId)) {
+                                if (cached != canvas) interval.onChanged(groupId) else interval.onUnchanged(groupId)
+                            }
+                            local.saveTodayCanvas(groupId, canvas)
+                        }
                     }
                 }.onFailure {
                     // 세대가 바뀌었으면 이미 버려진 갱신의 실패라 화면에 알리지 않는다

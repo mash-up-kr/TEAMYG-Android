@@ -26,6 +26,14 @@
             android:name="android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_ORIENTATION_AND_ASPECT_RATIO_OPT_OUT"
             android:value="true" />
 
+        <!--
+            단일 Activity 라 자동 수집은 화면과 무관하게 MainActivity 이름으로 찍힌다.
+            그 이벤트가 같은 보고서에 섞이면 화면별 수치를 흐린다.
+        -->
+        <meta-data
+            android:name="google_analytics_automatic_screen_reporting_enabled"
+            android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

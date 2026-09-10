@@ -3,6 +3,7 @@ package com.teamyg.parfait.domain.usecase.topping
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.ImageType
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -35,11 +36,12 @@ class AddToppingUseCase @Inject constructor(
         filePath: String,
         transform: ToppingTransform,
         border: ToppingBorder,
+        sourceLongSide: SourceLongSide?,
     ): Result<PlacedToppingVO> {
         // 용도를 파라미터로 열지 않는다. 잘못 고르면 객체가 엉뚱한 S3 접두사에 앉는데
         // 배치는 그것을 검사하지 않아 아무 실패도 드러나지 않는다(api/image.md 키 규칙)
         val imageId = imageUploadRepository
-            .upload(filePath = filePath, imageType = ImageType.NUKKI)
+            .upload(filePath = filePath, imageType = ImageType.NUKKI, sourceLongSide = sourceLongSide)
             .getOrElse { throwable -> return Result.failure(throwable) }
 
         return toppingRepository.place(
