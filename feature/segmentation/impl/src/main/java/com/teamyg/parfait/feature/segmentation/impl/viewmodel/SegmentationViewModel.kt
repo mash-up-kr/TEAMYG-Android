@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
+import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
@@ -64,6 +65,7 @@ class SegmentationViewModel
     private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
+    private val recoverCandidatesUseCase: RecoverCandidatesUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
@@ -72,6 +74,18 @@ class SegmentationViewModel
 ) {
     /** `AndroidBitmap` 생성자가 모듈 내부라 `state.originBitmap` 으로는 다시 만들 수 없다 */
     private var originBitmapWrapper: BitmapWrapper? = null
+
+    private enum class LastFailure { EXCEPTION, EMPTY }
+
+    /** 재시도가 무엇을 돌지만 정한다. 화면이 안 쓰는 값이라 상태로 올리지 않는다 */
+    private var lastFailure: LastFailure? = null
+
+    /**
+     * 이 사진으로 사다리를 끝까지 돌렸는가. 입력이 같으면 결과도 같아서 한 번만 돈다.
+     *
+     * ⚠️ 1차에서 다시 0건이 나와도 되돌리지 않는다. 되돌리면 사다리가 한 번 걸러 되풀이된다.
+     */
+    private var recoveryAttempted = false
 
     init {
         loadCandidates()
@@ -108,20 +122,60 @@ class SegmentationViewModel
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
                     if (candidates.isEmpty()) {
+                        lastFailure = LastFailure.EMPTY
                         updateState { copy(isError = true) }
                         return@onSuccess
                     }
 
+                    lastFailure = null
                     updateState { copy(candidates = candidates) }
                 }.onFailure { throwable ->
                     // 화면이 원인을 가르지 않으므로 원인은 여기에만 남는다
                     viewModelLogger.e(throwable) {
                         "세그멘테이션 실패 ${throwable::class.simpleName}, 원인 ${throwable.cause}"
                     }
+                    lastFailure = LastFailure.EXCEPTION
                     updateState { copy(isError = true) }
                 }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
+            updateState { copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * ⚠️ [LOAD_CANDIDATES_KEY] 를 진입·재시도와 공유한다. 다른 키를 쓰면 연타가 사다리를 겹쳐 돈다.
+     */
+    private fun recover() {
+        val bitmapWrapper = originBitmapWrapper ?: return loadCandidates()
+
+        launch(
+            key = LOAD_CANDIDATES_KEY,
+            onError = {
+                lastFailure = LastFailure.EXCEPTION
+                updateState { copy(isLoading = false, isError = true) }
+            },
+        ) {
+            // 에러 표시를 안 걷으면 실패 화면 위에 로딩 덮개가 겹친다
+            updateState { copy(isLoading = true, isError = false, candidates = emptyList()) }
+
+            recoverCandidatesUseCase(bitmapWrapper)
+                .onSuccess { candidates ->
+                    // 끝까지 돌았다. 모듈 문제로 중간에 접히면 여기 오지 않아 다시 돌 기회가 남는다
+                    recoveryAttempted = true
+                    if (candidates.isEmpty()) {
+                        lastFailure = LastFailure.EMPTY
+                        updateState { copy(isError = true) }
+                    } else {
+                        lastFailure = null
+                        updateState { copy(candidates = candidates) }
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "회복 실패 ${throwable::class.simpleName}" }
+                    lastFailure = LastFailure.EXCEPTION
+                    updateState { copy(isError = true) }
+                }
+
             updateState { copy(isLoading = false) }
         }
     }
@@ -134,7 +188,10 @@ class SegmentationViewModel
     override fun processIntent(intent: SegmentationIntent) {
         when (intent) {
             is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
-            SegmentationIntent.Retry -> loadCandidates()
+
+            SegmentationIntent.Retry ->
+                if (lastFailure == LastFailure.EMPTY && !recoveryAttempted) recover() else loadCandidates()
+
             SegmentationIntent.UseOriginal -> useOriginal()
         }
     }

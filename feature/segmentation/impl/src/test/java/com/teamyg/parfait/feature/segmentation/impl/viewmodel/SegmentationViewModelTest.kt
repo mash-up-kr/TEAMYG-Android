@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
+import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import io.mockk.coEvery
@@ -54,6 +55,7 @@ class SegmentationViewModelTest {
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
+    private val recoverCandidates: RecoverCandidatesUseCase = mockk()
 
     // useOriginal 의 긴 변 계산이 AndroidBitmap 캐스팅에 걸리므로 일반 mockk 로는 그 경로를 못 탄다
     private val originBitmap: Bitmap = mockk<Bitmap> {
@@ -101,6 +103,7 @@ class SegmentationViewModelTest {
         persistSubjectUseCase = persistSubject,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
+        recoverCandidatesUseCase = recoverCandidates,
     )
 
     @Test
@@ -628,5 +631,121 @@ class SegmentationViewModelTest {
 
         // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
         coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+    }
+
+    @Test
+    fun retry_afterEmptyCandidates_runsTheRecoveryLadder() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(listOf(candidate))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // 1차를 다시 돌지 않는다
+        coVerify(exactly = 1) { segmentImage(any()) }
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
+        assertFalse(viewModel.state.value.isError)
+    }
+
+    @Test
+    fun retry_afterAnException_takesTheOriginalPathAgain() = runTest {
+        coEvery { segmentImage(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { segmentImage(any()) }
+        coVerify(exactly = 0) { recoverCandidates(any()) }
+    }
+
+    @Test
+    fun retry_afterTheRecoveryAlsoFailed_fallsBackToTheOriginalPath() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        repeat(2) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        coVerify(exactly = 2) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_pressedFourTimesAfterEmpty_runsTheLadderOnlyOnce() = runTest {
+        // Given 같은 사진이라 1차도 회복도 계속 0건이다
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 네 번 누른다 — 1차의 0건이 플래그를 덮으면 세 번째에 사다리가 다시 돈다
+        repeat(4) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        coVerify(exactly = 4) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_afterTheLadderWasAbortedByTheModule_mayRunTheLadderAgain() = runTest {
+        // Given 사다리가 모듈 문제로 중간에 접혔다 — 끝까지 돈 것이 아니다
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        repeat(3) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        // 회복 → 1차(0건) → 회복
+        coVerify(exactly = 2) { recoverCandidates(any()) }
+        coVerify(exactly = 2) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_whileTheRecoveryRuns_clearsTheErrorAndShowsLoading() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } coAnswers {
+            delay(1_000)
+            Result.success(listOf(candidate))
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isError)
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        runCurrent()
+
+        // 에러 화면 위에 로딩 덮개가 겹치는 조합을 막는다
+        assertFalse(viewModel.state.value.isError)
+        assertTrue(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun retry_recoveryThrowsUnexpectedly_restoresTheErrorScreen() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } throws IllegalStateException("boom")
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // 되돌리지 않으면 에러도 후보도 없는 화면에 갇힌다
+        assertTrue(viewModel.state.value.isError)
+        assertFalse(viewModel.state.value.isLoading)
     }
 }
