@@ -243,17 +243,29 @@ constructor(
             return StageOutcome.Empty(hint = null)
         }
 
+        val whole = SegmentationBounds(0, 0, origin.width, origin.height)
+        val source = stage.cropRect ?: whole
+        val projection = DetectionProjection(stage.transform, clip = source)
+        val capped = stage.targetSize.width < source.width
+
+        // 철회 조건이 요구하는 목표 치수·상한 여부를 여기서 한 번만 남긴다 — 아래 어느 탈출 경로를 타도
+        // 이 단계가 어떤 조건으로 돌았는지는 남는다
+        repositoryLogger.i {
+            "회복 $name: 목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped"
+        }
+
         try {
             val image = InputImage.fromBitmap(plate.bitmap, 0)
-            val whole = SegmentationBounds(0, 0, origin.width, origin.height)
-            val source = stage.cropRect ?: whole
-            val projection = DetectionProjection(stage.transform, clip = source)
-            val capped = stage.targetSize.width < source.width
 
             val multi = runSegmenter(multipleSubjectOptions(), image).getOrElse { cause ->
                 return if (cause is SegmentationException.ModuleNotReady) {
+                    repositoryLogger.w { "회복 $name: 다중 subject 추론이 모듈 미준비로 사다리를 멈춘다" }
                     StageOutcome.Aborted(cause)
                 } else {
+                    repositoryLogger.w(cause) {
+                        "회복 $name: 다중 subject 추론 실패, 최종 후보 0, " +
+                            "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
+                    }
                     StageOutcome.Empty(hint = null)
                 }
             }
@@ -262,20 +274,32 @@ constructor(
             val relaxed = harvested.count { it.candidate.passesRelaxedFloor() }
 
             repositoryLogger.i {
-                "회복 $name: 목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped, " +
-                    "필터 통과 ${candidates.size}/${harvested.size}(1/$RELAXED_FLOOR_LOG_DIVISOR 하한이었다면 $relaxed), " +
+                "회복 $name: 필터 통과 ${candidates.size}/${harvested.size}" +
+                    "(1/$RELAXED_FLOOR_LOG_DIVISOR 하한이었다면 $relaxed), " +
                     "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
             }
             if (candidates.isNotEmpty()) return StageOutcome.Found(candidates)
 
             val foreground = runSegmenter(foregroundOptions(), image).getOrElse { cause ->
                 return if (cause is SegmentationException.ModuleNotReady) {
+                    repositoryLogger.w { "회복 $name: 전경 폴백 추론이 모듈 미준비로 사다리를 멈춘다" }
                     StageOutcome.Aborted(cause)
                 } else {
+                    repositoryLogger.w(cause) {
+                        "회복 $name: 전경 폴백 추론 실패, 최종 후보 0, " +
+                            "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
+                    }
                     StageOutcome.Empty(hint = null)
                 }
             }
-            val mask = foreground.foregroundConfidenceMask ?: return StageOutcome.Empty(hint = null)
+            val mask = foreground.foregroundConfidenceMask
+            if (mask == null) {
+                repositoryLogger.w {
+                    "회복 $name: 전경 신뢰도 마스크가 없어 최종 후보 0, " +
+                        "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
+                }
+                return StageOutcome.Empty(hint = null)
+            }
             val harvest = withContext(Dispatchers.Default) {
                 harvestForeground(
                     mask = mask,
