@@ -93,6 +93,8 @@ constructor(
 ) : BaseViewModel<CustomCameraState, CustomCameraIntent, CustomCameraEffect>(
     initialState = CustomCameraState(),
 ) {
+    private var hasRequestedPermission = false
+
     init {
         viewModelLogger.i { "CustomCameraViewModel::init" }
     }
@@ -122,6 +124,17 @@ constructor(
                 permanentlyDenied = if (intent.granted) false else permanentlyDenied,
             )
         }
+
+        if (!intent.granted) {
+            requestPermissionOnce()
+        }
+    }
+
+    private fun requestPermissionOnce() {
+        if (hasRequestedPermission) return
+
+        hasRequestedPermission = true
+        postSideEffect(CustomCameraEffect.RequestPermission)
     }
 
     private fun handleOnPermissionRequestResult(intent: CustomCameraIntent.OnPermissionRequestResult) {
