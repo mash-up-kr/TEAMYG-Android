@@ -37,7 +37,7 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 @Composable
 internal fun SegmentationErrorScreen(
     onClickRetry: () -> Unit,
-    onClickUseOriginal: () -> Unit,
+    onClickEditManually: () -> Unit,
     onClickClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,10 +100,10 @@ internal fun SegmentationErrorScreen(
                     )
 
                     YGButton(
-                        text = stringResource(R.string.segmentation_error_use_original),
+                        text = stringResource(R.string.segmentation_error_edit_manually),
                         buttonType = YGButtonType.Medium.Secondary,
                         isEnabled = true,
-                        onClick = onClickUseOriginal,
+                        onClick = onClickEditManually,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -120,7 +120,7 @@ private val BUTTON_WIDTH = 161.5.dp
 private fun PreviewSegmentationErrorScreen() = PreviewBox {
     SegmentationErrorScreen(
         onClickRetry = {},
-        onClickUseOriginal = {},
+        onClickEditManually = {},
         onClickClose = {},
         modifier = Modifier.fillMaxSize(),
     )
