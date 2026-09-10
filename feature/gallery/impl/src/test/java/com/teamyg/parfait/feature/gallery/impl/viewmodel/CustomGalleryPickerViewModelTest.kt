@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.gallery.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.member.TutorialKind
@@ -179,6 +180,49 @@ class CustomGalleryPickerViewModelTest {
 
             // Then 지금까지의 경로 그대로다
             assertEquals(CustomGalleryPickerEffect.NavigateToConfirm(source.uri), awaitItem())
+        }
+    }
+
+    @Test
+    fun permission_whenDeniedOnEntry_requestsSystemDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.DENIED))
+
+            assertEquals(CustomGalleryPickerEffect.RequestPermission, awaitItem())
+        }
+    }
+
+    @Test
+    fun permission_whenStillDeniedAfterRequest_doesNotRequestAgain() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.DENIED))
+            assertEquals(CustomGalleryPickerEffect.RequestPermission, awaitItem())
+
+            // 다이얼로그가 닫힐 때마다 재개 확인이 들어오므로, 여기서 또 띄우면 끝없이 돈다
+            viewModel.processIntent(
+                CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.PERMANENTLY_DENIED),
+            )
+            viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.DENIED))
+
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun permission_whenPartialOnEntry_doesNotRequest() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.PARTIAL))
+
+            expectNoEvents()
         }
     }
 }

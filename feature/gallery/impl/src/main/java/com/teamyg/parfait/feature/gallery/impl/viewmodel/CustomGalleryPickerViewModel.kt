@@ -89,6 +89,8 @@ class CustomGalleryPickerViewModel
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
+    private var hasRequestedPermission = false
+
     init {
         viewModelLogger.i { "CustomGalleryPickerViewModel::init" }
 
@@ -151,8 +153,17 @@ class CustomGalleryPickerViewModel
                         access = intent.access,
                     )
                 }
+
+                requestPermissionOnce()
             }
         }
+    }
+
+    private fun requestPermissionOnce() {
+        if (hasRequestedPermission) return
+
+        hasRequestedPermission = true
+        postSideEffect(CustomGalleryPickerEffect.RequestPermission)
     }
 
     private fun handleOnRequestPermission() {
