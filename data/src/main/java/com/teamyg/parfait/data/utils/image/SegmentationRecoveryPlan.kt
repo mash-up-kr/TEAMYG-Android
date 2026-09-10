@@ -6,24 +6,9 @@ import com.teamyg.parfait.data.model.image.ProjectedRegion
 import com.teamyg.parfait.data.model.image.RecoveryStage
 import com.teamyg.parfait.data.model.image.RecoveryTransform
 import com.teamyg.parfait.data.model.image.ScaledSize
+import com.teamyg.parfait.data.model.image.SegmentationRecoverySpec
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlin.math.roundToInt
-
-/** ML Kit 가이드가 "at least 512x512" 를 적는다 */
-internal const val DETECTION_MIN_SHORT_SIDE = 512
-
-/** 문서 근거가 아니라 자원에서 나온 값이다. 판을 네 번 추론하므로 피크를 여기서 막는다 */
-internal const val DETECTION_MAX_LONG_SIDE = 2048
-
-/** 테스트가 구현의 오차에 맞춰지지 않게 여기서 고정한다 */
-internal const val ROUND_TRIP_TOLERANCE_PX = 1
-
-private const val FOCUS_MARGIN_RATIO = 0.20f
-
-/** 정수로 비교한다. 부동소수 비율이면 정확히 70% 인 경계가 반올림 오차로 흔들린다 */
-private const val FOCUS_SHRINK_CEILING_PERCENT = 70
-
-private const val CENTER_CROP_RATIO = 0.70f
 
 /**
  * 검출에 쓸 치수. 하한과 상한이 충돌하면 상한이 이긴다 — 확대는 정보를 늘리지 않지만 상한 초과는
@@ -35,8 +20,8 @@ internal fun resolveTargetSize(
 ): ScaledSize {
     require(width > 0 && height > 0) { "size must be positive but was ${width}x$height" }
 
-    val floorScale = maxOf(1f, DETECTION_MIN_SHORT_SIDE.toFloat() / minOf(width, height))
-    val ceilingScale = DETECTION_MAX_LONG_SIDE.toFloat() / maxOf(width, height)
+    val floorScale = maxOf(1f, SegmentationRecoverySpec.DETECTION_MIN_SHORT_SIDE.toFloat() / minOf(width, height))
+    val ceilingScale = SegmentationRecoverySpec.DETECTION_MAX_LONG_SIDE.toFloat() / maxOf(width, height)
     val scale = minOf(floorScale, ceilingScale)
 
     return ScaledSize(
@@ -53,10 +38,10 @@ internal fun isLongSideCapped(
     width: Int,
     height: Int,
 ): Boolean {
-    val floorScale = maxOf(1f, DETECTION_MIN_SHORT_SIDE.toFloat() / minOf(width, height))
+    val floorScale = maxOf(1f, SegmentationRecoverySpec.DETECTION_MIN_SHORT_SIDE.toFloat() / minOf(width, height))
     val flooredLongSide = maxOf(width, height) * floorScale
 
-    return flooredLongSide > DETECTION_MAX_LONG_SIDE
+    return flooredLongSide > SegmentationRecoverySpec.DETECTION_MAX_LONG_SIDE
 }
 
 /** 크롭 없는 1단계. 목표 치수가 원본과 같고 대비도 안 걸면 1차 경로의 재실행일 뿐이라 널이다 */
@@ -91,8 +76,8 @@ internal fun focusCrop(
     if (hint == null || hintTransform == null) return centerSquare(width, height)
 
     val origin = hintTransform.toOrigin(hint)
-    val marginX = (origin.width * FOCUS_MARGIN_RATIO).roundToInt()
-    val marginY = (origin.height * FOCUS_MARGIN_RATIO).roundToInt()
+    val marginX = (origin.width * SegmentationRecoverySpec.FOCUS_MARGIN_RATIO).roundToInt()
+    val marginY = (origin.height * SegmentationRecoverySpec.FOCUS_MARGIN_RATIO).roundToInt()
 
     return SegmentationBounds(
         left = (origin.left - marginX).coerceIn(0, width),
@@ -118,7 +103,7 @@ internal fun focusStage(
     if (crop.width <= 0 || crop.height <= 0) return null
 
     val cropArea = crop.width.toLong() * crop.height
-    if (cropArea * 100 >= width.toLong() * height * FOCUS_SHRINK_CEILING_PERCENT) return null
+    if (cropArea * 100 >= width.toLong() * height * SegmentationRecoverySpec.FOCUS_SHRINK_CEILING_PERCENT) return null
 
     val target = resolveTargetSize(crop.width, crop.height)
 
@@ -139,7 +124,7 @@ private fun centerSquare(
     width: Int,
     height: Int,
 ): SegmentationBounds {
-    val side = maxOf(1, (minOf(width, height) * CENTER_CROP_RATIO).roundToInt())
+    val side = maxOf(1, (minOf(width, height) * SegmentationRecoverySpec.CENTER_CROP_RATIO).roundToInt())
     val left = (width - side) / 2
     val top = (height - side) / 2
 

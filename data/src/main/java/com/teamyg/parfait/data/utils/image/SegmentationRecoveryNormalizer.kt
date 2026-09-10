@@ -1,18 +1,13 @@
-// 파일명은 스펙이 정한 SegmentationRecoveryNormalizer.kt다(SegmentationInputNormalizer.kt와의 충돌 회피).
-// ktlint는 파일 안 유일한 클래스 DetectionPlate 이름을 기대하므로 여기서만 끈다.
-@file:Suppress("ktlint:standard:filename")
-
 package com.teamyg.parfait.data.utils.image
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import com.teamyg.parfait.data.model.image.DetectionPlate
 import com.teamyg.parfait.data.model.image.RecoveryStage
+import com.teamyg.parfait.data.model.image.SegmentationContrastSpec
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
-
-/** [ownedByUs] 가 거짓이면 원본이다. 쓰지도 회수하지도 않는다 */
-internal class DetectionPlate(val bitmap: Bitmap, val ownedByUs: Boolean)
 
 /**
  * 계획을 비트맵에 적용한다. 크롭 → 축소 → 축소판에서 히스토그램 → 축소판에 LUT 순서다. 원본에서 히스토그램을
@@ -62,7 +57,7 @@ private suspend fun applyContrastInPlace(bitmap: Bitmap) {
     val job = currentCoroutineContext().job
     val width = bitmap.width
     val row = IntArray(width)
-    val histogram = IntArray(LUMINANCE_LEVELS)
+    val histogram = IntArray(SegmentationContrastSpec.LUMINANCE_LEVELS)
 
     for (y in 0 until bitmap.height) {
         job.ensureActive()

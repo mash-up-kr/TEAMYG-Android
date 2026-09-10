@@ -4,6 +4,7 @@ import com.teamyg.parfait.data.model.image.DetectionBounds
 import com.teamyg.parfait.data.model.image.DetectionProjection
 import com.teamyg.parfait.data.model.image.RecoveryTransform
 import com.teamyg.parfait.data.model.image.ScaledSize
+import com.teamyg.parfait.data.model.image.SegmentationRecoverySpec
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlin.math.abs
 import kotlin.test.Test
@@ -38,7 +39,7 @@ class SegmentationRecoveryPlanTest {
 
         // Then 상한이 이겨 짧은 변은 하한에 못 미친다
         assertEquals(ScaledSize(width = 2048, height = 164), target)
-        assertTrue(target.height < DETECTION_MIN_SHORT_SIDE)
+        assertTrue(target.height < SegmentationRecoverySpec.DETECTION_MIN_SHORT_SIDE)
     }
 
     @Test
@@ -181,10 +182,10 @@ class SegmentationRecoveryPlanTest {
 
         val origin = transform.toOrigin(DetectionBounds(0, 0, target.width, target.height))
 
-        assertTrue(abs(origin.left - crop.left) <= ROUND_TRIP_TOLERANCE_PX)
-        assertTrue(abs(origin.top - crop.top) <= ROUND_TRIP_TOLERANCE_PX)
-        assertTrue(abs(origin.right - crop.right) <= ROUND_TRIP_TOLERANCE_PX)
-        assertTrue(abs(origin.bottom - crop.bottom) <= ROUND_TRIP_TOLERANCE_PX)
+        assertTrue(abs(origin.left - crop.left) <= SegmentationRecoverySpec.ROUND_TRIP_TOLERANCE_PX)
+        assertTrue(abs(origin.top - crop.top) <= SegmentationRecoverySpec.ROUND_TRIP_TOLERANCE_PX)
+        assertTrue(abs(origin.right - crop.right) <= SegmentationRecoverySpec.ROUND_TRIP_TOLERANCE_PX)
+        assertTrue(abs(origin.bottom - crop.bottom) <= SegmentationRecoverySpec.ROUND_TRIP_TOLERANCE_PX)
     }
 
     @Test

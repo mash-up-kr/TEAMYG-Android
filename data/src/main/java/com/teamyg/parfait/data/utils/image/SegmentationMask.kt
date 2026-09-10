@@ -1,16 +1,10 @@
 package com.teamyg.parfait.data.utils.image
 
+import com.teamyg.parfait.data.model.image.MaskedAlpha
 import com.teamyg.parfait.data.model.image.ProjectedRegion
+import com.teamyg.parfait.data.model.image.SegmentationMaskSpec
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import java.nio.FloatBuffer
-
-/** 이 신뢰도 이하는 완전히 투명하다 */
-private const val RAMP_FLOOR = 0.35f
-
-/** 이 신뢰도 이상은 완전히 불투명하다 */
-private const val RAMP_CEILING = 0.65f
-
-private const val FULLY_OPAQUE = 255
 
 /**
  * 전경 신뢰도를 알파로 사상한다. 이진 컷 대신 램프를 쓰는 것은 경계 한두 픽셀을 부드럽게 하기
@@ -21,16 +15,13 @@ private const val FULLY_OPAQUE = 255
  * 반올림으로 바꾸면 0.5가 전경이 되어 판정이 뒤집힌다.
  */
 internal fun confidenceToAlpha(confidence: Float): Int {
-    if (confidence <= RAMP_FLOOR) return 0
-    if (confidence >= RAMP_CEILING) return FULLY_OPAQUE
+    val floor = SegmentationMaskSpec.RAMP_FLOOR
+    val ceiling = SegmentationMaskSpec.RAMP_CEILING
+    if (confidence <= floor) return 0
+    if (confidence >= ceiling) return SegmentationMaskSpec.FULLY_OPAQUE
 
-    return (FULLY_OPAQUE * (confidence - RAMP_FLOOR) / (RAMP_CEILING - RAMP_FLOOR)).toInt()
+    return (SegmentationMaskSpec.FULLY_OPAQUE * (confidence - floor) / (ceiling - floor)).toInt()
 }
-
-internal class MaskedAlpha(
-    val alpha: ByteArray,
-    val result: AlphaPostProcessResult,
-)
 
 /** 신뢰도를 알파로. 검출 공간에서 돈다 */
 internal fun confidenceToAlphaArray(
