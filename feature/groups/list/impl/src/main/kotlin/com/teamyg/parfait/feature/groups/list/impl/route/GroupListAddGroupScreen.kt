@@ -22,7 +22,7 @@ import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonS
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
-import com.teamyg.parfait.core.util.android.clickable.clickableYG
+import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -37,7 +37,7 @@ fun GroupListAddGroupScreen(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
         modifier = modifier
-            .clickableYG(onClick = onDismissed)
+            .clickableYGNoRipple(onClick = onDismissed)
             .padding(
                 start = YGTheme.layout.padding.padding7,
                 top = YGTheme.layout.padding.padding3,
@@ -52,7 +52,7 @@ fun GroupListAddGroupScreen(
             YGChipButton(
                 text = stringResource(R.string.group_add),
                 colors = YGChipButtonColorsDefaults.GrayOutline,
-                onClick = {},
+                onClick = onDismissed,
                 startIconResource = DesignSystemR.drawable.ic_plus,
             )
         }

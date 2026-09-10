@@ -33,6 +33,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
+import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasImageSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
@@ -276,11 +277,42 @@ internal fun CanvasMainRoute(
 
     var retryKey by remember { mutableIntStateOf(0) }
 
+    // 폴링이 남이 올린 토핑을 실어 올 때마다 보고 있던 캔버스가 덮개 뒤로 사라져서다
+    val displayedCanvasId = canvasState.displayedCanvas?.parfaitId
+    var paintedCanvasIds by remember { mutableStateOf(emptySet<ParfaitId>()) }
+    var sawLoading by remember { mutableStateOf(false) }
+    var observedCanvasId by remember { mutableStateOf(displayedCanvasId) }
+
+    val firstPaintDone = displayedCanvasId != null && displayedCanvasId in paintedCanvasIds
+
+    LaunchedEffect(displayedCanvasId, canvasState.isInitialLoading, loadState) {
+        // 아직 그리지 못한 다른 캔버스로 옮겨 왔을 때만 관측을 처음부터 다시 모은다. 이미 그린
+        // 캔버스로 돌아온 것(달력에서 지난 날을 보다 오늘로)은 리셋이 아니다 — 토핑도 배경도
+        // 없는 캔버스는 loadState 가 Loaded 를 안 벗어나 한 번 버린 관측을 다시 얻지 못한다
+        val movedToUnpaintedCanvas = displayedCanvasId != null &&
+            observedCanvasId != null &&
+            displayedCanvasId != observedCanvasId &&
+            displayedCanvasId !in paintedCanvasIds
+        if (movedToUnpaintedCanvas) {
+            sawLoading = false
+        }
+        if (displayedCanvasId != null) {
+            observedCanvasId = displayedCanvasId
+        }
+
+        // loadState 는 아직 아무 이미지도 안 붙은 첫 컴포지션에서도 Loaded 다. 로딩을 한 번
+        // 본 뒤로 좁히지 않으면 캐시된 캔버스로 들어올 때 덮개가 아예 안 뜬다
+        when {
+            canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded -> sawLoading = true
+            sawLoading && displayedCanvasId != null -> paintedCanvasIds = paintedCanvasIds + displayedCanvasId
+        }
+    }
+
     // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
     // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
     Box(modifier = modifier.fillMaxSize()) {
         YGScaffoldV2(
-            isLoading = canvasState.isInitialLoading || loadState != CanvasLoadState.Loaded,
+            isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
             loadingOverlay = {
                 if (loadState == CanvasLoadState.Failed) {
                     CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })

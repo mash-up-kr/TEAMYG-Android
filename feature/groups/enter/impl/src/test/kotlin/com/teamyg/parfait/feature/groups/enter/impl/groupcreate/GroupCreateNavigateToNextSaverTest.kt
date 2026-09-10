@@ -20,6 +20,7 @@ class GroupCreateNavigateToNextSaverTest {
             groupId = 42L,
             groupName = "가나다",
             inviteCode = "ABC123",
+            memberLimit = 4,
         )
 
         val restored = NavigateToNextSaver.restore(save(value)!!)

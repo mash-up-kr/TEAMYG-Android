@@ -218,7 +218,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val elapsed: ElapsedTimeBucket,
     ) : CanvasMainEffect
 
-    /** 첫 조회를 기다리는 동안 갱신이 실패했을 때만 온다 — 폴링은 5초마다 돌아 매번 알리면 방해가 된다 */
+    /** 첫 조회를 기다리는 동안 갱신이 실패했을 때만 온다 — 폴링이 주기마다 돌아 매번 알리면 방해가 된다 */
     data object ShowTodayCanvasError : CanvasMainEffect
 
     data object ShowToppingFlowStartError : CanvasMainEffect
@@ -392,7 +392,7 @@ constructor(
 
     /**
      * [CanvasVO.lastClosedDate] 는 03시 회전으로 캔버스가 마감될 때만 새 값이 된다. 그 값을
-     * 그룹별로 기억해 뒀다가, 직전에 기억해 둔 마감일과 달라졌을 때만 알린다 — 폴링이 5초마다
+     * 그룹별로 기억해 뒀다가, 직전에 기억해 둔 마감일과 달라졌을 때만 알린다 — 폴링이 주기마다
      * 같은 값을 다시 흘려도 저장된 값과 같으므로 두 번째부터는 조용하다.
      *
      * 마감일이 어제가 아니어도(며칠 앱을 안 연 사이 여러 날 전으로 갱신됐어도) 알린다 — "그
@@ -444,7 +444,7 @@ constructor(
      * 갱신이 실패하면 캐시가 아무것도 내지 않아 [observeTodayCanvas] 만으로는 덮개를 내릴 계기가
      * 없다 — 첫 조회를 기다리는 동안에만 그 실패를 화면으로 옮긴다.
      *
-     * 폴링은 5초마다 도므로 조건 없이 알리면 실패가 이어지는 동안 토스트가 계속 쌓인다.
+     * 폴링은 주기마다 도므로 조건 없이 알리면 실패가 이어지는 동안 토스트가 계속 쌓인다.
      * 덮개가 걸려 있을 때로 좁혀 첫 조회 실패 한 번만 말한다.
      */
     private fun observeTodayCanvasRefreshFailure() {
