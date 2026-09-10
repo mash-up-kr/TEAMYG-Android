@@ -6,8 +6,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -15,12 +17,16 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
+import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
+import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationErrorScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
+import java.io.File
 
 @Composable
 internal fun SegmentationRoute(
@@ -35,12 +41,23 @@ internal fun SegmentationRoute(
     val toastPolicy = rememberYGToastPolicy()
     val errorMessage = stringResource(R.string.segmentation_error_message)
 
+    ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
+        viewModel.processIntent(SegmentationIntent.OnEditResult(result))
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
 
                 is SegmentationEffect.GoBack -> navigator.onBack()
+
+                is SegmentationEffect.GoToEdit -> navigator.goTo(
+                    NavKeyToppingEdit(
+                        sourceImageUri = key.sourceImageUri,
+                        segmentationImageUri = File(effect.originImagePath).toUri().toString(),
+                    ),
+                )
 
                 // 백스택에 쌓아 올려서 뒤로가기 하면 객체 인식이 끝난 이 화면으로 그대로 돌아온다
                 is SegmentationEffect.GoToConfirm -> navigator.goTo(
@@ -64,7 +81,7 @@ internal fun SegmentationRoute(
         if (state.isError) {
             SegmentationErrorScreen(
                 onClickRetry = { viewModel.processIntent(SegmentationIntent.Retry) },
-                onClickUseOriginal = { viewModel.processIntent(SegmentationIntent.UseOriginal) },
+                onClickEditManually = { viewModel.processIntent(SegmentationIntent.EditManually) },
                 onClickClose = onClickClose,
                 modifier = modifier.padding(innerPadding),
             )

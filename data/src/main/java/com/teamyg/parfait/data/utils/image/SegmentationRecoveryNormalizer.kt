@@ -1,0 +1,84 @@
+package com.teamyg.parfait.data.utils.image
+
+import android.graphics.Bitmap
+import android.graphics.Color
+import com.teamyg.parfait.data.model.image.DetectionPlate
+import com.teamyg.parfait.data.model.image.RecoveryStage
+import com.teamyg.parfait.data.model.image.SegmentationContrastSpec
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.job
+
+/**
+ * 계획을 비트맵에 적용한다. 크롭 → 축소 → 축소판에서 히스토그램 → 축소판에 LUT 순서다. 원본에서 히스토그램을
+ * 모으면 그 픽셀 배열 하나가 판 하나만큼 크다.
+ *
+ * ⚠️ 크롭도 축소도 필요 없으면 검출 판이 곧 원본 인스턴스다. 원본이 가변일 수 있어 거기에 대비를 적용하면
+ * 예외 없이 사용자 사진이 바뀐다. 그 경우 먼저 복사한다 — 근거는 스펙 「판 소유권」
+ * (parfait/specs/2026-09-10-segmentation-retry-recovery.md).
+ *
+ * LUT 적용이 픽셀 루프인 이유는 스펙 「메모리 피크」를 본다.
+ */
+internal suspend fun normalizeForDetection(
+    origin: Bitmap,
+    stage: RecoveryStage,
+): DetectionPlate {
+    val job = currentCoroutineContext().job
+
+    val cropped = stage.cropRect
+        ?.let { rect -> Bitmap.createBitmap(origin, rect.left, rect.top, rect.width, rect.height) }
+        ?: origin
+    val target = stage.targetSize
+    val scaled = if (cropped.width == target.width && cropped.height == target.height) {
+        cropped
+    } else {
+        Bitmap.createScaledBitmap(cropped, target.width, target.height, true)
+    }
+    // 두 팩토리는 조건에 따라 입력을 그대로 돌려준다
+    if (cropped !== origin && cropped !== scaled) cropped.recycle()
+    job.ensureActive()
+
+    val owned = scaled !== origin
+    if (!stage.applyContrast) return DetectionPlate(scaled, owned)
+
+    val writable = if (owned && scaled.isMutable) {
+        scaled
+    } else {
+        val copy = requireNotNull(scaled.copy(Bitmap.Config.ARGB_8888, true)) { "detection plate copy failed" }
+        if (owned) scaled.recycle()
+        copy
+    }
+    applyContrastInPlace(writable)
+
+    return DetectionPlate(writable, ownedByUs = true)
+}
+
+private suspend fun applyContrastInPlace(bitmap: Bitmap) {
+    val job = currentCoroutineContext().job
+    val width = bitmap.width
+    val row = IntArray(width)
+    val histogram = IntArray(SegmentationContrastSpec.LUMINANCE_LEVELS)
+
+    for (y in 0 until bitmap.height) {
+        job.ensureActive()
+        bitmap.getPixels(row, 0, width, 0, y, width, 1)
+        for (pixel in row) histogram[contrastLuminance(pixel)]++
+    }
+
+    val lut = contrastLut(histogram)
+
+    for (y in 0 until bitmap.height) {
+        job.ensureActive()
+        bitmap.getPixels(row, 0, width, 0, y, width, 1)
+        for (index in row.indices) row[index] = throughLut(row[index], lut)
+        bitmap.setPixels(row, 0, width, 0, y, width, 1)
+    }
+}
+
+private fun contrastLuminance(pixel: Int): Int =
+    (Color.red(pixel) * 299 + Color.green(pixel) * 587 + Color.blue(pixel) * 114) / 1000
+
+private fun throughLut(
+    pixel: Int,
+    lut: IntArray,
+): Int = Color.argb(Color.alpha(pixel), lut[Color.red(pixel)], lut[Color.green(pixel)], lut[Color.blue(pixel)])

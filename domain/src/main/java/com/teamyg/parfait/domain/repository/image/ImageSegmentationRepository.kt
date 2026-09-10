@@ -23,6 +23,13 @@ interface ImageSegmentationRepository {
     suspend fun segmentImage(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>>
 
     /**
+     * [segmentImage] 가 후보를 하나도 못 낸 뒤에만 부른다. 입력을 손봐 가며 다시 찾는다.
+     *
+     * 후보의 픽셀은 언제나 [bitmapWrapper] 에서 오려낸다 — 손본 판은 검출에만 쓴다.
+     */
+    suspend fun recoverCandidates(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>>
+
+    /**
      * 고른 후보를 캐시에 PNG 두 장으로 떨군다.
      *
      * 두 장인 이유는 쓰는 곳이 요구하는 좌표계가 달라서다 — 수동 편집은 원본과 픽셀로 겹쳐
