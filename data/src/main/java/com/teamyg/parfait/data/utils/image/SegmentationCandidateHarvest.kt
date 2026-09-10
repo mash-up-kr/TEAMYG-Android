@@ -301,7 +301,6 @@ private suspend fun harvestOriginRegion(
     }
 }
 
-/** 사상 사각형 크기로 **먼저** 재표본하고 그다음 잘린 사각형으로 자른다. 순서를 뒤집으면 알파가 어긋난다 */
 private fun originAlphaOf(source: PlateSource.OriginRegion): ByteArray {
     val plate = source.detectionPlate
     val row = IntArray(plate.width)
@@ -311,10 +310,7 @@ private fun originAlphaOf(source: PlateSource.OriginRegion): ByteArray {
         for (x in 0 until plate.width) detectionAlpha[y * plate.width + x] = (row[x] ushr 24).toByte()
     }
 
-    val mapped = source.projected.mapped
-    val full = resampleAlpha(detectionAlpha, plate.width, plate.height, mapped.width, mapped.height)
-
-    return cropAlpha(full, mapped.width, mapped.height, source.projected.clipped.offsetBy(-mapped.left, -mapped.top))
+    return projectAlpha(detectionAlpha, plate.width, plate.height, source.projected)
 }
 
 private suspend fun postProcessOriginRegion(
@@ -373,10 +369,15 @@ internal suspend fun harvestForeground(
     hintThreshold: Int?,
 ): ForegroundHarvest {
     // absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼으므로 remaining() 으로 비교한다
-    if (mask.remaining() != maskWidth * maskHeight) return ForegroundHarvest(emptyList(), hint = null)
+    if (mask.remaining() != maskWidth * maskHeight) {
+        repositoryLogger.w {
+            "세그멘테이션 폴백 마스크 길이 불일치: 남은 ${mask.remaining()}, 기대 ${maskWidth}x$maskHeight"
+        }
+        return ForegroundHarvest(emptyList(), hint = null)
+    }
 
-    // ⚠️ 이 할당은 OOM 가드 안에 있어야 한다. segmentForeground 는 Exception 만 잡으므로 가드 밖에 두면
-    // 1차 경로에서 OOM 이 크래시로 바뀐다
+    // ⚠️ 이 할당은 OOM 가드 안에 있어야 한다. OutOfMemoryError 는 Exception 이 아니라 Error 라
+    // 일반 Exception 캐치로는 안 잡힌다
     val detectionAlpha = try {
         confidenceToAlphaArray(mask, maskWidth, maskHeight)
     } catch (e: OutOfMemoryError) {
@@ -446,9 +447,6 @@ private fun placeForegroundAlpha(
 
     val projected = projectRegion(DetectionBounds(0, 0, maskWidth, maskHeight), projection, origin.width, origin.height)
         ?: return null
-    val mapped = projected.mapped
-    val full = resampleAlpha(detectionAlpha, maskWidth, maskHeight, mapped.width, mapped.height)
 
-    return projected.clipped to
-        cropAlpha(full, mapped.width, mapped.height, projected.clipped.offsetBy(-mapped.left, -mapped.top))
+    return projected.clipped to projectAlpha(detectionAlpha, maskWidth, maskHeight, projected)
 }

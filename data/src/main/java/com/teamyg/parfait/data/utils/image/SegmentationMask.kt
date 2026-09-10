@@ -136,6 +136,22 @@ internal fun cropAlpha(
     return out
 }
 
+/**
+ * 검출 공간의 알파를 원본 좌표 사각형으로 옮긴다. [ProjectedRegion.mapped] 크기로 **먼저** 재표본하고,
+ * 그다음 [ProjectedRegion.clipped] 로 자른다. 잘린 크기로 바로 재표본하면 알파가 어긋난다.
+ */
+internal fun projectAlpha(
+    alpha: ByteArray,
+    width: Int,
+    height: Int,
+    projected: ProjectedRegion,
+): ByteArray {
+    val mapped = projected.mapped
+    val full = resampleAlpha(alpha, width, height, mapped.width, mapped.height)
+
+    return cropAlpha(full, mapped.width, mapped.height, projected.clipped.offsetBy(-mapped.left, -mapped.top))
+}
+
 internal fun alphaSum(alpha: ByteArray): Long {
     var sum = 0L
     for (value in alpha) sum += value.toInt() and 0xFF
