@@ -53,8 +53,6 @@ internal class ForegroundHarvest(
 private class PlacedSubject(val plate: Bitmap, val projected: ProjectedRegion)
 
 /**
- * subject 들을 후보로 만든다. 1차 경로와 회복 경로가 함께 쓴다.
- *
  * [projection] 이 없으면 1차다. **판의 출처를 호출부가 고르지 않는 것이 요점이다** — 회복 경로가 ML Kit 판을
  * 쓸 길이 없다.
  *
@@ -92,7 +90,6 @@ internal suspend fun harvestSubjects(
         .sortedByDescending { it.projected.clipped.area() }
 
     repositoryLogger.i {
-        // 1차 로그 한 줄은 그대로 둔다. 회복 경로에서만 완화했다면 통과했을 수를 덧붙인다
         val relaxed = if (projection == null) {
             ""
         } else {
@@ -261,8 +258,6 @@ private suspend fun postProcessMlKitPlate(
  *
  * ⚠️ `postProcessAlpha` 는 알파를 제자리에서 지운다. 되돌림에 쓸 알파는 그 전에 사본을 떠 둔다. 원본 픽셀의
  * 알파는 JPEG 에서 전부 255 라, 사본 없이 되돌리면 불투명 사각형이 커버리지 만점으로 필터 1위에 오른다.
- *
- * 후보 하나의 실패는 그 후보만 버린다.
  */
 private suspend fun harvestOriginRegion(
     source: PlateSource.OriginRegion,
@@ -325,7 +320,6 @@ private suspend fun postProcessOriginRegion(
     val result = postProcessAlpha(alpha, region.width, region.height, guidance = originGuidance(origin, region))
         ?: return null
     val inner = result.bounds
-    // composeCroppedArgb 는 알파 채널을 덮어쓴다. 원본 픽셀의 255 가 남지 않는다
     val cropped = composeCroppedArgb(pixels, alpha, region.width, inner)
 
     return SegmentationCandidate(
@@ -356,8 +350,6 @@ private fun originRegionReverted(
 }
 
 /**
- * 전경 신뢰도에서 후보 하나와 힌트를 만든다.
- *
  * ⚠️ 마스크 치수와 출력 치수가 다를 수 있다 — 회복 경로의 마스크는 검출 판 치수다. 하나로 묶으면 길이 검사가
  * 언제나 실패해 예외도 로그도 없이 빈 목록이 되고, 연쇄로 2단계 힌트까지 사라진다.
  *
@@ -379,8 +371,7 @@ internal suspend fun harvestForeground(
         return ForegroundHarvest(emptyList(), hint = null)
     }
 
-    // ⚠️ 이 할당은 OOM 가드 안에 있어야 한다. OutOfMemoryError 는 Exception 이 아니라 Error 라
-    // 일반 Exception 캐치로는 안 잡힌다
+    // ⚠️ 마스크 크기 할당이라 이것도 OOM 가드 안에 둔다
     val detectionAlpha = try {
         confidenceToAlphaArray(mask, maskWidth, maskHeight)
     } catch (e: OutOfMemoryError) {
@@ -438,7 +429,6 @@ internal suspend fun harvestForeground(
     return ForegroundHarvest(listOfNotNull(candidate), hint)
 }
 
-/** 1차는 마스크가 곧 원본 전체다. 회복은 사상 사각형 크기로 재표본한 뒤 잘린 사각형으로 자른다 */
 private fun placeForegroundAlpha(
     detectionAlpha: ByteArray,
     maskWidth: Int,

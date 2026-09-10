@@ -240,8 +240,7 @@ constructor(
         val projection = DetectionProjection(stage.transform, clip = source)
         val capped = isLongSideCapped(source.width, source.height)
 
-        // 철회 조건이 요구하는 원본·목표 치수·상한 여부를 여기서 한 번만 남긴다 — 검출 판 생성이 실패해도
-        // 시작한 단계는 전부 기록에 남아야 한다
+        // 검출 판 생성이 실패해도 시작한 단계가 기록에 남도록 판을 만들기 전에 찍는다
         repositoryLogger.i {
             "회복 $name: 원본 ${source.width}x${source.height}, " +
                 "목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped"

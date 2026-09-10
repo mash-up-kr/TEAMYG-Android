@@ -23,7 +23,7 @@ internal fun confidenceToAlpha(confidence: Float): Int {
     return (SegmentationMaskSpec.FULLY_OPAQUE * (confidence - floor) / (ceiling - floor)).toInt()
 }
 
-/** 신뢰도를 알파로. 검출 공간에서 돈다 */
+/** 검출 공간에서 돈다 */
 internal fun confidenceToAlphaArray(
     mask: FloatBuffer,
     width: Int,

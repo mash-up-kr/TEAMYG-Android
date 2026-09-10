@@ -49,8 +49,7 @@ class SegmentationRecoveryPlanTest {
 
     @Test
     fun isLongSideCapped_floorAndCeilingCollide_isTrue() {
-        // Given 하한을 맞추면 긴 변이 상한을 넘는 극단 종횡비 — resolveTargetSize 가 실제로 상한에
-        // 걸리는지 픽스처가 진짜로 충돌하는지 함께 확인한다
+        // Given 하한을 맞추면 긴 변이 상한을 넘는 극단 종횡비. 픽스처가 실제로 충돌하는지도 함께 본다
         val target = resolveTargetSize(width = 400, height = 1800)
         assertEquals(2048, maxOf(target.width, target.height))
 

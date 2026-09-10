@@ -209,10 +209,7 @@ internal fun SegmentationBounds.offsetBy(
     bottom = bottom + dy,
 )
 
-/**
- * 판 치수와 사각형 치수를 비교하는 검사는 사각형을 판에서 만들기 때문에 항진명제다. 실제로 깨질 수 있는
- * 것은 이쪽이고, 깨지면 예외가 아니라 `persistSubject` 의 `drawBitmap` 이 조용히 자른다.
- */
+/** 어기면 예외 없이 저장할 때 조용히 잘린다 */
 internal fun isInsideCanvas(
     bounds: SegmentationBounds,
     canvasWidth: Int,
