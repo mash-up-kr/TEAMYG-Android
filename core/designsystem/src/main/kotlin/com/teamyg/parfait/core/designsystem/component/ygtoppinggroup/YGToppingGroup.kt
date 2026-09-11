@@ -5,20 +5,29 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.LocalPlatformContext
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChip
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
+import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -50,12 +59,8 @@ fun YGToppingGroup(
             .clip(RectangleShape)
 
         when (image) {
-            // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다
-            is YGToppingImage.Remote -> AsyncImage(
-                model = image.url,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                error = painterResource(TOPPING_ERROR_DRAWABLE),
+            is YGToppingImage.Remote -> RemoteToppingImage(
+                image = image,
                 modifier = imageModifier,
             )
 
@@ -84,6 +89,49 @@ fun YGToppingGroup(
                     x = type.chipOffset.x,
                     y = type.chipOffset.y,
                 ),
+        )
+    }
+}
+
+@Composable
+private fun RemoteToppingImage(
+    image: YGToppingImage.Remote,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalPlatformContext.current
+    val sizePx = with(LocalDensity.current) { SizeTokens.Size96.getDp().roundToPx() }
+
+    // 크기를 안 주면 painter 는 원본 해상도로 디코딩한다
+    val request = remember(image.url, sizePx) {
+        ImageRequest
+            .Builder(context)
+            .data(image.url)
+            .size(sizePx)
+            .build()
+    }
+    // 원격 이미지는 배경이 지워진 누끼라, Crop 으로 긴 변을 잘라 내면 피사체가 사라진다
+    val painter = rememberAsyncImagePainter(model = request, contentScale = ContentScale.Fit)
+    val painterState by painter.state.collectAsState()
+
+    if (painterState is AsyncImagePainter.State.Error) {
+        Image(
+            painter = painterResource(TOPPING_ERROR_DRAWABLE),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = modifier,
+        )
+    } else {
+        val border = image.border
+        val borderWidth = border?.width ?: 0.dp
+
+        YGToppingCutoutImage(
+            painter = painter,
+            // 알맹이가 뜨기 전에 띠를 깔면 실루엣 모양 색 덩어리만 보인다
+            borderColor = border?.color?.takeIf { painterState is AsyncImagePainter.State.Success },
+            borderWidth = borderWidth,
+            // 띠가 알맹이 밖으로 굵기만큼 나가므로 clip 안쪽에서 굵기만큼 덜어 낸다
+            modifier = modifier.padding(borderWidth),
+            outline = border?.outline,
         )
     }
 }
