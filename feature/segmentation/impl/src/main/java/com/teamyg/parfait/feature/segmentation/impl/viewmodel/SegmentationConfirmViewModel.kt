@@ -5,7 +5,6 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
 import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
@@ -167,14 +166,7 @@ class SegmentationConfirmViewModel
 
     private fun record(result: ToppingEditResult) {
         launch(onError = { postSideEffect(SegmentationConfirmEffect.DraftWriteFailed) }) {
-            val border = result.borderLayers.lastOrNull()
-            val recorded = recordToppingDraft(
-                subjectImagePath = result.subjectImagePath,
-                cutoutImagePath = result.cutoutImagePath,
-                borderColorArgb = border?.colorArgb,
-                borderWidthDp = border?.widthDp,
-                sourceLongSide = result.sourceLongSide?.let(::SourceLongSide),
-            )
+            val recorded = recordToppingDraft.recordEditResult(result)
             if (!recorded) postSideEffect(SegmentationConfirmEffect.DraftWriteFailed)
         }
     }

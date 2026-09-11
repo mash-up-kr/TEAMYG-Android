@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 internal fun CameraPreviewViewComponent(
     lensFacing: Int,
     zoomRatio: Float,
+    hasPermission: Boolean,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (ClosedFloatingPointRange<Float>) -> Unit,
 ): CameraPreviewHandle {
@@ -35,7 +36,12 @@ internal fun CameraPreviewViewComponent(
     val cameraState = remember { mutableStateOf<Camera?>(null) }
     var camera by cameraState
 
-    DisposableEffect(lensFacing) {
+    DisposableEffect(lensFacing, hasPermission) {
+        // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
+        if (!hasPermission) {
+            return@DisposableEffect onDispose { }
+        }
+
         var boundProvider: ProcessCameraProvider? = null
         val providerFuture = ProcessCameraProvider.getInstance(context)
         val listener = Runnable {

@@ -16,8 +16,11 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
+import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
+import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -39,8 +42,9 @@ private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
 private const val TRIMMED_SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
 private const val ORIGIN_PATH = "/cache/segmentation/origin.png"
+private const val EDITED_TRIMMED_PATH = "/cache/segmentation/edited_trimmed.png"
+private const val EDITED_CUTOUT_PATH = "/cache/segmentation/edited_cutout.png"
 
-/** [bitmapWrapper]가 감싸는 원본 판의 긴 변. 「편집 없이 사용」에서 곧 사진 전체의 긴 변이 된다 */
 private const val ORIGIN_LONG_SIDE = 4032
 
 class SegmentationViewModelTest {
@@ -54,8 +58,8 @@ class SegmentationViewModelTest {
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
+    private val recoverCandidates: RecoverCandidatesUseCase = mockk()
 
-    // useOriginal 의 긴 변 계산이 AndroidBitmap 캐스팅에 걸리므로 일반 mockk 로는 그 경로를 못 탄다
     private val originBitmap: Bitmap = mockk<Bitmap> {
         every { width } returns 3024
         every { height } returns ORIGIN_LONG_SIDE
@@ -76,6 +80,16 @@ class SegmentationViewModelTest {
         canvasWidth = 100,
         canvasHeight = 100,
         coverageAlphaSum = 255L * 10_000,
+    )
+
+    private val editResult = ToppingEditResult(
+        subjectImagePath = EDITED_TRIMMED_PATH,
+        cutoutImagePath = EDITED_CUTOUT_PATH,
+        borderLayers = listOf(
+            ToppingBorderLayer(colorArgb = 0xFF00FF00.toInt(), widthDp = 4f),
+            ToppingBorderLayer(colorArgb = 0xFFFF0000.toInt(), widthDp = 8f),
+        ),
+        sourceLongSide = ORIGIN_LONG_SIDE,
     )
 
     private val success = SegmentationResult(
@@ -101,6 +115,7 @@ class SegmentationViewModelTest {
         persistSubjectUseCase = persistSubject,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
+        recoverCandidatesUseCase = recoverCandidates,
     )
 
     @Test
@@ -531,34 +546,93 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun useOriginal_savesOnceAndGoesToConfirm() = runTest {
+    fun editManually_savesOriginOnceAndGoesToEdit() = runTest {
         // Given 세그멘테이션이 실패해 실패 화면이 떠 있다
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 직접 편집을 누른다
+        viewModel.processIntent(SegmentationIntent.EditManually)
+        advanceUntilIdle()
+
+        // Then 원본만 한 번 저장하고 편집으로 간다. 초안은 아직 적지 않는다
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+        coVerify(exactly = 0) { persistSubject(any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
+        assertFalse(viewModel.state.value.isLoading)
+        viewModel.effect.test {
+            assertEquals(SegmentationEffect.GoToEdit(originImagePath = ORIGIN_PATH), awaitItem())
+        }
+    }
+
+    @Test
+    fun editManually_saveFails_showsToastAndStaysOnErrorScreen() = runTest {
+        // Given 실패 화면이 떠 있고 원본 저장이 실패하는 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { saveBitmap(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 직접 편집을 누른다
+        viewModel.processIntent(SegmentationIntent.EditManually)
+        advanceUntilIdle()
+
+        // Then 토스트로 알리고 실패 화면에 머문다 — 로딩에 갇히지도 않는다
+        assertTrue(viewModel.state.value.isError)
+        assertFalse(viewModel.state.value.isLoading)
+        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+    }
+
+    @Test
+    fun editManually_pressedTwiceWhileRunning_runsOnce() = runTest {
+        // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
+        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+        coEvery { saveBitmap(bitmapWrapper) } coAnswers {
+            delay(1_000)
+            Result.success(ORIGIN_PATH)
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 연달아 두 번 누른다
+        viewModel.processIntent(SegmentationIntent.EditManually)
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.EditManually)
+        advanceUntilIdle()
+
+        // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
+        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+    }
+
+    @Test
+    fun editResult_recordsDraftAndGoesToConfirm() = runTest {
+        // Given 직접 편집으로 들어갔던 실패 화면
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
         coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 편집 없이 사용을 누른다
-        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        // When 편집을 마치고 결과가 돌아온다
+        viewModel.processIntent(SegmentationIntent.OnEditResult(editResult))
         advanceUntilIdle()
 
-        // Then 원본은 잘린 판과 캔버스 판이 같은 그림이라 한 번만 저장하고 같은 경로를 두 자리에 싣는다
-        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
-        coVerify(exactly = 0) { persistSubject(any()) }
+        // Then 가장 바깥 테두리 겹과 원본 긴 변까지 초안에 적고 확인 화면으로 간다
         coVerify(exactly = 1) {
             recordToppingDraft(
-                subjectImagePath = ORIGIN_PATH,
-                cutoutImagePath = ORIGIN_PATH,
-                borderColorArgb = null,
-                borderWidthDp = null,
+                subjectImagePath = EDITED_TRIMMED_PATH,
+                cutoutImagePath = EDITED_CUTOUT_PATH,
+                borderColorArgb = 0xFFFF0000.toInt(),
+                borderWidthDp = 8f,
                 sourceLongSide = SourceLongSide(ORIGIN_LONG_SIDE),
             )
         }
+        assertFalse(viewModel.state.value.isLoading)
         viewModel.effect.test {
             assertEquals(
                 SegmentationEffect.GoToConfirm(
-                    subjectImagePath = ORIGIN_PATH,
-                    trimmedSubjectImagePath = ORIGIN_PATH,
+                    subjectImagePath = EDITED_CUTOUT_PATH,
+                    trimmedSubjectImagePath = EDITED_TRIMMED_PATH,
                 ),
                 awaitItem(),
             )
@@ -566,67 +640,136 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun useOriginal_recordsSourceLongSideFromOriginBitmap() = runTest {
-        // Given 원본 판을 그대로 토핑 재료로 쓴다
+    fun editResult_draftWriteFails_showsToastAndStaysOnErrorScreen() = runTest {
+        // Given 초안 기록이 실패하는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns false
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 편집 없이 사용을 고른다
-        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        // When 편집 결과가 돌아온다
+        viewModel.processIntent(SegmentationIntent.OnEditResult(editResult))
         advanceUntilIdle()
 
-        // Then 원본이 곧 알맹이라 그 비트맵의 긴 변이 실린다
-        coVerify {
-            recordToppingDraft(
-                subjectImagePath = any(),
-                cutoutImagePath = any(),
-                borderColorArgb = null,
-                borderWidthDp = null,
-                sourceLongSide = SourceLongSide(ORIGIN_LONG_SIDE),
-            )
-        }
-    }
-
-    @Test
-    fun useOriginal_saveFails_showsToastAndStaysOnErrorScreen() = runTest {
-        // Given 실패 화면이 떠 있고 원본 저장이 실패하는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveBitmap(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 편집 없이 사용을 누른다
-        viewModel.processIntent(SegmentationIntent.UseOriginal)
-        advanceUntilIdle()
-
-        // Then 토스트로 알리고 실패 화면에 머문다 — 로딩에 갇히지도 않는다
+        // Then 확인 화면으로 가지 않고 토스트로 알린다
         assertTrue(viewModel.state.value.isError)
         assertFalse(viewModel.state.value.isLoading)
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
         viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
     }
 
     @Test
-    fun useOriginal_pressedTwiceWhileRunning_runsOnce() = runTest {
-        // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveBitmap(bitmapWrapper) } coAnswers {
-            delay(1_000)
-            Result.success(ORIGIN_PATH)
-        }
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+    fun retry_afterEmptyCandidates_runsTheRecoveryLadder() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(listOf(candidate))
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 연달아 두 번 누른다
-        viewModel.processIntent(SegmentationIntent.UseOriginal)
-        runCurrent()
-        viewModel.processIntent(SegmentationIntent.UseOriginal)
+        viewModel.processIntent(SegmentationIntent.Retry)
         advanceUntilIdle()
 
-        // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
-        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+        // 1차를 다시 돌지 않는다
+        coVerify(exactly = 1) { segmentImage(any()) }
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
+        assertFalse(viewModel.state.value.isError)
+    }
+
+    @Test
+    fun retry_afterAnException_takesTheOriginalPathAgain() = runTest {
+        coEvery { segmentImage(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { segmentImage(any()) }
+        coVerify(exactly = 0) { recoverCandidates(any()) }
+    }
+
+    @Test
+    fun retry_afterTheRecoveryAlsoFailed_fallsBackToTheOriginalPath() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        repeat(2) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        coVerify(exactly = 2) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_pressedFourTimesAfterEmpty_runsTheLadderOnlyOnce() = runTest {
+        // Given 같은 사진이라 1차도 회복도 계속 0건이다
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 네 번 누른다 — 1차의 0건이 플래그를 덮으면 세 번째에 사다리가 다시 돈다
+        repeat(4) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        coVerify(exactly = 1) { recoverCandidates(any()) }
+        coVerify(exactly = 4) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_afterTheLadderWasAbortedByTheModule_mayRunTheLadderAgain() = runTest {
+        // Given 사다리가 모듈 문제로 중간에 접혔다 — 끝까지 돈 것이 아니다
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        repeat(3) {
+            viewModel.processIntent(SegmentationIntent.Retry)
+            advanceUntilIdle()
+        }
+
+        // 회복 → 1차(0건) → 회복
+        coVerify(exactly = 2) { recoverCandidates(any()) }
+        coVerify(exactly = 2) { segmentImage(any()) }
+    }
+
+    @Test
+    fun retry_whileTheRecoveryRuns_clearsTheErrorAndShowsLoading() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } coAnswers {
+            delay(1_000)
+            Result.success(listOf(candidate))
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isError)
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        runCurrent()
+
+        // 에러 화면 위에 로딩 덮개가 겹치는 조합을 막는다
+        assertFalse(viewModel.state.value.isError)
+        assertTrue(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun retry_recoveryThrowsUnexpectedly_restoresTheErrorScreen() = runTest {
+        coEvery { segmentImage(any()) } returns Result.success(emptyList())
+        coEvery { recoverCandidates(any()) } throws IllegalStateException("boom")
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(SegmentationIntent.Retry)
+        advanceUntilIdle()
+
+        // 되돌리지 않으면 에러도 후보도 없는 화면에 갇힌다
+        assertTrue(viewModel.state.value.isError)
+        assertFalse(viewModel.state.value.isLoading)
     }
 }

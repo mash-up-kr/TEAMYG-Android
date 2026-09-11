@@ -11,14 +11,15 @@ import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
+import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -37,7 +38,9 @@ sealed interface SegmentationIntent : UiIntent {
 
     data object Retry : SegmentationIntent
 
-    data object UseOriginal : SegmentationIntent
+    data object EditManually : SegmentationIntent
+
+    data class OnEditResult(val result: ToppingEditResult) : SegmentationIntent
 }
 
 sealed interface SegmentationEffect : UiSideEffect {
@@ -45,10 +48,12 @@ sealed interface SegmentationEffect : UiSideEffect {
     data object ShowError : SegmentationEffect
 
     /**
-     * 원본을 못 읽었다. 이 경로를 실패 화면으로 돌리면 「편집 없이 사용」이 쓸 원본이 없는 상태가
+     * 원본을 못 읽었다. 이 경로를 실패 화면으로 돌리면 「직접 편집」이 쓸 원본이 없는 상태가
      * 생겨 버튼에 비활성 분기가 필요해진다.
      */
     data object GoBack : SegmentationEffect
+
+    data class GoToEdit(val originImagePath: String) : SegmentationEffect
 
     data class GoToConfirm(
         val subjectImagePath: String,
@@ -64,6 +69,7 @@ class SegmentationViewModel
     private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
+    private val recoverCandidatesUseCase: RecoverCandidatesUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
@@ -72,6 +78,18 @@ class SegmentationViewModel
 ) {
     /** `AndroidBitmap` 생성자가 모듈 내부라 `state.originBitmap` 으로는 다시 만들 수 없다 */
     private var originBitmapWrapper: BitmapWrapper? = null
+
+    private enum class LastFailure { EXCEPTION, EMPTY }
+
+    /** 재시도가 무엇을 돌지만 정한다. 화면이 안 쓰는 값이라 상태로 올리지 않는다 */
+    private var lastFailure: LastFailure? = null
+
+    /**
+     * 이 사진으로 사다리를 끝까지 돌렸는가. 입력이 같으면 결과도 같아서 한 번만 돈다.
+     *
+     * ⚠️ 1차에서 다시 0건이 나와도 되돌리지 않는다. 되돌리면 사다리가 한 번 걸러 되풀이된다.
+     */
+    private var recoveryAttempted = false
 
     init {
         loadCandidates()
@@ -108,20 +126,60 @@ class SegmentationViewModel
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
                     if (candidates.isEmpty()) {
+                        lastFailure = LastFailure.EMPTY
                         updateState { copy(isError = true) }
                         return@onSuccess
                     }
 
+                    lastFailure = null
                     updateState { copy(candidates = candidates) }
                 }.onFailure { throwable ->
                     // 화면이 원인을 가르지 않으므로 원인은 여기에만 남는다
                     viewModelLogger.e(throwable) {
                         "세그멘테이션 실패 ${throwable::class.simpleName}, 원인 ${throwable.cause}"
                     }
+                    lastFailure = LastFailure.EXCEPTION
                     updateState { copy(isError = true) }
                 }
 
             // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
+            updateState { copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * ⚠️ [LOAD_CANDIDATES_KEY] 를 진입·재시도와 공유한다. 다른 키를 쓰면 연타가 사다리를 겹쳐 돈다.
+     */
+    private fun recover() {
+        val bitmapWrapper = originBitmapWrapper ?: return loadCandidates()
+
+        launch(
+            key = LOAD_CANDIDATES_KEY,
+            onError = {
+                lastFailure = LastFailure.EXCEPTION
+                updateState { copy(isLoading = false, isError = true) }
+            },
+        ) {
+            // 에러 표시를 안 걷으면 실패 화면 위에 로딩 덮개가 겹친다
+            updateState { copy(isLoading = true, isError = false, candidates = emptyList()) }
+
+            recoverCandidatesUseCase(bitmapWrapper)
+                .onSuccess { candidates ->
+                    // 끝까지 돌았다. 모듈 문제로 중간에 접히면 여기 오지 않아 다시 돌 기회가 남는다
+                    recoveryAttempted = true
+                    if (candidates.isEmpty()) {
+                        lastFailure = LastFailure.EMPTY
+                        updateState { copy(isError = true) }
+                    } else {
+                        lastFailure = null
+                        updateState { copy(candidates = candidates) }
+                    }
+                }.onFailure { throwable ->
+                    viewModelLogger.e(throwable) { "회복 실패 ${throwable::class.simpleName}" }
+                    lastFailure = LastFailure.EXCEPTION
+                    updateState { copy(isError = true) }
+                }
+
             updateState { copy(isLoading = false) }
         }
     }
@@ -134,8 +192,13 @@ class SegmentationViewModel
     override fun processIntent(intent: SegmentationIntent) {
         when (intent) {
             is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
-            SegmentationIntent.Retry -> loadCandidates()
-            SegmentationIntent.UseOriginal -> useOriginal()
+
+            SegmentationIntent.Retry ->
+                if (lastFailure == LastFailure.EMPTY && !recoveryAttempted) recover() else loadCandidates()
+
+            SegmentationIntent.EditManually -> editManually()
+
+            is SegmentationIntent.OnEditResult -> recordEditResult(intent.result)
         }
     }
 
@@ -188,18 +251,12 @@ class SegmentationViewModel
         }
     }
 
-    /**
-     * 누끼 없이 원본을 그대로 토핑 재료로 쓴다.
-     *
-     * ⚠️ **[persistSubjectUseCase] 로 보내지 않는다.** 원본은 잘린 판과 캔버스 판이 같은 그림이라
-     * 한 번만 저장해 같은 경로를 두 자리에 싣는다. 근거는
-     * `parfait/specs/2026-09-05-c103-error-use-original.md`의 「편집 없이 사용」절.
-     */
-    private fun useOriginal() {
+    /** 초안은 여기서 적지 않고 편집 결과를 받은 뒤에 적는다 */
+    private fun editManually() {
         val originBitmapWrapper = originBitmapWrapper ?: return
 
         launch(
-            key = USE_ORIGINAL_KEY,
+            key = EDIT_MANUALLY_KEY,
             onError = {
                 releaseLoading()
                 postSideEffect(SegmentationEffect.ShowError)
@@ -207,34 +264,37 @@ class SegmentationViewModel
         ) {
             updateState { copy(isLoading = true) }
 
-            // 이 경로는 원본이 곧 알맹이라 사진 전체의 긴 변이 비트맵의 긴 변이다
-            val sourceLongSide = (originBitmapWrapper as? AndroidBitmap)
-                ?.getRawData()
-                ?.let { SourceLongSide(maxOf(it.width, it.height)) }
-
             val path = saveBitmapUseCase(originBitmapWrapper).getOrElse {
                 releaseLoading()
                 postSideEffect(SegmentationEffect.ShowError)
                 return@launch
             }
 
-            val recorded = runSuspendCatching {
-                recordToppingDraft(
-                    subjectImagePath = path,
-                    cutoutImagePath = path,
-                    borderColorArgb = null,
-                    borderWidthDp = null,
-                    sourceLongSide = sourceLongSide,
-                )
-            }.getOrDefault(false)
+            releaseLoading()
+            postSideEffect(SegmentationEffect.GoToEdit(originImagePath = path))
+        }
+    }
+
+    private fun recordEditResult(result: ToppingEditResult) {
+        launch(
+            key = EDIT_RESULT_KEY,
+            onError = {
+                releaseLoading()
+                postSideEffect(SegmentationEffect.ShowError)
+            },
+        ) {
+            updateState { copy(isLoading = true) }
+
+            val recorded = recordToppingDraft.recordEditResult(result)
 
             releaseLoading()
 
             if (recorded) {
                 postSideEffect(
+                    // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다(`ToppingEditResult` KDoc)
                     SegmentationEffect.GoToConfirm(
-                        subjectImagePath = path,
-                        trimmedSubjectImagePath = path,
+                        subjectImagePath = result.cutoutImagePath,
+                        trimmedSubjectImagePath = result.subjectImagePath,
                     ),
                 )
             } else {
@@ -250,4 +310,5 @@ class SegmentationViewModel
 
 private const val SELECT_CANDIDATE_KEY = "select-candidate"
 private const val LOAD_CANDIDATES_KEY = "loadCandidates"
-private const val USE_ORIGINAL_KEY = "use-original"
+private const val EDIT_MANUALLY_KEY = "edit-manually"
+private const val EDIT_RESULT_KEY = "edit-result"
