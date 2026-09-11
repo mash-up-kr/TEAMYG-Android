@@ -9,6 +9,7 @@ import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitI
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImagesResponse
+import com.teamyg.parfait.data.source.common.mapper.toToppingBorder
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -108,15 +109,9 @@ internal fun ToppingBorder.toUpdateBorderRequest(): UpdateParfaitImageBorderRequ
 internal fun UpdateParfaitImageBorderResponse.toUpdatedToppingBorderVO(): UpdatedToppingBorderVO =
     UpdatedToppingBorderVO(
         parfaitImageId = ParfaitImageId(parfaitImageId),
-        border = toToppingBorder(),
+        border = toToppingBorder(
+            borderType = borderType,
+            borderColor = borderColor,
+            borderWidth = borderWidth,
+        ),
     )
-
-/**
- * SOLID 인데 색이나 두께가 비어 있으면 Solid 를 만들 수 없으므로 None 으로 떨어뜨린다.
- */
-private fun UpdateParfaitImageBorderResponse.toToppingBorder(): ToppingBorder {
-    if (borderType != BORDER_TYPE_SOLID) return ToppingBorder.None
-    val color = borderColor ?: return ToppingBorder.None
-    val width = borderWidth ?: return ToppingBorder.None
-    return ToppingBorder.solidClamped(color = color, width = width)
-}
