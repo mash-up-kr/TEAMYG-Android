@@ -18,6 +18,7 @@ import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -438,6 +439,7 @@ class ParfaitGroupRepositoryImplTest {
             groupId = GROUP_ID_A,
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
@@ -445,6 +447,7 @@ class ParfaitGroupRepositoryImplTest {
             groupId = GROUP_ID_B,
             groupName = GroupName("라떼"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )

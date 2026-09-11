@@ -1095,6 +1095,7 @@ class CanvasMainViewModelTest {
             groupId = GroupId(GROUP_ID),
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )

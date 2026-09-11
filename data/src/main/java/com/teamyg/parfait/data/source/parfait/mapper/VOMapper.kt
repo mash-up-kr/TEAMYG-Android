@@ -9,6 +9,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsRespon
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
 import com.teamyg.parfait.data.source.common.mapper.toNametagChipType
+import com.teamyg.parfait.data.source.common.mapper.toToppingBorder
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
@@ -22,7 +23,6 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import kotlinx.datetime.LocalDate
@@ -30,7 +30,6 @@ import kotlinx.datetime.LocalDateTime
 
 private const val BACKGROUND_TYPE_COLOR = "COLOR"
 private const val BACKGROUND_TYPE_IMAGE = "IMAGE"
-private const val BORDER_TYPE_SOLID = "SOLID"
 private const val OWNER_TYPE_ME = "ME"
 
 internal fun GetTodayParfaitResponse.toCanvasVO(): CanvasVO = CanvasVO(
@@ -110,23 +109,15 @@ private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = Can
         scale = scale,
         rotation = rotation,
     ),
-    border = toToppingBorder(),
+    border = toToppingBorder(
+        borderType = borderType,
+        borderColor = borderColor,
+        borderWidth = borderWidth,
+    ),
     placedBy = placedBy.toToppingPlacerVO(),
     isMine = placedBy.ownerType == OWNER_TYPE_ME,
     createdAt = LocalDateTime.parse(createdAt),
 )
-
-/**
- * SOLID 인데 색이나 두께가 없으면 Solid 를 만들 수 없으므로 None 으로 떨어뜨린다.
- * 서버는 그 조합을 저장 시점에 막지만(INVALID_BORDER) 이미 저장된 행이 있을 수 있고,
- * 앱이 크래시하는 것보다 테두리를 안 그리는 편이 낫다.
- */
-private fun TodayParfaitImageResponse.toToppingBorder(): ToppingBorder {
-    if (borderType != BORDER_TYPE_SOLID) return ToppingBorder.None
-    val color = borderColor ?: return ToppingBorder.None
-    val width = borderWidth ?: return ToppingBorder.None
-    return ToppingBorder.solidClamped(color = color, width = width)
-}
 
 private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
     groupMemberId = GroupMemberId(groupMemberId),
