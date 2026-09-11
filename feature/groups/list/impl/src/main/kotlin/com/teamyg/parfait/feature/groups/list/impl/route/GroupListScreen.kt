@@ -24,6 +24,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGr
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.core.ui.reveal.RevealState
 import com.teamyg.parfait.core.ui.reveal.rememberStaggeredRevealState
 import com.teamyg.parfait.core.ui.reveal.revealed
@@ -38,6 +39,7 @@ import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParf
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
+import com.teamyg.parfait.feature.groups.list.impl.util.borderedImageUrls
 import com.teamyg.parfait.feature.groups.list.impl.util.toGroupTimestamp
 import com.teamyg.parfait.feature.groups.list.impl.util.toGrouptagChipType
 import com.teamyg.parfait.feature.groups.list.impl.util.toStringResource
@@ -131,6 +133,9 @@ internal fun GroupListContent(
     modifier: Modifier = Modifier,
     reveal: RevealState = RevealState.AllRevealed,
 ) {
+    val borderedImageUrls = remember(groupList) { groupList.borderedImageUrls() }
+    val outlines = rememberToppingOutlines(models = borderedImageUrls, retryKey = 0)
+
     GroupListParfaitLayout(
         cherrySection = {
             Image(
@@ -185,7 +190,7 @@ internal fun GroupListContent(
                     val revealed = reveal.isRevealed(index)
 
                     YGToppingGroup(
-                        image = group.toToppingImage(),
+                        image = group.toToppingImage(outlines),
                         name = group.groupName.value,
                         timestamp = group.recentImageUploadedAt
                             .toGroupTimestamp(now)
