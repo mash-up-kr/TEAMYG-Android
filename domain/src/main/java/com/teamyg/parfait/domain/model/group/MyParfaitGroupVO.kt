@@ -1,6 +1,7 @@
 package com.teamyg.parfait.domain.model.group
 
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import kotlin.time.Instant
 
 data class MyParfaitGroupVO(
@@ -11,6 +12,7 @@ data class MyParfaitGroupVO(
      * (api/parfait-group.md GET /api/parfait-groups).
      */
     val recentImageUrl: String?,
+    val recentImageBorder: ToppingBorder,
     /**
      * 마지막으로 토핑이 올라온 시각. **토핑이 하나도 없으면 그룹이 만들어진 시각**이 오므로
      * "활동이 있었다"는 뜻이 아니다. 응답만으로 그 둘을 가를 수단은 없다 —

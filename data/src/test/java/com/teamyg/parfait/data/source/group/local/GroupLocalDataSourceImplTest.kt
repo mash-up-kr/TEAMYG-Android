@@ -10,6 +10,7 @@ import com.teamyg.parfait.domain.model.group.ParfaitGroupDetailVO
 import com.teamyg.parfait.domain.model.group.ParfaitGroupMemberVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -90,6 +91,7 @@ class GroupLocalDataSourceImplTest {
             groupId = GROUP_ID_A,
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )
@@ -97,6 +99,7 @@ class GroupLocalDataSourceImplTest {
             groupId = GROUP_ID_B,
             groupName = GroupName("라떼"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )

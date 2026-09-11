@@ -8,6 +8,7 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
@@ -680,6 +681,7 @@ class GroupListViewModelTest {
                 groupId = GroupId(1L),
                 groupName = GroupName("모카의 파르페"),
                 recentImageUrl = "https://cdn.example.com/a.png",
+                recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
                 lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),
@@ -687,6 +689,7 @@ class GroupListViewModelTest {
                 groupId = GroupId(2L),
                 groupName = GroupName("우리집"),
                 recentImageUrl = null,
+                recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = null,
                 lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),
