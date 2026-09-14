@@ -49,12 +49,27 @@ run_in "$SEED_TREE" "$WORK/seed.csv" "$TARGET" --rerun-tasks
 run_in "$PROBE_TREE" "$WORK/probe-clean.csv" clean
 run_in "$PROBE_TREE" "$WORK/probe.csv" "$TARGET"
 
+# @DisableCachingByDefault 로 선언된 태스크는 어떤 캐시로도 안 줄어든다. 판정에 섞으면
+# "캐시 불가"가 "이식 불가"로 둔갑한다.
+NOT_CACHEABLE=':jar$|:bundleLibCompileToJar'
+
 echo "target:     $TARGET"
 echo "seed tree:  $SEED_TREE"
 echo "probe tree: $PROBE_TREE"
 echo
-echo "-- probe outcomes --"
-awk -F, 'NR>1 {c[$2]++} END {for (o in c) printf "%-12s %d\n", o, c[o]}' "$WORK/probe.csv"
+echo "-- probe outcomes (캐시 가능 태스크만) --"
+awk -F, -v re="$NOT_CACHEABLE" 'NR>1 && $1 !~ re {c[$2]++} END {for (o in c) printf "%-12s %d\n", o, c[o]}' "$WORK/probe.csv"
+echo
+echo "-- 판정 제외: 캐시 불가 태스크 --"
+awk -F, -v re="$NOT_CACHEABLE" 'NR>1 && $1 ~ re {printf "%-12s %s\n", $2, $1}' "$WORK/probe.csv"
 echo
 echo "-- not reused (executed despite warm cache) --"
-awk -F, 'NR>1 && $2=="EXECUTED" {printf "%s  %s\n", $1, $4}' "$WORK/probe.csv"
+awk -F, -v re="$NOT_CACHEABLE" 'NR>1 && $1 !~ re && $2=="EXECUTED" {printf "%s  %s\n", $1, $4}' "$WORK/probe.csv"
+echo
+
+hits=$(awk -F, -v re="$NOT_CACHEABLE" 'NR>1 && $1 !~ re && $2=="FROM_CACHE" {n++} END {print n+0}' "$WORK/probe.csv")
+if [[ "$hits" -eq 0 ]]; then
+    echo "FAIL: 캐시 가능 태스크 중 FROM_CACHE 가 0 건이다. 다른 경로에서 만든 캐시가 재사용되지 않는다." >&2
+    exit 1
+fi
+echo "PASS: FROM_CACHE $hits 건."
