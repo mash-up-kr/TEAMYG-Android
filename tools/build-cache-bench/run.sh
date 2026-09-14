@@ -244,11 +244,13 @@ measure() {
     local csv="$OUT/tasks/$tag.csv"
     mkdir -p "$OUT/tasks" "$OUT/logs"
 
+    # prepare_state 의 첫 동작이 캐시 디렉토리 rm -rf 다. 직전 회차 데몬이 살아 있는 채로
+    # 지우면 그 데몬이 열어 둔 캐시를 발밑에서 치우는 꼴이다. 먼저 내린다.
+    (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
     prepare_state "$scenario" "$tree" "$tag"
 
-    # 사전 상태를 만드는 빌드 횟수가 시나리오마다 달라서 데몬 온도가 갈린다.
-    # 상태를 다 만든 뒤에 재기동하고 고정 횟수로 덥혀야 모든 측정이 같은 조건에서 출발한다.
-    (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
+    # 사전 빌드 횟수가 시나리오마다 달라 데몬 온도가 갈린다. 측정 직전에 고정 횟수로 덥혀
+    # 출발선을 맞춘다.
     gradle_run "$tree" "$OUT/discard.csv" "$OUT/logs/$tag.warmup.log" help
 
     local start end daemon
