@@ -174,10 +174,15 @@ git diff --stat <A> <B> -- <대상 모듈 경로>
 `--out`(기본 `runs/<타임스탬프>/`) 아래에 남는 파일:
 
 - `builds.csv` — 빌드 1행. 컬럼: `scenario,target,pair,iteration,wall_ms,daemon_pid`.
-- `cache-size.csv` — 시나리오별 캐시 항목 수·용량. 컬럼: `scenario,target,iteration,entries,kb`.
+- `cache-size.csv` — 캐시 항목 수·용량.
+  컬럼: `scenario,target,iteration,pre_entries,pre_kb,post_entries,post_kb`.
+  `pre_*`는 **사전 상태를 다 만든 시점**, 즉 측정 빌드가 읽으려는 캐시다. `post_*`는 측정
+  빌드가 끝난 뒤라 **그 빌드가 새로 밀어 넣은 항목이 포함된다.** 저장 비용·전송량을
+  추정할 때는 `pre_*`를 쓴다.
 - `tasks/<시나리오>-<대상>-<회차>.csv` — 태스크 1행. 컬럼: `task_path,outcome,duration_ms,execution_reasons`.
-- `logs/<태그>.log` — 해당 빌드의 Gradle 전체 로그. `<태그>.prepare.log`·`<태그>.warmup.log`는
-  사전 상태 수립·워밍업 로그로, 측정 대상 로그와 구분된다.
+- `logs/<태그>.log` — 측정 빌드의 Gradle 전체 로그.
+- `logs/<태그>.prepare<N>.log` — 사전 상태를 만든 빌드들. `<N>`은 그 시나리오 안에서의 순번이다
+  (`S4`는 1=`clean`, 2=B 굽기, 3=`clean`, 4=A 굽기). `logs/<태그>.warmup.log`는 워밍업 로그다.
 - `summary.md` — 이 README의 [결과 읽는 법](#결과-읽는-법)대로 정리된 사람이 읽는 요약.
 
 `runs/`는 `.gitignore` 대상이다. 측정치는 머신마다 다르므로 커밋하지 않는다.

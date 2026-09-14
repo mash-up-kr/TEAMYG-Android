@@ -188,6 +188,15 @@ cache_stats() {
     echo "$entries,${kb:-0}"
 }
 
+# 사전 상태 빌드는 한 태그에 최대 4번이라 로그 파일명을 공유하면 마지막 하나만 남는다.
+# S4 에서 진단 가치가 가장 큰 "B 를 캐시에 굽는" 빌드가 바로 그 덮어써지는 쪽이다.
+PREPARE_STEP=0
+prepare_run() {
+    local tree="$1" tag="$2"; shift 2
+    PREPARE_STEP=$((PREPARE_STEP + 1))
+    gradle_run "$tree" "$OUT/discard.csv" "$OUT/logs/$tag.prepare$PREPARE_STEP.log" "$@"
+}
+
 # 시나리오가 요구하는 "빌드 직전 상태"를 만든다. 이 단계의 시간은 측정하지 않는다.
 # 캐시를 채우는 빌드 앞에는 반드시 clean 이 온다 — 출력이 남아 있으면 그 빌드가
 # UP_TO_DATE 로 끝나 캐시에 아무것도 안 담긴다.
@@ -195,40 +204,40 @@ prepare_state() {
     local scenario="$1" tree="$2" tag="$3"
     local -a targets
     targets=(${TARGETS//,/ })
-    local disc="$OUT/discard.csv" dlog="$OUT/logs/$tag.prepare.log"
+    PREPARE_STEP=0
     case "$scenario" in
         S0)
             wipe_cache
-            gradle_run "$tree" "$disc" "$dlog" clean
-            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            prepare_run "$tree" "$tag" clean
+            prepare_run "$tree" "$tag" "${targets[@]}"
             ;;
         S1)
             wipe_cache
-            gradle_run "$tree" "$disc" "$dlog" clean
-            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
-            gradle_run "$tree" "$disc" "$dlog" clean
+            prepare_run "$tree" "$tag" clean
+            prepare_run "$tree" "$tag" "${targets[@]}"
+            prepare_run "$tree" "$tag" clean
             ;;
         S2)
             wipe_cache
-            gradle_run "$tree" "$disc" "$dlog" clean
+            prepare_run "$tree" "$tag" clean
             ;;
         S3)
             wipe_cache
             checkout_commit "$tree" "$PAIR_A"
-            gradle_run "$tree" "$disc" "$dlog" clean
-            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            prepare_run "$tree" "$tag" clean
+            prepare_run "$tree" "$tag" "${targets[@]}"
             checkout_commit "$tree" "$PAIR_B"
             ;;
         S4)
             wipe_cache
             # B 를 먼저 구워 캐시에 담는다. 이것이 "CI 가 이미 B 를 빌드해 뒀다" 를 대역한다.
             checkout_commit "$tree" "$PAIR_B"
-            gradle_run "$tree" "$disc" "$dlog" clean
-            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            prepare_run "$tree" "$tag" clean
+            prepare_run "$tree" "$tag" "${targets[@]}"
             # 출력을 A 기준으로 되돌린다. S3 와 출력 상태가 같아야 캐시만의 차이가 남는다.
             checkout_commit "$tree" "$PAIR_A"
-            gradle_run "$tree" "$disc" "$dlog" clean
-            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            prepare_run "$tree" "$tag" clean
+            prepare_run "$tree" "$tag" "${targets[@]}"
             checkout_commit "$tree" "$PAIR_B"
             ;;
         *)
@@ -249,6 +258,11 @@ measure() {
     (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
     prepare_state "$scenario" "$tree" "$tag"
 
+    # 사전 상태 시점의 캐시다. 측정 빌드 뒤에 재면 그 빌드가 밀어 넣은 항목이 섞여,
+    # 캐시를 비우고 시작하는 S2 가 entries=1 처럼 보인다.
+    local pre_cache
+    pre_cache=$(cache_stats)
+
     # 사전 빌드 횟수가 시나리오마다 달라 데몬 온도가 갈린다. 측정 직전에 고정 횟수로 덥혀
     # 출발선을 맞춘다.
     gradle_run "$tree" "$OUT/discard.csv" "$OUT/logs/$tag.warmup.log" help
@@ -260,7 +274,7 @@ measure() {
     daemon=$(cat "$csv.daemon" 2>/dev/null || echo "unknown")
 
     echo "$scenario,$target,${PAIR:-none},$iteration,$((end - start)),$daemon" >> "$OUT/builds.csv"
-    echo "$scenario,$target,$iteration,$(cache_stats)" >> "$OUT/cache-size.csv"
+    echo "$scenario,$target,$iteration,$pre_cache,$(cache_stats)" >> "$OUT/cache-size.csv"
 }
 
 # BSD awk 에는 asort 가 없다. 정렬은 sort 에 맡긴다.
@@ -383,7 +397,7 @@ ensure_tree
 precheck "$TREE" || { echo "선행 조건 미충족" >&2; exit 5; }
 
 echo "scenario,target,pair,iteration,wall_ms,daemon_pid" > "$OUT/builds.csv"
-echo "scenario,target,iteration,entries,kb" > "$OUT/cache-size.csv"
+echo "scenario,target,iteration,pre_entries,pre_kb,post_entries,post_kb" > "$OUT/cache-size.csv"
 
 while IFS='|' read -r scenario target iteration; do
     echo "[$scenario] $target ($iteration/$ITERATIONS)"
