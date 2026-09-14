@@ -39,9 +39,12 @@ abstract class TaskOutcomeRecorder :
             else -> "UNKNOWN"
         }
         // 왜 실행됐는지를 남긴다. S3 에서 EXECUTED 로 남은 태스크의 사유가 판단 재료다.
-        // 쉼표와 따옴표는 CSV 구조를 깨므로 미리 지운다.
+        // 쉼표·따옴표·개행은 CSV 구조를 깬다. 개행이 섞이면 한 행이 두 행으로 쪼개져
+        // 이후 집계의 컬럼 정렬이 통째로 밀린다.
         val reasons = (result as? TaskExecutionResult)?.executionReasons.orEmpty()
-            .joinToString(";") { it.replace(',', ' ').replace('"', '\'') }
+            .joinToString(";") {
+                it.replace(',', ' ').replace('"', '\'').replace('\n', ' ').replace('\r', ' ')
+            }
         rows.append(event.descriptor.taskPath).append(',')
             .append(outcome).append(',')
             .append(result.endTime - result.startTime).append(',')
