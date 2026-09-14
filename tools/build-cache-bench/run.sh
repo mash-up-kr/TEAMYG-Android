@@ -249,20 +249,23 @@ median_ms() {
 
 hit_rate() {
     local scenario="$1" target="$2" slug="$scenario-${target//:/_}"
-    # 실행하지 않은 시나리오는 tasks/*.csv 가 아예 없다. glob 이 안 풀리면 cat 이 비영(非零)
-    # 종료해 pipefail 아래서 write_summary 전체를 죽인다 — awk 결과와 무관하게 `|| true` 로 막는다.
-    cat "$OUT/tasks/$slug"-*.csv 2>/dev/null | awk -F, -v s="$scenario" -v t="$target" '
+    # 실행하지 않은 시나리오는 tasks/*.csv 가 아예 없다 — 그 경우만 조용히 건너뛴다.
+    # nullglob 없이도(bash 3.2) glob 이 안 풀리면 files[0] 은 리터럴 글롭 문자열이라 -e 가 실패한다.
+    # 파일이 있는데 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
+    local files=("$OUT/tasks/$slug"-*.csv)
+    [[ -e "${files[0]}" ]] || return 0
+    cat "${files[@]}" | awk -F, -v s="$scenario" -v t="$target" '
         $1=="task_path" { next }
         $1 ~ /^:build-logic:/ { next }
         $2=="SKIPPED" || $2=="NO-SOURCE" { next }
         { n++; if ($2=="FROM_CACHE") hit++ }
         END { if (n) printf "| %s | %s | %d | %d | %.1f%% |\n", s, t, hit, n, 100*hit/n }
-    ' || true
+    '
 }
 
 # 핵심 값을 맨 앞에 둔다. 나머지는 그 값을 읽기 위한 참고값이다.
 write_summary() {
-    local md="$OUT/summary.md" target scenario s3 s4 m
+    local md="$OUT/summary.md" target scenario s3 s4 m s3_files
     {
         echo "# 빌드 캐시 측정 결과"
         echo
@@ -307,10 +310,16 @@ write_summary() {
         echo "사유는 init script 가 getExecutionReasons() 로 받은 값이다."
         echo
         echo '```'
-        # 위와 같은 이유로 cat 실패를 흡수한다 — S3 를 이번 실행에서 안 돌렸을 때 대비.
-        cat "$OUT/tasks"/S3-*.csv 2>/dev/null \
-            | awk -F, '$1!="task_path" && $2=="EXECUTED" {sum[$1]+=$3; why[$1]=$4} END {for (t in sum) printf "%8d ms  %-55s %s\n", sum[t], t, why[t]}' \
-            | sort -rn | head -30 || true
+        # S3 를 이번 실행에서 안 돌렸으면 tasks/S3-*.csv 가 아예 없다 — 그 경우만 건너뛴다.
+        # write_summary 는 함수지만 이 블록은 `{ ... } > "$md"` 안이라 return 을 쓰면 이후
+        # 섹션(닫는 ```)까지 못 쓰고 함수가 끝나 버린다. 조건 분기로 이 섹션만 비운다.
+        # 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
+        s3_files=("$OUT/tasks"/S3-*.csv)
+        if [[ -e "${s3_files[0]}" ]]; then
+            cat "${s3_files[@]}" \
+                | awk -F, '$1!="task_path" && $2=="EXECUTED" {sum[$1]+=$3; why[$1]=$4} END {for (t in sum) printf "%8d ms  %-55s %s\n", sum[t], t, why[t]}' \
+                | sort -rn | head -30
+        fi
         echo '```'
     } > "$md"
     echo "요약: $md"
