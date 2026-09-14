@@ -92,11 +92,110 @@ plan_runs() {
     done
 }
 
+# BSD date 는 %N 을 모르면서 오류도 내지 않는다 — %3N 을 리터럴로 뱉고 exit 0 이다.
+# 그래서 date 를 시도한 뒤 폴백하는 구조가 성립하지 않는다. python3 으로 직행한다.
+now_ms() {
+    python3 -c 'import time;print(int(time.time()*1000))'
+}
+
+# 전용 캐시를 통째로 지운다. 빈 변수로 rm -rf 가 나가지 않게 막는다.
+wipe_cache() {
+    [[ -n "$CACHE_DIR" && "$CACHE_DIR" != "/" ]] || { echo "캐시 경로가 비었다" >&2; exit 3; }
+    rm -rf "${CACHE_DIR:?}"
+    mkdir -p "$CACHE_DIR"
+}
+
+gradle_run() {
+    local tree="$1" csv="$2" log="$3"; shift 3
+    mkdir -p "$(dirname "$log")"
+    if ! (cd "$tree" && ./gradlew "$@" --offline \
+        -I "$INIT" \
+        -PcacheReport.csv="$csv" \
+        -PcacheReport.cacheDir="$CACHE_DIR" >"$log" 2>&1); then
+        echo "빌드 실패: $* (로그: $log)" >&2
+        return 1
+    fi
+}
+
+cache_stats() {
+    local entries kb
+    # gc.properties·cache.lock 은 캐시 항목이 아니다.
+    entries=$(find "$CACHE_DIR" -type f ! -name 'gc.properties' ! -name '*.lock' | wc -l | tr -d ' ')
+    kb=$(du -sk "$CACHE_DIR" 2>/dev/null | awk '{print $1}')
+    echo "$entries,${kb:-0}"
+}
+
+# 시나리오가 요구하는 "빌드 직전 상태"를 만든다. 이 단계의 시간은 측정하지 않는다.
+# 캐시를 채우는 빌드 앞에는 반드시 clean 이 온다 — 출력이 남아 있으면 그 빌드가
+# UP_TO_DATE 로 끝나 캐시에 아무것도 안 담긴다.
+prepare_state() {
+    local scenario="$1" tree="$2" tag="$3"
+    local -a targets
+    targets=(${TARGETS//,/ })
+    local disc="$OUT/discard.csv" dlog="$OUT/logs/$tag.prepare.log"
+    case "$scenario" in
+        S0)
+            wipe_cache
+            gradle_run "$tree" "$disc" "$dlog" clean
+            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            ;;
+        S1)
+            wipe_cache
+            gradle_run "$tree" "$disc" "$dlog" clean
+            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            gradle_run "$tree" "$disc" "$dlog" clean
+            ;;
+        S2)
+            wipe_cache
+            gradle_run "$tree" "$disc" "$dlog" clean
+            ;;
+        *)
+            echo "알 수 없는 시나리오: $scenario" >&2
+            return 4
+            ;;
+    esac
+}
+
+measure() {
+    local scenario="$1" target="$2" iteration="$3" tree="$4"
+    local tag="$scenario-${target//:/_}-$iteration"
+    local csv="$OUT/tasks/$tag.csv"
+    mkdir -p "$OUT/tasks" "$OUT/logs"
+
+    prepare_state "$scenario" "$tree" "$tag"
+
+    # 사전 상태를 만드는 빌드 횟수가 시나리오마다 달라서 데몬 온도가 갈린다.
+    # 상태를 다 만든 뒤에 재기동하고 고정 횟수로 덥혀야 모든 측정이 같은 조건에서 출발한다.
+    (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
+    gradle_run "$tree" "$OUT/discard.csv" "$OUT/logs/$tag.warmup.log" help
+
+    local start end daemon
+    start=$(now_ms)
+    gradle_run "$tree" "$csv" "$OUT/logs/$tag.log" "$target"
+    end=$(now_ms)
+    daemon=$(cat "$csv.daemon" 2>/dev/null || echo "unknown")
+
+    echo "$scenario,$target,${PAIR:-none},$iteration,$((end - start)),$daemon" >> "$OUT/builds.csv"
+    echo "$scenario,$target,$iteration,$(cache_stats)" >> "$OUT/cache-size.csv"
+}
+
 if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "tree=${TREE:-<새 worktree>} out=$OUT cache=$CACHE_DIR pair=${PAIR:-<없음>}"
     plan_runs
     exit 0
 fi
 
-echo "아직 시나리오 실행이 구현되지 않았다. --dry-run 으로 계획만 볼 수 있다." >&2
-exit 1
+mkdir -p "$OUT" "$CACHE_DIR" "$OUT/logs"
+TREE="${TREE:-$ROOT}"
+precheck "$TREE" || { echo "선행 조건 미충족" >&2; exit 5; }
+
+echo "scenario,target,pair,iteration,wall_ms,daemon_pid" > "$OUT/builds.csv"
+echo "scenario,target,iteration,entries,kb" > "$OUT/cache-size.csv"
+
+while IFS='|' read -r scenario target iteration; do
+    echo "[$scenario] $target ($iteration/$ITERATIONS)"
+    measure "$scenario" "$target" "$iteration" "$TREE"
+done < <(plan_runs)
+
+rm -f "$OUT/discard.csv" "$OUT/discard.csv.daemon"
+echo "결과: $OUT"
