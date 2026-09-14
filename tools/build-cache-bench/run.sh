@@ -51,6 +51,45 @@ done
 OUT="${OUT:-$ROOT/tools/build-cache-bench/runs/$(date +%Y%m%d-%H%M%S)}"
 CACHE_DIR="${CACHE_DIR:-$OUT/cache}"
 
+OWNED_TREE=""
+BORROWED_TREE=""
+BORROWED_HEAD=""
+
+cleanup_tree() {
+    if [[ -n "$OWNED_TREE" ]]; then
+        git -C "$ROOT" worktree remove --force "$OWNED_TREE" >/dev/null 2>&1 || true
+        git -C "$ROOT" worktree prune >/dev/null 2>&1 || true
+    fi
+    # 빌려 쓴 트리는 지우지 않고 HEAD 만 제자리로 돌린다.
+    if [[ -n "$BORROWED_TREE" && -n "$BORROWED_HEAD" ]]; then
+        git -C "$BORROWED_TREE" checkout "$BORROWED_HEAD" >/dev/null 2>&1 || true
+    fi
+}
+trap cleanup_tree EXIT
+
+# S3·S4 는 커밋을 오간다. 개발자 체크아웃에서 하면 중단 시 detached HEAD 와 지워진 build/ 가 남는다.
+# 명령 치환으로 부르면 서브셸이라 위 전역이 부모에 안 잡힌다 — 값을 echo 하지 않고 직접 대입한다.
+ensure_tree() {
+    if [[ -n "$TREE" ]]; then
+        BORROWED_TREE="$TREE"
+        BORROWED_HEAD="$(git -C "$TREE" rev-parse --abbrev-ref HEAD)"
+        [[ "$BORROWED_HEAD" != "HEAD" ]] || BORROWED_HEAD="$(git -C "$TREE" rev-parse HEAD)"
+        return 0
+    fi
+    OWNED_TREE="$OUT/tree"
+    git -C "$ROOT" worktree add --detach "$OWNED_TREE" HEAD >/dev/null
+    local f
+    for f in local.properties app/google-services.json; do
+        [[ -f "$ROOT/$f" ]] && cp "$ROOT/$f" "$OWNED_TREE/$f"
+    done
+    TREE="$OWNED_TREE"
+}
+
+checkout_commit() {
+    local tree="$1" commit="$2"
+    git -C "$tree" checkout --detach "$commit" >/dev/null 2>&1
+}
+
 # S3·S4 는 커밋 쌍이 없으면 의미가 없다. 콜론이 빠지면 A 와 B 가 같은 커밋이 되어
 # 조용히 무의미한 숫자가 나오므로 형식까지 본다.
 validate_pair() {
@@ -149,6 +188,25 @@ prepare_state() {
             wipe_cache
             gradle_run "$tree" "$disc" "$dlog" clean
             ;;
+        S3)
+            wipe_cache
+            checkout_commit "$tree" "${PAIR%%:*}"
+            gradle_run "$tree" "$disc" "$dlog" clean
+            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            checkout_commit "$tree" "${PAIR##*:}"
+            ;;
+        S4)
+            wipe_cache
+            # B 를 먼저 구워 캐시에 담는다. 이것이 "CI 가 이미 B 를 빌드해 뒀다" 를 대역한다.
+            checkout_commit "$tree" "${PAIR##*:}"
+            gradle_run "$tree" "$disc" "$dlog" clean
+            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            # 출력을 A 기준으로 되돌린다. S3 와 출력 상태가 같아야 캐시만의 차이가 남는다.
+            checkout_commit "$tree" "${PAIR%%:*}"
+            gradle_run "$tree" "$disc" "$dlog" clean
+            gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
+            checkout_commit "$tree" "${PAIR##*:}"
+            ;;
         *)
             echo "알 수 없는 시나리오: $scenario" >&2
             return 4
@@ -186,7 +244,8 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
 fi
 
 mkdir -p "$OUT" "$CACHE_DIR" "$OUT/logs"
-TREE="${TREE:-$ROOT}"
+validate_pair || exit 2
+ensure_tree
 precheck "$TREE" || { echo "선행 조건 미충족" >&2; exit 5; }
 
 echo "scenario,target,pair,iteration,wall_ms,daemon_pid" > "$OUT/builds.csv"
