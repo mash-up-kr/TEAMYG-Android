@@ -316,9 +316,13 @@ write_summary() {
         # 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
         s3_files=("$OUT/tasks"/S3-*.csv)
         if [[ -e "${s3_files[0]}" ]]; then
+            # head -30 은 쓰지 않는다 — head 가 30줄을 받고 먼저 끝내면 pipefail 아래서
+            # sort 가 SIGPIPE(141)로 죽어 write_summary 전체가 죽는다. S3 는 미스가 많은
+            # 사유 문자열(수백 바이트)이 정상이라 몇백 줄만 돼도 이 경합에 걸린다.
+            # awk 는 입력을 끝까지 읽어 앞 단계에 SIGPIPE 를 보내지 않는다.
             cat "${s3_files[@]}" \
                 | awk -F, '$1!="task_path" && $2=="EXECUTED" {sum[$1]+=$3; why[$1]=$4} END {for (t in sum) printf "%8d ms  %-55s %s\n", sum[t], t, why[t]}' \
-                | sort -rn | head -30
+                | sort -rn | awk 'NR<=30'
         fi
         echo '```'
     } > "$md"
