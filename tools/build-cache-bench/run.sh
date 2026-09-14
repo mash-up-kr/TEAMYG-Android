@@ -46,6 +46,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$TARGETS" ]] || { echo "--targets 가 비었다" >&2; exit 2; }
+[[ "$ITERATIONS" =~ ^[1-9][0-9]*$ ]] || { echo "--iterations 는 1 이상의 정수여야 한다: $ITERATIONS" >&2; exit 2; }
 
 OUT="${OUT:-$ROOT/tools/build-cache-bench/runs/$(date +%Y%m%d-%H%M%S)}"
 CACHE_DIR="${CACHE_DIR:-$OUT/cache}"
