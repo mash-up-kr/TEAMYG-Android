@@ -273,18 +273,23 @@ measure() {
     local csv="$OUT/tasks/$tag.csv"
     mkdir -p "$OUT/tasks" "$OUT/logs"
 
-    # prepare_state 의 첫 동작이 캐시 디렉토리 rm -rf 다. 직전 회차 데몬이 살아 있는 채로
-    # 지우면 그 데몬이 열어 둔 캐시를 발밑에서 치우는 꼴이다. 먼저 내린다.
+    # --stop 이 prepare_state 앞뒤로 한 번씩이다. 둘은 막는 것이 다르다.
+    # 앞: prepare_state 의 첫 동작이 캐시 디렉토리 rm -rf 라, 직전 회차 데몬이 살아 있는
+    #     채로 지우면 그 데몬이 연 캐시를 발밑에서 치우는 꼴이 된다.
+    # 뒤: 사전 풀빌드 횟수가 S4 는 2회, S3 는 1회다. 그 데몬을 그대로 쓰면 S4 가 항상 더
+    #     더워 S3 − S4 를 일정한 방향으로 부풀린다. 여기선 캐시를 지우지 않으므로 데몬을
+    #     내려도 캐시는 건드리지 않는다.
     (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
     prepare_state "$scenario" "$tree" "$tag"
+    (cd "$tree" && ./gradlew --stop >/dev/null 2>&1) || true
 
     # 사전 상태 시점의 캐시다. 측정 빌드 뒤에 재면 그 빌드가 밀어 넣은 항목이 섞여,
     # 캐시를 비우고 시작하는 S2 가 entries=1 처럼 보인다.
+    # 데몬을 내린 뒤라야 find·du 가 데몬 임시 파일과 경합하지 않는다.
     local pre_cache
     pre_cache=$(cache_stats)
 
-    # 사전 빌드 횟수가 시나리오마다 달라 데몬 온도가 갈린다. 측정 직전에 고정 횟수로 덥혀
-    # 출발선을 맞춘다.
+    # 측정 빌드는 help 1회만 거친 새 데몬 위에서 돈다. 모든 회차의 출발선이 여기서 맞는다.
     gradle_run "$tree" "$OUT/discard.csv" "$OUT/logs/$tag.warmup.log" help
 
     local start end daemon
