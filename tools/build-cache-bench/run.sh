@@ -278,12 +278,20 @@ hit_rate() {
     # 파일이 있는데 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
     local files=("$OUT/tasks/$slug"-*.csv)
     [[ -e "${files[0]}" ]] || return 0
+    # up_to_date 와 executed 를 따로 낸다. 적중률만 보면 "전부 UP_TO_DATE(=쌍이 무신호)"와
+    # "미스인데 빨랐다"가 똑같이 0.0% 로 보여 무신호를 알아볼 수 없다.
     cat "${files[@]}" | awk -F, -v s="$scenario" -v t="$target" '
         $1=="task_path" { next }
         $1 ~ /^:build-logic:/ { next }
         $2=="SKIPPED" || $2=="NO-SOURCE" { next }
-        { n++; if ($2=="FROM_CACHE") hit++ }
-        END { if (n) printf "| %s | %s | %d | %d | %.1f%% |\n", s, t, hit, n, 100*hit/n }
+        { n++ }
+        $2=="FROM_CACHE" { hit++ }
+        $2=="UP_TO_DATE" { utd++ }
+        $2=="EXECUTED"   { ex++ }
+        END {
+            if (n) printf "| %s | %s | %d | %d | %d | %d | %.1f%% |\n", \
+                s, t, hit, utd, ex, n, 100*hit/n
+        }
     '
 }
 
@@ -319,10 +327,11 @@ write_summary() {
         echo
         echo "## 캐시 적중률"
         echo
-        echo "분모는 actionable 태스크다. included build 와 SKIPPED·NO-SOURCE 를 뺀 전 회차 집계다."
+        echo "분모(actionable)는 included build 와 SKIPPED·NO-SOURCE 를 뺀 전 회차 집계다."
+        echo "S3 가 사실상 전부 up_to_date 면 캐시 효과가 아니라 커밋 쌍이 무신호라는 뜻이다."
         echo
-        echo "| scenario | target | from_cache | actionable | 적중률 |"
-        echo "|---|---|---|---|---|"
+        echo "| scenario | target | from_cache | up_to_date | executed | actionable | 적중률 |"
+        echo "|---|---|---|---|---|---|---|"
         for target in ${TARGETS//,/ }; do
             for scenario in $SCENARIO_ORDER; do
                 hit_rate "$scenario" "$target"
