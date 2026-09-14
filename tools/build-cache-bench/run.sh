@@ -237,6 +237,85 @@ measure() {
     echo "$scenario,$target,$iteration,$(cache_stats)" >> "$OUT/cache-size.csv"
 }
 
+# BSD awk 에는 asort 가 없다. 정렬은 sort 에 맡긴다.
+# 짝수 개일 때는 아래쪽 값을 쓴다(평균 아님). README 에 적어 둔다.
+median_ms() {
+    local scenario="$1" target="$2"
+    awk -F, -v s="$scenario" -v t="$target" \
+        'NR>1 && $1==s && $2==t {print $5}' "$OUT/builds.csv" \
+        | sort -n \
+        | awk '{v[n++]=$1} END {if (n) print v[int((n-1)/2)]}'
+}
+
+hit_rate() {
+    local scenario="$1" target="$2" slug="$scenario-${target//:/_}"
+    # 실행하지 않은 시나리오는 tasks/*.csv 가 아예 없다. glob 이 안 풀리면 cat 이 비영(非零)
+    # 종료해 pipefail 아래서 write_summary 전체를 죽인다 — awk 결과와 무관하게 `|| true` 로 막는다.
+    cat "$OUT/tasks/$slug"-*.csv 2>/dev/null | awk -F, -v s="$scenario" -v t="$target" '
+        $1=="task_path" { next }
+        $1 ~ /^:build-logic:/ { next }
+        $2=="SKIPPED" || $2=="NO-SOURCE" { next }
+        { n++; if ($2=="FROM_CACHE") hit++ }
+        END { if (n) printf "| %s | %s | %d | %d | %.1f%% |\n", s, t, hit, n, 100*hit/n }
+    ' || true
+}
+
+# 핵심 값을 맨 앞에 둔다. 나머지는 그 값을 읽기 위한 참고값이다.
+write_summary() {
+    local md="$OUT/summary.md" target scenario s3 s4 m
+    {
+        echo "# 빌드 캐시 측정 결과"
+        echo
+        echo "- 커밋 쌍: ${PAIR:-none}"
+        echo "- 반복: $ITERATIONS (중앙값, 짝수면 아래쪽 값)"
+        echo
+        echo "## 핵심 값 — T_local(S3) 빼기 T_remote(S4)"
+        echo
+        echo "| target | S3 ms | S4 ms | 차이 ms |"
+        echo "|---|---|---|---|"
+        for target in ${TARGETS//,/ }; do
+            s3=$(median_ms S3 "$target")
+            s4=$(median_ms S4 "$target")
+            [[ -n "$s3" && -n "$s4" ]] && echo "| $target | $s3 | $s4 | $((s3 - s4)) |"
+        done
+        echo
+        echo "## 참고값"
+        echo
+        echo "| scenario | target | 중앙값 ms |"
+        echo "|---|---|---|"
+        for target in ${TARGETS//,/ }; do
+            for scenario in $SCENARIO_ORDER; do
+                m=$(median_ms "$scenario" "$target")
+                [[ -n "$m" ]] && echo "| $scenario | $target | $m |"
+            done
+        done
+        echo
+        echo "## 캐시 적중률"
+        echo
+        echo "분모는 actionable 태스크다. included build 와 SKIPPED·NO-SOURCE 를 뺀 전 회차 집계다."
+        echo
+        echo "| scenario | target | from_cache | actionable | 적중률 |"
+        echo "|---|---|---|---|---|"
+        for target in ${TARGETS//,/ }; do
+            for scenario in $SCENARIO_ORDER; do
+                hit_rate "$scenario" "$target"
+            done
+        done
+        echo
+        echo "## S3 에서 캐시 미스로 남은 태스크"
+        echo
+        echo "사유는 init script 가 getExecutionReasons() 로 받은 값이다."
+        echo
+        echo '```'
+        # 위와 같은 이유로 cat 실패를 흡수한다 — S3 를 이번 실행에서 안 돌렸을 때 대비.
+        cat "$OUT/tasks"/S3-*.csv 2>/dev/null \
+            | awk -F, '$1!="task_path" && $2=="EXECUTED" {sum[$1]+=$3; why[$1]=$4} END {for (t in sum) printf "%8d ms  %-55s %s\n", sum[t], t, why[t]}' \
+            | sort -rn | head -30 || true
+        echo '```'
+    } > "$md"
+    echo "요약: $md"
+}
+
 if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "tree=${TREE:-<새 worktree>} out=$OUT cache=$CACHE_DIR pair=${PAIR:-<없음>}"
     plan_runs
@@ -257,4 +336,5 @@ while IFS='|' read -r scenario target iteration; do
 done < <(plan_runs)
 
 rm -f "$OUT/discard.csv" "$OUT/discard.csv.daemon"
+write_summary
 echo "결과: $OUT"
