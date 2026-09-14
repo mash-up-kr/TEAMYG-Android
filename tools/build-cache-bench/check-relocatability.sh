@@ -35,7 +35,8 @@ seed_tree_files "$PROBE_TREE"
 
 run_in() {
     local tree="$1" csv="$2"; shift 2
-    (cd "$tree" && ./gradlew "$@" --offline \
+    # --build-cache 는 상수다. 체크아웃된 커밋의 gradle.properties 에 맡기지 않는다.
+    (cd "$tree" && ./gradlew "$@" --offline --build-cache \
         -I "$INIT" \
         -PcacheReport.csv="$csv" \
         -PcacheReport.cacheDir="$CACHE" >/dev/null)

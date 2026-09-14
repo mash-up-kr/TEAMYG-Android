@@ -54,6 +54,8 @@ CACHE_DIR="${CACHE_DIR:-$OUT/cache}"
 OWNED_TREE=""
 BORROWED_TREE=""
 BORROWED_HEAD=""
+PAIR_A=""
+PAIR_B=""
 
 cleanup_tree() {
     if [[ -n "$OWNED_TREE" ]]; then
@@ -87,27 +89,46 @@ ensure_tree() {
 
 checkout_commit() {
     local tree="$1" commit="$2"
-    git -C "$tree" checkout --detach "$commit" >/dev/null 2>&1
+    git -C "$tree" checkout --detach "$commit" >/dev/null
 }
 
-# S3·S4 는 커밋 쌍이 없으면 의미가 없다. 콜론이 빠지면 A 와 B 가 같은 커밋이 되어
-# 조용히 무의미한 숫자가 나오므로 형식까지 본다.
+# S3·S4 는 커밋 쌍이 없으면 의미가 없다.
+#
+# 여기서 full SHA 로 고정하는 것이 핵심이다. `HEAD~1` 같은 상대 참조를 그대로 들고 다니면
+# 러너가 옮기는 트리 HEAD 를 따라 가리키는 커밋이 회차마다 달라진다 — 그러면 B 를 잰다고
+# 하고 A 를 재는 일이 에러 없이 일어난다.
 validate_pair() {
     case ",$SCENARIOS," in
         *,S3,*|*,S4,*) ;;
         *) return 0 ;;
     esac
     [[ "$PAIR" == *:* ]] || { echo "S3·S4 는 --pair <A>:<B> 가 필요하다" >&2; return 1; }
-    git -C "$ROOT" rev-parse --verify --quiet "${PAIR%%:*}^{commit}" >/dev/null \
+    PAIR_A=$(git -C "$ROOT" rev-parse --verify --quiet "${PAIR%%:*}^{commit}") \
         || { echo "커밋을 찾을 수 없다: ${PAIR%%:*}" >&2; return 1; }
-    git -C "$ROOT" rev-parse --verify --quiet "${PAIR##*:}^{commit}" >/dev/null \
+    PAIR_B=$(git -C "$ROOT" rev-parse --verify --quiet "${PAIR##*:}^{commit}") \
         || { echo "커밋을 찾을 수 없다: ${PAIR##*:}" >&2; return 1; }
+    [[ "$PAIR_A" != "$PAIR_B" ]] \
+        || { echo "A 와 B 가 같은 커밋이다: $PAIR_A" >&2; return 1; }
+    if git -C "$ROOT" diff --quiet "$PAIR_A" "$PAIR_B"; then
+        echo "두 커밋의 트리가 완전히 같다. S3·S4 가 같은 값이 된다: $PAIR_A..$PAIR_B" >&2
+        return 1
+    fi
+    # 이후 보고에 찍히는 값도 고정된 SHA 여야 한다.
+    PAIR="$PAIR_A:$PAIR_B"
 }
 
 # :app:assembleDebug 는 서명·google-services 를 탄다. 한 시간짜리 측정이 중간에 죽지 않게 먼저 본다.
 precheck() {
-    local tree="$1" missing=0
-    [[ -f "$tree/local.properties" ]] || { echo "없음: $tree/local.properties (템플릿 local.default.properties)" >&2; missing=1; }
+    local tree="$1" missing=0 dirty
+    # 미커밋 수정은 두 방향으로 측정을 망친다. 충돌하지 않으면 checkout --detach 가 A·B
+    # 양쪽으로 이월시켜 둘 다 오염시키고, 충돌하면 checkout 이 거부돼 측정이 죽는다.
+    dirty="$(git -C "$tree" status --porcelain)"
+    if [[ -n "$dirty" ]]; then
+        echo "대상 트리에 미커밋 변경이 있다: $tree" >&2
+        printf '%s\n' "$dirty" >&2
+        missing=1
+    fi
+    [[ -f "$tree/local.properties" ]] ||{ echo "없음: $tree/local.properties (템플릿 local.default.properties)" >&2; missing=1; }
     grep -q '^sdk.dir' "$tree/local.properties" 2>/dev/null || { echo "local.properties 에 sdk.dir 없음" >&2; missing=1; }
     if [[ "$TARGETS" == *"assembleDebug"* ]]; then
         [[ -f "$tree/app/google-services.json" ]] || { echo "없음: $tree/app/google-services.json" >&2; missing=1; }
@@ -147,7 +168,10 @@ wipe_cache() {
 gradle_run() {
     local tree="$1" csv="$2" log="$3"; shift 3
     mkdir -p "$(dirname "$log")"
-    if ! (cd "$tree" && ./gradlew "$@" --offline \
+    # --build-cache 를 상수로 준다. 켜짐 여부를 체크아웃된 커밋의 gradle.properties 에
+    # 맡기면, 그 줄이 없던 시절의 커밋을 쌍으로 골랐을 때 적중 0 건이 "캐시는 값어치가
+    # 없다" 로 조용히 둔갑한다.
+    if ! (cd "$tree" && ./gradlew "$@" --offline --build-cache \
         -I "$INIT" \
         -PcacheReport.csv="$csv" \
         -PcacheReport.cacheDir="$CACHE_DIR" >"$log" 2>&1); then
@@ -190,22 +214,22 @@ prepare_state() {
             ;;
         S3)
             wipe_cache
-            checkout_commit "$tree" "${PAIR%%:*}"
+            checkout_commit "$tree" "$PAIR_A"
             gradle_run "$tree" "$disc" "$dlog" clean
             gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
-            checkout_commit "$tree" "${PAIR##*:}"
+            checkout_commit "$tree" "$PAIR_B"
             ;;
         S4)
             wipe_cache
             # B 를 먼저 구워 캐시에 담는다. 이것이 "CI 가 이미 B 를 빌드해 뒀다" 를 대역한다.
-            checkout_commit "$tree" "${PAIR##*:}"
+            checkout_commit "$tree" "$PAIR_B"
             gradle_run "$tree" "$disc" "$dlog" clean
             gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
             # 출력을 A 기준으로 되돌린다. S3 와 출력 상태가 같아야 캐시만의 차이가 남는다.
-            checkout_commit "$tree" "${PAIR%%:*}"
+            checkout_commit "$tree" "$PAIR_A"
             gradle_run "$tree" "$disc" "$dlog" clean
             gradle_run "$tree" "$disc" "$dlog" "${targets[@]}"
-            checkout_commit "$tree" "${PAIR##*:}"
+            checkout_commit "$tree" "$PAIR_B"
             ;;
         *)
             echo "알 수 없는 시나리오: $scenario" >&2
@@ -308,14 +332,18 @@ write_summary() {
         echo "## S3 에서 캐시 미스로 남은 태스크"
         echo
         echo "사유는 init script 가 getExecutionReasons() 로 받은 값이다."
-        echo
-        echo '```'
-        # S3 를 이번 실행에서 안 돌렸으면 tasks/S3-*.csv 가 아예 없다 — 그 경우만 건너뛴다.
-        # write_summary 는 함수지만 이 블록은 `{ ... } > "$md"` 안이라 return 을 쓰면 이후
-        # 섹션(닫는 ```)까지 못 쓰고 함수가 끝나 버린다. 조건 분기로 이 섹션만 비운다.
-        # 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
-        s3_files=("$OUT/tasks"/S3-*.csv)
-        if [[ -e "${s3_files[0]}" ]]; then
+        echo "ms 는 $ITERATIONS 회차의 **합**이다 — 1회 빌드 시간이 아니다. target 당 상위 30개만 싣는다."
+        # target 을 섞으면 같은 태스크가 두 그래프에서 각각 실행된 시간이 한 줄로 합쳐져
+        # 어느 쪽이 비싼지 알 수 없게 된다. 적중률 표와 같은 slug 로 좁힌다.
+        for target in ${TARGETS//,/ }; do
+            # S3 를 이번 실행에서 안 돌렸으면 그 slug 의 csv 가 아예 없다 — 그 경우만 건너뛴다.
+            # 집계(awk)가 깨지는 경우는 삼키지 않고 그대로 실패시켜 드러나게 한다.
+            s3_files=("$OUT/tasks/S3-${target//:/_}"-*.csv)
+            [[ -e "${s3_files[0]}" ]] || continue
+            echo
+            echo "### $target"
+            echo
+            echo '```'
             # head -30 은 쓰지 않는다 — head 가 30줄을 받고 먼저 끝내면 pipefail 아래서
             # sort 가 SIGPIPE(141)로 죽어 write_summary 전체가 죽는다. S3 는 미스가 많은
             # 사유 문자열(수백 바이트)이 정상이라 몇백 줄만 돼도 이 경합에 걸린다.
@@ -323,20 +351,23 @@ write_summary() {
             cat "${s3_files[@]}" \
                 | awk -F, '$1!="task_path" && $2=="EXECUTED" {sum[$1]+=$3; why[$1]=$4} END {for (t in sum) printf "%8d ms  %-55s %s\n", sum[t], t, why[t]}' \
                 | sort -rn | awk 'NR<=30'
-        fi
-        echo '```'
+            echo '```'
+        done
     } > "$md"
     echo "요약: $md"
 }
 
+# dry-run 보다 앞이다. 쌍이 어느 SHA 로 고정됐는지 확인할 값싼 창구가 dry-run 뿐이다.
+validate_pair || exit 2
+
 if [[ "$DRY_RUN" -eq 1 ]]; then
-    echo "tree=${TREE:-<새 worktree>} out=$OUT cache=$CACHE_DIR pair=${PAIR:-<없음>}"
+    echo "tree=${TREE:-<새 worktree>} out=$OUT cache=$CACHE_DIR"
+    echo "pair A=${PAIR_A:-<없음>} B=${PAIR_B:-<없음>}"
     plan_runs
     exit 0
 fi
 
 mkdir -p "$OUT" "$CACHE_DIR" "$OUT/logs"
-validate_pair || exit 2
 ensure_tree
 precheck "$TREE" || { echo "선행 조건 미충족" >&2; exit 5; }
 
