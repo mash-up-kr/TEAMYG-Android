@@ -11,10 +11,15 @@
 `:app:assembleDebug`를 대상에 넣으면 아래 파일이 필요하다. 전부 `.gitignore` 대상이라
 클론마다(측정 전용 worktree 포함) 각자 채워야 한다.
 
-- 루트 `local.properties` — `sdk.dir`, `kakao.native.app.key`, debug 키스토어 관련 값
-  (템플릿은 `local.default.properties`).
-- 루트에 debug 키스토어 파일 3종(경로는 `local.properties`가 가리키는 값).
+- 루트 `local.properties`(템플릿은 `local.default.properties`) — `sdk.dir`,
+  `kakao.native.app.key`, 그리고 debug 서명 4종 `YG_DEBUG_STORE_FILE`·`YG_DEBUG_STORE_PASSWORD`·
+  `YG_DEBUG_KEY_ALIAS`·`YG_DEBUG_KEY_PASSWORD`.
+- `YG_DEBUG_STORE_FILE`이 가리키는 키스토어 파일이 실제로 있어야 한다. 이 값이 상대경로면
+  `app/` 기준으로 풀린다(그 값을 `file()`에 넘기는 프로젝트가 `:app`이다). 새 worktree를
+  쓸 때 상대경로는 그 파일이 worktree에 없으므로 **절대경로를 쓰는 편이 안전하다.**
 - `app/google-services.json`.
+
+러너의 `precheck`가 위를 **시작 전에** 전부 확인하고, 하나라도 빠지면 측정을 시작하지 않는다.
 
 `--tree`로 트리를 빌리면 그 트리에 이미 있는 파일을 그대로 쓴다. `run.sh`가 새 worktree를
 만드는 경우(`--tree` 생략) 저장소 루트의 `local.properties`·`app/google-services.json`을

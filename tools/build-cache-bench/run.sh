@@ -117,9 +117,17 @@ validate_pair() {
     PAIR="$PAIR_A:$PAIR_B"
 }
 
+# local.properties 한 줄의 값. 키에 든 '.' 이 와일드카드로 풀리지 않게 이스케이프한다.
+prop_value() {
+    local file="$1" key_re
+    [[ -f "$file" ]] || return 0
+    key_re="$(printf '%s' "$2" | sed 's/[.]/\\./g')"
+    sed -n "s/^[[:space:]]*$key_re[[:space:]]*=[[:space:]]*//p" "$file" | head -n 1
+}
+
 # :app:assembleDebug 는 서명·google-services 를 탄다. 한 시간짜리 측정이 중간에 죽지 않게 먼저 본다.
 precheck() {
-    local tree="$1" missing=0 dirty
+    local tree="$1" missing=0 dirty lp="$1/local.properties" key store
     # 미커밋 수정은 두 방향으로 측정을 망친다. 충돌하지 않으면 checkout --detach 가 A·B
     # 양쪽으로 이월시켜 둘 다 오염시키고, 충돌하면 checkout 이 거부돼 측정이 죽는다.
     dirty="$(git -C "$tree" status --porcelain)"
@@ -128,10 +136,22 @@ precheck() {
         printf '%s\n' "$dirty" >&2
         missing=1
     fi
-    [[ -f "$tree/local.properties" ]] ||{ echo "없음: $tree/local.properties (템플릿 local.default.properties)" >&2; missing=1; }
-    grep -q '^sdk.dir' "$tree/local.properties" 2>/dev/null || { echo "local.properties 에 sdk.dir 없음" >&2; missing=1; }
+    [[ -f "$lp" ]] || { echo "없음: $lp (템플릿 local.default.properties)" >&2; missing=1; }
+    [[ -n "$(prop_value "$lp" sdk.dir)" ]] || { echo "local.properties 에 sdk.dir 없음" >&2; missing=1; }
     if [[ "$TARGETS" == *"assembleDebug"* ]]; then
         [[ -f "$tree/app/google-services.json" ]] || { echo "없음: $tree/app/google-services.json" >&2; missing=1; }
+        for key in kakao.native.app.key YG_DEBUG_STORE_PASSWORD YG_DEBUG_KEY_ALIAS YG_DEBUG_KEY_PASSWORD; do
+            [[ -n "$(prop_value "$lp" "$key")" ]] || { echo "local.properties 에 $key 없음" >&2; missing=1; }
+        done
+        store="$(prop_value "$lp" YG_DEBUG_STORE_FILE)"
+        if [[ -z "$store" ]]; then
+            echo "local.properties 에 YG_DEBUG_STORE_FILE 없음" >&2
+            missing=1
+        else
+            # 상대경로는 그 값을 file() 에 넘기는 프로젝트, 곧 :app 디렉토리 기준으로 풀린다.
+            [[ "$store" == /* ]] || store="$tree/app/$store"
+            [[ -f "$store" ]] || { echo "debug 키스토어 없음: $store" >&2; missing=1; }
+        fi
     fi
     # 다른 데몬이 돌면 수치가 흔들린다. 막지는 않고 알린다.
     if "$tree/gradlew" --status 2>/dev/null | grep -qi idle; then
