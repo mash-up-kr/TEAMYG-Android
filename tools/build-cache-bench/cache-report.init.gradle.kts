@@ -1,4 +1,6 @@
+import org.gradle.api.Action
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.initialization.Settings
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.build.event.BuildEventsListenerRegistry
@@ -64,3 +66,13 @@ val recorder = gradle.sharedServices.registerIfAbsent(
 ) { parameters.csv.set(File(csvPath)) }
 
 gradle.serviceOf<BuildEventsListenerRegistry>().onTaskCompletion(recorder)
+
+// 측정이 개발자의 ~/.gradle 캐시를 쓰거나 더럽히지 않게 한다.
+val benchCacheDir = providers.gradleProperty("cacheReport.cacheDir").orNull
+if (benchCacheDir != null) {
+    gradle.settingsEvaluated(
+        Action<Settings> {
+            buildCache.local.directory = File(benchCacheDir)
+        },
+    )
+}
