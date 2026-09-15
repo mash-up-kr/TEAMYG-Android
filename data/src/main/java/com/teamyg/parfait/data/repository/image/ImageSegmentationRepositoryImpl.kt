@@ -58,6 +58,7 @@ import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.core.graphics.createBitmap
 
 @Singleton
 class ImageSegmentationRepositoryImpl
@@ -416,11 +417,7 @@ constructor(
             try {
                 val trimmedFile = trimmed.saveToCacheAsPng()
 
-                val canvasBitmap = Bitmap.createBitmap(
-                    candidate.canvasWidth,
-                    candidate.canvasHeight,
-                    Bitmap.Config.ARGB_8888,
-                )
+                val canvasBitmap = createBitmap(candidate.canvasWidth, candidate.canvasHeight)
 
                 val subjectFile = try {
                     // 스케일하지 않고 그대로 얹는다 — ML Kit 가 준 치수와 bounds 가 어긋나더라도

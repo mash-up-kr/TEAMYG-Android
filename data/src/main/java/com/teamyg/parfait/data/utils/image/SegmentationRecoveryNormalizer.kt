@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.model.image.SegmentationContrastSpec
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
+import androidx.core.graphics.scale
 
 /**
  * 계획을 비트맵에 적용한다. 크롭 → 축소 → 축소판에서 히스토그램 → 축소판에 LUT 순서다. 원본에서 히스토그램을
@@ -32,7 +33,7 @@ internal suspend fun normalizeForDetection(
     val scaled = if (cropped.width == target.width && cropped.height == target.height) {
         cropped
     } else {
-        Bitmap.createScaledBitmap(cropped, target.width, target.height, true)
+        cropped.scale(target.width, target.height)
     }
     // 두 팩토리는 조건에 따라 입력을 그대로 돌려준다
     if (cropped !== origin && cropped !== scaled) cropped.recycle()
