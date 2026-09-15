@@ -11,7 +11,10 @@ internal val TOPPING_ERROR_DRAWABLE: Int = R.drawable.img_topping_template_error
 @Immutable
 sealed interface YGToppingImage {
     @Immutable
-    data class Remote(val url: String) : YGToppingImage
+    data class Remote(
+        val url: String,
+        val border: YGToppingBorder? = null,
+    ) : YGToppingImage
 
     @Immutable
     data class Template(val type: YGToppingTemplate) : YGToppingImage
