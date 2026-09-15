@@ -65,7 +65,7 @@ constructor(
 
         ModuleInstallSignal.AlreadyInstalled,
         ModuleInstallSignal.Completed,
-            -> if (gateway.isAvailable()) {
+        -> if (gateway.isAvailable()) {
             ModuleInstallOutcome.Ready
         } else {
             ModuleInstallOutcome.Failed(installState = STATE_COMPLETED_BUT_UNAVAILABLE, errorCode = 0)

@@ -210,8 +210,7 @@ internal fun CanvasBGEditScreen(
                                     keyOf = { it.parfaitImageId },
                                     onHit = onClickTopping,
                                     onMiss = onClickDeselectTopping,
-                                )
-                                .toppingDragInput(
+                                ).toppingDragInput(
                                     targetAt = { selectedEntry?.target },
                                     onDrag = { amount ->
                                         onToppingMoveDrag(
@@ -381,8 +380,7 @@ private fun PaletteColorCircle(
                 width = 1.dp,
                 color = YGAtomicColors.Transparency.Black5,
                 shape = CircleShape,
-            )
-            .clickableYGNoRipple(onClick = onClick),
+            ).clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (isSelected) {

@@ -140,8 +140,7 @@ fun YGToastHost(
                                         dragOffsetY = 0f
                                     }
                                 },
-                            )
-                            .offset { IntOffset(0, dragOffsetY.toInt()) },
+                            ).offset { IntOffset(0, dragOffsetY.toInt()) },
                     )
                 }
             }
