@@ -405,6 +405,12 @@ write_summary() {
         done
     } > "$md"
     echo "요약: $md"
+
+    # 사람이 열어 보는 층. CSV 는 기계 판독용으로 그대로 둔다.
+    # 리포트 조립이 실패해도 측정 결과는 이미 디스크에 있으므로 러너를 죽이지 않는다.
+    if ! python3 "$ROOT/tools/build-cache-bench/report.py" "$OUT" ; then
+        echo "리포트 조립 실패 — CSV 와 summary.md 는 그대로 있다" >&2
+    fi
 }
 
 # dry-run 보다 앞이다. 쌍이 어느 SHA 로 고정됐는지 확인할 값싼 창구가 dry-run 뿐이다.
