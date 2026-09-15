@@ -108,7 +108,7 @@ class TokenAuthenticatorTest {
             userInfoLocalDataSource = userInfoLocalDataSource,
             groupLocalDataSource = groupLocalDataSource,
             canvasLocalDataSource = canvasLocalDataSource,
-            canvasPoller = Lazy { canvasPoller },
+            canvasPoller = { canvasPoller },
         )
     }
 

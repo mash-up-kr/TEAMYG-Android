@@ -74,7 +74,7 @@ internal fun ToppingBorderEditScreen(
     // 줄이는 것도 원본 해상도를 훑는 일이라 알맹이를 만들 때와 마찬가지로 컴포지션 밖에서 한다
     val density = LocalDensity.current.density
     val paddingPx = (MAX_BORDER_PADDING_DP * density).roundToInt()
-    val stamp: ToppingBorderStamp? by produceState<ToppingBorderStamp?>(
+    val stamp: ToppingBorderStamp? by produceState(
         initialValue = null,
         cutout,
         canvasSize,
@@ -106,7 +106,7 @@ internal fun ToppingBorderEditScreen(
 
     // 거리는 그대로 두고 칠하기만 다시 하면 되므로, 굵기를 끄는 동안에도 실루엣을 다시 재지 않는다.
     // 굵기가 dp 라 화면 배율을 태우지 않는다. 사진 해상도가 달라도 눈에 보이는 굵기는 같다
-    val borderImage: ImageBitmap? by produceState<ImageBitmap?>(initialValue = null, stamp, borderLayers, density) {
+    val borderImage: ImageBitmap? by produceState(initialValue = null, stamp, borderLayers, density) {
         val current = stamp ?: return@produceState
 
         value = withContext(Dispatchers.Default) {

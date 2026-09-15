@@ -20,7 +20,7 @@ fun neverFinishingImageLoader(): ImageLoader {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     return ImageLoader
         .Builder(context)
-        .components { add(Interceptor { awaitCancellation() }) }
+        .components { add { awaitCancellation() } }
         .build()
 }
 
@@ -33,19 +33,17 @@ fun instantlySucceedingImageLoader(): ImageLoader {
     return ImageLoader
         .Builder(context)
         .components {
-            add(
-                Interceptor { chain ->
-                    SuccessResult(
-                        image = ColorImage(
-                            color = Color.RED,
-                            width = FAKE_IMAGE_SIDE_PX,
-                            height = FAKE_IMAGE_SIDE_PX,
-                        ),
-                        request = chain.request,
-                        dataSource = DataSource.NETWORK,
-                    )
-                },
-            )
+            add { chain ->
+                SuccessResult(
+                    image = ColorImage(
+                        color = Color.RED,
+                        width = FAKE_IMAGE_SIDE_PX,
+                        height = FAKE_IMAGE_SIDE_PX,
+                    ),
+                    request = chain.request,
+                    dataSource = DataSource.NETWORK,
+                )
+            }
         }.build()
 }
 
@@ -81,20 +79,18 @@ class ControllableImageLoader {
         ImageLoader
             .Builder(context)
             .components {
-                add(
-                    Interceptor { chain ->
-                        gate.await()
-                        SuccessResult(
-                            image = ColorImage(
-                                color = Color.RED,
-                                width = FAKE_IMAGE_SIDE_PX,
-                                height = FAKE_IMAGE_SIDE_PX,
-                            ),
-                            request = chain.request,
-                            dataSource = DataSource.NETWORK,
-                        )
-                    },
-                )
+                add { chain ->
+                    gate.await()
+                    SuccessResult(
+                        image = ColorImage(
+                            color = Color.RED,
+                            width = FAKE_IMAGE_SIDE_PX,
+                            height = FAKE_IMAGE_SIDE_PX,
+                        ),
+                        request = chain.request,
+                        dataSource = DataSource.NETWORK,
+                    )
+                }
             }.build()
     }
 
