@@ -8,10 +8,10 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase

@@ -11,7 +11,6 @@ import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.image.SourceLongSide
-import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -19,6 +18,7 @@ import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
@@ -27,6 +27,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -37,6 +38,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
@@ -47,6 +49,7 @@ private const val EDITED_CUTOUT_PATH = "/cache/segmentation/edited_cutout.png"
 
 private const val ORIGIN_LONG_SIDE = 4032
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SegmentationViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -376,7 +379,7 @@ class SegmentationViewModelTest {
     fun clickCandidate_persisting_showsTheLoadingOverlay() = runTest {
         // Given 저장이 도는 동안 시간이 걸리는 상황
         coEvery { persistSubject(candidate) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(success)
         }
         coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
@@ -515,7 +518,7 @@ class SegmentationViewModelTest {
     fun retry_pressedTwiceWhileRunning_runsOnce() = runTest {
         // Given 세그멘테이션이 오래 걸리는 상황
         coEvery { segmentImage(bitmapWrapper) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(listOf(candidate))
         }
         val viewModel = viewModel()
@@ -589,7 +592,7 @@ class SegmentationViewModelTest {
         // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
         coEvery { saveBitmap(bitmapWrapper) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(ORIGIN_PATH)
         }
         val viewModel = viewModel()
@@ -743,7 +746,7 @@ class SegmentationViewModelTest {
     fun retry_whileTheRecoveryRuns_clearsTheErrorAndShowsLoading() = runTest {
         coEvery { segmentImage(any()) } returns Result.success(emptyList())
         coEvery { recoverCandidates(any()) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(listOf(candidate))
         }
         val viewModel = viewModel()

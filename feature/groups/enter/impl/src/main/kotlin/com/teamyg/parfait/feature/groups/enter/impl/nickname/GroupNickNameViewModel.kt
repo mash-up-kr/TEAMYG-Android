@@ -18,6 +18,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 data class GroupNickNameUiState(
     val groupName: String = "",
@@ -132,7 +133,7 @@ constructor(
      */
     private suspend fun noticeNicknameNotApplied() {
         postSideEffect(GroupNickNameSideEffect.ShowError(GroupNickNameError.NICKNAME_NOT_APPLIED))
-        delay(NICKNAME_NOTICE_DURATION)
+        delay(NICKNAME_NOTICE_DURATION.milliseconds)
     }
 
     /** `Result.failure` 가 아니라 예외로 튄 경로 — 갈래를 가릴 수 없어 한 갈래로 접는다 */

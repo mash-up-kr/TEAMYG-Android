@@ -37,11 +37,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,6 +50,12 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import org.junit.Rule
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val SCALE_DELTA = 1e-4f
 
@@ -63,6 +65,7 @@ private val PARFAIT_ID = ParfaitId(2L)
 /** 구독 캔버스가 초안과 다른 캔버스를 가리키는 경우(하루 경계를 넘긴 상황)를 표현한다 */
 private val OTHER_PARFAIT_ID = ParfaitId(99L)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanvasToppingPlaceViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -444,7 +447,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_whileLoading_doesNotStartASecondUpload() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(mockk())
         }
         coEvery { clearToppingDraft() } returns Unit
@@ -462,7 +465,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_setsLoadingWhileInFlight() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(mockk())
         }
         coEvery { clearToppingDraft() } returns Unit
@@ -470,7 +473,7 @@ class CanvasToppingPlaceViewModelTest {
         advanceUntilIdle()
 
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
-        advanceTimeBy(500)
+        advanceTimeBy(500.milliseconds)
         assertTrue(viewModel.state.value.isLoading)
 
         advanceUntilIdle()

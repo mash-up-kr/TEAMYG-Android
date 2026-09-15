@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,6 +31,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DISMISS_DELAY = 2500L
 private const val ANIMATION_DURATION = 300
@@ -85,7 +87,7 @@ fun YGAlertHost(
     Box(modifier = modifier) {
         policy.alert?.let { alert ->
             LaunchedEffect(alert.id) {
-                delay(DISMISS_DELAY)
+                delay(DISMISS_DELAY.milliseconds)
                 policy.clearAlert()
             }
 
@@ -94,7 +96,7 @@ fun YGAlertHost(
                 enter = slideInVertically(tween(ANIMATION_DURATION)) { -it },
                 exit = slideOutVertically(tween(ANIMATION_DURATION)) { -it },
             ) {
-                var dragOffsetY by remember { mutableStateOf(0f) }
+                var dragOffsetY by remember { mutableFloatStateOf(0f) }
                 YGAlert(
                     title = alert.title,
                     sub = alert.sub,
@@ -117,7 +119,8 @@ fun YGAlertHost(
                                     dragOffsetY = 0f
                                 }
                             },
-                        ).offset { IntOffset(0, dragOffsetY.toInt()) },
+                        )
+                        .offset { IntOffset(0, dragOffsetY.toInt()) },
                 )
             }
         }
