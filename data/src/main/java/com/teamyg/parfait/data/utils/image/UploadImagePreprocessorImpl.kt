@@ -115,7 +115,8 @@ constructor(
             decoded.width < plan.targetSize.width || decoded.height < plan.targetSize.height -> decoded
 
             else ->
-                decoded.scale(plan.targetSize.width, plan.targetSize.height)
+                decoded
+                    .scale(plan.targetSize.width, plan.targetSize.height)
                     .also { if (it !== decoded) decoded.recycle() }
         }
 
