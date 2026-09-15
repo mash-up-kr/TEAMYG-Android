@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.installer.image
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -135,6 +136,7 @@ class SegmentationModuleInstallerTest {
         gateway.emit(ModuleInstallSignal.Failed(installState = 5, errorCode = 8))
         first.await()
 
+        launch { installer.ensureInstalled() }
         runCurrent()
 
         // 끝난 대기를 재사용하면 재시도가 영영 옛 실패만 돌려준다

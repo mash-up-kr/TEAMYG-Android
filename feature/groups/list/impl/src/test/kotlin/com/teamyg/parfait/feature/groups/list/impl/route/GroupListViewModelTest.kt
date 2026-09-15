@@ -138,6 +138,7 @@ class GroupListViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When ViewModel 만 만들어지고 화면은 아직 앞에 서지 않았다
+        viewModel()
         advanceUntilIdle()
 
         // Then 조회는 화면이 설 때 나간다 — 생성만으로 부르면 재진입 조회와 겹쳐 두 번 나간다
