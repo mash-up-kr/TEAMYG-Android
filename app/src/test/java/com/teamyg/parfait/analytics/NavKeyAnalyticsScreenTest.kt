@@ -34,7 +34,7 @@ class NavKeyAnalyticsScreenTest {
     @Test
     fun toAnalyticsScreenOrNull_fixedKeys_returnMappedScreenId() {
         // Given 인자로 갈리지 않는 화면들
-        val expected = mapOf<NavKey, String>(
+        val expected = mapOf(
             NavKeySplash to "A-001",
             NavKeyLogin to "A-002",
             NavKeyTermAgree(registrationToken = "token") to "A-003",

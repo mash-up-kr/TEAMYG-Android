@@ -12,7 +12,7 @@ value class InviteCode(val value: String) {
         private const val MAX_PARSABLE_LENGTH = 200
 
         /** 초대 메시지 템플릿의 초대코드 자리 표시자 */
-        private const val CODE_PLACEHOLDER = "%1\$s"
+        private const val CODE_PLACEHOLDER = $$"%1$s"
 
         private const val CODE_CHAR_PATTERN = "[A-Za-z0-9]"
 
