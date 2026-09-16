@@ -136,7 +136,6 @@ internal fun CustomGalleryPickerRoute(
             CustomGalleryPickerScreen(
                 state = state,
                 toastPolicy = toastPolicy,
-                onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
                 onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
                 onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
                 onClickImage = { uri ->
