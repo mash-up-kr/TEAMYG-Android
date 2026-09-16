@@ -49,12 +49,11 @@ class CanvasPollerTest {
      * `error("폴러가 부르지 않는다")` 로 채운다.
      */
     private class FakeRemote(
-        response: CanvasVO,
+        /** 폴링 도중에 서버가 다른 값을 주는 상황을 만드는 데 쓴다 */
+        var response: CanvasVO,
         private val gate: CompletableDeferred<Unit>? = null,
         private val failure: Throwable? = null,
     ) : ParfaitRemoteDataSource {
-        /** 폴링 도중에 서버가 다른 값을 주는 상황을 만드는 데 쓴다 */
-        var response: CanvasVO = response
         var todayCallCount = 0
             private set
         var detailCallCount = 0

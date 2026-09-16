@@ -93,7 +93,7 @@ internal fun CanvasMainScreen(
             onBackClick = onClickBack,
             onMenuClick = onClickMenu,
             memberContent = {
-                Row(horizontalArrangement = Arrangement.spacedBy(-12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
                     canvasState.memberChips.take(MAX_VISIBLE_MEMBER_CHIPS).forEach { member ->
                         YGNametagChip(
                             colorChipType = member.colorChipType,

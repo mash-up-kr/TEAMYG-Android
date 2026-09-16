@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * 모듈 준비의 단일 소유자.
@@ -31,7 +32,7 @@ constructor(
             inFlight?.takeIf { !it.isCompleted } ?: startInstall().also { inFlight = it }
         }
 
-        val signal = withTimeoutOrNull(INSTALL_TIMEOUT_MS) { pending.await() }
+        val signal = withTimeoutOrNull(INSTALL_TIMEOUT_MS.milliseconds) { pending.await() }
             ?: return timedOut(pending)
 
         return signal.toOutcome()

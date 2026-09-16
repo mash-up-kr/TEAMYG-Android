@@ -14,12 +14,14 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.feature.groups.list.impl.route.GroupListViewModel.Companion.KEY_LOAD_GROUPS
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.format
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 data class GroupListUiState(
     /** `null` 은 아직 한 번도 받지 못했다는 뜻. 0건과 구분한다 */
@@ -219,7 +221,7 @@ constructor(
             try {
                 coroutineScope {
                     if (isRefresh) {
-                        launch { delay(REFRESH_MINIMUM_VISIBLE_MILLIS) }
+                        launch { delay(REFRESH_MINIMUM_VISIBLE_MILLIS.milliseconds) }
                     }
 
                     refreshMyGroups()

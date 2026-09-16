@@ -23,6 +23,8 @@ import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 @Singleton
 class UploadImagePreprocessorImpl
@@ -113,8 +115,8 @@ constructor(
             decoded.width < plan.targetSize.width || decoded.height < plan.targetSize.height -> decoded
 
             else ->
-                Bitmap
-                    .createScaledBitmap(decoded, plan.targetSize.width, plan.targetSize.height, true)
+                decoded
+                    .scale(plan.targetSize.width, plan.targetSize.height)
                     .also { if (it !== decoded) decoded.recycle() }
         }
 
@@ -202,7 +204,7 @@ constructor(
     }
 
     private fun flattenOnWhite(source: Bitmap): Bitmap {
-        val flattened = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        val flattened = createBitmap(source.width, source.height)
         Canvas(flattened).apply {
             drawColor(Color.WHITE)
             drawBitmap(source, 0f, 0f, null)

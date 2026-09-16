@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -16,12 +17,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -31,6 +31,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DISMISS_DELAY = 2000L
 private const val ANIMATION_DURATION = 300
@@ -107,10 +108,10 @@ fun YGToastHost(
     ) {
         policy.toasts.forEach { toast ->
             key(toast.id) {
-                var dragOffsetY by remember { mutableStateOf(0f) }
+                var dragOffsetY by remember { mutableFloatStateOf(0f) }
 
                 LaunchedEffect(toast.id) {
-                    delay(DISMISS_DELAY)
+                    delay(DISMISS_DELAY.milliseconds)
                     policy.setVisible(toast.id, false)
                     policy.removeToast(toast.id)
                 }
