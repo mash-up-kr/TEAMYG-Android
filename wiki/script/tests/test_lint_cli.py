@@ -1,5 +1,6 @@
 from conftest import page
 
+import check_status
 import lint
 
 
@@ -27,6 +28,21 @@ def test_run_all_collects_violations_and_warnings(make_repo):
     found = lint.run_all(root)
     levels = {f.level for f in found}
     assert "violation" in levels and "warning" in levels
+
+
+def test_main_exit_code_reflects_violations_only(make_repo, monkeypatch, capsys):
+    root = make_repo({
+        "wiki/conventions.md": "계약",
+        "wiki/pages/index.md": page(body="[[purpose]] [[overview]] someone@example.com"),
+        "wiki/pages/purpose.md": page(),
+        "wiki/pages/overview.md": page(),
+    })
+    monkeypatch.chdir(root)
+    code = lint.main()
+    out = capsys.readouterr().out
+    assert code == 0            # 경고만 있으면 통과
+    assert "위반 0건" in out
+    assert "경고 1건" in out
 
 
 def test_lint_main_exits_2_outside_repo_root(make_repo, monkeypatch, capsys):
@@ -67,3 +83,20 @@ def test_run_all_has_no_graph_signals_without_graph(make_repo):
     graph_codes = {"그래프stale", "그래프고립", "희소커뮤니티", "브리지"}
     assert not (graph_codes & {f.code for f in found})
     assert [f for f in found if f.level == "violation"] == []
+
+
+def test_lint_reports_status_violations_inline(make_repo, monkeypatch, capsys):
+    root = make_repo({
+        "wiki/conventions.md": "계약",
+        "wiki/pages/index.md": page(body="[[purpose]] [[overview]] [[src-x]]"),
+        "wiki/pages/purpose.md": page(),
+        "wiki/pages/overview.md": page(),
+        # status 누락 = check_status 위반
+        "wiki/pages/sources/src-x.md": page(sources="[x.md]"),
+        "wiki/raw/x.md": "원본",
+    })
+    monkeypatch.chdir(root)
+    code = lint.main()
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "status 누락" in out
