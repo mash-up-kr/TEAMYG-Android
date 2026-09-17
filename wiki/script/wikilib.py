@@ -15,7 +15,13 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 FENCE = re.compile(r"```.*?```", re.S)
 
 # 링크 대상이 아니라 수집도 하지 않는 경로
-UNCOLLECTED_DIRS = ("wiki/templates", "wiki/script", "wiki/references")
+# wiki/raw는 미통합 원본이다. check_raw_sync·check_manifest·_raw_texts가
+# 파일시스템을 직접 훑어 짝을 맞추므로 아무도 이걸 Page로 소비하지 않는다.
+# 수집하면 [[링크]] 대상이 아닌 원본이 인바운드 0건으로 고아 위반을 만든다 —
+# raw/가 wiki/ 밖에 있던 원본 저장소에는 없던 문제다. 파일명 유일성 검사는
+# all_markdown을 통해 그대로 받는다 (raw와 sources/src- 접두사 충돌은
+# check_unique_names가 계속 잡아야 한다).
+UNCOLLECTED_DIRS = ("wiki/templates", "wiki/script", "wiki/references", "wiki/raw")
 UNCOLLECTED_FILES = (
     "wiki/CLAUDE.md",
     "wiki/conventions.md",
