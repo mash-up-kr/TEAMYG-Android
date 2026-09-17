@@ -18,7 +18,15 @@ import json
 import pathlib
 import sys
 
+from wikilib import nfc
+
 MANIFEST_REL = "wiki/raw/.manifest.json"
+
+# 매니페스트 키는 항상 NFC로 맞춘다 (conventions.md §4). macOS가 만든 파일명은
+# NFD로 저장되는 경우가 있어, 정규화하지 않으면 같은 파일이 기록된 키와 다른
+# 문자열이 된다 — record 직후에도 pending에 남고 prune이 멀쩡한 항목을 지운다.
+# 파일을 여는 경로는 정규화하지 않는다. 리눅스는 NFC/NFD를 다른 파일로 보므로
+# 실제 경로는 파일시스템이 준 그대로 써야 한다.
 
 
 def sha256_of(path: pathlib.Path) -> str:
@@ -53,7 +61,7 @@ def pending(repo_root: pathlib.Path, manifest: dict[str, str] | None = None) -> 
     out = []
     for p in raw_markdown(repo_root):
         rel = p.relative_to(repo_root).as_posix()
-        if manifest.get(rel) != sha256_of(p):
+        if manifest.get(nfc(rel)) != sha256_of(p):
             out.append(rel)
     return out
 
@@ -63,14 +71,15 @@ def record(repo_root: pathlib.Path, rel: str) -> None:
     if not p.is_file():
         raise FileNotFoundError(rel)
     manifest = load_manifest(repo_root)
-    manifest[rel] = sha256_of(p)
+    manifest[nfc(rel)] = sha256_of(p)
     save_manifest(repo_root, manifest)
 
 
 def prune(repo_root: pathlib.Path) -> list[str]:
     manifest = load_manifest(repo_root)
-    actual = {p.relative_to(repo_root).as_posix() for p in raw_markdown(repo_root)}
-    removed = sorted(set(manifest) - actual)
+    actual = {nfc(p.relative_to(repo_root).as_posix())
+              for p in raw_markdown(repo_root)}
+    removed = sorted({nfc(k) for k in manifest} - actual)
     if removed:
         for k in removed:
             del manifest[k]
