@@ -87,10 +87,28 @@ def test_action_enum_skips_when_file_absent(make_repo):
 
 
 def test_credential_in_raw_is_violation(make_repo):
-    """raw/는 손대지 않은 원본이 쌓이는 곳 — 붙여넣은 자격증명이 가장 먼저 닿는다."""
+    """raw/는 손대지 않은 원본이 쌓이는 곳 — 붙여넣은 자격증명이 가장 먼저 닿는다.
+
+    wiki/raw는 load_pages에 수집되지 않는다 — 개수를 정확히 1건으로 못박아
+    _raw_texts와의 중복 스캔(수집된 페이지로 한 번, raw 훑기로 또 한 번)이
+    돌아오지 않았는지 확인한다.
+    """
     root = make_repo({
         "wiki/raw/유출.md": 'api_key: "sk-abcdefghijklmnop1234567890"',
     })
     found = lint.check_sensitive(wikilib.load_pages(root), root)
-    assert ("민감/credential", "violation") in _codes_levels(found)
-    assert found[0].path.startswith("wiki/raw/유출.md:")
+    assert len(found) == 1
+    assert found[0].code == "민감/credential"
+    assert found[0].level == "violation"
+    assert found[0].path == "wiki/raw/유출.md:1"
+
+
+def test_raw_is_not_scanned_without_repo_root(make_repo):
+    """repo_root를 안 넘기면 raw는 전혀 안 보인다.
+
+    wiki/raw가 UNCOLLECTED_DIRS라 load_pages가 만드는 pages에는 애초에
+    raw 내용이 없다 — repo_root가 없으면 _raw_texts도 raw를 못 읽으므로
+    민감정보가 하나도 안 잡혀야 한다.
+    """
+    root = make_repo({"wiki/raw/유출.md": 'api_key: "sk-abcdefghijklmnop1234567890"'})
+    assert lint.check_sensitive(wikilib.load_pages(root)) == []

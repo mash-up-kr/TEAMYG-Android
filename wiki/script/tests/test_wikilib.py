@@ -187,3 +187,19 @@ def test_wiki_entry_files_are_not_collected(make_repo):
         "wiki/open-questions.md": page(),
     })
     assert [pg.rel for pg in wikilib.load_pages(root)] == ["wiki/open-questions.md"]
+
+
+def test_raw_is_not_collected_but_participates_in_uniqueness(make_repo):
+    """wiki/raw는 미통합 원본이다 — [[링크]] 대상이 아니므로 Page로 수집되면
+
+    안 된다(고아 위반을 만든다). 하지만 파일명 유일성 검사(all_markdown)는
+    받아야 한다 — sources/의 src- 접두사와의 충돌을 계속 잡아야 하기 때문이다.
+    """
+    root = make_repo({
+        "wiki/raw/정책.md": "원본",
+        "wiki/pages/concepts/개념.md": page(sources="[]"),
+    })
+    assert [pg.rel for pg in wikilib.load_pages(root)] == [
+        "wiki/pages/concepts/개념.md"]
+    rels = {p.relative_to(root).as_posix() for p in wikilib.all_markdown(root)}
+    assert "wiki/raw/정책.md" in rels
