@@ -83,7 +83,7 @@ def test_shipped_routing_json_has_seven_intents():
            "wiki/pages/{purpose,index,overview}.md, wiki/open-questions.md 는 "
            "각각 Task 8·Task 9에서 만들어진다 — 그 전까지 validate_routing이 "
            "존재하지 않는 경로를 라우팅경로 위반으로 잡는다",
-    strict=False,
+    strict=True,
 )
 def test_shipped_routing_json_paths_exist():
     repo_root = pathlib.Path(__file__).resolve().parents[3]
