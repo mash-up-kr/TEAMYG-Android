@@ -48,9 +48,18 @@
 1. `wiki/pages/sources/src-<원본stem>.md`
 2. `wiki/pages/entities/*.md`
 3. `wiki/pages/concepts/*.md`
-4. `wiki/pages/overview.md` 갱신
-5. `wiki/pages/index.md` 갱신
-6. `wiki/log.md`에 기록
+4. (해당 시) `wiki/pages/synthesis/*.md` — 이 소스가 여러 개념·엔티티를
+   가로지르는 분석(패턴, 비교, 종합 판단)을 낳았을 때만 만든다. 매번 만들
+   필요는 없다. **만들었다면 바로 다음 단계에서 `wiki/pages/index.md`의
+   `## synthesis`에 등록하고, 근거가 된 관련 `concepts/`·`entities/` 페이지
+   중 최소 한 곳에서도 링크한다.** `queries/`와 달리 `synthesis/`는
+   `ORPHAN_EXEMPT_DIRS`에 없다 — synthesis는 개념망에 편입되어야 마땅한
+   분석이라, 예외를 주면 링크 안 된 분석이 조용히 쌓인다. 등록·링크를
+   빠뜨리면 인바운드 링크 0건으로 `고아` 위반이 뜬다.
+5. `wiki/pages/overview.md` 갱신
+6. `wiki/pages/index.md` 갱신 (synthesis를 만들었다면 위 4단계에서 이미
+   등록했을 `## synthesis` 항목을 포함해 확인한다)
+7. `wiki/log.md`에 기록
 
 ## 4. 소스 하나가 끝날 때마다
 
