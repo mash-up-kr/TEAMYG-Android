@@ -199,7 +199,7 @@ def test_index_projection_partial_with_both_tokens_passes(make_repo):
 
 
 def test_block_form_superseded_by_is_read_as_list(make_repo):
-    """Obsidian이 내보내는 블록 리스트도 판본 참조로 읽힌다."""
+    """블록 형식 리스트도 판본 참조로 읽힌다."""
     root = make_repo({
         "wiki/pages/sources/src-v1.md":
             "---\ntags:\n  - t\nupdated: 2026-08-10\nsources:\n  - 원본.md\n"

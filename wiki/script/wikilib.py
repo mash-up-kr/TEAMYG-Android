@@ -33,7 +33,7 @@ UNCOLLECTED_FILES = (
 # 스캔 루트(wiki/pages/) 밖에 두는 것과 별개로 이 마개가 필요하다 — 산출물이
 # wiki/ 안에 있기 때문이다.
 GENERATED_DIRS = ("wiki/graphify-out",)
-# vault 스캔에서 제외할 디렉토리.
+# 스캔에서 제외할 디렉토리.
 # .pytest_cache·.superpowers는 추적되지 않는 작업 부산물이다. 포함하면 lint 결과가
 # 로컬 작업 사본과 새 클론에서 달라진다 — 검사는 커밋된 트리만 봐야 한다.
 SKIP_DIRS = {
@@ -67,8 +67,7 @@ def split_frontmatter(text: str) -> tuple[str | None, str]:
 def parse_fm(fm_text: str | None) -> dict:
     """frontmatter를 dict로. 리스트는 인라인(`[a, b]`)과 블록(`-` 항목) 둘 다 받는다.
 
-    블록 형식은 Obsidian 속성 편집기가 GUI에서 속성을 건드리는 순간 내보내는 형식이다.
-    저장소 루트가 vault이므로 사람이 편집하면 반드시 이 형식이 들어온다.
+    두 형식 모두 `conventions.md` §6이 허용하므로 파서도 둘 다 받아들인다.
     두 형식은 같은 리스트를 만든다.
     """
     out: dict = {}
