@@ -17,3 +17,12 @@ http-client.private.env.json
 
 # 빌드 캐시 측정 결과 — 머신마다 다르고 저장소에 쌓일 이유가 없다
 /tools/build-cache-bench/runs/
+
+# Python 바이트코드 캐시 — 인터프리터 버전마다 달라져 공유 가치가 없다
+__pycache__/
+*.pyc
+
+# graphify 로컬 비용 집계 — 머신마다 다르다
+/wiki/graphify-out/cost.json
+# graphify 로컬 조회 타임스탐프 — 실행한 머신에서만 의미가 있다
+/wiki/graphify-out/cache/last_query_stamp
