@@ -216,12 +216,17 @@ def check_layout(pages: list[Page]) -> list[Finding]:
     return out
 
 
-def _raw_stems(repo_root: pathlib.Path) -> set[str]:
-    """wiki/raw/**/X.md → X. 도메인 차원이 없어 stem 하나로 짝을 맞춘다."""
+def _raw_stems(repo_root: pathlib.Path) -> dict[str, str]:
+    """wiki/raw/**/X.md → {stem: 저장소 상대 경로}. 도메인 차원이 없어 stem
+    하나로 짝을 맞추지만, 보고할 경로는 실제 위치(예: wiki/raw/research/ 처럼
+    중첩된 서브디렉토리)를 그대로 담아야 한다 — rglob이 하위 디렉토리까지
+    훑으므로 stem만 남기면 원본이 없는 경로가 보고된다. check_manifest와
+    같은 방식으로 맞춘다."""
     raw_root = repo_root / "wiki" / "raw"
     if not raw_root.exists():
-        return set()
-    return {nfc(p.stem) for p in raw_root.rglob("*.md")}
+        return {}
+    return {nfc(p.stem): p.relative_to(repo_root).as_posix()
+            for p in raw_root.rglob("*.md")}
 
 
 def check_raw_sync(repo_root: pathlib.Path, pages: list[Page]) -> list[Finding]:
@@ -229,11 +234,11 @@ def check_raw_sync(repo_root: pathlib.Path, pages: list[Page]) -> list[Finding]:
     src = {pg.stem.removeprefix("src-")
            for pg in pages if pg.parent_name == "sources"}
     out = []
-    for stem in sorted(raw - src):
+    for stem in sorted(set(raw) - src):
         out.append(Finding(
-            "violation", "raw정합", f"wiki/raw/{stem}.md",
+            "violation", "raw정합", raw[stem],
             f"ingest 안 됨 — wiki/pages/sources/src-{stem}.md 없음"))
-    for stem in sorted(src - raw):
+    for stem in sorted(src - set(raw)):
         out.append(Finding(
             "violation", "raw정합", f"wiki/pages/sources/src-{stem}.md",
             f"대응 raw 원본 없음 — wiki/raw/ 아래에 {stem}.md 가 없다"))

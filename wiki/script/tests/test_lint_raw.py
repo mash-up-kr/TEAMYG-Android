@@ -38,6 +38,15 @@ def test_research_subfolder_is_included(make_repo):
     assert lint.check_raw_sync(root, wikilib.load_pages(root)) == []
 
 
+def test_unmatched_nested_raw_reports_real_path(make_repo):
+    """중첩 서브디렉토리의 원본은 실제 경로로 보고돼야 한다 — stem만으로
+    wiki/raw/<stem>.md를 조립하면 그 경로에 파일이 없다."""
+    root = make_repo({"wiki/raw/research/검색-2026.md": "원본"})
+    found = lint.check_raw_sync(root, wikilib.load_pages(root))
+    assert [f.code for f in found] == ["raw정합"]
+    assert found[0].path == "wiki/raw/research/검색-2026.md"
+
+
 def test_manifest_missing_file_is_skipped(make_repo):
     root = make_repo({"wiki/raw/정책.md": "원본"})
     assert lint.check_manifest(root) == []
