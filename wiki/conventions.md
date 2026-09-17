@@ -113,8 +113,11 @@ graphify의 스캔 루트(`graph_signals.SCAN_ROOT` = `wiki/pages`) **밖에** �
 **`sources` 필드는 디렉토리마다 뜻이 다르다.** 같은 이름이지만 가리키는 대상이 다르다.
 
 - `sources/` 페이지의 `sources`는 **raw 원본 파일명**이다 (`[정책.md]`,
-  `wiki/templates/source.md` 참조). `wiki/raw/` 아래 실제 파일과 stem 하나로 1:1
-  대응해야 한다(§10) — 도메인 구분은 없다.
+  `wiki/templates/source.md` 참조). 이 필드 자체는 기계 검사 대상이 아니다 —
+  작성자의 자율 서술(honour system)이다. `check_raw_sync`(§10)가 실제로
+  1:1 대응을 강제하는 것은 `wiki/raw/` 아래 파일과 `sources/` 페이지의
+  **파일명(stem)**이지, 이 `sources` 필드 값이 아니다. 필드 값과 실제
+  raw 원본이 어긋나도 lint는 잡지 못한다 — 정확히 적는 것은 작성자 책임이다.
 - `concepts/`·`entities/` 페이지의 `sources`는 **`src-` 페이지 stem**이다
   (`[src-정책]`, `wiki/templates/concept.md` 참조). 선언한 stem은 **`wiki/pages/sources/`에
   실제로 존재해야** 한다.
