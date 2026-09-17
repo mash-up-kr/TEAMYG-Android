@@ -42,6 +42,20 @@ def test_find_links_handles_alias_and_anchor():
     assert links == ["개념", "개념", "개념"]
 
 
+def test_strip_noise_removes_inline_code():
+    t = "위키링크 문법은 `[[이름]]` 형식이다"
+    out = wikilib.strip_noise(t)
+    assert "이름" not in out
+
+
+def test_find_links_ignores_inline_code_example_but_keeps_prose_link():
+    """`[[이름]]`처럼 인라인 코드로 감싼 문법 예시는 링크로 취급하지 않지만,
+    보통 산문에 쓴 [[진짜링크]]는 그대로 잡힌다."""
+    t = "위키링크 문법은 `[[이름]]` 형식이다. 예: [[진짜링크]]"
+    links = wikilib.find_links(wikilib.strip_noise(t))
+    assert links == ["진짜링크"]
+
+
 def test_load_pages_skips_uncollected(make_repo):
     root = make_repo({
         "wiki/pages/index.md": page(body="[[a-index]]"),

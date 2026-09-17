@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 LINK = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]")
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 FENCE = re.compile(r"```.*?```", re.S)
+INLINE_CODE = re.compile(r"`+[^`\n]+`+")
 
 # 링크 대상이 아니라 수집도 하지 않는 경로
 # wiki/raw는 미통합 원본이다. check_raw_sync·check_manifest·_raw_texts가
@@ -49,8 +50,15 @@ def nfc(s) -> str:
 
 
 def strip_noise(text: str) -> str:
-    """주석 블록과 코드 펜스를 제거한다. 링크 검사는 항상 이걸 쓴다."""
-    return FENCE.sub("", COMMENT.sub("", text))
+    """주석 블록·코드 펜스·인라인 코드를 제거한다. 링크 검사는 항상 이걸 쓴다.
+
+    순서가 중요하다 — 펜스를 먼저 지워야 펜스 안의 백틱이 인라인 코드
+    패턴과 잘못 얽히지 않는다. 인라인 코드까지 지우는 이유: 위키링크 문법을
+    설명하는 산문이 `` `[[페이지이름]]` ``처럼 예시를 인라인 코드로 감싸면,
+    지우지 않을 경우 그 예시가 실제 링크로 오인되어 깨진링크/고아 위반을
+    만든다.
+    """
+    return INLINE_CODE.sub("", FENCE.sub("", COMMENT.sub("", text)))
 
 
 def split_frontmatter(text: str) -> tuple[str | None, str]:

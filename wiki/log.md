@@ -12,7 +12,7 @@ append-only다. 앞 항목을 고치지 않는다.
   `graph_signals`. `sync_issues.py`는 가져오지 않았다 — 팀 공용 저장소라 이슈를
   자동 생성하면 안 된다. 딸려서 `lint`의 `check_issue_field`와 계약의 `issue`
   필드도 뺐다
-- Obsidian 제외. ```[[이름]]``` 링크 규약과 세 검사는 유지하되 근거를 `route.py` seed
+- Obsidian 제외. `[[이름]]` 링크 규약과 세 검사는 유지하되 근거를 `route.py` seed
   확장의 결정성으로 다시 썼다
 - graphify 산출물은 `wiki/graphify-out/`, 스캔 루트는 `wiki/pages/`
 - 콘텐츠는 아직 0건이다. 첫 ingest는 별도 작업
