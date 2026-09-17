@@ -31,23 +31,18 @@ def test_raw_and_source_page_collide_without_prefix(make_repo):
 
 
 def test_skipped_dirs_do_not_participate_in_uniqueness(make_repo):
-    """추적되지 않는 작업 부산물이 파일명 중복을 만들면 안 된다."""
+    """추적되지 않는 작업 부산물이 파일명 중복을 만들면 안 된다.
+
+    fixture는 wiki/ 안에 둔다 — check_unique_names는 wikilib.all_markdown이
+    스캔한 것만 본다. wiki/ 밖에 두면 all_markdown이 애초에 보지 않아
+    SKIP_DIRS 필터와 무관하게 통과하므로, 이 검사가 정말 부산물을 걸러내는지
+    확인하지 못한다.
+    """
     root = make_repo({
         "wiki/pages/concepts/토핑.md": page(),
-        ".pytest_cache/토핑.md": "부산물",
-        ".superpowers/sdd/토핑.md": "부산물",
+        "wiki/.pytest_cache/토핑.md": "부산물",
+        "wiki/.superpowers/sdd/토핑.md": "부산물",
     })
-    assert lint.check_unique_names(root) == []
-
-
-def test_runtime_bridge_files_may_share_a_stem(make_repo):
-    root = make_repo({"CLAUDE.md": "브리지", "wiki/CLAUDE.md": "진입점"})
-    assert lint.check_unique_names(root) == []
-
-
-def test_readme_pair_may_share_a_stem(make_repo):
-    """루트 README와 script/README는 GitHub이 이름을 정하는 진입 문서다."""
-    root = make_repo({"README.md": "저장소 소개", "script/README.md": "툴링 홈"})
     assert lint.check_unique_names(root) == []
 
 
