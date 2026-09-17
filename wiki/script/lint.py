@@ -258,8 +258,13 @@ def check_manifest(repo_root: pathlib.Path) -> list[Finding]:
         entries = json.loads(mf.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         return [Finding("violation", "매니페스트", rel, f"JSON 파싱 실패: {e}")]
-    actual = {p.relative_to(repo_root).as_posix() for p in raw_root.rglob("*.md")}
-    recorded = set(entries)
+    # 경로 비교는 NFC로 맞춘다 (conventions.md §4). macOS가 만든 파일명은 NFD로
+    # 저장되는 경우가 있어, 정규화하지 않으면 같은 파일이 "등록 안 됨"과
+    # "파일 없음" 두 위반으로 동시에 뜬다. check_raw_sync는 _raw_stems에서
+    # 이미 nfc를 거치므로 같은 상황에서 걸리지 않는다.
+    actual = {nfc(p.relative_to(repo_root).as_posix())
+              for p in raw_root.rglob("*.md")}
+    recorded = {nfc(k) for k in entries}
     out = []
     for miss in sorted(actual - recorded):
         out.append(Finding("violation", "매니페스트", miss, "매니페스트에 등록 안 됨"))

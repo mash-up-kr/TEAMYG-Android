@@ -69,3 +69,17 @@ def test_manifest_stale_entry_is_violation(make_repo):
     found = lint.check_manifest(root)
     assert [f.code for f in found] == ["매니페스트"]
     assert "파일 없음" in found[0].message
+
+
+def test_manifest_nfd_path_matches_nfc_entry(make_repo):
+    """NFD 파일명과 NFC 매니페스트 항목은 같은 파일이다 (conventions.md §4).
+
+    정규화하지 않으면 '등록 안 됨'과 '파일 없음'이 동시에 뜬다.
+    """
+    import unicodedata as ud
+    nfd = "wiki/raw/" + ud.normalize("NFD", "캔버스") + ".md"
+    root = make_repo({
+        nfd: "원본",
+        "wiki/raw/.manifest.json": json.dumps({"wiki/raw/캔버스.md": "deadbeef"}),
+    })
+    assert lint.check_manifest(root) == []
