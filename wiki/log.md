@@ -16,3 +16,5 @@ append-only다. 앞 항목을 고치지 않는다.
   확장의 결정성으로 다시 썼다
 - graphify 산출물은 `wiki/graphify-out/`, 스캔 루트는 `wiki/pages/`
 - 콘텐츠는 아직 0건이다. 첫 ingest는 별도 작업
+- 검증: `pytest` 전건 통과, `lint.py` 위반 0건, `check_status.py` 위반 0건,
+  라우팅 6개 의도 0 / `unclear` 3 / 삭제된 `add-domain` 4
