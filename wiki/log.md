@@ -18,3 +18,22 @@ append-only다. 앞 항목을 고치지 않는다.
 - 콘텐츠는 아직 0건이다. 첫 ingest는 별도 작업
 - 검증: `pytest` 전건 통과, `lint.py` 위반 0건, `check_status.py` 위반 0건,
   라우팅 6개 의도 0 / `unclear` 3 / 삭제된 `add-domain` 4
+
+## [2026-09-17] ingest | 기능정의서_MVP v2
+
+- 원본: `wiki/raw/기능정의서-v2.md` (2026-05-30자, Notion 캡처 2장 전사, 원본
+  페이지는 게스트 권한이라 접근 불가)
+- 첫 콘텐츠 ingest다. 이전까지 위키 콘텐츠는 0건이었다
+- 소스 1건: `src-기능정의서-v2` (`status: current`, 비교 대상 판본이 없어
+  `supersedes`/`superseded_by` 없음)
+- 엔티티 1건: `parfait`
+- 개념 5건: `canvas` `group` `cutout-placement-pipeline` `screen-id-scheme`
+  `mvp-scope-limits`
+- synthesis는 만들지 않았다 — 소스가 하나라 가로지르는 비교 분석이 나오지 않는다
+- 화면 34건 중 단발 언급 화면은 페이지로 만들지 않고 관련 개념 본문 서술로 남겼다
+- `purpose.md`가 예고한 "화면 ID 체계 개념 페이지"를 만들고 거기서 링크를 걸었다
+- open-questions 8건 등록(전부 `action: research`). 소스가 "정의 필요"로 남긴 정책
+  16건을 주제별로 묶은 것과, 소스 자신이 밝힌 공백(`C-002` 미정의, 세부 열 공백
+  4건), 판본 번호 불일치(제목 v2 / 내부 DB 제목 v3), 대상 사용자 정의 부재다
+- 판본 번호 불일치는 대체 관계와 무관하다고 보고 진행했다 — 비교할 소스가 없어
+  `status` 판정에는 영향이 없다
