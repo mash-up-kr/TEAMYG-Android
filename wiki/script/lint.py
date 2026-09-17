@@ -16,27 +16,31 @@ import sys
 import wikilib
 from wikilib import Finding, Page, nfc
 
-# 인바운드 링크가 없어도 정상인 페이지 (스펙 3.2, 3.4)
-ORPHAN_EXEMPT_PATHS = {
-    "wiki/log.md",
-    "wiki/open-questions.md",
-    "wiki/pages/index.md",
-    "wiki/pages/purpose.md",
-    "wiki/pages/overview.md",
-}
-ORPHAN_EXEMPT_DIRS = {"queries"}
 # wiki/pages/ 루트에 올 수 있는 구조 파일. 한 곳에서만 정의한다 — 네 번째 구조
 # 파일이 생겼을 때 배치 검사와 frontmatter 검사가 어긋나지 않게 하기 위해서다.
 STRUCTURE_FILES = ("purpose.md", "index.md", "overview.md")
+STRUCTURE_PATHS = {f"wiki/pages/{f}" for f in STRUCTURE_FILES}
+
+# 인바운드 링크가 없어도 정상인 페이지 (스펙 3.2, 3.4). 구조 파일 셋은
+# STRUCTURE_PATHS에서 그대로 받는다 — 여기서 다시 나열하면 네 번째 구조
+# 파일이 생겼을 때 이 집합이 STRUCTURE_FILES와 어긋날 수 있다.
+ORPHAN_EXEMPT_PATHS = {"wiki/log.md", "wiki/open-questions.md"} | STRUCTURE_PATHS
+ORPHAN_EXEMPT_DIRS = {"queries"}
 
 
 def check_unique_names(repo_root: pathlib.Path) -> list[Finding]:
     """`wiki/` 전역 파일명 유일성. `route.py`의 seed 확장과 `lint.py`의 링크 검사가
     `[[파일명]]`을 파일 하나로 확정하려면 필수다.
 
-    UNCOLLECTED_FILES는 **서로 간에만** stem을 공유할 수 있다 (루트 CLAUDE.md와
-    wiki/CLAUDE.md). 런타임이 이름을 정하는 파일이라 바꿀 수 없고, 수집되지 않아
-    name index에 없으므로 둘만 겹치는 한 [[ ]] 해석이 모호해질 일이 없다.
+    UNCOLLECTED_FILES(`wiki/CLAUDE.md`·`wiki/conventions.md`·
+    `wiki/routing-misses.md`)는 **서로 간에만** stem을 공유할 수 있다. 셋 다
+    런타임이 이름을 정하는 진입 파일이라 바꿀 수 없고, 수집되지 않아 name
+    index에 없으므로 서로만 겹치는 한 [[ ]] 해석이 모호해질 일이 없다. (지금
+    셋의 stem이 서로 달라 이 조건은 실제로 발동하지 않는다 — 이름이 바뀌어
+    둘 이상이 같은 stem을 갖게 되는 경우를 대비한 안전장치다. 스캔 범위가
+    `wiki/`로 한정되기 전 근거였던 "저장소 루트 CLAUDE.md와 wiki/CLAUDE.md"
+    예시는 더 이상 유효하지 않다 — 저장소 루트의 마크다운은 all_markdown이
+    아예 보지 않는다.)
 
     면제 파일을 그룹에서 빼 버리면 안 된다. 그러면 CLAUDE·conventions 같은 stem을
     아무도 못 쓰게 되는 것이 아니라, 반대로 일반 콘텐츠 페이지가 그 이름을 가져가도
@@ -113,7 +117,6 @@ def check_orphans(pages: list[Page], inbound: dict[str, set[str]]) -> list[Findi
 CONTENT_DIRS = {"sources", "concepts", "entities", "queries", "synthesis"}
 # frontmatter에 sources 필드가 추가로 필요한 디렉토리
 SOURCED_DIRS = {"sources", "concepts", "entities"}
-STRUCTURE_PATHS = {f"wiki/pages/{f}" for f in STRUCTURE_FILES}
 
 
 def _needs_frontmatter(pg: Page) -> bool:
