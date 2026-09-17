@@ -71,7 +71,7 @@ BLOCK_PAGE = ("---\ntags:\n  - 정책\nupdated: 2026-08-10\n"
 
 
 def test_block_form_frontmatter_satisfies_required_fields(make_repo):
-    """Obsidian 속성 편집기가 내보내는 블록 형식도 요구를 충족한다."""
+    """블록 형식 frontmatter도 요구를 충족한다."""
     root = make_repo({"wiki/pages/concepts/개념.md": BLOCK_PAGE})
     assert lint.check_frontmatter(wikilib.load_pages(root)) == []
 

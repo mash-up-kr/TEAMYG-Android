@@ -31,7 +31,8 @@ STRUCTURE_FILES = ("purpose.md", "index.md", "overview.md")
 
 
 def check_unique_names(repo_root: pathlib.Path) -> list[Finding]:
-    """vault 전역 파일명 유일성. Obsidian이 [[파일명]]을 유일하게 resolve하려면 필수다.
+    """`wiki/` 전역 파일명 유일성. `route.py`의 seed 확장과 `lint.py`의 링크 검사가
+    `[[파일명]]`을 파일 하나로 확정하려면 필수다.
 
     UNCOLLECTED_FILES는 **서로 간에만** stem을 공유할 수 있다 (루트 CLAUDE.md와
     wiki/CLAUDE.md). 런타임이 이름을 정하는 파일이라 바꿀 수 없고, 수집되지 않아
@@ -44,8 +45,9 @@ def check_unique_names(repo_root: pathlib.Path) -> list[Finding]:
     "충돌한 경로가 전부 면제 대상일 때"만 적용한다.
 
     UNCOLLECTED_DIRS(templates/·script/·references/)는 제외하지 않는다. 템플릿
-    concept.md와 실제 concept 페이지가 겹치면 Obsidian이 잘못 고를 수 있고, 그건
-    이 검사만이 잡을 수 있는 진짜 모호성이다.
+    concept.md와 실제 concept 페이지가 겹치면 name index가 [[concept]]을 어느
+    쪽으로 조용히 resolve할지 결정할 수 없고, 그건 이 검사만이 잡을 수 있는
+    진짜 모호성이다.
     """
     groups: dict[str, list[str]] = {}
     for p in wikilib.all_markdown(repo_root):
