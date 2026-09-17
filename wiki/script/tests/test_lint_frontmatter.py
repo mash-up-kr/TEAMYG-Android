@@ -105,7 +105,9 @@ def test_declared_source_must_exist(make_repo):
 
 
 def test_source_page_sources_field_is_not_checked_for_page_existence(make_repo):
-    """sources/ 페이지의 sources는 raw 원본 파일명이다. check_raw_sync가 본다."""
+    """sources/ 페이지의 sources는 raw 원본 파일명이다. 이 필드 값은 어떤 검사도
+    읽지 않는다 — check_raw_sync조차 페이지 stem과 wiki/raw/ 파일명을 짝짓지,
+    이 필드를 읽지 않는다. 작성자 자율 서술(conventions.md §6)."""
     root = make_repo({
         "wiki/raw/정책.md": "원본",
         "wiki/pages/sources/src-정책.md": page(sources="[정책.md]"),

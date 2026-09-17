@@ -151,8 +151,11 @@ def check_provenance(pages: list[Page]) -> list[Finding]:
     - 본문이 인용한 소스 요약 페이지가 frontmatter sources에도 있는가
     - frontmatter sources가 선언한 대상이 sources/에 실제로 있는가
 
-    `sources/` 페이지의 sources는 raw 원본 파일명을 가리키며 check_raw_sync가
-    그쪽을 검사한다. 여기서 중복 보고하지 않는다.
+    `sources/` 페이지의 sources는 raw 원본 파일명을 가리킨다 — 하지만
+    check_raw_sync는 그 필드 값을 읽지 않는다. check_raw_sync는 페이지
+    stem과 wiki/raw/ 아래 파일명을 짝짓는 것으로 raw 동기화를 검사하고,
+    sources/ 페이지의 sources 필드는 아예 검사하지 않는다(작성자 자율
+    서술 — conventions.md §6). 그래서 여기서도 그 필드를 보지 않는다.
     """
     source_stems = {pg.stem for pg in pages if pg.parent_name == "sources"}
     out = []
