@@ -1,9 +1,13 @@
 package com.teamyg.parfait.feature.groups.enter.impl.invitecode
 
 import android.content.ClipDescription
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,10 +17,14 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.isSensitive
+import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.domain.model.group.InviteCode
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 import com.teamyg.parfait.core.ui.R as CoreUiR
@@ -82,23 +90,34 @@ fun GroupInviteCodeRoute(
         }
     }
 
-    GroupInviteCodeScreen(
-        uiState = uiState,
-        onTextChanged = { text, cursor ->
-            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = text, cursor = cursor))
-        },
-        onClickTextFieldElement = { index ->
-            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index))
-        },
-        onClickNextButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton) },
-        onClickBackButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickBackButton) },
-        onClickPasteBar = { viewModel.processIntent(GroupInviteCodeIntent.ClickPasteInviteCode) },
-        onFocusChanged = { isFocused ->
-            viewModel.processIntent(GroupInviteCodeIntent.FocusChanged(isFocused = isFocused))
-        },
-        onClickBackground = { viewModel.processIntent(GroupInviteCodeIntent.HideKeyboard) },
+    YGScaffoldV2(
         modifier = modifier,
-    )
+        contentWindowInsets = WindowInsets(0.dp),
+        isLoading = uiState.isSubmitting,
+    ) { innerPadding ->
+        GroupInviteCodeScreen(
+            uiState = uiState,
+            onTextChanged = { text, cursor ->
+                viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = text, cursor = cursor))
+            },
+            onClickTextFieldElement = { index ->
+                viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index))
+            },
+            onClickNextButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickNextButton) },
+            onClickBackButton = { viewModel.processIntent(GroupInviteCodeIntent.ClickBackButton) },
+            onClickPasteBar = { viewModel.processIntent(GroupInviteCodeIntent.ClickPasteInviteCode) },
+            onFocusChanged = { isFocused ->
+                viewModel.processIntent(GroupInviteCodeIntent.FocusChanged(isFocused = isFocused))
+            },
+            onClickBackground = { viewModel.processIntent(GroupInviteCodeIntent.HideKeyboard) },
+            modifier = Modifier
+                .fillMaxSize()
+                .background(YGAtomicColors.Gray.White)
+                .padding(innerPadding)
+                .statusBarsPadding()
+                .navigationBarsAndImePadding(),
+        )
+    }
 }
 
 /**
