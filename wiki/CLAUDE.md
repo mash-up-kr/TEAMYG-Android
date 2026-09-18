@@ -84,15 +84,39 @@
 PR을 올리기 전 로컬에서 graphify를 1회 수동 실행하고 `wiki/graphify-out/`
 산출물까지 함께 커밋한다.
 
-    graphify extract ./wiki/pages
+    graphify extract ./wiki/pages --out ./wiki
 
-백엔드는 실행하는 환경에 맞춰 고른다. 셋 중 하나다 — 로컬 `ollama`
+`--out ./wiki`를 빠뜨리면 산출물이 `wiki/pages/graphify-out/`에 떨어진다 —
+스캔 루트 안이라 `conventions.md` §5가 금지하는 배치다.
+
+백엔드는 실행하는 환경에 맞춰 고른다. 넷 중 하나다 — Claude Code 구독 인증을
+그대로 쓰는 `claude-cli`(`--backend claude-cli`), 로컬 `ollama`
 (`--backend ollama`), `OPENAI_BASE_URL`을 로컬 서버로 돌린 `openai` 백엔드,
-또는 API 키를 쓰는 원격 백엔드. 앞의 둘은 API 키가 필요 없다.
+또는 API 키를 쓰는 원격 백엔드. 앞의 셋은 API 키가 필요 없다.
 `graphify update`와 `--code-only`는 코드 전용이라 이 위키에는 쓰지 않는다.
 
 `graph.json`이 아직 없으면 `lint.py`의 그래프 신호 4종은 아예 뜨지 않는다.
 백엔드가 없는 환경에서도 lint는 정상 동작한다.
+
+### 추출 뒤 — 스캔 루트 밖을 가리키는 노드를 지운다
+
+추출이 끝나면 `graph.json`의 노드 중 `source_file`이 `wiki/pages/` 아래 실재
+파일로 풀리지 않는 것을 지운다. 그 엣지와 하이퍼엣지 항목도 같이 지운 뒤
+`graphify cluster-only ./wiki`로 다시 묶는다.
+
+위키 페이지들이 `[[open-questions]]`처럼 스캔 루트 밖 문서를 링크하기 때문에
+생기는 일이다. 추출이 그 링크를 노드로 만들면서 `source_file`을
+`open-questions.md`로 적고, 스캔 루트 기준으로 풀면
+`wiki/pages/open-questions.md`가 되어 실물(`wiki/open-questions.md`)과
+어긋난다. `lint.py`는 이를 `그래프stale`로 읽고 그래프 신호 4종 판정을 통째로
+생략한다 — 그래프는 멀쩡한데 신호만 죽는다. 2026-09-18 첫 추출에서 실제로
+`open_questions` 노드 1건이 이렇게 나왔다.
+
+커뮤니티 수가 바뀌면 `cluster-only`가 저장된 이름을 재사용하며 경고를 낸다.
+이름을 다시 붙이려면 `graphify label ./wiki`를 돌린다.
+
+`lint.py`가 남기는 `브리지` 경고는 고칠 것이 아니다 — 여러 지식 영역을 잇는
+페이지를 알려주는 신호이고, 위반이 아니라 읽을 거리다.
 
 ## 라우팅 실패 기록
 
