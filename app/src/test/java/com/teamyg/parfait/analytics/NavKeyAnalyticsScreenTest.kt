@@ -12,11 +12,8 @@ import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSelect
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -37,7 +34,7 @@ class NavKeyAnalyticsScreenTest {
     @Test
     fun toAnalyticsScreenOrNull_fixedKeys_returnMappedScreenId() {
         // Given 인자로 갈리지 않는 화면들
-        val expected = mapOf<NavKey, String>(
+        val expected = mapOf(
             NavKeySplash to "A-001",
             NavKeyLogin to "A-002",
             NavKeyTermAgree(registrationToken = "token") to "A-003",
@@ -56,9 +53,6 @@ class NavKeyAnalyticsScreenTest {
             ) to "C-103-select",
             NavKeyCanvasToppingPlace to "C-106",
             NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09") to "C-001-image-save",
-            NavKeyCanvasEdit(imageUri = "uri") to "C-001-edit",
-            NavKeyCanvasImageSelect to "C-001-image-select",
-            NavKeyCanvasMove(imageUri = "uri") to "C-001-move",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
             NavKeyGroupSetting(groupId = 1L) to "S-101",

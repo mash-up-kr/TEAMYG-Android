@@ -198,9 +198,7 @@ internal fun CustomCameraRoute(
         CustomCameraScreen(
             state = state,
             toastPolicy = toastPolicy,
-            onClickGrantPermission = { viewModel.processIntent(CustomCameraIntent.OnRequestPermission) },
             onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
-            onClickZoomLevel = { viewModel.processIntent(CustomCameraIntent.OnClickZoomLevel(it)) },
             onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
             onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
             onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },

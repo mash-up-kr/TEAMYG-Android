@@ -43,6 +43,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +67,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanvasMainViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -246,7 +248,7 @@ class CanvasMainViewModelTest {
         // Then launchWhileSubscribed 가 업스트림을 열지 않아 폴링도 시작되지 않는다
         verify(exactly = 0) { getTodayParfaitFlow(any(), any()) }
         val state = viewModel.state.value
-        assertTrue(state.displayedCanvas == null)
+        assertNull(state.displayedCanvas)
     }
 
     @Test
@@ -656,7 +658,7 @@ class CanvasMainViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When 화면이 열린다
-        val viewModel = viewModel()
+        viewModel()
         advanceUntilIdle()
 
         // Then 목록을 한 번 받아 온다. 실패해도 캔버스는 계속 그린다

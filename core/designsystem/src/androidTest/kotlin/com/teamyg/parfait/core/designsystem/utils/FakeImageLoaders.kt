@@ -6,7 +6,6 @@ import coil3.ColorImage
 import coil3.ImageLoader
 import coil3.decode.DataSource
 import coil3.request.ErrorResult
-import coil3.intercept.Interceptor
 import coil3.request.SuccessResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -55,15 +54,13 @@ fun instantlyFailingImageLoader(): ImageLoader {
     return ImageLoader
         .Builder(context)
         .components {
-            add(
-                Interceptor { chain ->
-                    ErrorResult(
-                        image = null,
-                        request = chain.request,
-                        throwable = IllegalStateException("테스트용 실패"),
-                    )
-                },
-            )
+            add { chain ->
+                ErrorResult(
+                    image = null,
+                    request = chain.request,
+                    throwable = IllegalStateException("테스트용 실패"),
+                )
+            }
         }.build()
 }
 

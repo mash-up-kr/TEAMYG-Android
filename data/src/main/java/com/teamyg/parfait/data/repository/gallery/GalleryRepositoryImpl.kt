@@ -29,54 +29,6 @@ constructor(
         repositoryLogger.i { "GalleryRepositoryImpl::init" }
     }
 
-    override suspend fun loadAllGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
-        withContext(Dispatchers.IO) {
-            val uri: Uri = galleryMediaProvider
-                .collectionUri
-                ?: return@withContext LinkedHashMap<LocalDate, MutableList<String>>()
-            val timeZone: TimeZone = TimeZone.currentSystemDefault()
-
-            val grouped = linkedMapOf<LocalDate, MutableList<String>>()
-
-            galleryMediaProvider
-                .query(
-                    uri = uri,
-                    projection = galleryMediaProvider.projection,
-                    selection = null,
-                    selectionArgs = null,
-                    sortOrder = galleryMediaProvider.sortOrder,
-                )?.use { cursor ->
-                    val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                    val takenColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
-                    val addedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
-
-                    while (cursor.moveToNext()) {
-                        val id: Long = cursor.getLong(idColumn)
-
-                        val timestampMs: Long = galleryMediaProvider.resolveTimestampMs(
-                            cursor = cursor,
-                            takenColumn = takenColumn,
-                            addedColumn = addedColumn,
-                        )
-
-                        val dateKey: LocalDate = Instant
-                            .fromEpochMilliseconds(timestampMs)
-                            .toLocalDateTime(timeZone)
-                            .date
-
-                        val imageUri: String = ContentUris
-                            .withAppendedId(uri, id)
-                            .toString()
-
-                        grouped
-                            .getOrPut(dateKey) { mutableListOf() }
-                            .add(imageUri)
-                    }
-                }
-
-            return@withContext grouped
-        }
-
     override suspend fun loadFilterYGGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
         withContext(Dispatchers.IO) {
             val uri: Uri = galleryMediaProvider
