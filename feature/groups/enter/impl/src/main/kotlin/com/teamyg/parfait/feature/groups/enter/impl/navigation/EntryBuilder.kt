@@ -17,7 +17,6 @@ import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameViewMo
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
     entry<NavKeyGroupInviteCode> {
-        // 형제 entry 와 달리 스캐폴드를 씌우지 않는다 — 로딩·토스트가 화면 상태를 봐야 해서 Route 가 쥔다
         GroupInviteCodeRoute(
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
