@@ -1,5 +1,6 @@
 import hashlib
 import json
+import unicodedata as ud
 
 import ingest_cache
 
@@ -83,3 +84,35 @@ def test_main_wrong_root_exits_2(make_repo, monkeypatch):
     root = make_repo({"wiki/conventions.md": "계약", "wiki/raw/정책.md": "원본"})
     monkeypatch.chdir(root / "wiki" / "raw")
     assert ingest_cache.main(["--list"]) == 2
+
+
+def test_nfd_filename_is_recorded_as_nfc(make_repo):
+    """macOS가 만든 NFD 파일명도 매니페스트에는 NFC 키로 들어간다.
+
+    정규화하지 않으면 record 직후에도 pending에 남는다 (conventions.md §4).
+    """
+    nfd = "wiki/raw/" + ud.normalize("NFD", "캔버스") + ".md"
+    root = make_repo({nfd: "원본"})
+    ingest_cache.record(root, nfd)
+    assert list(ingest_cache.load_manifest(root)) == ["wiki/raw/캔버스.md"]
+    assert ingest_cache.pending(root) == []
+
+
+def test_nfd_file_with_nfc_manifest_is_not_pending(make_repo):
+    """이미 NFC로 기록된 매니페스트는 NFD 파일을 다시 대상으로 내놓지 않는다."""
+    nfd = "wiki/raw/" + ud.normalize("NFD", "캔버스") + ".md"
+    root = make_repo({nfd: "원본"})
+    (root / "wiki/raw/.manifest.json").write_text(
+        json.dumps({"wiki/raw/캔버스.md": hashlib.sha256("원본".encode()).hexdigest()}),
+        encoding="utf-8")
+    assert ingest_cache.pending(root) == []
+
+
+def test_prune_keeps_nfd_file_recorded_as_nfc(make_repo):
+    """NFC로 기록된 항목을 NFD 파일이 실재한다는 이유로 지우지 않는다."""
+    nfd = "wiki/raw/" + ud.normalize("NFD", "캔버스") + ".md"
+    root = make_repo({nfd: "원본"})
+    (root / "wiki/raw/.manifest.json").write_text(
+        json.dumps({"wiki/raw/캔버스.md": "deadbeef"}), encoding="utf-8")
+    assert ingest_cache.prune(root) == []
+    assert list(ingest_cache.load_manifest(root)) == ["wiki/raw/캔버스.md"]
