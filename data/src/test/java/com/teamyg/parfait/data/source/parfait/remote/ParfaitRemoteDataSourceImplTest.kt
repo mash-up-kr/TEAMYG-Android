@@ -315,7 +315,7 @@ class ParfaitRemoteDataSourceImplTest {
     fun getTodayCanvas_groupNotJoined_returnsBusinessFailure() = runTest {
         // Given 참여하지 않은 그룹이다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns
-            businessFailure<GetTodayParfaitResponse>("GROUP_NOT_JOINED")
+            businessFailure("GROUP_NOT_JOINED")
 
         // When 오늘의 캔버스 조회
         val result = dataSource.getTodayCanvas(GroupId(1L))
@@ -502,7 +502,7 @@ class ParfaitRemoteDataSourceImplTest {
     fun getPastCanvases_invalidDateRange_returnsBusinessFailure() = runTest {
         // Given from 이 to 보다 늦다
         coEvery { parfaitService.getGroupsByGroupIdParfaits(1L, "2026-08-20", "2026-08-15") } returns
-            businessFailure<PastParfaitsResponse>("INVALID_DATE_RANGE")
+            businessFailure("INVALID_DATE_RANGE")
 
         // When 과거 목록 조회
         val result = dataSource.getPastCanvases(
@@ -537,7 +537,7 @@ class ParfaitRemoteDataSourceImplTest {
     fun getCanvasDetail_parfaitNotFound_returnsBusinessFailure() = runTest {
         // Given 없는 파르페이거나 다른 그룹 소속이다 — 서버는 둘을 구분하지 않는다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsByParfaitId(1L, 999L) } returns
-            businessFailure<GetTodayParfaitResponse>("PARFAIT_NOT_FOUND")
+            businessFailure("PARFAIT_NOT_FOUND")
 
         // When 캔버스 상세 조회
         val result = dataSource.getCanvasDetail(GroupId(1L), ParfaitId(999L))
@@ -640,7 +640,7 @@ class ParfaitRemoteDataSourceImplTest {
         // Given HEX 형식이 서버 검증을 통과하지 못한다
         coEvery {
             parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
-        } returns businessFailure<ChangeParfaitBackgroundResponse>("INVALID_BACKGROUND")
+        } returns businessFailure("INVALID_BACKGROUND")
 
         // When 배경 변경
         val result = dataSource.changeCanvasBackground(
@@ -659,7 +659,7 @@ class ParfaitRemoteDataSourceImplTest {
         // Given imageId 에 해당하는 이미지 메타가 없다
         coEvery {
             parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
-        } returns businessFailure<ChangeParfaitBackgroundResponse>("IMAGE_NOT_FOUND")
+        } returns businessFailure("IMAGE_NOT_FOUND")
 
         // When 이미지 배경 변경
         val result = dataSource.changeCanvasBackground(
@@ -679,7 +679,7 @@ class ParfaitRemoteDataSourceImplTest {
         // Given 업로드 확인을 마치지 않은 이미지다
         coEvery {
             parfaitService.patchGroupsByGroupIdParfaitsByParfaitIdBackground(1L, 100L, any())
-        } returns businessFailure<ChangeParfaitBackgroundResponse>("BACKGROUND_IMAGE_NOT_CONFIRMED")
+        } returns businessFailure("BACKGROUND_IMAGE_NOT_CONFIRMED")
 
         // When 이미지 배경 변경
         val result = dataSource.changeCanvasBackground(
@@ -697,7 +697,7 @@ class ParfaitRemoteDataSourceImplTest {
     fun getCanvasDetail_groupNotJoined_returnsBusinessFailure() = runTest {
         // Given 참여하지 않은 그룹이다 — 멤버십 검사가 파르페 조회보다 먼저다
         coEvery { parfaitService.getGroupsByGroupIdParfaitsByParfaitId(1L, 100L) } returns
-            businessFailure<GetTodayParfaitResponse>("GROUP_NOT_JOINED")
+            businessFailure("GROUP_NOT_JOINED")
 
         // When 캔버스 상세 조회
         val result = dataSource.getCanvasDetail(GroupId(1L), ParfaitId(100L))

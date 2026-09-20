@@ -17,3 +17,6 @@ http-client.private.env.json
 
 # 빌드 캐시 측정 결과 — 머신마다 다르고 저장소에 쌓일 이유가 없다
 /tools/build-cache-bench/runs/
+
+# Kotlin 컴파일러 데몬이 남기는 세션/에러 로그
+.kotlin/

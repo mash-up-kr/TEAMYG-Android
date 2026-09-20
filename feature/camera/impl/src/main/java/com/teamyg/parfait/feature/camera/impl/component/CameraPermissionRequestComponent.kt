@@ -37,8 +37,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 @Composable
 internal fun CameraPermissionRequestComponent(
     isInit: Boolean,
-    permanentlyDenied: Boolean,
-    onClickGrantPermission: () -> Unit,
     onClickOpenAppSettings: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -114,21 +112,6 @@ internal fun CameraPermissionRequestComponent(
 private fun PreviewCameraPermissionRequestComponent() = PreviewBox {
     CameraPermissionRequestComponent(
         isInit = true,
-        permanentlyDenied = false,
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickCancel = {},
-        modifier = Modifier.fillMaxSize(),
-    )
-}
-
-@YGPreview
-@Composable
-private fun PreviewCameraPermissionRequestComponentPermanentlyDenied() = PreviewBox {
-    CameraPermissionRequestComponent(
-        isInit = true,
-        permanentlyDenied = true,
-        onClickGrantPermission = {},
         onClickOpenAppSettings = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
