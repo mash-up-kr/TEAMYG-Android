@@ -57,8 +57,6 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
         val access: GalleryPermissionManager.GalleryAccessLevel,
     ) : CustomGalleryPickerIntent()
 
-    data object OnRequestPermission : CustomGalleryPickerIntent()
-
     data object OnRequestOpenSettings : CustomGalleryPickerIntent()
 
     data object OnRequestManageMedia : CustomGalleryPickerIntent()
@@ -115,7 +113,6 @@ class CustomGalleryPickerViewModel
     override fun processIntent(intent: CustomGalleryPickerIntent) {
         when (intent) {
             is CustomGalleryPickerIntent.OnPermissionResult -> handleOnPermissionResult(intent)
-            is CustomGalleryPickerIntent.OnRequestPermission -> handleOnRequestPermission()
             is CustomGalleryPickerIntent.OnRequestOpenSettings -> handleOnRequestOpenSettings()
             is CustomGalleryPickerIntent.OnRequestManageMedia -> handleOnRequestManageMedia()
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
@@ -163,10 +160,6 @@ class CustomGalleryPickerViewModel
         if (hasRequestedPermission) return
 
         hasRequestedPermission = true
-        postSideEffect(CustomGalleryPickerEffect.RequestPermission)
-    }
-
-    private fun handleOnRequestPermission() {
         postSideEffect(CustomGalleryPickerEffect.RequestPermission)
     }
 

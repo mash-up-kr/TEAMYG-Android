@@ -47,16 +47,10 @@ sealed interface CustomCameraIntent : UiIntent {
         val shouldShowRationale: Boolean,
     ) : CustomCameraIntent
 
-    data object OnRequestPermission : CustomCameraIntent
-
     data object OnOpenAppSettings : CustomCameraIntent
 
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
-    ) : CustomCameraIntent
-
-    data class OnClickZoomLevel(
-        val level: Float,
     ) : CustomCameraIntent
 
     data object OnClickFlip : CustomCameraIntent
@@ -103,10 +97,8 @@ constructor(
         when (intent) {
             is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
             is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
-            is CustomCameraIntent.OnRequestPermission -> handleOnRequestPermission()
             is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
-            is CustomCameraIntent.OnClickZoomLevel -> handleOnClickZoomLevel(intent)
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -146,10 +138,6 @@ constructor(
         }
     }
 
-    private fun handleOnRequestPermission() {
-        postSideEffect(CustomCameraEffect.RequestPermission)
-    }
-
     private fun handleOnOpenAppSettings() {
         postSideEffect(CustomCameraEffect.OpenAppSettings)
     }
@@ -161,10 +149,6 @@ constructor(
                 zoomRatio = zoomRatio.coerceIn(intent.range),
             )
         }
-    }
-
-    private fun handleOnClickZoomLevel(intent: CustomCameraIntent.OnClickZoomLevel) {
-        updateState { copy(zoomRatio = intent.level.coerceIn(zoomRange)) }
     }
 
     private fun handleOnClickFlip() {
