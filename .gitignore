@@ -33,3 +33,8 @@ __pycache__/
 # graphify가 추출 때마다 남기는 날짜별 이전 판 백업. 그래프 이력은 git이 이미
 # 갖고 있어 중복이다
 /wiki/graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+# graphify cluster-only·label이 스캔 루트 안에 떨구는 캐시. conventions.md §5가
+# 금지하는 배치라 커밋하지 않는다 — 지워도 다음 실행에서 다시 만들어진다.
+# cache/ 만 건다 — 디렉토리를 통째로 무시하면 extract에서 --out을 빠뜨려
+# graph.html까지 여기 떨어졌을 때 git status에 뜨지 않아 실수가 조용해진다
+/wiki/pages/graphify-out/cache/

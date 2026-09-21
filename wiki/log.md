@@ -1627,3 +1627,23 @@ append-only다. 앞 항목을 고치지 않는다.
   스스로 밝힌다. `lint.py` 자격증명 검사 위반 0건
 - assets 커밋 없음
 - 검증: `lint.py` 위반 0건, `check_status.py` 위반 0건
+
+## [2026-09-21] chore | 스캔 루트 안에 떨어진 graphify 캐시 정리
+
+- `graphify cluster-only ./wiki`와 `graphify label ./wiki`가
+  **`wiki/pages/graphify-out/cache/stat-index.json`**을 만들었다. `extract`에
+  `--out ./wiki`를 붙였는데도 생긴다 — 뒤의 두 명령은 `--out`을 받지 않는다
+- `conventions.md` §5가 금지하는 배치다. 위키 콘텐츠가 아니라 재생성되는 머신별
+  캐시라 지웠고, `.gitignore`에 **`/wiki/pages/graphify-out/cache/`**를 더해
+  재발해도 커밋에 섞이지 않게 했다
+- **디렉토리를 통째로 무시하지 않았다.** `extract`에서 `--out ./wiki`를 빠뜨리면
+  `graph.html`을 포함한 산출물 전체가 이 자리에 떨어지는데, 통째로 무시하면 그게
+  `git status`에 뜨지 않아 실수가 조용해진다 — §5가 막으려는 것과 같은 종류다.
+  `cache/`만 건다
+- **지운다고 끝나지 않는다** — 다음 `cluster-only`·`label` 실행에서 다시 생긴다.
+  `wiki/CLAUDE.md`의 "작업 후" 절이 `extract`의 `--out`만 경고하고 있어 절차에
+  이 두 명령을 추가할지 판단이 필요하다
+- 그래프 재구축 결과: **114 노드 / 225 엣지 / 22 커뮤니티**. 스캔 루트 밖을
+  가리키는 노드 0건이라 추출 뒤 prune은 불필요했다
+- 검증: `lint.py` 위반 0건(경고 21건 — `브리지` 18, `그래프고립` 3),
+  `check_status.py` 위반 0건. `그래프stale` 경고 해소
