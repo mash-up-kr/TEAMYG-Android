@@ -1,0 +1,287 @@
+{
+  "communities": {
+    "0": [
+      "concepts_canvas",
+      "concepts_group",
+      "concepts_mvp_scope_limits",
+      "concepts_screen_id_scheme",
+      "concepts_topping_placement_pipeline",
+      "entities_parfait",
+      "index",
+      "overview",
+      "purpose",
+      "sources_src_a_001_splash_policy_v0_1",
+      "sources_src_c_001_canvas_policy_v0_1",
+      "sources_src_c_001_canvas_policy_v0_2",
+      "sources_src_c_101_camera_policy_v0_1",
+      "sources_src_c_103_image_rendering_policy_v0_1",
+      "sources_src_c_103_selected_nukki_policy_v0_1",
+      "sources_src_c_104_nukki_edit_policy_v0_1",
+      "sources_src_c_106_topping_placement_policy_v0_1",
+      "sources_src_c_201_calendar_policy_v0_1",
+      "sources_src_common_loading_policy_v0_1",
+      "sources_src_g_001_topping_policy_v0_1",
+      "sources_src_spec_v6",
+      "synthesis_spec_version_history"
+    ],
+    "1": [
+      "concepts_account",
+      "concepts_toast",
+      "sources_src_a_005_group_name_policy_v0_1",
+      "sources_src_c_202_topping_editor_check_rule_v0_1",
+      "sources_src_s_002_app_nickname_generation_policy_v0_1",
+      "sources_src_s_002_app_nickname_policy_v0_1",
+      "sources_src_s_002_app_nickname_policy_v0_2",
+      "sources_src_s_101_profile_nickname_color_v0_1",
+      "sources_src_s_101_profile_nickname_color_v0_2",
+      "sources_src_s_101_profile_nickname_color_v0_3",
+      "sources_src_s_101_profile_nickname_color_v0_4",
+      "sources_src_s_102_group_nickname_generation_policy_v0_1",
+      "sources_src_s_102_nickname_policy_v0_1",
+      "sources_src_s_102_nickname_policy_v0_2",
+      "sources_src_spec_v2",
+      "sources_src_spec_v3",
+      "sources_src_spec_v4",
+      "sources_src_spec_v5"
+    ],
+    "2": [
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_1_color_rule_v01",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_1_nametag_chip_12",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_1_toast_color_mapping",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_2_color_rule_v02",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_2_type_fixed_policy",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_3_color_rule_v03",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_4_color_rule_v04",
+      "sources_src_s_101_프로필_닉네임_컬러_규칙_v0_4_default_state",
+      "sources_src_s_101_프로필_이미지_및_그룹칩_내_타임스탬프_컬러_규칙_v0_1_separate_mapping",
+      "sources_src_s_101_프로필_이미지_및_그룹칩_내_타임스탬프_컬러_규칙_v0_1_timestamp_color_rule",
+      "sources_src_toast_common_policy",
+      "sources_src_toast_공통_정책_stack_order_rationale",
+      "sources_src_기능정의서_v5_no_profile_image",
+      "synthesis_spec_version_history_reference_misses_5"
+    ],
+    "3": [
+      "sources_src_s_002_앱_닉네임_생성_정책_v0_1_k2_marker",
+      "sources_src_s_002_앱_닉네임_생성_정책_v0_1_nickname_gen_policy",
+      "sources_src_s_002_앱_닉네임_생성_정책_v0_1_word_pool_3000",
+      "sources_src_s_002_앱닉네임_정책_v0_1_app_nickname_v01",
+      "sources_src_s_002_앱닉네임_정책_v0_1_validity_rules_14",
+      "sources_src_s_002_앱닉네임_정책_v0_2_app_nickname_v02",
+      "sources_src_s_002_앱닉네임_정책_v0_2_series_maintained",
+      "sources_src_s_102_그룹_닉네임_생성_정책_v0_1_group_nickname_gen",
+      "sources_src_s_102_그룹_닉네임_생성_정책_v0_1_shared_initial_value",
+      "sources_src_s_102_닉네임_정책_v0_1_s102_nickname_v01",
+      "sources_src_s_102_닉네임_정책_v0_2_s102_nickname_v02"
+    ],
+    "4": [
+      "concepts_infinite_parfait",
+      "sources_src_g_001_empty_tooltip_policy_v0_1",
+      "sources_src_g_001_group_topping_template_policy_v0_1",
+      "sources_src_g_001_group_topping_template_policy_v0_2",
+      "sources_src_g_001_infinite_parfait_design",
+      "sources_src_g_001_infinite_parfait_design_v0_2",
+      "sources_src_g_001_infinite_parfait_design_v0_3",
+      "sources_src_g_001_spacing_policy_v0_1",
+      "sources_src_g_001_spacing_policy_v0_2",
+      "sources_src_g_001_spacing_policy_v0_3",
+      "sources_src_s_101_profile_image_grouptag_timestamp_color_v0_1"
+    ],
+    "5": [
+      "sources_src_기능정의서_v2_spec_v2",
+      "sources_src_기능정의서_v3_spec_v3",
+      "sources_src_기능정의서_v4_spec_v4",
+      "sources_src_기능정의서_v5_spec_v5",
+      "sources_src_기능정의서_v6_spec_v6",
+      "sources_src_기능정의서_v6_yesterday_parfait_ux3",
+      "synthesis_spec_version_history_silent_deletion",
+      "synthesis_spec_version_history_spec_version_history",
+      "synthesis_spec_version_history_two_series_drift"
+    ],
+    "6": [
+      "sources_src_g_001_무한파르페_간격_정책_v0_1_gap_policy_v01",
+      "sources_src_g_001_무한파르페_간격_정책_v0_1_stagger_2121",
+      "sources_src_g_001_무한파르페_간격_정책_v0_1_type_system_3",
+      "sources_src_g_001_무한파르페_간격_정책_v0_2_gap_policy_v02",
+      "sources_src_g_001_무한파르페_간격_정책_v0_2_type_system_6",
+      "sources_src_g_001_무한파르페_간격_정책_v0_2_zigzag_pattern",
+      "sources_src_g_001_무한파르페_정책설계_design_policy_v01",
+      "sources_src_g_001_토핑_정책_v0_1_topping_frame_180",
+      "sources_src_g_001_토핑_정책_v0_1_topping_policy_v01"
+    ],
+    "7": [
+      "sources_src_common_공통_로딩_정책_v0_1_common_loading_policy",
+      "sources_src_common_공통_로딩_정책_v0_1_lottie_assets",
+      "sources_src_g_001_무한파르페_정책설계_v0_2_design_policy_v02",
+      "sources_src_g_001_무한파르페_정책설계_v0_2_variant_seed_groupid",
+      "sources_src_g_001_무한파르페_정책설계_v0_3_design_policy_v03",
+      "sources_src_g_001_무한파르페_정책설계_v0_3_empty_topping_template_6",
+      "sources_src_g_001_무한파르페_정책설계_v0_3_variant_random",
+      "sources_src_g_001_토핑_정책_v0_1_overflow_clip_off"
+    ],
+    "8": [
+      "sources_src_g_001_무한파르페_간격_정책_v0_3_gap_policy_v03",
+      "sources_src_g_001_무한파르페_간격_정책_v0_3_inset_4",
+      "sources_src_g_001_무한파르페_간격_정책_v0_3_sort_tiebreak",
+      "sources_src_g_001_무한파르페_정책설계_sort_by_activity_vote",
+      "sources_src_g_001_무한파르페_정책설계_v0_2_inset_28",
+      "sources_src_s_101_프로필_이미지_및_그룹칩_내_타임스탬프_컬러_규칙_v0_1_activity_definition"
+    ]
+  },
+  "cohesion": {
+    "0": 0.26406926406926406,
+    "1": 0.16993464052287582,
+    "2": 0.1978021978021978,
+    "3": 0.2909090909090909,
+    "4": 0.32727272727272727,
+    "5": 0.3888888888888889,
+    "6": 0.3611111111111111,
+    "7": 0.2857142857142857,
+    "8": 0.3333333333333333
+  },
+  "gods": [
+    {
+      "id": "synthesis_spec_version_history_spec_version_history",
+      "label": "기능정의서 판본 이력 (합성)",
+      "degree": 16
+    },
+    {
+      "id": "concepts_account",
+      "label": "계정 (account)",
+      "degree": 15
+    },
+    {
+      "id": "overview",
+      "label": "개요 (overview)",
+      "degree": 14
+    },
+    {
+      "id": "concepts_canvas",
+      "label": "캔버스 (canvas)",
+      "degree": 13
+    },
+    {
+      "id": "concepts_group",
+      "label": "그룹 (group)",
+      "degree": 13
+    },
+    {
+      "id": "index",
+      "label": "페이지 카탈로그 (index)",
+      "degree": 12
+    },
+    {
+      "id": "concepts_infinite_parfait",
+      "label": "무한 파르페 (infinite-parfait, G-001)",
+      "degree": 11
+    },
+    {
+      "id": "sources_src_spec_v6",
+      "label": "기능정의서 v6 (2026-07-23)",
+      "degree": 11
+    },
+    {
+      "id": "entities_parfait",
+      "label": "parfait (제품)",
+      "degree": 10
+    },
+    {
+      "id": "sources_src_toast_common_policy",
+      "label": "Toast 공통 정책",
+      "degree": 10
+    }
+  ],
+  "surprises": [
+    {
+      "source": "무한 파르페 (infinite-parfait, G-001)",
+      "target": "G-001 토핑 정책 v0.1",
+      "source_files": [
+        "concepts/infinite-parfait.md",
+        "sources/src-G-001-토핑-정책-v0.1.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "cites",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `G-001 토핑 정책 v0.1` unexpectedly reaches hub `무한 파르페 (infinite-parfait, G-001)`"
+    },
+    {
+      "source": "기능정의서 판본 이력 (합성)",
+      "target": "[K2] 생성 주체 미정 — 서버 생성 권장 (어뷰징·치우침 방지)",
+      "source_files": [
+        "synthesis/spec-version-history.md",
+        "sources/src-S-002-앱-닉네임-생성-정책-v0.1.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "cites",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `[K2] 생성 주체 미정 — 서버 생성 권장 (어뷰징·치우침 방지)` unexpectedly reaches hub `기능정의서 판본 이력 (합성)`"
+    },
+    {
+      "source": "기능정의서 판본 이력 (합성)",
+      "target": "중복이 의도 — 두 화면 분기 대비 계열 유지",
+      "source_files": [
+        "synthesis/spec-version-history.md",
+        "sources/src-S-002-앱닉네임-정책-v0.2.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "cites",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `중복이 의도 — 두 화면 분기 대비 계열 유지` unexpectedly reaches hub `기능정의서 판본 이력 (합성)`"
+    },
+    {
+      "source": "기능정의서 판본 이력 (합성)",
+      "target": "Nametag-Chip Default 상태 (정상 결정 불가 전부)",
+      "source_files": [
+        "synthesis/spec-version-history.md",
+        "sources/src-S-101-프로필-닉네임-컬러-규칙-v0.4.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "cites",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Nametag-Chip Default 상태 (정상 결정 불가 전부)` unexpectedly reaches hub `기능정의서 판본 이력 (합성)`"
+    },
+    {
+      "source": "기능정의서 판본 이력 (합성)",
+      "target": "Toast 스택 — 나중 것이 위 (인스타 DM 레퍼런스)",
+      "source_files": [
+        "synthesis/spec-version-history.md",
+        "sources/src-Toast-공통-정책.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "cites",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Toast 스택 — 나중 것이 위 (인스타 DM 레퍼런스)` unexpectedly reaches hub `기능정의서 판본 이력 (합성)`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `토핑 배치 정책 v0.1 (C-106)` and `기능정의서 v6 (2026-07-23)`?",
+      "why": "Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `토핑 편집자 확인 규칙 v0.1 (C-202)` and `Toast 공통 정책`?",
+      "why": "Edge tagged AMBIGUOUS (relation: references) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `그룹 토핑 템플릿 정책 v0.2 (G-001)` and `G-001 무한파르페 정책설계 v0.3`?",
+      "why": "Edge tagged AMBIGUOUS (relation: semantically_similar_to) - confidence is low."
+    },
+    {
+      "type": "ambiguous_edge",
+      "question": "What is the exact relationship between `형용사 100 × 파르페 재료 30 = 3000 조합` and `앱 닉네임 정책 v0.2 (S-002)`?",
+      "why": "Edge tagged AMBIGUOUS (relation: references) - confidence is low."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Toast 공통 정책` connect `Toast 공통 정책` to `개요 (overview)`, `계정 (account)`?",
+      "why": "High betweenness centrality (0.514) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `기능정의서 판본 이력 (합성)` connect `기능정의서 판본 이력 (합성)` to `그룹 정렬 및 인셋 규칙`, `Toast 공통 정책`, `닉네임 생성 및 검증 정책`, `로딩 및 토핑 변형 정책`?",
+      "why": "High betweenness centrality (0.273) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `그룹 (group)` connect `개요 (overview)` to `계정 (account)`, `Toast 공통 정책`, `무한 파르페 (infinite-parfait, G-001)`?",
+      "why": "High betweenness centrality (0.212) - this node is a cross-community bridge."
+    }
+  ]
+}

@@ -20,3 +20,16 @@ http-client.private.env.json
 
 # Kotlin 컴파일러 데몬이 남기는 세션/에러 로그
 .kotlin/
+
+# Python 바이트코드 캐시 — 인터프리터 버전마다 달라져 공유 가치가 없다
+__pycache__/
+*.pyc
+
+# graphify 로컬 비용 집계 — 머신마다 다르다
+/wiki/graphify-out/cost.json
+# graphify 재추출 캐시 — 조회 타임스탬프와 시맨틱 캐시 전부 실행한 머신에서만
+# 의미가 있다. 다른 머신에서는 재사용되지 않고 추출마다 새로 쌓인다
+/wiki/graphify-out/cache/
+# graphify가 추출 때마다 남기는 날짜별 이전 판 백업. 그래프 이력은 git이 이미
+# 갖고 있어 중복이다
+/wiki/graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
