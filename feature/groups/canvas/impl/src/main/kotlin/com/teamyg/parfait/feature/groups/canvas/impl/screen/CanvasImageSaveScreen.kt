@@ -53,8 +53,10 @@ internal fun CanvasImageSaveScreen(
     bitmap: ImageBitmap?,
     fallbackImagePath: String,
     date: LocalDate,
+    isVideoSaveEnabled: Boolean,
     onClickClose: () -> Unit,
-    onClickSave: () -> Unit,
+    onClickSaveImage: () -> Unit,
+    onClickSaveVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -145,8 +147,9 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        Box(
-            contentAlignment = Alignment.Center,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -160,7 +163,15 @@ internal fun CanvasImageSaveScreen(
                 text = stringResource(R.string.canvas_image_save_confirm),
                 buttonType = YGButtonType.Medium.Primary,
                 isEnabled = true,
-                onClick = onClickSave,
+                onClick = onClickSaveImage,
+            )
+
+            // 쌓일 것이 없으면 영상이 성립하지 않는다 — 토핑 0건에서는 누를 수 없다
+            YGButton(
+                text = stringResource(R.string.canvas_image_save_video),
+                buttonType = YGButtonType.Medium.Secondary,
+                isEnabled = isVideoSaveEnabled,
+                onClick = onClickSaveVideo,
             )
         }
     }
@@ -184,8 +195,10 @@ private fun PreviewCanvasImageSaveScreen(
         bitmap = null,
         fallbackImagePath = "",
         date = date,
+        isVideoSaveEnabled = true,
         onClickClose = {},
-        onClickSave = {},
+        onClickSaveImage = {},
+        onClickSaveVideo = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

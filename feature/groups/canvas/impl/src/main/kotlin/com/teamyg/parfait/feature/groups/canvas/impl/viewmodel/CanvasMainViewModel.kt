@@ -28,6 +28,7 @@ import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -117,6 +118,13 @@ data class CanvasMainUiState(
      * 마지막 장을 닫은 사람이 같은 상태다.
      */
     val tutorialStep: CanvasTutorialStep? = null,
+    /**
+     * 캔버스 타임랩스 영상을 만드는 중. 참인 동안 녹화용 레이어가 컴포지션에 들어가고 로딩
+     * 오버레이가 화면을 덮는다.
+     *
+     * 진행률을 두지 않는 이유는 취소 경로를 만들지 않기로 확정했기 때문이다 — 불린 하나면 족하다.
+     */
+    val isRecordingVideo: Boolean = false,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -206,9 +214,20 @@ sealed interface CanvasMainEffect : UiSideEffect {
      */
     data object RequestCanvasCaptureForPreview : CanvasMainEffect
 
+    /**
+     * 캔버스 타임랩스 영상을 찍어 달라는 요청.
+     *
+     * 프레임 캡처는 컴포지션을 읽는 일이라 화면만 할 수 있다 — [RequestCanvasCaptureForPreview] 와
+     * 같은 이유로 ViewModel 은 요청만 보낸다. 화면은 끝나면 [CanvasMainIntent.SaveRecordedVideo] 로,
+     * 실패하면 [CanvasMainIntent.CanvasVideoRecordFailed] 로 돌아온다.
+     */
+    data object StartCanvasVideoRecording : CanvasMainEffect
+
+    /** @param isVideo 이미지와 영상의 토스트 문구가 갈린다. 저장 경로 자체는 같은 사건이라 이펙트를 나누지 않는다 */
     data class ShowGallerySaveResult(
         val isSuccess: Boolean,
         val date: LocalDate,
+        val isVideo: Boolean,
     ) : CanvasMainEffect
 
     /** Spotlight 진입과 동시에 1회 노출하는 작성자 정보 토스트 */
@@ -279,6 +298,15 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
     data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 
+    /** 미리보기에서 동영상 저장을 확정하고 돌아왔다 */
+    data object OnClickSaveVideoToGallery : CanvasMainIntent
+
+    /** 화면이 녹화를 마쳐 캐시에 mp4 를 완성했다 */
+    data class SaveRecordedVideo(val videoFilePath: String) : CanvasMainIntent
+
+    /** 녹화나 인코딩이 실패했다. 저장할 파일이 없다 */
+    data object CanvasVideoRecordFailed : CanvasMainIntent
+
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
 
@@ -309,6 +337,7 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
+    private val saveCanvasVideoToGalleryUseCase: SaveCanvasVideoToGalleryUseCase,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
@@ -610,6 +639,12 @@ constructor(
 
             is CanvasMainIntent.SaveCapturedCanvas -> handleSaveCapturedCanvas(intent.bitmap)
 
+            is CanvasMainIntent.OnClickSaveVideoToGallery -> handleClickSaveVideoToGallery()
+
+            is CanvasMainIntent.SaveRecordedVideo -> handleSaveRecordedVideo(intent.videoFilePath)
+
+            is CanvasMainIntent.CanvasVideoRecordFailed -> handleCanvasVideoRecordFailed()
+
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
@@ -824,7 +859,15 @@ constructor(
         }
     }
 
+    /**
+     * 캡처를 요청하기 **전에** Spotlight 를 반드시 해제한다. 캡처 레이어는 [CanvasMainUiState]
+     * 를 그대로 읽는 화면의 내부 Box(배경 + content)라, Spotlight 가 켜진 채로 캡처하면 Dim 과
+     * 맨 위로 옮겨진 토핑이 그대로 PNG 에 구워진다 — 녹화 레이어는 애초에 `spotlightedToppingId`
+     * 를 null 로 고정해 Dim 이 없으므로, 여기서 해제하지 않으면 이미지 저장물과 영상의 마지막
+     * 장면이 달라진다.
+     */
     private fun handleClickSaveToGallery() {
+        resetSpotlight()
         postSideEffect(effect = CanvasMainEffect.RequestCanvasCaptureForPreview)
     }
 
@@ -836,11 +879,65 @@ constructor(
 
             saveCanvasToGalleryUseCase(bitmap.toAndroidBitmap(), displayName)
                 .onSuccess {
-                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = date))
+                    postSideEffect(
+                        effect = CanvasMainEffect.ShowGallerySaveResult(
+                            isSuccess = true,
+                            date = date,
+                            isVideo = false,
+                        ),
+                    )
                 }.onFailure {
-                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))
+                    postSideEffect(
+                        effect = CanvasMainEffect.ShowGallerySaveResult(
+                            isSuccess = false,
+                            date = date,
+                            isVideo = false,
+                        ),
+                    )
                 }
         }
+    }
+
+    private fun handleClickSaveVideoToGallery() {
+        // 이 핸들러는 launch 를 타지 않고 이펙트만 바로 보내 launch(key = ...) 의 중복 방어가
+        // 닿지 않는다 — 녹화 중 재요청을 걸러내는 문지기는 isRecordingVideo 상태뿐이다. 산출물이
+        // 고정 파일명에 쓰여, 중복 발행되면 두 인코더가 같은 파일을 다퉈 재생 불가로 남는다
+        if (state.value.isRecordingVideo) return
+
+        updateState { copy(isRecordingVideo = true) }
+        postSideEffect(effect = CanvasMainEffect.StartCanvasVideoRecording)
+    }
+
+    private fun handleSaveRecordedVideo(videoFilePath: String) {
+        val date = state.value.selectedDate
+
+        launch(key = SAVE_CANVAS_VIDEO_TO_GALLERY_KEY) {
+            val displayName = "parfait_${System.currentTimeMillis()}.mp4"
+
+            val result = saveCanvasVideoToGalleryUseCase(
+                videoFilePath = videoFilePath,
+                displayName = displayName,
+            )
+
+            // 성공이든 실패든 녹화는 끝났다 — 오버레이를 먼저 걷지 않으면 토스트가 딤 아래에 깔린다
+            updateState { copy(isRecordingVideo = false) }
+            postSideEffect(
+                effect = CanvasMainEffect.ShowGallerySaveResult(
+                    isSuccess = result.isSuccess,
+                    date = date,
+                    isVideo = true,
+                ),
+            )
+        }
+    }
+
+    private fun handleCanvasVideoRecordFailed() {
+        val date = state.value.selectedDate
+
+        updateState { copy(isRecordingVideo = false) }
+        postSideEffect(
+            effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date, isVideo = true),
+        )
     }
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
@@ -953,6 +1050,8 @@ constructor(
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
 
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
+
+        const val SAVE_CANVAS_VIDEO_TO_GALLERY_KEY = "saveCanvasVideoToGallery"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 

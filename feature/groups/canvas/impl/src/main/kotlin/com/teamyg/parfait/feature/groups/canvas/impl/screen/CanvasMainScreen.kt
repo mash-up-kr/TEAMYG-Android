@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,18 +16,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackgroundState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_WIDTH_PX
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoRecordLayer
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CustomCalendar
 import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertHost
 import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertPolicy
@@ -76,6 +82,16 @@ internal fun CanvasMainScreen(
     retryKey: Int,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
+    // 녹화 인자들은 모두 기본값을 둔다 — 녹화는 Route 만 켤 수 있는 흐름이라 프리뷰처럼
+    // 녹화가 없는 호출부는 한 줄도 적지 않아야 한다
+    recordLayer: GraphicsLayer = rememberGraphicsLayer(),
+    recordVisibleToppingCount: Int = 0,
+    recordLastToppingPopProgress: Float = 1f,
+    /** 녹화 레이어가 쓸 Canvas-Area dp. [onCanvasAreaSizeChange] 로 재서 올린 값이 되돌아온다 */
+    recordCanvasWidth: Dp = 0.dp,
+    recordCanvasHeight: Dp = 0.dp,
+    onCanvasAreaSizeChange: (width: Dp, height: Dp) -> Unit = { _, _ -> },
+    onRecordLoadStateChange: (CanvasLoadState) -> Unit = {},
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
 ) {
@@ -125,6 +141,11 @@ internal fun CanvasMainScreen(
             onLoadStateChange(canvasLoadState(listOf(backgroundState, toppingState)))
         }
 
+        // 녹화 레이어가 화면과 **같은 배경**을 그려야 마지막 프레임이 이미지 저장물과 같은
+        // 장면이 된다. 변환을 두 번 하면 색 변환 실패 같은 갈래에서 어긋날 수 있어 한 번만
+        // 옮겨 양쪽에 나눠 준다
+        val canvasBackground = canvasState.canvasBackground.toYGCanvasBackground()
+
         YGCanvas(
             reloadKey = retryKey,
             onBackgroundStateChange = { backgroundState = it.toCanvasLoadState() },
@@ -157,7 +178,7 @@ internal fun CanvasMainScreen(
                     onClick = onClickGoToToday,
                 )
             },
-            background = canvasState.canvasBackground.toYGCanvasBackground(),
+            background = canvasBackground,
             isSaveVisible = canvasState.isCanvasSaveVisible,
             onClickSave = onClickSaveToGallery,
             saveContentDescription = stringResource(R.string.canvas_main_save_to_gallery),
@@ -211,6 +232,20 @@ internal fun CanvasMainScreen(
                 .weight(1f)
                 .fillMaxWidth(),
         ) {
+            val density = LocalDensity.current
+
+            // 녹화 레이어가 같은 dp 폭을 써야 테두리 굵기 비율이 이미지 저장물과 같아진다.
+            // 이 Box 가 Canvas-Area 와 같은 크기이므로 여기서 재서 올린다
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .onSizeChanged { size ->
+                        with(density) {
+                            onCanvasAreaSizeChange(size.width.toDp(), size.height.toDp())
+                        }
+                    },
+            )
+
             CanvasToppingLayer(
                 toppings = canvasState.toppings,
                 spotlightedToppingId = canvasState.spotlightedToppingId,
@@ -223,6 +258,24 @@ internal fun CanvasMainScreen(
                 onLoadStateChange = { toppingState = it },
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // 녹화 중에만 컴포지션에 붙는다. 화면에는 한 픽셀도 그리지 않고 프레임만 기록한다.
+            // 아직 재지 못한 0dp 로는 밀도를 정할 수 없어(0 으로 나눈다) 측정 뒤로 미룬다
+            if (canvasState.isRecordingVideo && recordCanvasWidth > 0.dp) {
+                CanvasVideoRecordLayer(
+                    toppings = canvasState.toppings,
+                    background = canvasBackground,
+                    visibleToppingCount = recordVisibleToppingCount,
+                    lastToppingPopProgress = recordLastToppingPopProgress,
+                    canvasWidth = recordCanvasWidth,
+                    canvasHeight = recordCanvasHeight,
+                    targetWidthPx = CANVAS_VIDEO_WIDTH_PX,
+                    // 화면과 같은 값이어야 한다 — 재시도 뒤 0 이면 녹화만 옛 실패 캐시를 읽는다
+                    retryKey = retryKey,
+                    captureLayer = recordLayer,
+                    onLoadStateChange = onRecordLoadStateChange,
+                )
+            }
         }
     }
 }

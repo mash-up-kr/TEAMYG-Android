@@ -25,6 +25,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -81,6 +82,7 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
+    private val saveCanvasVideoToGallery: SaveCanvasVideoToGalleryUseCase = mockk()
     private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
     private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
@@ -152,6 +154,7 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
+        saveCanvasVideoToGalleryUseCase = saveCanvasVideoToGallery,
         getTutorialVisibleFlowUseCase = getTutorialVisible,
         completeTutorialUseCase = completeTutorial,
         startToppingDraft = startToppingDraft,
@@ -743,6 +746,24 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun onClickSaveToGallery_whileSpotlighted_clearsTheSpotlightBeforeCapturing() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 남이 올린 토핑이 Spotlight 로 강조돼 있다
+            val othersTopping = topping(positionZ = 1, isMine = false)
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(othersTopping))
+            val viewModel = enteredViewModel()
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+
+            // When 저장 버튼을 누른다
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+
+            // Then Dim 이 캡처에 구워지지 않도록 캡처를 요청하기 전에 Spotlight 부터 해제한다
+            assertNull(viewModel.state.value.spotlightedToppingId)
+        }
+
+    @Test
     fun saveCapturedCanvas_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
         // Given 화면이 열린 상태(오늘을 보고 있다)이고 저장이 성공한다
         val viewModel = enteredViewModel()
@@ -754,7 +775,7 @@ class CanvasMainViewModelTest {
 
             // Then 지금 보고 있는 날짜와 함께 성공을 알린다
             assertEquals(
-                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today),
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today, isVideo = false),
                 awaitItem(),
             )
         }
@@ -967,9 +988,110 @@ class CanvasMainViewModelTest {
 
             // Then 실패를 알린다 — 크래시 대신 토스트로 이어진다
             assertEquals(
-                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today, isVideo = false),
                 awaitItem(),
             )
+        }
+    }
+
+    @Test
+    fun onClickSaveVideoToGallery_always_startsRecordingAndRaisesFlag() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑이 있는 오늘 캔버스
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 동영상 저장을 누른다
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+
+            // Then 화면에 녹화를 요청하고 녹화 중 표시를 세운다
+            assertEquals(CanvasMainEffect.StartCanvasVideoRecording, awaitItem())
+            assertTrue(viewModel.state.value.isRecordingVideo)
+        }
+    }
+
+    @Test
+    fun onClickSaveVideoToGallery_whileRecording_ignoresTheSecondRequest() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미 녹화 중인 화면
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+            assertEquals(CanvasMainEffect.StartCanvasVideoRecording, awaitItem())
+
+            // When 녹화 중에 같은 버튼을 다시 누른다
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+
+            // Then 고정 파일명을 두 인코더가 다투지 않도록 두 번째 요청은 조용히 무시한다
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun saveRecordedVideo_useCaseSucceeds_reportsVideoSuccessAndClearsFlag() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 갤러리 저장이 성공한다
+        coEvery { saveCanvasVideoToGallery(any(), any()) } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+            assertEquals(CanvasMainEffect.StartCanvasVideoRecording, awaitItem())
+
+            // When 녹화가 끝난 파일을 넘긴다
+            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = "/cache/a.mp4"))
+            advanceUntilIdle()
+
+            // Then 영상 성공으로 알리고 녹화 중 표시를 내린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today, isVideo = true),
+                awaitItem(),
+            )
+            assertFalse(viewModel.state.value.isRecordingVideo)
+        }
+    }
+
+    @Test
+    fun saveRecordedVideo_useCaseFails_reportsVideoFailureAndClearsFlag() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 갤러리 저장이 실패한다
+        coEvery { saveCanvasVideoToGallery(any(), any()) } returns Result.failure(RuntimeException("저장 실패"))
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+            assertEquals(CanvasMainEffect.StartCanvasVideoRecording, awaitItem())
+
+            // When 녹화가 끝난 파일을 넘긴다
+            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = "/cache/a.mp4"))
+            advanceUntilIdle()
+
+            // Then 영상 실패로 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today, isVideo = true),
+                awaitItem(),
+            )
+            assertFalse(viewModel.state.value.isRecordingVideo)
+        }
+    }
+
+    @Test
+    fun canvasVideoRecordFailed_always_reportsFailureWithoutCallingUseCase() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 녹화 도중 실패한다
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+            assertEquals(CanvasMainEffect.StartCanvasVideoRecording, awaitItem())
+
+            // When 화면이 실패를 알린다
+            viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
+            advanceUntilIdle()
+
+            // Then 갤러리 저장을 부르지 않고 실패만 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today, isVideo = true),
+                awaitItem(),
+            )
+            assertFalse(viewModel.state.value.isRecordingVideo)
+            coVerify(exactly = 0) { saveCanvasVideoToGallery(any(), any()) }
         }
     }
 
