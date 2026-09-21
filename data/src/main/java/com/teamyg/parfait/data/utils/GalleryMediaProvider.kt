@@ -11,6 +11,7 @@ import android.provider.MediaStore
 import java.io.OutputStream
 
 private const val IMAGE_MIME_TYPE = "image/png"
+private const val VIDEO_MIME_TYPE = "video/mp4"
 private const val SAVE_SUBDIRECTORY = "Parfait"
 
 class GalleryMediaProvider(
@@ -85,6 +86,24 @@ class GalleryMediaProvider(
         return context.contentResolver?.insert(collection, values)
     }
 
+    /**
+     * 영상 컬렉션에 새 항목을 등록한다. 구조는 [insertPendingImage] 와 같고 갈리는 것은 컬렉션·MIME·
+     * 저장 디렉토리뿐이다 — 이미지와 영상은 서로 다른 MediaStore 컬렉션이라 한 함수로 합칠 수 없다.
+     */
+    fun insertPendingVideo(displayName: String): Uri? {
+        val collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        val values = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Video.Media.MIME_TYPE, VIDEO_MIME_TYPE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MOVIES}/$SAVE_SUBDIRECTORY")
+                put(MediaStore.Video.Media.IS_PENDING, 1)
+            }
+        }
+
+        return context.contentResolver?.insert(collection, values)
+    }
+
     fun openOutputStream(uri: Uri): OutputStream? = context.contentResolver?.openOutputStream(uri)
 
     /** [insertPendingImage] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
@@ -92,6 +111,14 @@ class GalleryMediaProvider(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
         val values = ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }
+        context.contentResolver?.update(uri, values, null, null)
+    }
+
+    /** [insertPendingVideo] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
+    fun finalizePendingVideo(uri: Uri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+
+        val values = ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }
         context.contentResolver?.update(uri, values, null, null)
     }
 
