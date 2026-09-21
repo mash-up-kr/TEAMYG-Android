@@ -46,6 +46,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopAlpha
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -76,6 +78,14 @@ internal fun CanvasToppingLayer(
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
+    /**
+     * 그릴 토핑 개수. 앞에서부터 이만큼만 그린다. `null` 이면 전부 그린다.
+     *
+     * 타임랩스 녹화가 프레임마다 이 값을 올려 토핑이 하나씩 나타나게 만든다.
+     */
+    visibleToppingCount: Int? = null,
+    /** [visibleToppingCount] 의 마지막 토핑에만 적용하는 팝인 진행도(0~1) */
+    lastToppingPopProgress: Float = 1f,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -90,6 +100,12 @@ internal fun CanvasToppingLayer(
             retryKey = retryKey,
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
+
+        // 녹화가 프레임마다 개수를 올린다. 자르기만 하면 되는 이유는 목록이 이미 positionZ
+        // 오름차순, 즉 배치 순서라서다
+        val visibleEntries = visibleToppingCount
+            ?.let { count -> entries.take(count) }
+            ?: entries
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
         // 다시 시도할 때도 처음부터 모아야 한다
@@ -111,14 +127,19 @@ internal fun CanvasToppingLayer(
                 .matchParentSize()
                 .revealed(toppingsVisible),
         ) {
-            entries.forEach { entry ->
+            visibleEntries.forEachIndexed { index, entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {
+                    // 팝인은 지금 막 등장한 마지막 토핑의 몫이다. 앞의 것들은 이미 자리를 잡았다
+                    val isLast = index == visibleEntries.lastIndex
+                    val popProgress = if (isLast) lastToppingPopProgress else 1f
+
                     CanvasTopping(
                         entry = entry,
                         canvasWidth = areaWidth,
                         canvasHeight = areaHeight,
                         onClick = { onClickTopping(entry.topping) },
                         clickable = hitTestEnabled,
+                        popProgress = popProgress,
                     )
                 }
             }
@@ -160,7 +181,8 @@ internal fun CanvasToppingLayer(
                     .toppingTapInput(
                         // 강조된 토핑이 있으면 그것만 본다. 딤이 전면을 덮어 나머지는 닿지 않는다
                         entries = {
-                            (spotlighted?.let(::listOf) ?: entries).map { it.topping to it.target }
+                            // 아직 안 보이는 토핑이 눌리면 안 된다
+                            (spotlighted?.let(::listOf) ?: visibleEntries).map { it.topping to it.target }
                         },
                         keyOf = { it.parfaitImageId },
                         onHit = onClickTopping,
@@ -189,6 +211,7 @@ private fun CanvasTopping(
     canvasHeight: Dp,
     onClick: () -> Unit,
     clickable: Boolean,
+    popProgress: Float = 1f,
 ) {
     val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
@@ -206,8 +229,16 @@ private fun CanvasTopping(
             )
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
             .requiredSize(side)
-            .graphicsLayer { rotationZ = transform.rotation.toFloat() }
-            .then(
+            .graphicsLayer {
+                rotationZ = transform.rotation.toFloat()
+                // 테두리 띠가 상자 밖으로 나가는데 alpha < 1 이면 그만큼 잘린다 — 진행 중에만 건다
+                if (popProgress < 1f) {
+                    val pop = toppingPopScale(popProgress)
+                    scaleX = pop
+                    scaleY = pop
+                    alpha = toppingPopAlpha(popProgress)
+                }
+            }.then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
                 if (clickable) {
                     Modifier.semantics(mergeDescendants = true) {
