@@ -1,58 +1,58 @@
 {
   "concepts/account.md": {
-    "mtime": 1789690191.0960245,
-    "ast_hash": "ea7b46fe87b5b81bf67fb132096ca581",
-    "semantic_hash": "ea7b46fe87b5b81bf67fb132096ca581"
+    "mtime": 1789981669.2536623,
+    "ast_hash": "709d48bad7b3588528e94002bd218a19",
+    "semantic_hash": "709d48bad7b3588528e94002bd218a19"
   },
   "concepts/canvas.md": {
-    "mtime": 1789690760.267034,
-    "ast_hash": "295ea8092e3184058b259d9731ba663e",
-    "semantic_hash": "295ea8092e3184058b259d9731ba663e"
+    "mtime": 1789981506.437625,
+    "ast_hash": "20d9a302c1feed2b91330aaa03954059",
+    "semantic_hash": "20d9a302c1feed2b91330aaa03954059"
   },
   "concepts/group.md": {
-    "mtime": 1789689693.2049806,
-    "ast_hash": "f056962bc933900b795e7300fdc06529",
-    "semantic_hash": "f056962bc933900b795e7300fdc06529"
+    "mtime": 1789982136.7674558,
+    "ast_hash": "0a8e48779204276c0b32d430e03eae86",
+    "semantic_hash": "0a8e48779204276c0b32d430e03eae86"
   },
   "concepts/infinite-parfait.md": {
-    "mtime": 1789690738.4177384,
-    "ast_hash": "2a0bff9b6e83ec25f85a8c7bc7f3c9ae",
-    "semantic_hash": "2a0bff9b6e83ec25f85a8c7bc7f3c9ae"
+    "mtime": 1789981714.4051676,
+    "ast_hash": "81a51dc1d5c70234585d3755b93a2481",
+    "semantic_hash": "81a51dc1d5c70234585d3755b93a2481"
   },
   "concepts/mvp-scope-limits.md": {
-    "mtime": 1789627826.9137046,
-    "ast_hash": "8609b7c928c9add434d8b7af9fe1a08b",
-    "semantic_hash": "8609b7c928c9add434d8b7af9fe1a08b"
+    "mtime": 1789981264.868057,
+    "ast_hash": "a72d3af2d51bba4b7c5eda5f90e509da",
+    "semantic_hash": "a72d3af2d51bba4b7c5eda5f90e509da"
   },
   "concepts/screen-id-scheme.md": {
-    "mtime": 1789690760.267681,
-    "ast_hash": "2d75efb6ebd891b0d81405a5906d3984",
-    "semantic_hash": "2d75efb6ebd891b0d81405a5906d3984"
+    "mtime": 1789981632.5766098,
+    "ast_hash": "3a63518c3d43c1efd6eba7d5540825b3",
+    "semantic_hash": "3a63518c3d43c1efd6eba7d5540825b3"
   },
   "concepts/toast.md": {
-    "mtime": 1789689990.9251056,
-    "ast_hash": "1080654aa6b2001b2b99f6e002c4000b",
-    "semantic_hash": "1080654aa6b2001b2b99f6e002c4000b"
+    "mtime": 1789981152.4215739,
+    "ast_hash": "c3720dc45c940348d76fea6a14027181",
+    "semantic_hash": "c3720dc45c940348d76fea6a14027181"
   },
   "concepts/topping-placement-pipeline.md": {
-    "mtime": 1789629632.6931615,
-    "ast_hash": "de50226066acad5a8ac7e97a9d4f36c4",
-    "semantic_hash": "de50226066acad5a8ac7e97a9d4f36c4"
+    "mtime": 1789981573.7653568,
+    "ast_hash": "3abca4e67faac3c6b99e38697263584c",
+    "semantic_hash": "3abca4e67faac3c6b99e38697263584c"
   },
   "entities/parfait.md": {
-    "mtime": 1789690786.839173,
-    "ast_hash": "3eea2c3771b1a990a722688f065dc88d",
-    "semantic_hash": "3eea2c3771b1a990a722688f065dc88d"
+    "mtime": 1789981759.082765,
+    "ast_hash": "d547c022ccc306c8d92ff78d70ee8ad9",
+    "semantic_hash": "d547c022ccc306c8d92ff78d70ee8ad9"
   },
   "index.md": {
-    "mtime": 1789690845.368103,
-    "ast_hash": "b9476438e5c669f791a9ca75d8988e4e",
-    "semantic_hash": "b9476438e5c669f791a9ca75d8988e4e"
+    "mtime": 1789981895.4085424,
+    "ast_hash": "f157e63758b23aae990e29ee0e46cc2f",
+    "semantic_hash": "f157e63758b23aae990e29ee0e46cc2f"
   },
   "overview.md": {
-    "mtime": 1789690852.66864,
-    "ast_hash": "4e42e26e86fa06c659747f455d394493",
-    "semantic_hash": "4e42e26e86fa06c659747f455d394493"
+    "mtime": 1789981879.0927572,
+    "ast_hash": "11de09531926253623d41e0c29d17546",
+    "semantic_hash": "11de09531926253623d41e0c29d17546"
   },
   "purpose.md": {
     "mtime": 1789617687.2731147,
@@ -250,13 +250,23 @@
     "semantic_hash": "bbb5c67303df8eb3baca78241da8c34e"
   },
   "sources/src-\uae30\ub2a5\uc815\uc758\uc11c-v6.md": {
-    "mtime": 1789627178.7246597,
-    "ast_hash": "f21c2bd6fb8b57845a6c023492ac792f",
-    "semantic_hash": "f21c2bd6fb8b57845a6c023492ac792f"
+    "mtime": 1789981095.260267,
+    "ast_hash": "db9395439acdd4375d22a53575b3abeb",
+    "semantic_hash": "db9395439acdd4375d22a53575b3abeb"
   },
   "synthesis/spec-version-history.md": {
-    "mtime": 1789690786.8399773,
-    "ast_hash": "aa72524a04ffa44d5741242b5b03e85a",
-    "semantic_hash": "aa72524a04ffa44d5741242b5b03e85a"
+    "mtime": 1789981822.8277738,
+    "ast_hash": "1d67302c1728b2127b3cc1da2913324f",
+    "semantic_hash": "1d67302c1728b2127b3cc1da2913324f"
+  },
+  "concepts/push-notification.md": {
+    "mtime": 1789981124.196332,
+    "ast_hash": "23bce562526a2874a2c0240b391b8c18",
+    "semantic_hash": "23bce562526a2874a2c0240b391b8c18"
+  },
+  "sources/src-\uae30\ub2a5\uc815\uc758\uc11c-v7.md": {
+    "mtime": 1789981077.610426,
+    "ast_hash": "d33bcef8c8772dc3f14aa5a4e8ddf7cb",
+    "semantic_hash": "d33bcef8c8772dc3f14aa5a4e8ddf7cb"
   }
 }
