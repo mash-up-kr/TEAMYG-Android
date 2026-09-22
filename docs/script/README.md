@@ -14,6 +14,26 @@
 | 스크립트 | 용도 | 호출 스킬 |
 |---|---|---|
 | `check_links.py` | 마크다운 상대 링크 전수 resolve 검사(디렉토리 이동·아카이브 이동 후 `../` 깊이 확인) | _(없음 — 손으로 실행)_ |
+| `search.py` | 자연어 쿼리로 구현 문서(스펙·계획·ADR·아키텍처) 검색 | _(없음 — 손으로 실행)_ |
+
+## search
+
+`docs/superpowers/specs`·`docs/superpowers/plans`·`docs/adr`·`docs/architecture`
+네 디렉토리를 재귀로 훑어 각 마크다운의 frontmatter(`id`·`title`·`tags`·
+`related_code`·`related_spec`·`related_adr`)와 헤딩을 색인한다. `archive/`
+하위 문서도 검색 대상에 포함하고, 결과에 `[archived]`로 표시한다 — 아카이브가
+과거 판단의 근거를 담은 문서 대다수라서 제외하면 검색의 요점을 잃는다.
+frontmatter가 없는 파일(`README.md`, `template.md` 등)은 죽지 않고 파일명
+stem을 `id`로, 빈 문자열을 `title`로 삼는다.
+
+graphify는 `wiki/pages/`만 스캔하므로 `docs/` 아래 문서는 그 검색망 밖에
+있다. `search.py`가 그 구멍을 메운다.
+
+```bash
+python3 docs/script/search.py "<자연어 쿼리>" [--top N]
+```
+
+점수 내림차순으로 `<id>  (score N) [archived] — <title>`과 상대 경로를 출력한다.
 
 ## 템플릿
 - [`_script-template.py`](_script-template.py) — 파이썬 스크립트 헤더/경로 규약.

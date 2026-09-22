@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""자연어 쿼리로 구현 문서를 찾는다 — 스펙·계획·ADR·아키텍처.
+
+용법:
+    python3 docs/script/search.py "<자연어 쿼리>" [--top N]
+
+graphify 의 스캔 루트는 `wiki/pages/` 라서 `docs/` 아래 문서는 그 바깥이다.
+이 스크립트가 그 구멍을 메운다.
+
+규약: stdlib 전용. repo 루트 = Path(__file__).resolve().parents[2].
+"""
+import argparse
+import re
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+DOC_ROOTS = [
+    REPO_ROOT / "docs" / "superpowers" / "specs",
+    REPO_ROOT / "docs" / "superpowers" / "plans",
+    REPO_ROOT / "docs" / "adr",
+    REPO_ROOT / "docs" / "architecture",
+]
+
+FRONTMATTER = re.compile(r"^---\n(.*?)\n---", re.S)
+
+
+def tokenize(s):
+    return re.findall(r"[a-z0-9가-힣]+", s.lower())
+
+
+def _field(block, key):
+    m = re.search(rf"^{key}:\s*(.+)$", block, re.M)
+    return m.group(1).strip().strip("\"'") if m else ""
+
+
+def parse_doc(md_path, archived):
+    text = md_path.read_text(encoding="utf-8", errors="ignore")
+    m = FRONTMATTER.search(text)
+    block = m.group(1) if m else ""
+    doc_id = _field(block, "id") or md_path.stem
+    related = " ".join(
+        _field(block, k) for k in ("related_code", "related_spec", "related_adr")
+    )
+    return {
+        "id": doc_id,
+        "title": _field(block, "title"),
+        "tags": _field(block, "tags"),
+        "code": related,
+        "headings": " ".join(re.findall(r"^#{1,3}\s+(.+)$", text, re.M)),
+        "archived": archived,
+        "path": str(md_path),
+    }
+
+
+def score(query, doc):
+    q = set(tokenize(query))
+    if not q:
+        return 0.0
+    id_t = tokenize(doc["id"])
+    title_t = tokenize(doc["title"])
+    tag_t = tokenize(doc["tags"])
+    code_t = tokenize(doc["code"])
+    head_t = tokenize(doc.get("headings", ""))
+    total = 0.0
+    for t in q:
+        total += (
+            4 * id_t.count(t)
+            + 4 * title_t.count(t)
+            + 2 * tag_t.count(t)
+            + 2 * code_t.count(t)
+            + 1 * head_t.count(t)
+        )
+        if any(t in n for n in id_t):
+            total += 1
+    return total
+
+
+def collect():
+    docs = []
+    for root in DOC_ROOTS:
+        if not root.is_dir():
+            continue
+        for md in sorted(root.rglob("*.md")):
+            docs.append(parse_doc(md, archived="archive" in md.parts))
+    return docs
+
+
+def search(query, top=8):
+    ranked = sorted(((score(query, d), d) for d in collect()), key=lambda x: -x[0])
+    return [(sc, d) for sc, d in ranked if sc > 0][:top]
+
+
+def main():
+    ap = argparse.ArgumentParser(description="구현 문서 검색")
+    ap.add_argument("query", nargs="+")
+    ap.add_argument("--top", type=int, default=8)
+    a = ap.parse_args()
+    q = " ".join(a.query)
+    res = search(q, a.top)
+    if not res:
+        print(f"매칭 문서 없음: {q}")
+        return
+    for sc, d in res:
+        mark = " [archived]" if d["archived"] else ""
+        rel = Path(d["path"]).relative_to(REPO_ROOT)
+        print(f"{d['id']}  (score {sc:.0f}){mark} — {d['title'][:80]}\n    {rel}")
+
+
+if __name__ == "__main__":
+    main()

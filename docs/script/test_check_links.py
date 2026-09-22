@@ -2,7 +2,7 @@
 """check_links 단위 테스트.
 
 용법:
-    python3 -m unittest discover -s parfait/script -p 'test_*.py'
+    python3 -m unittest discover -s docs/script -p 'test_*.py'
 """
 import tempfile
 import unittest
