@@ -678,6 +678,7 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 | `docs/architecture/` | 레이어별 구조 문서 |
 | `docs/api/` | TEAMYG-SERVER 계약. 서버가 정본이고 Android 매핑은 각 문서의 절로 붙는다 |
 | `docs/synthesis/` | 미결 항목·린트 로그 |
+| `docs/doc-baseline.md` | 문서를 어느 `develop` 커밋 기준으로 마지막 검증했는지 적는 단일 출처 |
 | `docs/script/` | `check_links` `search`. 전부 저장소 루트에서 실행 |
 
 **Kotlin 코드 주석·KDoc 규약은 [`docs/code-conventions.md`](docs/code-conventions.md)에
@@ -1062,7 +1063,30 @@ echo "사본: $(find docs -name '*.md' \
 
 Expected: 원본 254, 사본 255. 차이 1은 `docs/index.md`(원본 `parfait/index.md`는 `parfait/android`·`parfait/api` 바깥이라 원본 집계에 없다)다.
 
-- [ ] **Step 4: 원본 저장소가 불변인지 확인한다**
+- [ ] **Step 4: 루트 라우팅 표의 경로가 전부 실존하는지 확인한다**
+
+`CLAUDE.md`의 `## 문서 (docs/)` 절 표는 "무엇이 어디 있다"는 주장의 목록이다. 존재하지 않는
+경로를 가리키면 그 표가 거짓이 된다. `search`는 Task 6이 만들기 때문에 이 시점에야 참이 된다.
+
+```bash
+python3 -c '
+import re, sys
+from pathlib import Path
+rows = re.findall(r"^\| \`(docs/[^\`]+)\` \|", Path("CLAUDE.md").read_text(encoding="utf-8"), re.M)
+missing = [r for r in rows if not Path(r).exists()]
+print(f"표의 경로 {len(rows)}개 · 없는 것 {len(missing)}")
+for m in missing:
+    print("MISSING:", m)
+for f in ("docs/script/check_links.py", "docs/script/search.py"):
+    print("OK  " if Path(f).exists() else "MISSING", f)
+sys.exit(1 if missing else 0)
+'
+```
+
+Expected: `없는 것 0`, 그리고 `check_links.py`·`search.py` 둘 다 OK. `search.py`가 없으면
+Task 6이 끝나지 않은 것이다.
+
+- [ ] **Step 5: 원본 저장소가 불변인지 확인한다**
 
 ```bash
 git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent status --short
@@ -1070,7 +1094,7 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent st
 
 Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이다 — 무엇이 바뀌었는지 보고하고 되돌린다.
 
-- [ ] **Step 5: 빌드가 영향받지 않았는지 확인한다**
+- [ ] **Step 6: 빌드가 영향받지 않았는지 확인한다**
 
 ```bash
 ./gradlew build
@@ -1078,7 +1102,7 @@ Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이
 
 Expected: `BUILD SUCCESSFUL`. 이관은 파일 추가일 뿐이므로 이관 전과 같아야 한다. 실패하면 이관과 무관한 기존 실패인지 먼저 확인한다 — `git stash` 후 재실행으로 가른다.
 
-- [ ] **Step 6: 커밋할 것이 남았으면 커밋한다**
+- [ ] **Step 7: 커밋할 것이 남았으면 커밋한다**
 
 ```bash
 git status --short
