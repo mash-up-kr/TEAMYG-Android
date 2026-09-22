@@ -832,6 +832,29 @@ class CollectTest(unittest.TestCase):
             self.assertEqual(doc["id"], "README")
             self.assertEqual(doc["title"], "")
 
+    def test_field_reads_whole_block_list(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "x.md"
+            p.write_text(
+                "---\nid: x\ntitle: 제목\nrelated_code:\n"
+                "  - settings.gradle.kts\n  - TestConfig.kt#setConfigTestUnit\n---\n# 본문\n",
+                encoding="utf-8",
+            )
+            doc = search.parse_doc(p, archived=False)
+            self.assertIn("settings.gradle.kts", doc["code"])
+            self.assertIn("TestConfig.kt#setConfigTestUnit", doc["code"])
+
+    def test_empty_field_does_not_swallow_the_next_one(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "y.md"
+            p.write_text(
+                "---\nid: y\ntitle: 제목\nrelated_adr:\nrelated_spec: login-debug-mode\n---\n# 본문\n",
+                encoding="utf-8",
+            )
+            doc = search.parse_doc(p, archived=False)
+            self.assertNotIn("related_spec", doc["code"])
+            self.assertIn("login-debug-mode", doc["code"])
+
     def test_marks_archived(self):
         with tempfile.TemporaryDirectory() as t:
             p = Path(t) / "archive" / "old.md"
@@ -840,6 +863,12 @@ class CollectTest(unittest.TestCase):
 
 
 class SearchTest(unittest.TestCase):
+    def setUp(self):
+        # 모듈 전역을 건드리므로 반드시 되돌린다 — 이 클래스가 마지막으로
+        # 실행되는 것에 기대면 테스트 파일이 하나 더 생기는 순간 깨진다.
+        saved = search.DOC_ROOTS
+        self.addCleanup(lambda: setattr(search, "DOC_ROOTS", saved))
+
     def test_ranks_relevant_first(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
@@ -908,8 +937,18 @@ def tokenize(s):
 
 
 def _field(block, key):
-    m = re.search(rf"^{key}:\s*(.+)$", block, re.M)
-    return m.group(1).strip().strip("\"'") if m else ""
+    """frontmatter 에서 key 의 값을 뽑는다. 블록 리스트는 한 줄로 이어 붙인다.
+
+    `\s*` 를 쓰면 개행을 넘어가 두 가지가 깨진다 — 블록 리스트
+    (`related_code:` 다음 줄부터 `- item`)는 첫 항목만 잡히고, 값이 빈 필드
+    (`related_adr:`)는 **다음 필드의 값을 삼킨다**. 그래서 같은 줄 공백만
+    허용하고(`[ \t]*`), 들여쓰기된 이어지는 줄만 값에 포함한다.
+    """
+    m = re.search(rf"^{key}:[ \t]*(.*(?:\n[ \t]+.*)*)$", block, re.M)
+    if not m:
+        return ""
+    parts = [ln.strip().lstrip("-").strip() for ln in m.group(1).splitlines()]
+    return " ".join(p for p in parts if p).strip("[]").strip("\"'")
 
 
 def parse_doc(md_path, archived):
@@ -997,7 +1036,7 @@ if __name__ == "__main__":
 cd docs/script && python3 -m unittest test_search -v; cd -
 ```
 
-Expected: PASS, 8개 전부.
+Expected: PASS, 10개 전부(`ScoreTest` 3 · `CollectTest` 5 · `SearchTest` 2).
 
 - [ ] **Step 5: 실제 문서에 대고 돌려본다**
 
