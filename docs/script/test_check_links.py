@@ -80,6 +80,11 @@ class BrokenLinksTest(unittest.TestCase):
         page = self.write("specs/a.md", "[디렉토리](../adr/)")
         self.assertEqual(check_links.broken_links(page), [])
 
+    def test_skips_superpowers_scratch(self):
+        self.write(".superpowers/sdd/task-1-report.md", "[x](../없는/파일.md)")
+        found = list(check_links.iter_markdown([self.root]))
+        self.assertEqual(found, [])
+
 
 if __name__ == "__main__":
     unittest.main()

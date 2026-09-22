@@ -25,7 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
+SKIP_DIRS = {".git", ".superpowers", "node_modules", "__pycache__", ".venv", "venv"}
 
 # ```...``` 펜스와 `인라인 코드` 안의 예시는 실제 링크가 아니다
 FENCE = re.compile(r"```.*?```", re.S)
