@@ -1,5 +1,9 @@
 # Parfait wiki — 에이전트 진입 허브
 
+> 이 문서 트리는 2026-09-22에 `team-yg-pesonal-agent`(`parfait/`)에서 복사됐다.
+> 기준 커밋 `de9f5f5`. 원본은 그 저장소에 그대로 남아 있고 자동 동기화는 없다 —
+> 이후의 정본은 이쪽이다.
+
 > 세션 시작·작업 전 **이 파일부터** 읽어라. 여기서 "무엇을 찾으면 어디를 보라"로 라우팅한 뒤, 필요한 문서만 펼친다 (전체를 읽지 말 것).
 
 ## 지금 상태 (1줄)
@@ -315,12 +319,12 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
 | 유효성 결과·에러 문자열 다국어 매핑(domain 의미↔표시 분리) | [ADR-0016](adr/0016-domain-result-presentation-string-mapping.md) + [state-management](architecture/state-management.md) |
 | 구현 직전 기능·컴포넌트 설계 스펙 | [specs/README.md](superpowers/specs/README.md) |
 | 작업 계획·진행 중/완료 작업 | [plans/README.md](superpowers/plans/README.md) |
-| 제품 문서(PRD·positioning·roadmap 등, PM-Skills 산출물) | pm/README.md |
 | 구현 미결·열린 결정·코드/문서 정합 이슈 | [open-questions.md](synthesis/open-questions.md) |
 
 ## 문서 지도
 
-`parfait/`는 **플랫폼 축으로 갈린다** — `android/`는 Android 전용이고 나머지는 플랫폼
+이 문서 트리는 **플랫폼 축으로 갈린다** — Android 전용 문서는 `adr/`·`architecture/`·
+`superpowers/specs/`·`superpowers/plans/`·`synthesis/` 다섯 갈래에 있고 나머지는 플랫폼
 공용이다. 어느 쪽에 새 문서를 둘지는 [CLAUDE.md](index.md)가 기준을 적는다.
 
 ### `android/` — TJYG-Android 전용
@@ -340,8 +344,6 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
   정본은 서버 코드이고 이 디렉토리는 미러다. 추적 브랜치는 서버 **`main`**(TJYG-Android의 `develop`과 다름).
   계약 절은 플랫폼과 무관하고 Android가 그것을 어떻게 받는지는 같은 문서의 「Android 매핑」 절에 적는다.
   기준선·갱신 절차는 [api/server-baseline.md](api/server-baseline.md), 반복 워크플로는 스킬 `sync-teamyg-server-api`.
-- **`pm/`** — 제품 문서(PRD·positioning·roadmap·user story·discovery 등, PM-Skills 산출물, `YYYY-MM-DD-kebab-topic.md`). 코드 작업은 superpowers 체인, 문서 작업은 PM-Skills — 라우팅은 루트 CLAUDE.md.
-- **`blog/`** — 외부 공개용 기술 블로그 원고(`YYYY-MM-DD-kebab-topic.md`). 발행 전 `korean-humanizer` 검증. 인덱스: blog/README.md
 - **[`script/`](script/README.md)** — 파이썬 툴링 홈(스킬 호출 로직·유틸, stdlib 전용). 템플릿: `_script-template.py`·`SKILL.template.md`.
   링크 깊이 검사는 `python3 parfait/script/check_links.py parfait`.
 - **[`CLAUDE.md`](index.md)** — parfait 범위 지도(어디에 무엇을 두는지). 루트 `CLAUDE.md`가 상위 정본.
