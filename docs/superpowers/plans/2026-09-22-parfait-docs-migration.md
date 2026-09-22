@@ -1075,7 +1075,23 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1~6의 산출물 전부
 - Produces: 완료 판정 근거
 
-- [ ] **Step 1: 링크 전수 검사**
+- [ ] **Step 1: 게이트가 에이전트 스크래치를 건너뛰게 한다**
+
+`.superpowers/sdd/`는 SDD 실행이 남기는 git 미추적 작업 자료다(브리프·보고서·리뷰 패키지).
+그 안의 보고서는 문서에서 링크 문법을 **인용**하므로, 저장소 전체 검사가 인용문을 실제
+링크로 읽고 깨졌다고 보고한다. 저장소 콘텐츠가 아니라 작업 흔적이니 `__pycache__`와 같은
+부류다.
+
+`docs/script/check_links.py`의 `SKIP_DIRS`에 `.superpowers`를 넣는다.
+
+```python
+SKIP_DIRS = {".git", ".superpowers", "node_modules", "__pycache__", ".venv", "venv"}
+```
+
+`docs/script/test_check_links.py`에 이 동작을 고정하는 테스트를 더한다 — `.superpowers`
+아래 마크다운에 깨진 링크를 두고, 전수 검사가 그것을 세지 않는지 본다.
+
+- [ ] **Step 2: 링크 전수 검사**
 
 ```bash
 python3 docs/script/check_links.py
@@ -1083,7 +1099,7 @@ python3 docs/script/check_links.py
 
 Expected: exit 0. 저장소 전체를 검사한다 — `docs/` 밖(루트 `CLAUDE.md`, `README.md`, `wiki/`)에서 새로 깨진 것이 없는지 본다.
 
-- [ ] **Step 2: 스크립트 테스트 전부**
+- [ ] **Step 3: 스크립트 테스트 전부**
 
 ```bash
 cd docs/script && python3 -m unittest discover -p 'test_*.py' -v; cd -
@@ -1091,7 +1107,7 @@ cd docs/script && python3 -m unittest discover -p 'test_*.py' -v; cd -
 
 Expected: PASS. `test_check_links`·`test_search` 양쪽.
 
-- [ ] **Step 3: 파일 수 최종 대조**
+- [ ] **Step 4: 파일 수 최종 대조**
 
 ```bash
 SRC=/Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent
@@ -1100,9 +1116,14 @@ echo "사본: $(find docs -name '*.md' \
   | grep -v '2026-09-17-wiki-port' | grep -v '2026-09-22-parfait-docs-migration' | wc -l)"
 ```
 
-Expected: 원본 254, 사본 255. 차이 1은 `docs/index.md`(원본 `parfait/index.md`는 `parfait/android`·`parfait/api` 바깥이라 원본 집계에 없다)다.
+Expected: 원본 254, 사본 **256**.
 
-- [ ] **Step 4: 루트 라우팅 표의 경로가 전부 실존하는지 확인한다**
+차이 2는 원본 집계가 `parfait/android`·`parfait/api` 두 트리만 세기 때문이다. 이관된 문서
+중 그 두 트리 **밖**에서 온 것이 둘 있다 — `parfait/index.md` → `docs/index.md`,
+`parfait/script/README.md` → `docs/script/README.md`. 둘 다 옮기기로 한 것이고 원본 254에는
+안 들어 있다.
+
+- [ ] **Step 5: 루트 라우팅 표의 경로가 전부 실존하는지 확인한다**
 
 `CLAUDE.md`의 `## 문서 (docs/)` 절 표는 "무엇이 어디 있다"는 주장의 목록이다. 존재하지 않는
 경로를 가리키면 그 표가 거짓이 된다. `search`는 Task 6이 만들기 때문에 이 시점에야 참이 된다.
@@ -1125,7 +1146,7 @@ sys.exit(1 if missing else 0)
 Expected: `없는 것 0`, 그리고 `check_links.py`·`search.py` 둘 다 OK. `search.py`가 없으면
 Task 6이 끝나지 않은 것이다.
 
-- [ ] **Step 5: 원본 저장소가 불변인지 확인한다**
+- [ ] **Step 6: 원본 저장소가 불변인지 확인한다**
 
 ```bash
 git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent status --short
@@ -1133,7 +1154,7 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent st
 
 Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이다 — 무엇이 바뀌었는지 보고하고 되돌린다.
 
-- [ ] **Step 6: 빌드가 영향받지 않았는지 확인한다**
+- [ ] **Step 7: 빌드가 영향받지 않았는지 확인한다**
 
 ```bash
 ./gradlew build
@@ -1141,7 +1162,7 @@ Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이
 
 Expected: `BUILD SUCCESSFUL`. 이관은 파일 추가일 뿐이므로 이관 전과 같아야 한다. 실패하면 이관과 무관한 기존 실패인지 먼저 확인한다 — `git stash` 후 재실행으로 가른다.
 
-- [ ] **Step 7: 커밋할 것이 남았으면 커밋한다**
+- [ ] **Step 8: 커밋할 것이 남았으면 커밋한다**
 
 ```bash
 git status --short
