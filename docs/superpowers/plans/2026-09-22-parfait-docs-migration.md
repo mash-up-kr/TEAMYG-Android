@@ -570,9 +570,12 @@ sed -i '' 's|](parfait/specs/2026-08-05-orchestration-session-pipeline.md)|](../
 
 ```bash
 F=docs/superpowers/plans/archive/2026-08-01-parfait-api-contract-docs.md
-sed -i '' -E 's|\]\(api/([a-z-]+\.md)\)|](../../../api/\1)|g' "$F"
-sed -i '' -E 's|\]\((conventions|auth|parfait|parfait-group|server-baseline|template|README)\.md\)|](../../../api/\1.md)|g' "$F"
+sed -i '' -E 's@\]\(api/([a-z-]+\.md)\)@](../../../api/\1)@g' "$F"
+sed -i '' -E 's@\]\((conventions|auth|parfait|parfait-group|server-baseline|template|README)\.md\)@](../../../api/\1.md)@g' "$F"
 ```
+
+구분자가 `/`나 `|`가 아니라 `@`인 이유는 정규식 안에 교대 `|`가 있어서다. `|`를 구분자로
+쓰면 macOS 기본 BSD sed 가 `parentheses not balanced` 로 거부한다.
 
 - [ ] **Step 5: 고친 링크가 실제로 resolve 되는지 본다**
 
