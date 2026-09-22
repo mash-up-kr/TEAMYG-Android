@@ -937,7 +937,7 @@ def tokenize(s):
 
 
 def _field(block, key):
-    """frontmatter 에서 key 의 값을 뽑는다. 블록 리스트는 한 줄로 이어 붙인다.
+    r"""frontmatter 에서 key 의 값을 뽑는다. 블록 리스트는 한 줄로 이어 붙인다.
 
     `\s*` 를 쓰면 개행을 넘어가 두 가지가 깨진다 — 블록 리스트
     (`related_code:` 다음 줄부터 `- item`)는 첫 항목만 잡히고, 값이 빈 필드
