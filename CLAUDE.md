@@ -22,6 +22,7 @@
 | `docs/architecture/` | 레이어별 구조 문서 |
 | `docs/api/` | TEAMYG-SERVER 계약. 서버가 정본이고 Android 매핑은 각 문서의 절로 붙는다 |
 | `docs/synthesis/` | 미결 항목·린트 로그 |
+| `docs/doc-baseline.md` | 문서를 어느 `develop` 커밋 기준으로 마지막 검증했는지 적는 단일 출처 |
 | `docs/script/` | `check_links` `search`. 전부 저장소 루트에서 실행 |
 
 **Kotlin 코드 주석·KDoc 규약은 [`docs/code-conventions.md`](docs/code-conventions.md)에
