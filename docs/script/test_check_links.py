@@ -81,9 +81,11 @@ class BrokenLinksTest(unittest.TestCase):
         self.assertEqual(check_links.broken_links(page), [])
 
     def test_skips_superpowers_scratch(self):
-        self.write(".superpowers/sdd/task-1-report.md", "[x](../없는/파일.md)")
+        control = self.write("specs/a.md", "ok")
+        scratch = self.write(".superpowers/sdd/task-1-report.md", "[x](../없는/파일.md)")
         found = list(check_links.iter_markdown([self.root]))
-        self.assertEqual(found, [])
+        self.assertIn(control, found)
+        self.assertNotIn(scratch, found)
 
 
 if __name__ == "__main__":
