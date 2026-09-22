@@ -238,7 +238,9 @@ class RewriteTest(unittest.TestCase):
         self.assertEqual(unlinked, 1)
 
     def test_skips_code_fence(self):
-        text = "```\n[예시](../specs/X.md)\n```\n"
+        # 백틱 3개를 리터럴로 쓰면 이 계획 문서의 펜스가 깨진다 — chr(96) 으로 만든다
+        fence = chr(96) * 3
+        text = f"{fence}\n[예시](../specs/X.md)\n{fence}\n"
         out, _ = m.rewrite(text, "parfait/android/adr/0031-x.md", "docs/adr/0031-x.md")
         self.assertEqual(out, text)
 
