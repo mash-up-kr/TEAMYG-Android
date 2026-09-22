@@ -158,7 +158,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 `<scratchpad>/test_migrate_links.py`:
 
 ```python
+import tempfile
 import unittest
+from pathlib import Path
 
 import migrate_links as m
 
@@ -271,6 +273,27 @@ class RewriteTest(unittest.TestCase):
         text = "[깃허브](https://github.com/x) 와 [절](#어떤-절)"
         out, _ = m.rewrite(text, "parfait/api/auth.md", "docs/api/auth.md")
         self.assertEqual(out, text)
+
+
+class CopyAllTest(unittest.TestCase):
+    def test_pairs_come_from_source_not_destination(self):
+        """목적지에 이미 있던 문서를 쌍에 쓸어 담지 않는다."""
+        with tempfile.TemporaryDirectory() as t:
+            src_repo, dst_repo = Path(t) / "src", Path(t) / "dst"
+            (src_repo / "parfait/android/adr").mkdir(parents=True)
+            (src_repo / "parfait/android/adr/0001-x.md").write_text("# a", encoding="utf-8")
+            (dst_repo / "docs/adr").mkdir(parents=True)
+            (dst_repo / "docs/adr/pre-existing.md").write_text("# pre", encoding="utf-8")
+
+            m.SRC_REPO, m.DST_REPO = src_repo, dst_repo
+            m.COPY_TREES = [("parfait/android/adr", "docs/adr")]
+            m.COPY_FILES = []
+
+            self.assertEqual(
+                m.copy_all(),
+                [("parfait/android/adr/0001-x.md", "docs/adr/0001-x.md")],
+            )
+            self.assertTrue((dst_repo / "docs/adr/pre-existing.md").is_file())
 
 
 if __name__ == "__main__":
@@ -425,7 +448,13 @@ COPY_FILES = [
 
 
 def copy_all() -> list[tuple[str, str]]:
-    """(원본 repo-relative, 목적지 repo-relative) 쌍 목록을 돌려준다."""
+    """(원본 repo-relative, 목적지 repo-relative) 쌍 목록을 돌려준다.
+
+    쌍은 **원본 트리**를 열거해 만든다. 복사한 뒤 목적지를 glob 하면
+    목적지에 이미 있던 문서까지 쓸어 담아, 존재하지 않는 원본 경로와
+    짝지어 재작성해 버린다(`docs/superpowers/` 에 이 이관과 무관한 문서
+    4개가 이미 있다).
+    """
     pairs = []
     for src_rel, dst_rel in COPY_TREES:
         src, dst = SRC_REPO / src_rel, DST_REPO / dst_rel
@@ -433,9 +462,9 @@ def copy_all() -> list[tuple[str, str]]:
             src, dst, dirs_exist_ok=True,
             ignore=shutil.ignore_patterns("__pycache__", ".DS_Store"),
         )
-        for p in sorted(dst.rglob("*.md")):
-            rel = p.relative_to(DST_REPO).as_posix()
-            pairs.append((src_rel + rel[len(dst_rel):], rel))
+        for p in sorted(src.rglob("*.md")):
+            rel = p.relative_to(src).as_posix()
+            pairs.append((f"{src_rel}/{rel}", f"{dst_rel}/{rel}"))
     for src_rel, dst_rel in COPY_FILES:
         shutil.copy2(SRC_REPO / src_rel, DST_REPO / dst_rel)
         pairs.append((src_rel, dst_rel))
@@ -466,7 +495,7 @@ if __name__ == "__main__":
 cd <scratchpad> && python3 -m unittest test_migrate_links -v
 ```
 
-Expected: PASS, 18개 테스트 전부(`MapTargetTest` 11 · `RewriteTest` 7).
+Expected: PASS, 19개 테스트 전부(`MapTargetTest` 11 · `RewriteTest` 7 · `CopyAllTest` 1).
 
 `test_unknown_target_raises`가 실패하면 `PATH_MAP`에 `parfait/pm`이 잘못 들어간 것이다. `test_skips_code_fence`가 실패하면 `FENCE` 분할이 깨진 것이다.
 
