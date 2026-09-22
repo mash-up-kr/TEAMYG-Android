@@ -1,11 +1,8 @@
-# parfait/android 범위 규약
+# 코드 주석·KDoc 규약
 
-TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`architecture`·`specs`·`plans`·
-`synthesis`·`doc-baseline.md`)가 적용 범위다. 플랫폼 공용인 `parfait/api/`·`parfait/pm/`에는
-적용하지 않는다 — 그쪽 경계는 [`parfait/CLAUDE.md`](index.md)가 적는다.
-
-작업 유형 라우팅·문서 위치는 저장소 루트 [`CLAUDE.md`](../CLAUDE.md)가 정본이고
-여기 중복하지 않는다.
+이 저장소의 Kotlin 코드에 적용되는 규약이다. 문서 트리의 범위 지도는
+[`docs/index.md`](index.md)가 적고, 작업 유형 라우팅은 저장소 루트
+[`CLAUDE.md`](../CLAUDE.md)가 정본이라 여기 중복하지 않는다.
 
 ## 코드 주석·KDoc
 
@@ -103,13 +100,10 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 
 ### 서브에이전트에게 실어 나른다
 
-⚠️ **이 파일은 TJYG-Android에서 일하는 서브에이전트에게 자동으로 닿지 않는다.** CLAUDE.md는
-그 디렉토리 파일을 열 때 로드되는데 구현 서브에이전트는 다른 저장소에서 브리프만 읽는다.
-
-그래서 **구현·리뷰 디스패치 프롬프트의 전역 제약에 이 절의 요지를 넣는다.** 최소한 이 셋:
+구현·리뷰를 서브에이전트에 디스패치할 때 이 문서를 브리프에 링크한다.
+`writing-plans`로 계획을 쓸 때는 계획의 **Global Constraints**에도 넣는다.
+최소한 이 셋은 요지로 실어 나른다:
 
 - 코드가 이미 말하는 것은 쓰지 않는다
 - `@return`·`@param`은 타입·이름이 말하지 못할 때만
 - 다른 컴포넌트의 현재 상태를 단정하지 않는다(낡는다)
-
-`writing-plans`로 계획을 쓸 때는 계획의 **Global Constraints**에도 같은 줄을 넣는다.
