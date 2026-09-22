@@ -466,17 +466,22 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent re
 cd <scratchpad> && python3 migrate_links.py; cd -
 ```
 
-Expected: `파일 254개 재작성 · 링크 해제 7건`
+Expected: `파일 255개 재작성 · 링크 해제 7건`
 
-파일 수가 254가 아니면 복사가 누락된 것이다. 해제 건수가 7이 아니면 `UNLINK_PREFIXES` 판정과 실제가 어긋난 것이다 — 둘 다 멈추고 원인을 본다. `KeyError`가 나면 `PATH_MAP`에 없는 target이 있다는 뜻이고, 예외 메시지가 그 경로를 알려준다.
+255의 내역: `COPY_TREES` 252(specs 110 · plans 81 · adr 34 · architecture 7 · synthesis 3 · api 17) + `COPY_FILES` 3(`doc-baseline.md` · `code-conventions.md` · `index.md`).
+
+파일 수가 255가 아니면 복사가 누락된 것이다. 해제 건수가 7이 아니면 `UNLINK_PREFIXES` 판정과 실제가 어긋난 것이다 — 둘 다 멈추고 원인을 본다. `KeyError`가 나면 `PATH_MAP`에 없는 target이 있다는 뜻이고, 예외 메시지가 그 경로를 알려준다.
 
 - [ ] **Step 3: 파일 수를 원본과 대조한다**
+
+`docs/superpowers/`에는 이관분이 아닌 문서가 이미 4개 있다 — `2026-09-17-wiki-port` 스펙·계획과 이 이관의 스펙·계획이다. 집계에서 뺀다.
 
 ```bash
 SRC=/Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent
 find "$SRC/parfait/android" "$SRC/parfait/api" -name '*.md' | wc -l
 find docs/superpowers/specs docs/superpowers/plans docs/adr docs/architecture \
-     docs/synthesis docs/api -name '*.md' | wc -l
+     docs/synthesis docs/api -name '*.md' \
+  | grep -v '2026-09-17-wiki-port' | grep -v '2026-09-22-parfait-docs-migration' | wc -l
 ```
 
 Expected: 첫 명령 254, 둘째 명령 252. 차이 2는 `doc-baseline.md`와 `CLAUDE.md`(→`code-conventions.md`)가 `docs/` 바로 아래로 갔기 때문이다. 이 둘의 존재를 따로 확인한다:
@@ -1014,10 +1019,8 @@ Expected: PASS. `test_check_links`·`test_search` 양쪽.
 ```bash
 SRC=/Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent
 echo "원본: $(find "$SRC/parfait/android" "$SRC/parfait/api" -name '*.md' | wc -l)"
-echo "사본: $(find docs -name '*.md' -not -path 'docs/superpowers/specs/2026-09-17*' \
-  -not -path 'docs/superpowers/specs/2026-09-22*' \
-  -not -path 'docs/superpowers/plans/2026-09-17*' \
-  -not -path 'docs/superpowers/plans/2026-09-22*' | wc -l)"
+echo "사본: $(find docs -name '*.md' \
+  | grep -v '2026-09-17-wiki-port' | grep -v '2026-09-22-parfait-docs-migration' | wc -l)"
 ```
 
 Expected: 원본 254, 사본 255. 차이 1은 `docs/index.md`(원본 `parfait/index.md`는 `parfait/android`·`parfait/api` 바깥이라 원본 집계에 없다)다.
