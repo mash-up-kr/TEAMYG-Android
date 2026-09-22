@@ -221,16 +221,18 @@ class RewriteTest(unittest.TestCase):
         )
 
     def test_preserves_anchor(self):
-        text = "[타임존](../../api/parfait-group.md#타임존)"
+        # specs/archive 는 깊이 4다 — api 까지 ../../../ 세 단계. 목적지도 깊이 4라 문자열이 같다.
+        text = "[타임존](../../../api/parfait-group.md#타임존)"
         out, _ = m.rewrite(
             text,
             "parfait/android/specs/archive/2026-08-01-x.md",
             "docs/superpowers/specs/archive/2026-08-01-x.md",
         )
-        self.assertEqual(out, "[타임존](../../api/parfait-group.md#타임존)")
+        self.assertEqual(out, "[타임존](../../../api/parfait-group.md#타임존)")
 
     def test_unlinks_missing_wiki_concept(self):
-        text = "정책은 [누끼 따기](../../wiki/concepts/누끼-따기.md)를 따른다."
+        # specs 는 깊이 3이라 저장소 루트까지 ../../../ 다. 원본 문서가 쓰는 깊이가 이것이다.
+        text = "정책은 [누끼 따기](../../../wiki/concepts/누끼-따기.md)를 따른다."
         out, unlinked = m.rewrite(
             text, "parfait/android/specs/README.md", "docs/superpowers/specs/README.md"
         )
