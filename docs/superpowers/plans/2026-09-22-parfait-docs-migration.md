@@ -27,7 +27,7 @@
 
 1. **코드 펜스 안의 예시 링크가 재작성되면 문서가 거짓이 된다** — 펜스 안 `](...)`는 링크가 아니라 예시다. Task 2에서 펜스 제외를 테스트한다.
 2. **앵커가 유실되면 링크가 문서 첫 줄로 간다** — `](../specs/X.md#절이름)`의 `#절이름`이 보존돼야 한다. Task 2에서 테스트한다.
-3. **매핑되지 않은 target이 조용히 통과하면 깨진 링크가 남는다** — `PATH_MAP`에도 `UNLINK_PREFIXES`에도 없는 target은 예외를 던져야 한다. Task 2에서 테스트한다.
+3. **매핑되지 않은 target이 조용히 통과하면 깨진 링크가 남는다** — `PATH_MAP`·`UNLINK_EXACT`·`UNLINK_PREFIXES` 어디에도 없는 target은 예외를 던져야 한다. Task 2에서 테스트한다. 정확일치 해제가 접두사로 새어 하위를 삼키지 않는지도 함께 본다.
 4. **파일명의 유니코드 정규화 차이로 복사본이 원본과 달라질 수 있다** — 한글 파일명이 많다(`누끼-따기.md` 등). Task 3에서 파일 수 대조로 잡는다.
 5. **`search.py`가 frontmatter 없는 문서에서 죽으면 검색이 통째로 실패한다** — `README.md`·`template.md`에는 frontmatter가 없다. Task 6에서 테스트한다.
 
@@ -149,7 +149,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Produces:
   - `PATH_MAP: dict[str, str]` — 원본 repo-relative 경로 → 목적지 repo-relative 경로
   - `UNLINK_PREFIXES: tuple[str, ...]` — 대응 대상이 없어 링크를 해제할 target 접두사
-  - `map_target(old_target: str) -> str | None` — 매핑된 목적지 경로. `UNLINK_PREFIXES`에 걸리면 `None`. 어디에도 없으면 `KeyError`
+  - `UNLINK_EXACT: tuple[str, ...]` — 접두사로 쓰면 하위를 전부 삼켜 버리는 **정확일치** 해제 대상. 디렉토리 자체를 가리키는 링크가 여기 온다
+  - `map_target(old_target: str) -> str | None` — 매핑된 목적지 경로. `UNLINK_EXACT`·`UNLINK_PREFIXES`에 걸리면 `None`. 어디에도 없으면 `KeyError`
   - `rewrite(text: str, old_file: str, new_file: str) -> tuple[str, int]` — 재작성된 본문과 링크 해제 건수. `old_file`·`new_file`은 각 저장소 루트 기준 상대 경로 문자열
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
@@ -189,9 +190,29 @@ class MapTargetTest(unittest.TestCase):
     def test_unlinks_wiki_concept(self):
         self.assertIsNone(m.map_target("wiki/concepts/누끼-따기.md"))
 
+    def test_maps_script_dir(self):
+        # Task 1 이 docs/script/README.md 를 이미 만들었으므로 이 링크는 살아 있다
+        self.assertEqual(m.map_target("parfait/script/README.md"), "docs/script/README.md")
+
+    def test_unlinks_out_of_scope_trees(self):
+        # pm·blog 는 이관 범위 밖이라 목적지가 없다
+        self.assertIsNone(m.map_target("parfait/pm/README.md"))
+        self.assertIsNone(m.map_target("parfait/blog/README.md"))
+
+    def test_unlinks_bare_android_dir(self):
+        # 디렉토리 자체를 가리키는 링크. 목적지에서 세 갈래로 흩어져 대응이 없다.
+        self.assertIsNone(m.map_target("parfait/android"))
+
+    def test_exact_unlink_does_not_swallow_children(self):
+        # 정확일치여야 한다 — 접두사로 처리하면 android 하위 전부가 해제된다
+        self.assertEqual(
+            m.map_target("parfait/android/adr/0004-hilt-ksp-di.md"),
+            "docs/adr/0004-hilt-ksp-di.md",
+        )
+
     def test_unknown_target_raises(self):
         with self.assertRaises(KeyError):
-            m.map_target("parfait/pm/README.md")
+            m.map_target("parfait/bot/README.md")
 
 
 class RewriteTest(unittest.TestCase):
@@ -298,6 +319,7 @@ PATH_MAP = {
     "parfait/android/doc-baseline.md": "docs/doc-baseline.md",
     "parfait/android/CLAUDE.md": "docs/code-conventions.md",
     "parfait/api": "docs/api",
+    "parfait/script": "docs/script",
     "parfait/index.md": "docs/index.md",
     # 범위 지도 역할은 docs/index.md 가 이어받는다
     "parfait/CLAUDE.md": "docs/index.md",
@@ -306,7 +328,13 @@ PATH_MAP = {
 }
 
 # 이 저장소에 대응 페이지가 없는 target. 링크를 해제하고 텍스트만 남긴다.
-UNLINK_PREFIXES = ("wiki/concepts/",)
+# wiki/concepts/ 는 아직 ingest 되지 않은 개념, parfait/pm·blog 는 이관 범위 밖이다.
+UNLINK_PREFIXES = ("wiki/concepts/", "parfait/pm/", "parfait/blog/")
+
+# 접두사로 쓰면 하위를 전부 삼켜 버리는 정확일치 해제 대상.
+# `parfait/android` 는 디렉토리 링크이고, 목적지에서는 superpowers·adr·architecture 로
+# 흩어져 대응하는 한 경로가 없다. 접두사로 넣으면 android 하위 235개가 전부 해제된다.
+UNLINK_EXACT = ("parfait/android",)
 
 EXTERNAL = ("http://", "https://", "mailto:", "tel:", "data:")
 
@@ -318,8 +346,10 @@ LINK = re.compile(r"\[([^\]]*)\]\(\s*([^)\s]+?)\s*(?:\s+\"[^\"]*\")?\)")
 def map_target(old_target: str) -> str | None:
     """원본 repo-relative target → 목적지 repo-relative target.
 
-    UNLINK_PREFIXES 에 걸리면 None. 어디에도 없으면 KeyError.
+    UNLINK_EXACT·UNLINK_PREFIXES 에 걸리면 None. 어디에도 없으면 KeyError.
     """
+    if old_target in UNLINK_EXACT:
+        return None
     for prefix in UNLINK_PREFIXES:
         if old_target.startswith(prefix):
             return None
@@ -436,7 +466,7 @@ if __name__ == "__main__":
 cd <scratchpad> && python3 -m unittest test_migrate_links -v
 ```
 
-Expected: PASS, 14개 테스트 전부.
+Expected: PASS, 18개 테스트 전부(`MapTargetTest` 11 · `RewriteTest` 7).
 
 `test_unknown_target_raises`가 실패하면 `PATH_MAP`에 `parfait/pm`이 잘못 들어간 것이다. `test_skips_code_fence`가 실패하면 `FENCE` 분할이 깨진 것이다.
 
@@ -470,11 +500,13 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent re
 cd <scratchpad> && python3 migrate_links.py; cd -
 ```
 
-Expected: `파일 255개 재작성 · 링크 해제 7건`
+Expected: `파일 255개 재작성 · 링크 해제 12건`
 
 255의 내역: `COPY_TREES` 252(specs 110 · plans 81 · adr 34 · architecture 7 · synthesis 3 · api 17) + `COPY_FILES` 3(`doc-baseline.md` · `code-conventions.md` · `index.md`).
 
-파일 수가 255가 아니면 복사가 누락된 것이다. 해제 건수가 7이 아니면 `UNLINK_PREFIXES` 판정과 실제가 어긋난 것이다 — 둘 다 멈추고 원인을 본다. `KeyError`가 나면 `PATH_MAP`에 없는 target이 있다는 뜻이고, 예외 메시지가 그 경로를 알려준다.
+해제 12건의 내역: 아직 ingest 되지 않은 위키 개념 7건(`누끼-따기` 5 · `토핑` 1 · `캘린더-컴포넌트` 1) + 이관 범위 밖 5건(`parfait/index.md` 안의 `pm/` 2 · `blog/` 2 · 디렉토리 링크 `android/` 1).
+
+파일 수가 255가 아니면 복사가 누락된 것이다. 해제 건수가 12가 아니면 판정과 실제가 어긋난 것이다 — 둘 다 멈추고 원인을 본다. `KeyError`가 나면 `PATH_MAP`·`UNLINK_EXACT`·`UNLINK_PREFIXES` 어디에도 없는 target이 있다는 뜻이고, 예외 메시지가 그 경로를 알려준다.
 
 - [ ] **Step 3: 파일 수를 원본과 대조한다**
 
@@ -531,7 +563,7 @@ Expected: exit 0, `깨진 링크 0건`.
 
 깨진 링크가 나오면 출력이 파일·줄·target을 준다. `PATH_MAP`에 빠진 경로인지 확인하고, 도구를 고친 뒤 **복사본을 지우고 Step 2부터 다시 돌린다**(`git clean -fd docs/` 후 재실행). 손으로 개별 링크를 고치지 않는다 — 3,200건 중 하나를 손으로 고치면 나머지도 손으로 고치게 된다.
 
-- [ ] **Step 7: 링크 해제된 7곳을 미결로 등록한다**
+- [ ] **Step 7: 위키 개념 때문에 해제된 7곳을 미결로 등록한다**
 
 `docs/synthesis/open-questions.md` 끝에 항목을 추가한다. 이 파일의 기존 항목 형식을 먼저 읽고 그 형식에 맞춘다.
 
