@@ -43,6 +43,29 @@ class CollectTest(unittest.TestCase):
             self.assertEqual(doc["id"], "README")
             self.assertEqual(doc["title"], "")
 
+    def test_field_reads_whole_block_list(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "x.md"
+            p.write_text(
+                "---\nid: x\ntitle: 제목\nrelated_code:\n"
+                "  - settings.gradle.kts\n  - TestConfig.kt#setConfigTestUnit\n---\n# 본문\n",
+                encoding="utf-8",
+            )
+            doc = search.parse_doc(p, archived=False)
+            self.assertIn("settings.gradle.kts", doc["code"])
+            self.assertIn("TestConfig.kt#setConfigTestUnit", doc["code"])
+
+    def test_empty_field_does_not_swallow_the_next_one(self):
+        with tempfile.TemporaryDirectory() as t:
+            p = Path(t) / "y.md"
+            p.write_text(
+                "---\nid: y\ntitle: 제목\nrelated_adr:\nrelated_spec: login-debug-mode\n---\n# 본문\n",
+                encoding="utf-8",
+            )
+            doc = search.parse_doc(p, archived=False)
+            self.assertNotIn("related_spec", doc["code"])
+            self.assertIn("login-debug-mode", doc["code"])
+
     def test_marks_archived(self):
         with tempfile.TemporaryDirectory() as t:
             p = Path(t) / "archive" / "old.md"
@@ -51,6 +74,12 @@ class CollectTest(unittest.TestCase):
 
 
 class SearchTest(unittest.TestCase):
+    def setUp(self):
+        # 모듈 전역을 건드리므로 반드시 되돌린다 — 이 클래스가 마지막으로
+        # 실행되는 것에 기대면 테스트 파일이 하나 더 생기는 순간 깨진다.
+        saved = search.DOC_ROOTS
+        self.addCleanup(lambda: setattr(search, "DOC_ROOTS", saved))
+
     def test_ranks_relevant_first(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)

@@ -30,8 +30,18 @@ def tokenize(s):
 
 
 def _field(block, key):
-    m = re.search(rf"^{key}:\s*(.+)$", block, re.M)
-    return m.group(1).strip().strip("\"'") if m else ""
+    """frontmatter 에서 key 의 값을 뽑는다. 블록 리스트는 한 줄로 이어 붙인다.
+
+    `\s*` 를 쓰면 개행을 넘어가 두 가지가 깨진다 — 블록 리스트
+    (`related_code:` 다음 줄부터 `- item`)는 첫 항목만 잡히고, 값이 빈 필드
+    (`related_adr:`)는 **다음 필드의 값을 삼킨다**. 그래서 같은 줄 공백만
+    허용하고(`[ \t]*`), 들여쓰기된 이어지는 줄만 값에 포함한다.
+    """
+    m = re.search(rf"^{key}:[ \t]*(.*(?:\n[ \t]+.*)*)$", block, re.M)
+    if not m:
+        return ""
+    parts = [ln.strip().lstrip("-").strip() for ln in m.group(1).splitlines()]
+    return " ".join(p for p in parts if p).strip("[]").strip("\"'")
 
 
 def parse_doc(md_path, archived):
