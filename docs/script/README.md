@@ -14,12 +14,12 @@
 | 스크립트 | 용도 | 호출 스킬 |
 |---|---|---|
 | `check_links.py` | 마크다운 상대 링크 전수 resolve 검사(디렉토리 이동·아카이브 이동 후 `../` 깊이 확인) | _(없음 — 손으로 실행)_ |
-| `search.py` | 자연어 쿼리로 구현 문서(스펙·계획·ADR·아키텍처) 검색 | _(없음 — 손으로 실행)_ |
+| `search.py` | 자연어 쿼리로 구현 문서(스펙·계획·ADR·아키텍처·API 계약·synthesis) 검색 | _(없음 — 손으로 실행)_ |
 
 ## search
 
-`docs/superpowers/specs`·`docs/superpowers/plans`·`docs/adr`·`docs/architecture`
-네 디렉토리를 재귀로 훑어 각 마크다운의 frontmatter(`id`·`title`·`tags`·
+`docs/superpowers/specs`·`docs/superpowers/plans`·`docs/adr`·`docs/architecture`·
+`docs/api`·`docs/synthesis` 여섯 디렉토리를 재귀로 훑어 각 마크다운의 frontmatter(`id`·`title`·`tags`·
 `related_code`·`related_spec`·`related_adr`)와 헤딩을 색인한다. `archive/`
 하위 문서도 검색 대상에 포함하고, 결과에 `[archived]`로 표시한다 — 아카이브가
 과거 판단의 근거를 담은 문서 대다수라서 제외하면 검색의 요점을 잃는다.

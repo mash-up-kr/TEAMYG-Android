@@ -20,6 +20,8 @@ DOC_ROOTS = [
     REPO_ROOT / "docs" / "superpowers" / "plans",
     REPO_ROOT / "docs" / "adr",
     REPO_ROOT / "docs" / "architecture",
+    REPO_ROOT / "docs" / "api",
+    REPO_ROOT / "docs" / "synthesis",
 ]
 
 FRONTMATTER = re.compile(r"^---\n(.*?)\n---", re.S)

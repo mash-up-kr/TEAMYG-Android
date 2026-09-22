@@ -3,6 +3,11 @@
 > parfait 문서(spec/plan/architecture/adr/open-questions)를 **어느 `develop` 커밋 기준으로 마지막 검증했는지** 기록하는 단일 출처(SoT).
 > 사용자가 "develop 기준 문서 점검"을 요청하면, 아래 기준선부터 현재 `origin/develop`까지의 **delta(신규 머지)만** 감사하고, 끝나면 기준선을 갱신한다.
 
+> 이 기준선과 축이 다른 또 하나의 기준선이 있다 — 이관 자체의 기준점(원본 저장소
+> 커밋), [`docs/index.md`](index.md) 머리말 인용문에 있다. 이쪽은 "코드 대비 문서가
+> 최신인가", 저쪽은 "이 트리를 언제 어디서 복사해 왔는가"를 잰다. 서로 다른 것을
+> 재므로 하나로 합치지 않는다.
+
 ## 현재 기준선
 - **repo**: `TJYG-Android` (`mash-up-kr/TEAMYG-Android`) `develop`
 - **커밋**: `143cda87b` (`Merge pull request #511 from mash-up-kr/feature/ai/llm-wiki-document`)

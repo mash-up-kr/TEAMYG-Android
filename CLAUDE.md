@@ -32,6 +32,9 @@
 문서를 옮기거나 `archive/`로 내린 뒤에는
 `python3 docs/script/check_links.py docs`로 상대 링크를 전수 확인한다(깨지면 exit 1).
 
+코드 작업(설계 → 계획 → 구현 → 리뷰)은 superpowers 체인으로 돈다. 그 산출물인 설계 스펙과
+구현 계획은 `docs/superpowers/`에 남는다.
+
 ## 위키 (`wiki/`)
 
 `wiki/`는 parfait의 **제품 스펙·기획**을 추적하는 마크다운 위키다. 무엇을 만들기로

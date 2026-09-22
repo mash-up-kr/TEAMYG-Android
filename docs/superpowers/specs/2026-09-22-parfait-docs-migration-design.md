@@ -73,7 +73,8 @@ tags: [plan, parfait, login, debug]
 
 `tokenize`·`score`는 그대로 두고 **수집기만 교체**한다.
 
-- 대상: `docs/superpowers/specs`, `docs/superpowers/plans`, `docs/adr`, `docs/architecture`
+- 대상: `docs/superpowers/specs`, `docs/superpowers/plans`, `docs/adr`, `docs/architecture`,
+  `docs/api`, `docs/synthesis`
 - `archive/` 포함. 완료분 181건이 선례 검색의 본체다. 결과 줄에 archived 표시를 붙인다
 - 문서 키: 디렉토리 이름 대신 frontmatter `id`, 없으면 파일명 stem
 - 점수 필드: `title`·`tags`·`related_code`를 기존 `name`·`desc`·`headings` 자리에 대응시킨다
@@ -129,7 +130,7 @@ docs/
     specs/                  ← parfait/android/specs      (3 + README + template + archive 105)
     plans/                  ← parfait/android/plans      (3 + README + template + archive 76)
   adr/                      ← parfait/android/adr        (32 + README + template)
-  architecture/             ← parfait/android/architecture (6 + README + template)
+  architecture/             ← parfait/android/architecture (5 + README + template)
   synthesis/                ← parfait/android/synthesis  (open-questions + lint 2)
   api/                      ← parfait/api                (11 + template + spec/ 4 + README)
   script/                   ← 아래 3.2
@@ -199,6 +200,18 @@ resolve 되지 않는 링크가 11건 있다. 처음에는 원본에 이미 깨�
 
 이 오진의 원인은 초기 스캔 스크립트가 펜스를 건너뛰지 않은 것이다. 링크를 찾는 코드는
 `check_links.py` 와 같은 펜스 규칙을 써야 한다.
+
+**반대 방향도 확인했다.** 원본에서는 유효했는데 이관으로 디렉토리 깊이가 한 단계
+늘면서 이 저장소에서 깨진 펜스 링크가 8건 있다 — `../../adr/`·`../../synthesis/`·
+`../../doc-baseline.md` 형태로, 아래 세 파일에 있다.
+
+- `docs/superpowers/plans/archive/2026-08-27-canvas-polling.md`
+- `docs/superpowers/plans/archive/2026-08-31-topping-batch-update-and-past-canvas-status.md`
+- `docs/superpowers/plans/archive/2026-08-01-parfait-api-contract-docs.md`
+
+세 파일 모두 완료된 작업의 아카이브 기록이다. 위와 같은 논리로 **고치지 않는다** — 당시
+실행된 절차를 펜스가 그대로 담고 있고, 깊이를 맞춰 고치면 역사 문서가 그 시점에 실행되지
+않은 경로를 가리키게 된다. `check_links.py`는 이 8건도 펜스 안이라 애초에 보지 않는다.
 
 ### 4.2 `parfait/index.md`가 가리키는 이관 범위 밖 경로
 
