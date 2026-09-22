@@ -555,37 +555,7 @@ Expected: 첫 명령 254, 둘째 명령 252. 차이 2는 `doc-baseline.md`와 `C
 ls docs/doc-baseline.md docs/code-conventions.md docs/index.md
 ```
 
-- [ ] **Step 4: 원본에서 이미 깨져 있던 링크 11건을 고친다**
-
-이 11건은 이관이 만든 것이 아니다. 원본 저장소에서도 깨져 있다 — 두 문서가 다른 디렉토리에서 작성된 뒤 옮겨지면서 상대 깊이가 따라가지 않았다. 원본은 읽기 전용이므로 사본에서만 고친다.
-
-`docs/superpowers/plans/2026-08-05-orchestration-session-pipeline.md` — 스펙을 `parfait/specs/`로 가리킨다. 같은 계층의 `specs/`가 맞다.
-
-```bash
-sed -i '' 's|](parfait/specs/2026-08-05-orchestration-session-pipeline.md)|](../specs/2026-08-05-orchestration-session-pipeline.md)|g' \
-  docs/superpowers/plans/2026-08-05-orchestration-session-pipeline.md
-```
-
-`docs/superpowers/plans/archive/2026-08-01-parfait-api-contract-docs.md` — API 계약 문서를 같은 디렉토리 형제(`conventions.md`)나 `api/` 하위로 가리킨다. `docs/superpowers/plans/archive/`에서 `docs/api/`까지는 `../../../api/`다.
-
-```bash
-F=docs/superpowers/plans/archive/2026-08-01-parfait-api-contract-docs.md
-sed -i '' -E 's@\]\(api/([a-z-]+\.md)\)@](../../../api/\1)@g' "$F"
-sed -i '' -E 's@\]\((conventions|auth|parfait|parfait-group|server-baseline|template|README)\.md\)@](../../../api/\1.md)@g' "$F"
-```
-
-구분자가 `/`나 `|`가 아니라 `@`인 이유는 정규식 안에 교대 `|`가 있어서다. `|`를 구분자로
-쓰면 macOS 기본 BSD sed 가 `parentheses not balanced` 로 거부한다.
-
-- [ ] **Step 5: 고친 링크가 실제로 resolve 되는지 본다**
-
-```bash
-python3 docs/script/check_links.py docs/superpowers/plans
-```
-
-Expected: exit 0. 여기서 남는 것이 있으면 `sed` 패턴이 일부를 놓친 것이다 — 출력의 target을 보고 패턴을 넓힌다.
-
-- [ ] **Step 6: 링크 게이트를 돌린다**
+- [ ] **Step 4: 게이트를 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs
@@ -595,7 +565,7 @@ Expected: exit 0, `깨진 링크 0건`.
 
 깨진 링크가 나오면 출력이 파일·줄·target을 준다. `PATH_MAP`에 빠진 경로인지 확인하고, 도구를 고친 뒤 **복사본을 지우고 Step 2부터 다시 돌린다**(`git clean -fd docs/` 후 재실행). 손으로 개별 링크를 고치지 않는다 — 3,200건 중 하나를 손으로 고치면 나머지도 손으로 고치게 된다.
 
-- [ ] **Step 7: 위키 개념 때문에 해제된 7곳을 미결로 등록한다**
+- [ ] **Step 5: 위키 개념 때문에 해제된 7곳을 미결로 등록한다**
 
 `docs/synthesis/open-questions.md` 끝에 항목을 추가한다. 이 파일의 기존 항목 형식을 먼저 읽고 그 형식에 맞춘다.
 
@@ -607,15 +577,15 @@ Expected: exit 0, `깨진 링크 0건`.
 - `docs/superpowers/specs/archive/2026-09-11-g001-group-list-topping-border.md`
 - `docs/architecture/design-system.md`
 
-- [ ] **Step 8: 게이트를 다시 돌린다**
+- [ ] **Step 6: 게이트를 다시 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs
 ```
 
-Expected: exit 0. Step 7에서 새 링크를 넣었다면 그것도 검사된다.
+Expected: exit 0. Step 5에서 새 링크를 넣었다면 그것도 검사된다.
 
-- [ ] **Step 9: 커밋**
+- [ ] **Step 7: 커밋**
 
 ```bash
 git add docs/
@@ -623,10 +593,9 @@ git commit -m "docs: migrate the parfait implementation docs into this repo
 
 Copy specs, plans, ADRs, architecture, synthesis and the API contract
 docs from the parfait docs repo, rewriting every relative link for the
-new layout. Seven links to wiki concept pages that do not exist here
-are unlinked and tracked in docs/synthesis/open-questions.md. Eleven
-links that were already broken in the source repo are repaired here,
-since the copy has to pass the link gate.
+new layout. Twelve links are unlinked: seven to wiki concept pages that
+do not exist here, tracked in docs/synthesis/open-questions.md, and five
+to directories this migration leaves behind.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
