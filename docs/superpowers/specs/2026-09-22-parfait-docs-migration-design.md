@@ -132,7 +132,7 @@ docs/
   adr/                      ← parfait/android/adr        (32 + README + template)
   architecture/             ← parfait/android/architecture (5 + README + template)
   synthesis/                ← parfait/android/synthesis  (open-questions + lint 2)
-  api/                      ← parfait/api                (11 + template + spec/ 4 + README)
+  api/                      ← parfait/api                (10 + template + README + spec/ 4 + README = 17)
   script/                   ← 아래 3.2
 ```
 
@@ -265,7 +265,7 @@ resolve 되지 않는 링크가 11건 있다. 처음에는 원본에 이미 깨�
 ## 7. 검증
 
 1. `python3 docs/script/check_links.py docs` — exit 0
-2. `python3 docs/script/test_search.py` (또는 pytest) — 개작된 수집기가 네 디렉토리에서
+2. `python3 docs/script/test_search.py` (또는 pytest) — 개작된 수집기가 여섯 디렉토리에서
    문서를 찾고, `id`·`title`·`tags`로 순위를 매기는지
 3. `python3 docs/script/test_check_links.py`
 4. 이관 파일 수가 원본과 일치하는지 (2.1에서 제외한 4개 제외)

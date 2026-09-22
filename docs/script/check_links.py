@@ -11,9 +11,9 @@
 - repo 루트 = Path(__file__).resolve().parents[2] 기준 상대 경로.
 - 깨진 링크가 하나라도 있으면 exit 1.
 
-검사 대상은 `](경로)` 꼴의 **상대 링크**다. URL(http/https/mailto)·앵커 전용(`#x`)·
-절대 경로는 건너뛴다. `[[wikilink]]`는 Obsidian이 파일명으로 resolve 하므로 대상이
-아니다(위키 쪽 검사는 `wiki/script/lint.py`가 한다).
+검사 대상은 `](경로)` 꼴의 **상대 링크**와 raw HTML의 `<img src="…">`·`<a href="…">`다.
+URL(http/https/mailto)·앵커 전용(`#x`)·절대 경로는 건너뛴다. `[[wikilink]]`는
+Obsidian이 파일명으로 resolve 하므로 대상이 아니다(위키 쪽 검사는 `wiki/script/lint.py`가 한다).
 
 디렉토리를 옮긴 뒤 `../` 깊이가 맞는지 확인하는 것이 주 용도다. 아카이브 이동
 (`specs/` → `specs/archive/`)도 같은 종류의 작업이라 같은 검사가 쓰인다.
@@ -28,11 +28,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SKIP_DIRS = {".git", ".superpowers", "node_modules", "__pycache__", ".venv", "venv"}
 
 # ```...``` 펜스와 `인라인 코드` 안의 예시는 실제 링크가 아니다
-FENCE = re.compile(r"```.*?```", re.S)
 INLINE_CODE = re.compile(r"`[^`\n]*`")
+# 펜스 여는/닫는 줄: 들여쓰기 0~3칸 + 백틱 3개 이상 또는 물결 3개 이상
+FENCE_LINE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
 # ](...) 꼴. 링크 텍스트의 중첩 괄호는 다루지 않는다 — 경로에 ')' 가 없다는 가정.
 # 앞이 ']' 이면 `[[wikilink]](설명)` 이라 링크가 아니다
 LINK = re.compile(r"(?<!\])\]\(\s*([^)\s]+?)\s*(?:\s+\"[^\"]*\")?\)")
+# 마크다운 링크 문법을 안 쓰는 raw HTML의 <img src="…">·<a href="…">
+HTML_ATTR = re.compile(r"""<[a-zA-Z][^>]*?\s(?:src|href)\s*=\s*["']([^"']+)["']""")
 
 EXTERNAL = ("http://", "https://", "mailto:", "tel:", "data:")
 
@@ -50,12 +53,35 @@ def is_checkable(target: str) -> bool:
     return True
 
 
+def fence_spans(lines):
+    """닫힌 펜스의 (시작, 끝) 줄 인덱스. 안 닫힌 여는 마커는 펜스로 치지 않는다.
+
+    게이트는 가리는 쪽이 아니라 검사하는 쪽으로 실패해야 한다 — 떠돌이 백틱
+    하나가 뒤따르는 진짜 링크를 통째로 감추는 것이 이전 구현의 결함이었다.
+    """
+    spans = []
+    open_i = None
+    marker = None
+    for i, line in enumerate(lines):
+        m = FENCE_LINE.match(line)
+        if not m:
+            continue
+        tok = m.group(1)
+        if open_i is None:
+            open_i, marker = i, tok
+        elif tok[0] == marker[0] and len(tok) >= len(marker):
+            spans.append((open_i, i))
+            open_i = marker = None
+    return spans
+
+
 def blank_out(text: str) -> str:
     """코드 펜스·인라인 코드를 줄 수를 지킨 채 지운다 — 줄 번호가 어긋나지 않게."""
-    def keep_newlines(match: re.Match) -> str:
-        return "\n" * match.group(0).count("\n")
-
-    return INLINE_CODE.sub("", FENCE.sub(keep_newlines, text))
+    lines = text.split("\n")
+    for start, end in fence_spans(lines):
+        for i in range(start, end + 1):
+            lines[i] = ""
+    return INLINE_CODE.sub("", "\n".join(lines))
 
 
 def iter_markdown(roots: list[Path]):
@@ -78,7 +104,8 @@ def broken_links(path: Path) -> list[tuple[int, str, Path]]:
 
     found = []
     for lineno, line in enumerate(blank_out(text).splitlines(), start=1):
-        for target in LINK.findall(line):
+        targets = LINK.findall(line) + HTML_ATTR.findall(line)
+        for target in targets:
             if not is_checkable(target):
                 continue
             # 앵커·쿼리를 떼고 퍼센트 인코딩된 공백만 되돌린다

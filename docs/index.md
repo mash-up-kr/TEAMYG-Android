@@ -314,7 +314,7 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
 | 토핑 만들기 흐름 상태(초안 SSOT) | [ADR-0026](adr/0026-topping-draft-datastore-ssot.md) |
 | 화면 방향(세로 고정)·대화면 예외 | [ADR-0027](adr/0027-portrait-orientation-lock.md) |
 | 시스템바 아이콘 색·다크모드 미지원 | [ADR-0028](adr/0028-system-bar-light-fixed.md) |
-| Crashlytics·Analytics·Firebase 설정 + **푸시(FCM)** (2026-08-22 철회 → **2026-09-05 되살림**(#446·#447)에 이어 **#450이 기기 토큰 등록과 알림 권한 안내까지 채웠다** — 등록은 세션 축 넷, 권한은 A-004·A-005 완료 직후, API 33 미만은 허용. OQ-P-341·358 해소. ⚠️ 쓰고 있는 FCM API 셋이 deprecated이나 서버가 선행 조건이라 등록 토큰 축에 남는다 — OQ-P-362) | [ADR-0013](adr/0013-firebase-fcm-crashlytics.md) |
+| Crashlytics·Analytics·Firebase 설정 + **푸시(FCM)** (2026-08-22 철회 → **2026-09-05 되살림**(#446·#447)에 이어 **#450이 기기 토큰 등록과 알림 권한 안내까지 채웠다** — 등록은 세션 축 넷, 권한은 A-004·A-005 완료 직후, API 33 미만은 허용. OQ-P-341·358 해소. ⚠️ 쓰고 있는 FCM API 셋이 deprecated이나 서버가 선행 조건이라 등록 토큰 축에 남는다 — OQ-P-362) | [ADR-0013](adr/0013-firebase-fcm-crashlytics.md) + [ADR-0031](adr/0031-analytics-central-screen-mapping.md) |
 | 로깅·Logger 추상화(Kermit) | [ADR-0014](adr/0014-logging-abstraction-kermit.md) |
 | 유효성 결과·에러 문자열 다국어 매핑(domain 의미↔표시 분리) | [ADR-0016](adr/0016-domain-result-presentation-string-mapping.md) + [state-management](architecture/state-management.md) |
 | 구현 직전 기능·컴포넌트 설계 스펙 | [specs/README.md](superpowers/specs/README.md) |
@@ -343,7 +343,7 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
 - **[`api/`](api/README.md)** — 서버(`mash-up-kr/TEAMYG-SERVER`) API 계약 스냅샷 + 플랫폼별 적용 상태.
   정본은 서버 코드이고 이 디렉토리는 미러다. 추적 브랜치는 서버 **`main`**(TJYG-Android의 `develop`과 다름).
   계약 절은 플랫폼과 무관하고 Android가 그것을 어떻게 받는지는 같은 문서의 「Android 매핑」 절에 적는다.
-  기준선·갱신 절차는 [api/server-baseline.md](api/server-baseline.md), 반복 워크플로는 스킬 `sync-teamyg-server-api`.
+  기준선·갱신 절차는 [api/server-baseline.md](api/server-baseline.md) — 이 저장소에는 반복 워크플로 스킬이 없어 수동으로 갱신한다.
 - **[`script/`](script/README.md)** — 파이썬 툴링 홈(스킬 호출 로직·유틸, stdlib 전용). 템플릿: `_script-template.py`.
   링크 깊이 검사는 `python3 docs/script/check_links.py docs`.
 

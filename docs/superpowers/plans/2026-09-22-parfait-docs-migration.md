@@ -68,7 +68,7 @@
 - Consumes: 없음 (첫 태스크)
 - Produces: `python3 docs/script/check_links.py <경로...>` — 깨진 링크가 있으면 stdout에 `파일:줄: 깨진 링크 '...' → /절대/경로` 를 출력하고 exit 1, 없으면 exit 0. 이후 모든 태스크가 이 명령을 게이트로 쓴다.
 
-- [ ] **Step 1: 원본 스크립트를 복사한다**
+- [x] **Step 1: 원본 스크립트를 복사한다**
 
 ```bash
 SRC=/Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent/parfait/script
@@ -79,7 +79,7 @@ cp "$SRC/check_links.py" "$SRC/test_check_links.py" "$SRC/_script-template.py" \
 
 `oq_sync.py`·`vendor.py`·`test_oq_sync.py`·`test_vendor.py`·`SKILL.template.md`·`search.py`는 복사하지 않는다. `search.py`는 Task 6이 개작본으로 만든다.
 
-- [ ] **Step 2: 복사된 파일 목록을 확인한다**
+- [x] **Step 2: 복사된 파일 목록을 확인한다**
 
 ```bash
 ls docs/script/
@@ -87,7 +87,7 @@ ls docs/script/
 
 Expected: `.gitignore  README.md  _script-template.py  check_links.py  test_check_links.py` 다섯 개. `__pycache__`가 딸려 왔으면 지운다 (`rm -rf docs/script/__pycache__`).
 
-- [ ] **Step 3: 테스트를 돌려 통과를 확인한다**
+- [x] **Step 3: 테스트를 돌려 통과를 확인한다**
 
 ```bash
 cd docs/script && python3 -m unittest test_check_links -v; cd -
@@ -95,7 +95,7 @@ cd docs/script && python3 -m unittest test_check_links -v; cd -
 
 Expected: PASS. `REPO_ROOT = parents[2]`가 `docs/script/check_links.py` 기준으로도 저장소 루트라서 수정 없이 돈다.
 
-- [ ] **Step 4: docstring의 용법 경로를 고친다**
+- [x] **Step 4: docstring의 용법 경로를 고친다**
 
 `docs/script/check_links.py` 상단 docstring에서 `parfait/script/check_links.py`를 `docs/script/check_links.py`로 바꾼다. 세 줄이다.
 
@@ -108,11 +108,11 @@ Expected: PASS. `REPO_ROOT = parents[2]`가 `docs/script/check_links.py` 기준�
 
 같은 docstring의 마지막 문단에 있는 `wiki/script/lint.py` 언급은 이 저장소에도 그 파일이 있으므로 그대로 둔다.
 
-- [ ] **Step 5: `docs/script/README.md`에서 빠진 스크립트 절을 지운다**
+- [x] **Step 5: `docs/script/README.md`에서 빠진 스크립트 절을 지운다**
 
 `oq_sync`·`vendor`·`search`를 설명하는 절을 삭제한다. `search`는 Task 6에서 개작본 설명으로 되살린다. 남는 것은 `check_links`와 스크립트 작성 규약뿐이다. 용법 예시의 `parfait/script/` 경로도 `docs/script/`로 고친다.
 
-- [ ] **Step 6: 현재 저장소에서 게이트가 초록인지 확인한다**
+- [x] **Step 6: 현재 저장소에서 게이트가 초록인지 확인한다**
 
 ```bash
 python3 docs/script/check_links.py docs
@@ -120,7 +120,7 @@ python3 docs/script/check_links.py docs
 
 Expected: exit 0. 이 시점의 `docs/`에는 이관분이 아직 없고 기존 문서만 있다. 여기서 이미 깨진 링크가 나오면 **이관과 무관한 기존 문제**다 — 보고하고, 고치지 말고 다음 스텝으로 간다(범위 밖).
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 git add docs/script
@@ -153,7 +153,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - `map_target(old_target: str) -> str | None` — 매핑된 목적지 경로. `UNLINK_EXACT`·`UNLINK_PREFIXES`에 걸리면 `None`. 어디에도 없으면 `KeyError`
   - `rewrite(text: str, old_file: str, new_file: str) -> tuple[str, int]` — 재작성된 본문과 링크 해제 건수. `old_file`·`new_file`은 각 저장소 루트 기준 상대 경로 문자열
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다**
+- [x] **Step 1: 실패하는 테스트를 쓴다**
 
 `<scratchpad>/test_migrate_links.py`:
 
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인한다**
+- [x] **Step 2: 테스트가 실패하는지 확인한다**
 
 ```bash
 cd <scratchpad> && python3 -m unittest test_migrate_links -v
@@ -308,7 +308,7 @@ cd <scratchpad> && python3 -m unittest test_migrate_links -v
 
 Expected: FAIL — `ModuleNotFoundError: No module named 'migrate_links'`
 
-- [ ] **Step 3: 도구를 구현한다**
+- [x] **Step 3: 도구를 구현한다**
 
 `<scratchpad>/migrate_links.py`:
 
@@ -489,7 +489,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 4: 테스트가 통과하는지 확인한다**
+- [x] **Step 4: 테스트가 통과하는지 확인한다**
 
 ```bash
 cd <scratchpad> && python3 -m unittest test_migrate_links -v
@@ -499,7 +499,7 @@ Expected: PASS, 19개 테스트 전부(`MapTargetTest` 11 · `RewriteTest` 7 · 
 
 `test_unknown_target_raises`가 실패하면 `PATH_MAP`에 `parfait/pm`이 잘못 들어간 것이다. `test_skips_code_fence`가 실패하면 `FENCE` 분할이 깨진 것이다.
 
-- [ ] **Step 5: 커밋 없음**
+- [x] **Step 5: 커밋 없음**
 
 스크래치패드 파일이라 저장소에 들어가지 않는다. 다음 태스크로 간다.
 
@@ -515,7 +515,7 @@ Expected: PASS, 19개 테스트 전부(`MapTargetTest` 11 · `RewriteTest` 7 · 
 - Consumes: Task 2의 `migrate_links.main()`, Task 1의 `check_links.py`
 - Produces: 이관된 문서 트리. 이후 태스크가 이 경로를 수정한다.
 
-- [ ] **Step 1: 이관 전 상태를 기록한다**
+- [x] **Step 1: 이관 전 상태를 기록한다**
 
 ```bash
 git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent rev-parse --short HEAD
@@ -523,7 +523,7 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent re
 
 이 SHA를 Task 5에서 `docs/index.md` 머리에 적는다. **출력값을 적어 둔다.**
 
-- [ ] **Step 2: 도구를 실행한다**
+- [x] **Step 2: 도구를 실행한다**
 
 ```bash
 cd <scratchpad> && python3 migrate_links.py; cd -
@@ -537,7 +537,7 @@ Expected: `파일 255개 재작성 · 링크 해제 12건`
 
 파일 수가 255가 아니면 복사가 누락된 것이다. 해제 건수가 12가 아니면 판정과 실제가 어긋난 것이다 — 둘 다 멈추고 원인을 본다. `KeyError`가 나면 `PATH_MAP`·`UNLINK_EXACT`·`UNLINK_PREFIXES` 어디에도 없는 target이 있다는 뜻이고, 예외 메시지가 그 경로를 알려준다.
 
-- [ ] **Step 3: 파일 수를 원본과 대조한다**
+- [x] **Step 3: 파일 수를 원본과 대조한다**
 
 `docs/superpowers/`에는 이관분이 아닌 문서가 이미 4개 있다 — `2026-09-17-wiki-port` 스펙·계획과 이 이관의 스펙·계획이다. 집계에서 뺀다.
 
@@ -555,7 +555,7 @@ Expected: 첫 명령 254, 둘째 명령 252. 차이 2는 `doc-baseline.md`와 `C
 ls docs/doc-baseline.md docs/code-conventions.md docs/index.md
 ```
 
-- [ ] **Step 4: 게이트를 돌린다**
+- [x] **Step 4: 게이트를 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs
@@ -565,7 +565,7 @@ Expected: exit 0, `깨진 링크 0건`.
 
 깨진 링크가 나오면 출력이 파일·줄·target을 준다. `PATH_MAP`에 빠진 경로인지 확인하고, 도구를 고친 뒤 **복사본을 지우고 Step 2부터 다시 돌린다**(`git clean -fd docs/` 후 재실행). 손으로 개별 링크를 고치지 않는다 — 3,200건 중 하나를 손으로 고치면 나머지도 손으로 고치게 된다.
 
-- [ ] **Step 5: 위키 개념 때문에 해제된 7곳을 미결로 등록한다**
+- [x] **Step 5: 위키 개념 때문에 해제된 7곳을 미결로 등록한다**
 
 `docs/synthesis/open-questions.md` 끝에 항목을 추가한다. 이 파일의 기존 항목 형식을 먼저 읽고 그 형식에 맞춘다.
 
@@ -577,7 +577,7 @@ Expected: exit 0, `깨진 링크 0건`.
 - `docs/superpowers/specs/archive/2026-09-11-g001-group-list-topping-border.md`
 - `docs/architecture/design-system.md`
 
-- [ ] **Step 6: 게이트를 다시 돌린다**
+- [x] **Step 6: 게이트를 다시 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs
@@ -585,7 +585,7 @@ python3 docs/script/check_links.py docs
 
 Expected: exit 0. Step 5에서 새 링크를 넣었다면 그것도 검사된다.
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 git add docs/
@@ -612,7 +612,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 3이 만든 `docs/code-conventions.md`
 - Produces: 루트 `CLAUDE.md`에서 도달 가능한 코드 규약. 구현 서브에이전트가 이 경로를 읽는다.
 
-- [ ] **Step 1: 제목과 첫 문단을 이 저장소 기준으로 다시 쓴다**
+- [x] **Step 1: 제목과 첫 문단을 이 저장소 기준으로 다시 쓴다**
 
 원본은 이렇게 시작한다(경로는 Task 3의 재작성을 이미 거친 상태다):
 
@@ -639,7 +639,7 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 
 플랫폼 축(`parfait/android` vs `parfait/api`·`parfait/pm`)은 이 저장소에 없다. 여기서는 문서가 전부 이 앱 것이다.
 
-- [ ] **Step 2: 「서브에이전트에게 실어 나른다」 절을 줄인다**
+- [x] **Step 2: 「서브에이전트에게 실어 나른다」 절을 줄인다**
 
 문서 끝의 그 절에서 ⚠️ 경고와 근거 설명을 지운다. 근거는 그 절 자신의 문장이다:
 
@@ -659,7 +659,7 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 - 다른 컴포넌트의 현재 상태를 단정하지 않는다(낡는다)
 ```
 
-- [ ] **Step 3: 루트 `CLAUDE.md`에 절을 추가한다**
+- [x] **Step 3: 루트 `CLAUDE.md`에 절을 추가한다**
 
 `## 위키 (`wiki/`)` 절 **앞**에 넣는다. 본문을 옮기지 않고 링크만 건다 — 루트가 비대해지면 매 세션 비용이 된다.
 
@@ -689,7 +689,7 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 `python3 docs/script/check_links.py docs`로 상대 링크를 전수 확인한다(깨지면 exit 1).
 ```
 
-- [ ] **Step 4: 링크 게이트를 돌린다**
+- [x] **Step 4: 링크 게이트를 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs CLAUDE.md
@@ -697,7 +697,7 @@ python3 docs/script/check_links.py docs CLAUDE.md
 
 Expected: exit 0. 새로 넣은 링크 `docs/code-conventions.md`·`docs/index.md`가 실제로 존재하는지 여기서 걸린다.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add CLAUDE.md docs/code-conventions.md
@@ -721,7 +721,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 3이 만든 `docs/index.md`, Task 3 Step 1이 기록한 원본 SHA
 - Produces: pm 참조가 없는 진입 허브
 
-- [ ] **Step 1: pm 참조 위치를 찾는다**
+- [x] **Step 1: pm 참조 위치를 찾는다**
 
 ```bash
 grep -n "pm/" docs/index.md | head -40
@@ -730,13 +730,13 @@ grep -c "pm/" docs/index.md
 
 `parfait/pm/`은 이관하지 않았으므로 이 참조들은 전부 죽은 링크다.
 
-- [ ] **Step 2: pm 절과 pm 링크를 지운다**
+- [x] **Step 2: pm 절과 pm 링크를 지운다**
 
 절 전체가 pm이면 절을 지운다. 표의 행이면 행을 지운다. 문장 안의 링크면 문장을 다시 쓴다 — 링크만 떼면 "제품 문서는 …에 있다"가 목적어를 잃는다.
 
 `blog/`·`bot/`·`raw/` 참조도 같은 이유로 죽은 링크다. 같이 처리한다.
 
-- [ ] **Step 3: 이관 기준점을 머리에 적는다**
+- [x] **Step 3: 이관 기준점을 머리에 적는다**
 
 `docs/index.md` 제목 바로 아래에 넣는다. Task 3 Step 1에서 적어 둔 SHA를 쓴다.
 
@@ -746,7 +746,7 @@ grep -c "pm/" docs/index.md
 > 이후의 정본은 이쪽이다.
 ```
 
-- [ ] **Step 4: 게이트를 돌린다**
+- [x] **Step 4: 게이트를 돌린다**
 
 ```bash
 python3 docs/script/check_links.py docs
@@ -755,7 +755,7 @@ grep -c "pm/\|blog/\|bot/" docs/index.md
 
 Expected: 첫 명령 exit 0. 둘째 명령 0.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add docs/index.md
@@ -782,7 +782,7 @@ graphify의 스캔 루트는 `wiki/pages/`라서 `docs/` 아래 문서는 검색
 - Consumes: Task 3이 만든 `docs/superpowers/specs`·`docs/superpowers/plans`·`docs/adr`·`docs/architecture`
 - Produces: `python3 docs/script/search.py "<자연어 쿼리>" [--top N]` — 점수 내림차순으로 `<id>  (score N) [archived] — <title>` 출력
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다**
+- [x] **Step 1: 실패하는 테스트를 쓴다**
 
 `docs/script/test_search.py` (원본 테스트를 대체한다):
 
@@ -892,7 +892,7 @@ if __name__ == "__main__":
     unittest.main()
 ```
 
-- [ ] **Step 2: 테스트가 실패하는지 확인한다**
+- [x] **Step 2: 테스트가 실패하는지 확인한다**
 
 ```bash
 cd docs/script && python3 -m unittest test_search -v; cd -
@@ -900,7 +900,7 @@ cd docs/script && python3 -m unittest test_search -v; cd -
 
 Expected: FAIL — `ModuleNotFoundError: No module named 'search'`
 
-- [ ] **Step 3: 구현한다**
+- [x] **Step 3: 구현한다**
 
 `docs/script/search.py`:
 
@@ -1030,7 +1030,7 @@ if __name__ == "__main__":
 
 `tokenize`가 원본과 다르다 — 한글을 문자 클래스에 넣었다. 원본은 `[a-z0-9]+`라서 한국어 제목이 통째로 버려진다. 대상 문서의 `title`이 대부분 한국어이므로 이 변경이 없으면 검색이 사실상 영문 `id`만 본다.
 
-- [ ] **Step 4: 테스트가 통과하는지 확인한다**
+- [x] **Step 4: 테스트가 통과하는지 확인한다**
 
 ```bash
 cd docs/script && python3 -m unittest test_search -v; cd -
@@ -1038,7 +1038,7 @@ cd docs/script && python3 -m unittest test_search -v; cd -
 
 Expected: PASS, 10개 전부(`ScoreTest` 3 · `CollectTest` 5 · `SearchTest` 2).
 
-- [ ] **Step 5: 실제 문서에 대고 돌려본다**
+- [x] **Step 5: 실제 문서에 대고 돌려본다**
 
 ```bash
 python3 docs/script/search.py "토핑 border" --top 5
@@ -1047,11 +1047,11 @@ python3 docs/script/search.py "login debug" --top 5
 
 Expected: 두 쿼리 모두 1건 이상. 0건이면 `DOC_ROOTS` 경로가 틀렸거나 frontmatter 파싱이 실패한 것이다. 예외 없이 끝나는지도 본다 — `README.md`·`template.md`처럼 frontmatter 없는 파일에서 죽으면 안 된다.
 
-- [ ] **Step 6: `docs/script/README.md`에 `search` 절을 되살린다**
+- [x] **Step 6: `docs/script/README.md`에 `search` 절을 되살린다**
 
 Task 1 Step 5에서 지운 `search` 절 자리에, 개작된 동작을 적는다 — 대상 네 디렉토리, `archive/` 포함, frontmatter `id`·`title`·`tags`·`related_*`를 본다는 것.
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 git add docs/script/search.py docs/script/test_search.py docs/script/README.md
@@ -1075,7 +1075,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1~6의 산출물 전부
 - Produces: 완료 판정 근거
 
-- [ ] **Step 1: 게이트가 에이전트 스크래치를 건너뛰게 한다**
+- [x] **Step 1: 게이트가 에이전트 스크래치를 건너뛰게 한다**
 
 `.superpowers/sdd/`는 SDD 실행이 남기는 git 미추적 작업 자료다(브리프·보고서·리뷰 패키지).
 그 안의 보고서는 문서에서 링크 문법을 **인용**하므로, 저장소 전체 검사가 인용문을 실제
@@ -1091,7 +1091,7 @@ SKIP_DIRS = {".git", ".superpowers", "node_modules", "__pycache__", ".venv", "ve
 `docs/script/test_check_links.py`에 이 동작을 고정하는 테스트를 더한다 — `.superpowers`
 아래 마크다운에 깨진 링크를 두고, 전수 검사가 그것을 세지 않는지 본다.
 
-- [ ] **Step 2: 링크 전수 검사**
+- [x] **Step 2: 링크 전수 검사**
 
 ```bash
 python3 docs/script/check_links.py
@@ -1099,7 +1099,7 @@ python3 docs/script/check_links.py
 
 Expected: exit 0. 저장소 전체를 검사한다 — `docs/` 밖(루트 `CLAUDE.md`, `README.md`, `wiki/`)에서 새로 깨진 것이 없는지 본다.
 
-- [ ] **Step 3: 스크립트 테스트 전부**
+- [x] **Step 3: 스크립트 테스트 전부**
 
 ```bash
 cd docs/script && python3 -m unittest discover -p 'test_*.py' -v; cd -
@@ -1107,7 +1107,7 @@ cd docs/script && python3 -m unittest discover -p 'test_*.py' -v; cd -
 
 Expected: PASS. `test_check_links`·`test_search` 양쪽.
 
-- [ ] **Step 4: 파일 수 최종 대조**
+- [x] **Step 4: 파일 수 최종 대조**
 
 ```bash
 SRC=/Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent
@@ -1123,7 +1123,7 @@ Expected: 원본 254, 사본 **256**.
 `parfait/script/README.md` → `docs/script/README.md`. 둘 다 옮기기로 한 것이고 원본 254에는
 안 들어 있다.
 
-- [ ] **Step 5: 루트 라우팅 표의 경로가 전부 실존하는지 확인한다**
+- [x] **Step 5: 루트 라우팅 표의 경로가 전부 실존하는지 확인한다**
 
 `CLAUDE.md`의 `## 문서 (docs/)` 절 표는 "무엇이 어디 있다"는 주장의 목록이다. 존재하지 않는
 경로를 가리키면 그 표가 거짓이 된다. `search`는 Task 6이 만들기 때문에 이 시점에야 참이 된다.
@@ -1146,7 +1146,7 @@ sys.exit(1 if missing else 0)
 Expected: `없는 것 0`, 그리고 `check_links.py`·`search.py` 둘 다 OK. `search.py`가 없으면
 Task 6이 끝나지 않은 것이다.
 
-- [ ] **Step 6: 원본 저장소가 불변인지 확인한다**
+- [x] **Step 6: 원본 저장소가 불변인지 확인한다**
 
 ```bash
 git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent status --short
@@ -1154,7 +1154,7 @@ git -C /Users/jeonheehoon/Documents/work_station/mashup/team-yg-pesonal-agent st
 
 Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이다 — 무엇이 바뀌었는지 보고하고 되돌린다.
 
-- [ ] **Step 7: 빌드가 영향받지 않았는지 확인한다**
+- [x] **Step 7: 빌드가 영향받지 않았는지 확인한다**
 
 ```bash
 ./gradlew build
@@ -1162,7 +1162,7 @@ Expected: 출력 없음. 한 줄이라도 나오면 Global Constraints 위반이
 
 Expected: `BUILD SUCCESSFUL`. 이관은 파일 추가일 뿐이므로 이관 전과 같아야 한다. 실패하면 이관과 무관한 기존 실패인지 먼저 확인한다 — `git stash` 후 재실행으로 가른다.
 
-- [ ] **Step 8: 커밋할 것이 남았으면 커밋한다**
+- [x] **Step 8: 커밋할 것이 남았으면 커밋한다**
 
 ```bash
 git status --short

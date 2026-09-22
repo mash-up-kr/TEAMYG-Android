@@ -27,7 +27,7 @@ tags: [plan, parfait]
 
 <!--
 사용법 (작성 후 이 주석 삭제):
-- `parfait/plans/YYYY-MM-DD-<slug>.md`로 저장, frontmatter 채우고 `parfait/plans/README.md` 활성 카탈로그에 한 줄 추가.
+- `docs/superpowers/plans/YYYY-MM-DD-<slug>.md`로 저장, frontmatter 채우고 `docs/superpowers/plans/README.md` 활성 카탈로그에 한 줄 추가.
 - 플랫폼별 핸드오프(type: handoff)는 필요 시 `plans/aos/` 등 하위에 둔다(이 repo는 Android 전용).
 - 작업 완료: `status: done` + `archived_reason` + 상단 Archived 배너 후 `archive/`로 이동, `README.md` 아카이브에 한 줄 기록.
 - 미채택/폐기: `status: abandoned` + `archived_reason` + `archive/`로 이동(맥락 보존).

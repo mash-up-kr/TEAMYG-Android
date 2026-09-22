@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""자연어 쿼리로 구현 문서를 찾는다 — 스펙·계획·ADR·아키텍처.
+"""자연어 쿼리로 구현 문서를 찾는다 — 스펙·계획·ADR·아키텍처·API·synthesis.
 
 용법:
     python3 docs/script/search.py "<자연어 쿼리>" [--top N]
@@ -25,6 +25,11 @@ DOC_ROOTS = [
 ]
 
 FRONTMATTER = re.compile(r"^---\n(.*?)\n---", re.S)
+
+# 한 필드에서 같은 토큰이 여러 번 나와도 3회까지만 센다. 상한이 없으면
+# 헤딩이 408개인 open-questions.md 같은 메타 문서가 넓이만으로 거의 모든
+# 쿼리를 이긴다 — 관련성이 아니라 분량이 이긴다.
+FIELD_CAP = 3
 
 
 def tokenize(s):
@@ -77,11 +82,11 @@ def score(query, doc):
     total = 0.0
     for t in q:
         total += (
-            4 * id_t.count(t)
-            + 4 * title_t.count(t)
-            + 2 * tag_t.count(t)
-            + 2 * code_t.count(t)
-            + 1 * head_t.count(t)
+            4 * min(id_t.count(t), FIELD_CAP)
+            + 4 * min(title_t.count(t), FIELD_CAP)
+            + 2 * min(tag_t.count(t), FIELD_CAP)
+            + 2 * min(code_t.count(t), FIELD_CAP)
+            + 1 * min(head_t.count(t), FIELD_CAP)
         )
         if any(t in n for n in id_t):
             total += 1

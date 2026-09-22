@@ -25,6 +25,32 @@ class ScoreTest(unittest.TestCase):
         doc = {"id": "a", "title": "b", "tags": "", "code": "LoginViewModel", "headings": ""}
         self.assertGreater(search.score("LoginViewModel", doc), 0.0)
 
+    def test_field_cap_stops_repetition_beating_specific_match(self):
+        # wide 는 헤딩 하나에서만 토큰이 잔뜩(50회) 반복되는 메타 문서
+        # (헤딩 408개짜리 open-questions.md 흉내)고, narrow 는 id·title·tags·
+        # code·headings 다섯 필드 전부에서 한 번씩만 정확히 맞는 문서다.
+        # 상한이 없으면 wide 의 headings 기여만 1*50=50 으로 narrow 총점
+        # (id4+title4+tags2+code2+head1+substring보너스1=14)을 가볍게 이긴다.
+        # 캡을 걸면 wide 의 headings 기여가 1*3=3 으로 눌려 narrow 가 이긴다.
+        wide = {
+            "id": "open-questions",
+            "title": "열린 질문",
+            "tags": "",
+            "code": "",
+            "headings": " ".join(["토핑"] * 50),
+        }
+        narrow = {
+            "id": "토핑-border-distance-field",
+            "title": "토핑 border 거리 필드",
+            "tags": "토핑",
+            "code": "토핑모듈",
+            "headings": "토핑",
+        }
+        uncapped_wide = 1 * 50
+        uncapped_narrow = 4 + 4 + 2 + 2 + 1 + 1
+        assert uncapped_wide > uncapped_narrow, "상한 없이는 wide 가 이겨야 회귀 테스트가 의미 있다"
+        self.assertGreater(search.score("토핑", narrow), search.score("토핑", wide))
+
 
 class CollectTest(unittest.TestCase):
     def test_reads_frontmatter_id_and_title(self):

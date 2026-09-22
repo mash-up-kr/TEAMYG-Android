@@ -46,8 +46,8 @@ tags: [spec, parfait]
 
 <!--
 이 템플릿 사용법 (작성 후 이 주석 블록은 삭제):
-- 복사 후 `parfait/specs/<YYYY-MM-DD-kebab-topic>.md`로 저장, frontmatter 채우고
-  `parfait/specs/README.md` 인덱스에 한 줄 추가.
+- 복사 후 `docs/superpowers/specs/<YYYY-MM-DD-kebab-topic>.md`로 저장, frontmatter 채우고
+  `docs/superpowers/specs/README.md` 인덱스에 한 줄 추가.
 - `category: ui-spec`(단일 위젯)이면 다중 UI 상호작용 섹션은 생략 가능.
 - 사양 변경 시: 값 수정 + `verified` 갱신 + `related_code` 심볼명 재확인(라인번호 안 씀).
 - 결정 번복(대체) 시: 기존 문서 `status: superseded` + `superseded_by` 지정,

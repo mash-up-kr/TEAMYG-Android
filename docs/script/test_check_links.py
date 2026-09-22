@@ -87,6 +87,46 @@ class BrokenLinksTest(unittest.TestCase):
         self.assertIn(control, found)
         self.assertNotIn(scratch, found)
 
+    def test_stray_unclosed_fence_does_not_hide_following_link(self):
+        body = (
+            "이 문서는 마크다운 문법을 설명한다. 코드 펜스는 ```으로 연다.\n\n"
+            "[진짜 깨진 링크](../없는/파일.md)\n\n"
+            "```python\nprint('x')\n```\n"
+        )
+        page = self.write("specs/a.md", body)
+        found = check_links.broken_links(page)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0][1], "../없는/파일.md")
+
+    def test_closed_fence_still_hides_its_example_link(self):
+        page = self.write("specs/a.md", "```\n[x](../없는/파일.md)\n```")
+        self.assertEqual(check_links.broken_links(page), [])
+
+    def test_tilde_fence_hides_example_link(self):
+        page = self.write("specs/a.md", "~~~\n[x](../없는/파일.md)\n~~~")
+        self.assertEqual(check_links.broken_links(page), [])
+
+    def test_four_backtick_fence_contains_three_backtick_block(self):
+        body = "````\n```\n[x](../없는/파일.md)\n```\n````"
+        page = self.write("specs/a.md", body)
+        self.assertEqual(check_links.broken_links(page), [])
+
+    def test_line_number_after_fence_still_correct(self):
+        page = self.write("specs/a.md", "머리말\n```\n코드\n```\n[x](없다.md)")
+        found = check_links.broken_links(page)
+        self.assertEqual(found[0][0], 5)
+
+    def test_broken_html_img_src_is_reported(self):
+        page = self.write("specs/a.md", '<img src="../없는/그림.png">')
+        found = check_links.broken_links(page)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0][1], "../없는/그림.png")
+
+    def test_valid_html_img_src_is_not_reported(self):
+        self.write("그림.png", "")
+        page = self.write("specs/a.md", '<img src="../그림.png">')
+        self.assertEqual(check_links.broken_links(page), [])
+
 
 if __name__ == "__main__":
     unittest.main()
