@@ -266,7 +266,7 @@ UseCase가 얹는 규칙은 **순서**다 — 서버가 받아 준 뒤에만 기
 **재시도 동선이 화면 안에 있는가**이고, 이것이 OQ-P-167이 묻던 "공통 에러화면을 세울지"의 답이다.
 컨테이너도 Route의 `YGScaffoldV2`로 옮겨 **이관 17화면·V1 잔여 2파일**(둘 다 EntryBuilder)이 됐다.
 **2026-08-20 — 하루 만에 낡았던 주석 일곱이 정리됐다**(#318). 서버 409 가드를 사실로 적는 문장으로
-바뀌었고(지우지 않은 근거는 `parfait/CLAUDE.md` "기준 2와 3이 겹칠 때는 남긴다"),
+바뀌었고(지우지 않은 근거는 [`code-conventions.md`](code-conventions.md) "기준 2와 3이 겹칠 때는 남긴다"),
 `ServerErrorCode.Parfait.PARFAIT_ALREADY_CLOSED`가 **소비처 0건인 채로** 신설됐다 — 처분이 이미
 정해진 코드는 미리 둔다는 예외를 그 파일에 함께 적었다. ⚠️ 다섯 경로 모두 **권한 검사가 마감 검사보다
 앞**이라 마감된 캔버스라도 남의 토핑·비멤버면 403이 먼저 온다(상수 KDoc의 경고).
@@ -325,7 +325,7 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
 
 이 문서 트리는 **플랫폼 축으로 갈린다** — Android 전용 문서는 `adr/`·`architecture/`·
 `superpowers/specs/`·`superpowers/plans/`·`synthesis/` 다섯 갈래에 있고 나머지는 플랫폼
-공용이다. 어느 쪽에 새 문서를 둘지는 [CLAUDE.md](index.md)가 기준을 적는다.
+공용이다. 새 문서를 어디에 둘지는 이 허브의 분류와 루트 [`CLAUDE.md`](../CLAUDE.md)의 「문서 (`docs/`)」 절이 기준이다.
 
 ### `android/` — TJYG-Android 전용
 - **[`android/adr/`](adr/README.md)** — "왜"(결정·대안·트레이드오프). 인덱스: [adr/README.md](adr/README.md)
@@ -344,9 +344,8 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
   정본은 서버 코드이고 이 디렉토리는 미러다. 추적 브랜치는 서버 **`main`**(TJYG-Android의 `develop`과 다름).
   계약 절은 플랫폼과 무관하고 Android가 그것을 어떻게 받는지는 같은 문서의 「Android 매핑」 절에 적는다.
   기준선·갱신 절차는 [api/server-baseline.md](api/server-baseline.md), 반복 워크플로는 스킬 `sync-teamyg-server-api`.
-- **[`script/`](script/README.md)** — 파이썬 툴링 홈(스킬 호출 로직·유틸, stdlib 전용). 템플릿: `_script-template.py`·`SKILL.template.md`.
-  링크 깊이 검사는 `python3 parfait/script/check_links.py parfait`.
-- **[`CLAUDE.md`](index.md)** — parfait 범위 지도(어디에 무엇을 두는지). 루트 `CLAUDE.md`가 상위 정본.
+- **[`script/`](script/README.md)** — 파이썬 툴링 홈(스킬 호출 로직·유틸, stdlib 전용). 템플릿: `_script-template.py`.
+  링크 깊이 검사는 `python3 docs/script/check_links.py docs`.
 
 ## 규율 (상세는 각 문서)
 - **SoT 우선순위**(모순 시): 코드 > wiki > CLAUDE.md
