@@ -7767,15 +7767,15 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-406
 - **출처**: parfait 구현 문서 트리를 이 저장소 `docs/`로 이관하면서(Task 3, `migrate_links.py`)
-  이 저장소 위키에 아직 ingest되지 않은 개념 페이지 3건 — `누끼-따기`·`토핑`·`캘린더-컴포넌트` —
+  이 저장소 위키에 아직 ingest되지 않은 개념 페이지 3건 — [[누끼-따기]]·[[토핑]]·[[캘린더-컴포넌트]] —
   을 가리키던 마크다운 링크 7곳을 해제했다. 원본에서는 `[[개념]] ([link](.../wiki/concepts/개념.md))`
   형태로 위키 본문 링크가 따로 있었는데, 이관 도구의 `PATH_MAP`에 `wiki/concepts/`는 대응 목적지가
   없어 링크만 걷고 라벨 텍스트를 남겼다.
-- **항목**: ① `누끼-따기` 5곳 — [specs/README.md](../superpowers/specs/README.md),
+- **항목**: ① [[누끼-따기]] 5곳 — [specs/README.md](../superpowers/specs/README.md),
   [specs/archive/2026-08-23-c103-multi-subject-selection.md](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md)(3곳),
-  [architecture/design-system.md](../architecture/design-system.md). ② `토핑` 1곳 —
+  [architecture/design-system.md](../architecture/design-system.md). ② [[토핑]] 1곳 —
   [specs/archive/2026-09-11-g001-group-list-topping-border.md](../superpowers/specs/archive/2026-09-11-g001-group-list-topping-border.md).
-  ③ `캘린더-컴포넌트` 1곳 —
+  ③ [[캘린더-컴포넌트]] 1곳 —
   [specs/archive/2026-08-01-designsystem-bar-listdate-components.md](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md).
 - **상태**: 미해결
 - **해소 메모**: 같은 `raw/`에서 [[누끼-따기]]·[[토핑]]·[[캘린더-컴포넌트]] 세 개념이 실제 페이지로

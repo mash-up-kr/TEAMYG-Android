@@ -947,7 +947,7 @@ git commit -m "feat(skills): 통합·코드 리뷰·최종 산출·에스컬레�
 > **세션 진입점 2종** — 온보딩만 필요하면 `start-default-session`.
 > 요구사항 하나를 다수 에이전트가 나눠 처리하는 파이프라인(분석·설계·스펙리뷰·계획·계획리뷰·
 > TDD 구현 병렬·통합·코드리뷰)을 돌릴 때는 `start-orchestration-session`.
-> 파이프라인 설계 정본은 [`parfait/specs/2026-08-05-orchestration-session-pipeline.md`](../specs/2026-08-05-orchestration-session-pipeline.md).
+> 파이프라인 설계 정본은 [`parfait/specs/2026-08-05-orchestration-session-pipeline.md`](parfait/specs/2026-08-05-orchestration-session-pipeline.md).
 ```
 
 - [x] **Step 2: 스펙 status를 in-progress로 갱신**

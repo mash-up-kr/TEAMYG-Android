@@ -88,7 +88,7 @@ tags: [api, parfait, server-contract, <도메인>]
 # <도메인 이름> API 계약
 
 > 정본은 서버 코드(`mash-up-kr/TEAMYG-SERVER` `main`). 이 문서는 미러다 — 어긋나면 서버가 옳다.
-> 전역 계약(envelope·에러 체계·인증)은 [conventions.md](../../../api/conventions.md).
+> 전역 계약(envelope·에러 체계·인증)은 [conventions.md](conventions.md).
 
 ## 엔드포인트
 
@@ -143,7 +143,7 @@ tags: [api, parfait, server-contract, conventions]
 # 서버 API 전역 계약
 
 > 정본은 서버 코드(`mash-up-kr/TEAMYG-SERVER` `main`). 이 문서는 미러다.
-> 도메인별 계약은 [README.md](../../../api/README.md)의 인덱스 참고.
+> 도메인별 계약은 [README.md](README.md)의 인덱스 참고.
 
 ## 응답 envelope
 
@@ -272,7 +272,7 @@ signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바�
 3. **계약 대조**: 컨트롤러·`*Request`/`*Response` DTO·`*ErrorCode` enum·`SecurityConfig`·
    `ApiResponse`·`GlobalExceptionHandler` 변경이 `parfait/api/*.md`와 어긋나는지 검사.
    - 파일 조회는 항상 `git -C <S> show origin/main:<path>` — **워킹트리를 믿지 않는다**(로컬은 `develop`).
-   - 신규 도메인이면 [template.md](../../../api/template.md)로 문서 신설 + [README.md](../../../api/README.md) 인덱스 등록.
+   - 신규 도메인이면 [template.md](template.md)로 문서 신설 + [README.md](README.md) 인덱스 등록.
 4. **기준선 갱신**: 위 "현재 기준선"을 새 `origin/main` HEAD로 교체하고 아래 이력에 한 줄 추가.
 
 ## 기준선 이력
@@ -293,10 +293,10 @@ signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바�
 > **정본은 서버 코드**입니다. 이 디렉토리는 미러이고, 어긋나면 서버가 옳습니다
 > (파르페 SoT 우선순위 "코드 > wiki > CLAUDE.md"와 동형).
 >
-> 추적 브랜치는 서버 **`main`** — 기준 커밋과 갱신 절차는 [server-baseline.md](../../../api/server-baseline.md).
+> 추적 브랜치는 서버 **`main`** — 기준 커밋과 갱신 절차는 [server-baseline.md](server-baseline.md).
 
 ## 전역 계약
-- [conventions.md](../../../api/conventions.md) — 응답 envelope·성공/에러 코드 체계·인증·URL 규약·**Android 불일치 3건**
+- [conventions.md](conventions.md) — 응답 envelope·성공/에러 코드 체계·인증·URL 규약·**Android 불일치 3건**
 
 ## 도메인 계약
 | 문서 | 서버 위치 | 엔드포인트 | Android |
@@ -307,7 +307,7 @@ signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바�
   **살아있는 문서**입니다 — 서버가 바뀌면 같은 파일을 갱신하고, 판본은 frontmatter `server_commit`·`verified`가 기록합니다.
 - 도메인 파일명은 **서버 URL 세그먼트** 기준입니다(`/api/parfait-groups` → `parfait-group.md`).
   소비자는 서버 패키지가 아니라 경로로 API를 찾기 때문입니다.
-- 형식 권위 출처는 [template.md](../../../api/template.md). 새 도메인 문서는 위 인덱스 표에 한 줄 등록합니다.
+- 형식 권위 출처는 [template.md](template.md). 새 도메인 문서는 위 인덱스 표에 한 줄 등록합니다.
 - 엔드포인트 표의 **Android 열**은 세 값입니다.
   - `미구현` — 대응 심볼이 없다
   - `구현됨` — 대응 심볼이 있고 계약과 일치한다
@@ -466,7 +466,7 @@ Run: `git -C <S> grep -n "expiresIn" origin/main -- core http | head -20`
 
 도메인 표에 한 행 추가:
 ```markdown
-| [auth.md](../../../api/auth.md) | `http/api/auth` | 2 (카카오 로그인 · 회원가입 완료) | 미구현 |
+| [auth.md](auth.md) | `http/api/auth` | 2 (카카오 로그인 · 회원가입 완료) | 미구현 |
 ```
 
 - [ ] **Step 6: 커밋 — 사용자 확인 후**
@@ -594,7 +594,7 @@ git -C <S> show origin/main:bootstrap/src/main/resources/application.yaml | grep
 - [ ] **Step 5: `README.md` 인덱스 등록**
 
 ```markdown
-| [parfait-group.md](../../../api/parfait-group.md) | `http/parfaitgroup` | 8 (목록 · 상세 · 참여 미리보기 · 참여 · 생성 · 닉네임 변경 · 탈퇴 · 신고) | 미구현 |
+| [parfait-group.md](parfait-group.md) | `http/parfaitgroup` | 8 (목록 · 상세 · 참여 미리보기 · 참여 · 생성 · 닉네임 변경 · 탈퇴 · 신고) | 미구현 |
 ```
 
 - [ ] **Step 6: 커밋 — 사용자 확인 후**
@@ -670,7 +670,7 @@ git -C <S> ls-tree -r --name-only origin/main | grep "core/.*parfait/" | grep -v
 - [ ] **Step 3: 서버 소스 1:1 재대조 + `README.md` 인덱스 등록**
 
 ```markdown
-| [parfait.md](../../../api/parfait.md) | `http/api/parfait` | 1 (그룹 캘린더 연도 리스트) | 미구현 |
+| [parfait.md](parfait.md) | `http/api/parfait` | 1 (그룹 캘린더 연도 리스트) | 미구현 |
 ```
 
 - [ ] **Step 4: 커밋 — 사용자 확인 후**
@@ -796,7 +796,7 @@ git commit -m "feat(skill): sync-teamyg-server-api 신설 + 기존 baseline 스�
 "무엇을 찾는가 → 어디를 보라" 표에 아래 행을 추가한다(원격 네트워크 행 바로 아래).
 
 ```markdown
-| 서버 API 계약·엔드포인트·요청/응답 필드 | [api/README.md](api/README.md) + [api/conventions.md](../../../api/conventions.md) |
+| 서버 API 계약·엔드포인트·요청/응답 필드 | [api/README.md](api/README.md) + [api/conventions.md](api/conventions.md) |
 ```
 
 "문서 지도"에 아래 항목을 추가한다(`architecture/` 다음).
@@ -804,7 +804,7 @@ git commit -m "feat(skill): sync-teamyg-server-api 신설 + 기존 baseline 스�
 ```markdown
 - **[`api/`](api/README.md)** — 서버(`mash-up-kr/TEAMYG-SERVER`) API 계약 스냅샷 + Android 적용 상태.
   정본은 서버 코드이고 이 디렉토리는 미러다. 추적 브랜치는 서버 **`main`**(TJYG-Android의 `develop`과 다름).
-  기준선·갱신 절차는 [api/server-baseline.md](../../../api/server-baseline.md), 반복 워크플로는 스킬 `sync-teamyg-server-api`.
+  기준선·갱신 절차는 [api/server-baseline.md](api/server-baseline.md), 반복 워크플로는 스킬 `sync-teamyg-server-api`.
 ```
 
 "지금 상태 (1줄)"의 네트워크 문장 끝에 아래를 덧붙인다.
