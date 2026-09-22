@@ -111,6 +111,6 @@ private fun YGToastPreview() = PreviewBox {
         )
         YGToast(type = YGToastType.Edit("내 토핑만 편집할 수 있어요"))
         YGToast(type = YGToastType.InviteCode("초대 코드를 복사했어요"))
-        YGToast(type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."))
+        YGToast(type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요"))
     }
 }

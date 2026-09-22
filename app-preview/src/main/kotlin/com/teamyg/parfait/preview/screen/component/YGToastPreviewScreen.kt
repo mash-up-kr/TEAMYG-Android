@@ -47,7 +47,7 @@ private val ygToastSamples: List<YGToastSample> = listOf(
     ),
     YGToastSample(
         label = "Fail (Figma Type=Error)",
-        type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요."),
+        type = YGToastType.Fail("갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요"),
     ),
 )
 
