@@ -11,15 +11,20 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.teamyg.parfait.analytics.AnalyticsLogger
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.domain.model.deeplink.AppLinkDeepLink
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
+import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
@@ -31,8 +36,11 @@ fun MainRoute(
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
     sessionEventBus: SessionEventBus,
     pushDeepLinkEventBus: PushDeepLinkEventBus,
+    appLinkDeepLinkEventBus: AppLinkDeepLinkEventBus,
     hasActiveSession: HasActiveSessionUseCase,
+    getMyAccountFlow: GetMyAccountFlowUseCase,
     screenViewTracker: ScreenViewTracker,
+    analyticsLogger: AnalyticsLogger,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
@@ -63,6 +71,30 @@ fun MainRoute(
                 )
 
                 is PushDeepLink.GroupList -> navigator.goTo(destination = NavKeyGroupList)
+            }
+        }
+    }
+
+    // App Links 딥링크도 같은 이유로 여기 한 곳에서만 수집한다.
+    LaunchedEffect(Unit) {
+        appLinkDeepLinkEventBus.deepLinks.collect { deepLink ->
+            snapshotFlow { navigator.backStack.lastOrNull() }.first { it != NavKeySplash }
+
+            // 초대 링크는 계정이 없는 신규 유저가 가장 먼저 클릭하는 경로라, push 딥링크와
+            // 달리 로그인 전이면 버리지 않고 로그인이 끝날 때까지 기다렸다가 이어간다.
+            getMyAccountFlow().first { it != null }
+
+            // 로그인 성공 직후 LoginRoute 가 replaceAll(NavKeyGroupList) 로 백스택을 통째로
+            // 갈아치운다. 계정이 생겼다고 바로 push 하면 그 replaceAll 이 뒤따라와 지워버리므로,
+            // 로그인 화면을 벗어난 뒤에야 우리 쪽 네비게이션을 건다.
+            snapshotFlow { navigator.backStack.lastOrNull() }.first { it != NavKeyLogin }
+
+            analyticsLogger.logAppLinkOpened(deepLink)
+
+            when (deepLink) {
+                is AppLinkDeepLink.OpenGroupInvite -> navigator.goTo(
+                    destination = NavKeyGroupInviteCode(inviteCode = deepLink.inviteCode),
+                )
             }
         }
     }

@@ -9,16 +9,23 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.analytics.AnalyticsLogger
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.deeplink.toAppLinkDeepLinkOrNull
+import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
+import com.teamyg.parfait.domain.repository.deeplink.AppLinkReferrerRepository
+import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // API 26 에는 밝은 내비게이션 바 아이콘이 없어 대신 이 스크림이 깔린다(값은 androidx 기본값).
@@ -39,14 +46,32 @@ class MainActivity : ComponentActivity() {
     lateinit var pushDeepLinkEventBus: PushDeepLinkEventBus
 
     @Inject
+    lateinit var appLinkDeepLinkEventBus: AppLinkDeepLinkEventBus
+
+    @Inject
+    lateinit var appLinkReferrerRepository: AppLinkReferrerRepository
+
+    @Inject
     lateinit var hasActiveSession: HasActiveSessionUseCase
+
+    @Inject
+    lateinit var getMyAccountFlow: GetMyAccountFlowUseCase
 
     @Inject
     lateinit var screenViewTracker: ScreenViewTracker
 
+    @Inject
+    lateinit var analyticsLogger: AnalyticsLogger
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumePushDeepLink(intent)
+        consumeAppLinkDeepLink(intent)
+        // 콜드 스타트에서만 확인한다 — Install Referrer 는 "이번 설치"의 스토어 진입 정보라
+        // onNewIntent(같은 프로세스가 살아있는 재진입)에서 다시 물어봐도 의미가 없다.
+        lifecycleScope.launch {
+            appLinkReferrerRepository.consumeDeepLinkOnce()?.let(appLinkDeepLinkEventBus::post)
+        }
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
         // 근거는 parfait/adr/0028-system-bar-light-fixed.md 에 있다.
         enableEdgeToEdge(
@@ -60,8 +85,11 @@ class MainActivity : ComponentActivity() {
                     entryBuilders = entryBuilders,
                     sessionEventBus = sessionEventBus,
                     pushDeepLinkEventBus = pushDeepLinkEventBus,
+                    appLinkDeepLinkEventBus = appLinkDeepLinkEventBus,
                     hasActiveSession = hasActiveSession,
+                    getMyAccountFlow = getMyAccountFlow,
                     screenViewTracker = screenViewTracker,
+                    analyticsLogger = analyticsLogger,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -73,6 +101,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         consumePushDeepLink(intent)
+        consumeAppLinkDeepLink(intent)
     }
 
     // 소비한 뒤 반드시 비운다 — 안 비우면 화면 회전 없이도 재구성이 일어나는 경로(다크모드
@@ -82,5 +111,12 @@ class MainActivity : ComponentActivity() {
         val deepLink = intent.toPushDeepLinkOrNull() ?: return
         setIntent(Intent())
         pushDeepLinkEventBus.post(deepLink)
+    }
+
+    /** [consumePushDeepLink] 와 같은 이유로 소비한 뒤 반드시 비운다. */
+    private fun consumeAppLinkDeepLink(intent: Intent) {
+        val deepLink = intent.toAppLinkDeepLinkOrNull() ?: return
+        setIntent(Intent())
+        appLinkDeepLinkEventBus.post(deepLink)
     }
 }

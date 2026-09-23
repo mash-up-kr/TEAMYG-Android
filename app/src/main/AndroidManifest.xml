@@ -46,6 +46,23 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+                App Links. autoVerify 는 서버가 /.well-known/assetlinks.json 을 배포해야
+                실제로 검증이 붙는다 — 그전까지는 시스템이 앱과 브라우저 중 고르는 선택지로
+                내려간다. URL 쿼리 파라미터 스펙은 아직 서버와 확정 전이라
+                AppLinkDeepLink/AppLinkDeepLinkIntent 쪽에서 임시로 설계했다.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="parfait-app.store" />
+            </intent-filter>
         </activity>
 
         <service
