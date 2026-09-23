@@ -2,8 +2,12 @@ package com.teamyg.parfait.analytics
 
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.teamyg.parfait.domain.model.deeplink.AppLinkDeepLink
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val EVENT_APP_LINK_OPENED = "app_link_opened"
+private const val PARAM_DESTINATION = "destination"
 
 @Singleton
 class FirebaseAnalyticsLogger @Inject constructor(
@@ -28,5 +32,13 @@ class FirebaseAnalyticsLogger @Inject constructor(
             putString(FirebaseAnalytics.Param.SCREEN_CLASS, screen.screenClass)
         }
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, params)
+    }
+
+    override fun logAppLinkOpened(deepLink: AppLinkDeepLink) {
+        val destination = when (deepLink) {
+            is AppLinkDeepLink.OpenGroupInvite -> "group_invite"
+        }
+        val params = Bundle().apply { putString(PARAM_DESTINATION, destination) }
+        firebaseAnalytics.logEvent(EVENT_APP_LINK_OPENED, params)
     }
 }
