@@ -1,4 +1,4 @@
-# Parfait
+# Parfait.
 
 
 <div align="center">
