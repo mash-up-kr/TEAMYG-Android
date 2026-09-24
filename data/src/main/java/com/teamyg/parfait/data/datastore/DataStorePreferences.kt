@@ -27,12 +27,8 @@ constructor(
         .map { stored -> decodeOrDiscard(stored, onDecodeFailure, decode) }
 
     /**
-     * 저장분을 한 번 읽는다. 없으면 `null`.
-     *
-     * **저장소 읽기 자체가 실패한 경우(디스크 IO 등)는 폐기하지 않는다** — 값이 손상됐다는
-     * 근거가 없고, 일시적 실패로 토큰·계정 정보를 지우면 다음 시도에 살아날 세션까지 잃는다.
-     * 폐기는 값을 손에 넣고도 해석하지 못했을 때만이다([decodeOrDiscard]).
-     * 취소는 `null` 로 접지 않고 그대로 재던진다.
+     * 저장소 읽기 자체의 실패(디스크 IO 등)는 `null` 로 돌리되 폐기하지 않는다 — 일시적
+     * 실패일 수 있다. 폐기는 값을 읽고도 해석하지 못했을 때만이다([decodeOrDiscard]).
      */
     suspend fun <T> read(
         key: Preferences.Key<String>,
@@ -44,7 +40,7 @@ constructor(
         decode = decode,
     )
 
-    /** 여러 값을 **한 `edit` 블록**에서 쓴다 — 반쪽만 저장된 상태가 보이지 않는다. */
+    /** 한 `edit` 블록에서 써서 반쪽만 저장된 상태가 보이지 않는다. */
     suspend fun write(values: Map<Preferences.Key<String>, String>) {
         dataStore.edit { preferences ->
             values.forEach { (key, value) -> preferences[key] = value }
@@ -60,14 +56,7 @@ constructor(
         dataStore.edit { preferences -> keys.forEach(preferences::remove) }
     }
 
-    /**
-     * 복호화·역직렬화에 실패하면(키 회전·백업 복원·저장 형태 손상 등) [onDecodeFailure] 로
-     * 저장분을 버리고 `null` 을 돌려 재부트스트랩을 유도한다 — 영구히 못 읽는 값을 들고
-     * 있어 봐야 매 읽기마다 같은 실패를 반복할 뿐이다.
-     *
-     * `runCatching` 이 아니라 [runSuspendCatching] 인 이유: 블록이 suspend 라 stdlib 판으로
-     * 감싸면 **취소가 `null` 로 둔갑해** 화면을 벗어난 것뿐인데 "저장분 없음"으로 보고된다.
-     */
+    /** 해석에 실패하면 [onDecodeFailure] 로 저장분을 버린다 — 두면 매 읽기마다 같은 실패를 반복한다. */
     private suspend fun <T> decodeOrDiscard(
         stored: String?,
         onDecodeFailure: suspend () -> Unit,
