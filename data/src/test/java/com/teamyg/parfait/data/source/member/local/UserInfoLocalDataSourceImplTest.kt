@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.source.member.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.teamyg.parfait.data.datastore.DataStorePreferences
 import com.teamyg.parfait.data.datastore.EncryptedPreferences
 import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.data.security.CryptoManager
@@ -41,7 +42,10 @@ class UserInfoLocalDataSourceImplTest {
         dataStore: DataStore<Preferences>,
         crypto: CryptoManager = passthroughCrypto,
     ) = UserInfoLocalDataSourceImpl(
-        preferences = EncryptedPreferences(dataStore = dataStore, cryptoManager = crypto),
+        preferences = EncryptedPreferences(
+            preferences = DataStorePreferences(dataStore),
+            cryptoManager = crypto,
+        ),
         json = Json { ignoreUnknownKeys = true },
     )
 
