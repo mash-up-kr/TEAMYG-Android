@@ -1,8 +1,6 @@
 package com.teamyg.parfait.data.installer.image
 
-/**
- * [ModuleInstallGateway] 가 흘리는 설치 신호. GMS 상태 코드를 그대로 나르지 않고 종료만 추린다.
- */
+/** [ModuleInstallGateway] 가 흘리는 설치 신호. GMS 상태 중 종료만 추린다. */
 sealed interface ModuleInstallSignal {
     data object AlreadyInstalled : ModuleInstallSignal
 
