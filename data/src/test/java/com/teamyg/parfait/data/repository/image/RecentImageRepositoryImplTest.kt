@@ -4,13 +4,11 @@ import com.teamyg.parfait.data.model.local.RecentImageEntity
 import com.teamyg.parfait.data.model.local.RecentImageKindEntity
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
-import com.teamyg.parfait.data.datastore.RecentImageEditor
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -30,7 +28,6 @@ class RecentImageRepositoryImplTest {
 
     private val localDataSource: RecentImageLocalDataSource = mockk(relaxed = true)
     private val fileDataSource: FileRecentImageLocalDataSource = mockk(relaxed = true)
-    private val editor: RecentImageEditor = mockk(relaxed = true)
 
     /** 생성자 초기화식이 `localDataSource.values`를 곧바로 읽으므로 stub을 먼저 둔다 */
     private fun repository() = RecentImageRepositoryImpl(
@@ -38,11 +35,13 @@ class RecentImageRepositoryImplTest {
         fileRecentImageLocalDataSource = fileDataSource,
     )
 
-    /** `edit`이 실제 DataStore 트랜잭션을 열지 않으므로, 전달된 transform 을 그대로 실행해 준다 */
-    private fun stubEdit() {
-        coEvery { localDataSource.edit(any()) } coAnswers {
-            firstArg<suspend (RecentImageEditor) -> Unit>().invoke(editor)
+    /** `update`가 실제 DataStore 트랜잭션을 열지 않으므로, [current] 로 transform 을 돌리고 결과를 담아 준다 */
+    private fun stubUpdate(current: List<RecentImageEntity>): MutableList<RecentImageEntity> {
+        val updated = mutableListOf<RecentImageEntity>()
+        coEvery { localDataSource.update(any()) } coAnswers {
+            updated += firstArg<(List<RecentImageEntity>) -> List<RecentImageEntity>>().invoke(current)
         }
+        return updated
     }
 
     @Test
@@ -178,18 +177,15 @@ class RecentImageRepositoryImplTest {
 
     @Test
     fun addAndGetEvictedCacheFileName_withCutout_keepsCutoutKindInStoredEntity() = runTest {
-        // Given 빈 저장소이고, encodeValue 로 넘어가는 리스트를 슬롯으로 잡는다
-        val encoded = slot<List<RecentImageEntity>>()
-        every { localDataSource.decodeValue(any()) } returns emptyList()
-        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
-        stubEdit()
+        // Given 빈 저장소
+        val updated = stubUpdate(emptyList())
 
         // When 배치까지 마친 알맹이를 추가한다
         repository().addAndGetEvictedCacheFileName(uri = "content://recent/new.png", kind = RecentImageKind.CUTOUT)
 
         // Then 저장되는 엔티티가 CUTOUT 을 유지한다 — SOURCE 로 강등되면 갤러리가 이 항목을
         // 원본 사진으로 오인해 엉뚱한 화면으로 보낸다
-        assertEquals(RecentImageKindEntity.CUTOUT, encoded.captured.single().kind)
+        assertEquals(RecentImageKindEntity.CUTOUT, updated.single().kind)
     }
 
     @Test
@@ -198,10 +194,7 @@ class RecentImageRepositoryImplTest {
         val existing = (1..9).map { index ->
             RecentImageEntity(uri = "content://recent/$index.jpg", kind = RecentImageKindEntity.SOURCE)
         }
-        val encoded = slot<List<RecentImageEntity>>()
-        every { localDataSource.decodeValue(any()) } returns existing
-        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
-        stubEdit()
+        val updated = stubUpdate(existing)
 
         // When 10 번째 항목을 추가한다
         val evicted = repository().addAndGetEvictedCacheFileName(
@@ -211,9 +204,9 @@ class RecentImageRepositoryImplTest {
 
         // Then 가장 오래된 하나가 evicted 로 돌아오고 목록은 9개로 유지된다
         assertEquals(listOf("content://recent/1.jpg"), evicted)
-        assertEquals(9, encoded.captured.size)
-        assertTrue(encoded.captured.none { it.uri == "content://recent/1.jpg" })
-        assertTrue(encoded.captured.any { it.uri == "content://recent/10.jpg" })
+        assertEquals(9, updated.size)
+        assertTrue(updated.none { it.uri == "content://recent/1.jpg" })
+        assertTrue(updated.any { it.uri == "content://recent/10.jpg" })
     }
 
     @Test
@@ -222,10 +215,7 @@ class RecentImageRepositoryImplTest {
         val existing = (1..9).map { index ->
             RecentImageEntity(uri = "content://recent/$index.jpg", kind = RecentImageKindEntity.SOURCE)
         }
-        val encoded = slot<List<RecentImageEntity>>()
-        every { localDataSource.decodeValue(any()) } returns existing
-        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
-        stubEdit()
+        val updated = stubUpdate(existing)
 
         // When 알맹이 한 개를 추가한다
         val evicted = repository().addAndGetEvictedCacheFileName(
@@ -235,9 +225,9 @@ class RecentImageRepositoryImplTest {
 
         // Then 정원은 종류마다 따로라 원본은 하나도 밀려나지 않는다
         assertEquals(emptyList(), evicted)
-        assertEquals(10, encoded.captured.size)
-        assertEquals(9, encoded.captured.count { it.kind == RecentImageKindEntity.SOURCE })
-        assertTrue(encoded.captured.any { it.uri == "content://recent/cutout.png" })
+        assertEquals(10, updated.size)
+        assertEquals(9, updated.count { it.kind == RecentImageKindEntity.SOURCE })
+        assertTrue(updated.any { it.uri == "content://recent/cutout.png" })
     }
 
     @Test
@@ -249,10 +239,7 @@ class RecentImageRepositoryImplTest {
         ) + (2..9).map { index ->
             RecentImageEntity(uri = "content://recent/s$index.jpg", kind = RecentImageKindEntity.SOURCE)
         }
-        val encoded = slot<List<RecentImageEntity>>()
-        every { localDataSource.decodeValue(any()) } returns existing
-        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
-        stubEdit()
+        val updated = stubUpdate(existing)
 
         // When 원본을 하나 더 넣어 원본 쪽만 넘치게 한다
         repository().addAndGetEvictedCacheFileName(
@@ -274,7 +261,7 @@ class RecentImageRepositoryImplTest {
                 "content://recent/s9.jpg",
                 "content://recent/s10.jpg",
             ),
-            encoded.captured.map(RecentImageEntity::uri),
+            updated.map(RecentImageEntity::uri),
         )
     }
 
@@ -287,10 +274,7 @@ class RecentImageRepositoryImplTest {
             RecentImageEntity(uri = "content://recent/s1.jpg", kind = RecentImageKindEntity.SOURCE),
             RecentImageEntity(uri = "content://recent/s2.jpg", kind = RecentImageKindEntity.SOURCE),
         )
-        val encoded = slot<List<RecentImageEntity>>()
-        every { localDataSource.decodeValue(any()) } returns existing
-        every { localDataSource.encodeValue(capture(encoded)) } returns "encoded"
-        stubEdit()
+        val updated = stubUpdate(existing)
 
         // When 알맹이를 하나 더 넣는다
         val evicted = repository().addAndGetEvictedCacheFileName(
@@ -300,7 +284,7 @@ class RecentImageRepositoryImplTest {
 
         // Then 밀려나는 것은 가장 오래된 알맹이 하나뿐이고 원본은 그대로다
         assertEquals(listOf("content://recent/c1.png"), evicted)
-        assertEquals(9, encoded.captured.count { it.kind == RecentImageKindEntity.CUTOUT })
-        assertEquals(2, encoded.captured.count { it.kind == RecentImageKindEntity.SOURCE })
+        assertEquals(9, updated.count { it.kind == RecentImageKindEntity.CUTOUT })
+        assertEquals(2, updated.count { it.kind == RecentImageKindEntity.SOURCE })
     }
 }

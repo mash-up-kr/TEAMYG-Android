@@ -54,8 +54,7 @@ constructor(
     ): List<String> {
         var evicted: List<String> = emptyList()
 
-        recentImageLocalDataSource.edit { prefs ->
-            val current: List<RecentImageEntity> = recentImageLocalDataSource.decodeValue(prefs.get())
+        recentImageLocalDataSource.update { current ->
             val appended: List<RecentImageEntity> = current.filterNot { it.uri == uri } +
                 listOf(RecentImageEntity(uri = uri, kind = kind.toEntity()))
 
@@ -67,10 +66,9 @@ constructor(
                 .flatMap { entities -> entities.takeLast(MAX_SIZE_PER_KIND) }
                 .map(RecentImageEntity::uri)
                 .toSet()
-            val updated: List<RecentImageEntity> = appended.filter { it.uri in keptUris }
 
             evicted = current.filterNot { it.uri in keptUris }.map(RecentImageEntity::uri)
-            prefs.set(recentImageLocalDataSource.encodeValue(updated))
+            appended.filter { it.uri in keptUris }
         }
 
         return evicted
