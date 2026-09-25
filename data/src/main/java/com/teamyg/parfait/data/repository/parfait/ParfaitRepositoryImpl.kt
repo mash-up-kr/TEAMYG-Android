@@ -20,11 +20,8 @@ import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
 /**
- * 위임만 하는 것처럼 보여도 [mapErrorToAppError] 때문에 이 층이 필요하다 — 여기서
- * `ApiException` 을 `AppError` 로 바꿔야 domain·feature 가 `:data` 를 보지 않는다.
- *
  * 오늘 캔버스는 [CanvasLocalDataSource] 인메모리 캐시가 SSoT 다
- * (`adr/0029-canvas-today-ssot-polling.md`) — 조회는 캐시를 읽는 [Flow] 하나, 서버 재조회는
+ * (`docs/adr/0029-canvas-today-ssot-polling.md`). 조회는 캐시를 읽는 [Flow] 하나, 서버 재조회는
  * [CanvasPoller] 가 맡고 이 층은 [refreshTodayCanvasDetail]·[requestTodayCanvasRefresh] 로
  * 그 트리거만 낸다.
  */

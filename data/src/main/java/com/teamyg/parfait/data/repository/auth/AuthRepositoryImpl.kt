@@ -12,12 +12,6 @@ import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import javax.inject.Inject
 
-/**
- * 원격 인증 호출과 토큰 저장을 묶는다.
- *
- * 실패 원인을 여기서 [com.teamyg.parfait.domain.model.error.AppError] 로 바꾼다 —
- * 이 경계가 있어야 feature 모듈이 `:data` 의 `ApiException` 을 보지 않는다.
- */
 class AuthRepositoryImpl @Inject constructor(
     private val authRemoteDataSource: AuthRemoteDataSource,
     private val tokenLocalDataSource: TokenLocalDataSource,
@@ -64,12 +58,12 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 재발급이 로그아웃 요청 도중 refresh token 을 회전시켰으면 새 값으로 **딱 한 번** 다시 보낸다.
+     * 재발급이 로그아웃 요청 도중 refresh token 을 회전시켰으면 새 값으로 딱 한 번 다시 보낸다.
      *
      * `POST /api/v1/auth/logout` 은 화이트리스트 밖이라 access token 이 만료된 상태의
      * 로그아웃은 `TokenAuthenticator` 를 한 번 타고 나간다. 그런데 재발급은 refresh token 도
      * 함께 회전시켜 방금 본문에 실어 보낸 값을 죽이고, 인증기는 `Authorization` 헤더만
-     * 갈아끼워 **같은 본문을** 재전송하므로 재시도까지 실패한다. 그대로 두면 로컬만 지워지고
+     * 갈아끼워 같은 본문을 재전송하므로 재시도까지 실패한다. 그대로 두면 로컬만 지워지고
      * 갓 발급된 서버 세션은 refresh token 수명만큼 살아남는다 — 사용자는 로그아웃했다고 믿는데.
      */
     private suspend fun retryIfRefreshTokenRotated(sentRefreshToken: String) {
