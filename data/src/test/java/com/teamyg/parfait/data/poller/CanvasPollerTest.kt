@@ -1,5 +1,6 @@
-package com.teamyg.parfait.data.source.parfait.local
+package com.teamyg.parfait.data.poller
 
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
@@ -16,8 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate

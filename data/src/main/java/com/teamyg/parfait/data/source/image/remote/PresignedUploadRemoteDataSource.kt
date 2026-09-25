@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.source.image.remote
 
 import java.io.File
 
-interface PresignedUploadDataSource {
+interface PresignedUploadRemoteDataSource {
     /**
      * 발급받은 presigned URL 로 파일 바이트를 그대로 올린다. 우리 서버가 아니라 S3 로 나가는
      * 유일한 요청이다.

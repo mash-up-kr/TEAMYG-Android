@@ -6,10 +6,10 @@ import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSource
 import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSourceImpl
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSourceImpl
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSourceImpl
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSource
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSource
+import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSource
@@ -63,15 +63,15 @@ interface RemoteDataSourceModule {
 
     @Binds
     @Singleton
-    fun bindPresignedUploadDataSource(
-        presignedUploadDataSourceImpl: PresignedUploadDataSourceImpl,
-    ): PresignedUploadDataSource
+    fun bindPresignedUploadRemoteDataSource(
+        presignedUploadRemoteDataSourceImpl: PresignedUploadRemoteDataSourceImpl,
+    ): PresignedUploadRemoteDataSource
 
     @Binds
     @Singleton
-    fun bindRemoteImageDownloadDataSource(
-        remoteImageDownloadDataSourceImpl: RemoteImageDownloadDataSourceImpl,
-    ): RemoteImageDownloadDataSource
+    fun bindImageDownloadRemoteDataSource(
+        imageDownloadRemoteDataSourceImpl: ImageDownloadRemoteDataSourceImpl,
+    ): ImageDownloadRemoteDataSource
 
     @Binds
     @Singleton

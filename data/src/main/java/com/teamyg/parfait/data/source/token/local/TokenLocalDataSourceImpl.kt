@@ -5,11 +5,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.datastore.EncryptedPreferences
 import javax.inject.Inject
 
-class EncryptedTokenStore
+class TokenLocalDataSourceImpl
 @Inject
 constructor(
     private val preferences: EncryptedPreferences,
-) : TokenStore {
+) : TokenLocalDataSource {
     override suspend fun getAccessToken(): String? = read(ACCESS_TOKEN_KEY)
 
     override suspend fun getRefreshToken(): String? = read(REFRESH_TOKEN_KEY)
