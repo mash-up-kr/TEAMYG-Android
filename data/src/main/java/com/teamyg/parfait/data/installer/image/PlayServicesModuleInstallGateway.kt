@@ -30,6 +30,8 @@ constructor(
     /**
      * 판정에 `SubjectSegmenter` 를 쓰지 않는다 — `getClient` 가 네이티브 그래프를 띄워
      * 실제 세그멘테이션의 그래프와 겹치면 실기기에서 SIGBUS 로 죽는다.
+     *
+     * feature 이름·버전 근거: `docs/superpowers/specs/archive/2026-09-02-segmentation-module-install.md`
      */
     private val segmentationModule = OptionalModuleApi {
         arrayOf(Feature(SUBJECT_SEGMENTATION_FEATURE, SUBJECT_SEGMENTATION_FEATURE_VERSION))

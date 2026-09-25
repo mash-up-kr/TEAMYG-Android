@@ -22,7 +22,7 @@ internal const val MAX_POST_PROCESS_CANDIDATES = MAX_SUBJECT_COUNT + 3
 
 /**
  * 로그에만 쓰는 완화 배수. 판정에는 쓰지 않는다 — 수동 편집이 같은 엄격 하한으로 저장을 막으므로, 회복 판정만
- * 완화하면 고른 후보를 손대지 않고도 저장하지 못한다.
+ * 완화하면 고른 후보를 손대지 않고도 저장하지 못한다. 근거: `docs/superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md` 「범위」
  */
 internal const val RELAXED_FLOOR_LOG_DIVISOR = 4
 
@@ -207,7 +207,7 @@ private suspend fun postProcessMlKitPlate(
     }
 
     val inner = result.bounds
-    // ML Kit 판은 ML Kit 소유라 알파가 안 바뀌면 그대로 써도 된다. 회복 경로는 이 최적화를 안 쓴다
+    // ML Kit 판은 ML Kit 소유라 알파가 안 바뀌면 그대로 써도 된다(OQ-P-266). 회복 경로는 이 최적화를 안 쓴다
     val unchangedWholePlate = !result.changed && inner.width == width && inner.height == height
     val trimmed = if (unchangedWholePlate) {
         plate
