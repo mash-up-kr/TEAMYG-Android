@@ -10,7 +10,7 @@ import java.nio.FloatBuffer
  * 전경 신뢰도를 알파로 사상한다. 이진 컷 대신 램프를 쓰는 것은 경계 한두 픽셀을 부드럽게 하기
  * 위해서다.
  *
- * ⚠️ 변환은 **버림**이다. 종전 상수가 "이 값을 **넘는**" 신뢰도만 객체로 봤고, 버림이면
+ * 변환은 버림이다. 종전 상수가 "이 값을 넘는" 신뢰도만 객체로 봤고, 버림이면
  * `알파 > 127 ⇔ 신뢰도 ≥ 0.35 + 128 × 0.3 / 255`(대략 0.5006)라 그 경계가 거의 그대로 옮겨진다.
  * 반올림으로 바꾸면 0.5가 전경이 되어 판정이 뒤집힌다.
  */
@@ -38,7 +38,7 @@ internal fun confidenceToAlphaArray(
 /**
  * 알파 후처리. 원본 공간에서 돈다 — [guidance] 가 원본을 읽기 때문이다.
  *
- * ⚠️ [alpha] 를 제자리에서 지운다. 되돌림에 쓸 알파는 부르기 전에 사본을 떠 둔다.
+ * [alpha] 를 제자리에서 지운다. 되돌림에 쓸 알파는 부르기 전에 사본을 떠 둔다.
  */
 internal suspend fun postProcessMaskedAlpha(
     alpha: ByteArray,
@@ -129,7 +129,7 @@ internal fun cropAlpha(
 }
 
 /**
- * 검출 공간의 알파를 원본 좌표 사각형으로 옮긴다. [ProjectedRegion.mapped] 크기로 **먼저** 재표본하고,
+ * 검출 공간의 알파를 원본 좌표 사각형으로 옮긴다. [ProjectedRegion.mapped] 크기로 먼저 재표본하고,
  * 그다음 [ProjectedRegion.clipped] 로 자른다. 잘린 크기로 바로 재표본하면 알파가 어긋난다.
  */
 internal fun projectAlpha(

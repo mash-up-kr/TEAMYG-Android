@@ -185,9 +185,8 @@ internal const val REFINE_EPSILON = 1e-4f
  * 중단 지점이 없어서 `suspend` 표시만으로는 이 성질이 드러나지 않는다.
  *
  * @param alpha 길이가 `width * height` 여야 한다
- * @return 남은 알파가 없으면 `null`. 정련이나 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로
- *   `null` 이 나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고
- *   반환하므로 다르다
+ * @return 남은 알파가 없으면 `null`. 정련·침식에서 전멸했으면 `alpha` 는 지워진 상태고,
+ *   area opening 에서 전멸했으면 원본 그대로다
  */
 internal suspend fun postProcessAlpha(
     alpha: ByteArray,
