@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.toppingdraft.local
+package com.teamyg.parfait.data.source.topping.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

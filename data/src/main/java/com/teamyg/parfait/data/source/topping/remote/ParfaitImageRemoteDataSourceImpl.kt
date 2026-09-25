@@ -1,13 +1,13 @@
-package com.teamyg.parfait.data.source.parfaitimage.remote
+package com.teamyg.parfait.data.source.topping.remote
 
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitImageService
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toPlaceRequest
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toPlacedToppingVO
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdateBorderRequest
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdateRequest
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdatedToppingBorderVO
-import com.teamyg.parfait.data.source.parfaitimage.mapper.toUpdatedToppingVOList
+import com.teamyg.parfait.data.source.topping.mapper.toPlaceRequest
+import com.teamyg.parfait.data.source.topping.mapper.toPlacedToppingVO
+import com.teamyg.parfait.data.source.topping.mapper.toUpdateBorderRequest
+import com.teamyg.parfait.data.source.topping.mapper.toUpdateRequest
+import com.teamyg.parfait.data.source.topping.mapper.toUpdatedToppingBorderVO
+import com.teamyg.parfait.data.source.topping.mapper.toUpdatedToppingVOList
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId

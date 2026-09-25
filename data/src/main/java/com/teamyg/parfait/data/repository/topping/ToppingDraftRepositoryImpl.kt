@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.topping
 
-import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSource
+import com.teamyg.parfait.data.source.topping.local.ToppingDraftLocalDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.SourceLongSide

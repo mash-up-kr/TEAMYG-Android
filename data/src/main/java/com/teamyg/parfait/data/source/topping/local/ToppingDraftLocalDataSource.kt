@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.toppingdraft.local
+package com.teamyg.parfait.data.source.topping.local
 
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.coroutines.flow.Flow

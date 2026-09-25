@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.parfaitimage.remote
+package com.teamyg.parfait.data.source.topping.remote
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId
