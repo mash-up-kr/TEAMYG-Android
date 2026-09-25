@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.repository.auth
 
 import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
@@ -20,7 +20,7 @@ import javax.inject.Inject
  */
 class AuthRepositoryImpl @Inject constructor(
     private val authRemoteDataSource: AuthRemoteDataSource,
-    private val tokenStore: TokenStore,
+    private val tokenLocalDataSource: TokenLocalDataSource,
 ) : AuthRepository {
     override suspend fun loginWithKakao(
         idToken: String,
@@ -39,16 +39,16 @@ class AuthRepositoryImpl @Inject constructor(
         ).mapErrorToAppError()
 
     override suspend fun saveSession(session: AuthSessionVO) {
-        tokenStore.save(
+        tokenLocalDataSource.save(
             accessToken = session.accessToken.value,
             refreshToken = session.refreshToken.value,
         )
     }
 
-    override suspend fun hasSession(): Boolean = tokenStore.getRefreshToken() != null
+    override suspend fun hasSession(): Boolean = tokenLocalDataSource.getRefreshToken() != null
 
     override suspend fun logout(): Result<Unit> {
-        val refreshToken = tokenStore.getRefreshToken()
+        val refreshToken = tokenLocalDataSource.getRefreshToken()
 
         if (refreshToken != null) {
             authRemoteDataSource
@@ -59,7 +59,7 @@ class AuthRepositoryImpl @Inject constructor(
                 }
         }
 
-        tokenStore.clear()
+        tokenLocalDataSource.clear()
         return Result.success(Unit)
     }
 
@@ -73,7 +73,7 @@ class AuthRepositoryImpl @Inject constructor(
      * 갓 발급된 서버 세션은 refresh token 수명만큼 살아남는다 — 사용자는 로그아웃했다고 믿는데.
      */
     private suspend fun retryIfRefreshTokenRotated(sentRefreshToken: String) {
-        val currentRefreshToken = tokenStore.getRefreshToken()
+        val currentRefreshToken = tokenLocalDataSource.getRefreshToken()
         if (currentRefreshToken == null || currentRefreshToken == sentRefreshToken) return
 
         repositoryLogger.i { "로그아웃 도중 refresh token 이 회전됐다 — 새 값으로 한 번만 재시도" }

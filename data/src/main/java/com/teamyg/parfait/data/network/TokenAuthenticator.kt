@@ -11,8 +11,8 @@ import com.teamyg.parfait.data.source.auth.mapper.toAuthSessionVO
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
-import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.poller.CanvasPoller
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.data.utils.sourceLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -42,7 +42,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class TokenAuthenticator @Inject constructor(
-    private val tokenStore: TokenStore,
+    private val tokenLocalDataSource: TokenLocalDataSource,
     @UnauthenticatedClient private val authService: AuthService,
     private val apiCaller: ApiCaller,
     private val sessionEventBus: SessionEventBusImpl,
@@ -78,15 +78,15 @@ class TokenAuthenticator @Inject constructor(
             mutex.withLock {
                 // 기다리는 동안 다른 요청이 이미 갱신했다면 새 토큰만 달아준다. 이 확인이 없으면
                 // 대기하던 요청들이 차례로 각자 재발급을 쏜다
-                val currentToken = tokenStore.getAccessToken()
+                val currentToken = tokenLocalDataSource.getAccessToken()
                 if (currentToken != null && currentToken != failedToken) {
                     return@withLock response.request.withBearerToken(currentToken)
                 }
 
-                val refreshToken = tokenStore.getRefreshToken() ?: return@withLock null
+                val refreshToken = tokenLocalDataSource.getRefreshToken() ?: return@withLock null
 
                 val session = reissue(refreshToken) ?: return@withLock null
-                tokenStore.save(
+                tokenLocalDataSource.save(
                     accessToken = session.accessToken.value,
                     refreshToken = session.refreshToken.value,
                 )
@@ -123,7 +123,7 @@ class TokenAuthenticator @Inject constructor(
                 sessionEventBus.postForcedLogout()
                 // 계정 정보·캐시도 여기서 함께 지운다. 화면이 이벤트를 받아 지우게 하면 이벤트
                 // 유실 시 토큰 없이 계정 정보만 남는다
-                tokenStore.clear()
+                tokenLocalDataSource.clear()
                 // 던지지 않는 인메모리 캐시부터 지운다. 뒤의 DataStore IO 실패가 이 정리까지
                 // 막지 않게 한다
                 groupLocalDataSource.clear()

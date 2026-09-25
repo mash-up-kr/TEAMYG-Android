@@ -19,13 +19,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-class EncryptedTokenStoreTest {
+class TokenLocalDataSourceImplTest {
     private val dataStore: DataStore<Preferences> = mockk()
     private val cryptoManager: CryptoManager = mockk()
 
     // 프록시는 실물을 통과시킨다 — 암호화·복호화·손상분 폐기가 이 저장소의 계약이라
     // mock 으로 바꾸면 그 계약이 테스트에서 사라진다.
-    private val tokenStore = EncryptedTokenStore(
+    private val tokenLocalDataSource = TokenLocalDataSourceImpl(
         preferences = EncryptedPreferences(
             preferences = DataStorePreferences(dataStore),
             cryptoManager = cryptoManager,
@@ -41,7 +41,7 @@ class EncryptedTokenStoreTest {
         every { cryptoManager.decrypt("cipher") } returns "access-1"
 
         // When 읽는다
-        val token = tokenStore.getAccessToken()
+        val token = tokenLocalDataSource.getAccessToken()
 
         // Then 복호화된 값이 나온다
         assertEquals("access-1", token)
@@ -53,7 +53,7 @@ class EncryptedTokenStoreTest {
         every { dataStore.data } returns flowOf(preferencesOf())
 
         // When 읽는다
-        val token = tokenStore.getAccessToken()
+        val token = tokenLocalDataSource.getAccessToken()
 
         // Then null 이다
         assertNull(token)
@@ -66,7 +66,7 @@ class EncryptedTokenStoreTest {
         every { cryptoManager.decrypt("cipher") } throws IllegalStateException("bad key")
 
         // When 읽는다
-        val token = tokenStore.getAccessToken()
+        val token = tokenLocalDataSource.getAccessToken()
 
         // Then 재로그인을 유도하려고 null 을 돌려준다
         assertNull(token)
@@ -78,7 +78,7 @@ class EncryptedTokenStoreTest {
         every { dataStore.data } returns flow { throw IOException("disk") }
 
         // When 읽는다
-        val token = tokenStore.getAccessToken()
+        val token = tokenLocalDataSource.getAccessToken()
 
         // Then null 이다
         assertNull(token)
@@ -92,6 +92,6 @@ class EncryptedTokenStoreTest {
         // When·Then 취소를 "토큰 없음"으로 바꾸지 않고 그대로 재던진다.
         // stdlib `runCatching` 으로 감싸면 여기서 null 이 나오고, 호출부는 그것을
         // 로그아웃 상태로 읽는다 — `runSuspendCatching` 이 막는 회귀다.
-        assertFailsWith<CancellationException> { tokenStore.getAccessToken() }
+        assertFailsWith<CancellationException> { tokenLocalDataSource.getAccessToken() }
     }
 }

@@ -22,7 +22,7 @@ import com.teamyg.parfait.data.model.image.DetectionBounds
 import com.teamyg.parfait.data.model.image.DetectionProjection
 import com.teamyg.parfait.data.model.image.RecoveryStage
 import com.teamyg.parfait.data.model.image.RecoveryTransform
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
+import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSource
 import com.teamyg.parfait.data.utils.image.AlphaPostProcessOptions
 import com.teamyg.parfait.data.utils.image.RELAXED_FLOOR_LOG_DIVISOR
 import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
@@ -65,7 +65,7 @@ class ImageSegmentationRepositoryImpl
 @Inject
 constructor(
     @ApplicationContext private val context: Context,
-    private val remoteImageDownloadDataSource: RemoteImageDownloadDataSource,
+    private val imageDownloadRemoteDataSource: ImageDownloadRemoteDataSource,
     private val moduleInstaller: SegmentationModuleInstaller,
 ) : ImageSegmentationRepository {
     override suspend fun prepareSegmentationModule() {
@@ -79,7 +79,7 @@ constructor(
      */
     override suspend fun decodeImage(uri: String): BitmapWrapper {
         val bitmap: Bitmap = if (uri.isRemoteImageUrl()) {
-            val bytes = remoteImageDownloadDataSource.download(uri)
+            val bytes = imageDownloadRemoteDataSource.download(uri)
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 ?: throw IOException("이미지를 디코드하지 못했다 - uri: $uri")
         } else {

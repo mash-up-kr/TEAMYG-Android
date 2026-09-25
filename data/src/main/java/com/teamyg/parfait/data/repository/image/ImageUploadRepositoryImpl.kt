@@ -4,7 +4,7 @@ import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.model.mapper.exception.toAppError
 import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSource
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.image.SourceLongSide
@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 class ImageUploadRepositoryImpl @Inject constructor(
     private val imageRemoteDataSource: ImageRemoteDataSource,
-    private val presignedUploadDataSource: PresignedUploadDataSource,
+    private val presignedUploadRemoteDataSource: PresignedUploadRemoteDataSource,
     private val uploadImagePreprocessor: UploadImagePreprocessor,
 ) : ImageUploadRepository {
     override suspend fun upload(
@@ -44,7 +44,7 @@ class ImageUploadRepositoryImpl @Inject constructor(
                 .issueUploadUrl(fileName = prepared.file.name, contentType = contentType, imageType = imageType)
                 .getOrElse { return Result.failure(it.toAppError()) }
 
-            presignedUploadDataSource
+            presignedUploadRemoteDataSource
                 .put(uploadUrl = issued.uploadUrl, contentType = contentType, file = prepared.file)
                 .getOrElse { return Result.failure(it.toAppError()) }
 

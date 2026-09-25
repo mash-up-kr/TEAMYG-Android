@@ -18,8 +18,8 @@ import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.PastCanvasAlertLocalDataSourceImpl
-import com.teamyg.parfait.data.source.token.local.EncryptedTokenStore
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSourceImpl
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSource
 import com.teamyg.parfait.data.source.toppingdraft.local.ToppingDraftLocalDataSourceImpl
 import dagger.Binds
@@ -57,7 +57,7 @@ interface LocalDataSourceModule {
 
     @Binds
     @Singleton
-    fun bindTokenStore(encryptedTokenStore: EncryptedTokenStore): TokenStore
+    fun bindTokenLocalDataSource(tokenLocalDataSourceImpl: TokenLocalDataSourceImpl): TokenLocalDataSource
 
     @Binds
     @Singleton

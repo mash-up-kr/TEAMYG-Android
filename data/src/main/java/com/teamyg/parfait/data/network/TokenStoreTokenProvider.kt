@@ -1,13 +1,13 @@
 package com.teamyg.parfait.data.network
 
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 class TokenStoreTokenProvider
 @Inject
 constructor(
-    private val tokenStore: TokenStore,
+    private val tokenLocalDataSource: TokenLocalDataSource,
 ) : TokenProvider {
-    override fun getToken(): String? = runBlocking { tokenStore.getAccessToken() }
+    override fun getToken(): String? = runBlocking { tokenLocalDataSource.getAccessToken() }
 }

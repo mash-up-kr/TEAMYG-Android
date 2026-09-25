@@ -12,11 +12,11 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class RemoteImageDownloadDataSourceImpl
+class ImageDownloadRemoteDataSourceImpl
 @Inject
 constructor(
     @DownloadClient private val okHttpClient: OkHttpClient,
-) : RemoteImageDownloadDataSource {
+) : ImageDownloadRemoteDataSource {
     /**
      * `execute()` 가 아니라 `enqueue` 를 쓰는 것이 취소 전파의 전부다 — 블로킹 호출은
      * 코루틴이 취소돼도 스스로 멈추지 않는다. 자체 디스패처 위에서 돌므로

@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.source.token.local
 
-interface TokenStore {
+interface TokenLocalDataSource {
     suspend fun getAccessToken(): String?
 
     suspend fun getRefreshToken(): String?

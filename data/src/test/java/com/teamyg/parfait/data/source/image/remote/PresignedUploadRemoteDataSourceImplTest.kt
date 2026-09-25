@@ -20,10 +20,10 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class PresignedUploadDataSourceImplTest {
+class PresignedUploadRemoteDataSourceImplTest {
     private lateinit var server: MockWebServer
     private lateinit var client: OkHttpClient
-    private lateinit var dataSource: PresignedUploadDataSource
+    private lateinit var dataSource: PresignedUploadRemoteDataSource
     private lateinit var file: File
 
     @BeforeTest
@@ -31,7 +31,7 @@ class PresignedUploadDataSourceImplTest {
         server = MockWebServer()
         server.start()
         client = NetworkModule.provideUploadOkHttpClient()
-        dataSource = PresignedUploadDataSourceImpl(client)
+        dataSource = PresignedUploadRemoteDataSourceImpl(client)
         file = File.createTempFile("topping", ".png")
         file.writeBytes(ByteArray(FILE_SIZE) { index -> index.toByte() })
     }
@@ -45,7 +45,7 @@ class PresignedUploadDataSourceImplTest {
     @Test
     fun impl_injectsUploadQualifiedClient() {
         // Given·When 생성자에 붙은 모든 파라미터의 한정자를 본다
-        val qualifiers = PresignedUploadDataSourceImpl::class.java
+        val qualifiers = PresignedUploadRemoteDataSourceImpl::class.java
             .declaredConstructors
             .single()
             .parameterAnnotations

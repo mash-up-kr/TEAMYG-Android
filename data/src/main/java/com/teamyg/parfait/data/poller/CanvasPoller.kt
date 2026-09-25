@@ -1,6 +1,7 @@
-package com.teamyg.parfait.data.source.parfait.local
+package com.teamyg.parfait.data.poller
 
 import com.teamyg.parfait.data.model.qualifier.ApplicationScope
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
