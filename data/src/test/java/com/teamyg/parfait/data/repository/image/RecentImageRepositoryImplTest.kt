@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.repository.image
 
-import com.teamyg.parfait.data.model.local.RecentImageEntity
-import com.teamyg.parfait.data.model.local.RecentImageKindEntity
+import com.teamyg.parfait.data.model.entity.RecentImageEntity
+import com.teamyg.parfait.data.model.entity.RecentImageKindEntity
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.domain.model.image.RecentImage

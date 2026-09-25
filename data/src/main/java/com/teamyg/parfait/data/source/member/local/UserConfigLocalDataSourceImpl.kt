@@ -2,9 +2,9 @@ package com.teamyg.parfait.data.source.member.local
 
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.teamyg.parfait.data.datastore.DataStorePreferences
-import com.teamyg.parfait.data.model.local.UserConfigEntity
-import com.teamyg.parfait.data.model.local.toEntity
-import com.teamyg.parfait.data.model.local.toVO
+import com.teamyg.parfait.data.model.entity.UserConfigEntity
+import com.teamyg.parfait.data.model.mapper.entity.toEntity
+import com.teamyg.parfait.data.model.mapper.entity.toVO
 import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.domain.model.member.UserConfigVO
 import kotlinx.coroutines.flow.Flow

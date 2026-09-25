@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.parfait
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource

@@ -1,20 +1,14 @@
-package com.teamyg.parfait.data.model.local
+package com.teamyg.parfait.data.model.mapper.entity
 
+import com.teamyg.parfait.data.model.entity.RecentImageKindEntity
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import kotlinx.serialization.Serializable
 
-@Serializable
-enum class RecentImageKindEntity {
-    SOURCE,
-    CUTOUT,
-}
-
-fun RecentImageKindEntity.toVO(): RecentImageKind = when (this) {
+internal fun RecentImageKindEntity.toVO(): RecentImageKind = when (this) {
     RecentImageKindEntity.SOURCE -> RecentImageKind.SOURCE
     RecentImageKindEntity.CUTOUT -> RecentImageKind.CUTOUT
 }
 
-fun RecentImageKind.toEntity(): RecentImageKindEntity = when (this) {
+internal fun RecentImageKind.toEntity(): RecentImageKindEntity = when (this) {
     RecentImageKind.SOURCE -> RecentImageKindEntity.SOURCE
     RecentImageKind.CUTOUT -> RecentImageKindEntity.CUTOUT
 }

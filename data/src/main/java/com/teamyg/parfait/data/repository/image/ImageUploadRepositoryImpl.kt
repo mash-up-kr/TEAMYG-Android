@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.repository.image
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
-import com.teamyg.parfait.data.model.error.toAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.toAppError
 import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource

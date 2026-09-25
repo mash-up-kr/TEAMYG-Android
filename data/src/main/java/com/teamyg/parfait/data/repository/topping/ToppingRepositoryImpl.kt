@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.topping
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ImageId

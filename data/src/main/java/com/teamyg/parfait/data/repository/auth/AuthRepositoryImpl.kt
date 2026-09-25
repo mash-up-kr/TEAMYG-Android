@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.auth
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
 import com.teamyg.parfait.data.source.token.local.TokenStore
 import com.teamyg.parfait.data.utils.repositoryLogger

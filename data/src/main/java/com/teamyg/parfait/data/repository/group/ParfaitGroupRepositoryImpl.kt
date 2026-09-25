@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.group
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSource
 import com.teamyg.parfait.domain.model.group.CreatedGroupVO
