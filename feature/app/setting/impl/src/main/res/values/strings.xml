@@ -3,7 +3,7 @@
     <string name="setting_profile_label">내 프로필</string>
     <string name="setting_item_account">계정 정보</string>
     <string name="setting_item_service_terms">서비스 이용약관</string>
-    <string name="setting_item_privacy_policy">개인정보 처리 방침</string>
+    <string name="setting_item_privacy_policy">개인정보처리방침</string>
     <string name="setting_item_version">버전 정보</string>
     <string name="setting_item_version_value">v%1$s</string>
     <string name="setting_logout">로그아웃</string>

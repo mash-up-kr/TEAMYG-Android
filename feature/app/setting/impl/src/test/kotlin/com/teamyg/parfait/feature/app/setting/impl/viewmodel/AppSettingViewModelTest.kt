@@ -83,7 +83,7 @@ class AppSettingViewModelTest {
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // When 개인정보 처리방침을 누른다
+            // When 개인정보처리방침을 누른다
             viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
 
             // Then 두 항목이 같은 목적지를 쓰더라도 서로 다른 약관이 열린다
@@ -124,7 +124,7 @@ class AppSettingViewModelTest {
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // When 없는 쪽인 개인정보 처리방침을 누른다
+            // When 없는 쪽인 개인정보처리방침을 누른다
             viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
             advanceUntilIdle()
 
@@ -439,7 +439,7 @@ class AppSettingViewModelTest {
         val PRIVACY_POLICY = PolicyVO(
             termsId = TermsId(2L),
             type = PolicyType.PRIVACY_POLICY,
-            title = "개인정보 처리 방침",
+            title = "개인정보처리방침",
             url = "https://example.com/privacy-policy",
             required = true,
         )

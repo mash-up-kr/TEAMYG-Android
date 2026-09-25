@@ -37,7 +37,7 @@ internal fun WebViewScreen(
 private class WebViewPreviewParameterProvider : PreviewParameterProvider<Pair<String, String>> {
     override val values = sequenceOf(
         "서비스 이용약관" to "https://example.com/terms-of-service",
-        "개인정보 처리 방침" to "https://example.com/privacy-policy",
+        "개인정보처리방침" to "https://example.com/privacy-policy",
     )
 }
 
