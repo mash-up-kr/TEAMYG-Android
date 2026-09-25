@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.utils.image
 
+import com.teamyg.parfait.data.model.image.AlphaMeasurement
+import com.teamyg.parfait.data.model.image.AlphaPostProcessResult
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
