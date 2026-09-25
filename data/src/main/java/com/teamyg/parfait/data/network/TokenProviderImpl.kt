@@ -4,7 +4,7 @@ import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
-class TokenStoreTokenProvider
+class TokenProviderImpl
 @Inject
 constructor(
     private val tokenLocalDataSource: TokenLocalDataSource,
