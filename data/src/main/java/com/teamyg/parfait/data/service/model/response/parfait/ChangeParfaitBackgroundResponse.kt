@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * 조회에서는 background 가 널 허용이지만 여기서는 방금 설정한 값이라 비널이다.
  *
  * type 이 IMAGE 면 value 는 imageId 가 아니라 저장된 이미지 URL 이다 — 요청은 id 로 보내고
- * 응답은 URL 로 받는다(`api/parfait.md`).
+ * 응답은 URL 로 받는다(`docs/api/parfait.md`).
  */
 @Serializable
 data class ChangeParfaitBackgroundResponse(
