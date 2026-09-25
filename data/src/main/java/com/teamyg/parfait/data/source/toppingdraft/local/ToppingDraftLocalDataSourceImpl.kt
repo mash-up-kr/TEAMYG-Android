@@ -4,9 +4,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.teamyg.parfait.data.model.local.ToppingDraftEntity
-import com.teamyg.parfait.data.model.local.toEntity
-import com.teamyg.parfait.data.model.local.toVO
+import com.teamyg.parfait.data.model.entity.ToppingDraftEntity
+import com.teamyg.parfait.data.model.mapper.entity.toEntity
+import com.teamyg.parfait.data.model.mapper.entity.toVO
 import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import kotlinx.coroutines.flow.Flow

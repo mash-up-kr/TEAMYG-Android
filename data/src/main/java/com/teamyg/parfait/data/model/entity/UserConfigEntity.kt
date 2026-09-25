@@ -1,7 +1,6 @@
-package com.teamyg.parfait.data.model.local
+package com.teamyg.parfait.data.model.entity
 
 import com.teamyg.parfait.domain.model.member.TutorialKind
-import com.teamyg.parfait.domain.model.member.UserConfigVO
 import kotlinx.serialization.Serializable
 
 /**
@@ -15,14 +14,4 @@ internal data class UserConfigEntity(
      * 모르는 항목에서 터져 설정 전체가 폐기된다. 문자열이면 모르는 항목만 버린다.
      */
     val seenTutorials: Set<String> = emptySet(),
-)
-
-internal fun UserConfigVO.toEntity(): UserConfigEntity = UserConfigEntity(
-    seenTutorials = seenTutorials.mapTo(mutableSetOf(), TutorialKind::name),
-)
-
-internal fun UserConfigEntity.toVO(): UserConfigVO = UserConfigVO(
-    seenTutorials = seenTutorials.mapNotNullTo(mutableSetOf()) { name ->
-        TutorialKind.entries.firstOrNull { it.name == name }
-    },
 )

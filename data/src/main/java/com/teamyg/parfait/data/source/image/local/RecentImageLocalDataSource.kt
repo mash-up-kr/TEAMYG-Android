@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.source.image.local
 
-import com.teamyg.parfait.data.model.local.RecentImageEntity
+import com.teamyg.parfait.data.model.entity.RecentImageEntity
 import kotlinx.coroutines.flow.Flow
 
 interface RecentImageLocalDataSource {

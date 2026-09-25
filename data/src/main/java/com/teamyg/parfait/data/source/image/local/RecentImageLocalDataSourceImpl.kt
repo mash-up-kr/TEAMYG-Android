@@ -4,8 +4,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.teamyg.parfait.data.model.local.RecentImageEntity
-import com.teamyg.parfait.data.model.local.RecentImageKindEntity
+import com.teamyg.parfait.data.model.entity.RecentImageEntity
+import com.teamyg.parfait.data.model.entity.RecentImageKindEntity
 import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.data.utils.sourceLogger
 import kotlinx.coroutines.flow.Flow

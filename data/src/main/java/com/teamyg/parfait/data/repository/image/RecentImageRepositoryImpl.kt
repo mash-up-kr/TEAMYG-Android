@@ -1,9 +1,9 @@
 package com.teamyg.parfait.data.repository.image
 
 import com.teamyg.parfait.data.model.image.UploadImageFormat
-import com.teamyg.parfait.data.model.local.RecentImageEntity
-import com.teamyg.parfait.data.model.local.toEntity
-import com.teamyg.parfait.data.model.local.toVO
+import com.teamyg.parfait.data.model.entity.RecentImageEntity
+import com.teamyg.parfait.data.model.mapper.entity.toEntity
+import com.teamyg.parfait.data.model.mapper.entity.toVO
 import com.teamyg.parfait.data.source.file.local.FileRecentImageLocalDataSource
 import com.teamyg.parfait.data.source.image.local.RecentImageLocalDataSource
 import com.teamyg.parfait.data.utils.repositoryLogger
