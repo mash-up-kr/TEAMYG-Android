@@ -18,18 +18,24 @@ sealed interface UploadImagePlan {
         /**
          * 누끼 배율의 분자. "원본이 이 크기였다면" 을 기준으로 잘린 판을 줄여, 알맹이의 절대
          * 크기가 아니라 프레임 안에서 차지하는 비율을 보존한다.
+         *
+         * 근거: `docs/superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md`
+         * iOS 를 따르지 않는 근거: `docs/adr/0032-android-own-topping-upload-scale.md`
          */
         private const val NUKKI_SOURCE_LONG_SIDE = 1280
 
         /** 원본 긴 변을 모를 때 걸리는 방어선. 배율 갈래를 지나면 결과가 이미 이 값 이하다 */
         private const val NUKKI_LONG_SIDE_LIMIT = 1280
 
-        /** 축소 결과의 하한 */
+        /** 축소 결과의 하한. 근거: `docs/superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md` 「하한」 */
         private const val NUKKI_MIN_LONG_SIDE = 256
 
         private const val BACKGROUND_LONG_SIDE_LIMIT = 2048
 
-        /** PNG 는 무손실이라 이 값을 보지 않는다. 배경 한정으로 iOS 와 맞춘 값이다 */
+        /**
+         * PNG 는 무손실이라 이 값을 보지 않는다. 배경 한정으로 iOS 와 맞춘 값이다.
+         * 근거: `docs/superpowers/specs/archive/2026-09-08-upload-image-downscale.md` 「결정 표」
+         */
         const val JPEG_QUALITY = 70
 
         /**
@@ -70,6 +76,8 @@ sealed interface UploadImagePlan {
         /**
          * 원본이 [NUKKI_SOURCE_LONG_SIDE] 였다면 이 알맹이가 가졌을 크기. 결과가 너무 잘아지면
          * [NUKKI_MIN_LONG_SIDE] 까지 되돌리되, 되돌림의 상한이 `fileSize` 자신이라 확대가 아니다.
+         *
+         * 하한을 입력이 아니라 결과에 거는 근거: `docs/superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md` 「하한」
          */
         private fun scaledBySource(
             fileSize: UploadImageSize,

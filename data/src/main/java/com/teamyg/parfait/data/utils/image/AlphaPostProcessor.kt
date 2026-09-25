@@ -10,6 +10,8 @@ private const val OPAQUE = 255
 /**
  * [keep] 이 거짓인 자리의 알파를 0으로 만든다. 참인 자리는 원본 알파를 그대로 둔다.
  *
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」
+ *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
 internal suspend fun applyKeepMask(
@@ -42,6 +44,8 @@ internal suspend fun applyKeepMask(
 
 /**
  * 남은 알파를 감싸는 사각 영역과 커버리지를 잰다. 불투명 판정은 "알파 0 초과"다.
+ *
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「tight bounds 판정 기준 통일」
  *
  * @return 남은 알파가 없으면 `null`
  */
@@ -95,6 +99,7 @@ private const val ABSENT = -1
  * 들고 돈다. 오른쪽·아래는 아직 안 고쳤으므로 현재 배열을 그대로 읽는다.
  *
  * 능선 보호: 마주 보는 4-근방 쌍(좌·우 또는 상·하)이 둘 다 0이면 건너뛴다.
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」
  *
  * 이미지 밖 이웃은 최소 계산에서는 빠진다(`ABSENT` 가 `-1` 이라 `in 0 until lowest` 에 걸리지 않는다).
  * 반면 능선 판정에서는 0이 아닌 값으로 세어져 "이웃이 있다"고 본다 — 밖을 능선 판정에서도 빼면 한
@@ -161,10 +166,10 @@ internal const val MIN_PIXELS_FOR_DOWNSCALE = 2_000_000
 /** 정련 계수를 구할 배율. 판정 버퍼 배율(`downscaleFactor`)과 별개 값이다 */
 internal const val REFINE_DOWNSCALE = 4
 
-/** 축소판 기준 창 반경 */
+/** 축소판 기준 창 반경. 근거: `docs/synthesis/open-questions.md` OQ-P-298 */
 internal const val REFINE_RADIUS = 2
 
-/** 정칙화. 작을수록 안내자를 바싹 따라간다 */
+/** 정칙화. 작을수록 안내자를 바싹 따라간다. 근거: `docs/synthesis/open-questions.md` OQ-P-298 */
 internal const val REFINE_EPSILON = 1e-4f
 
 /**
@@ -172,6 +177,7 @@ internal const val REFINE_EPSILON = 1e-4f
  *
  * 판정(이진화·성분·팽창)은 축소판에서, 적용과 측정은 원본 해상도에서 한다. 축소판이 정하는 것은
  * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다.
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」
  *
  * 행 경계마다 취소를 확인하고, 취소되면 `CancellationException` 을 던진다. 순수 CPU 루프라
  * 중단 지점이 없어서 `suspend` 표시만으로는 이 성질이 드러나지 않는다.

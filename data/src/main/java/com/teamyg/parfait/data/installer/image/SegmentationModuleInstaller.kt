@@ -47,7 +47,7 @@ constructor(
 
     /**
      * 완료 신호에도 가용 여부를 다시 묻는다 — 성공으로 접으면 곧바로 process 가 죽는데 로그에는
-     * 설치 성공만 남아 원인이 가려진다.
+     * 설치 성공만 남아 원인이 가려진다. 근거: `docs/superpowers/specs/archive/2026-09-02-segmentation-module-install.md` 「종료 판정」
      */
     private suspend fun ModuleInstallSignal.toOutcome(): ModuleInstallOutcome = when (this) {
         is ModuleInstallSignal.Failed -> ModuleInstallOutcome.Failed(installState, errorCode)
