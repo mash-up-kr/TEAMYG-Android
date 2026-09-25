@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.toppingdraft.local
+package com.teamyg.parfait.data.source.topping.local
 
 import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.domain.model.id.GroupId

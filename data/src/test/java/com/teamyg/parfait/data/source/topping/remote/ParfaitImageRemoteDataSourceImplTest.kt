@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.parfaitimage.remote
+package com.teamyg.parfait.data.source.topping.remote
 
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.network.ApiCaller
@@ -7,8 +7,8 @@ import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitIm
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImagesRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
-import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
+import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImagesResponse
