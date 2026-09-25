@@ -10,7 +10,7 @@ import com.teamyg.parfait.data.network.NetworkConstValue
 import com.teamyg.parfait.data.network.SelectiveLoggingInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
-import com.teamyg.parfait.data.network.TokenStoreTokenProvider
+import com.teamyg.parfait.data.network.TokenProviderImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,7 +31,7 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideTokenProvider(tokenStoreTokenProvider: TokenStoreTokenProvider): TokenProvider = tokenStoreTokenProvider
+    fun provideTokenProvider(tokenProviderImpl: TokenProviderImpl): TokenProvider = tokenProviderImpl
 
     @Provides
     @Singleton
