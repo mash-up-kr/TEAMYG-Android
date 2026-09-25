@@ -8,8 +8,7 @@ import kotlinx.serialization.Serializable
  *   다른 키다.
  * @param uploadUrl S3 presigned PUT URL. 이 주소로 앱이 직접 PUT 한다(서버를 지나지 않는다).
  *   서명이 쿼리 스트링에 실려 URL 자체가 자격증명이므로 로그에 남기지 않는다(`docs/api/image.md`).
- * @param imageUrl 업로드 후 접근할 공개 주소.
- * @param expiresIn uploadUrl 유효 시간, 초 단위. 매퍼가 Duration 으로 바꾼다.
+ * @param expiresIn uploadUrl 유효 시간, 초 단위.
  */
 @Serializable
 data class IssueImageUploadUrlResponse(

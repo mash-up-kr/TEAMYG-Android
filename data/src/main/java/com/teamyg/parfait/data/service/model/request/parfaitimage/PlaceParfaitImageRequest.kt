@@ -13,8 +13,7 @@ import kotlinx.serialization.Serializable
  *   400 INVALID_REQUEST 다(도메인 코드가 아니라 공통 코드).
  * @param borderColor borderType=SOLID 면 필수, 없으면 400 INVALID_BORDER. NONE 이면 검증 없이 보낸 값이
  *   그대로 저장된다.
- * @param borderWidth borderType=SOLID 면 필수, 없으면 400 INVALID_BORDER. NONE 이면 검증 없이 보낸 값이
- *   그대로 저장된다. 범위 검증은 서버에 없다.
+ * @param borderWidth borderColor 와 같은 조건이다. 범위 검증은 서버에 없다.
  */
 @Serializable
 data class PlaceParfaitImageRequest(
