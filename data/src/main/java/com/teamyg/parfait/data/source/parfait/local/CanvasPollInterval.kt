@@ -6,7 +6,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 폴링 주기를 그룹별로 잰다(`specs/2026-09-10-canvas-adaptive-polling.md`).
+ * 폴링 주기를 그룹별로 잰다(`docs/superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md`).
  *
  * 스스로 락을 들지 않는다 — [CanvasPoller] 의 `synchronized(lock)` 안에서만 불린다. 락을 둘로
  * 나누면 주기를 읽는 것과 타이머를 다시 세우는 것 사이가 갈라진다.
