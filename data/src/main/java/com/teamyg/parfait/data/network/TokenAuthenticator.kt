@@ -2,6 +2,8 @@ package com.teamyg.parfait.data.network
 
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
+import com.teamyg.parfait.data.network.NetworkConstValue.AUTHORIZATION_HEADER
+import com.teamyg.parfait.data.network.NetworkConstValue.BEARER_PREFIX
 import com.teamyg.parfait.data.service.AuthService
 import com.teamyg.parfait.data.service.model.request.auth.ReissueRequest
 import com.teamyg.parfait.data.event.SessionEventBusImpl
@@ -150,12 +152,10 @@ class TokenAuthenticator @Inject constructor(
     }
 
     private fun Request.withBearerToken(accessToken: String): Request = newBuilder()
-        .header(AUTHORIZATION_HEADER, "$BEARER_PREFIX$accessToken")
+        .bearerAuth(accessToken)
         .build()
 
     private companion object {
-        const val AUTHORIZATION_HEADER = "Authorization"
-        const val BEARER_PREFIX = "Bearer "
         const val MAX_RETRY = 2
 
         val SESSION_DEAD_CODES = setOf(
