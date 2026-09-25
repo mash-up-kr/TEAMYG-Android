@@ -180,7 +180,7 @@ class PresignedUploadRemoteDataSourceImplTest {
         }
         // 요청이 실제로 나간 뒤에 취소해야 "취소가 호출을 끊는지"를 보는 테스트가 된다
         server.takeRequest()
-        // ⚠️ join 하지 않는다. 블로킹 execute() 를 쓰는 구현에서는 join 이 응답 도착까지
+        // join 하지 않는다. 블로킹 execute() 를 쓰는 구현에서는 join 이 응답 도착까지
         // 기다려 버려, 그 뒤에 세면 호출이 이미 걷힌 뒤라 구·신 구현이 똑같이 통과한다
         job.cancel()
 

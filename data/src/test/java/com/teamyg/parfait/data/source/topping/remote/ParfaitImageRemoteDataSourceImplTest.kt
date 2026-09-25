@@ -421,7 +421,7 @@ class ParfaitImageRemoteDataSourceImplTest {
     @Test
     fun updateToppings_alreadyClosed_returnsBusinessException() = runTest {
         // Given 마감된 캔버스다 — 일괄은 마감 검사가 항목별 소유권보다 앞이라 단건과 다른 코드가 온다
-        // (`api/parfait-image.md` 검사 순서)
+        // (`docs/api/parfait-image.md` 검사 순서)
         coEvery {
             parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), any())
         } returns ApiResponse(
