@@ -12,7 +12,7 @@ import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.repository.notification.NotificationRepository
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -36,7 +36,7 @@ private val pushLogger = Loggers.create("Push")
 @AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
-    lateinit var notificationRepository: NotificationRepository
+    lateinit var registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase
 
     @Inject
     lateinit var requestTodayParfaitRefresh: RequestTodayParfaitRefreshUseCase
@@ -68,7 +68,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        notificationRepository.registerCurrentDeviceToken()
+        registerCurrentDeviceToken()
     }
 
     /**
