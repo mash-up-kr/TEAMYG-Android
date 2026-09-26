@@ -6,6 +6,9 @@ import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.sumArgbAlpha
 import com.teamyg.parfait.data.model.image.DetectionBounds
 import com.teamyg.parfait.data.model.image.DetectionProjection
+import com.teamyg.parfait.data.model.image.ForegroundHarvest
+import com.teamyg.parfait.data.model.image.HarvestedCandidate
+import com.teamyg.parfait.data.model.image.PlateSource
 import com.teamyg.parfait.data.model.image.ProjectedRegion
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.SegmentationBounds

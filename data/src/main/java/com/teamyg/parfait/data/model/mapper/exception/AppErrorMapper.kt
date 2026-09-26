@@ -6,7 +6,7 @@ import com.teamyg.parfait.domain.model.error.AppError
 import kotlinx.coroutines.CancellationException
 
 /**
- * 데이터 레이어 예외를 도메인 에러로 바꾼다. **Repository 경계에서만** 호출한다 —
+ * 데이터 레이어 예외를 도메인 에러로 바꾼다. Repository 경계에서만 호출한다 —
  * 이 변환이 있어야 feature 모듈이 `:data` 를 보지 않는다.
  *
  * [CancellationException] 은 변환하지 않고 재던진다. 취소를 에러로 오분류하면

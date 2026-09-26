@@ -18,11 +18,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 위임만 하는 것처럼 보여도 [mapErrorToAppError] 때문에 이 층이 필요하다 — 여기서
- * `ApiException` 을 `AppError` 로 바꿔야 domain·feature 가 `:data` 를 보지 않는다.
- *
- * 목록·상세는 [GroupLocalDataSource] 인메모리 캐시가 SSoT 다(ADR-0023) — 조회는 캐시를
- * 읽는 [Flow] 하나, 서버 재조회는 [refreshMyGroups]·[refreshGroupDetail] 로 갈라 둔다.
+ * 목록·상세는 [GroupLocalDataSource] 인메모리 캐시가 SSoT 다(`docs/adr/0023-group-in-memory-ssot.md`).
+ * 조회는 캐시를 읽는 [Flow] 하나, 서버 재조회는 [refreshMyGroups]·[refreshGroupDetail] 로 갈라 둔다.
  */
 class ParfaitGroupRepositoryImpl @Inject constructor(
     private val parfaitGroupRemoteDataSource: ParfaitGroupRemoteDataSource,

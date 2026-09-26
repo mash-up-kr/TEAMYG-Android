@@ -14,11 +14,11 @@ import androidx.core.graphics.scale
  * 계획을 비트맵에 적용한다. 크롭 → 축소 → 축소판에서 히스토그램 → 축소판에 LUT 순서다. 원본에서 히스토그램을
  * 모으면 그 픽셀 배열 하나가 판 하나만큼 크다.
  *
- * ⚠️ 크롭도 축소도 필요 없으면 검출 판이 곧 원본 인스턴스다. 원본이 가변일 수 있어 거기에 대비를 적용하면
- * 예외 없이 사용자 사진이 바뀐다. 그 경우 먼저 복사한다 — 근거는 스펙 「판 소유권」
- * (parfait/specs/2026-09-10-segmentation-retry-recovery.md).
+ * 크롭도 축소도 필요 없으면 검출 판이 곧 원본 인스턴스다. 원본이 가변일 수 있어 거기에 대비를 적용하면
+ * 예외 없이 사용자 사진이 바뀐다. 그 경우 먼저 복사한다.
  *
- * LUT 적용이 픽셀 루프인 이유는 스펙 「메모리 피크」를 본다.
+ * 근거: `docs/superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md` 「판 소유권」,
+ * LUT 적용이 픽셀 루프인 이유는 같은 문서 「메모리 피크」
  */
 internal suspend fun normalizeForDetection(
     origin: Bitmap,

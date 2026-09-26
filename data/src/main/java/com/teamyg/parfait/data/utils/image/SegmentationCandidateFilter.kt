@@ -6,7 +6,7 @@ import com.teamyg.parfait.domain.model.SubjectCoverage
 
 internal const val MAX_SUBJECT_COUNT = 5
 
-/** 이 값 **이상** 겹치는 후보 쌍은 같은 것으로 본다 (만분율) */
+/** 이 값 이상 겹치는 후보 쌍은 같은 것으로 본다 (만분율) */
 internal const val DUPLICATE_IOU_PERMYRIAD = 9_000L
 
 /**
@@ -39,9 +39,8 @@ private fun SegmentationCandidate.isLargeEnough(): Boolean = SubjectCoverage.isL
 /**
  * 앞에서부터 훑으며 이미 채택한 것과 크게 겹치는 후보를 버린다. 정렬이 전순서라 결과가 매번 같다.
  *
- * ⚠️ **포함 관계는 병합하지 않는다.** 교집합을 작은 쪽 면적으로 나누는 지표로 바꾸면 사람이 든
- * 물건이 지워진다. 그 판단의 근거는
- * `parfait/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」에 있다.
+ * 포함 관계는 병합하지 않는다. 교집합을 작은 쪽 면적으로 나누는 지표로 바꾸면 사람이 든
+ * 물건이 지워진다. 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「필터 판정」
  */
 private fun List<SegmentationCandidate>.dropNearDuplicates(): List<SegmentationCandidate> {
     val kept = mutableListOf<SegmentationCandidate>()

@@ -140,7 +140,7 @@ constructor(
     /**
      * 전경 마스크로 후보 한 개를 만든다. 다중 후보가 하나도 안 남았을 때의 폴백이다.
      *
-     * ⚠️ **세그멘테이션을 한 번 더 돌린다.** 전경 마스크 옵션을 다중 후보 옵션과 함께 켜면
+     * 세그멘테이션을 한 번 더 돌린다. 전경 마스크 옵션을 다중 후보 옵션과 함께 켜면
      * ML Kit 모듈이 `SIGSEGV` 로 죽어서(2026-08-23 실기기 확인, Galaxy A35) 두 옵션을 한
      * 요청에 실을 수 없다. 대신 이 비용은 후보가 0건인 사진에서만 든다.
      *
@@ -178,7 +178,7 @@ constructor(
         val origin = (bitmapWrapper as? AndroidBitmap)?.getRawData()
             ?: return Result.failure(SegmentationException.ImageNotFound(null))
 
-        // ⚠️ runSegmenter 는 Tasks.await 블로킹 대기라 추론 도중에는 끊기지 않는다. 상한은 진행 중인 추론 하나가
+        // runSegmenter 는 Tasks.await 블로킹 대기라 추론 도중에는 끊기지 않는다. 상한은 진행 중인 추론 하나가
         // 끝난 뒤에 걸린다
         return withTimeoutOrNull(RECOVERY_TIMEOUT_MS.milliseconds) { runRecoveryLadder(origin) } ?: run {
             repositoryLogger.w { "회복: 대기 상한 ${RECOVERY_TIMEOUT_MS}ms 를 넘겨 빈 결과로 접는다" }

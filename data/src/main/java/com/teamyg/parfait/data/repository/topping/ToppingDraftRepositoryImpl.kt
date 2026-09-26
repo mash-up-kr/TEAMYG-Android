@@ -60,7 +60,7 @@ class ToppingDraftRepositoryImpl @Inject constructor(
 
     /**
      * 초안은 영속되지만 그것이 가리키는 것은 `cacheDir` 하위 파일이라 먼저 사라질 수 있다
-     * (`specs/2026-08-20-c106-topping-place-api.md` 초안 SSOT 절).
+     * (`docs/superpowers/specs/archive/2026-08-20-c106-topping-place-api.md` 초안 SSOT 절).
      */
     private fun ToppingDraft.withExistingFilesOnly(): ToppingDraft = copy(
         subjectImagePath = subjectImagePath?.takeIf { path -> File(path).isFile },

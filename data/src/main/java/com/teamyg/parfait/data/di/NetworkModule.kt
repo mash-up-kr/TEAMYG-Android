@@ -10,7 +10,7 @@ import com.teamyg.parfait.data.network.NetworkConstValue
 import com.teamyg.parfait.data.network.SelectiveLoggingInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
-import com.teamyg.parfait.data.network.TokenStoreTokenProvider
+import com.teamyg.parfait.data.network.TokenProviderImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,7 +31,7 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideTokenProvider(tokenStoreTokenProvider: TokenStoreTokenProvider): TokenProvider = tokenStoreTokenProvider
+    fun provideTokenProvider(tokenProviderImpl: TokenProviderImpl): TokenProvider = tokenProviderImpl
 
     @Provides
     @Singleton
@@ -53,7 +53,7 @@ object NetworkModule {
         .build()
 
     /**
-     * 자격증명을 붙이지 않는 클라이언트. 메인 클라이언트와 **아무것도 공유하지 않는다.**
+     * 자격증명을 붙이지 않는 클라이언트. 메인 클라이언트와 아무것도 공유하지 않는다.
      *
      * `authenticate()` 는 그 호출이 아직 `Dispatcher` 슬롯을 점유한 채 `runBlocking` 으로
      * 블록된 상태에서 실행된다. 재발급이 같은 클라이언트를 타면 같은 `Dispatcher` ·같은
@@ -62,11 +62,11 @@ object NetworkModule {
      * `callTimeout` 도 없어 스스로 풀리지 않는다 — 앱의 모든 네트워크가 멈춘다.
      *
      * 그래서 [Dispatcher] 를 직접 새로 만든다. `okHttpClient.newBuilder()` 로 파생하면
-     * **부모의 `Dispatcher` 인스턴스를 그대로 물려받아** 교착이 살아남는다.
+     * 부모의 `Dispatcher` 인스턴스를 그대로 물려받아 교착이 살아남는다.
      *
      * 인증기를 달지 않는 이유는 재발급 자신의 401 이 인증기를 재진입시키지 않게 하기
      * 위해서고, `AuthInterceptor` 를 달지 않는 이유는 재발급이 자격증명을 헤더가 아니라
-     * **본문**(`ReissueRequest.refreshToken`)으로 보내기 때문이다.
+     * 본문(`ReissueRequest.refreshToken`)으로 보내기 때문이다.
      */
     @Provides
     @Singleton
@@ -81,13 +81,12 @@ object NetworkModule {
         .build()
 
     /**
-     * S3 presigned PUT 전용. **자격증명을 붙이지 않는 것이 이 클라이언트의 존재 이유다** —
-     * presigned URL 에 `Authorization` 이 실리면 S3 가 거절해 업로드가 아예 동작하지 않는다.
-     * 재발급 표면([provideUnauthenticatedOkHttpClient])을 재사용하지 않는 이유를 포함한 근거는
-     * `parfait/specs/2026-08-20-c106-topping-place-api.md` 업로드 전송 절에 있다.
+     * S3 presigned PUT 전용. 자격증명을 붙이지 않는 것이 이 클라이언트의 존재 이유다.
+     * presigned URL 에 `Authorization` 이 실리면 S3 가 거절한다. [provideUnauthenticatedOkHttpClient]
+     * 를 재사용하지 않는 이유를 포함한 근거: `docs/superpowers/specs/archive/2026-08-20-c106-topping-place-api.md` 업로드 전송 절
      *
-     * ⚠️ `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
-     * 반드시 새 [OkHttpClient.Builder] 로 만든다.
+     * `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
+     * 새 [OkHttpClient.Builder] 로 만든다.
      *
      * 로깅 인터셉터를 달지 않는다 — presigned URL 은 서명을 쿼리 스트링에 싣는 방식이라
      * URL 자체가 자격증명이고, OkHttp 로깅 인터셉터에는 그것을 가릴 수단이 없다.
@@ -111,8 +110,8 @@ object NetworkModule {
      * `Dispatcher` 를 공유하지 않는다는 것 말고는 [provideOkHttpClient] 와 같은 프로필이다 —
      * 타임아웃을 늘려야 할 만큼 크다는 근거가 아직 없어 다르게 줄 이유가 없다.
      *
-     * ⚠️ `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
-     * 반드시 새 [OkHttpClient.Builder] 로 만든다.
+     * `newBuilder()` 로 파생하면 부모의 [Dispatcher] 를 물려받아 격리가 사라진다.
+     * 새 [OkHttpClient.Builder] 로 만든다.
      */
     @Provides
     @Singleton
