@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.parfait.local
+package com.teamyg.parfait.data.poller
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import kotlin.test.Test

@@ -7,8 +7,8 @@ import com.teamyg.parfait.data.event.SessionEventBusImpl
 import com.teamyg.parfait.data.source.group.local.GroupLocalDataSource
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
-import com.teamyg.parfait.data.source.parfait.local.CanvasPoller
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.poller.CanvasPoller
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.domain.model.session.SessionEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,14 +38,14 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 /**
- * 저장 매체를 끌어들이지 않으려고 [TokenStore] 를 메모리 페이크로 둔다.
- * 실제 [com.teamyg.parfait.data.source.token.local.EncryptedTokenStore] 는 Keystore 를
+ * 저장 매체를 끌어들이지 않으려고 [TokenLocalDataSource] 를 메모리 페이크로 둔다.
+ * 실제 [com.teamyg.parfait.data.source.token.local.TokenLocalDataSourceImpl] 는 Keystore 를
  * 요구해 JVM 단위 테스트에서 돌지 않는다.
  */
-private class FakeTokenStore(
+private class FakeTokenLocalDataSource(
     var accessToken: String? = null,
     var refreshToken: String? = null,
-) : TokenStore {
+) : TokenLocalDataSource {
     var clearCount: Int = 0
 
     override suspend fun getAccessToken(): String? = accessToken
@@ -69,7 +69,7 @@ private class FakeTokenStore(
 
 class TokenAuthenticatorTest {
     private lateinit var server: MockWebServer
-    private lateinit var tokenStore: FakeTokenStore
+    private lateinit var tokenLocalDataSource: FakeTokenLocalDataSource
     private lateinit var sessionEventBus: SessionEventBusImpl
     private lateinit var userInfoLocalDataSource: UserInfoLocalDataSource
     private lateinit var groupLocalDataSource: GroupLocalDataSource
@@ -84,7 +84,7 @@ class TokenAuthenticatorTest {
         server = MockWebServer()
         server.start()
 
-        tokenStore = FakeTokenStore(accessToken = OLD_ACCESS_TOKEN, refreshToken = REFRESH_TOKEN)
+        tokenLocalDataSource = FakeTokenLocalDataSource(accessToken = OLD_ACCESS_TOKEN, refreshToken = REFRESH_TOKEN)
         sessionEventBus = SessionEventBusImpl()
         userInfoLocalDataSource = mockk(relaxed = true)
         groupLocalDataSource = mockk(relaxed = true)
@@ -100,7 +100,7 @@ class TokenAuthenticatorTest {
             .create(AuthService::class.java)
 
         authenticator = TokenAuthenticator(
-            tokenStore = tokenStore,
+            tokenLocalDataSource = tokenLocalDataSource,
             authService = authService,
             apiCaller = ApiCaller(json),
             sessionEventBus = sessionEventBus,
@@ -159,9 +159,9 @@ class TokenAuthenticatorTest {
         assertNotNull(retried)
         assertEquals("Bearer $NEW_ACCESS_TOKEN", retried.header("Authorization"))
         assertEquals(listOf("Bearer $NEW_ACCESS_TOKEN"), retried.headers.values("Authorization"))
-        assertEquals(NEW_ACCESS_TOKEN, runBlocking { tokenStore.getAccessToken() })
-        assertEquals(NEW_REFRESH_TOKEN, runBlocking { tokenStore.getRefreshToken() })
-        assertEquals(0, tokenStore.clearCount)
+        assertEquals(NEW_ACCESS_TOKEN, runBlocking { tokenLocalDataSource.getAccessToken() })
+        assertEquals(NEW_REFRESH_TOKEN, runBlocking { tokenLocalDataSource.getRefreshToken() })
+        assertEquals(0, tokenLocalDataSource.clearCount)
     }
 
     @Test
@@ -180,7 +180,7 @@ class TokenAuthenticatorTest {
 
         // Then 재시도하지 않고 세션을 버린다
         assertNull(retried)
-        assertEquals(1, tokenStore.clearCount)
+        assertEquals(1, tokenLocalDataSource.clearCount)
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
@@ -201,7 +201,7 @@ class TokenAuthenticatorTest {
         authenticator.authenticate(route = null, response = unauthorizedResponse(OLD_ACCESS_TOKEN))
 
         // Then 토큰과 함께 계정 정보도 지워진다 — 이벤트가 유실돼도 둘이 갈라지면 안 된다
-        assertEquals(1, tokenStore.clearCount)
+        assertEquals(1, tokenLocalDataSource.clearCount)
         coVerify(exactly = 1) { userInfoLocalDataSource.clear() }
         // Then 토큰·계정 정보와 함께 그룹 캐시도 지운다
         verify(exactly = 1) { groupLocalDataSource.clear() }
@@ -282,7 +282,7 @@ class TokenAuthenticatorTest {
 
         // Then 재시도하지 않고 세션을 버린다
         assertNull(retried)
-        assertEquals(1, tokenStore.clearCount)
+        assertEquals(1, tokenLocalDataSource.clearCount)
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
@@ -305,7 +305,7 @@ class TokenAuthenticatorTest {
 
         // Then 상태코드가 아니라 본문의 code 로 거절을 알아보고 세션을 버린다
         assertNull(retried)
-        assertEquals(1, tokenStore.clearCount)
+        assertEquals(1, tokenLocalDataSource.clearCount)
         sessionEventBus.events.test {
             assertEquals(SessionEvent.ForcedLogout, awaitItem())
         }
@@ -328,8 +328,8 @@ class TokenAuthenticatorTest {
 
         // Then 인프라가 막은 것이지 자격증명이 죽은 것이 아니다 — 로그인 상태를 유지한다
         assertNull(retried)
-        assertEquals(0, tokenStore.clearCount)
-        assertEquals(REFRESH_TOKEN, tokenStore.refreshToken)
+        assertEquals(0, tokenLocalDataSource.clearCount)
+        assertEquals(REFRESH_TOKEN, tokenLocalDataSource.refreshToken)
         sessionEventBus.events.test {
             expectNoEvents()
         }
@@ -345,8 +345,8 @@ class TokenAuthenticatorTest {
 
         // Then 토큰을 지우지 않는다 — 연결 실패는 자격증명이 죽은 것과 다른 사건이다
         assertNull(retried)
-        assertEquals(0, tokenStore.clearCount)
-        assertEquals(REFRESH_TOKEN, tokenStore.refreshToken)
+        assertEquals(0, tokenLocalDataSource.clearCount)
+        assertEquals(REFRESH_TOKEN, tokenLocalDataSource.refreshToken)
         sessionEventBus.events.test {
             expectNoEvents()
         }
@@ -368,7 +368,7 @@ class TokenAuthenticatorTest {
 
         // Then 서버 장애로 세션을 버리지 않는다
         assertNull(retried)
-        assertEquals(0, tokenStore.clearCount)
+        assertEquals(0, tokenLocalDataSource.clearCount)
         sessionEventBus.events.test {
             expectNoEvents()
         }
@@ -377,15 +377,15 @@ class TokenAuthenticatorTest {
     @Test
     fun authenticate_noRefreshToken_postsNothing() = runTest {
         // Given 로그인한 적이 없어 refresh token 이 없다
-        tokenStore.accessToken = null
-        tokenStore.refreshToken = null
+        tokenLocalDataSource.accessToken = null
+        tokenLocalDataSource.refreshToken = null
 
         // When 인증기가 응답을 받는다
         val retried = authenticator.authenticate(route = null, response = unauthorizedResponse(token = null))
 
         // Then 조용히 포기한다 — 여기서 강제 로그아웃을 쏘면 로그인 화면이 자기 자신으로 튕긴다
         assertNull(retried)
-        assertEquals(0, tokenStore.clearCount)
+        assertEquals(0, tokenLocalDataSource.clearCount)
         assertEquals(0, server.requestCount)
         sessionEventBus.events.test {
             expectNoEvents()

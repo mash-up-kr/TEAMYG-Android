@@ -1,6 +1,7 @@
-package com.teamyg.parfait.data.source.parfait.local
+package com.teamyg.parfait.data.poller
 
 import com.teamyg.parfait.data.model.qualifier.ApplicationScope
+import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
@@ -17,12 +18,11 @@ import javax.inject.Singleton
 import kotlin.time.Clock
 
 /**
- * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다. 값이 아니라
- * **트리거**를 소유한다(`adr/0029-canvas-today-ssot-polling.md`).
+ * 오늘 캔버스를 주기적으로 다시 받아 [CanvasLocalDataSource] 에 싣는다. 값이 아니라 트리거를 소유한다
+ * (`docs/adr/0029-canvas-today-ssot-polling.md`).
  *
- * 계수 조작에 코루틴 뮤텍스가 아니라 [synchronized] 를 쓰는 이유: [release] 가 `onCompletion`
- * 에서 불리는데 그 블록은 **취소된 코루틴에서 돈다** — 거기서 서스펜드하면 계수가 안 내려가
- * 폴링이 남는다. [stopAll] 도 OkHttp 스레드에서 불린다.
+ * 코루틴 뮤텍스가 아니라 [synchronized] 를 쓴다. [release] 는 취소된 코루틴의 `onCompletion` 에서 불려
+ * 서스펜드하면 계수가 안 내려가고, [stopAll] 은 OkHttp 스레드에서 불린다.
  *
  * @param clock 캐시의 날짜가 오늘인지 보는 데 쓴다. 주입하지 않으면 하루 경계 전환을 테스트로
  *   고정할 수 없다.
@@ -40,9 +40,8 @@ class CanvasPoller @Inject constructor(
     private val pollJobs = mutableMapOf<GroupId, Job>()
 
     /**
-     * 그룹별 "진행 중" 표시. 값은 그 갱신을 시작한 [generation] 이다 — [stopAll] 로 세대가 바뀐
-     * 뒤 곧바로 재시작된 새 세대의 항목을, 이전 세대의 지연 응답이 자기 것인 줄 알고 지우는
-     * 사고를 막는다(세대가 다르면 자기 것이 아니므로 지우지 않는다).
+     * 그룹별 "진행 중" 표시. 값은 그 갱신을 시작한 [generation] 이다. 이전 세대의 늦은 응답이 [stopAll]
+     * 뒤 새 세대의 항목을 지우지 못하게 한다.
      */
     private val refreshing = mutableMapOf<GroupId, Int>()
 
@@ -52,11 +51,10 @@ class CanvasPoller @Inject constructor(
     private val _refreshFailures = MutableSharedFlow<GroupId>(extraBufferCapacity = FAILURE_BUFFER)
 
     /**
-     * 갱신이 실패했다는 신호. 값이 아니라 실패 사실만 흘린다 — 값을 얻는 길은 캐시 하나라는
-     * 규칙(`adr/0029-canvas-today-ssot-polling.md`)은 그대로 둔다.
+     * 갱신 실패 신호. 값은 캐시로만 얻는다는 규칙(`docs/adr/0029-canvas-today-ssot-polling.md`)을 지키려고 실패 사실만 흘린다.
      *
-     * 첫 조회를 기다리는 화면이 로딩을 풀 계기로 쓴다. 캐시는 실패했을 때 아무것도 방출하지
-     * 않아, 이 신호가 없으면 화면이 로딩에 갇힌다.
+     * 첫 조회를 기다리는 화면이 로딩을 풀 계기다. 실패하면 캐시가 아무것도 방출하지 않아, 이 신호가 없으면
+     * 화면이 로딩에 갇힌다.
      */
     val refreshFailures: SharedFlow<GroupId> = _refreshFailures.asSharedFlow()
 
@@ -97,8 +95,8 @@ class CanvasPoller @Inject constructor(
     }
 
     /**
-     * 쓰기 직후처럼 주기를 기다릴 수 없을 때 부른다. **주기도 이 시점부터 다시 센다** —
-     * 그러지 않으면 강제 갱신 직후에 주기 타이머가 또 터져 요청이 붙어 나간다.
+     * 쓰기 직후처럼 주기를 기다릴 수 없을 때 부른다. 주기도 이 시점부터 다시 센다 — 그러지 않으면 강제
+     * 갱신 직후에 주기 타이머가 또 터져 요청이 붙어 나간다.
      *
      * 실패해도 주기를 다시 세운다. 실패한 갱신 때문에 다음 주기가 앞당겨질 이유가 없다.
      *
@@ -150,7 +148,7 @@ class CanvasPoller @Inject constructor(
     }
 
     /**
-     * 오늘 조회는 캔버스가 없으면 서버가 만들어 저장한다(`api/parfait.md`) — 그래서 캔버스를
+     * 오늘 조회는 캔버스가 없으면 서버가 만들어 저장한다(`docs/api/parfait.md`) — 그래서 캔버스를
      * 만들 필요가 있을 때만 쓴다. 캐시가 비었거나 실린 날짜가 오늘이 아니면(하루 경계를 넘겼다)
      * 그 경우다. 나머지는 부작용 없는 상세 조회를 쓴다.
      */

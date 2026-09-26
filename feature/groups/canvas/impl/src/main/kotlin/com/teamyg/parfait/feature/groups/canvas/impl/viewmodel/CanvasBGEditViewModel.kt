@@ -499,7 +499,7 @@ constructor(
 
     /**
      * 서버 토핑은 https 주소라 [android.content.ContentResolver] 로 열지 못하지만,
-     * `RemoteImageDownloadDataSource` 가 그 스킴을 갈라 기기에 받아 두므로 편집 화면은
+     * `ImageDownloadRemoteDataSource` 가 그 스킴을 갈라 기기에 받아 두므로 편집 화면은
      * 이 URL 을 그대로 받아도 된다(`ImageSegmentationRepositoryImpl.decodeImage`).
      */
     private fun handleOnClickEditTopping() {

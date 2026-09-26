@@ -12,13 +12,11 @@ interface ParfaitRemoteDataSource {
     suspend fun getYears(groupId: GroupId): Result<List<Int>>
 
     /**
-     * 오늘의 캔버스를 상태·멤버·배경·배치 토핑까지 한 번에 읽는다.
+     * 조회인데 오늘 날짜 파르페가 없으면 서버가 만들어 저장한다. 반복 호출하면 빈 캔버스가 양산되므로
+     * 호출 지점을 아낀다(`docs/api/parfait.md`).
      *
-     * ⚠️ 조회인데 서버가 캔버스를 만든다 — 오늘 날짜 파르페가 없으면 생성해 저장한다
-     * (`api/parfait.md`). 화면이 반복 호출하면 빈 캔버스가 양산되므로 호출 지점을 아껴야 한다.
-     *
-     * 오늘 날짜가 이미 마감돼 있으면 그것을 그대로 돌려준다 — status 가 ACTIVE 가 아닐 수 있다.
-     * 그 캔버스에 쓰기를 보내면 409 PARFAIT_ALREADY_CLOSED 로 돌아온다(`api/parfait.md`).
+     * 오늘 날짜가 이미 마감돼 있으면 그대로 돌려준다(status 가 ACTIVE 가 아닐 수 있다). 그 캔버스에 쓰면
+     * 409 PARFAIT_ALREADY_CLOSED 다.
      */
     suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
 
@@ -35,10 +33,9 @@ interface ParfaitRemoteDataSource {
     ): Result<List<PastCanvasVO>>
 
     /**
-     * 특정 캔버스 상세. 결과 형태가 [getTodayCanvas] 와 같다 — 서버가 같은 응답을 쓴다.
+     * 특정 캔버스 상세. 결과 형태가 [getTodayCanvas] 와 같다.
      *
-     * 조회만 한다(캔버스를 만들지 않는다). 다만 상태로 거르지 않아 오늘의 ACTIVE 캔버스도
-     * 이 경로로 얻을 수 있다 — 같은 캔버스를 두 경로로 얻을 수 있고 한쪽만 부작용이 있다.
+     * 캔버스를 만들지 않는다. 상태로 거르지 않아 오늘의 ACTIVE 캔버스도 이 경로로 얻을 수 있다.
      *
      * 파르페가 없거나 다른 그룹 소속이면 PARFAIT_NOT_FOUND 다.
      */
@@ -54,9 +51,8 @@ interface ParfaitRemoteDataSource {
      * 서버가 앱이 모르는 type 을 돌려주면 조회와 같은 규칙으로 null 이 된다(저장은 됐지만
      * 그릴 수 없다).
      *
-     * ⚠️ 마감된 캔버스에는 저장되지 않는다 — 409 PARFAIT_ALREADY_CLOSED 다.
-     * ⚠️ 배경 이미지는 참조 카운트를 올리지 않는다 — 같은 이미지의 토핑을 지우면 배경이 깨진다
-     * (`api/parfait.md`).
+     * 마감된 캔버스면 409 PARFAIT_ALREADY_CLOSED 다. 배경 이미지는 참조 카운트를 올리지 않아 같은 이미지의
+     * 토핑을 지우면 배경이 깨진다(`docs/api/parfait.md`).
      */
     suspend fun changeCanvasBackground(
         groupId: GroupId,
