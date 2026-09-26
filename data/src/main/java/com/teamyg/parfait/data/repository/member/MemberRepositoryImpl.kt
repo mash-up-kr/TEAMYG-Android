@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.repository.member
 
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.member.local.UserInfoLocalDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.domain.model.member.GlobalNickname

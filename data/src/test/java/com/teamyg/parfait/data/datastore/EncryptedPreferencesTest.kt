@@ -24,7 +24,7 @@ class EncryptedPreferencesTest {
     fun write_thenRead_roundTripsThroughCipherText() = runTest {
         // Given 빈 저장소
         val dataStore = FakePreferencesDataStore()
-        val preferences = EncryptedPreferences(dataStore, prefixingCrypto)
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
 
         // When 쓰고 읽는다
         preferences.write(KEY, "모카")
@@ -38,7 +38,7 @@ class EncryptedPreferencesTest {
     fun write_multipleValues_goesOutAsSingleEdit() = runTest {
         // Given 한 짝으로 저장돼야 하는 값 둘(예: access·refresh 토큰)
         val dataStore = FakePreferencesDataStore()
-        val preferences = EncryptedPreferences(dataStore, prefixingCrypto)
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
 
         // When 한 번에 쓴다
         preferences.write(mapOf(Pair(KEY, "값1"), Pair(OTHER_KEY, "값2")))
@@ -53,7 +53,7 @@ class EncryptedPreferencesTest {
     fun observe_unrelatedKeyChanges_doesNotDecryptAgain() = runTest {
         // Given 이 저장소를 여러 소비자가 공유한다 — 관심 없는 키가 따로 바뀐다
         val dataStore = FakePreferencesDataStore()
-        val preferences = EncryptedPreferences(dataStore, prefixingCrypto)
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
         preferences.write(KEY, "모카")
 
         // When 구독하는 도중 무관한 키가 바뀐다
@@ -73,7 +73,7 @@ class EncryptedPreferencesTest {
     fun read_decodeFails_discardsStoredValueAndReturnsNull() = runTest {
         // Given 저장분은 있으나 해석에 실패한다(키 회전·저장 형태 손상)
         val dataStore = FakePreferencesDataStore()
-        val preferences = EncryptedPreferences(dataStore, prefixingCrypto)
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
         preferences.write(KEY, "모카")
 
         // When 해석이 던지는 decode 로 읽는다
@@ -88,7 +88,7 @@ class EncryptedPreferencesTest {
     fun read_decodeFails_discardScopeIsCallerDecision() = runTest {
         // Given 두 값이 한 짝으로 저장돼 있다(하나가 깨지면 다른 하나도 못 읽는 관계)
         val dataStore = FakePreferencesDataStore()
-        val preferences = EncryptedPreferences(dataStore, prefixingCrypto)
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
         preferences.write(mapOf(Pair(KEY, "값1"), Pair(OTHER_KEY, "값2")))
 
         // When 호출부가 "짝 전체를 버린다"를 넘긴다
@@ -106,7 +106,8 @@ class EncryptedPreferencesTest {
     @Test
     fun read_nothingStored_isNullWithoutTouchingCrypto() = runTest {
         // Given 저장분이 없다
-        val preferences = EncryptedPreferences(FakePreferencesDataStore(), prefixingCrypto)
+        val dataStore = FakePreferencesDataStore()
+        val preferences = EncryptedPreferences(DataStorePreferences(dataStore), prefixingCrypto)
 
         // When 읽는다
         // Then null 이고 복호화를 시도하지 않는다

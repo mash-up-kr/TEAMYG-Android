@@ -8,9 +8,9 @@ import kotlinx.coroutines.job
 private const val OPAQUE = 255
 
 /**
- * [keep] 이 거짓인 자리의 알파를 0으로 만든다. 참인 자리는 **원본 알파를 그대로 둔다.**
+ * [keep] 이 거짓인 자리의 알파를 0으로 만든다. 참인 자리는 원본 알파를 그대로 둔다.
  *
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」 참고
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」
  *
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */
@@ -42,18 +42,10 @@ internal suspend fun applyKeepMask(
     return changed
 }
 
-internal data class AlphaMeasurement(
-    val bounds: SegmentationBounds,
-    val alphaSum: Long,
-    /** 알파가 1~254 인 픽셀 수. 관측이 램프 띠 폭과 침식 유효성을 판정하는 데 쓴다 */
-    val partialAlphaPixels: Int,
-)
-
 /**
- * 남은 알파를 감싸는 사각 영역과 커버리지를 잰다.
+ * 남은 알파를 감싸는 사각 영역과 커버리지를 잰다. 불투명 판정은 "알파 0 초과"다.
  *
- * 불투명 판정을 "알파 0 초과"로 두는 근거는
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「tight bounds 판정 기준 통일」에 있다.
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「tight bounds 판정 기준 통일」
  *
  * @return 남은 알파가 없으면 `null`
  */
@@ -101,13 +93,13 @@ private const val ABSENT = -1
 /**
  * 경계를 한 겹 안으로 깎는다. `a' = min(a, 4-근방 알파의 최소)` 다.
  *
- * ⚠️ **판정은 침식 전 값으로 한다.** 제자리에서 래스터 순서로 돌리면 방금 낮아진 왼쪽 값을 다음
+ * 판정은 침식 전 값으로 한다. 제자리에서 래스터 순서로 돌리면 방금 낮아진 왼쪽 값을 다음
  * 픽셀이 읽어, 부분 알파 띠가 스캔 방향으로만 연쇄 침식된다. 반대 방향은 한 겹만 깎이므로 피사체가
  * 한쪽으로 밀린 것처럼 보인다. 그래서 직전 행의 침식 전 알파 한 줄과 좌측 픽셀의 침식 전 값을
  * 들고 돈다. 오른쪽·아래는 아직 안 고쳤으므로 현재 배열을 그대로 읽는다.
  *
- * **능선 보호**: 마주 보는 4-근방 쌍(좌·우 또는 상·하)이 둘 다 0이면 건너뛴다.
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」 참고
+ * 능선 보호: 마주 보는 4-근방 쌍(좌·우 또는 상·하)이 둘 다 0이면 건너뛴다.
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」
  *
  * 이미지 밖 이웃은 최소 계산에서는 빠진다(`ABSENT` 가 `-1` 이라 `in 0 until lowest` 에 걸리지 않는다).
  * 반면 능선 판정에서는 0이 아닌 값으로 세어져 "이웃이 있다"고 본다 — 밖을 능선 판정에서도 빼면 한
@@ -165,71 +157,31 @@ internal suspend fun erodeEdge(
     return changed
 }
 
-/** 원본 픽셀 환산. 이 값 **미만** 크기의 성분은 잡티로 보고 버린다 */
+/** 원본 픽셀 환산. 이 값 미만 크기의 성분은 잡티로 보고 버린다 */
 internal const val AREA_OPENING_MIN_PIXELS = 256
 
-/** 판정 버퍼를 줄이지 않는 크기 하한. 이 값 **미만** 픽셀 수의 판은 배율 1로 돈다 */
+/** 판정 버퍼를 줄이지 않는 크기 하한. 이 값 미만 픽셀 수의 판은 배율 1로 돈다 */
 internal const val MIN_PIXELS_FOR_DOWNSCALE = 2_000_000
 
-/** 정련 계수를 구할 배율. 판정 버퍼 배율(`downscaleFactor`)과 **별개 값**이다 */
+/** 정련 계수를 구할 배율. 판정 버퍼 배율(`downscaleFactor`)과 별개 값이다 */
 internal const val REFINE_DOWNSCALE = 4
 
-/** 축소판 기준 창 반경. 값의 근거는 `synthesis/open-questions.md` OQ-P-298 */
+/** 축소판 기준 창 반경. 근거: `docs/synthesis/open-questions.md` OQ-P-298 */
 internal const val REFINE_RADIUS = 2
 
-/** 정칙화. 작을수록 안내자를 바싹 따라간다. 근거는 OQ-P-298 */
+/** 정칙화. 작을수록 안내자를 바싹 따라간다. 근거: `docs/synthesis/open-questions.md` OQ-P-298 */
 internal const val REFINE_EPSILON = 1e-4f
-
-internal data class AlphaPostProcessOptions(
-    val downscaleFactor: Int = 4,
-    val binaryThreshold: Int = 127,
-    val areaOpeningMinPixels: Int = AREA_OPENING_MIN_PIXELS,
-    val erodeEdge: Boolean = true,
-    val minPixelsForDownscale: Int = MIN_PIXELS_FOR_DOWNSCALE,
-    val refineEdges: Boolean = true,
-    val refineDownscale: Int = REFINE_DOWNSCALE,
-    val refineRadius: Int = REFINE_RADIUS,
-    val refineEpsilon: Float = REFINE_EPSILON,
-) {
-    init {
-        // 배율은 판정 좌표를 나누는 데 네 자리에서 쓰인다. 만들어지는 자리에서 막아야
-        // 어느 자리가 터지든 원인이 이 값이라는 것이 드러난다
-        require(downscaleFactor >= 1) { "downscaleFactor must be >= 1 but was $downscaleFactor" }
-    }
-}
-
-internal data class AlphaPostProcessResult(
-    val bounds: SegmentationBounds,
-    val alphaSum: Long,
-    val partialAlphaPixels: Int,
-    /**
-     * 거짓이면 알파가 하나도 안 바뀌었다는 뜻이다. 원본 판을 그대로 쓰려면 [bounds] 가 판 전체와
-     * 같은지도 함께 봐야 한다 — 알파를 안 바꿔도 원판에 투명 여백이 있으면 판 치수와 [bounds]
-     * 치수가 어긋나 `SegmentationCandidate` 의 계약이 깨진다.
-     */
-    val changed: Boolean,
-    /** 정련에 든 시간. 안 돌았으면 0 이다. 원본 해상도 적용이 감당 가능한지 판정할 근거다 */
-    val refineElapsedNanos: Long,
-)
-
-/**
- * 정련이 쓸 안내자를 공급한다. 커널이 `Bitmap` 을 모른다는 원칙을 지키면서 두 경로가 서로 다른
- * 방식으로 픽셀을 대게 하는 통로다.
- */
-internal fun interface GuidanceProvider {
-    /** [bounds] 크기의 ARGB. 행 우선이고 stride 는 `bounds.width` 다 */
-    fun pixelsIn(bounds: SegmentationBounds): IntArray
-}
 
 /**
  * [alpha] 를 그 자리에서 다듬고 남은 영역을 돌려준다.
  *
  * 판정(이진화·성분·팽창)은 축소판에서, 적용과 측정은 원본 해상도에서 한다. 축소판이 정하는 것은
- * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다. 근거는
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」.
+ * "이 영역이 살아남는 성분인가"뿐이고 경계 모양은 원본 알파가 그대로 만든다.
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」
  *
  * 행 경계마다 취소를 확인하고, 취소되면 `CancellationException` 을 던진다. 순수 CPU 루프라
  * 중단 지점이 없어서 `suspend` 표시만으로는 이 성질이 드러나지 않는다.
+ *
  * @param alpha 길이가 `width * height` 여야 한다
  * @return 남은 알파가 없으면 `null`. 정련이나 침식 단계에서 전멸했다면 `alpha` 는 이미 지워진 채로
  *   `null` 이 나간다 — `applyAreaOpening` 이 전멸을 보고하는 경로는 `alpha` 를 원본 그대로 두고

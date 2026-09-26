@@ -21,39 +21,15 @@ import java.nio.FloatBuffer
 internal const val MAX_POST_PROCESS_CANDIDATES = MAX_SUBJECT_COUNT + 3
 
 /**
- * 로그에만 쓰는 완화 배수. **판정에는 쓰지 않는다** — 수동 편집이 같은 엄격 하한으로 저장을 막으므로, 회복 판정만
- * 완화하면 고른 후보를 손대지 않고도 저장하지 못한다. 근거는 스펙 「제외」.
+ * 로그에만 쓰는 완화 배수. 판정에는 쓰지 않는다 — 수동 편집이 같은 엄격 하한으로 저장을 막으므로, 회복 판정만
+ * 완화하면 고른 후보를 손대지 않고도 저장하지 못한다. 근거: `docs/superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md` 「범위」
  */
 internal const val RELAXED_FLOOR_LOG_DIVISOR = 4
-
-/** 판 한 장이 어디서 오는가. 어느 쪽을 쓸지는 [harvestSubjects] 가 투영 유무로 정한다 */
-internal sealed interface PlateSource {
-    /** 1차 경로 전용. 검출 공간이 곧 원본 공간이라 이 판의 픽셀이 원본 색이다 */
-    class MlKitPlate(val plate: Bitmap, val region: SegmentationBounds) : PlateSource
-
-    /**
-     * 회복 경로 전용. **픽셀 인자가 없다** — 알파만 [detectionPlate] 에서 가져오고 픽셀은 원본에서 읽는다.
-     * 검출 판은 대비를 건 판이라 그 픽셀을 쓰면 결과 색이 변한다.
-     */
-    class OriginRegion(val detectionPlate: Bitmap, val projected: ProjectedRegion) : PlateSource
-}
-
-internal class HarvestedCandidate(
-    val candidate: SegmentationCandidate,
-    /** 후처리가 실패하거나 알파를 전멸시켜 후처리 이전 판으로 되돌렸다 */
-    val reverted: Boolean,
-)
-
-internal class ForegroundHarvest(
-    val candidates: List<SegmentationCandidate>,
-    /** 다음 단계가 어디를 크롭할지 정하는 데만 쓴다. 검출 공간 좌표다 */
-    val hint: DetectionBounds?,
-)
 
 private class PlacedSubject(val plate: Bitmap, val projected: ProjectedRegion)
 
 /**
- * [projection] 이 없으면 1차다. **판의 출처를 호출부가 고르지 않는 것이 요점이다** — 회복 경로가 ML Kit 판을
+ * [projection] 이 없으면 1차다. 판의 출처를 호출부가 고르지 않는 것이 요점이다 — 회복 경로가 ML Kit 판을
  * 쓸 길이 없다.
  *
  * bbox 사전 절단은 원본 좌표 사각형 면적으로 한다. bbox 픽셀 수는 커버리지의 상계라 하한 미만이면 커버리지도
@@ -156,7 +132,7 @@ private fun originGuidance(
 }
 
 /**
- * ⚠️ `try` 가 픽셀 배열 할당까지 감싼다. 12MP 후보에서 `OutOfMemoryError` 가 가장 잘 나는 자리가 후처리 안이
+ * `try` 가 픽셀 배열 할당까지 감싼다. 12MP 후보에서 `OutOfMemoryError` 가 가장 잘 나는 자리가 후처리 안이
  * 아니라 그 할당이다.
  */
 private suspend fun harvestMlKitPlate(
@@ -254,9 +230,9 @@ private suspend fun postProcessMlKitPlate(
 }
 
 /**
- * 회복 경로의 후보. **판을 항상 새로 만든다** — 재사용할 판이 원본뿐이다.
+ * 회복 경로의 후보. 판을 항상 새로 만든다 — 재사용할 판이 원본뿐이다.
  *
- * ⚠️ `postProcessAlpha` 는 알파를 제자리에서 지운다. 되돌림에 쓸 알파는 그 전에 사본을 떠 둔다. 원본 픽셀의
+ * `postProcessAlpha` 는 알파를 제자리에서 지운다. 되돌림에 쓸 알파는 그 전에 사본을 떠 둔다. 원본 픽셀의
  * 알파는 JPEG 에서 전부 255 라, 사본 없이 되돌리면 불투명 사각형이 커버리지 만점으로 필터 1위에 오른다.
  */
 private suspend fun harvestOriginRegion(
@@ -350,7 +326,7 @@ private fun originRegionReverted(
 }
 
 /**
- * ⚠️ 마스크 치수와 출력 치수가 다를 수 있다 — 회복 경로의 마스크는 검출 판 치수다. 하나로 묶으면 길이 검사가
+ * 마스크 치수와 출력 치수가 다를 수 있다 — 회복 경로의 마스크는 검출 판 치수다. 하나로 묶으면 길이 검사가
  * 언제나 실패해 예외도 로그도 없이 빈 목록이 되고, 연쇄로 2단계 힌트까지 사라진다.
  *
  * @param hintThreshold 널이면 힌트를 구하지 않는다. 1차 경로에 원본 전체를 한 번 더 훑는 비용을 얹지 않는다
@@ -371,7 +347,7 @@ internal suspend fun harvestForeground(
         return ForegroundHarvest(emptyList(), hint = null)
     }
 
-    // ⚠️ 마스크 크기 할당이라 이것도 OOM 가드 안에 둔다
+    // 마스크 크기 할당이라 이것도 OOM 가드 안에 둔다
     val detectionAlpha = try {
         confidenceToAlphaArray(mask, maskWidth, maskHeight)
     } catch (e: OutOfMemoryError) {
@@ -406,7 +382,7 @@ internal suspend fun harvestForeground(
     // 로컬 사각형에 원점을 더한다. 빠뜨리면 1단계는 오프셋이 0 이라 멀쩡하고 2단계만 엉뚱한 곳을 오린다
     val bounds = local.offsetBy(region.left, region.top)
 
-    // ⚠️ 이 판이 폴백에서 가장 큰 할당이라 OOM 가드를 여기까지 넓힌다
+    // 이 판이 폴백에서 가장 큰 할당이라 OOM 가드를 여기까지 넓힌다
     val candidate = try {
         val trimmedPixels = IntArray(local.width * local.height)
         origin.getPixels(trimmedPixels, 0, local.width, bounds.left, bounds.top, local.width, local.height)

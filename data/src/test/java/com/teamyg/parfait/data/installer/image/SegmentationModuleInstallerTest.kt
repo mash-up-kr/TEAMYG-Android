@@ -1,5 +1,7 @@
 package com.teamyg.parfait.data.installer.image
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -16,13 +18,13 @@ private class FakeModuleInstallGateway(private var available: Boolean = false) :
     var installCount: Int = 0
         private set
 
-    private var listener: ((ModuleInstallSignal) -> Unit)? = null
+    private var pending: CompletableDeferred<ModuleInstallSignal>? = null
 
     override suspend fun isAvailable(): Boolean = available
 
-    override fun install(onSignal: (ModuleInstallSignal) -> Unit) {
+    override fun install(): Deferred<ModuleInstallSignal> {
         installCount++
-        listener = onSignal
+        return CompletableDeferred<ModuleInstallSignal>().also { pending = it }
     }
 
     /** 게이트웨이가 신호를 흘리는 순간을 테스트가 정한다 */
@@ -31,7 +33,7 @@ private class FakeModuleInstallGateway(private var available: Boolean = false) :
         becomesAvailable: Boolean = false,
     ) {
         available = becomesAvailable
-        listener?.invoke(signal)
+        pending?.complete(signal)
     }
 }
 

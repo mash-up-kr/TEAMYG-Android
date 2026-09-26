@@ -4,9 +4,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.teamyg.parfait.data.datastore.RecentImageEditor
-import com.teamyg.parfait.data.model.local.RecentImageEntity
-import com.teamyg.parfait.data.model.local.RecentImageKindEntity
+import com.teamyg.parfait.data.model.entity.RecentImageEntity
+import com.teamyg.parfait.data.model.entity.RecentImageKindEntity
 import com.teamyg.parfait.data.model.qualifier.LocalJson
 import com.teamyg.parfait.data.utils.sourceLogger
 import kotlinx.coroutines.flow.Flow
@@ -29,21 +28,11 @@ constructor(
     override val values: Flow<List<RecentImageEntity>> = dataStore.data
         .map { prefs -> decode(prefs[RECENT_IMAGE_URIS_KEY]) }
 
-    override fun encodeValue(value: List<RecentImageEntity>): String = json.encodeToString(value)
-
-    override fun decodeValue(raw: String?): List<RecentImageEntity> = decode(raw)
-
-    override suspend fun edit(transform: suspend (RecentImageEditor) -> Unit) {
+    override suspend fun update(transform: (List<RecentImageEntity>) -> List<RecentImageEntity>) {
         dataStore.edit { prefs ->
-            transform(
-                object : RecentImageEditor {
-                    override fun get(): String? = prefs[RECENT_IMAGE_URIS_KEY]
+            val updated: List<RecentImageEntity> = transform(decode(prefs[RECENT_IMAGE_URIS_KEY]))
 
-                    override fun set(value: String) {
-                        prefs[RECENT_IMAGE_URIS_KEY] = value
-                    }
-                },
-            )
+            prefs[RECENT_IMAGE_URIS_KEY] = json.encodeToString(updated)
         }
     }
 
@@ -52,12 +41,7 @@ constructor(
             return
         }
 
-        dataStore.edit { prefs ->
-            val current: List<RecentImageEntity> = decode(prefs[RECENT_IMAGE_URIS_KEY])
-            val updated: List<RecentImageEntity> = current.filterNot { it.uri in uris }
-
-            prefs[RECENT_IMAGE_URIS_KEY] = json.encodeToString(updated)
-        }
+        update { current -> current.filterNot { it.uri in uris } }
     }
 
     /**

@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.model.error
+package com.teamyg.parfait.data.model.mapper.exception
 
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.domain.model.error.AppError
