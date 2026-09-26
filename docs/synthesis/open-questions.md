@@ -1447,6 +1447,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 재진입하면 서버가 아직 어제로 치는 날에 앱이 새 날 캔버스를 요청한다. G-001도 같은 시점에 날짜
   > 헤더를 다시 센다(이쪽은 기기 시간대 그대로)
   > → [screen-resume-refetch 스펙](../superpowers/specs/archive/2026-08-17-screen-resume-refetch.md).
+- 📌 **2026-09-26 코드 대조**: ①·② 모두 코드로 닫혀 있다 — `ParfaitDay.kt`의 `parfaitToday()`가 `PARFAIT_TIME_ZONE`(Asia/Seoul)과 `DayWindow.DAY_BOUNDARY_HOUR`로 오늘을 센다. 상태 갱신은 open-questions 정리 작업에서 한다.
 - **해소 메모**: ①②가 정해지면 [c001-canvas-main 스펙](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md) "정책 대조" 표와 드리프트 1번을 고치고, `DayWindow`를 화면 계층에서도 쓰는 관용구를 [module-structure](../architecture/module-structure.md)에 한 줄 남긴다. [2026-08-04] 날짜 영문 표기 항목과 같은 화면·같은 값에 걸린다.
 
 ### [2026-08-12] Dot Grid가 시스템 바 영역을 못 덮는다 — 정책은 "화면 전체 뒤"
@@ -7781,4 +7782,43 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **해소 메모**: 같은 `raw/`에서 [[누끼-따기]]·[[토핑]]·[[캘린더-컴포넌트]] 세 개념이 실제 페이지로
   ingest되면, 위 7곳의 링크를 되살리고 이 항목을 해소됨으로 바꾼다.
 
-<!-- oq-next: 407 -->
+### [2026-09-26] 목록에서 사라진 그룹이면 C-001 상단 바가 옛 그룹명을 계속 든다
+
+- **ID**: OQ-P-407
+- **출처**: docs 기록 구조 개선 추출 — 이관 전 `docs/doc-baseline.md`(`git show 4fd12b91d:docs/doc-baseline.md`)의 C-001 그룹명 소유 서술, `CanvasMainViewModel#loadCanvasMainInfo`
+- **항목**: 그룹명 정본을 그룹 목록 캐시로 두면서, 목록 방출에 이 그룹이 없으면 `return@collect`로 건너뛰어 이미 든 이름을 지우지 않는다(캔버스 응답으로 부트스트랩한 이름이 목록 방출마다 지워지는 것을 막으려는 선택이다). 그 대가로 그룹이 목록에서 빠져도(나가기·강퇴·그룹 삭제) 상단 바는 옛 이름을 그대로 보여 준다. 지금은 그 경로가 화면을 떠나는 흐름이라 드러나지 않지만, 목록에서 빠진 뒤에도 캔버스에 머무는 경로(푸시 진입·다른 기기에서 나가기 등)가 생기면 보인다. 목록에서 빠진 그룹을 캔버스가 어떻게 처리할지(화면 종료·안내)도 정해지지 않았다.
+- **상태**: 미해결
+- **해소 메모**: 목록에서 빠진 그룹의 캔버스 처분을 정하면(OQ-P-383 ④의 404 `GROUP_NOT_FOUND` 분기와 함께) `loadCanvasMainInfo`의 건너뛰기 조건과 [c001-canvas-main 스펙](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md)·[ADR-0029](../adr/0029-canvas-today-ssot-polling.md) 소유 경계 절에 적는다.
+
+### [2026-09-26] 코드 주석이 실제 호출·근거와 어긋난 채 남아 있다
+
+- **ID**: OQ-P-408
+- **출처**: docs 기록 구조 개선 추출 — 이관 전 `docs/doc-baseline.md`(`git show 4fd12b91d:docs/doc-baseline.md`)의 KDoc 잔재 서술
+- **항목**: ① `UploadImagePreprocessorImpl`의 KDoc이 "뒤따르는 `createScaledBitmap`"이라고 적지만 코드는 `scale`을 부른다 — 축소가 확대로 돌 수 없다는 논증이 가리키는 호출이 코드에 없다. ② `NotionWebView`의 `@SuppressLint("SetJavaScriptEnabled")`에 JS를 켜는 근거 주석이 없다.
+- **상태**: 미해결
+- **해소 메모**: ①은 KDoc의 호출 이름을 `scale`로 고치면 닫힌다(동작 영향 없음). ②는 JS 활성이 필요한 이유(노션 페이지 렌더)를 억제 옆에 한 줄 적으면 닫힌다.
+
+### [2026-09-26] 전경 마스크와 다중 후보 옵션의 동시 사용 금지를 지키는 수단이 KDoc뿐이다
+
+- **ID**: OQ-P-409
+- **출처**: docs 기록 구조 개선 추출 — 이관 전 `docs/doc-baseline.md`(`git show 4fd12b91d:docs/doc-baseline.md`)의 C-103 다중 후보 회차 요약. 관찰 근거는 해소된 OQ-P-268
+- **항목**: ① 두 옵션을 한 요청에 켜면 ML Kit 모듈이 네이티브 `SIGSEGV`로 죽는다(실기기 1대 관찰). 스택이 모듈 네이티브라 `try/catch`·Crashlytics가 못 잡고 `logcat -b crash`에만 남는다. ② 그래서 전경 마스크는 후보 0건일 때의 2차 요청으로 떨어져 있고, 대가로 한 흐름에서 세그멘터를 두 번 열 수 있다. ③ 이 금지를 잡는 테스트·린트가 없다 — `ImageSegmentationRepositoryImpl` KDoc의 ⚠️ 한 줄이 유일한 방어라, 옵션을 합치는 리팩터가 JVM 테스트를 통과한 채 들어올 수 있다. ④ ML Kit을 올렸을 때 크래시가 사라졌는지 다시 볼 절차가 없다.
+- **상태**: 미해결
+- **해소 메모**: ③은 옵션 빌더(`multipleSubjectOptions`·`foregroundOptions`)가 서로를 켜지 않는다는 단언 테스트로 좁힌다. ④는 ML Kit 버전 업 회차의 실기기 점검 항목에 넣고, 결합이 안전해지면 2차 요청을 걷을지 [ADR-0012](../adr/0012-mlkit-subject-segmentation.md)에서 다시 정한다.
+
+### [2026-09-26] 실기기·실서버 확인이 한 번도 돌지 않은 채 이월된 항목
+
+- **ID**: OQ-P-410
+- **출처**: docs 기록 구조 개선 추출 — 이관 전 `docs/doc-baseline.md`(`git show 4fd12b91d:docs/doc-baseline.md`)의 회차 요약·이력 표에 흩어져 있던 "실기기 확인 0회" 서술 20건. 개별 OQ가 없던 것만 모았다(개별 OQ가 있는 실기기 항목은 각 OQ가 추적한다).
+- **항목**:
+  ① 세션 — 자동로그인 왕복·첫 프레임·계정 전환·오프라인 진입(수동 확인 7항목 미수행).
+  ② 푸시 — 기기 토큰 등록이 204를 받는지, 발송이 `NO_DEVICE_TOKEN` 취소를 벗어나는지.
+  ③ 캔버스 — 토핑 탭 토스트 노출, 토핑 셋 중 일부만 403일 때의 부분 실패, 저장 미리보기 캡처 홀더의 체감 속도.
+  ④ 업로드 — 실서버 요청 0건인 업로드 경로.
+  ⑤ 카메라·갤러리 — 권한 영구 거부 경로와 갤러리 경로.
+  ⑥ 세그멘테이션 — 계획의 실기기 수동 검증 Task 미체크, 모듈이 기기에 도착한 뒤의 화면 경로를 사람이 본 적 없음.
+  ⑦ 계측 테스트만 있고 실기기 기록이 없는 회차들.
+- **상태**: 미해결
+- **해소 메모**: 실기기 점검 회차를 한 번 돌려 항목별로 확인하고, 확인한 항목은 해당 스펙 「검증」 절에 기록한 뒤 여기서 지운다. 확인 중 결함이 나오면 개별 OQ로 분리한다.
+
+<!-- oq-next: 411 -->
