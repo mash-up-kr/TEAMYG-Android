@@ -6,6 +6,7 @@ import com.teamyg.parfait.data.model.qualifier.RemoteJson
 import com.teamyg.parfait.data.model.qualifier.UnauthenticatedClient
 import com.teamyg.parfait.data.model.qualifier.UploadClient
 import com.teamyg.parfait.data.network.AuthInterceptor
+import com.teamyg.parfait.data.network.NetworkConstValue
 import com.teamyg.parfait.data.network.SelectiveLoggingInterceptor
 import com.teamyg.parfait.data.network.TokenAuthenticator
 import com.teamyg.parfait.data.network.TokenProvider
@@ -160,7 +161,7 @@ object NetworkModule {
     private fun httpLoggingInterceptor(debugLevel: HttpLoggingInterceptor.Level): HttpLoggingInterceptor =
         HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) debugLevel else HttpLoggingInterceptor.Level.NONE
-            redactHeader("Authorization")
+            redactHeader(NetworkConstValue.AUTHORIZATION_HEADER)
         }
 
     private const val CONNECT_TIMEOUT_SECONDS = 10L

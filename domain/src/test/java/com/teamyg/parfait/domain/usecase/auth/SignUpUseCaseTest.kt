@@ -14,8 +14,8 @@ import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
-import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -32,8 +32,8 @@ import kotlin.time.Duration.Companion.seconds
 class SignUpUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val deviceTokenRegistrar: DeviceTokenRegistrar = mockk(relaxed = true)
-    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, deviceTokenRegistrar)
+    private val notificationRepository: NotificationRepository = mockk(relaxed = true)
+    private val useCase = SignUpUseCase(authRepository, refreshMyAccount, notificationRepository)
 
     private val registrationToken = RegistrationToken("registration-token")
 
@@ -248,7 +248,7 @@ class SignUpUseCaseTest {
         // Then 세션이 저장된 뒤에 등록한다 — 이 엔드포인트는 인증이 필요하다(화이트리스트 밖)
         coVerifyOrder {
             authRepository.saveSession(session)
-            deviceTokenRegistrar.register()
+            notificationRepository.registerCurrentDeviceToken()
         }
     }
 
@@ -264,6 +264,6 @@ class SignUpUseCaseTest {
         )
 
         // Then 세션이 없으니 등록도 부르지 않는다
-        verify(exactly = 0) { deviceTokenRegistrar.register() }
+        verify(exactly = 0) { notificationRepository.registerCurrentDeviceToken() }
     }
 }

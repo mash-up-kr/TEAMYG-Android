@@ -12,7 +12,7 @@ import com.teamyg.parfait.R
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
+import com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -36,7 +36,7 @@ private val pushLogger = Loggers.create("Push")
 @AndroidEntryPoint
 class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Inject
-    lateinit var deviceTokenRegistrar: DeviceTokenRegistrar
+    lateinit var registerCurrentDeviceToken: RegisterCurrentDeviceTokenUseCase
 
     @Inject
     lateinit var requestTodayParfaitRefresh: RequestTodayParfaitRefreshUseCase
@@ -59,7 +59,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     /**
-     * 전달받은 [token] 을 그대로 쓰지 않고 등록구를 부른다 — 그쪽이 지금 값을 다시 읽는다.
+     * 전달받은 [token] 을 그대로 쓰지 않고 등록을 건다 — 저장소가 지금 값을 다시 읽는다.
      * 세션 축 등록과 같은 뮤텍스를 타야 같은 토큰이 동시에 두 번 올라가지 않는다.
      *
      * deprecated 인 이유는 대체가 FID 기반 `onRegistered` 이기 때문이다. 지금 옮기지 않는
@@ -68,7 +68,7 @@ class ParfaitFirebaseMessagingService : FirebaseMessagingService() {
     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        deviceTokenRegistrar.register()
+        registerCurrentDeviceToken()
     }
 
     /**
