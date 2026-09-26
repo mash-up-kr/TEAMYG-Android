@@ -334,8 +334,6 @@ raw OkHttp를 쓰는 유일한 자리**)·`ImageUploadRepository`·`ToppingRepos
 - **[`superpowers/plans/`](superpowers/plans/README.md)** — 작업 계획(`YYYY-MM-DD-kebab-topic.md`). 완료분은 `plans/archive/`
 - **[`synthesis/`](synthesis)** — 분석·점검 산출물(open-questions·lint). wiki `synthesis/`와 동형.
   - **[`synthesis/open-questions.md`](synthesis/open-questions.md)** — 구현 미결·열린 결정·코드/문서 정합 이슈 추적. 정책·기획 미결은 위키 [[open-questions]].
-  - **[`synthesis/lint-2026-07-22-parfait.md`](synthesis/lint-2026-07-22-parfait.md)** — 문서 내부 정합(링크·상태표·규율·민감데이터) 점검 보고서(2026-07-22, wikilink 3건 수정).
-  - **[`synthesis/lint-2026-07-06-parfait.md`](synthesis/lint-2026-07-06-parfait.md)** — 문서 vs 실제 코드 정합성 점검 보고서(2026-07-06, 조치 완료 이력).
 - **[`code-conventions.md`](code-conventions.md)** — 코드 주석·KDoc 규약. 루트 `CLAUDE.md`가 이 파일을 링크한다.
 - **[`doc-baseline.md`](doc-baseline.md)** — 문서를 마지막으로 검증한 `develop` 커밋 해시(SoT) + "develop 기준 문서 점검" 절차. 현재 기준선 `143cda87b`(2026-09-21 검증, #511까지 — **Android 소스가 한 줄도 안 움직인 첫 라운드이고, 들어온 것은 이 저장소 밖에서 운영하던 정책 위키의 분기본이다**. delta 1건, **158파일 27237/0 — 삭제 0줄**, 커밋 67개, 머지 트리 = 브랜치 팁. `.kt`·`.kts`·gradle·xml·toml 변경 **0건**이라 유닛 **1298**·계측 **46**은 셈할 것도 없이 유지. 아카이브 이동 **0건**, **parfait 문서 드리프트 0건**(spec·plan·architecture·ADR·`api/` 다섯 표면 전부 불변), 신설 1건(OQ-P-405, `oq-next` 406). #511 이 `wiki/` 아래로 스크립트 다섯·pytest 열다섯·`routing.json`·`references/`·원본 45건·콘텐츠 `pages/`·graphify 산출물을 들여왔고, 루트 `CLAUDE.md`에 「위키」 절이 붙었다(Gradle·CI 미변경). ⚠️ **같은 정책 위키가 두 벌이 됐다** — 이 저장소의 `wiki/`와 저쪽이 같은 원본을 각각 ingest했고, 소스 39건은 파일명까지 같은데 **개념 층이 갈라졌다**(이쪽 concepts 19건 한글 세분 / 저쪽 8건 영문 묶음). **어느 쪽이 정본인지 정한 문서가 없다**(OQ-P-405). ⚠️ 이식 설계가 「콘텐츠는 옮기지 않는다·원본이 계속 정본」이라 못 박았는데 머지된 트리에는 같은 원본 39건이 그대로 있다. 미머지 하나(`feature/debug-mode`) 유지 — 원격 브랜치는 일곱에서 다섯으로 줄었다. 직전 회차(`e10ead2ca`, #513까지) 요약은 doc-baseline 본문에 있다).
 
