@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.common.terms.impl.component
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import android.webkit.WebResourceError
@@ -29,6 +30,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.common.terms.impl.R
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 internal fun NotionWebView(
     url: String,

@@ -61,7 +61,7 @@ fun GroupCreateRoute(
     // 그룹 생성 직후 알림 권한 안내(정책 §3.1)를 한 번 거쳐야 캔버스로 넘어간다 —
     // 안내가 끝나기 전까지는 목적지 정보만 들고 대기한다.
     var pendingNavigation by rememberSaveable(stateSaver = NavigateToNextSaver) {
-        mutableStateOf<GroupCreateSideEffect.NavigateToNext?>(null)
+        mutableStateOf(null)
     }
 
     LaunchedEffect(viewModel) {

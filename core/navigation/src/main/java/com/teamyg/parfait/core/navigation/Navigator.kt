@@ -8,11 +8,11 @@ import kotlin.reflect.KClass
 
 @ActivityRetainedScoped
 class Navigator(initialNavigationKey: NavKey) {
-    private val _backStack: SnapshotStateList<NavKey> = mutableStateListOf(initialNavigationKey)
-    val backStack: List<NavKey> get() = _backStack
+    val backStack: List<NavKey>
+        field: SnapshotStateList<NavKey> = mutableStateListOf(initialNavigationKey)
 
     fun goTo(destination: NavKey) {
-        _backStack.add(destination)
+        backStack.add(destination)
     }
 
     /**
@@ -22,26 +22,26 @@ class Navigator(initialNavigationKey: NavKey) {
      * 없으면 평범하게 새로 쌓는다.
      */
     fun goToSingleClearTop(destination: NavKey) {
-        val destinationIndex = _backStack.lastIndexOf(destination)
+        val destinationIndex = backStack.lastIndexOf(destination)
 
         if (destinationIndex == -1) {
-            _backStack.add(destination)
+            backStack.add(destination)
             return
         }
 
         // 하나씩 걷어내면 스냅샷에도 그만큼 변경이 쌓이므로 한 번에 잘라낸다
-        _backStack.removeRange(destinationIndex + 1, _backStack.size)
+        backStack.removeRange(destinationIndex + 1, backStack.size)
     }
 
     /** [destination] 으로 가면서 지금 화면은 백스택에서 걷어낸다. 뒤로 가면 지금 화면을 건너뛴다 */
     fun goToAndPopCurrent(destination: NavKey) {
-        val currentIndex = _backStack.lastIndex
+        val currentIndex = backStack.lastIndex
         if (currentIndex < 0) {
-            _backStack.add(destination)
+            backStack.add(destination)
             return
         }
 
-        _backStack[currentIndex] = destination
+        backStack[currentIndex] = destination
     }
 
     /**
@@ -58,13 +58,13 @@ class Navigator(initialNavigationKey: NavKey) {
 
     /** 타입을 값으로 받는 [popUpTo]. reified 판이 이쪽으로 넘긴다 */
     fun popUpTo(type: KClass<out NavKey>): Boolean {
-        val destinationIndex = _backStack.indexOfLast { it::class == type }
+        val destinationIndex = backStack.indexOfLast { it::class == type }
 
         if (destinationIndex == -1) return false
-        if (destinationIndex == _backStack.lastIndex) return true
+        if (destinationIndex == backStack.lastIndex) return true
 
         // 하나씩 걷어내면 스냅샷에도 그만큼 변경이 쌓이므로 한 번에 잘라낸다
-        _backStack.removeRange(destinationIndex + 1, _backStack.size)
+        backStack.removeRange(destinationIndex + 1, backStack.size)
 
         return true
     }
@@ -78,16 +78,16 @@ class Navigator(initialNavigationKey: NavKey) {
      * 방어하고 있는 크래시 원인이라 아예 만들 수 없게 막는다.
      */
     fun replaceAll(destination: NavKey) {
-        _backStack.clear()
-        _backStack.add(destination)
+        backStack.clear()
+        backStack.add(destination)
     }
 
     fun onBack() {
-        if (_backStack.size <= 1) {
+        if (backStack.size <= 1) {
             // ResultEffect 발동 상황에서 사이즈가 1인 경우 크래시 발생
             return
         }
 
-        _backStack.removeLastOrNull()
+        backStack.removeLastOrNull()
     }
 }

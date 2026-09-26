@@ -45,7 +45,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 internal fun CustomGalleryPickerScreen(
     state: CustomGalleryPickerState,
     toastPolicy: YGToastPolicy,
-    onClickGrantPermission: () -> Unit,
     onClickOpenSettings: () -> Unit,
     onClickManageMedia: () -> Unit,
     onClickImage: (String) -> Unit,
@@ -70,7 +69,6 @@ internal fun CustomGalleryPickerScreen(
 
         false -> GalleryPermissionRequestComponent(
             isDeniedPermission = state.access.isDeniedPermission,
-            onClickGrantPermission = onClickGrantPermission,
             onClickOpenSettings = onClickOpenSettings,
             onClickCancel = onClickCancel,
             modifier = modifier,
@@ -182,7 +180,6 @@ private fun PreviewCustomGalleryPickerScreen(
             access = access,
         ),
         toastPolicy = rememberYGToastPolicy(),
-        onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickManageMedia = {},
         onClickImage = {},

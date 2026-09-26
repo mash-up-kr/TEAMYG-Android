@@ -28,7 +28,7 @@ fun YGCanvasMenu(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(-1.dp),
+        verticalArrangement = Arrangement.spacedBy((-1).dp),
     ) {
         if (isExpanded) {
             expandedItems.forEach { item ->
@@ -41,7 +41,7 @@ fun YGCanvasMenu(
         if (addAction != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(-1.dp),
+                horizontalArrangement = Arrangement.spacedBy((-1).dp),
             ) {
                 YGStrokeButton(
                     text = addAction.text,

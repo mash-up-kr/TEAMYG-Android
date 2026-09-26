@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class InviteCodeTest {
-    private val messageTemplate = "친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1\$s"
+    private val messageTemplate = $$"친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s"
 
     private fun message(code: String) = messageTemplate.format(code)
 

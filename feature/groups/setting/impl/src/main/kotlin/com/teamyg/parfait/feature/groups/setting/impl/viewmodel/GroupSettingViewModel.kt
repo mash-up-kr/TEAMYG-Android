@@ -33,6 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 그룹 설정 화면이 한 번에 하나만 띄울 수 있는 확인 팝업. */
 enum class GroupSettingDialog {
@@ -284,7 +285,7 @@ constructor(
 
         copyResetJob?.cancel()
         copyResetJob = viewModelScope.launch {
-            delay(COPY_CODE_RESET_DELAY_MS)
+            delay(COPY_CODE_RESET_DELAY_MS.milliseconds)
             updateState { copy(isCodeCopied = false) }
         }
     }

@@ -26,7 +26,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
-import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
@@ -413,7 +412,7 @@ class CanvasBGEditViewModelTest {
         val updates = slot<List<ToppingTransformUpdate>>()
         coEvery {
             updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), capture(updates))
-        } returns Result.success(emptyList<UpdatedToppingVO>())
+        } returns Result.success(emptyList())
 
         // When 확인 버튼을 누른다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
@@ -438,7 +437,7 @@ class CanvasBGEditViewModelTest {
         viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
 
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList<UpdatedToppingVO>())
+        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
 
         // When 확인 버튼을 누른다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
@@ -508,7 +507,7 @@ class CanvasBGEditViewModelTest {
         }
 
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList<UpdatedToppingVO>())
+        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
 
         // When 확인 버튼을 누른다
         viewModel.processIntent(CanvasBGEditIntent.OnClickConfirm)
@@ -663,7 +662,7 @@ class CanvasBGEditViewModelTest {
         val viewModel = viewModel()
         viewModel.selectMyTopping()
         viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
-        coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList<UpdatedToppingVO>())
+        coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList())
 
         // When 확인 버튼을 누른다
         viewModel.effect.test {

@@ -32,7 +32,6 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 @Composable
 internal fun GalleryPermissionRequestComponent(
     isDeniedPermission: Boolean,
-    onClickGrantPermission: () -> Unit,
     onClickOpenSettings: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -93,7 +92,6 @@ internal fun GalleryPermissionRequestComponent(
 private fun PreviewGalleryPermissionRequestComponent() = PreviewBox {
     GalleryPermissionRequestComponent(
         isDeniedPermission = false,
-        onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),
@@ -105,7 +103,6 @@ private fun PreviewGalleryPermissionRequestComponent() = PreviewBox {
 private fun PreviewGalleryPermissionRequestComponentPermanentlyDenied() = PreviewBox {
     GalleryPermissionRequestComponent(
         isDeniedPermission = true,
-        onClickGrantPermission = {},
         onClickOpenSettings = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),

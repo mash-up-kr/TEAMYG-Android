@@ -1,8 +1,6 @@
 package com.teamyg.parfait
 
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -16,7 +14,6 @@ import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.ui.LocalSharedTransitionScope
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
@@ -76,30 +73,27 @@ fun MainRoute(
             .collect { (size, top) -> screenViewTracker.track(backStackSize = size, top = top) }
     }
 
-    SharedTransitionLayout(modifier = modifier) {
-        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-            NavDisplay(
-                entryDecorators = listOf(
-                    // NavEntry Lifecycle 동안 유효한 SaveableState 를 만드는 Decorator
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    // NavEntry Lifecycle 동안 유효한 ViewModel 를 만드는 Decorator
-                    rememberViewModelStoreNavEntryDecorator(),
-                    // NavEntry 범위마다 공통 ReturnEventBus 객체를 CompositionLocal 로 제공하는 Decorator
-                    // Returning Result 를 위해 사용하는 EventBus 를 feature impl 모듈들의 Composable 에서
-                    // LocalResultEventBus.current 로 가져올 수 있게 됨
-                    rememberResultEventBusNavEntryDecorator(),
-                ),
-                backStack = navigator.backStack,
-                onBack = navigator::onBack,
-                transitionSpec = { NavTransition.Default.push(this) },
-                popTransitionSpec = { NavTransition.Default.pop(this) },
-                predictivePopTransitionSpec = { swipeEdge ->
-                    NavTransition.Default.predictivePop(this, swipeEdge)
-                },
-                entryProvider = entryProvider {
-                    entryBuilders.forEach { builder -> this.builder(navigator) }
-                },
-            )
-        }
-    }
+    NavDisplay(
+        modifier = modifier,
+        entryDecorators = listOf(
+            // NavEntry Lifecycle 동안 유효한 SaveableState 를 만드는 Decorator
+            rememberSaveableStateHolderNavEntryDecorator(),
+            // NavEntry Lifecycle 동안 유효한 ViewModel 를 만드는 Decorator
+            rememberViewModelStoreNavEntryDecorator(),
+            // NavEntry 범위마다 공통 ReturnEventBus 객체를 CompositionLocal 로 제공하는 Decorator
+            // Returning Result 를 위해 사용하는 EventBus 를 feature impl 모듈들의 Composable 에서
+            // LocalResultEventBus.current 로 가져올 수 있게 됨
+            rememberResultEventBusNavEntryDecorator(),
+        ),
+        backStack = navigator.backStack,
+        onBack = navigator::onBack,
+        transitionSpec = { NavTransition.Default.push(this) },
+        popTransitionSpec = { NavTransition.Default.pop(this) },
+        predictivePopTransitionSpec = { swipeEdge ->
+            NavTransition.Default.predictivePop(this, swipeEdge)
+        },
+        entryProvider = entryProvider {
+            entryBuilders.forEach { builder -> this.builder(navigator) }
+        },
+    )
 }

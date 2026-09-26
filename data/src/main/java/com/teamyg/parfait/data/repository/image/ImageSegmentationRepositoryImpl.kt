@@ -5,30 +5,24 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.os.SystemClock
-import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
-import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
-import com.teamyg.parfait.domain.model.SegmentationCandidate
-import com.teamyg.parfait.domain.model.SegmentationResult
-import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import androidx.core.net.toUri
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
+import com.teamyg.parfait.core.util.android.extension.decodeUriToBitmap
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
+import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.data.installer.image.ModuleInstallOutcome
 import com.teamyg.parfait.data.installer.image.SegmentationModuleInstaller
 import com.teamyg.parfait.data.model.image.DetectionBounds
 import com.teamyg.parfait.data.model.image.DetectionProjection
 import com.teamyg.parfait.data.model.image.RecoveryStage
 import com.teamyg.parfait.data.model.image.RecoveryTransform
+import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
 import com.teamyg.parfait.data.utils.image.AlphaPostProcessOptions
 import com.teamyg.parfait.data.utils.image.RELAXED_FLOOR_LOG_DIVISOR
 import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
@@ -45,8 +39,12 @@ import com.teamyg.parfait.data.utils.image.normalizeStage
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
+import com.teamyg.parfait.domain.model.SegmentationCandidate
+import com.teamyg.parfait.domain.model.SegmentationResult
 import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.image.SourceLongSide
+import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -57,6 +55,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ExecutionException
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
+import androidx.core.graphics.createBitmap
 
 @Singleton
 class ImageSegmentationRepositoryImpl
@@ -178,7 +180,7 @@ constructor(
 
         // ⚠️ runSegmenter 는 Tasks.await 블로킹 대기라 추론 도중에는 끊기지 않는다. 상한은 진행 중인 추론 하나가
         // 끝난 뒤에 걸린다
-        return withTimeoutOrNull(RECOVERY_TIMEOUT_MS) { runRecoveryLadder(origin) } ?: run {
+        return withTimeoutOrNull(RECOVERY_TIMEOUT_MS.milliseconds) { runRecoveryLadder(origin) } ?: run {
             repositoryLogger.w { "회복: 대기 상한 ${RECOVERY_TIMEOUT_MS}ms 를 넘겨 빈 결과로 접는다" }
             Result.success(emptyList())
         }
@@ -415,11 +417,7 @@ constructor(
             try {
                 val trimmedFile = trimmed.saveToCacheAsPng()
 
-                val canvasBitmap = Bitmap.createBitmap(
-                    candidate.canvasWidth,
-                    candidate.canvasHeight,
-                    Bitmap.Config.ARGB_8888,
-                )
+                val canvasBitmap = createBitmap(candidate.canvasWidth, candidate.canvasHeight)
 
                 val subjectFile = try {
                     // 스케일하지 않고 그대로 얹는다 — ML Kit 가 준 치수와 bounds 가 어긋나더라도

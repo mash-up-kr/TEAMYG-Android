@@ -6,7 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -97,7 +97,7 @@ class CountingJobTest {
 
         // When · Then
         assertFailsWith<IllegalStateException> {
-            runKernelCounting(job) { suspendCoroutine<Unit> { } }
+            runKernelCounting(job) { suspendCancellableCoroutine<Unit> { } }
         }
     }
 }

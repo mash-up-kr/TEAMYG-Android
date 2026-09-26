@@ -8,10 +8,10 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -20,6 +20,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,8 +36,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -135,7 +138,7 @@ class GroupListViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When ViewModel 만 만들어지고 화면은 아직 앞에 서지 않았다
-        val viewModel = viewModel()
+        viewModel()
         advanceUntilIdle()
 
         // Then 조회는 화면이 설 때 나간다 — 생성만으로 부르면 재진입 조회와 겹쳐 두 번 나간다
@@ -262,7 +265,7 @@ class GroupListViewModelTest {
 
         // When 당겨서 새로고침을 하고 최소 노출 시간이 차기 직전까지만 시간을 흘린다
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS - 1)
+        advanceTimeBy((REFRESH_MINIMUM_VISIBLE_MILLIS - 1).milliseconds)
         runCurrent()
 
         // Then 조회가 끝났다고 바로 걷으면 인디케이터가 깜빡이기만 하고 사라진다
@@ -278,7 +281,7 @@ class GroupListViewModelTest {
 
         // When 당겨서 새로고침을 하고 최소 노출 시간을 채운다
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS)
+        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS.milliseconds)
         runCurrent()
 
         // Then 최소 노출 시간은 걷을 시점을 미룰 뿐이라, 다 채우면 더 붙잡지 않는다
@@ -295,11 +298,11 @@ class GroupListViewModelTest {
 
         // When 조회가 끝나는 시점까지만 시간을 흘린다
         coEvery { refreshMyGroups() } coAnswers {
-            delay(slowQueryMillis)
+            delay(slowQueryMillis.milliseconds)
             Result.success(Unit)
         }
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(slowQueryMillis)
+        advanceTimeBy(slowQueryMillis.milliseconds)
         runCurrent()
 
         // Then 이미 최소 노출 시간을 넘겼으므로 조회 뒤에 지연을 더 얹지 않는다

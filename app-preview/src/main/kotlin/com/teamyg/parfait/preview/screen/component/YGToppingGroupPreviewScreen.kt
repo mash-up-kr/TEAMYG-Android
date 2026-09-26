@@ -9,15 +9,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.yggrouptagchip.YGGrouptagChipType
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingBorder
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroupType
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTemplate
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 
 private const val SAMPLE_TOPPING_URL = "https://picsum.photos/400"
+private const val SAMPLE_WIDE_TOPPING_URL = "https://picsum.photos/800/400"
 
 @Composable
 internal fun YGToppingGroupPreviewScreen(
@@ -83,6 +87,45 @@ internal fun YGToppingGroupPreviewScreen(
                 }
             }
             item {
+                val outlines = rememberToppingOutlines(
+                    models = listOf(SAMPLE_TOPPING_URL, SAMPLE_WIDE_TOPPING_URL),
+                    retryKey = 0,
+                )
+
+                PreviewSection("Remote + 테두리 (4dp / 30dp / 비정사각 8dp)") {
+                    listOf(4.dp, 30.dp).forEach { width ->
+                        YGToppingGroup(
+                            image = YGToppingImage.Remote(
+                                url = SAMPLE_TOPPING_URL,
+                                border = YGToppingBorder(
+                                    color = YGAtomicColors.Cherry.Cherry200,
+                                    width = width,
+                                    outline = outlines[SAMPLE_TOPPING_URL],
+                                ),
+                            ),
+                            name = "테두리 ${width.value.toInt()}dp",
+                            timestamp = "3분전",
+                            chipType = YGGrouptagChipType.TYPE_5_6,
+                            type = YGToppingGroupType.TYPE_1_RIGHT,
+                        )
+                    }
+                    YGToppingGroup(
+                        image = YGToppingImage.Remote(
+                            url = SAMPLE_WIDE_TOPPING_URL,
+                            border = YGToppingBorder(
+                                color = YGAtomicColors.Cherry.Cherry200,
+                                width = 8.dp,
+                                outline = outlines[SAMPLE_WIDE_TOPPING_URL],
+                            ),
+                        ),
+                        name = "비정사각 테두리",
+                        timestamp = "3분전",
+                        chipType = YGGrouptagChipType.TYPE_5_6,
+                        type = YGToppingGroupType.TYPE_2_LEFT,
+                    )
+                }
+            }
+            item {
                 PreviewSection("경계 케이스 (긴 이름 + 긴 시간 / 비정사각 이미지)") {
                     // 칩이 160dp 프레임을 넘어 한 줄로 나오는지 확인용.
                     YGToppingGroup(
@@ -94,7 +137,7 @@ internal fun YGToppingGroupPreviewScreen(
                     )
                     // 가로로 긴 비정사각 원격 이미지가 잘리지 않고 96dp 안에 다 들어오는지 확인용.
                     YGToppingGroup(
-                        image = YGToppingImage.Remote("https://picsum.photos/800/400"),
+                        image = YGToppingImage.Remote(SAMPLE_WIDE_TOPPING_URL),
                         name = "비정사각",
                         timestamp = "3분전",
                         chipType = YGGrouptagChipType.TYPE_9_10,

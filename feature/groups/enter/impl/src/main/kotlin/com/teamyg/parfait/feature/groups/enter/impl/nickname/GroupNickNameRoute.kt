@@ -64,7 +64,7 @@ fun GroupNickNameRoute(
     // 안내가 끝나기 전까지는 목적지 정보만 들고 대기한다. rememberSaveable 인 이유는
     // NavigateToNextSaver 의 KDoc 참고
     var pendingNavigation by rememberSaveable(stateSaver = NavigateToNextSaver) {
-        mutableStateOf<GroupNickNameSideEffect.NavigateToNext?>(null)
+        mutableStateOf(null)
     }
 
     LaunchedEffect(viewModel) {

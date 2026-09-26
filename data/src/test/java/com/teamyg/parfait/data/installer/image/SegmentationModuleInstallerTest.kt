@@ -1,6 +1,8 @@
 package com.teamyg.parfait.data.installer.image
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -8,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.milliseconds
 
 private class FakeModuleInstallGateway(private var available: Boolean = false) : ModuleInstallGateway {
     var installCount: Int = 0
@@ -32,6 +35,7 @@ private class FakeModuleInstallGateway(private var available: Boolean = false) :
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SegmentationModuleInstallerTest {
     @Test
     fun ensureInstalled_alreadyAvailable_doesNotRequestInstall() = runTest {
@@ -109,7 +113,7 @@ class SegmentationModuleInstallerTest {
         val installer = SegmentationModuleInstaller(gateway)
 
         val first = async { installer.ensureInstalled() }
-        advanceTimeBy(SegmentationModuleInstaller.INSTALL_TIMEOUT_MS + 1)
+        advanceTimeBy((SegmentationModuleInstaller.INSTALL_TIMEOUT_MS + 1).milliseconds)
         advanceUntilIdle()
 
         assertEquals(ModuleInstallOutcome.TimedOut, first.await())
@@ -132,7 +136,7 @@ class SegmentationModuleInstallerTest {
         gateway.emit(ModuleInstallSignal.Failed(installState = 5, errorCode = 8))
         first.await()
 
-        val second = async { installer.ensureInstalled() }
+        launch { installer.ensureInstalled() }
         runCurrent()
 
         // 끝난 대기를 재사용하면 재시도가 영영 옛 실패만 돌려준다

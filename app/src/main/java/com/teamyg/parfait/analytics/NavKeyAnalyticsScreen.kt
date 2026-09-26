@@ -11,11 +11,8 @@ import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSelect
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMove
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -92,12 +89,6 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     )
 
     is NavKeyCanvasImageSave -> AnalyticsScreen("C-001-image-save", "NavKeyCanvasImageSave")
-
-    is NavKeyCanvasEdit -> AnalyticsScreen("C-001-edit", "NavKeyCanvasEdit")
-
-    is NavKeyCanvasImageSelect -> AnalyticsScreen("C-001-image-select", "NavKeyCanvasImageSelect")
-
-    is NavKeyCanvasMove -> AnalyticsScreen("C-001-move", "NavKeyCanvasMove")
 
     is NavKeyAppSetting -> AnalyticsScreen("S-001", "NavKeyAppSetting")
 
