@@ -19,7 +19,7 @@ signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바�
 **두 저장소의 통합 브랜치 이름이 다르다** — 혼동하지 말 것.
 
 ## 점검 절차 (다음 요청 시)
-로컬 경로는 개인정보라 `wiki/personal-private/project-paths.md` 참고(아래 `<S>`).
+`<S>`는 서버 저장소(`mash-up-kr/TEAMYG-SERVER`)의 로컬 클론 경로다. 이 저장소에는 경로를 적지 않는다.
 
 1. **최신화**: `git -C <S> fetch origin main`
 2. **신규 커밋 나열**: `git -C <S> log --oneline <기준선>..origin/main`

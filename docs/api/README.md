@@ -386,7 +386,7 @@ develop에 0건이라(2026-08-22 PR #325가 걷어냈다) 되살릴지가 그대
 
 ## 갱신
 - **서버가 바뀌었을 때** → 이 저장소에는 반복 워크플로 스킬이 없어 계약 절·기준선을 수동으로 갱신한다
-- **Android가 바뀌었을 때** → 스킬 `sync-tjyg-develop-baseline`(`android_status`·Android 매핑 절 갱신)
+- **Android가 바뀌었을 때** → [doc-baseline](../doc-baseline.md) 「점검 절차」를 따르고, 계약에 닿는 변경은 각 문서의 `android_status`·「Android 매핑」 절을 갱신한다.
 
 ## 계약을 실제로 확인하는 법
 
