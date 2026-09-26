@@ -8,6 +8,51 @@
 - 코드, 식별자, 파일명, 커밋 메시지, PR 제목: **영어** 유지 (이 레포의 표준 컨벤션)
 - 스킬이 정한 고정 구조(헤딩, 프론트매터 키)는 영어로 두고, **내용**만 한국어로 작성
 
+## 문서 (`docs/`)
+
+`docs/`는 이 앱의 **구현 문서**다. 무엇을 어떻게 만들었고 왜 그렇게 했는지를 남긴다.
+제품 스펙·기획 자체는 `wiki/`가 적는다 — 의존 방향은 구현 → 위키 단방향이다.
+
+| 경로 | 내용 |
+|---|---|
+| `docs/index.md` | 진입 허브. 라우팅은 여기서 본다 |
+| `docs/status.md` | 기능별 현재 상태. 덮어쓰기만 한다 |
+| `docs/log.md` | 점검·lint·구조 변경의 시간순 기록. append-only |
+| `docs/superpowers/specs/` | 설계 스펙. 구현 완료분은 `archive/` |
+| `docs/superpowers/plans/` | 구현 계획. 구현 완료분은 `archive/` |
+| `docs/adr/` | 아키텍처 결정 기록 |
+| `docs/architecture/` | 레이어별 구조 문서 |
+| `docs/api/` | TEAMYG-SERVER 계약. 서버가 정본이고 Android 매핑은 각 문서의 절로 붙는다 |
+| `docs/synthesis/` | 미결 항목 |
+| `docs/doc-baseline.md` | 문서를 어느 `develop` 커밋 기준으로 마지막 검증했는지 적는 단일 출처 |
+| `docs/script/` | `check_links` `search`. 전부 저장소 루트에서 실행 |
+
+### 무엇을 적나
+
+코드로 복원할 수 없는 것만 적는다. 수정 작업에서 에이전트는 문서를 읽고도 코드를 직접 열기
+때문에, 코드에서 바로 나오는 사실은 중복이다.
+
+| 적는다 | 적지 않는다 |
+|---|---|
+| 여러 파일을 가로지르는 **현재 상태 종합** | 무엇이 삭제·교체·개명됐는가 같은 **변경 서술** |
+| grep 앵커 — 현재 코드에 있는 식별자·경로 | PR 번호 나열, `~~취소선~~ → ✅` 식 이력 |
+| gotcha — 코드만 봐서는 의도가 아님을 알 수 없는 결함 | 코드를 읽으면 바로 나오는 구현 세부 |
+| 미완 상태의 의도 — stub인지 버그인지 | 해소된 미결, 닫힌 lint 발견 |
+| 결정 이유 → ADR, 설계 → 스펙, 점검 규칙 → 점검 절차 | 날짜 머리말 단위의 누적 서술 |
+
+미결은 `docs/synthesis/open-questions.md` 한 곳에서만 추적한다. lint·점검 결과는 별도 보고서를
+만들지 않는다 — 고친 것은 `log.md` 한 줄, 못 고친 것은 open-questions 항목이다.
+
+**Kotlin 코드 주석·KDoc 규약은 [`docs/code-conventions.md`](docs/code-conventions.md)에
+있다.** 구현·리뷰를 서브에이전트에 디스패치할 때 그 문서를 브리프에 링크하고,
+`writing-plans`로 계획을 쓸 때는 Global Constraints에도 넣는다.
+
+문서를 옮기거나 `archive/`로 내린 뒤에는
+`python3 docs/script/check_links.py docs`로 상대 링크를 전수 확인한다(깨지면 exit 1).
+
+코드 작업(설계 → 계획 → 구현 → 리뷰)은 superpowers 체인으로 돈다. 그 산출물인 설계 스펙과
+구현 계획은 `docs/superpowers/`에 남는다.
+
 ## 위키 (`wiki/`)
 
 `wiki/`는 parfait의 **제품 스펙·기획**을 추적하는 마크다운 위키다. 무엇을 만들기로
