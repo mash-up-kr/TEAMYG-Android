@@ -5,8 +5,8 @@ category: meta
 status: living
 platforms: android
 verified: 2026-09-21
-related_spec: topping-edit-empty-subject-guard, upload-image-downscale, push-notification-permission-and-device-token, canvas-today-ssot-polling, topping-alpha-hit-test, segmentation-mask-postprocessing, segmentation-alpha-refinement, alpha-kernel-suspend-cancellation, segmentation-preprocessing, c001-canvas-gallery-save, c301-topping-edit-tab, c106-topping-place-api, c106-topping-place, user-info-ssot, app-setting-s001, s004-terms-privacy-webview, canvas-detail-background-api-service-layer, c201-canvas-calendar, c201-canvas-calendar-server, c001-canvas-today-detail, session-token-refresh-infra, c301-canvas-background-edit, c103-segmentation-topping-edit, intro-term-agree, designsystem-bar-listdate-components, designsystem-text-component-sync, a005-group-create, s002-account-info, data-network-setup, network-envelope-token-storage, designsystem-grouptag-topping-components, designsystem-button-component-sync, designsystem-button-missing-components, designsystem-canvas-components, g001-group-list, c101-camera-picture-confirm, c102-custom-gallery-picker, parfait-api-contract-docs, data-api-service-layer, unit-test-infrastructure, ci-gradle-cache-seeding, a002-login-onboarding, c001-canvas-main, image-api-service-layer, member-parfait-image-api-service-layer, a004-group-invite-code, s102-group-nickname, mvi-error-infrastructure, a002-kakao-login-api, ygscaffold-v2-common-loading-error, s101-group-setting-api, screen-resume-refetch, canvas-save-preview-capture-holder, topping-border-distance-field, g001-group-list-topping-border, build-cache-measurement-harness
-related_adr: ADR-0004, ADR-0010, ADR-0011, ADR-0012, ADR-0013, ADR-0014, ADR-0016, ADR-0017, ADR-0018, ADR-0019, ADR-0020, ADR-0021, ADR-0022, ADR-0025, ADR-0026, ADR-0029, ADR-0030
+related_spec: canvas-topping-timelapse-video, topping-edit-empty-subject-guard, upload-image-downscale, push-notification-permission-and-device-token, canvas-today-ssot-polling, topping-alpha-hit-test, segmentation-mask-postprocessing, segmentation-alpha-refinement, alpha-kernel-suspend-cancellation, segmentation-preprocessing, c001-canvas-gallery-save, c301-topping-edit-tab, c106-topping-place-api, c106-topping-place, user-info-ssot, app-setting-s001, s004-terms-privacy-webview, canvas-detail-background-api-service-layer, c201-canvas-calendar, c201-canvas-calendar-server, c001-canvas-today-detail, session-token-refresh-infra, c301-canvas-background-edit, c103-segmentation-topping-edit, intro-term-agree, designsystem-bar-listdate-components, designsystem-text-component-sync, a005-group-create, s002-account-info, data-network-setup, network-envelope-token-storage, designsystem-grouptag-topping-components, designsystem-button-component-sync, designsystem-button-missing-components, designsystem-canvas-components, g001-group-list, c101-camera-picture-confirm, c102-custom-gallery-picker, parfait-api-contract-docs, data-api-service-layer, unit-test-infrastructure, ci-gradle-cache-seeding, a002-login-onboarding, c001-canvas-main, image-api-service-layer, member-parfait-image-api-service-layer, a004-group-invite-code, s102-group-nickname, mvi-error-infrastructure, a002-kakao-login-api, ygscaffold-v2-common-loading-error, s101-group-setting-api, screen-resume-refetch, canvas-save-preview-capture-holder, topping-border-distance-field, g001-group-list-topping-border, build-cache-measurement-harness
+related_adr: ADR-0004, ADR-0010, ADR-0011, ADR-0012, ADR-0013, ADR-0014, ADR-0016, ADR-0017, ADR-0018, ADR-0019, ADR-0020, ADR-0021, ADR-0022, ADR-0025, ADR-0026, ADR-0029, ADR-0030, ADR-0034
 related_architecture: design-system, data-layer, navigation-flow, module-structure, state-management
 related_code:
 tags: [meta, parfait]
@@ -7825,3 +7825,31 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 실기기 점검 회차를 한 번 돌려 항목별로 확인하고, 확인한 항목은 해당 스펙 「검증」 절에 기록한 뒤 여기서 지운다. 확인 중 결함이 나오면 개별 OQ로 분리한다.
 
 <!-- oq-next: 411 -->
+
+### [2026-09-27] 캔버스 타임랩스 동영상 저장 — 화면 결선 미착수와 정책 원본 부재
+
+- **ID**: OQ-P-411
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0034](../adr/0034-canvas-video-onscreen-capture-encoding.md)
+- **항목**:
+  ① `toppingVideoFrames`·`Mp4VideoEncoder`·`SaveCanvasVideoToGalleryUseCase`가 호출부 없이 들어와 있다. `CanvasToppingLayer` 등장 진행도·녹화 레이어·프레임 루프·`CanvasSaveResult` sealed·미리보기 버튼·ViewModel 경로가 없다(계획 Task 5~8).
+  ② 미리보기 하단 버튼 두 개의 배치와 레이블, 영상 성공·실패 토스트 문구가 디자인 미정이다.
+  ③ 기능 자체가 기획 원본(`wiki/raw/`)에 없는 제안이라 타임라인 수치·해상도에 정책 근거가 없다.
+  ④ 영상 마지막 프레임과 이미지 저장물의 테두리 비율을 실제로 대조한 적이 없다(녹화 레이어가 없어 대조할 수 없다).
+- **상태**: 미해결
+- **해소 메모**: Task 5~8을 결선하면 ①④를 닫는다. ②③은 디자인·기획 확정을 받아 `strings.xml`과 `VideoTimelineOptions`에 반영한다.
+
+### [2026-09-27] 녹화 밀도에서 토핑 테두리 판 캐시가 미스된다
+
+- **ID**: OQ-P-412
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
+- **항목**: `ToppingBorderPlateCache` 판 열쇠가 밀도 의존 `outsetPx`를 포함해 녹화 레이어의 판은 새로 만들어진다. 녹화 게이트가 판 생성을 기다리지 않아 이른 프레임의 토핑이 테두리 없이 등장할 수 있고, 캐시 용량을 넘기면 화면용 판을 축출해 녹화 뒤 화면 테두리가 다시 만들어진다.
+- **상태**: 보류 (녹화 레이어 결선 뒤 실기기 관찰 후 처방)
+- **해소 메모**: 처방이 공용 캐시를 건드려야 하고 기기 없이 측정할 수 없다. OQ-P-411 ① 이후에만 재현 가능하다.
+
+### [2026-09-27] 타임랩스 동영상 길이에 토핑 수 상한이 없다
+
+- **ID**: OQ-P-413
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
+- **항목**: 총 프레임이 `15 + 12N + 30`이라 토핑 60개면 영상이 25초를 넘고 인코딩도 그만큼 길어진다. 그 동안 로딩 오버레이가 화면을 막는다.
+- **상태**: 미해결 (실측 대기)
+- **해소 메모**: 결선 뒤 실기기에서 토핑 수별 생성 시간을 재고 상한이나 토핑당 프레임 축소를 정한다.

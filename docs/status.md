@@ -113,13 +113,14 @@
 
 ## 캔버스 이미지 저장
 - 상태: 날짜바의 저장 아이콘(오늘·지난 캔버스 모두, 빈 안내판이 없을 때만)을 누르면 `CanvasMainRoute`가 `YGCanvas` 프레임의 GraphicsLayer를 캡처해 고정 이름 캐시 PNG로 굽고 비트맵은 `CanvasCaptureHolder`에 실어 ViewModel 없는 미리보기로 보낸다. 미리보기에서 확정하면 결과 버스로 경로만 돌려주고, 캔버스 메인이 그 파일을 다시 읽어(API 28 이하는 쓰기 권한을 물은 뒤) `SaveCanvasToGalleryUseCase` → `GalleryMediaProvider`로 MediaStore에 PNG를 쓰고 결과를 캔버스 프레임 토스트로 알린다.
-- 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`
+- 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`, `SaveCanvasVideoToGalleryUseCase`, `Mp4VideoEncoder`
 - ⚠️ 캡처는 지금 그려진 것을 그대로 복사해 배경 이미지가 아직 안 왔으면 배경 없이 담기고, 해상도도 기기 화면 크기에 종속된다 (OQ-P-272)
 - ⚠️ 캡처 파일 이름이 고정이고 지우는 호출이 없으며, 홀더도 한 장만 들어 연달아 캡처하면(푸시로 다른 그룹 캔버스에 갔다 오는 경우 포함) 미리보기가 다른 그림을 원래 날짜 라벨과 함께 보여 준다. 읽기·결과 왕복·미리보기 화면에 테스트가 없다 (OQ-P-365)
 - ⚠️ 미리보기 키가 캐시 파일 절대경로와 날짜 문자열을 나른다 — OS가 캐시를 정리하면 확정 시 읽기 실패 토스트로 끝나고, `LocalDate.parse` 실패는 아무도 잡지 않는다 (OQ-P-364)
 - ⚠️ API 29 미만에서는 `Pictures/Parfait` 하위 폴더도 `IS_PENDING` 보호도 없이 기본 위치에 쓰고 쓰기 권한 다이얼로그가 추가로 뜬다 (OQ-P-274)
 - ⚠️ 오늘 캔버스에서도 저장되는 것에 기획 근거가 없고, 저장 아이콘 노출이 빈 안내판 조건의 부정으로 따로 적혀 있어 안내판 조건이 바뀌면 말없이 따라 바뀐다 (OQ-P-340)
-- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md)
+- ⚠️ 타임랩스 동영상 저장은 화면 아래 조각만 있다 — `toppingVideoFrames`·`Mp4VideoEncoder`·`SaveCanvasVideoToGalleryUseCase`가 호출부 없이 들어와 있고, 미리보기 버튼·녹화 레이어·ViewModel 경로가 없다. stub이 아니라 결선 전 단계다 (OQ-P-411)
+- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0034](adr/0034-canvas-video-onscreen-capture-encoding.md)
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).
