@@ -13,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.filters.SdkSuppress
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -162,6 +163,26 @@ class Mp4VideoEncoderTest {
 
         // Then 재생할 수 없는 파일을 남기지 않는다
         assertTrue("중단한 산출물이 남았다", !output.exists() || output.length() == 0L)
+
+        output.delete()
+        bitmap.recycle()
+    }
+
+    @Test
+    fun encodeFrame_afterClose_throwsIllegalState() {
+        // Given 닫힌 인코더
+        val output = File(context.cacheDir, "encoder_closed_${System.nanoTime()}.mp4")
+        val bitmap = createBitmap(width, height)
+        val encoder = Mp4VideoEncoder(
+            outputFile = output,
+            width = width,
+            height = height,
+            framesPerSecond = framesPerSecond,
+        )
+        encoder.close()
+
+        // When · Then 프레임을 넣으면 원인이 드러나는 예외를 던진다
+        assertThrows(IllegalStateException::class.java) { encoder.encodeFrame(bitmap) }
 
         output.delete()
         bitmap.recycle()
