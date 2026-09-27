@@ -231,7 +231,7 @@ internal fun CanvasMainScreen(
  * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 미설정으로
  * 떨어뜨린다 — 캔버스를 못 그리는 것보다 [YGCanvas] 의 기본 배경을 깔아 주는 편이 낫다.
  */
-private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
+internal fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
     null -> null
     is CanvasBackground.Color -> value.toColorOrNull()?.let(YGCanvasBackground::Solid)
     is CanvasBackground.Image -> YGCanvasBackground.Image(url)
