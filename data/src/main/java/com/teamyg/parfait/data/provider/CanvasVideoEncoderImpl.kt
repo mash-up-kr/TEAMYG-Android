@@ -25,8 +25,13 @@ private const val CANVAS_VIDEO_FRAME_RATE = 30
 
 /**
  * [Transformer] 는 호출 스레드에 Looper 가 있어야 해서 [Dispatchers.Main] 에서 돌린다.
- * 이미지 시퀀스는 [EditedMediaItem.durationUs]·[EditedMediaItem.frameRate] 로 노출 시간을
- * 정하고, [Transformer] 가 그 시간만큼의 프레임을 만들어 이어 붙인다.
+ *
+ * 이미지 하나의 길이는 [MediaItem.Builder.setImageDurationMs] 로 정한다 — 이게 없으면
+ * `DefaultAssetLoaderFactory` 가 고정 길이 이미지로 인식하지 못하고 일반 미디어 취급하는
+ * `ExoPlayerAssetLoader` 로 흘려보내는데, 정지 이미지 트랙에는 재생 길이가 없어
+ * `IllegalArgumentException("Could not retrieve required duration")` 로 실패한다.
+ * [EditedMediaItem.Builder.setDurationUs]·[EditedMediaItem.Builder.setFrameRate] 는 그
+ * 길이를 합성 타임라인에 얼마나 반영할지(트림·프레임 수)를 정하는 것이라 별개로 필요하다.
  */
 @UnstableApi
 class CanvasVideoEncoderImpl
@@ -40,8 +45,14 @@ constructor(
         outputFile: File,
     ): Result<Unit> = runSuspendCatching {
         val editedItems = frames.map { frame ->
+            val mediaItem = MediaItem
+                .Builder()
+                .setUri(frame.toUri())
+                .setImageDurationMs(frameDurationMs)
+                .build()
+
             EditedMediaItem
-                .Builder(MediaItem.fromUri(frame.toUri()))
+                .Builder(mediaItem)
                 .setDurationUs(frameDurationMs.milliseconds.inWholeMicroseconds)
                 .setFrameRate(CANVAS_VIDEO_FRAME_RATE)
                 .build()
