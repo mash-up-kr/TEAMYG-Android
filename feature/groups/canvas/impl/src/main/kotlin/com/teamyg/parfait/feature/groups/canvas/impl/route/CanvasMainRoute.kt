@@ -216,6 +216,12 @@ internal fun CanvasMainRoute(
                     toastPolicy.showError(gallerySaveFailureMessage)
                 }
 
+                // 실제 캡처 실행·권한 분기는 다음 라운드가 채운다 — 지금은 sealed 분기를
+                // 컴파일 가능하게만 둔다
+                is CanvasMainEffect.RequestCanvasVideoCapture -> Unit
+
+                is CanvasMainEffect.ShowGalleryVideoSaveResult -> Unit
+
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
                     type = YGToastType.Record(
                         userName = effect.nickname,

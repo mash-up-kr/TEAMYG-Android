@@ -26,8 +26,10 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.provider.CanvasVideoEncoder
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -40,6 +42,7 @@ import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCas
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_FRAME_DURATION_MS
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -59,6 +62,7 @@ import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import java.io.File
 import kotlin.math.abs
 import kotlin.time.Clock
 
@@ -211,6 +215,18 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val date: LocalDate,
     ) : CanvasMainEffect
 
+    /**
+     * 저장 미리보기에서 "동영상으로 저장"을 눌렀다. 프레임 캡처(Compose GraphicsLayer)도
+     * 화면만 할 수 있어 ViewModel 은 요청만 보낸다. 인코딩·갤러리 저장은 화면이 프레임을 다
+     * 모아 돌려준 뒤 [CanvasMainIntent.EncodeAndSaveCanvasVideo] 로 이어진다.
+     */
+    data object RequestCanvasVideoCapture : CanvasMainEffect
+
+    data class ShowGalleryVideoSaveResult(
+        val isSuccess: Boolean,
+        val date: LocalDate,
+    ) : CanvasMainEffect
+
     /** Spotlight 진입과 동시에 1회 노출하는 작성자 정보 토스트 */
     data class ShowSpotlightToast(
         val nickname: String,
@@ -279,6 +295,15 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
     data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 
+    /** 미리보기에서 "동영상으로 저장"을 눌렀다. */
+    data object SaveCapturedCanvasVideo : CanvasMainIntent
+
+    /** 화면이 오프스크린으로 캡처한 프레임을 모아 돌려줬다. 인코딩·저장은 여기서부터다. */
+    data class EncodeAndSaveCanvasVideo(
+        val frames: List<File>,
+        val outputFile: File,
+    ) : CanvasMainIntent
+
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
 
@@ -309,6 +334,8 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
+    private val saveCanvasVideoToGalleryUseCase: SaveCanvasVideoToGalleryUseCase,
+    private val canvasVideoEncoder: CanvasVideoEncoder,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
@@ -609,6 +636,9 @@ constructor(
             is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
 
             is CanvasMainIntent.SaveCapturedCanvas -> handleSaveCapturedCanvas(intent.bitmap)
+            is CanvasMainIntent.SaveCapturedCanvasVideo -> handleSaveCapturedCanvasVideo()
+            is CanvasMainIntent.EncodeAndSaveCanvasVideo ->
+                handleEncodeAndSaveCanvasVideo(intent.frames, intent.outputFile)
 
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
@@ -843,6 +873,39 @@ constructor(
         }
     }
 
+    private fun handleSaveCapturedCanvasVideo() {
+        postSideEffect(effect = CanvasMainEffect.RequestCanvasVideoCapture)
+    }
+
+    private fun handleEncodeAndSaveCanvasVideo(
+        frames: List<File>,
+        outputFile: File,
+    ) {
+        val date = state.value.selectedDate
+
+        launch(key = SAVE_CANVAS_VIDEO_TO_GALLERY_KEY) {
+            val encodeResult = canvasVideoEncoder.encode(
+                frames = frames,
+                frameDurationMs = CANVAS_VIDEO_FRAME_DURATION_MS,
+                outputFile = outputFile,
+            )
+            val saveResult = encodeResult.fold(
+                onSuccess = { saveCanvasVideoToGalleryUseCase(outputFile, outputFile.name) },
+                onFailure = { Result.failure(it) },
+            )
+
+            frames.forEach { it.delete() }
+            outputFile.delete()
+
+            postSideEffect(
+                effect = CanvasMainEffect.ShowGalleryVideoSaveResult(
+                    isSuccess = saveResult.isSuccess,
+                    date = date,
+                ),
+            )
+        }
+    }
+
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
     private fun handleSelectYear(year: Int) {
         val current = state.value
@@ -953,6 +1016,8 @@ constructor(
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
 
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
+
+        const val SAVE_CANVAS_VIDEO_TO_GALLERY_KEY = "saveCanvasVideoToGallery"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 

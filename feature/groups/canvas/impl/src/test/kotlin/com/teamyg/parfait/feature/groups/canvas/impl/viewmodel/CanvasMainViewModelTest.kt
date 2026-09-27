@@ -23,8 +23,10 @@ import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
+import com.teamyg.parfait.domain.provider.CanvasVideoEncoder
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
@@ -59,6 +61,7 @@ import kotlinx.datetime.minus
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
+import java.io.File
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -81,6 +84,8 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
+    private val saveCanvasVideoToGallery: SaveCanvasVideoToGalleryUseCase = mockk()
+    private val canvasVideoEncoder: CanvasVideoEncoder = mockk()
     private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
     private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
@@ -152,6 +157,8 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
+        saveCanvasVideoToGalleryUseCase = saveCanvasVideoToGallery,
+        canvasVideoEncoder = canvasVideoEncoder,
         getTutorialVisibleFlowUseCase = getTutorialVisible,
         completeTutorialUseCase = completeTutorial,
         startToppingDraft = startToppingDraft,
@@ -758,6 +765,64 @@ class CanvasMainViewModelTest {
                 awaitItem(),
             )
         }
+    }
+
+    @Test
+    fun onClickSaveVideo_requestsCaptureWithoutEncodingYet() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태
+        val viewModel = enteredViewModel()
+
+        // When "동영상으로 저장"을 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+
+            // Then 바로 인코딩하지 않는다 — 화면 밖 캡처만 요청한다
+            assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
+        }
+    }
+
+    @Test
+    fun encodeAndSaveCanvasVideo_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태이고 인코딩·저장이 모두 성공한다
+        val viewModel = enteredViewModel()
+        val frames = listOf(mockk<File>(relaxed = true))
+        val outputFile = mockk<File>(relaxed = true)
+        coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns Result.success(Unit)
+        coEvery { saveCanvasVideoToGallery(outputFile, any()) } returns Result.success(Unit)
+
+        // When 화면이 캡처한 프레임을 돌려준다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+
+            // Then 지금 보고 있는 날짜와 함께 성공을 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = true, date = today),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun encodeAndSaveCanvasVideo_encodingFails_showsFailureAndNeverCallsSave() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 인코딩이 실패한다
+        val viewModel = enteredViewModel()
+        val frames = listOf(mockk<File>(relaxed = true))
+        val outputFile = mockk<File>(relaxed = true)
+        coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns
+            Result.failure(IllegalStateException("인코딩 실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+
+            // Then 실패를 알리고
+            assertEquals(
+                CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = false, date = today),
+                awaitItem(),
+            )
+        }
+
+        // 갤러리 저장까지 가지 않는다 — 인코딩 결과가 없으니 저장할 파일도 없다
+        coVerify(exactly = 0) { saveCanvasVideoToGallery(any(), any()) }
     }
 
     @Test
