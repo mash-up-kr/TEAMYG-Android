@@ -40,6 +40,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 | Crashlytics·Analytics·Firebase 설정·푸시(FCM) | [ADR-0013](adr/0013-firebase-fcm-crashlytics.md) + [ADR-0031](adr/0031-analytics-central-screen-mapping.md) |
 | 로깅·Logger 추상화(Kermit) | [ADR-0014](adr/0014-logging-abstraction-kermit.md) |
 | 유효성 결과·에러 문자열 다국어 매핑(domain 의미↔표시 분리) | [ADR-0016](adr/0016-domain-result-presentation-string-mapping.md) + [state-management](architecture/state-management.md) |
+| 캔버스 동영상 인코딩(MediaCodec·EGL)·갤러리 영상 저장 | [ADR-0034](adr/0034-canvas-video-onscreen-capture-encoding.md) + [canvas-topping-timelapse-video 스펙](superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) |
 | 구현 직전 기능·컴포넌트 설계 스펙 | [specs/README.md](superpowers/specs/README.md) |
 | 작업 계획·진행 중/완료 작업 | [plans/README.md](superpowers/plans/README.md) |
 | 구현 미결·열린 결정·코드/문서 정합 이슈 | [open-questions.md](synthesis/open-questions.md) |
