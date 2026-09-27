@@ -16,4 +16,10 @@ interface GalleryRepository {
         bitmap: BitmapWrapper,
         displayName: String,
     ): Result<Unit>
+
+    /** [videoFilePath] 의 mp4 를 기기 갤러리에 새 영상으로 저장한다. 수십 MB 라 메모리로 올리지 않고 경로로 받는다 */
+    suspend fun saveVideoToGallery(
+        videoFilePath: String,
+        displayName: String,
+    ): Result<Unit>
 }
