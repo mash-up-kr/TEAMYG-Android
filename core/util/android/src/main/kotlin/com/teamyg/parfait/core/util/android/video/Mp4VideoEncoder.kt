@@ -75,6 +75,7 @@ class Mp4VideoEncoder(
 
     /** [bitmap] 을 다음 프레임으로 넣는다. 호출 순서가 곧 재생 순서다 */
     fun encodeFrame(bitmap: Bitmap) {
+        check(!isClosed) { "이미 닫힌 인코더에 프레임을 넣었다" }
         check(!isFinished) { "이미 마감한 인코더에 프레임을 넣었다" }
 
         runOnEncoderThread {
@@ -93,6 +94,7 @@ class Mp4VideoEncoder(
      * 산출물은 `use` 블록 밖에서 읽어야 한다.
      */
     fun finish() {
+        check(!isClosed) { "이미 닫힌 인코더를 마감했다" }
         check(!isFinished) { "인코더를 두 번 마감했다" }
 
         runOnEncoderThread {
@@ -112,13 +114,15 @@ class Mp4VideoEncoder(
                 codec.stop()
                 codec.release()
             }
-            runCatching {
-                if (isMuxerStarted) muxer.stop()
-                muxer.release()
-            }
+            // stop 이 실패하면 moov 가 안 쓰인다. finish() 를 거쳤어도 재생할 수 없는 파일이다
+            val isMuxerStopped = isMuxerStarted &&
+                runCatching { muxer.stop() }
+                    .onFailure { throwable -> coreUtilAndroidLogger.w(throwable) { "muxer 를 멈추지 못했다" } }
+                    .isSuccess
+            runCatching { muxer.release() }
 
-            if (!isFinished && outputFile.exists()) {
-                // 헤더가 덜 쓰인 mp4 는 재생되지 않는다. 호출부가 그것을 갤러리에 올리지 못하게 지운다
+            if (!(isFinished && isMuxerStopped) && outputFile.exists()) {
+                // 재생되지 않는 mp4 를 호출부가 갤러리에 올리지 못하게 지운다
                 val deleted = outputFile.delete()
                 if (!deleted) {
                     coreUtilAndroidLogger.w { "중단한 mp4 를 지우지 못했다 - path: ${outputFile.absolutePath}" }
