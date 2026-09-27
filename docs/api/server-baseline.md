@@ -1,6 +1,6 @@
 # 서버 API 문서 검증 기준선 (Server Baseline)
 
-> `parfait/api/` 계약 문서를 **어느 서버 커밋 기준으로 마지막 검증했는지** 기록하는 단일 출처(SoT).
+> `docs/api/` 계약 문서를 **어느 서버 커밋 기준으로 마지막 검증했는지** 기록하는 단일 출처(SoT).
 > "서버 API 문서 점검"을 요청받으면 아래 기준선부터 현재 `origin/main`까지의 **delta만** 감사하고,
 > 끝나면 기준선을 갱신한다.
 
@@ -26,7 +26,7 @@ signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바�
    - 기능 PR이 squash로 들어와 merge 커밋이 아닐 수 있다 → **`--merges` 필터를 쓰지 않는다.**
    - 변경 파일: `git -C <S> show --stat <hash>`
 3. **계약 대조**: 컨트롤러·`*Request`/`*Response` DTO·`*ErrorCode` enum·`SecurityConfig`·
-   `ApiResponse`·`GlobalExceptionHandler` 변경이 `parfait/api/*.md`와 어긋나는지 검사.
+   `ApiResponse`·`GlobalExceptionHandler` 변경이 `docs/api/*.md`와 어긋나는지 검사.
    - 파일 조회는 항상 `git -C <S> show origin/main:<path>` — **워킹트리를 믿지 않는다**(로컬은 `develop`).
    - 신규 도메인이면 [template.md](template.md)로 문서 신설 + [README.md](README.md) 인덱스 등록.
    - **엔드포인트·DTO·에러 코드가 하나도 안 바뀐 delta도 계약을 뒤집는다.** 2026-09-01 라운드가 그
