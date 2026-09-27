@@ -10,3 +10,7 @@ internal val repositoryLogger: Logger by lazy {
 internal val sourceLogger: Logger by lazy {
     Loggers.create("Source")
 }
+
+internal val providerLogger: Logger by lazy {
+    Loggers.create("Provider")
+}

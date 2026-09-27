@@ -11,6 +11,7 @@ import androidx.media3.transformer.ExportException
 import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.data.utils.providerLogger
 import com.teamyg.parfait.domain.provider.CanvasVideoEncoder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +68,9 @@ constructor(
                                 exportResult: ExportResult,
                                 exportException: ExportException,
                             ) {
+                                providerLogger.e(exportException) {
+                                    "CanvasVideoEncoderImpl - 인코딩 실패: ${exportException.errorCodeName}"
+                                }
                                 if (continuation.isActive) continuation.resumeWith(Result.failure(exportException))
                             }
                         },
@@ -76,5 +80,7 @@ constructor(
                 continuation.invokeOnCancellation { transformer.cancel() }
             }
         }
+    }.onFailure { throwable ->
+        providerLogger.e(throwable) { "CanvasVideoEncoderImpl::encode - 실패" }
     }
 }
