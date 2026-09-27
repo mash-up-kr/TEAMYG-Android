@@ -12,28 +12,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-private const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
-private const val BIT_RATE = 6_000_000
-private const val I_FRAME_INTERVAL_SECONDS = 1
-private const val DEQUEUE_TIMEOUT_MICROS = 10_000L
-
-/** [close] 가 스레드를 정리할 때 기다리는 최대 시간. 이미 마지막 작업까지 끝낸 뒤라 사실상 즉시 끝난다 */
-private const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1L
-
-/**
- * [drainCodec] 이 EOS 를 기다리며 총 대기할 수 있는 상한.
- *
- * [finish] 는 이 안에서 호출부 스레드를 동기적으로 막는다(클래스 KDoc 참고) — 상한이 없으면
- * 코덱이 EOS 를 끝내 내놓지 않을 때 `while(true)` 로 영원히 멈춘다. 프레임 루프가 UI 스레드
- * (`AndroidUiDispatcher.Main`)에서 돌기 때문에 그 경우 실패 토스트가 아니라 ANR 로 이어진다.
- * 정상적인 코덱은 EOS 신호 뒤 수십 ms 안에 응답하므로 3초는 이미 넉넉한 여유이면서, 안드로이드가
- * 입력 이벤트를 ANR 로 판정하는 5초보다는 짧게 잡아 "무한정 멈춤" 대신 "예외로 드러나는 실패"가
- * 되도록 한다
- */
-private const val EOS_DRAIN_TIMEOUT_MILLIS = 3_000L
-
-private const val NANOS_PER_MILLI = 1_000_000L
-
 /**
  * 비트맵 시퀀스를 무음 mp4 로 쓴다.
  *
@@ -280,5 +258,29 @@ class Mp4VideoEncoder(
         } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
+    }
+
+    private companion object {
+        const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
+        const val BIT_RATE = 6_000_000
+        const val I_FRAME_INTERVAL_SECONDS = 1
+        const val DEQUEUE_TIMEOUT_MICROS = 10_000L
+
+        /** [close] 가 스레드를 정리할 때 기다리는 최대 시간. 이미 마지막 작업까지 끝낸 뒤라 사실상 즉시 끝난다 */
+        const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1L
+
+        /**
+         * [drainCodec] 이 EOS 를 기다리며 총 대기할 수 있는 상한.
+         *
+         * [finish] 는 이 안에서 호출부 스레드를 동기적으로 막는다(클래스 KDoc 참고) — 상한이 없으면
+         * 코덱이 EOS 를 끝내 내놓지 않을 때 `while(true)` 로 영원히 멈춘다. 프레임 루프가 UI 스레드
+         * (`AndroidUiDispatcher.Main`)에서 돌기 때문에 그 경우 실패 토스트가 아니라 ANR 로 이어진다.
+         * 정상적인 코덱은 EOS 신호 뒤 수십 ms 안에 응답하므로 3초는 이미 넉넉한 여유이면서, 안드로이드가
+         * 입력 이벤트를 ANR 로 판정하는 5초보다는 짧게 잡아 "무한정 멈춤" 대신 "예외로 드러나는 실패"가
+         * 되도록 한다
+         */
+        const val EOS_DRAIN_TIMEOUT_MILLIS = 3_000L
+
+        const val NANOS_PER_MILLI = 1_000_000L
     }
 }
