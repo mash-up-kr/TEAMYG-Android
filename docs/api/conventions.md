@@ -474,7 +474,7 @@ DTO를 자기가 만들어 넣어 `@SerialName` 문자열도 날짜 포맷도 �
 **2026-08-04 기준 남은 항목 없음.** 오래 걸려 있던 3건(Android `ApiResponse`에 `success`·`errorDetail`
 부재 / `isSuccess`가 `code == "SUCCESS"` 단일 비교 / `TokenProvider`가 항상 null)은
 `network-envelope-token-storage` 라운드가 **PR #190으로 develop에 머지되며 전부 해소**됐다 —
-envelope 5필드 정합, 성공 판정은 `success` 필드, `TokenProvider`는 `TokenStoreTokenProvider`
+envelope 5필드 정합, 성공 판정은 `success` 필드, `TokenProvider`는 `TokenProviderImpl`
 ([ADR-0019](../adr/0019-encrypted-token-storage.md)). 대응 [open-questions](../synthesis/open-questions.md)
 항목도 해소 처리했다.
 
