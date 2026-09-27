@@ -1,22 +1,12 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingVideoFrame
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.ALPHA_COMPLETION_POINT
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.HOLD_FRAMES
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.INTRO_FRAMES
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.OUTRO_FRAMES
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.POP_FRAMES
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions.POP_OVERSHOOT
-
-/**
- * 한 프레임의 상태.
- *
- * @param visibleCount 이 프레임에 그려지는 토핑 개수. 등장 순서대로 앞에서 센다
- * @param popProgress 마지막으로 등장한 토핑의 팝인 진행도(0~1). [visibleCount] 가 0이면 0이다
- */
-data class ToppingVideoFrame(
-    val visibleCount: Int,
-    val popProgress: Float,
-)
 
 /**
  * 토핑 [toppingCount] 개가 하나씩 등장하는 영상의 전체 프레임을 만든다.
