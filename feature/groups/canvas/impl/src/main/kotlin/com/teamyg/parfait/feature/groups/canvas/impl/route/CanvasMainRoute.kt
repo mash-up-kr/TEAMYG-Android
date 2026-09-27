@@ -1,27 +1,33 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
 import android.content.ClipData
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -31,9 +37,11 @@ import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
+import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasImageSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
@@ -41,12 +49,16 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTutorialOverlay
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoCaptureHost
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.toYGCanvasBackground
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_FINAL_HOLD_FRAMES
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_REVEAL_STEPS_PER_TOPPING
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceSnapshot
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasVideoRevealSteps
 import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
@@ -63,10 +75,15 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
+import java.io.File
+import java.io.FileOutputStream
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
@@ -93,6 +110,10 @@ internal fun CanvasMainRoute(
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
+    val videoGraphicsLayer = rememberGraphicsLayer()
+    var activeVideoSnapshot by remember { mutableStateOf<CanvasVideoSourceSnapshot?>(null) }
+    val videoRevealProgress = remember { mutableStateMapOf<ParfaitImageId, Float>() }
+    var pendingVideoCapture by remember { mutableStateOf(false) }
 
     // 이 화면의 토스트는 전부 캔버스 프레임 상단에 뜬다 — 작성자 알림이 그 자리에 고정돼 있고,
     // 실패만 화면 최상단으로 보내면 같은 화면에서 자리가 갈린다. 큐를 하나로 둬야 Toast 공통
@@ -105,6 +126,9 @@ internal fun CanvasMainRoute(
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
     val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
+    val videoCaptureFailureMessage = stringResource(R.string.canvas_main_video_capture_failure)
+    val gallerySaveVideoSuccessFormat = stringResource(R.string.canvas_main_video_save_success)
+    val gallerySaveVideoFailureMessage = stringResource(R.string.canvas_main_video_save_failure)
     val closedCanvasAlertTitleFormat = stringResource(R.string.canvas_main_closed_canvas_alert_title)
     val closedCanvasAlertSubFormat = stringResource(R.string.canvas_main_closed_canvas_alert_sub)
     val closedCanvasAlertButtonText = stringResource(R.string.canvas_main_closed_canvas_alert_button)
@@ -126,9 +150,27 @@ internal fun CanvasMainRoute(
     ) { granted ->
         val bitmap = pendingGalleryBitmap
         pendingGalleryBitmap = null
+        val videoRequested = pendingVideoCapture
+        pendingVideoCapture = false
+
         if (granted && bitmap != null) {
             viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
-        } else if (bitmap != null) {
+        } else if (granted && videoRequested) {
+            scope.launch {
+                runCanvasVideoCapture(
+                    context = context,
+                    videoGraphicsLayer = videoGraphicsLayer,
+                    onSnapshotActive = { activeVideoSnapshot = it },
+                    onRevealProgressChange = { id, progress -> videoRevealProgress[id] = progress },
+                    onFailure = { toastPolicy.showError(videoCaptureFailureMessage) },
+                    onFramesReady = { frames, outputFile ->
+                        viewModel.processIntent(
+                            CanvasMainIntent.EncodeAndSaveCanvasVideo(frames = frames, outputFile = outputFile),
+                        )
+                    },
+                )
+            }
+        } else if (bitmap != null || videoRequested) {
             toastPolicy.showError(gallerySaveFailureMessage)
         }
     }
@@ -216,11 +258,37 @@ internal fun CanvasMainRoute(
                     toastPolicy.showError(gallerySaveFailureMessage)
                 }
 
-                // 실제 캡처 실행·권한 분기는 다음 라운드가 채운다 — 지금은 sealed 분기를
-                // 컴파일 가능하게만 둔다
-                is CanvasMainEffect.RequestCanvasVideoCapture -> Unit
+                is CanvasMainEffect.RequestCanvasVideoCapture -> {
+                    if (GalleryWritePermissionManager.hasPermission(context)) {
+                        scope.launch {
+                            runCanvasVideoCapture(
+                                context = context,
+                                videoGraphicsLayer = videoGraphicsLayer,
+                                onSnapshotActive = { activeVideoSnapshot = it },
+                                onRevealProgressChange = { id, progress -> videoRevealProgress[id] = progress },
+                                onFailure = { toastPolicy.showError(videoCaptureFailureMessage) },
+                                onFramesReady = { frames, outputFile ->
+                                    viewModel.processIntent(
+                                        CanvasMainIntent.EncodeAndSaveCanvasVideo(
+                                            frames = frames,
+                                            outputFile = outputFile,
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+                    } else {
+                        pendingVideoCapture = true
+                        galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
+                    }
+                }
 
-                is CanvasMainEffect.ShowGalleryVideoSaveResult -> Unit
+                is CanvasMainEffect.ShowGalleryVideoSaveResult -> if (effect.isSuccess) {
+                    val message = gallerySaveVideoSuccessFormat.format(effect.date.month.number, effect.date.day)
+                    toastPolicy.show(YGToastType.InviteCode(message))
+                } else {
+                    toastPolicy.showError(gallerySaveVideoFailureMessage)
+                }
 
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
                     type = YGToastType.Record(
@@ -369,5 +437,96 @@ internal fun CanvasMainRoute(
                 onClickNext = { viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext) },
             )
         }
+
+        activeVideoSnapshot?.let { snapshot ->
+            CanvasVideoCaptureHost(
+                background = snapshot.background,
+                toppings = snapshot.toppings,
+                revealProgress = videoRevealProgress,
+                graphicsLayer = videoGraphicsLayer,
+                modifier = Modifier.offset(x = 10_000.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 배경·토핑 이미지를 먼저 메모리 캐시에 올려 둔다 — 프레임을 여러 장 그리는 동안 이미지가
+ * 늦게 도착하면 일부 프레임만 비어 보인다(정지 이미지 캡처의 OQ-P-272와 같은 결함이 프레임
+ * 수만큼 반복되는 것을 막는다).
+ */
+private suspend fun preloadCanvasVideoImages(
+    context: Context,
+    snapshot: CanvasVideoSourceSnapshot,
+): Result<Unit> = runCatching {
+    val urls = buildList {
+        (snapshot.background as? YGCanvasBackground.Image)?.let { add(it.url) }
+        addAll(snapshot.toppings.map { it.imageUrl })
+    }
+
+    urls.forEach { url ->
+        val result = context.imageLoader.execute(ImageRequest.Builder(context).data(url).build())
+        check(result is SuccessResult) { "이미지를 미리 불러오지 못했다: $url" }
+    }
+}
+
+/**
+ * [CanvasVideoSourceHolder] 스냅샷을 오프스크린으로 재생하며 프레임을 순서대로 캡처해 캐시에
+ * PNG로 쓴다. 배경만 있는 시작 프레임 → 토핑마다 [CANVAS_VIDEO_REVEAL_STEPS_PER_TOPPING] 단계로
+ * 페이드인+슬라이드인 → 마지막에 [CANVAS_VIDEO_FINAL_HOLD_FRAMES] 만큼 정지 프레임을 더한다.
+ */
+private suspend fun runCanvasVideoCapture(
+    context: Context,
+    videoGraphicsLayer: GraphicsLayer,
+    onSnapshotActive: (CanvasVideoSourceSnapshot?) -> Unit,
+    onRevealProgressChange: (ParfaitImageId, Float) -> Unit,
+    onFailure: () -> Unit,
+    onFramesReady: (frames: List<File>, outputFile: File) -> Unit,
+) {
+    val snapshot = CanvasVideoSourceHolder.peek()
+    if (snapshot == null) {
+        onFailure()
+        return
+    }
+
+    if (preloadCanvasVideoImages(context, snapshot).isFailure) {
+        onFailure()
+        return
+    }
+
+    val frameDir = File(context.cacheDir, "canvas_video_frames").apply { mkdirs() }
+    val frames = mutableListOf<File>()
+
+    suspend fun captureFrame() {
+        // state 반영 → 레이아웃 → 드로우까지 실제로 한 번 돌 시간을 준다
+        withFrameNanos {}
+        withFrameNanos {}
+        val bitmap = videoGraphicsLayer.toImageBitmap().asAndroidBitmap()
+        val frameFile = File(frameDir, "frame_${frames.size}.png")
+        FileOutputStream(frameFile).use { output -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, output) }
+        frames += frameFile
+    }
+
+    try {
+        onSnapshotActive(snapshot)
+
+        captureFrame() // 배경만 있는 시작 프레임 — 모든 토핑이 revealProgress 0
+
+        for (topping in snapshot.toppings) {
+            for (progress in canvasVideoRevealSteps(CANVAS_VIDEO_REVEAL_STEPS_PER_TOPPING)) {
+                onRevealProgressChange(topping.parfaitImageId, progress)
+                captureFrame()
+            }
+        }
+
+        repeat(CANVAS_VIDEO_FINAL_HOLD_FRAMES) { captureFrame() }
+
+        val outputFile = File(context.cacheDir, "canvas_video_${System.currentTimeMillis()}.mp4")
+        onFramesReady(frames, outputFile)
+    } catch (throwable: Throwable) {
+        frames.forEach { it.delete() }
+        onFailure()
+    } finally {
+        onSnapshotActive(null)
     }
 }
