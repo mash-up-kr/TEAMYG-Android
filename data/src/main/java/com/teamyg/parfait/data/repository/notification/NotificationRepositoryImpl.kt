@@ -54,7 +54,7 @@ class NotificationRepositoryImpl @Inject constructor(
             repositoryLogger.w(failure) { "기기 토큰 등록 실패 ${attempt + 1}/$MAX_ATTEMPTS" }
             if (isLast) return
 
-            delay(RETRY_DELAY * (attempt + 1))
+            delay(RETRY_DELAY)
         }
     }
 
