@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.repository.gallery
 
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import kotlinx.datetime.LocalDate
+import java.io.File
 
 interface GalleryRepository {
     /**
@@ -14,6 +15,12 @@ interface GalleryRepository {
     /** [bitmap] 을 기기 갤러리에 새 이미지로 저장한다. */
     suspend fun saveImageToGallery(
         bitmap: BitmapWrapper,
+        displayName: String,
+    ): Result<Unit>
+
+    /** 이미 인코딩된 [videoFile]을 기기 갤러리에 새 동영상으로 저장한다. */
+    suspend fun saveVideoToGallery(
+        videoFile: File,
         displayName: String,
     ): Result<Unit>
 }
