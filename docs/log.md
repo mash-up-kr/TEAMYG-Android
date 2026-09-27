@@ -309,3 +309,6 @@ archive 문서 hex 3건(보존)과 wiki/index ADR 개수 stale(위키 소관)은
 
 ## [2026-09-26] restructure | index·doc-baseline을 status·log로 분리, lint 보고서 폐지
 기록 기준을 루트 CLAUDE.md에 도입하고 doc-baseline 이력 98행을 이 파일로 옮겼다.
+
+## [2026-09-27] audit | 594f8047e — #534 data 레이어 패키지·이름 정리 · #527 · #535 문구 · #528 docs 이관
+497파일 +137403/-4010 · 유닛 1294 · 계측 46 · OQ 신설 없음 · 해소 OQ-P-367(①②, 부분)
