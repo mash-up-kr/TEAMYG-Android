@@ -77,6 +77,8 @@ internal fun CanvasToppingLayer(
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
+    /** 동영상 저장이 토핑을 순서대로 드러낼 때만 쓴다. 기본값은 항상 다 보이는 것이다. */
+    revealProgress: (ParfaitImageId) -> Float = { 1f },
 ) {
     BoxWithConstraints(modifier = modifier) {
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
@@ -119,6 +121,7 @@ internal fun CanvasToppingLayer(
                         canvasHeight = areaHeight,
                         onClick = { onClickTopping(entry.topping) },
                         clickable = hitTestEnabled,
+                        revealProgress = revealProgress(entry.topping.parfaitImageId),
                     )
                 }
             }
@@ -148,6 +151,7 @@ internal fun CanvasToppingLayer(
                     canvasHeight = areaHeight,
                     onClick = { onClickTopping(spotlighted.topping) },
                     clickable = hitTestEnabled,
+                    revealProgress = revealProgress(spotlighted.topping.parfaitImageId),
                 )
             }
         }
@@ -182,6 +186,9 @@ internal fun CanvasToppingLayer(
  *
  * @param clickable 판정을 끈 화면에서는 눌러도 아무 일이 없으므로 버튼으로 안내하지 않는다
  */
+/** 토핑 하나가 최종 위치까지 슬라이드하며 나타나는 거리. 동영상 등장 애니메이션에만 쓰인다. */
+private val TOPPING_REVEAL_SLIDE_DISTANCE = 24.dp
+
 @Composable
 private fun CanvasTopping(
     entry: ToppingHitEntry,
@@ -189,10 +196,15 @@ private fun CanvasTopping(
     canvasHeight: Dp,
     onClick: () -> Unit,
     clickable: Boolean,
+    revealProgress: Float = 1f,
 ) {
     val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
     val description = stringResource(R.string.canvas_topping_content_description)
+    val density = LocalDensity.current
+    val revealSlideOffsetPx = with(density) {
+        (TOPPING_REVEAL_SLIDE_DISTANCE * (1f - revealProgress)).toPx()
+    }
 
     Box(
         modifier = Modifier
@@ -206,7 +218,11 @@ private fun CanvasTopping(
             )
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
             .requiredSize(side)
-            .graphicsLayer { rotationZ = transform.rotation.toFloat() }
+            .graphicsLayer {
+                rotationZ = transform.rotation.toFloat()
+                alpha = revealProgress
+                translationY = revealSlideOffsetPx
+            }
             .then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
                 if (clickable) {
