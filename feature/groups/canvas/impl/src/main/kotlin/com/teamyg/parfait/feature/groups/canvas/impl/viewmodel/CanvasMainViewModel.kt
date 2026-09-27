@@ -50,12 +50,14 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
@@ -116,6 +118,12 @@ data class CanvasMainUiState(
     val spotlightedToppingId: ParfaitImageId? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
+    /**
+     * 동영상 캡처·인코딩·저장이 도는 동안 true다. 화면 밖에서 조용히 도는 작업이라 보이는
+     * 자리는 없지만, 끝나기 전에 같은 요청이 다시 들어오면 캡처가 겹쳐 프레임 파일이 서로를
+     * 덮어써 한쪽이 조용히 사라진다 — 그래서 겹치는 동안은 새 요청 자체를 받지 않는다.
+     */
+    val isSavingVideo: Boolean = false,
     /**
      * 지금 보여 주는 튜토리얼 장. `null` 이면 튜토리얼이 떠 있지 않다 — 이미 본 사람과
      * 마지막 장을 닫은 사람이 같은 상태다.
@@ -303,6 +311,13 @@ sealed interface CanvasMainIntent : UiIntent {
         val frames: List<File>,
         val outputFile: File,
     ) : CanvasMainIntent
+
+    /**
+     * 캡처가 시작되지도 못했거나(홀더 비어 있음·선행 디코딩 실패) 권한이 거부돼 저장 자체가
+     * 없던 일이 됐다. [CanvasMainUiState.isSavingVideo] 를 다시 열어 다음 요청을 받게 한다 —
+     * 안 열면 이 세션 동안 "동영상으로 저장"이 다시는 반응하지 않는다.
+     */
+    data object CancelSavingCanvasVideo : CanvasMainIntent
 
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
@@ -636,9 +651,13 @@ constructor(
             is CanvasMainIntent.OnClickGoToToday -> handleClickGoToToday()
 
             is CanvasMainIntent.SaveCapturedCanvas -> handleSaveCapturedCanvas(intent.bitmap)
+
             is CanvasMainIntent.SaveCapturedCanvasVideo -> handleSaveCapturedCanvasVideo()
+
             is CanvasMainIntent.EncodeAndSaveCanvasVideo ->
                 handleEncodeAndSaveCanvasVideo(intent.frames, intent.outputFile)
+
+            is CanvasMainIntent.CancelSavingCanvasVideo -> updateState { copy(isSavingVideo = false) }
 
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
@@ -874,6 +893,11 @@ constructor(
     }
 
     private fun handleSaveCapturedCanvasVideo() {
+        // 이미 도는 캡처·인코딩이 있으면 새 캡처가 같은 프레임 캐시 디렉터리를 밟고 지나가
+        // 먼저 시작한 쪽 파일을 지워 버린다 — 그래서 끝나기 전에는 새 요청 자체를 받지 않는다
+        if (state.value.isSavingVideo) return
+
+        updateState { copy(isSavingVideo = true) }
         postSideEffect(effect = CanvasMainEffect.RequestCanvasVideoCapture)
     }
 
@@ -884,25 +908,31 @@ constructor(
         val date = state.value.selectedDate
 
         launch(key = SAVE_CANVAS_VIDEO_TO_GALLERY_KEY) {
-            val encodeResult = canvasVideoEncoder.encode(
-                frames = frames,
-                frameDurationMs = CANVAS_VIDEO_FRAME_DURATION_MS,
-                outputFile = outputFile,
-            )
-            val saveResult = encodeResult.fold(
-                onSuccess = { saveCanvasVideoToGalleryUseCase(outputFile, outputFile.name) },
-                onFailure = { Result.failure(it) },
-            )
+            try {
+                val encodeResult = canvasVideoEncoder.encode(
+                    frames = frames,
+                    frameDurationMs = CANVAS_VIDEO_FRAME_DURATION_MS,
+                    outputFile = outputFile,
+                )
+                val saveResult = encodeResult.fold(
+                    onSuccess = { saveCanvasVideoToGalleryUseCase(outputFile, outputFile.name) },
+                    onFailure = { Result.failure(it) },
+                )
 
-            frames.forEach { it.delete() }
-            outputFile.delete()
-
-            postSideEffect(
-                effect = CanvasMainEffect.ShowGalleryVideoSaveResult(
-                    isSuccess = saveResult.isSuccess,
-                    date = date,
-                ),
-            )
+                postSideEffect(
+                    effect = CanvasMainEffect.ShowGalleryVideoSaveResult(
+                        isSuccess = saveResult.isSuccess,
+                        date = date,
+                    ),
+                )
+            } finally {
+                // 화면 이탈로 이 코루틴이 취소돼도 임시 파일은 지우고 다음 요청을 열어야 한다
+                withContext(NonCancellable) {
+                    frames.forEach { it.delete() }
+                    outputFile.delete()
+                    updateState { copy(isSavingVideo = false) }
+                }
+            }
         }
     }
 

@@ -39,7 +39,8 @@ constructor(
         outputFile: File,
     ): Result<Unit> = runSuspendCatching {
         val editedItems = frames.map { frame ->
-            EditedMediaItem.Builder(MediaItem.fromUri(frame.toUri()))
+            EditedMediaItem
+                .Builder(MediaItem.fromUri(frame.toUri()))
                 .setDurationUs(frameDurationMs.milliseconds.inWholeMicroseconds)
                 .setFrameRate(CANVAS_VIDEO_FRAME_RATE)
                 .build()
@@ -50,10 +51,14 @@ constructor(
 
         withContext(Dispatchers.Main) {
             suspendCancellableCoroutine { continuation ->
-                val transformer = Transformer.Builder(context)
+                val transformer = Transformer
+                    .Builder(context)
                     .addListener(
                         object : Transformer.Listener {
-                            override fun onCompleted(composition: Composition, exportResult: ExportResult) {
+                            override fun onCompleted(
+                                composition: Composition,
+                                exportResult: ExportResult,
+                            ) {
                                 if (continuation.isActive) continuation.resumeWith(Result.success(Unit))
                             }
 
@@ -65,8 +70,7 @@ constructor(
                                 if (continuation.isActive) continuation.resumeWith(Result.failure(exportException))
                             }
                         },
-                    )
-                    .build()
+                    ).build()
 
                 transformer.start(composition, outputFile.absolutePath)
                 continuation.invokeOnCancellation { transformer.cancel() }

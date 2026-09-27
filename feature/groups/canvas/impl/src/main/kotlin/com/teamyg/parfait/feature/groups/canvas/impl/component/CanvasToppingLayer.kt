@@ -175,6 +175,9 @@ internal fun CanvasToppingLayer(
     }
 }
 
+/** 토핑 하나가 최종 위치까지 슬라이드하며 나타나는 거리. 동영상 등장 애니메이션에만 쓰인다. */
+private val TOPPING_REVEAL_SLIDE_DISTANCE = 24.dp
+
 /**
  * positionX·positionY 는 Canvas-Area 대비 0~1 로 정규화된 **중심점**이라 [centeredAt] 으로 앉힌다.
  *
@@ -186,9 +189,6 @@ internal fun CanvasToppingLayer(
  *
  * @param clickable 판정을 끈 화면에서는 눌러도 아무 일이 없으므로 버튼으로 안내하지 않는다
  */
-/** 토핑 하나가 최종 위치까지 슬라이드하며 나타나는 거리. 동영상 등장 애니메이션에만 쓰인다. */
-private val TOPPING_REVEAL_SLIDE_DISTANCE = 24.dp
-
 @Composable
 private fun CanvasTopping(
     entry: ToppingHitEntry,
@@ -222,8 +222,7 @@ private fun CanvasTopping(
                 rotationZ = transform.rotation.toFloat()
                 alpha = revealProgress
                 translationY = revealSlideOffsetPx
-            }
-            .then(
+            }.then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
                 if (clickable) {
                     Modifier.semantics(mergeDescendants = true) {

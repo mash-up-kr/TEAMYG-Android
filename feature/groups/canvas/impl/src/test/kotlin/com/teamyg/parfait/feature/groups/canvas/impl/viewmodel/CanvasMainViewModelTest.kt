@@ -782,48 +782,145 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun encodeAndSaveCanvasVideo_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 화면이 열린 상태이고 인코딩·저장이 모두 성공한다
+    fun encodeAndSaveCanvasVideo_useCaseSucceeds_showsSuccessWithTheViewedDate() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 화면이 열린 상태이고 인코딩·저장이 모두 성공한다
+            val viewModel = enteredViewModel()
+            val frames = listOf(mockk<File>(relaxed = true))
+            val outputFile = mockk<File>(relaxed = true)
+            coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns Result.success(Unit)
+            coEvery { saveCanvasVideoToGallery(outputFile, any()) } returns Result.success(Unit)
+
+            // When 화면이 캡처한 프레임을 돌려준다
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+
+                // Then 지금 보고 있는 날짜와 함께 성공을 알린다
+                assertEquals(
+                    CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = true, date = today),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun encodeAndSaveCanvasVideo_encodingFails_showsFailureAndNeverCallsSave() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 인코딩이 실패한다
+            val viewModel = enteredViewModel()
+            val frames = listOf(mockk<File>(relaxed = true))
+            val outputFile = mockk<File>(relaxed = true)
+            coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns
+                Result.failure(IllegalStateException("인코딩 실패"))
+
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+
+                // Then 실패를 알리고
+                assertEquals(
+                    CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = false, date = today),
+                    awaitItem(),
+                )
+            }
+
+            // 갤러리 저장까지 가지 않는다 — 인코딩 결과가 없으니 저장할 파일도 없다
+            coVerify(exactly = 0) { saveCanvasVideoToGallery(any(), any()) }
+        }
+
+    @Test
+    fun onClickSaveVideo_calledAgainWhileAlreadySaving_doesNotRequestASecondCapture() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 화면이 열린 상태
+            val viewModel = enteredViewModel()
+
+            viewModel.effect.test {
+                // When 한 번 눌러 캡처를 요청하고
+                viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+                assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
+
+                // 끝나기 전에 다시 누른다
+                viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+
+                // Then 두 번째 요청은 무시된다 — 겹쳐 돌면 두 캡처의 프레임 파일이 서로를 덮어쓴다
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun cancelSavingCanvasVideo_reopensTheGuardForTheNextRequest() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 화면이 열린 상태
         val viewModel = enteredViewModel()
-        val frames = listOf(mockk<File>(relaxed = true))
-        val outputFile = mockk<File>(relaxed = true)
-        coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns Result.success(Unit)
-        coEvery { saveCanvasVideoToGallery(outputFile, any()) } returns Result.success(Unit)
 
-        // When 화면이 캡처한 프레임을 돌려준다
         viewModel.effect.test {
-            viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+            // 캡처가 시작되지 못해 취소됐다(홀더 비어 있음·권한 거부 등 화면 쪽 사정)
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+            assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
+            viewModel.processIntent(CanvasMainIntent.CancelSavingCanvasVideo)
 
-            // Then 지금 보고 있는 날짜와 함께 성공을 알린다
-            assertEquals(
-                CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = true, date = today),
-                awaitItem(),
-            )
+            // When 다시 누른다
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+
+            // Then 이번에는 막히지 않고 다시 요청한다
+            assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
         }
     }
 
     @Test
-    fun encodeAndSaveCanvasVideo_encodingFails_showsFailureAndNeverCallsSave() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 인코딩이 실패한다
-        val viewModel = enteredViewModel()
-        val frames = listOf(mockk<File>(relaxed = true))
-        val outputFile = mockk<File>(relaxed = true)
-        coEvery { canvasVideoEncoder.encode(frames, any(), outputFile) } returns
-            Result.failure(IllegalStateException("인코딩 실패"))
+    fun encodeAndSaveCanvasVideo_useCaseSucceeds_deletesFramesAndOutputFileAndReopensTheGuard() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 캡처 요청까지 마친 상태이고 인코딩·저장이 모두 성공한다
+            val viewModel = enteredViewModel()
+            val frame = mockk<File>(relaxed = true)
+            val outputFile = mockk<File>(relaxed = true)
+            coEvery { canvasVideoEncoder.encode(listOf(frame), any(), outputFile) } returns Result.success(Unit)
+            coEvery { saveCanvasVideoToGallery(outputFile, any()) } returns Result.success(Unit)
 
-        viewModel.effect.test {
-            viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(frames, outputFile))
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+                assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
 
-            // Then 실패를 알리고
-            assertEquals(
-                CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = false, date = today),
-                awaitItem(),
-            )
+                // When 화면이 캡처한 프레임을 돌려준다
+                viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(listOf(frame), outputFile))
+                assertEquals(
+                    CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = true, date = today),
+                    awaitItem(),
+                )
+
+                // Then 임시 프레임·mp4 파일을 지우고
+                verify(exactly = 1) { frame.delete() }
+                verify(exactly = 1) { outputFile.delete() }
+
+                // 그리고 다음 요청을 다시 받는다 — 저장이 끝났으니 잠가 둘 이유가 없다
+                viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+                assertEquals(CanvasMainEffect.RequestCanvasVideoCapture, awaitItem())
+            }
         }
 
-        // 갤러리 저장까지 가지 않는다 — 인코딩 결과가 없으니 저장할 파일도 없다
-        coVerify(exactly = 0) { saveCanvasVideoToGallery(any(), any()) }
-    }
+    @Test
+    fun encodeAndSaveCanvasVideo_saveFailsAfterEncodeSucceeds_showsFailureAndDeletesFiles() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 인코딩은 성공하지만 갤러리 저장이 실패한다
+            val viewModel = enteredViewModel()
+            val frame = mockk<File>(relaxed = true)
+            val outputFile = mockk<File>(relaxed = true)
+            coEvery { canvasVideoEncoder.encode(listOf(frame), any(), outputFile) } returns Result.success(Unit)
+            coEvery { saveCanvasVideoToGallery(outputFile, any()) } returns
+                Result.failure(IllegalStateException("MediaStore insert 실패"))
+
+            viewModel.effect.test {
+                viewModel.processIntent(CanvasMainIntent.EncodeAndSaveCanvasVideo(listOf(frame), outputFile))
+
+                // Then 실패를 알리고
+                assertEquals(
+                    CanvasMainEffect.ShowGalleryVideoSaveResult(isSuccess = false, date = today),
+                    awaitItem(),
+                )
+            }
+
+            // 인코딩까지는 성공했으니 인코더가 남긴 프레임·mp4도 정리해야 한다
+            verify(exactly = 1) { frame.delete() }
+            verify(exactly = 1) { outputFile.delete() }
+        }
 
     @Test
     fun clickCamera_opensTheFlowWithTheCanvasItEnteredFrom() = runTest(mainDispatcherRule.dispatcher) {

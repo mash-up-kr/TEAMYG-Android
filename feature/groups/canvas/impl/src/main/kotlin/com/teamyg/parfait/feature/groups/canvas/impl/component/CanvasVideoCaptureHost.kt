@@ -43,7 +43,9 @@ internal fun CanvasVideoCaptureHost(
     ) {
         when (background) {
             null -> Box(modifier = Modifier.matchParentSize().background(YGAtomicColors.Gray.White))
+
             is YGCanvasBackground.Solid -> Box(modifier = Modifier.matchParentSize().background(background.color))
+
             is YGCanvasBackground.Image -> AsyncImage(
                 model = background.url,
                 contentDescription = null,

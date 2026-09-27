@@ -78,6 +78,7 @@ import com.teamyg.parfait.core.ui.R as CoreUiR
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -144,6 +145,13 @@ internal fun CanvasMainRoute(
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 캡처한 비트맵을 여기서
     // 들고 있다가 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
+    // 캡처가 시작되지 못했을 때 공용으로 쓴다 — 토스트만 띄우고 isSavingVideo 를 열어 두지
+    // 않으면 이 세션에서 "동영상으로 저장"이 다시는 반응하지 않는다
+    val onVideoCaptureFailure: () -> Unit = {
+        toastPolicy.showError(videoCaptureFailureMessage)
+        viewModel.processIntent(CanvasMainIntent.CancelSavingCanvasVideo)
+    }
+
     var pendingGalleryBitmap by remember { mutableStateOf<Bitmap?>(null) }
     val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -161,8 +169,9 @@ internal fun CanvasMainRoute(
                     context = context,
                     videoGraphicsLayer = videoGraphicsLayer,
                     onSnapshotActive = { activeVideoSnapshot = it },
+                    onResetRevealProgress = { videoRevealProgress.clear() },
                     onRevealProgressChange = { id, progress -> videoRevealProgress[id] = progress },
-                    onFailure = { toastPolicy.showError(videoCaptureFailureMessage) },
+                    onFailure = onVideoCaptureFailure,
                     onFramesReady = { frames, outputFile ->
                         viewModel.processIntent(
                             CanvasMainIntent.EncodeAndSaveCanvasVideo(frames = frames, outputFile = outputFile),
@@ -170,7 +179,10 @@ internal fun CanvasMainRoute(
                     },
                 )
             }
-        } else if (bitmap != null || videoRequested) {
+        } else if (videoRequested) {
+            viewModel.processIntent(CanvasMainIntent.CancelSavingCanvasVideo)
+            toastPolicy.showError(gallerySaveFailureMessage)
+        } else if (bitmap != null) {
             toastPolicy.showError(gallerySaveFailureMessage)
         }
     }
@@ -242,7 +254,8 @@ internal fun CanvasMainRoute(
                             CanvasCaptureHolder.put(bitmap)
                             CanvasVideoSourceHolder.put(
                                 CanvasVideoSourceSnapshot(
-                                    background = viewModel.state.value.canvasBackground.toYGCanvasBackground(),
+                                    background = viewModel.state.value.canvasBackground
+                                        .toYGCanvasBackground(),
                                     toppings = viewModel.state.value.toppings,
                                 ),
                             )
@@ -269,8 +282,9 @@ internal fun CanvasMainRoute(
                                 context = context,
                                 videoGraphicsLayer = videoGraphicsLayer,
                                 onSnapshotActive = { activeVideoSnapshot = it },
+                                onResetRevealProgress = { videoRevealProgress.clear() },
                                 onRevealProgressChange = { id, progress -> videoRevealProgress[id] = progress },
-                                onFailure = { toastPolicy.showError(videoCaptureFailureMessage) },
+                                onFailure = onVideoCaptureFailure,
                                 onFramesReady = { frames, outputFile ->
                                     viewModel.processIntent(
                                         CanvasMainIntent.EncodeAndSaveCanvasVideo(
@@ -472,17 +486,21 @@ private suspend fun preloadCanvasVideoImages(
         val result = context.imageLoader.execute(ImageRequest.Builder(context).data(url).build())
         check(result is SuccessResult) { "이미지를 미리 불러오지 못했다: $url" }
     }
-}
+}.onFailure { throwable -> if (throwable is CancellationException) throw throwable }
 
 /**
  * [CanvasVideoSourceHolder] 스냅샷을 오프스크린으로 재생하며 프레임을 순서대로 캡처해 캐시에
  * PNG로 쓴다. 배경만 있는 시작 프레임 → 토핑마다 [CANVAS_VIDEO_REVEAL_STEPS_PER_TOPPING] 단계로
  * 페이드인+슬라이드인 → 마지막에 [CANVAS_VIDEO_FINAL_HOLD_FRAMES] 만큼 정지 프레임을 더한다.
+ *
+ * [onResetRevealProgress] 를 매 실행 시작마다 불러야 한다 — 이전 실행이 남긴 진행도가 그대로면
+ * 이번 실행의 배경만 있어야 할 첫 프레임에 지난 토핑들이 이미 다 드러난 채로 찍힌다.
  */
 private suspend fun runCanvasVideoCapture(
     context: Context,
     videoGraphicsLayer: GraphicsLayer,
     onSnapshotActive: (CanvasVideoSourceSnapshot?) -> Unit,
+    onResetRevealProgress: () -> Unit,
     onRevealProgressChange: (ParfaitImageId, Float) -> Unit,
     onFailure: () -> Unit,
     onFramesReady: (frames: List<File>, outputFile: File) -> Unit,
@@ -498,7 +516,10 @@ private suspend fun runCanvasVideoCapture(
         return
     }
 
-    val frameDir = File(context.cacheDir, "canvas_video_frames").apply { mkdirs() }
+    // 실행마다 고유한 디렉터리를 써야 한다 — 고정 디렉터리를 공유하면 겹친 실행이 서로의
+    // frame_N.png 를 같은 이름으로 덮어쓰고, 먼저 끝난 쪽의 정리(delete)가 나중 실행의
+    // 파일까지 지운다
+    val frameDir = File(context.cacheDir, "canvas_video_frames/${System.currentTimeMillis()}").apply { mkdirs() }
     val frames = mutableListOf<File>()
 
     suspend fun captureFrame() {
@@ -507,11 +528,16 @@ private suspend fun runCanvasVideoCapture(
         withFrameNanos {}
         val bitmap = videoGraphicsLayer.toImageBitmap().asAndroidBitmap()
         val frameFile = File(frameDir, "frame_${frames.size}.png")
-        FileOutputStream(frameFile).use { output -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, output) }
+        // PNG 인코딩·파일 쓰기는 무거워 메인 스레드에서 돌리면 다음 프레임의 recompose·draw가
+        // 밀린다 — 정지 이미지 캡처(writeToCanvasCaptureCache)도 같은 이유로 IO 로 옮긴다
+        withContext(Dispatchers.IO) {
+            FileOutputStream(frameFile).use { output -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, output) }
+        }
         frames += frameFile
     }
 
     try {
+        onResetRevealProgress()
         onSnapshotActive(snapshot)
 
         captureFrame() // 배경만 있는 시작 프레임 — 모든 토핑이 revealProgress 0
@@ -528,6 +554,7 @@ private suspend fun runCanvasVideoCapture(
         val outputFile = File(context.cacheDir, "canvas_video_${System.currentTimeMillis()}.mp4")
         onFramesReady(frames, outputFile)
     } catch (throwable: Throwable) {
+        if (throwable is CancellationException) throw throwable
         frames.forEach { it.delete() }
         onFailure()
     } finally {
