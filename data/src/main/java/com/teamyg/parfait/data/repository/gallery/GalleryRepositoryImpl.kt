@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.io.File
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
@@ -107,9 +108,31 @@ constructor(
                     rawBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
                 } ?: error("갤러리 이미지의 출력 스트림을 열지 못했다")
 
-                galleryMediaProvider.finalizePendingImage(uri)
+                galleryMediaProvider.finalizePendingMedia(uri)
             } catch (throwable: Throwable) {
-                galleryMediaProvider.deleteImage(uri)
+                galleryMediaProvider.deleteMedia(uri)
+                throw throwable
+            }
+        }
+    }
+
+    /** [saveImageToGallery] 와 같은 IS_PENDING 왕복이나, 인코딩된 바이트를 그대로 복사만 한다. */
+    override suspend fun saveVideoToGallery(
+        videoFile: File,
+        displayName: String,
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        runSuspendCatching {
+            val uri = galleryMediaProvider.insertPendingVideo(displayName)
+                ?: error("갤러리에 동영상을 등록하지 못했다")
+
+            try {
+                galleryMediaProvider.openOutputStream(uri)?.use { output ->
+                    videoFile.inputStream().use { input -> input.copyTo(output) }
+                } ?: error("갤러리 동영상의 출력 스트림을 열지 못했다")
+
+                galleryMediaProvider.finalizePendingMedia(uri)
+            } catch (throwable: Throwable) {
+                galleryMediaProvider.deleteMedia(uri)
                 throw throwable
             }
         }
