@@ -78,9 +78,11 @@ tags: [architecture, parfait]
 - **암호화 DataStore 프록시** — `EncryptedPreferences`(`data/datastore/`, PR #263). 저장 형태가 값이 아니라 **암호문**인 저장소들이 공유한다(`TokenLocalDataSourceImpl`·`UserInfoLocalDataSourceImpl`) — 아래 "토큰·계정 정보 저장 경로" 참고.
 - **평문 DataStore 프록시** — **`DataStorePreferences`**(`data/datastore/`, #449). `observe`·`read`·`write`·`remove`와 못 읽는 저장분을 버리는 규칙을 가진 **바닥 층**이고, `EncryptedPreferences`는 이것을 감싸 암복호화만 얹는다 — 폐기 규칙은 이 한 벌뿐이다. 평문 그대로 쓰는 저장소는 `UserConfigLocalDataSourceImpl` 하나다. 계정 정보와 달리 담기는 것이 "튜토리얼을 봤는가" 뿐이라 지킬 것이 없고, 암호화하면 **키 회전 한 번에 설정이 통째로 폐기될 위험만** 남는다는 것이 평문의 근거다. ⚠️ 평문·암호문이 **같은 `DataStore<Preferences>` 하나**를 공유해 어느 키가 어느 형태인지는 코드로만 안다 → [open-questions](../synthesis/open-questions.md) OQ-P-367 ③.
 - **시스템 미디어** — `GalleryMediaProvider`(시스템 갤러리 접근). **읽기 전용이 아니게 됐다**(#324) —
-  `insertPendingImage`·`openOutputStream`·`finalizePendingImage`·`deleteImage`로 `MediaStore`에
+  `insertPendingImage`·`openOutputStream`·`finalizePendingImage`·`deletePendingMedia`로 `MediaStore`에
   이미지를 쓴다(`GalleryRepository.saveImageToGallery` → `SaveCanvasToGalleryUseCase`, C-001 지난
-  캔버스 저장). 쓰기 순서는 **등록(`IS_PENDING`) → 바이트 → 표시로 내림**이고 중간 실패는 등록 자체를
+  캔버스 저장). 영상도 같은 순서로 쓴다(`insertPendingVideo`·`finalizePendingVideo`,
+  `saveVideoToGallery` → `SaveCanvasVideoToGalleryUseCase`) — 컬렉션이 달라 등록·표시만 따로 있고
+  롤백은 미디어 종류와 무관한 `deletePendingMedia` 하나다. 쓰기 순서는 **등록(`IS_PENDING`) → 바이트 → 표시로 내림**이고 중간 실패는 등록 자체를
   지운다 — 갤러리에 반쯤 쓰인 파일이 온전한 것처럼 보이지 않게 하려는 것이다. **그 보호와
   `Pictures/Parfait` 경로는 API 29부터만** 걸린다(그 아래는 권한도 함께 필요해
   `core:util:android`의 `GalleryWritePermissionManager`가 판정한다)

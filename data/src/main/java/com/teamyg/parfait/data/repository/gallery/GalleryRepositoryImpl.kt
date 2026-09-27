@@ -110,7 +110,7 @@ constructor(
 
                 galleryMediaProvider.finalizePendingImage(uri)
             } catch (throwable: Throwable) {
-                galleryMediaProvider.deleteImage(uri)
+                galleryMediaProvider.deletePendingMedia(uri)
                 throw throwable
             }
         }
@@ -133,7 +133,7 @@ constructor(
 
                 galleryMediaProvider.finalizePendingVideo(uri)
             } catch (throwable: Throwable) {
-                galleryMediaProvider.deleteImage(uri)
+                galleryMediaProvider.deletePendingMedia(uri)
                 throw throwable
             }
         }

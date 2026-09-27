@@ -64,7 +64,7 @@ class GalleryRepositoryImplTest {
 
         // Then 지울 대상이 없으므로 삭제를 부르지 않는다
         assertTrue(result.isFailure)
-        verify(exactly = 0) { galleryMediaProvider.deleteImage(any()) }
+        verify(exactly = 0) { galleryMediaProvider.deletePendingMedia(any()) }
     }
 
     @Test
@@ -82,7 +82,7 @@ class GalleryRepositoryImplTest {
 
         // Then 빈 항목이 갤러리에 남지 않게 등록을 되돌린다
         assertTrue(result.isFailure)
-        verify(exactly = 1) { galleryMediaProvider.deleteImage(uri) }
+        verify(exactly = 1) { galleryMediaProvider.deletePendingMedia(uri) }
         verify(exactly = 0) { galleryMediaProvider.finalizePendingVideo(uri) }
     }
 
@@ -100,6 +100,6 @@ class GalleryRepositoryImplTest {
 
         // Then 실패로 접고 등록을 되돌린다
         assertTrue(result.isFailure)
-        verify(exactly = 1) { galleryMediaProvider.deleteImage(uri) }
+        verify(exactly = 1) { galleryMediaProvider.deletePendingMedia(uri) }
     }
 }
