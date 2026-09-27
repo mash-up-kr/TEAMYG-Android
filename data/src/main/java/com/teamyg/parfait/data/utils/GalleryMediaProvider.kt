@@ -120,7 +120,7 @@ class GalleryMediaProvider(
     }
 
     /** 바이트를 다 못 썼을 때 갤러리에 빈 파일이 남지 않게 등록을 되돌린다 */
-    fun deleteImage(uri: Uri) {
+    fun deletePendingMedia(uri: Uri) {
         context.contentResolver?.delete(uri, null, null)
     }
 }
