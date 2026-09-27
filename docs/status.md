@@ -113,6 +113,13 @@
 
 ## 캔버스 이미지 저장
 - 상태: 날짜바의 저장 아이콘(오늘·지난 캔버스 모두, 빈 안내판이 없을 때만)을 누르면 `CanvasMainRoute`가 `YGCanvas` 프레임의 GraphicsLayer를 캡처해 고정 이름 캐시 PNG로 굽고 비트맵은 `CanvasCaptureHolder`에 실어 ViewModel 없는 미리보기로 보낸다. 미리보기에서 확정하면 결과 버스로 경로만 돌려주고, 캔버스 메인이 그 파일을 다시 읽어(API 28 이하는 쓰기 권한을 물은 뒤) `SaveCanvasToGalleryUseCase` → `GalleryMediaProvider`로 MediaStore에 PNG를 쓰고 결과를 캔버스 프레임 토스트로 알린다.
+  같은 화면에 "동영상으로 저장"도 있다 — `positionZ` 순서대로 토핑이 페이드인+슬라이드인하며
+  쌓이는 mp4를 만든다. 프레임은 `CanvasToppingLayer`를 오프스크린(`CanvasVideoCaptureHost`)으로
+  재생하며 `GraphicsLayer`로 캡처하고(정지 이미지와 같은 메커니즘), `media3 Transformer`로
+  인코딩해 `MediaStore.Video`에 저장한다. 앵커 심볼: `CanvasVideoSourceHolder`,
+  `CanvasVideoCaptureHost`, `CanvasVideoEncoder`, `CanvasMainEffect.RequestCanvasVideoCapture`.
+  순서 기준은 `positionZ` 단일 기준이라 위 "토핑 생성·배치" 절의 동시 배치 흔들림(OQ-P-322)이
+  동영상 등장 순서에도 그대로 전이된다.
 - 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`
 - ⚠️ 캡처는 지금 그려진 것을 그대로 복사해 배경 이미지가 아직 안 왔으면 배경 없이 담기고, 해상도도 기기 화면 크기에 종속된다 (OQ-P-272)
 - ⚠️ 캡처 파일 이름이 고정이고 지우는 호출이 없으며, 홀더도 한 장만 들어 연달아 캡처하면(푸시로 다른 그룹 캔버스에 갔다 오는 경우 포함) 미리보기가 다른 그림을 원래 날짜 라벨과 함께 보여 준다. 읽기·결과 왕복·미리보기 화면에 테스트가 없다 (OQ-P-365)
