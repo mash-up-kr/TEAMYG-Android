@@ -55,6 +55,7 @@ internal fun CanvasImageSaveScreen(
     date: LocalDate,
     onClickClose: () -> Unit,
     onClickSave: () -> Unit,
+    onClickSaveVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -145,8 +146,8 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        Box(
-            contentAlignment = Alignment.Center,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -161,6 +162,13 @@ internal fun CanvasImageSaveScreen(
                 buttonType = YGButtonType.Medium.Primary,
                 isEnabled = true,
                 onClick = onClickSave,
+            )
+
+            YGButton(
+                text = stringResource(R.string.canvas_image_save_confirm_video),
+                buttonType = YGButtonType.Medium.Secondary,
+                isEnabled = true,
+                onClick = onClickSaveVideo,
             )
         }
     }
@@ -186,6 +194,7 @@ private fun PreviewCanvasImageSaveScreen(
         date = date,
         onClickClose = {},
         onClickSave = {},
+        onClickSaveVideo = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

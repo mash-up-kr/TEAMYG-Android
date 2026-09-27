@@ -51,6 +51,13 @@ internal fun CanvasImageSaveRoute(
                 )
                 navigator.onBack()
             },
+            onClickSaveVideo = {
+                resultEventBus.sendResult(
+                    CANVAS_IMAGE_SAVE_RESULT_KEY,
+                    CanvasImageSaveResult(imagePath = navKey.imagePath, isVideoRequested = true),
+                )
+                navigator.onBack()
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),

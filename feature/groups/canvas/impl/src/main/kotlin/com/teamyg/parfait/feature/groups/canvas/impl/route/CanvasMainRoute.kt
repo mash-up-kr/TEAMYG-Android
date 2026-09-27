@@ -189,10 +189,14 @@ internal fun CanvasMainRoute(
     // 미리보기에서 저장을 확정하고 돌아왔다. 보여 준 그림 그대로 남겨야 하므로 캔버스를 다시
     // 캡처하지 않고 미리보기가 쓰던 파일을 읽는다
     ResultEffect<CanvasImageSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
-        scope.launch {
-            withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
-                .onSuccess(saveWithPermission)
-                .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
+        if (result.isVideoRequested) {
+            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvasVideo)
+        } else {
+            scope.launch {
+                withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
+                    .onSuccess(saveWithPermission)
+                    .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
+            }
         }
     }
 

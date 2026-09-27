@@ -26,8 +26,13 @@ data class NavKeyCanvasImageSave(
  * 저장까지 하고 나면 알림만 남기고 사라지는 화면이 되어, 실패했을 때 알릴 곳이 없다.
  *
  * @param imagePath 저장할 이미지의 경로. 넘겨받은 [NavKeyCanvasImageSave.imagePath] 를 그대로 돌려준다
+ * @param isVideoRequested true면 이미지가 아니라 동영상으로 저장해 달라는 뜻이다 — 이때는
+ *  [imagePath] 대신 `CanvasVideoSourceHolder` 스냅샷을 쓴다
  */
-data class CanvasImageSaveResult(val imagePath: String)
+data class CanvasImageSaveResult(
+    val imagePath: String,
+    val isVideoRequested: Boolean = false,
+)
 
 /** [CanvasImageSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */
 const val CANVAS_IMAGE_SAVE_RESULT_KEY = "canvas_image_save_result"

@@ -69,6 +69,7 @@
     <string name="canvas_image_save_question_suffix">의 캔버스를 갤러리에 저장할까요?</string>
     <string name="canvas_image_save_description">이 이미지 그대로 갤러리에 저장돼요\n파르페는 인스타그램 스토리 규격에 최적화되어 있어요</string>
     <string name="canvas_image_save_confirm">갤러리에 저장</string>
+    <string name="canvas_image_save_confirm_video">동영상으로 저장</string>
 
     <string name="canvas_spotlight_dismiss">토핑 강조 닫기</string>
     <string name="canvas_spotlight_time_just_now">방금 전</string>
