@@ -21,7 +21,7 @@ tags: [adr, parfait]
 로컬 영속화는 **DataStore(Preferences)** 로 한다(`androidx.datastore`). Room은 도입하지 않는다.
 
 - `DataStoreModule`이 `DataStore<Preferences>` 싱글톤과 JSON 파서(`ignoreUnknownKeys`, `coerceInputValues`, `encodeDefaults`) 제공.
-- `RecentImageEditor` 인터페이스가 DataStore 접근을 추상화.
+- `DataStorePreferences`(평문)가 DataStore 접근을 감싸고, `EncryptedPreferences`가 그 위에 암복호화를 얹는다.
 - 이미지 자체는 파일 시스템(내부 저장소), 메타데이터는 DataStore로 이원 관리. `RecentImageRepositoryImpl`이 `RecentImageLocalDataSource`(DataStore)와 `FileRecentImageLocalDataSource`(파일)를 조합, 파일 last-modified 기반으로 캐시 축출.
 
 ## 대안

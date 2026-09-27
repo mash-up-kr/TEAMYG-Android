@@ -40,7 +40,7 @@ DataSource 배치 관례를 확립한다.
   `NetworkModule`·`JsonModule`·`DataStoreModule`·`SingletonInjectModule`. 도메인이 늘면 해당 역할
   파일에 바인딩을 **추가**한다.
   - `NetworkModule`(object, `@InstallIn(SingletonComponent::class)`): `provideTokenProvider`
-    (=`EmptyTokenProvider`, **as-built: `TokenStoreTokenProvider` — 아래 "인증" 절 참고**)·
+    (=`EmptyTokenProvider`, **as-built: `TokenProviderImpl` — 아래 "인증" 절 참고**)·
     `provideAuthInterceptor`·`provideOkHttpClient`·`provideRetrofit`.
   - `ServiceModule`(object): Retrofit 서비스 생성(`provideTempService` 등). 설정 코드인
     `NetworkModule`과 서비스 목록을 분리해 둔다.
@@ -98,7 +98,7 @@ DataSource 배치 관례를 확립한다.
   항상 null을 반환 — 실제 토큰 소스 연동은 후속.
 
   > ⚠️ **as-built 갱신(`network-envelope-token-storage` 라운드 — 2026-08-04 PR #190으로 develop 머지)** — `EmptyTokenProvider`가
-  > **`TokenStoreTokenProvider`로 교체**됐다(`EmptyTokenProvider`는 삭제). `AuthInterceptor`·
+  > **`TokenProviderImpl`로 교체**됐다(`EmptyTokenProvider`는 삭제). `AuthInterceptor`·
   > `TokenProvider` 인터페이스는 시그니처 변경 없음 — 구현체만 바뀌었다. 토큰을 어디에 어떻게
   > 저장하는지, 동기 인터페이스를 유지한 채 suspend 저장소를 어떻게 연결하는지는
   > [ADR-0019](0019-encrypted-token-storage.md) 소관.
@@ -238,7 +238,7 @@ DataSource 배치 관례를 확립한다.
 - `ApiResponse.isSuccess` 판정에 쓰는 성공 코드 규약과 `TokenProvider`의 실제 토큰 소스는
   미확정이다 → [open-questions](../synthesis/open-questions.md)로 추적.
   **as-built: 둘 다 2026-08-04 PR #190으로 develop 머지됐다** — 성공 판정은 `success` 필드로
-  (`isSuccess`·`SUCCESS_CODE` 제거), `TokenProvider`는 `TokenStoreTokenProvider`(암호화 저장소 연동,
+  (`isSuccess`·`SUCCESS_CODE` 제거), `TokenProvider`는 `TokenProviderImpl`(암호화 저장소 연동,
   [ADR-0019](0019-encrypted-token-storage.md))로 교체됐다. 해당 [open-questions](../synthesis/open-questions.md)
   항목 3건은 해소 처리했다. 다만 **실서버 요청은 여전히 0건**이다 — 2026-08-06 PR #197로 14 엔드포인트,
   2026-08-12 PR #230으로 나머지 6(image·member·parfait-image)까지 **Service 7·DataSource 7쌍이 다

@@ -123,7 +123,7 @@
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).
-- 앵커: `ParfaitFirebaseMessagingService`, `PushDeepLinkParser`, `PushDeepLinkEventBusImpl`, `DeviceTokenRegistrarImpl`, `NotificationPermissionGate`, `NotificationPermissionManager`
+- 앵커: `ParfaitFirebaseMessagingService`, `PushDeepLinkParser`, `PushDeepLinkEventBusImpl`, `NotificationRepositoryImpl`, `NotificationPermissionGate`, `NotificationPermissionManager`
 - ⚠️ 수신부가 계약의 `date`를 읽지 않아 토핑 알림은 늘 그 그룹의 최신 캔버스로 열리고, 알림 id가 `messageId` 해시라 재시도로 온 같은 알림이 두 개로 쌓인다 (OQ-P-359)
 - ⚠️ 영구 거부 판정이 요청 직전·직후 rationale 비교라 이전 세션에서 이미 두 번 거부한 사용자에게는 "허용" 버튼이 설정으로도 안 보내고 아무 일도 하지 않는다. 이 갈래를 잠그는 테스트가 없다(모듈에 `androidTest` 소스셋 없음) (OQ-P-371, OQ-P-373)
 - ⚠️ 거부·"나중에"를 영속하지 않아 허용 전까지 그룹 생성·참여를 마칠 때마다 안내가 다시 뜬다. 노출 횟수는 정한 적이 없다 (OQ-P-370)
