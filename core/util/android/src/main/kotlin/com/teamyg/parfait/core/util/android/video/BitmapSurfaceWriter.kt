@@ -14,18 +14,11 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
- * `MediaCodec` 입력 표면에는 `Surface.lockCanvas` 가 통하지 않는다 — 그 표면의 소비자가
- * 코덱이라 GL 생산자를 기대한다. 그래서 비트맵을 텍스처로 올려 사각형 하나에 입히는
- * 최소한의 GL 경로를 여기 한 벌만 둔다.
+ * 비트맵을 GL 텍스처로 올려 `Surface` 에 그린다. `MediaCodec` 입력 표면은 GL 생산자를 기대해
+ * `Surface.lockCanvas` 가 통하지 않는다. 색 공간 변환도 GPU 가 맡는다.
  *
- * 색 공간 변환은 GPU가 맡는다. 직접 YUV로 바꾸면 기기마다 갈리는 컬러 포맷을 앱이 떠안는다
- * (`adr/0033-canvas-video-onscreen-capture-encoding.md`).
- *
- * **스레드 종속**: EGL 컨텍스트는 그것을 `eglMakeCurrent` 로 현재로 만든 스레드에 묶인다.
- * 이 클래스는 생성자(`init`)에서 그 스레드에 컨텍스트를 current 로 만들고 이후 다시 바꾸지
- * 않으므로, **이 인스턴스를 생성한 스레드에서만 [draw]·[close] 를 호출해야 한다.** 다른
- * 스레드(예: 인코더가 별도 디스패처에서 프레임을 넣는 경우)에서 부르면 예외 없이 그리기가
- * 조용히 실패한다 — GL 호출이 "current 컨텍스트가 없다"는 이유로 무시되기 때문이다.
+ * **생성한 스레드에서만 [draw]·[close] 를 불러야 한다.** EGL 컨텍스트가 그 스레드에 묶여,
+ * 다른 스레드에서는 예외 없이 그리기가 조용히 실패한다.
  */
 class BitmapSurfaceWriter(
     surface: Surface,
@@ -38,10 +31,6 @@ class BitmapSurfaceWriter(
     private val positionHandle: Int
     private val texCoordHandle: Int
 
-    // display 등을 val 로 유지하고(생성 후 불변인 EGL 핸들이라는 의미가 분명해진다) close() 의
-    // 중복 호출 방지는 별도 플래그로 가른다. display 를 var 로 두고 EGL_NO_DISPLAY 로 되돌리는
-    // 방식도 가능하지만, "핸들이 유효한지"와 "이미 정리했는지"를 하나의 값에 겹쳐 표현하면
-    // 읽는 쪽에서 헷갈린다.
     private var isClosed = false
 
     init {
@@ -91,29 +80,14 @@ class BitmapSurfaceWriter(
     /**
      * [bitmap] 을 표면 전체에 그리고 프레임을 제출한다.
      *
-     * [presentationTimeNanos] 는 `eglPresentationTimeANDROID` 로 표면에 실린다 — 코덱이 이 값을
-     * 프레임 타임스탬프로 읽으므로, 이 값이 없으면 영상의 재생 속도가 벽시계에 끌려간다.
+     * [presentationTimeNanos] 가 코덱의 프레임 타임스탬프가 된다.
      *
-     * **소비자가 매번 즉시 받아가야 한다.** 소비자가 이전 프레임을 받기 전에 [draw] 를 여러 번
-     * 몰아서 부르면, 아직 소비되지 않은 이전 프레임이 조용히 유실될 수 있다 — 실제로 이
-     * 프로젝트가 검증에 쓴 에뮬레이터(Pixel_7_API_36)에서 `ImageReader.acquireNextImage()` 로
-     * 재현했고, GL 을 전혀 쓰지 않는 순수 `Surface.lockCanvas`/`unlockCanvasAndPost` 만으로도
-     * 똑같이 재현돼 이 클래스의 버그가 아니라 그 기기의 `BufferQueue` 소비자 쪽 동작임을
-     * 확인했다. 프레임을 미리 여러 장 그려두지 말고, 한 장 그릴 때마다 소비자가 가져가게 한다.
+     * **소비자가 매번 즉시 받아가야 한다.** 몰아서 그리면 기기에 따라 소비 전 프레임이 조용히
+     * 유실된다(`BufferQueue` 소비자 쪽 동작이라 여기서 못 고친다).
      *
-     * **[bitmap] 이 `Config.HARDWARE` 면 업로드 직전에 `ARGB_8888` 로 복사한다.**
-     * `GLUtils.texImage2D` 는 HARDWARE 비트맵을 받으면 `IllegalArgumentException("invalid
-     * Bitmap format")` 을 던진다(`GLUtils.java` 네이티브 구현이 하드웨어 버퍼를 CPU 에서 읽는
-     * 경로를 지원하지 않는다). 그런데 이 클래스를 실제로 부르는 [CanvasVideoRecorder] 는 매
-     * 프레임 `GraphicsLayer.toImageBitmap()` 으로 비트맵을 얻는데, Compose(`ui-graphics-android`,
-     * `LayerSnapshot.android.kt` 의 `LayerSnapshotV28`) 는 API 28(P) 이상에서 이 호출이 내부적으로
-     * `Bitmap.createBitmap(Picture)` 를 타 **항상** HARDWARE 비트맵을 돌려준다 — 즉 이 변환은
-     * 예외적인 경로가 아니라 실기기에서 [draw] 가 받는 **기본값**이다. 변환을 생략하면 이
-     * 앱이 지원하는 사실상 모든 기기(API 28+)에서 녹화 첫 프레임부터 실패한다.
-     * 이 복사는 프레임마다 전체 해상도(예: 720x1280) 비트맵 하나를 그대로 다시 뜨는 비용이 든다
-     * — 작지 않지만, 없으면 기능 자체가 죽으므로 "불필요한 낭비"로 보고 지우면 안 된다.
-     * `HARDWARE` 가 아닌 비트맵(기존 계측 테스트가 쓰는 소프트웨어 `ARGB_8888` 등)은 원래도
-     * `texImage2D` 가 그대로 받아들이므로 이 경로를 타지 않아 비용이 붙지 않는다.
+     * ⚠️ **`Config.HARDWARE` 사본 변환을 지우지 않는다.** `GLUtils.texImage2D` 는 HARDWARE 비트맵을
+     * 거부하는데, Compose `GraphicsLayer.toImageBitmap()` 은 API 28+ 에서 HARDWARE 를 돌려준다.
+     * 프레임마다 복사 비용이 들지만 없으면 녹화가 항상 실패한다.
      */
     fun draw(
         bitmap: Bitmap,
@@ -122,8 +96,6 @@ class BitmapSurfaceWriter(
         GLES20.glUseProgram(program)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
 
-        // 호출부가 넘긴 bitmap 의 수명은 이 함수가 책임지지 않는다(호출부가 recycle 한다) —
-        // 여기서 새로 만든 임시 사본만 이 함수가 직접 회수한다
         val uploadBitmap = if (bitmap.config == Bitmap.Config.HARDWARE) {
             bitmap.copy(Bitmap.Config.ARGB_8888, false)
         } else {
@@ -253,10 +225,7 @@ class BitmapSurfaceWriter(
             1f,
         )
 
-        /**
-         * 세로가 뒤집혀 있다. 비트맵은 위에서 아래로 줄이 쌓이는데 GL 텍스처 좌표는 아래에서
-         * 위로 올라가므로, 여기서 한 번 뒤집지 않으면 영상이 거꾸로 나온다.
-         */
+        /** 세로가 뒤집혀 있다. 비트맵은 위→아래, GL 텍스처 좌표는 아래→위라 안 뒤집으면 영상이 거꾸로 나온다 */
         val texCoordBuffer = floatBufferOf(
             0f,
             1f,

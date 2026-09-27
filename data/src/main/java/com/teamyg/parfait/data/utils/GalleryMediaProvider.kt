@@ -86,10 +86,7 @@ class GalleryMediaProvider(
         return context.contentResolver?.insert(collection, values)
     }
 
-    /**
-     * 영상 컬렉션에 새 항목을 등록한다. 구조는 [insertPendingImage] 와 같고 갈리는 것은 컬렉션·MIME·
-     * 저장 디렉토리뿐이다 — 이미지와 영상은 서로 다른 MediaStore 컬렉션이라 한 함수로 합칠 수 없다.
-     */
+    /** [insertPendingImage] 의 영상판. MediaStore 컬렉션이 달라 한 함수로 합칠 수 없다 */
     fun insertPendingVideo(displayName: String): Uri? {
         val collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val values = ContentValues().apply {

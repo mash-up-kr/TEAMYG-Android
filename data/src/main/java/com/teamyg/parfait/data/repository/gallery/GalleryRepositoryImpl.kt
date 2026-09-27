@@ -116,10 +116,7 @@ constructor(
         }
     }
 
-    /**
-     * [saveImageToGallery] 와 같은 IS_PENDING 2단 커밋이다. 다른 점은 압축하지 않고 완성된 파일을
-     * 그대로 복사하는 것뿐이다.
-     */
+    /** [saveImageToGallery] 와 같은 IS_PENDING 2단 커밋. 압축 대신 파일을 복사한다 */
     override suspend fun saveVideoToGallery(
         videoFilePath: String,
         displayName: String,
