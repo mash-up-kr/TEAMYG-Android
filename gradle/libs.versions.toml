@@ -29,7 +29,9 @@ coil = "3.5.0"
 haze = "1.7.2"
 
 #Media3
-media3 = "1.5.1"
+# 1.5.1 로 선언해도 :app 은 camera-video 가 요구하는 1.9.0 으로 올려 해석한다(dependencyInsight
+# 로 확인) — 실제로 도는 버전과 선언을 맞춰 둔다. 낮춰 강제하면 camera-video 쪽이 깨진다
+media3 = "1.9.0"
 
 #Lottie
 lottie = "6.7.1"
