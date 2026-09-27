@@ -21,5 +21,9 @@ class ModuleDataConventionPlugin : BaseConventionPlugin({
         implementation(libs.kakao.sdk.user)
 
         implementation(libs.google.mlkit.subject.segmentation)
+
+        implementation(libs.media3.transformer)
+        implementation(libs.media3.effect)
+        implementation(libs.media3.common)
     }
 })
