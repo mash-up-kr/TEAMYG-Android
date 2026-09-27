@@ -19,7 +19,7 @@ class AuthInterceptor(
             .newBuilder()
             .apply {
                 if (token != null && skipAuth.not()) {
-                    addHeader("Authorization", "Bearer $token")
+                    bearerAuth(token)
                 }
             }.build()
         return chain.proceed(request)

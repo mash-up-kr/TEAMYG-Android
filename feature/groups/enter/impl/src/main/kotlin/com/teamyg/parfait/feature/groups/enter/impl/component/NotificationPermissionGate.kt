@@ -35,7 +35,7 @@ private val gateLogger = Loggers.create("NotificationPermissionGate")
  * 않는다. 가르는 곳은 [GroupCreateRoute][com.teamyg.parfait.feature.groups.enter.impl.groupcreate.GroupCreateRoute] 다.
  *
  * **기기 토큰 등록을 여기에 매달지 마라** — 토큰은 알림 권한과 무관하게 발급되고 등록은
- * 세션 축이 맡는다([RegisterCurrentDeviceTokenUseCase][com.teamyg.parfait.domain.usecase.notification.RegisterCurrentDeviceTokenUseCase]).
+ * 세션 축이 맡는다([NotificationRepository.registerCurrentDeviceToken][com.teamyg.parfait.domain.repository.notification.NotificationRepository.registerCurrentDeviceToken]).
  *
  * [onFinished] 는 허용·거부·"나중에" 세 갈래 모두에서 호출된다.
  */

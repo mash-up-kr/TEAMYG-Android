@@ -10,8 +10,8 @@ import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
-import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
+import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import com.teamyg.parfait.domain.usecase.member.RefreshMyAccountUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,8 +27,8 @@ import kotlin.time.Duration.Companion.seconds
 class LoginWithKakaoUseCaseTest {
     private val authRepository: AuthRepository = mockk(relaxed = true)
     private val refreshMyAccount: RefreshMyAccountUseCase = mockk()
-    private val deviceTokenRegistrar: DeviceTokenRegistrar = mockk(relaxed = true)
-    private val useCase = LoginWithKakaoUseCase(authRepository, refreshMyAccount, deviceTokenRegistrar)
+    private val notificationRepository: NotificationRepository = mockk(relaxed = true)
+    private val useCase = LoginWithKakaoUseCase(authRepository, refreshMyAccount, notificationRepository)
 
     private val session = AuthSessionVO(
         accessToken = AccessToken("access-1"),
@@ -97,7 +97,7 @@ class LoginWithKakaoUseCaseTest {
         // Then 세션이 저장된 뒤에 등록한다 — 이 엔드포인트는 인증이 필요하다(화이트리스트 밖)
         coVerifyOrder {
             authRepository.saveSession(session)
-            deviceTokenRegistrar.register()
+            notificationRepository.registerCurrentDeviceToken()
         }
     }
 
@@ -111,7 +111,7 @@ class LoginWithKakaoUseCaseTest {
         useCase(idToken = "id-1", nonce = "nonce-1")
 
         // Then 등록 호출이 없다
-        verify(exactly = 0) { deviceTokenRegistrar.register() }
+        verify(exactly = 0) { notificationRepository.registerCurrentDeviceToken() }
     }
 
     @Test

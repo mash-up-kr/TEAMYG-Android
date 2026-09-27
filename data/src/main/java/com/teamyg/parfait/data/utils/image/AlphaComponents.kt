@@ -4,12 +4,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.job
 
-/**
- * [value] 를 [divisor] 로 나누고 올린다. [value] 는 0 이상, [divisor] 는 1 이상이어야 한다.
- *
- * 0 을 돌려주고 넘어가지 않는 이유: [divisor] 가 0 이면 `factor` 로 나누는 나머지 세 자리
- * (`downscaleMask`·`applyKeepMask`·`minComponentPixels`)에서 같은 예외가 더 안쪽에서 난다.
- */
+/** [value] 를 [divisor] 로 나누고 올린다. [value] 는 0 이상, [divisor] 는 1 이상이어야 한다 */
 internal fun ceilDiv(
     value: Int,
     divisor: Int,
@@ -22,7 +17,7 @@ internal fun ceilDiv(
 /**
  * 알파를 [threshold] 로 이진화하고 [factor] × [factor] 블록마다 OR 해서 축소 마스크를 만든다.
  *
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」 참고
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」
  */
 internal suspend fun downscaleMask(
     alpha: ByteArray,
@@ -52,7 +47,7 @@ internal suspend fun downscaleMask(
 /**
  * 픽셀 수가 [minPixels] 미만인 8-연결 성분을 [mask] 에서 그 자리에 지운다.
  *
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」 참고
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「후처리 커널」
  *
  * @return 살아남은 성분이 하나라도 있으면 true
  */
@@ -147,7 +142,7 @@ private fun fillRuns(
 /**
  * 인접한 두 행의 런을 투 포인터로 훑어 잇는다.
  *
- * ⚠️ **한 런은 윗행의 겹치는 런 전부와 이어야 한다.** 첫 매치에서 멈추면 윗행 두 런을 아랫행 한
+ * 한 런은 윗행의 겹치는 런 전부와 이어야 한다. 첫 매치에서 멈추면 윗행 두 런을 아랫행 한
  * 런이 잇는 배치에서 성분이 갈린다. 그래서 조건이 맞아도 포인터를 멈추지 않고, 끝이 작은 쪽만
  * 전진시킨다.
  *
@@ -207,7 +202,7 @@ private fun union(
 /**
  * 8-근방으로 1픽셀 팽창한 새 마스크를 돌려준다.
  *
- * `specs/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」 참고
+ * 근거: `docs/superpowers/specs/archive/2026-08-24-segmentation-mask-postprocessing.md` 「처리 해상도」
  *
  * 반경 1이 계약이다 — 8-연결 성분끼리는 최소 거리가 2라, 반경을 키우면 area opening 이 지운
  * 성분이 되살아난다.

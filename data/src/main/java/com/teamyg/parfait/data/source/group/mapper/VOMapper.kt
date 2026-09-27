@@ -37,7 +37,7 @@ internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyP
         borderColor = recentImageBorderColor,
         borderWidth = recentImageBorderWidth,
     ),
-    // 서버는 오프셋 없는 로컬 날짜시각을 주고 그 벽시계는 KST다(api/parfait-group.md 타임존 절).
+    // 서버는 오프셋 없는 로컬 날짜시각을 주고 그 벽시계는 KST다(`docs/api/parfait-group.md` 타임존 절).
     // 오프셋을 안 붙이면 기기 타임존에 따라 다른 시점이 된다.
     recentImageUploadedAt = recentImageUploadedAt
         ?.let(LocalDateTime::parse)

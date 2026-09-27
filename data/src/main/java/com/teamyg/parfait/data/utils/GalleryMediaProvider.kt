@@ -68,9 +68,8 @@ class GalleryMediaProvider(
     }
 
     /**
-     * 새 이미지를 갤러리 컬렉션에 등록하고 아직 다 쓰지 않았다는 표시([MediaStore.MediaColumns.IS_PENDING])를
-     * 남긴 채 돌려준다 — 실제 바이트는 이 [Uri]로 [openOutputStream] 열어서 쓴다.
-     * API 29 미만은 IS_PENDING 개념이 없어 그 필드를 아예 안 쓴다.
+     * 새 이미지를 [MediaStore.MediaColumns.IS_PENDING] 상태로 갤러리에 등록한다. 바이트는 돌려받은
+     * [Uri] 로 [openOutputStream] 을 열어 쓴다. API 29 미만은 IS_PENDING 을 쓰지 않는다.
      */
     fun insertPendingImage(displayName: String): Uri? {
         val collection = collectionUri ?: return null
@@ -88,7 +87,7 @@ class GalleryMediaProvider(
 
     fun openOutputStream(uri: Uri): OutputStream? = context.contentResolver?.openOutputStream(uri)
 
-    /** [insertPendingImage] 로 걸어 둔 IS_PENDING 표시를 내려, 갤러리 앱에 실제로 보이게 한다. */
+    /** [insertPendingImage] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
     fun finalizePendingImage(uri: Uri) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
@@ -96,7 +95,7 @@ class GalleryMediaProvider(
         context.contentResolver?.update(uri, values, null, null)
     }
 
-    /** 바이트를 다 못 썼을 때, 갤러리에 빈 파일이 남지 않도록 등록 자체를 되돌린다. */
+    /** 바이트를 다 못 썼을 때 갤러리에 빈 파일이 남지 않게 등록을 되돌린다 */
     fun deleteImage(uri: Uri) {
         context.contentResolver?.delete(uri, null, null)
     }

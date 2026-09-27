@@ -177,7 +177,7 @@ class AlphaRefineTest {
             epsilon = 1e-4f,
         )
 
-        // Then — b 는 창 평균을 **두 번** 거친 값이다. 한 번만 기대하면 가장자리에서 0.167 어긋난다
+        // Then — b 는 창 평균을 두 번 거친 값이다. 한 번만 기대하면 가장자리에서 0.167 어긋난다
         val once = boxMean(input, width = 4, height = 4, radius = 1)
         val twice = boxMean(once, width = 4, height = 4, radius = 1)
         for (index in coefficients.a.indices) {
@@ -189,7 +189,7 @@ class AlphaRefineTest {
     @Test
     fun guidedCoefficients_inputEqualsGuidance_reproducesTheGuidance() = runTest {
         // Given — p 가 I 와 같으면 q = I 여야 하므로 a = 1, b = 0 이다.
-        // ⚠️ 안내자는 **모든 창에 분산이 있어야** 한다. 계단형이면 가장자리 창의 분산이 0 이라
+        // 안내자는 모든 창에 분산이 있어야 한다. 계단형이면 가장자리 창의 분산이 0 이라
         // 그 자리 a 가 0 으로 떨어지고 두 번째 평균이 그것을 안쪽까지 번지게 한다
         val guidance = FloatArray(16) { index -> (index % 4) * 0.3f }
 
@@ -403,8 +403,8 @@ class AlphaRefineTest {
     @Test
     fun refineAlpha_misalignedHardEdge_becomesASoftTransition() = runTest {
         // Given — 이 라운드의 목적이다. 정련 전에는 0 과 255 뿐이다.
-        // ⚠️ 마스크 경계를 색 경계와 어긋나게 둔다. 같은 자리(p ≡ I)면 가이드 필터는 경계를
-        // **일부러 보존하므로** 부분 알파가 생기지 않는다
+        // 마스크 경계를 색 경계와 어긋나게 둔다. 같은 자리(p ≡ I)면 가이드 필터는 경계를
+        // 일부러 보존하므로 부분 알파가 생기지 않는다
         val alpha = maskFrom(width = 32, height = 8, opaqueFrom = 13)
 
         // When

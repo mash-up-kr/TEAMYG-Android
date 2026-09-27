@@ -1,7 +1,7 @@
 package com.teamyg.parfait.data.repository.topping
 
 import com.teamyg.parfait.data.model.exception.ApiException
-import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteDataSource
+import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSource
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupId

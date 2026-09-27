@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.source.member.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.teamyg.parfait.data.datastore.DataStorePreferences
 import com.teamyg.parfait.data.datastore.EncryptedPreferences
 import com.teamyg.parfait.data.datastore.FakePreferencesDataStore
 import com.teamyg.parfait.data.security.CryptoManager
@@ -30,7 +31,7 @@ class UserInfoLocalDataSourceImplTest {
      * 실제로 값을 바꾸는(암호화하는 척하는) 페이크. `save()` 가 `cryptoManager.encrypt(...)`
      * 를 건너뛰고 평문을 그대로 저장해도 [passthroughCrypto] 로는 잡히지 않는다 —
      * encrypt/decrypt 가 항등 함수라 평문 저장과 구분이 안 된다. 이 페이크로 DataStore
-     * 원문이 평문 JSON 과 **다르다**는 것 자체를 그물로 건다.
+     * 원문이 평문 JSON 과 다르다는 것 자체를 그물로 건다.
      */
     private val prefixingCrypto: CryptoManager = mockk {
         every { encrypt(any()) } answers { ENCRYPTED_PREFIX + firstArg<String>() }
@@ -41,7 +42,10 @@ class UserInfoLocalDataSourceImplTest {
         dataStore: DataStore<Preferences>,
         crypto: CryptoManager = passthroughCrypto,
     ) = UserInfoLocalDataSourceImpl(
-        preferences = EncryptedPreferences(dataStore = dataStore, cryptoManager = crypto),
+        preferences = EncryptedPreferences(
+            preferences = DataStorePreferences(dataStore),
+            cryptoManager = crypto,
+        ),
         json = Json { ignoreUnknownKeys = true },
     )
 

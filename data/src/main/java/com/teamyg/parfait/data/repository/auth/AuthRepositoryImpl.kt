@@ -1,8 +1,8 @@
 package com.teamyg.parfait.data.repository.auth
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
-import com.teamyg.parfait.data.source.token.local.TokenStore
+import com.teamyg.parfait.data.source.token.local.TokenLocalDataSource
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.auth.AuthSessionVO
 import com.teamyg.parfait.domain.model.auth.KakaoLoginVO
@@ -12,15 +12,9 @@ import com.teamyg.parfait.domain.model.auth.TermsAgreement
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import javax.inject.Inject
 
-/**
- * 원격 인증 호출과 토큰 저장을 묶는다.
- *
- * 실패 원인을 여기서 [com.teamyg.parfait.domain.model.error.AppError] 로 바꾼다 —
- * 이 경계가 있어야 feature 모듈이 `:data` 의 `ApiException` 을 보지 않는다.
- */
 class AuthRepositoryImpl @Inject constructor(
     private val authRemoteDataSource: AuthRemoteDataSource,
-    private val tokenStore: TokenStore,
+    private val tokenLocalDataSource: TokenLocalDataSource,
 ) : AuthRepository {
     override suspend fun loginWithKakao(
         idToken: String,
@@ -39,16 +33,16 @@ class AuthRepositoryImpl @Inject constructor(
         ).mapErrorToAppError()
 
     override suspend fun saveSession(session: AuthSessionVO) {
-        tokenStore.save(
+        tokenLocalDataSource.save(
             accessToken = session.accessToken.value,
             refreshToken = session.refreshToken.value,
         )
     }
 
-    override suspend fun hasSession(): Boolean = tokenStore.getRefreshToken() != null
+    override suspend fun hasSession(): Boolean = tokenLocalDataSource.getRefreshToken() != null
 
     override suspend fun logout(): Result<Unit> {
-        val refreshToken = tokenStore.getRefreshToken()
+        val refreshToken = tokenLocalDataSource.getRefreshToken()
 
         if (refreshToken != null) {
             authRemoteDataSource
@@ -59,21 +53,21 @@ class AuthRepositoryImpl @Inject constructor(
                 }
         }
 
-        tokenStore.clear()
+        tokenLocalDataSource.clear()
         return Result.success(Unit)
     }
 
     /**
-     * 재발급이 로그아웃 요청 도중 refresh token 을 회전시켰으면 새 값으로 **딱 한 번** 다시 보낸다.
+     * 재발급이 로그아웃 요청 도중 refresh token 을 회전시켰으면 새 값으로 딱 한 번 다시 보낸다.
      *
      * `POST /api/v1/auth/logout` 은 화이트리스트 밖이라 access token 이 만료된 상태의
      * 로그아웃은 `TokenAuthenticator` 를 한 번 타고 나간다. 그런데 재발급은 refresh token 도
      * 함께 회전시켜 방금 본문에 실어 보낸 값을 죽이고, 인증기는 `Authorization` 헤더만
-     * 갈아끼워 **같은 본문을** 재전송하므로 재시도까지 실패한다. 그대로 두면 로컬만 지워지고
+     * 갈아끼워 같은 본문을 재전송하므로 재시도까지 실패한다. 그대로 두면 로컬만 지워지고
      * 갓 발급된 서버 세션은 refresh token 수명만큼 살아남는다 — 사용자는 로그아웃했다고 믿는데.
      */
     private suspend fun retryIfRefreshTokenRotated(sentRefreshToken: String) {
-        val currentRefreshToken = tokenStore.getRefreshToken()
+        val currentRefreshToken = tokenLocalDataSource.getRefreshToken()
         if (currentRefreshToken == null || currentRefreshToken == sentRefreshToken) return
 
         repositoryLogger.i { "로그아웃 도중 refresh token 이 회전됐다 — 새 값으로 한 번만 재시도" }
