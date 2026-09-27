@@ -43,28 +43,38 @@ jobs:
           git diff "$base_sha...$head_sha" > "$REVIEW_DIR/pr.diff"
           echo "HEAD_SHA=$head_sha" >> "$GITHUB_ENV"
 
+      # 오케스트레이터 프롬프트는 기본 브랜치에서 읽는다. PR 이 프롬프트를 바꿔도 리뷰 규칙이 바뀌지 않는다.
+      # (.claude/ 아래 서브에이전트 정의와 공통 규칙은 action 이 base 브랜치 버전으로 되돌린다.)
       - name: Build prompt
         id: prompt
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          delimiter="PROMPT_EOF_$(openssl rand -hex 8)"
           {
-            echo 'text<<PROMPT_EOF'
-            cat .github/claude-review/orchestrator.md
+            echo "text<<${delimiter}"
+            git show "origin/${DEFAULT_BRANCH}:.github/claude-review/orchestrator.md"
             echo
             echo '## 실행 정보'
+            echo "- 이벤트: ${EVENT_NAME}"
             echo "- 저장소 URL: https://github.com/${{ github.repository }}"
             echo "- PR 번호: ${PR_NUMBER}"
             echo "- PR head sha: ${HEAD_SHA}"
             echo "- 리뷰 자료 디렉토리: ${REVIEW_DIR}"
-            echo 'PROMPT_EOF'
+            echo "${delimiter}"
           } >> "$GITHUB_OUTPUT"
 
       # track_progress 가 tag 모드를 강제한다. tag 모드만 @claude 코멘트 실행에서도 PR 브랜치를 체크아웃한다.
       # 리뷰어 정의는 .claude/agents/pr-review-*.md 이고, 도구가 Read/Grep/Glob 뿐이라 게시·중첩 호출을 못 한다.
+      # 봇은 코드를 고치지 않는다. tag 모드가 acceptEdits 와 git add/commit 을 켜므로 disallowedTools 로 막는다.
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         env:
-          # -p 모드는 백그라운드 서브에이전트를 idle 10분까지만 기다린다. 리뷰어 셋이 도는 동안 끊기지 않게 늘린다.
-          CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: "1200000"
+          # -p 모드의 서브에이전트는 기본이 백그라운드라 결과가 유실될 수 있다. foreground 로 강제한다.
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+          # general-purpose·Explore 같은 내장 서브에이전트를 없애 pr-review-* 만 부를 수 있게 한다.
+          CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS: "1"
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
@@ -73,4 +83,5 @@ jobs:
           claude_args: |
             --model claude-sonnet-5
             --add-dir ${{ runner.temp }}/pr-review
-            --allowedTools "Agent,mcp__github_inline_comment__create_inline_comment,Bash(gh:*),Bash(git:*),Read,Glob,Grep"
+            --allowedTools "Agent,mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr comment:*),Read,Glob,Grep"
+            --disallowedTools "Edit,Write,MultiEdit,NotebookEdit,Bash(git add:*),Bash(git commit:*),Bash(git rm:*),Bash(git push:*)"
