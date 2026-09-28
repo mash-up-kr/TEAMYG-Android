@@ -23,7 +23,7 @@ import kotlin.math.abs
 
 private const val LAYER_TAG = "layer"
 
-/** 좌표는 이 단위로 적고 [at] 으로 px 로 바꾼다. 밀도가 달라도 손가락 폭 비율이 같게 유지된다 */
+/** [at] 이 px 로 바꾸는 좌표 단위. 밀도가 달라도 손가락 폭 비율이 유지된다 */
 private const val LAYER_UNITS = 400f
 private val LAYER_SIZE = 300.dp
 private const val STEP_COUNT = 12
@@ -38,10 +38,7 @@ private data class Transform(
     val rotationDelta: Float,
 )
 
-/**
- * 화면과 같은 순서(`toppingTapInput` 바깥, `toppingTransformInput` 안쪽)로 붙인 두 입력의 계약.
- * 좌표는 모두 노드 기준 px 다.
- */
+/** 화면과 같은 순서(`toppingTapInput` 바깥, `toppingTransformInput` 안쪽)로 붙인 두 입력의 계약 */
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class ToppingTransformInputTest {

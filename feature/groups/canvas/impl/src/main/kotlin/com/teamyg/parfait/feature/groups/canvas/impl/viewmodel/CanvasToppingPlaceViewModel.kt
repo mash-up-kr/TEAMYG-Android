@@ -277,7 +277,7 @@ class CanvasToppingPlaceViewModel
         )
     }
 
-    /** 서버 scale [TOPPING_MIN_SCALE] 을 이 화면의 배율로 환산한 값. [toToppingTransform] 의 역산이다 */
+    /** [TOPPING_MIN_SCALE] 을 이 화면 배율로 환산한다. [toToppingTransform] 의 역산이다 */
     private fun minScale(
         canvasSize: DpSize,
         baseSize: DpSize,
