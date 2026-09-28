@@ -48,7 +48,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLaye
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 import java.io.File
 
@@ -149,29 +148,8 @@ internal fun CanvasToppingPlaceScreen(
                     modifier = Modifier
                         .matchParentSize()
                         .toppingTransformInput(
-                            targetAt = {
-                                // 그림이 뜨기 전 크기는 폴백이라, 여기서 제스처를 받으면 초기 배치가 영영 안 걸린다
-                                if (!isToppingImageLoaded) {
-                                    null
-                                } else {
-                                    with(density) {
-                                        ToppingHitTarget(
-                                            centerXPx = center.x.toPx(),
-                                            centerYPx = center.y.toPx(),
-                                            imageWidthPx = sizeAfterScale.width.toPx(),
-                                            imageHeightPx = sizeAfterScale.height.toPx(),
-                                            rotationDegrees = uiState.rotationDegrees,
-                                            // 테두리를 안 그리면 판정도 넓히지 않는다
-                                            borderWidthPx = if (uiState.borderColorArgb != null) {
-                                                (uiState.borderWidthDp ?: 0f).dp.toPx()
-                                            } else {
-                                                0f
-                                            },
-                                            outline = outline,
-                                        )
-                                    }
-                                }
-                            },
+                            // 그림이 뜨기 전 크기는 폴백이라, 여기서 제스처를 받으면 초기 배치가 영영 안 걸린다
+                            enabled = { isToppingImageLoaded },
                             onTransform = { pan: Offset, zoom, rotationDelta ->
                                 onToppingTransform(
                                     with(density) { DpOffset(pan.x.toDp(), pan.y.toDp()) },

@@ -211,7 +211,7 @@ internal fun CanvasBGEditScreen(
                                     onHit = onClickTopping,
                                     onMiss = onClickDeselectTopping,
                                 ).toppingTransformInput(
-                                    targetAt = { selectedEntry?.target },
+                                    enabled = { selectedEntry != null },
                                     onTransform = { pan, zoom, rotationDelta ->
                                         onToppingTransform(
                                             pan.x / canvasWidthPx,

@@ -17,13 +17,22 @@ import androidx.compose.ui.input.pointer.PointerInputEventHandler
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.isOutOfBounds
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingClickThrottle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.pickToppingHit
 import kotlin.math.atan2
 
 private const val MISS_KEY = "miss"
+
+/**
+ * 두 손가락이 이보다 가까우면 변환하지 않는다. 좁은 폭에서는 손가락이 조금만 굴러도 거리비가 크게
+ * 흔들리고, 터치 패널이 두 손가락을 하나로 합쳤다 나누며 좌표를 튀게 만든다
+ */
+internal val TOPPING_PINCH_MIN_SPAN = 64.dp
+
+/** 한 이벤트에 한 포인터가 이보다 멀리 움직이면 터치 패널이 추적을 놓친 것으로 본다 */
+internal val TOPPING_POINTER_MAX_JUMP = 48.dp
 
 /**
  * 누른 자리로 대상을 정하고, 떼는 것이 확정되면 그 대상으로 [onHit] 을 부른다. 아무것도 맞지
@@ -91,8 +100,8 @@ private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): Poin
 }
 
 /**
- * 한 손가락은 [targetAt] 실루엣 안에서 시작했을 때만 옮기고, 두 손가락은 어디서 시작했든
- * 옮기기·회전·확대를 한 번에 한다.
+ * 두 손가락이 닿으면 어디서 시작했든 옮기기·회전·확대를 한 번에 한다. 한 손가락으로 시작하면
+ * 옮기지 않지만, 핀치 중 한 손가락을 떼면 남은 손가락으로 계속 옮긴다.
  *
  * 직전 이벤트에도 눌려 있던 포인터만 센다. 새로 down 됐거나 막 뗀 포인터를 넣으면 포인터 수가
  * 바뀌는 순간 중점이 튄다.
@@ -101,19 +110,19 @@ private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): Poin
  */
 @Composable
 internal fun Modifier.toppingTransformInput(
-    targetAt: () -> ToppingHitTarget?,
+    enabled: () -> Boolean,
     onTransform: (pan: Offset, zoom: Float, rotationDelta: Float) -> Unit,
     onGestureActiveChange: (Boolean) -> Unit = {},
 ): Modifier {
-    val latestTargetAt by rememberUpdatedState(targetAt)
+    val latestEnabled by rememberUpdatedState(enabled)
     val latestOnTransform by rememberUpdatedState(onTransform)
     val latestOnGestureActiveChange by rememberUpdatedState(onGestureActiveChange)
 
     val handler = remember {
         PointerInputEventHandler {
             awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                val target = latestTargetAt() ?: return@awaitEachGesture
+                awaitFirstDown(requireUnconsumed = false)
+                if (!latestEnabled()) return@awaitEachGesture
 
                 fun emit(
                     pan: Offset,
@@ -127,30 +136,19 @@ internal fun Modifier.toppingTransformInput(
 
                 latestOnGestureActiveChange(true)
                 try {
-                    val touchSlop = viewConfiguration.touchSlop
-                    val canDrag = target.containsPoint(down.position.x, down.position.y)
+                    val minSpan = TOPPING_PINCH_MIN_SPAN.toPx()
+                    val maxJump = TOPPING_POINTER_MAX_JUMP.toPx()
                     var grabbed = false
-                    var slopAccum = Offset.Zero
+                    var pairIds: Pair<PointerId, PointerId>? = null
+                    var referenceSpan = 0f
+                    var referenceAngle = 0f
 
                     while (true) {
                         val event = awaitPointerEvent()
                         if (event.changes.none { it.pressed }) break
 
                         if (!grabbed) {
-                            // awaitTouchSlopOrCancellation 은 두 번째 down 에 반환하지 않아서 직접 기다린다
-                            if (event.changes.count { it.pressed } >= 2) {
-                                grabbed = true
-                            } else if (canDrag) {
-                                val change = event.changes.firstOrNull { it.id == down.id } ?: continue
-                                slopAccum += change.positionChange()
-                                val distance = slopAccum.getDistance()
-                                if (distance > touchSlop) {
-                                    grabbed = true
-                                    // 슬롭을 넘긴 몫을 버리면 한 프레임씩 손가락 뒤로 처진다
-                                    emit(slopAccum - slopAccum / distance * touchSlop, 1f, 0f)
-                                    change.consume()
-                                }
-                            }
+                            grabbed = event.changes.count { it.pressed } >= 2
                             continue
                         }
 
@@ -158,25 +156,45 @@ internal fun Modifier.toppingTransformInput(
                             .filter { it.pressed && it.previousPressed }
                             .sortedBy { it.id.value }
                             .take(2)
+                        if (tracked.any { (it.position - it.previousPosition).getDistance() > maxJump }) {
+                            pairIds = null
+                            continue
+                        }
+
                         val emitted = when (tracked.size) {
-                            1 -> emit(tracked[0].position - tracked[0].previousPosition, 1f, 0f)
+                            1 -> {
+                                pairIds = null
+                                emit(tracked[0].position - tracked[0].previousPosition, 1f, 0f)
+                            }
 
                             2 -> {
                                 val (first, second) = tracked
-                                val current = second.position - first.position
-                                val previous = second.previousPosition - first.previousPosition
-                                val previousDistance = previous.getDistance()
                                 val pan = (first.position + second.position) / 2f -
                                     (first.previousPosition + second.previousPosition) / 2f
-                                // 손가락이 슬롭보다 가까우면 몇 px 오차로 거리비·각도가 튄다
-                                if (previousDistance < touchSlop) {
+                                val vector = second.position - first.position
+                                val span = vector.getDistance()
+                                val angle = vector.angleDegrees()
+                                val ids = first.id to second.id
+
+                                // 기준은 최소 폭 아래에서 갱신하지 않는다. 오므렸다 벌려도 배율이 누적 오차 없이 맞는다
+                                if (ids != pairIds) {
+                                    pairIds = ids
+                                    val previous = second.previousPosition - first.previousPosition
+                                    referenceSpan = previous.getDistance()
+                                    referenceAngle = previous.angleDegrees()
+                                }
+                                if (span < minSpan) {
+                                    false
+                                } else if (referenceSpan < minSpan) {
+                                    referenceSpan = span
+                                    referenceAngle = angle
                                     emit(pan, 1f, 0f)
                                 } else {
-                                    emit(
-                                        pan,
-                                        current.getDistance() / previousDistance,
-                                        normalizeDegrees(current.angleDegrees() - previous.angleDegrees()),
-                                    )
+                                    val zoom = span / referenceSpan
+                                    val rotation = normalizeDegrees(angle - referenceAngle)
+                                    referenceSpan = span
+                                    referenceAngle = angle
+                                    emit(pan, zoom, rotation)
                                 }
                             }
 
