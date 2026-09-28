@@ -48,7 +48,7 @@ When the delta changes the contract, update every surface below that it touches:
 | Android symbol exists and now disagrees | Android column → `⚠️불일치` + entry in `docs/synthesis/open-questions.md` |
 | Unverifiable fact | `## 미결` in the domain doc + entry in `docs/synthesis/open-questions.md` |
 
-Out of scope: Android-side changes (`android_status`, 「Android 매핑」) belong to the `sync-develop-doc-baseline` skill. No edits to TJYG-Android code.
+Out of scope: Android-side changes (`android_status`, 「Android 매핑」) belong to the `sync-develop-doc-baseline` skill. No edits to TEAMYG-Android code.
 
 ## Finish
 

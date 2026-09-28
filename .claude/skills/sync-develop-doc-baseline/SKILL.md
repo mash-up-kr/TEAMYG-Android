@@ -1,6 +1,6 @@
 ---
 name: sync-develop-doc-baseline
-description: Use when the user asks to check or sync docs against develop in TJYG-Android — "/sync-develop-doc-baseline", "develop 기준 문서 점검", "develop 문서 점검", "doc-baseline 맞춰줘", "baseline sync 확인", "develop delta 감사", or when docs/doc-baseline.md lags behind origin/develop.
+description: Use when the user asks to check or sync docs against develop in TEAMYG-Android — "/sync-develop-doc-baseline", "develop 기준 문서 점검", "develop 문서 점검", "doc-baseline 맞춰줘", "baseline sync 확인", "develop delta 감사", or when docs/doc-baseline.md lags behind origin/develop.
 ---
 
 # sync-develop-doc-baseline
