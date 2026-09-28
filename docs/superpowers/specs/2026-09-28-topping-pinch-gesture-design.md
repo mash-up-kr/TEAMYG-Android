@@ -1,7 +1,7 @@
 ---
 id: topping-pinch-gesture
 title: 토핑 두 손가락 변환 제스처 (Topping pinch/rotate/pan gesture)
-status: draft
+status: implemented
 category: behavior-spec
 platforms: android
 verified: 2026-09-28

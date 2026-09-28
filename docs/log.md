@@ -312,3 +312,6 @@ archive 문서 hex 3건(보존)과 wiki/index ADR 개수 stale(위키 소관)은
 
 ## [2026-09-27] audit | 594f8047e — #534 data 레이어 패키지·이름 정리 · #527 · #535 문구 · #528 docs 이관
 497파일 +137403/-4010 · 유닛 1294 · 계측 46 · OQ 신설 없음 · 해소 OQ-P-367(①②, 부분)
+
+## [2026-09-28] lint | 토핑 핀치 제스처 반영 — 삭제된 핸들 심볼 앵커 정리, 7건 수정
+status.md C-106·C-301 조작 서술 · OQ-P-202 문구(핀치 기준, 미결 유지) · design-system·module-structure `dragBy` 앵커 · 스펙 `status: implemented` · specs·plans README 상태.
