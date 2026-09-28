@@ -138,10 +138,17 @@ internal fun Modifier.toppingTransformInput(
                     var pairIds: Pair<PointerId, PointerId>? = null
                     var referenceSpan = 0f
                     var referenceAngle = 0f
+                    var pairWasClose = false
 
                     while (true) {
                         val event = awaitPointerEvent()
                         if (event.changes.none { it.pressed }) break
+
+                        val wasClose = pairWasClose
+                        val pressed = event.changes.filter { it.pressed }.sortedBy { it.id.value }
+                        if (pressed.size >= 2) {
+                            pairWasClose = (pressed[1].position - pressed[0].position).getDistance() < minSpan
+                        }
 
                         if (!grabbed) {
                             grabbed = event.changes.count { it.pressed } >= 2
@@ -160,7 +167,9 @@ internal fun Modifier.toppingTransformInput(
                         val emitted = when (tracked.size) {
                             1 -> {
                                 pairIds = null
-                                emit(tracked[0].position - tracked[0].previousPosition, 1f, 0f)
+                                // 붙어 있던 짝에서 한쪽이 떨어졌다면 패널이 두 접점을 합친 것일 수 있다
+                                val change = tracked[0]
+                                if (pairWasClose) false else emit(change.position - change.previousPosition, 1f, 0f)
                             }
 
                             2 -> {
@@ -187,7 +196,8 @@ internal fun Modifier.toppingTransformInput(
                                     emit(pan, 1f, 0f)
                                 } else {
                                     val zoom = span / referenceSpan
-                                    val rotation = normalizeDegrees(angle - referenceAngle)
+                                    // 붙어 있는 동안 굴린 각도는 버린다
+                                    val rotation = if (wasClose) 0f else normalizeDegrees(angle - referenceAngle)
                                     referenceSpan = span
                                     referenceAngle = angle
                                     emit(pan, zoom, rotation)

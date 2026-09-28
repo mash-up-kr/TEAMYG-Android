@@ -19,7 +19,7 @@ import kotlin.math.sqrt
  */
 const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
 
-/** 서버 scale 하한. 상한은 없다 */
+/** 서버 scale 단위의 하한. 앱이 정한 값이고 서버는 검증하지 않는다. 상한은 없다 */
 const val TOPPING_MIN_SCALE = 0.05f
 
 fun toppingLongSide(
