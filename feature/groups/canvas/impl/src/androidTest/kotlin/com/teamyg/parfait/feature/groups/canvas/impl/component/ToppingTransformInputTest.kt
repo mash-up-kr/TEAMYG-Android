@@ -118,6 +118,45 @@ class ToppingTransformInputTest {
     }
 
     @Test
+    fun liftWhileFingersClose_remainingFingerDoesNotMove() {
+        setLayer()
+
+        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
+            down(0, at(200f, 200f))
+            down(1, at(200f + minSpan / 2f, 200f))
+            // 붙은 두 손가락을 패널이 하나로 합치면 한쪽이 떨어진 것처럼 보이고 남은 좌표가 튄다
+            up(0)
+            moveTo(1, at(200f + minSpan / 2f + maxJump / 2f, 200f))
+            moveTo(1, at(200f + minSpan / 2f + maxJump / 2f, 220f))
+            up(1)
+        }
+
+        composeTestRule.runOnIdle { assertEquals(emptyList<Transform>(), transforms) }
+    }
+
+    @Test
+    fun rotationWhileFingersClose_isNotAppliedOnReopen() {
+        setLayer()
+
+        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
+            down(0, at(50f, 200f))
+            down(1, at(350f, 200f))
+            val half = minSpan / 4f
+            moveBothTo(at(200f - half, 200f), at(200f + half, 200f))
+            // 붙은 채로 90도 굴린 뒤 다시 벌린다
+            moveBothTo(at(200f, 200f - half), at(200f, 200f + half))
+            moveBothTo(at(200f, 50f), at(200f, 350f))
+            up(0)
+            up(1)
+        }
+
+        composeTestRule.runOnIdle {
+            val rotation = transforms.sumOf { it.rotationDelta.toDouble() }.toFloat()
+            assertEquals(0f, rotation, ROTATION_TOLERANCE_DEGREES)
+        }
+    }
+
+    @Test
     fun singlePointerJump_isDropped() {
         setLayer()
 

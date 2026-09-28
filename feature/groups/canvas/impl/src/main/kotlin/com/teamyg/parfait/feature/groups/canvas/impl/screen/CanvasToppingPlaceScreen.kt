@@ -122,7 +122,7 @@ internal fun CanvasToppingPlaceScreen(
                 if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
             }
 
-            // 이미지·스트로크·핸들이 같은 자리에 오려면 셋이 같은 값을 봐야 한다. 여기서 한 번만 계산한다
+            // 이미지와 스트로크가 같은 자리에 오려면 같은 값을 봐야 한다. 여기서 한 번만 계산한다
             val center = DpOffset(
                 x = uiState.offsetX + baseSize.width / 2,
                 y = uiState.offsetY + baseSize.height / 2,
@@ -189,7 +189,7 @@ internal fun CanvasToppingPlaceScreen(
                 )
 
                 // Image()를 그냥 두면 painter.intrinsicSize로 스스로 크기를 맞춰(sizeToIntrinsics)
-                // 스트로크·핸들 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
+                // 스트로크 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
                 Box(
                     modifier = Modifier
                         .centeredAt(center)

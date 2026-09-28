@@ -46,7 +46,7 @@ internal fun rememberToppingBaseSize(painter: Painter): DpSize {
  * 토핑과 함께 회전하는 흰색 2dp 점선 스트로크. [center]에 여백이 반영된 크기([toppingStrokeSize])로
  * 놓은 뒤 [rotationDegrees]만큼 [graphicsLayer]로 돌려, 토핑 자신의 회전을 그대로 따라가게 한다.
  *
- * ⚠️ 자리는 반드시 [centeredAt]으로 잡는다 — 캔버스보다 커지면 핸들 버튼과 벌어진다(#313).
+ * ⚠️ 자리는 반드시 [centeredAt]으로 잡는다 — 캔버스보다 커지면 모서리 버튼과 벌어진다(#313).
  */
 @Composable
 internal fun ToppingSelectionStroke(
