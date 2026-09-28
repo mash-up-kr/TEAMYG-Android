@@ -36,7 +36,6 @@ tags: [spec, parfait]
   - 제스처 modifier의 Compose UI 테스트.
 - 제외
   - 스냅, 정렬 가이드라인, 햅틱.
-  - 클램프 정책 변경. 두 화면의 scale 최소·최대값은 지금 값 그대로 둔다(OQ-P-325).
   - 회전·위치 범위 제한.
   - 접근성 대체 입력(OQ-P-202). 핸들 드래그도 대체 입력이 아니었다.
   - 저장 경로(`toToppingTransform`, 편집 화면의 배치 PATCH) 변경.
@@ -127,7 +126,9 @@ data class OnToppingTransform(val panX: Float, val panY: Float, val zoom: Float,
 `OnToppingTransform` 핸들러는 `updateState` 한 번으로 아래를 갱신한다.
 
 - `offsetX/offsetY += pan`
-- `scale = (scale * zoom).coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas())`
+- `scale = (scale * zoom).coerceAtLeast(minScale(canvasSize, baseSize))` — 서버 scale `TOPPING_MIN_SCALE`(0.05)을
+  이 화면 배율로 환산한 하한만 있고 상한은 없다. 편집 화면과 같은 규칙이다. 캔버스·토핑을 둘 다 실측하기
+  전에는 변환을 무시한다
 - `rotationDegrees += rotationDelta`
 - `hasUserAdjustedPlacement = true`
 
