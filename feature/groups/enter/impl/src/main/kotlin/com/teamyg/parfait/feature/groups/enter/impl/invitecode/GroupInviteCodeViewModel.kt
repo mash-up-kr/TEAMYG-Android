@@ -117,7 +117,7 @@ constructor(
                     // 글자를 커서 자리에 "끼워 넣어" 다음 칸부터 전부 밀어 버린다. 눌린 칸 자체를
                     // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자를 그 자리에 끼워 넣으려 한
                     // 것으로 보이면 밀지 않고 그 칸만 바꾼다.
-                    val isTypingOverFilledCell = focusedIndex < text.length &&
+                    val isReplacingFilledCell = focusedIndex < text.length &&
                         intent.text.length == text.length + 1 &&
                         intent.cursor == oldCursor + 1 &&
                         intent.text.take(oldCursor) == text.take(oldCursor) &&
@@ -125,7 +125,7 @@ constructor(
                         typedChar != null &&
                         InviteCode.isCodeChar(typedChar)
 
-                    if (isTypingOverFilledCell) {
+                    if (isReplacingFilledCell) {
                         val newText = text.take(focusedIndex) + typedChar + text.drop(focusedIndex + 1)
                         copy(
                             text = newText,
