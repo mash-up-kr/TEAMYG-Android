@@ -377,12 +377,6 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 - **화면 적용(#218 develop 머지, 2026-08-11)**: A-002 로그인이 실물화되면서 `KakaoSignInButton`이 `RoundedCornerShape` 리터럴 → `YGTheme.shapes.radius.none`, 리터럴 dp 패딩 → `YGTheme.layout.padding.*`, 라벨 타이포 → `YGTheme.typography.body.b01SB`로 토큰화됐다. 다만 **버튼 자체는 DS 컴포넌트가 아니라 feature 로컬 Material3 `Button`**이고(외부 로그인 가이드 색을 따라야 해서 `YGButton` 변형에 안 맞는다), 주입한 `ButtonColors.contentColor`는 내부 `Text`가 색을 명시해 死필드다. 같은 화면 `PagerIndicator`의 활성/비활성 색은 여전히 리터럴이다 → [a002-login-onboarding 스펙](../superpowers/specs/archive/2026-08-11-a002-login-onboarding.md).
 - **버튼 신설 5종**(#183, `ygcirclebutton`·`ygeditbutton`·`ygedittabbutton`·`ygeditactionbutton`·`ygcamerashutter`): `YGCircleButton`만 변형 타입(`YGCircleButtonType`)이 색·아이콘 크기·tint·`paintsOuterCircle`을 들고(단 `@Immutable` + 평범한 `val`이라 `YGButtonType`의 `@get:Composable` 패턴과 갈린다), 나머지 4종은 컴포저블 본문 상태 분기다. Colors data class는 5종 모두 미분리 — 규약과 갈리는 판단(→ [open-questions](../synthesis/open-questions.md)). 선택형(`YGEditButton`·`YGEditTabButton`)은 `selectable`(`Role.Button`/`Role.Tab`), 나머지는 `clickable(indication = null)` + `role = Role.Button`. 밑줄 폭은 `width(IntrinsicSize.Max)`로 텍스트에 묶는다.
   - 📌 **첫 실화면 소비처(2026-08-14, PR #221)** — C-104/C-105 편집 화면이 `YGEditButton` 2개(모드 전환)·`YGEditActionButton` 2개(되돌리기/다시실행)를 쓰고, `YGEditTabButton`은 `YGFloatingBarEditTab`을 통해 간접 소비된다. `YGCircleButton`·`YGCameraShutter`(#182)에 이어 신설 5종이 전부 실화면에 닿았다.
-  - 📌 **`YGCircleButton`이 한때 "버튼 아닌 손잡이"로도 쓰였다(#264 develop 머지, 2026-08-16)** — C-301 토핑 탭의 모서리 4개 중 둘(크기조절·회전)이 `onClick = {}` 빈 람다에 `Modifier.dragBy`를 덧대 **드래그 핸들**로 썼다. 컴포넌트는 여전히 `role = Role.Button`이라 스크린리더에는 눌리는 버튼으로 읽혔고 눌러도 아무 일이 없었다 — 조작 종류(탭 vs 드래그)를 표현할 API가 없다는 뜻이었다 → [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md). 나머지 둘(삭제·편집)은 평범한 소비이고 `ic_edit`·`ic_scale` 아이콘 2종이 이때 신설됐다.
-    - 📌 **핸들 관용구가 화면 밖으로 나왔다(#290 develop 머지, 2026-08-19)** — 같은 조합을 감싼
-      `ToppingDragHandleButton`이 `feature/groups/canvas/impl`의 `component/` 패키지로 올라가
-      C-301 편집 탭과 C-106 배치 화면이 공유했다(제스처 추적 키가 `toppingId: Long` → `key: Any?`로
-      일반화돼, 대상이 하나뿐인 화면은 `Unit`을 넘겼다). **디자인시스템이 아니라 feature 로컬 공유**였고,
-      "조작 종류를 표현할 API가 없다"는 문제는 그대로 **두 화면**에 퍼져 있었다.
   - `YGCircleButton`은 편집 탭·배치 화면 모두에서 버튼(삭제·편집)으로만 쓰인다. 이동·회전·확대는
     `toppingTransformInput` 두 손가락 제스처가 맡고, 접근성 대체 수단은 없다 →
     [open-questions](../synthesis/open-questions.md) OQ-P-202 ③.
