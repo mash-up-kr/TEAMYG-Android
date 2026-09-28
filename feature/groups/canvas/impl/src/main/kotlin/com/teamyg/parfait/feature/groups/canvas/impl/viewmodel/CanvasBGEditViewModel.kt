@@ -167,25 +167,17 @@ sealed interface CanvasBGEditIntent : UiIntent {
 
     data object OnClickEditTopping : CanvasBGEditIntent
 
-    /** 크기조절 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **배율에 곱할 값**이며, 환산은 화면 몫이다. */
-    data class OnToppingResize(
-        val scaleFactor: Float,
-    ) : CanvasBGEditIntent
-
-    /** 회전 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **각도**이며, 환산은 핸들 위치를 아는 화면 몫이다. */
-    data class OnToppingRotate(
-        val deltaDegrees: Float,
-    ) : CanvasBGEditIntent
-
     /**
-     * 선택된 토핑 자신을 잡고 드래그한 만큼 넘어온다.
-     *
-     * 픽셀이 아니라 **Canvas-Area 대비 비율**이다 — 위치를 그 단위로 들고 있으므로
-     * ([CanvasToppingItem]) 화면 크기를 아는 쪽에서 미리 환산해 넘긴다.
+     * 두 손가락(또는 선택된 토핑 실루엣 안에서 시작한 한 손가락) 제스처 한 프레임이 넘어온다.
+     * `panX`/`panY` 는 픽셀이 아니라 **Canvas-Area 대비 비율**이다 — 위치를 그 단위로 들고 있으므로
+     * ([CanvasToppingItem]) 화면 크기를 아는 쪽에서 미리 환산해 넘긴다. `zoom` 은 직전 대비 배율,
+     * `rotationDelta` 는 시계 방향이 양수인 도 단위다.
      */
-    data class OnToppingMoveDrag(
-        val deltaX: Float,
-        val deltaY: Float,
+    data class OnToppingTransform(
+        val panX: Float,
+        val panY: Float,
+        val zoom: Float,
+        val rotationDelta: Float,
     ) : CanvasBGEditIntent
 
     /** 테두리 편집 화면에서 돌아온 결과. 편집을 시작한 토핑에 새 이미지·테두리를 반영한다. */
@@ -384,9 +376,7 @@ constructor(
             CanvasBGEditIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
             CanvasBGEditIntent.OnDeleteToppingDialogCancel -> updateState { copy(showDeleteToppingDialog = false) }
             CanvasBGEditIntent.OnClickEditTopping -> handleOnClickEditTopping()
-            is CanvasBGEditIntent.OnToppingResize -> handleOnToppingResize(intent)
-            is CanvasBGEditIntent.OnToppingRotate -> handleOnToppingRotate(intent)
-            is CanvasBGEditIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
+            is CanvasBGEditIntent.OnToppingTransform -> handleOnToppingTransform(intent)
             is CanvasBGEditIntent.OnToppingEditResult -> handleOnToppingEditResult(intent)
         }
     }
@@ -450,29 +440,15 @@ constructor(
         )
     }
 
-    private fun handleOnToppingResize(intent: CanvasBGEditIntent.OnToppingResize) {
-        val selectedId = state.value.selectedToppingId ?: return
-
-        applyToppingTransform(selectedId) { topping ->
-            topping.copy(scale = (topping.scale * intent.scaleFactor).coerceAtLeast(TOPPING_MIN_SCALE))
-        }
-    }
-
-    private fun handleOnToppingRotate(intent: CanvasBGEditIntent.OnToppingRotate) {
-        val selectedId = state.value.selectedToppingId ?: return
-
-        applyToppingTransform(selectedId) { topping ->
-            topping.copy(rotationDegrees = topping.rotationDegrees + intent.deltaDegrees)
-        }
-    }
-
-    private fun handleOnToppingMoveDrag(intent: CanvasBGEditIntent.OnToppingMoveDrag) {
+    private fun handleOnToppingTransform(intent: CanvasBGEditIntent.OnToppingTransform) {
         val selectedId = state.value.selectedToppingId ?: return
 
         applyToppingTransform(selectedId) { topping ->
             topping.copy(
-                positionX = topping.positionX + intent.deltaX,
-                positionY = topping.positionY + intent.deltaY,
+                positionX = topping.positionX + intent.panX,
+                positionY = topping.positionY + intent.panY,
+                scale = (topping.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
+                rotationDegrees = topping.rotationDegrees + intent.rotationDelta,
             )
         }
     }
