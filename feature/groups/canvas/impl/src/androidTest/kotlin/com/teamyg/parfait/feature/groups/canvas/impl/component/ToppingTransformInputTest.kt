@@ -10,6 +10,7 @@ import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
@@ -21,23 +22,15 @@ import org.junit.runner.RunWith
 import kotlin.math.abs
 
 private const val LAYER_TAG = "layer"
-private const val LAYER_SIZE_PX = 400
+
+/** 좌표는 이 단위로 적고 [at] 으로 px 로 바꾼다. 밀도가 달라도 손가락 폭 비율이 같게 유지된다 */
+private const val LAYER_UNITS = 400f
+private val LAYER_SIZE = 300.dp
 private const val STEP_COUNT = 12
 
 private const val PAN_TOLERANCE_PX = 1f
 private const val ZOOM_TOLERANCE = 0.05f
 private const val ROTATION_TOLERANCE_DEGREES = 1f
-
-/** 탭 판정용. 중심 (200,200), 100×100px 사각형 */
-private val TARGET = ToppingHitTarget(
-    centerXPx = 200f,
-    centerYPx = 200f,
-    imageWidthPx = 100f,
-    imageHeightPx = 100f,
-    rotationDegrees = 0f,
-    borderWidthPx = 0f,
-    outline = null,
-)
 
 private data class Transform(
     val pan: Offset,
@@ -59,14 +52,15 @@ class ToppingTransformInputTest {
     private val activeChanges = mutableListOf<Boolean>()
     private var hitCount = 0
     private var missCount = 0
-    private var maxJumpPx = 0f
-    private var minSpanPx = 0f
+    private var unit = 1f
+    private var maxJump = 0f
+    private var minSpan = 0f
 
     @Test
     fun singleFinger_onTarget_doesNotTransform() {
         setLayer()
 
-        drag(from = Offset(200f, 200f), to = Offset(260f, 200f))
+        drag(from = at(200f, 200f), to = at(260f, 200f))
 
         composeTestRule.runOnIdle { assertEquals(emptyList<Transform>(), transforms) }
     }
@@ -76,9 +70,9 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(100f, 200f))
-            down(1, Offset(300f, 200f))
-            moveBothTo(Offset(59f, 59f), Offset(341f, 341f))
+            down(0, at(100f, 200f))
+            down(1, at(300f, 200f))
+            moveBothTo(at(59f, 59f), at(341f, 341f))
             up(0)
             up(1)
         }
@@ -96,9 +90,9 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(100f, 100f))
-            down(1, Offset(100f + minSpanPx / 2f, 100f))
-            moveBothTo(Offset(160f, 190f), Offset(160f + minSpanPx * 0.8f, 150f))
+            down(0, at(100f, 100f))
+            down(1, at(100f + minSpan / 2f, 100f))
+            moveBothTo(at(160f, 190f), at(160f + minSpan * 0.8f, 150f))
             up(0)
             up(1)
         }
@@ -111,11 +105,11 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(50f, 200f))
-            down(1, Offset(350f, 200f))
+            down(0, at(50f, 200f))
+            down(1, at(350f, 200f))
             // 거의 붙을 만큼 오므렸다가 다시 벌린다
-            moveBothTo(Offset(195f, 200f), Offset(205f, 200f))
-            moveBothTo(Offset(50f, 200f), Offset(350f, 200f))
+            moveBothTo(at(195f, 200f), at(205f, 200f))
+            moveBothTo(at(50f, 200f), at(350f, 200f))
             up(0)
             up(1)
         }
@@ -131,42 +125,42 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(100f, 200f))
-            down(1, Offset(300f, 200f))
+            down(0, at(100f, 200f))
+            down(1, at(300f, 200f))
             up(0)
-            moveTo(1, Offset(300f, 200f + maxJumpPx * 2))
-            moveTo(1, Offset(305f, 200f + maxJumpPx * 2))
+            moveTo(1, at(300f, 200f + maxJump * 2))
+            moveTo(1, at(305f, 200f + maxJump * 2))
             up(1)
         }
 
-        composeTestRule.runOnIdle { assertPanSum(expected = Offset(5f, 0f)) }
+        composeTestRule.runOnIdle { assertPanSum(expected = at(5f, 0f)) }
     }
 
     @Test
     fun pointerCountChange_doesNotJumpPan() {
         setLayer()
 
-        val stepPx = 5f
+        val step = 5f
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
             // 한 손가락 +x 80px 은 옮기지 않는다
-            down(0, Offset(200f, 200f))
-            repeat(16) { i -> moveTo(0, Offset(200f + stepPx * (i + 1), 200f)) }
+            down(0, at(200f, 200f))
+            repeat(16) { i -> moveTo(0, at(200f + step * (i + 1), 200f)) }
             // 두 번째 손가락을 대고 둘 다 +y 로 40px
-            down(1, Offset(80f, 330f))
+            down(1, at(80f, 330f))
             repeat(8) { i ->
-                updatePointerTo(0, Offset(280f, 200f + stepPx * (i + 1)))
-                updatePointerTo(1, Offset(80f, 330f + stepPx * (i + 1)))
+                updatePointerTo(0, at(280f, 200f + step * (i + 1)))
+                updatePointerTo(1, at(80f, 330f + step * (i + 1)))
                 move()
             }
             // 첫 손가락을 떼고 남은 손가락만 +x 로 20px
             up(0)
-            repeat(4) { i -> moveTo(1, Offset(80f + stepPx * (i + 1), 370f)) }
+            repeat(4) { i -> moveTo(1, at(80f + step * (i + 1), 370f)) }
             up(1)
         }
 
         composeTestRule.runOnIdle {
-            assertPanSum(expected = Offset(20f, 40f))
-            assertTrue(transforms.all { it.pan.getDistance() <= stepPx * 2 })
+            assertPanSum(expected = at(20f, 40f))
+            assertTrue(transforms.all { it.pan.getDistance() <= step * 2 * unit })
         }
     }
 
@@ -175,8 +169,8 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(50f, 50f))
-            down(1, Offset(350f, 350f))
+            down(0, at(50f, 50f))
+            down(1, at(350f, 350f))
             up(0)
             up(1)
         }
@@ -193,16 +187,16 @@ class ToppingTransformInputTest {
 
         var beforeThird = 0
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(100f, 200f))
-            down(1, Offset(300f, 200f))
-            moveBothTo(Offset(80f, 200f), Offset(320f, 200f))
+            down(0, at(100f, 200f))
+            down(1, at(300f, 200f))
+            moveBothTo(at(80f, 200f), at(320f, 200f))
         }
         composeTestRule.runOnIdle { beforeThird = transforms.size }
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(2, Offset(200f, 100f))
+            down(2, at(200f, 100f))
             repeat(STEP_COUNT) { i ->
                 val fraction = (i + 1).toFloat() / STEP_COUNT
-                moveTo(2, lerp(Offset(200f, 100f), Offset(50f, 380f), fraction))
+                moveTo(2, lerp(at(200f, 100f), at(50f, 380f), fraction))
             }
             up(2)
             up(0)
@@ -222,9 +216,9 @@ class ToppingTransformInputTest {
         setLayer(enabled = { false })
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(100f, 200f))
-            down(1, Offset(300f, 200f))
-            moveBothTo(Offset(59f, 59f), Offset(341f, 341f))
+            down(0, at(100f, 200f))
+            down(1, at(300f, 200f))
+            moveBothTo(at(59f, 59f), at(341f, 341f))
             up(0)
             up(1)
         }
@@ -240,8 +234,8 @@ class ToppingTransformInputTest {
         setLayer()
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(0, Offset(50f, 50f))
-            down(1, Offset(350f, 350f))
+            down(0, at(50f, 50f))
+            down(1, at(350f, 350f))
             repeat(STEP_COUNT) { move() }
             up(0)
             up(1)
@@ -254,11 +248,11 @@ class ToppingTransformInputTest {
     fun gestureActive_spansFirstDownToLastUp() {
         setLayer()
 
-        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput { down(0, Offset(50f, 50f)) }
+        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput { down(0, at(50f, 50f)) }
         composeTestRule.runOnIdle { assertEquals(listOf(true), activeChanges) }
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            down(1, Offset(350f, 350f))
+            down(1, at(350f, 350f))
             up(0)
             up(1)
         }
@@ -269,16 +263,16 @@ class ToppingTransformInputTest {
     private fun setLayer(enabled: () -> Boolean = { true }) {
         composeTestRule.setContent {
             with(LocalDensity.current) {
-                maxJumpPx = TOPPING_POINTER_MAX_JUMP.toPx()
-                minSpanPx = TOPPING_PINCH_MIN_SPAN.toPx()
+                unit = LAYER_SIZE.toPx() / LAYER_UNITS
+                maxJump = TOPPING_POINTER_MAX_JUMP.toPx() / unit
+                minSpan = TOPPING_PINCH_MIN_SPAN.toPx() / unit
             }
-            val sizeDp = with(LocalDensity.current) { LAYER_SIZE_PX.toDp() }
             Box(
                 modifier = Modifier
-                    .requiredSize(sizeDp)
+                    .requiredSize(LAYER_SIZE)
                     .testTag(LAYER_TAG)
                     .toppingTapInput(
-                        entries = { listOf(Unit to TARGET) },
+                        entries = { listOf(Unit to target()) },
                         keyOf = { it },
                         onHit = { hitCount++ },
                         onMiss = { missCount++ },
@@ -292,6 +286,22 @@ class ToppingTransformInputTest {
             )
         }
     }
+
+    /** 탭 판정용. 중심 (200,200), 100×100 단위 사각형 */
+    private fun target() = ToppingHitTarget(
+        centerXPx = 200f * unit,
+        centerYPx = 200f * unit,
+        imageWidthPx = 100f * unit,
+        imageHeightPx = 100f * unit,
+        rotationDegrees = 0f,
+        borderWidthPx = 0f,
+        outline = null,
+    )
+
+    private fun at(
+        x: Float,
+        y: Float,
+    ) = Offset(x * unit, y * unit)
 
     private fun drag(
         from: Offset,
