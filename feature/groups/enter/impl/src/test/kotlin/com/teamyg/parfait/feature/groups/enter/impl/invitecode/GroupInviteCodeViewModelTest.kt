@@ -501,6 +501,52 @@ class GroupInviteCodeViewModelTest {
     }
 
     @Test
+    fun changeText_typesOverFilledMiddleCell_replacesOnlyThatCharWithoutShiftingRest() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 세 번째 칸(C)을 다시 누른 상태
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+
+            // When 그 칸에 새 글자를 입력한다 — 텍스트 필드는 커서 위치에 글자를 끼워 넣으므로
+            // 눌린 칸 다음 글자부터 밀린 텍스트가 들어온다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCXDEF", cursor = 4))
+
+            // Then 누른 칸만 새 글자로 바뀌고 뒤 칸은 밀리지 않는다(main 브랜치 정책)
+            assertEquals("ABXDEF", viewModel.state.value.text)
+            assertEquals(3, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_typesOverFilledCell_whileCodeNotFullyTyped_replacesOnlyThatChar() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 세 글자만 입력한 화면에서 두 번째 칸(B)을 다시 누른 상태
+            val viewModel = viewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABC", cursor = 3))
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 1))
+
+            // When 그 칸에 새 글자를 입력한다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABXC", cursor = 3))
+
+            // Then 코드가 다 차지 않은 상태에서도 누른 칸만 바뀌고 뒤는 밀리지 않는다
+            assertEquals("AXC", viewModel.state.value.text)
+            assertEquals(2, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_typesOverFilledLastCell_replacesOnlyThatChar() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 다 채운 화면에서 마지막 칸(F)을 다시 누른 상태
+        val viewModel = filledViewModel()
+        viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = LAST_INDEX))
+
+        // When 그 칸에 새 글자를 입력한다
+        viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCDEFX", cursor = 7))
+
+        // Then 마지막 칸만 바뀌고 칸 수는 그대로다
+        assertEquals("ABCDEX", viewModel.state.value.text)
+        assertEquals(LAST_INDEX, viewModel.state.value.focusedIndex)
+    }
+
+    @Test
     fun changeText_headAloneFillsCodeLength_keepsFocusAtLastCell() = runTest(mainDispatcherRule.dispatcher) {
         // Given 빈 화면
         val viewModel = viewModel()

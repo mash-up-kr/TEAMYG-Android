@@ -111,21 +111,44 @@ constructor(
             // 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
             is GroupInviteCodeIntent.ChangeText -> {
                 updateState {
-                    val cursor = intent.cursor.coerceIn(0, intent.text.length)
-                    val head = intent.text
-                        .take(cursor)
-                        .filter(InviteCode::isCodeChar)
-                        .take(codeLength)
-                    val tail = intent.text
-                        .drop(cursor)
-                        .filter(InviteCode::isCodeChar)
-                    val newText = (head + tail).take(codeLength)
-                    copy(
-                        text = newText,
-                        focusedIndex = newText.focusedIndex(),
-                        // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
-                        inviteCodeError = inviteCodeError.takeIf { newText == text },
-                    )
+                    val oldCursor = cursor
+                    val typedChar = intent.text.getOrNull(oldCursor)
+                    // 이미 글자가 있는 칸을 다시 눌러 타이핑하면, 텍스트 필드 기본 동작은 그
+                    // 글자를 커서 자리에 "끼워 넣어" 다음 칸부터 전부 밀어 버린다. 눌린 칸 자체를
+                    // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자를 그 자리에 끼워 넣으려 한
+                    // 것으로 보이면 밀지 않고 그 칸만 바꾼다.
+                    val isTypingOverFilledCell = focusedIndex < text.length &&
+                        intent.text.length == text.length + 1 &&
+                        intent.cursor == oldCursor + 1 &&
+                        intent.text.take(oldCursor) == text.take(oldCursor) &&
+                        intent.text.drop(oldCursor + 1) == text.drop(oldCursor) &&
+                        typedChar != null &&
+                        InviteCode.isCodeChar(typedChar)
+
+                    if (isTypingOverFilledCell) {
+                        val newText = text.take(focusedIndex) + typedChar + text.drop(focusedIndex + 1)
+                        copy(
+                            text = newText,
+                            focusedIndex = (focusedIndex + 1).coerceAtMost(codeLength - 1),
+                            inviteCodeError = inviteCodeError.takeIf { newText == text },
+                        )
+                    } else {
+                        val newCursor = intent.cursor.coerceIn(0, intent.text.length)
+                        val head = intent.text
+                            .take(newCursor)
+                            .filter(InviteCode::isCodeChar)
+                            .take(codeLength)
+                        val tail = intent.text
+                            .drop(newCursor)
+                            .filter(InviteCode::isCodeChar)
+                        val newText = (head + tail).take(codeLength)
+                        copy(
+                            text = newText,
+                            focusedIndex = newText.focusedIndex(),
+                            // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
+                            inviteCodeError = inviteCodeError.takeIf { newText == text },
+                        )
+                    }
                 }
             }
 
