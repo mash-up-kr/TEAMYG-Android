@@ -167,12 +167,7 @@ sealed interface CanvasBGEditIntent : UiIntent {
 
     data object OnClickEditTopping : CanvasBGEditIntent
 
-    /**
-     * 두 손가락(또는 선택된 토핑 실루엣 안에서 시작한 한 손가락) 제스처 한 프레임이 넘어온다.
-     * `panX`/`panY` 는 픽셀이 아니라 **Canvas-Area 대비 비율**이다 — 위치를 그 단위로 들고 있으므로
-     * ([CanvasToppingItem]) 화면 크기를 아는 쪽에서 미리 환산해 넘긴다. `zoom` 은 직전 대비 배율,
-     * `rotationDelta` 는 시계 방향이 양수인 도 단위다.
-     */
+    /** `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다. */
     data class OnToppingTransform(
         val panX: Float,
         val panY: Float,

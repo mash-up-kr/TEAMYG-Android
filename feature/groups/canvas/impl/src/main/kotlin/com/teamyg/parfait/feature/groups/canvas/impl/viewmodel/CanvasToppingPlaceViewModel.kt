@@ -88,10 +88,6 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 
     data object OnClickConfirm : CanvasToppingPlaceIntent
 
-    /**
-     * 두 손가락(또는 실루엣 안에서 시작한 한 손가락) 제스처 한 프레임이 넘어온다. `pan`은 px가
-     * 아니라 [DpOffset] — 환산은 이 값을 손가락 이동 픽셀에서 만든 화면 몫이다.
-     */
     data class OnToppingTransform(
         val pan: DpOffset,
         val zoom: Float,
@@ -249,8 +245,7 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
-            // 실측 전 화면의 targetAt 은 null 을 돌려 제스처를 못 일으키는 게 정상이지만, 그 가드를
-            // 여기서도 한 번 더 건다 — 어겨도 hasUserAdjustedPlacement 가 굳어 초기 배치가 영영 안 걸린다
+            // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
             if (toppingBaseSize == null) return@updateState this
 
             copy(

@@ -58,7 +58,7 @@ import java.io.File
  * [CanvasBGEditScreen]의 토핑 탭과 UI가 비슷하지만, 이미 캔버스에 놓인 여러 토핑 중 하나를
  * 고르는 게 아니라 이제 막 편집을 마친 토핑 하나를 처음 배치하는 화면이라 더 단순하다 —
  * 탭 전환이 없고(하단 바 가운데는 고정 문구), 고를 대상도 하나뿐이라 탭해서 선택할 필요 없이
- * 처음부터 바로 두 손가락 제스처로 옮기고 크기·각도를 바꿀 수 있다(삭제·테두리 재편집 없음).
+ * 처음부터 바로 옮기고 크기·각도를 바꿀 수 있다(삭제·테두리 재편집 없음).
  */
 @Composable
 internal fun CanvasToppingPlaceScreen(
@@ -145,16 +145,12 @@ internal fun CanvasToppingPlaceScreen(
                         color = YGAtomicColors.Gray.Gray500,
                     ),
             ) {
-                // 두 손가락은 캔버스 어디서든 시작해도 된다. 판정만 하는 빈 레이어라 형제 순서(그리는
-                // 순서)는 화면에 보이지 않는다
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .toppingTransformInput(
                             targetAt = {
-                                // 그림이 뜨기 전 center·sizeAfterScale 은 폴백 크기 기준이다. 이때 대상을
-                                // 돌리면 두 손가락 제스처가 hasUserAdjustedPlacement 를 굳혀 initial
-                                // placement(정중앙·기준 크기)가 영영 안 걸린다
+                                // 그림이 뜨기 전 크기는 폴백이라, 여기서 제스처를 받으면 초기 배치가 영영 안 걸린다
                                 if (!isToppingImageLoaded) {
                                     null
                                 } else {
@@ -165,7 +161,7 @@ internal fun CanvasToppingPlaceScreen(
                                             imageWidthPx = sizeAfterScale.width.toPx(),
                                             imageHeightPx = sizeAfterScale.height.toPx(),
                                             rotationDegrees = uiState.rotationDegrees,
-                                            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다(CanvasToppingLayer와 같은 규칙)
+                                            // 테두리를 안 그리면 판정도 넓히지 않는다
                                             borderWidthPx = if (uiState.borderColorArgb != null) {
                                                 (uiState.borderWidthDp ?: 0f).dp.toPx()
                                             } else {

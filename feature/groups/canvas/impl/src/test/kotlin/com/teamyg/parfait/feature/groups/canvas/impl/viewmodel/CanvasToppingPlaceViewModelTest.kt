@@ -136,12 +136,7 @@ class CanvasToppingPlaceViewModelTest {
     private fun TestScope.readyViewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel =
         viewModel(draft).apply { measureAndReady(this) }
 
-    /**
-     * `handleOnToppingTransform` 가드(`toppingBaseSize == null`)만 통과시키고 canvasSize 는 비워
-     * 둔다 — 그래야 minScaleForTouchTarget/maxScaleToOverflowCanvas 가 실측 전과 같은 폴백값
-     * (0.5~2.5)을 쓰고, 클램프를 검증하는 기존 케이스들의 기대값이 안 바뀐다. 96.dp 는
-     * MIN_TOPPING_SHORT_SIDE(48.dp) / TOPPING_MIN_SCALE_FALLBACK(0.5f)의 역산이다
-     */
+    /** canvasSize 를 비워 두어 배율 상·하한이 폴백값(0.5~2.5)을 쓰게 한다. 96.dp = 48.dp / 0.5 */
     private fun measureBaseSizeOnly(viewModel: CanvasToppingPlaceViewModel) {
         viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(96.dp, 96.dp)))
     }
@@ -236,8 +231,7 @@ class CanvasToppingPlaceViewModelTest {
 
     @Test
     fun onToppingTransform_beforeBaseSizeMeasured_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
-        // Given toppingBaseSize 를 아직 실측하지 않은 상태 — 화면의 targetAt 은 이 시점에 null 을
-        // 돌려 제스처 자체가 안 일어나야 정상이지만, 그 가드를 우회해 인텐트가 들어온 경우를 대비한다
+        // Given toppingBaseSize 를 아직 실측하지 않은 상태
         val viewModel = viewModel()
 
         // When 두 손가락 제스처가 들어온다
@@ -249,7 +243,7 @@ class CanvasToppingPlaceViewModelTest {
             ),
         )
 
-        // Then 아무 것도 바뀌지 않는다 — 반영하면 hasUserAdjustedPlacement 가 굳어 초기 배치가 안 걸린다
+        // Then 아무 것도 바뀌지 않는다
         val state = viewModel.state.value
         assertEquals(0.dp, state.offsetX)
         assertEquals(0.dp, state.offsetY)

@@ -107,8 +107,6 @@ class ToppingTransformInputTest {
     fun closeFingers_doNotSpikeZoomOrRotation() {
         setLayer()
 
-        // 두 손가락이 슬롭보다 가까운 채로 시작하면, 이후 한쪽만 조금 움직여도 거리비·각도가
-        // 위치 오차만으로 크게 튈 수 있는 자리다
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
             down(0, Offset(50f, 50f))
             down(1, Offset(52f, 50f))
@@ -128,7 +126,6 @@ class ToppingTransformInputTest {
     fun pointerCountChange_doesNotJumpPan() {
         setLayer()
 
-        // 한 스텝 이동량은 5px 로 고정한다
         val stepPx = 5f
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
             // 실루엣 안에서 슬롭을 넘겨 +x 로 80px
