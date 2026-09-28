@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
@@ -136,62 +137,86 @@ class CanvasToppingPlaceViewModelTest {
         viewModel(draft).apply { measureAndReady(this) }
 
     @Test
-    fun onToppingResize_multipliesScale() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 배율 1배
+    fun onToppingTransform_appliesPanZoomAndRotationTogether() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 기본 상태
         val viewModel = viewModel()
 
-        // When 핸들이 중심에서 10퍼센트 멀어질 만큼 끈 결과가 넘어온다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+        // When 두 손가락 제스처 한 프레임이 이동·확대·회전을 한 번에 실어 온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(
+                pan = DpOffset(10.dp, 20.dp),
+                zoom = 1.1f,
+                rotationDelta = 15f,
+            ),
+        )
 
-        // Then 배율에 그대로 곱해진다
-        assertEquals(1.1f, viewModel.state.value.scale, SCALE_DELTA)
+        // Then 네 필드가 한 번에 갱신된다
+        val state = viewModel.state.value
+        assertEquals(10.dp, state.offsetX)
+        assertEquals(20.dp, state.offsetY)
+        assertEquals(1.1f, state.scale, SCALE_DELTA)
+        assertEquals(15f, state.rotationDegrees, SCALE_DELTA)
+        assertTrue(state.hasUserAdjustedPlacement)
     }
 
     @Test
-    fun onToppingResize_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
+    fun onToppingTransform_accumulatesAcrossFrames() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
 
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1.1f, rotationDelta = 20f),
+        )
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1.1f, rotationDelta = 10f),
+        )
 
         assertEquals(1.21f, viewModel.state.value.scale, SCALE_DELTA)
+        assertEquals(30f, viewModel.state.value.rotationDegrees, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingResize_clampsAtMaxScale() = runTest(mainDispatcherRule.dispatcher) {
+    fun onToppingTransform_clampsAtMaxScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
 
-        // When 최대 배율을 훌쩍 넘도록 키운다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 100f))
+        // When 최대 배율을 훌쩍 넘도록 확대하는 핀치가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 100f, rotationDelta = 0f),
+        )
 
         // Then 상한(2.5)에서 멈춘다
         assertEquals(2.5f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingResize_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
+    fun onToppingTransform_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
 
-        // When 중심 너머까지 끌어 배율이 0으로 떨어질 만한 값이 넘어온다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 0f))
+        // When 배율이 0으로 떨어질 만한 핀치가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 0f, rotationDelta = 0f),
+        )
 
         // Then 하한(0.5)에서 멈춘다
         assertEquals(0.5f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
-    fun onToppingRotate_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 기본 상태(회전 0도)
+    fun onToppingTransform_atClampBoundary_reversesImmediately() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 상한(2.5)에 닿은 상태
         val viewModel = viewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 100f, rotationDelta = 0f),
+        )
 
-        // When 여러 번에 걸쳐 회전 핸들을 끈다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 20f))
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 10f))
+        // When 반대 방향으로 핀치한다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 0.5f, rotationDelta = 0f),
+        )
 
-        // Then 각 드래그의 각도 변화가 그대로 누적된다
-        assertEquals(30f, viewModel.state.value.rotationDegrees, SCALE_DELTA)
+        // Then 누적된 초과분 없이 곱셈 그대로 반영된다(2.5 * 0.5)
+        assertEquals(1.25f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
     @Test
