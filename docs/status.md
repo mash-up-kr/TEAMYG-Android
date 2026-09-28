@@ -95,7 +95,7 @@
 - 앵커: `CanvasBGEditViewModel`, `CanvasBGEditUiState`, `CanvasBGEditError`, `NavKeyCanvasBGEdit`, `UpdateToppingsUseCase`, `ChangeCanvasBackgroundUseCase`
 - ⚠️ 삭제는 모달 확인 시점에 영구가 되고 이동·크기·회전·테두리는 확인 버튼 시점에야 저장돼, 그만두기로 나가면 삭제만 남는데 화면은 그 차이를 말하지 않는다 (OQ-P-270)
 - ⚠️ 마감된 캔버스의 409를 배경·토핑 저장 모두 일반 오류 토스트로 접어 다시 눌러도 영원히 실패하고, 변형 일괄 PATCH는 부분 성공이 없어 한 토핑이 걸리면 보낸 토핑 전부가 dirty로 남는다 (OQ-P-261, OQ-P-334)
-- ⚠️ 크기는 하한만 있고 회전과 함께 상한이 없어 캔버스 밖으로 커진 배율이 그대로 PATCH 된다 — 배치 화면에는 상한이 있다 (OQ-P-271)
+- ⚠️ 크기는 배치·편집 화면 모두 하한(서버 scale `TOPPING_MIN_SCALE` 0.05)만 있고 회전과 함께 상한이 없어, 캔버스 밖으로 커진 배율과 손가락으로 다시 잡기 어려울 만큼 작아진 배율이 그대로 저장된다 (OQ-P-271, OQ-P-325)
 - ⚠️ 테두리를 그릴 때는 첫 겹, 저장할 때는 마지막 겹을 써서 겹이 둘 이상이면 보이는 테두리와 저장되는 테두리가 갈리고, 편집 결과의 `editedImagePath`는 상태에만 남는다 (OQ-P-324, OQ-P-276)
 - ⚠️ C-305(본인 토핑 편집)가 별도 화면이 아니라 이 화면의 토핑 탭이고, 캔버스 메인의 `isViewingToday` 가드 때문에 지난 캔버스에서 본인 토핑 탭은 무반응이다 (OQ-P-326)
 - ⚠️ 배경 업로드용 `copyToCache` 복사본이 `cacheDir/upload`에 쌓이기만 하고, 배경색은 `toRgbHex`로·테두리색은 로케일을 고정하지 않는 `toRgbHexString`으로 적는다 (OQ-P-262, OQ-P-263)
