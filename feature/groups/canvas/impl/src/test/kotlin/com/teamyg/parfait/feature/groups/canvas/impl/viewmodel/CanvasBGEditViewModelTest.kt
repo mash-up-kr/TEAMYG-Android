@@ -793,7 +793,7 @@ class CanvasBGEditViewModelTest {
 
     @Test
     fun toppingTransform_atClampBoundary_reversesImmediately() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 내 토핑을 고른 상태. TOPPING_MIN_SCALE 은 private 이라 리터럴(0.05f)을 그대로 쓴다
+        // Given 내 토핑을 고른 상태
         val viewModel = viewModel()
         val mine = viewModel.selectMyTopping()
 

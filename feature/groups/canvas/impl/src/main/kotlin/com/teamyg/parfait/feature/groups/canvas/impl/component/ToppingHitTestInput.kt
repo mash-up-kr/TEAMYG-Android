@@ -52,14 +52,13 @@ internal fun <T> Modifier.toppingTapInput(
     val handler = remember {
         PointerInputEventHandler {
             awaitEachGesture {
-                // 같은 노드에 달린 드래그 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
+                // 같은 노드에 달린 변환 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
                 val down = awaitFirstDown(requireUnconsumed = false)
                 // 대상은 누른 자리로 고정한다. 뗀 자리를 보면 슬롭만큼 미끄러진 곳의 다른 토핑이
                 // 잡히거나, 투명한 자리로 떨어져 미스 분기가 발동한다
                 val hit = pickToppingHit(latestEntries(), down.position.x, down.position.y)
                 down.consume()
 
-                // up 없이 끝나면(변환 입력이 이동을 소비했거나 손가락이 벗어남) 아무 콜백도 부르지 않는다
                 val up = waitForTapUp(down.id) ?: return@awaitEachGesture
                 up.consume()
 
@@ -74,9 +73,8 @@ internal fun <T> Modifier.toppingTapInput(
 }
 
 /**
- * [waitForUpOrCancellation] 과 같은 조건으로 [downId] 의 up 을 기다리되, 다른 손가락이 눌리면
- * 탭이 아니므로 `null` 이다. 두 손가락을 대고 움직이지 않은 채 떼면 아무도 소비하지 않아서
- * 이 조건이 없으면 탭으로 잡힌다.
+ * [waitForUpOrCancellation] 에 "다른 손가락이 눌리면 탭 아님"을 더한 것. 두 손가락을 대고 움직이지
+ * 않은 채 떼면 아무도 소비하지 않아서 이 조건이 없으면 탭으로 잡힌다.
  */
 private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): PointerInputChange? {
     while (true) {
@@ -87,23 +85,19 @@ private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): Poin
         if (change.changedToUp()) return change
         if (change.isConsumed || change.isOutOfBounds(size, extendedTouchPadding)) return null
 
-        // 같은 이벤트를 뒤 단계에서 소비한 쪽이 있는지도 본다 — waitForUpOrCancellation 과 같다
         val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
         if (consumeCheck.changes.any { it.id == downId && it.isConsumed }) return null
     }
 }
 
 /**
- * 인스타그램 스토리식 변환 입력. 한 손가락은 [targetAt] 의 실루엣 안에서 시작했을 때만 옮기고,
- * 두 손가락은 어디서 시작했든 옮기기·회전·확대를 한 번에 한다.
+ * 한 손가락은 [targetAt] 실루엣 안에서 시작했을 때만 옮기고, 두 손가락은 어디서 시작했든
+ * 옮기기·회전·확대를 한 번에 한다.
  *
- * 매 이벤트에서 직전 이벤트에도 눌려 있던 포인터만 셈한다. 새로 down 됐거나 막 뗀 포인터를
- * 그 이벤트에 넣으면 포인터 수가 바뀌는 순간 중점이 튄다. 세 번째 이후 손가락은 무시한다.
+ * 직전 이벤트에도 눌려 있던 포인터만 센다. 새로 down 됐거나 막 뗀 포인터를 넣으면 포인터 수가
+ * 바뀌는 순간 중점이 튄다.
  *
- * @param onTransform `pan` 은 px, `zoom` 은 직전 대비 배율, `rotationDelta` 는 시계 방향이 양수인
- *   도 단위다(`graphicsLayer` 의 `rotationZ` 와 같은 방향). 항등 변환이면 부르지 않는다.
- * @param onGestureActiveChange 첫 down 에서 [targetAt] 이 있으면 `true`, 그 제스처가 끝나거나
- *   취소되면 `false` 를 한 번씩 받는다.
+ * @param onTransform `pan` 은 px, `rotationDelta` 는 `rotationZ` 와 같은 방향의 도 단위.
  */
 @Composable
 internal fun Modifier.toppingTransformInput(
@@ -152,7 +146,7 @@ internal fun Modifier.toppingTransformInput(
                                 val distance = slopAccum.getDistance()
                                 if (distance > touchSlop) {
                                     grabbed = true
-                                    // 슬롭을 넘긴 만큼은 첫 델타로 보낸다. 버리면 한 프레임씩 손가락 뒤로 처진다
+                                    // 슬롭을 넘긴 몫을 버리면 한 프레임씩 손가락 뒤로 처진다
                                     emit(slopAccum - slopAccum / distance * touchSlop, 1f, 0f)
                                     change.consume()
                                 }
@@ -174,9 +168,7 @@ internal fun Modifier.toppingTransformInput(
                                 val previousDistance = previous.getDistance()
                                 val pan = (first.position + second.position) / 2f -
                                     (first.previousPosition + second.previousPosition) / 2f
-                                // 직전 손가락 간 거리가 슬롭보다 가까우면 위치 오차 몇 px 만으로 거리비·각도가
-                                // 크게 튄다(0 나눗셈 방지 가드로는 못 막던 자리). 이동은 그대로 두고
-                                // 확대·회전만 이 프레임에서 항등으로 묶는다
+                                // 손가락이 슬롭보다 가까우면 몇 px 오차로 거리비·각도가 튄다
                                 if (previousDistance < touchSlop) {
                                     emit(pan, 1f, 0f)
                                 } else {
@@ -190,8 +182,6 @@ internal fun Modifier.toppingTransformInput(
 
                             else -> false
                         }
-                        // 움직임 없는 이벤트는 소비하지 않는다. 두 손가락을 대기만 하고 떼는 경우의 탭 취소는
-                        // toppingTapInput 이 스스로 한다
                         if (emitted) event.changes.forEach { it.consume() }
                     }
                 } finally {

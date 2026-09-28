@@ -176,8 +176,6 @@ internal fun CanvasBGEditScreen(
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
                         }
-                        // 포인터는 down 시점의 히트 테스트로 대상이 정해지므로, 두 번째 손가락이 버튼
-                        // 위에 닿기 전인 첫 down부터 버튼을 빼야 핀치가 버튼에 가로채이지 않는다
                         var isToppingGestureActive by remember { mutableStateOf(false) }
 
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
@@ -562,12 +560,10 @@ private fun CanvasToppingImage(
 }
 
 /**
- * 선택된 토핑의 스트로크와 그 모서리에 놓는 버튼들.
- * 좌측 상단=삭제, 좌측 하단=편집.
+ * 선택된 토핑의 스트로크와 모서리 버튼(좌측 상단=삭제, 좌측 하단=편집).
  *
- * @param showActionButtons `false` 면 삭제·편집 버튼을 컴포지션에서 뺀다 — 진행 중인 두 손가락
- *   제스처가 위에 얹힌 이 버튼에 포인터를 뺏기지 않게 한다(스펙 「표시·제어 규칙 → 편집 화면」).
- *   스트로크는 이 값과 무관하게 계속 그린다.
+ * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
+ *   버튼을 빼야 두 번째 손가락을 버튼이 가로채지 않는다.
  */
 @Composable
 private fun ToppingCornerButtons(
