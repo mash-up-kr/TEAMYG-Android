@@ -104,6 +104,27 @@ class ToppingTransformInputTest {
     }
 
     @Test
+    fun closeFingers_doNotSpikeZoomOrRotation() {
+        setLayer()
+
+        // 두 손가락이 슬롭보다 가까운 채로 시작하면, 이후 한쪽만 조금 움직여도 거리비·각도가
+        // 위치 오차만으로 크게 튈 수 있는 자리다
+        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
+            down(0, Offset(50f, 50f))
+            down(1, Offset(52f, 50f))
+            updatePointerTo(1, Offset(55f, 50f))
+            move()
+            up(0)
+            up(1)
+        }
+
+        composeTestRule.runOnIdle {
+            assertTrue(transforms.isNotEmpty())
+            assertTrue(transforms.all { it.zoom == 1f && it.rotationDelta == 0f })
+        }
+    }
+
+    @Test
     fun pointerCountChange_doesNotJumpPan() {
         setLayer()
 

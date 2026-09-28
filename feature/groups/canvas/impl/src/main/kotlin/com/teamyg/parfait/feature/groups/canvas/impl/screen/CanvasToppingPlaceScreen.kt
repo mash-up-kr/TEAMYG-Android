@@ -152,21 +152,28 @@ internal fun CanvasToppingPlaceScreen(
                         .matchParentSize()
                         .toppingTransformInput(
                             targetAt = {
-                                with(density) {
-                                    ToppingHitTarget(
-                                        centerXPx = center.x.toPx(),
-                                        centerYPx = center.y.toPx(),
-                                        imageWidthPx = sizeAfterScale.width.toPx(),
-                                        imageHeightPx = sizeAfterScale.height.toPx(),
-                                        rotationDegrees = uiState.rotationDegrees,
-                                        // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다(CanvasToppingLayer와 같은 규칙)
-                                        borderWidthPx = if (uiState.borderColorArgb != null && isToppingImageLoaded) {
-                                            (uiState.borderWidthDp ?: 0f).dp.toPx()
-                                        } else {
-                                            0f
-                                        },
-                                        outline = outline,
-                                    )
+                                // 그림이 뜨기 전 center·sizeAfterScale 은 폴백 크기 기준이다. 이때 대상을
+                                // 돌리면 두 손가락 제스처가 hasUserAdjustedPlacement 를 굳혀 initial
+                                // placement(정중앙·기준 크기)가 영영 안 걸린다
+                                if (!isToppingImageLoaded) {
+                                    null
+                                } else {
+                                    with(density) {
+                                        ToppingHitTarget(
+                                            centerXPx = center.x.toPx(),
+                                            centerYPx = center.y.toPx(),
+                                            imageWidthPx = sizeAfterScale.width.toPx(),
+                                            imageHeightPx = sizeAfterScale.height.toPx(),
+                                            rotationDegrees = uiState.rotationDegrees,
+                                            // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다(CanvasToppingLayer와 같은 규칙)
+                                            borderWidthPx = if (uiState.borderColorArgb != null) {
+                                                (uiState.borderWidthDp ?: 0f).dp.toPx()
+                                            } else {
+                                                0f
+                                            },
+                                            outline = outline,
+                                        )
+                                    }
                                 }
                             },
                             onTransform = { pan: Offset, zoom, rotationDelta ->

@@ -172,12 +172,20 @@ internal fun Modifier.toppingTransformInput(
                                 val current = second.position - first.position
                                 val previous = second.previousPosition - first.previousPosition
                                 val previousDistance = previous.getDistance()
-                                emit(
-                                    (first.position + second.position) / 2f -
-                                        (first.previousPosition + second.previousPosition) / 2f,
-                                    if (previousDistance == 0f) 1f else current.getDistance() / previousDistance,
-                                    normalizeDegrees(current.angleDegrees() - previous.angleDegrees()),
-                                )
+                                val pan = (first.position + second.position) / 2f -
+                                    (first.previousPosition + second.previousPosition) / 2f
+                                // 직전 손가락 간 거리가 슬롭보다 가까우면 위치 오차 몇 px 만으로 거리비·각도가
+                                // 크게 튄다(0 나눗셈 방지 가드로는 못 막던 자리). 이동은 그대로 두고
+                                // 확대·회전만 이 프레임에서 항등으로 묶는다
+                                if (previousDistance < touchSlop) {
+                                    emit(pan, 1f, 0f)
+                                } else {
+                                    emit(
+                                        pan,
+                                        current.getDistance() / previousDistance,
+                                        normalizeDegrees(current.angleDegrees() - previous.angleDegrees()),
+                                    )
+                                }
                             }
 
                             else -> false

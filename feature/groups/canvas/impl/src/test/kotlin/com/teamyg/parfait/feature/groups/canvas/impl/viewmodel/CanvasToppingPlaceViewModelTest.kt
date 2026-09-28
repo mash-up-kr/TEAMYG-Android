@@ -136,10 +136,21 @@ class CanvasToppingPlaceViewModelTest {
     private fun TestScope.readyViewModel(draft: ToppingDraft? = draft()): CanvasToppingPlaceViewModel =
         viewModel(draft).apply { measureAndReady(this) }
 
+    /**
+     * `handleOnToppingTransform` 가드(`toppingBaseSize == null`)만 통과시키고 canvasSize 는 비워
+     * 둔다 — 그래야 minScaleForTouchTarget/maxScaleToOverflowCanvas 가 실측 전과 같은 폴백값
+     * (0.5~2.5)을 쓰고, 클램프를 검증하는 기존 케이스들의 기대값이 안 바뀐다. 96.dp 는
+     * MIN_TOPPING_SHORT_SIDE(48.dp) / TOPPING_MIN_SCALE_FALLBACK(0.5f)의 역산이다
+     */
+    private fun measureBaseSizeOnly(viewModel: CanvasToppingPlaceViewModel) {
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(96.dp, 96.dp)))
+    }
+
     @Test
     fun onToppingTransform_appliesPanZoomAndRotationTogether() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 상태
         val viewModel = viewModel()
+        measureBaseSizeOnly(viewModel)
 
         // When 두 손가락 제스처 한 프레임이 이동·확대·회전을 한 번에 실어 온다
         viewModel.processIntent(
@@ -162,6 +173,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onToppingTransform_accumulatesAcrossFrames() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
+        measureBaseSizeOnly(viewModel)
 
         viewModel.processIntent(
             CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1.1f, rotationDelta = 20f),
@@ -178,6 +190,7 @@ class CanvasToppingPlaceViewModelTest {
     fun onToppingTransform_clampsAtMaxScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
+        measureBaseSizeOnly(viewModel)
 
         // When 최대 배율을 훌쩍 넘도록 확대하는 핀치가 들어온다
         viewModel.processIntent(
@@ -192,6 +205,7 @@ class CanvasToppingPlaceViewModelTest {
     fun onToppingTransform_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
         // Given 기본 배율
         val viewModel = viewModel()
+        measureBaseSizeOnly(viewModel)
 
         // When 배율이 0으로 떨어질 만한 핀치가 들어온다
         viewModel.processIntent(
@@ -206,6 +220,7 @@ class CanvasToppingPlaceViewModelTest {
     fun onToppingTransform_atClampBoundary_reversesImmediately() = runTest(mainDispatcherRule.dispatcher) {
         // Given 상한(2.5)에 닿은 상태
         val viewModel = viewModel()
+        measureBaseSizeOnly(viewModel)
         viewModel.processIntent(
             CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 100f, rotationDelta = 0f),
         )
@@ -217,6 +232,30 @@ class CanvasToppingPlaceViewModelTest {
 
         // Then 누적된 초과분 없이 곱셈 그대로 반영된다(2.5 * 0.5)
         assertEquals(1.25f, viewModel.state.value.scale, SCALE_DELTA)
+    }
+
+    @Test
+    fun onToppingTransform_beforeBaseSizeMeasured_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given toppingBaseSize 를 아직 실측하지 않은 상태 — 화면의 targetAt 은 이 시점에 null 을
+        // 돌려 제스처 자체가 안 일어나야 정상이지만, 그 가드를 우회해 인텐트가 들어온 경우를 대비한다
+        val viewModel = viewModel()
+
+        // When 두 손가락 제스처가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(
+                pan = DpOffset(10.dp, 20.dp),
+                zoom = 1.1f,
+                rotationDelta = 15f,
+            ),
+        )
+
+        // Then 아무 것도 바뀌지 않는다 — 반영하면 hasUserAdjustedPlacement 가 굳어 초기 배치가 안 걸린다
+        val state = viewModel.state.value
+        assertEquals(0.dp, state.offsetX)
+        assertEquals(0.dp, state.offsetY)
+        assertEquals(1f, state.scale, SCALE_DELTA)
+        assertEquals(0f, state.rotationDegrees, SCALE_DELTA)
+        assertFalse(state.hasUserAdjustedPlacement)
     }
 
     @Test
