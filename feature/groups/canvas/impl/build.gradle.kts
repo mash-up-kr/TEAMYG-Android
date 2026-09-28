@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.parfait.module.feature.impl)
     alias(libs.plugins.parfait.test.unit)
+    alias(libs.plugins.parfait.test.android)
+    alias(libs.plugins.parfait.test.compose)
 }
 
 android {
