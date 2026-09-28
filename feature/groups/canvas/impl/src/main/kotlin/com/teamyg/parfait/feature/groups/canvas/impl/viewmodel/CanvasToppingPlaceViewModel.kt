@@ -88,19 +88,14 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 
     data object OnClickConfirm : CanvasToppingPlaceIntent
 
-    /** 토핑을 잡고 드래그한 만큼 넘어온다. 드래그한 그대로 위치를 옮긴다. */
-    data class OnToppingMoveDrag(
-        val delta: DpOffset,
-    ) : CanvasToppingPlaceIntent
-
-    /** 크기조절 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **배율에 곱할 값**이며, 환산은 화면 몫이다. */
-    data class OnToppingResize(
-        val scaleFactor: Float,
-    ) : CanvasToppingPlaceIntent
-
-    /** 회전 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **각도**이며, 환산은 핸들 위치를 아는 화면 몫이다. */
-    data class OnToppingRotate(
-        val deltaDegrees: Float,
+    /**
+     * 두 손가락(또는 실루엣 안에서 시작한 한 손가락) 제스처 한 프레임이 넘어온다. `pan`은 px가
+     * 아니라 [DpOffset] — 환산은 이 값을 손가락 이동 픽셀에서 만든 화면 몫이다.
+     */
+    data class OnToppingTransform(
+        val pan: DpOffset,
+        val zoom: Float,
+        val rotationDelta: Float,
     ) : CanvasToppingPlaceIntent
 
     /** 화면이 Canvas-Area 를 실측해 알려준다. C-106 초기 배치를 계산하는 데 쓴다 */
@@ -236,11 +231,7 @@ class CanvasToppingPlaceViewModel
 
             CanvasToppingPlaceIntent.OnClickConfirm -> handleOnClickConfirm()
 
-            is CanvasToppingPlaceIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
-
-            is CanvasToppingPlaceIntent.OnToppingResize -> handleOnToppingResize(intent)
-
-            is CanvasToppingPlaceIntent.OnToppingRotate -> handleOnToppingRotate(intent)
+            is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
             is CanvasToppingPlaceIntent.OnCanvasMeasured -> {
                 updateState { copy(canvasSize = intent.canvasSize).applyInitialPlacementIfNeeded() }
@@ -256,30 +247,13 @@ class CanvasToppingPlaceViewModel
         }
     }
 
-    private fun handleOnToppingMoveDrag(intent: CanvasToppingPlaceIntent.OnToppingMoveDrag) {
+    private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
             copy(
-                offsetX = offsetX + intent.delta.x,
-                offsetY = offsetY + intent.delta.y,
-                hasUserAdjustedPlacement = true,
-            )
-        }
-    }
-
-    private fun handleOnToppingResize(intent: CanvasToppingPlaceIntent.OnToppingResize) {
-        updateState {
-            copy(
-                scale = (scale * intent.scaleFactor)
-                    .coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas()),
-                hasUserAdjustedPlacement = true,
-            )
-        }
-    }
-
-    private fun handleOnToppingRotate(intent: CanvasToppingPlaceIntent.OnToppingRotate) {
-        updateState {
-            copy(
-                rotationDegrees = rotationDegrees + intent.deltaDegrees,
+                offsetX = offsetX + intent.pan.x,
+                offsetY = offsetY + intent.pan.y,
+                scale = (scale * intent.zoom).coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas()),
+                rotationDegrees = rotationDegrees + intent.rotationDelta,
                 hasUserAdjustedPlacement = true,
             )
         }
