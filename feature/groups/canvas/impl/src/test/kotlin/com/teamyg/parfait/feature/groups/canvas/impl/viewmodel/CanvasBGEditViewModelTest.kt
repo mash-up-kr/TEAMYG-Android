@@ -405,7 +405,9 @@ class CanvasBGEditViewModelTest {
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
         val topping = viewModel.selectMyTopping()
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = -0.05f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = -0.05f, zoom = 1f, rotationDelta = 0f),
+        )
         val moved = viewModel.state.value.toppings
             .first { it.parfaitImageId == topping.parfaitImageId }
 
@@ -434,7 +436,9 @@ class CanvasBGEditViewModelTest {
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
         viewModel.selectMyTopping()
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+        )
 
         val updates = slot<List<ToppingTransformUpdate>>()
         coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
@@ -503,7 +507,9 @@ class CanvasBGEditViewModelTest {
                         .first { it.parfaitImageId == id },
                 ),
             )
-            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnToppingTransform(panX = 0.2f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+            )
         }
 
         val updates = slot<List<ToppingTransformUpdate>>()
@@ -541,7 +547,9 @@ class CanvasBGEditViewModelTest {
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
         viewModel.selectMyTopping()
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+        )
         coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
 
         // When 확인 버튼을 누른다
@@ -572,7 +580,9 @@ class CanvasBGEditViewModelTest {
                         .first { it.parfaitImageId == id },
                 ),
             )
-            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnToppingTransform(panX = 0.2f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+            )
         }
         coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
 
@@ -613,7 +623,9 @@ class CanvasBGEditViewModelTest {
                         .first { it.parfaitImageId == MY_IMAGE_ID },
                 ),
             )
-            viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+            viewModel.processIntent(
+                CanvasBGEditIntent.OnToppingTransform(panX = 0.2f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+            )
 
             // 테두리만 바꾼다 — 위치는 그대로 두고 테두리 편집 결과만 반영한다
             val newBorder = ToppingBorder.Solid(color = "#FF6B00", width = 4.0)
@@ -661,7 +673,9 @@ class CanvasBGEditViewModelTest {
         stubBackgroundChange(CanvasBackgroundEdit.Color(CanvasBackgroundPaletteColors.first().toRgbHex()))
         val viewModel = viewModel()
         viewModel.selectMyTopping()
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+        )
         coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList())
 
         // When 확인 버튼을 누른다
@@ -705,7 +719,7 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun toppingMoveDrag_movesByTheRatioItReceives() = runTest(mainDispatcherRule.dispatcher) {
+    fun toppingTransform_movesByTheRatioItReceives() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 고른 상태
         val viewModel = viewModel()
         val mine = viewModel.state.value.toppings
@@ -713,13 +727,37 @@ class CanvasBGEditViewModelTest {
         viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(mine))
 
         // When 캔버스 너비의 10%, 높이의 5% 만큼 끈다
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.1f, deltaY = 0.05f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 1f, rotationDelta = 0f),
+        )
 
         // Then 화면 크기와 무관한 비율 그대로 옮겨진다
         val moved = viewModel.state.value.toppings
             .first { it.parfaitImageId == mine.parfaitImageId }
         assertEquals(0.35f, moved.positionX)
         assertEquals(0.80f, moved.positionY)
+    }
+
+    @Test
+    fun toppingTransform_appliesPanZoomAndRotationTogether() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 고른 상태
+        val viewModel = viewModel()
+        val mine = viewModel.state.value.toppings
+            .first { it.isMine }
+        viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(mine))
+
+        // When pan·zoom·rotation 을 한 프레임에 함께 받는다
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 30f),
+        )
+
+        // Then 위치는 pan 만큼, 배율은 원래의 2배, 각도는 원래 + 30 으로 한 번에 반영된다
+        val transformed = viewModel.state.value.toppings
+            .first { it.parfaitImageId == mine.parfaitImageId }
+        assertEquals(0.35f, transformed.positionX)
+        assertEquals(0.80f, transformed.positionY)
+        assertEquals(mine.scale * 2f, transformed.scale)
+        assertEquals(mine.rotationDegrees + 30f, transformed.rotationDegrees)
     }
 
     @Test
@@ -737,18 +775,78 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun toppingResize_largeDrag_isNoLongerClampedToTheOldMax() = runTest(mainDispatcherRule.dispatcher) {
+    fun toppingTransform_largeZoom_isNotClampedToTheOldMax() = runTest(mainDispatcherRule.dispatcher) {
         // Given 내 토핑을 고른 상태
         val viewModel = viewModel()
         val mine = viewModel.selectMyTopping()
 
         // When 예전 상한을 훌쩍 넘도록 크게 키운다
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingResize(scaleFactor = 10f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0f, panY = 0f, zoom = 10f, rotationDelta = 0f),
+        )
 
         // Then 예전 상한(2.5)에 걸리지 않고 그대로 커진다
         val resized = viewModel.state.value.toppings
             .first { it.parfaitImageId == mine.parfaitImageId }
         assertTrue(resized.scale > 2.5f)
+    }
+
+    @Test
+    fun toppingTransform_atClampBoundary_reversesImmediately() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 고른 상태. TOPPING_MIN_SCALE 은 private 이라 리터럴(0.05f)을 그대로 쓴다
+        val viewModel = viewModel()
+        val mine = viewModel.selectMyTopping()
+
+        // When 배율 하한 아래로 눌러 경계에 닿는다
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0f, panY = 0f, zoom = 0f, rotationDelta = 0f),
+        )
+
+        // Then 누적된 초과분 없이 하한에 그대로 걸린다
+        val clamped = viewModel.state.value.toppings
+            .first { it.parfaitImageId == mine.parfaitImageId }
+        assertEquals(0.05f, clamped.scale)
+
+        // When 반대 방향으로 다시 키운다
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0f, panY = 0f, zoom = 2f, rotationDelta = 0f),
+        )
+
+        // Then 경계에서 바로 반응한다
+        val reversed = viewModel.state.value.toppings
+            .first { it.parfaitImageId == mine.parfaitImageId }
+        assertEquals(0.1f, reversed.scale)
+    }
+
+    @Test
+    fun transform_withoutSelection_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아무 토핑도 고르지 않은 상태
+        val viewModel = viewModel()
+        val before = viewModel.state.value
+
+        // When transform 이 온다
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 30f),
+        )
+
+        // Then 선택이 없으니 무시한다
+        assertEquals(before.toppings, viewModel.state.value.toppings)
+        assertEquals(before.dirtyToppingIds, viewModel.state.value.dirtyToppingIds)
+    }
+
+    @Test
+    fun toppingTransform_marksOnlyTheSelectedToppingDirty() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내 토핑을 고른 상태
+        val viewModel = viewModel()
+        val mine = viewModel.selectMyTopping()
+
+        // When transform 한 번
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 30f),
+        )
+
+        // Then 선택된 토핑만 dirty 로 표시된다
+        assertEquals(setOf(mine.parfaitImageId), viewModel.state.value.dirtyToppingIds)
     }
 
     @Test
@@ -921,7 +1019,9 @@ class CanvasBGEditViewModelTest {
                     .first(),
             ),
         )
-        viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = 0.2f, deltaY = 0f))
+        viewModel.processIntent(
+            CanvasBGEditIntent.OnToppingTransform(panX = 0.2f, panY = 0f, zoom = 1f, rotationDelta = 0f),
+        )
         advanceUntilIdle()
         val moved = viewModel.state.value.toppings
             .first()

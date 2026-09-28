@@ -132,14 +132,15 @@ internal fun CanvasBGEditRoute(
                 viewModel.processIntent(CanvasBGEditIntent.OnDeleteToppingDialogCancel)
             },
             onClickEditTopping = { viewModel.processIntent(CanvasBGEditIntent.OnClickEditTopping) },
-            onToppingResize = { scaleFactor ->
-                viewModel.processIntent(CanvasBGEditIntent.OnToppingResize(scaleFactor))
-            },
-            onToppingRotate = { deltaDegrees ->
-                viewModel.processIntent(CanvasBGEditIntent.OnToppingRotate(deltaDegrees))
-            },
-            onToppingMoveDrag = { deltaX, deltaY ->
-                viewModel.processIntent(CanvasBGEditIntent.OnToppingMoveDrag(deltaX = deltaX, deltaY = deltaY))
+            onToppingTransform = { panX, panY, zoom, rotationDelta ->
+                viewModel.processIntent(
+                    CanvasBGEditIntent.OnToppingTransform(
+                        panX = panX,
+                        panY = panY,
+                        zoom = zoom,
+                        rotationDelta = rotationDelta,
+                    ),
+                )
             },
             modifier = Modifier
                 .fillMaxSize()
