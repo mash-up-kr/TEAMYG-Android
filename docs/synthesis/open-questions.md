@@ -13,7 +13,7 @@ tags: [meta, parfait]
 ---
 # Open Questions — 구현 미결·열린 결정
 
-TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
+TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
 정책 기획 쪽 미결은 위키 [[open-questions]]에 있다. 여기는 **코드·ADR·architecture 소관**만 둔다.
 해소된 항목은 상태를 "해소됨"으로 바꾸고 관련 ADR/architecture 문서에 반영한다.
 
@@ -754,7 +754,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 개발 서버가 평문 HTTP — 앱에서 전 요청이 cleartext 차단된다
 - **ID**: OQ-P-076
-- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TJYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
+- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TEAMYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
 - **항목**: Android 9(API 28)부터 평문 HTTP는 기본 차단이라, 실제 연동을 시작하면 **모든 요청이 `CLEARTEXT communication not permitted`로 실패**한다. 서버에 HTTPS를 적용할지(권장), 아니면 debug 빌드 한정으로 `network_security_config.xml`에 해당 호스트만 허용할지 결정한다. 후자는 release 빌드가 HTTPS 전환 전까지 동작하지 않는다는 뜻이므로 서버 일정과 묶인다.
 - **상태**: **해소됨** (2026-08-25, PR #358 — 서버가 ①을 채택하고 앱 매니페스트 조치가 같은 날 들어왔다)
   > 📌 **2026-08-14** — A-002 로그인 실기기 검증을 막고 있어 `app/src/main/AndroidManifest.xml`에
@@ -932,7 +932,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-04] `http/` 요청 모음과 `parfait/api/` 계약 문서가 같은 계약을 이중 관리
 
 - **ID**: OQ-P-092
-- **출처**: TJYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
+- **출처**: TEAMYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
 - **항목**: ① 서버 계약이 바뀔 때 `http/`도 함께 갱신하는 것을 `sync-teamyg-server-api` 절차에 넣을지(넣으면 이 위키 저장소의 스킬이 코드 저장소 파일을 고치게 된다), ② 아니면 `http/README.md`를 계약 서술 없이 "실행 방법"으로만 깎고 계약 근거는 `api/`로 단일화할지. 현재는 `http/README.md`가 envelope 5필드·204 예외·`errorDetail` 항상 null까지 자체 서술하고 있어 서버가 바뀌면 조용히 갈린다.
 - **상태**: 미해결 (**2026-08-10 실제로 갈렸다** — 아래 참고)
   > 📌 **표면이 더 커졌다(2026-08-06, PR #197)** — `policy.http`가 추가돼 요청 모음이 **14 엔드포인트 전량**을 덮고, `README.md`도 약관 `termsId` 출처·`url` 전문 가능성·성공 코드 2종 같은 계약 서술을 더 얹었다. 이중 관리 면적이 늘었다는 뜻이라 결정을 미룰수록 비싸진다.
@@ -1164,7 +1164,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-10] `http/` 요청 모음이 서버 신규 엔드포인트 2건을 덮지 못한다
 
 - **ID**: OQ-P-108
-- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TJYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
+- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TEAMYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
 - **항목**: [2026-08-04] 항목의 선택지 ①(스킬이 `http/`도 갱신)·②(`http/`를 실행 방법으로만 축소) 중 무엇을 고를지. 갱신 경로가 둘이라는 구조 자체는 그대로다.
 - **상태**: 미해결 (**2026-08-16 서버 delta로 다시 25/27** — 다섯 번째 왕복, 구조 결정은 그대로.
   이번엔 `:data` 표면만 닫히고 `http/`는 안 닫혀 **두 표면이 처음으로 갈렸다**)
@@ -1312,7 +1312,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-11] 서버가 앱보다 7 엔드포인트 앞섰다 — 애플 로그인·회원·토핑 배치가 통째로 공백
 
 - **ID**: OQ-P-117
-- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TJYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TEAMYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 앱이 어느 순서로 따라갈지 — 화면 결선 순서(온보딩 → 캔버스)와 서버 순서가 다르다. ~~② **애플 로그인은 iOS만의 요구가 아니다** — Android가 붙일지, 붙는다면 `identityToken`·`authorizationCode`를 어디서 얻을지(애플 로그인 SDK가 Android에 없어 웹 플로가 필요하다) 결정한다.~~(해소 — 아래) ③ 토핑 배치(`parfait-image`)는 **목록 조회 API가 없어** 배치만 되고 다시 그릴 수 없다 — 앱 결선은 그 API를 기다려야 한다.
   > 📌 **② 해소(2026-08-11)** — **Android는 애플 로그인을 쓰지 않는다.** 서버 계약은 그대로 두되 앱 대응 심볼을 만들지 않고 `http/auth.http`에도 요청을 넣지 않는다. [api/README.md](../api/README.md) Android 열에 `해당 없음` 값을 신설해 `미구현`(아직 없음)과 구분했고 — 표면 개수를 셀 때 분모에서 뺀다 — [api/auth.md](../api/auth.md) 엔드포인트 표·Android 매핑 절에 반영했다. 근거는 [member·parfait-image 서비스 레이어 스펙](../superpowers/specs/archive/2026-08-11-member-parfait-image-api-service-layer.md) "범위". iOS가 붙으면 계약은 그대로 유효하다.
   > 📌 **공백이 곧 0이 된다(진행 중)** — 분모가 21에서 **20**으로 줄고(애플 1 제외), develop 14 + PR #229의 image 2 + 위 스펙의 member 2·parfait-image 2 = **20**이다. 즉 표면 공백 자체는 이 라운드로 닫히고 **①이 말하는 "순서" 문제는 표면이 아니라 소비처 쪽으로 옮겨간다.**
@@ -1935,7 +1935,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-15] 서버가 다시 5 엔드포인트 앞섰다 — 캔버스 조회·토핑 삭제/테두리·탈퇴가 통째로 공백
 
 - **ID**: OQ-P-158
-- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TJYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TEAMYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 어느 것부터 붙일지 — **`GET .../parfaits/today`가 C-001 캔버스 결선의 선행**이라 우선순위가 가장 높다(배치 목록 부재라는 오래된 장애물이 이것으로 사라졌다, OQ-P-119). ② **회원 탈퇴는 응답이 본문 없는 204**라 앱 `ApiCaller`의 envelope 전제와 맞지 않는다 — `Response<Unit>` 계열 진입점을 새로 둘지, 서버에 envelope 통일을 요청할지 정해야 표면을 붙일 수 있다(OQ-P-162). ③ 토핑 삭제·테두리 수정은 C-105·C-106 편집 플로우와 짝이라 그 화면 결선 라운드에 함께 간다.
 - **상태**: **해소됨** (2026-08-15, PR #250 — 다섯 표면이 한 라운드에 들어왔다)
 - **해소 메모**: 선작성 스펙·플랜 한 쌍이 그대로 이행됐다
@@ -6578,7 +6578,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-02] 원격 이미지 묶음 노출 — 미머지 브랜치가 로딩 표현을 바꾼다
 
 - **ID**: OQ-P-346
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
   원격 이미지가 로딩 중 아무것도 그리지 않다가 성공하는 순간 불투명으로 튀던 것을 고치면서,
   캔버스 토핑과 G-001 그룹 목록을 각각 **한 묶음으로 모아 한 번에 드러내는** 규칙이 생겼다.
   `core:ui`에 `reveal/` 패키지(`rememberBatchReveal`·`rememberStaggeredReveal`과 그 순수 함수)가
@@ -6629,7 +6629,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-03] G-001 새로고침 — 미머지 브랜치가 로딩 문구와 실패 라우팅을 바꾼다
 
 - **ID**: OQ-P-348
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
   커밋 `163cd194`·`1d68f167`) — 디자인 두 프레임을 근거로 G-001 당겨서 새로고침을 다시 짰다
   (Figma 파일 `QPoxqbNMNktsi8ktua3gMN`, 두 프레임 모두 이름이 `G-001-Error`다: 노드 `2019:10223`이
   새로고침 중, `1972:4873`이 실패). 셋이 바뀐다. ① `GroupListPullToRefreshBox`의 인디케이터가
@@ -6790,7 +6790,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-04] 서버 발송 페이로드가 앱 저장소에 복제됐는데 갈라짐을 세는 축이 없다
 
 - **ID**: OQ-P-354
-- **출처**: `http/fcm-test.http`(TJYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
+- **출처**: `http/fcm-test.http`(TEAMYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
   "어떤 페이로드가 가는가" × 서버 `NotificationMessageFactory`·`FcmNotificationSender`(`aa9cc9b`) —
   같은 값(문구 2종·`data` 키 4종·채널 id `parfait_default`·TTL 6시간·APNs 헤더)이 **세 곳**에 있다.
   파일 머리말이 "서버 코드를 정본으로 삼는다"고 적지만, 그 대조를 무엇이 언제 하는지는 정해지지 않았다.
@@ -7743,7 +7743,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-21] 같은 정책 위키가 두 저장소에 각각 존재하는데 어느 쪽이 정본인지 정한 문서가 없다
 
 - **ID**: OQ-P-405
-- **출처**: TJYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
+- **출처**: TEAMYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
   각각 ingest한 결과**다. 소스 층은 사실상 같다 — 39건이 파일명까지 일치하고 차이는 한글 자모
   정규화(NFC/NFD)뿐이다. 갈라진 것은 그 위의 개념 층이다. 이쪽 `concepts/`는 19건이고 화면 단위로
   잘게 쪼갠 한글 이름(`카메라-뷰파인더`·`무한-파르페-그리드`·`nametag-chip`)인데, 저쪽은 8건이고

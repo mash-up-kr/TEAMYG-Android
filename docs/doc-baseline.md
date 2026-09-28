@@ -9,7 +9,7 @@
 > 재므로 하나로 합치지 않는다.
 
 ## 현재 기준선
-- **repo**: `TJYG-Android` (`mash-up-kr/TEAMYG-Android`) `develop`
+- **repo**: `mash-up-kr/TEAMYG-Android` `develop`
 - **커밋**: `594f8047e` (`Merge pull request #534 from mash-up-kr/refactor/data-layer-code-style-4`)
 - **검증일**: 2026-09-27 (84회차)
 - **테스트 수**: 유닛 1294 · 계측 46

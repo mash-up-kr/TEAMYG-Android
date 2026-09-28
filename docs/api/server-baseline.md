@@ -15,7 +15,7 @@
 `develop`은 main을 주기적으로 끌어오는 쪽이라 **뒤처진다** — 체계 신설 시점에 develop은
 signup·파르페 연도 조회 두 API를 갖고 있지 않았다. 앱이 바라볼 서버는 main에서 나온다.
 
-⚠️ TJYG-Android는 `develop`을 추적한다([doc-baseline.md](../doc-baseline.md)).
+⚠️ TEAMYG-Android는 `develop`을 추적한다([doc-baseline.md](../doc-baseline.md)).
 **두 저장소의 통합 브랜치 이름이 다르다** — 혼동하지 말 것.
 
 ## 점검 절차 (다음 요청 시)

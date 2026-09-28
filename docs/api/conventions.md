@@ -391,7 +391,7 @@ Flyway 마이그레이션이 운영 히스토리에는 V4까지만 기록돼 있
 
 ## Android 불일치
 
-TJYG-Android `:data`의 원격 네트워크 구조([ADR-0017](../adr/0017-remote-network-datasource.md))와 위 계약의 간극.
+TEAMYG-Android `:data`의 원격 네트워크 구조([ADR-0017](../adr/0017-remote-network-datasource.md))와 위 계약의 간극.
 
 ⚠️ **2026-09-08 기준 4건.** 하나는 2026-08-31 서버 delta(`02e11be`)가 그룹 목록 `recentImageUrl`의 뜻을
 좁히면서 벌어진 것이고, **둘은 2026-09-05에 앱이 푸시 수신부를 붙이며 새로 생겼다**(PR #446·#447).

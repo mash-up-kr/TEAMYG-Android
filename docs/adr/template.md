@@ -9,7 +9,7 @@ superseded_by:                # 이 ADR을 대체한 ADR-NNNN (없으면 비움)
 related_adr:
 related_spec:
 related_architecture:
-platforms: android            # 이 repo는 TJYG-Android(Kotlin/Compose) 전용
+platforms: android            # 이 repo는 TEAMYG-Android(Kotlin/Compose) 전용
 tags: [adr, parfait]
 ---
 
