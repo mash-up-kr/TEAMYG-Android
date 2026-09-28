@@ -33,6 +33,7 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
@@ -73,11 +74,6 @@ data class CanvasToppingItem(
     val editedImagePath: String? = null,
     val cutoutImagePath: String? = null,
 )
-
-/**
- * 배율 하한 수정
- */
-private const val TOPPING_MIN_SCALE = 0.05f
 
 val CanvasBackgroundPaletteColors = listOf(
     YGAtomicColors.Gray.White,

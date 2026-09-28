@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,16 +39,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
-
-// 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
-private const val TOPPING_MIN_SCALE_FALLBACK = 0.5f
-private const val TOPPING_MAX_SCALE_FALLBACK = 2.5f
-
-/**
- * 원본이 큰 사진은 그 배율만으로는 캔버스를 못 벗어나 "아무리 키워도 안 벗어나는" 것처럼 보인다 —
- * 최대 배율을 캔버스 대비 객체의 실제 크기로 역산해야 원본 크기와 무관하게 항상 벗어날 수 있다.
- */
-private const val TOPPING_MAX_OVERFLOW_RATIO = 1.5f
 
 /** 스케일링된 토핑의 짧은 변이 이보다 작아지면, 그 변을 이 크기로 맞추도록 강제 상향한다 */
 private val MIN_TOPPING_SHORT_SIDE = 48.dp
@@ -246,12 +237,13 @@ class CanvasToppingPlaceViewModel
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
             // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
-            if (toppingBaseSize == null) return@updateState this
+            val canvasSize = canvasSize ?: return@updateState this
+            val baseSize = toppingBaseSize ?: return@updateState this
 
             copy(
                 offsetX = offsetX + intent.pan.x,
                 offsetY = offsetY + intent.pan.y,
-                scale = (scale * intent.zoom).coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas()),
+                scale = (scale * intent.zoom).coerceAtLeast(minScale(canvasSize, baseSize)),
                 rotationDegrees = rotationDegrees + intent.rotationDelta,
                 hasUserAdjustedPlacement = true,
             )
@@ -285,32 +277,13 @@ class CanvasToppingPlaceViewModel
         )
     }
 
-    /**
-     * 리사이즈로 도달할 수 있는 하한. 고정 배율(0.5)로 두면, 초기 배치 배율이 그보다 작은
-     * 큰 원본 사진(예: 0.23)은 한 번이라도 리사이즈를 건드리는 순간 원래 크기보다 작게는
-     * 다시 못 줄인다 — [applyInitialPlacementIfNeeded]와 같은 최소 터치 영역 기준으로 역산해
-     * 원본 크기와 무관하게 항상 처음 크기까지는 줄일 수 있게 한다.
-     */
-    private fun CanvasToppingPlaceUiState.minScaleForTouchTarget(): Float {
-        val baseSize = toppingBaseSize ?: return TOPPING_MIN_SCALE_FALLBACK
-        val shorterBaseSide = minOf(baseSize.width, baseSize.height)
-        if (shorterBaseSide <= 0.dp) return TOPPING_MIN_SCALE_FALLBACK
-
-        return MIN_TOPPING_SHORT_SIDE / shorterBaseSide
-    }
-
-    /**
-     * 리사이즈로 도달할 수 있는 상한.
-     */
-    private fun CanvasToppingPlaceUiState.maxScaleToOverflowCanvas(): Float {
-        val canvasSize = canvasSize ?: return TOPPING_MAX_SCALE_FALLBACK
-        val baseSize = toppingBaseSize ?: return TOPPING_MAX_SCALE_FALLBACK
-        val longerCanvasSide = maxOf(canvasSize.width, canvasSize.height).value
-        val longerBaseSide = maxOf(baseSize.width, baseSize.height).value
-        if (longerBaseSide <= 0f) return TOPPING_MAX_SCALE_FALLBACK
-
-        val overflowScale = (longerCanvasSide * TOPPING_MAX_OVERFLOW_RATIO) / longerBaseSide
-        return maxOf(overflowScale, TOPPING_MAX_SCALE_FALLBACK)
+    /** 서버 scale [TOPPING_MIN_SCALE] 을 이 화면의 배율로 환산한 값. [toToppingTransform] 의 역산이다 */
+    private fun minScale(
+        canvasSize: DpSize,
+        baseSize: DpSize,
+    ): Float {
+        val longerBaseSide = maxOf(baseSize.width, baseSize.height)
+        return canvasSize.width * (TOPPING_MIN_SCALE * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
     }
 
     /**

@@ -19,6 +19,9 @@ import kotlin.math.sqrt
  */
 const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
 
+/** 서버 scale 하한. 배치·편집 화면이 같은 값을 쓴다. 상한은 없다 */
+const val TOPPING_MIN_SCALE = 0.05f
+
 fun toppingLongSide(
     canvasWidth: Dp,
     scale: Float,
