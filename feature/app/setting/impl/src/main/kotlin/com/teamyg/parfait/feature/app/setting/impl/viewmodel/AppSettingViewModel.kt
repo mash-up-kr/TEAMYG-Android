@@ -24,9 +24,10 @@ import javax.inject.Inject
  *   이유로 로딩이다.
  * @property version 앱 버전. 빌드에 박혀 있어 로딩 상태가 없다 — `nickname` 과 달리 처음부터
  *   값이 있어 non-null 이다
- * @property policies 약관 목록. 화면의 약관 두 줄은 문자열 리소스로 고정돼 있고 이 목록은
- *   **누를 때 열 제목과 주소의 출처로만** 쓴다 — 조회가 실패해도 줄이 사라지지 않아야 한다.
- *   비어 있으면 아직 못 받았거나 조회가 실패한 것이다
+ * @property policies 약관 목록. 화면의 약관 줄 텍스트와, 누를 때 열 제목·주소 모두 이 목록의
+ *   값을 그대로 쓴다 — 로컬 고정 문자열 폴백은 없다. 해당 타입을 아직 못 받았거나 title·url이
+ *   둘 다 비어 있으면 그 줄 자체를 그리지 않는다([AppSettingScreen] 참고). title만 비어 있으면
+ *   빈 텍스트로 줄은 그대로 보여준다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
