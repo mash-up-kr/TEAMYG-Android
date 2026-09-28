@@ -111,22 +111,14 @@ constructor(
             // 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
             is GroupInviteCodeIntent.ChangeText -> {
                 updateState {
-                    val oldCursor = cursor
-                    val typedChar = intent.text.getOrNull(oldCursor)
                     // 이미 글자가 있는 칸을 다시 눌러 타이핑하면, 텍스트 필드 기본 동작은 그
                     // 글자를 커서 자리에 "끼워 넣어" 다음 칸부터 전부 밀어 버린다. 눌린 칸 자체를
                     // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자를 그 자리에 끼워 넣으려 한
                     // 것으로 보이면 밀지 않고 그 칸만 바꾼다.
-                    val isReplacingFilledCell = focusedIndex < text.length &&
-                        intent.text.length == text.length + 1 &&
-                        intent.cursor == oldCursor + 1 &&
-                        intent.text.take(oldCursor) == text.take(oldCursor) &&
-                        intent.text.drop(oldCursor + 1) == text.drop(oldCursor) &&
-                        typedChar != null &&
-                        InviteCode.isCodeChar(typedChar)
+                    val replacementChar = charReplacingFilledCellOrNull(intent)
 
-                    if (isReplacingFilledCell) {
-                        val newText = text.take(focusedIndex) + typedChar + text.drop(focusedIndex + 1)
+                    if (replacementChar != null) {
+                        val newText = text.take(focusedIndex) + replacementChar + text.drop(focusedIndex + 1)
                         copy(
                             text = newText,
                             focusedIndex = (focusedIndex + 1).coerceAtMost(codeLength - 1),
@@ -250,6 +242,20 @@ constructor(
     }
 
     private fun String.focusedIndex(): Int = length.coerceAtMost(InviteCode.LENGTH - 1)
+
+    /**
+     * 이미 글자가 있는 칸을 다시 눌러 새 글자 하나를 끼워 넣으려는 삽입인지 확인해, 맞으면 그
+     * 칸을 대신할 글자를 돌려준다. 삭제·붙여넣기·코드 문자가 아닌 입력 등은 `null`이다.
+     */
+    private fun GroupInviteCodeUiState.charReplacingFilledCellOrNull(intent: GroupInviteCodeIntent.ChangeText): Char? {
+        val oldCursor = cursor
+        if (focusedIndex >= text.length) return null
+        if (intent.text.length != text.length + 1) return null
+        if (intent.cursor != oldCursor + 1) return null
+        if (intent.text.take(oldCursor) != text.take(oldCursor)) return null
+        if (intent.text.drop(oldCursor + 1) != text.drop(oldCursor)) return null
+        return intent.text.getOrNull(oldCursor)?.takeIf(InviteCode::isCodeChar)
+    }
 
     private companion object {
         /** [launch] 중복 실행 가드 키 — 초대코드 조회 job 하나를 가리킨다 */
