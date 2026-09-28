@@ -33,8 +33,7 @@ internal fun AppSettingScreen(
     state: AppSettingState,
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
-    onClickTerms: () -> Unit,
-    onClickPrivacy: () -> Unit,
+    onClickPolicy: (TermsId) -> Unit,
     onClickLogout: () -> Unit,
     onClickWithdraw: () -> Unit,
     onConfirmWithdraw: () -> Unit,
@@ -73,14 +72,12 @@ internal fun AppSettingScreen(
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickAccount,
                     )
-                    PolicyListItem(
-                        policy = state.policyOf(PolicyType.TERMS_OF_SERVICE),
-                        onClick = onClickTerms,
-                    )
-                    PolicyListItem(
-                        policy = state.policyOf(PolicyType.PRIVACY_POLICY),
-                        onClick = onClickPrivacy,
-                    )
+                    state.policies.forEach { policy ->
+                        PolicyListItem(
+                            policy = policy,
+                            onClick = { onClickPolicy(policy.termsId) },
+                        )
+                    }
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
@@ -130,15 +127,15 @@ internal fun AppSettingScreen(
 }
 
 /**
- * 약관 목록 한 줄. title·url 이 둘 다 비어 있으면(정책 자체를 못 받은 경우 포함) 줄을 그리지 않는다.
+ * 약관 목록 한 줄. title·url 이 둘 다 비어 있으면 줄을 그리지 않는다.
  * title 만 비어 있으면 서버가 일부러 빈 문자열을 내려준 것으로 보고 빈 텍스트로 그대로 보여준다.
  */
 @Composable
 private fun PolicyListItem(
-    policy: PolicyVO?,
+    policy: PolicyVO,
     onClick: () -> Unit,
 ) {
-    if (policy != null && (policy.title.isNotBlank() || policy.url.isNotBlank())) {
+    if (policy.title.isNotBlank() || policy.url.isNotBlank()) {
         YGListItem(
             text = policy.title,
             trailingIcon = DesignSystemR.drawable.ic_caret_right,
@@ -173,8 +170,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         ),
         onClickBack = {},
         onClickAccount = {},
-        onClickTerms = {},
-        onClickPrivacy = {},
+        onClickPolicy = {},
         onClickLogout = {},
         onClickWithdraw = {},
         onConfirmWithdraw = {},

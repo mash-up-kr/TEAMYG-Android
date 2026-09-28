@@ -56,14 +56,14 @@ class AppSettingViewModelTest {
     }
 
     @Test
-    fun clickServiceTerms_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickPolicy_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 목록을 이미 받아 둔 화면
         val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
             // When 서비스 이용약관을 누른다
-            viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
+            viewModel.processIntent(AppSettingIntent.ClickPolicy(SERVICE_TERMS.termsId))
 
             // Then 그 약관의 제목과 주소를 실어 보낸다 — 상세 화면은 스스로 조회하지 않는다
             assertEquals(
@@ -77,16 +77,16 @@ class AppSettingViewModelTest {
     }
 
     @Test
-    fun clickPrivacyPolicy_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickPolicy_withAnotherTermsId_navigatesToThatOtherPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 목록을 이미 받아 둔 화면
         val viewModel = viewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
             // When 개인정보처리방침을 누른다
-            viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
+            viewModel.processIntent(AppSettingIntent.ClickPolicy(PRIVACY_POLICY.termsId))
 
-            // Then 두 항목이 같은 목적지를 쓰더라도 서로 다른 약관이 열린다
+            // Then 두 항목이 같은 목적지를 쓰더라도 termsId 로 구분해 서로 다른 약관이 열린다
             assertEquals(
                 AppSettingSideEffect.NavigateToPolicyDetail(
                     title = PRIVACY_POLICY.title,
@@ -105,7 +105,7 @@ class AppSettingViewModelTest {
 
         viewModel.effect.test {
             // When 서비스 이용약관을 누른다
-            viewModel.processIntent(AppSettingIntent.ClickServiceTerms)
+            viewModel.processIntent(AppSettingIntent.ClickPolicy(SERVICE_TERMS.termsId))
             advanceUntilIdle()
 
             // Then 열 곳을 모르니 이동하지 않는다 — 빈 화면으로 넘기지 않는다
@@ -118,14 +118,50 @@ class AppSettingViewModelTest {
     }
 
     @Test
-    fun clickPolicy_whenServerOmitsThatType_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickPolicy_withUnrecognizedServerTypes_stillDistinguishesByTermsId() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 서버가 내려준 새 정책 타입 두 개가 매퍼에서 전부 UNKNOWN 으로 뭉뚱그려진 상태
+        // (PolicyType 만으로는 두 항목을 구분할 수 없다)
+        val firstUnknown = PolicyVO(
+            termsId = TermsId(10L),
+            type = PolicyType.UNKNOWN,
+            title = "새 정책 A",
+            url = "https://example.com/new-policy-a",
+            required = false,
+        )
+        val secondUnknown = PolicyVO(
+            termsId = TermsId(11L),
+            type = PolicyType.UNKNOWN,
+            title = "새 정책 B",
+            url = "https://example.com/new-policy-b",
+            required = false,
+        )
+        val viewModel = viewModel(policies = Result.success(listOf(firstUnknown, secondUnknown)))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 두 번째 항목을 termsId 로 누른다
+            viewModel.processIntent(AppSettingIntent.ClickPolicy(secondUnknown.termsId))
+
+            // Then type 이 같더라도 termsId 로 정확히 그 항목이 열린다
+            assertEquals(
+                AppSettingSideEffect.NavigateToPolicyDetail(
+                    title = secondUnknown.title,
+                    url = secondUnknown.url,
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun clickPolicy_whenServerOmitsThatTermsId_doesNotNavigate() = runTest(mainDispatcherRule.dispatcher) {
         // Given 서버가 이용약관만 내려 준 경우(길이 0~2 가 계약이다)
         val viewModel = viewModel(policies = Result.success(listOf(SERVICE_TERMS)))
         advanceUntilIdle()
 
         viewModel.effect.test {
             // When 없는 쪽인 개인정보처리방침을 누른다
-            viewModel.processIntent(AppSettingIntent.ClickPrivacyPolicy)
+            viewModel.processIntent(AppSettingIntent.ClickPolicy(PRIVACY_POLICY.termsId))
             advanceUntilIdle()
 
             // Then 다른 약관을 대신 열지 않는다

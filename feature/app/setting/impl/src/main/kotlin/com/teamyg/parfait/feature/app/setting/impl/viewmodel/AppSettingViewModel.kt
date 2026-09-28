@@ -6,8 +6,8 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.APP_VERSION_NAME
+import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.member.LoginProvider
-import com.teamyg.parfait.domain.model.policy.PolicyType
 import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -24,10 +24,11 @@ import javax.inject.Inject
  *   이유로 로딩이다.
  * @property version 앱 버전. 빌드에 박혀 있어 로딩 상태가 없다 — `nickname` 과 달리 처음부터
  *   값이 있어 non-null 이다
- * @property policies 약관 목록. 화면의 약관 줄 텍스트와, 누를 때 열 제목·주소 모두 이 목록의
- *   값을 그대로 쓴다 — 로컬 고정 문자열 폴백은 없다. 해당 타입을 아직 못 받았거나 title·url이
- *   둘 다 비어 있으면 그 줄 자체를 그리지 않는다([AppSettingScreen] 참고). title만 비어 있으면
- *   빈 텍스트로 줄은 그대로 보여준다
+ * @property policies 약관 목록. 화면은 이 목록을 그대로 순회해서 그린다 — 특정 타입을 골라
+ *   쓰지 않으므로 서버가 새 정책을 추가해도 코드 변경 없이 반영된다. 각 항목의 title·주소 모두
+ *   이 목록의 값을 그대로 쓴다 — 로컬 고정 문자열 폴백은 없다. title·url이 둘 다 비어 있는
+ *   항목은 그리지 않는다(`AppSettingScreen` 참고). title만 비어 있으면 빈 텍스트로 줄은
+ *   그대로 보여준다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
@@ -41,8 +42,6 @@ data class AppSettingState(
     val isWithdrawing: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = isLoggingOut || isWithdrawing
-
-    fun policyOf(type: PolicyType): PolicyVO? = policies.firstOrNull { it.type == type }
 }
 
 sealed interface AppSettingIntent : UiIntent {
@@ -50,9 +49,7 @@ sealed interface AppSettingIntent : UiIntent {
 
     data object ClickAccount : AppSettingIntent
 
-    data object ClickServiceTerms : AppSettingIntent
-
-    data object ClickPrivacyPolicy : AppSettingIntent
+    data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
     data object ClickLogout : AppSettingIntent
 
@@ -113,8 +110,7 @@ constructor(
         when (intent) {
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
-            AppSettingIntent.ClickServiceTerms -> handleClickPolicy(PolicyType.TERMS_OF_SERVICE)
-            AppSettingIntent.ClickPrivacyPolicy -> handleClickPolicy(PolicyType.PRIVACY_POLICY)
+            is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
             AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
@@ -139,18 +135,19 @@ constructor(
     }
 
     /**
-     * 찾는 약관이 없으면 아무것도 하지 않는다. 여기서 다시 조회하지 않는 이유: 목록에 그 종류가
-     * 없다는 것은 서버가 잘못 내려줬다는 뜻이고, 같은 요청을 되풀이해도 같은 응답이 온다.
-     * 탭마다 요청만 늘면서 결함은 로그에만 남아 가려진다.
+     * termsId 로 찾는다 — 서버가 새 정책 타입을 내려줘도(매퍼에서 `PolicyType.UNKNOWN` 으로 뭉뚱그려져도)
+     * 항목별로 구분해서 열 수 있다. 찾는 약관이 없으면 아무것도 하지 않는다. 여기서 다시 조회하지
+     * 않는 이유: 목록에 그 termsId 가 없다는 것은 서버가 잘못 내려줬다는 뜻이고, 같은 요청을
+     * 되풀이해도 같은 응답이 온다. 탭마다 요청만 늘면서 결함은 로그에만 남아 가려진다.
      */
-    private fun handleClickPolicy(type: PolicyType) {
-        val policy = state.value.policyOf(type)
+    private fun handleClickPolicy(termsId: TermsId) {
+        val policy = state.value.policies.firstOrNull { it.termsId == termsId }
 
         if (policy == null) {
             // 받은 개수를 함께 남긴다 — 0 이면 조회가 아직 안 끝났거나 실패한 것이고,
-            // 0 이 아니면 서버가 이 종류를 빼고 준 것이다
+            // 0 이 아니면 서버가 이 termsId 를 빼고 준 것이다
             viewModelLogger.w {
-                "약관을 찾지 못해 열지 못했다 - type: $type, 받은 약관 수: ${state.value.policies.size}"
+                "약관을 찾지 못해 열지 못했다 - termsId: $termsId, 받은 약관 수: ${state.value.policies.size}"
             }
             return
         }
