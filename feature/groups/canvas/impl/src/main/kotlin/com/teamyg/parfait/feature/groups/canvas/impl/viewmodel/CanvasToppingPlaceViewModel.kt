@@ -249,6 +249,10 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
+            // 실측 전 화면의 targetAt 은 null 을 돌려 제스처를 못 일으키는 게 정상이지만, 그 가드를
+            // 여기서도 한 번 더 건다 — 어겨도 hasUserAdjustedPlacement 가 굳어 초기 배치가 영영 안 걸린다
+            if (toppingBaseSize == null) return@updateState this
+
             copy(
                 offsetX = offsetX + intent.pan.x,
                 offsetY = offsetY + intent.pan.y,
