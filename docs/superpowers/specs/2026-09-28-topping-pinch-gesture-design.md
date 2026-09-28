@@ -6,18 +6,12 @@ category: behavior-spec
 platforms: android
 verified: 2026-09-28
 related_code:
+  - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTransformInput
   - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTapInput
-  - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingDragInput
-  - feature/groups/canvas/impl/.../component/ToppingHandleComponents.kt#ToppingRotateHandleButton
-  - feature/groups/canvas/impl/.../component/ToppingHandleComponents.kt#ToppingResizeHandleButton
-  - feature/groups/canvas/impl/.../util/ToppingGeometry.kt#resizeScaleFactor
-  - feature/groups/canvas/impl/.../util/ToppingGeometry.kt#rotationDeltaDegrees
   - feature/groups/canvas/impl/.../util/ToppingHitTarget.kt#ToppingHitTarget
-  - feature/groups/canvas/impl/.../screen/CanvasToppingPlaceScreen.kt#ToppingPlaceCornerButtons
   - feature/groups/canvas/impl/.../screen/CanvasBGEditScreen.kt#ToppingCornerButtons
-  - feature/groups/canvas/impl/.../viewmodel/CanvasToppingPlaceViewModel.kt#CanvasToppingPlaceIntent
-  - feature/groups/canvas/impl/.../viewmodel/CanvasBGEditViewModel.kt#CanvasBGEditIntent
-  - core/util/android/.../extension/Modifier.kt#dragBy
+  - feature/groups/canvas/impl/.../viewmodel/CanvasToppingPlaceViewModel.kt#OnToppingTransform
+  - feature/groups/canvas/impl/.../viewmodel/CanvasBGEditViewModel.kt#OnToppingTransform
 related_adr:
 related_spec: c106-topping-place, c301-topping-edit-tab
 related_architecture:
