@@ -142,7 +142,7 @@ class CanvasToppingPlaceViewModelTest {
         val viewModel = readyViewModel()
         val before = viewModel.state.value
 
-        // When 두 손가락 제스처 한 프레임이 이동·확대·회전을 한 번에 실어 온다
+        // When 이동·확대·회전을 한 프레임에 받는다
         viewModel.processIntent(
             CanvasToppingPlaceIntent.OnToppingTransform(
                 pan = DpOffset(10.dp, 20.dp),
@@ -151,7 +151,7 @@ class CanvasToppingPlaceViewModelTest {
             ),
         )
 
-        // Then 네 필드가 한 번에 갱신된다
+        // Then 한 번에 반영된다
         val state = viewModel.state.value
         assertEquals(before.offsetX + 10.dp, state.offsetX)
         assertEquals(before.offsetY + 20.dp, state.offsetY)
@@ -187,7 +187,7 @@ class CanvasToppingPlaceViewModelTest {
             CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 100f, rotationDelta = 0f),
         )
 
-        // Then 편집 화면처럼 상한 없이 그대로 커진다
+        // Then 상한 없이 커진다
         assertEquals(before * 100f, viewModel.state.value.scale, SCALE_DELTA)
     }
 
@@ -248,7 +248,7 @@ class CanvasToppingPlaceViewModelTest {
             CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(10.dp, 20.dp), zoom = 1.1f, rotationDelta = 15f),
         )
 
-        // Then 하한을 계산할 캔버스 폭이 없으니 아무 것도 바뀌지 않는다
+        // Then 아무 것도 바뀌지 않는다
         assertUntouched(viewModel.state.value)
     }
 

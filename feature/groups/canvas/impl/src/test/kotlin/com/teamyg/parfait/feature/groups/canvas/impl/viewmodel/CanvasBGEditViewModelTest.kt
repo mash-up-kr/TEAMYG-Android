@@ -746,12 +746,12 @@ class CanvasBGEditViewModelTest {
             .first { it.isMine }
         viewModel.processIntent(CanvasBGEditIntent.OnClickTopping(mine))
 
-        // When pan·zoom·rotation 을 한 프레임에 함께 받는다
+        // When 이동·확대·회전을 한 프레임에 받는다
         viewModel.processIntent(
             CanvasBGEditIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 30f),
         )
 
-        // Then 위치는 pan 만큼, 배율은 원래의 2배, 각도는 원래 + 30 으로 한 번에 반영된다
+        // Then 한 번에 반영된다
         val transformed = viewModel.state.value.toppings
             .first { it.parfaitImageId == mine.parfaitImageId }
         assertEquals(0.35f, transformed.positionX)
