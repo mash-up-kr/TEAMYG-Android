@@ -3,7 +3,7 @@ id: <kebab-case-id>            # 예: module-structure
 title: <사람이 읽는 제목>
 category: architecture
 status: living                 # living | superseded | deprecated
-platforms: android             # 이 repo는 TJYG-Android(Kotlin/Compose) 전용
+platforms: android             # 이 repo는 TEAMYG-Android(Kotlin/Compose) 전용
 verified: YYYY-MM-DD           # 코드와 대조 확인한 날짜
 related_spec:
 related_adr:
