@@ -42,6 +42,10 @@ jobs:
           git diff --name-status "$base_sha...$head_sha" > "$REVIEW_DIR/changed-files.txt"
           git diff "$base_sha...$head_sha" > "$REVIEW_DIR/pr.diff"
           echo "HEAD_SHA=$head_sha" >> "$GITHUB_ENV"
+          # 문서(*.md, docs/, wiki/) 밖의 변경 파일. 비어 있으면 아키텍처·정확성 리뷰어를 부르지 않는다.
+          git diff --name-only "$base_sha...$head_sha" | grep -vE '\.md$|^(docs|wiki)/' > "$REVIEW_DIR/code-files.txt" || true
+          if [ -s "$REVIEW_DIR/code-files.txt" ]; then code_changed=true; else code_changed=false; fi
+          echo "CODE_CHANGED=$code_changed" >> "$GITHUB_ENV"
 
       # 오케스트레이터 프롬프트는 기본 브랜치에서 읽는다. PR 이 프롬프트를 바꿔도 리뷰 규칙이 바뀌지 않는다.
       # (.claude/ 아래 서브에이전트 정의와 공통 규칙은 action 이 base 브랜치 버전으로 되돌린다.)
@@ -62,6 +66,7 @@ jobs:
             echo "- PR 번호: ${PR_NUMBER}"
             echo "- PR head sha: ${HEAD_SHA}"
             echo "- 리뷰 자료 디렉토리: ${REVIEW_DIR}"
+            echo "- 코드 변경: ${CODE_CHANGED}"
             echo "${delimiter}"
           } >> "$GITHUB_OUTPUT"
 
