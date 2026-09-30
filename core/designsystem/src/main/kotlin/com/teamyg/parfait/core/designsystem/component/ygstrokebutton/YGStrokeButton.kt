@@ -50,10 +50,10 @@ fun YGStrokeButton(
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     val shape = YGTheme.shapes.radius.none
     val isHighlighted = isEnabled && (isSelected || isPressed)
-    val backgroundColor = if (isHighlighted) {
-        YGAtomicColors.Gray.Gray100
-    } else {
-        YGAtomicColors.Gray.White
+    val backgroundColor = when {
+        !isEnabled -> YGAtomicColors.Gray.Gray200
+        isHighlighted -> YGAtomicColors.Gray.Gray100
+        else -> YGAtomicColors.Gray.White
     }
     val borderColor = if (isEnabled) {
         YGAtomicColors.Gray.Gray500
