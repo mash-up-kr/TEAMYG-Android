@@ -135,11 +135,13 @@ data class NavKeyToppingEdit(
 ) : NavKey
 ```
 
-`ToppingEditViewModel`이 `RecordToppingDraftUseCase`를 주입받는다. `RecordAndConfirm`에서 완료 시
-`recordToppingDraft.recordEditResult(result)` → 성공이면 `ToppingEditEffect.GoToConfirm`
-(경로 이름 뒤집힘 주의: `subjectImagePath = result.cutoutImagePath`,
+`ToppingEditViewModel`은 완료 방식을 모른다. 완료 시 지금처럼 `EditCompleted(result)`를 내고,
+`ToppingEditRoute`가 `key.completion`으로 가른다 — `ReturnResult`면 `sendResult` + `onBack`,
+`RecordAndConfirm`이면 `ToppingEditIntent.RecordResult(result)`를 VM에 돌려준다. VM은
+`RecordToppingDraftUseCase`를 주입받아 `recordEditResult(result)` → 성공이면
+`ToppingEditEffect.GoToConfirm`(경로 이름 뒤집힘 주의: `subjectImagePath = result.cutoutImagePath`,
 `trimmedSubjectImagePath = result.subjectImagePath`), 실패면 기존 `SaveFailed` 토스트 후 머문다.
-이 모드에서는 `sendResult`를 하지 않는다.
+기록을 비트맵 처리와 떼어 두면 JVM 테스트가 비트맵 없이 이 분기를 덮는다.
 
 ### 팝업 상태
 
@@ -182,8 +184,7 @@ data class NavKeyToppingEdit(
   - 팝업 중 결과 → 보류, `DismissQuit`에서 적용, `ConfirmQuit`에서 `QuitToCanvas`만
   - 재시도·회복·에러 상태 테스트 삭제
 - `ToppingEditViewModelTest`
-  - `RecordAndConfirm` 완료 → 기록 성공 `GoToConfirm`(경로 이름 뒤집힘 확인), 실패 `SaveFailed`
-  - `ReturnResult` 기존 동작 유지
+  - `RecordResult` → 기록 성공 `GoToConfirm`(경로 이름 뒤집힘 확인), 실패 `SaveFailed`
 - 회복 사다리 관련 domain·data 테스트 삭제
 - 실기기: 백스택 표 전 행, 팝업 네 화면, 로딩 중 시스템 뒤로
 
