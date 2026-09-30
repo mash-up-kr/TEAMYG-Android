@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygmenuitem.YGMenuItem
 import com.teamyg.parfait.core.designsystem.component.ygstrokebutton.YGStrokeButton
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -48,6 +49,7 @@ fun YGCanvasMenu(
                     onClick = addAction.onClick,
                     iconResource = addAction.iconResource,
                     isEnabled = addAction.isEnabled,
+                    disabledBorderColor = YGAtomicColors.Gray.Gray500,
                     modifier = Modifier.weight(1f),
                 )
                 YGStrokeButton(
@@ -55,6 +57,7 @@ fun YGCanvasMenu(
                     onClick = editAction.onClick,
                     iconResource = editAction.iconResource,
                     isEnabled = editAction.isEnabled,
+                    disabledBorderColor = YGAtomicColors.Gray.Gray500,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -64,6 +67,7 @@ fun YGCanvasMenu(
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
                 isEnabled = editAction.isEnabled,
+                disabledBorderColor = YGAtomicColors.Gray.Gray500,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
