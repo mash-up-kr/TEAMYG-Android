@@ -673,6 +673,38 @@ class GroupInviteCodeViewModelTest {
         }
 
     @Test
+    fun changeText_tapsMiddleCellOfPartialCode_replacesThroughTailThenAppendsPastIt() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 세 글자(ABC)만 입력한 화면에서 두 번째 칸(B)을 다시 누른 상태
+            val viewModel = viewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABC", cursor = 3))
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 1))
+
+            // When 칸을 다시 고르지 않고 이어서 E 를 계속 입력한다 — 처음 두 번은 B, C 가
+            // 있던 자리를 교체하고, 그 뒤로는 채울 칸이 없어 끝에 그대로 추가된다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABEC", cursor = 3))
+            assertEquals("AEC", viewModel.state.value.text)
+            assertEquals(2, viewModel.state.value.focusedIndex)
+
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "AECE", cursor = 4))
+            assertEquals("AEE", viewModel.state.value.text)
+            assertEquals(3, viewModel.state.value.focusedIndex)
+
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "AEEE", cursor = 4))
+            assertEquals("AEEE", viewModel.state.value.text)
+            assertEquals(4, viewModel.state.value.focusedIndex)
+
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "AEEEE", cursor = 5))
+            assertEquals("AEEEE", viewModel.state.value.text)
+            assertEquals(5, viewModel.state.value.focusedIndex)
+
+            // Then 6자가 꽉 차면 더 갈 칸이 없어 포커스가 마지막 칸에 멈춘다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "AEEEEE", cursor = 6))
+            assertEquals("AEEEEE", viewModel.state.value.text)
+            assertEquals(LAST_INDEX, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
     fun changeText_typesOverFilledLastCell_replacesOnlyThatChar() = runTest(mainDispatcherRule.dispatcher) {
         // Given 다 채운 화면에서 마지막 칸(F)을 다시 누른 상태
         val viewModel = filledViewModel()
