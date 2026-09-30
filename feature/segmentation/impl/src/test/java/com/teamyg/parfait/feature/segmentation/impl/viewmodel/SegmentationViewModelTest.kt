@@ -5,7 +5,6 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.domain.exception.SegmentationException
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
@@ -15,12 +14,8 @@ import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
-import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
-import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -43,9 +38,6 @@ import kotlin.time.Duration.Companion.milliseconds
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SUBJECT_PATH = "/cache/segmentation/subject.png"
 private const val TRIMMED_SUBJECT_PATH = "/cache/segmentation/subject_trimmed.png"
-private const val ORIGIN_PATH = "/cache/segmentation/origin.png"
-private const val EDITED_TRIMMED_PATH = "/cache/segmentation/edited_trimmed.png"
-private const val EDITED_CUTOUT_PATH = "/cache/segmentation/edited_cutout.png"
 
 private const val ORIGIN_LONG_SIDE = 4032
 
@@ -60,8 +52,6 @@ class SegmentationViewModelTest {
     private val segmentImage: SegmentImageUseCase = mockk()
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
-    private val saveBitmap: SaveBitmapUseCase = mockk()
-    private val recoverCandidates: RecoverCandidatesUseCase = mockk()
 
     private val originBitmap: Bitmap = mockk<Bitmap> {
         every { width } returns 3024
@@ -85,16 +75,6 @@ class SegmentationViewModelTest {
         coverageAlphaSum = 255L * 10_000,
     )
 
-    private val editResult = ToppingEditResult(
-        subjectImagePath = EDITED_TRIMMED_PATH,
-        cutoutImagePath = EDITED_CUTOUT_PATH,
-        borderLayers = listOf(
-            ToppingBorderLayer(colorArgb = 0xFF00FF00.toInt(), widthDp = 4f),
-            ToppingBorderLayer(colorArgb = 0xFFFF0000.toInt(), widthDp = 8f),
-        ),
-        sourceLongSide = ORIGIN_LONG_SIDE,
-    )
-
     private val success = SegmentationResult(
         subjectImagePath = SUBJECT_PATH,
         trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
@@ -106,7 +86,6 @@ class SegmentationViewModelTest {
         coEvery { decodeImage(SOURCE_URI) } returns Result.success(bitmapWrapper)
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
         coEvery { persistSubject(candidate) } returns Result.success(success)
-        coEvery { saveBitmap(bitmapWrapper) } returns Result.success(ORIGIN_PATH)
     }
 
     private fun viewModel() = SegmentationViewModel(
@@ -116,9 +95,7 @@ class SegmentationViewModelTest {
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
         persistSubjectUseCase = persistSubject,
-        saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
-        recoverCandidatesUseCase = recoverCandidates,
     )
 
     @Test
@@ -131,7 +108,8 @@ class SegmentationViewModelTest {
         // Then 후보 목록이 상태에 실린다
         val state = viewModel.state.value
         assertEquals(listOf(candidate), state.candidates)
-        assertFalse(state.isLoading)
+        assertFalse(state.isAnalyzing)
+        assertFalse(state.isSaving)
         viewModel.effect.test { expectNoEvents() }
     }
 
@@ -147,49 +125,6 @@ class SegmentationViewModelTest {
             clearSegmentationCache()
             decodeImage(SOURCE_URI)
         }
-    }
-
-    @Test
-    fun init_decodeFails_goesBackWithoutSegmenting() = runTest {
-        // Given URI 가 만료돼 디코드가 실패를 돌려주는 상황
-        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
-
-        // When 화면이 열린다
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // Then 실패 화면 대신 뒤로 보낸다 — 원본이 없으면 이 화면에서 할 수 있는 일이 없다
-        assertFalse(viewModel.state.value.isError)
-        assertFalse(viewModel.state.value.isLoading)
-        coVerify(exactly = 0) { segmentImage(any()) }
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoBack, awaitItem()) }
-    }
-
-    @Test
-    fun init_segmentationFails_tellsTheUser() = runTest {
-        // Given 세그멘테이션이 실패를 돌려주는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-
-        // When 화면이 열린다
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // Then 실패 화면으로 바뀌고 로딩 오버레이는 걷힌다
-        assertTrue(viewModel.state.value.isError)
-        assertFalse(viewModel.state.value.isLoading)
-    }
-
-    @Test
-    fun init_noSubjectDetected_tellsTheUser() = runTest {
-        // Given 성공했지만 후보가 하나도 없는 응답
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(emptyList())
-
-        // When 화면이 열린다
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // Then 실패 화면으로 바꾼다 — 하이라이트도 다음 화면으로 갈 방법도 없는 화면을 말없이 남기지 않는다
-        assertTrue(viewModel.state.value.isError)
     }
 
     @Test
@@ -372,7 +307,7 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         // Then 로딩이 걷힌다 — 이동이 goTo 라 이 화면이 백스택에 남고, 켠 채 나가면 돌아왔을 때 갇힌다
-        assertFalse(viewModel.state.value.isLoading)
+        assertFalse(viewModel.state.value.isSaving)
     }
 
     @Test
@@ -391,9 +326,9 @@ class SegmentationViewModelTest {
         runCurrent()
 
         // Then 저장이 끝나기 전엔 로딩이 켜져 있고, 끝나면 걷힌다
-        assertTrue(viewModel.state.value.isLoading)
+        assertTrue(viewModel.state.value.isSaving)
         advanceUntilIdle()
-        assertFalse(viewModel.state.value.isLoading)
+        assertFalse(viewModel.state.value.isSaving)
     }
 
     @Test
@@ -410,7 +345,7 @@ class SegmentationViewModelTest {
         // Then 알리되 목록은 남긴다 — 사용자가 다른 후보를 고를 수 있어야 한다
         viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
         assertEquals(listOf(candidate), viewModel.state.value.candidates)
-        assertFalse(viewModel.state.value.isLoading)
+        assertFalse(viewModel.state.value.isSaving)
     }
 
     @Test
@@ -495,284 +430,187 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun retry_afterFailure_runsTheFlowAgainAndClearsTheError() = runTest {
-        // Given 첫 시도가 실패한 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        val viewModel = viewModel()
-        advanceUntilIdle()
-        assertTrue(viewModel.state.value.isError)
-
-        // When 다음 시도는 성공하도록 바꾸고 재시도를 누른다
-        coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate))
-        viewModel.processIntent(SegmentationIntent.Retry)
-        advanceUntilIdle()
-
-        // Then 실패 표시가 걷히고 후보가 실린다 — 안 걷으면 성공해도 에러 화면이 남는다
-        val state = viewModel.state.value
-        assertFalse(state.isError)
-        assertEquals(listOf(candidate), state.candidates)
-        assertFalse(state.isLoading)
-    }
-
-    @Test
-    fun retry_pressedTwiceWhileRunning_runsOnce() = runTest {
-        // Given 세그멘테이션이 오래 걸리는 상황
-        coEvery { segmentImage(bitmapWrapper) } coAnswers {
-            delay(1_000.milliseconds)
-            Result.success(listOf(candidate))
-        }
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 연달아 두 번 누른다
-        viewModel.processIntent(SegmentationIntent.Retry)
-        runCurrent()
-        viewModel.processIntent(SegmentationIntent.Retry)
-        advanceUntilIdle()
-
-        // Then 흐름은 진입 1회 + 재시도 1회로 끝난다 — 두 번째 누름은 버려진다
-        coVerify(exactly = 2) { segmentImage(bitmapWrapper) }
-    }
-
-    @Test
-    fun init_moduleNotReady_marksErrorLikeAnyOtherFailure() = runTest {
-        // Given 모듈을 못 받아 실패한 상황
-        coEvery { segmentImage(bitmapWrapper) } returns
-            Result.failure(SegmentationException.ModuleNotReady(null))
+    fun init_decodeFails_goesToEdit() = runTest {
+        // Given URI 가 만료돼 디코드가 실패를 돌려주는 상황
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IllegalStateException("broken uri"))
 
         // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // Then 대상 못 찾음과 같은 실패로 접는다 — 디자인이 문구를 한 벌로 요구한다
-        assertTrue(viewModel.state.value.isError)
+        // Then 분석 없이 편집으로 보낸다. 교체 직전 프레임에 빈 선택 UI 가 비치지 않게 분석 상태는 그대로다
+        assertTrue(viewModel.state.value.isAnalyzing)
+        coVerify(exactly = 0) { segmentImage(any()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
     }
 
     @Test
-    fun editManually_savesOriginOnceAndGoesToEdit() = runTest {
-        // Given 세그멘테이션이 실패해 실패 화면이 떠 있다
+    fun init_segmentationReturnsFailure_goesToEdit() = runTest {
+        // Given 세그멘테이션이 실패를 돌려주는 상황
         coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
+
+        // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 직접 편집을 누른다
-        viewModel.processIntent(SegmentationIntent.EditManually)
-        advanceUntilIdle()
-
-        // Then 원본만 한 번 저장하고 편집으로 간다. 초안은 아직 적지 않는다
-        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
-        coVerify(exactly = 0) { persistSubject(any()) }
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
-        assertFalse(viewModel.state.value.isLoading)
-        viewModel.effect.test {
-            assertEquals(SegmentationEffect.GoToEdit(originImagePath = ORIGIN_PATH), awaitItem())
-        }
+        // Then 편집으로 보낸다
+        assertTrue(viewModel.state.value.isAnalyzing)
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
     }
 
     @Test
-    fun editManually_saveFails_showsToastAndStaysOnErrorScreen() = runTest {
-        // Given 실패 화면이 떠 있고 원본 저장이 실패하는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveBitmap(bitmapWrapper) } returns Result.failure(IllegalStateException("disk full"))
+    fun init_segmentationThrows_goesToEdit() = runTest {
+        // Given 세그멘테이션이 Result 로 감싸지 않고 예외를 던지는 상황
+        coEvery { segmentImage(any()) } throws IllegalStateException()
+
+        // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 직접 편집을 누른다
-        viewModel.processIntent(SegmentationIntent.EditManually)
-        advanceUntilIdle()
-
-        // Then 토스트로 알리고 실패 화면에 머문다 — 로딩에 갇히지도 않는다
-        assertTrue(viewModel.state.value.isError)
-        assertFalse(viewModel.state.value.isLoading)
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        // Then 로딩에 갇히지 않고 편집으로 보낸다
+        assertTrue(viewModel.state.value.isAnalyzing)
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
     }
 
     @Test
-    fun editManually_pressedTwiceWhileRunning_runsOnce() = runTest {
-        // Given 실패 화면이 떠 있고 원본 저장이 오래 걸리는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { saveBitmap(bitmapWrapper) } coAnswers {
-            delay(1_000.milliseconds)
-            Result.success(ORIGIN_PATH)
-        }
+    fun init_noSubjectDetected_goesToEdit() = runTest {
+        // Given 성공했지만 후보가 하나도 없는 응답
+        coEvery { segmentImage(bitmapWrapper) } returns Result.success(emptyList())
+
+        // When 화면이 열린다
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 연달아 두 번 누른다
-        viewModel.processIntent(SegmentationIntent.EditManually)
-        runCurrent()
-        viewModel.processIntent(SegmentationIntent.EditManually)
-        advanceUntilIdle()
-
-        // Then 두 번째 누름은 버려진다 — 같은 원본을 두 벌 떨구지 않는다
-        coVerify(exactly = 1) { saveBitmap(bitmapWrapper) }
+        // Then 편집으로 보낸다
+        assertTrue(viewModel.state.value.isAnalyzing)
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
     }
 
     @Test
-    fun editResult_recordsDraftAndGoesToConfirm() = runTest {
-        // Given 직접 편집으로 들어갔던 실패 화면
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+    fun clickClose_showsQuitDialog() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        // When 편집을 마치고 결과가 돌아온다
-        viewModel.processIntent(SegmentationIntent.OnEditResult(editResult))
-        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
 
-        // Then 가장 바깥 테두리 겹과 원본 긴 변까지 초안에 적고 확인 화면으로 간다
-        coVerify(exactly = 1) {
-            recordToppingDraft(
-                subjectImagePath = EDITED_TRIMMED_PATH,
-                cutoutImagePath = EDITED_CUTOUT_PATH,
-                borderColorArgb = 0xFFFF0000.toInt(),
-                borderWidthDp = 8f,
-                sourceLongSide = SourceLongSide(ORIGIN_LONG_SIDE),
-            )
-        }
-        assertFalse(viewModel.state.value.isLoading)
-        viewModel.effect.test {
-            assertEquals(
-                SegmentationEffect.GoToConfirm(
-                    subjectImagePath = EDITED_CUTOUT_PATH,
-                    trimmedSubjectImagePath = EDITED_TRIMMED_PATH,
-                ),
-                awaitItem(),
-            )
-        }
+        assertTrue(viewModel.state.value.showQuitDialog)
     }
 
     @Test
-    fun editResult_draftWriteFails_showsToastAndStaysOnErrorScreen() = runTest {
-        // Given 초안 기록이 실패하는 상황
-        coEvery { segmentImage(bitmapWrapper) } returns Result.failure(IllegalStateException("no mask"))
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns false
+    fun dismissQuit_hidesQuitDialog() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
 
-        // When 편집 결과가 돌아온다
-        viewModel.processIntent(SegmentationIntent.OnEditResult(editResult))
-        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.DismissQuit)
 
-        // Then 확인 화면으로 가지 않고 토스트로 알린다
-        assertTrue(viewModel.state.value.isError)
-        assertFalse(viewModel.state.value.isLoading)
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test
-    fun retry_afterEmptyCandidates_runsTheRecoveryLadder() = runTest {
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } returns Result.success(listOf(candidate))
+    fun confirmQuit_quitsToCanvas() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
 
-        viewModel.processIntent(SegmentationIntent.Retry)
+        viewModel.processIntent(SegmentationIntent.ConfirmQuit)
         advanceUntilIdle()
 
-        // 1차를 다시 돌지 않는다
-        coVerify(exactly = 1) { segmentImage(any()) }
-        coVerify(exactly = 1) { recoverCandidates(any()) }
-        assertEquals(listOf(candidate), viewModel.state.value.candidates)
-        assertFalse(viewModel.state.value.isError)
+        viewModel.effect.test { assertEquals(SegmentationEffect.QuitToCanvas, awaitItem()) }
     }
 
     @Test
-    fun retry_afterAnException_takesTheOriginalPathAgain() = runTest {
-        coEvery { segmentImage(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        viewModel.processIntent(SegmentationIntent.Retry)
-        advanceUntilIdle()
-
-        coVerify(exactly = 2) { segmentImage(any()) }
-        coVerify(exactly = 0) { recoverCandidates(any()) }
-    }
-
-    @Test
-    fun retry_afterTheRecoveryAlsoFailed_fallsBackToTheOriginalPath() = runTest {
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        repeat(2) {
-            viewModel.processIntent(SegmentationIntent.Retry)
-            advanceUntilIdle()
-        }
-
-        coVerify(exactly = 1) { recoverCandidates(any()) }
-        coVerify(exactly = 2) { segmentImage(any()) }
-    }
-
-    @Test
-    fun retry_pressedFourTimesAfterEmpty_runsTheLadderOnlyOnce() = runTest {
-        // Given 같은 사진이라 1차도 회복도 계속 0건이다
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } returns Result.success(emptyList())
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 네 번 누른다 — 1차의 0건이 플래그를 덮으면 세 번째에 사다리가 다시 돈다
-        repeat(4) {
-            viewModel.processIntent(SegmentationIntent.Retry)
-            advanceUntilIdle()
-        }
-
-        coVerify(exactly = 1) { recoverCandidates(any()) }
-        coVerify(exactly = 4) { segmentImage(any()) }
-    }
-
-    @Test
-    fun retry_afterTheLadderWasAbortedByTheModule_mayRunTheLadderAgain() = runTest {
-        // Given 사다리가 모듈 문제로 중간에 접혔다 — 끝까지 돈 것이 아니다
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } returns Result.failure(SegmentationException.ModuleNotReady(null))
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        repeat(3) {
-            viewModel.processIntent(SegmentationIntent.Retry)
-            advanceUntilIdle()
-        }
-
-        // 회복 → 1차(0건) → 회복
-        coVerify(exactly = 2) { recoverCandidates(any()) }
-        coVerify(exactly = 2) { segmentImage(any()) }
-    }
-
-    @Test
-    fun retry_whileTheRecoveryRuns_clearsTheErrorAndShowsLoading() = runTest {
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } coAnswers {
+    fun candidatesArriveWhileQuitDialogOpen_areHeldUntilDismissed() = runTest {
+        // Given 분석이 늦게 끝나는 상황에서 팝업을 연다
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
             delay(1_000.milliseconds)
             Result.success(listOf(candidate))
         }
         val viewModel = viewModel()
-        advanceUntilIdle()
-        assertTrue(viewModel.state.value.isError)
-
-        viewModel.processIntent(SegmentationIntent.Retry)
         runCurrent()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
 
-        // 에러 화면 위에 로딩 덮개가 겹치는 조합을 막는다
-        assertFalse(viewModel.state.value.isError)
-        assertTrue(viewModel.state.value.isLoading)
+        // When 팝업이 떠 있는 채로 분석이 끝난다
+        advanceUntilIdle()
+
+        // Then 결과는 보류되고 로딩 화면이 유지된다
+        assertTrue(viewModel.state.value.isAnalyzing)
+        assertEquals(emptyList(), viewModel.state.value.candidates)
+
+        // When 팝업을 닫는다
+        viewModel.processIntent(SegmentationIntent.DismissQuit)
+
+        // Then 보류된 후보가 적용된다
+        assertEquals(listOf(candidate), viewModel.state.value.candidates)
+        assertFalse(viewModel.state.value.isAnalyzing)
     }
 
     @Test
-    fun retry_recoveryThrowsUnexpectedly_restoresTheErrorScreen() = runTest {
-        coEvery { segmentImage(any()) } returns Result.success(emptyList())
-        coEvery { recoverCandidates(any()) } throws IllegalStateException("boom")
+    fun noSubjectWhileQuitDialogOpen_isHeldUntilDismissed() = runTest {
+        // Given 0개로 끝날 분석이 늦게 끝나는 상황에서 팝업을 연다
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000.milliseconds)
+            Result.success(emptyList())
+        }
         val viewModel = viewModel()
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
         advanceUntilIdle()
 
-        viewModel.processIntent(SegmentationIntent.Retry)
+        viewModel.effect.test {
+            // Then 보류 중에는 편집으로 가지 않는다
+            expectNoEvents()
+
+            // When 팝업을 닫는다
+            viewModel.processIntent(SegmentationIntent.DismissQuit)
+
+            // Then 그제야 편집으로 간다
+            assertEquals(SegmentationEffect.GoToEdit, awaitItem())
+        }
+    }
+
+    @Test
+    fun confirmQuit_withHeldResult_dropsIt() = runTest {
+        // Given 팝업이 떠 있는 동안 결과가 보류된 상황
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000.milliseconds)
+            Result.success(emptyList())
+        }
+        val viewModel = viewModel()
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
         advanceUntilIdle()
 
-        // 되돌리지 않으면 에러도 후보도 없는 화면에 갇힌다
-        assertTrue(viewModel.state.value.isError)
-        assertFalse(viewModel.state.value.isLoading)
+        viewModel.effect.test {
+            // When 그만두기를 누른다
+            viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+
+            // Then 보류된 결과는 버려지고 effect 는 QuitToCanvas 하나뿐이다
+            assertEquals(SegmentationEffect.QuitToCanvas, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun confirmQuit_beforeAnalysisEnds_ignoresLateResult() = runTest {
+        // Given 분석이 도는 중에 그만두기를 확정한다
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000.milliseconds)
+            Result.success(emptyList())
+        }
+        val viewModel = viewModel()
+        runCurrent()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
+        viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+
+        viewModel.effect.test {
+            assertEquals(SegmentationEffect.QuitToCanvas, awaitItem())
+
+            // When 분석이 뒤늦게 끝난다
+            advanceUntilIdle()
+
+            // Then 추가 effect 가 없다
+            expectNoEvents()
+        }
     }
 }
