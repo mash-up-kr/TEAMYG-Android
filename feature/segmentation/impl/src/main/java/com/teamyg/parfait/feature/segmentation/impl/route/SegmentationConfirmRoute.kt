@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -25,6 +28,7 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.R
+import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationQuitDialog
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationConfirmScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmIntent
@@ -50,6 +54,7 @@ internal fun SegmentationConfirmRoute(
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val toastPolicy = rememberYGToastPolicy()
+    var showQuitDialog by rememberSaveable { mutableStateOf(false) }
 
     ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
         viewModel.processIntent(SegmentationConfirmIntent.OnEditResult(result))
@@ -78,8 +83,7 @@ internal fun SegmentationConfirmRoute(
                 borderWidthDp = uiState.borderWidthDp,
                 isNextEnabled = uiState.isDraftReady,
                 onClickBack = { navigator.onBack() },
-                // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-                onClickClose = { navigator.popUpTo<NavKeyCanvasMain>() },
+                onClickClose = { showQuitDialog = true },
                 onClickEditPhoto = {
                     // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
                     val editImageUri = File(uiState.editImagePath).toUri().toString()
@@ -97,6 +101,14 @@ internal fun SegmentationConfirmRoute(
                 },
                 onClickNext = { navigator.goTo(NavKeyCanvasToppingPlace) },
                 modifier = modifier.padding(innerPadding),
+            )
+        }
+
+        if (showQuitDialog) {
+            SegmentationQuitDialog(
+                // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
+                onConfirmQuit = { navigator.popUpTo<NavKeyCanvasMain>() },
+                onDismiss = { showQuitDialog = false },
             )
         }
 

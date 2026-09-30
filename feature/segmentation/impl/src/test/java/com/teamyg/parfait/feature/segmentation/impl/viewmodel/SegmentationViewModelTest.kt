@@ -488,35 +488,63 @@ class SegmentationViewModelTest {
 
     @Test
     fun clickClose_showsQuitDialog() = runTest {
+        // Given 분석이 끝난 화면
         val viewModel = viewModel()
         advanceUntilIdle()
 
+        // When X 를 누른다
         viewModel.processIntent(SegmentationIntent.ClickClose)
 
+        // Then 그만두기 팝업이 뜬다
         assertTrue(viewModel.state.value.showQuitDialog)
     }
 
     @Test
     fun dismissQuit_hidesQuitDialog() = runTest {
+        // Given 팝업이 떠 있다
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(SegmentationIntent.ClickClose)
 
+        // When 계속 편집을 누른다
         viewModel.processIntent(SegmentationIntent.DismissQuit)
 
+        // Then 팝업이 닫힌다
         assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test
     fun confirmQuit_quitsToCanvas() = runTest {
+        // Given 팝업이 떠 있다
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(SegmentationIntent.ClickClose)
 
+        // When 그만두기를 누른다
         viewModel.processIntent(SegmentationIntent.ConfirmQuit)
         advanceUntilIdle()
 
+        // Then 캔버스로 나간다
         viewModel.effect.test { assertEquals(SegmentationEffect.QuitToCanvas, awaitItem()) }
+    }
+
+    @Test
+    fun confirmQuit_twice_quitsOnce() = runTest {
+        // Given 팝업이 떠 있다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickClose)
+
+        // When 그만두기를 두 번 누른다
+        viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+        viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+        advanceUntilIdle()
+
+        // Then 캔버스로 나가는 effect 는 한 번뿐이다
+        viewModel.effect.test {
+            assertEquals(SegmentationEffect.QuitToCanvas, awaitItem())
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -571,10 +599,10 @@ class SegmentationViewModelTest {
 
     @Test
     fun confirmQuit_withHeldResult_dropsIt() = runTest {
-        // Given 팝업이 떠 있는 동안 결과가 보류된 상황
+        // Given 팝업이 떠 있는 동안 후보가 보류된 상황
         coEvery { segmentImage(bitmapWrapper) } coAnswers {
             delay(1_000.milliseconds)
-            Result.success(emptyList())
+            Result.success(listOf(candidate))
         }
         val viewModel = viewModel()
         runCurrent()
@@ -582,13 +610,15 @@ class SegmentationViewModelTest {
         advanceUntilIdle()
 
         viewModel.effect.test {
-            // When 그만두기를 누른다
+            // When 그만두기를 누르고 팝업이 닫힌다
             viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+            viewModel.processIntent(SegmentationIntent.DismissQuit)
 
-            // Then 보류된 결과는 버려지고 effect 는 QuitToCanvas 하나뿐이다
+            // Then 보류된 결과는 버려진다 — effect 는 QuitToCanvas 하나뿐이고 후보는 적용되지 않는다
             assertEquals(SegmentationEffect.QuitToCanvas, awaitItem())
             expectNoEvents()
         }
+        assertEquals(emptyList(), viewModel.state.value.candidates)
     }
 
     @Test
@@ -596,11 +626,35 @@ class SegmentationViewModelTest {
         // Given 분석이 도는 중에 그만두기를 확정한다
         coEvery { segmentImage(bitmapWrapper) } coAnswers {
             delay(1_000.milliseconds)
-            Result.success(emptyList())
+            Result.success(listOf(candidate))
         }
         val viewModel = viewModel()
         runCurrent()
         viewModel.processIntent(SegmentationIntent.ClickClose)
+        viewModel.processIntent(SegmentationIntent.ConfirmQuit)
+        viewModel.processIntent(SegmentationIntent.DismissQuit)
+
+        viewModel.effect.test {
+            assertEquals(SegmentationEffect.QuitToCanvas, awaitItem())
+
+            // When 분석이 뒤늦게 끝난다
+            advanceUntilIdle()
+
+            // Then 추가 effect 도 후보 적용도 없다
+            expectNoEvents()
+        }
+        assertEquals(emptyList(), viewModel.state.value.candidates)
+    }
+
+    @Test
+    fun confirmQuit_withoutDialog_ignoresLateResult() = runTest {
+        // Given 팝업 없이 그만두기가 확정된 상황(팝업이 이미 닫힌 뒤 도착한 의도)
+        coEvery { segmentImage(bitmapWrapper) } coAnswers {
+            delay(1_000.milliseconds)
+            Result.success(emptyList())
+        }
+        val viewModel = viewModel()
+        runCurrent()
         viewModel.processIntent(SegmentationIntent.ConfirmQuit)
 
         viewModel.effect.test {
@@ -609,7 +663,7 @@ class SegmentationViewModelTest {
             // When 분석이 뒤늦게 끝난다
             advanceUntilIdle()
 
-            // Then 추가 effect 가 없다
+            // Then 편집으로 가지 않는다 — QuitToCanvas 뿐이다
             expectNoEvents()
         }
     }

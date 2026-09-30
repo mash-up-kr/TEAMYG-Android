@@ -159,6 +159,9 @@ class SegmentationViewModel
             SegmentationIntent.DismissQuit -> dismissQuit()
 
             SegmentationIntent.ConfirmQuit -> {
+                // 그만두기를 두 번 눌러도 캔버스로 나가는 effect 는 한 번이다
+                if (quit) return
+
                 quit = true
                 pendingOutcome = null
                 postSideEffect(SegmentationEffect.QuitToCanvas)

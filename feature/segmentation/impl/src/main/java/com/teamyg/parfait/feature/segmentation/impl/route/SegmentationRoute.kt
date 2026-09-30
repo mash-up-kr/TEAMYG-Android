@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +19,8 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.impl.R
+import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationQuitDialog
+import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationLoadingScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
@@ -65,18 +68,37 @@ internal fun SegmentationRoute(
         }
     }
 
+    // 분석 중에는 되돌아갈 화면이 없다 — 뒤로가기도 X 와 같이 그만두기를 묻는다
+    BackHandler(enabled = state.isAnalyzing) {
+        viewModel.processIntent(SegmentationIntent.ClickClose)
+    }
+
     YGScaffoldV2(
         isLoading = state.isSaving,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        SegmentationScreen(
-            state = state,
-            modifier = modifier.padding(innerPadding),
-            onClickBack = { navigator.onBack() },
-            onClickClose = { viewModel.processIntent(SegmentationIntent.ClickClose) },
-            onClickCandidate = { index ->
-                viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
-            },
+        if (state.isAnalyzing) {
+            SegmentationLoadingScreen(
+                onClickClose = { viewModel.processIntent(SegmentationIntent.ClickClose) },
+                modifier = modifier.padding(innerPadding),
+            )
+        } else {
+            SegmentationScreen(
+                state = state,
+                modifier = modifier.padding(innerPadding),
+                onClickBack = { navigator.onBack() },
+                onClickClose = { viewModel.processIntent(SegmentationIntent.ClickClose) },
+                onClickCandidate = { index ->
+                    viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
+                },
+            )
+        }
+    }
+
+    if (state.showQuitDialog) {
+        SegmentationQuitDialog(
+            onConfirmQuit = { viewModel.processIntent(SegmentationIntent.ConfirmQuit) },
+            onDismiss = { viewModel.processIntent(SegmentationIntent.DismissQuit) },
         )
     }
 }
