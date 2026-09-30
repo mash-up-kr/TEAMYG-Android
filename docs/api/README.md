@@ -1,6 +1,6 @@
 # API 계약 문서
 
-서버(`mash-up-kr/TEAMYG-SERVER`)가 제공하는 API 계약의 **스냅샷**과 TJYG-Android의 **적용 상태**를 함께 둡니다.
+서버(`mash-up-kr/TEAMYG-SERVER`)가 제공하는 API 계약의 **스냅샷**과 TEAMYG-Android의 **적용 상태**를 함께 둡니다.
 
 > **정본은 서버 코드**입니다. 이 디렉토리는 미러이고, 어긋나면 서버가 옳습니다
 > (파르페 SoT 우선순위 "코드 > wiki > CLAUDE.md"와 동형).
@@ -385,12 +385,12 @@ develop에 0건이라(2026-08-22 PR #325가 걷어냈다) 되살릴지가 그대
   구분이 사라집니다. 명세 원문에는 **개인 식별 정보(작성자·코멘트)를 옮기지 않습니다** — public repo입니다.
 
 ## 갱신
-- **서버가 바뀌었을 때** → 이 저장소에는 반복 워크플로 스킬이 없어 계약 절·기준선을 수동으로 갱신한다
-- **Android가 바뀌었을 때** → [doc-baseline](../doc-baseline.md) 「점검 절차」를 따르고, 계약에 닿는 변경은 각 문서의 `android_status`·「Android 매핑」 절을 갱신한다.
+- **서버가 바뀌었을 때** → `sync-server-api-baseline` 스킬로 [server-baseline](server-baseline.md) 「점검 절차」를 따라 계약 절·기준선을 갱신한다.
+- **Android가 바뀌었을 때** → `sync-develop-doc-baseline` 스킬로 [doc-baseline](../doc-baseline.md) 「점검 절차」를 따르고, 계약에 닿는 변경은 각 문서의 `android_status`·「Android 매핑」 절을 갱신한다.
 
 ## 계약을 실제로 확인하는 법
 
-TJYG-Android 저장소의 **`http/` 디렉토리**에 IntelliJ HTTP Client 요청 모음이 있다 — develop 기준
+TEAMYG-Android 저장소의 **`http/` 디렉토리**에 IntelliJ HTTP Client 요청 모음이 있다 — develop 기준
 `auth.http`·`policy.http`·`parfait-group.http`·`parfait.http`·`images.http`·`users.http`·
 `parfait-image.http`·`notifications.http`·`health.http`·`_reset.http` + `http-client.env.json` +
 사용법 `README.md`다. 여기 문서에 적힌 계약을 서버에 직접 쏴서 확인할 수 있다.

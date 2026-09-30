@@ -91,7 +91,7 @@ tags: [adr, parfait]
 > ✅ **남은 둘이 2026-09-05 PR #450 `feature/push-notification-permission` 으로 답해졌다.**
 > 위 표의 마지막 두 행이 닫힌다.
 >
-> - **토큰 라이프사이클** — `onNewToken` 이 이제 `DeviceTokenRegistrar.register()` 를 부르고,
+> - **토큰 라이프사이클** — `onNewToken` 이 이제 `NotificationRepository.registerCurrentDeviceToken()` 을 부르고,
 >   등록 시점이 그 하나가 아니라 **세션 축 넷**이다(로그인·가입·앱 진입의 성공 분기 + `onNewToken`).
 >   **권한과 독립**이라는 것이 이 결정의 핵심이다 — FCM 토큰은 알림 권한과 무관하게 SDK 가 설치
 >   시점에 발급하므로, 등록을 권한에 매달면 재로그인·기기교체·재설치 사용자가 등록 경로에 닿지

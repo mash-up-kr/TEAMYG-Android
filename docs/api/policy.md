@@ -87,7 +87,7 @@ tags: [api, parfait, server-contract, policy]
 
 `:data`·`:domain`에 API 표면이 구현됐다([spec](../superpowers/specs/archive/2026-08-03-data-api-service-layer.md)) —
 **2026-08-06 PR #197로 develop 머지 완료**다. 이 표면이 딛고 선 공용 인프라(`ApiCaller` 4진입점·
-`ApiResponse` envelope·`@NoAuth`·`TokenStoreTokenProvider`)는 PR #190으로 먼저 들어왔고, 아래
+`ApiResponse` envelope·`@NoAuth`·`TokenProviderImpl`)는 PR #190으로 먼저 들어왔고, 아래
 Service·DataSource·DTO·VO가 이번에 그 위에 올라갔다.
 **✅ 2026-08-15(PR #242) — 화면까지 결선됐다.** `PolicyRepository`/`PolicyRepositoryImpl`(신설)과
 `GetPoliciesUseCase`가 붙고 온보딩 약관 동의 화면(`feature/intro/impl` `TermAgreeViewModel`)이 진입 시

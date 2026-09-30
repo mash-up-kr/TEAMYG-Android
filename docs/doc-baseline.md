@@ -9,10 +9,10 @@
 > 재므로 하나로 합치지 않는다.
 
 ## 현재 기준선
-- **repo**: `TJYG-Android` (`mash-up-kr/TEAMYG-Android`) `develop`
-- **커밋**: `143cda87b` (`Merge pull request #511 from mash-up-kr/feature/ai/llm-wiki-document`)
-- **검증일**: 2026-09-21 (83회차)
-- **테스트 수**: 유닛 1298 · 계측 46
+- **repo**: `mash-up-kr/TEAMYG-Android` `develop`
+- **커밋**: `594f8047e` (`Merge pull request #534 from mash-up-kr/refactor/data-layer-code-style-4`)
+- **검증일**: 2026-09-27 (84회차)
+- **테스트 수**: 유닛 1294 · 계측 46
 - **미머지 추적 항목**: 하나(`feature/debug-mode`, OQ-P-311 계보)
 - **실기기 미확인 이월**: [status.md 「실기기 미확인」](status.md#실기기-미확인)
 

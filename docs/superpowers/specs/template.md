@@ -3,7 +3,7 @@ id: <kebab-case-id>
 title: <사람이 읽는 제목> (<English/SDK term>)
 status: draft                # draft | in-progress | implemented | superseded
 category: ui-spec            # ui-spec | behavior-spec | ...
-platforms: android           # 이 repo는 TJYG-Android(Kotlin/Compose) 전용
+platforms: android           # 이 repo는 TEAMYG-Android(Kotlin/Compose) 전용
 verified: YYYY-MM-DD          # 코드와 대조 확인한 날짜
 related_code:                 # 파일명#심볼 (라인번호·hex·변동수치 금지 — parfait 규칙)
 related_adr:                  # ADR-NNNN (없으면 비움)

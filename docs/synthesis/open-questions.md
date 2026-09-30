@@ -13,7 +13,7 @@ tags: [meta, parfait]
 ---
 # Open Questions — 구현 미결·열린 결정
 
-TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
+TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
 정책 기획 쪽 미결은 위키 [[open-questions]]에 있다. 여기는 **코드·ADR·architecture 소관**만 둔다.
 해소된 항목은 상태를 "해소됨"으로 바꾸고 관련 ADR/architecture 문서에 반영한다.
 
@@ -607,7 +607,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **출처**: Android `EmptyTokenProvider`(항상 null 반환) vs 서버 `SecurityConfig` 화이트리스트(`/actuator/health`·`/swagger-ui.html`·`/swagger-ui/**`·`/favicon.ico`·`/v3/api-docs/**`·`/api/v1/auth/kakao`·`/api/v1/auth/signup`·`/api/v1/auth/reissue`, [api/conventions.md](../api/conventions.md) "인증").
 - **항목**: 실 `TokenProvider` 구현 시점·토큰 저장 방식(DataStore 등) 확정.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지) — 단 **동작 확인은 아님**
-- **해소 메모**: `EmptyTokenProvider`가 삭제되고 `TokenStoreTokenProvider`(→`TokenStore`→`EncryptedTokenStore`, [ADR-0019](../adr/0019-encrypted-token-storage.md))가 들어왔다. [ADR-0017](../adr/0017-remote-network-datasource.md)·[data-layer](../architecture/data-layer.md) 갱신 + [api/conventions.md](../api/conventions.md) 표에서 제거. **저장소가 실제로 토큰을 돌려주는지는 미확인**이다 — `TokenStore.save()` 호출부가 develop에 0건이라 저장된 토큰 자체가 없다(아래 "실기기 암복호화 왕복 검증이 수행 불가" 항목).
+- **해소 메모**: `EmptyTokenProvider`가 삭제되고 `TokenProviderImpl`(→`TokenLocalDataSource`→`TokenLocalDataSourceImpl`, [ADR-0019](../adr/0019-encrypted-token-storage.md))가 들어왔다. [ADR-0017](../adr/0017-remote-network-datasource.md)·[data-layer](../architecture/data-layer.md) 갱신 + [api/conventions.md](../api/conventions.md) 표에서 제거. **저장소가 실제로 토큰을 돌려주는지는 미확인**이다 — `TokenLocalDataSource.save()` 호출부가 develop에 0건이라 저장된 토큰 자체가 없다(아래 "실기기 암복호화 왕복 검증이 수행 불가" 항목).
 
 ### [2026-08-02] 서버 URL 규약 3형태 혼재
 - **ID**: OQ-P-060
@@ -691,7 +691,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 키 유실(Keystore 무효화) 경로 미검증
 - **ID**: OQ-P-070
-- **출처**: [ADR-0019](../adr/0019-encrypted-token-storage.md) "키 유실 시 정책" — 기기 복원·잠금 화면 자격증명 변경 등으로 Keystore 키가 무효화되면 `CryptoManager.decrypt`가 예외를 던지고 `EncryptedTokenStore.read()`가 이를 잡아 `clear()` 후 `null`을 반환하도록 설계됐다. 코드베이스에 `test`/`androidTest`가 없고 Android Keystore는 JVM 유닛 테스트에서 동작하지 않아 이 경로를 재현·검증하지 못했다.
+- **출처**: [ADR-0019](../adr/0019-encrypted-token-storage.md) "키 유실 시 정책" — 기기 복원·잠금 화면 자격증명 변경 등으로 Keystore 키가 무효화되면 `CryptoManager.decrypt`가 예외를 던지고 `TokenLocalDataSourceImpl.read()`가 이를 잡아 `clear()` 후 `null`을 반환하도록 설계됐다. 코드베이스에 `test`/`androidTest`가 없고 Android Keystore는 JVM 유닛 테스트에서 동작하지 않아 이 경로를 재현·검증하지 못했다.
 - **항목**: 키 유실을 실기기에서 재현(기기 복원 또는 잠금 자격증명 변경)해 `clear()` 분기가 실제로 타는지, 앱이 정상적으로 "토큰 없음" 상태로 전환되는지 확인.
 - **상태**: 미해결 (재현 수단 없음)
   > 📌 **as-built 범위 확대(2026-08-04, PR #190 머지본)** — `read()`의 `runCatching`이 복호화뿐 아니라 **DataStore 읽기까지** 감싼다. 즉 일시적 저장소 I/O 실패도 같은 경로로 떨어져 토큰이 삭제된다 — 재현해야 할 경우의 수가 하나 늘었다.
@@ -700,17 +700,17 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 인터셉터 `runBlocking`이 코드리뷰를 통과할지 미확정
 - **ID**: OQ-P-071
-- **출처**: `AuthInterceptor` → `TokenStoreTokenProvider.getToken()`이 `runBlocking { tokenStore.getAccessToken() }`으로 suspend 경계를 넘는다([ADR-0019](../adr/0019-encrypted-token-storage.md) "결정", [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "`runBlocking` 사용 근거"). OkHttp dispatcher 스레드에서 실행돼 메인 스레드는 막지 않는다는 근거로 채택했으나, 코루틴 규율(구조화된 동시성) 이탈이라는 지적이 나올 수 있다.
+- **출처**: `AuthInterceptor` → `TokenProviderImpl.getToken()`이 `runBlocking { tokenLocalDataSource.getAccessToken() }`으로 suspend 경계를 넘는다([ADR-0019](../adr/0019-encrypted-token-storage.md) "결정", [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "`runBlocking` 사용 근거"). OkHttp dispatcher 스레드에서 실행돼 메인 스레드는 막지 않는다는 근거로 채택했으나, 코루틴 규율(구조화된 동시성) 이탈이라는 지적이 나올 수 있다.
 - **항목**: 코드리뷰에서 `runBlocking` 사용이 반려될지 확정. 반려되면 메모리 캐시(StateFlow) + 동기 읽기 방식으로 전환하고, 앱 시작 직후 캐시가 비어 있는 창(window)에서 첫 요청이 토큰 없이 나가는 타이밍 문제를 별도로 설계해야 한다.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지 — 반려되지 않음)
-- **해소 메모**: 리뷰 반영 커밋은 `AuthInterceptor`의 early return만 걷어냈고 `TokenStoreTokenProvider`의 `runBlocking`은 무수정으로 머지됐다. 메모리 캐시 전환은 불필요해졌다. 단 **런타임에 이 경로가 돌아간 적은 없다**(토큰 저장분 0건) — 실제 지연·ANR 관측은 로그인 연동 라운드 몫이다.
+- **해소 메모**: 리뷰 반영 커밋은 `AuthInterceptor`의 early return만 걷어냈고 `TokenProviderImpl`의 `runBlocking`은 무수정으로 머지됐다. 메모리 캐시 전환은 불필요해졌다. 단 **런타임에 이 경로가 돌아간 적은 없다**(토큰 저장분 0건) — 실제 지연·ANR 관측은 로그인 연동 라운드 몫이다.
 
 ### [2026-08-02] 실기기 암복호화 왕복 검증이 수행 불가
 - **ID**: OQ-P-072
-- **출처**: [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" — 저장 → 앱 완전 종료 → 재시작 → 읽기를 사람이 육안 확인하면 된다고 봤으나, `TokenStore.save()` 호출부가 코드베이스에 **0건**이라 저장을 트리거할 방법 자체가 없다(auth 도메인 Service·RemoteDataSource·Repository 구현이 이 라운드 범위 밖).
-- **항목**: 로그인이 실제로 붙어 `TokenStoreTokenProvider`/`EncryptedTokenStore.save()`가 호출되는 다음 라운드에서 저장 → 종료 → 재시작 → 읽기 왕복을 실기기로 확인한다(DataStore 파일에 평문이 없는지 포함).
+- **출처**: [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" — 저장 → 앱 완전 종료 → 재시작 → 읽기를 사람이 육안 확인하면 된다고 봤으나, `TokenLocalDataSource.save()` 호출부가 코드베이스에 **0건**이라 저장을 트리거할 방법 자체가 없다(auth 도메인 Service·RemoteDataSource·Repository 구현이 이 라운드 범위 밖).
+- **항목**: 로그인이 실제로 붙어 `TokenProviderImpl`/`TokenLocalDataSourceImpl.save()`가 호출되는 다음 라운드에서 저장 → 종료 → 재시작 → 읽기 왕복을 실기기로 확인한다(DataStore 파일에 평문이 없는지 포함).
 - **상태**: 미해결 (로그인 연동 라운드로 이월)
-  > 📌 **코드가 develop에 머지됐어도 상태 불변(2026-08-04, PR #190)** — 저장 경로 전체가 develop에 들어왔지만 `TokenStore.save()` 호출부는 여전히 0건이다. 머지가 검증을 대신하지 않는다.
+  > 📌 **코드가 develop에 머지됐어도 상태 불변(2026-08-04, PR #190)** — 저장 경로 전체가 develop에 들어왔지만 `TokenLocalDataSource.save()` 호출부는 여전히 0건이다. 머지가 검증을 대신하지 않는다.
   > 📌 **로그인 화면이 다음 단계로 이어져도 상태 불변(2026-08-09, PR #220)** — 카카오 토큰은 `LoginState`에만 담기고 저장 호출은 여전히 0건이다 → [2026-08-10] 온보딩 체인 항목.
   > 📌 **저장 호출부는 생겼는데 검증은 그대로다(2026-08-16, PR #263)** — 로그인 결선(#241) 이후 저장이 실제로 일어나고, 같은 프록시(`EncryptedPreferences`)로 **계정 정보까지 암호화 저장**돼 확인 대상이 둘이 됐다(DataStore 파일에 닉네임·`memberId` 평문이 없는지 포함). 그런데 자동로그인 라운드의 **수동 확인 7항목이 미수행**이라 저장 → 종료 → 재시작 왕복은 여전히 사람이 본 적이 없다.
 - **해소 메모**: 로그인 연동 라운드에서 확인 후 [ADR-0019](../adr/0019-encrypted-token-storage.md)와 [specs/archive/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" 절을 갱신한다.
@@ -754,7 +754,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 개발 서버가 평문 HTTP — 앱에서 전 요청이 cleartext 차단된다
 - **ID**: OQ-P-076
-- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TJYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
+- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TEAMYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
 - **항목**: Android 9(API 28)부터 평문 HTTP는 기본 차단이라, 실제 연동을 시작하면 **모든 요청이 `CLEARTEXT communication not permitted`로 실패**한다. 서버에 HTTPS를 적용할지(권장), 아니면 debug 빌드 한정으로 `network_security_config.xml`에 해당 호스트만 허용할지 결정한다. 후자는 release 빌드가 HTTPS 전환 전까지 동작하지 않는다는 뜻이므로 서버 일정과 묶인다.
 - **상태**: **해소됨** (2026-08-25, PR #358 — 서버가 ①을 채택하고 앱 매니페스트 조치가 같은 날 들어왔다)
   > 📌 **2026-08-14** — A-002 로그인 실기기 검증을 막고 있어 `app/src/main/AndroidManifest.xml`에
@@ -924,7 +924,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-04] `AuthInterceptor`의 `@NoAuth` 스킵 방식이 브랜치별로 갈렸다 — 토큰 조회 생략 여부
 - **ID**: OQ-P-091
-- **출처**: `data/.../network/AuthInterceptor.kt`. 두 형태가 공존한다. ① **`origin/feature/sync-api-service`·`origin/feature/set-up-backend-api` 커밋본** — `skipAuth`면 `chain.proceed(originalRequest)`로 **early return**해 `tokenProvider.getToken()` 호출 자체를 하지 않는다. ② **`feature/set-up-backend-api` 로컬 작업 트리(미커밋)** — early return을 없애고 헤더 부착 조건만 `token != null && skipAuth.not()`으로 바꿔, `skipAuth`여도 `getToken()`을 **항상 호출**한다. **헤더 부착 결과는 네 경우 모두 동일**하다(토큰 있음+`skipAuth`에도 헤더가 붙지 않는다) — 갈리는 것은 비용뿐이다. ②는 화이트리스트 경로(`postAuthKakao`·`postAuthSignup`·`postAuthReissue`·`getPolicies`) 요청마다 `TokenStoreTokenProvider`의 `runBlocking` + DataStore 읽기 + Keystore 복호화를 유발한다.
+- **출처**: `data/.../network/AuthInterceptor.kt`. 두 형태가 공존한다. ① **`origin/feature/sync-api-service`·`origin/feature/set-up-backend-api` 커밋본** — `skipAuth`면 `chain.proceed(originalRequest)`로 **early return**해 `tokenProvider.getToken()` 호출 자체를 하지 않는다. ② **`feature/set-up-backend-api` 로컬 작업 트리(미커밋)** — early return을 없애고 헤더 부착 조건만 `token != null && skipAuth.not()`으로 바꿔, `skipAuth`여도 `getToken()`을 **항상 호출**한다. **헤더 부착 결과는 네 경우 모두 동일**하다(토큰 있음+`skipAuth`에도 헤더가 붙지 않는다) — 갈리는 것은 비용뿐이다. ②는 화이트리스트 경로(`postAuthKakao`·`postAuthSignup`·`postAuthReissue`·`getPolicies`) 요청마다 `TokenProviderImpl`의 `runBlocking` + DataStore 읽기 + Keystore 복호화를 유발한다.
 - **항목**: ①②를 확정한다. ②를 택하면 [ADR-0017](../adr/0017-remote-network-datasource.md) "인증"·[data-layer](../architecture/data-layer.md) "인증"·[network-envelope-token-storage 스펙](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) 세 곳의 "스킵 대상이면 토큰 조회 자체를 생략한다"를 as-built로 정정해야 한다. `skipAuth` 판정 후 `val token = if (skipAuth) null else tokenProvider.getToken()`로 두면 early return 없이도 ① 의미를 지킬 수 있다.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지 — **②로 확정**)
 - **해소 메모**: PR #190의 마지막 커밋(`refactor: 코드 리뷰 반영`)이 early return을 걷어낸 단일 변경이다 — 즉 ②는 미커밋 실험이 아니라 **리뷰 결론**이었다. [ADR-0017](../adr/0017-remote-network-datasource.md) "인증"·[data-layer](../architecture/data-layer.md) "인증"·[network-envelope-token-storage 스펙](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) 세 곳의 "토큰 조회 자체를 생략한다"를 as-built로 정정하고, 절약 근거 문장을 비용 감수 서술로 바꿨다. 비용이 실제로 드는 시점은 `@NoAuth`를 붙인 서비스 메서드가 develop에 들어올 때다(현재 0건).
@@ -932,7 +932,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-04] `http/` 요청 모음과 `parfait/api/` 계약 문서가 같은 계약을 이중 관리
 
 - **ID**: OQ-P-092
-- **출처**: TJYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
+- **출처**: TEAMYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
 - **항목**: ① 서버 계약이 바뀔 때 `http/`도 함께 갱신하는 것을 `sync-teamyg-server-api` 절차에 넣을지(넣으면 이 위키 저장소의 스킬이 코드 저장소 파일을 고치게 된다), ② 아니면 `http/README.md`를 계약 서술 없이 "실행 방법"으로만 깎고 계약 근거는 `api/`로 단일화할지. 현재는 `http/README.md`가 envelope 5필드·204 예외·`errorDetail` 항상 null까지 자체 서술하고 있어 서버가 바뀌면 조용히 갈린다.
 - **상태**: 미해결 (**2026-08-10 실제로 갈렸다** — 아래 참고)
   > 📌 **표면이 더 커졌다(2026-08-06, PR #197)** — `policy.http`가 추가돼 요청 모음이 **14 엔드포인트 전량**을 덮고, `README.md`도 약관 `termsId` 출처·`url` 전문 가능성·성공 코드 2종 같은 계약 서술을 더 얹었다. 이중 관리 면적이 늘었다는 뜻이라 결정을 미룰수록 비싸진다.
@@ -1114,7 +1114,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-10] 온보딩 체인이 화면 전이만 결선 — 인증·동의 저장이 통째로 빠져 있다
 
 - **ID**: OQ-P-104
-- **출처**: PR #220 develop 머지 — `feature/login/impl` `LoginRoute.kt`·`LoginViewModel.kt`, `feature/intro/impl` `termagree/TermAgreeRoute.kt`. `Splash → Login → TermAgree → GroupList`가 이어졌지만 세 구멍이 그대로다. ① 카카오 로그인 성공 토큰은 `LoginState.token`에만 담기고 서버 `POST /api/v1/auth/login`·`/auth/signup` 호출도, `TokenStore` 저장도 없다 — [ADR-0019](../adr/0019-encrypted-token-storage.md)의 저장 경로는 여전히 호출자 0건이다. ② 서버 로그인 응답이 신규/기존 회원을 가르는데(`KakaoLoginResponse`의 `newUser` 판별자, [api/auth.md](../api/auth.md)) 화면은 분기 없이 **누구나 매번 약관 화면**을 지난다. ③ `TermAgreeViewModel`의 동의 저장은 여전히 `// Todo`라 `signup`이 필수로 받는 `agreements[].termsId`를 만들 자리가 없다(약관 목록도 `TERM_CONTENT_LIST` 리터럴).
+- **출처**: PR #220 develop 머지 — `feature/login/impl` `LoginRoute.kt`·`LoginViewModel.kt`, `feature/intro/impl` `termagree/TermAgreeRoute.kt`. `Splash → Login → TermAgree → GroupList`가 이어졌지만 세 구멍이 그대로다. ① 카카오 로그인 성공 토큰은 `LoginState.token`에만 담기고 서버 `POST /api/v1/auth/login`·`/auth/signup` 호출도, `TokenLocalDataSource` 저장도 없다 — [ADR-0019](../adr/0019-encrypted-token-storage.md)의 저장 경로는 여전히 호출자 0건이다. ② 서버 로그인 응답이 신규/기존 회원을 가르는데(`KakaoLoginResponse`의 `newUser` 판별자, [api/auth.md](../api/auth.md)) 화면은 분기 없이 **누구나 매번 약관 화면**을 지난다. ③ `TermAgreeViewModel`의 동의 저장은 여전히 `// Todo`라 `signup`이 필수로 받는 `agreements[].termsId`를 만들 자리가 없다(약관 목록도 `TERM_CONTENT_LIST` 리터럴).
 - **항목**: ① 서버 인증을 어느 단계에 넣을지 — 카카오 토큰 획득 직후 `login` 호출 후 `newUser`로 약관/그룹목록을 가를지, 아니면 약관 동의까지 받고 `signup` 한 번으로 끝낼지. ② ①이 정해져야 `clearBackStack()` 리셋 지점(현재 약관 → 그룹목록)이 맞는지도 확정된다 — 기존 회원이 약관을 건너뛰면 리셋 지점이 로그인 쪽으로 올라간다. ③ `termsId` 출처를 `GET /api/v1/policies` 연동으로 세우는 건([2026-08-03] 항목)이 이 체인의 선행 조건인지.
 - **상태**: 해소됨 (2026-08-15, PR #241·#242 — 세 구멍이 모두 닫혔다)
   > ✅ ① 서버 인증이 카카오 토큰 획득 직후 `POST /auth/kakao`로 들어갔고(#241), ② `isNewUser` 분기로
@@ -1164,7 +1164,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-10] `http/` 요청 모음이 서버 신규 엔드포인트 2건을 덮지 못한다
 
 - **ID**: OQ-P-108
-- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TJYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
+- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TEAMYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
 - **항목**: [2026-08-04] 항목의 선택지 ①(스킬이 `http/`도 갱신)·②(`http/`를 실행 방법으로만 축소) 중 무엇을 고를지. 갱신 경로가 둘이라는 구조 자체는 그대로다.
 - **상태**: 미해결 (**2026-08-16 서버 delta로 다시 25/27** — 다섯 번째 왕복, 구조 결정은 그대로.
   이번엔 `:data` 표면만 닫히고 `http/`는 안 닫혀 **두 표면이 처음으로 갈렸다**)
@@ -1312,7 +1312,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-11] 서버가 앱보다 7 엔드포인트 앞섰다 — 애플 로그인·회원·토핑 배치가 통째로 공백
 
 - **ID**: OQ-P-117
-- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TJYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TEAMYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 앱이 어느 순서로 따라갈지 — 화면 결선 순서(온보딩 → 캔버스)와 서버 순서가 다르다. ~~② **애플 로그인은 iOS만의 요구가 아니다** — Android가 붙일지, 붙는다면 `identityToken`·`authorizationCode`를 어디서 얻을지(애플 로그인 SDK가 Android에 없어 웹 플로가 필요하다) 결정한다.~~(해소 — 아래) ③ 토핑 배치(`parfait-image`)는 **목록 조회 API가 없어** 배치만 되고 다시 그릴 수 없다 — 앱 결선은 그 API를 기다려야 한다.
   > 📌 **② 해소(2026-08-11)** — **Android는 애플 로그인을 쓰지 않는다.** 서버 계약은 그대로 두되 앱 대응 심볼을 만들지 않고 `http/auth.http`에도 요청을 넣지 않는다. [api/README.md](../api/README.md) Android 열에 `해당 없음` 값을 신설해 `미구현`(아직 없음)과 구분했고 — 표면 개수를 셀 때 분모에서 뺀다 — [api/auth.md](../api/auth.md) 엔드포인트 표·Android 매핑 절에 반영했다. 근거는 [member·parfait-image 서비스 레이어 스펙](../superpowers/specs/archive/2026-08-11-member-parfait-image-api-service-layer.md) "범위". iOS가 붙으면 계약은 그대로 유효하다.
   > 📌 **공백이 곧 0이 된다(진행 중)** — 분모가 21에서 **20**으로 줄고(애플 1 제외), develop 14 + PR #229의 image 2 + 위 스펙의 member 2·parfait-image 2 = **20**이다. 즉 표면 공백 자체는 이 라운드로 닫히고 **①이 말하는 "순서" 문제는 표면이 아니라 소비처 쪽으로 옮겨간다.**
@@ -1734,7 +1734,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-146
 - **출처**: [a002-kakao-login-api 스펙](../superpowers/specs/archive/2026-08-13-a002-kakao-login-api.md) "실기기 검증" — 구현·유닛 테스트·리뷰는 끝났고 **PR #241로 2026-08-15 develop에 머지됐으나** 실물 기기·실제 카카오 계정·개발 서버가 필요한 항목은 하나도 돌지 않았다. 즉 **검증 안 된 로그인 경로가 develop에 있다.** 컴파일·ktlint·Hilt 어디에도 안 걸리는 종류의 결함이 여기서 처음 드러난다.
-- **항목**: ① 개발 서버에 요청이 나가는가(평문 HTTP 차단이면 즉시 중단 → OQ-P-076) ② 신규 계정 → 약관 화면, 응답 판별자 키가 실제로 `isNewUser`인가(`MissingFieldException`이면 [api/auth.md](../api/auth.md)가 틀린 것) ③ 기존 계정 → 그룹 목록, 백스택 비움 ④ 로그인 → 앱 종료 → 재시작 → 토큰 읽힘, DataStore 파일에 평문 없음(ADR-0019 검증) ⑤ 카카오 창 취소 → 로딩 풀림 ⑥ 버튼 연타 → 카카오 창 1회 ⑦ 비행기 모드 → 로딩 풀림 + `AppError.Network` 로그 ⑧ `TokenStoreTokenProvider`의 `runBlocking` 체감 지연 ⑨ **카카오 창 떠 있는 동안 화면 회전 → 로딩 풀림**(이번 라운드 fix 대상, 유닛 테스트로 못 덮는다)
+- **항목**: ① 개발 서버에 요청이 나가는가(평문 HTTP 차단이면 즉시 중단 → OQ-P-076) ② 신규 계정 → 약관 화면, 응답 판별자 키가 실제로 `isNewUser`인가(`MissingFieldException`이면 [api/auth.md](../api/auth.md)가 틀린 것) ③ 기존 계정 → 그룹 목록, 백스택 비움 ④ 로그인 → 앱 종료 → 재시작 → 토큰 읽힘, DataStore 파일에 평문 없음(ADR-0019 검증) ⑤ 카카오 창 취소 → 로딩 풀림 ⑥ 버튼 연타 → 카카오 창 1회 ⑦ 비행기 모드 → 로딩 풀림 + `AppError.Network` 로그 ⑧ `TokenProviderImpl`의 `runBlocking` 체감 지연 ⑨ **카카오 창 떠 있는 동안 화면 회전 → 로딩 풀림**(이번 라운드 fix 대상, 유닛 테스트로 못 덮는다)
 - **상태**: 미해결 (실기기 대기 — **검증 안 된 실서버 경로가 하루 만에 8 엔드포인트로 늘었다**)
   > ⚠️ **2026-08-15 같은 날 네 라운드가 더 머지됐다**(PR #242·#243·#244·#248) — 약관 조회·회원가입·
   > 그룹 목록·생성·참여 미리보기·참여·닉네임 변경이 전부 실서버를 타는데 **어느 것도 실기기로 안 돌았다**.
@@ -1801,9 +1801,9 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-149
 - **출처**: `feature/camera/impl/route/CustomCameraRoute.kt` — `runCatching { withContext(Dispatchers.IO) { saveViewfinderCapture(...) } }`. `withContext`가 suspend라 촬영 저장 중 화면을 벗어나면 취소가 `Result.failure`가 되고 "저장 실패" 경로로 분기한다. [data-layer](../architecture/data-layer.md) "suspend 를 감싸는 runCatching" 참고.
-- **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `EncryptedTokenStore.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
+- **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `TokenLocalDataSourceImpl.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
 - **상태**: 미해결 (교체 대상 확정, 라운드만 대기)
-- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`EncryptedTokenStoreTest`의 취소 케이스가 본보기다).
+- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`TokenLocalDataSourceImplTest`의 취소 케이스가 본보기다).
 
 ### [2026-08-15] 누끼 캔버스 Safe Margin +20%가 미이행 — 원본 전체 크기가 끝까지 실려 간다
 
@@ -1935,7 +1935,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-15] 서버가 다시 5 엔드포인트 앞섰다 — 캔버스 조회·토핑 삭제/테두리·탈퇴가 통째로 공백
 
 - **ID**: OQ-P-158
-- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TJYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TEAMYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 어느 것부터 붙일지 — **`GET .../parfaits/today`가 C-001 캔버스 결선의 선행**이라 우선순위가 가장 높다(배치 목록 부재라는 오래된 장애물이 이것으로 사라졌다, OQ-P-119). ② **회원 탈퇴는 응답이 본문 없는 204**라 앱 `ApiCaller`의 envelope 전제와 맞지 않는다 — `Response<Unit>` 계열 진입점을 새로 둘지, 서버에 envelope 통일을 요청할지 정해야 표면을 붙일 수 있다(OQ-P-162). ③ 토핑 삭제·테두리 수정은 C-105·C-106 편집 플로우와 짝이라 그 화면 결선 라운드에 함께 간다.
 - **상태**: **해소됨** (2026-08-15, PR #250 — 다섯 표면이 한 라운드에 들어왔다)
 - **해소 메모**: 선작성 스펙·플랜 한 쌍이 그대로 이행됐다
@@ -4208,7 +4208,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-20] S3 업로드가 코루틴 취소를 따라가지 않는다
 
 - **ID**: OQ-P-246
-- **출처**: `data/source/image/remote/PresignedUploadDataSourceImpl#put`(PR1 `feature/#270-image-upload-transport`) — `withContext(Dispatchers.IO)` 안에서 OkHttp `Call.execute()`를 블로킹으로 부르고 `Call.cancel()`을 코루틴 취소에 잇지 않는다. 그 블록에 중단점이 없어 **호출 코루틴이 취소돼도 업로드는 `callTimeout`까지 계속 돈다.** 브랜치 최종 리뷰가 잡았고 "되돌리는 비용은 지금이 가장 싸다"고 평가했다.
+- **출처**: `data/source/image/remote/PresignedUploadRemoteDataSourceImpl#put`(PR1 `feature/#270-image-upload-transport`) — `withContext(Dispatchers.IO)` 안에서 OkHttp `Call.execute()`를 블로킹으로 부르고 `Call.cancel()`을 코루틴 취소에 잇지 않는다. 그 블록에 중단점이 없어 **호출 코루틴이 취소돼도 업로드는 `callTimeout`까지 계속 돈다.** 브랜치 최종 리뷰가 잡았고 "되돌리는 비용은 지금이 가장 싸다"고 평가했다.
 - **항목**: ① `suspendCancellableCoroutine` + `enqueue` + `invokeOnCancellation { call.cancel() }`로 바꿀지, 아니면 ② 지금 형태를 두고 화면이 취소를 안 하도록 설계할지. ①이면 취소를 실제로 관측하는 테스트 설계가 따로 필요하다(느린 응답 + 취소).
 - **상태**: 해소됨(PR5)
 - **해소 메모**: PR1에서 미룬 이유는 전송 메서드의 모양을 바꾸는 변경이라 단일 fix 웨이브에 태우면 클린한 브랜치를 늦게 흔들 위험이 이득보다 컸다는 것이다. PR5는 로딩 오버레이·실패 시 `popUpTo` 되감기가 있어 `viewModelScope` 취소가 흔한 화면이므로 그 라운드가 판정했다. `execute()` → `enqueue` + `suspendCancellableCoroutine`·`invokeOnCancellation { call.cancel() }`로 바꿨다. `onFailure`가 취소를 실패 `Result`로 둔갑시키지 않도록 `continuation.isActive` 가드를 뒀다.
@@ -6072,9 +6072,9 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-28] 원격 이미지 다운로드가 응답 본문을 통째로 힙에 올린다
 
 - **ID**: OQ-P-327
-- **출처**: `RemoteImageDownloadDataSourceImpl.download`(PR #369) — `response.body?.bytes()`로
+- **출처**: `ImageDownloadRemoteDataSourceImpl.download`(PR #369) — `response.body?.bytes()`로
   전체를 읽어 `ByteArray`로 돌려주고, `ImageSegmentationRepositoryImpl.decodeImage`가 그것을
-  `BitmapFactory.decodeByteArray`에 넘긴다. 같은 저장소의 이웃인 `PresignedUploadDataSource`는
+  `BitmapFactory.decodeByteArray`에 넘긴다. 같은 저장소의 이웃인 `PresignedUploadRemoteDataSource`는
   반대로 **스트리밍 `RequestBody`**를 써서 바이트를 힙에 통째로 올리지 않는 것이 명시된 결정이다.
 - **항목**: ① 상한이 없다 — 서버가 주는 토핑 이미지 크기의 실측이 0건이고,
   `Content-Length` 확인도 없다. ② 디코드 직후 원본 `ByteArray`와 비트맵이 **동시에** 살아 있다
@@ -6456,8 +6456,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 위에 예고한 그대로 들어왔고 어긋난 자리가 없다.
   > - **②(등록 호출 시점)** — 세션 축 넷이다: `LoginWithKakaoUseCase`·`SignUpUseCase`의
   >   `refreshMyAccount` 뒤, `BootstrapSessionUseCase`의 성공 분기, `onNewToken`. 네 자리 모두
-  >   **`suspend`가 아닌 `DeviceTokenRegistrar.register()`** 하나를 부르고 실행은 `:data` 구현이
-  >   `@ApplicationScope`에서 한다. 재시도 3회(3초·6초)와 `Mutex`가 그 안에 있다.
+  >   **`suspend`가 아닌 `NotificationRepository.registerCurrentDeviceToken()`** 하나를 부르고 실행은 `:data` 구현이
+  >   `@ApplicationScope`에서 한다. 재시도 3회(3초 고정)와 `Mutex`가 그 안에 있다.
   > - **③(권한을 언제 묻는지)** — A-004·A-005 완료 직후다(OQ-P-358 해소).
   > - **④(거부 상태에서도 등록할지)** — **등록한다.** 서버가 권한 상태를 모르므로 발송이 나가고 OS가
   >   버리지만, 사용자가 나중에 설정에서 켜면 앱이 아무것도 안 해도 동작한다.
@@ -6583,7 +6583,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-02] 원격 이미지 묶음 노출 — 미머지 브랜치가 로딩 표현을 바꾼다
 
 - **ID**: OQ-P-346
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
   원격 이미지가 로딩 중 아무것도 그리지 않다가 성공하는 순간 불투명으로 튀던 것을 고치면서,
   캔버스 토핑과 G-001 그룹 목록을 각각 **한 묶음으로 모아 한 번에 드러내는** 규칙이 생겼다.
   `core:ui`에 `reveal/` 패키지(`rememberBatchReveal`·`rememberStaggeredReveal`과 그 순수 함수)가
@@ -6634,7 +6634,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-03] G-001 새로고침 — 미머지 브랜치가 로딩 문구와 실패 라우팅을 바꾼다
 
 - **ID**: OQ-P-348
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
   커밋 `163cd194`·`1d68f167`) — 디자인 두 프레임을 근거로 G-001 당겨서 새로고침을 다시 짰다
   (Figma 파일 `QPoxqbNMNktsi8ktua3gMN`, 두 프레임 모두 이름이 `G-001-Error`다: 노드 `2019:10223`이
   새로고침 중, `1972:4873`이 실패). 셋이 바뀐다. ① `GroupListPullToRefreshBox`의 인디케이터가
@@ -6795,7 +6795,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-04] 서버 발송 페이로드가 앱 저장소에 복제됐는데 갈라짐을 세는 축이 없다
 
 - **ID**: OQ-P-354
-- **출처**: `http/fcm-test.http`(TJYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
+- **출처**: `http/fcm-test.http`(TEAMYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
   "어떤 페이로드가 가는가" × 서버 `NotificationMessageFactory`·`FcmNotificationSender`(`aa9cc9b`) —
   같은 값(문구 2종·`data` 키 4종·채널 id `parfait_default`·TTL 6시간·APNs 헤더)이 **세 곳**에 있다.
   파일 머리말이 "서버 코드를 정본으로 삼는다"고 적지만, 그 대조를 무엇이 언제 하는지는 정해지지 않았다.
@@ -6949,7 +6949,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 다만 ③이 닫히면서 **"로그인 화면 위에 캔버스가 얹힌다"는 갈래는 사라졌다.**
   > ⚠️ **이 항목이 근거로 삼았던 "등록 호출부가 0건"은 틀렸다** — PR #450(`da26d084a`)이
   > `BootstrapSessionUseCase`·`LoginWithKakaoUseCase`·`SignUpUseCase`·`onNewToken` 넷에
-  > `DeviceTokenRegistrar.register()`를 붙였고, 권한 요청도 `NotificationPermissionGate`가
+  > `NotificationRepository.registerCurrentDeviceToken()`을 붙였고, 권한 요청도 `NotificationPermissionGate`가
   > `GroupCreateRoute`·`GroupNickNameRoute` 두 자리에서 한다. **같은 문구가 OQ-P-351·OQ-P-352·
   > OQ-P-359의 상태에도 남아 있었고 2026-09-06 감사가 셋 다 걷었다.**
   > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`,
@@ -7010,7 +7010,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 로 바꾸고 ② 그 뒤 앱이 플래그를 켠다. 앱 플래그를 먼저 켜면 `getToken()` 이 던져 되돌아갈
   > 중간 상태가 없다.
   > 📌 **앱 쪽 전환 비용은 생각보다 작다** — `FirebaseInstallations.getId()` 로 FID 를 당겨올 수
-  > 있어 지금의 pull 모델이 그대로 성립한다. `DeviceTokenRegistrar` 와 세션 트리거 넷은 남고
+  > 있어 지금의 pull 모델이 그대로 성립한다. `NotificationRepository.registerCurrentDeviceToken()` 과 세션 트리거 넷은 남고
   > `FirebaseDeviceTokenProvider` 구현·`onNewToken`→`onRegistered`·매니페스트 플래그만 바뀐다.
   > (초판이 "값을 당겨오는 자리가 없어져 구조가 통째로 바뀐다"고 적었으나 사실이 아니다.)
   > 📌 브랜치는 등록 토큰 축에 남기로 하고 근거·전환 조건을
@@ -7131,7 +7131,10 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   **호출부가 0건**이다(쓰는 곳이 `observe`·`write`·`remove`만 쓴다) — 대칭을 위해 남길지.
   ③ 평문·암호문이 **같은 `DataStore<Preferences>` 하나**를 공유하므로 키가 섞인다 — 지금은 문제가
   없지만 어느 키가 어느 형태인지는 코드로만 안다.
-- **상태**: 미해결 (**동작 영향 0** — 복제와 미사용 표면의 문제다)
+- **상태**: 부분 해소 — ①② 해소, ③ 미해결 (**동작 영향 0**)
+  > 📌 **①② 해소(PR #534)** — `EncryptedPreferences`가 `DataStorePreferences`를 감싸 암복호화만 얹는다.
+  > 폐기 규칙은 `DataStorePreferences` 한 벌에만 있고, `DataStorePreferences.read`는 `EncryptedPreferences.read`가
+  > 부른다. ③(한 `DataStore<Preferences>`에 평문·암호문 키가 섞임)은 그대로다.
 - **해소 메모**: ①을 정하면 [data-layer](../architecture/data-layer.md) 「평문 DataStore 프록시」 항목에
   적고, 뽑아낸다면 [ADR-0019](../adr/0019-encrypted-token-storage.md)의 결정 범위를 건드리는지 함께 본다.
 
@@ -7745,7 +7748,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-21] 같은 정책 위키가 두 저장소에 각각 존재하는데 어느 쪽이 정본인지 정한 문서가 없다
 
 - **ID**: OQ-P-405
-- **출처**: TJYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
+- **출처**: TEAMYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
   각각 ingest한 결과**다. 소스 층은 사실상 같다 — 39건이 파일명까지 일치하고 차이는 한글 자모
   정규화(NFC/NFD)뿐이다. 갈라진 것은 그 위의 개념 층이다. 이쪽 `concepts/`는 19건이고 화면 단위로
   잘게 쪼갠 한글 이름(`카메라-뷰파인더`·`무한-파르페-그리드`·`nametag-chip`)인데, 저쪽은 8건이고

@@ -42,7 +42,7 @@ tags: [adr, parfait, auth, network, session]
 
 - **`TokenAuthenticator`**(`data/network`) — `authenticate()`가 `@NoAuth` 가드 → 루프 가드 →
   `Mutex` → 선점 확인 → 재발급 순으로 판단한다. `Authenticator` 계약이 동기라 `runBlocking`을
-  쓴다(`TokenStoreTokenProvider` 선례와 동일).
+  쓴다(`TokenProviderImpl` 선례와 동일).
 - **재발급은 전용 `OkHttpClient`로 나간다**(`@UnauthenticatedClient`, 독립 `Dispatcher`, 인증기·`AuthInterceptor`
   없음). 같은 클라이언트를 쓰면 **디스패처가 고갈돼 앱 전체가 정지한다** — `authenticate()`는 자기
   호출이 슬롯을 점유한 채 블록된 상태로 실행되는데, 재발급이 같은 디스패처·같은 호스트로 enqueue
