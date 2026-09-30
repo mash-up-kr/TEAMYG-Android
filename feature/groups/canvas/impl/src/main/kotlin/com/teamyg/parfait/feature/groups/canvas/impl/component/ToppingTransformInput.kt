@@ -27,7 +27,8 @@ internal val TOPPING_POINTER_MAX_JUMP = 48.dp
  * 옮기기·회전·확대를 한 번에 한다. 핀치 중 한 손가락을 떼면 남은 손가락으로 계속 옮긴다.
  *
  * 직전 이벤트에도 눌려 있던 포인터만 센다. 새로 down 됐거나 막 뗀 포인터를 넣으면 포인터 수가
- * 바뀌는 순간 중점이 튄다.
+ * 바뀌는 순간 중점이 튄다. 짝은 id 가 작은 두 포인터다 — `PointerId` 는 닿은 순서로 늘고 재사용되지
+ * 않아서 먼저 닿은 두 손가락이 된다.
  *
  * @param onTransform `pan` 은 px, `rotationDelta` 는 `rotationZ` 와 같은 방향의 도 단위.
  */
