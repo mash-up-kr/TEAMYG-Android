@@ -134,9 +134,17 @@ constructor(
                             .drop(newCursor)
                             .filter(InviteCode::isCodeChar)
                         val newText = (head + tail).take(codeLength)
+                        // 글자 수가 줄었으면(지우기) 누른 자리에 지울 글자가 남아 있는 한 포커스를
+                        // 그 자리에 붙잡아 둔다 — 재선택 없이 지우기를 이어가면 그 자리로 밀려온
+                        // 글자가 계속 지워진다. 그 외(추가·붙여넣기)는 기존대로 끝을 따라간다.
+                        val newFocusedIndex = if (newText.length < text.length) {
+                            focusedIndexAfterShrink(oldFocusedIndex = focusedIndex, newLength = newText.length)
+                        } else {
+                            newText.focusedIndex()
+                        }
                         copy(
                             text = newText,
-                            focusedIndex = newText.focusedIndex(),
+                            focusedIndex = newFocusedIndex,
                             // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
                             inviteCodeError = inviteCodeError.takeIf { newText == text },
                         )
@@ -242,6 +250,16 @@ constructor(
     }
 
     private fun String.focusedIndex(): Int = length.coerceAtMost(InviteCode.LENGTH - 1)
+
+    /**
+     * 지우기로 줄어든 다음 포커스 칸. 누른 자리([oldFocusedIndex])에 아직 글자가 남아 있으면
+     * ([oldFocusedIndex] < [newLength]) 그 자리를 그대로 유지하고, 더 당겨올 글자가 없어지면
+     * 새 텍스트의 마지막 칸으로 물러난다.
+     */
+    private fun focusedIndexAfterShrink(
+        oldFocusedIndex: Int,
+        newLength: Int,
+    ): Int = if (newLength == 0) 0 else minOf(oldFocusedIndex, newLength - 1)
 
     /** [replacingFilledCellsOrNull]의 결과 — 밀지 않고 대신 끼워 넣은 새 텍스트와 그다음 포커스 칸 */
     private data class FilledCellReplacement(val text: String, val focusedIndex: Int)

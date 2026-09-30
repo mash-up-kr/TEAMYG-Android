@@ -341,9 +341,9 @@ class GroupInviteCodeViewModelTest {
         // When 마지막 글자를 지운다
         viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCDE", cursor = 5))
 
-        // Then 칸을 직접 누르지 않아도 지워지고 포커스가 빈 자리로 물러난다
+        // Then 칸을 직접 누르지 않아도 지워지고, 포커스는 이제 마지막 글자가 된 자리로 물러난다
         assertEquals("ABCDE", viewModel.state.value.text)
-        assertEquals(5, viewModel.state.value.focusedIndex)
+        assertEquals(4, viewModel.state.value.focusedIndex)
     }
 
     @Test
@@ -365,19 +365,20 @@ class GroupInviteCodeViewModelTest {
 
     @Test
     fun changeText_deletesMiddleChar_pullsFollowingCharsForward() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 초대코드 ABCDEF 를 입력한 화면
+        // Given 초대코드 ABCDEF 를 입력한 화면 — 포커스는 마지막 칸(5)에 있다
         val viewModel = filledViewModel()
 
         // When 세 번째 글자 C 를 지운다
         viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABDEF", cursor = 2))
 
-        // Then 뒤 글자가 빈자리로 당겨지고 포커스는 다시 빈 칸으로 간다
+        // Then 뒤 글자가 당겨오고, 기존 포커스(5)는 5글자짜리 텍스트엔 더는 없는 자리라
+        // 새 마지막 칸(4)으로 당겨진다
         assertEquals("ABDEF", viewModel.state.value.text)
-        assertEquals(5, viewModel.state.value.focusedIndex)
+        assertEquals(4, viewModel.state.value.focusedIndex)
     }
 
     @Test
-    fun changeText_tapsMiddleCellThenDeletes_removesThatCharAndPullsRestForward() =
+    fun changeText_tapsMiddleCellThenDeletes_removesThatCharAndHoldsFocusThere() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고른 상태
             val viewModel = filledViewModel()
@@ -386,28 +387,44 @@ class GroupInviteCodeViewModelTest {
             // When 그 칸에서 지우기를 누른다 — 커서가 눌린 칸 뒤에 있어 그 칸 자신이 지워진다
             viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABDEF", cursor = 2))
 
-            // Then 누른 글자(C)가 지워지고 뒤 글자가 당겨오며, 포커스는 빈 칸(끝)으로 간다
+            // Then 누른 글자(C)가 지워지고 뒤 글자가 당겨오지만, 포커스는 누른 자리(그 뒤로 밀려온
+            // D)에 그대로 남는다 — 빈 칸(끝)으로 점프하지 않는다
             assertEquals("ABDEF", viewModel.state.value.text)
-            assertEquals(5, viewModel.state.value.focusedIndex)
+            assertEquals(2, viewModel.state.value.focusedIndex)
         }
 
     @Test
-    fun changeText_deletesStartingFromMiddleCellRepeatedly_emptiesTextWithoutReselecting() =
+    fun changeText_tapsMiddleCellThenDeletesRepeatedly_holdsFocusUntilTailConsumedThenTracksEnd() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고르고 한 번 지운 상태 — "ABDEF"
+            // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고른 상태
             val viewModel = filledViewModel()
             viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+
+            // When 칸을 다시 고르지 않고 지우기만 이어서 누른다 — 눌린 자리로 밀려온 글자를
+            // 계속 지우는 동안은 포커스가 그 자리에 그대로 있다
             viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABDEF", cursor = 2))
+            assertEquals("ABDEF", viewModel.state.value.text)
+            assertEquals(2, viewModel.state.value.focusedIndex)
 
-            // When 칸을 다시 고르지 않고 지우기만 이어서 누른다 — 지우기 후 포커스가 매번
-            // 남은 글자 끝으로 가므로, 이후 지우기는 항상 그 시점의 마지막 글자를 지운다
-            listOf("ABDE", "ABD", "AB", "A", "").forEach { remaining ->
-                viewModel.processIntent(
-                    GroupInviteCodeIntent.ChangeText(text = remaining, cursor = remaining.length),
-                )
-            }
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABEF", cursor = 2))
+            assertEquals("ABEF", viewModel.state.value.text)
+            assertEquals(2, viewModel.state.value.focusedIndex)
 
-            // Then 중간에서 시작했어도 결국 전부 지워진다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABF", cursor = 2))
+            assertEquals("ABF", viewModel.state.value.text)
+            assertEquals(2, viewModel.state.value.focusedIndex)
+
+            // Then 눌린 자리 뒤로 밀려올 글자가 더는 없으면(F까지 지워 "AB"만 남으면), 그때부터는
+            // 포커스가 한 칸씩 앞으로 물러나며 끝에서부터 지워진다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "AB", cursor = 2))
+            assertEquals("AB", viewModel.state.value.text)
+            assertEquals(1, viewModel.state.value.focusedIndex)
+
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "A", cursor = 1))
+            assertEquals("A", viewModel.state.value.text)
+            assertEquals(0, viewModel.state.value.focusedIndex)
+
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "", cursor = 0))
             assertEquals("", viewModel.state.value.text)
             assertEquals(0, viewModel.state.value.focusedIndex)
         }
@@ -424,9 +441,9 @@ class GroupInviteCodeViewModelTest {
             viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABF", cursor = 2))
 
             // Then 선택한 세 글자만 사라지고 나머지는 순서 그대로 남는다 — 삽입 판별 로직이
-            // 글자 수가 준 경우까지 건드리지 않는다
+            // 글자 수가 준 경우까지 건드리지 않는다. 포커스는 누른 자리(이제 F)에 그대로 남는다
             assertEquals("ABF", viewModel.state.value.text)
-            assertEquals(3, viewModel.state.value.focusedIndex)
+            assertEquals(2, viewModel.state.value.focusedIndex)
         }
 
     @Test
