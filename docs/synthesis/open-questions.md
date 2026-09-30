@@ -2968,7 +2968,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   탭을 받아 **선택 해제**만 한다. 위키 [[C-202-토핑-편집자-확인-규칙-v0.1]]([[토핑-spotlight]])은
   타인 토핑 탭에 Spotlight 강조 + 작성자 Toast를, 본인 토핑 탭에 C-305 편집 진입을 규정한다.
   코드는 본인 토핑 탭이 곧 편집이 아니라 **선택**이고 편집은 모서리 버튼이다. 또 크기조절·회전은
-  버튼 없이 두 손가락 제스처(`component/ToppingHitTestInput.kt`의 `toppingTransformInput`)로만 되고,
+  버튼 없이 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)로만 되고,
   접근성 서비스가 대신할 수 있는 조작이 없다. TalkBack에서는 두 손가락 핀치가 스크린리더에 가로채져
   크기·회전을 바꿀 경로가 없다 — 한 손가락 드래그 패스스루로는 이동만 된다.
 - **항목**: ① C-202가 캔버스 상세(C-001) 전용인지, 편집 모드에도 적용되는지 — 적용된다면 편집 중
@@ -4067,7 +4067,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   정책 문구("스케일링된 토핑의 짧은 쪽이 48px 미만이면")는 초기 렌더링 절에 있다.
   ③ 회전 스냅(0·90·180·270 근처 흡착)이나 상한이 필요한지.
 - **상태**: 부분 해소 (①③ 잔존)
-  > 지금 조작은 두 손가락 제스처(`component/ToppingHitTestInput.kt`의 `toppingTransformInput`)라 감도
+  > 지금 조작은 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)라 감도
   > 상수가 없다. 배율은 두 화면이 `TOPPING_MIN_SCALE` 하한만 쓰고 상한이 없다(OQ-P-271·OQ-P-325).
   > ②는 "48dp 방어는 초기 배치에만"으로 정해졌다. 회전은 여전히 무제한이고 `rotation`이 그대로 PATCH
   > 되며 서버도 범위를 검증하지 않아, ③(스냅·상한)은 저장 값의 문제이기도 하다.
@@ -5046,7 +5046,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-282
 - **출처**: [segmentation-preprocessing 스펙](../superpowers/specs/2026-08-23-segmentation-preprocessing.md)
-  설계 2절 × `ToppingHandleComponents.kt#rememberToppingBaseSize` × `ToppingPlacement.kt` —
+  설계 2절 × `ToppingPlacementComponents.kt#rememberToppingBaseSize` × `ToppingPlacement.kt` —
   `rememberToppingBaseSize`가 알맹이 PNG의 인트린식 픽셀 치수를 그대로 dp로 환산하고, 그 값이
   배치 화면의 초기 크기이자 `toToppingTransform`이 계산하는 `scale`의 분자가 된다. 그 `scale`이
   서버에 저장된다([c106-topping-place-api](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md)).

@@ -118,8 +118,8 @@ app / app-preview
   `core:designsystem`만 `utils`(복수)를 쓰는데 그쪽이 예외다(2026-08-18 기준 이름을 맞추지 않았다).
   > 📌 **화면 둘이 공유하는 컴포저블은 같은 모듈 `component/`에 둔다**(2026-08-19, PR #290) —
   > `groups/canvas/impl`의 C-301 편집 탭과 C-106 배치 화면이 토핑 표시 조각 둘
-  > (`ToppingHandleComponents.kt`의 `rememberToppingBaseSize`·`ToppingSelectionStroke`)과 제스처 입력
-  > (`ToppingHitTestInput.kt`)을 나눠 쓴다.
+  > (`ToppingPlacementComponents.kt`의 `rememberToppingBaseSize`·`ToppingSelectionStroke`)과 제스처 입력
+  > (`ToppingHitTestInput.kt`·`ToppingTransformInput.kt`)을 나눠 쓴다.
   > **디자인시스템으로 올리지는 않았다** — 소비처가 한 모듈 안 두 화면이라
   > `feature/common/*` 승격 기준("2개 이상 소비처")과 같은 판단을 모듈 안에서 한 셈이다.
   > 컴포저블이 아닌 기하 계산은 종전대로 `util/ToppingGeometry.kt`에 남는다.

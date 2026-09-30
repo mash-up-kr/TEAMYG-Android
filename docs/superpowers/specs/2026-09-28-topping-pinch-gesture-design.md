@@ -6,7 +6,7 @@ category: behavior-spec
 platforms: android
 verified: 2026-09-28
 related_code:
-  - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTransformInput
+  - feature/groups/canvas/impl/.../component/ToppingTransformInput.kt#toppingTransformInput
   - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTapInput
   - feature/groups/canvas/impl/.../util/ToppingHitTarget.kt#ToppingHitTarget
   - feature/groups/canvas/impl/.../screen/CanvasBGEditScreen.kt#ToppingCornerButtons
@@ -63,7 +63,7 @@ tags: [spec, parfait]
 ## API / 인터페이스
 
 ```kotlin
-// component/ToppingHitTestInput.kt — toppingDragInput 을 대체
+// component/ToppingTransformInput.kt — toppingDragInput 을 대체
 @Composable
 internal fun Modifier.toppingTransformInput(
     targetAt: () -> ToppingHitTarget?,
@@ -177,8 +177,9 @@ data class OnToppingTransform(val panX: Float, val panY: Float, val zoom: Float,
 
 | 파일 | 변경 |
 |---|---|
-| `component/ToppingHitTestInput.kt` | `toppingTransformInput` 추가, `toppingDragInput` 삭제, `toppingTapInput`에 다중 포인터 취소 추가 |
-| `component/ToppingHandleComponents.kt` | `ToppingRotateHandleButton` `ToppingResizeHandleButton` `ToppingDragHandleButton` `handleVectorPx` 삭제. `ToppingSelectionStroke` 유지 |
+| `component/ToppingTransformInput.kt` | `toppingTransformInput` 신설 |
+| `component/ToppingHitTestInput.kt` | `toppingDragInput` 삭제, `toppingTapInput`에 다중 포인터 취소 추가 |
+| `component/ToppingPlacementComponents.kt` | `ToppingHandleComponents.kt`에서 개명. `ToppingRotateHandleButton` `ToppingResizeHandleButton` `ToppingDragHandleButton` `handleVectorPx` 삭제. `ToppingSelectionStroke` 유지 |
 | `util/ToppingGeometry.kt` | `resizeScaleFactor` `rotationDeltaDegrees` 삭제. `computeToppingButtonPoints`는 편집 화면이 쓰므로 유지 |
 | `screen/CanvasToppingPlaceScreen.kt` | 오버레이 추가, `dragBy`와 `ToppingPlaceCornerButtons` 삭제 |
 | `screen/CanvasBGEditScreen.kt` | 제스처 교체, TR·BR 핸들 제거, 제스처 중 삭제·편집 버튼 숨김 |
