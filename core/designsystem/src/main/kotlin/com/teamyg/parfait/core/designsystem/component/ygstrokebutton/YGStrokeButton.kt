@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -36,7 +35,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
  * Figma Button-Stroke
  *
  * @param borderWidth 테두리 두께. [Dp.Hairline] 이면 테두리를 그리지 않는다.
- * @param disabledBorderColor 비활성 테두리 색. 다른 버튼과 외곽선을 이어야 하는 자리에서는 활성 테두리 색을 넘긴다.
+ * @param isBorderKeptWhenDisabled 비활성이어도 활성 테두리 색을 유지한다. 다른 버튼과 외곽선을 이어야 하는 자리에서 쓴다.
  */
 @Composable
 fun YGStrokeButton(
@@ -47,7 +46,7 @@ fun YGStrokeButton(
     isSelected: Boolean = false,
     isEnabled: Boolean = true,
     borderWidth: Dp = SizeTokens.Size1.getDp(),
-    disabledBorderColor: Color = YGAtomicColors.Gray.Gray200,
+    isBorderKeptWhenDisabled: Boolean = false,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
@@ -58,10 +57,10 @@ fun YGStrokeButton(
         isHighlighted -> YGAtomicColors.Gray.Gray100
         else -> YGAtomicColors.Gray.White
     }
-    val borderColor = if (isEnabled) {
+    val borderColor = if (isEnabled || isBorderKeptWhenDisabled) {
         YGAtomicColors.Gray.Gray500
     } else {
-        disabledBorderColor
+        YGAtomicColors.Gray.Gray200
     }
     val contentColor = if (isEnabled) {
         YGAtomicColors.Gray.Gray700
