@@ -1,7 +1,7 @@
 ---
 id: c101-loading
 title: 사진 분석 로딩 페이지 (C-101-Loading)
-status: draft
+status: implemented
 category: behavior-spec
 platforms: android
 verified: 2026-09-30
