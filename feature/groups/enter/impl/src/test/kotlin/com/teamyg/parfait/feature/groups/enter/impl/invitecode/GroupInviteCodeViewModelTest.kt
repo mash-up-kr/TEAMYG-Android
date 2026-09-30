@@ -533,6 +533,76 @@ class GroupInviteCodeViewModelTest {
         }
 
     @Test
+    fun changeText_multiCharCommitOverFilledCell_replacesInPlaceWithoutShifting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 두 번째 칸(B)을 다시 누른 상태
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 1))
+
+            // When 자동완성·스와이프 입력처럼 두 글자("XY")가 한 번의 편집으로 한꺼번에 끼워 넣어진다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABXYCDEF", cursor = 4))
+
+            // Then 두 글자 모두 누른 칸부터 순서대로 그 칸들을 대신하고, 그 뒤는 밀리지 않는다
+            assertEquals("AXYDEF", viewModel.state.value.text)
+            assertEquals(3, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_multiCharCommitOverflowsRemainingCells_replacesThoseCellsAndDropsOverflow() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 다섯 번째 칸(E)을 다시 누른 상태 — 대신할 칸이 E·F 둘뿐이다
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 4))
+
+            // When 세 글자("XYZ")가 한 번에 끼워 넣어져, 남은 칸 수보다 많다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCDEXYZF", cursor = 8))
+
+            // Then 남은 두 칸(E·F)이 앞에서부터 순서대로 바뀌고, 더 들어갈 칸이 없는 나머지는 잘려 나간다
+            assertEquals("ABCDXY", viewModel.state.value.text)
+            assertEquals(LAST_INDEX, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_typesOverMiddleCellRepeatedlyWithoutReselecting_replacesEachCellThroughToTheEnd() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 세 번째 칸(C)을 다시 누른 상태
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+
+            // When 칸을 다시 고르지 않고 마지막 칸까지 이어서 타이핑한다 — 텍스트 필드는 매번
+            // 그 시점 커서 자리에 새 글자를 끼워 넣은 원본을 준다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCVDEF", cursor = 4))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVDWEF", cursor = 5))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWEXF", cursor = 6))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWXFY", cursor = 7))
+
+            // Then 칸마다 순서대로 밀리지 않고 바뀌어 마지막 칸까지 정상 도달한다
+            assertEquals("ABVWXY", viewModel.state.value.text)
+            assertEquals(LAST_INDEX, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_continuesTypingAfterReachingLastCell_keepsReplacingLastCellWithoutGrowingOrCorrupting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 마지막 칸까지 이어서 고친 화면(포커스가 마지막 칸에 멈춰 있다)
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABCVDEF", cursor = 4))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVDWEF", cursor = 5))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWEXF", cursor = 6))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWXFY", cursor = 7))
+
+            // When 마지막 칸에서도 칸을 다시 고르지 않고 계속 입력한다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWXYZ", cursor = 7))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABVWXZQ", cursor = 7))
+
+            // Then 6자를 넘어가거나 깨지지 않고, 마지막 칸만 계속 새 글자로 바뀐다
+            assertEquals("ABVWXQ", viewModel.state.value.text)
+            assertEquals(InviteCode.LENGTH, viewModel.state.value.text.length)
+            assertEquals(LAST_INDEX, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
     fun changeText_typesOverFilledLastCell_replacesOnlyThatChar() = runTest(mainDispatcherRule.dispatcher) {
         // Given 다 채운 화면에서 마지막 칸(F)을 다시 누른 상태
         val viewModel = filledViewModel()

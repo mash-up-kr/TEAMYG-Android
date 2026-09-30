@@ -113,16 +113,16 @@ constructor(
                 updateState {
                     // 이미 글자가 있는 칸을 다시 눌러 타이핑하면, 텍스트 필드 기본 동작은 그
                     // 글자를 커서 자리에 "끼워 넣어" 다음 칸부터 전부 밀어 버린다. 눌린 칸 자체를
-                    // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자를 그 자리에 끼워 넣으려 한
-                    // 것으로 보이면 밀지 않고 그 칸만 바꾼다.
-                    val replacementChar = charReplacingFilledCellOrNull(intent)
+                    // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자든(직접 타이핑) 여러 글자든
+                    // (자동완성·스와이프 입력처럼 한 번에 여러 글자가 들어오는 경우) 그 칸부터
+                    // 순서대로 끼워 넣으려 한 것으로 보이면 밀지 않고 그 칸들만 바꾼다.
+                    val replacement = replacingFilledCellsOrNull(intent)
 
-                    if (replacementChar != null) {
-                        val newText = text.take(focusedIndex) + replacementChar + text.drop(focusedIndex + 1)
+                    if (replacement != null) {
                         copy(
-                            text = newText,
-                            focusedIndex = (focusedIndex + 1).coerceAtMost(codeLength - 1),
-                            inviteCodeError = inviteCodeError.takeIf { newText == text },
+                            text = replacement.text,
+                            focusedIndex = replacement.focusedIndex,
+                            inviteCodeError = inviteCodeError.takeIf { replacement.text == text },
                         )
                     } else {
                         val newCursor = intent.cursor.coerceIn(0, intent.text.length)
@@ -243,18 +243,45 @@ constructor(
 
     private fun String.focusedIndex(): Int = length.coerceAtMost(InviteCode.LENGTH - 1)
 
+    /** [replacingFilledCellsOrNull]의 결과 — 밀지 않고 대신 끼워 넣은 새 텍스트와 그다음 포커스 칸 */
+    private data class FilledCellReplacement(val text: String, val focusedIndex: Int)
+
     /**
-     * 이미 글자가 있는 칸을 다시 눌러 새 글자 하나를 끼워 넣으려는 삽입인지 확인해, 맞으면 그
-     * 칸을 대신할 글자를 돌려준다. 삭제·붙여넣기·코드 문자가 아닌 입력 등은 `null`이다.
+     * 이미 글자가 있는 칸을 다시 눌러 새 글자(들)를 끼워 넣으려는 삽입인지 확인해, 맞으면 밀지
+     * 않고 그 칸부터 순서대로 새 글자로 바꾼 결과를 돌려준다. 한 글자를 직접 타이핑하는 경우뿐
+     * 아니라 자동완성·스와이프 입력처럼 한 번의 편집으로 여러 글자가 한꺼번에 들어오는 경우도
+     * 같은 방식으로 다룬다 — 그렇지 않으면 그 경우만 기존 밀림 로직으로 새어 나간다. 대신할 칸보다
+     * 새 글자가 많으면 남는 칸이 없는 만큼은 버린다. 삭제·붙여넣기·코드 문자가 아닌 입력 등
+     * 삽입으로 볼 수 없는 경우는 `null`이다.
      */
-    private fun GroupInviteCodeUiState.charReplacingFilledCellOrNull(intent: GroupInviteCodeIntent.ChangeText): Char? {
-        val oldCursor = cursor
+    private fun GroupInviteCodeUiState.replacingFilledCellsOrNull(
+        intent: GroupInviteCodeIntent.ChangeText,
+    ): FilledCellReplacement? {
         if (focusedIndex >= text.length) return null
-        if (intent.text.length != text.length + 1) return null
-        if (intent.cursor != oldCursor + 1) return null
+
+        val oldCursor = cursor
+        val insertedLength = intent.text.length - text.length
+        if (insertedLength <= 0) return null
         if (intent.text.take(oldCursor) != text.take(oldCursor)) return null
-        if (intent.text.drop(oldCursor + 1) != text.drop(oldCursor)) return null
-        return intent.text.getOrNull(oldCursor)?.takeIf(InviteCode::isCodeChar)
+        if (intent.text.drop(oldCursor + insertedLength) != text.drop(oldCursor)) return null
+
+        val inserted = intent.text
+            .substring(oldCursor, oldCursor + insertedLength)
+            .filter(InviteCode::isCodeChar)
+        if (inserted.isEmpty()) return null
+
+        val replaceCount = minOf(inserted.length, text.length - focusedIndex)
+        val newText = (
+            text.take(focusedIndex) +
+                inserted.take(replaceCount) +
+                text.drop(focusedIndex + replaceCount) +
+                inserted.drop(replaceCount)
+            ).take(codeLength)
+        val placedCount = minOf(inserted.length, codeLength - focusedIndex)
+        return FilledCellReplacement(
+            text = newText,
+            focusedIndex = (focusedIndex + placedCount).coerceAtMost(codeLength - 1),
+        )
     }
 
     private companion object {
