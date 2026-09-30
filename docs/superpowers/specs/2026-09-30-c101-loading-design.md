@@ -149,8 +149,10 @@ data class NavKeyToppingEdit(
 
 ## 표시·제어 규칙
 
-- C-101-Loading: 흰 배경, 우상단 X(`YGCircleButton`), 가운데 회색 원 "···", 제목
-  "사진을 편집하고 있어요", 부제 "잠시만 기다려 주세요...". 딤·Lottie 오버레이는 쓰지 않는다
+- C-101-Loading: 흰 배경, 우상단 X(`YGCircleButton`), 가운데 `YGLoadingLottie(art = YGLoadingArt.Dark)`,
+  제목 "사진을 편집하고 있어요", 부제 "잠시만 기다려 주세요...". 딤 오버레이는 쓰지 않는다.
+  `Dark`인 이유는 에셋 색이다 — 반투명 검정 원 위 회색 점 셋이라 Figma의 회색 원 "···"과 같고,
+  `Light`는 흰 점이라 흰 배경에서 안 보인다
 - `BackHandler`는 `isAnalyzing`인 동안에만 켠다. 선택 UI에서의 시스템 뒤로는 `PictureConfirm`으로 간다
 - 팝업: `YGModalPopup` + `ic_warning_round`. 제목 "사진 편집을 그만둘까요?", 본문
   "지금까지 편집한 내용은 저장되지 않아요.\n정말 그만두시겠어요?", 보조 "그만두기", 주 "계속 편집".
@@ -187,7 +189,6 @@ data class NavKeyToppingEdit(
 
 ## 주의 / 열린 질문
 
-- Figma의 "···" 원이 Lottie인지 정적 이미지인지 미확인 — 구현 시 `get_design_context`로 확인한다
 - 분석 화면명: 로딩 중에도 `C-103`으로 찍힌다(`NavKeyAnalyticsScreenTest`). 로딩을 따로 세야 하면
   NavKey 분리가 필요하다
 - 위키의 C-103-Error·재시도 정책과 어긋난다. 정책 원본이 위키에 들어올 때 갱신된다
