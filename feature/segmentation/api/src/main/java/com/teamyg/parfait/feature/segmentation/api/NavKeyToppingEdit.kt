@@ -25,7 +25,7 @@ data class NavKeyToppingEdit(
 /** 편집 화면이 완료 시 결과를 처리하는 방식 */
 @Serializable
 enum class ToppingEditCompletion {
-    /** 결과를 [TOPPING_EDIT_RESULT_KEY] 로 돌려주고 닫는다. 확인 화면 "사진 편집", 배경 편집 */
+    /** 결과를 [TOPPING_EDIT_RESULT_KEY] 로 돌려주고 닫는다. 기록·이동은 호출한 쪽 몫이다 */
     ReturnResult,
 
     /** 초안을 직접 기록하고 확인 화면으로 간다. 편집 화면은 백스택에 남는다. 0개 경로 */

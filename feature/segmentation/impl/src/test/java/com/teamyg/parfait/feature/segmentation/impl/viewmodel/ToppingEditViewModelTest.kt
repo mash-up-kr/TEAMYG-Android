@@ -35,15 +35,32 @@ class ToppingEditViewModelTest {
         sourceLongSide = 4032,
     )
 
-    private fun createViewModel() = ToppingEditViewModel(
-        sourceImageUri = SOURCE_URI,
-        segmentationImageUri = SEGMENTATION_URI,
+    private fun createViewModel(
+        sourceImageUri: String = SOURCE_URI,
+        segmentationImageUri: String = SEGMENTATION_URI,
+    ) = ToppingEditViewModel(
+        sourceImageUri = sourceImageUri,
+        segmentationImageUri = segmentationImageUri,
         initialBorderLayers = emptyList(),
         borderOnly = false,
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
     )
+
+    @Test
+    fun loadImages_equalUris_decodesOnce() = runTest {
+        // Given 원본과 분석 결과가 같은 주소다(RecordAndConfirm 진입)
+        val viewModel = createViewModel(sourceImageUri = SOURCE_URI, segmentationImageUri = SOURCE_URI)
+
+        // When 이미지를 불러온다
+        viewModel.effect.test {
+            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+        }
+
+        // Then 같은 주소를 두 번 풀지 않는다
+        coVerify(exactly = 1) { decodeImage(SOURCE_URI) }
+    }
 
     @Test
     fun recordResult_recorded_goesToConfirmWithSwappedPaths() = runTest {

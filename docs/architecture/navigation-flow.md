@@ -378,7 +378,7 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   `ToppingEditRoute`가 `ToppingEditIntent.RecordResult`로 VM에 초안을 기록시킨 뒤 `goTo(NavKeySegmentationConfirm)`을 한다.
   **편집 화면은 확인 화면 아래 백스택에 남는다.** 이동은 편집 키가 아직 맨 위일 때만 한다(`backStack.lastOrNull() == key`).
   ⚠️ 완료 연타는 초안을 두 번 기록할 수 있다 — 두 번째 결과는 저장 경로가 달라 확인 키가 달라지므로
-  `goToSingleClearTop`으로는 못 막고, 맨 위 검사가 두 번째 이동만 버린다. 그때 초안은 둘째 경로, 떠 있는 확인 화면은 첫 경로를 보여 준다.
+  `goToSingleClearTop`으로는 못 막고, 맨 위 검사가 두 번째 이동만 버린다. 그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
   경로 이름이 뒤집혀 있다: 확인 화면 인자의 `subjectImagePath = result.cutoutImagePath`, `trimmedSubjectImagePath = result.subjectImagePath`.
 - **"사진 편집을 그만둘까요?" 팝업이 네 화면에 있다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로)의 X.
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,

@@ -6,6 +6,7 @@
 
     <string name="segmentation_loading_title">사진을 편집하고 있어요</string>
     <string name="segmentation_loading_description">잠시만 기다려 주세요...</string>
+    <string name="segmentation_loading_close">닫기</string>
 
     <string name="segmentation_quit_dialog_title">사진 편집을 그만둘까요?</string>
     <string name="segmentation_quit_dialog_body">지금까지 편집한 내용은 저장되지 않아요.\n정말 그만두시겠어요?</string>

@@ -107,7 +107,10 @@ internal fun SegmentationConfirmRoute(
         if (showQuitDialog) {
             SegmentationQuitDialog(
                 // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-                onConfirmQuit = { navigator.popUpTo<NavKeyCanvasMain>() },
+                onConfirmQuit = {
+                    showQuitDialog = false
+                    navigator.popUpTo<NavKeyCanvasMain>()
+                },
                 onDismiss = { showQuitDialog = false },
             )
         }

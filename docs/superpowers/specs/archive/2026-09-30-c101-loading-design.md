@@ -152,7 +152,7 @@ data class NavKeyToppingEdit(
 ⚠️ 알려진 한계: `completeEdit`이 `isSaving`을 끈 뒤 Route가 `RecordResult`를 돌려주기까지 틈이 있어,
 그 사이 "완료" 연타는 기록을 한 번 더 할 수 있다. 두 번째 결과는 저장 경로가 달라 확인 키가
 달라지므로 `goToSingleClearTop`으로는 못 막는다 — 위의 맨 위 검사가 두 번째 이동을 버린다. 두 번째
-기록은 초안을 새 경로로 덮어쓰고, 떠 있는 확인 화면은 첫 경로를 보여 준다(파일은 둘 다 캐시에 남는다). VM은
+기록은 초안을 새 경로로 덮어쓰고, 확인 화면은 초안 흐름을 따라 둘째 결과로 바뀌어 초안과 어긋나지 않는다(첫 결과 파일만 캐시에 고아로 남는다). VM은
 `RecordToppingDraftUseCase`를 주입받아 `recordEditResult(result)` → 성공이면
 `ToppingEditEffect.GoToConfirm`(경로 이름 뒤집힘 주의: `subjectImagePath = result.cutoutImagePath`,
 `trimmedSubjectImagePath = result.subjectImagePath`), 실패면 기존 `SaveFailed` 토스트 후 머문다.

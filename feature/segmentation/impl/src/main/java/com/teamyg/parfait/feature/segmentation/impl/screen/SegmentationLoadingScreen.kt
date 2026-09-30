@@ -37,7 +37,7 @@ internal fun SegmentationLoadingScreen(
         YGCircleButton(
             iconResource = DesignSystemR.drawable.ic_close,
             type = YGCircleButtonType.Default,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.segmentation_loading_close),
             onClick = onClickClose,
             modifier = Modifier
                 .align(Alignment.TopEnd)

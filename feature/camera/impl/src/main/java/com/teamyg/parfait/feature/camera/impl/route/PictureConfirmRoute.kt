@@ -79,15 +79,15 @@ internal fun PictureConfirmRoute(
 
     if (showQuitDialog) {
         YGModalPopup(
-            title = stringResource(R.string.picture_confirm_quit_dialog_title),
-            body = stringResource(R.string.picture_confirm_quit_dialog_body),
+            title = stringResource(R.string.camera_picture_confirm_quit_dialog_title),
+            body = stringResource(R.string.camera_picture_confirm_quit_dialog_body),
             iconRes = DesignSystemR.drawable.ic_warning_round,
-            secondaryText = stringResource(R.string.picture_confirm_quit_dialog_confirm),
+            secondaryText = stringResource(R.string.camera_picture_confirm_quit_dialog_confirm),
             onSecondaryClick = {
                 showQuitDialog = false
                 navigator.popUpTo<NavKeyCanvasMain>()
             },
-            primaryText = stringResource(R.string.picture_confirm_quit_dialog_cancel),
+            primaryText = stringResource(R.string.camera_picture_confirm_quit_dialog_cancel),
             onPrimaryClick = { showQuitDialog = false },
             onDismissRequest = { showQuitDialog = false },
         )

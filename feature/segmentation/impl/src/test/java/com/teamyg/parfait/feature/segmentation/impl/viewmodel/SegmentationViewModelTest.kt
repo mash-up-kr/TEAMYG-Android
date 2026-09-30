@@ -526,6 +526,8 @@ class SegmentationViewModelTest {
 
         // Then 캔버스로 나간다
         viewModel.effect.test { assertEquals(SegmentationEffect.QuitToCanvas, awaitItem()) }
+        // 전환 동안 팝업이 남지 않는다
+        assertEquals(false, viewModel.state.value.showQuitDialog)
     }
 
     @Test

@@ -164,6 +164,8 @@ class SegmentationViewModel
 
                 quit = true
                 pendingOutcome = null
+                // 화면이 걷히는 전환 동안 팝업이 캔버스 위에 남지 않게 닫는다
+                updateState { copy(showQuitDialog = false) }
                 postSideEffect(SegmentationEffect.QuitToCanvas)
             }
         }
