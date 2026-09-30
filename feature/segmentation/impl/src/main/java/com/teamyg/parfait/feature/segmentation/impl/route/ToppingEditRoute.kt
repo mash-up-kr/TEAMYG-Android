@@ -12,8 +12,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.screen.ToppingEditScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditEffect
@@ -60,8 +62,30 @@ internal fun ToppingEditRoute(
                 }
 
                 is ToppingEditEffect.EditCompleted -> {
-                    resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.result)
-                    navigator.onBack()
+                    when (key.completion) {
+                        ToppingEditCompletion.ReturnResult -> {
+                            resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.result)
+                            navigator.onBack()
+                        }
+
+                        ToppingEditCompletion.RecordAndConfirm -> {
+                            viewModel.processIntent(ToppingEditIntent.RecordResult(effect.result))
+                        }
+                    }
+                }
+
+                is ToppingEditEffect.GoToConfirm -> {
+                    // 완료를 연타하면 기록이 두 번 끝나 확인 화면이 두 번 쌓인다.
+                    // 이 화면이 맨 위일 때만 이동해, 이미 확인 화면으로 넘어갔다면 나머지는 버린다
+                    if (navigator.backStack.lastOrNull() == key) {
+                        navigator.goTo(
+                            NavKeySegmentationConfirm(
+                                sourceImageUri = key.sourceImageUri,
+                                subjectImagePath = effect.subjectImagePath,
+                                trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
+                            ),
+                        )
+                    }
                 }
             }
         }

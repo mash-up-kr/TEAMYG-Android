@@ -14,7 +14,9 @@ import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
@@ -144,6 +146,9 @@ sealed interface ToppingEditIntent : UiIntent {
     data object RedoBorder : ToppingEditIntent
 
     data object ClickDone : ToppingEditIntent
+
+    /** [ToppingEditCompletion.RecordAndConfirm] 진입에서 편집 결과를 초안에 기록한다 */
+    data class RecordResult(val result: ToppingEditResult) : ToppingEditIntent
 }
 
 sealed interface ToppingEditEffect : UiSideEffect {
@@ -160,6 +165,12 @@ sealed interface ToppingEditEffect : UiSideEffect {
     data object SubjectTooSmall : ToppingEditEffect
 
     data class EditCompleted(val result: ToppingEditResult) : ToppingEditEffect
+
+    /** 초안 기록을 마쳐 확인 화면으로 간다. 경로 이름은 확인 화면 키 기준이다 */
+    data class GoToConfirm(
+        val subjectImagePath: String,
+        val trimmedSubjectImagePath: String,
+    ) : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -171,6 +182,7 @@ class ToppingEditViewModel
     @Assisted("borderOnly") borderOnly: Boolean,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
+    private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
     initialState = ToppingEditState(
         tab = if (borderOnly) ToppingEditTab.BORDER else ToppingEditTab.AREA,
@@ -237,6 +249,8 @@ class ToppingEditViewModel
             }
 
             ToppingEditIntent.ClickDone -> completeEdit()
+
+            is ToppingEditIntent.RecordResult -> recordResult(intent.result)
         }
     }
 
@@ -340,6 +354,34 @@ class ToppingEditViewModel
         }
     }
 
+    private fun recordResult(result: ToppingEditResult) {
+        launch(
+            key = RECORD_RESULT_KEY,
+            onError = {
+                updateState { copy(isSaving = false) }
+                postSideEffect(ToppingEditEffect.SaveFailed)
+            },
+        ) {
+            updateState { copy(isSaving = true) }
+
+            val recorded = recordToppingDraft.recordEditResult(result)
+
+            updateState { copy(isSaving = false) }
+
+            if (recorded) {
+                postSideEffect(
+                    // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다(`ToppingEditResult` KDoc)
+                    ToppingEditEffect.GoToConfirm(
+                        subjectImagePath = result.cutoutImagePath,
+                        trimmedSubjectImagePath = result.subjectImagePath,
+                    ),
+                )
+            } else {
+                postSideEffect(ToppingEditEffect.SaveFailed)
+            }
+        }
+    }
+
     @AssistedFactory
     interface Factory {
         fun create(
@@ -350,3 +392,5 @@ class ToppingEditViewModel
         ): ToppingEditViewModel
     }
 }
+
+private const val RECORD_RESULT_KEY = "record-result"
