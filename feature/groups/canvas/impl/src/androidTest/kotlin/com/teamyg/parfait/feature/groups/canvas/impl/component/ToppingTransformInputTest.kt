@@ -187,6 +187,32 @@ class ToppingTransformInputTest {
     }
 
     @Test
+    fun onePointerJumpDuringPinch_doesNotSkewZoomOrRotation() {
+        setLayer()
+
+        composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
+            down(0, at(100f, 200f))
+            down(1, at(300f, 200f))
+            // 한 프레임만 튀었다가 제자리로 돌아온다
+            updatePointerTo(1, at(300f, 200f + maxJump * 2))
+            move()
+            updatePointerTo(1, at(300f, 200f))
+            move()
+            moveBothTo(at(80f, 200f), at(320f, 200f))
+            up(0)
+            up(1)
+        }
+
+        composeTestRule.runOnIdle {
+            val zoom = transforms.fold(1f) { acc, it -> acc * it.zoom }
+            val rotation = transforms.sumOf { it.rotationDelta.toDouble() }.toFloat()
+            assertEquals(1.2f, zoom, ZOOM_TOLERANCE)
+            assertEquals(0f, rotation, ROTATION_TOLERANCE_DEGREES)
+            assertPanSum(expected = Offset.Zero)
+        }
+    }
+
+    @Test
     fun pointerCountChange_doesNotJumpPan() {
         setLayer()
 
