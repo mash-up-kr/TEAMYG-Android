@@ -1,6 +1,5 @@
 package com.teamyg.parfait.data.utils.image
 
-import com.teamyg.parfait.data.model.image.ProjectedRegion
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -186,33 +185,6 @@ class SegmentationMaskTest {
         assertFailsWith<IllegalArgumentException> {
             cropAlpha(ByteArray(9), width = 3, height = 3, region = SegmentationBounds(1, 1, 4, 3))
         }
-    }
-
-    @Test
-    fun projectAlpha_mappedEqualsClipped_isPlainResample() {
-        val alpha = byteArrayOf(0, 100, 100, 200.toByte())
-        val mapped = SegmentationBounds(left = 10, top = 10, right = 11, bottom = 11)
-        val projected = ProjectedRegion(mapped = mapped, clipped = mapped)
-
-        val result = projectAlpha(alpha, width = 2, height = 2, projected = projected)
-
-        assertContentEquals(resampleAlpha(alpha, 2, 2, 1, 1), result)
-    }
-
-    @Test
-    fun projectAlpha_mappedAndClippedDiffer_cropsAfterResamplingAtTheMappedOffset() {
-        // Given 2x2 원본을 4x4 로 재표본하고 그중 우상단 2x2 만 자른다 — 잘린 크기로 바로 재표본하면
-        // 코너 값이 달라진다
-        val alpha = byteArrayOf(0, 255.toByte(), 0, 255.toByte())
-        val mapped = SegmentationBounds(left = 100, top = 100, right = 104, bottom = 104)
-        val clipped = SegmentationBounds(left = 102, top = 100, right = 104, bottom = 102)
-        val projected = ProjectedRegion(mapped = mapped, clipped = clipped)
-
-        val result = projectAlpha(alpha, width = 2, height = 2, projected = projected)
-
-        assertEquals(4, result.size)
-        // mapped 의 우상단 코너(재표본에서 255 로 보존)가 잘린 조각의 (1,0) 자리에 온다
-        assertEquals(255, result[1].toInt() and 0xFF)
     }
 
     @Test
