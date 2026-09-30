@@ -377,6 +377,59 @@ class GroupInviteCodeViewModelTest {
     }
 
     @Test
+    fun changeText_tapsMiddleCellThenDeletes_removesThatCharAndPullsRestForward() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고른 상태
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+
+            // When 그 칸에서 지우기를 누른다 — 커서가 눌린 칸 뒤에 있어 그 칸 자신이 지워진다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABDEF", cursor = 2))
+
+            // Then 누른 글자(C)가 지워지고 뒤 글자가 당겨오며, 포커스는 빈 칸(끝)으로 간다
+            assertEquals("ABDEF", viewModel.state.value.text)
+            assertEquals(5, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_deletesStartingFromMiddleCellRepeatedly_emptiesTextWithoutReselecting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고르고 한 번 지운 상태 — "ABDEF"
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABDEF", cursor = 2))
+
+            // When 칸을 다시 고르지 않고 지우기만 이어서 누른다 — 지우기 후 포커스가 매번
+            // 남은 글자 끝으로 가므로, 이후 지우기는 항상 그 시점의 마지막 글자를 지운다
+            listOf("ABDE", "ABD", "AB", "A", "").forEach { remaining ->
+                viewModel.processIntent(
+                    GroupInviteCodeIntent.ChangeText(text = remaining, cursor = remaining.length),
+                )
+            }
+
+            // Then 중간에서 시작했어도 결국 전부 지워진다
+            assertEquals("", viewModel.state.value.text)
+            assertEquals(0, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
+    fun changeText_deletesMultipleCharsFromMiddleAtOnce_shrinksCorrectlyWithoutShifting() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 다 채운 화면에서 세 번째 칸(C)을 직접 눌러 고른 상태
+            val viewModel = filledViewModel()
+            viewModel.processIntent(GroupInviteCodeIntent.SelectedTextFieldElement(index = 2))
+
+            // When 가운데 세 글자(C·D·E)를 한 번에 선택해서 지운다 — 텍스트 필드가 한 번의
+            // 편집으로 여러 글자를 한꺼번에 줄인 결과를 준다
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = "ABF", cursor = 2))
+
+            // Then 선택한 세 글자만 사라지고 나머지는 순서 그대로 남는다 — 삽입 판별 로직이
+            // 글자 수가 준 경우까지 건드리지 않는다
+            assertEquals("ABF", viewModel.state.value.text)
+            assertEquals(3, viewModel.state.value.focusedIndex)
+        }
+
+    @Test
     fun changeText_dropsCharsOutsideCodeAlphabet() = runTest(mainDispatcherRule.dispatcher) {
         // Given 빈 화면
         val viewModel = viewModel()
