@@ -12,7 +12,7 @@ related_code:
   - feature/segmentation/impl/.../route/SegmentationConfirmRoute.kt#SegmentationConfirmRoute
   - feature/segmentation/api/.../NavKeyToppingEdit.kt#NavKeyToppingEdit
   - feature/camera/impl/.../route/PictureConfirmRoute.kt#PictureConfirmRoute
-  - domain/.../usecase/image/RecoverCandidatesUseCase.kt#RecoverCandidatesUseCase
+  - data/.../utils/image/SegmentationCandidateHarvest.kt#harvestSubjects
 related_adr:
 related_spec:
 related_architecture:
@@ -41,8 +41,9 @@ tags: [spec, parfait, segmentation, topping]
   - "사진 편집을 그만둘까요?" 팝업 — C-101-Loading, C-103 대상 선택, `SegmentationConfirm`,
     `PictureConfirm`(토핑 경로)의 X. 로딩 중에는 시스템 뒤로도 같은 팝업
   - `PictureConfirm`을 백스택에 남기도록 이동 방식 변경
-  - 삭제: `SegmentationErrorScreen`(C-103-Error), 재시도, 회복 사다리(`RecoverCandidatesUseCase`와
-    레포지토리의 회복 메서드)
+  - 삭제: `SegmentationErrorScreen`(C-103-Error), 재시도, 회복 사다리 전체 — 회복만 쓰던 projection
+    경로(`DetectionProjection`·`RecoveryTransform`·`PlateSource.OriginRegion` 등)와 대비 보정
+    (`SegmentationContrast*`)까지. 1차 경로는 늘 `projection = null`이라 남기면 죽은 코드다
 - 제외
   - 배경 편집 경로(`PictureConfirm`의 `returnResultOnly = true`) — X 동작은 지금 그대로. 별도 이슈로 다룬다
   - 편집 화면(`ToppingEditScreen`)의 뒤로·닫기 — 팝업 없이 지금처럼 `onBack`
@@ -51,7 +52,8 @@ tags: [spec, parfait, segmentation, topping]
 
 ## 흐름과 백스택
 
-`PictureConfirm`의 "다음"은 `goToAndPopCurrent`가 아니라 **`goTo(NavKeySegmentation(uri))`** 다.
+`PictureConfirm`의 "다음"은 `goToAndPopCurrent`가 아니라 **`goToSingleClearTop(NavKeySegmentation(uri))`** 다
+(push. 연타로 같은 키가 두 번 쌓이지 않도록 `goTo` 대신 쓴다).
 사진 확인 화면이 로딩 아래에 남는다. 로딩 페이지는 어떤 경로로도 되돌아오지 않는 경유지다.
 
 | 분석 결과 | 이동 | 결과 백스택 (아래 → 위) |
@@ -60,6 +62,7 @@ tags: [spec, parfait, segmentation, topping]
 | 0개·예외·디코드 실패 | `goToAndPopCurrent(NavKeyToppingEdit(..., completion = RecordAndConfirm))` | 카메라/갤러리 · `PictureConfirm` · `ToppingEdit` |
 
 편집 완료(`RecordAndConfirm`)는 `goTo(NavKeySegmentationConfirm)` 라 편집 화면이 확인 화면 아래에 남는다.
+단 `navigator.backStack.lastOrNull() == key`(편집 화면이 아직 맨 위)일 때만 이동한다.
 
 | 화면 | `<` · 시스템 뒤로 | X |
 |---|---|---|
@@ -96,7 +99,7 @@ sealed interface SegmentationIntent : UiIntent {
 sealed interface SegmentationEffect : UiSideEffect {
     data object ShowError : SegmentationEffect          // 후보 저장 실패 토스트 (기존)
     data object QuitToCanvas : SegmentationEffect
-    data class GoToEdit(val segmentationImageUri: String) : SegmentationEffect
+    data object GoToEdit : SegmentationEffect           // Route 가 key.sourceImageUri 로 편집을 연다
     data class GoToConfirm(val subjectImagePath: String, val trimmedSubjectImagePath: String) : SegmentationEffect
 }
 ```
@@ -104,11 +107,19 @@ sealed interface SegmentationEffect : UiSideEffect {
 분석 순서(기존 `loadCandidates`에서 회복·에러 분기만 걷는다):
 
 1. 세그멘테이션 캐시 비우기 (실패 무시)
-2. 원본 디코드. 실패 → 결과 = **편집으로**, `segmentationImageUri = sourceImageUri`
+2. 원본 디코드. 실패 → 결과 = **편집으로**
 3. 최근 원본 기록 (실패 무시)
-4. `SegmentImageUseCase`. 1개 이상 → 결과 = **선택**. 0개·예외 → 원본을 `SaveBitmapUseCase`로
-   저장해 결과 = **편집으로**(`segmentationImageUri` = 저장 경로의 file uri). 저장이 실패하면
-   `sourceImageUri`로 대신한다
+4. `SegmentImageUseCase`. 1개 이상 → 결과 = **선택**. 0개·`Result.failure` → 결과 = **편집으로**
+5. 분석 `launch`의 `onError`(유스케이스가 `Result`로 감싸지 않고 던진 예외) → 결과 = **편집으로**.
+   없으면 로딩에 갇힌다
+
+**편집으로 가는 결과는 언제나 `GoToEdit(sourceImageUri)`다.** 원본을 따로 저장하지 않는다 —
+편집 화면이 같은 `DecodeImageUseCase`로 원본 URI를 직접 읽으므로 결과가 같고, 저장 실패 분기와
+캐시 파일이 없어진다. 편집으로 갈 때는 `isAnalyzing`을 참으로 둔 채 effect만 낸다 — 먼저 끄면
+교체 직전 한 프레임 동안 후보 0개인 선택 UI가 보인다.
+
+디코드 실패로 편집에 가면 편집 화면도 같은 URI를 못 읽어 `LoadFailed` 토스트 후 `onBack`으로
+`PictureConfirm`에 돌아온다. 이것이 의도한 동작이다.
 
 **팝업이 떠 있는 동안 나온 결과는 보류한다.** 결과를 `pendingOutcome`(비상태 필드)에 두고
 `isAnalyzing`을 참으로 유지한다. `DismissQuit`에서 보류된 결과를 적용하고, `ConfirmQuit`은
@@ -137,7 +148,11 @@ data class NavKeyToppingEdit(
 
 `ToppingEditViewModel`은 완료 방식을 모른다. 완료 시 지금처럼 `EditCompleted(result)`를 내고,
 `ToppingEditRoute`가 `key.completion`으로 가른다 — `ReturnResult`면 `sendResult` + `onBack`,
-`RecordAndConfirm`이면 `ToppingEditIntent.RecordResult(result)`를 VM에 돌려준다. VM은
+`RecordAndConfirm`이면 `ToppingEditIntent.RecordResult(result)`를 VM에 돌려준다.
+⚠️ 알려진 한계: `completeEdit`이 `isSaving`을 끈 뒤 Route가 `RecordResult`를 돌려주기까지 틈이 있어,
+그 사이 "완료" 연타는 기록을 한 번 더 할 수 있다. 두 번째 결과는 저장 경로가 달라 확인 키가
+달라지므로 `goToSingleClearTop`으로는 못 막는다 — 위의 맨 위 검사가 두 번째 이동을 버린다. 두 번째
+기록은 초안을 새 경로로 덮어쓰고, 떠 있는 확인 화면은 첫 경로를 보여 준다(파일은 둘 다 캐시에 남는다). VM은
 `RecordToppingDraftUseCase`를 주입받아 `recordEditResult(result)` → 성공이면
 `ToppingEditEffect.GoToConfirm`(경로 이름 뒤집힘 주의: `subjectImagePath = result.cutoutImagePath`,
 `trimmedSubjectImagePath = result.subjectImagePath`), 실패면 기존 `SaveFailed` 토스트 후 머문다.
@@ -174,23 +189,29 @@ data class NavKeyToppingEdit(
   - segmentation·camera `strings.xml`
 - 삭제
   - `SegmentationErrorScreen.kt`와 전용 문자열·리소스
-  - `RecoverCandidatesUseCase`, `ImageSegmentationRepository`·`ImageSegmentationRepositoryImpl`의 회복 메서드
+  - `RecoverCandidatesUseCase`, 레포지토리의 `recoverCandidates`와 회복 전용 private 함수·상수
+  - 회복 전용 data 타입·유틸: `RecoveryStage`, `RecoveryTransform`, `SegmentationRecoverySpec`,
+    `SegmentationRecoveryNormalizer`, `DetectionPlate`, `ScaledSize`, `SegmentationContrast*`,
+    `DetectionProjection`, `PlateSource.OriginRegion` 경로, harvest의 `projection`·`hintThreshold`
+  - 1차 경로가 쓰는 `offsetBy`·`isInsideCanvas`는 `SegmentationRecoveryPlan.kt`에서
+    `SegmentationGeometry.kt`로 옮기고 나머지는 지운다
 
 ## 테스트
 
 - `SegmentationViewModelTest`
   - 1개 이상 → `isAnalyzing = false`, 후보 채워짐
-  - 0개 / 예외 / 디코드 실패 → `GoToEdit` (디코드 실패는 `sourceImageUri`)
+  - 0개 / `Result.failure` / 던진 예외 / 디코드 실패 → `GoToEdit`, `isAnalyzing`은 참 유지
   - 팝업 중 결과 → 보류, `DismissQuit`에서 적용, `ConfirmQuit`에서 `QuitToCanvas`만
   - 재시도·회복·에러 상태 테스트 삭제
 - `ToppingEditViewModelTest`
   - `RecordResult` → 기록 성공 `GoToConfirm`(경로 이름 뒤집힘 확인), 실패 `SaveFailed`
-- 회복 사다리 관련 domain·data 테스트 삭제
+- 회복 전용 테스트 삭제, `offsetBy`·`isInsideCanvas` 테스트는 `SegmentationGeometryTest`로 이동
 - 실기기: 백스택 표 전 행, 팝업 네 화면, 로딩 중 시스템 뒤로
 
 ## 주의 / 열린 질문
 
 - 분석 화면명: 로딩 중에도 `C-103`으로 찍힌다(`NavKeyAnalyticsScreenTest`). 로딩을 따로 세야 하면
   NavKey 분리가 필요하다
-- 위키의 C-103-Error·재시도 정책과 어긋난다. 정책 원본이 위키에 들어올 때 갱신된다
+- 위키의 C-103-Error·재시도 정책과 어긋난다. `docs/synthesis/open-questions.md` 항목으로 추적한다
+- 갤러리 content URI를 편집 화면이 다시 읽을 수 있는지 실기기로 확인한다(원본을 저장하지 않으므로)
 - `PictureConfirm`에 돌아올 때 `prepareSegmentationModule()`이 다시 돈다. 준비된 모듈이면 바로 끝난다
