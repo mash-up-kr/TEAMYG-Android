@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -52,14 +53,27 @@ class ToppingTransformInputTest {
     private var unit = 1f
     private var maxJump = 0f
     private var minSpan = 0f
+    private var touchSlop = 0f
 
     @Test
-    fun singleFinger_onTarget_doesNotTransform() {
+    fun singleFinger_outsideTarget_doesNotTransform() {
+        setLayer()
+
+        drag(from = at(20f, 20f), to = at(120f, 20f))
+
+        composeTestRule.runOnIdle { assertEquals(emptyList<Transform>(), transforms) }
+    }
+
+    @Test
+    fun singleFinger_insideTarget_panOnly() {
         setLayer()
 
         drag(from = at(200f, 200f), to = at(260f, 200f))
 
-        composeTestRule.runOnIdle { assertEquals(emptyList<Transform>(), transforms) }
+        composeTestRule.runOnIdle {
+            assertPanSum(expected = at(60f, 0f) - Offset(touchSlop, 0f))
+            assertTrue(transforms.all { it.zoom == 1f && it.rotationDelta == 0f })
+        }
     }
 
     @Test
@@ -178,7 +192,7 @@ class ToppingTransformInputTest {
 
         val step = 5f
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
-            // 한 손가락 +x 80px 은 옮기지 않는다
+            // 실루엣 안에서 슬롭을 넘겨 +x 로 80
             down(0, at(200f, 200f))
             repeat(16) { i -> moveTo(0, at(200f + step * (i + 1), 200f)) }
             // 두 번째 손가락을 대고 둘 다 +y 로 40px
@@ -195,7 +209,7 @@ class ToppingTransformInputTest {
         }
 
         composeTestRule.runOnIdle {
-            assertPanSum(expected = at(20f, 40f))
+            assertPanSum(expected = at(100f, 40f) - Offset(touchSlop, 0f))
             assertTrue(transforms.all { it.pan.getDistance() <= step * 2 * unit })
         }
     }
@@ -248,8 +262,8 @@ class ToppingTransformInputTest {
     }
 
     @Test
-    fun disabled_doesNothing() {
-        setLayer(enabled = { false })
+    fun nullTarget_doesNothing() {
+        setLayer(targetAt = { null })
 
         composeTestRule.onNodeWithTag(LAYER_TAG).performTouchInput {
             down(0, at(100f, 200f))
@@ -296,8 +310,9 @@ class ToppingTransformInputTest {
         composeTestRule.runOnIdle { assertEquals(listOf(true, false), activeChanges) }
     }
 
-    private fun setLayer(enabled: () -> Boolean = { true }) {
+    private fun setLayer(targetAt: () -> ToppingHitTarget? = { target() }) {
         composeTestRule.setContent {
+            touchSlop = LocalViewConfiguration.current.touchSlop
             with(LocalDensity.current) {
                 unit = LAYER_SIZE.toPx() / LAYER_UNITS
                 maxJump = TOPPING_POINTER_MAX_JUMP.toPx() / unit
@@ -308,12 +323,12 @@ class ToppingTransformInputTest {
                     .requiredSize(LAYER_SIZE)
                     .testTag(LAYER_TAG)
                     .toppingTapInput(
-                        entries = { listOf(Unit to target()) },
+                        entries = { listOfNotNull(targetAt()?.let { Unit to it }) },
                         keyOf = { it },
                         onHit = { hitCount++ },
                         onMiss = { missCount++ },
                     ).toppingTransformInput(
-                        enabled = enabled,
+                        targetAt = targetAt,
                         onTransform = { pan, zoom, rotationDelta ->
                             transforms += Transform(pan, zoom, rotationDelta)
                         },
@@ -323,7 +338,7 @@ class ToppingTransformInputTest {
         }
     }
 
-    /** 탭 판정용. 중심 (200,200), 100×100 단위 사각형 */
+    /** 중심 (200,200), 100×100 단위 사각형 판정 */
     private fun target() = ToppingHitTarget(
         centerXPx = 200f * unit,
         centerYPx = 200f * unit,

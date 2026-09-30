@@ -17,6 +17,7 @@ import androidx.compose.ui.input.pointer.PointerInputEventHandler
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.isOutOfBounds
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingClickThrottle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
@@ -97,7 +98,8 @@ private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): Poin
 }
 
 /**
- * 한 손가락으로 시작하면 옮기지 않지만, 핀치 중 한 손가락을 떼면 남은 손가락으로 계속 옮긴다.
+ * 한 손가락은 [targetAt] 실루엣 안에서 시작했을 때만 옮기고, 두 손가락은 어디서 시작했든
+ * 옮기기·회전·확대를 한 번에 한다. 핀치 중 한 손가락을 떼면 남은 손가락으로 계속 옮긴다.
  *
  * 직전 이벤트에도 눌려 있던 포인터만 센다. 새로 down 됐거나 막 뗀 포인터를 넣으면 포인터 수가
  * 바뀌는 순간 중점이 튄다.
@@ -106,19 +108,19 @@ private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): Poin
  */
 @Composable
 internal fun Modifier.toppingTransformInput(
-    enabled: () -> Boolean,
+    targetAt: () -> ToppingHitTarget?,
     onTransform: (pan: Offset, zoom: Float, rotationDelta: Float) -> Unit,
     onGestureActiveChange: (Boolean) -> Unit = {},
 ): Modifier {
-    val latestEnabled by rememberUpdatedState(enabled)
+    val latestTargetAt by rememberUpdatedState(targetAt)
     val latestOnTransform by rememberUpdatedState(onTransform)
     val latestOnGestureActiveChange by rememberUpdatedState(onGestureActiveChange)
 
     val handler = remember {
         PointerInputEventHandler {
             awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false)
-                if (!latestEnabled()) return@awaitEachGesture
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val target = latestTargetAt() ?: return@awaitEachGesture
 
                 fun emit(
                     pan: Offset,
@@ -134,7 +136,10 @@ internal fun Modifier.toppingTransformInput(
                 try {
                     val minSpan = TOPPING_PINCH_MIN_SPAN.toPx()
                     val maxJump = TOPPING_POINTER_MAX_JUMP.toPx()
+                    val touchSlop = viewConfiguration.touchSlop
+                    val canDrag = target.containsPoint(down.position.x, down.position.y)
                     var grabbed = false
+                    var slopAccum = Offset.Zero
                     var pairIds: Pair<PointerId, PointerId>? = null
                     var referenceSpan = 0f
                     var referenceAngle = 0f
@@ -151,7 +156,20 @@ internal fun Modifier.toppingTransformInput(
                         }
 
                         if (!grabbed) {
-                            grabbed = event.changes.count { it.pressed } >= 2
+                            // awaitTouchSlopOrCancellation 은 두 번째 down 에 반환하지 않아서 직접 기다린다
+                            if (pressed.size >= 2) {
+                                grabbed = true
+                            } else if (canDrag) {
+                                val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+                                slopAccum += change.positionChange()
+                                val distance = slopAccum.getDistance()
+                                if (distance > touchSlop) {
+                                    grabbed = true
+                                    // 슬롭을 넘긴 몫을 버리면 한 프레임씩 손가락 뒤로 처진다
+                                    emit(slopAccum - slopAccum / distance * touchSlop, 1f, 0f)
+                                    change.consume()
+                                }
+                            }
                             continue
                         }
 
