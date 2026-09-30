@@ -107,15 +107,8 @@ constructor(
                 requestJoinPreview()
             }
 
-            // 커서를 기준으로 앞뒤를 나눠 각각 거른 뒤 다시 붙인다. 통째로 거르면 걸러진 글자가
-            // 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
             is GroupInviteCodeIntent.ChangeText -> {
                 updateState {
-                    // 이미 글자가 있는 칸을 다시 눌러 타이핑하면, 텍스트 필드 기본 동작은 그
-                    // 글자를 커서 자리에 "끼워 넣어" 다음 칸부터 전부 밀어 버린다. 눌린 칸 자체를
-                    // 새 글자로 바꾸는 것이 기존 정책이므로, 한 글자든(직접 타이핑) 여러 글자든
-                    // (자동완성·스와이프 입력처럼 한 번에 여러 글자가 들어오는 경우) 그 칸부터
-                    // 순서대로 끼워 넣으려 한 것으로 보이면 밀지 않고 그 칸들만 바꾼다.
                     val replacement = replacingFilledCellsOrNull(intent)
 
                     if (replacement != null) {
@@ -125,6 +118,8 @@ constructor(
                             inviteCodeError = inviteCodeError.takeIf { replacement.text == text },
                         )
                     } else {
+                        // 커서를 기준으로 앞뒤를 나눠 각각 거른 뒤 다시 붙인다. 통째로 거르면 걸러진
+                        // 글자가 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
                         val newCursor = intent.cursor.coerceIn(0, intent.text.length)
                         val head = intent.text
                             .take(newCursor)
