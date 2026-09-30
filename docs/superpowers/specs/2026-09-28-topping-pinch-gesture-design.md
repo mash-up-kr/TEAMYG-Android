@@ -26,11 +26,12 @@ tags: [spec, parfait]
 
 토핑 배치 화면(C-106)과 편집 화면(C-301 토핑 탭, C-305)의 회전 핸들과 크기 핸들 버튼을 없앤다.
 대신 인스타그램 스토리 스티커처럼 두 손가락 제스처 하나로 이동·회전·확대를 동시에 처리한다.
+토핑 위에서 시작한 한 손가락 드래그로 옮기는 기존 동작은 유지한다.
 
 ## 범위
 
 - 포함
-  - 두 손가락 핀치로 이동·회전·확대를 동시에 처리. 한 손가락으로 시작한 드래그는 옮기지 않는다.
+  - 두 손가락 핀치로 이동·회전·확대를 동시에 처리. 토핑 실루엣 안에서 시작한 한 손가락 드래그는 이동만 한다.
   - 두 화면의 회전·크기 핸들 제거.
   - 두 화면의 이동·크기·회전 intent를 `OnToppingTransform` 하나로 통합.
   - 제스처 modifier의 Compose UI 테스트.
@@ -49,9 +50,9 @@ tags: [spec, parfait]
 | 두 손가락 최소 폭 | 64dp. 이보다 붙어 있으면 이동·확대·회전 모두 멈춘다 |
 | 대상 | 배치 화면은 유일한 토핑, 편집 화면은 선택된 토핑 |
 | 편집 화면에서 선택 없음 | 제스처 무시. 자동 선택하지 않음 |
-| 한 손가락으로 시작한 드래그 | 옮기지 않음. 소비하지 않으므로 떼면 `toppingTapInput`이 탭·미스로 판정 |
+| 한 손가락으로 시작한 드래그 | 대상 토핑 실루엣 안에서 시작해 터치 슬롭을 넘으면 이동만 한다. 실루엣 밖에서 시작했거나 슬롭 전에 떼면 소비하지 않으므로 `toppingTapInput`이 탭·미스로 판정 |
 | 회전·확대 기준점 | 토핑 중심. 손가락 중점의 이동량만 pan으로 반영 |
-| 손가락 수 변화 | 한 손가락을 댄 채 두 번째 손가락이 닿으면 핀치가 시작된다. 핀치 중 한 손가락을 떼면 남은 손가락으로 이동을 계속 |
+| 손가락 수 변화 | 한 손가락을 댄 채(드래그 중이어도) 두 번째 손가락이 닿으면 핀치가 시작된다. 핀치 중 한 손가락을 떼면 남은 손가락으로 이동을 계속 |
 | 핀치와 탭 | 두 번째 포인터가 down된 제스처는 탭으로 판정하지 않음 |
 | 변화 없는 프레임 | `onTransform`을 부르지 않음. 두 손가락을 대기만 해서는 dirty·`hasUserAdjustedPlacement`가 바뀌지 않음 |
 | 편집 화면 삭제·편집 버튼 | 오버레이 제스처가 진행되는 동안(첫 down부터 모든 손가락 up까지) 숨김 |
@@ -65,18 +66,19 @@ tags: [spec, parfait]
 // component/ToppingHitTestInput.kt — toppingDragInput 을 대체
 @Composable
 internal fun Modifier.toppingTransformInput(
-    enabled: () -> Boolean,
+    targetAt: () -> ToppingHitTarget?,
     onTransform: (pan: Offset, zoom: Float, rotationDelta: Float) -> Unit,
     onGestureActiveChange: (Boolean) -> Unit = {},
 ): Modifier
 ```
 
-- `enabled`: 제스처 첫 down 시점에 읽는다. `false`면 이번 제스처를 버린다.
+- `targetAt`: 제스처 첫 down 시점에 읽는다. `null`이면 이번 제스처를 버린다. 첫 down이 이 판정 안이어야
+  한 손가락 드래그가 된다.
 - `onTransform`: 잡힘 상태의 프레임마다 한 번 호출된다.
   - `pan`: 누른 손가락들의 중점 이동량(px).
   - `zoom`: 손가락 사이 거리 비율. 손가락이 하나면 `1f`.
   - `rotationDelta`: 도 단위, 화면 좌표 기준 시계 방향이 양수. 손가락이 하나면 `0f`.
-- `onGestureActiveChange`: 첫 down에서 `enabled()`가 `true`면 `true`, 모든 손가락이 떨어지거나 취소되면 `false`.
+- `onGestureActiveChange`: 첫 down에서 `targetAt()`이 `null`이 아니면 `true`, 모든 손가락이 떨어지거나 취소되면 `false`.
 - 핸들러는 `toppingTapInput`처럼 `remember`로 고정하고 콜백은 `rememberUpdatedState`로 읽는다.
 
 ```kotlin
@@ -94,10 +96,11 @@ data class OnToppingTransform(val panX: Float, val panY: Float, val zoom: Float,
 
 ### 제스처 루프 (`awaitEachGesture`)
 
-1. `awaitFirstDown(requireUnconsumed = false)`로 첫 down을 받는다. `enabled()`가 `false`면 종료한다.
+1. `awaitFirstDown(requireUnconsumed = false)`로 첫 down을 받는다. `targetAt()`이 `null`이면 종료한다.
    아니면 `onGestureActiveChange(true)`.
-2. 한 손가락만 눌린 동안은 잡힘 상태가 아니다. 이동을 보내지도 소비하지도 않는다.
-3. 두 번째 포인터가 down되면 잡힘 상태로 들어간다.
+2. 한 손가락만 눌린 동안은 첫 down이 대상 실루엣 안이었을 때만 이동량을 모은다. 터치 슬롭을 넘으면 잡힘
+   상태로 들어가고, 슬롭을 넘긴 몫을 첫 이동으로 보낸다. 실루엣 밖이면 이동을 보내지도 소비하지도 않는다.
+3. 두 번째 포인터가 down되면 슬롭과 관계없이 잡힘 상태로 들어간다.
 4. 잡힘 상태에서는 매 이벤트마다 `pressed && previousPressed`인 포인터 중 id 순 앞의 두 개로 중점 이동량,
    거리 비율, 각도 변화를 직접 계산한다. 세 번째 이후 포인터는 뺀다. 결과가 항등 변환이 아니면
    `onTransform`을 호출하고 change를 소비한다.
@@ -158,10 +161,10 @@ data class OnToppingTransform(val panX: Float, val panY: Float, val zoom: Float,
 - 배치 화면
   - 토핑 박스의 `dragBy`를 없앤다.
   - 캔버스 전체 크기 오버레이에 `toppingTransformInput`을 붙인다.
-  - `enabled`는 이미지가 로드됐을 때만 `true`. 로드 전 크기는 폴백이라, 이때 제스처를 받으면 초기 배치가 꺼진다.
+  - `targetAt`은 이미지가 로드됐을 때만 토핑 판정을 돌려준다. 로드 전 크기는 폴백이라, 이때 제스처를 받으면 초기 배치가 꺼진다.
   - `ToppingPlaceCornerButtons`는 통째로 삭제한다. `ToppingSelectionStroke`는 남겨서 조작 대상 토핑을 표시한다.
 - 편집 화면
-  - 오버레이의 `toppingDragInput`을 `toppingTransformInput`으로 바꾼다. `enabled`는 `selectedEntry != null`.
+  - 오버레이의 `toppingDragInput`을 `toppingTransformInput`으로 바꾼다. `targetAt`은 `selectedEntry?.target`.
   - `ToppingCornerButtons`에서 TR 회전 핸들과 BR 크기 핸들을 뺀다.
   - TL 삭제, BL 편집 버튼과 스트로크는 그대로 둔다. KDoc을 맞춘다.
   - 삭제·편집 버튼은 오버레이보다 위에 있는 형제 노드라, 두 번째 손가락이 그 위에 닿으면 포인터를 버튼이
@@ -196,11 +199,12 @@ data class OnToppingTransform(val panX: Float, val panY: Float, val zoom: Float,
   - 새 케이스(편집 화면): 선택 없음이면 무시한다. transform 한 번에 dirty 마크가 한 번이다.
   - `ToppingGeometryTest`: 삭제한 함수의 케이스를 지운다.
 - Compose UI 테스트 (`androidTest`, `createComposeRule`, `performTouchInput` 멀티터치)
-  - 토핑 위에서 시작한 한 손가락 드래그도 `onTransform`을 부르지 않는다.
+  - 토핑 밖에서 시작한 한 손가락 드래그는 `onTransform`을 부르지 않는다.
+  - 토핑 위에서 시작한 한 손가락 드래그는 슬롭을 뺀 이동량만 전달한다.
   - 캔버스 어디서든 두 손가락 핀치·회전이 zoom과 rotation을 전달한다.
   - 손가락 수가 바뀌는 순간 pan이 튀지 않는다.
   - 두 손가락을 대고 뗀 제스처는 탭 콜백을 부르지 않는다.
-  - `enabled`가 `false`면 아무것도 전달하지 않는다.
+  - `targetAt`이 `null`이면 아무것도 전달하지 않는다.
   - 두 손가락을 대고 움직이지 않으면 `onTransform`을 부르지 않는다.
   - `onGestureActiveChange`는 첫 down에 `true`, 마지막 up에 `false`를 한 번씩 전달한다.
 
