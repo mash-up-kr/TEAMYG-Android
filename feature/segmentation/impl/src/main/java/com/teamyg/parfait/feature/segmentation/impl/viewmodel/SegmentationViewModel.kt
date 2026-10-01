@@ -37,10 +37,8 @@ sealed interface SegmentationIntent : UiIntent {
     /** X 버튼, 분석 중 시스템 뒤로가기 */
     data object ClickClose : SegmentationIntent
 
-    /** 팝업의 「그만두기」 */
     data object ConfirmQuit : SegmentationIntent
 
-    /** 팝업의 「계속 편집」, 팝업 바깥 탭 */
     data object DismissQuit : SegmentationIntent
 }
 
@@ -50,10 +48,7 @@ sealed interface SegmentationEffect : UiSideEffect {
 
     data object QuitToCanvas : SegmentationEffect
 
-    /**
-     * 자동 인식으로 대상을 못 얻었다. 원본을 따로 저장하지 않는다 — 편집 화면이 같은 원본 URI 를
-     * 직접 읽으므로 Route 가 `key.sourceImageUri` 로 편집을 연다.
-     */
+    /** 자동 인식으로 대상을 못 얻었다. 편집이 원본 URI 를 그대로 읽으므로 실어 보낼 값이 없다 */
     data object GoToEdit : SegmentationEffect
 
     data class GoToConfirm(
@@ -159,7 +154,6 @@ class SegmentationViewModel
             SegmentationIntent.DismissQuit -> dismissQuit()
 
             SegmentationIntent.ConfirmQuit -> {
-                // 그만두기를 두 번 눌러도 캔버스로 나가는 effect 는 한 번이다
                 if (quit) return
 
                 quit = true

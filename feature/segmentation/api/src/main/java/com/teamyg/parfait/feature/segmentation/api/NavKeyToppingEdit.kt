@@ -11,7 +11,6 @@ import kotlinx.serialization.Serializable
  * @param borderLayers 이미 두른 테두리 겹. 다시 편집할 때 벗겨진 채로 열리지 않도록 되살릴 재료다
  * @param borderOnly 되살릴 원본이 없는 진입은 영역(잘라내기)을 건드릴 수 없고 테두리만 고칠 수
  * 있어야 한다. true 면 영역|테두리 탭 전환 없이 테두리 편집만 열린다
- * @param completion 편집을 마쳤을 때 결과를 어떻게 처리할지
  */
 @Serializable
 data class NavKeyToppingEdit(
@@ -22,13 +21,12 @@ data class NavKeyToppingEdit(
     val completion: ToppingEditCompletion = ToppingEditCompletion.ReturnResult,
 ) : NavKey
 
-/** 편집 화면이 완료 시 결과를 처리하는 방식 */
 @Serializable
 enum class ToppingEditCompletion {
     /** 결과를 [TOPPING_EDIT_RESULT_KEY] 로 돌려주고 닫는다. 기록·이동은 호출한 쪽 몫이다 */
     ReturnResult,
 
-    /** 초안을 직접 기록하고 확인 화면으로 간다. 편집 화면은 백스택에 남는다. 0개 경로 */
+    /** 초안을 직접 기록하고 확인 화면으로 간다. 편집 화면은 백스택에 남는다 */
     RecordAndConfirm,
 }
 

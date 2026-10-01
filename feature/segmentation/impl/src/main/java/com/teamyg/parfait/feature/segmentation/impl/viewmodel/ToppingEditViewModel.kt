@@ -257,8 +257,7 @@ class ToppingEditViewModel
     private fun loadImages() {
         viewModelScope.launch {
             val originBitmap = decodeBitmapOrNull(sourceImageUri)
-            // 두 주소가 같으면(RecordAndConfirm 진입) 한 번만 풀어 같은 비트맵을 함께 쓴다.
-            // 두 입력은 읽기만 하고 따로 recycle 하지 않아 공유해도 안전하다
+            // 두 비트맵은 읽기만 하고 따로 recycle 하지 않아 같은 주소면 하나를 함께 쓴다
             val segmentationBitmap = if (segmentationImageUri == sourceImageUri) {
                 originBitmap
             } else {

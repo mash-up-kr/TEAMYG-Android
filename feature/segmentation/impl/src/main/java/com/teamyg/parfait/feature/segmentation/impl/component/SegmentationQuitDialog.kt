@@ -8,7 +8,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
-/** 토핑 만들기를 접을지 묻는다 */
 @Composable
 internal fun SegmentationQuitDialog(
     onConfirmQuit: () -> Unit,
