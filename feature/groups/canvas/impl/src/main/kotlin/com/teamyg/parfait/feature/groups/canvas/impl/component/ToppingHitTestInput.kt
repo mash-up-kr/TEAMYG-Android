@@ -2,18 +2,20 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputEventHandler
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.isOutOfBounds
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingClickThrottle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.pickToppingHit
@@ -47,15 +49,14 @@ internal fun <T> Modifier.toppingTapInput(
     val handler = remember {
         PointerInputEventHandler {
             awaitEachGesture {
-                // 같은 노드에 달린 드래그 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
+                // 같은 노드에 달린 변환 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
                 val down = awaitFirstDown(requireUnconsumed = false)
                 // 대상은 누른 자리로 고정한다. 뗀 자리를 보면 슬롭만큼 미끄러진 곳의 다른 토핑이
                 // 잡히거나, 투명한 자리로 떨어져 미스 분기가 발동한다
                 val hit = pickToppingHit(latestEntries(), down.position.x, down.position.y)
                 down.consume()
 
-                // up 없이 끝나면(드래그가 이동을 소비했거나 손가락이 벗어남) 아무 콜백도 부르지 않는다
-                val up = waitForUpOrCancellation() ?: return@awaitEachGesture
+                val up = waitForTapUp(down.id) ?: return@awaitEachGesture
                 up.consume()
 
                 if (throttle.tryPass(hit?.let(latestKeyOf) ?: MISS_KEY)) {
@@ -69,44 +70,19 @@ internal fun <T> Modifier.toppingTapInput(
 }
 
 /**
- * 터치 다운 지점이 [targetAt] 의 실루엣 안일 때만 드래그를 소비한다.
- *
- * 판정은 down 좌표로 하고 이동은 슬롭을 넘긴 뒤부터 친다 — 슬롭을 버리면 탭이 미세 이동만으로
- * 이동으로 처리된다. 슬롭을 넘긴 그 프레임의 이동량도 첫 델타로 흘려보낸다. 버리면 제스처마다
- * 한 프레임씩 손가락 뒤로 처지고 오차가 쌓인다.
+ * [waitForUpOrCancellation] 에 "다른 손가락이 눌리면 탭 아님"을 더한 것. 두 손가락을 대고 움직이지
+ * 않은 채 떼면 아무도 소비하지 않아서 이 조건이 없으면 탭으로 잡힌다.
  */
-@Composable
-internal fun Modifier.toppingDragInput(
-    targetAt: () -> ToppingHitTarget?,
-    onDrag: (Offset) -> Unit,
-): Modifier {
-    val latestTargetAt by rememberUpdatedState(targetAt)
-    val latestOnDrag by rememberUpdatedState(onDrag)
+private suspend fun AwaitPointerEventScope.waitForTapUp(downId: PointerId): PointerInputChange? {
+    while (true) {
+        val event = awaitPointerEvent()
+        if (event.changes.any { it.id != downId && it.pressed }) return null
 
-    val handler = remember {
-        PointerInputEventHandler {
-            awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                val target = latestTargetAt() ?: return@awaitEachGesture
-                if (!target.containsPoint(down.position.x, down.position.y)) {
-                    return@awaitEachGesture
-                }
+        val change = event.changes.firstOrNull { it.id == downId } ?: return null
+        if (change.changedToUp()) return change
+        if (change.isConsumed || change.isOutOfBounds(size, extendedTouchPadding)) return null
 
-                var overSlop = Offset.Zero
-                val afterSlop = awaitTouchSlopOrCancellation(down.id) { change, over ->
-                    change.consume()
-                    overSlop = over
-                } ?: return@awaitEachGesture
-
-                latestOnDrag(overSlop)
-                drag(afterSlop.id) { change ->
-                    // 소비한 change 의 positionChange() 는 Offset.Zero 다. 읽고 나서 소비한다
-                    latestOnDrag(change.positionChange())
-                    change.consume()
-                }
-            }
-        }
+        val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
+        if (consumeCheck.changes.any { it.id == downId && it.isConsumed }) return null
     }
-
-    return this.pointerInput(Unit, handler)
 }
