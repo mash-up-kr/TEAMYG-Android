@@ -4,9 +4,8 @@ import android.graphics.Bitmap
 import com.google.mlkit.vision.segmentation.subject.Subject
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.sumArgbAlpha
-import com.teamyg.parfait.data.model.image.ForegroundHarvest
 import com.teamyg.parfait.data.model.image.HarvestedCandidate
-import com.teamyg.parfait.data.model.image.PlateSource
+import com.teamyg.parfait.data.model.image.MlKitPlate
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
@@ -61,7 +60,7 @@ internal suspend fun harvestSubjects(
 
     return considered.mapNotNull { subject ->
         job.ensureActive()
-        harvestCandidate(PlateSource.MlKitPlate(subject.plate, subject.region), origin)
+        harvestCandidate(MlKitPlate(subject.plate, subject.region), origin)
     }
 }
 
@@ -69,7 +68,7 @@ private fun SegmentationBounds.area(): Long = width.toLong() * height
 
 /** 캔버스 밖으로 새는 후보는 흐름 전체가 아니라 그 후보만 버린다 */
 private suspend fun harvestCandidate(
-    source: PlateSource.MlKitPlate,
+    source: MlKitPlate,
     origin: Bitmap,
 ): HarvestedCandidate? {
     val region = source.region
@@ -103,7 +102,7 @@ private fun originGuidance(
  * 아니라 그 할당이다.
  */
 private suspend fun harvestMlKitPlate(
-    source: PlateSource.MlKitPlate,
+    source: MlKitPlate,
     origin: Bitmap,
 ): HarvestedCandidate {
     val postProcessed = try {
@@ -202,13 +201,13 @@ internal suspend fun harvestForeground(
     maskWidth: Int,
     maskHeight: Int,
     origin: Bitmap,
-): ForegroundHarvest {
+): List<SegmentationCandidate> {
     // absolute get(index) 는 capacity 가 아니라 limit 을 경계로 삼으므로 remaining() 으로 비교한다
     if (mask.remaining() != maskWidth * maskHeight) {
         repositoryLogger.w {
             "세그멘테이션 폴백 마스크 길이 불일치: 남은 ${mask.remaining()}, 기대 ${maskWidth}x$maskHeight"
         }
-        return ForegroundHarvest(emptyList())
+        return emptyList()
     }
 
     // 마스크 크기 할당이라 이것도 OOM 가드 안에 둔다
@@ -216,18 +215,18 @@ internal suspend fun harvestForeground(
         confidenceToAlphaArray(mask, maskWidth, maskHeight)
     } catch (e: OutOfMemoryError) {
         repositoryLogger.w(e) { "세그멘테이션 신뢰도 되올림이 메모리로 실패했다" }
-        return ForegroundHarvest(emptyList())
+        return emptyList()
     }
 
     val region = SegmentationBounds(0, 0, maskWidth, maskHeight)
-    if (!isInsideCanvas(region, origin.width, origin.height)) return ForegroundHarvest(emptyList())
+    if (!isInsideCanvas(region, origin.width, origin.height)) return emptyList()
 
     val masked = try {
         postProcessMaskedAlpha(detectionAlpha, region.width, region.height, guidance = originGuidance(origin, region))
     } catch (e: OutOfMemoryError) {
         repositoryLogger.w(e) { "세그멘테이션 폴백 후처리가 메모리로 실패했다" }
         null
-    } ?: return ForegroundHarvest(emptyList())
+    } ?: return emptyList()
 
     repositoryLogger.i {
         "세그멘테이션 폴백 부분 알파 ${masked.result.partialAlphaPixels}/${region.width * region.height}, " +
@@ -257,5 +256,5 @@ internal suspend fun harvestForeground(
         null
     }
 
-    return ForegroundHarvest(listOfNotNull(candidate))
+    return listOfNotNull(candidate)
 }

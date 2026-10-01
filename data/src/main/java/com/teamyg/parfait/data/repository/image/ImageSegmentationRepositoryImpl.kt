@@ -141,12 +141,12 @@ constructor(
         val mask = result.foregroundConfidenceMask ?: return Result.success(emptyList())
 
         return try {
-            val harvest = withContext(Dispatchers.Default) {
+            val candidates = withContext(Dispatchers.Default) {
                 // InputImage.fromBitmap(bitmap, 0) 이라 지금은 마스크 치수가 origin 과 같지만, 그 일치는
                 // 계약으로 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 오려낸다
                 harvestForeground(mask, origin.width, origin.height, origin)
             }
-            Result.success(harvest.candidates)
+            Result.success(candidates)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
