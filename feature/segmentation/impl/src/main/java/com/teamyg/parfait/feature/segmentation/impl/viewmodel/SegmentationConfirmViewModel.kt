@@ -180,6 +180,6 @@ class SegmentationConfirmViewModel
 
     private companion object {
         const val KEY_RECORDED_ENTRY_SUBJECT = "recorded_entry_subject"
-        const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
+        const val COMPLETE_TUTORIAL_KEY = "complete-tutorial"
     }
 }

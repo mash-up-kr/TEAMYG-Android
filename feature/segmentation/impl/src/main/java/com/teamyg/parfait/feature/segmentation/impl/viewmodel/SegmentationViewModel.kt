@@ -81,7 +81,7 @@ class SegmentationViewModel
     private var pendingOutcome: Outcome? = null
 
     /** 그만두기를 확정했다. 이후 도착하는 분석 결과는 버린다 */
-    private var quit = false
+    private var isQuitConfirmed = false
 
     init {
         analyze()
@@ -90,8 +90,7 @@ class SegmentationViewModel
     /** 실패는 모두 편집으로 접는다. `onError` 가 없으면 던진 예외에 로딩 화면에 갇힌다 */
     private fun analyze() {
         launch(key = LOAD_CANDIDATES_KEY, onError = { deliver(Outcome.Edit) }) {
-            // 이번 흐름이 파일을 만들기 전에 지운다 — 뒤에 두면 방금 만든 것을 지운다
-            // 지난 흐름의 파일을 못 지워도 이번 흐름은 진행돼야 한다 — 남은 파일은 다음 진입에서 다시 지운다
+            // 이번 흐름이 파일을 만들기 전에 지운다(뒤에 두면 방금 만든 것을 지운다). 실패해도 진행한다
             runSuspendCatching { clearSegmentationCacheUseCase() }
 
             val bitmapWrapper = decodeImageUseCase(sourceImageUri).getOrNull()
@@ -124,7 +123,7 @@ class SegmentationViewModel
      * 까지 보류한다. 고르는 중에 화면이 바뀌면 사용자의 선택이 무엇에 대한 것인지 모호해진다.
      */
     private fun deliver(outcome: Outcome) {
-        if (quit) return
+        if (isQuitConfirmed) return
 
         if (state.value.showQuitDialog) {
             pendingOutcome = outcome
@@ -154,9 +153,9 @@ class SegmentationViewModel
             SegmentationIntent.DismissQuit -> dismissQuit()
 
             SegmentationIntent.ConfirmQuit -> {
-                if (quit) return
+                if (isQuitConfirmed) return
 
-                quit = true
+                isQuitConfirmed = true
                 pendingOutcome = null
                 // 화면이 걷히는 전환 동안 팝업이 캔버스 위에 남지 않게 닫는다
                 updateState { copy(showQuitDialog = false) }
@@ -228,6 +227,6 @@ class SegmentationViewModel
 
     private companion object {
         const val SELECT_CANDIDATE_KEY = "select-candidate"
-        const val LOAD_CANDIDATES_KEY = "loadCandidates"
+        const val LOAD_CANDIDATES_KEY = "load-candidates"
     }
 }
