@@ -380,7 +380,7 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   ⚠️ 완료 연타는 초안을 두 번 기록할 수 있다 — 두 번째 결과는 저장 경로가 달라 확인 키가 달라지므로
   `goToSingleClearTop`으로는 못 막고, 맨 위 검사가 두 번째 이동만 버린다. 그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
   경로 이름이 뒤집혀 있다: 확인 화면 인자의 `subjectImagePath = result.cutoutImagePath`, `trimmedSubjectImagePath = result.subjectImagePath`.
-- **"사진 편집을 그만둘까요?" 팝업이 네 화면에 있다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로)의 X.
+- **그만두기 팝업이 네 화면에 있다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로)의 X. 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 나머지 셋은 "사진 편집을 그만둘까요?".
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
   "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)와 편집 화면의 뒤로·닫기에는 팝업이 없다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.
