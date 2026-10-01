@@ -1,134 +1,289 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
+import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
+import com.teamyg.parfait.feature.segmentation.impl.editor.SubjectMeasure
+import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
+import com.teamyg.parfait.feature.segmentation.impl.editor.measureSubject
+import com.teamyg.parfait.feature.segmentation.impl.editor.trimTo
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 private const val SOURCE_URI = "content://media/external/images/1"
 private const val SEGMENTATION_URI = "/cache/segmentation/subject.png"
+private const val CUTOUT_PATH = "/cache/edited_cutout.png"
+private const val TRIMMED_PATH = "/cache/edited_trimmed.png"
+private const val CUTOUT_SIDE = 1000
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ToppingEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val decodeImage: DecodeImageUseCase = mockk {
-        coEvery { this@mockk(any()) } returns Result.failure(IOException("decode failed"))
-    }
+    private val decodeImage: DecodeImageUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk()
 
-    private val result = ToppingEditResult(
-        subjectImagePath = "/cache/edited_trimmed.png",
-        cutoutImagePath = "/cache/edited_cutout.png",
-        borderLayers = emptyList(),
-        sourceLongSide = 4032,
+    private val sourceBitmap: Bitmap = mockk(relaxed = true)
+    private val segmentationBitmap: Bitmap = mockk(relaxed = true)
+    private val cutout: Bitmap = mockk(relaxed = true) {
+        every { width } returns CUTOUT_SIDE
+        every { height } returns CUTOUT_SIDE
+    }
+    private val trimmedCutout: Bitmap = mockk(relaxed = true)
+
+    private val fullMeasure = SubjectMeasure(
+        left = 0,
+        top = 0,
+        right = CUTOUT_SIDE - 1,
+        bottom = CUTOUT_SIDE - 1,
+        alphaSum = 255L * CUTOUT_SIDE * CUTOUT_SIDE,
     )
+
+    private val result = ToppingEditResult(
+        subjectImagePath = TRIMMED_PATH,
+        cutoutImagePath = CUTOUT_PATH,
+        borderLayers = emptyList(),
+        sourceLongSide = CUTOUT_SIDE,
+    )
+
+    private val confirm = ToppingEditEffect.GoToConfirm(
+        subjectImagePath = CUTOUT_PATH,
+        trimmedSubjectImagePath = TRIMMED_PATH,
+    )
+
+    /**
+     * 비트맵을 실제로 만드는 편집 헬퍼는 JVM 테스트에서 돌지 않아 통째로 갈아 끼운다.
+     * 그래서 여기서 검증되는 것은 저장 이후의 순서이고, 픽셀 합성은 아니다.
+     */
+    @Before
+    fun stubTheHappyPath() {
+        coEvery { decodeImage(SOURCE_URI) } returns Result.success(sourceBitmap.toAndroidBitmap())
+        coEvery { decodeImage(SEGMENTATION_URI) } returns Result.success(segmentationBitmap.toAndroidBitmap())
+
+        mockkStatic("com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMaskKt")
+        every { buildCutoutBitmap(any(), any(), any()) } returns cutout
+        every { cutout.measureSubject() } returns fullMeasure
+        every { cutout.trimTo(fullMeasure) } returns trimmedCutout
+
+        coEvery { saveBitmap(cutout.toAndroidBitmap()) } returns Result.success(CUTOUT_PATH)
+        coEvery { saveBitmap(trimmedCutout.toAndroidBitmap()) } returns Result.success(TRIMMED_PATH)
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+    }
+
+    /** `mockkStatic` 은 JVM 전역 상태라 다음 테스트로 새지 않도록 매번 걷어 낸다 */
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     private fun createViewModel(
         sourceImageUri: String = SOURCE_URI,
         segmentationImageUri: String = SEGMENTATION_URI,
+        completion: ToppingEditCompletion = ToppingEditCompletion.RecordAndConfirm,
     ) = ToppingEditViewModel(
         sourceImageUri = sourceImageUri,
         segmentationImageUri = segmentationImageUri,
         initialBorderLayers = emptyList(),
         borderOnly = false,
+        completion = completion,
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
     )
 
     @Test
-    fun loadImages_equalUris_decodesOnce() = runTest {
+    fun loadImages_equalUris_sharesOneDecodedBitmap() = runTest {
         // Given 원본과 분석 결과가 같은 주소다(RecordAndConfirm 진입)
         val viewModel = createViewModel(sourceImageUri = SOURCE_URI, segmentationImageUri = SOURCE_URI)
 
         // When 이미지를 불러온다
-        viewModel.effect.test {
-            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
-        }
+        advanceUntilIdle()
 
-        // Then 같은 주소를 두 번 풀지 않는다
-        coVerify(exactly = 1) { decodeImage(SOURCE_URI) }
+        // Then 한 번만 풀어 같은 비트맵을 함께 쓴다
+        val state = viewModel.state.value
+        assertSame(sourceBitmap, state.originBitmap)
+        assertSame(state.originBitmap, state.segmentationBitmap)
+        coVerify(exactly = 1) { decodeImage(any()) }
     }
 
     @Test
-    fun recordResult_recorded_goesToConfirmWithSwappedPaths() = runTest {
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+    fun loadImages_differentUris_decodesEach() = runTest {
+        // Given 원본과 분석 결과의 주소가 다르다
+        val viewModel = createViewModel()
+
+        // When 이미지를 불러온다
+        advanceUntilIdle()
+
+        // Then 주소마다 한 번씩 푼다
+        val state = viewModel.state.value
+        assertSame(sourceBitmap, state.originBitmap)
+        assertSame(segmentationBitmap, state.segmentationBitmap)
+        coVerify(exactly = 1) { decodeImage(SOURCE_URI) }
+        coVerify(exactly = 1) { decodeImage(SEGMENTATION_URI) }
+    }
+
+    @Test
+    fun loadImages_decodeFails_reportsLoadFailed() = runTest {
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IOException("decode failed"))
         val viewModel = createViewModel()
 
         viewModel.effect.test {
             assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+        }
+    }
 
-            viewModel.processIntent(ToppingEditIntent.RecordResult(result))
+    @Test
+    fun clickDone_recordAndConfirm_recordsDraftThenGoesToConfirmWithSwappedPaths() = runTest {
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
 
             // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다
-            assertEquals(
-                ToppingEditEffect.GoToConfirm(
-                    subjectImagePath = result.cutoutImagePath,
-                    trimmedSubjectImagePath = result.subjectImagePath,
-                ),
-                awaitItem(),
+            assertEquals(confirm, awaitItem())
+            assertFalse(viewModel.state.value.isSaving)
+        }
+
+        coVerify(exactly = 1) {
+            recordToppingDraft(
+                subjectImagePath = TRIMMED_PATH,
+                cutoutImagePath = CUTOUT_PATH,
+                borderColorArgb = null,
+                borderWidthDp = null,
+                sourceLongSide = SourceLongSide(CUTOUT_SIDE),
             )
         }
     }
 
     @Test
-    fun recordResult_recordReturnsFalse_showsSaveFailed() = runTest {
+    fun clickDone_recordReturnsFalse_showsSaveFailed() = runTest {
         coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns false
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
 
         viewModel.effect.test {
-            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
-
-            viewModel.processIntent(ToppingEditIntent.RecordResult(result))
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
 
             assertEquals(ToppingEditEffect.SaveFailed, awaitItem())
+            assertFalse(viewModel.state.value.isSaving)
         }
     }
 
     @Test
-    fun recordResult_recordThrows_showsSaveFailed() = runTest {
+    fun clickDone_recordThrows_showsSaveFailed() = runTest {
         coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } throws IOException("disk full")
-        val viewModel = createViewModel()
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
 
         viewModel.effect.test {
-            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
-
-            viewModel.processIntent(ToppingEditIntent.RecordResult(result))
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
 
             assertEquals(ToppingEditEffect.SaveFailed, awaitItem())
-            assertEquals(false, viewModel.state.value.isSaving)
+            assertFalse(viewModel.state.value.isSaving)
         }
     }
 
     @Test
-    fun recordResult_afterFirstCompletes_recordsAgain() = runTest {
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
-        val viewModel = createViewModel()
-        val confirm = ToppingEditEffect.GoToConfirm(
-            subjectImagePath = result.cutoutImagePath,
-            trimmedSubjectImagePath = result.subjectImagePath,
-        )
+    fun clickDone_saveFails_showsSaveFailedWithoutRecording() = runTest {
+        coEvery { saveBitmap(trimmedCutout.toAndroidBitmap()) } returns Result.failure(IOException("disk full"))
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
 
         viewModel.effect.test {
-            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
 
-            viewModel.processIntent(ToppingEditIntent.RecordResult(result))
+            assertEquals(ToppingEditEffect.SaveFailed, awaitItem())
+            assertFalse(viewModel.state.value.isSaving)
+        }
+
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun clickDone_returnResult_completesWithoutRecording() = runTest {
+        val viewModel = createViewModel(completion = ToppingEditCompletion.ReturnResult)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
+
+            assertEquals(ToppingEditEffect.EditCompleted(result), awaitItem())
+            assertFalse(viewModel.state.value.isSaving)
+        }
+
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun clickDone_tappedAgainWhileRecording_isIgnored() = runTest {
+        // Given 파일 저장은 끝났고 초안 기록이 아직 돌고 있다
+        val recordEntered = CompletableDeferred<Unit>()
+        val releaseRecord = CompletableDeferred<Unit>()
+        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } coAnswers {
+            recordEntered.complete(Unit)
+            releaseRecord.await()
+            true
+        }
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
+            recordEntered.await()
+            assertTrue(viewModel.state.value.isSaving)
+
+            // When 그 사이에 완료를 한 번 더 누른다
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
+            releaseRecord.complete(Unit)
+
+            // Then 저장도 기록도 한 번뿐이다
+            assertEquals(confirm, awaitItem())
+            advanceUntilIdle()
+            expectNoEvents()
+        }
+
+        verify(exactly = 1) { buildCutoutBitmap(any(), any(), any()) }
+        coVerify(exactly = 1) { recordToppingDraft(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun clickDone_afterReturningFromConfirm_completesAgain() = runTest {
+        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
             assertEquals(confirm, awaitItem())
 
-            // 같은 key 의 launch 는 앞 job 이 살아 있으면 버려지므로 첫 결과를 받은 뒤에 보낸다
-            viewModel.processIntent(ToppingEditIntent.RecordResult(result))
+            viewModel.processIntent(ToppingEditIntent.ClickDone)
             assertEquals(confirm, awaitItem())
         }
 
