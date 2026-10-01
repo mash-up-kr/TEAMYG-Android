@@ -22,10 +22,7 @@ import com.teamyg.parfait.feature.segmentation.impl.component.GuideBanner
 import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
 
-/**
- * 대상을 하나 이상 얻은 뒤의 화면만 그린다 — 분석 중 화면과 못 얻은 경우의 편집 이동은
- * [SegmentationState.isAnalyzing] 을 보는 상위 Route 가 받는다.
- */
+/** 후보를 하나 이상 얻은 뒤의 상태만 그린다 */
 @Composable
 internal fun SegmentationScreen(
     state: SegmentationState,

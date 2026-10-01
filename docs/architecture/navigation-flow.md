@@ -350,6 +350,9 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
                                                                                              │ popUpTo<NavKeyCanvasMain>()
                                                                                              ▼
                                                                                         C-001 캔버스
+
+NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) ──▶ NavKeySegmentationConfirm
+   (후보 0개·실패 — goToAndPopCurrent 로 분석 화면을 치환)      (goTo — 편집 화면은 백스택에 남는다)
 ```
 
 - 확인 화면(C-101-confirm) → 분석은 **`goToSingleClearTop(NavKeySegmentation)`**다(연타로 같은 키가 두 번
@@ -375,12 +378,16 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   → [topping-upload-source-scaled 스펙](../superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md).
 - **편집 완료가 `ToppingEditCompletion`으로 갈린다** — `NavKeyToppingEdit.completion`이 `ReturnResult`(기본. 확인 화면의
   "사진 편집"·배경 편집: 위 `ResultEventBus` 왕복)이면 `sendResult` + `onBack`이고, `RecordAndConfirm`(분석 0개 경로)이면
-  `ToppingEditRoute`가 `ToppingEditIntent.RecordResult`로 VM에 초안을 기록시킨 뒤 `goTo(NavKeySegmentationConfirm)`을 한다.
-  **편집 화면은 확인 화면 아래 백스택에 남는다.** 이동은 편집 키가 아직 맨 위일 때만 한다(`backStack.lastOrNull() == key`).
-  ⚠️ 완료 연타는 초안을 두 번 기록할 수 있다 — 두 번째 결과는 저장 경로가 달라 확인 키가 달라지므로
-  `goToSingleClearTop`으로는 못 막고, 맨 위 검사가 두 번째 이동만 버린다. 그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
+  `ToppingEditViewModel`이 파일 저장에 이어 초안까지 기록한 뒤 `GoToConfirm`을 내고 Route가 `goTo(NavKeySegmentationConfirm)`을 한다.
+  완료 방식은 `@Assisted` 인자로 VM이 받는다. **편집 화면은 확인 화면 아래 백스택에 남는다.**
+  저장부터 기록까지는 `isSaving`이 올라가 있어 그 사이의 완료 탭은 무시된다.
+  ⚠️ `isSaving`은 이동 전에 내린다(켠 채 나가면 확인 화면에서 돌아왔을 때 갇힌다). 그래서 화면이 걷히기 전에 들어온
+  완료 탭은 한 번 더 저장·기록한다 — 두 번째 결과는 저장 경로가 달라 확인 키가 달라지므로 `goToSingleClearTop`으로는 못 막고,
+  Route가 편집 키가 맨 위일 때만 이동해(`backStack.lastOrNull() == key`) 확인 화면이 두 번 쌓이는 것만 막는다.
+  그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
   경로 이름이 뒤집혀 있다: 확인 화면 인자의 `subjectImagePath = result.cutoutImagePath`, `trimmedSubjectImagePath = result.subjectImagePath`.
-- **그만두기 팝업이 네 화면에 있다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로)의 X. 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 나머지 셋은 "사진 편집을 그만둘까요?".
+- **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
+  팝업 호출은 카메라 모듈과 세그멘테이션 모듈에 따로 있다 — 카메라가 세그멘테이션 `impl`을 의존할 수 없고, 호출이 몇 줄뿐이며, 문자열이 모듈마다 있어서다. 본문·버튼을 바꿀 때는 두 벌을 함께 고친다.
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
   "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)와 편집 화면의 뒤로·닫기에는 팝업이 없다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.

@@ -62,7 +62,8 @@ tags: [spec, parfait, segmentation, topping]
 | 0개·예외·디코드 실패 | `goToAndPopCurrent(NavKeyToppingEdit(..., completion = RecordAndConfirm))` | 카메라/갤러리 · `PictureConfirm` · `ToppingEdit` |
 
 편집 완료(`RecordAndConfirm`)는 `goTo(NavKeySegmentationConfirm)` 라 편집 화면이 확인 화면 아래에 남는다.
-단 `navigator.backStack.lastOrNull() == key`(편집 화면이 아직 맨 위)일 때만 이동한다.
+단 `navigator.backStack.lastOrNull() == key`(편집 화면이 아직 맨 위)일 때만 이동한다 — 화면이 걷히기 전에
+들어온 완료 탭이 확인 화면을 한 번 더 쌓지 않게 한다.
 
 | 화면 | `<` · 시스템 뒤로 | X |
 |---|---|---|
@@ -146,17 +147,18 @@ data class NavKeyToppingEdit(
 ) : NavKey
 ```
 
-`ToppingEditViewModel`은 완료 방식을 모른다. 완료 시 지금처럼 `EditCompleted(result)`를 내고,
-`ToppingEditRoute`가 `key.completion`으로 가른다 — `ReturnResult`면 `sendResult` + `onBack`,
-`RecordAndConfirm`이면 `ToppingEditIntent.RecordResult(result)`를 VM에 돌려준다.
-⚠️ 알려진 한계: `completeEdit`이 `isSaving`을 끈 뒤 Route가 `RecordResult`를 돌려주기까지 틈이 있어,
-그 사이 "완료" 연타는 기록을 한 번 더 할 수 있다. 두 번째 결과는 저장 경로가 달라 확인 키가
-달라지므로 `goToSingleClearTop`으로는 못 막는다 — 위의 맨 위 검사가 두 번째 이동을 버린다. 두 번째
-기록은 초안을 새 경로로 덮어쓰고, 확인 화면은 초안 흐름을 따라 둘째 결과로 바뀌어 초안과 어긋나지 않는다(첫 결과 파일만 캐시에 고아로 남는다). VM은
-`RecordToppingDraftUseCase`를 주입받아 `recordEditResult(result)` → 성공이면
+`ToppingEditViewModel`이 완료 방식을 `@Assisted` 인자로 받아 `completeEdit` 한 코루틴 안에서 가른다.
+파일 저장 뒤 `ReturnResult`면 `EditCompleted(result)`를 내고 Route가 `sendResult` + `onBack`을 한다.
+`RecordAndConfirm`이면 VM이 주입받은 `RecordToppingDraftUseCase`로 `recordEditResult(result)` → 성공이면
 `ToppingEditEffect.GoToConfirm`(경로 이름 뒤집힘 주의: `subjectImagePath = result.cutoutImagePath`,
-`trimmedSubjectImagePath = result.subjectImagePath`), 실패면 기존 `SaveFailed` 토스트 후 머문다.
-기록을 비트맵 처리와 떼어 두면 JVM 테스트가 비트맵 없이 이 분기를 덮는다.
+`trimmedSubjectImagePath = result.subjectImagePath`), 실패·예외면 `SaveFailed` 토스트 후 머문다.
+`isSaving`은 저장부터 기록까지 올라가 있어 그 사이의 "완료" 탭은 무시되고, 어느 출구에서든 이펙트 직전에 내린다
+(편집 화면이 백스택에 남아 다시 완료할 수 있어야 한다).
+⚠️ 알려진 한계: `isSaving`을 내린 뒤 화면이 걷히기 전의 "완료" 탭은 한 번 더 저장·기록한다. 두 번째 결과는
+저장 경로가 달라 확인 키가 달라지므로 `goToSingleClearTop`으로는 못 막는다 — 위의 맨 위 검사가 두 번째 이동을
+버린다. 두 번째 기록은 초안을 새 경로로 덮어쓰고, 확인 화면은 초안 흐름을 따라 둘째 결과로 바뀌어 초안과
+어긋나지 않는다(첫 결과 파일만 캐시에 고아로 남는다).
+JVM 테스트는 비트맵을 만드는 편집 헬퍼(`ToppingEditMask.kt`)를 `mockkStatic`으로 갈아 끼워 저장 이후의 순서를 덮는다.
 
 ### 팝업 상태
 
@@ -204,9 +206,10 @@ data class NavKeyToppingEdit(
   - 팝업 중 결과 → 보류, `DismissQuit`에서 적용, `ConfirmQuit`에서 `QuitToCanvas`만
   - 재시도·회복·에러 상태 테스트 삭제
 - `ToppingEditViewModelTest`
-  - `RecordResult` → 기록 성공 `GoToConfirm`(경로 이름 뒤집힘 확인), 실패 `SaveFailed`
+  - `ClickDone`(`RecordAndConfirm`) → 기록 성공 `GoToConfirm`(경로 이름 뒤집힘 확인), 실패·예외 `SaveFailed`,
+    기록 중 재탭 무시. `ClickDone`(`ReturnResult`) → `EditCompleted`, 초안 기록 없음
 - 회복 전용 테스트 삭제, `offsetBy`·`isInsideCanvas` 테스트는 `SegmentationGeometryTest`로 이동
-- 실기기: 백스택 표 전 행, 팝업 네 화면, 로딩 중 시스템 뒤로
+- 실기기: 백스택 표 전 행, 팝업이 뜨는 화면 전부, 로딩 중 시스템 뒤로
 
 ## 주의 / 열린 질문
 
