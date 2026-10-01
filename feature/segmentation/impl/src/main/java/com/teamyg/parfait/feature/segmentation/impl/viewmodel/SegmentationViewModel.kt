@@ -225,7 +225,9 @@ class SegmentationViewModel
     private fun releaseLoading() {
         updateState { copy(isSaving = false) }
     }
-}
 
-private const val SELECT_CANDIDATE_KEY = "select-candidate"
-private const val LOAD_CANDIDATES_KEY = "loadCandidates"
+    private companion object {
+        const val SELECT_CANDIDATE_KEY = "select-candidate"
+        const val LOAD_CANDIDATES_KEY = "loadCandidates"
+    }
+}

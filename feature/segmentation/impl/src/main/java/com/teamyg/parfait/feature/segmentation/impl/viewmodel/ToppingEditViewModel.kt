@@ -396,6 +396,8 @@ class ToppingEditViewModel
             @Assisted("borderOnly") borderOnly: Boolean,
         ): ToppingEditViewModel
     }
-}
 
-private const val RECORD_RESULT_KEY = "record-result"
+    private companion object {
+        const val RECORD_RESULT_KEY = "record-result"
+    }
+}
