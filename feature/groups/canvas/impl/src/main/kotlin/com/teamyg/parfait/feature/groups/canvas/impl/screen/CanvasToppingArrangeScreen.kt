@@ -1,9 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,36 +12,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableToppingImage
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeLayout
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingBorderPanel
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingFocusDecoration
-import com.teamyg.parfait.feature.groups.canvas.impl.component.dismissPanelOnTouch
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingDrawEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingHitEntries
-import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
-import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingPanelInputs
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelFocusCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingArrangeUiState
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -130,10 +122,7 @@ internal fun CanvasToppingArrangeScreen(
             var isToppingGestureActive by remember { mutableStateOf(false) }
 
             // 그리는 자리. 이미지와 선택 박스가 같은 자리에 오려면 같은 값을 봐야 한다
-            val focusFraction by animateFloatAsState(
-                targetValue = if (uiState.isBorderPanelOpen) 1f else 0f,
-                label = "toppingPanelFocus",
-            )
+            val focusFraction by animatePanelFocusFraction(uiState.isBorderPanelOpen)
             val focusedDrawnCenter = focusedEntry?.let { entry ->
                 lerp(entry.draw.center, panelFocusCenter(DpSize(canvasWidth, canvasHeight)), focusFraction)
             }
@@ -146,25 +135,11 @@ internal fun CanvasToppingArrangeScreen(
                 myEntries
             }
 
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clipToBounds()
-                    .let { if (uiState.backgroundImageUrl == null) it.background(uiState.backgroundColor) else it }
-                    .border(
-                        width = 1.dp,
-                        color = YGAtomicColors.Gray.Gray500,
-                    ),
+            ToppingArrangeCanvasSurface(
+                backgroundColor = uiState.backgroundColor,
+                backgroundImageUrl = uiState.backgroundImageUrl,
+                modifier = Modifier.matchParentSize(),
             ) {
-                uiState.backgroundImageUrl?.let { imageUrl ->
-                    Image(
-                        painter = rememberAsyncImagePainter(model = imageUrl),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
                 othersEntries.forEach { entry ->
                     key(entry.topping.parfaitImageId) {
                         EditableToppingImage(
@@ -176,11 +151,7 @@ internal fun CanvasToppingArrangeScreen(
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(YGAtomicColors.Transparency.Black25),
-                )
+                ToppingArrangeCanvasDim()
 
                 myEntriesInDrawOrder.forEach { entry ->
                     key(entry.topping.parfaitImageId) {
@@ -194,23 +165,19 @@ internal fun CanvasToppingArrangeScreen(
                     }
                 }
 
-                // 세 입력의 순서와, 패널 상태로 체인을 갈아 끼우지 않는 이유는 dismissPanelOnTouch KDoc 참고
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .testTag(INPUT_TAG)
-                        .dismissPanelOnTouch(
+                        .toppingPanelInputs(
                             isPanelOpen = { uiState.isBorderPanelOpen },
-                            onDismiss = onDismissBorderPanel,
-                        ).toppingTapInput(
+                            onDismissPanel = onDismissBorderPanel,
                             // 아래에서 위 순서 — 본인 토핑이 남의 토핑 위에 그려진다
-                            entries = { (othersEntries + myEntries).map { it.topping to it.target } },
-                            keyOf = { it.parfaitImageId },
-                            onHit = onClickTopping,
-                            onMiss = onClickEmptyCanvas,
-                            enabled = { !uiState.isBorderPanelOpen },
-                        ).toppingTransformInput(
-                            targetAt = { focusedEntry?.target },
+                            tapEntries = { (othersEntries + myEntries).map { it.topping to it.target } },
+                            tapKeyOf = { it.parfaitImageId },
+                            onTapHit = onClickTopping,
+                            onTapMiss = onClickEmptyCanvas,
+                            transformTargetAt = { focusedEntry?.target },
                             onTransform = { pan, zoom, rotationDelta ->
                                 onToppingTransform(
                                     pan.x / canvasWidthPx,
@@ -220,7 +187,6 @@ internal fun CanvasToppingArrangeScreen(
                                 )
                             },
                             onGestureActiveChange = { isToppingGestureActive = it },
-                            enabled = { !uiState.isBorderPanelOpen },
                         ),
                 )
             }

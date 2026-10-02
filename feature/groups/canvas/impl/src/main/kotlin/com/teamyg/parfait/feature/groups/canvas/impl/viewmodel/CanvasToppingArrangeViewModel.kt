@@ -21,12 +21,17 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
-import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -72,7 +77,7 @@ data class CanvasToppingArrangeUiState(
 
     val panelBorderColorArgb: Int? get() = focusedTopping?.border?.colorArgb
 
-    val panelBorderWidthDp: Float get() = focusedTopping?.border?.widthDp ?: pendingBorderWidthDp
+    val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(focusedTopping?.border, pendingBorderWidthDp)
 
     val canOpenBorderPanel: Boolean get() = focusedToppingId != null
 }
@@ -316,10 +321,10 @@ constructor(
 
     private fun handleOnSystemBack() {
         updateState {
-            when {
-                isLoading -> this
-                isBorderPanelOpen -> copy(isBorderPanelOpen = false)
-                else -> copy(showQuitDialog = true)
+            when (toppingPanelBackAction(isLoading = isLoading, isBorderPanelOpen = isBorderPanelOpen)) {
+                ToppingPanelBackAction.Ignore -> this
+                ToppingPanelBackAction.ClosePanel -> copy(isBorderPanelOpen = false)
+                ToppingPanelBackAction.ShowQuitDialog -> copy(showQuitDialog = true)
             }
         }
     }
@@ -327,7 +332,7 @@ constructor(
     private fun handleOnSelectBorderColor(intent: CanvasToppingArrangeIntent.OnSelectBorderColor) {
         updateState {
             val focusedId = focusedToppingId ?: return@updateState this
-            val border = intent.colorArgb?.let { argb -> ToppingBorderStyle(argb, panelBorderWidthDp) }
+            val border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp)
 
             copy(
                 toppings = toppings.map { topping ->
@@ -344,7 +349,7 @@ constructor(
     private fun handleOnChangeBorderWidth(intent: CanvasToppingArrangeIntent.OnChangeBorderWidth) {
         updateState {
             val focusedId = focusedToppingId ?: return@updateState this
-            val widthDp = intent.widthDp.coerceIn(TOPPING_BORDER_WIDTH_RANGE_DP)
+            val widthDp = clampPanelBorderWidthDp(intent.widthDp)
 
             if (focusedTopping?.border == null) {
                 copy(pendingBorderWidthDp = widthDp)
@@ -353,7 +358,7 @@ constructor(
                     pendingBorderWidthDp = widthDp,
                     toppings = toppings.map { topping ->
                         if (topping.parfaitImageId == focusedId) {
-                            topping.copy(border = topping.border?.copy(widthDp = widthDp))
+                            topping.copy(border = topping.border.withPanelWidth(widthDp))
                         } else {
                             topping
                         }
@@ -408,9 +413,7 @@ constructor(
 
     private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
         updateState {
-            // 패널이 열린 동안 화면은 토핑을 저장된 자리가 아닌 곳에 보여 준다. 그 상태에서 받은
-            // 이동량을 저장된 자리에 더하면 닫았을 때 토핑이 엉뚱한 데로 가 있다
-            if (isBorderPanelOpen) return@updateState this
+            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
             val focusedId = focusedToppingId ?: return@updateState this
 
             applyToppingTransform(focusedId) { topping ->
