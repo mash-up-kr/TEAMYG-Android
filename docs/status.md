@@ -83,7 +83,7 @@
 - ⚠️ 삭제가 성공한 뒤 오늘 캔버스를 다시 받는 동안에는 로딩 덮개가 이미 내려가 있어 시스템 뒤로가기가 그만두기 팝업을 띄울 수 있고, 그 재조회가 예외를 던지면 지워진 토핑에 "삭제하지 못했어요" 토스트가 뜬다. 패널이 닫히는 애니메이션 동안에는 포커스된 토핑이 목록 순서로 먼저 돌아가 다른 본인 토핑 밑을 지날 수 있다 — 의도로 정한 적이 없다 (OQ-P-418)
 - ⚠️ 마감된 캔버스의 409를 토핑 저장·삭제가 일반 오류 토스트(`CanvasToppingArrangeError`)로 접어 다시 눌러도 영원히 실패하고, 변형 일괄 PATCH는 부분 성공이 없어 한 토핑이 걸리면 보낸 토핑 전부가 dirty로 남는다 (OQ-P-261, OQ-P-334)
 - ⚠️ 크기는 배치·배치 수정 화면 모두 하한(서버 scale `TOPPING_MIN_SCALE` 0.05)만 있고 회전과 함께 상한이 없어, 캔버스 밖으로 커진 배율과 손가락으로 다시 잡기 어려울 만큼 작아진 배율이 그대로 저장된다 (OQ-P-271, OQ-P-325)
-- ⚠️ 지난 캔버스에서 본인 토핑 탭은 무반응이다 — 캔버스 메인의 `isViewingToday` 가드다. 분석 화면 id는 `C-305`인데 정책은 이 화면을 C-105-Arrange라 부른다 (OQ-P-326, OQ-P-415)
+- ⚠️ 지난 캔버스에서 본인 토핑 탭은 무반응이다 — 캔버스 메인의 `isViewingToday` 가드다. 분석 화면 id는 `C-305`(위키 v7의 토핑 편집)인데 피그마는 이 화면을 `C-105-Arrange`라 부르고 위키에는 그 id가 없다 (OQ-P-326, OQ-P-415)
 - ⚠️ 배치 수정 화면의 확정 버튼 문구("캔버스에 쌓기")는 추가 플로우와 같은 문자열이고, 그만두기 팝업은 변경이 없어도 뜨며 제목이 「사진 편집을 그만둘까요?」다. 남의 토핑 안내 토스트는 `YGToastType.Edit`다 — 넷 다 기획·디자인 확인 전이다 (OQ-P-413, OQ-P-414, OQ-P-419)
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md), [ADR-0034](adr/0034-topping-border-set-at-placement.md)
 
@@ -106,7 +106,7 @@
 - 앵커: `CanvasBGEditViewModel`, `CanvasBGEditUiState`, `CanvasBGEditError`, `NavKeyCanvasBGEdit`, `ChangeCanvasBackgroundUseCase`, `EditableToppingImage`
 - ⚠️ 마감된 캔버스의 409를 배경 저장이 일반 오류 토스트로 접어 다시 눌러도 영원히 실패한다 (OQ-P-261)
 - ⚠️ 캔버스 튜토리얼(`canvas_tutorial_canvas_edit_description`)은 편집 버튼으로 "배경과 토핑을 자유롭게 꾸밀 수 있어요"라고 안내하는데 그 버튼이 여는 화면은 배경만 다룬다. 토핑은 캔버스에서 직접 탭해야 고칠 수 있다 (OQ-P-417)
-- ⚠️ 위키는 C-301을 배경과 토핑 편집의 통합 진입점으로 정의하는데 구현은 배경 전용 화면이다 (OQ-P-175)
+- ⚠️ 위키 v7은 `C-301`을 삭제하고 `C-304`(캔버스 수정)를 배경 탭 + 토핑 탭을 가진 편집 허브로 두는데, 구현은 탭 없는 배경 전용 화면이고 분석 화면 id로 `C-301`을 보낸다 (OQ-P-175, OQ-P-415)
 - ⚠️ 배경 업로드용 `copyToCache` 복사본이 `cacheDir/upload`에 쌓이기만 하고, 배경색은 `toRgbHex`로·테두리색은 로케일을 고정하지 않는 `toRgbHexString`으로 적는다 (OQ-P-262, OQ-P-263)
 - 설계: [c301-canvas-background-edit](superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md)
 
