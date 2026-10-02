@@ -330,3 +330,6 @@ navigation-flow·design-system·data-layer·api/parfait-image Android 매핑·AD
 
 ## [2026-10-02] lint | 배치 수정 화면 최종 리뷰 반영 — 삭제 뒤 재조회 동안 로딩 유지, 이탈을 `popUpTo<NavKeyCanvasMain>()`으로, 그만두기 확인이 팝업을 닫음, 패널이 닫히는 동안 포커스된 토핑을 위에 유지, 포커스가 사라지면 삭제 모달도 닫음
 status 「토핑 생성·배치·배치 수정」·navigation-flow 이탈 경로 정정 · 고쳐 씀 OQ-P-270, OQ-P-414(본문 문구 추가), OQ-P-416(안 쓰는 기하 추가), OQ-P-418(재조회 예외 토스트만 남김) · OQ 신설 OQ-P-420, OQ-P-421, OQ-P-422, OQ-P-423 · 유닛 `feature:groups:canvas:impl` 227·`feature:segmentation:impl` 77·`app` 35 · 계측 44(`feature:groups:canvas:impl`, SM-A356N)
+
+## [2026-10-03] lint | 배치 수정 화면의 토스트를 헤더 아래 캔버스 윗변으로 내림 — 피그마 `5479:13704` 대조, 스캐폴드 자리는 헤더를 덮었다
+status 「토핑 생성·배치·배치 수정」에 토스트 자리(`ToppingArrangeLayout`의 `toast` 슬롯) 추가 · 고쳐 씀 OQ-P-419(토스트 모양 대조 항목 걷음) · 추가 플로우 배치 화면의 토스트는 스캐폴드 자리 그대로다
