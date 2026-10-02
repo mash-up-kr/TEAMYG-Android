@@ -78,7 +78,6 @@ data class CanvasToppingPlaceUiState(
     /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
     val hasUserAdjustedPlacement: Boolean = false,
 ) : UiState {
-    /** 슬라이더가 가리키는 값 */
     val panelBorderWidthDp: Float get() = border?.widthDp ?: pendingBorderWidthDp
 }
 

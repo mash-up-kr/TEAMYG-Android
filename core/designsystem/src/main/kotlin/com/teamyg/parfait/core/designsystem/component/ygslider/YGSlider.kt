@@ -25,8 +25,6 @@ private val TRACK_HEIGHT = 2.dp
 private val THUMB_SIZE = 16.dp
 
 /**
- * 값 범위를 조절하는 슬라이더.
- *
  * Material 기본 트랙은 stop indicator 와 gap 이 함께 그려져 디자인과 어긋나므로,
  * 트랙과 thumb 을 직접 그려 지나온 구간과 남은 구간만 색으로 가른다.
  */

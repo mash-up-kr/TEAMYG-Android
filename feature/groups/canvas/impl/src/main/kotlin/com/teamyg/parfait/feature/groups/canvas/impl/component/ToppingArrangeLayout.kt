@@ -18,9 +18,7 @@ import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 
 /**
- * 토핑 배치 화면의 뼈대. 머리글, 캔버스 영역, 하단 확정 버튼을 세로로 쌓는다.
- *
- * 캔버스 영역은 머리글과 버튼 사이에 비율을 지킨 채 들어간다. 높이가 모자라면 폭이 줄고 가로 가운데에 온다.
+ * 토핑 배치 화면의 뼈대.
  *
  * 캔버스 영역은 자르지 않는다. 토핑의 점선 선택 박스는 캔버스 밖으로 나가도 보여야 한다.
  * 캔버스 내용을 자르는 것은 [canvas] 안에서 호출부가 한다.

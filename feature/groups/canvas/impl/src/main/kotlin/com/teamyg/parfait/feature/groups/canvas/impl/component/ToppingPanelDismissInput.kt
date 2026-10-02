@@ -11,8 +11,7 @@ import androidx.compose.ui.input.pointer.PointerInputEventHandler
 import androidx.compose.ui.input.pointer.pointerInput
 
 /**
- * 제스처의 첫 down 때 [isPanelOpen] 이 참이면 [onDismiss] 를 부른다.
- * 닫혀 있으면 아무것도 하지 않는다. down 은 소비하지 않는다.
+ * 제스처의 첫 down 때 [isPanelOpen] 이 참이면 [onDismiss] 를 부른다. down 은 소비하지 않는다.
  *
  * [toppingTapInput]·[toppingTransformInput] 보다 **바깥**(체인의 앞)에 단다. 같은 down 을 안쪽
  * 입력이 먼저 받으므로, 두 입력이 `enabled` 를 읽고 그 제스처를 버린 뒤에야 [onDismiss] 가 상태를
