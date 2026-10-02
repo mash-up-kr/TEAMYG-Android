@@ -4691,8 +4691,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   떠나므로, 그때까지 다른 토핑에 해 둔 미저장 변경은 묻지 않고 버려진다 — 삭제 전에 저장할지, 물을지,
   화면에 남을지 정한 적이 없다. 번호는 다른 문서가 가리키는 ②를 그대로 둔다.
 - **상태**: 미해결 (정한 적 없음)
-- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다. 삭제 뒤 재조회가 예외를 던질 때의 토스트는 OQ-P-418.
-  정하면 `CanvasToppingArrangeViewModelTest`의 `deleteConfirm_success_refreshesThenNavigatesBack` 계열을 함께 고친다.
+- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다.
+  지금 동작은 `CanvasToppingArrangeViewModelTest`의 `deleteConfirm_success_discardsOtherDirtyToppings`가 고정한다.
+  정하면 `deleteConfirm_success_*` 계열을 함께 고친다.
 
 ### [2026-08-23] 토핑 크기 상한이 근거 없이 사라졌다 — 이제 막는 자리가 앱에도 서버에도 없다
 
@@ -7624,17 +7625,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: 튜토리얼 문구와 목업 이미지를 고칠지 — 문구는 기획 소관이다.
 - **상태**: 미해결 (기획 확인 전)
 - **해소 메모**: 목업 PNG가 실제 화면을 따라가지 않는 문제는 OQ-P-363과 같은 자리다.
-
-### [2026-10-02] 배치 수정 화면 — 삭제 뒤 재조회가 예외를 던지면 삭제 실패 토스트가 뜬다
-
-- **ID**: OQ-P-418
-- **출처**: `CanvasToppingArrangeViewModel#handleOnDeleteToppingDialogConfirm`·`failToDeleteTopping`.
-- **항목**: 삭제가 성공한 뒤 기다리는 `refreshTodayParfaitDetailUseCase`가 예외를 던지면 `launch`의
-  `onError`가 `failToDeleteTopping`으로 가서, 이미 지워진 토핑에 `TOPPING_DELETE_UNKNOWN` 토스트가 뜨고
-  화면이 닫히지 않는다. 코드만 봐서는 의도인지 알 수 없다. 삭제 성공이 다른 토핑의 미저장 변경을 버리는
-  것은 OQ-P-270 ②가 쥔다.
-- **상태**: 미해결 (정한 적 없음 — 관찰된 사용자 증상은 없다)
-- **해소 메모**: 고치면 `CanvasToppingArrangeViewModelTest`에 감지선을 붙인다.
 
 ### [2026-10-02] 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
 
