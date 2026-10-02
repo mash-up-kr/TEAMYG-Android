@@ -84,10 +84,7 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
 
     is NavKeyCanvasToppingPlace -> AnalyticsScreen("C-106", "NavKeyCanvasToppingPlace")
 
-    is NavKeyCanvasBGEdit -> AnalyticsScreen(
-        screenId = if (initialToppingId == null) "C-301" else "C-305",
-        screenClass = "NavKeyCanvasBGEdit",
-    )
+    is NavKeyCanvasBGEdit -> AnalyticsScreen("C-301", "NavKeyCanvasBGEdit")
 
     is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")
 

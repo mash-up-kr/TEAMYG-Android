@@ -135,14 +135,11 @@ class NavKeyAnalyticsScreenTest {
     }
 
     @Test
-    fun toAnalyticsScreenOrNull_canvasBGEdit_splitsByInitialToppingId() {
-        // Given, When 편집 모드 진입과 특정 토핑을 탭한 진입
-        val mode = NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L)
-        val topping = NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L, initialToppingId = 3L)
-
-        // Then
-        assertEquals("C-301", mode.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-305", topping.toAnalyticsScreenOrNull()?.screenId)
+    fun toAnalyticsScreenOrNull_canvasBGEdit_isC301() {
+        assertEquals(
+            "C-301",
+            NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L).toAnalyticsScreenOrNull()?.screenId,
+        )
     }
 
     @Test

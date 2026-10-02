@@ -39,7 +39,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeLay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingBorderPanel
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingFocusDecoration
 import com.teamyg.parfait.feature.groups.canvas.impl.component.dismissPanelOnTouch
-import com.teamyg.parfait.feature.groups.canvas.impl.component.drawnModel
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingDrawEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingHitEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
@@ -119,7 +118,7 @@ internal fun CanvasToppingArrangeScreen(
                 canvasHeight = canvasHeight,
             )
             val outlines = rememberToppingOutlines(
-                models = drawEntries.map { it.topping.drawnModel },
+                models = drawEntries.map { it.topping.imageUrl },
                 retryKey = 0,
             )
 
@@ -169,7 +168,7 @@ internal fun CanvasToppingArrangeScreen(
                     key(entry.topping.parfaitImageId) {
                         EditableToppingImage(
                             entry = entry.draw,
-                            outline = outlines[entry.topping.drawnModel],
+                            outline = outlines[entry.topping.imageUrl],
                             alpha = 1f,
                             onClick = null,
                         )
@@ -186,7 +185,7 @@ internal fun CanvasToppingArrangeScreen(
                     key(entry.topping.parfaitImageId) {
                         EditableToppingImage(
                             entry = entry.draw,
-                            outline = outlines[entry.topping.drawnModel],
+                            outline = outlines[entry.topping.imageUrl],
                             alpha = 1f,
                             onClick = { onClickTopping(entry.topping) },
                             centerOverride = focusedDrawnCenter.takeIf { entry === focusedEntry },
@@ -231,7 +230,6 @@ internal fun CanvasToppingArrangeScreen(
                     entry = focusedEntry,
                     center = focusedDrawnCenter,
                     onClickDelete = onClickDeleteTopping,
-                    onClickEdit = null,
                     showActionButtons = !isToppingGestureActive,
                 )
             }

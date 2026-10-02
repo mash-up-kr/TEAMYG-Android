@@ -40,10 +40,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
-/** 편집 화면이 그리는 대상. 편집본이 있으면 그쪽이고, 그 파일은 투명 여백이 잘려 있다. */
-internal val EditableTopping.drawnModel: String
-    get() = editedImagePath ?: imageUrl
-
 /** 그리기 정보. [ToppingHitTarget]은 [EditableToppingHitEntry]가 얹는다 */
 internal data class EditableToppingDrawEntry(
     val topping: EditableTopping,
@@ -62,7 +58,7 @@ internal fun rememberEditableToppingDrawEntries(
     canvasHeight: Dp,
 ): List<EditableToppingDrawEntry> = toppings.map { topping ->
     key(topping.parfaitImageId) {
-        val painter = rememberAsyncImagePainter(model = topping.drawnModel)
+        val painter = rememberAsyncImagePainter(model = topping.imageUrl)
         val painterState by painter.state.collectAsState()
         val intrinsicSize = painter.intrinsicSize
 
@@ -103,8 +99,7 @@ internal data class EditableToppingHitEntry(
 }
 
 /**
- * @param outlines [EditableTopping.drawnModel] 로 찾는다 — 그리는 대상과 다른 키를 쓰면
- *   편집본의 잘린 여백만큼 실루엣이 어긋난다
+ * @param outlines [EditableTopping.imageUrl] 로 찾는다
  */
 @Composable
 internal fun rememberEditableToppingHitEntries(
@@ -124,7 +119,7 @@ internal fun rememberEditableToppingHitEntries(
                     imageHeightPx = entry.size.height.toPx(),
                     rotationDegrees = entry.topping.rotationDegrees,
                     borderWidthPx = entry.drawnBorderWidthDp.dp.toPx(),
-                    outline = outlines[entry.topping.drawnModel],
+                    outline = outlines[entry.topping.imageUrl],
                 )
             },
         )
@@ -202,8 +197,7 @@ internal fun EditableToppingImage(
 }
 
 /**
- * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼. [onClickEdit] 이 null 이면 연필 버튼
- * (좌하단)을 그리지 않는다.
+ * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼.
  *
  * @param center 선택 박스를 두는 자리. 이미지를 그린 자리와 같아야 한다
  * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
@@ -214,7 +208,6 @@ internal fun ToppingFocusDecoration(
     entry: EditableToppingHitEntry,
     center: DpOffset,
     onClickDelete: () -> Unit,
-    onClickEdit: (() -> Unit)?,
     showActionButtons: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -242,15 +235,6 @@ internal fun ToppingFocusDecoration(
                 onClick = onClickDelete,
                 modifier = Modifier.centeredAt(buttonPoints.topLeft),
             )
-            if (onClickEdit != null) {
-                YGCircleButton(
-                    iconResource = DesignSystemR.drawable.ic_edit,
-                    type = YGCircleButtonType.Small,
-                    contentDescription = stringResource(R.string.canvas_bg_edit_topping_edit),
-                    onClick = onClickEdit,
-                    modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
-                )
-            }
         }
     }
 }
