@@ -4691,7 +4691,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   떠나므로, 그때까지 다른 토핑에 해 둔 미저장 변경은 묻지 않고 버려진다 — 삭제 전에 저장할지, 물을지,
   화면에 남을지 정한 적이 없다. 번호는 다른 문서가 가리키는 ②를 그대로 둔다.
 - **상태**: 미해결 (정한 적 없음)
-- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다. 삭제 뒤 재조회 구간의 빈틈은 OQ-P-418.
+- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다. 삭제 뒤 재조회가 예외를 던질 때의 토스트는 OQ-P-418.
   정하면 `CanvasToppingArrangeViewModelTest`의 `deleteConfirm_success_refreshesThenNavigatesBack` 계열을 함께 고친다.
 
 ### [2026-08-23] 토핑 크기 상한이 근거 없이 사라졌다 — 이제 막는 자리가 앱에도 서버에도 없다
@@ -7569,7 +7569,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 전)
 - **해소 메모**: 문구가 갈리면 `ToppingArrangeLayout`이 버튼 문구를 인자로 받게 한다.
 
-### [2026-10-02] 배치 수정 화면의 그만두기 팝업이 변경이 없어도 뜨고, 제목이 스펙과 다르다
+### [2026-10-02] 배치 수정 화면의 그만두기 팝업이 변경이 없어도 뜨고, 제목·본문이 스펙과 다르다
 
 - **ID**: OQ-P-414
 - **출처**: `CanvasToppingArrangeViewModel`의 `OnClickClose`·`handleOnSystemBack`,
@@ -7578,7 +7578,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 정책 메모는 닫기가 변경사항이 있을 때만 확인을 띄운다고 적는데 구현은 `dirtyToppingIds`를
   보지 않고 항상 띄운다. 스펙이 알고 고른 차이이고 기획 확인은 받지 않았다. ② 스펙은 팝업 제목을
   "편집을 그만둘까요?"로 적었는데 구현은 디자인시스템 `YGModalQuitEdit`의 「사진 편집을 그만둘까요?」를
-  쓴다. `YGModalQuit.kt`의 세 변형 가운데 편집용을 고른 것이고 사용자 확인 전이다.
+  쓴다. 본문도 스펙이 가리킨 "기존 편집 내용은 모두 사라지며 캔버스 화면으로 돌아가요"가 아니라
+  디자인시스템 공통 문구(`yg_modal_quit_body`) 「지금까지 진행한 내용은 저장되지 않아요. 정말
+  그만두시겠어요?」다. `YGModalQuit.kt`의 세 변형 가운데 편집용을 고른 것이고 사용자 확인 전이다.
 - **상태**: 미해결 (①은 기획, ②는 사용자 확인 전)
 - **해소 메모**: ①을 정책대로 하면 `dirtyToppingIds`가 비었을 때 팝업 없이 `NavigateBack`을 내고
   `CanvasToppingArrangeViewModelTest`를 함께 고친다. ②에서 다른 문구가 필요하면 `YGModalQuit.kt`에
@@ -7603,11 +7605,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-416
 - **출처**: `core/util/jvm`의 `ToppingOutline.buildBorderPixels`·`ToppingBorderBand`, `core/util/android`의
-  `toBorderArgbBitmap`, `feature/groups/canvas/impl`의 `ToppingCorners.bottomLeft`.
+  `toBorderArgbBitmap`, `feature/groups/canvas/impl`의 `util/ToppingGeometry.kt`·`model/ToppingCorners.kt`.
 - **항목**: ① 여러 겹 띠를 한 장으로 굽는 `buildBorderPixels`·`toBorderArgbBitmap`·`ToppingBorderBand`는
   부르는 프로덕션 코드가 없고 `ToppingOutlineTest`만 쓴다. 화면은 한 겹짜리 `toBorderAlphaBitmap` 쪽만
-  쓴다. 지울지 정하지 않았다. ② `ToppingCorners.bottomLeft`는 `util/ToppingGeometry.kt`가 채우기만 하고
-  읽는 곳이 없다.
+  쓴다. 지울지 정하지 않았다. ② `computeToppingStrokeCorners`는 부르는 곳이 프로덕션에도 테스트에도
+  없다. `ToppingCorners`의 `topRight`·`bottomLeft`·`bottomRight`는 `rotatedRectangleCorners`가 채우기만
+  하고 읽는 곳이 없다 — 읽히는 것은 `ToppingFocusDecoration`이 삭제 버튼을 놓는 `topLeft` 하나다.
 - **상태**: 미해결 (동작 영향 없음)
 - **해소 메모**: 지우면 `ToppingOutlineTest`의 해당 케이스와 [module-structure](../architecture/module-structure.md)의
   `core:util:jvm`·`core:util:android` 줄을 함께 고친다. `YGFloatingBarEditTab`은 OQ-P-081이 쥔다.
@@ -7622,20 +7625,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 전)
 - **해소 메모**: 목업 PNG가 실제 화면을 따라가지 않는 문제는 OQ-P-363과 같은 자리다.
 
-### [2026-10-02] 배치 수정 화면 — 삭제 뒤 재조회 구간과 패널이 닫히는 동안의 그리기 순서
+### [2026-10-02] 배치 수정 화면 — 삭제 뒤 재조회가 예외를 던지면 삭제 실패 토스트가 뜬다
 
 - **ID**: OQ-P-418
-- **출처**: `CanvasToppingArrangeViewModel#handleOnDeleteToppingDialogConfirm`·
-  `CanvasToppingArrangeScreen`. 코드만 봐서는 의도인지 알 수 없는 자리 셋이다(①②③).
-- **항목**: ① 삭제가 성공하면 `isLoading`을 내린 뒤에 `refreshTodayParfaitDetailUseCase`를 기다린다.
-  그 사이에는 덮개가 없어 `handleOnSystemBack`이 그만두기 팝업을 띄울 수 있고 캔버스도 눌린다.
-  ② 그 재조회가 예외를 던지면 `launch`의 `onError`가 `failToDeleteTopping`으로 가서, 이미 지워진
-  토핑에 `TOPPING_DELETE_UNKNOWN` 토스트가 뜨고 화면이 닫히지 않는다. ③ 포커스된 토핑을 맨 위에
-  그리는 조건이 `isBorderPanelOpen`이라, 패널이 닫히는 애니메이션(`focusFraction`) 동안에는 토핑이
-  아직 `panelFocusCenter` 쪽에 있는데 그리는 순서는 이미 목록 순서로 돌아가 다른 본인 토핑 밑을 지날
-  수 있다. 삭제 성공이 다른 토핑의 미저장 변경을 버리는 것은 OQ-P-270 ②가 쥔다.
+- **출처**: `CanvasToppingArrangeViewModel#handleOnDeleteToppingDialogConfirm`·`failToDeleteTopping`.
+- **항목**: 삭제가 성공한 뒤 기다리는 `refreshTodayParfaitDetailUseCase`가 예외를 던지면 `launch`의
+  `onError`가 `failToDeleteTopping`으로 가서, 이미 지워진 토핑에 `TOPPING_DELETE_UNKNOWN` 토스트가 뜨고
+  화면이 닫히지 않는다. 코드만 봐서는 의도인지 알 수 없다. 삭제 성공이 다른 토핑의 미저장 변경을 버리는
+  것은 OQ-P-270 ②가 쥔다.
 - **상태**: 미해결 (정한 적 없음 — 관찰된 사용자 증상은 없다)
-- **해소 메모**: 고치면 `CanvasToppingArrangeViewModelTest`·`CanvasToppingArrangeScreenTest`에 감지선을 붙인다.
+- **해소 메모**: 고치면 `CanvasToppingArrangeViewModelTest`에 감지선을 붙인다.
 
 ### [2026-10-02] 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
 
@@ -7650,4 +7649,57 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
 - **해소 메모**: 계획의 Step 2 표를 그대로 돌린다. 어긋난 것이 나오면 개별 OQ로 가른다.
 
-<!-- oq-next: 420 -->
+### [2026-10-02] 배치 수정 화면 — 일부만 저장된 뒤 되돌린 값은 서버에 가지 않는다
+
+- **ID**: OQ-P-420
+- **출처**: `CanvasToppingArrangeViewModel`의 `hasBorderChange`·`hasTransformChange`·`serverToppings`·
+  `handleOnClickConfirm`.
+- **항목**: 바뀐 축을 가리는 기준인 `serverToppings`는 오늘 캔버스 방출(`observeCanvas`)에서만 갱신되고,
+  PATCH가 성공해도 그 자리에서는 갱신되지 않는다. 확정이 일부만 성공하면(예: 토핑 1의 테두리 PATCH는
+  성공, 토핑 2는 실패) 화면에 남고 재조회도 하지 않는다. 그 상태에서 다음 방출이 오기 전에 토핑 1을 원래
+  값으로 되돌리고 다시 확정하면, 화면 값이 낡은 `serverToppings`와 같아 PATCH가 나가지 않고 서버에는
+  사용자가 되돌린 값이 남는다. 변형 축도 같은 대조를 쓴다.
+- **상태**: 미해결 (정한 적 없음 — 관찰된 사용자 증상은 없다)
+- **해소 메모**: 성공한 PATCH의 결과를 `serverToppings`에 반영하거나 부분 실패 뒤에도 재조회하는 길이
+  있다. 고치면 `CanvasToppingArrangeViewModelTest`에 감지선을 붙인다. 일괄 PATCH의 부분 성공 부재는 OQ-P-334.
+
+### [2026-10-02] 배치 수정 화면 — 확정 실패 토스트가 네트워크 오류를 가리지 않는다
+
+- **ID**: OQ-P-421
+- **출처**: `CanvasToppingArrangeViewModel`의 `handleOnClickConfirm`·`saveTransforms`·`saveBorder`·
+  `failToSaveUnexpectedly`, `CanvasToppingArrangeError`.
+- **항목**: `saveTransforms`·`saveBorder`는 유스케이스가 돌려준 `Result.failure`의 원인을 로그에만 남기고
+  실패한 id만 돌려주므로, `handleOnClickConfirm`은 원인이 `AppError.Network`여도 항상
+  `TOPPING_SAVE_UNKNOWN`을 낸다. `NETWORK` 문구는 유스케이스가 예외를 **던져** `failToSaveUnexpectedly`로
+  갔을 때만 나온다. 삭제(`failToDeleteTopping`)는 `Result.failure`의 원인도 가린다 — 두 경로가 갈린 것이
+  의도인지 정한 적이 없다.
+- **상태**: 미해결 (정한 적 없음)
+- **해소 메모**: 가리게 하면 `CanvasToppingArrangeViewModelTest`의 `confirm_failure_keepsPanelOpen`이
+  기대하는 오류 값을 함께 고친다. 409를 일반 오류로 접는 것은 OQ-P-261.
+
+### [2026-10-02] 배치 수정 화면 — 패널이 닫히는 동안 다른 본인 토핑을 탭하면 그 토핑이 패널 자리 쪽으로 튄다
+
+- **ID**: OQ-P-422
+- **출처**: `CanvasToppingArrangeScreen`의 `focusFraction`·`focusedDrawnCenter`·`myEntriesInDrawOrder`.
+- **항목**: 그리는 자리와 그리는 순서는 "지금 포커스된 토핑"과 `focusFraction`만 본다. 패널이 닫힌 직후
+  `focusFraction`이 0으로 돌아가는 동안(약 0.3초) 탭 입력은 이미 켜져 있어, 다른 본인 토핑을 탭하면 포커스가
+  옮겨 가고 남은 `focusFraction`이 새 토핑에 적용된다 — 새 토핑이 제자리에서 `panelFocusCenter` 쪽으로
+  순간 이동해 맨 위에 그려진 뒤 되돌아오고, 돌아오던 원래 토핑은 저장된 자리로 곧바로 놓인다. 터치 판정은
+  내내 저장된 자리다.
+- **상태**: 미해결 (정한 적 없음 — 실기기에서 본 적 없다)
+- **해소 메모**: 애니메이션 대상을 포커스가 아니라 "패널을 열었던 토핑"으로 고정하는 길이 있다. 고치면
+  `CanvasToppingArrangeScreenTest`에 감지선을 붙인다.
+
+### [2026-10-02] 배치 수정 화면만 쓰는 문자열 키가 `canvas_bg_edit_topping_*`다
+
+- **ID**: OQ-P-423
+- **출처**: `feature/groups/canvas/impl`의 `strings.xml` — `canvas_bg_edit_topping_delete`,
+  `canvas_bg_edit_topping_delete_dialog_title`·`_body`·`_confirm`·`_cancel`,
+  `canvas_bg_edit_topping_save_error_unknown`, `canvas_bg_edit_topping_delete_error_unknown`.
+- **항목**: 읽는 곳은 `CanvasToppingArrangeScreen`의 삭제 모달, `ToppingFocusDecoration`의 삭제 버튼,
+  `CanvasToppingArrangeError`뿐이고 배경 편집 화면(`CanvasBGEdit`)은 쓰지 않는다. 키 이름이 쓰는 화면과 맞지 않는다.
+- **상태**: 미해결 (동작 영향 없음)
+- **해소 메모**: 이름을 바꾸면 `canvas_topping_arrange_*`로 맞춘다. `NETWORK` 문구
+  `canvas_bg_edit_save_error_network`는 두 화면이 함께 쓴다.
+
+<!-- oq-next: 424 -->

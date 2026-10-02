@@ -327,3 +327,6 @@ OQ-P-256 호출 경로·잠금 테스트 서술을 현재 코드에 맞춤(미�
 
 ## [2026-10-02] restructure | 배치 수정 화면(`CanvasToppingArrange`) 반영 — status 「토핑 생성·배치·배치 수정」·「캔버스 배경 편집」 덮어쓰기, 스펙·계획 둘 archive
 navigation-flow·design-system·data-layer·api/parfait-image Android 매핑·ADR-0034 갱신 · 해소 OQ-P-201, OQ-P-276, OQ-P-324, OQ-P-337, OQ-P-338, OQ-P-379(이미 닫혀 있던 OQ-P-254 항목 삭제) · 고쳐 씀 OQ-P-081, OQ-P-175, OQ-P-202, OQ-P-203, OQ-P-326, OQ-P-391 · OQ 신설 OQ-P-413, OQ-P-414, OQ-P-415, OQ-P-416, OQ-P-417, OQ-P-418, OQ-P-419 · 유닛 1256 · 계측 44(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기·TalkBack 대조는 하지 않았다
+
+## [2026-10-02] lint | 배치 수정 화면 최종 리뷰 반영 — 삭제 뒤 재조회 동안 로딩 유지, 이탈을 `popUpTo<NavKeyCanvasMain>()`으로, 그만두기 확인이 팝업을 닫음, 패널이 닫히는 동안 포커스된 토핑을 위에 유지, 포커스가 사라지면 삭제 모달도 닫음
+status 「토핑 생성·배치·배치 수정」·navigation-flow 이탈 경로 정정 · 고쳐 씀 OQ-P-270, OQ-P-414(본문 문구 추가), OQ-P-416(안 쓰는 기하 추가), OQ-P-418(재조회 예외 토스트만 남김) · OQ 신설 OQ-P-420, OQ-P-421, OQ-P-422, OQ-P-423 · 유닛 `feature:groups:canvas:impl` 227·`feature:segmentation:impl` 77·`app` 35 · 계측 44(`feature:groups:canvas:impl`, SM-A356N)

@@ -501,7 +501,7 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
 
 ```
 NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)
-        ▲                                                          │ 확정·삭제 성공 / 그만두기 → onBack
+        ▲                                                          │ 확정·삭제 성공 / 그만두기 → popUpTo<NavKeyCanvasMain>
         └──────────────────────────────────────────────────────────┘
 ```
 
@@ -510,8 +510,8 @@ NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyC
   `CanvasToppingArrangeViewModel`의 `withCanvas`가 최초 방출에만 얹는다. 탭한 토핑 없이는 열 수 없어
   null이 아니다.
 - **결과 왕복이 없다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
-  저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤 `onBack()`
-  1회로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
+  저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤
+  `popUpTo<NavKeyCanvasMain>()`으로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
 - **`NavKeyToppingEdit`의 호출자는 둘이다** — `SegmentationRoute`(분석 0건·실패, `RecordAndConfirm`)와
   `SegmentationConfirmRoute`(「사진 편집」, `ReturnResult`). 캔버스 쪽은 그 목적지를 열지 않고
   `TOPPING_EDIT_RESULT_KEY`를 받는 곳도 `SegmentationConfirmRoute` 하나다.
