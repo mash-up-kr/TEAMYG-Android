@@ -79,7 +79,7 @@ tags: [spec, parfait]
 
 ```kotlin
 /** 토핑에 두른 테두리. null 이면 두르지 않은 것이다 */
-internal data class ToppingBorderStyle(
+data class ToppingBorderStyle(
     val colorArgb: Int,
     val widthDp: Float,
 )
@@ -118,6 +118,8 @@ internal fun panelFocusCenter(canvasSize: DpSize): DpOffset
   포커스가 없을 때 쓴다.
 - `ToppingArrangeLayout`의 `panel` 슬롯은 캔버스 영역 하단에 겹쳐 놓인다. 하단 버튼은 언제나
   눌린다 — 초안 미로딩·그림 미준비 같은 가드는 지금처럼 ViewModel이 토스트로 알린다.
+- `ToppingBorderStyle`은 public이다. public인 `UiState`에 실리기 때문이다. 수정 플로우의
+  토핑 타입(`EditableTopping`)도 같은 이유로 public이다.
 - 기본 굵기는 지금 테두리 탭과 같은 값이다. 그 상수는 삭제될 `ToppingEditState`의
   `private`이라 canvas impl에 새로 둔다.
 
@@ -194,8 +196,8 @@ data class NavKeyCanvasToppingArrange(
 **값을 바꾸면**
 
 - 색을 고르면 그 색과 슬라이더가 가리키는 굵기로 테두리를 두른다. "없음"을 고르면 벗긴다.
-- 테두리가 있을 때 굵기를 바꾸면 그 테두리의 굵기가 바뀐다.
-- 테두리가 없을 때 굵기를 바꾸면 `pendingBorderWidthDp`만 바뀐다.
+- 굵기를 바꾸면 언제나 `pendingBorderWidthDp`가 그 값이 된다. 테두리가 있으면 그 테두리의
+  굵기도 함께 바뀐다. 그래서 "없음"으로 벗긴 뒤 다시 색을 고르면 마지막 굵기로 둘러진다.
 
 **열려 있는 동안**
 
@@ -208,11 +210,15 @@ data class NavKeyCanvasToppingArrange(
 - 포커스 토핑을 다른 본인 토핑보다 위에 그린다. 그리는 순서만 바뀌고 저장되는 깊이
   (`positionZ`)는 그대로다. 닫히면 원래 순서로 돌아간다.
 - 점선 선택 박스와 삭제 버튼도 함께 움직인다.
-- 캔버스 입력 레이어를 "무엇이든 닫기" 하나로 바꾼다. 탭·드래그·핀치 모두 패널만 닫고
-  히트 판정을 하지 않는다. 이동·포커스 전환·토스트가 일어날 길이 없다. 삭제 버튼을 눌러도
-  패널만 닫힌다.
-- 닫는 시점은 손가락이 닿는 순간이다. 닫은 그 제스처는 끝까지 삼킨다 — 이어서 변형으로
-  넘어가지 않는다.
+- 캔버스에 닿는 것은 무엇이든 패널만 닫는다. 탭·드래그·핀치 모두 히트 판정을 하지 않아
+  이동·포커스 전환·토스트가 일어나지 않는다. 삭제 버튼을 눌러도 패널만 닫힌다.
+- 닫는 시점은 손가락이 닿는 순간이다. 닫은 그 제스처는 끝까지 버린다 — 이어지는 드래그나
+  뒤늦게 닿은 두 번째 손가락이 변형으로 넘어가지 않는다.
+- 입력 레이어는 패널 상태에 따라 갈아 끼우지 않는다. 닫기·탭·변형 세 입력을 늘 붙여 두고,
+  각자가 제스처의 첫 down에서 패널 상태를 읽어 그 제스처 전체를 받을지 버릴지 정한다.
+  갈아 끼우면 진행 중이던 핸들러가 리셋돼 두 번째 손가락이 새 변형 입력으로 샌다.
+- 접근성 서비스의 클릭은 포인터 입력을 거치지 않는다. 그래서 ViewModel도 패널이 열린 동안
+  토핑 탭·빈 캔버스 탭·삭제 버튼 intent를 받으면 패널만 닫는다.
 - 패널 자신은 영역 안의 입력을 모두 삼킨다. 패널의 빈 곳을 눌러도, 슬라이더를 끄는 동안에도
   닫히지 않는다.
 - 아래 화살표를 탭해도 닫힌다.
@@ -232,6 +238,7 @@ data class NavKeyCanvasToppingArrange(
 
 | 상태 | 결과 |
 |---|---|
+| 로딩 덮개가 떠 있다 | 무시한다 |
 | 패널 열림 | 패널만 닫힌다 |
 | 패널 닫힘 | 그만두기 팝업을 띄운다 |
 
@@ -331,8 +338,8 @@ data class NavKeyCanvasToppingArrange(
 - 튜토리얼 제목과 본문에서 테두리 언급을 뺀다. 지금 문구는 "사진 편집 버튼으로 테두리를
   추가"하라고 안내한다. "사진 편집" 버튼이 숨겨진 진입에서는 튜토리얼을 띄우지 않고, 봤다는
   기록도 남기지 않는다.
-- 계획 B에서 `sourceImageUri ?: editImageUri` 폴백과 `editImagePath`를 걷는다. 되살린 알맹이를
-  원본 자리에 넣던 길이다.
+- 계획 B에서 `sourceImageUri ?: editImageUri` 폴백을 걷는다. 되살린 알맹이를 원본 자리에
+  넣던 길이다. `editImagePath`는 남는다 — 영역 수정의 시작 마스크를 고르는 데 계속 쓴다.
 
 ## 표시·제어 규칙
 
@@ -370,6 +377,8 @@ data class NavKeyCanvasToppingArrange(
 | `canvas/impl/.../util/ToppingBorderColors.kt` | segmentation 것을 복제 |
 | `core/designsystem/.../component/ygslider/YGSlider.kt` | segmentation에서 이동·개명 |
 | `core/designsystem/.../ygfloatingbar/YGFloatingBar.kt` | 뒤로 + 제목 + 닫기 변형 추가 |
+| `canvas/impl/.../component/ToppingPanelDismissInput.kt` | 신규. 패널이 열린 채 시작한 제스처면 닫는다 |
+| `ToppingHitTestInput.kt`, `ToppingTransformInput.kt` | 첫 down에서 읽는 `enabled` 인자 추가 |
 | `CanvasToppingPlaceScreen.kt`·`ViewModel.kt`·`Route.kt` | 헤더·버튼·패널·팝업·`BackHandler` |
 | `canvas/impl` `strings.xml` | 그만두기 팝업 문구, 패널 문구 |
 | `ToppingEditScreen.kt`·`ToppingEditViewModel.kt` | `borderOnly == false`일 때 탭 숨김 |
@@ -456,3 +465,10 @@ data class NavKeyCanvasToppingArrange(
   입력의 결과가 다르다.
 - 추가 플로우에서 뒤로 갔다 다시 오거나 프로세스가 죽으면 고른 테두리가 사라진다.
 - 두 손가락 제스처를 대신할 접근성 조작은 여전히 없다(OQ-P-202 ③).
+- 계획 B 뒤에는 `YGFloatingBarEditTab`과 여러 겹 띠 렌더링(`buildBorderPixels`,
+  `toBorderArgbBitmap`, `ToppingBorderBand`)의 프로덕션 사용처가 없어진다. 디자인시스템·공용
+  유틸이라 이번에는 지우지 않는다.
+- 캔버스 튜토리얼 문구가 "캔버스 편집 버튼을 눌러 배경과 토핑을 자유롭게 꾸밀 수 있어요"인데
+  계획 B 뒤 그 버튼이 여는 화면은 배경만 다룬다. 문구는 기획 소관이라 건드리지 않는다.
+- 남의 사진 탭 토스트의 스타일을 피그마와 대조하지 못했다. 구현 때 맞는 `YGToastType`을
+  고른다.

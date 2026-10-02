@@ -25,9 +25,9 @@ tags: [plan, parfait]
 
 **Goal:** 이미 쌓은 본인 토핑을 고치는 흐름을 토핑 전용 화면으로 떼어 내 배치 화면과 같은 테두리 패널을 쓰게 하고, 남은 테두리 편집 코드를 전부 지운다.
 
-**Architecture:** `CanvasBGEditViewModel`의 토핑 부분을 새 `CanvasToppingArrangeViewModel`로 옮기고 `CanvasBGEdit`는 배경만 다룬다. 토핑 한 장의 테두리는 겹 목록이 아니라 단일 값(`ToppingBorderStyle?`)이다. 화면은 계획 A가 만든 `ToppingArrangeLayout`·`ToppingBorderPanel`·`dismissPanelOnTouch`·`panelFocusCenter`를 그대로 쓴다. 마지막에 `NavKeyToppingEdit`의 테두리 인자와 편집 화면의 테두리 탭 코드를 삭제한다.
+**Architecture:** `CanvasBGEditViewModel`의 토핑 부분을 새 `CanvasToppingArrangeViewModel`로 옮기고 `CanvasBGEdit`는 배경만 다룬다. 토핑 한 장의 테두리는 겹 목록이 아니라 단일 값(`ToppingBorderStyle?`)이다. 화면은 계획 A가 만든 `ToppingArrangeLayout`·`ToppingBorderPanel`·`dismissPanelOnTouch`·`panelFocusCenter`와, `enabled` 인자가 붙은 `toppingTapInput`·`toppingTransformInput`을 그대로 쓴다. 패널이 열린 동안의 "무엇이든 닫기"는 두 겹으로 지킨다 — 포인터는 입력 게이트가, 접근성 클릭은 ViewModel이 막는다. 마지막에 `NavKeyToppingEdit`의 테두리 인자와 편집 화면의 테두리 탭 코드를 삭제한다.
 
-**Tech Stack:** Kotlin, Jetpack Compose, Navigation3, Hilt(assisted), JUnit4 + MockK + Turbine + coroutines-test, Compose UI 계측 테스트.
+**Tech Stack:** Kotlin, Jetpack Compose, Navigation3, Hilt(assisted), JUnit4 + MockK + Turbine + coroutines-test, Compose UI 계측 테스트(`androidx.compose.ui.test.junit4.v2.createComposeRule`).
 
 **Spec:** [`docs/superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md`](../specs/2026-10-02-c105-arrange-border-merge-design.md)
 
@@ -36,26 +36,29 @@ tags: [plan, parfait]
 ## Global Constraints
 
 - 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다. 구현·리뷰 서브에이전트 브리프에 이 링크를 넣는다.
-- 경로 약어는 계획 A와 같다(`C`, `CT`, `CA`, `S`, `ST`, `DS`). 더해서 `CAPI` = `feature/groups/canvas/api/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/api`, `SAPI` = `feature/segmentation/api/src/main/java/com/teamyg/parfait/feature/segmentation/api`.
+- 경로 약어는 계획 A와 같다(`C`, `CT`, `CA`, `S`, `ST`, `SAPI`, `DS`). 더해서 `CAPI` = `feature/groups/canvas/api/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/api`.
 - 검증 명령: 단위 `./gradlew :feature:groups:canvas:impl:testDebugUnitTest`, 계측 `./gradlew :feature:groups:canvas:impl:connectedDebugAndroidTest`, 스타일 `./gradlew ktlintCheck`.
 - 모든 Task는 끝났을 때 전체 빌드가 통과해야 한다.
+- `UiState`·`Intent`·ViewModel이 public이므로 그 안에 실리는 `EditableTopping`도 public이다(계획 A의 `ToppingBorderStyle`과 같은 이유).
 - 좌표는 캔버스 대비 비율을 유지한다. 저장 경로(`UpdateToppingsUseCase`, `UpdateToppingBorderUseCase`, `DeleteToppingUseCase`)와 서버 계약은 바꾸지 않는다.
 - 삭제 동작은 바꾸지 않는다 — 모달 확인 → 서버 삭제 → 오늘 캔버스 갱신 → 캔버스 메인으로 돌아간다.
-- 닫기와 시스템 뒤로가기의 그만두기 팝업은 변경 여부와 무관하게 뜬다. 패널이 열려 있을 때의 시스템 뒤로가기만 패널을 닫는다.
+- 닫기와 시스템 뒤로가기의 그만두기 팝업은 변경 여부와 무관하게 뜬다. 패널이 열려 있을 때의 시스템 뒤로가기만 패널을 닫는다. `isLoading`인 동안의 시스템 뒤로가기는 무시한다.
+- 패널이 열려 있는 동안 ViewModel은 `OnClickTopping`·`OnClickEmptyCanvas`·`OnClickDeleteToppingButton`을 받으면 **패널만 닫는다.** 접근성 서비스의 클릭은 포인터 입력 게이트를 거치지 않기 때문이다.
 - 지난 캔버스에서는 본인 토핑을 탭해도 반응이 없다(`isViewingToday` 가드 유지).
+- 옮기는 코드의 KDoc은 **새 이름과 새 구조에 맞게 고쳐 옮긴다.** 사라지는 이름(`BGEditDrawEntry`, `ToppingCornerButtons`, "두 탭", "좌측 하단=편집")을 가리키는 문장을 그대로 두지 않는다.
 - 문구
-  - 화면 제목: "배치" / 하단 버튼: "캔버스에 쌓기"
+  - 화면 제목: "배치"(`canvas_topping_place_title`을 함께 쓴다) / 하단 버튼: "캔버스에 쌓기"
   - 남의 토핑 탭 토스트: "다른 사람의 사진은 편집할 수 없어요"
   - 그만두기 팝업: 지금 `canvas_bg_edit_quit_dialog_*`의 값 그대로("편집을 그만둘까요?")
 - 분석 화면 id: `NavKeyCanvasToppingArrange` → `"C-305"`, `NavKeyCanvasBGEdit` → `"C-301"`, `NavKeyToppingEdit` → `"C-104"`.
 
 ## Review Focus
 
-1. 패널이 열린 동안 폴링이 포커스된 토핑을 목록에서 뺀다 — 패널이 닫히고 포커스가 풀려야 하며, 없는 토핑에 PATCH가 나가면 안 된다. (Task 3 테스트)
+1. 색을 고쳐 둔 토핑을 폴링이 목록에서 뺀 뒤 확정한다 — 패널이 닫히고 포커스가 풀려야 하며, 없는 토핑에 PATCH가 나가면 안 된다. (Task 3 테스트)
 2. 패널에서 색을 바꿨다가 원래 색으로 되돌리고 확정한다 — 테두리 PATCH가 나가지 않아야 한다. (Task 3 테스트)
-3. 서버의 테두리 색이 팔레트 9색에 없는 토핑을 포커스하고 굵기만 바꾼다 — 색은 그대로 두고 굵기만 바뀌어 저장돼야 한다. (Task 3 테스트)
+3. 서버의 테두리 색이 팔레트 9색에 없는 토핑을 포커스하고 굵기만 바꾼 뒤 확정한다 — 색은 그대로, 바뀐 굵기로 PATCH가 나가야 한다. (Task 3 테스트)
 4. 변형 PATCH는 성공하고 테두리 PATCH만 실패한다 — 화면에 남고 실패한 토핑만 다시 보낼 대상으로 남아야 한다. (Task 3 테스트)
-5. 포커스된 토핑이 가운데 자리에 있는 다른 본인 토핑보다 깊이가 낮다 — 패널이 열린 동안에는 포커스된 토핑이 위에 보여야 한다. (Task 4 계측 테스트)
+5. 포커스된 토핑이 다른 본인 토핑보다 목록에서 앞(아래)에 있다 — 패널이 열린 동안에는 포커스된 토핑이 맨 위에 그려져야 한다. (Task 4 계측 테스트)
 
 ---
 
@@ -64,7 +67,7 @@ tags: [plan, parfait]
 **Files:**
 - Create: `C/util/EditableTopping.kt`
 - Modify: `C/viewmodel/CanvasBGEditViewModel.kt`
-- Modify: `C/screen/CanvasBGEditScreen.kt`
+- Modify: `C/screen/CanvasBGEditScreen.kt` (`previewToppings` 포함)
 - Modify: `C/route/CanvasBGEditRoute.kt`
 - Test: `CT/viewmodel/CanvasBGEditViewModelTest.kt`
 
@@ -73,7 +76,7 @@ tags: [plan, parfait]
 - Produces:
   ```kotlin
   /** 편집 화면이 다루는 토핑 하나. 위치·크기는 Canvas-Area 대비 비율이다 */
-  internal data class EditableTopping(
+  data class EditableTopping(
       val parfaitImageId: Long,
       val isMine: Boolean,
       val imageUrl: String,
@@ -90,9 +93,12 @@ tags: [plan, parfait]
   ```
   `CanvasToppingItem`은 사라진다. `editedImagePath`·`cutoutImagePath`는 Task 5에서 뺀다 — 테두리 편집 왕복이 그때까지 쓴다.
 
-- [ ] **Step 1: 테스트의 타입과 테두리 단언을 새 형태로 바꾼다**
+- [ ] **Step 1: 테스트를 새 형태로 바꾼다**
 
-`CanvasBGEditViewModelTest`의 `CanvasToppingItem` → `EditableTopping`, `borderLayers = listOf(layer)` → `border = ToppingBorderStyle(...)`, `borderLayers.isEmpty()` → `border == null`. 테스트 이름과 검증 대상은 그대로다.
+- `CanvasToppingItem` → `EditableTopping`.
+- `ToppingEditResult(borderLayers = listOf(...))` 두 곳은 **그대로 둔다** — `ToppingEditResult`는 Task 6까지 겹 목록이다. 그 결과를 받은 뒤의 단언만 `state.toppings.first().border == ToppingBorderStyle(...)`로 바꾼다.
+- `init_solidBorder_becomesOneEditableLayer` → `init_solidBorder_becomesBorderStyle`. 단언은 `border == ToppingBorderStyle(colorArgb, widthDp)`.
+- `init_unreadableBorderColor_*`의 단언은 `border == null`.
 
 - [ ] **Step 2: 실패 확인**
 
@@ -101,11 +107,12 @@ Expected: FAIL — 미해결 참조
 
 - [ ] **Step 3: 타입을 옮기고 호출부를 고친다**
 
-- `CanvasToppingItem`의 KDoc은 `EditableTopping`으로 옮긴다.
 - `toBorderLayers`·`List<ToppingBorderLayer>.toToppingBorder`는 지우고 계획 A의 변환을 쓴다.
 - `hasBorderChange`는 `border != original.border`.
 - 편집 화면 왕복의 경계에서만 겹 목록과 바꾼다: 보낼 때 `listOfNotNull(border?.let { ToppingBorderLayer(it.colorArgb, it.widthDp) })`, 받을 때 `result.borderLayers.lastOrNull()?.let { ToppingBorderStyle(it.colorArgb, it.widthDp) }`.
-- `CanvasBGEditScreen`의 `borderLayers.firstOrNull()` 두 곳은 `border`를 읽는다.
+- `CanvasBGEditScreen`의 `borderLayers.firstOrNull()` 두 곳과 `previewToppings`는 `border`를 쓴다.
+
+여러 겹으로 돌아온 결과에서 화면에 그리는 겹이 첫 겹에서 마지막 겹으로 바뀐다. 저장되는 겹과 같아지는 방향이다.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -129,7 +136,7 @@ git commit -m "refactor: hold a single border style per editable topping"
 
 **Interfaces:**
 - Consumes: Task 1 `EditableTopping`
-- Produces (`CanvasBGEditScreen.kt`의 `private` 선언을 이름만 바꿔 `internal`로 옮긴다):
+- Produces (`CanvasBGEditScreen.kt`의 `private` 선언을 이름을 바꿔 `internal`로 옮긴다):
   ```kotlin
   internal val EditableTopping.drawnModel: String
 
@@ -144,7 +151,9 @@ git commit -m "refactor: hold a single border style per editable topping"
   internal data class EditableToppingHitEntry(
       val draw: EditableToppingDrawEntry,
       val target: ToppingHitTarget,
-  )
+  ) {
+      val topping: EditableTopping get() = draw.topping
+  }
 
   @Composable
   internal fun rememberEditableToppingDrawEntries(
@@ -159,7 +168,10 @@ git commit -m "refactor: hold a single border style per editable topping"
       outlines: Map<String, ToppingOutline>,
   ): List<EditableToppingHitEntry>
 
-  /** @param centerOverride 패널이 열린 동안 그릴 자리. null 이면 저장된 배치대로 그린다 */
+  /**
+   * @param centerOverride 패널이 열린 동안 그릴 자리. null 이면 저장된 배치대로 그린다
+   * 루트에 테스트 태그 "editable_topping_<parfaitImageId>" 를 단다
+   */
   @Composable
   internal fun EditableToppingImage(
       entry: EditableToppingDrawEntry,
@@ -184,7 +196,7 @@ git commit -m "refactor: hold a single border style per editable topping"
 
 - [ ] **Step 1: 선언을 옮긴다**
 
-`BGEditDrawEntry` → `EditableToppingDrawEntry`, `BGEditHitEntry` → `EditableToppingHitEntry`, `rememberBGEdit*` → `rememberEditableTopping*`, `CanvasToppingImage` → `EditableToppingImage`, `ToppingCornerButtons` → `ToppingFocusDecoration`. 본문과 KDoc은 그대로 옮긴다.
+`BGEditDrawEntry` → `EditableToppingDrawEntry`, `BGEditHitEntry` → `EditableToppingHitEntry`, `rememberBGEdit*` → `rememberEditableTopping*`, `CanvasToppingImage` → `EditableToppingImage`, `ToppingCornerButtons` → `ToppingFocusDecoration`. 본문은 그대로 옮기고 KDoc은 새 이름에 맞게 고친다.
 
 - `ToppingFocusDecoration`은 중심을 스스로 계산하지 않고 `center`로 받는다. `CanvasBGEditScreen`은 지금처럼 `toppingCenter(...)`를 넘긴다.
 - `EditableToppingImage`는 `centerOverride ?: entry.center`에 놓는다.
@@ -193,10 +205,10 @@ git commit -m "refactor: hold a single border style per editable topping"
 
 `onClickEdit`은 지금처럼 넘긴다(연필 버튼은 Task 5에서 사라진다).
 
-- [ ] **Step 3: 회귀 확인**
+- [ ] **Step 3: 컴파일과 단위 테스트 확인**
 
-Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:connectedDebugAndroidTest`
-Expected: PASS — 동작 변화가 없는 이동이다
+Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:assembleDebug`
+Expected: PASS. 이 화면을 띄우는 자동 테스트는 없다 — 에뮬레이터에서 캔버스 메인 → 캔버스 편집 → 토핑 탭을 열어 토핑·선택 박스·삭제·연필 버튼이 전과 같이 보이는지 눈으로 본다.
 
 - [ ] **Step 4: Commit**
 
@@ -261,7 +273,14 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
       data class ShowError(val error: CanvasToppingArrangeError)
   }
 
+  // CanvasToppingArrangeError.kt
   enum class CanvasToppingArrangeError { NETWORK, TOPPING_SAVE_UNKNOWN, TOPPING_DELETE_UNKNOWN }
+
+  @Composable
+  internal fun CanvasToppingArrangeError.toStringResource(): String
+  // NETWORK → canvas_bg_edit_save_error_network
+  // TOPPING_SAVE_UNKNOWN → canvas_bg_edit_topping_save_error_unknown
+  // TOPPING_DELETE_UNKNOWN → canvas_bg_edit_topping_delete_error_unknown
 
   @HiltViewModel(assistedFactory = CanvasToppingArrangeViewModel.Factory::class)
   class CanvasToppingArrangeViewModel @AssistedInject constructor(
@@ -273,20 +292,38 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
       deleteToppingUseCase: DeleteToppingUseCase,
       updateToppingsUseCase: UpdateToppingsUseCase,
       updateToppingBorderUseCase: UpdateToppingBorderUseCase,
-  )
+  ) {
+      @AssistedFactory
+      interface Factory {
+          fun create(
+              @Assisted("groupId") groupId: Long,
+              @Assisted("parfaitId") parfaitId: Long,
+              @Assisted("initialToppingId") initialToppingId: Long,
+          ): CanvasToppingArrangeViewModel
+      }
+  }
   ```
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
-테스트 틀(오늘 캔버스 흐름, 구독 유지 헬퍼, 유스케이스 mock)은 `CanvasBGEditViewModelTest`의 것을 따른다. 기본 캔버스는 본인 토핑 둘(id 1, 2)과 남의 토핑 하나(id 3)이고 `initialToppingId = 1`이다.
+테스트 틀(오늘 캔버스 흐름, 구독 유지 헬퍼, 유스케이스 mock)은 `CanvasBGEditViewModelTest`의 것을 따른다. 기본 캔버스는 본인 토핑 둘(id 1, 2)과 남의 토핑 하나(id 3)이고 `initialToppingId = 1`이다. 아래에서 "토핑 N"은 목록 순서가 아니라 `parfaitImageId == N`인 토핑이다.
 
 ```kotlin
-// 진입
+// 진입·변환 (CanvasBGEditViewModelTest 의 init_* 네 테스트를 옮겨 온다)
 @Test fun firstEmission_focusesInitialTopping()                 // focusedToppingId == 1L
+@Test fun init_placesToppingsByTheStoredRatiosAndMarksMine()
+@Test fun init_ordersToppingsByPositionZ()
+@Test fun init_solidBorder_becomesBorderStyle()
+@Test fun init_unreadableBorderColor_hasNoBorder()
+@Test
+fun firstEmission_withDifferentParfaitId_movesTheEditTarget() {
+    // 연 parfaitId = 2, 최초 방출의 parfaitId = 9 → 토핑 1 을 옮기고 확정
+    // updateToppingsUseCase 가 parfaitId == ParfaitId(9) 로 불린다
+}
 
-// 탭 네 갈래
+// 탭 네 갈래 (패널이 닫힌 상태에서)
 @Test fun clickFocusedTopping_opensPanel()                      // isBorderPanelOpen == true
-@Test fun clickOtherOwnTopping_movesFocus()                     // focusedToppingId == 2L, 패널 닫힘
+@Test fun clickOtherOwnTopping_movesFocus()                     // focusedToppingId == 2L, isBorderPanelOpen == false
 @Test fun clickOthersTopping_showsToastAndKeepsFocus() {
     // effect == ShowOthersToppingNotEditable, focusedToppingId == 1L
 }
@@ -295,29 +332,35 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
 // 패널
 @Test fun togglePanel_withoutFocus_staysClosed()
 @Test fun panelValues_followFocusedTopping() {
-    // 토핑 1: border = (black, 8f), 토핑 2: border = null, pending 기본값
+    // 토핑 1: border = (black, 8f), 토핑 2: border = null
     // 포커스 1 → panelBorderColorArgb == black, panelBorderWidthDp == 8f
     // 포커스 2 → panelBorderColorArgb == null, panelBorderWidthDp == 10f
 }
 @Test fun changeWidth_withoutBorder_keepsPendingAcrossFocusChange() {
     // 포커스 2 → OnChangeBorderWidth(16f) → 포커스 1 → 포커스 2
-    // panelBorderWidthDp == 16f, 토핑 2 는 dirty 가 아니다
+    // panelBorderWidthDp == 16f, 2 !in dirtyToppingIds
 }
 @Test fun selectColor_setsBorderOnFocusedToppingAndMarksDirty() {
-    // toppings[1].border == ToppingBorderStyle(color, 10f), 1 in dirtyToppingIds
+    // 토핑 1 의 border == ToppingBorderStyle(color, 10f), 1 in dirtyToppingIds
 }
 @Test fun selectNone_removesBorderAndMarksDirty()
-@Test fun changeWidth_onOffPaletteColor_keepsColor() {
-    // 서버 색 0xFF123456 → OnChangeBorderWidth(12f)
-    // border == ToppingBorderStyle(0xFF123456.toInt(), 12f)
+@Test fun changeWidth_withBorder_marksDirtyAndUpdatesPending() {
+    // 토핑 1: border = (black, 8f) → OnChangeBorderWidth(12f)
+    // 토핑 1 의 border.widthDp == 12f, 1 in dirtyToppingIds, pendingBorderWidthDp == 12f
 }
 @Test fun changeWidth_isClampedToRange()
 
 // 패널이 열린 동안
 @Test fun transform_whilePanelOpen_isIgnored()                  // 위치 불변, dirty 아님
-@Test fun focusedToppingRemovedByPolling_closesPanelAndClearsFocus() {
-    // 패널을 연 뒤 토핑 1 이 빠진 캔버스를 방출
+@Test fun clickOtherOwnTopping_whilePanelOpen_onlyClosesPanel() // focusedToppingId == 1L
+@Test fun clickOthersTopping_whilePanelOpen_onlyClosesPanel()   // effect 없음
+@Test fun clickEmptyCanvas_whilePanelOpen_onlyClosesPanel()     // focusedToppingId == 1L
+@Test fun clickDeleteButton_whilePanelOpen_onlyClosesPanel()    // showDeleteToppingDialog == false
+@Test
+fun focusedToppingRemovedByPolling_closesPanel_andSendsNoPatch() {
+    // 패널을 열고 OnSelectBorderColor(black) → 토핑 1 이 빠진 캔버스를 방출 → OnClickConfirm
     // isBorderPanelOpen == false, focusedToppingId == null, 1 !in dirtyToppingIds
+    // coVerify(exactly = 0) { updateToppingBorderUseCase(any(), any(), ParfaitImageId(1L), any()) }
 }
 
 // 변형
@@ -329,6 +372,7 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
 @Test fun clickClose_withoutChanges_stillShowsQuitDialog()      // showQuitDialog == true
 @Test fun systemBack_withPanelOpen_onlyClosesPanel()
 @Test fun systemBack_withPanelClosed_showsQuitDialog()
+@Test fun systemBack_whileLoading_isIgnored()                   // 확정이 끝나지 않게 걸어 두고
 @Test fun quitDialogConfirm_emitsNavigateBack()
 
 // 확정
@@ -337,7 +381,13 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
     // updateToppingsUseCase 는 토핑 1 만, updateToppingBorderUseCase 는 토핑 2 만 받는다
 }
 @Test fun confirm_colorChangedAndReverted_sendsNoBorderPatch()
+@Test
+fun confirm_widthChangedOnOffPaletteColor_patchesSameColorNewWidth() {
+    // 토핑 1 의 서버 테두리: Solid("#123456", 8.0) → OnChangeBorderWidth(12f) → OnClickConfirm
+    // updateToppingBorderUseCase 가 ParfaitImageId(1L), ToppingBorder.Solid("#123456", 12.0) 으로 불린다
+}
 @Test fun confirm_whilePanelOpen_sendsStoredPosition()
+@Test fun confirm_showsLoadingUntilDone()                       // 진행 중 isLoading == true, 끝나면 false
 @Test fun confirm_success_refreshesThenNavigatesBack() {
     // coVerifyOrder { updateToppingsUseCase(...); refreshTodayParfaitDetailUseCase(...) }
     // 그 뒤 effect == NavigateBack
@@ -347,13 +397,19 @@ git commit -m "refactor: extract editable topping drawing into a shared componen
     // 토핑 1 변형 성공, 토핑 2 테두리 실패
     // effect == ShowError(TOPPING_SAVE_UNKNOWN), dirtyToppingIds == setOf(2L), NavigateBack 없음
 }
+@Test fun confirm_failure_keepsPanelOpen()                      // 패널을 연 채 확정이 실패 → isBorderPanelOpen == true
+@Test fun confirm_unexpectedException_showsSaveError()          // 유스케이스가 던짐 → ShowError(TOPPING_SAVE_UNKNOWN), isLoading == false
 
 // 삭제
 @Test fun deleteConfirm_success_refreshesThenNavigatesBack()
 @Test fun deleteConfirm_failure_showsErrorAndStays()
 ```
 
-`CanvasBGEditViewModelTest`에 있는 토핑 병합·툼스톤·dirty 케이스(폴링이 dirty 토핑을 덮지 않음, 지운 토핑이 되살아나지 않음, 서버에서 사라진 토핑이 두 집합에서 빠짐)는 이 파일로 **복제**한다. 원본에서 지우는 것은 Task 5다.
+`CanvasBGEditViewModelTest`의 토핑 병합·툼스톤·dirty 케이스(폴링이 dirty 토핑을 덮지 않음, 지운 토핑이 되살아나지 않음, 서버에서 사라진 토핑의 툼스톤이 빠짐)는 이 파일로 **복제**한다. 원본에서 지우는 것은 Task 5다. 더해서 원본에 없던 한 건을 쓴다.
+
+```kotlin
+@Test fun merge_whenTheServerDropsIt_clearsTheDirtyMark()
+```
 
 - [ ] **Step 2: 실패 확인**
 
@@ -362,7 +418,7 @@ Expected: FAIL — 미해결 참조
 
 - [ ] **Step 3: ViewModel을 구현한다**
 
-`CanvasBGEditViewModel`에서 아래를 옮겨 온다. 본문과 주석은 그대로 쓰고 이름만 새 상태에 맞춘다.
+`CanvasBGEditViewModel`에서 아래를 옮겨 온다. 본문은 그대로 쓰고 이름만 새 상태에 맞춘다(`selectedToppingId` → `focusedToppingId`).
 
 | 옮기는 것 | 달라지는 점 |
 |---|---|
@@ -371,11 +427,18 @@ Expected: FAIL — 미해결 참조
 | `serverToppings`, `hasTransformChange`, `hasBorderChange`, `updateDirtyToppings`, `saveTransforms`, `saveBorder`, `toTransformUpdate` | 그대로 |
 | `handleOnDeleteToppingDialogConfirm`, `failToDeleteTopping` | 오류 타입만 새 enum |
 | `handleOnToppingTransform`, `applyToppingTransform`, `markDirty` | `isBorderPanelOpen`이면 무시 |
+| `handleOnClickConfirm`의 틀(`launch(key = …, onError = …)`, `isLoading` 토글, `failToSaveUnexpectedly`) | 배경 저장 단계가 없다. `onError`는 `ShowError(TOPPING_SAVE_UNKNOWN)` |
 
 새로 쓰는 것:
 
-- `OnClickTopping`: `isMine == false`면 `ShowOthersToppingNotEditable`. 포커스된 토핑이면 패널을 연다. 다른 본인 토핑이면 포커스를 옮긴다.
-- `OnSelectBorderColor`·`OnChangeBorderWidth`: 포커스가 없으면 무시. 규칙은 스펙 「패널 > 값을 바꾸면」.
+- `OnClickTopping`
+  - 패널이 열려 있으면 패널만 닫는다.
+  - `isMine == false`면 `ShowOthersToppingNotEditable`.
+  - 포커스된 토핑이면 패널을 연다. 다른 본인 토핑이면 포커스를 옮긴다.
+- `OnClickEmptyCanvas`·`OnClickDeleteToppingButton`: 패널이 열려 있으면 패널만 닫는다. 아니면 각각 포커스 해제, 삭제 모달.
+- `OnToggleBorderPanel`: 포커스가 없으면 무시.
+- `OnSelectBorderColor`·`OnChangeBorderWidth`: 포커스가 없으면 무시. 굵기는 범위로 가둔 뒤 `pendingBorderWidthDp`에 넣고, 포커스 토핑에 테두리가 있으면 그 굵기도 바꾸고 dirty로 표시한다. 색은 null이면 벗기고, 아니면 `ToppingBorderStyle(argb, panelBorderWidthDp)`를 두른 뒤 dirty로 표시한다.
+- `OnSystemBack`: `isLoading`이면 무시. 패널이 열려 있으면 닫는다. 아니면 `showQuitDialog = true`.
 - `OnClickConfirm`: `updateDirtyToppings()` → 실패가 없으면 `refreshTodayParfaitDetailUseCase`를 **기다린 뒤** `NavigateBack`. 실패가 있으면 `dirtyToppingIds`를 실패분으로 줄이고 `ShowError(TOPPING_SAVE_UNKNOWN)`.
 - `Throwable.toCanvasToppingArrangeError(unknown)`는 `toCanvasBGEditError`와 같은 규칙으로 `NETWORK`만 가른다.
 
@@ -408,7 +471,7 @@ git commit -m "feat: add CanvasToppingArrangeViewModel"
 - Test: `app/src/test/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreenTest.kt`
 
 **Interfaces:**
-- Consumes: Task 2 그리기 부품, Task 3 ViewModel; 계획 A `ToppingArrangeLayout`, `ToppingBorderPanel`, `dismissPanelOnTouch`, `panelFocusCenter`, `YGFloatingBarTitle`
+- Consumes: Task 2 그리기 부품, Task 3 ViewModel·`toStringResource`; 계획 A `ToppingArrangeLayout`, `ToppingBorderPanel`, `dismissPanelOnTouch`, `toppingTapInput`·`toppingTransformInput`의 `enabled`, `panelFocusCenter`, `TOPPING_BORDER_WIDTH_RANGE_DP`, `writeTestToppingPng`; 기존 `YGFloatingBarTitle`
 - Produces:
   ```kotlin
   @Serializable
@@ -424,8 +487,28 @@ git commit -m "feat: add CanvasToppingArrangeViewModel"
       val parfaitId: ParfaitId,
       val toppingId: ParfaitImageId,
   ) : CanvasMainEffect
+  // NavigateToCanvasBGEdit 에서 toppingId 를 뺀다
+
+  @Composable
+  internal fun CanvasToppingArrangeScreen(
+      uiState: CanvasToppingArrangeUiState,
+      onClickClose: () -> Unit,
+      onClickConfirm: () -> Unit,
+      onClickTopping: (EditableTopping) -> Unit,
+      onClickEmptyCanvas: () -> Unit,
+      onToggleBorderPanel: () -> Unit,
+      onDismissBorderPanel: () -> Unit,
+      onSelectBorderColor: (Int?) -> Unit,
+      onChangeBorderWidth: (Float) -> Unit,
+      onToppingTransform: (panX: Float, panY: Float, zoom: Float, rotationDelta: Float) -> Unit,
+      onClickDeleteTopping: () -> Unit,
+      onDeleteToppingDialogConfirm: () -> Unit,
+      onDeleteToppingDialogCancel: () -> Unit,
+      onQuitDialogConfirm: () -> Unit,
+      onQuitDialogCancel: () -> Unit,
+      modifier: Modifier = Modifier,
+  )
   ```
-  `CanvasMainEffect.NavigateToCanvasBGEdit`에서 `toppingId`를 뺀다.
 
 - [ ] **Step 1: 문자열을 더한다**
 
@@ -436,9 +519,10 @@ git commit -m "feat: add CanvasToppingArrangeViewModel"
 - [ ] **Step 2: 실패하는 테스트를 쓴다**
 
 ```kotlin
-// CanvasMainViewModelTest — 기존 본인 토핑 탭 테스트의 기대 effect 를 바꾼다
+// CanvasMainViewModelTest — 기존 clickTopping_placedByMe_navigatesToCanvasBGEditInsteadOfSpotlighting 을
+// 아래 이름으로 바꾸고 기대 effect 를 고친다
 @Test
-fun clickMyTopping_onToday_emitsNavigateToToppingArrange() {
+fun clickTopping_placedByMe_navigatesToToppingArrangeInsteadOfSpotlighting() {
     // effect == NavigateToToppingArrange(groupId, parfaitId, toppingId)
 }
 
@@ -451,10 +535,21 @@ fun toAnalyticsScreenOrNull_toppingArrange_isC305() {
             .toAnalyticsScreenOrNull()?.screenId,
     )
 }
-// 기존 toAnalyticsScreenOrNull_canvasBGEdit_splitsByInitialToppingId 는
-// NavKeyCanvasBGEdit(1L, 2L) == "C-301" 하나만 남긴다
+// 기존 toAnalyticsScreenOrNull_canvasBGEdit_splitsByInitialToppingId 는 이 Task 에서 고치지 않는다 —
+// NavKeyCanvasBGEdit 의 인자는 Task 5 에서 빠진다
+```
 
-// CanvasToppingArrangeScreenTest — 본인 토핑 둘(하나는 포커스), 남의 토핑 하나로 화면을 직접 띄운다
+화면 계측 테스트는 `writeTestToppingPng`로 만든 200×200 불투명 PNG 하나를 세 토핑의 `imageUrl`(`File(path).toUri().toString()`)로 쓴다. 정사각 그림이라 그림이 뜨기 전의 폴백 크기와 뜬 뒤의 크기가 같다 — 판정 자리가 로드 여부에 좌우되지 않는다. 화면 폭은 `requiredWidth(340.dp)`로 고정한다(캔버스 폭 300dp). 토핑은 서로 겹치지 않게 놓는다.
+
+| 토핑 | id | isMine | positionX, positionY | scale |
+|---|---|---|---|---|
+| 본인 A (포커스) | 1 | true | 0.25, 0.2 | 0.5 |
+| 본인 B | 2 | true | 0.75, 0.2 | 0.5 |
+| 남 | 3 | false | 0.5, 0.6 | 0.5 |
+
+목록 순서는 `[3, 1, 2]`다(본인 A가 본인 B보다 아래).
+
+```kotlin
 @Test
 fun header_showsTitleAndCloseOnly() {
     onNodeWithText("배치").assertIsDisplayed()
@@ -468,22 +563,40 @@ fun focusedTopping_showsDeleteButton_andNoEditButton() {
     onNodeWithContentDescription("편집").assertDoesNotExist()
 }
 
-@Test
-fun tapOnOthersTopping_reportsThatTopping()          // onClickTopping(남의 토핑)
+@Test fun tapOnFocusedTopping_reportsThatTopping()   // 캔버스 (0.25, 0.2) 탭 → clicked == [토핑 1]
+@Test fun tapOnOthersTopping_reportsThatTopping()    // 캔버스 (0.5, 0.6) 탭 → clicked == [토핑 3]
+@Test fun tapOnEmptyCanvas_reportsEmpty()            // 캔버스 (0.5, 0.95) 탭 → emptyCount == 1
+@Test fun bottomButton_reportsConfirm()
 
 @Test
-fun tapOnEmptyCanvas_reportsEmpty()                  // onClickEmptyCanvas 1회
+fun ownToppingOverOthers_winsTheHit() {
+    // 본인 B 를 남의 토핑과 같은 자리 (0.5, 0.6) 로 옮긴 상태로 띄우고 그 자리를 탭
+    // clicked == [토핑 2]
+}
 
 @Test
-fun panelOpen_touchAnywhereOnCanvas_onlyDismisses() {
-    // isBorderPanelOpen = true. 다른 본인 토핑 위, 남의 토핑 위, 삭제 버튼 위를 차례로 누른다
-    // dismiss 3회, onClickTopping 0회, onClickDelete 0회
+fun withoutFocus_panelBarDoesNotToggle() {
+    // focusedToppingId = null → 접힌 바 탭 → toggleCount == 0
+}
+
+@Test
+fun panelOpen_touchOnCanvas_onlyDismisses() {
+    // isBorderPanelOpen = true. 본인 B 위, 남의 토핑 위, 빈 곳을 차례로 탭
+    // dismissCount == 3, clicked.isEmpty(), emptyCount == 0
 }
 
 @Test
 fun panelOpen_focusedToppingIsDrawnLast() {
-    // 포커스 토핑의 깊이가 다른 본인 토핑보다 낮게 주어져도
-    // 본인 토핑 노드들 중 포커스 토핑이 마지막 순서로 놓인다
+    // isBorderPanelOpen = true
+    // 본인 토핑 노드를 컴포지션 순서대로 모으면 [editable_topping_2, editable_topping_1] 이다:
+    val tags = onAllNodes(hasTestTagPrefix("editable_topping_"))
+        .fetchSemanticsNodes().map { it.config[SemanticsProperties.TestTag] }
+    assertEquals(listOf("editable_topping_3", "editable_topping_2", "editable_topping_1"), tags)
+}
+
+@Test
+fun panelClosed_toppingsKeepListOrder() {
+    // isBorderPanelOpen = false → [editable_topping_3, editable_topping_1, editable_topping_2]
 }
 ```
 
@@ -494,33 +607,61 @@ Expected: FAIL
 
 - [ ] **Step 4: 화면을 만든다**
 
-`ToppingArrangeLayout`을 루트로 쓴다. `header`는 `YGFloatingBarTitle`. `canvas` 슬롯은 `CanvasBGEditScreen`의 토핑 탭 갈래를 옮겨 온 것이다.
+`ToppingArrangeLayout`을 루트로 쓴다. `header`는 `YGFloatingBarTitle(title = stringResource(R.string.canvas_topping_place_title), …)`.
 
-- 그리는 순서: 배경 → 남의 토핑 → 딤(`Transparency.Black25`) → 본인 토핑 → 입력 레이어 → `ToppingFocusDecoration`.
-- 패널이 열려 있으면 본인 토핑 중 포커스된 것을 맨 뒤로 보내 그린다. 저장되는 깊이는 건드리지 않는다.
-- 포커스된 토핑과 `ToppingFocusDecoration`의 중심은 `lerp(저장된 중심, panelFocusCenter(canvasSize), focusFraction)`이다. `focusFraction`은 계획 A의 배치 화면과 같은 `animateFloatAsState`다.
-- 입력 레이어(패널 닫힘):
+`canvas` 슬롯의 구조:
+
+```
+BoxWithConstraints(matchParentSize)                  ← 캔버스 크기를 여기서 잰다
+├─ Box(matchParentSize, clipToBounds, 배경색, 1dp Gray500 테두리)   ← 자르는 박스
+│   ├─ 배경 이미지
+│   ├─ 남의 토핑                (EditableToppingImage, onClick = null)
+│   ├─ 딤                       (Transparency.Black25)
+│   ├─ 본인 토핑                (EditableToppingImage, onClick = { onClickTopping(topping) })
+│   └─ 입력 레이어              (matchParentSize)
+└─ ToppingFocusDecoration                             ← 자르지 않는다
+```
+
+- 본인 토핑은 목록 순서대로 그린다. **패널이 열려 있으면 포커스된 토핑을 맨 뒤로 보내 그린다**(컴포지션 순서를 바꾼다. `zIndex`를 쓰지 않는다 — 테스트가 노드 순서를 본다). 상태의 목록 순서와 저장되는 깊이는 건드리지 않는다.
+- 포커스된 토핑과 `ToppingFocusDecoration`의 중심은 `lerp(저장된 중심, panelFocusCenter(DpSize(maxWidth, maxHeight)), focusFraction)`이다. `focusFraction`은 계획 A의 배치 화면과 같은 `animateFloatAsState`다. 포커스된 토핑에는 이 값을 `centerOverride`로 넘긴다.
+- 입력 레이어의 체인은 고정이다. 패널 상태에 따라 갈아 끼우지 않는다.
   ```kotlin
-  .toppingTapInput(
-      entries = { (othersEntries + myEntries).map { it.topping to it.target } },  // 아래에서 위 순서
-      keyOf = { it.parfaitImageId },
-      onHit = onClickTopping,
-      onMiss = onClickEmptyCanvas,
-  ).toppingTransformInput(targetAt = { focusedEntry?.target }, ...)
+  Modifier
+      .matchParentSize()
+      .dismissPanelOnTouch(isPanelOpen = { uiState.isBorderPanelOpen }, onDismiss = onDismissBorderPanel)
+      .toppingTapInput(
+          entries = { (othersEntries + myEntries).map { it.topping to it.target } },  // 아래에서 위 순서
+          keyOf = { it.parfaitImageId },
+          onHit = onClickTopping,
+          onMiss = onClickEmptyCanvas,
+          enabled = { !uiState.isBorderPanelOpen },
+      )
+      .toppingTransformInput(
+          targetAt = { focusedEntry?.target },
+          onTransform = { pan, zoom, rotationDelta ->
+              onToppingTransform(pan.x / canvasWidthPx, pan.y / canvasHeightPx, zoom, rotationDelta)
+          },
+          onGestureActiveChange = { isToppingGestureActive = it },
+          enabled = { !uiState.isBorderPanelOpen },
+      )
   ```
-- 입력 레이어(패널 열림): `.dismissPanelOnTouch(onDismissBorderPanel)`만. 이때는 이 레이어를 `ToppingFocusDecoration`보다 **위에** 둔다 — 삭제 버튼은 보이지만 그 위를 눌러도 입력 레이어가 먼저 받아 패널만 닫힌다.
-- `ToppingFocusDecoration`의 `onClickEdit`은 null.
-- 본인 토핑의 접근성 클릭(`EditableToppingImage.onClick`)은 `onClickTopping`, 남의 토핑은 null.
-- 패널: `isEnabled = uiState.canOpenBorderPanel`, `selectedColorArgb = uiState.panelBorderColorArgb`, `widthDp = uiState.panelBorderWidthDp`.
+  판정 대상은 저장된 중심으로 만든다(패널이 열린 동안의 임시 위치가 아니다).
+- `ToppingFocusDecoration`: `onClickDelete = onClickDeleteTopping`, `onClickEdit = null`, `showActionButtons = !isToppingGestureActive`. 패널이 열려 있어도 삭제 버튼은 그대로 눌린다 — ViewModel이 그 intent를 "패널만 닫기"로 처리한다.
+- 패널: `isEnabled = uiState.canOpenBorderPanel`, `selectedColorArgb = uiState.panelBorderColorArgb`, `widthDp = uiState.panelBorderWidthDp`, `widthRange = TOPPING_BORDER_WIDTH_RANGE_DP`, 나머지 콜백은 같은 이름의 화면 인자.
 - 그만두기 팝업과 삭제 모달은 `CanvasBGEditScreen`의 것을 같은 문자열로 띄운다.
 
 - [ ] **Step 5: Route·entry·진입을 잇는다**
 
-- `CanvasToppingArrangeRoute`: `YGScaffoldV2(isLoading, toastPolicy)`, `BackHandler → OnSystemBack`, effect 처리(`NavigateBack → navigator.onBack()`, `ShowOthersToppingNotEditable → toastPolicy.showError(문구)`, `ShowError → 문구`). 오류 문구는 `canvas_bg_edit_save_error_network`, `canvas_bg_edit_topping_save_error_unknown`, `canvas_bg_edit_topping_delete_error_unknown`을 그대로 쓴다.
+- `CanvasToppingArrangeRoute`
+  - `hiltViewModel`의 `creationCallback`으로 `Factory.create(groupId, parfaitId, initialToppingId)`를 부른다(`CanvasBGEditRoute`와 같은 방식).
+  - 상태는 `collectAsStateWithLifecycle()`로 구독한다 — `launchWhileSubscribed`가 구독자 수로 캔버스 구독을 켠다.
+  - `YGScaffoldV2(isLoading, toastPolicy)`, `BackHandler { OnSystemBack }`.
+  - `NavigateBack → navigator.onBack()`, `ShowError → toastPolicy.showError(문구)`. 문구는 `CanvasBGEditRoute`처럼 컴포지션에서 미리 뽑아 둔다.
+  - `ShowOthersToppingNotEditable`: `YGToastType` 변형 가운데 피그마 `5479:13704`(어두운 바, 노란 글씨)와 같은 것을 고른다. 맞는 것이 없으면 `toastPolicy.showError`를 쓰고 Task 7에서 미결 항목으로 적는다.
 - `EntryBuilder`에 `entry<NavKeyCanvasToppingArrange>`를 더한다. `CanvasBGEdit`과 같은 이유로 바깥 Scaffold를 씌우지 않는다.
 - `CanvasMainViewModel.handleOnClickMyTopping`이 `NavigateToToppingArrange`를 낸다. `isViewingToday` 가드는 그대로다. KDoc의 "편집 화면이 토핑 탭에서…"는 지금 상태에 맞게 고친다.
-- `CanvasMainRoute`가 `NavKeyCanvasToppingArrange`로 보낸다.
-- `NavKeyAnalyticsScreen`에 `is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")`. `NavKeyCanvasBGEdit`는 언제나 `"C-301"`.
+- `CanvasMainRoute`: `NavigateToToppingArrange → NavKeyCanvasToppingArrange`. `NavigateToCanvasBGEdit` 갈래에서 `initialToppingId = effect.toppingId?.value` 줄을 뺀다.
+- `NavKeyAnalyticsScreen`에 `is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")`.
 
 `NavKeyCanvasBGEdit.initialToppingId`와 `CanvasBGEdit`의 토핑 탭은 이 Task에서 지우지 않는다. 아무도 값을 넘기지 않는 인자로 남고, Task 5가 걷는다.
 
@@ -544,9 +685,11 @@ git commit -m "feat: open own toppings in the arrange screen"
 - Modify: `CAPI/NavKeyCanvasBGEdit.kt`
 - Modify: `C/viewmodel/CanvasBGEditViewModel.kt`, `C/viewmodel/CanvasBGEditError.kt`
 - Modify: `C/screen/CanvasBGEditScreen.kt`, `C/route/CanvasBGEditRoute.kt`, `C/navigation/EntryBuilder.kt`
-- Modify: `C/util/EditableTopping.kt`, `C/component/EditableToppingLayer.kt`
+- Modify: `C/util/EditableTopping.kt`, `C/component/EditableToppingLayer.kt`, `C/screen/CanvasToppingArrangeScreen.kt`
+- Modify: `feature/groups/canvas/impl/build.gradle.kts`
 - Modify: `feature/groups/canvas/impl/src/main/res/values/strings.xml`
-- Test: `CT/viewmodel/CanvasBGEditViewModelTest.kt`
+- Modify: `app/src/main/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreen.kt`
+- Test: `CT/viewmodel/CanvasBGEditViewModelTest.kt`, `app/src/test/.../NavKeyAnalyticsScreenTest.kt`
 
 **Interfaces:**
 - Produces:
@@ -569,7 +712,11 @@ git commit -m "feat: open own toppings in the arrange screen"
 
 - [ ] **Step 1: 테스트를 줄인다**
 
-`CanvasBGEditViewModelTest`에서 토핑 선택·변형·삭제·dirty·테두리 편집 결과·탭 전환 케이스를 지운다(Task 3에서 새 테스트 파일로 복제해 뒀다). 남는 것은 배경 색·이미지 선택, 배경 저장의 성공·실패, 그만두기 팝업, 최초 방출 시딩, 그리고 아래 하나다.
+`CanvasBGEditViewModelTest`에서 지우는 것: 토핑 선택·변형·삭제·dirty·툼스톤·테두리 편집 결과·탭 전환 케이스, `init_placesToppingsByTheStoredRatiosAndMarksMine`, `init_solidBorder_*`, `init_unreadableBorderColor_*`(Task 3에서 새 파일로 옮겨 뒀다). 토핑 유스케이스 mock도 지운다.
+
+남기는 것: 배경 색·이미지 선택, 배경 저장의 성공·실패, 최초 방출 시딩, `observeCanvas_movesTheEditTargetOnlyOnTheFirstEmission`, `init_ordersToppingsByPositionZ`.
+
+더하는 것:
 
 ```kotlin
 @Test
@@ -577,11 +724,11 @@ fun toppings_followEveryEmission() {
     // 두 번째 방출이 토핑을 하나 더 들고 오면 state.toppings 도 그만큼 는다
 }
 
-@Test
-fun confirm_savesBackgroundOnly() {
-    // 배경 저장 성공 → effect == ConfirmBackground. 테스트 클래스에서 토핑 유스케이스 mock 을 지운다
-}
+@Test fun clickClose_showsQuitDialog()
+@Test fun quitDialogConfirm_emitsNavigateBack()
 ```
+
+`NavKeyAnalyticsScreenTest`의 `toAnalyticsScreenOrNull_canvasBGEdit_splitsByInitialToppingId`는 `NavKeyCanvasBGEdit(1L, 2L) == "C-301"` 하나로 줄이고 이름을 `toAnalyticsScreenOrNull_canvasBGEdit_isC301`로 바꾼다.
 
 - [ ] **Step 2: ViewModel·화면·Route를 줄인다**
 
@@ -596,13 +743,16 @@ fun confirm_savesBackgroundOnly() {
 - 화면의 토핑 탭 갈래, 삭제 모달, `YGFloatingBarEditTab`
 - `CanvasBGEditError`의 `TOPPING_SAVE_UNKNOWN`·`TOPPING_DELETE_UNKNOWN` (문자열은 수정 화면이 쓰므로 남긴다)
 - 문자열 `canvas_bg_edit_tab_background`, `canvas_bg_edit_tab_topping`, `canvas_bg_edit_topping_edit`
+- `build.gradle.kts`의 `implementation(projects.feature.segmentation.api)` — 이 모듈에서 import가 0건이 된다
 
 남기는 것:
 
-- `mergeToppings` 자리는 `toppings = incoming` 대입으로 바뀐다.
+- `mergeToppings` 자리는 `toppings = incoming` 대입으로 바뀐다. 지금도 배경 탭에서는 두 집합이 비어 결과가 같다.
+- `parfaitId` 이전 규칙과 `hasSeededFromCanvas`는 그대로 둔다.
 - `handleOnClickConfirm`은 `saveBackground()` 결과만 본다.
 - 하단 바는 `YGFloatingBarEdit`. 제목 문자열 `canvas_bg_edit_title`을 새로 둔다(값 "배경").
 - 캔버스 여백은 지금 배경 탭의 값(`padding4`)으로 고정한다.
+- `NavKeyAnalyticsScreen`: `NavKeyCanvasBGEdit`는 언제나 `"C-301"`.
 
 - [ ] **Step 3: `EditableTopping`과 그리기 부품을 정리한다**
 
@@ -610,13 +760,13 @@ fun confirm_savesBackgroundOnly() {
 
 - [ ] **Step 4: 통과 확인**
 
-Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:connectedDebugAndroidTest :feature:camera:impl:compileDebugKotlin`
+Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:connectedDebugAndroidTest :app:testDebugUnitTest :app:assembleDebug`
 Expected: PASS. `PictureConfirmRoute`의 `popUpTo<NavKeyCanvasBGEdit>()`는 그대로 컴파일된다.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add feature/groups/canvas
+git add app feature/groups/canvas
 git commit -m "refactor: reduce CanvasBGEdit to background editing"
 ```
 
@@ -627,7 +777,7 @@ git commit -m "refactor: reduce CanvasBGEdit to background editing"
 **Files:**
 - Modify: `SAPI/NavKeyToppingEdit.kt`
 - Delete: `SAPI/ToppingBorderLayer.kt`
-- Modify: `S/viewmodel/ToppingEditViewModel.kt`, `S/screen/ToppingEditScreen.kt`, `S/route/ToppingEditRoute.kt`, `S/editor/ToppingEditStroke.kt`
+- Modify: `S/viewmodel/ToppingEditViewModel.kt`, `S/screen/ToppingEditScreen.kt`, `S/route/ToppingEditRoute.kt`, `S/editor/ToppingEditStroke.kt`, `S/editor/UndoRedoStack.kt`
 - Modify: `S/viewmodel/SegmentationConfirmViewModel.kt`, `S/route/SegmentationConfirmRoute.kt`, `S/viewmodel/ToppingEditDraft.kt`
 - Delete: `S/screen/ToppingBorderEditScreen.kt`, `S/component/ToppingBorderPreviewLayout.kt`, `S/component/BorderColorChipRow.kt`, `S/editor/ToppingBorderColors.kt`, `S/editor/ToppingBorderOutline.kt`
 - Delete: `ST/component/ToppingBorderPreviewLayoutTest.kt`
@@ -655,9 +805,20 @@ git commit -m "refactor: reduce CanvasBGEdit to background editing"
 
 - [ ] **Step 1: 테스트를 고친다**
 
-- `ToppingEditViewModelTest`: 테두리 선택·굵기·되돌리기·`borderOnly` 케이스를 지운다. 남는 완료 케이스에서 `result.sourceLongSide`가 원본 긴 변과 같은지 단언한다. 영역이 하한에 못 미치면 `SubjectTooSmall`이 나는 케이스는 조건 없이(`isBorderOnly` 분기 없이) 유지된다.
-- `SegmentationConfirmViewModelTest`: `isBorderOnlyEdit` 단언을 `canEditPhoto`로 바꾼 것만 남긴다.
-- `NavKeyAnalyticsScreenTest`: `toAnalyticsScreenOrNull_toppingEdit_mergesBorderOnlyIntoOneId`를 `NavKeyToppingEdit(...) == "C-104"` 하나로 줄인다.
+- `ToppingEditViewModelTest`
+  - 계획 A가 더한 `changeTab_toBorder_whenNotBorderOnly_isIgnored`, `borderOnly_stillOpensOnBorderTab`를 지운다.
+  - ViewModel을 만드는 헬퍼에서 `initialBorderLayers`·`borderOnly` 인자를, `ToppingEditResult(...)` 생성부에서 `borderLayers` 인자를 뺀다.
+  - 남는 `clickDone_*` 케이스 하나에 `result.sourceLongSide == 원본 긴 변` 단언을 더한다.
+  - 새로 쓴다 — `isBorderOnly` 분기가 사라진 뒤에도 하한 판정이 도는지 본다.
+    ```kotlin
+    @Test
+    fun clickDone_subjectTooSmall_emitsSubjectTooSmallAndSavesNothing() {
+        // 알파가 전부 0 인 segmentation 비트맵으로 로드 → ClickDone
+        // effect == SubjectTooSmall, saveBitmapUseCase 는 불리지 않는다
+    }
+    ```
+- `SegmentationConfirmViewModelTest`: `isBorderOnlyEdit` 단언을 `canEditPhoto`로 바꾼다. `editImagePath`를 단언하는 세 테스트는 **그대로 둔다** — `editImagePath`는 남는다. `ToppingEditResult(...)` 생성부에서 `borderLayers` 인자를 뺀다.
+- `NavKeyAnalyticsScreenTest`: `toAnalyticsScreenOrNull_toppingEdit_mergesBorderOnlyIntoOneId`를 `NavKeyToppingEdit(...) == "C-104"` 하나로 줄이고 이름을 `toAnalyticsScreenOrNull_toppingEdit_isC104`로 바꾼다.
 
 - [ ] **Step 2: 삭제하고 고친다**
 
@@ -666,19 +827,27 @@ git commit -m "refactor: reduce CanvasBGEdit to background editing"
 - `ToppingEditViewModel`: `borderLayers`·`borderOnly` assisted 인자와 `completeEdit`의 `isBorderOnly` 분기 둘을 지운다.
 - `ToppingEditScreen`: 테두리 탭 갈래, `SegmentationBorderControls`, `isBorderOnly` 하단 바 갈래를 지운다.
 - `ToppingEditTab` enum과 `topping_edit_tab_*`·`topping_edit_border_*` 문자열을 지운다.
-- `SegmentationConfirmRoute`: `borderOnly` 인자와 `sourceImageUri ?: editImageUri` 폴백을 지운다. `canEditPhoto`일 때만 버튼이 보이므로 `sourceImageUri`는 null이 아니다 — null이면 이동하지 않는다.
-- `SegmentationConfirmUiState`: `isBorderOnlyEdit`를 지운다(`canEditPhoto`가 대신한다). `editImagePath`는 쓰는 곳이 남는지 보고, 없으면 지운다.
+- `UndoRedoStack.replaceLast`를 지운다 — 쓰는 곳이 `borderHistory` 하나였다.
+- `SegmentationConfirmRoute`: `borderOnly` 인자와 `sourceImageUri ?: editImageUri` 폴백을 지운다. "사진 편집" 클릭은 `sourceImageUri`가 null이면 아무것도 하지 않는다(버튼이 숨겨져 닿지 않는 갈래다). `segmentationImageUri`를 `editImagePath`에서 만드는 줄은 그대로다.
+- `SegmentationConfirmState`: `isBorderOnlyEdit`를 지운다(`canEditPhoto`가 대신한다). `editImagePath`는 남긴다.
 - `ToppingEditDraft.kt`: `sourceLongSide`가 non-null이 된 것에 맞춘다.
 - `NavKeyAnalyticsScreen`: `NavKeyToppingEdit`는 언제나 `"C-104"`. 갈래를 설명하던 주석을 지운다.
 
 - [ ] **Step 3: 남은 참조가 없는지 확인**
 
-Run: `grep -rn "ToppingBorderLayer\|borderOnly\|isBorderOnly\|ToppingBorderEditScreen\|TOPPING_EDIT_RESULT_KEY" --include='*.kt' app feature core domain data`
-Expected: `TOPPING_EDIT_RESULT_KEY`는 `SAPI`의 선언과 `SegmentationConfirmRoute`·`ToppingEditRoute`에만 남는다. 나머지 넷은 0건.
+Run:
+```bash
+grep -rnE "ToppingBorderLayer|borderOnly|isBorderOnly|ToppingBorderEditScreen|ToppingEditTab|CanvasToppingItem|CanvasEditTab|editedImagePath|editingToppingId|NavigateToToppingEdit|replaceLast" \
+  --include='*.kt' --include='*.kts' --include='*.xml' --exclude-dir=build app feature core domain data
+```
+Expected: 0건.
+
+Run: `grep -rn "TOPPING_EDIT_RESULT_KEY" --include='*.kt' --exclude-dir=build app feature`
+Expected: `SAPI`의 선언, `ToppingEditRoute`, `SegmentationConfirmRoute`에만 남는다.
 
 - [ ] **Step 4: 통과 확인**
 
-Run: `./gradlew testDebugUnitTest assembleDebug`
+Run: `./gradlew testDebugUnitTest :domain:test assembleDebug`
 Expected: BUILD SUCCESSFUL
 
 - [ ] **Step 5: Commit**
@@ -694,12 +863,14 @@ git commit -m "refactor: remove border editing from the topping edit screen"
 
 **Files:**
 - Modify: `docs/status.md`, `docs/synthesis/open-questions.md`, `docs/log.md`
-- Modify: `docs/adr/0034-topping-border-set-at-placement.md`
+- Modify: `docs/adr/0034-topping-border-set-at-placement.md`, `docs/adr/0026-*.md`, `docs/adr/0032-*.md`, `docs/adr/README.md`
+- Modify: `docs/architecture/navigation-flow.md`, `docs/architecture/design-system.md`, `docs/architecture/data-layer.md`
+- Modify: `docs/api/README.md`, `docs/api/parfait-image.md`
 - Move: 스펙과 두 계획을 `archive/`로
 
 - [ ] **Step 1: 전체 검증**
 
-Run: `./gradlew ktlintCheck testDebugUnitTest :feature:groups:canvas:impl:connectedDebugAndroidTest assembleDebug`
+Run: `./gradlew ktlintCheck testDebugUnitTest :domain:test :feature:groups:canvas:impl:connectedDebugAndroidTest assembleDebug`
 Expected: BUILD SUCCESSFUL
 
 - [ ] **Step 2: 에뮬레이터에서 피그마와 대조한다**
@@ -713,14 +884,18 @@ Expected: BUILD SUCCESSFUL
 | 다른 본인 토핑 탭 | 포커스가 옮겨 간다 |
 | 남의 토핑 탭 | "다른 사람의 사진은 편집할 수 없어요" 토스트 (피그마 `5479:13704`) |
 | 빈 캔버스 탭 | 포커스가 풀리고 접힌 바를 눌러도 안 열린다 |
-| 패널 열린 채 남의 토핑·다른 본인 토핑·삭제 버튼 탭 | 패널만 닫힌다. 토스트·포커스 이동·삭제 모달 없음 |
+| 패널 열린 채 남의 토핑·다른 본인 토핑·삭제 버튼 탭, 드래그, 핀치 | 패널만 닫힌다. 토스트·포커스 이동·삭제 모달·이동 없음 |
+| TalkBack을 켜고 패널 열린 채 다른 본인 토핑·삭제 버튼 활성화 | 패널만 닫힌다 |
 | 색·굵기 바꾸고 "캔버스에 쌓기" | 캔버스 메인에 바로 반영돼 보인다 |
 | 삭제 버튼 → 확인 | 캔버스 메인으로 돌아가고 토핑이 없다 |
 | 아무것도 안 바꾸고 닫기 | 그만두기 팝업이 뜬다 |
 | 패널 열린 채 시스템 뒤로가기 | 패널만 닫힌다 |
+| 저장 중 시스템 뒤로가기 | 아무 일 없다 |
 | 지난 캔버스에서 본인 토핑 탭 | 반응 없음 |
 | 캔버스 메뉴 → 배경 편집 | 탭 없이 배경만. 토핑은 반투명 |
 | 추가 플로우 한 바퀴(촬영 → 배치 → 쌓기) | 계획 A의 동작 그대로 |
+
+화면 높이가 다른 기기 두 대에서 패널이 열렸을 때 포커스 토핑이 패널에 가려지는지 본다.
 
 - [ ] **Step 3: `docs/status.md`를 덮어쓴다**
 
@@ -734,18 +909,41 @@ Expected: BUILD SUCCESSFUL
 | OQ-P-391 | `borderOnly` 절만 걷는다 |
 | OQ-P-202 ①② | 수정 화면의 탭 규칙으로 고쳐 쓰거나, 남는 물음이 없으면 닫는다. ③은 남긴다 |
 | OQ-P-175 ①③, OQ-P-326 | 화면 분리에 맞춰 고쳐 쓴다 |
-| OQ-P-081 ②, OQ-P-203 ③ | 바뀐 사용처로 고쳐 쓴다 |
+| OQ-P-081 ②, OQ-P-203 ③ | 바뀐 사용처로 고쳐 쓴다. `YGFloatingBarEditTab`은 프로덕션 사용처가 없어졌다는 것을 OQ-P-081에 적는다 |
 | OQ-P-270, OQ-P-245 | 그대로 둔다 |
 
-새로 여는 것: 수정 화면의 하단 버튼 문구가 "캔버스에 쌓기"인 것, 닫기 팝업이 정책 메모와 달리 변경이 없어도 뜨는 것, 분석 화면 id가 정책의 C-105-Arrange와 다른 것.
+닫은 항목을 가리키는 포인터를 함께 걷는다. `check_links.py`는 상대 링크만 봐서 이것을 잡지 못한다.
 
-- [ ] **Step 5: ADR·로그·보관**
+Run: `grep -rnE "OQ-P-(324|338|201|379)\b" docs`
+Expected: 0건이 될 때까지 고친다(`docs/api/README.md`, `docs/api/parfait-image.md`, `docs/architecture/data-layer.md`, `open-questions.md`의 다른 항목 본문). OQ-P-276·337은 일부 절만 닫으므로 손으로 본다.
+
+새로 여는 것:
+
+- 수정 화면의 하단 버튼 문구가 "캔버스에 쌓기"다.
+- 닫기 팝업이 정책 메모와 달리 변경이 없어도 뜬다.
+- 분석 화면 id가 정책의 C-105-Arrange와 다르다.
+- 여러 겹 띠 렌더링(`ToppingOutline.buildBorderPixels`, `toBorderArgbBitmap`, `ToppingBorderBand`)의 프로덕션 호출부가 없어졌다. 지울지 정하지 않았다.
+- `canvas_tutorial_canvas_edit_description`이 "배경과 토핑을 자유롭게 꾸밀 수 있어요"라고 안내하는데 그 버튼이 여는 화면은 배경만 다룬다. 문구는 기획 소관이다.
+- Task 4에서 토스트를 `showError`로 띄웠다면 그 사실.
+
+- [ ] **Step 5: 낡은 앵커를 고친다**
+
+Run:
+```bash
+grep -rnE "CanvasToppingItem|CanvasEditTab|ToppingBorderLayer|borderOnly|ToppingBorderEditScreen|ToppingEditTab|BrushWidthSlider|NavigateToToppingEdit|initialToppingId" \
+  docs --include='*.md' --exclude-dir=archive
+```
+Expected: 0건이 될 때까지 고친다. `architecture/navigation-flow.md`, `architecture/design-system.md`, `adr/0026`, `adr/0032`, `adr/README.md`가 걸린다. ADR 본문의 결정 서술은 고치지 않고, 현재 코드 식별자를 가리키는 앵커만 지금 이름으로 바꾸거나 ADR-0034를 가리키게 한다.
+
+- [ ] **Step 6: ADR·로그·보관**
 
 - ADR-0034에 수정 플로우도 같은 패널을 쓴다는 것과 `NavKeyToppingEdit`에서 테두리가 빠진 것을 반영한다.
 - `docs/log.md`에 한 줄.
-- 스펙의 `status`를 `implemented`로, 두 계획의 `status`를 `done`으로 바꾸고 `archive/`로 옮긴다. 두 README의 줄을 옮긴다.
+- 스펙: `status: implemented`로 바꾸고 `specs/archive/`로 옮긴다.
+- 두 계획: `status: done`, `archived_reason`을 채우고 상단에 Archived 배너를 단 뒤 `plans/archive/`로 옮긴다(`plans/template.md`의 절차).
+- 두 README의 줄을 아카이브 쪽으로 옮긴다.
 
-- [ ] **Step 6: 링크 확인과 커밋**
+- [ ] **Step 7: 링크 확인과 커밋**
 
 Run: `python3 docs/script/check_links.py docs`
 Expected: 깨진 링크 0건

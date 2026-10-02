@@ -6,7 +6,7 @@ Parfait 프로젝트의 작업 계획 문서를 모읍니다.
 
 | 계획 | 내용 |
 |------|------|
-| [2026-10-02-c105-arrange-add-flow.md](2026-10-02-c105-arrange-add-flow.md) | **배치 화면 테두리 패널 — 추가 플로우**(계획 A, 8 Task). Task 1~3은 `YGSlider` 이동과 공용 부품(`ToppingBorderStyle`, `ToppingBorderPanel`, `ToppingArrangeLayout`, `dismissPanelOnTouch`). Task 4·5는 `CanvasToppingPlace`의 패널·그만두기 팝업. Task 6은 초안의 테두리 필드 삭제, Task 7은 편집 화면 테두리 탭 숨김과 확인 화면, Task 8은 검증·문서. |
+| [2026-10-02-c105-arrange-add-flow.md](2026-10-02-c105-arrange-add-flow.md) | **배치 화면 테두리 패널 — 추가 플로우**(계획 A, 7 Task). Task 1~3은 `YGSlider` 이동과 공용 부품(`ToppingBorderStyle`, `ToppingBorderPanel`, `ToppingArrangeLayout`, `dismissPanelOnTouch`, 탭·변형 입력의 `enabled`). Task 4는 `CanvasToppingPlace`의 ViewModel·화면·Route. Task 5는 초안의 테두리 필드 삭제, Task 6은 편집 화면 테두리 탭 숨김과 확인 화면, Task 7은 검증·문서. |
 | [2026-10-02-c105-arrange-edit-flow.md](2026-10-02-c105-arrange-edit-flow.md) | **배치 화면 테두리 패널 — 수정 플로우**(계획 B, 7 Task, 계획 A 선행). Task 1·2는 `EditableTopping`과 그리기 부품 추출. Task 3·4는 `CanvasToppingArrange` ViewModel·화면·진입. Task 5는 `CanvasBGEdit` 배경 전용 축소, Task 6은 편집 화면 테두리 코드 삭제, Task 7은 검증·문서·보관. |
 | [2026-09-28-topping-pinch-gesture.md](2026-09-28-topping-pinch-gesture.md) | **토핑 두 손가락 변환 제스처**(5 Task). Task 1은 `toppingTransformInput` 제스처 modifier와 탭 취소, 계측 테스트. Task 2·3은 배치·편집 화면을 `OnToppingTransform` 하나로 전환. Task 4는 핸들 잔재 삭제, Task 5는 문서 반영. ✅ **5 Task 전부 구현 완료** |
 | [2026-09-26-docs-record-structure.md](2026-09-26-docs-record-structure.md) | **docs 기록 구조 개선**(Task 0~7, 문서만 변경). 원본 사본과 추출표로 미결·절차 노하우의 행방을 먼저 정한 뒤 `log.md`·doc-baseline·루트 `CLAUDE.md`를 이관하고, 영역별 코드 대조로 `status.md`를 쓴 다음 index를 라우팅만 남긴다. |
