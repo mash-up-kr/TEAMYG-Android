@@ -52,7 +52,12 @@
     <string name="canvas_bg_edit_save_error_unknown">배경을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
     <string name="canvas_bg_edit_topping_save_error_unknown">토핑 편집을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
     <string name="canvas_bg_edit_topping_delete_error_unknown">토핑을 삭제하지 못했어요\n잠시 후 다시 시도해 주세요</string>
-    <string name="canvas_topping_place_title">토핑배치</string>
+    <string name="canvas_topping_place_title">배치</string>
+    <string name="canvas_topping_border_panel_collapsed">테두리 설정</string>
+    <string name="canvas_topping_border_panel_width">테두리 굵기</string>
+    <string name="canvas_topping_border_panel_open">테두리 설정 열기</string>
+    <string name="canvas_topping_border_panel_close">테두리 설정 닫기</string>
+    <string name="canvas_topping_arrange_confirm">캔버스에 쌓기</string>
     <string name="canvas_topping_place_draft_unavailable">올릴 토핑을 찾지 못했어요. 캔버스에서 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_failed">토핑을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>

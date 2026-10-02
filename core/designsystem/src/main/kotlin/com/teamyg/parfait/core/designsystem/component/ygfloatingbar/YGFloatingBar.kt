@@ -35,12 +35,24 @@ fun YGFloatingBarBackClose(
     modifier: Modifier = Modifier,
 ) {
     YGFloatingBarContent(modifier = modifier) {
-        YGCircleButton(
-            iconResource = R.drawable.ic_caret_left,
-            type = YGCircleButtonType.Default,
-            contentDescription = "뒤로가기",
-            onClick = onBackClick,
-        )
+        YGFloatingBarBackButton(onClick = onBackClick)
+        YGFloatingBarCloseButton(onClick = onCloseClick)
+    }
+}
+
+/**
+ * 뒤로가기와 닫기 사이에 제목을 둔 변형
+ */
+@Composable
+fun YGFloatingBarBackTitleClose(
+    title: String,
+    onBackClick: () -> Unit,
+    onCloseClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    YGFloatingBarContent(modifier = modifier) {
+        YGFloatingBarBackButton(onClick = onBackClick)
+        YGFloatingBarEditTitle(title = title)
         YGFloatingBarCloseButton(onClick = onCloseClick)
     }
 }
@@ -73,15 +85,7 @@ fun YGFloatingBarEdit(
 ) {
     YGFloatingBarContent(modifier = modifier) {
         YGFloatingBarCloseButton(onClick = onCloseClick)
-        Text(
-            text = title,
-            style = YGTheme.typography.body.b01R,
-            color = YGAtomicColors.Gray.Gray800,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        YGFloatingBarEditTitle(title = title)
         YGFloatingBarConfirmButton(onClick = onConfirmClick)
     }
 }
@@ -166,6 +170,29 @@ private fun YGFloatingBarContent(
 }
 
 @Composable
+private fun RowScope.YGFloatingBarEditTitle(title: String) {
+    Text(
+        text = title,
+        style = YGTheme.typography.body.b01R,
+        color = YGAtomicColors.Gray.Gray800,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(1f),
+    )
+}
+
+@Composable
+private fun YGFloatingBarBackButton(onClick: () -> Unit) {
+    YGCircleButton(
+        iconResource = R.drawable.ic_caret_left,
+        type = YGCircleButtonType.Default,
+        contentDescription = "뒤로가기",
+        onClick = onClick,
+    )
+}
+
+@Composable
 private fun YGFloatingBarCloseButton(onClick: () -> Unit) {
     YGCircleButton(
         iconResource = R.drawable.ic_close,
@@ -194,6 +221,12 @@ private fun YGFloatingBarPreview() = PreviewBox {
             .background(color = Color.White),
     ) {
         YGFloatingBarBackClose(
+            onBackClick = {},
+            onCloseClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGFloatingBarBackTitleClose(
+            title = "배치",
             onBackClick = {},
             onCloseClick = {},
             modifier = Modifier.fillMaxWidth(),

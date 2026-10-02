@@ -32,6 +32,8 @@ private const val MISS_KEY = "miss"
  *
  * @param entries 겹침 순서가 **아래에서 위**인 목록. 그리는 순서 그대로 넘기면 된다.
  * @param keyOf 연타 방어가 "같은 대상"을 가리는 기준
+ * @param enabled 첫 down 때 한 번만 읽는다. 거짓이면 그 제스처는 손가락이 모두 떨어질 때까지 통째로
+ *   버린다. 입력을 체인에서 빼는 대신 이것으로 끈다 — [dismissPanelOnTouch] 참고.
  */
 @Composable
 internal fun <T> Modifier.toppingTapInput(
@@ -39,11 +41,13 @@ internal fun <T> Modifier.toppingTapInput(
     keyOf: (T) -> Any,
     onHit: (T) -> Unit,
     onMiss: () -> Unit,
+    enabled: () -> Boolean = { true },
 ): Modifier {
     val latestEntries by rememberUpdatedState(entries)
     val latestKeyOf by rememberUpdatedState(keyOf)
     val latestOnHit by rememberUpdatedState(onHit)
     val latestOnMiss by rememberUpdatedState(onMiss)
+    val latestEnabled by rememberUpdatedState(enabled)
     val throttle = remember { ToppingClickThrottle() }
 
     val handler = remember {
@@ -51,6 +55,7 @@ internal fun <T> Modifier.toppingTapInput(
             awaitEachGesture {
                 // 같은 노드에 달린 변환 입력이 이 down 을 먼저 볼 수 있으므로 소비 여부를 따지지 않는다
                 val down = awaitFirstDown(requireUnconsumed = false)
+                if (!latestEnabled()) return@awaitEachGesture
                 // 대상은 누른 자리로 고정한다. 뗀 자리를 보면 슬롭만큼 미끄러진 곳의 다른 토핑이
                 // 잡히거나, 투명한 자리로 떨어져 미스 분기가 발동한다
                 val hit = pickToppingHit(latestEntries(), down.position.x, down.position.y)
