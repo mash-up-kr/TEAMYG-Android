@@ -1,5 +1,12 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.component
 
+import androidx.compose.foundation.background
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -60,6 +67,41 @@ internal fun ToppingArrangeLayout(
                 .fillMaxWidth()
                 .padding(horizontal = YGTheme.layout.padding.padding7)
                 .padding(bottom = YGTheme.layout.padding.padding1),
+        )
+    }
+}
+
+@YGPreview
+@Composable
+private fun ToppingArrangeLayoutPreview() = PreviewBox {
+    ToppingArrangeLayout(
+        header = {
+            YGFloatingBarBackTitleClose(
+                title = stringResource(R.string.canvas_topping_place_title),
+                onBackClick = {},
+                onCloseClick = {},
+            )
+        },
+        onClickConfirm = {},
+        panel = {
+            ToppingBorderPanel(
+                isOpen = false,
+                selectedColorArgb = null,
+                widthDp = DEFAULT_TOPPING_BORDER_WIDTH_DP,
+                widthRange = TOPPING_BORDER_WIDTH_RANGE_DP,
+                onClickToggle = {},
+                onSelectColor = {},
+                onChangeWidth = {},
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            )
+        },
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(YGAtomicColors.Gray.Gray200),
         )
     }
 }
