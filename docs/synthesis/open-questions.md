@@ -4432,10 +4432,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-256
 - **출처**: PR5 최종 브랜치 리뷰 — `core/util/android`의 `String.kt#toRgbHexString`이 알파가
   불투명(`0xFF`)이 아니면 `require()`로 던진다. 호출부
-  `CanvasToppingPlaceViewModel#toToppingBorder`는 `handleOnClickConfirm`에서 `launch { }` **앞에**
+  `util/ToppingBorderStyle.kt`의 `ToppingBorderStyle?.toToppingBorder()`는
+  `CanvasToppingPlaceViewModel#handleOnClickConfirm`에서 `launch { }` **앞에**
   동기로 불린다 — `BaseViewModel.launch`의 `try`(성공·실패·예외·취소 네 경로를 한 곳에서 덮는 그
   블록) 밖이라, 여기서 `require()`가 던지면 어디에도 안 걸리고 그대로 크래시한다.
-- **항목**: ① 지금은 이 화면의 `borderColorArgb`가 팔레트가 주는 불투명 색뿐이라 도달 불가능하지만,
+- **항목**: ① 지금은 이 화면의 `CanvasToppingPlaceUiState.border`(`ToppingBorderStyle.colorArgb`)가 팔레트가 주는 불투명 색뿐이라 도달 불가능하지만,
   그 전제가 코드 어디에도 강제돼 있지 않다 — 팔레트에 반투명 색이 하나라도 들어오면 사용자 손에서
   터진다. `require()`를 `runCatching`으로 감싸 `ToppingBorder.None`으로 폴백할지, 팔레트 타입을 좁혀
   반투명을 아예 표현 불가능하게 만들지, 아니면 이 상태를 계속 감수할지. ② 감수한다면 그 전제(팔레트가
@@ -4959,12 +4960,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [c103-multi-subject-selection 스펙](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md)
   선택 시점 절 × PR2 최종 리뷰(2026-08-23) — 저장과 초안 기록이 화면 진입에서 **탭 시점으로**
   옮겨 오면서 생긴 새 동작이다. 이전에는 재탭이 이동만 했다.
-- **항목**: ① 확인·편집 화면에서 테두리를 두른 뒤 뒤로 와 **같은 후보를 다시 탭**하면
-  `SegmentationViewModel#selectCandidate`의 `record(borderColorArgb = null, borderWidthDp = null)`가
-  초안을 새 경로로 갈아 끼운다. 사용자가 두른 테두리가 말없이 사라진다. ② 그것이 의도인지
-  판단이 필요하다 — "다시 고르면 처음부터"가 자연스러울 수도 있고, 같은 후보를 다시 고른
-  경우만 갈라 초안을 건드리지 않는 선택지도 있다. ③ **다른 후보**를 고르는 경우는 알맹이가
-  바뀌므로 테두리를 지우는 것이 맞다(`ToppingDraftRepository.record` KDoc이 그 규칙을 적어 두었다).
+- **항목**: ① 확인 화면의 「사진 편집」으로 영역을 고친 뒤(`SegmentationConfirmViewModel`이
+  `recordEditResult`로 초안에 적는다) 뒤로 와 **같은 후보를 다시 탭**하면
+  `SegmentationViewModel#selectCandidate`가 후보를 새로 저장해 `recordToppingDraft`로 초안의
+  `subjectImagePath`·`cutoutImagePath`·`sourceLongSide`를 갈아 끼운다. 같은 후보인지는 가르지
+  않는다. 사용자가 고친 영역이 말없이 사라진다. ② 그것이 의도인지 판단이 필요하다 — "다시
+  고르면 처음부터"가 자연스러울 수도 있고, 같은 후보를 다시 고른 경우만 갈라 초안을 건드리지
+  않는 선택지도 있다. ③ **다른 후보**를 고르는 경우는 알맹이가 바뀌므로 편집 결과를 버리는
+  것이 맞다.
 - **상태**: 미해결 (스펙이 "선택 취소·다시 고르기 동선"을 범위 밖으로 두었으므로 이번 라운드의
   결함으로 세지 않는다. **실기기 확인 때 함께 본다**)
 - **해소 메모**: ①이 문제로 판명되면 같은 후보 재선택을 걸러 내는 것이 가장 작은 처방이다.

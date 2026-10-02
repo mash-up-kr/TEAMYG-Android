@@ -44,8 +44,9 @@ C-301 테두리 재편집도 필드 수정으로는 성립하지 않고 이미�
   여백이 붙은 채 올리면 초기 배치(긴 변 40%·짧은 변 48dp 하한) 계산과 좌표가 어긋난다.
   **편집이 캐시에 남기는 파일은 여전히 둘이다** — 굽기 전에도 `cutout`과 트리밍본을 저장했고,
   바뀌는 것은 두 번째 파일의 내용뿐이다(테두리를 구운 판 → 테두리 없는 알맹이).
-- 테두리 색·굵기는 토핑 초안([ADR-0026](0026-topping-draft-datastore-ssot.md))에 값으로 싣고
-  배치 확정 때 `ToppingBorder.Solid`로 보낸다.
+- 테두리 색·굵기는 배치 화면의 상태(`CanvasToppingPlaceUiState.border`)가 값으로 들고
+  배치 확정 때 `ToppingBorder.Solid`로 보낸다. 토핑 초안([ADR-0026](0026-topping-draft-datastore-ssot.md))에는
+  싣지 않는다 ([ADR-0034](0034-topping-border-set-at-placement.md)).
 - **테두리를 그리는 화면 셋이 같은 렌더러를 쓴다.** 알맹이 위에 8방향 스탬프를 얹어 그리고,
   `CanvasToppingLayer`가 쥐고 있던 스탬프를 **`:core:designsystem`의 `YGToppingCutoutImage`로 올려**
   공유한다. feature 모듈의 `component/`가 아닌 이유는 나눠 쓰는 화면이 모듈 둘에 걸치기 때문이다
