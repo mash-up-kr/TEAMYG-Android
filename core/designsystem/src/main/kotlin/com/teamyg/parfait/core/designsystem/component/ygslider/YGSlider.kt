@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.segmentation.impl.component
+package com.teamyg.parfait.core.designsystem.component.ygslider
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,14 +25,14 @@ private val TRACK_HEIGHT = 2.dp
 private val THUMB_SIZE = 16.dp
 
 /**
- * 브러시 굵기를 조절하는 슬라이더.
+ * 값 범위를 조절하는 슬라이더.
  *
  * Material 기본 트랙은 stop indicator 와 gap 이 함께 그려져 디자인과 어긋나므로,
  * 트랙과 thumb 을 직접 그려 지나온 구간과 남은 구간만 색으로 가른다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BrushWidthSlider(
+fun YGSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
@@ -84,25 +84,24 @@ private val SliderState.passedFraction: Float
         return if (span == 0f) 0f else ((value - valueRange.start) / span).coerceIn(0f, 1f)
     }
 
-private class BrushWidthSliderPreviewParameterProvider : PreviewParameterProvider<Float> {
+private class YGSliderPreviewParameterProvider : PreviewParameterProvider<Float> {
     override val values: Sequence<Float> = sequenceOf(0f, 0.35f, 1f)
 }
 
 @YGPreview
 @Composable
-private fun BrushWidthSliderPreview(@PreviewParameter(BrushWidthSliderPreviewParameterProvider::class) value: Float) =
-    PreviewBox {
-        Column(verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3)) {
-            BrushWidthSlider(
-                value = value,
-                onValueChange = {},
-                valueRange = 0f..1f,
-            )
-            BrushWidthSlider(
-                value = value,
-                onValueChange = {},
-                valueRange = 0f..1f,
-                isEnabled = false,
-            )
-        }
+private fun YGSliderPreview(@PreviewParameter(YGSliderPreviewParameterProvider::class) value: Float) = PreviewBox {
+    Column(verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3)) {
+        YGSlider(
+            value = value,
+            onValueChange = {},
+            valueRange = 0f..1f,
+        )
+        YGSlider(
+            value = value,
+            onValueChange = {},
+            valueRange = 0f..1f,
+            isEnabled = false,
+        )
     }
+}

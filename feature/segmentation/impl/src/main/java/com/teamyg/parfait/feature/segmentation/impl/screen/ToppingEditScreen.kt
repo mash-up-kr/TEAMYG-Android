@@ -60,6 +60,7 @@ import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditA
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -67,7 +68,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toPath
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.component.BorderColorChipRow
-import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
@@ -558,7 +558,7 @@ private fun SegmentationAreaControls(
                 color = YGAtomicColors.Gray.Gray700,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
+            YGSlider(
                 value = brushWidth,
                 onValueChange = onChangeBrushWidth,
                 onValueChangeFinished = onChangeBrushWidthFinished,
@@ -615,7 +615,7 @@ private fun SegmentationBorderControls(
                 color = YGAtomicColors.Gray.Gray700,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
+            YGSlider(
                 value = borderWidth,
                 onValueChange = onChangeWidth,
                 valueRange = borderWidthRange,
