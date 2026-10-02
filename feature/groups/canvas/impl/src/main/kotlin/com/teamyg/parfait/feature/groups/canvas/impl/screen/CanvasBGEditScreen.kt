@@ -26,8 +26,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitBackground
@@ -112,7 +110,6 @@ internal fun CanvasBGEditScreen(
                         retryKey = 0,
                     )
 
-                    // 딤·입력 레이어·모서리 버튼·접근성 클릭을 붙이지 않는다
                     drawEntries.forEach { entry ->
                         EditableToppingImage(
                             entry = entry,

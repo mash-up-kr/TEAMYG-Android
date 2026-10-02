@@ -116,6 +116,16 @@ class CanvasToppingArrangeViewModelTest {
         CanvasToppingArrangeIntent.OnToppingTransform(panX = panX, panY = 0f, zoom = 1f, rotationDelta = 0f),
     )
 
+    /** @return 완료시키기 전까지 갱신이 끝나지 않게 붙드는 문 */
+    private fun holdTheRefresh(): CompletableDeferred<Unit> {
+        val gate = CompletableDeferred<Unit>()
+        coEvery { refreshTodayParfaitDetail(any(), any()) } coAnswers {
+            gate.await()
+            Result.success(Unit)
+        }
+        return gate
+    }
+
     private fun stubTransformSaveSucceeds() {
         coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList())
     }
@@ -260,6 +270,29 @@ class CanvasToppingArrangeViewModelTest {
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
         assertFalse(viewModel.state.value.canOpenBorderPanel)
+    }
+
+    @Test
+    fun togglePanel_withFocus_opensThenCloses() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnToggleBorderPanel)
+        assertTrue(viewModel.state.value.isBorderPanelOpen)
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnToggleBorderPanel)
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun dismissPanel_closesAnOpenPanel() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnToggleBorderPanel)
+        assertTrue(viewModel.state.value.isBorderPanelOpen)
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnDismissBorderPanel)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
     }
 
     @Test
@@ -436,6 +469,33 @@ class CanvasToppingArrangeViewModelTest {
         coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
     }
 
+    @Test
+    fun focusedToppingRemovedByPolling_closesDeleteDialog() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 삭제 모달이 떠 있는데, 폴링이 그 토핑이 빠진 캔버스를 가져온다
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        assertTrue(viewModel.state.value.showDeleteToppingDialog)
+
+        todayCanvases.value = canvas(toppings = listOf(toppingVO(SECOND_ID), toppingVO(OTHERS_ID, isMine = false)))
+        advanceUntilIdle()
+
+        // Then 지울 대상이 없어진 모달이 남지 않는다
+        assertNull(viewModel.state.value.focusedToppingId)
+        assertFalse(viewModel.state.value.showDeleteToppingDialog)
+    }
+
+    @Test
+    fun otherToppingRemovedByPolling_keepsDeleteDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+
+        todayCanvases.value = canvas(toppings = listOf(toppingVO(FIRST_ID), toppingVO(OTHERS_ID, isMine = false)))
+        advanceUntilIdle()
+
+        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertTrue(viewModel.state.value.showDeleteToppingDialog)
+    }
+
     // 변형
 
     @Test
@@ -529,14 +589,34 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
-    fun quitDialogConfirm_emitsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
+    fun systemBack_whileRefreshingAfterDelete_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 삭제는 끝났고 그 뒤의 갱신이 아직 돌고 있다
         val viewModel = viewModel()
+        coEvery { deleteTopping(any(), any(), any()) } returns Result.success(Unit)
+        val refreshGate = holdTheRefresh()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
+        advanceUntilIdle()
+
+        // When 시스템 뒤로가기
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
+
+        // Then 팝업이 뜨지 않는다 — 뜨면 삭제가 낼 되감기와 팝업의 되감기가 겹친다
+        assertFalse(viewModel.state.value.showQuitDialog)
+        refreshGate.complete(Unit)
+    }
+
+    @Test
+    fun quitDialogConfirm_closesDialogAndEmitsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
+        assertTrue(viewModel.state.value.showQuitDialog)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnQuitDialogConfirm)
 
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     // 확정
@@ -665,12 +745,20 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
         viewModel.drag()
         stubTransformSaveSucceeds()
+        val refreshGate = holdTheRefresh()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+            advanceUntilIdle()
 
+            // 갱신이 도는 동안에는 되감지 않고 덮개도 걷지 않는다
+            expectNoEvents()
+            assertTrue(viewModel.state.value.isLoading)
+
+            refreshGate.complete(Unit)
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
+        assertFalse(viewModel.state.value.isLoading)
 
         // 되감기 전에 갱신을 마쳐야 캔버스가 저장된 값을 본다
         coVerifyOrder {
@@ -778,10 +866,17 @@ class CanvasToppingArrangeViewModelTest {
         } returns Result.success(Unit)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         assertTrue(viewModel.state.value.showDeleteToppingDialog)
+        val refreshGate = holdTheRefresh()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
+            advanceUntilIdle()
 
+            // 갱신이 도는 동안에는 되감지 않고 덮개도 걷지 않는다
+            expectNoEvents()
+            assertTrue(viewModel.state.value.isLoading)
+
+            refreshGate.complete(Unit)
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
 

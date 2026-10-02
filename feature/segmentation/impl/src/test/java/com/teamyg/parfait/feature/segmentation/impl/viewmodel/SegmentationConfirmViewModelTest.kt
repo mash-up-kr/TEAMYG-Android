@@ -398,8 +398,8 @@ class SegmentationConfirmViewModelTest {
     }
 
     @Test
-    fun reuseEntry_afterBorderEdit_reopensFromTheEditedMask() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 재사용 진입에서 테두리를 한 번 고쳐 초안에 마스크가 적혔다
+    fun reuseEntry_withEditedMask_reopensFromTheEditedMask() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재사용 진입에서 편집을 한 번 거쳐 초안에 재편집 마스크가 적혔다
         givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = EDITED_CUTOUT_PATH))
 
         // When 화면이 열린다

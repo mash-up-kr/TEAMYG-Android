@@ -61,7 +61,10 @@ data class CanvasToppingArrangeUiState(
      * 목록에 있어서, 이게 없으면 방금 지운 토핑이 되살아난다.
      */
     val deletedToppingIds: Set<Long> = emptySet(),
-    /** 확인과 삭제가 한 깃발을 나눠 쓴다 — 덮개가 입력을 삼켜 둘이 겹칠 수 없다. */
+    /**
+     * 확인과 삭제가 한 깃발을 나눠 쓴다. 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템
+     * 뒤로가기는 덮개를 거치지 않아, 그쪽은 ViewModel 이 이 값을 보고 직접 막는다.
+     */
     val isLoading: Boolean = false,
 ) : UiState {
     val focusedTopping: EditableTopping?
@@ -235,8 +238,9 @@ constructor(
             dirtyToppingIds = dirtyToppingIds intersect incomingIds,
             deletedToppingIds = deletedToppingIds intersect incomingIds,
             focusedToppingId = remainingFocusId,
-            // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
+            // 패널과 삭제 모달은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
             isBorderPanelOpen = isBorderPanelOpen && remainingFocusId != null,
+            showDeleteToppingDialog = showDeleteToppingDialog && remainingFocusId != null,
         )
     }
 
@@ -271,9 +275,10 @@ constructor(
 
             CanvasToppingArrangeIntent.OnSystemBack -> handleOnSystemBack()
 
-            CanvasToppingArrangeIntent.OnQuitDialogConfirm -> postSideEffect(
-                effect = CanvasToppingArrangeEffect.NavigateBack,
-            )
+            CanvasToppingArrangeIntent.OnQuitDialogConfirm -> {
+                updateState { copy(showQuitDialog = false) }
+                postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
+            }
 
             CanvasToppingArrangeIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
 
@@ -375,13 +380,14 @@ constructor(
                             dirtyToppingIds = dirtyToppingIds - focusedId,
                             focusedToppingId = null,
                             isBorderPanelOpen = false,
-                            isLoading = false,
                         )
                     }
                     // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
-                    // 취소돼 갱신이 끊긴다
+                    // 취소돼 갱신이 끊긴다. 그동안 덮개를 걷으면 시스템 뒤로가기가 되감기를
+                    // 하나 더 낸다
                     refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
 
+                    updateState { copy(isLoading = false) }
                     postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
                 }.onFailure { throwable -> failToDeleteTopping(throwable, focusedId) }
         }

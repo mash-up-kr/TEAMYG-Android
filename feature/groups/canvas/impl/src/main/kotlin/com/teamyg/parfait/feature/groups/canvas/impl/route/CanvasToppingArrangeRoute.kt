@@ -16,6 +16,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingArrangeScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingArrangeEffect
@@ -52,7 +53,9 @@ internal fun CanvasToppingArrangeRoute(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                CanvasToppingArrangeEffect.NavigateBack -> navigator.onBack()
+                // 한 칸 되감기가 아니라 목적지를 짚는다 — 이펙트가 겹쳐 와도 캔버스 메인 밑으로
+                // 내려가지 않는다
+                CanvasToppingArrangeEffect.NavigateBack -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 // 실패가 아니라 안내라 오류 색을 쓰지 않는다
                 CanvasToppingArrangeEffect.ShowOthersToppingNotEditable ->

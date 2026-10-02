@@ -138,8 +138,9 @@ internal fun CanvasToppingArrangeScreen(
                 lerp(entry.draw.center, panelFocusCenter(DpSize(canvasWidth, canvasHeight)), focusFraction)
             }
 
-            // zIndex 가 아니라 컴포지션 순서로 올린다 — 겹침 순서가 노드 순서와 갈리지 않는다
-            val myEntriesInDrawOrder = if (uiState.isBorderPanelOpen && focusedEntry != null) {
+            // zIndex 가 아니라 컴포지션 순서로 올린다 — 겹침 순서가 노드 순서와 갈리지 않는다.
+            // 패널 상태가 아니라 애니메이션을 본다 — 제자리로 돌아오는 동안에도 위에 있어야 한다
+            val myEntriesInDrawOrder = if (focusFraction > 0f && focusedEntry != null) {
                 myEntries.filterNot { it === focusedEntry } + focusedEntry
             } else {
                 myEntries
