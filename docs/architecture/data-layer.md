@@ -329,8 +329,9 @@ impl 컨벤션 플러그인이 주는 것은 `:domain`뿐이다). 그래서 **Re
 > 🔁 **둘째 갈래가 열렸다(2026-08-23, PR #335)** — `delete`가 C-301 편집 탭이라는 소비 화면과 함께
 > 올라왔다. **소비자 없이 열지 않는다**는 방침이 이 Repository에서도 유지된 셈이고, 남은 둘(위치·
 > 테두리 수정)은 아직 부르는 화면이 없어 닫혀 있다. Repository는 여기서도 **에러 변환만** 한다
-> (`mapErrorToAppError`) — 삭제 실패의 처분은 화면 몫인데 지금 그 화면이 로그만 남긴다
-> ([open-questions](../synthesis/open-questions.md) OQ-P-270).
+> (`mapErrorToAppError`) — 삭제 실패의 처분은 화면 몫이고, `CanvasToppingArrangeViewModel`의
+> `failToDeleteTopping`이 토스트로 알린 뒤 화면에 남는다. 삭제만 확인 즉시 영구인 것은
+> [open-questions](../synthesis/open-questions.md) OQ-P-270.
 >
 > 🔁 **셋째 갈래가 같은 날 열렸다(2026-08-23, PR #336)** — `update`가 같은 화면의 확인 버튼과 함께
 > 올라와 **넷 중 셋**이 열렸다. 이 메서드만 파라미터가 전부 널 허용인데 서버 계약이 부분 병합이라

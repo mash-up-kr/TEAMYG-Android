@@ -278,10 +278,11 @@ develop에 0건이라(2026-08-22 PR #325가 걷어냈다) 되살릴지가 그대
 > ✅ **2026-08-23 — 앱이 서버 데이터를 지우는 첫 경로가 생겼다**(PR #335 develop 머지, 계약 delta
 > 없음). C-301 편집 탭의 삭제 확인 모달이 **토핑 삭제 DELETE**를 부르면서 `parfait-image.md`의
 > 미소비 셋이 **둘**(위치·테두리 수정)로 줄었다. **소비처를 얻은 엔드포인트는 25건**이고 `partial`
-> 도메인은 여전히 **둘**이다(`parfait-group.md`·`parfait-image.md`). ⚠️ **실패가 화면에 닿지
-> 않는다** — 403·409·404가 전부 로그 한 줄로 접혀, 같은 화면의 배경 저장과 처분이 갈렸다
-> → [parfait-image.md](parfait-image.md) Android 매핑 ·
-> [open-questions](../synthesis/open-questions.md) OQ-P-270.
+> 도메인은 여전히 **둘**이다(`parfait-group.md`·`parfait-image.md`). ⚠️ **지금 삭제 실패는
+> 토스트 하나로 접힌다** — 403·409·404는 `AppError.Network`가 아니라서 전부
+> `CanvasToppingArrangeError.TOPPING_DELETE_UNKNOWN` 문구가 뜨고 화면에 남는다(연결 실패만 `NETWORK`)
+> → [parfait-image.md](parfait-image.md) Android 매핑. 409를 갈라 말할지는 OQ-P-261, 삭제만 확인 즉시
+> 영구인 것은 [open-questions](../synthesis/open-questions.md) OQ-P-270.
 >
 > ✅ **2026-08-23 — 편집 결과가 서버에 남기 시작했다**(PR #336 develop 머지, 계약 delta 없음).
 > C-301 편집 탭의 **확인 버튼**이 바뀐 토핑만 골라 **위치 PATCH**를 부르면서 `parfait-image.md`의
