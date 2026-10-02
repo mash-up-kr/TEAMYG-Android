@@ -29,12 +29,18 @@ import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
+import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -78,7 +84,7 @@ data class CanvasToppingPlaceUiState(
     /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
     val hasUserAdjustedPlacement: Boolean = false,
 ) : UiState {
-    val panelBorderWidthDp: Float get() = border?.widthDp ?: pendingBorderWidthDp
+    val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(border, pendingBorderWidthDp)
 }
 
 sealed interface CanvasToppingPlaceIntent : UiIntent {
@@ -271,12 +277,12 @@ class CanvasToppingPlaceViewModel
             CanvasToppingPlaceIntent.OnDismissBorderPanel -> updateState { copy(isBorderPanelOpen = false) }
 
             is CanvasToppingPlaceIntent.OnSelectBorderColor -> updateState {
-                copy(border = intent.colorArgb?.let { argb -> ToppingBorderStyle(argb, panelBorderWidthDp) })
+                copy(border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp))
             }
 
             is CanvasToppingPlaceIntent.OnChangeBorderWidth -> updateState {
-                val widthDp = intent.widthDp.coerceIn(TOPPING_BORDER_WIDTH_RANGE_DP)
-                copy(pendingBorderWidthDp = widthDp, border = border?.copy(widthDp = widthDp))
+                val widthDp = clampPanelBorderWidthDp(intent.widthDp)
+                copy(pendingBorderWidthDp = widthDp, border = border.withPanelWidth(widthDp))
             }
 
             is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
@@ -297,19 +303,17 @@ class CanvasToppingPlaceViewModel
 
     private fun handleOnSystemBack() {
         updateState {
-            when {
-                isLoading -> this
-                isBorderPanelOpen -> copy(isBorderPanelOpen = false)
-                else -> copy(showQuitDialog = true)
+            when (toppingPanelBackAction(isLoading = isLoading, isBorderPanelOpen = isBorderPanelOpen)) {
+                ToppingPanelBackAction.Ignore -> this
+                ToppingPanelBackAction.ClosePanel -> copy(isBorderPanelOpen = false)
+                ToppingPanelBackAction.ShowQuitDialog -> copy(showQuitDialog = true)
             }
         }
     }
 
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
-            // 패널이 열린 동안 화면은 토핑을 저장된 자리가 아닌 곳에 보여 준다. 그 상태에서 받은
-            // 이동량을 저장된 자리에 더하면 닫았을 때 토핑이 엉뚱한 데로 가 있다
-            if (isBorderPanelOpen) return@updateState this
+            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
 
             // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
             val canvasSize = canvasSize ?: return@updateState this

@@ -1,7 +1,7 @@
 ---
 id: c105-arrange-add-flow
 title: 배치 화면 테두리 패널 — 추가 플로우 (계획 A)
-status: draft
+status: done
 type: work-order
 created: 2026-10-02
 updated: 2026-10-02
@@ -15,11 +15,14 @@ related_code:
   - ToppingEditScreen.kt#ToppingEditScreen
   - SegmentationConfirmViewModel.kt#SegmentationConfirmViewModel
   - ToppingDraft.kt#ToppingDraft
-archived_reason:
+archived_reason: 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 전.
 tags: [plan, parfait]
 ---
 
 # 배치 화면 테두리 패널 — 추가 플로우 Implementation Plan
+
+> **Archived (2026-10-02)** — 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 전. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -29,11 +32,11 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose(`pointerInput`, `animateFloatAsState`, `BackHandler`), Hilt, JUnit4 + MockK + Turbine + coroutines-test, Compose UI 계측 테스트(`androidx.compose.ui.test.junit4.v2.createComposeRule`).
 
-**Spec:** [`docs/superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md`](../specs/2026-10-02-c105-arrange-border-merge-design.md)
+**Spec:** [`docs/superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md`](../../specs/archive/2026-10-02-c105-arrange-border-merge-design.md)
 
 ## Global Constraints
 
-- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다. 구현·리뷰 서브에이전트 브리프에 이 링크를 넣는다.
+- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다. 구현·리뷰 서브에이전트 브리프에 이 링크를 넣는다.
 - 경로 약어
   - `C` = `feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl`
   - `CT` = 같은 모듈 `src/test/kotlin/com/teamyg/parfait/feature/groups/canvas/impl`

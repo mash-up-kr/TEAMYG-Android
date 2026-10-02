@@ -823,18 +823,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (이월 관찰 — 현재 렌더 결과는 정상)
 - **해소 메모**: 정리 시 [design-system](../architecture/design-system.md) `YGTopBar` 항목과 [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) `YGTopBarContent` 절을 함께 고친다.
 
-### [2026-08-04] `YGFloatingBar` 4변형 사용처 0건 — 화면 배치 책임·중앙 문구 출처 미정
+### [2026-08-04] `YGFloatingBarEdit`의 중앙 문구 출처가 미확인이고 `YGFloatingBarEditTab`은 프로덕션 사용처가 없다
 - **ID**: OQ-P-081
-- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`(PR #188 develop 머지) — 4변형이 전부 갤러리에서만 렌더되고 feature 참조가 0건이다. 컴포넌트는 폭을 정하지 않고(`modifier` 몫) 상단 패딩만 갖는데, Figma도 화면 어디에 떠 있는지(상단 고정/하단/오버레이)를 주지 않았다. `YGFloatingBarEdit`의 중앙 문구도 Figma가 `Text` placeholder만 둬서 편집 대상 이름인지 모드 라벨인지 미확정이다.
-- **항목**: ① 캔버스·편집 화면 라운드에서 배치(위치·폭·safe area)를 어떻게 정할지, ② `Edit`의 중앙 문구가 무엇인지, ③ `EditTab`의 탭 문자열("영역"/"테두리")이 화면 소유인지 컴포넌트 기본값이어야 하는지.
-- **상태**: 부분 해소 (①③ **PR #221 develop 머지, 2026-08-14** / ② **잔존** — `YGFloatingBarEdit`의 소비처는 `ToppingEditScreen` 하나이고 중앙 문구로 화면 `strings.xml`의 모드 라벨 `topping_edit_area_only_title`·`topping_edit_border_only_title`을 넘긴다. 문구 출처를 디자인으로 확인한 기록은 이 항목에 없다)
-- **해소 메모**: ① 배치가 확정됐다 — C-103~C-105 4화면이 전부 세로 `Column`의 맨 위/맨 아래에 `fillMaxWidth()`로 붙이는 형태이고 오버레이가 아니다(`BackClose` 추출·확인, `Close` 로딩·에러, `EditTab` 편집). safe area는 엔트리 `YGScaffold` 기본 `innerPadding`이 처리한다. ③ 탭 문자열은 **화면 소유**로 확정 — `ToppingEditTab` enum이 `@StringRes label`을 들고 화면이 `stringResource`로 풀어 넘긴다(feature `strings.xml`). ②는 `Edit`의 중앙 문구가 무엇인지 디자인으로 확인되면 닫는다. 배치 화면(C-106)은 `Edit`가 아니라 뒤로 + 제목 + 닫기 변형 `YGFloatingBarBackTitleClose`를 세로 `Column` 맨 위에 쓰고 제목은 화면 `strings.xml`이 갖는다 — ①③의 답과 같은 쪽이다. [design-system](../architecture/design-system.md) 인벤토리 노트와 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)에 반영했고, [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) 열린 질문 3은 닫힌다.
-  > 📌 **변형이 5종이 되고 배치가 한 갈래 늘었다(2026-08-30, PR #406 develop 머지)** — Figma에
-  > `Status=Title`이 추가돼 `YGFloatingBarTitle`이 신설되고 C-102 갤러리 두 화면이 손으로 조립하던
-  > `Row` + `YGCircleButton`을 그것으로 바꿨다. ①의 답은 여기서도 같다 — 세로 `Column` 맨 위에
-  > `fillMaxWidth()`로 붙이고 오버레이가 아니다. **②(`Edit`의 중앙 문구)는 그대로 잔존**이고,
-  > `Title`의 중앙 문구는 화면 `strings.xml`이 갖는다(③이 탭 문자열에서 고른 것과 같은 쪽).
-  > 다만 **빈 상태에는 제목을 두지 않는데 그 근거가 작업자 지시뿐**이다 → OQ-P-331.
+- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`. `YGFloatingBarEdit`를 쓰는 화면은 `ToppingEditScreen`(중앙 문구 `topping_edit_area_only_title`)과 `CanvasBGEditScreen`(`canvas_bg_edit_title`) 둘이고, 둘 다 화면 `strings.xml`의 모드 라벨을 넘긴다. Figma는 그 자리에 `Text` placeholder만 둔다. `YGFloatingBarEditTab`은 `:app-preview`의 `YGFloatingBarPreviewScreen` 말고 부르는 곳이 없고, 그 변형만 쓰는 `YGEditTabButton`도 프로덕션에서 닿지 않는다.
+- **항목**: ① `Edit`의 중앙 문구가 모드 라벨이 맞는지 디자인으로 확인한 기록이 없다. ② `YGFloatingBarEditTab`·`YGEditTabButton`을 지울지 남길지 정하지 않았다.
+- **상태**: 미해결
+- **해소 메모**: ①은 디자인 확인 뒤 닫는다. ②에서 지우기로 하면 [design-system](../architecture/design-system.md) 인벤토리와 `:app-preview` 갤러리 항목을 함께 걷는다. `YGFloatingBarTitle`을 쓰는 갤러리의 빈 상태 제목은 OQ-P-331이 따로 쥔다.
 
 ### [2026-08-04] Top Bar 날짜 표기가 영문 고정 — 로케일·포맷 규칙 미정
 - **ID**: OQ-P-082
@@ -2309,21 +2303,20 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: ①을 고르면 `YGCanvas`의 배치 계산을 파라미터로 분리하는 일이 선행한다. 정해지면 [design-system](../architecture/design-system.md) 캔버스 절과 [c301 스펙](../superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md) 드리프트 2를 정리한다.
 
-### [2026-08-15] C-301의 "토핑" 탭이 비어 있다 — 편집 모드의 절반이 미구현
+### [2026-08-15] 위키 v7은 C-301을 삭제하고 C-304를 편집 허브로 두는데, 구현은 배경 전용 화면을 `C-301`로 둔다
 
 - **ID**: OQ-P-175
-- **출처**: `feature/groups/canvas/impl` `CanvasBGEditScreen`·`CanvasEditTab`(PR #231) — 탭이 배경/토핑 2종인데 `selectedTab` 상태만 바뀌고 본문·팔레트는 그대로다. 위키 [[기능정의서-v3]]은 C-301을 "파르페 편집 모드 진입"(배경 변경 + 누끼 사진 편집 통합 진입점)으로 정의하므로, 통합 진입점의 한쪽이 빈 채로 머지됐다. 화면·심볼 이름도 배경만 가리킨다(`CanvasBGEdit*`·`NavKeyCanvasBGEdit`).
-- **항목**: ① 토핑 탭에서 무엇을 편집할지 확정(위키 표의 C-305 토핑 편집·C-306 테두리 편집과의 관계 — 이미 `feature/segmentation`에 `NavKeyToppingEdit` 두 탭이 있다), ② 탭 선택이 화면 안 전환인지 다른 목적지로의 이동인지, ③ 심볼 이름을 C-301 전체를 가리키게 고칠지.
-- **상태**: 부분 해소 — **②는 답이 나왔고 ①③은 열려 있다**(2026-08-16, PR #264)
-  > ✅ **탭이 채워졌고 전환은 화면 안 분기로 확정됐다** — 토핑 탭이 선택·이동·크기·회전·삭제와
-  > 테두리 재편집 왕복을 갖췄다. **②**: 탭 선택은 다른 목적지로의 이동이 아니라 같은 화면 안에서
-  > 본문(팔레트 vs 토핑 스택)을 가르는 분기다. 위키 표의 C-305(토핑 편집)는 **선택 + 모서리 버튼**으로,
-  > C-306(테두리 편집)은 **`NavKeyToppingEdit(borderOnly = true)`**로 기존 C-104/C-105 화면을 재사용해
-  > 성립했다 — 새 목적지를 만들지 않았다.
-  > **①③은 그대로다**: 편집 대상이 아직 mock이고(OQ-P-199), 심볼·NavKey 이름은 여전히
-  > `CanvasBGEdit*`라 화면 전체를 가리키지 않는다. 새 라운드의 설계·드리프트는
-  > [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md)이 갖는다.
-- **해소 메모**: ①은 위키의 "에딧 모드 삭제 비고 vs C-301~C-306 잔존" 미결과 맞물린다(정책 소관은 위키 [[open-questions]]). 정해지면 [c301 스펙](../superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md) 범위·정책 대조 표를 갱신한다.
+- **출처**: `CanvasBGEditScreen`·`NavKeyCanvasBGEdit`·`NavKeyAnalyticsScreen.kt`(`C-301`) × 위키 [[screen-id-scheme]] —
+  위키는 기능정의서 v7이 `C-301`(편집 모드 진입)을 삭제했고 `C-304`(캔버스 수정)가 흡수해 **배경 탭 +
+  토핑 탭을 가진 편집 허브**가 됐다고 적는다. `C-305`는 토핑 편집, `C-306`은 토핑 테두리 편집이다.
+  구현에는 탭을 가진 허브가 없다. 캔버스 메인의 편집 버튼은 배경만 다루는 화면을 열고 그 화면이 분석
+  화면 id로 `C-301`을 보낸다. 토핑은 캔버스 메인에서 본인 토핑을 탭해 여는 `NavKeyCanvasToppingArrange`
+  한 화면이 배치와 테두리를 함께 고치고, 테두리 전용 화면은 없다.
+- **항목**: ① 편집 진입을 위키 v7의 허브(배경 탭 + 토핑 탭) 쪽으로 맞출지, 구현의 두 화면 구조를 정책에
+  올릴지(정책 소관). ② 배경 편집 화면의 분석 화면 id를 v7에 없는 `C-301`로 계속 보낼지 — id 전반은
+  OQ-P-415가 쥔다. ③ 편집 버튼이 배경만 연다는 것을 사용자에게 어떻게 알릴지 — 튜토리얼 문구는 OQ-P-417.
+- **상태**: 미해결 (구현의 화면 구조는 피그마 수정 플로우를 따랐고 위키에는 그 원본이 없다. 위키는 이 저장소가 고치지 않는다)
+- **해소 메모**: 기획이 화면 구조를 위키에 반영하면 그쪽 id에 맞춰 `toAnalyticsScreenOrNull`과 `status.md` 머리말을 고친다.
 
 ### [2026-08-15] C-301의 State·Effect가 UI 타입을 들고 팔레트 색이 코드 hex로 확정됐다
 
@@ -2871,11 +2864,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 끝난 뒤에야 배경 저장이 이어진다 — 둘을 얽으면 한쪽만 실패한 경우를 갈라 다뤄야 해서다.
   > `positionZ`는 안 보낸다(부분 병합이라 서버 겹침 순서가 유지되고, 앱에 z 조작 경로가 없다).
   > ⚠️ **닫히면서 남긴 것이 셋이다** — 실패가 화면에 안 닿는데 확인은 성공한다(OQ-P-275),
-  > 테두리 재편집만 여전히 안 나간다(OQ-P-276), 범위 검증 없는 두 축이 그대로 요청 값이 된다
+  > 테두리 재편집만 여전히 안 나간다, 범위 검증 없는 두 축이 그대로 요청 값이 된다
   > (OQ-P-271·OQ-P-241).
   > ✅ **①이 닫혔다 — 편집 탭도 같은 서버 조회를 쓴다.** `loadMockToppings()`가 사라지고
   > `GetTodayParfaitUseCase` 응답을 그린다(진입 시 한 번 더 부르는 이유는 편집을 여는 사이 다른
-  > 멤버가 올린 토핑까지 그려야 해서다). 좌표계도 함께 맞춰졌다 — `CanvasToppingItem`이 Dp 오프셋을
+  > 멤버가 올린 토핑까지 그려야 해서다). 좌표계도 함께 맞춰졌다 — `EditableTopping`이 Dp 오프셋을
   > 버리고 **Canvas-Area 대비 0~1 중심점**을 들고, 배치 규칙 셋이
   > `component/CanvasToppingLayer.kt`에서 `util/ToppingGeometry.kt`로 올라가 **캔버스 메인·편집 탭·배치
   > 화면이 같은 값을 본다.** 같은 캔버스가 두 화면에서 다르게 보이던 상태가 끝났다.
@@ -2895,8 +2888,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > ✅ **③이 닫혔다(2026-08-23, PR #335)** — **확인 모달 시점에 즉시**다. "삭제하기"가 곧
   > `DELETE .../images/{parfaitImageId}`이고, **성공해야** 화면 목록에서 뺀다(서버에 반영되지 않은
   > 것을 화면에서 지우지 않는다). 부작용은 이 화면의 두 파괴적 조작이 갈린 것이다 — **"그만두기"로
-  > 나가도 지운 토핑은 돌아오지 않는데** 이동·크기·회전은 여전히 나가면 사라진다. 실패 처분은 함께
-  > 정해지지 않아 로그 한 줄로 남았다(OQ-P-270).
+  > 나가도 지운 토핑은 돌아오지 않는데** 이동·크기·회전은 여전히 나가면 사라진다. 실패 처분은 그때
+  > 정해지지 않았다.
   > 📌 **②의 전제 하나가 낡아 있었다** — "서버 토핑 수정 표면은 **테두리만** 받고 좌표·배율·회전
   > 갱신 경로가 계약에 없다"는 서술은 2026-08-15 PR #250 이후로 사실이 아니다.
   > `PATCH .../images/{parfaitImageId}`가 `positionX`·`positionY`·`positionZ`·`scale`·`rotation`을
@@ -2947,44 +2940,23 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   정책 대조 표가 정본이다. **② 단위(px↔dp)는 정책 문서 쪽이 아직 안 맞았고**, 정책이 다루지 않는
   회전·리사이즈 한계를 코드가 새로 정한 것은 OQ-P-241로 갈렸다.
 
-### [2026-08-16] 편집하러 간 토핑이 누구인지를 Route의 `rememberSaveable`이 기억한다
-
-- **ID**: OQ-P-201
-- **출처**: `CanvasBGEditRoute#editingToppingId`(PR #264) — 테두리 재편집 왕복은
-  `ResultEventBus`로 결과만 돌려주므로 "어느 토핑이었나"를 받는 쪽이 따로 들고 있어야 하는데,
-  그 상태가 ViewModel이 아니라 Route의 `rememberSaveable`에 산다. ViewModel은 자기가 무엇을 편집하러
-  보냈는지 모르고, 결과가 왔을 때만 인텐트 인자로 전해 듣는다. `NavKeyToppingEdit`가 왕복 대상 id를
-  싣지 않는 것도 같은 원인이다(그 키는 C-103 확인 화면이 먼저 쓰던 계약이다).
-- **항목**: ① 왕복 대상 식별을 어디에 둘지 — ViewModel State(`editingToppingId`)로 올릴지,
-  `ToppingEditResult`에 요청 식별자를 실어 되돌려받을지, NavKey에 태울지. ② 같은 패턴이 다른 화면에도
-  생기면(결과 왕복이 목록의 한 항목을 겨냥할 때) 관용구로 굳힐지.
-- **상태**: 미해결
-- **해소 메모**: [state-management](../architecture/state-management.md) "화면 상태는 ViewModel이
-  소유" 항목과 [navigation-flow](../architecture/navigation-flow.md) 결과 왕복 절에 함께 반영한다.
-
-### [2026-08-16] 편집 모드의 남의 토핑 취급이 C-202 정책과 다르고, 핀치 제스처에 대체 수단이 없다
+### [2026-08-16] 토핑 변형 제스처에 접근성 대체 수단이 없다
 
 - **ID**: OQ-P-202
-- **출처**: `CanvasBGEditScreen`(PR #264) — 토핑 탭은 남의 토핑을 딤 **아래**에 그리고 그 위 딤이
-  탭을 받아 **선택 해제**만 한다. 위키 [[C-202-토핑-편집자-확인-규칙-v0.1]]([[토핑-spotlight]])은
-  타인 토핑 탭에 Spotlight 강조 + 작성자 Toast를, 본인 토핑 탭에 C-305 편집 진입을 규정한다.
-  코드는 본인 토핑 탭이 곧 편집이 아니라 **선택**이고 편집은 모서리 버튼이다. 또 크기조절·회전은
-  버튼 없이 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)로만 되고,
-  접근성 서비스가 대신할 수 있는 조작이 없다. TalkBack에서는 두 손가락 핀치가 스크린리더에 가로채져
-  크기·회전을 바꿀 경로가 없다 — 한 손가락 드래그 패스스루로는 이동만 된다.
-- **항목**: ① C-202가 캔버스 상세(C-001) 전용인지, 편집 모드에도 적용되는지 — 적용된다면 편집 중
-  타인 토핑 탭의 규칙을 정책에 명시해야 한다(위키 소관). ② 본인 토핑의 "탭 = 편집 진입" vs
-  "탭 = 선택 후 버튼"을 정책 쪽에 맞출지 코드 쪽으로 정책을 고칠지. ③ 핀치 제스처의 접근성 대체 수단
-  (증분 버튼·semantics 커스텀 액션)을 둘지.
-- **상태**: 미해결 — 두 화면 모두 핀치만 있고 대체 조작이 없다
-- **해소 메모**: ①②는 위키 [[open-questions]]의 "에딧 모드 삭제 비고 vs C-301~C-306 잔존" 미결과
-  같은 자리다. 정하면
-  [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md) 정책 대조 표를 갱신한다.
+- **출처**: `component/ToppingTransformInput.kt`의 `toppingTransformInput` — 배치(`CanvasToppingPlaceScreen`)와
+  배치 수정(`CanvasToppingArrangeScreen`) 두 화면에서 이동·크기·회전이 포인터 제스처로만 된다.
+  TalkBack에서는 두 손가락 핀치가 스크린리더에 가로채져 크기·회전을 바꿀 경로가 없다. 배치 수정
+  화면에서 본인 토핑은 접근성 클릭(포커스 이동·패널 열기)을 갖지만 남의 토핑은 갖지 않아
+  (`EditableToppingImage`의 `onClick = null`), 접근성 서비스로는 "다른 사람의 사진은 편집할 수 없어요"
+  안내에 닿지 않는다. 배치 화면의 토핑 그림에는 시맨틱스가 없다.
+- **항목**: 제스처의 접근성 대체 수단(증분 버튼·semantics 커스텀 액션)을 둘지.
+- **상태**: 미해결 — 두 화면 모두 대체 조작이 없다
+- **해소 메모**: 정하면 [design-system](../architecture/design-system.md)의 토핑 제스처 항목에 적는다.
 
 ### [2026-08-16] 토핑 라운드가 규약 이탈 셋을 함께 들였다 — 점선 직접 그리기·클릭 규약·치수 리터럴
 
 - **ID**: OQ-P-203
-- **출처**: `CanvasBGEditScreen`·`util/ToppingGeometry.kt`(PR #264) — ① 선택 스트로크를
+- **출처**: `component/ToppingPlacementComponents.kt`·`component/EditableToppingLayer.kt`·`util/ToppingGeometry.kt` — ① 선택 스트로크를
   `core:designsystem`의 `dashedBorder()`가 아니라 화면이 `drawBehind` + `dashPathEffect`로 직접 그린다
   (회전을 얹어야 해 형태가 달랐다). ② 토핑·딤이 `clickable(indication = null)`을 직접 쓴다
   (`clickableYG` 미사용, 갤러리 그리드·배경 팔레트와 같은 부류). ③ 탭별 상하 패딩·스트로크 굵기·점선
@@ -3000,15 +2972,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 📌 **②의 대상이 아예 사라졌다(2026-08-27, PR #390)** — 토핑·딤의 클릭 모디파이어가 판정
   > 오버레이의 `pointerInput` 하나로 합쳐졌다. 관용구를 강제할지 묻던 자리가 없어진 것이지
   > 규약이 달라진 것은 아니다.
-  > 📌 **③의 리터럴이 있는 자리** — 캔버스 영역 여백(상단 60dp·하단 14dp·좌우 21dp)은
-  > `CanvasBGEditScreen` 한 곳에 "공통에 없음" 주석과 함께 있다. C-106 배치 화면은
-  > `ToppingArrangeLayout`이 여백을 토큰(`YGTheme.layout.padding`)으로만 잡는다. 대신 토큰 밖
-  > 치수가 `ToppingBorderPanel`의 private 상수(선 굵기·화살표 터치 크기·아이콘 크기·라벨 간격)와
-  > `util/ToppingPanelFocus.kt`의 `PANEL_FOCUS_LIFT`에 있다. 토큰으로 올릴 때 고칠 자리는 이 셋과
-  > `util/ToppingGeometry.kt`다.
+  > 📌 **③의 리터럴이 있는 자리** — `CanvasBGEditScreen`의 캔버스 좌우 여백 21dp("공통에 없음" 주석),
+  > `component/ToppingPlacementComponents.kt`의 선택 스트로크 굵기·점선 간격,
+  > `util/ToppingGeometry.kt`의 버튼 시각 반지름·모서리 간격, `ToppingBorderPanel`의 private 상수(선 굵기·
+  > 화살표 터치 크기·아이콘 크기·라벨 간격), `util/ToppingPanelFocus.kt`의 `PANEL_FOCUS_LIFT`다.
+  > `ToppingArrangeLayout`은 여백을 토큰(`YGTheme.layout.padding`)으로만 잡는다.
   > 📌 **①의 자리** — 회전 가능한 점선 테두리는 `dashedBorder()`로 흡수되지 않고 화면 밖
-  > `component/` 패키지의 `ToppingSelectionStroke`를 두 화면이 공유한다. 디자인시스템으로 가지
-  > 않았으니 물음 자체는 남는다.
+  > `component/` 패키지의 `ToppingSelectionStroke`를 `CanvasToppingPlaceScreen`과
+  > `ToppingFocusDecoration`(배치 수정 화면)이 함께 쓴다. 디자인시스템으로 가지 않았으니 물음 자체는 남는다.
 - **해소 메모**: ①은 [design-system](../architecture/design-system.md) "그리기 프리미티브 소유"
   항목(현재 네 곳 + 이번 예외)과 함께 정한다. ②③은 [2026-08-04]·[2026-08-16] 규약 이탈 항목과 묶인다.
 
@@ -4164,33 +4135,22 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 캔버스라도 남의 토핑·비멤버면 403이 먼저 온다 — "마감을 유일한 실패로 두고 분기하면 놓친다"가
   > 상수 KDoc의 경고로 남았다. **③은 그대로다** — 이번에도 찾은 것은 이 감사다.
 
-### [2026-08-20] 테두리 굵기 거동이 편집 화면과 캔버스에서 다르다
+### [2026-08-20] 테두리 굵기가 토핑 배율·기기 폭과 무관한 절대 dp다
 
 - **ID**: OQ-P-245
-- **출처**: [ADR-0025](../adr/0025-topping-border-as-server-field.md)가 테두리를 픽셀에 굽지 않고 서버
-  필드로 보내기로 하면서 드러난 차이다. 구운 테두리는 이미지의 일부라 **토핑을 키우면 함께 굵어졌다.**
-  서버 `borderWidth`를 받아 그리는 `CanvasToppingLayer`는 그 값을 **화면 dp로 고정**해 8방향 스탬프를
-  찍으므로 토핑을 키워도 굵기가 그대로다. 편집 화면(`ToppingEditViewModel`)은 또 다르게 — `originPxPerDp`로
-  dp를 원본 픽셀 좌표계에 환산해 굽는다. 즉 **같은 "굵기 N dp"가 세 자리에서 서로 다른 그림**이 될 수 있다.
-  위키 정책([[토핑]]·C-104 편집 정책)은 브러시·테두리 범위만 정하고 배율에 따른 거동을 다루지 않는다.
-- **항목**: ① 토핑을 키울 때 테두리가 함께 굵어져야 하는가(정책 확정 필요 — 지금은 서버 계약이 dp 고정
-  쪽으로 사실상 정해 버린 상태다). ② 편집 화면 미리보기를 캔버스와 같은 거동으로 맞출지, 아니면 편집은
-  원본 좌표계 그대로 두고 차이를 받아들일지. ③ 굵기 값의 단위를 계약 문서에 명시할지 —
+- **출처**: [ADR-0025](../adr/0025-topping-border-as-server-field.md) — 테두리를 픽셀에 굽지 않고 서버
+  필드 `borderWidth`로 나른다. 그리는 쪽(`CanvasToppingLayer`·`EditableToppingImage`·
+  `CanvasToppingPlaceScreen`)은 그 값을 화면 dp로 그대로 쓰므로 토핑을 키워도 굵기가 그대로다.
+  고르는 쪽(`ToppingBorderPanel`)도 같은 dp 값을 다룬다. 위키 정책은 테두리 범위만 정하고 배율에 따른
+  거동을 다루지 않는다. 번호는 다른 문서가 가리키는 ①③④를 그대로 둔다.
+- **항목**: ① 토핑을 키울 때 테두리가 함께 굵어져야 하는가(정책 확정 필요 — 지금은 dp 고정으로 코드가
+  먼저 정했다). ③ 굵기 값의 단위를 계약 문서에 명시할지 —
   [api/parfait-image.md](../api/parfait-image.md)는 타입만 적고 단위를 말하지 않아 앱이 dp로 정했다.
-  ④ **기기 폭 축**(2026-08-21, PR5 추가) — 토핑 크기는 캔버스 폭 대비 비율로 정규화되는데
-  `borderWidth`만 절대 dp라, 폭이 다른 기기에서 상대 굵기가 달라진다. ①②③이 다루던 것은
-  "편집 화면 굵기와 캔버스 굵기의 어긋남"(배율 축)뿐이었다.
+  ④ 토핑 크기는 캔버스 폭 대비 비율로 정규화되는데 `borderWidth`만 절대 dp라, 폭이 다른 기기에서 상대
+  굵기가 달라진다.
 - **상태**: 미해결 (정책 근거 없음 — 코드가 먼저 정했다)
 - **해소 메모**: 정하면 [ADR-0025](../adr/0025-topping-border-as-server-field.md) "트레이드오프"와
-  [design-system](../architecture/design-system.md) 토핑 절에 반영한다. C-301 테두리 재편집 라운드가
-  같은 값을 다시 만지므로 그 전에 정하는 편이 싸다.
-  > 📌 **이 차이가 사용자 화면에 실현됐다**(2026-08-21 브랜치 작업 → 2026-08-22 develop 머지,
-  > PR #334) — 편집을 마치면 누끼 확인·배치·캔버스가 전부 서버 계약과 같은 방식으로
-  > (화면 dp 고정 8방향 스탬프) 그리므로, **편집 화면에서 본 굵기보다 그다음 화면들이 가늘어 보인다.**
-  > 그때까지는 굽기 덕에 편집에서 본 그림이 확인 화면까지 그대로 따라와 차이가 한 흐름 안에서
-  > 드러나지 않았다. 라운드는 이것을 회귀가 아니라 **의도된 변화**로 두고 실기기 확인 항목에 적어
-  > 두었다 — 어느 쪽이 정책인지는 여전히 이 항목이 쥔다. ①이 사실상 dp 고정으로 굳는 압력이 한 단계
-  > 더 세졌다.
+  [design-system](../architecture/design-system.md) 토핑 절에 반영한다.
 
 ### [2026-08-20] S3 업로드가 코루틴 취소를 따라가지 않는다
 
@@ -4352,44 +4312,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 사용자가 채울 수 있다. ①(알릴지 말지)에 "가드를 없애고 그냥 연다"는 선택지가 하나 늘었고,
   > ③(계정 정보가 영영 없는 경우)의 무게도 그만큼 줄었다. `GroupListViewModel#handleClickCreateNewGroup`은
   > 바뀌지 않았다.
-
-### [2026-08-21] C-301 배경 편집에서 테두리를 다시 편집해도 화면이 그대로다
-
-- **ID**: OQ-P-254
-- **출처**: `feature/groups/canvas/impl` `CanvasBGEditScreen`·`CanvasBGEditViewModel#CanvasToppingItem`
-  (#334 develop 머지, 2026-08-22) — 이 화면은 이미 놓인 토핑을
-  `borderOnly`로 다시 편집하는 경로를 갖고 있고([ADR-0026](../adr/0026-topping-draft-datastore-ssot.md)이
-  `TOPPING_EDIT_RESULT_KEY`를 걷지 않은 이유가 이 경로다), 편집 결과의 테두리 값을 받아
-  `CanvasToppingItem.borderLayers`에 담아 둔다. 그런데 토핑을 그리는 자리는 편집 결과 **이미지 하나만**
-  읽고 그 값을 보지 않는다. 테두리를 두르든 벗든 화면이 그대로다.
-- **항목**: ① 이 화면을 `:core:designsystem`의 `YGToppingCutoutImage`로 갈아태워 `borderLayers`를
-  그릴지 — 값도 컴포저블도 이미 있어 붙이는 일만 남는다. ② 아니면 C-301 라운드가 이 화면의 미리보기를
-  다시 설계할 때 함께 볼지(지금 미리보기는 컷 도형·Dot Grid·날짜 라벨이 없는 목업이고 그 어긋남은
-  OQ-P-174가 쥐고 있다).
-- **상태**: 해소됨 (2026-08-27, PR #388 — ①로 닫혔다. **저장 쪽 OQ-P-276은 잔존**)
-  > ✅ **①이 그대로 일어났다(2026-08-27, PR #388)** — `CanvasToppingImage`가 맨 `Image` 대신
-  > `YGToppingCutoutImage`를 쓰고 `borderLayers` 첫 겹의 색·두께를 넘긴다. 계기는 이 항목이 아니라
-  > [토핑 알파 판정](../superpowers/specs/archive/2026-08-26-topping-alpha-hit-test.md)이었다 — 판정 모양을 외형과
-  > 맞추려면 두 화면이 같은 그림을 그려야 해서, 렌더링 수정이 그 스펙의 범위로 들어왔다. 색을 못 읽거나
-  > painter가 성공 상태가 아니면 안 그리는 조건이 캔버스 메인과 같다. **받아 두고 안 보내는 쪽(OQ-P-276)은
-  > 그대로다.** 새로 보이게 된 테두리와 코너 스트로크·버튼의 관계는 OQ-P-315가 쥔다.
-  > ⚠️ **그 화면을 다시 만진 라운드가 이것을 건너뛰었다(2026-08-22, PR #329)** — 토핑 그리는 자리가
-  > 통째로 재작성돼(mock → 서버 URL, 오프셋 → 비율, 새 크기 계산) `rememberToppingPainter`가 생겼는데도
-  > 여전히 **편집 결과 이미지 하나만 읽는다.** ①(`YGToppingCutoutImage`로 갈아태우기)이 붙을 자리가
-  > 그때 손댄 그 함수라, 다음 라운드에는 "값도 컴포저블도 이미 있다"에 **"그리는 함수도 이미 새로
-  > 썼다"**가 더해진다.
-  > ⚠️ **같은 값이 저장 쪽에서도 빠졌다(2026-08-23, PR #336)** — 확인 버튼이 이동·크기·회전을
-  > PATCH 하면서 `borderLayers`는 비교에도 요청에도 넣지 않았다. 이제 이 값은 **받아 두고 안 그리고,
-  > 받아 두고 안 보낸다** → OQ-P-276. 둘은 한 라운드에서 함께 닫는 편이 낫다.
-- **해소 메모**: 붙일 때 함께 걷기로 했던 `CanvasToppingItem`의 KDoc도 같은 라운드에서
-  사실에 맞게 고쳐졌다 — `editedImagePath`를 "테두리를 새로 구운 이미지"라고 적던 문장이
-  "테두리는 픽셀에 굽지 않고 `borderLayers`로 따로 나른다"로 바뀌었다 — ADR-0025 전환(PR #334)
-  이후로 거짓이던 문장이다. 아래는 닫히기 전의 기록이다.
-  이 화면이 테두리를 **그린 적은 없다.** 그전에는 편집이 돌려주던 파일에 테두리가 이미
-  구워져 있어 화면이 아무것도 하지 않아도 반영된 것처럼 보였고,
-  [ADR-0025](../adr/0025-topping-border-as-server-field.md) 전환이 굽기를 멈추면서 **표시 경로가 없다는
-  사실이 드러났다.** 그래서 이 라운드는 필드 이름만 맞추고(그 자리가 받는 것이 구운 판에서 알맹이로
-  바뀌었다) 표시는 손대지 않았다. 붙일 때 `CanvasToppingItem`이 지금 들고 있는 경고 KDoc도 함께 걷는다.
 
 ### [2026-08-21] 누끼 알맹이를 최근 이미지로 재사용하려면 선행 결함 넷을 먼저 닫아야 한다
 
@@ -4576,7 +4498,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > ②(판정 공용화)의 값이 그만큼 커졌다 → OQ-P-275.
   > 🔁 **처분이 넷에서 셋으로 줄었다(2026-08-28, 브랜치 `feature/canvas-polling` — develop 미머지)** —
   > 무반응 갈래(토핑 삭제·위치 수정)가 사라지고 **일반 오류 토스트 + 화면 잔류**로 합쳐졌다
-  > (OQ-P-270 ① · OQ-P-275 ③). 남은 셋은 되감기(C-106 배치, 나중에 뒤집힘) · 알리고 남기(C-106
+  > (OQ-P-275 ③). 남은 셋은 되감기(C-106 배치, 나중에 뒤집힘) · 알리고 남기(C-106
   > 최종) · 일반 오류 토스트(배경 저장·토핑 저장·토핑 삭제)다. **①(409를 "마감된 캔버스"로 갈라
   > 말할지)은 그대로 열려 있다** — 이번 라운드는 셋을 한 문구로 접는 쪽을 택했고, 그 선택이
   > 409를 다른 서버 코드와 같은 자리에 두었다.
@@ -4756,43 +4678,22 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 확인 화면을 다녀와 되돌아온 뒤에도 유효한지는 아직 안 봤다 — 그 동선에서 깨지면 예외가 아니라
   > **빈 자리**로 드러날 공산이 크다. ②(복사할지 segmenter를 열어 둘지)는 손대지 않았다.
 
-### [2026-08-23] 토핑 삭제만 즉시 영구인데, 실패는 화면에 닿지 않는다
+### [2026-08-23] 토핑 삭제만 즉시 영구이고 화면을 떠나며, 나머지 변경은 확정 시점에 저장된다
 
 - **ID**: OQ-P-270
-- **출처**: `feature/groups/canvas/impl` `CanvasBGEditViewModel#handleOnDeleteToppingDialogConfirm`
-  (PR #335) — 확인 모달의 "삭제하기"가 곧 `DeleteToppingUseCase` 호출이고, 실패 갈래는
-  `viewModelLogger.e` 한 줄이다. 같은 파일에 `CanvasBGEditEffect.ShowError`가 있고 Route가 그것을
-  토스트로 받는데(배경 저장 실패가 그 길로 나간다) **삭제만 그 길을 쓰지 않는다.**
-  계약상 실패는 셋이다 — 403 `PARFAIT_IMAGE_NOT_OWNED`(남의 배치·그룹 미참여) · 409
-  `PARFAIT_ALREADY_CLOSED`(마감된 캔버스) · 404 `PARFAIT_IMAGE_NOT_FOUND`(두 번째 삭제)
-  ([api/parfait-image.md](../api/parfait-image.md)). 지금은 셋 다 **모달이 닫히고 아무 일도 안
-  일어나는** 하나의 모습으로 접힌다.
-- **항목**: ① 삭제 실패를 무엇으로 알릴지 — 셋을 한 문구로 접을지, 409만 갈라 "마감된 캔버스"라고
-  말할지. 409는 **같은 서버 코드에 세 번째 처분**을 더한 자리다(C-106 배치는 알린 뒤 남기고, C-301
-  배경 저장은 일반 오류로 접고, 삭제는 아무것도 안 한다 — OQ-P-261). ② **같은 화면 안에서 되돌림
-  가능성이 갈린 것**을 그대로 둘지 — 삭제는 "그만두기"로 나가도 돌아오지 않는데 이동·크기·회전은
-  나가면 사라진다. 화면은 그 차이를 말하지 않는다. ③ 소유 판정이 새면 삭제가 남의 토핑을 향할 수
-  있는데(OQ-P-250) 그때 서버가 주는 403이 지금은 무반응이라 **잘못된 게이트가 조용히 덮인다.**
-- **상태**: 미해결 (**①③은 브랜치에서 답이 나왔고 develop 머지 대기, ② 잔존**)
-  > 🔁 **②의 전제가 절반 바뀌고, ①의 범위가 넓어졌다(2026-08-23, PR #336)** — 확인 버튼이 이동·
-  > 크기·회전을 PATCH 하기 시작해 **"나가면 사라진다"가 더는 사실이 아니다.** 대신 갈린 축이
-  > **시점**으로 옮겨 갔다: 삭제는 모달 확인 시점에, 나머지 셋은 확인 버튼 시점에 영구가 되고
-  > "그만두기"로 나가면 셋은 여전히 사라진다. ①은 삭제만의 문제가 아니게 됐다 — 위치 PATCH 실패도
-  > 같은 방식으로 접히는데, **그쪽은 화면이 성공한 것처럼 넘어가기까지 한다**(OQ-P-275).
-  > 문구를 정할 때 두 갈래를 함께 봐야 한다.
-  > ✅ **①③이 닫혔다(2026-08-28, 브랜치 `feature/canvas-polling` — develop 미머지)** — **셋을 한
-  > 문구로 접었다.** 409를 갈라 "마감된 캔버스"라고 말하지 않는다. `CanvasBGEditError`에
-  > `TOPPING_DELETE_UNKNOWN`이 생기고 `AppError.Network`만 공용 `NETWORK`로 갈린다. 403도 이제
-  > 토스트로 보이므로 ③의 "잘못된 게이트가 조용히 덮인다"도 사라졌다. 같은 라운드에서 **삭제가
-  > 성공했을 때만 화면을 닫고**(그전에는 성공해도 안 닫혔다) 진행 중에는 `YGScaffoldV2` 로딩
-  > 오버레이가 덮는다 — OQ-P-275와 함께 한 라운드에서 정하라던 메모대로 갔다.
-  > ⚠️ **②는 그대로다** — 삭제는 모달 확인 시점, 나머지는 확인 버튼 시점이고 화면은 그 차이를
-  > 여전히 말하지 않는다. 오히려 **삭제만 성공 시 화면을 닫게 되면서 시점 차이가 더 눈에 띈다.**
-  > 409 처분 갈래는 OQ-P-261이 계속 쥔다(무반응 하나가 일반 오류 토스트로 옮겨 갔다).
-- **해소 메모**: ②는 [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md)
-  as-built 절의 비대칭 서술과 함께 정리한다. ①③의 as-built는 develop 머지 시점에 그 스펙과
-  specs README로 옮긴다 — 지금은 [폴링 스펙](../superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md)
-  「배경 편집 화면의 진행·실패 표현」에 있다.
+- **출처**: `CanvasToppingArrangeViewModel#handleOnDeleteToppingDialogConfirm`·`handleOnClickConfirm` —
+  삭제 확인 모달의 "삭제하기"가 곧 `DeleteToppingUseCase` 호출이다. 성공하면 오늘 캔버스를 다시 받은 뒤
+  `NavigateBack`으로 캔버스에 돌아간다. 이동·크기·회전·테두리는 `dirtyToppingIds`에 모였다가 확정 버튼에서만
+  나간다. 삭제 실패는 `failToDeleteTopping`이 `CanvasToppingArrangeError`의 `NETWORK` 또는
+  `TOPPING_DELETE_UNKNOWN` 토스트로 알리고 화면에 남는다 — 403·409·404를 한 문구로 접는다.
+- **항목**: ② 한 화면 안에서 저장 시점이 갈린다. 삭제는 모달 확인 시점에 영구이고 되돌릴 수 없으며,
+  나머지는 확정 버튼을 눌러야 저장된다. 화면은 그 차이를 말하지 않는다. 삭제가 성공하면 곧바로 화면을
+  떠나므로, 그때까지 다른 토핑에 해 둔 미저장 변경은 묻지 않고 버려진다 — 삭제 전에 저장할지, 물을지,
+  화면에 남을지 정한 적이 없다. 번호는 다른 문서가 가리키는 ②를 그대로 둔다.
+- **상태**: 미해결 (정한 적 없음)
+- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다.
+  지금 동작은 `CanvasToppingArrangeViewModelTest`의 `deleteConfirm_success_discardsOtherDirtyToppings`가 고정한다.
+  정하면 `deleteConfirm_success_*` 계열을 함께 고친다.
 
 ### [2026-08-23] 토핑 크기 상한이 근거 없이 사라졌다 — 이제 막는 자리가 앱에도 서버에도 없다
 
@@ -4900,7 +4801,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   줄지 — 셋 중 하나만 실패한 경우가 이 화면의 기본형이다(토핑들이 병렬로 나간다). ③ 같은 버튼
   안에서 **배경은 토스트 + 잔류, 토핑은 무반응 + 이동**으로 갈린 것을 그대로 둘지. ④ 소유 판정이
   새면(OQ-P-250) 남의 토핑에 PATCH가 나가고 서버 403이 오는데, 지금은 그 403이 무반응이라
-  **잘못된 게이트가 또 한 번 조용히 덮인다**(삭제와 같은 구조 — OQ-P-270 ③).
+  **잘못된 게이트가 또 한 번 조용히 덮인다**(삭제와 같은 구조).
 - **상태**: 미해결 (**네 항목 전부 브랜치에서 답이 나왔고 develop 머지 대기** — 남은 것은
   아래 ⚠️ 하나다)
   > ✅ **넷 다 답이 나왔다(2026-08-28, 브랜치 `feature/canvas-polling` — develop 미머지)** —
@@ -4909,7 +4810,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `TOPPING_SAVE_UNKNOWN` 토스트 하나가 나간다. 대신 **실패한 토핑은 `dirtyToppingIds`에 남아**
   > 다시 누른 확인이 그것만 재시도한다(폴링 스펙이 "성공·실패를 가리지 않고 비운다"고 적어 둔
   > 규칙이 이것으로 뒤집혔다). ③ **갈린 처분이 합쳐졌다** — 배경도 토핑도 토스트 + 화면 잔류다.
-  > ④ 403이 토스트로 보이므로 잘못된 게이트가 조용히 덮이지 않는다(OQ-P-270 ③과 같은 자리).
+  > ④ 403이 토스트로 보이므로 잘못된 게이트가 조용히 덮이지 않는다(삭제와 같은 자리).
   > 진행 중에는 `YGScaffoldV2` 로딩 오버레이가 덮는다.
   > ⚠️ **배경과 토핑이 함께 실패하면 배경 쪽 토스트만 나간다** — 둘을 겹쳐 띄우지 않기로 한
   > 결과다. ②를 "한 문구로 접는다"로 답한 것의 연장이고, 토핑 실패를 알릴 필요가 있다고 판단되면
@@ -4920,41 +4821,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   「실패 표현」으로 옮긴다 — 지금은 [폴링 스펙](../superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md)
   「배경 편집 화면의 진행·실패 표현」에 있다. ③이 맞물린 OQ-P-261 ②(마감 409 판정 공용화)는
   그대로 열려 있다.
-
-### [2026-08-23] 편집 결과 다섯 중 테두리만 혼자 서버로 안 나간다
-
-- **ID**: OQ-P-276
-- **출처**: `CanvasBGEditViewModel#updateToppingIfChanged`(PR #336) — 변경 판정이 넷
-  (`positionX`·`positionY`·`scale`·`rotationDegrees`)만 비교하고 `borderLayers`·`editedImagePath`는
-  대상이 아니다. 요청에도 없다. 테두리 PATCH(`.../images/{parfaitImageId}/border`)는
-  `ParfaitImageRemoteDataSource.updateToppingBorder`까지 와 있지만 **소비처가 0건**이고
-  ([api/parfait-image.md](../api/parfait-image.md)) Repository 갈래도 안 열렸다. 그래서 테두리만
-  다시 편집하고 확인을 누르면 **요청이 한 건도 나가지 않고 결과가 사라진다.** 다른 넷이 저장되기
-  시작한 지금, 사용자 기준으로는 **"확인했는데 이것만 사라지는" 하나**가 됐다.
-- **항목**: ① 무엇을 보낼지 — 앱은 테두리를 **겹 목록**(`ToppingBorderLayer`)으로 들고 서버는
-  단일 3필드(`borderType`·`borderColor`·`borderWidth`)다. 모양이 맞지 않는 자리를 어디서 접을지.
-  ② `editedImagePath`(테두리를 구워 넣은 새 이미지)를 새로 업로드해 배치를 갈아 끼워야 하는지 —
-  [ADR-0025](../adr/0025-topping-border-as-server-field.md)가 굽기를 멈추고 테두리를 서버 필드로
-  옮겼으므로 원칙적으로는 필드만 보내면 되는데, 그 결정 이후 이 화면이 실제로 무엇을 들고 오는지가
-  확인된 적이 없다. ③ 보내지 않기로 한다면 이 화면의 편집 버튼을 왜 여는지.
-- **상태**: 부분 해소 (**①③ 해소 — 2026-08-27, PR #369 develop 머지. ② 잔존**)
-  > ✅ **①이 닫혔다 — 접는 자리는 `CanvasBGEditViewModel.toToppingBorder`다.** 겹 목록의
-  > **마지막 겹**(가장 바깥)만 `ToppingBorder.Solid`로 보내고, 비면 `ToppingBorder.None`을 보낸다.
-  > 되읽는 방향(`toBorderLayers`)은 반대로 한 겹짜리 목록으로 편다.
-  > ✅ **③은 질문 자체가 소멸했다** — 편집 버튼이 여는 것이 실제로 서버까지 간다.
-  > `updateToppingIfChanged`가 하나였던 변경 판정을 **둘로 갈라** 위치·배율·각도(`update`)와
-  > 테두리(`updateBorder`)를 독립적으로 비교하고 독립적으로 보낸다. 서버 API가 두 엔드포인트로
-  > 갈라져 있는 것을 그대로 미러링한 결과다. 이로써 [api/parfait-image.md](../api/parfait-image.md)의
-  > `android_status`가 **`done`**이 됐다(4/4 소비).
-  > ⚠️ **②는 그대로다** — `editedImagePath`(테두리를 구워 넣은 새 이미지)와 `cutoutImagePath`는
-  > `handleOnToppingEditResult`가 상태에 적어 두기만 하고 어디로도 안 나간다.
-  > [ADR-0025](../adr/0025-topping-border-as-server-field.md)가 굽기를 멈춘 뒤 이 화면이 실제로
-  > 무엇을 들고 오는지는 여전히 확인된 적이 없다.
-  > ⚠️ **①의 답이 표시 쪽과 어긋난다** — 같은 화면이 그릴 때는 **첫 겹**을 쓴다(OQ-P-254를 닫은
-  > PR #388). 겹이 둘 이상이면 보이는 테두리와 저장되는 테두리가 갈린다 → OQ-P-324.
-- **해소 메모**: 남은 것은 ② 하나다. `editedImagePath`를 새로 업로드해 배치를 갈아 끼울지 정하면
-  [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md) as-built 재정정
-  절과 [api/parfait-image.md](../api/parfait-image.md) Android 매핑을 함께 고친다.
 
 ### [2026-08-23] 후보를 다시 고르면 초안에 적힌 편집 결과가 조용히 덮인다
 
@@ -5926,25 +5792,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   다음 주기 상세 조회로 회복하면 된다. 앱 쪽 방어는 `CanvasPoller` 가 캐시의 날짜를 보고
   **오늘 조회와 상세 조회를 가르는 것** 하나뿐이라, 경계 직후 첫 요청이 오늘 조회인 것은 그대로다.
 
-### [2026-08-28] 토핑 테두리를 그리는 겹과 서버로 보내는 겹이 서로 다르다
-
-- **ID**: OQ-P-324
-- **출처**: `CanvasBGEditScreen`(그리기)과 `CanvasBGEditViewModel.toToppingBorder`(저장), 둘 다
-  develop. 앱은 테두리를 **겹 목록**(`ToppingBorderLayer`)으로 들고 서버는 **한 겹**만 받는데,
-  접는 규칙이 두 자리에서 갈렸다 — 그리는 쪽은 `borderLayers.firstOrNull()`, 보내는 쪽은
-  `lastOrNull()`이다. `ToppingEditViewModel`의 `borderHistory`가 `UndoRedoStack<ToppingBorderLayer>`
-  라 겹은 실제로 둘 이상 쌓일 수 있다(테두리 편집 화면은 그 겹을 겹겹이 그린다).
-- **항목**: ① 어느 쪽이 정본인지 — 테두리 편집 화면의 렌더링(`ToppingBorderEditScreen`)과
-  `SegmentationConfirmViewModel`은 **마지막 겹을 바깥으로** 보는 쪽이라 저장 규칙이 그것과 맞고,
-  캔버스 편집 화면의 렌더링만 첫 겹이다. ② 겹을 여러 장 유지하는 것 자체가 필요한지 — 서버가
-  한 겹만 받으므로 되읽으면 언제나 한 겹이 되고, 여러 겹은 **한 세션 안에서만 존재한다.**
-  ③ 정하면 감지선이 필요하다 — 지금 붙은 테스트가 전부 한 겹짜리 목록만 쓴다.
-- **상태**: 미해결 (**증상은 세션 안에서만 보인다** — 테두리를 두 번 이상 겹쳐 두른 뒤 확인을
-  누르면, 화면에 보이던 겹과 다른 겹이 저장되고 재조회 뒤 그것이 드러난다)
-- **해소 메모**: ①을 "마지막 겹이 바깥"으로 통일하면 고칠 자리는 `CanvasBGEditScreen` 한 곳이다.
-  반영처는 [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md)
-  as-built 재정정 절과 [api/parfait-image.md](../api/parfait-image.md) Android 매핑이다.
-
 ### [2026-08-28] 토핑 배율 하한이 두 화면에서 갈렸고 편집 쪽 근거가 없다
 
 - **ID**: OQ-P-325
@@ -5960,96 +5807,22 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: ②가 참이면 `TOPPING_MIN_SCALE` 하나를 올리면 두 화면에 함께 걸린다. 반영처는
   [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md) 드리프트 4다.
 
-### [2026-08-28] 선작성 문서 셋이 이번 델타를 모른다
+### [2026-08-28] 지난 캔버스에서 본인 토핑 탭이 무반응이고, 세그멘테이션 전처리 스펙의 전제가 코드와 다르다
 
 - **ID**: OQ-P-326
-- **출처**: [캔버스 오늘 SSoT·폴링 스펙](../superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md)·
-  [PR3 계획](../superpowers/plans/archive/2026-08-27-canvas-polling.md)·
-  [세그멘테이션 입력 전처리 스펙](../superpowers/specs/2026-08-23-segmentation-preprocessing.md)은 develop 머지
-  **전에** 쓰였고, 하루 뒤 PR #369·#400이 그 문서들이 전제한 코드를 바꿨다. 앞 둘은 아직
-  `status: draft`, 셋째는 `in-progress`다.
-- **항목**: ① **테두리 PATCH가 계획에서 사라진다** — 계획의 `updateDirtyToppings`가
-  `updateToppingUseCase` 하나만 부른다. 그대로 구현하면 PR #369가 붙인 테두리 저장이 **되돌아간다.**
-  스펙·계획 두 곳의 "테두리 PATCH는 아직 소비처가 없지만"이라는 서술도 이제 거짓이다.
-  ② **초기 선택 시딩이 매 방출마다 되돌아간다** — `withCanvas`가 `selectedTab`·`selectedToppingId`를
-  `initialToppingId`로 채우는데, 계획이 이 자리를 구독으로 바꾸면서 "최초 방출에만 시딩한다"고
-  적은 목록에 이 두 필드가 없다. 사용자가 탭을 옮기거나 선택을 풀어도 다음 주기에 되돌아간다.
-  ③ **정책의 C-305가 별도 화면인지 다시 물어야 한다** — OQ-P-250 ③이 "기존 화면이 받는다"로
-  닫혔으므로, 위키 [[화면-ID-체계]]·[[C-202-토핑-편집자-확인-규칙-v0.1]]과 구현의 화면 경계가
-  갈린 채로 남는다. 지난 캔버스에서 본인 토핑 탭이 무반응인 것도 이 갈림의 결과다.
-  ④ **[세그멘테이션 입력 전처리 스펙](../superpowers/specs/2026-08-23-segmentation-preprocessing.md)의 전제도
-  깨졌다** — 그 스펙은 방향 보정과 하한 확대를 `decodeUriToBitmap` 안에 두면 된다고 적는데,
-  PR #369가 `decodeImage`를 스킴으로 갈라 원격 경로가 그 확장 함수를 타지 않게 됐다. 그대로
-  구현하면 **서버 토핑 재편집 경로만 정규화 밖에 남는다.** 그 스펙은 아직 `in-progress`다.
-  ⑤ **크기조절·회전 인텐트가 개명되고 시그니처가 바뀌었다**(2026-08-27, PR #397) —
-  `OnToppingResizeDrag(Offset)`·`OnToppingRotateDrag(Offset)`가 `OnToppingResize(scaleFactor)`·
-  `OnToppingRotate(deltaDegrees)`가 됐다. 픽셀 환산이 화면으로 올라간 결과이고, 스펙이
-  `dirtyToppingIds`에 id를 넣는 자리로 세어 둔 그 인텐트들이다. **스펙 본문은 이번 회차에
-  현행 이름으로 정정했다**(2026-08-28). 계획 쪽은 `OnToppingMoveDrag`만 쓰므로 영향이 없다.
-- **상태**: 부분 해소 (**①②⑤는 2026-08-28, ⑥은 2026-08-30 스택 리베이스에서 닫혔고 넷 다
-  2026-08-31 PR #404 로 develop 에 들어왔다** — 코드가 문서를 앞질러 풀었다 / ③④ 잔존)
-- **해소 메모**: ①②는 계획을 고치는 일이라 다음 캔버스 폴링 라운드의 첫 작업이고, ④는 전처리
-  라운드의 첫 작업이다. ③은 위키
-  정책과의 대조라 [[화면-ID-체계]] 쪽 판단이 선행한다 — 구현이 옳으면 정책 문서가 따라오고,
-  정책이 옳으면 화면을 가르는 라운드가 따로 필요하다.
-
-  > ✅ **①②⑤가 닫혔다(2026-08-28, 스택 PR 3단을 `627e1867` 위로 리베이스)** — 예상했던 "다음
-  > 라운드의 첫 작업"이 아니라 **리베이스 충돌을 푸는 자리에서** 닫혔다. 세 브랜치가 develop 과
-  > 같은 파일을 건드려 충돌이 났고, 그것을 푸는 유일한 방법이 두 의도를 합치는 것이었다.
-  > **①** `updateDirtyToppings` 가 테두리 PATCH 를 함께 낸다. 다만 계획이 적어 둔 "스냅샷 대조가
-  > 사라지므로 테두리가 바뀌었는가를 따로 볼 필요가 없다"는 **틀린 예측이었다** — 축별 판정을 빼면
-  > 위치만 옮긴 토핑에도 테두리 PATCH 가 따라 나가고, develop 의
-  > `onClickConfirm_toppingBorderEdited_savesOnlyTheBorder` 가 그 반대 방향을 잠그고 있어 실제로
-  > 깨졌다. 그래서 스냅샷은 **이름을 바꿔 남았다**(`confirmedToppings` → `serverToppings`)
-  > — 목록 전체가 아니라 **집합이 이미 고른 토핑 안에서만** 축을 가린다.
-  > **②** `withCanvas` 의 시딩 가드 안으로 `selectedTab`·`selectedToppingId` 가 들어갔다.
-  > **⑤** 인텐트 개명(`OnToppingResize`·`OnToppingRotate`)이 스펙 본문에 반영됐고, PR #397 이
-  > 전면 재작성한 배치 화면 테스트 다섯은 develop 쪽을 채택했다 — 옛
-  > `OnToppingResizeDrag` 기반 테스트는 `resizeOutwardDirection` 이 사라져 컴파일되지 않는다.
-  > **검증** — 세 스택 지점 각각에서 `:domain`·`:data`·`:core:ui`·`:feature:groups:canvas:impl`
-  > 유닛 테스트가 통과한다. **③④는 그대로다** — ③은 위키 판단이 선행이고, ④는 전처리 스펙이
-  > 아직 `in-progress` 다.
-  > ⚠️ **세 브랜치는 아직 develop 에 머지되지 않았다** — 리베이스로 갱신된 것은 로컬 브랜치이고,
-  > 원격에는 올라가 있지 않다.
-  > ⚠️ **⑥ 첫 조회 덮개가 계획의 코드블록에서 사라진다(2026-08-30, PR #407 develop 머지)** —
-  > [PR2 계획](../superpowers/plans/archive/2026-08-27-canvas-today-ssot.md)이 `loadTodayCanvas()` 를 **통째로 갈아 끼우는**
-  > 코드블록을 싣는데, 그 블록에는 이번에 붙은 `isInitialLoading` 이 없다. 적힌 그대로 구현하면
-  > **오늘 캔버스 첫 조회의 화면 덮개가 조용히 사라진다.** [PR3 계획](../superpowers/plans/archive/2026-08-27-canvas-polling.md)은
-  > 한 걸음 더 가서 그 함수를 지우자고 적는다(구독이 대신한다). release 계보는 이 충돌을 이미
-  > 한 번 풀었고 **답이 계획과 다르다** — 폴링을 받은 뒤의 release 쪽 `CanvasMainViewModel` 은
-  > 덮개를 `try`/`finally` 가 아니라 **구독 안에서 파생**시킨다. 계획을 고칠 때 베낄 자리가 이미
-  > 있다는 뜻이다.
-  > 📌 **PR2·PR3 브랜치가 원격에 올라왔다(2026-08-30)** — `origin/feature/canvas-today-ssot` ·
-  > `origin/feature/canvas-polling`(전자를 품은 스택). 다만 들어간 곳은 develop 이 아니라
-  > **release 계보**다 → OQ-P-311.
-
-  > ✅ **⑥이 닫혔다(2026-08-30, 스택 3단을 `27e85d0d` 위로 다시 리베이스)** — `feature/#392-canvas-topping`
-  > · `feature/canvas-today-ssot` · `feature/canvas-polling` 을 `--update-refs` 로 함께 옮기면서
-  > PR #407 의 덮개와 부딪히는 자리를 셋 다 풀었다. **답은 예상보다 한 겹 두껍다.**
-  > 예상대로 덮개는 구독 안에서 파생한다 — 구독이 열릴 때 `todayCanvas` 가 `null` 이면 켜고
-  > (이미 받아 둔 캔버스가 있으면 켜지 않는다 — 화면에 다시 붙을 때마다 번쩍이지 않도록),
-  > 구독이 캔버스를 실어 오면 내린다. **그러나 그것만으로는 갱신 실패에서 덮개가 풀리지 않는다**
-  > — 실패하면 캐시가 아무것도 방출하지 않아 화면이 로딩에 갇힌다. `try`/`finally` 가 늘 내려
-  > 주던 자리를 구독은 대신하지 못한다.
-  > 그래서 **폴러가 실패를 내보내는 축을 새로 냈다**: `CanvasPoller.refreshFailures` →
-  > `ParfaitRepository.todayCanvasRefreshFailures` → `ObserveTodayParfaitRefreshFailureUseCase`.
-  > 값은 싣지 않아 ADR-0023 의 "값을 얻는 길은 하나"는 그대로다. `stopAll()` 로 세대가 바뀐 뒤
-  > 도착한 실패는 내보내지 않는다.
-  > **PR3 계획이 "트리거를 잃었다"며 지우자고 적은 `ShowTodayCanvasError` 는 되살렸다** — 이펙트
-  > 선언·화면 처리·문자열 리소스 셋 다. 조건만 "보여 줄 캔버스가 없을 때"에서 "덮개가 걸려
-  > 있을 때"로 좁혔다. 폴링이 5초마다 도는 자리라 가드가 없으면 실패가 이어지는 동안 토스트가
-  > 쌓인다.
-  > **검증** — 세 브랜치 각각에서 clean 뒤 `./gradlew test ktlintCheck` 가 통과한다.
-  > 반영처는 [이 라운드의 스펙](../superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md) 머리말·「Repository」
-  > as-built·「실패 표현」 as-built·「삭제」 as-built · [ADR-0029](../adr/0029-canvas-today-ssot-polling.md)
-  > 「결정」·「영향」 · [PR2 계획](../superpowers/plans/archive/2026-08-27-canvas-today-ssot.md) ·
-  > [PR3 계획](../superpowers/plans/archive/2026-08-27-canvas-polling.md) 머리말이다.
-
-  > ✅ **①②⑤⑥이 develop 에서 사실이 됐다(2026-08-31, PR #404 `2c7bb31b`)** — 리베이스분이 원격에
-  > 올라가지 않았다던 상태가 끝났다. 스택 3단이 한 머지로 들어왔고 **머지 커밋의 트리가 브랜치 팁
-  > `6bd21fb7` 과 같아** 위 리베이스 서술을 재측정 없이 develop 사실로 읽어도 된다. 스펙은
-  > `implemented`, 계획 셋은 `done` 으로 아카이브됐고 ADR-0029 는 `accepted` 가 됐다.
-  > **③④는 그대로다** — ③은 위키 판단이 선행이고, ④는 전처리 스펙이 아직 `in-progress` 다.
+- **출처**: `CanvasMainViewModel#handleOnClickMyTopping` × 위키 [[C-202-토핑-편집자-확인-규칙-v0.1]],
+  [세그멘테이션 입력 전처리 스펙](../superpowers/specs/2026-08-23-segmentation-preprocessing.md)(`in-progress`).
+  번호는 다른 문서가 가리키는 ③④를 그대로 둔다.
+- **항목**: ③ 본인 토핑 탭은 `isViewingToday`가 거짓이면 아무 일도 하지 않는다. 수정 대상이 언제나
+  오늘 캔버스라는 `NavKeyCanvasToppingArrange`의 계약에서 나온 결과인데, 정책은 본인 토핑 탭에 편집
+  진입만 적고 그 조건을 적지 않는다. 지난 캔버스에서 본인 토핑을 탭했을 때 무엇을 보일지(무반응·
+  Spotlight·안내) 정해진 적이 없다.
+  ④ 전처리 스펙은 방향 보정과 하한 확대를 `decodeUriToBitmap` 안에 두면 된다고 적는데,
+  `decodeImage`가 스킴으로 갈려 원격 경로는 그 확장 함수를 타지 않는다. 스펙대로 구현하면 원격
+  경로만 정규화 밖에 남는다.
+- **상태**: 미해결
+- **해소 메모**: ③은 위키 정책과의 대조라 [[화면-ID-체계]] 쪽 판단이 선행한다. ④는 전처리 라운드의
+  첫 작업으로 스펙을 고친다.
 
 ### [2026-08-28] 원격 이미지 다운로드가 응답 본문을 통째로 힙에 올린다
 
@@ -6259,47 +6032,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 정하면 [api/parfait-group.md](../api/parfait-group.md) 목록 응답 절과
   [api/conventions.md](../api/conventions.md) "Android 불일치" 행에 반영한다. ①은 정책 소관이라 위키
   [[open-questions]]와 갈리는 자리다 — 여기는 앱이 무엇을 그리는지만 추적한다.
-
-### [2026-09-01] 테두리 미리보기 여백이 굵기 상한과 따로 굳었고, 세 화면의 테두리 렌더 규칙이 갈렸다
-
-- **ID**: OQ-P-337
-- **출처**: `ToppingBorderEditScreen`의 `MAX_BORDER_PADDING_DP`(PR #425 develop 머지) ×
-  `ToppingEditViewModel`의 `MAX_BORDER_WIDTH_DP` — 미리보기가 알맹이 사방에 여백을 두고 그 판 위에
-  테두리를 그려 가장자리에서 깎이던 것을 고쳤다. 여백 값과 굵기 상한은 **같은 값인데 서로를 모르는
-  별개 상수**이고 파일도 갈라져 있다.
-- **항목**: ① 굵기 상한이 올라가면 미리보기가 **말없이 다시 깎인다** — 두 상수를 잇거나 여백을
-  굵기에서 파생시킬지. ② 여백을 둔 화면은 편집 미리보기 하나뿐이다 — 누끼 확인 화면과 캔버스는
-  `YGToppingCutoutImage`(여덟 방향 스탬프, [ADR-0025](../adr/0025-topping-border-as-server-field.md))로
-  그리므로 **한 흐름 안에서 테두리를 그리는 규칙이 둘**이고, 같은 굵기가 화면마다 다르게 잘릴 수
-  있다. ③ 실기기에서 두 화면을 나란히 본 사람이 없다 — 어긋남의 크기를 잰 적이 없다.
-- **상태**: 부분 해소 (① **해소**(PR #464 develop 머지,
-  [ADR-0030](../adr/0030-topping-outline-distance-field.md)) — `ToppingBorderEditScreen`의
-  `MAX_BORDER_PADDING_DP`가 `MAX_BORDER_WIDTH_DP`에서 파생되는 한 줄로 바뀌어 두 상수가 서로를 안다.
-  ② **코드는 하나가 됐다** — `YGToppingCutoutImage`가 여덟 방향 스탬프 대신 편집 화면과 같은 거리장을
-  그린다. 다만 **③이 아직 닫히지 않아 이번 라운드도 실기기 대조가 없다** — 코드가 통일된 사실과
-  네 화면이 실제로 같아 보이는지는 별개다)
-- **해소 메모**: ③은 실기기 육안 확인이 선행이다([topping-border-distance-field
-  스펙](../superpowers/specs/archive/2026-09-07-topping-border-distance-field.md) 「육안 확인」 1번). 그것이 끝나면
-  이 항목 전체가 닫히고 [design-system](../architecture/design-system.md) `YGToppingCutoutImage`
-  항목과 [c103-segmentation-topping-edit
-  스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md) 테두리 절에 함께 적는다.
-
-### [2026-09-01] 되살린 알맹이 편집은 원본 자리에도 알맹이를 넣어, 재편집 좌표계 전제가 진입마다 다르다
-
-- **ID**: OQ-P-338
-- **출처**: `SegmentationConfirmRoute#onClickEditPhoto`·`SegmentationConfirmState.editImagePath`
-  (PR #425 develop 머지) — 최근 목록에서 되살린 알맹이는 원본도 재편집 마스크도 없어,
-  `NavKeyToppingEdit`의 `sourceImageUri`·`segmentationImageUri`에 **같은 알맹이 경로**가 들어간다.
-  `borderOnly = true`라 영역 탭이 안 열리므로 지금은 스트로크가 0건이고 `buildCutoutBitmap` 결과가
-  알맹이 그대로다.
-- **항목**: ① 그 편집이 돌려주는 `cutoutImagePath`는 **트리밍된 알맹이 기준**이라, "재편집 좌표계를
-  지키려 원본 크기를 유지한다"는 `completeEdit`의 전제가 이 진입에서만 다른 뜻이 된다(두 번 되살리면
-  기준이 또 한 번 좁아진다). ② `borderOnly` 가드가 느슨해지는 순간 사용자가 **알맹이를 원본으로 알고**
-  지운 영역을 되살리려 하게 된다 — 가드가 유일한 방어인데 그 사실이 코드 한 곳에만 있다.
-- **상태**: 미해결 (**동작 영향 0** — 가드가 서 있는 동안은 결과가 알맹이 그대로다)
-- **해소 메모**: 정하면 [navigation-flow](../architecture/navigation-flow.md)의 재사용 진입 항목과
-  [c106-topping-place-api 스펙](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md)
-  「누끼 알맹이 재사용 (PR6)」 절에 적는다.
 
 ### [2026-09-01] 환영 배너가 정책 소스 없이 코드로 확정됐고, 1회 노출이 ViewModel 수명에 걸려 있다
 
@@ -7317,25 +7049,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   확인하면 닫는다. 닫을 때 [토핑 알파 판정 스펙](../superpowers/specs/archive/2026-08-26-topping-alpha-hit-test.md)의
   판정 규칙 절에 반영한다.
 
-### [2026-09-07] 편집 화면과 나머지 셋의 거리판 해상도가 다르다
-
-- **ID**: OQ-P-379
-- **출처**: `ToppingBorderEditScreen.kt`의 `PREVIEW_FIELD_LONG_SIDE = 1440` ×
-  `ToppingOutlineCache.kt`의 `OUTLINE_LONG_SIDE = 256`(PR #464 develop 머지, [ADR-0030](../adr/0030-topping-outline-distance-field.md)) — 편집 화면은 거리판을
-  화면에 나올 크기 그대로(사실상 화면 크기, 상한 1440) 재고, 누끼 확인·배치·캔버스 셋은 캐시가 만든
-  긴 변 256 거리판을 공유한다. 띠의 바깥 곡선은 등거리 곡선이라 굵을 때는 격자 차이가 안 보인다.
-- **항목**: ① **굵기가 얇을수록 256 격자가 실루엣 잔주름을 뭉갠다** — 굵기 최소(2dp)에 토핑이 화면을
-  거의 채우는 자리(누끼 확인 화면 등)에서 편집 화면과 나머지 셋의 모양이 갈릴 수 있다. ②
-  [topping-border-distance-field 스펙](../superpowers/specs/archive/2026-09-07-topping-border-distance-field.md) 목표인
-  "네 화면 모양 일치"와 정면으로 부딪히는 자리인데 이번 라운드는 256으로 간 채 실기기 확인에
-  넘긴다. ③ 갈리면 `OUTLINE_LONG_SIDE`를 512로 올리는 대응이 이미 스펙에 있지만(항목당 메모리가
-  네 배가 되므로 캐시 칸 수를 함께 줄인다), 그 판단 자체가 아직 실기기 확인 전이다.
-- **상태**: 미해결 (**한 번 관측했으나 조건이 불완전** — 2026-09-07 실기기 확인에서 네 화면 모양이
-  같았고 그래서 `OUTLINE_LONG_SIDE` 를 256으로 유지했다. 다만 **굵기 최소 2dp 조건까지 대조했는지
-  기록이 없다** — 차이가 드러나는 조건이 바로 그 자리다)
-- **해소 메모**: 굵기 2dp에 토핑이 화면을 거의 채우는 자리에서 편집 화면과 나머지 셋을 한 번 더
-  대조하면 닫는다. 갈리면 스펙의 "열린 질문" 절에 512로 올린 근거를 적고 캐시 칸 수를 함께 줄인다.
-
 ### [2026-09-07] 확인 화면과 배치 화면이 같은 그림을 다른 열쇠로 잡는다
 
 - **ID**: OQ-P-380
@@ -7512,8 +7225,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `specs/archive/2026-09-08-upload-image-downscale.md` 「결정 표」. 두 스펙이 같은 날 나란히 머지됐다.
 - **항목**: 빈 알맹이 차단은 **편집 화면의 원본 해상도 비트맵**에서 알파 합을 재는데, 그 알맹이가
   서버로 나갈 때는 긴 변 상한까지 줄어든다. 하한을 통과한 알맹이가 축소 뒤에는 같은 하한에 못
-  미치는 구간이 생긴다. 특히 `borderOnly` 진입은 판정에서 빠져 있어, 서버에서 받아 여는 토핑의
-  커버리지가 이미 줄어든 판이다.
+  미치는 구간이 생긴다.
 - **상태**: 미해결 (지금까지 드러난 오작동은 없음)
 - **해소 메모**: 하한을 어느 좌표계에서 재는지가 정해진 적이 없다. 기획이 하한을 확정할 때
   **업로드본 기준인지 편집본 기준인지**를 함께 정하고, iOS 와 값·기준면을 맞춘다(OQ-P-386 과 한 묶음).
@@ -7829,7 +7541,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-412
 - **출처**: `util/ToppingPanelFocus.kt#panelFocusCenter`·`component/ToppingBorderPanel.kt`·
-  `component/ToppingArrangeLayout.kt` × [c105-arrange-border-merge 스펙](../superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md)
+  `component/ToppingArrangeLayout.kt` × [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md)
   「주의 / 열린 질문」.
 - **항목**: ① 패널이 열리면 토핑을 캔버스 세로 중앙에서 `PANEL_FOCUS_LIFT`만큼 올려 그리는데, 그 값은
   피그마 한 프레임 크기에서 나온 고정값이다. 캔버스 영역은 폭에 비례해 커지고 패널 높이는 고정이라
@@ -7848,4 +7560,135 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   높이에서 계산하도록 `panelFocusCenter`를 고치고 `ToppingPanelFocusTest`를 함께 고친다. ②는 기획이
   줄이는 규칙을 정하면 스펙에 반영한다.
 
-<!-- oq-next: 413 -->
+### [2026-10-02] 배치 수정 화면의 확정 버튼 문구가 "캔버스에 쌓기"다
+
+- **ID**: OQ-P-413
+- **출처**: `component/ToppingArrangeLayout.kt`(`canvas_topping_arrange_confirm`) — 새 토핑을 쌓는
+  `CanvasToppingPlaceScreen`과 이미 쌓은 토핑을 고치는 `CanvasToppingArrangeScreen`이 같은 버튼을 쓴다.
+  스펙이 두 플로우 모두 같은 문구로 정했다.
+- **항목**: 이미 쌓은 사진을 고치는 화면에서 "쌓기"가 맞는 말인지 — 문구는 기획 소관이다.
+- **상태**: 미해결 (기획 확인 전)
+- **해소 메모**: 문구가 갈리면 `ToppingArrangeLayout`이 버튼 문구를 인자로 받게 한다.
+
+### [2026-10-02] 배치 수정 화면의 그만두기 팝업이 변경이 없어도 뜨고, 제목·본문이 스펙과 다르다
+
+- **ID**: OQ-P-414
+- **출처**: `CanvasToppingArrangeViewModel`의 `OnClickClose`·`handleOnSystemBack`,
+  `CanvasToppingArrangeRoute`의 `YGModalQuitEdit` × 피그마 수정 플로우 정책 메모 ·
+  [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
+- **항목**: ① 정책 메모는 닫기가 변경사항이 있을 때만 확인을 띄운다고 적는데 구현은 `dirtyToppingIds`를
+  보지 않고 항상 띄운다. 스펙이 알고 고른 차이이고 기획 확인은 받지 않았다. ② 스펙은 팝업 제목을
+  "편집을 그만둘까요?"로 적었는데 구현은 디자인시스템 `YGModalQuitEdit`의 「사진 편집을 그만둘까요?」를
+  쓴다. 본문도 스펙이 가리킨 "기존 편집 내용은 모두 사라지며 캔버스 화면으로 돌아가요"가 아니라
+  디자인시스템 공통 문구(`yg_modal_quit_body`) 「지금까지 진행한 내용은 저장되지 않아요. 정말
+  그만두시겠어요?」다. `YGModalQuit.kt`의 세 변형 가운데 편집용을 고른 것이고 사용자 확인 전이다.
+- **상태**: 미해결 (①은 기획, ②는 사용자 확인 전)
+- **해소 메모**: ①을 정책대로 하면 `dirtyToppingIds`가 비었을 때 팝업 없이 `NavigateBack`을 내고
+  `CanvasToppingArrangeViewModelTest`를 함께 고친다. ②에서 다른 문구가 필요하면 `YGModalQuit.kt`에
+  변형을 더한다.
+
+### [2026-10-02] 배치·배치 수정·배경 편집 화면의 분석 화면 id가 위키 v7·피그마와 맞지 않는다
+
+- **ID**: OQ-P-415
+- **출처**: `NavKeyAnalyticsScreen.kt`의 `toAnalyticsScreenOrNull` — `NavKeyCanvasToppingPlace`는 `C-106`,
+  `NavKeyCanvasToppingArrange`는 `C-305`, `NavKeyCanvasBGEdit`는 `C-301`을 보낸다. 위키 [[screen-id-scheme]]의
+  v7 기준으로 `C-105`는 수동 편집(테두리), `C-106`은 캔버스에 배치, `C-305`는 토핑 편집이고 `C-301`은
+  삭제된 id다. 피그마는 추가·수정 두 화면의 프레임을 모두 `C-105-Arrange`라 부르는데 위키에는 그 id가 없다.
+- **항목**: ① 테두리를 배치 화면에서 정하게 되면서 위키의 `C-105`(테두리)와 `C-106`(배치)이 한 화면이
+  됐다 — 어느 id로 보낼지. ② 수정 화면을 위키의 `C-305`로 둘지 피그마 이름을 따를지. ③ 수집 중인 값의
+  연속성을 지킬지.
+- **상태**: 미해결 (스펙이 지금 값을 유지하기로 했다. 기획·분석 쪽 확인 전)
+- **해소 메모**: 바꾸면 `NavKeyAnalyticsScreenTest`와
+  [release-analytics-screen-tracking 스펙](../superpowers/specs/archive/2026-09-09-release-analytics-screen-tracking.md)
+  매핑표를 함께 고친다. `C-301`과 편집 허브의 갈림은 OQ-P-175.
+
+### [2026-10-02] 프로덕션 호출부가 없는 토핑 코드가 남아 있다
+
+- **ID**: OQ-P-416
+- **출처**: `core/util/jvm`의 `ToppingOutline.buildBorderPixels`·`ToppingBorderBand`, `core/util/android`의
+  `toBorderArgbBitmap`, `feature/groups/canvas/impl`의 `util/ToppingGeometry.kt`·`model/ToppingCorners.kt`.
+- **항목**: ① 여러 겹 띠를 한 장으로 굽는 `buildBorderPixels`·`toBorderArgbBitmap`·`ToppingBorderBand`는
+  부르는 프로덕션 코드가 없고 `ToppingOutlineTest`만 쓴다. 화면은 한 겹짜리 `toBorderAlphaBitmap` 쪽만
+  쓴다. 지울지 정하지 않았다. ② `computeToppingStrokeCorners`는 부르는 곳이 프로덕션에도 테스트에도
+  없다. `ToppingCorners`의 `topRight`·`bottomLeft`·`bottomRight`는 `rotatedRectangleCorners`가 채우기만
+  하고 읽는 곳이 없다 — 읽히는 것은 `ToppingFocusDecoration`이 삭제 버튼을 놓는 `topLeft` 하나다.
+- **상태**: 미해결 (동작 영향 없음)
+- **해소 메모**: 지우면 `ToppingOutlineTest`의 해당 케이스와 [module-structure](../architecture/module-structure.md)의
+  `core:util:jvm`·`core:util:android` 줄을 함께 고친다. `YGFloatingBarEditTab`은 OQ-P-081이 쥔다.
+
+### [2026-10-02] 캔버스 튜토리얼이 편집 버튼으로 토핑도 꾸밀 수 있다고 안내한다
+
+- **ID**: OQ-P-417
+- **출처**: `canvas_tutorial_canvas_edit_description`("캔버스 편집 버튼을 눌러 배경과 토핑을 자유롭게 꾸밀 수
+  있어요") × `CanvasMainViewModel#handleOnClickCanvasEdit` — 그 버튼이 여는 `NavKeyCanvasBGEdit`는
+  배경만 다룬다. 토핑은 캔버스에서 본인 토핑을 탭해야 고칠 수 있고 튜토리얼에 그 안내가 없다.
+- **항목**: 튜토리얼 문구와 목업 이미지를 고칠지 — 문구는 기획 소관이다.
+- **상태**: 미해결 (기획 확인 전)
+- **해소 메모**: 목업 PNG가 실제 화면을 따라가지 않는 문제는 OQ-P-363과 같은 자리다.
+
+### [2026-10-02] 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
+
+- **ID**: OQ-P-419
+- **출처**: [c105-arrange-edit-flow 계획](../superpowers/plans/archive/2026-10-02-c105-arrange-edit-flow.md)
+  Task 7 Step 2 — 본인 토핑 둘 이상과 남의 토핑이 있는 캔버스가 필요해 돌리지 않았다.
+- **항목**: ① 피그마 `5465:20693`(패널 닫힘)·`5465:20560`(패널 열림)과 화면을 대조하지 않았다.
+  ② TalkBack을 켠 채 패널이 열린 상태에서 다른 본인 토핑·삭제 버튼을 활성화했을 때 패널만 닫히는지는
+  `CanvasToppingArrangeViewModelTest`로만 고정했고 기기에서 본 적이 없다. ③ 화면 높이가 다른 기기에서
+  포커스된 토핑이 패널에 가리는지는 OQ-P-412와 같은 계산이라 함께 본다.
+- **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
+- **해소 메모**: 계획의 Step 2 표를 그대로 돌린다. 어긋난 것이 나오면 개별 OQ로 가른다.
+
+### [2026-10-02] 배치 수정 화면 — 일부만 저장된 뒤 되돌린 값은 서버에 가지 않는다
+
+- **ID**: OQ-P-420
+- **출처**: `CanvasToppingArrangeViewModel`의 `hasBorderChange`·`hasTransformChange`·`serverToppings`·
+  `handleOnClickConfirm`.
+- **항목**: 바뀐 축을 가리는 기준인 `serverToppings`는 오늘 캔버스 방출(`observeCanvas`)에서만 갱신되고,
+  PATCH가 성공해도 그 자리에서는 갱신되지 않는다. 확정이 일부만 성공하면(예: 토핑 1의 테두리 PATCH는
+  성공, 토핑 2는 실패) 화면에 남고 재조회도 하지 않는다. 그 상태에서 다음 방출이 오기 전에 토핑 1을 원래
+  값으로 되돌리고 다시 확정하면, 화면 값이 낡은 `serverToppings`와 같아 PATCH가 나가지 않고 서버에는
+  사용자가 되돌린 값이 남는다. 변형 축도 같은 대조를 쓴다.
+- **상태**: 미해결 (정한 적 없음 — 관찰된 사용자 증상은 없다)
+- **해소 메모**: 성공한 PATCH의 결과를 `serverToppings`에 반영하거나 부분 실패 뒤에도 재조회하는 길이
+  있다. 고치면 `CanvasToppingArrangeViewModelTest`에 감지선을 붙인다. 일괄 PATCH의 부분 성공 부재는 OQ-P-334.
+
+### [2026-10-02] 배치 수정 화면 — 확정 실패 토스트가 네트워크 오류를 가리지 않는다
+
+- **ID**: OQ-P-421
+- **출처**: `CanvasToppingArrangeViewModel`의 `handleOnClickConfirm`·`saveTransforms`·`saveBorder`·
+  `failToSaveUnexpectedly`, `CanvasToppingArrangeError`.
+- **항목**: `saveTransforms`·`saveBorder`는 유스케이스가 돌려준 `Result.failure`의 원인을 로그에만 남기고
+  실패한 id만 돌려주므로, `handleOnClickConfirm`은 원인이 `AppError.Network`여도 항상
+  `TOPPING_SAVE_UNKNOWN`을 낸다. `NETWORK` 문구는 유스케이스가 예외를 **던져** `failToSaveUnexpectedly`로
+  갔을 때만 나온다. 삭제(`failToDeleteTopping`)는 `Result.failure`의 원인도 가린다 — 두 경로가 갈린 것이
+  의도인지 정한 적이 없다.
+- **상태**: 미해결 (정한 적 없음)
+- **해소 메모**: 가리게 하면 `CanvasToppingArrangeViewModelTest`의 `confirm_failure_keepsPanelOpen`이
+  기대하는 오류 값을 함께 고친다. 409를 일반 오류로 접는 것은 OQ-P-261.
+
+### [2026-10-02] 배치 수정 화면 — 패널이 닫히는 동안 다른 본인 토핑을 탭하면 그 토핑이 패널 자리 쪽으로 튄다
+
+- **ID**: OQ-P-422
+- **출처**: `CanvasToppingArrangeScreen`의 `focusFraction`·`focusedDrawnCenter`·`myEntriesInDrawOrder`.
+- **항목**: 그리는 자리와 그리는 순서는 "지금 포커스된 토핑"과 `focusFraction`만 본다. 패널이 닫힌 직후
+  `focusFraction`이 0으로 돌아가는 동안(약 0.3초) 탭 입력은 이미 켜져 있어, 다른 본인 토핑을 탭하면 포커스가
+  옮겨 가고 남은 `focusFraction`이 새 토핑에 적용된다 — 새 토핑이 제자리에서 `panelFocusCenter` 쪽으로
+  순간 이동해 맨 위에 그려진 뒤 되돌아오고, 돌아오던 원래 토핑은 저장된 자리로 곧바로 놓인다. 터치 판정은
+  내내 저장된 자리다.
+- **상태**: 미해결 (정한 적 없음 — 실기기에서 본 적 없다)
+- **해소 메모**: 애니메이션 대상을 포커스가 아니라 "패널을 열었던 토핑"으로 고정하는 길이 있다. 고치면
+  `CanvasToppingArrangeScreenTest`에 감지선을 붙인다.
+
+### [2026-10-02] 배치 수정 화면만 쓰는 문자열 키가 `canvas_bg_edit_topping_*`다
+
+- **ID**: OQ-P-423
+- **출처**: `feature/groups/canvas/impl`의 `strings.xml` — `canvas_bg_edit_topping_delete`,
+  `canvas_bg_edit_topping_delete_dialog_title`·`_body`·`_confirm`·`_cancel`,
+  `canvas_bg_edit_topping_save_error_unknown`, `canvas_bg_edit_topping_delete_error_unknown`.
+- **항목**: 읽는 곳은 `CanvasToppingArrangeScreen`의 삭제 모달, `ToppingFocusDecoration`의 삭제 버튼,
+  `CanvasToppingArrangeError`뿐이고 배경 편집 화면(`CanvasBGEdit`)은 쓰지 않는다. 키 이름이 쓰는 화면과 맞지 않는다.
+- **상태**: 미해결 (동작 영향 없음)
+- **해소 메모**: 이름을 바꾸면 `canvas_topping_arrange_*`로 맞춘다. `NETWORK` 문구
+  `canvas_bg_edit_save_error_network`는 두 화면이 함께 쓴다.
+
+<!-- oq-next: 424 -->

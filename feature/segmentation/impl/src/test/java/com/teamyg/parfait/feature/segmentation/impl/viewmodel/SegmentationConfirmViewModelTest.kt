@@ -219,7 +219,6 @@ class SegmentationConfirmViewModelTest {
                 ToppingEditResult(
                     subjectImagePath = "/cache/edited-trimmed.png",
                     cutoutImagePath = "/cache/edited-canvas.png",
-                    borderLayers = emptyList(),
                     sourceLongSide = 3024,
                 ),
             ),
@@ -369,7 +368,7 @@ class SegmentationConfirmViewModelTest {
         }
 
     @Test
-    fun normalEntry_opensAreaAndBorderEdit_fromTheReeditMask() = runTest(mainDispatcherRule.dispatcher) {
+    fun normalEntry_canEditPhoto_fromTheReeditMask() = runTest(mainDispatcherRule.dispatcher) {
         // Given 세그멘테이션을 거쳐 온 진입 — 원본도 재편집 마스크도 있다
         givenDraft(draft())
 
@@ -379,12 +378,12 @@ class SegmentationConfirmViewModelTest {
 
         // Then 지운 영역을 되살릴 수 있으므로 영역까지 여는 편집으로 간다
         val state = viewModel.state.value
-        assertFalse(state.isBorderOnlyEdit)
+        assertTrue(state.canEditPhoto)
         assertEquals(CUTOUT_PATH, state.editImagePath)
     }
 
     @Test
-    fun reuseEntry_opensBorderOnlyEdit_fromTheSubject() = runTest(mainDispatcherRule.dispatcher) {
+    fun reuseEntry_cannotEditPhoto_fromTheSubject() = runTest(mainDispatcherRule.dispatcher) {
         // Given 최근 목록에서 고른 진입 — 원본도 재편집 마스크도 없다
         givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
 
@@ -392,24 +391,24 @@ class SegmentationConfirmViewModelTest {
         val viewModel = reuseViewModel()
         advanceUntilIdle()
 
-        // Then 잠그지 않고 테두리만 고치는 편집으로 연다. 되살릴 원본이 없어 알맹이가 곧 재료다
+        // Then 되살릴 원본이 없어 사진 편집은 숨기고, 알맹이가 곧 재료다
         val state = viewModel.state.value
-        assertTrue(state.isBorderOnlyEdit)
+        assertFalse(state.canEditPhoto)
         assertEquals(REUSED_PATH, state.editImagePath)
     }
 
     @Test
-    fun reuseEntry_afterBorderEdit_reopensFromTheEditedMask() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 재사용 진입에서 테두리를 한 번 고쳐 초안에 마스크가 적혔다
+    fun reuseEntry_withEditedMask_reopensFromTheEditedMask() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 재사용 진입에서 편집을 한 번 거쳐 초안에 재편집 마스크가 적혔다
         givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = EDITED_CUTOUT_PATH))
 
         // When 화면이 열린다
         val viewModel = reuseViewModel()
         advanceUntilIdle()
 
-        // Then 두 번째 편집은 그 마스크에서 이어간다. 원본은 여전히 없으므로 테두리 전용은 그대로다
+        // Then 두 번째 편집은 그 마스크에서 이어간다. 원본은 여전히 없으므로 사진 편집은 숨긴 채다
         val state = viewModel.state.value
-        assertTrue(state.isBorderOnlyEdit)
+        assertFalse(state.canEditPhoto)
         assertEquals(EDITED_CUTOUT_PATH, state.editImagePath)
     }
 }

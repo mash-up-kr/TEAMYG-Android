@@ -71,8 +71,6 @@ internal fun SegmentationConfirmRoute(
         }
     }
 
-    val sourceImageUri = uiState.sourceImageUri
-
     // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
     // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
     Box(modifier = Modifier.fillMaxSize()) {
@@ -84,16 +82,16 @@ internal fun SegmentationConfirmRoute(
                 onClickBack = { navigator.onBack() },
                 onClickClose = { showQuitDialog = true },
                 onClickEditPhoto = {
+                    // 버튼이 숨겨지는 갈래라 닿지 않지만, 원본이 없으면 되살릴 픽셀이 없어 열지 않는다
+                    val sourceImageUri = uiState.sourceImageUri ?: return@SegmentationConfirmScreen
+
                     // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
                     val editImageUri = File(uiState.editImagePath).toUri().toString()
 
                     navigator.goTo(
                         NavKeyToppingEdit(
-                            // 되살릴 원본이 없는 진입은 원본 자리에도 알맹이를 넣는다 — 원본과
-                            // 누끼가 같은 그림이면 편집 결과가 알맹이 그대로다
-                            sourceImageUri = sourceImageUri ?: editImageUri,
+                            sourceImageUri = sourceImageUri,
                             segmentationImageUri = editImageUri,
-                            borderOnly = uiState.isBorderOnlyEdit,
                         ),
                     )
                 },

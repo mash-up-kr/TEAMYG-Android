@@ -48,7 +48,11 @@ tags: [adr, parfait, topping, border, state]
 - "테두리 없음"은 `border == null`이다. 색 없이 굵기만 실린 상태를 타입으로 만들 수 없게 해,
   굵기만 든 `Solid`가 서버로 가는 경로를 없앤다. 색을 고르기 전 슬라이더 값은
   `pendingBorderWidthDp`가 따로 든다.
-- 한 겹만 든다. 배치 화면에는 겹 목록(`ToppingBorderLayer`)이 없다.
+- 한 겹만 든다. 겹 목록을 나르는 타입은 앱에 없다.
+- 이미 놓인 본인 토핑의 테두리도 같은 자리에서 정한다. 배치 수정 화면(`CanvasToppingArrangeViewModel`)이
+  같은 `ToppingBorderPanel`을 쓰고, 값은 토핑마다 `EditableTopping.border`(`ToppingBorderStyle?`) 하나이며
+  확정 때 `UpdateToppingBorderUseCase`로 간다.
+- 편집 화면은 영역만 고친다. `NavKeyToppingEdit`와 `ToppingEditResult`에는 테두리 필드가 없다.
 
 ## 대안
 
@@ -71,7 +75,7 @@ tags: [adr, parfait, topping, border, state]
 - 초안이 캔버스 식별값과 이미지 경로만 든다. `domain`·`data`의 초안 기록 경로
   (`RecordToppingDraftUseCase`, `EnsureDraftSubjectRecordedUseCase`, `ToppingDraftRepository.record`)가
   테두리를 모른다.
-- 새 토핑 흐름에서는 그리는 겹과 저장하는 겹이 갈릴 수 없다.
+- 추가·수정 두 흐름 모두 테두리가 단일 값이라 그리는 값과 저장하는 값이 갈릴 수 없다.
 - 확인 화면은 테두리를 그리지 않는다. 한 흐름에서 같은 테두리를 두 화면이 다르게 그릴 자리가
   없다.
 
@@ -87,5 +91,5 @@ tags: [adr, parfait, topping, border, state]
   필드는 그대로 읽힌다 — `ToppingDraftLocalDataSourceImplTest`가 고정한다.
 - 색 없이 확정하면 `ToppingBorder.None`이 가고, 패널이 열린 채 확정해도 저장 위치는 화면에 보이는
   자리가 아니라 원래 자리다 — `CanvasToppingPlaceViewModelTest`가 고정한다.
-- 이미 놓인 본인 토핑의 테두리 재편집은 이 결정의 범위 밖이다. 그 경로는 C-301이 편집 화면을
-  `borderOnly`로 여는 왕복(`TOPPING_EDIT_RESULT_KEY`)으로 남아 있고 초안을 거치지 않는다.
+- 배치 수정 화면의 테두리는 초안을 거치지 않는다. 그만두기로 나가거나 프로세스가 죽으면 저장 전
+  변경은 위치·배율·각도와 함께 사라진다.

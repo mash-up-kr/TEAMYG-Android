@@ -7,5 +7,5 @@ import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 internal suspend fun RecordToppingDraftUseCase.recordEditResult(result: ToppingEditResult): Boolean = this(
     subjectImagePath = result.subjectImagePath,
     cutoutImagePath = result.cutoutImagePath,
-    sourceLongSide = result.sourceLongSide?.let(::SourceLongSide),
+    sourceLongSide = SourceLongSide(result.sourceLongSide),
 )

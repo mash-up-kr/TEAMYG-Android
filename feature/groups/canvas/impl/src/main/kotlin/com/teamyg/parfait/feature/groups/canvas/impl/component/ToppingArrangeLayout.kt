@@ -14,9 +14,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -31,6 +38,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
  * 캔버스 내용을 자르는 것은 [canvas] 안에서 호출부가 한다.
  *
  * @param panel 캔버스 영역 위에 겹친다. 자리는 호출부가 `align` 으로 정한다.
+ * @param toast 캔버스 윗변에 맞춰 화면 폭 전체로 겹친다. 스캐폴드의 토스트 자리(상태바 바로 아래)는
+ *   헤더를 덮어서, 헤더 아래에 띄워야 하는 화면이 토스트 호스트를 여기에 둔다
  */
 @Composable
 internal fun ToppingArrangeLayout(
@@ -38,9 +47,17 @@ internal fun ToppingArrangeLayout(
     onClickConfirm: () -> Unit,
     panel: @Composable BoxScope.() -> Unit,
     modifier: Modifier = Modifier,
+    toast: @Composable () -> Unit = {},
     canvas: @Composable BoxScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    val density = LocalDensity.current
+    var layoutWidthPx by remember { mutableIntStateOf(0) }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { size -> layoutWidthPx = size.width },
+    ) {
         header()
 
         Box(
@@ -55,6 +72,16 @@ internal fun ToppingArrangeLayout(
             Box(modifier = Modifier.aspectRatio(CANVAS_AREA_ASPECT_RATIO)) {
                 canvas()
                 panel()
+
+                // 캔버스는 좌우 여백 안쪽에 있고 토스트는 화면 폭이다. 부모보다 넓은 requiredWidth 는
+                // 가운데로 놓이고, 캔버스가 화면 가운데라 양쪽으로 같은 만큼 나간다
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .requiredWidth(with(density) { layoutWidthPx.toDp() }),
+                ) {
+                    toast()
+                }
             }
         }
 
