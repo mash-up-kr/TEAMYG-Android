@@ -195,8 +195,6 @@ class SegmentationViewModel
                         recordToppingDraft(
                             subjectImagePath = result.trimmedSubjectImagePath,
                             cutoutImagePath = result.subjectImagePath,
-                            borderColorArgb = null,
-                            borderWidthDp = null,
                             sourceLongSide = result.sourceLongSide,
                         )
                     }.getOrDefault(false)

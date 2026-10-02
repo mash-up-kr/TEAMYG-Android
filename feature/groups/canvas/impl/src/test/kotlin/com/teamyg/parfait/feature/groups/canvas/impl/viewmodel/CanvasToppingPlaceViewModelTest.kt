@@ -81,8 +81,6 @@ class CanvasToppingPlaceViewModelTest {
 
     private fun draft(
         subjectImagePath: String? = "/cache/segmentation/subject.png",
-        borderColorArgb: Int? = null,
-        borderWidthDp: Float? = null,
         parfaitId: ParfaitId = PARFAIT_ID,
         nextPositionZ: Int = 3,
     ) = ToppingDraft(
@@ -91,8 +89,6 @@ class CanvasToppingPlaceViewModelTest {
         nextPositionZ = nextPositionZ,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = "/cache/segmentation/cutout.png",
-        borderColorArgb = borderColorArgb,
-        borderWidthDp = borderWidthDp,
     )
 
     private val addToppingUseCase: AddToppingUseCase = mockk()

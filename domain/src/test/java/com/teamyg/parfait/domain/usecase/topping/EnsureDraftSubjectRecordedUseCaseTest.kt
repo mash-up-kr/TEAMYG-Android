@@ -29,8 +29,6 @@ class EnsureDraftSubjectRecordedUseCaseTest {
                 nextPositionZ = 0,
                 subjectImagePath = subjectImagePath,
                 cutoutImagePath = null,
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = null,
             ),
         )
@@ -42,13 +40,13 @@ class EnsureDraftSubjectRecordedUseCaseTest {
 
         assertTrue(ensureDraftSubjectRecorded(SUBJECT_PATH))
 
-        coVerify(exactly = 0) { repository.record(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { repository.record(any(), any(), any()) }
     }
 
     @Test
     fun whenDraftPointsElsewhere_recordsTheSubjectOnly() = runTest {
         givenDraft(OTHER_PATH)
-        coEvery { repository.record(any(), any(), any(), any(), any()) } returns true
+        coEvery { repository.record(any(), any(), any()) } returns true
 
         assertTrue(ensureDraftSubjectRecorded(SUBJECT_PATH))
 
@@ -57,8 +55,6 @@ class EnsureDraftSubjectRecordedUseCaseTest {
             repository.record(
                 subjectImagePath = SUBJECT_PATH,
                 cutoutImagePath = null,
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = null,
             )
         }
@@ -67,7 +63,7 @@ class EnsureDraftSubjectRecordedUseCaseTest {
     @Test
     fun whenRecordFails_returnsFalse() = runTest {
         givenDraft(null)
-        coEvery { repository.record(any(), any(), any(), any(), any()) } returns false
+        coEvery { repository.record(any(), any(), any()) } returns false
 
         assertFalse(ensureDraftSubjectRecorded(SUBJECT_PATH))
     }

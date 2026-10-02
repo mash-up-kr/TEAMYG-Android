@@ -94,7 +94,7 @@ class ToppingEditViewModelTest {
 
         coEvery { saveBitmap(cutout.toAndroidBitmap()) } returns Result.success(CUTOUT_PATH)
         coEvery { saveBitmap(trimmedCutout.toAndroidBitmap()) } returns Result.success(TRIMMED_PATH)
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any()) } returns true
     }
 
     /** `mockkStatic` 은 JVM 전역 상태라 다음 테스트로 새지 않도록 매번 걷어 낸다 */
@@ -176,8 +176,6 @@ class ToppingEditViewModelTest {
             recordToppingDraft(
                 subjectImagePath = TRIMMED_PATH,
                 cutoutImagePath = CUTOUT_PATH,
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = SourceLongSide(CUTOUT_SIDE),
             )
         }
@@ -185,7 +183,7 @@ class ToppingEditViewModelTest {
 
     @Test
     fun clickDone_recordReturnsFalse_showsSaveFailed() = runTest {
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns false
+        coEvery { recordToppingDraft(any(), any(), any()) } returns false
         val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
         advanceUntilIdle()
 
@@ -199,7 +197,7 @@ class ToppingEditViewModelTest {
 
     @Test
     fun clickDone_recordThrows_showsSaveFailed() = runTest {
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } throws IOException("disk full")
+        coEvery { recordToppingDraft(any(), any(), any()) } throws IOException("disk full")
         val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
         advanceUntilIdle()
 
@@ -224,7 +222,7 @@ class ToppingEditViewModelTest {
             assertFalse(viewModel.state.value.isSaving)
         }
 
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any()) }
     }
 
     @Test
@@ -239,7 +237,7 @@ class ToppingEditViewModelTest {
             assertFalse(viewModel.state.value.isSaving)
         }
 
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any()) }
     }
 
     @Test
@@ -247,7 +245,7 @@ class ToppingEditViewModelTest {
         // Given 파일 저장은 끝났고 초안 기록이 아직 돌고 있다
         val recordEntered = CompletableDeferred<Unit>()
         val releaseRecord = CompletableDeferred<Unit>()
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } coAnswers {
+        coEvery { recordToppingDraft(any(), any(), any()) } coAnswers {
             recordEntered.complete(Unit)
             releaseRecord.await()
             true
@@ -271,7 +269,7 @@ class ToppingEditViewModelTest {
         }
 
         verify(exactly = 1) { buildCutoutBitmap(any(), any(), any()) }
-        coVerify(exactly = 1) { recordToppingDraft(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { recordToppingDraft(any(), any(), any()) }
     }
 
     @Test
@@ -287,6 +285,6 @@ class ToppingEditViewModelTest {
             assertEquals(confirm, awaitItem())
         }
 
-        coVerify(exactly = 2) { recordToppingDraft(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 2) { recordToppingDraft(any(), any(), any()) }
     }
 }

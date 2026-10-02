@@ -79,8 +79,6 @@ internal fun SegmentationConfirmRoute(
         YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
             SegmentationConfirmScreen(
                 subjectImagePath = uiState.subjectImagePath,
-                borderColorArgb = uiState.borderColorArgb,
-                borderWidthDp = uiState.borderWidthDp,
                 isNextEnabled = uiState.isDraftReady,
                 onClickBack = { navigator.onBack() },
                 onClickClose = { showQuitDialog = true },
@@ -94,7 +92,6 @@ internal fun SegmentationConfirmRoute(
                             // 누끼가 같은 그림이면 편집 결과가 알맹이 그대로다
                             sourceImageUri = sourceImageUri ?: editImageUri,
                             segmentationImageUri = editImageUri,
-                            borderLayers = uiState.borderLayers,
                             borderOnly = uiState.isBorderOnlyEdit,
                         ),
                     )

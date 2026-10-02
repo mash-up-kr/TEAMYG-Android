@@ -10,19 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -43,8 +40,6 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 @Composable
 internal fun SegmentationConfirmScreen(
     subjectImagePath: String,
-    borderColorArgb: Int?,
-    borderWidthDp: Float?,
     isNextEnabled: Boolean,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
@@ -74,7 +69,6 @@ internal fun SegmentationConfirmScreen(
                 model = subjectImagePath,
                 contentScale = ContentScale.Fit,
             )
-            val painterState by painter.state.collectAsState()
 
             val context = LocalContext.current
             var outline by remember(subjectImagePath) {
@@ -87,10 +81,8 @@ internal fun SegmentationConfirmScreen(
 
             YGToppingCutoutImage(
                 painter = painter,
-                borderColor = borderColorArgb
-                    ?.takeIf { painterState is AsyncImagePainter.State.Success }
-                    ?.let { argb -> Color(argb) },
-                borderWidth = (borderWidthDp ?: 0f).dp,
+                borderColor = null,
+                borderWidth = 0.dp,
                 modifier = Modifier.fillMaxSize(),
                 outline = outline,
             )
@@ -130,8 +122,6 @@ internal fun SegmentationConfirmScreen(
 private fun SegmentationConfirmScreenPreview() = PreviewBox {
     SegmentationConfirmScreen(
         subjectImagePath = "",
-        borderColorArgb = null,
-        borderWidthDp = null,
         isNextEnabled = true,
         onClickBack = {},
         onClickClose = {},
