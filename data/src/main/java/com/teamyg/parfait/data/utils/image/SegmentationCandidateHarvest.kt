@@ -19,8 +19,6 @@ import java.nio.FloatBuffer
 /** 후처리를 태울 후보 수 상한. 후처리는 `filterCandidates` 의 상한 절단 앞에 있다 */
 internal const val MAX_POST_PROCESS_CANDIDATES = MAX_SUBJECT_COUNT + 3
 
-private class PlacedSubject(val plate: Bitmap, val region: SegmentationBounds)
-
 /**
  * bbox 사전 절단은 원본 좌표 사각형 면적으로 한다. bbox 픽셀 수는 커버리지의 상계라 하한 미만이면 커버리지도
  * 하한 미만이다.
@@ -41,7 +39,7 @@ internal suspend fun harvestSubjects(
             right = subject.startX + plate.width,
             bottom = subject.startY + plate.height,
         )
-        PlacedSubject(plate, region)
+        MlKitPlate(plate, region)
     }
 
     val eligible = placed
@@ -58,9 +56,9 @@ internal suspend fun harvestSubjects(
         repositoryLogger.i { "세그멘테이션 후처리 대상을 ${eligible.size}개 중 ${considered.size}개로 자른다" }
     }
 
-    return considered.mapNotNull { subject ->
+    return considered.mapNotNull { plate ->
         job.ensureActive()
-        harvestCandidate(MlKitPlate(subject.plate, subject.region), origin)
+        harvestCandidate(plate, origin)
     }
 }
 
