@@ -32,10 +32,6 @@ data class SegmentationConfirmState(
     val canEditPhoto: Boolean
         get() = sourceImageUri != null
 
-    /** 되살릴 원본이 없으면 영역은 손댈 수 없고 테두리만 고칠 수 있다 */
-    val isBorderOnlyEdit: Boolean
-        get() = sourceImageUri == null
-
     /** 편집 화면이 시작 마스크로 읽을 그림. 재편집 마스크가 없는 재사용 진입은 알맹이가 곧 재료다 */
     val editImagePath: String
         get() = cutoutImagePath ?: subjectImagePath

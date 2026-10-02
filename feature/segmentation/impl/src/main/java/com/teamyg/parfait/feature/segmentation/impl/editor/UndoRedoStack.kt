@@ -31,13 +31,4 @@ data class UndoRedoStack<T>(
         val last = undone.lastOrNull() ?: return this
         return UndoRedoStack(done = done + last, undone = undone.dropLast(1))
     }
-
-    /**
-     * 슬라이더처럼 값이 이어서 변하는 조작에 쓴다.
-     * 미는 동안 [push] 로 칸을 쌓으면 되돌리기 한 번에 한 칸씩만 물러나 쓸모가 없어진다.
-     */
-    fun replaceLast(transform: (T) -> T): UndoRedoStack<T> {
-        val last = latest ?: return this
-        return UndoRedoStack(done = done.dropLast(1) + transform(last), undone = emptyList())
-    }
 }

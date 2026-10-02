@@ -120,18 +120,11 @@ class NavKeyAnalyticsScreenTest {
     }
 
     @Test
-    fun toAnalyticsScreenOrNull_toppingEdit_mergesBorderOnlyIntoOneId() {
-        // Given, When borderOnly 진입은 두 경로에서 오는데 키만으로는 갈리지 않는다
-        val area = NavKeyToppingEdit(sourceImageUri = "src", segmentationImageUri = "seg")
-        val border = NavKeyToppingEdit(
-            sourceImageUri = "src",
-            segmentationImageUri = "seg",
-            borderOnly = true,
+    fun toAnalyticsScreenOrNull_toppingEdit_isC104() {
+        assertEquals(
+            "C-104",
+            NavKeyToppingEdit(sourceImageUri = "src", segmentationImageUri = "seg").toAnalyticsScreenOrNull()?.screenId,
         )
-
-        // Then 둘 중 하나로 몰지 않고 합친 값을 쓴다
-        assertEquals("C-104", area.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-105/C-306", border.toAnalyticsScreenOrNull()?.screenId)
     }
 
     @Test

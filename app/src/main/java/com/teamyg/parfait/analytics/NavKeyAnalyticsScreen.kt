@@ -76,11 +76,7 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
 
     is NavKeySegmentationConfirm -> AnalyticsScreen("C-103-select", "NavKeySegmentationConfirm")
 
-    // 두 경로(최근 알맹이 재사용·편집 모드 테두리)가 같은 키로 와 키만으로는 갈리지 않는다
-    is NavKeyToppingEdit -> AnalyticsScreen(
-        screenId = if (borderOnly) "C-105/C-306" else "C-104",
-        screenClass = "NavKeyToppingEdit",
-    )
+    is NavKeyToppingEdit -> AnalyticsScreen("C-104", "NavKeyToppingEdit")
 
     is NavKeyCanvasToppingPlace -> AnalyticsScreen("C-106", "NavKeyCanvasToppingPlace")
 
