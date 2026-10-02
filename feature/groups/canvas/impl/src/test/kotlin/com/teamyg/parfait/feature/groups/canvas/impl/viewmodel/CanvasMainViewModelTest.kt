@@ -838,7 +838,7 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun clickTopping_placedByMe_navigatesToCanvasBGEditInsteadOfSpotlighting() =
+    fun clickTopping_placedByMe_navigatesToToppingArrangeInsteadOfSpotlighting() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 서버가 내 것으로 판정한 토핑이 놓여 있다
             val myTopping = topping(positionZ = 1, isMine = true)
@@ -852,7 +852,7 @@ class CanvasMainViewModelTest {
 
                 // Then Spotlight 가 아니라 C-305 토핑 편집으로, 탭한 토핑 id 를 실어 보낸다
                 assertEquals(
-                    CanvasMainEffect.NavigateToCanvasBGEdit(
+                    CanvasMainEffect.NavigateToToppingArrange(
                         groupId = GroupId(GROUP_ID),
                         parfaitId = ParfaitId(TODAY_PARFAIT_ID),
                         toppingId = myTopping.parfaitImageId,
@@ -865,8 +865,8 @@ class CanvasMainViewModelTest {
 
     @Test
     fun clickTopping_placedByMe_whileViewingAPastDate_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 지난 날의 내 토핑을 보고 있다 — CanvasBGEdit 은 넘겨받은 parfaitId 와 무관하게
-        // 항상 오늘 캔버스를 다시 조회하므로, 여기서 열면 지난 날이 아니라 오늘 것이 열린다
+        // Given 지난 날의 내 토핑을 보고 있다 — 토핑 편집 화면은 넘겨받은 parfaitId 와 무관하게
+        // 항상 오늘 캔버스를 구독하므로, 여기서 열면 지난 날이 아니라 오늘 것이 열린다
         val myTopping = topping(positionZ = 1, isMine = true)
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(
             canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(toppings = listOf(myTopping)),

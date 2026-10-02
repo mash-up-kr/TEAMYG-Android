@@ -13,6 +13,7 @@ import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -87,6 +88,8 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
         screenId = if (initialToppingId == null) "C-301" else "C-305",
         screenClass = "NavKeyCanvasBGEdit",
     )
+
+    is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")
 
     is NavKeyCanvasImageSave -> AnalyticsScreen("C-001-image-save", "NavKeyCanvasImageSave")
 

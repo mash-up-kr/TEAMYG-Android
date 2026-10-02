@@ -14,6 +14,7 @@ import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -142,6 +143,16 @@ class NavKeyAnalyticsScreenTest {
         // Then
         assertEquals("C-301", mode.toAnalyticsScreenOrNull()?.screenId)
         assertEquals("C-305", topping.toAnalyticsScreenOrNull()?.screenId)
+    }
+
+    @Test
+    fun toAnalyticsScreenOrNull_toppingArrange_isC305() {
+        assertEquals(
+            "C-305",
+            NavKeyCanvasToppingArrange(groupId = 1L, parfaitId = 2L, initialToppingId = 3L)
+                .toAnalyticsScreenOrNull()
+                ?.screenId,
+        )
     }
 
     @Test

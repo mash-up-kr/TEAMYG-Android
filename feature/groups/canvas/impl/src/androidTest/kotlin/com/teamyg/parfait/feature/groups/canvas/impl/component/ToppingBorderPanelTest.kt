@@ -12,9 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
@@ -29,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
+import com.teamyg.parfait.feature.groups.canvas.impl.hasTestTagPrefix
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -150,9 +148,5 @@ class ToppingBorderPanelTest {
                 }
             }
         }
-    }
-
-    private fun hasTestTagPrefix(prefix: String) = SemanticsMatcher("TestTag startsWith '$prefix'") { node ->
-        node.config.getOrNull(SemanticsProperties.TestTag)?.startsWith(prefix) == true
     }
 }
