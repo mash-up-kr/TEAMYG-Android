@@ -315,3 +315,6 @@ archive 문서 hex 3건(보존)과 wiki/index ADR 개수 stale(위키 소관)은
 
 ## [2026-09-28] lint | 토핑 핀치 제스처 반영 — 삭제된 핸들 심볼 앵커 정리, 7건 수정
 status.md C-106·C-301 조작 서술 · OQ-P-202 문구(핀치 기준, 미결 유지) · design-system·module-structure `dragBy` 앵커 · 스펙 `status: implemented` · specs·plans README 상태.
+
+## [2026-09-30] restructure | C-101-Loading 반영 — 세그멘테이션 분석 흐름 문서 갱신, 스펙·계획 archive
+status·navigation-flow·data-layer·design-system·ADR-0012 갱신 · 해소 OQ-P-399, OQ-P-401, OQ-P-400(①~⑤) · OQ 신설 OQ-P-411

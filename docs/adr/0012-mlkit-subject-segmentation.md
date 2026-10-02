@@ -221,3 +221,8 @@ dynamite 모듈로 배달된다. 모듈이 도착해 실제로 동작하는 시�
 ⚠️ **회복 경로는 실기기에서 한 번도 돌지 않았다.** 조건부 항목(힌트 크롭·대비·512 확대)을 철회할 근거로 삼은
 단계 로그도 logcat 밖으로 나가지 않는다(OQ-P-399)
 → [segmentation-retry-recovery 스펙](../superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md).
+
+> 📌 **후속(2026-09-30, C-101-Loading)** — 위 2026-09-10 절의 재시도 회복과 「직접 편집」 버튼은 현재 코드에 없다.
+> `recoverCandidates`·`C-103-Error`·「다시 시도」가 사라졌고, 분석은 1차 경로 한 번뿐이다(세그멘터는 최대 두 번:
+> 다중 subject 다음 전경 폴백). 후보 0건·실패·던진 예외·디코드 실패는 전부 편집 화면으로 간다. 이 절은 당시 판단의
+> 기록으로 보존한다. OQ-P-399는 대상 코드 삭제로 해소됐다 → [c101-loading 스펙](../superpowers/specs/archive/2026-09-30-c101-loading-design.md).

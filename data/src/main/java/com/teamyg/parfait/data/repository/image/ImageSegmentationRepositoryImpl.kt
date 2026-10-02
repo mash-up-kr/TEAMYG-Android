@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.os.SystemClock
 import androidx.core.net.toUri
 import com.google.android.gms.tasks.Tasks
 import com.google.mlkit.common.MlKitException
@@ -18,46 +17,27 @@ import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.data.installer.image.ModuleInstallOutcome
 import com.teamyg.parfait.data.installer.image.SegmentationModuleInstaller
-import com.teamyg.parfait.data.model.image.DetectionBounds
-import com.teamyg.parfait.data.model.image.DetectionProjection
-import com.teamyg.parfait.data.model.image.RecoveryStage
-import com.teamyg.parfait.data.model.image.RecoveryTransform
 import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSource
-import com.teamyg.parfait.data.utils.image.AlphaPostProcessOptions
-import com.teamyg.parfait.data.utils.image.RELAXED_FLOOR_LOG_DIVISOR
 import com.teamyg.parfait.data.utils.image.SEGMENTATION_CACHE_DIR_NAME
 import com.teamyg.parfait.data.utils.image.clearFiles
-import com.teamyg.parfait.data.utils.image.cropAreaPercent
 import com.teamyg.parfait.data.utils.image.filterCandidates
-import com.teamyg.parfait.data.utils.image.focusCrop
-import com.teamyg.parfait.data.utils.image.focusStage
 import com.teamyg.parfait.data.utils.image.harvestForeground
 import com.teamyg.parfait.data.utils.image.harvestSubjects
-import com.teamyg.parfait.data.utils.image.isLongSideCapped
-import com.teamyg.parfait.data.utils.image.normalizeForDetection
-import com.teamyg.parfait.data.utils.image.normalizeStage
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.exception.SegmentationException
-import com.teamyg.parfait.domain.model.SegmentationBounds
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.SegmentationResult
-import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.repository.image.ImageSegmentationRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.job
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.graphics.createBitmap
 
 @Singleton
@@ -101,7 +81,7 @@ constructor(
         val result = runSegmenter(multipleSubjectOptions(), image).getOrElse { return Result.failure(it) }
 
         val harvested = try {
-            withContext(Dispatchers.Default) { harvestSubjects(result.subjects, bitmap, projection = null) }
+            withContext(Dispatchers.Default) { harvestSubjects(result.subjects, bitmap) }
         } catch (e: CancellationException) {
             // 취소는 실패가 아니다 — 값으로 접으면 상위로 전파되지 않아 취소된 흐름이 계속 돈다
             throw e
@@ -144,8 +124,8 @@ constructor(
      * ML Kit 모듈이 `SIGSEGV` 로 죽어서(2026-08-23 실기기 확인, Galaxy A35) 두 옵션을 한
      * 요청에 실을 수 없다. 대신 이 비용은 후보가 0건인 사진에서만 든다.
      *
-     * 모듈이 없으면 위로 올린다. 그 밖의 실패는 종전처럼 「인식된 대상 없음」으로 접는다 — 모두 올리면
-     * 1차의 처리 실패가 빈 목록에서 예외로 분류가 바뀌어 그 사진의 재시도가 회복 경로로 못 간다.
+     * 모듈이 없으면 위로 올린다. 그 밖의 실패는 「인식된 대상 없음」으로 접는다 — 폴백은 다중 후보가
+     * 0건일 때의 보조라, 그 실패를 사진 전체의 처리 실패로 올리지 않는다.
      */
     private suspend fun segmentForeground(
         image: InputImage,
@@ -161,189 +141,16 @@ constructor(
         val mask = result.foregroundConfidenceMask ?: return Result.success(emptyList())
 
         return try {
-            val harvest = withContext(Dispatchers.Default) {
+            val candidates = withContext(Dispatchers.Default) {
                 // InputImage.fromBitmap(bitmap, 0) 이라 지금은 마스크 치수가 origin 과 같지만, 그 일치는
                 // 계약으로 적혀 있지 않다. 어긋난 채로 읽으면 엉뚱한 자리를 오려낸다
-                harvestForeground(mask, origin.width, origin.height, origin, projection = null, hintThreshold = null)
+                harvestForeground(mask, origin.width, origin.height, origin)
             }
-            Result.success(harvest.candidates)
+            Result.success(candidates)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Result.success(emptyList())
-        }
-    }
-
-    override suspend fun recoverCandidates(bitmapWrapper: BitmapWrapper): Result<List<SegmentationCandidate>> {
-        val origin = (bitmapWrapper as? AndroidBitmap)?.getRawData()
-            ?: return Result.failure(SegmentationException.ImageNotFound(null))
-
-        // runSegmenter 는 Tasks.await 블로킹 대기라 추론 도중에는 끊기지 않는다. 상한은 진행 중인 추론 하나가
-        // 끝난 뒤에 걸린다
-        return withTimeoutOrNull(RECOVERY_TIMEOUT_MS.milliseconds) { runRecoveryLadder(origin) } ?: run {
-            repositoryLogger.w { "회복: 대기 상한 ${RECOVERY_TIMEOUT_MS}ms 를 넘겨 빈 결과로 접는다" }
-            Result.success(emptyList())
-        }
-    }
-
-    private suspend fun runRecoveryLadder(origin: Bitmap): Result<List<SegmentationCandidate>> {
-        val job = currentCoroutineContext().job
-        var hint: DetectionBounds? = null
-        var hintTransform: RecoveryTransform? = null
-
-        val normalize = normalizeStage(origin.width, origin.height, RECOVERY_APPLY_CONTRAST)
-        if (normalize == null) {
-            repositoryLogger.i { "회복 1단계: 목표 치수가 원본과 같고 대비가 꺼져 있어 무동작 가드로 건너뛴다" }
-        } else {
-            when (val outcome = runStage("1단계", origin, normalize)) {
-                is StageOutcome.Found -> return Result.success(outcome.candidates)
-
-                is StageOutcome.Aborted -> return Result.failure(outcome.cause)
-
-                is StageOutcome.Empty -> {
-                    hint = outcome.hint
-                    hintTransform = normalize.transform
-                }
-            }
-        }
-        job.ensureActive()
-
-        val crop = focusCrop(origin.width, origin.height, hint, hintTransform)
-        val percent = cropAreaPercent(crop, origin.width, origin.height)
-        val focus = focusStage(origin.width, origin.height, crop, RECOVERY_APPLY_CONTRAST)
-        if (focus == null) {
-            repositoryLogger.i { "회복 2단계: 크롭이 원본의 $percent% 라 수축 가드로 건너뛴다, 힌트 ${hint != null}" }
-            return Result.success(emptyList())
-        }
-        repositoryLogger.i { "회복 2단계: 크롭이 원본의 $percent%, 힌트 ${hint != null}" }
-
-        return when (val outcome = runStage("2단계", origin, focus)) {
-            is StageOutcome.Found -> Result.success(outcome.candidates)
-            is StageOutcome.Aborted -> Result.failure(outcome.cause)
-            is StageOutcome.Empty -> Result.success(emptyList())
-        }
-    }
-
-    /**
-     * 한 단계를 돌린다. `ModuleNotReady` 만 사다리를 멈추고, 그 밖의 실패는 이 단계만 포기한다.
-     *
-     * 단계가 끝나면 ML Kit 결과를 놓고 힌트 좌표 넷만 들고 나온다. 결과를 다음 단계까지 붙들면 피크가 커지고,
-     * 네이티브 신뢰도 버퍼가 새 세그멘터를 연 뒤에도 유효한지에 기대게 된다.
-     */
-    private suspend fun runStage(
-        name: String,
-        origin: Bitmap,
-        stage: RecoveryStage,
-    ): StageOutcome {
-        val startedAt = SystemClock.elapsedRealtime()
-
-        val whole = SegmentationBounds(0, 0, origin.width, origin.height)
-        val source = stage.cropRect ?: whole
-        val projection = DetectionProjection(stage.transform, clip = source)
-        val capped = isLongSideCapped(source.width, source.height)
-
-        // 검출 판 생성이 실패해도 시작한 단계가 기록에 남도록 판을 만들기 전에 찍는다
-        repositoryLogger.i {
-            "회복 $name: 원본 ${source.width}x${source.height}, " +
-                "목표 ${stage.targetSize.width}x${stage.targetSize.height}, 상한 걸림 $capped"
-        }
-
-        val plate = try {
-            withContext(Dispatchers.Default) { normalizeForDetection(origin, stage) }
-        } catch (e: OutOfMemoryError) {
-            repositoryLogger.w(e) {
-                "회복 $name: 검출 판을 만들다 메모리로 실패해 이 단계를 포기한다, " +
-                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-            }
-            return StageOutcome.Empty(hint = null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            repositoryLogger.w(e) {
-                "회복 $name: 검출 판을 만들다 실패해 이 단계를 포기한다, " +
-                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-            }
-            return StageOutcome.Empty(hint = null)
-        }
-
-        try {
-            val image = InputImage.fromBitmap(plate.bitmap, 0)
-
-            val multi = runSegmenter(multipleSubjectOptions(), image).getOrElse { cause ->
-                return if (cause is SegmentationException.ModuleNotReady) {
-                    repositoryLogger.w { "회복 $name: 다중 subject 추론이 모듈 미준비로 사다리를 멈춘다" }
-                    StageOutcome.Aborted(cause)
-                } else {
-                    repositoryLogger.w(cause) {
-                        "회복 $name: 다중 subject 추론 실패, 최종 후보 0, " +
-                            "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-                    }
-                    StageOutcome.Empty(hint = null)
-                }
-            }
-            val harvested = withContext(Dispatchers.Default) { harvestSubjects(multi.subjects, origin, projection) }
-            val candidates = withContext(Dispatchers.Default) { filterCandidates(harvested.map { it.candidate }) }
-            val relaxed = harvested.count { it.candidate.passesRelaxedFloor() }
-
-            repositoryLogger.i {
-                "회복 $name: 필터 통과 ${candidates.size}/${harvested.size}" +
-                    "(1/$RELAXED_FLOOR_LOG_DIVISOR 하한이었다면 $relaxed), " +
-                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-            }
-            if (candidates.isNotEmpty()) return StageOutcome.Found(candidates)
-
-            val foreground = runSegmenter(foregroundOptions(), image).getOrElse { cause ->
-                return if (cause is SegmentationException.ModuleNotReady) {
-                    repositoryLogger.w { "회복 $name: 전경 폴백 추론이 모듈 미준비로 사다리를 멈춘다" }
-                    StageOutcome.Aborted(cause)
-                } else {
-                    repositoryLogger.w(cause) {
-                        "회복 $name: 전경 폴백 추론 실패, 최종 후보 0, " +
-                            "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-                    }
-                    StageOutcome.Empty(hint = null)
-                }
-            }
-            val mask = foreground.foregroundConfidenceMask
-            if (mask == null) {
-                repositoryLogger.w {
-                    "회복 $name: 전경 신뢰도 마스크가 없어 최종 후보 0, " +
-                        "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-                }
-                return StageOutcome.Empty(hint = null)
-            }
-            val harvest = withContext(Dispatchers.Default) {
-                harvestForeground(
-                    mask = mask,
-                    maskWidth = plate.bitmap.width,
-                    maskHeight = plate.bitmap.height,
-                    origin = origin,
-                    projection = projection,
-                    hintThreshold = AlphaPostProcessOptions().binaryThreshold,
-                )
-            }
-
-            // 폴백 후보는 필터를 거치지 않는다 — 1차 경로와 같은 규칙이다
-            repositoryLogger.i {
-                "회복 $name: 폴백 후보 ${harvest.candidates.size}, 힌트 ${harvest.hint != null}, " +
-                    "소요 ${SystemClock.elapsedRealtime() - startedAt}ms"
-            }
-
-            return if (harvest.candidates.isNotEmpty()) {
-                StageOutcome.Found(harvest.candidates)
-            } else {
-                StageOutcome.Empty(harvest.hint)
-            }
-        } catch (e: OutOfMemoryError) {
-            repositoryLogger.w(e) { "회복 $name: 메모리로 실패해 이 단계를 포기한다" }
-            return StageOutcome.Empty(hint = null)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            repositoryLogger.w(e) { "회복 $name: 실패해 이 단계를 포기한다" }
-            return StageOutcome.Empty(hint = null)
-        } finally {
-            if (plate.ownedByUs) plate.bitmap.recycle()
         }
     }
 
@@ -360,22 +167,6 @@ constructor(
         .Builder()
         .enableForegroundConfidenceMask()
         .build()
-
-    /** 로그 전용. 알파 합은 칠해진 픽셀 수의 255 배다 */
-    private fun SegmentationCandidate.passesRelaxedFloor(): Boolean {
-        val floor = SubjectCoverage.floorPixels(canvasWidth.toLong() * canvasHeight) / RELAXED_FLOOR_LOG_DIVISOR
-        return coverageAlphaSum >= floor * 255L
-    }
-
-    private sealed interface StageOutcome {
-        class Found(val candidates: List<SegmentationCandidate>) : StageOutcome
-
-        /** 다음 단계가 쓸 힌트. 후보가 없어도 힌트는 있을 수 있다 */
-        class Empty(val hint: DetectionBounds?) : StageOutcome
-
-        /** 남은 단계도 같은 이유로 실패한다 */
-        class Aborted(val cause: Throwable) : StageOutcome
-    }
 
     /**
      * 모델은 APK 가 아니라 Play 서비스가 내려주는 optional module 이라, 받기 전에 process 하면 실패한다.
@@ -497,8 +288,3 @@ constructor(
         }
     }
 }
-
-private const val RECOVERY_TIMEOUT_MS = 30_000L
-
-/** 조건부 항목이다. 로그가 대비 스트레치를 철회하면 여기만 끈다 — 그러면 1단계 무동작 가드가 의미를 갖는다 */
-private const val RECOVERY_APPLY_CONTRAST = true

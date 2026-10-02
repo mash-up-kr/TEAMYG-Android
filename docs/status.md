@@ -80,15 +80,18 @@
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md)
 
 ## 누끼 추출 (C-103·C-104)
-- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 세그멘테이션 화면은 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 실패는 `C-103-Error` 한 화면이 받아 「다시 시도」(0건이면 정규화·초점 크롭 회복 사다리를 사진당 한 번)와 「직접 편집」(원본을 C-104로)을 주고, C-104 영역 탭은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다.
+- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고, 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣는다)으로 치환한다. 편집 완료는 초안을 직접 기록하고 편집 화면을 백스택에 남긴 채 확인 화면으로 간다. 로딩·선택 UI·`SegmentationConfirm`의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고(로딩 중엔 시스템 뒤로도), 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 영역 탭은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다.
 - 앵커: `SegmentationViewModel`, `ImageSegmentationRepositoryImpl`, `SegmentationModuleInstaller`, `harvestSubjects`, `refineAlpha`, `ToppingEditViewModel`
 - ⚠️ 원본을 다운샘플 없이 디코드하고 다중 후보 비트맵도 선택 전까지 전부 들고 있어, 큰 사진에서 메모리 피크가 `largeHeap` 없이 위험 구간이다 — 현재 트리 기준 피크는 미측정 (OQ-P-228, OQ-P-266)
 - ⚠️ 전경 마스크 옵션과 다중 후보 옵션을 한 요청에 함께 켜면 ML Kit 모듈이 네이티브 `SIGSEGV`로 죽는다. `try/catch`도 Crashlytics도 못 잡으므로 두 옵션은 반드시 별도 요청으로 둔다 (OQ-P-409)
-- ⚠️ 세그멘테이션은 beta ML Kit에 기대고, 모듈 가용 판정이 ML Kit 내부 feature 이름 상수라 이름이 바뀌면 크래시 없이 설치 요청만 반복하다 실패 화면이 뜬다. 모듈을 끝내 못 받는 기기의 정책은 없고 「직접 편집」이 유일한 우회로다 (OQ-P-003, OQ-P-345, OQ-P-344)
-- ⚠️ 회복 사다리의 잠정값을 철회할 근거인 단계 로그가 Kermit `platformLogWriter` 하나라 logcat 밖으로 나가지 않고, 회복 경로를 강제로 태울 수단도 없다 (OQ-P-399)
+- ⚠️ 세그멘테이션은 beta ML Kit에 기대고, 모듈 가용 판정이 ML Kit 내부 feature 이름 상수라 이름이 바뀌면 크래시 없이 설치 요청만 반복하다 분석이 실패해 편집 화면으로 떨어진다. 모듈을 끝내 못 받는 기기의 정책은 없고 편집 화면(직접 편집)이 유일한 우회로다 (OQ-P-003, OQ-P-345, OQ-P-344)
+- ⚠️ 분석 이벤트 화면명은 로딩 중에도 `C-103`이다 — 로딩과 선택 UI가 같은 `NavKeySegmentation`이라 화면명을 못 가른다
+- ⚠️ 편집 완료(`RecordAndConfirm`)는 저장부터 초안 기록까지 `isSaving`으로 완료 탭을 막지만, 확인 화면으로 가기 직전에 내리므로 화면이 걷히기 전의 탭은 한 번 더 저장·기록한다. 확인 화면 이동은 편집 키가 맨 위일 때만 해 두 번 쌓이지 않고, 초안은 둘째 경로로 덮이며 확인 화면도 초안 흐름을 따라 둘째 결과를 본다. 첫 결과 파일만 캐시에 고아로 남는다
+- ⚠️ 디코드 실패로 편집에 간 경우 편집 화면도 같은 uri를 못 읽어 `LoadFailed` 토스트 후 확인 화면으로 돌아온다(의도). 갤러리 content uri를 편집 화면이 다시 읽는 것은 실기기로 본 적이 없다 (OQ-P-400)
+- ⚠️ 위키에 C-103-Error·재시도 정책이 남아 있는데 구현에는 그 화면이 없다 — 정책 원본이 아직 들어오지 않았다 (OQ-P-411)
 - ⚠️ `applyAreaOpening`의 `countRuns`·`fillRuns`와 알파 정련 일부 루프에 취소 확인이 없어, 큰 판에서는 화면을 떠난 뒤에도 전체 패스가 끝까지 돈다 (OQ-P-318)
-- ⚠️ C-104 영역 탭의 빨간 틴트와 `C-103-Error` 「직접 편집」 버튼의 이름·동작은 위키·디자인 근거 없이 코드가 정했다 (OQ-P-347, OQ-P-401)
-- 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c103-error-use-original](superpowers/specs/archive/2026-09-05-c103-error-use-original.md), [segmentation-retry-recovery](superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
+- ⚠️ C-104 영역 탭의 빨간 틴트의 이름·동작은 위키·디자인 근거 없이 코드가 정했다 (OQ-P-347)
+- 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c101-loading](superpowers/specs/archive/2026-09-30-c101-loading-design.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
 
 ## 캔버스 편집 (C-301 배경·삭제)
 - 상태: 편집 화면은 캔버스 메인이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독하고, 배경·탭·선택은 최초 방출에만 시딩하며 이후 방출은 dirty·툼스톤 집합을 지키며 토핑 목록만 병합한다. 토핑 탭에서 본인 토핑을 고른 뒤에는 두 손가락 제스처가 캔버스 어디서(남의 토핑 위여도) 시작해도 선택된 토핑을 이동·회전·확대하고, 한 손가락 드래그는 선택된 토핑 위에서 시작했을 때만 옮기며(핀치 중 남은 한 손가락은 어디서든 계속 옮긴다), 삭제·편집 버튼은 첫 터치부터 모든 손가락을 뗄 때까지 숨는다. 선택이 없으면 제스처는 무시된다. 확인 버튼은 dirty 토핑의 변형을 일괄 PATCH 한 번, 테두리를 토핑별 PATCH로 보낸 뒤 배경(색 또는 업로드한 이미지)을 저장해 모두 성공해야 화면을 닫고, 토핑 삭제는 확인 모달에서 곧바로 DELETE 해 성공할 때만 닫으며, 실패는 모두 `CanvasBGEditError` 토스트 + 화면 잔류다.
@@ -169,7 +172,7 @@
 - OQ-P-287 — 누끼 전처리의 임계·반경·정칙화·축소 하한이 측정 없이 정한 값이다(OQ-P-287~300, 판정 주체는 실기기 사진 세트)
 - OQ-P-301 — 카메라 권한 거부 화면의 수정 결과를 실기기에서 본 사람이 없다
 - OQ-P-337 — 토핑 테두리를 그리는 두 화면을 실기기에서 나란히 본 사람이 없어 어긋남의 크기를 잰 적이 없다(③)
-- OQ-P-400 — 세그멘테이션 재시도 회복 경로와 1차 경로 회귀를 실기기로 본 적이 없다
+- OQ-P-400 — 세그멘테이션 1차 경로 회귀와 C-101-Loading 흐름(갤러리 content uri 재읽기, 팝업 중 결과 보류, 편집 완료 뒤 백스택)을 실기기로 본 적이 없다
 - OQ-P-260 — 화면 전환 애니메이션의 모양·시간·방향을 실기기로 본 적이 없다
 - OQ-P-146 — 로그인 실기기 검증 항목과 앱의 첫 실서버 호출 왕복이 한 번도 돌지 않았다
 - OQ-P-350 — 교체된 스플래시 로고 애니메이션을 본 사람이 없고 되돌아가도 잡을 수단이 없다

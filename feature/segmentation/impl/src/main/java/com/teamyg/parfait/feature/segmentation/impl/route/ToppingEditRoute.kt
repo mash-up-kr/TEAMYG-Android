@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.impl.R
@@ -33,6 +34,7 @@ internal fun ToppingEditRoute(
                 segmentationImageUri = key.segmentationImageUri,
                 borderLayers = key.borderLayers,
                 borderOnly = key.borderOnly,
+                completion = key.completion,
             )
         },
     )
@@ -62,6 +64,20 @@ internal fun ToppingEditRoute(
                 is ToppingEditEffect.EditCompleted -> {
                     resultEventBus.sendResult(TOPPING_EDIT_RESULT_KEY, effect.result)
                     navigator.onBack()
+                }
+
+                is ToppingEditEffect.GoToConfirm -> {
+                    // 저장 중 표시는 이동 전에 내려가므로, 이 화면이 걷히기 전에 들어온 완료 탭은 한 번 더
+                    // 끝까지 간다. 이 화면이 맨 위일 때만 이동해 확인 화면이 두 번 쌓이지 않게 한다
+                    if (navigator.backStack.lastOrNull() == key) {
+                        navigator.goTo(
+                            NavKeySegmentationConfirm(
+                                sourceImageUri = key.sourceImageUri,
+                                subjectImagePath = effect.subjectImagePath,
+                                trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
+                            ),
+                        )
+                    }
                 }
             }
         }

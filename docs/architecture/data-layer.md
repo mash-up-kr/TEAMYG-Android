@@ -209,7 +209,7 @@ tags: [architecture, parfait]
 **메서드 6개**다 — `prepareSegmentationModule()`(2026-09-03 PR #438 신설, 아래 모듈 설치 절.
 결과를 돌려주지 않는 유일한 계약이다 — 부르는 쪽이 그것으로 할 일이 없다) · `decodeImage(uri)` · `segmentImage(bitmapWrapper)` ·
 `persistSubject(candidate)`(고른 후보를 캐시에 PNG 두 장으로 떨군다) ·
-`saveBitmap(bitmapWrapper)`(구 `saveEditedImage`, 2026-09-06 PR #457 개명 — 비트맵 한 장을 캐시에 PNG로 떨구고 절대 경로 반환. 손편집 결과뿐 아니라 실패 화면 「직접 편집」의 시작 원본도 이 자리로 온다) ·
+`saveBitmap(bitmapWrapper)`(구 `saveEditedImage`, 2026-09-06 PR #457 개명 — 비트맵 한 장을 캐시에 PNG로 떨구고 절대 경로 반환. 손편집 결과가 이 자리로 온다) ·
 `clearSegmentationCache()`(PR #309 신설, 아래 캐시 정리 절).
 `saveBitmap`은 **넘겨받은 비트맵을 recycle하지 않는다**(수명은 넘겨준 쪽 몫, 코드 주석에 명시).
 
@@ -372,9 +372,9 @@ impl 컨벤션 플러그인이 주는 것은 `:domain`뿐이다). 그래서 **Re
 업로드의 성공·실패와 무관하게 `finally` 에서 지운다 — 입력 파일 옆에 두면 최근 알맹이 재사용
 경로의 고아가 `filesDir` 에 남는다 → [spec](../superpowers/specs/archive/2026-09-08-upload-image-downscale.md).
 
-세그멘테이션 재시도 회복도 같은 갈래를 따른다. 좌표·단계 타입과 잠정 상수 object(`SegmentationRecoverySpec` 등)는
-`data/model/image` 에 선언 하나당 파일 하나로 두고, 계산과 `Bitmap` 실행은 `data/utils/image` 에 둔다
-→ [spec](../superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md).
+세그멘테이션 후보 수확은 1차 경로 하나뿐이다 — 결과가 0건이거나 실패해도 저장소는 재시도·전처리 사다리를 돌리지 않고
+`Result`로 넘기며, 그 뒤 분기는 `SegmentationViewModel`이 쥔다(→ [navigation-flow](navigation-flow.md) 토핑 생성 플로우).
+캔버스 밖 후보를 버리는 판정에 쓰는 `offsetBy`·`isInsideCanvas`는 `data/utils/image/SegmentationGeometry.kt`에 있다.
 
 ✅ **`ParfaitRepository`가 DataSource의 다섯 갈래를 전부 연다**(2026-08-22, PR #329) — 마지막 하나였던
 배경 변경이 C-301 확인 버튼이라는 소비자와 함께 올라왔다. "쓰지 않는 갈래를 미리 열지 않는다"는

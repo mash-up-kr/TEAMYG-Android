@@ -14,7 +14,9 @@ import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
@@ -160,6 +162,12 @@ sealed interface ToppingEditEffect : UiSideEffect {
     data object SubjectTooSmall : ToppingEditEffect
 
     data class EditCompleted(val result: ToppingEditResult) : ToppingEditEffect
+
+    /** 초안 기록을 마쳐 확인 화면으로 간다. 경로 이름은 확인 화면 키 기준이다 */
+    data class GoToConfirm(
+        val subjectImagePath: String,
+        val trimmedSubjectImagePath: String,
+    ) : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -169,8 +177,10 @@ class ToppingEditViewModel
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
     @Assisted("borderLayers") private val initialBorderLayers: List<ToppingBorderLayer>,
     @Assisted("borderOnly") borderOnly: Boolean,
+    @Assisted private val completion: ToppingEditCompletion,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
+    private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(
     initialState = ToppingEditState(
         tab = if (borderOnly) ToppingEditTab.BORDER else ToppingEditTab.AREA,
@@ -243,7 +253,12 @@ class ToppingEditViewModel
     private fun loadImages() {
         viewModelScope.launch {
             val originBitmap = decodeBitmapOrNull(sourceImageUri)
-            val segmentationBitmap = decodeBitmapOrNull(segmentationImageUri)
+            // 두 비트맵은 읽기만 하고 따로 recycle 하지 않아 같은 주소면 하나를 함께 쓴다
+            val segmentationBitmap = if (segmentationImageUri == sourceImageUri) {
+                originBitmap
+            } else {
+                decodeBitmapOrNull(segmentationImageUri)
+            }
 
             if (originBitmap == null || segmentationBitmap == null) {
                 postSideEffect(ToppingEditEffect.LoadFailed)
@@ -270,9 +285,10 @@ class ToppingEditViewModel
         val segmentationBitmap = current.segmentationBitmap ?: return
         if (current.isSaving) return
 
-        viewModelScope.launch {
-            updateState { copy(isSaving = true) }
+        // 코루틴이 돌기 전에 올린다 — 안에서 올리면 시작을 기다리는 사이의 연타가 위 가드를 지난다
+        updateState { copy(isSaving = true) }
 
+        launch(onError = { finishSaving(ToppingEditEffect.SaveFailed) }) {
             val (cutout, measure) = withContext(Dispatchers.Default) {
                 val built = buildCutoutBitmap(
                     originBitmap = originBitmap,
@@ -292,8 +308,7 @@ class ToppingEditViewModel
                 )
             ) {
                 cutout.recycle()
-                updateState { copy(isSaving = false) }
-                postSideEffect(ToppingEditEffect.SubjectTooSmall)
+                finishSaving(ToppingEditEffect.SubjectTooSmall)
                 return@launch
             }
 
@@ -320,24 +335,44 @@ class ToppingEditViewModel
                 if (trimmedCutout !== cutout) trimmedCutout.recycle()
                 cutout.recycle()
             }
-            updateState { copy(isSaving = false) }
 
             if (cutoutPath == null || subjectPath == null) {
-                postSideEffect(ToppingEditEffect.SaveFailed)
+                finishSaving(ToppingEditEffect.SaveFailed)
                 return@launch
             }
 
-            postSideEffect(
-                ToppingEditEffect.EditCompleted(
-                    ToppingEditResult(
-                        subjectImagePath = subjectPath,
-                        cutoutImagePath = cutoutPath,
-                        borderLayers = current.borderLayers,
-                        sourceLongSide = sourceLongSide,
-                    ),
-                ),
+            val result = ToppingEditResult(
+                subjectImagePath = subjectPath,
+                cutoutImagePath = cutoutPath,
+                borderLayers = current.borderLayers,
+                sourceLongSide = sourceLongSide,
             )
+            finishSaving(completionEffect(result))
         }
+    }
+
+    private suspend fun completionEffect(result: ToppingEditResult): ToppingEditEffect = when (completion) {
+        ToppingEditCompletion.ReturnResult -> ToppingEditEffect.EditCompleted(result)
+
+        ToppingEditCompletion.RecordAndConfirm ->
+            if (recordToppingDraft.recordEditResult(result)) {
+                // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다(`ToppingEditResult` KDoc)
+                ToppingEditEffect.GoToConfirm(
+                    subjectImagePath = result.cutoutImagePath,
+                    trimmedSubjectImagePath = result.subjectImagePath,
+                )
+            } else {
+                ToppingEditEffect.SaveFailed
+            }
+    }
+
+    /**
+     * 저장과 기록 사이에서 내리면 그 틈의 완료 탭이 한 번 더 저장하므로 끝난 뒤 한 번만 내린다.
+     * 확인 화면으로 갈 때도 내리는 것은 이 화면이 백스택에 남아, 켠 채 나가면 돌아왔을 때 갇히기 때문이다.
+     */
+    private fun finishSaving(effect: ToppingEditEffect) {
+        updateState { copy(isSaving = false) }
+        postSideEffect(effect)
     }
 
     @AssistedFactory
@@ -347,6 +382,7 @@ class ToppingEditViewModel
             @Assisted("segmentationImageUri") segmentationImageUri: String,
             @Assisted("borderLayers") borderLayers: List<ToppingBorderLayer>,
             @Assisted("borderOnly") borderOnly: Boolean,
+            completion: ToppingEditCompletion,
         ): ToppingEditViewModel
     }
 }
