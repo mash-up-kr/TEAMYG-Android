@@ -372,7 +372,8 @@ data class NavKeyCanvasToppingArrange(
 | `canvas/impl/.../component/ToppingBorderPanel.kt` | 신규. 패널 |
 | `canvas/impl/.../component/ToppingArrangeLayout.kt` | 신규. 화면 뼈대 |
 | `canvas/impl/.../util/ToppingPanelFocus.kt` | 신규. `panelFocusCenter` |
-| `canvas/impl/.../util/ToppingBorderStyle.kt` | 신규. 테두리 값과 기본 굵기 |
+| `canvas/impl/.../model/ToppingBorderStyle.kt` | 신규. 테두리 값 |
+| `canvas/impl/.../util/ToppingBorderStyle.kt` | 신규. 기본 굵기·굵기 범위와 `ToppingBorder` 변환 |
 | `canvas/impl/.../component/BorderColorChipRow.kt` | segmentation 것을 복제 |
 | `canvas/impl/.../util/ToppingBorderColors.kt` | segmentation 것을 복제 |
 | `core/designsystem/.../component/ygslider/YGSlider.kt` | segmentation에서 이동·개명 |

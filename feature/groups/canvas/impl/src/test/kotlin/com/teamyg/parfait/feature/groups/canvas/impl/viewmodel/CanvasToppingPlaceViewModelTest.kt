@@ -30,7 +30,7 @@ import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCa
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import io.mockk.coEvery
 import io.mockk.coVerify

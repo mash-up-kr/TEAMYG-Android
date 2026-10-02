@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import kotlin.test.Test
 import kotlin.test.assertEquals
