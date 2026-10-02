@@ -6,7 +6,7 @@ date: 2026-08-20
 deciders: Parfait 팀
 supersedes:
 superseded_by:
-related_adr: ADR-0005, ADR-0006, ADR-0030
+related_adr: ADR-0005, ADR-0006, ADR-0030, ADR-0034
 related_spec: c106-topping-place-api, c103-segmentation-topping-edit, c106-topping-place
 related_architecture: data-layer, design-system
 platforms: android

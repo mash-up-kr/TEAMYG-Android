@@ -4433,9 +4433,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: PR5 최종 브랜치 리뷰 — `core/util/android`의 `String.kt#toRgbHexString`이 알파가
   불투명(`0xFF`)이 아니면 `require()`로 던진다. 호출부
   `util/ToppingBorderStyle.kt`의 `ToppingBorderStyle?.toToppingBorder()`는
-  `CanvasToppingPlaceViewModel#handleOnClickConfirm`에서 `launch { }` **앞에**
-  동기로 불린다 — `BaseViewModel.launch`의 `try`(성공·실패·예외·취소 네 경로를 한 곳에서 덮는 그
-  블록) 밖이라, 여기서 `require()`가 던지면 어디에도 안 걸리고 그대로 크래시한다.
+  `CanvasToppingPlaceViewModel#handleOnClickConfirm`의 `launch { }` **안**, `addToppingUseCase`
+  호출 앞에서 불린다 — 던지면 `launch`의 `onError`가 `PlaceFailed`로 받는다. 이 호출이 `launch`
+  밖에 있으면 `require()`가 어디에도 안 걸리고 그대로 크래시한다.
 - **항목**: ① 지금은 이 화면의 `CanvasToppingPlaceUiState.border`(`ToppingBorderStyle.colorArgb`)가 팔레트가 주는 불투명 색뿐이라 도달 불가능하지만,
   그 전제가 코드 어디에도 강제돼 있지 않다 — 팔레트에 반투명 색이 하나라도 들어오면 사용자 손에서
   터진다. `require()`를 `runCatching`으로 감싸 `ToppingBorder.None`으로 폴백할지, 팔레트 타입을 좁혀
@@ -4448,7 +4448,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `catch (e: Throwable)` → `onError` → `PlaceFailed`로 흡수되고, `finally`가 `isLoading`을
   > 내린다. 업로드보다 앞이라 **고아 이미지도 안 남는다.**
   > `CanvasToppingPlaceViewModelTest#onClickConfirm_nonOpaqueBorderColor_failsInsteadOfCrashing`이
-  > 그 경로를 잠근다(호출을 다시 `launch` 밖으로 빼면 `processIntent`가 그 자리에서 던져 실패한다).
+  > 그 경로를 잠근다(`OnSelectBorderColor`로 반투명 색을 넣고 확정한다. 호출을 `launch` 밖으로
+  > 빼면 `processIntent`가 그 자리에서 던져 실패한다).
   >
   > **`require()`는 그대로 뒀다** — `toRgbHexString`은 `core:util:android`의 public 확장이라
   > 누구든 부를 수 있고, public API 경계의 인자 검증은 그 자리가 맞다. 문제는 검사가 아니라
@@ -4462,7 +4463,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 색을 만났을 때 한 경로는 던지고 다른 경로는 통과하며, **로케일 결함은 기존 함수에만 남았다**
   > → OQ-P-263.
 - **해소 메모**: 남은 것은 **타입으로 불변식을 옮기는 것**이다 — 불투명 색 전용 타입을
-  팔레트 → 편집 화면 → 초안 → ViewModel까지 관통시키면 반투명 색이 표현 불가능해지고 `require()`도
+  팔레트 → `ToppingBorderPanel` → `CanvasToppingPlaceIntent.OnSelectBorderColor` →
+  `ToppingBorderStyle.colorArgb`까지 관통시키면 반투명 색이 표현 불가능해지고 `require()`도
   필요 없어진다. 커스텀 컬러피커처럼 진입점이 실제로 늘어나는 라운드에서 함께 한다.
   ②(전제를 어디에 못박을지)는 이 항목과 `toRgbHexString` KDoc이 지금 그 역할을 한다.
 
@@ -7826,19 +7828,23 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-02] 배치 화면 테두리 패널 — 다른 화면 높이에서의 가림과 터치 영역 겹침이 미확인이다
 
 - **ID**: OQ-P-412
-- **출처**: `util/ToppingPanelFocus.kt#panelFocusCenter`·`component/ToppingBorderPanel.kt`(브랜치
-  `feature/#567-topping-place-ui`) × [c105-arrange-border-merge 스펙](../superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md)
+- **출처**: `util/ToppingPanelFocus.kt#panelFocusCenter`·`component/ToppingBorderPanel.kt`·
+  `component/ToppingArrangeLayout.kt` × [c105-arrange-border-merge 스펙](../superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md)
   「주의 / 열린 질문」.
 - **항목**: ① 패널이 열리면 토핑을 캔버스 세로 중앙에서 `PANEL_FOCUS_LIFT`만큼 올려 그리는데, 그 값은
   피그마 한 프레임 크기에서 나온 고정값이다. 캔버스 영역은 폭에 비례해 커지고 패널 높이는 고정이라
   화면 높이가 다른 기기에서 토핑이 패널에 가리는지 계산으로 정해지지 않고, 실기기에서 본 적도 없다.
+  머리글과 확정 버튼 사이 높이가 폭 기준 캔버스 높이보다 낮은 화면에서는 `ToppingArrangeLayout`이
+  캔버스를 높이에 맞춰 좁히므로 캔버스가 더 작아진다 — 이 경우는 `ToppingArrangeLayoutTest`가 밀도를
+  낮춰 흉내 낸 화면으로만 다루고, 그런 실기기에서 패널과 토핑이 어떻게 보이는지는 확인하지 않았다.
   ② 캔버스 폭 이상으로 키운 토핑은 가운데로 옮겨도 패널에 가린다 — 크기를 줄이는 규칙이 정책에 없어
   그대로 둔다. ③ 열린 패널의 화살표 터치 영역(44dp 정사각)이 슬라이더 터치 띠의 오른쪽 위 귀퉁이와
   겹친다(기본 글꼴 배율에서 가로 30dp·세로 8dp, 트랙과 손잡이는 겹치지 않는다). 그 자리에서 슬라이더를
   잡으려다 패널이 닫히는 일이 실제로 생기는지 확인되지 않았다. ④ 이 화면을 피그마(`5453:10418`,
   `5461:9261`)와 실기기에서 대조한 기록이 없다.
 - **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
-- **해소 메모**: 화면 높이가 다른 기기 두 대에서 패널을 열어 ①③을 본다. 가리면 올리는 양을 캔버스
+- **해소 메모**: 화면 높이가 다른 기기 두 대(하나는 캔버스가 높이에 맞춰 좁아지는 낮은 화면)에서
+  패널을 열어 ①③을 본다. 가리면 올리는 양을 캔버스
   높이에서 계산하도록 `panelFocusCenter`를 고치고 `ToppingPanelFocusTest`를 함께 고친다. ②는 기획이
   줄이는 규칙을 정하면 스펙에 반영한다.
 

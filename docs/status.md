@@ -140,7 +140,7 @@
 - 설계: [push-notification-permission-and-device-token](superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [ADR-0013](adr/0013-firebase-fcm-crashlytics.md), [navigation-flow](architecture/navigation-flow.md)
 
 ## 튜토리얼 (ygtutorial)
-- 상태: 디자인시스템 `YGTutorialOverlay`는 딤까지 구워진 풀스크린 목업 PNG 한 장으로 실제 화면을 덮고 클릭을 삼킨다. 버튼 라벨(「다음」/「시작하기」)은 `YGTutorialProgress`가 정한다. 소비 화면은 C-001 캔버스(`CanvasTutorialStep` 3장), C-102 갤러리(1장), 누끼 확인(1장) 셋이다. 각 화면은 `GetTutorialVisibleFlowUseCase`로 `TutorialKind`별 노출 여부를 구독하고, `CompleteTutorialUseCase`로 평문 DataStore의 `UserConfigRepository`에 "봤다"를 남긴다. 캔버스는 마지막 장을 닫을 때, 한 장짜리 둘은 누르는 즉시 남긴다.
+- 상태: 디자인시스템 `YGTutorialOverlay`는 딤까지 구워진 풀스크린 목업 PNG 한 장으로 실제 화면을 덮고 클릭을 삼킨다. 버튼 라벨(「다음」/「시작하기」)은 `YGTutorialProgress`가 정한다. 소비 화면은 C-001 캔버스(`CanvasTutorialStep` 3장), C-102 갤러리(1장), 누끼 확인(1장) 셋이다. 각 화면은 `GetTutorialVisibleFlowUseCase`로 `TutorialKind`별 노출 여부를 구독하고, `CompleteTutorialUseCase`로 평문 DataStore의 `UserConfigRepository`에 "봤다"를 남긴다. 캔버스는 마지막 장을 닫을 때, 한 장짜리 둘은 누르는 즉시 남긴다. 누끼 확인은 원본 사진 없이 들어오면(`SegmentationConfirmState.canEditPhoto == false`) 튜토리얼을 띄우지 않고 "봤다"도 남기지 않는다 — 원본을 들고 처음 들어올 때 뜬다.
 - 앵커: `YGTutorialOverlay`, `YGTutorialProgress`, `CanvasTutorialStep`, `GetTutorialVisibleFlowUseCase`, `UserConfigRepository`, `core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/component/ygtutorial`
 - ⚠️ `clearConfig`는 계약과 구현만 있고 부르는 곳이 없다. 로그아웃·탈퇴가 이 설정을 지우지 않아서, 같은 기기에서 계정을 바꾸면 앞사람의 "봤다" 기록을 물려받아 튜토리얼이 뜨지 않는다 (OQ-P-366)
 - ⚠️ 목업 PNG는 실제 화면이 바뀌어도 따라 바뀌지 않는다. `ContentScale.Crop`이라 폭이 다른 기기에서는 잘리고, 위키에 튜토리얼 정책 조항이 없다 (OQ-P-363)
