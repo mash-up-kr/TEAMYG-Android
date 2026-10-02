@@ -827,8 +827,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-081
 - **출처**: `component/ygfloatingbar/YGFloatingBar.kt`(PR #188 develop 머지) — 4변형이 전부 갤러리에서만 렌더되고 feature 참조가 0건이다. 컴포넌트는 폭을 정하지 않고(`modifier` 몫) 상단 패딩만 갖는데, Figma도 화면 어디에 떠 있는지(상단 고정/하단/오버레이)를 주지 않았다. `YGFloatingBarEdit`의 중앙 문구도 Figma가 `Text` placeholder만 둬서 편집 대상 이름인지 모드 라벨인지 미확정이다.
 - **항목**: ① 캔버스·편집 화면 라운드에서 배치(위치·폭·safe area)를 어떻게 정할지, ② `Edit`의 중앙 문구가 무엇인지, ③ `EditTab`의 탭 문자열("영역"/"테두리")이 화면 소유인지 컴포넌트 기본값이어야 하는지.
-- **상태**: 부분 해소 (①③ **PR #221 develop 머지, 2026-08-14** / ② **잔존** — `Edit` 변형만 여전히 사용처 0건)
-- **해소 메모**: ① 배치가 확정됐다 — C-103~C-105 4화면이 전부 세로 `Column`의 맨 위/맨 아래에 `fillMaxWidth()`로 붙이는 형태이고 오버레이가 아니다(`BackClose` 추출·확인, `Close` 로딩·에러, `EditTab` 편집). safe area는 엔트리 `YGScaffold` 기본 `innerPadding`이 처리한다. ③ 탭 문자열은 **화면 소유**로 확정 — `ToppingEditTab` enum이 `@StringRes label`을 들고 화면이 `stringResource`로 풀어 넘긴다(feature `strings.xml`). ②는 `Edit` 변형에 첫 소비처가 생길 때 닫는다. [design-system](../architecture/design-system.md) 인벤토리 노트와 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)에 반영했고, [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) 열린 질문 3은 닫힌다.
+- **상태**: 부분 해소 (①③ **PR #221 develop 머지, 2026-08-14** / ② **잔존** — `YGFloatingBarEdit`의 소비처는 `ToppingEditScreen` 하나이고 중앙 문구로 화면 `strings.xml`의 모드 라벨 `topping_edit_area_only_title`·`topping_edit_border_only_title`을 넘긴다. 문구 출처를 디자인으로 확인한 기록은 이 항목에 없다)
+- **해소 메모**: ① 배치가 확정됐다 — C-103~C-105 4화면이 전부 세로 `Column`의 맨 위/맨 아래에 `fillMaxWidth()`로 붙이는 형태이고 오버레이가 아니다(`BackClose` 추출·확인, `Close` 로딩·에러, `EditTab` 편집). safe area는 엔트리 `YGScaffold` 기본 `innerPadding`이 처리한다. ③ 탭 문자열은 **화면 소유**로 확정 — `ToppingEditTab` enum이 `@StringRes label`을 들고 화면이 `stringResource`로 풀어 넘긴다(feature `strings.xml`). ②는 `Edit`의 중앙 문구가 무엇인지 디자인으로 확인되면 닫는다. 배치 화면(C-106)은 `Edit`가 아니라 뒤로 + 제목 + 닫기 변형 `YGFloatingBarBackTitleClose`를 세로 `Column` 맨 위에 쓰고 제목은 화면 `strings.xml`이 갖는다 — ①③의 답과 같은 쪽이다. [design-system](../architecture/design-system.md) 인벤토리 노트와 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)에 반영했고, [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) 열린 질문 3은 닫힌다.
   > 📌 **변형이 5종이 되고 배치가 한 갈래 늘었다(2026-08-30, PR #406 develop 머지)** — Figma에
   > `Status=Title`이 추가돼 `YGFloatingBarTitle`이 신설되고 C-102 갤러리 두 화면이 손으로 조립하던
   > `Row` + `YGCircleButton`을 그것으로 바꿨다. ①의 답은 여기서도 같다 — 세로 `Column` 맨 위에
@@ -2996,15 +2996,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   드래그·선택 토글도 예외로 두지 않는다(무리플이라 시각은 그대로, 스로틀만 얹힌다).
   ③ 편집 화면용 치수(60·14·2·7.5·9·7dp)를 토큰 스케일에 올릴지 — A-002·C-201이 남긴 "스케일 공백"
   지적과 같은 자리다.
-- **상태**: 부분 해소 (② 해소, ①③ 잔존 — **③은 두 번째 화면으로 복제됐다**)
+- **상태**: 부분 해소 (② 해소, ①③ 잔존 — ③의 리터럴 자리는 아래 메모)
   > 📌 **②의 대상이 아예 사라졌다(2026-08-27, PR #390)** — 토핑·딤의 클릭 모디파이어가 판정
   > 오버레이의 `pointerInput` 하나로 합쳐졌다. 관용구를 강제할지 묻던 자리가 없어진 것이지
   > 규약이 달라진 것은 아니다.
-  > 📌 **③이 복사됐다(2026-08-19, PR #290)** — C-106 배치 화면이 캔버스 영역에 **같은 값**
-  > (상단 60dp·하단 14dp)을 리터럴로 다시 적고 **"공통에 없음" 주석까지 그대로 옮겼다.** 리터럴이 두
-  > 화면에 흩어졌으므로 토큰으로 올릴 때 고칠 자리도 둘이다. ①(회전 가능한 점선 테두리)은 이번에
-  > `dashedBorder()`로 흡수되는 대신 **화면 밖 `component/` 패키지로 올라가 두 화면이 공유**하는
-  > 형태가 됐다 — 디자인시스템으로 가지 않았으니 물음 자체는 남는다.
+  > 📌 **③의 리터럴이 있는 자리** — 캔버스 영역 여백(상단 60dp·하단 14dp·좌우 21dp)은
+  > `CanvasBGEditScreen` 한 곳에 "공통에 없음" 주석과 함께 있다. C-106 배치 화면은
+  > `ToppingArrangeLayout`이 여백을 토큰(`YGTheme.layout.padding`)으로만 잡는다. 대신 토큰 밖
+  > 치수가 `ToppingBorderPanel`의 private 상수(선 굵기·화살표 터치 크기·아이콘 크기·라벨 간격)와
+  > `util/ToppingPanelFocus.kt`의 `PANEL_FOCUS_LIFT`에 있다. 토큰으로 올릴 때 고칠 자리는 이 셋과
+  > `util/ToppingGeometry.kt`다.
+  > 📌 **①의 자리** — 회전 가능한 점선 테두리는 `dashedBorder()`로 흡수되지 않고 화면 밖
+  > `component/` 패키지의 `ToppingSelectionStroke`를 두 화면이 공유한다. 디자인시스템으로 가지
+  > 않았으니 물음 자체는 남는다.
 - **해소 메모**: ①은 [design-system](../architecture/design-system.md) "그리기 프리미티브 소유"
   항목(현재 네 곳 + 이번 예외)과 함께 정한다. ②③은 [2026-08-04]·[2026-08-16] 규약 이탈 항목과 묶인다.
 
@@ -7816,4 +7820,23 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 기획 쪽이 C-101-Loading·C-103-Error 삭제·그만두기 팝업을 위키에 반영하면 이 항목을 닫는다.
   위키 [[open-questions]]에 대응 항목이 서면 링크를 붙인다.
 
-<!-- oq-next: 412 -->
+### [2026-10-02] 배치 화면 테두리 패널 — 다른 화면 높이에서의 가림과 터치 영역 겹침이 미확인이다
+
+- **ID**: OQ-P-412
+- **출처**: `util/ToppingPanelFocus.kt#panelFocusCenter`·`component/ToppingBorderPanel.kt`(브랜치
+  `feature/#567-topping-place-ui`) × [c105-arrange-border-merge 스펙](../superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md)
+  「주의 / 열린 질문」.
+- **항목**: ① 패널이 열리면 토핑을 캔버스 세로 중앙에서 `PANEL_FOCUS_LIFT`만큼 올려 그리는데, 그 값은
+  피그마 한 프레임 크기에서 나온 고정값이다. 캔버스 영역은 폭에 비례해 커지고 패널 높이는 고정이라
+  화면 높이가 다른 기기에서 토핑이 패널에 가리는지 계산으로 정해지지 않고, 실기기에서 본 적도 없다.
+  ② 캔버스 폭 이상으로 키운 토핑은 가운데로 옮겨도 패널에 가린다 — 크기를 줄이는 규칙이 정책에 없어
+  그대로 둔다. ③ 열린 패널의 화살표 터치 영역(44dp 정사각)이 슬라이더 터치 띠의 오른쪽 위 귀퉁이와
+  겹친다(기본 글꼴 배율에서 가로 30dp·세로 8dp, 트랙과 손잡이는 겹치지 않는다). 그 자리에서 슬라이더를
+  잡으려다 패널이 닫히는 일이 실제로 생기는지 확인되지 않았다. ④ 이 화면을 피그마(`5453:10418`,
+  `5461:9261`)와 실기기에서 대조한 기록이 없다.
+- **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
+- **해소 메모**: 화면 높이가 다른 기기 두 대에서 패널을 열어 ①③을 본다. 가리면 올리는 양을 캔버스
+  높이에서 계산하도록 `panelFocusCenter`를 고치고 `ToppingPanelFocusTest`를 함께 고친다. ②는 기획이
+  줄이는 규칙을 정하면 스펙에 반영한다.
+
+<!-- oq-next: 413 -->

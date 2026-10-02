@@ -318,3 +318,6 @@ status.md C-106·C-301 조작 서술 · OQ-P-202 문구(핀치 기준, 미결 �
 
 ## [2026-09-30] restructure | C-101-Loading 반영 — 세그멘테이션 분석 흐름 문서 갱신, 스펙·계획 archive
 status·navigation-flow·data-layer·design-system·ADR-0012 갱신 · 해소 OQ-P-399, OQ-P-401, OQ-P-400(①~⑤) · OQ 신설 OQ-P-411
+
+## [2026-10-02] restructure | 배치 화면 테두리 패널(추가 플로우) 반영 — status 「토핑 생성·배치」 덮어쓰기, ADR-0034 신설
+ADR-0026 본문·인덱스에서 초안의 테두리 서술 정리 · OQ-P-081(②)·OQ-P-203(③) 사용처 고쳐 씀 · OQ 신설 OQ-P-412(실기기 미확인) · 유닛 1239 · 계측 30(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기 대조는 하지 않았다

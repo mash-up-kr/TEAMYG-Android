@@ -2,7 +2,7 @@
 
 > 현재형으로 쓰고, 바뀌면 덮어쓴다. 이력은 [`log.md`](log.md), 결정 이유는 `adr/`, 설계는 스펙.
 > 영역 형식과 규칙: [기록 구조 설계](superpowers/specs/2026-09-26-docs-record-structure-design.md) §3.1.
-> 코드 대조 기준: 작업 브랜치 HEAD `4fd12b91d`.
+> 코드 대조 기준: 작업 브랜치 HEAD `71e3410b7`.
 
 ## 앱 진입·인증 — 스플래시·로그인·약관 (A-001·A-002)
 - 상태: 앱은 스플래시에서 시작해 `BootstrapSessionUseCase`의 세션 검증 결과(저장 토큰 + `users/me` 조회)와 로띠 재생 종료가 둘 다 모여야 그룹 목록 또는 로그인으로 `replaceAll`하며, 세션은 401·`MEMBER_NOT_FOUND`일 때만 지우고 나머지 실패는 토큰을 남긴 채 로그인으로 보낸다. 로그인은 카카오 SDK ID 토큰을 서버에 보내 기존 회원은 그룹 목록으로, 신규 회원은 등록 토큰을 들고 약관 동의로 가고, 약관 동의는 서버 약관 목록으로 필수 동의를 가려 가입·세션 저장 뒤 그룹 목록으로 가며 약관 전문은 서버가 준 `url`을 공용 웹뷰로 연다.
@@ -69,15 +69,19 @@
 - 설계: [c001-canvas-main](superpowers/specs/archive/2026-08-12-c001-canvas-main.md), [c001-canvas-today-detail](superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md), [c202-canvas-spotlight](superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [canvas-feedback-fixes](superpowers/specs/archive/2026-09-10-canvas-feedback-fixes.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0023](adr/0023-group-in-memory-ssot.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md), [ADR-0030](adr/0030-topping-outline-distance-field.md)
 
 ## 토핑 생성·배치 (C-101·C-102·C-105·C-106)
-- 상태: 캔버스 메인이 오늘 캔버스 id와 다음 깊이를 DataStore 초안에 못 박으면서 흐름이 시작되고, 촬영(C-101)이나 커스텀 갤러리(C-102 — 최근 줄은 부른 쪽에 따라 원본 또는 배치에 성공한 알맹이)로 고른 사진이 누끼·편집을 거쳐 초안에 알맹이와 테두리 한 겹을 남긴다. 배치 화면(C-106)은 폴러가 주는 오늘 캔버스 위에 정중앙·캔버스 폭 40%·짧은 변 48dp 하한으로 자동 배치하고, 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)가 캔버스 어디서 시작하든 토핑 중심을 축으로 이동·회전·확대를 한 번에 반영하고 토핑 위 한 손가락 드래그는 이동만 하며, 확인하면 알맹이를 원본 긴 변 기준으로 축소·재인코딩해 올린 뒤 서버 좌표로 배치하며 성공했을 때만 초안을 비우고 캔버스로 되감는다.
-- 앵커: `CanvasToppingPlaceViewModel`, `AddToppingUseCase`, `ToppingDraftRepositoryImpl`, `UploadImagePreprocessorImpl`, `RecentImagePick`, `CustomCameraViewModel`
+- 상태: 캔버스 메인이 오늘 캔버스 id와 다음 깊이를 DataStore 초안에 못 박으면서 흐름이 시작되고, 촬영(C-101)이나 커스텀 갤러리(C-102 — 최근 줄은 부른 쪽에 따라 원본 또는 배치에 성공한 알맹이)로 고른 사진이 누끼·영역 편집을 거쳐 초안에 알맹이를 남긴다. 초안에는 테두리가 없다 — 테두리는 배치 화면(C-106)의 `ToppingBorderPanel`이 정하고 화면 상태(`CanvasToppingPlaceUiState.border`)에만 있다가 확정 때 서버로 간다. 패널은 접힌 바나 토핑 탭으로 열리며, 열린 동안 토핑은 `panelFocusCenter` 자리에 그려지기만 하고 저장 위치는 그대로이고, 캔버스에 닿는 터치는 패널만 닫는다. 닫기와 시스템 뒤로가기는 그만두기 팝업을 거쳐 캔버스로 되감고, 헤더의 뒤로는 팝업 없이 확인 화면으로 돌아간다. 확인 화면의 「사진 편집」은 원본이 있을 때만 보이고 영역 수정만 연다. 배치 화면은 폴러가 주는 오늘 캔버스 위에 정중앙·캔버스 폭 40%·짧은 변 48dp 하한으로 자동 배치하고, 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)가 캔버스 어디서 시작하든 토핑 중심을 축으로 이동·회전·확대를 한 번에 반영하고 토핑 위 한 손가락 드래그는 이동만 하며, 확인하면 알맹이를 원본 긴 변 기준으로 축소·재인코딩해 올린 뒤 서버 좌표로 배치하며 성공했을 때만 초안을 비우고 캔버스로 되감는다.
+- 앵커: `CanvasToppingPlaceViewModel`, `ToppingBorderPanel`, `ToppingArrangeLayout`, `dismissPanelOnTouch`, `ToppingBorderStyle`, `AddToppingUseCase`, `ToppingDraftRepositoryImpl`, `UploadImagePreprocessorImpl`, `RecentImagePick`, `CustomCameraViewModel`
 - ⚠️ 커스텀 카메라는 `targetRotation` 없이 표시 방향 기준 회전값으로 보정해, 세로 고정 화면에서 가로로 들고 찍은 사진이 누운 채 누끼·배치·캔버스까지 흘러간다 (OQ-P-265)
-- ⚠️ 테두리는 편집 세션 안에서만 여러 겹이고 초안·서버에는 마지막 한 겹이 저장되는데 C-301 편집 화면만 첫 겹을 그린다. 굵기는 토핑 배율·기기 폭과 무관한 절대 dp이고 그 정책 근거가 없다 (OQ-P-324, OQ-P-245)
+- ⚠️ 배치 화면에서 고른 테두리는 헤더의 뒤로로 확인 화면에 돌아가거나 프로세스가 죽으면 사라진다 — 초안에 싣지 않기로 한 결정이다 ([ADR-0034](adr/0034-topping-border-set-at-placement.md)). 굵기는 토핑 배율·기기 폭과 무관한 절대 dp이고 그 정책 근거가 없다 (OQ-P-245)
+- ⚠️ 패널이 열린 채 시작한 제스처를 버리는 동작은 modifier 순서(`dismissPanelOnTouch` → `toppingTapInput` → `toppingTransformInput`)에 기대고, 그 순서를 고정하는 테스트는 `ToppingPanelDismissInputTest`뿐이다. 패널이 닫히는 애니메이션 동안에는 토핑이 그려진 자리와 터치 판정 자리(저장 위치)가 다르다
+- ⚠️ 로딩 중에 패널 상태가 안 바뀌는 것은 `CanvasToppingPlaceViewModel`의 가드가 아니라 `YGScaffoldV2`의 로딩 덮개가 입력을 막아서다. ViewModel이 로딩을 보는 자리는 시스템 뒤로가기 하나다
+- ⚠️ 패널이 열릴 때 토핑을 올리는 양(`PANEL_FOCUS_LIFT`)은 피그마 한 프레임 크기에서 나온 고정값이라 화면 높이가 다른 기기에서 토핑이 패널에 가리는지 확인되지 않았고, 열린 패널의 화살표 터치 영역은 슬라이더 터치 띠의 오른쪽 위 귀퉁이와 겹친다 (OQ-P-412)
+- ⚠️ 편집 화면(`ToppingEditScreen`)의 테두리 탭 코드는 `isBorderOnly` 진입에만 살아 있고 그 진입은 C-301의 `CanvasBGEditRoute` 하나다. `BorderColorChipRow`와 `TOPPING_BORDER_COLORS`는 `feature/segmentation/impl`과 `feature/groups/canvas/impl`에 같은 내용으로 두 벌 있다 — 수정 플로우를 옮길 때 segmentation 쪽을 지우기로 한 미완 상태다
 - ⚠️ 토핑 업로드는 알맹이를 디코드해 다시 인코딩하므로 디코드 실패·ICC 프로파일 소실·미러 EXIF 미보정 갈래가 생기고, 빈 알맹이 하한은 축소 전 편집본 해상도에서 재며 `borderOnly` 진입은 판정에서 빠진다 (OQ-P-390, OQ-P-391)
-- ⚠️ 갤러리 최근 줄의 알맹이로 들어온 재편집(`borderOnly`)은 원본 자리에도 알맹이를 넣어 재편집 좌표계 전제가 진입마다 다르고, 영역 탭을 막는 가드 하나가 유일한 방어다 (OQ-P-338)
+- ⚠️ 갤러리 최근 줄의 알맹이로 들어오면 확인 화면이 「사진 편집」을 숨겨(`canEditPhoto`) 편집 화면에 닿지 않는다. 그런데 `SegmentationConfirmRoute`에는 원본 자리에 알맹이를 넣어 `borderOnly`로 여는 코드가 닿지 않는 채 남아 있다 (OQ-P-338)
 - ⚠️ 새 토핑의 `positionZ`는 앱이 확정 시점에 구독 캔버스로 다시 세는 완화뿐이라, 폴링 주기 안에 두 사람이 확인을 누르면 깊이가 겹쳐 그리는 순서가 흔들린다 (OQ-P-322)
-- ⚠️ 배치·편집 화면의 토핑 회전·확대는 두 손가락 제스처(`toppingTransformInput`)로만 되고 접근성 서비스가 대신할 조작이 없다 (OQ-P-202)
-- 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md)
+- ⚠️ 배치·편집 화면의 토핑 회전·확대는 두 손가락 제스처(`toppingTransformInput`)로만 되고 접근성 서비스가 대신할 조작이 없다. 배치 화면의 토핑 그림에는 시맨틱스가 없어 접근성 서비스가 패널을 여는 길은 접힌 바 하나다 (OQ-P-202)
+- 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [c105-arrange-border-merge](superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md), [ADR-0034](adr/0034-topping-border-set-at-placement.md)
 
 ## 누끼 추출 (C-103·C-104)
 - 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고, 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣는다)으로 치환한다. 편집 완료는 초안을 직접 기록하고 편집 화면을 백스택에 남긴 채 확인 화면으로 간다. 로딩·선택 UI·`SegmentationConfirm`의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고(로딩 중엔 시스템 뒤로도), 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 영역 탭은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다.
@@ -187,4 +191,5 @@
 - OQ-P-038 — 토핑 그룹 두 변형이 코드상 같아 실제 화면에서 구분되는지 확인하지 않았다
 - OQ-P-050 — 날짜 칩 배경이 테두리를 덮는지 실기기 렌더로 확인하지 않았다
 - OQ-P-357 — 파르페 쌓임 연출의 간격을 실기기에서 본 적이 없다
+- OQ-P-412 — 배치 화면의 테두리 패널이 열렸을 때 화면 높이가 다른 기기에서 토핑이 패널에 가리는지, 화살표와 슬라이더의 터치 영역 겹침이 손에 걸리는지 본 적이 없다
 - OQ-P-410 — 세션·푸시·캔버스·업로드·카메라·세그멘테이션 영역에서 이월된 나머지 실기기·실서버 항목

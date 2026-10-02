@@ -6,7 +6,7 @@ date: 2026-08-20
 deciders: Parfait 팀
 supersedes:
 superseded_by:
-related_adr: ADR-0022, ADR-0023, ADR-0025
+related_adr: ADR-0022, ADR-0023, ADR-0025, ADR-0034
 related_spec: c106-topping-place-api, c106-topping-place, segmentation-pipeline-hardening
 related_architecture: data-layer, state-management, navigation-flow
 platforms: android
@@ -35,10 +35,12 @@ tags: [adr, parfait, topping, state, datastore, navigation]
 **토핑 만들기 흐름 상태를 `:data`의 DataStore에 초안 한 벌로 두고, 흐름의 화면들이 그것을 읽고
 쓴다. 초안은 흐름당 하나만 존재한다.**
 
-- 담는 것: 캔버스 식별값(`groupId`·`parfaitId`·`nextPositionZ`), 알맹이·cutout 경로,
-  테두리 색·굵기.
+- 담는 것: 캔버스 식별값(`groupId`·`parfaitId`·`nextPositionZ`), 알맹이·cutout 경로.
+  **테두리는 담지 않는다** — 배치 화면이 정하고 화면 상태에만 둔다
+  ([ADR-0034](0034-topping-border-set-at-placement.md)). 아래 프로세스 사망 복원 보장에도 테두리는
+  들지 않는다.
 - **여는 시점은 흐름 진입 하나뿐이다.** `CanvasMain`이 카메라·갤러리로 떠날 때 캔버스 식별값으로
-  **새로 덮어쓰고** 이미지·테두리를 비운다. 낡은 초안이 다음 흐름에 따라붙는 문제가 이 규칙 하나로
+  **새로 덮어쓰고** 이미지를 비운다. 낡은 초안이 다음 흐름에 따라붙는 문제가 이 규칙 하나로
   닫히므로 별도 만료·정리 경로를 두지 않는다.
 - 채우는 곳은 세그멘테이션 완료와 편집 완료, 읽는 곳은 배치 화면, 비우는 곳은 배치 성공이다.
 - 걷는 것은 `SegmentationConfirmRoute`의 `rememberSaveable` 셋**뿐**이다.
@@ -101,8 +103,8 @@ tags: [adr, parfait, topping, state, datastore, navigation]
   `cacheDir` 하위 파일이고, 세그멘테이션 진입이 그 디렉토리를 통째로 비운다
   (`SegmentationCacheDir#clearFiles`). OS도 저장 공간 압박 시 회수한다. 초안을 읽을 때
   **"경로는 있는데 파일이 없다"를 그 경로가 처음부터 없었던 것과 같이 취급한다** — 비우는 것은
-  **이미지 경로 둘뿐**이고 캔버스 식별값과 테두리는 남긴다. 초안 전체를 버리면 아래 "진입 캔버스가
+  **이미지 경로 둘뿐**이고 캔버스 식별값은 남긴다. 초안 전체를 버리면 아래 "진입 캔버스가
   못 박히는 것"이 함께 깨진다.
 - 덮어쓰기·비우기를 단위 테스트로 고정한다. 이 결정의 안전성이 전부 그 두 규칙에 걸려 있다.
-- 초안에 담기는 것은 캐시 파일 경로와 id·색·수치뿐이다. 개인 식별 정보가 아니라
+- 초안에 담기는 것은 캐시 파일 경로와 id·수치뿐이다. 개인 식별 정보가 아니라
   `EncryptedPreferences`(ADR-0019) 대상이 아니다.
