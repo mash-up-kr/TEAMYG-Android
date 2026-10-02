@@ -8,11 +8,6 @@
     <string name="segmentation_loading_description">잠시만 기다려 주세요...</string>
     <string name="segmentation_loading_close">닫기</string>
 
-    <string name="segmentation_quit_dialog_title">사진 편집을 그만둘까요?</string>
-    <string name="segmentation_quit_dialog_body">지금까지 진행한 내용은 저장되지 않아요.\n정말 그만두시겠어요?</string>
-    <string name="segmentation_quit_dialog_confirm">그만두기</string>
-    <string name="segmentation_quit_dialog_cancel">계속 편집</string>
-
     <string name="segmentation_confirm_edit_photo">사진 편집</string>
     <string name="segmentation_confirm_next">다음</string>
     <string name="segmentation_confirm_draft_unavailable">토핑을 이어서 만들 수 없어요. 캔버스에서 다시 시작해 주세요.</string>

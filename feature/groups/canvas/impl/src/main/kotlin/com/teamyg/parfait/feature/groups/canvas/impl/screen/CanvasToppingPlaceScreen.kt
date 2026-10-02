@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.lerp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -58,7 +57,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelFocusCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 import java.io.File
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val INPUT_TAG = "topping_place_input"
 
@@ -293,23 +291,6 @@ internal fun CanvasToppingPlaceScreen(
     }
 }
 
-@Composable
-internal fun ToppingPlaceQuitDialog(
-    onConfirmQuit: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    YGModalPopup(
-        title = stringResource(R.string.canvas_topping_place_quit_dialog_title),
-        body = stringResource(R.string.canvas_topping_place_quit_dialog_body),
-        iconRes = DesignSystemR.drawable.ic_warning_round,
-        secondaryText = stringResource(R.string.canvas_topping_place_quit_dialog_confirm),
-        onSecondaryClick = onConfirmQuit,
-        primaryText = stringResource(R.string.canvas_topping_place_quit_dialog_cancel),
-        onPrimaryClick = onDismiss,
-        onDismissRequest = onDismiss,
-    )
-}
-
 private class CanvasToppingPlacePreviewParameterProvider : PreviewParameterProvider<Boolean> {
     override val values: Sequence<Boolean> = sequenceOf(false, true)
 }
@@ -335,10 +316,4 @@ private fun PreviewCanvasToppingPlaceScreen(
         onToppingImageReadyChanged = {},
         modifier = Modifier.fillMaxSize(),
     )
-}
-
-@YGPreview
-@Composable
-private fun PreviewToppingPlaceQuitDialog() = PreviewBox {
-    ToppingPlaceQuitDialog(onConfirmQuit = {}, onDismiss = {})
 }

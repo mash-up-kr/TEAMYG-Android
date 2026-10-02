@@ -17,7 +17,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
-import com.teamyg.parfait.feature.groups.canvas.impl.screen.ToppingPlaceQuitDialog
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceViewModel
@@ -104,7 +104,7 @@ internal fun CanvasToppingPlaceRoute(
     }
 
     if (uiState.showQuitDialog) {
-        ToppingPlaceQuitDialog(
+        YGModalQuitEdit(
             onConfirmQuit = { viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogConfirm) },
             onDismiss = { viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogCancel) },
         )
