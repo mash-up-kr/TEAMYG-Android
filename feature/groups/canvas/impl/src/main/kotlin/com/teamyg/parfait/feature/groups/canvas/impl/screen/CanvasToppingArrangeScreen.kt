@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.lerp
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
@@ -52,6 +55,7 @@ private const val INPUT_TAG = "topping_arrange_input"
  * 위치와 목록 순서는 그대로다.
  *
  * @param onToppingTransform `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다.
+ * @param toastPolicy 이 화면이 헤더 아래 캔버스 윗변에 직접 띄운다. 로딩 덮개보다 아래 층이다.
  */
 @Composable
 internal fun CanvasToppingArrangeScreen(
@@ -69,8 +73,10 @@ internal fun CanvasToppingArrangeScreen(
     onDeleteToppingDialogConfirm: () -> Unit,
     onDeleteToppingDialogCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
 ) {
     ToppingArrangeLayout(
+        toast = { YGToastHost(policy = toastPolicy, modifier = Modifier.fillMaxWidth()) },
         header = {
             YGFloatingBarTitle(
                 title = stringResource(R.string.canvas_topping_place_title),

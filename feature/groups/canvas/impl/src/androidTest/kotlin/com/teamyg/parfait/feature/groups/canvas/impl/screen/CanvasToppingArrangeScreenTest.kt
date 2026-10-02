@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -21,6 +22,8 @@ import androidx.core.net.toUri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.feature.groups.canvas.impl.hasTestTagPrefix
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
@@ -52,6 +55,8 @@ private val OTHERS_AT = Offset(0.5f, 0.6f)
 /** 닫힌 패널 바 바로 위. 더 내려가면 바가 터치를 가져간다 */
 private val EMPTY_AT = Offset(0.5f, 0.85f)
 
+private const val TOAST_TEXT = "다른 사람의 사진은 편집할 수 없어요"
+
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class CanvasToppingArrangeScreenTest {
@@ -65,6 +70,7 @@ class CanvasToppingArrangeScreenTest {
     private var confirmCount = 0
     private var toggleCount = 0
     private var dismissCount = 0
+    private val toastPolicy = YGToastPolicy()
 
     @Before
     fun writeToppingImage() {
@@ -195,6 +201,23 @@ class CanvasToppingArrangeScreenTest {
         .fetchSemanticsNodes()
         .map { it.config[SemanticsProperties.TestTag] }
 
+    @Test
+    fun toast_coversTheCanvasTopAtFullWidth_andLeavesTheHeaderClear() {
+        setScreen()
+        composeTestRule.runOnIdle { toastPolicy.show(YGToastType.Edit(TOAST_TEXT)) }
+        composeTestRule.waitForIdle()
+
+        val toast = composeTestRule.onNodeWithText(TOAST_TEXT, useUnmergedTree = true).getBoundsInRoot()
+        val title = composeTestRule.onNodeWithText("배치").getBoundsInRoot()
+        val canvas = composeTestRule.onNodeWithTag(INPUT_TAG).getBoundsInRoot()
+
+        assertTrue("토스트가 헤더 제목 아래에 있어야 한다", toast.top >= title.bottom)
+        assertTrue("토스트가 캔버스 윗변에서 시작해야 한다", toast.top >= canvas.top && toast.top < canvas.top + 40.dp)
+        // 문구는 토스트 안쪽 여백(16dp)만큼 들어가 있다. 캔버스 폭으로 깔렸다면 문구가 캔버스 왼쪽 변보다
+        // 안쪽이고, 화면 폭이면 캔버스 왼쪽 여백(20dp) 덕에 바깥이다
+        assertTrue("토스트가 캔버스 좌우 여백 밖까지 깔려야 한다", toast.left < canvas.left)
+    }
+
     /** @param fraction 캔버스 대비 비율 */
     private fun tapCanvas(fraction: Offset) {
         composeTestRule.onNodeWithTag(INPUT_TAG).performTouchInput {
@@ -254,6 +277,7 @@ class CanvasToppingArrangeScreenTest {
                         modifier = Modifier
                             .requiredWidth(SCREEN_WIDTH)
                             .fillMaxHeight(),
+                        toastPolicy = toastPolicy,
                     )
                 }
             }

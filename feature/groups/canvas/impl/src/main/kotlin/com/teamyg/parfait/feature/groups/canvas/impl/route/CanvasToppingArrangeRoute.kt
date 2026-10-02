@@ -72,7 +72,6 @@ internal fun CanvasToppingArrangeRoute(
     YGScaffoldV2(
         modifier = modifier,
         isLoading = uiState.isLoading,
-        toastPolicy = toastPolicy,
     ) { innerPadding ->
         CanvasToppingArrangeScreen(
             uiState = uiState,
@@ -112,6 +111,8 @@ internal fun CanvasToppingArrangeRoute(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
+            // 스캐폴드에 넘기지 않는다 — 스캐폴드의 토스트 자리는 상태바 바로 아래라 헤더를 덮는다
+            toastPolicy = toastPolicy,
         )
     }
 
