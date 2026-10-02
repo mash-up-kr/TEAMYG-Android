@@ -260,6 +260,7 @@ class CanvasToppingPlaceViewModel
 
             CanvasToppingPlaceIntent.OnClickConfirm -> handleOnClickConfirm()
 
+            // 누른 대상이 달라 인텐트를 나눈다. 이 화면은 토핑이 하나뿐이라 둘의 결과가 같다
             CanvasToppingPlaceIntent.OnClickTopping,
             CanvasToppingPlaceIntent.OnToggleBorderPanel,
             -> updateState {

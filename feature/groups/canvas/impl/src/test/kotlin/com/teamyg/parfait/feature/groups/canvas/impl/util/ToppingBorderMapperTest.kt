@@ -6,7 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-class ToppingBorderStyleTest {
+class ToppingBorderMapperTest {
     @Test
     fun toToppingBorder_null_isNone() =
         assertEquals(ToppingBorder.None, (null as ToppingBorderStyle?).toToppingBorder())

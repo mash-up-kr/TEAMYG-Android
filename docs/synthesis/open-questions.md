@@ -4432,7 +4432,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-256
 - **출처**: PR5 최종 브랜치 리뷰 — `core/util/android`의 `String.kt#toRgbHexString`이 알파가
   불투명(`0xFF`)이 아니면 `require()`로 던진다. 호출부
-  `util/ToppingBorderStyle.kt`의 `ToppingBorderStyle?.toToppingBorder()`는
+  `util/ToppingBorderMapper.kt`의 `ToppingBorderStyle?.toToppingBorder()`는
   `CanvasToppingPlaceViewModel#handleOnClickConfirm`의 `launch { }` **안**, `addToppingUseCase`
   호출 앞에서 불린다 — 던지면 `launch`의 `onError`가 `PlaceFailed`로 받는다. 이 호출이 `launch`
   밖에 있으면 `require()`가 어디에도 안 걸리고 그대로 크래시한다.
