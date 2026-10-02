@@ -47,6 +47,8 @@ internal fun GalleryImageGridComponent(
     onClickCutoutImage: (RecentImage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val latestDate = groups.maxOfOrNull { it.date }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(count = 3),
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding5),
@@ -91,6 +93,7 @@ internal fun GalleryImageGridComponent(
                 GalleryDateHeader(
                     date = group.date.format(DateTextFormat.monthDayFormat),
                     dayOfWeek = group.date.format(DateTextFormat.weekdayFormat),
+                    isDayBoundaryInfoVisible = group.date == latestDate,
                 )
             }
 
@@ -145,6 +148,7 @@ private fun GalleryDateHeader(
 private fun GalleryDateHeader(
     date: String,
     dayOfWeek: String,
+    isDayBoundaryInfoVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -168,12 +172,14 @@ private fun GalleryDateHeader(
             )
         }
 
-        GalleryTodayOnlyInfo()
+        if (isDayBoundaryInfoVisible) {
+            GalleryDayBoundaryInfo()
+        }
     }
 }
 
 @Composable
-private fun GalleryTodayOnlyInfo(modifier: Modifier = Modifier) {
+private fun GalleryDayBoundaryInfo(modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth(),
@@ -185,7 +191,7 @@ private fun GalleryTodayOnlyInfo(modifier: Modifier = Modifier) {
             modifier = Modifier.size(SizeTokens.Size24.getDp()),
         )
         Text(
-            text = stringResource(R.string.gallery_today_only_info),
+            text = stringResource(R.string.gallery_day_boundary_info),
             color = YGAtomicColors.Soda.Soda500,
             style = YGTheme.typography.caption.c01R,
         )
