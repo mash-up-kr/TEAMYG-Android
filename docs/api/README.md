@@ -304,11 +304,8 @@ develop에 0건이라(2026-08-22 PR #325가 걷어냈다) 되살릴지가 그대
 > ✅ **2026-08-27 — 마지막 미소비 엔드포인트가 닫혔다**(PR #369 develop 머지, 계약 delta 없음).
 > C-301 편집 탭의 확인 버튼이 **테두리 PATCH**까지 부르면서 `parfait-image.md`가 **`done`**이 됐다
 > (4/4 소비). **소비처를 얻은 엔드포인트는 27건**이고, `partial`로 남은 도메인은
-> **하나**(`parfait-group.md`)다. 앱이 테두리를 **겹 목록**으로 들고 서버가 **한 겹**을 받는
-> 모양 차이는 `CanvasBGEditViewModel.toToppingBorder`가 접는데, **마지막 겹**을 보내는 그 규칙이
-> 같은 화면의 **첫 겹**을 그리는 렌더링과 어긋난다
-> → [parfait-image.md](parfait-image.md) Android 매핑 ·
-> [open-questions](../synthesis/open-questions.md) OQ-P-324.
+> **하나**(`parfait-group.md`)다
+> → [parfait-image.md](parfait-image.md) Android 매핑.
 > ⚠️ **실서버 확인은 여전히 0회**이고, 테두리 저장 실패도 앞선 두 갈래와 같이 로그 한 줄로 접힌다
 > (OQ-P-146·OQ-P-275).
 

@@ -45,8 +45,9 @@ tags: [adr, parfait, topping, state, datastore, navigation]
 - 채우는 곳은 세그멘테이션 완료와 편집 완료, 읽는 곳은 배치 화면, 비우는 곳은 배치 성공이다.
 - 걷는 것은 `SegmentationConfirmRoute`의 `rememberSaveable` 셋**뿐**이다.
 - ⚠️ **`TOPPING_EDIT_RESULT_KEY`는 걷지 않는다.** 그 결과 키의 소비자가 둘이다 —
-  `SegmentationConfirmRoute`와 **`CanvasBGEditRoute`**(C-301에서 이미 놓인 토핑을 `borderOnly`로
-  다시 손보는 경로). 편집 화면이 결과 키 대신 초안에 쓰도록 바꾸면 배경 편집 쪽은 편집을 마쳐도
+  `SegmentationConfirmRoute`와 **`CanvasBGEditRoute`**(결정 당시 C-301이 이미 놓인 토핑의 테두리를 편집 화면으로
+  다시 손보던 경로. 지금은 그 왕복이 없어 소비자가 `SegmentationConfirmRoute` 하나다 →
+  [ADR-0034](0034-topping-border-set-at-placement.md)). 편집 화면이 결과 키 대신 초안에 쓰도록 바꾸면 배경 편집 쪽은 편집을 마쳐도
   아무것도 반영되지 않고 **컴파일은 통과한다.** 결과 키는 전달 수단으로 남기고, 그것을 받은
   `SegmentationConfirmRoute`가 초안에 옮겨 적는다.
 - **`NavKeySegmentationConfirm`의 경로 셋도 그대로 둔다.** 그것은 화면을 여는 인자이고 초안은

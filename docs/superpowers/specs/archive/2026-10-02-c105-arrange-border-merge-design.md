@@ -1,24 +1,24 @@
 ---
 id: c105-arrange-border-merge
 title: 배치 화면에 테두리 설정 합치기 (C-105-Arrange border panel)
-status: draft
+status: implemented
 category: behavior-spec
 platforms: android
 verified: 2026-10-02
 related_code:
   - feature/groups/canvas/impl/.../screen/CanvasToppingPlaceScreen.kt#CanvasToppingPlaceScreen
   - feature/groups/canvas/impl/.../viewmodel/CanvasToppingPlaceViewModel.kt#CanvasToppingPlaceViewModel
-  - feature/groups/canvas/impl/.../screen/CanvasBGEditScreen.kt#CanvasBGEditScreen
+  - feature/groups/canvas/impl/.../screen/CanvasToppingArrangeScreen.kt#CanvasToppingArrangeScreen
+  - feature/groups/canvas/impl/.../viewmodel/CanvasToppingArrangeViewModel.kt#CanvasToppingArrangeViewModel
   - feature/groups/canvas/impl/.../viewmodel/CanvasBGEditViewModel.kt#CanvasBGEditViewModel
-  - feature/groups/canvas/impl/.../component/ToppingTransformInput.kt#toppingTransformInput
-  - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTapInput
-  - feature/segmentation/impl/.../screen/ToppingEditScreen.kt#ToppingEditScreen
-  - feature/segmentation/impl/.../screen/ToppingBorderEditScreen.kt#ToppingBorderEditScreen
-  - feature/segmentation/impl/.../component/BorderColorChipRow.kt#BorderColorChipRow
-  - feature/segmentation/impl/.../component/BrushWidthSlider.kt#BrushWidthSlider
+  - feature/groups/canvas/impl/.../component/ToppingBorderPanel.kt#ToppingBorderPanel
+  - feature/groups/canvas/impl/.../component/ToppingArrangeLayout.kt#ToppingArrangeLayout
+  - feature/groups/canvas/impl/.../component/EditableToppingLayer.kt#EditableToppingImage
+  - feature/groups/canvas/impl/.../model/EditableTopping.kt#EditableTopping
+  - feature/groups/canvas/api/.../NavKeyCanvasToppingArrange.kt#NavKeyCanvasToppingArrange
   - feature/segmentation/api/.../NavKeyToppingEdit.kt#NavKeyToppingEdit
-  - domain/.../model/topping/ToppingDraft.kt#ToppingDraft
-related_adr: ADR-0025, ADR-0026
+  - core/designsystem/.../component/ygslider/YGSlider.kt#YGSlider
+related_adr: ADR-0025, ADR-0026, ADR-0034
 related_spec: c106-topping-place, c301-topping-edit-tab, topping-pinch-gesture, topping-border-distance-field
 related_architecture:
 supersedes:
@@ -27,6 +27,10 @@ tags: [spec, parfait]
 ---
 
 # Spec: 배치 화면에 테두리 설정 합치기
+
+> **구현 완료(2026-10-02, develop 머지 전).** 구현이 이 스펙과 다르게 간 자리와 남은 물음은
+> [open-questions](../../../synthesis/open-questions.md) OQ-P-413~OQ-P-419에 있다. 현재 상태는
+> [status.md](../../../status.md) 「토핑 생성·배치·배치 수정」과 [ADR-0034](../../../adr/0034-topping-border-set-at-placement.md).
 
 > 상태·날짜·대상·관련은 위 frontmatter가 단일 출처(source of truth). 본문은 설계 내용에 집중.
 

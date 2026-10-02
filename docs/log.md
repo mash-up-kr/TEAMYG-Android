@@ -324,3 +324,6 @@ ADR-0026 본문·인덱스에서 초안의 테두리 서술 정리 · OQ-P-081(�
 
 ## [2026-10-02] lint | 배치 화면 테두리 패널 최종 리뷰 반영 — 낮은 화면에서 캔버스가 확정 버튼 밑으로 넘치던 배치 수정, 문서 6건 정정
 OQ-P-256 호출 경로·잠금 테스트 서술을 현재 코드에 맞춤(미결 유지) · OQ-P-412 출처에서 브랜치명 제거, 낮은 화면 실기기 미확인 추가(미결 유지) · status 「튜토리얼」 원본 없는 누끼 확인 진입 · ADR-0025 `related_adr`에 ADR-0034 · 유닛 `feature:groups:canvas:impl` 202·`domain` 130 · 계측 33(`feature:groups:canvas:impl`, 에뮬레이터 Pixel_7_API_36) · 낮은 화면 실기기 확인은 하지 않았다
+
+## [2026-10-02] restructure | 배치 수정 화면(`CanvasToppingArrange`) 반영 — status 「토핑 생성·배치·배치 수정」·「캔버스 배경 편집」 덮어쓰기, 스펙·계획 둘 archive
+navigation-flow·design-system·data-layer·api/parfait-image Android 매핑·ADR-0034 갱신 · 해소 OQ-P-201, OQ-P-276, OQ-P-324, OQ-P-337, OQ-P-338, OQ-P-379(이미 닫혀 있던 OQ-P-254 항목 삭제) · 고쳐 씀 OQ-P-081, OQ-P-175, OQ-P-202, OQ-P-203, OQ-P-326, OQ-P-391 · OQ 신설 OQ-P-413, OQ-P-414, OQ-P-415, OQ-P-416, OQ-P-417, OQ-P-418, OQ-P-419 · 유닛 1256 · 계측 44(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기·TalkBack 대조는 하지 않았다

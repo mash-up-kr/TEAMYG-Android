@@ -312,7 +312,7 @@ impl 컨벤션 플러그인이 주는 것은 `:domain`뿐이다). 그래서 **Re
 | `ImageUploadRepository`(#322, **#480**) | `upload(filePath, imageType, sourceLongSide): Result<ImageId>` — 발급·S3 PUT·확인 3단계를 하나로 닫고 **이미 `COMPLETED`인 `imageId`**를 준다. `sourceLongSide`(#480)는 **누끼를 오려낸 사진 전체의 긴 변**이고 배경은 보지 않는다 — 기본값을 두지 않아 새 호출부가 빠뜨리면 컴파일이 잡는다 | `AddToppingUseCase`(C-106 배치, 초안이 나른 값) · `UploadImageUseCase`(#329, C-301 배경 — `null` 명시) |
 | **`ImageFileRepository`**(#329) | `copyToCache(uri): Result<String>` — `content://`를 캐시 파일로 떨구고 **절대경로**를 준다 | `UploadImageUseCase` |
 | **`NotificationRepository`**(#450) | `registerCurrentDeviceToken()` — `suspend`도 `Result`도 아니다. 걸어만 두고 돌아오며 실패는 로그로만 남는다(아래 「기기 토큰 등록」) | `LoginWithKakaoUseCase`·`SignUpUseCase`·`BootstrapSessionUseCase`(직접) · `RegisterCurrentDeviceTokenUseCase`(`:app` `ParfaitFirebaseMessagingService.onNewToken`) → 세션 트리거 넷 |
-| `ToppingRepository`(#322, #335, #336→2026-08-31, #369) | `place(groupId, parfaitId, imageId, transform, border): Result<PlacedToppingVO>` · **`delete(groupId, parfaitId, parfaitImageId): Result<Unit>`**(#335) · **`updateAll(groupId, parfaitId, updates): Result<List<UpdatedToppingVO>>`**(#428→2026-09-01 develop 머지 — #336의 단건 `update`를 대체) · **`updateBorder(groupId, parfaitId, parfaitImageId, border): Result<UpdatedToppingBorderVO>`**(#369) | `AddToppingUseCase`(C-106 배치) · `DeleteToppingUseCase`(C-301 편집 탭 삭제) · `UpdateToppingsUseCase`·`UpdateToppingBorderUseCase`(C-301 편집 탭 확인) |
+| `ToppingRepository`(#322, #335, #336→2026-08-31, #369) | `place(groupId, parfaitId, imageId, transform, border): Result<PlacedToppingVO>` · **`delete(groupId, parfaitId, parfaitImageId): Result<Unit>`**(#335) · **`updateAll(groupId, parfaitId, updates): Result<List<UpdatedToppingVO>>`**(#428→2026-09-01 develop 머지 — #336의 단건 `update`를 대체) · **`updateBorder(groupId, parfaitId, parfaitImageId, border): Result<UpdatedToppingBorderVO>`**(#369) | `AddToppingUseCase`(C-106 배치) · `DeleteToppingUseCase`(배치 수정 화면 삭제) · `UpdateToppingsUseCase`·`UpdateToppingBorderUseCase`(배치 수정 화면 확정) |
 
 > ✅ **오늘 캔버스가 그룹 SSoT와 같은 형태로 갈렸다(2026-08-31, PR #404)** — `getTodayCanvas` 하나가 구독·갱신 둘·정리·실패 축 다섯으로 나뉘고 `GetTodayParfaitUseCase`가 사라졌다. 갱신이 `Result<Unit>`만 주는 것도 ADR-0023과 같은 이유다.
 
@@ -343,8 +343,7 @@ impl 컨벤션 플러그인이 주는 것은 `:domain`뿐이다). 그래서 **Re
 > 같은 확인 버튼과 함께 올라왔다. `update`와 달리 **부분 병합이 아니라 통째 교체**라 파라미터가
 > 널 허용이 아니고 `ToppingBorder` 하나를 받는다(서버 계약이 세 필드를 통째로 덮는다). 이 메서드만
 > 응답 VO(`UpdatedToppingBorderVO`)가 따로인데 **읽는 자리는 아직 없다** — 화면이 실패만 로그로
-> 접는다. 접는 규칙(겹 목록 → 마지막 겹)이 그리는 규칙(첫 겹)과 어긋나는 것은
-> [open-questions](../synthesis/open-questions.md) OQ-P-324.
+> 접는다.
 
 **업로드가 받아 주는 형식은 `UploadImageFormat` 한 자리가 안다**(#329) — 확장자·contentType·파일
 시그니처를 enum 하나에 묶었다(`data/model/image/`). 셋을 함께 두는 이유는 **발급 요청과 S3 PUT

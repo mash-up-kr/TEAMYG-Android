@@ -346,7 +346,7 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
                           NavKeySegmentationConfirm(sourceImageUri?, subjectImagePath?, trimmedSubjectImagePath)
                                      ▲              │  ▲ ToppingEditResult(ResultEventBus)  │
    갤러리 "최근"의 알맹이 ────────────┘              ▼  │                                    ▼
-   (앞의 둘이 null — 테두리만 편집)   NavKeyToppingEdit(source, segmentation, borderLayers)   NavKeyCanvasToppingPlace
+   (앞의 둘이 null — 편집 없음)      NavKeyToppingEdit(source, segmentation)                 NavKeyCanvasToppingPlace
                                                                                              │ popUpTo<NavKeyCanvasMain>()
                                                                                              ▼
                                                                                         C-001 캔버스
@@ -370,14 +370,12 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
   [open-questions](../synthesis/open-questions.md) [2026-08-10].
 - 재편집을 위해 확인 화면이 **최종본과 "테두리 전 알맹이"를 따로** 들고 있다가 알맹이 쪽을 마스크로
   넘긴다. 최종본을 넘기면 테두리 색이 원본 픽셀로 덮여 사라진다.
-- 📌 **결과가 원본 사진의 긴 변도 나른다**(2026-09-09, PR #480) — `ToppingEditResult.sourceLongSide`가
-  업로드 축소 배율의 분모다. **값 클래스가 아니라 벌거벗은 `Int?`**인 이유는 `feature/segmentation/api`가
-  `:domain`을 의존하지 않기 때문이고(같은 이유로 `ToppingBorderLayer`가 색을 ARGB 정수로 내린다),
-  감싸는 곳은 소비처인 `SegmentationConfirmViewModel`이다. `borderOnly` 진입은 `null`을 싣는다 —
-  그 진입의 `cutout`은 사진이 아니라 되살린 알맹이라 분모가 못 된다
+- 📌 **결과가 원본 사진의 긴 변도 나른다** — `ToppingEditResult.sourceLongSide`가 업로드 축소 배율의
+  분모다. 값 클래스가 아니라 벌거벗은 `Int`인 이유는 `feature/segmentation/api`가 `:domain`을 의존하지
+  않기 때문이고, 감싸는 곳은 소비처인 `SegmentationConfirmViewModel`이다
   → [topping-upload-source-scaled 스펙](../superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md).
 - **편집 완료가 `ToppingEditCompletion`으로 갈린다** — `NavKeyToppingEdit.completion`이 `ReturnResult`(기본. 확인 화면의
-  "사진 편집"·배경 편집: 위 `ResultEventBus` 왕복)이면 `sendResult` + `onBack`이고, `RecordAndConfirm`(분석 0개 경로)이면
+  "사진 편집": 위 `ResultEventBus` 왕복)이면 `sendResult` + `onBack`이고, `RecordAndConfirm`(분석 0개 경로)이면
   `ToppingEditViewModel`이 파일 저장에 이어 초안까지 기록한 뒤 `GoToConfirm`을 내고 Route가 `goTo(NavKeySegmentationConfirm)`을 한다.
   완료 방식은 `@Assisted` 인자로 VM이 받는다. **편집 화면은 확인 화면 아래 백스택에 남는다.**
   저장부터 기록까지는 `isSaving`이 올라가 있어 그 사이의 완료 탭은 무시된다.
@@ -387,7 +385,7 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
   그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
   경로 이름이 뒤집혀 있다: 확인 화면 인자의 `subjectImagePath = result.cutoutImagePath`, `trimmedSubjectImagePath = result.subjectImagePath`.
 - **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
-  팝업 호출은 카메라 모듈과 세그멘테이션 모듈에 따로 있다 — 카메라가 세그멘테이션 `impl`을 의존할 수 없고, 호출이 몇 줄뿐이며, 문자열이 모듈마다 있어서다. 본문·버튼을 바꿀 때는 두 벌을 함께 고친다.
+  팝업은 디자인시스템 `YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitEdit`이고 문구는 `core/designsystem`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
   "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)와 편집 화면의 뒤로·닫기에는 팝업이 없다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.
@@ -429,7 +427,7 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
 > ✅ **흐름에 두 번째 입구가 생겼다(2026-08-22, PR #334)** — 배치에 성공한 알맹이가 갤러리 "최근"에
 > 남고, 그것을 고르면 촬영·세그멘테이션을 건너뛰어 **확인 화면으로 직행**한다. 그래서
 > `NavKeySegmentationConfirm`의 `sourceImageUri`·`subjectImagePath`가 nullable로 넓어졌고, 둘이 없는
-> 진입에서는 "사진 편집"이 잠겼다(🔁 2026-08-31 뒤집힘, 아래 항목). 확인 화면은 초안이 이번 알맹이를 가리키지 않으면 **스스로 초안을
+> 진입에서는 「사진 편집」을 숨긴다(아래 항목). 확인 화면은 초안이 이번 알맹이를 가리키지 않으면 **스스로 초안을
 > 먼저 적은 뒤** 구독을 연다 — 순서를 뒤집으면 첫 방출의 `null`이 없는 실패를 알린다.
 > 노출은 `returnResultOnly = false`인 토핑 만들기 진입에서만이라 배경 선택(C-301)에는 안 섞인다 →
 > [c106-topping-place-api 스펙](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md) 「누끼 알맹이 재사용 (PR6)」.
@@ -440,14 +438,10 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
 > 것을 부르는 쪽이 직접 고르게 갈랐고, **배경 편집은 `SOURCE`·토핑 만들기는 `CUTOUT`**이다.
 > 겸해 최근 목록의 정원도 종류별로 갈렸다([data-layer](data-layer.md) 「예: 최근 이미지」, OQ-P-258).
 >
-> 🔁 **재사용 진입의 "사진 편집"이 열렸다(2026-08-31 브랜치 작업 → **2026-09-01 develop 머지, 이슈 #424 ·
-> PR #425 `6a1da1b0`**)** — 잠그는 대신 **`NavKeyToppingEdit(borderOnly = true)`로 테두리 편집만** 연다. 되살릴
-> 원본이 없다는 사실은 그대로이므로 영역(잘라내기) 탭은 열리지 않는다. 원본 자리에는 알맹이를 같이
-> 넣는다 — 원본과 누끼가 같은 그림이면 `buildCutoutBitmap`의 SRC_IN 결과가 알맹이 그대로다.
-> 캔버스에 놓인 토핑을 다시 손보는 C-306이 쓰던 경로를 그대로 태운 것이라 편집 화면은 안 바뀌었다.
-> 함께 **재사용 진입의 초안 재기록 가드가 `SavedStateHandle` 표시로 옮겼다** — 편집을 열면서
-> "초안의 알맹이는 진입 인자에서 벗어나지 않는다"는 전제가 깨졌고, 그대로 두면 프로세스 사망 복원이
-> 진입 인자로 편집 결과와 테두리를 덮어쓴다.
+> 🔁 **재사용 진입에는 「사진 편집」이 없다** — 되살릴 원본이 없어 확인 화면이 버튼을 숨긴다
+> (`SegmentationConfirmState.canEditPhoto`). 편집 화면은 영역 수정만 하므로 원본 없이 열 수 있는 모드가 없다.
+> 재사용 진입은 확인 화면이 진입 인자의 알맹이를 초안에 한 번만 적고, 그 표시를 `SavedStateHandle`
+> (`hasRecordedEntrySubject`)에 둔다 — 프로세스 사망 복원이 진입 인자로 초안을 다시 덮어쓰지 않게 한다.
 >
 > ✅ **호출자를 잃고 남았던 잔해가 지워졌다(2026-09-20, PR #514)** — `NavKeyCanvasMove`·
 > `CanvasMoveRoute`·`CanvasMoveScreen`과 엔트리 등록이 삭제됐다. 같은 라운드가
@@ -492,39 +486,37 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
   못 받았으면 편집을 아예 열지 않는다(로그만 남기고 버튼이 조용히 안 먹는다). 편집 화면이 스스로
   오늘 조회를 부르면 캔버스가 없는 날에는 서버가 캔버스를 새로 만들기 때문에, "화면 상태가 그대로
   다음 목적지의 인자"(그룹 설정과 같은 형태)를 여기서도 택했다.
-- **선택 상태를 실어 보내는 인자가 하나 더 붙었다**(2026-08-27, PR #400) —
-  `NavKeyCanvasBGEdit(groupId, parfaitId, initialToppingId: Long? = null)`이다. C-001에서 **본인
-  토핑을 탭하면** 그 id가 실려 오고, 편집 화면이 토핑 탭을 편 채 그 토핑을 선택한 상태로 열린다
-  (`CanvasBGEditViewModel`의 `withCanvas`가 첫 조회 결과에 이 값을 얹는다). ⚠️ **정책이 말하는
-  C-305 편집 화면이 새로 생긴 것이 아니라 기존 목적지가 그 역할을 받은 것**이고, 앞선 `groupId`·
-  `parfaitId`와 달리 이 인자는 **그릴 값도 동작 플래그도 아닌 초기 선택 상태**다. 기본값이 `null`
-  이라 편집 버튼으로 들어오는 기존 경로는 그대로다
-  → [open-questions](../synthesis/open-questions.md) OQ-P-250.
+- **본인 토핑 탭은 다른 목적지다** — C-001에서 본인 토핑을 탭하면 `NavKeyCanvasBGEdit`가 아니라
+  `NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)`가 열린다. 아래
+  [배치 수정 화면](#배치-수정-화면-navkeycanvastoppingarrange) 절.
 - **entry에서 `YGScaffold` 껍질이 걷혔다**(2026-08-22, PR #329) — 이 화면은 저장 실패를 토스트로
   알려야 해서 Route가 `YGScaffoldV2`를 직접 든다. 두 겹으로 씌우면 **인셋 패딩이 두 번 먹으므로**
   entry는 `Modifier.fillMaxSize()`만 넘긴다. 아래 [체크리스트](#신규-목적지-등록-체크리스트) 2번의
   기본형에 대한 예외이고, 세그멘테이션 계열이 먼저 같은 이유로 예외가 됐다.
 
-### 토핑 테두리 재편집 왕복 (2026-08-16, PR #264)
+### 배치 수정 화면 (`NavKeyCanvasToppingArrange`)
 
-같은 화면의 **토핑 탭**이 편집 화면을 한 번 더 재사용한다. 상세는
-[c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md).
+이미 놓인 본인 토핑의 배치와 테두리를 고치는 목적지다. 상세는
+[c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
 
 ```
-NavKeyCanvasBGEdit ─(선택된 토핑의 편집 버튼)─▶ NavKeyToppingEdit(source, segmentation, borderLayers, borderOnly = true)
-        ▲                                                          │ sendResult(TOPPING_EDIT_RESULT_KEY, ToppingEditResult) + onBack
+NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)
+        ▲                                                          │ 확정·삭제 성공 / 그만두기 → onBack
         └──────────────────────────────────────────────────────────┘
 ```
 
-- **`NavKeyToppingEdit`의 세 번째 호출자**이자, 그 목적지를 **모드로 가른 첫 사례**다 —
-  `borderOnly = true`면 영역 탭 없이 테두리 편집만 열린다. **그 플래그의 뜻이 넓어졌다**(2026-09-01,
-  PR #425) — "이미 캔버스에 놓인 토핑"이 아니라 **"되살릴 원본이 없는 진입"**이 조건이고, 누끼 확인
-  화면의 재사용 진입이 같은 값으로 들어오는 네 번째 호출자다. `returnResultOnly`(#231)와 같은 부류의
-  동작 플래그가 백스택 키에 하나 더 늘었다 → [open-questions](../synthesis/open-questions.md) [2026-08-15].
-- 결과는 종전대로 `ResultEventBus` 왕복이지만, **받는 쪽이 어느 토핑인지 알아야 한다.**
-  그 id를 ViewModel이 아니라 Route의 `rememberSaveable`(`editingToppingId`)이 들고 있다가
-  인텐트에 실어 준다 → [open-questions](../synthesis/open-questions.md) [2026-08-16].
-- 복귀는 편집 화면의 `onBack()` 1회다(배경 이미지 왕복의 `onBack()` 2회와 달리 스택 깊이 가정이 없다).
+- **인자 셋의 성격이 다르다** — `groupId`·`parfaitId`는 `NavKeyCanvasBGEdit`와 같은 이유로 C-001이 이미
+  받아 둔 오늘 캔버스에서 온다. `initialToppingId`는 그릴 값도 동작 플래그도 아닌 **초기 포커스**이고,
+  `CanvasToppingArrangeViewModel`의 `withCanvas`가 최초 방출에만 얹는다. 탭한 토핑 없이는 열 수 없어
+  null이 아니다.
+- **결과 왕복이 없다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
+  저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤 `onBack()`
+  1회로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
+- **`NavKeyToppingEdit`의 호출자는 둘이다** — `SegmentationRoute`(분석 0건·실패, `RecordAndConfirm`)와
+  `SegmentationConfirmRoute`(「사진 편집」, `ReturnResult`). 캔버스 쪽은 그 목적지를 열지 않고
+  `TOPPING_EDIT_RESULT_KEY`를 받는 곳도 `SegmentationConfirmRoute` 하나다.
+- entry는 `NavKeyCanvasBGEdit`와 같이 `Modifier.fillMaxSize()`만 넘긴다 — Route가 `YGScaffoldV2`를 직접 든다.
+- 지난 캔버스에서 본인 토핑 탭이 무반응인 것은 → [open-questions](../synthesis/open-questions.md) OQ-P-326 ③.
 
 ## 그룹 설정 진입·이탈 (2026-08-17, PR #285·#287)
 
@@ -625,8 +617,7 @@ C-001 캔버스 메인
    > 📌 **화면 ID 매핑도 함께 더한다**(2026-09-09, PR #478) — `:app`의 `NavKey.toAnalyticsScreenOrNull()`이
    > `NavKey`를 기획 화면 ID(`C-001`·`G-001` 등)로 바꿔 `screen_view` 로 보낸다. ⚠️ **컴파일러가 누락을
    > 잡지 못한다** — `NavKey`는 sealed 가 아니라 `when` 이 빠짐없음을 강제하지 못하고, 잊으면 런타임
-   > 경고 한 줄로만 드러난다. 인자로 화면이 갈리는 키(`returnResultOnly`·`source`·`borderOnly`·
-   > `initialToppingId`)는 그 인자까지 보고 가른다
+   > 경고 한 줄로만 드러난다. 인자로 화면이 갈리는 키(`returnResultOnly`·`source`)는 그 인자까지 보고 가른다
    > → [release-analytics-screen-tracking 스펙](../superpowers/specs/archive/2026-09-09-release-analytics-screen-tracking.md).
 4. 이동 원하는 feature는 대상의 `:api`에 의존 추가(`settings.gradle.kts`/build 파일).
 5. 결과가 필요하면 `ResultEventBus` 데코레이터 경로 사용.
@@ -723,7 +714,7 @@ C-001 캔버스 메인
 `NavKeyCameraCustom`·`NavKeyCustomGalleryPicker`(뒤 둘은 #231에서 `data object` → `data class` 승격)·
 `NavKeyCanvasMain`(#268 승격 — `groupId`, **#411에서 `welcomeGroupName`·`welcomeInviteCode` 추가**)·`NavKeyGroupSetting`(#285 승격 — `groupId`)·
 `NavKeyWebView`(#296 신설 — `title`·`url`)·`NavKeyCanvasToppingPlace`(#290 신설 — `imageUri`, **#334에서 인자를 잃고 `data object`로 되돌아갔다**)·
-`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`, **#400에서 `initialToppingId` 추가**)·
+`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`)·`NavKeyCanvasToppingArrange`(`groupId`·`parfaitId`·`initialToppingId`)·
 `NavKeyCanvasImageSave`(#445 신설 — `imagePath`·`date`)).
 **#514에서 이 목록이 둘 줄었다** — `NavKeyCanvasEdit(imageUri)`·`NavKeyCanvasMove(imageUri)`가
 도달 불가 잔해로 삭제됐다(OQ-P-239 해소).
