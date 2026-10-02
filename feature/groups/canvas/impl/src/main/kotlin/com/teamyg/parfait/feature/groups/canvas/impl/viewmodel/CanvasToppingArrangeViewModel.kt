@@ -56,9 +56,6 @@ data class CanvasToppingArrangeUiState(
      *
      * **삭제는 넣지 않는다** — 삭제 모달의 확인이 곧 DELETE 라 이미 서버에 반영돼 있고,
      * 확인 버튼은 삭제를 다루지 않는다.
-     *
-     * [focusedToppingId] 가 `Long` 이라 그것에 맞춘다. `ParfaitImageId` 로 감싸는 자리는
-     * API 호출 직전 한 곳뿐이다.
      */
     val dirtyToppingIds: Set<Long> = emptySet(),
     /**
@@ -110,7 +107,6 @@ sealed interface CanvasToppingArrangeIntent : UiIntent {
         val rotationDelta: Float,
     ) : CanvasToppingArrangeIntent
 
-    /** 툴바의 삭제 버튼. 바로 지우지 않고 확인 모달을 띄운다. */
     data object OnClickDeleteToppingButton : CanvasToppingArrangeIntent
 
     data object OnDeleteToppingDialogConfirm : CanvasToppingArrangeIntent
@@ -428,8 +424,7 @@ constructor(
     }
 
     /**
-     * [transform]으로 크기/회전/위치를 바꾼다. 캔버스 밖으로 나가는 부분은 화면에서 클립되어 안 보이므로
-     * 여기서 위치를 되돌리지 않고 [transform] 결과를 그대로 반영한다.
+     * 캔버스 밖으로 나가는 부분은 화면에서 클립되어 안 보이므로 여기서 위치를 되돌리지 않는다.
      */
     private fun CanvasToppingArrangeUiState.applyToppingTransform(
         toppingId: Long,

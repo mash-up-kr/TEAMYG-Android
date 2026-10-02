@@ -246,11 +246,9 @@ class ToppingEditViewModelTest {
         val viewModel = createViewModel(completion = ToppingEditCompletion.ReturnResult)
         advanceUntilIdle()
 
-        // When 완료를 누른다
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
 
-            // Then 저장하지 않고 하한 미달만 알린다
             assertEquals(ToppingEditEffect.SubjectTooSmall, awaitItem())
             assertFalse(viewModel.state.value.isSaving)
         }

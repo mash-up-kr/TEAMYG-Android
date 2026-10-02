@@ -40,7 +40,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
-/** 그리기 정보. [ToppingHitTarget]은 [EditableToppingHitEntry]가 얹는다 */
 internal data class EditableToppingDrawEntry(
     val topping: EditableTopping,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
@@ -136,8 +135,6 @@ internal fun rememberEditableToppingHitEntries(
  * Box 가 이미지보다 [EditableToppingDrawEntry.drawnBorderWidthDp]만큼 크고 그만큼 안쪽으로 덜어낸다.
  * [YGToppingCutoutImage]가 거리판으로 만든 띠는 그 폭만큼 상자 밖으로 나가는데, `alpha`가
  * 1 미만이면 오프스크린 버퍼가 생겨 레이어 밖으로 나간 부분이 잘리기 때문이다.
- *
- * 루트에 테스트 태그 `editable_topping_<parfaitImageId>` 를 단다.
  *
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
  *   읽히면 안 된다.

@@ -209,11 +209,9 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.drag()
         coEvery { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) } returns Result.success(emptyList())
 
-        // When 확인
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 저장은 화면이 그린 캔버스(9)로 나간다
         coVerify(exactly = 1) { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) }
     }
 
@@ -445,33 +443,28 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun focusedToppingRemovedByPolling_closesPanel_andSendsNoPatch() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 패널을 열고 색을 바꿨는데, 폴링이 그 토핑이 빠진 캔버스를 가져온다
         val viewModel = viewModel()
         viewModel.click(FIRST_ID)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSelectBorderColor(BLACK_ARGB))
         todayCanvases.value = canvas(toppings = listOf(toppingVO(SECOND_ID), toppingVO(OTHERS_ID, isMine = false)))
         advanceUntilIdle()
 
-        // Then 포커스와 함께 패널이 닫히고 dirty 도 빠진다
         assertFalse(viewModel.state.value.isBorderPanelOpen)
         assertNull(viewModel.state.value.focusedToppingId)
         assertFalse(FIRST_ID in viewModel.state.value.dirtyToppingIds)
 
-        // When 확인
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
 
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
 
-        // Then 없는 토핑에 PATCH 가 나가지 않는다
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), ParfaitImageId(FIRST_ID), any()) }
         coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
     }
 
     @Test
     fun focusedToppingRemovedByPolling_closesDeleteDialog() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 삭제 모달이 떠 있는데, 폴링이 그 토핑이 빠진 캔버스를 가져온다
         val viewModel = viewModel()
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         assertTrue(viewModel.state.value.showDeleteToppingDialog)
@@ -479,7 +472,6 @@ class CanvasToppingArrangeViewModelTest {
         todayCanvases.value = canvas(toppings = listOf(toppingVO(SECOND_ID), toppingVO(OTHERS_ID, isMine = false)))
         advanceUntilIdle()
 
-        // Then 지울 대상이 없어진 모달이 남지 않는다
         assertNull(viewModel.state.value.focusedToppingId)
         assertFalse(viewModel.state.value.showDeleteToppingDialog)
     }
@@ -572,7 +564,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun systemBack_whileLoading_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 확정이 끝나지 않게 걸어 둔다
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
@@ -581,26 +572,22 @@ class CanvasToppingArrangeViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
 
-        // When 시스템 뒤로가기
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
 
-        // Then 팝업이 뜨지 않는다
         assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test
     fun systemBack_whileRefreshingAfterDelete_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 삭제는 끝났고 그 뒤의 갱신이 아직 돌고 있다
         val viewModel = viewModel()
         coEvery { deleteTopping(any(), any(), any()) } returns Result.success(Unit)
         val refreshGate = holdTheRefresh()
         viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
         advanceUntilIdle()
 
-        // When 시스템 뒤로가기
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
 
-        // Then 팝업이 뜨지 않는다 — 뜨면 삭제가 낼 되감기와 팝업의 되감기가 겹친다
+        // 팝업이 뜨면 삭제가 낼 되감기와 팝업의 되감기가 겹친다
         assertFalse(viewModel.state.value.showQuitDialog)
         refreshGate.complete(Unit)
     }
@@ -623,7 +610,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun confirm_sendsOnlyChangedAxes() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑 1 은 옮기기만, 토핑 2 는 색만 바꾼다
         val viewModel = viewModel()
         viewModel.drag()
         viewModel.click(SECOND_ID)
@@ -632,11 +618,9 @@ class CanvasToppingArrangeViewModelTest {
         coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
         stubBorderSave(SECOND_ID, ToppingBorder.Solid(color = "#FF6B00", width = 10.0))
 
-        // When 확인
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 변형은 토핑 1 만, 테두리는 토핑 2 만 받는다
         assertEquals(listOf(ParfaitImageId(FIRST_ID)), updates.captured.map { it.parfaitImageId })
         coVerify(exactly = 1) { updateToppingBorder(any(), any(), any(), any()) }
         coVerify(exactly = 1) {
@@ -651,7 +635,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun confirm_colorChangedAndReverted_sendsNoBorderPatch() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버 테두리가 검정인 토핑의 색을 바꿨다가 검정으로 되돌린다
         val viewModel = viewModel()
         todayCanvases.value = canvas(
             toppings = listOf(
@@ -664,7 +647,6 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSelectBorderColor(BLACK_ARGB))
         assertTrue(FIRST_ID in viewModel.state.value.dirtyToppingIds)
 
-        // When 확인
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
 
@@ -678,7 +660,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun confirm_widthChangedOnOffPaletteColor_patchesSameColorNewWidth() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버 테두리 색이 9색 팔레트에 없는 토핑에 포커스가 있다
         val viewModel = viewModel()
         todayCanvases.value = canvas(
             toppings = listOf(
@@ -690,12 +671,10 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(FIRST_ID)
         stubBorderSave(FIRST_ID, ToppingBorder.Solid(color = "#123456", width = 12.0))
 
-        // When 굵기만 바꾸고 확인
         viewModel.processIntent(CanvasToppingArrangeIntent.OnChangeBorderWidth(12f))
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 같은 색에 새 굵기로 나간다
         coVerify(exactly = 1) {
             updateToppingBorder(
                 GroupId(GROUP_ID),
@@ -708,7 +687,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun confirm_whilePanelOpen_sendsStoredPosition() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 옮긴 뒤 패널을 열어 둔 채다
         val viewModel = viewModel()
         viewModel.drag()
         viewModel.click(FIRST_ID)
@@ -716,11 +694,9 @@ class CanvasToppingArrangeViewModelTest {
         val updates = slot<List<ToppingTransformUpdate>>()
         coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
 
-        // When 확인
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        // Then 저장된 자리가 나간다
         assertEquals(0.35f.toDouble(), updates.captured.single().positionX)
     }
 
@@ -788,7 +764,6 @@ class CanvasToppingArrangeViewModelTest {
 
     @Test
     fun confirm_borderPatchFails_staysAndKeepsOnlyFailedDirty() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑 1 변형은 성공하고, 토핑 2 테두리가 실패한다
         val viewModel = viewModel()
         viewModel.drag()
         viewModel.click(SECOND_ID)
@@ -800,11 +775,9 @@ class CanvasToppingArrangeViewModelTest {
             result = Result.failure(RuntimeException("실패")),
         )
 
-        // When 확인
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
 
-            // Then 화면을 닫지 않고 실패만 알린다
             assertEquals(
                 CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
                 awaitItem(),

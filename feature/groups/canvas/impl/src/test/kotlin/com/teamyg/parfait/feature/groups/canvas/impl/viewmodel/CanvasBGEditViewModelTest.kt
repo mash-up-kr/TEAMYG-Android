@@ -341,7 +341,6 @@ class CanvasBGEditViewModelTest {
 
     @Test
     fun toppings_followEveryEmission() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑이 하나인 캔버스로 열린다
         todayCanvases.value = canvas(toppings = listOf(topping(parfaitImageId = 1L, positionZ = 1)))
         val viewModel = viewModel()
         assertEquals(
@@ -350,7 +349,6 @@ class CanvasBGEditViewModelTest {
                 .map(EditableTopping::parfaitImageId),
         )
 
-        // When 두 번째 방출이 토핑을 하나 더 들고 온다
         todayCanvases.value = canvas(
             toppings = listOf(
                 topping(parfaitImageId = 1L, positionZ = 1),
@@ -359,7 +357,6 @@ class CanvasBGEditViewModelTest {
         )
         advanceUntilIdle()
 
-        // Then 최초 방출 뒤에도 토핑은 그대로 따라온다
         assertEquals(
             listOf(1L, 2L),
             viewModel.state.value.toppings
