@@ -862,6 +862,55 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun deleteConfirm_refreshThrows_stillNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        coEvery { deleteTopping(any(), any(), any()) } returns Result.success(Unit)
+        coEvery { refreshTodayParfaitDetail(any(), any()) } throws RuntimeException("갱신 실패")
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
+
+            // 토핑은 이미 지워졌다. 갱신이 터졌다고 삭제 실패로 알리지 않는다
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun deleteConfirm_success_discardsOtherDirtyToppings() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        coEvery { deleteTopping(any(), any(), any()) } returns Result.success(Unit)
+        viewModel.click(SECOND_ID)
+        viewModel.drag()
+        viewModel.click(FIRST_ID)
+        assertTrue(SECOND_ID in viewModel.state.value.dirtyToppingIds)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun confirm_refreshThrows_stillNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        coEvery { refreshTodayParfaitDetail(any(), any()) } throws RuntimeException("갱신 실패")
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            // 저장은 끝났다. 갱신이 터졌다고 저장 실패로 알리지 않는다
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
     fun deleteConfirm_failure_showsErrorAndStays() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         coEvery { deleteTopping(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))

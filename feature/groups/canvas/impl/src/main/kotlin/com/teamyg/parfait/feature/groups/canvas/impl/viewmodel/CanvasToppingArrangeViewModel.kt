@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.graphics.Color
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -364,6 +365,7 @@ constructor(
         }
     }
 
+    /** 지우면 곧바로 떠난다. 다른 토핑의 미저장 변경은 묻지 않고 버린다 — OQ-P-270 */
     private fun handleOnDeleteToppingDialogConfirm() {
         val focusedId = state.value.focusedToppingId ?: return
 
@@ -386,12 +388,23 @@ constructor(
                     // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
                     // 취소돼 갱신이 끊긴다. 그동안 덮개를 걷으면 시스템 뒤로가기가 되감기를
                     // 하나 더 낸다
-                    refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+                    refreshTodayCanvas()
 
                     updateState { copy(isLoading = false) }
                     postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
                 }.onFailure { throwable -> failToDeleteTopping(throwable, focusedId) }
         }
+    }
+
+    /**
+     * 저장·삭제는 이미 끝난 뒤다. 갱신이 터져도 그 실패로 알리지 않는다 — 캔버스 메인이 다음
+     * 조회에서 따라잡는다.
+     */
+    private suspend fun refreshTodayCanvas() {
+        runSuspendCatching { refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId) }
+            .onFailure { throwable ->
+                viewModelLogger.e(throwable) { "오늘 캔버스를 다시 받지 못했다 - parfaitId: ${parfaitId.value}" }
+            }
     }
 
     private fun failToDeleteTopping(
@@ -461,7 +474,7 @@ constructor(
 
             // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
             // 취소돼 갱신이 끊긴다
-            refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+            refreshTodayCanvas()
 
             updateState { copy(isLoading = false) }
             postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
