@@ -1,0 +1,579 @@
+package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
+
+import androidx.compose.ui.graphics.Color
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.ui.BaseViewModel
+import com.teamyg.parfait.core.ui.UiIntent
+import com.teamyg.parfait.core.ui.UiSideEffect
+import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+
+data class CanvasToppingArrangeUiState(
+    /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
+    val backgroundColor: Color = YGAtomicColors.Gray.White,
+    val backgroundImageUrl: String? = null,
+    val toppings: List<EditableTopping> = emptyList(),
+    val focusedToppingId: Long? = null,
+    /** 테두리가 없는 토핑에 두를 굵기. 색을 고르는 순간 이 굵기로 테두리가 생긴다 */
+    val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
+    val isBorderPanelOpen: Boolean = false,
+    val showQuitDialog: Boolean = false,
+    val showDeleteToppingDialog: Boolean = false,
+    /**
+     * 아직 서버에 반영되지 않은 로컬 변경. 이동·크기조절·회전·테두리 편집이 여기 든다.
+     *
+     * **삭제는 넣지 않는다** — 삭제 모달의 확인이 곧 DELETE 라 이미 서버에 반영돼 있고,
+     * 확인 버튼은 삭제를 다루지 않는다.
+     *
+     * [focusedToppingId] 가 `Long` 이라 그것에 맞춘다. `ParfaitImageId` 로 감싸는 자리는
+     * API 호출 직전 한 곳뿐이다.
+     */
+    val dirtyToppingIds: Set<Long> = emptySet(),
+    /**
+     * 지운 토핑의 툼스톤. 삭제 직전에 출발한 갱신 응답이 뒤늦게 도착하면 그 토핑이 아직 서버
+     * 목록에 있어서, 이게 없으면 방금 지운 토핑이 되살아난다.
+     */
+    val deletedToppingIds: Set<Long> = emptySet(),
+    /** 확인과 삭제가 한 깃발을 나눠 쓴다 — 덮개가 입력을 삼켜 둘이 겹칠 수 없다. */
+    val isLoading: Boolean = false,
+) : UiState {
+    val focusedTopping: EditableTopping?
+        get() = toppings.firstOrNull { it.parfaitImageId == focusedToppingId }
+
+    val panelBorderColorArgb: Int? get() = focusedTopping?.border?.colorArgb
+
+    val panelBorderWidthDp: Float get() = focusedTopping?.border?.widthDp ?: pendingBorderWidthDp
+
+    val canOpenBorderPanel: Boolean get() = focusedToppingId != null
+}
+
+sealed interface CanvasToppingArrangeIntent : UiIntent {
+    data class OnClickTopping(
+        val topping: EditableTopping,
+    ) : CanvasToppingArrangeIntent
+
+    data object OnClickEmptyCanvas : CanvasToppingArrangeIntent
+
+    data object OnToggleBorderPanel : CanvasToppingArrangeIntent
+
+    data object OnDismissBorderPanel : CanvasToppingArrangeIntent
+
+    /** @param colorArgb `null` 은 테두리 없음 */
+    data class OnSelectBorderColor(
+        val colorArgb: Int?,
+    ) : CanvasToppingArrangeIntent
+
+    data class OnChangeBorderWidth(
+        val widthDp: Float,
+    ) : CanvasToppingArrangeIntent
+
+    /** `panX`/`panY` 는 px 가 아니라 Canvas-Area 대비 비율이다. */
+    data class OnToppingTransform(
+        val panX: Float,
+        val panY: Float,
+        val zoom: Float,
+        val rotationDelta: Float,
+    ) : CanvasToppingArrangeIntent
+
+    /** 툴바의 삭제 버튼. 바로 지우지 않고 확인 모달을 띄운다. */
+    data object OnClickDeleteToppingButton : CanvasToppingArrangeIntent
+
+    data object OnDeleteToppingDialogConfirm : CanvasToppingArrangeIntent
+
+    data object OnDeleteToppingDialogCancel : CanvasToppingArrangeIntent
+
+    data object OnClickClose : CanvasToppingArrangeIntent
+
+    data object OnSystemBack : CanvasToppingArrangeIntent
+
+    data object OnQuitDialogConfirm : CanvasToppingArrangeIntent
+
+    data object OnQuitDialogCancel : CanvasToppingArrangeIntent
+
+    data object OnClickConfirm : CanvasToppingArrangeIntent
+}
+
+sealed interface CanvasToppingArrangeEffect : UiSideEffect {
+    data object NavigateBack : CanvasToppingArrangeEffect
+
+    data object ShowOthersToppingNotEditable : CanvasToppingArrangeEffect
+
+    data class ShowError(
+        val error: CanvasToppingArrangeError,
+    ) : CanvasToppingArrangeEffect
+}
+
+@HiltViewModel(assistedFactory = CanvasToppingArrangeViewModel.Factory::class)
+class CanvasToppingArrangeViewModel
+@AssistedInject
+constructor(
+    @Assisted("groupId") groupIdValue: Long,
+    @Assisted("parfaitId") parfaitIdValue: Long,
+    @Assisted("initialToppingId") private val initialToppingId: Long,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val refreshTodayParfaitDetailUseCase: RefreshTodayParfaitDetailUseCase,
+    private val deleteToppingUseCase: DeleteToppingUseCase,
+    private val updateToppingsUseCase: UpdateToppingsUseCase,
+    private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
+) : BaseViewModel<CanvasToppingArrangeUiState, CanvasToppingArrangeIntent, CanvasToppingArrangeEffect>(
+    initialState = CanvasToppingArrangeUiState(),
+) {
+    private val groupId = GroupId(groupIdValue)
+
+    /**
+     * 저장할 대상 캔버스. 캔버스 메인이 열어 준 오늘의 캔버스로 시작하지만, 최초 방출이 다른
+     * parfaitId 를 주면 그쪽으로 옮긴다([hasSeededFromCanvas] 참고) — 화면에 그려진 토핑과
+     * 저장 대상이 갈라지는 편이 더 나쁘다.
+     *
+     * 그 뒤 날이 바뀌어 조회가 다른 날의 캔버스를 주는 경우는 여기서 옮기지 않는다 — 이 화면의
+     * 시간 축이 닫을 몫이다(`specs/2026-08-27-canvas-today-ssot-polling.md` 「하루 경계」).
+     */
+    private var parfaitId = ParfaitId(parfaitIdValue)
+
+    /**
+     * 최초 방출에만 포커스를 시딩하고, 편집 대상([parfaitId])도 최초 방출로만 정한다 — 이후
+     * 방출이 사용자의 포커스를 덮거나, 화면에 그려진 토핑과 다른 캔버스로 저장 대상을 바꾸면
+     * 안 된다.
+     */
+    private var hasSeededFromCanvas = false
+
+    /**
+     * 서버가 마지막으로 준 그대로의 토핑. 확인 때 손댄 토핑의 **어느 축**이 바뀌었는지 가리는 데만
+     * 쓴다 — 화면 렌더링에는 [CanvasToppingArrangeUiState.toppings] 를 본다.
+     */
+    private var serverToppings: List<EditableTopping> = emptyList()
+
+    init {
+        viewModelLogger.i { "CanvasToppingArrangeViewModel::init" }
+        observeCanvas()
+    }
+
+    /**
+     * 화면이 보이는 동안만 오늘 캔버스를 구독한다. 갱신은 구독 시작 즉시, 이후 주기마다
+     * 폴러가 맡는다(`adr/0029-canvas-today-ssot-polling.md`) — 여기서 따로 조회를 걸지 않는다.
+     */
+    private fun observeCanvas() {
+        launchWhileSubscribed(source = { getTodayParfaitFlowUseCase(groupId) }) { canvas ->
+            if (canvas == null) return@launchWhileSubscribed
+
+            if (hasSeededFromCanvas.not() && canvas.parfaitId != parfaitId) {
+                viewModelLogger.e {
+                    "편집을 연 캔버스와 조회 결과가 다르다 — 조회 쪽으로 옮긴다" +
+                        " (열린 것: ${parfaitId.value}, 받은 것: ${canvas.parfaitId.value})"
+                }
+                parfaitId = canvas.parfaitId
+            }
+
+            val incoming = canvas.toppings
+                .sortedBy { topping -> topping.transform.positionZ }
+                .map { topping -> topping.toEditableTopping() }
+
+            serverToppings = incoming
+            updateState { withCanvas(canvas).mergeToppings(incoming) }
+            hasSeededFromCanvas = true
+        }
+    }
+
+    /** 이 화면은 배경을 고르지 않으므로 방출마다 서버 값을 따른다. 포커스만 최초 방출에 시딩한다. */
+    private fun CanvasToppingArrangeUiState.withCanvas(canvas: CanvasVO): CanvasToppingArrangeUiState = copy(
+        backgroundColor = (canvas.background as? CanvasBackground.Color)
+            ?.value
+            ?.toColorOrNull()
+            ?: backgroundColor,
+        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
+        focusedToppingId = if (hasSeededFromCanvas) focusedToppingId else initialToppingId,
+    )
+
+    /**
+     * 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어 결과가 통째 대입과 같아진다.
+     * 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지 구분하지 않는다.
+     */
+    private fun CanvasToppingArrangeUiState.mergeToppings(
+        incoming: List<EditableTopping>,
+    ): CanvasToppingArrangeUiState {
+        val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }
+        val localById = toppings.associateBy { it.parfaitImageId }
+
+        val merged = incoming
+            .filterNot { it.parfaitImageId in deletedToppingIds }
+            .map { server ->
+                if (server.parfaitImageId in dirtyToppingIds) localById[server.parfaitImageId] ?: server else server
+            }
+        val remainingFocusId = focusedToppingId?.takeIf { it in incomingIds && it !in deletedToppingIds }
+
+        return copy(
+            toppings = merged,
+            // 서버 목록에서 사라진 것은 두 집합에서도 뺀다 — 없는 토핑에 PATCH 를 보낼 수 없고,
+            // 툼스톤도 제 역할을 다했다
+            dirtyToppingIds = dirtyToppingIds intersect incomingIds,
+            deletedToppingIds = deletedToppingIds intersect incomingIds,
+            focusedToppingId = remainingFocusId,
+            // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
+            isBorderPanelOpen = isBorderPanelOpen && remainingFocusId != null,
+        )
+    }
+
+    override fun processIntent(intent: CanvasToppingArrangeIntent) {
+        when (intent) {
+            is CanvasToppingArrangeIntent.OnClickTopping -> handleOnClickTopping(intent)
+
+            CanvasToppingArrangeIntent.OnClickEmptyCanvas -> handleOnClickEmptyCanvas()
+
+            CanvasToppingArrangeIntent.OnToggleBorderPanel -> updateState {
+                if (focusedToppingId == null) this else copy(isBorderPanelOpen = !isBorderPanelOpen)
+            }
+
+            CanvasToppingArrangeIntent.OnDismissBorderPanel -> updateState { copy(isBorderPanelOpen = false) }
+
+            is CanvasToppingArrangeIntent.OnSelectBorderColor -> handleOnSelectBorderColor(intent)
+
+            is CanvasToppingArrangeIntent.OnChangeBorderWidth -> handleOnChangeBorderWidth(intent)
+
+            is CanvasToppingArrangeIntent.OnToppingTransform -> handleOnToppingTransform(intent)
+
+            CanvasToppingArrangeIntent.OnClickDeleteToppingButton -> handleOnClickDeleteToppingButton()
+
+            CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
+
+            CanvasToppingArrangeIntent.OnDeleteToppingDialogCancel -> updateState {
+                copy(showDeleteToppingDialog = false)
+            }
+
+            // 변경 여부와 무관하게 팝업을 띄운다
+            CanvasToppingArrangeIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
+
+            CanvasToppingArrangeIntent.OnSystemBack -> handleOnSystemBack()
+
+            CanvasToppingArrangeIntent.OnQuitDialogConfirm -> postSideEffect(
+                effect = CanvasToppingArrangeEffect.NavigateBack,
+            )
+
+            CanvasToppingArrangeIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
+
+            CanvasToppingArrangeIntent.OnClickConfirm -> handleOnClickConfirm()
+        }
+    }
+
+    /**
+     * 패널이 열려 있는 동안 캔버스 위 탭은 패널을 닫는 데만 쓴다. 닫는 탭이 포커스까지 옮기면
+     * 사용자는 패널을 닫으려다 편집 대상이 바뀐 것을 보게 된다.
+     */
+    private fun handleOnClickTopping(intent: CanvasToppingArrangeIntent.OnClickTopping) {
+        val current = state.value
+        val topping = intent.topping
+
+        when {
+            current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
+            !topping.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
+            current.focusedToppingId == topping.parfaitImageId -> updateState { copy(isBorderPanelOpen = true) }
+            else -> updateState { copy(focusedToppingId = topping.parfaitImageId) }
+        }
+    }
+
+    private fun handleOnClickEmptyCanvas() {
+        updateState {
+            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(focusedToppingId = null)
+        }
+    }
+
+    private fun handleOnClickDeleteToppingButton() {
+        updateState {
+            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(showDeleteToppingDialog = true)
+        }
+    }
+
+    private fun handleOnSystemBack() {
+        updateState {
+            when {
+                isLoading -> this
+                isBorderPanelOpen -> copy(isBorderPanelOpen = false)
+                else -> copy(showQuitDialog = true)
+            }
+        }
+    }
+
+    private fun handleOnSelectBorderColor(intent: CanvasToppingArrangeIntent.OnSelectBorderColor) {
+        updateState {
+            val focusedId = focusedToppingId ?: return@updateState this
+            val border = intent.colorArgb?.let { argb -> ToppingBorderStyle(argb, panelBorderWidthDp) }
+
+            copy(
+                toppings = toppings.map { topping ->
+                    if (topping.parfaitImageId == focusedId) topping.copy(border = border) else topping
+                },
+            ).markDirty(focusedId)
+        }
+    }
+
+    /**
+     * 테두리가 없는 토핑은 굵기를 [CanvasToppingArrangeUiState.pendingBorderWidthDp] 에만 담는다 —
+     * 바뀐 값이 없는 토핑을 dirty 로 만들면 확인이 서버에 같은 "테두리 없음"을 보낸다.
+     */
+    private fun handleOnChangeBorderWidth(intent: CanvasToppingArrangeIntent.OnChangeBorderWidth) {
+        updateState {
+            val focusedId = focusedToppingId ?: return@updateState this
+            val widthDp = intent.widthDp.coerceIn(TOPPING_BORDER_WIDTH_RANGE_DP)
+
+            if (focusedTopping?.border == null) {
+                copy(pendingBorderWidthDp = widthDp)
+            } else {
+                copy(
+                    pendingBorderWidthDp = widthDp,
+                    toppings = toppings.map { topping ->
+                        if (topping.parfaitImageId == focusedId) {
+                            topping.copy(border = topping.border?.copy(widthDp = widthDp))
+                        } else {
+                            topping
+                        }
+                    },
+                ).markDirty(focusedId)
+            }
+        }
+    }
+
+    private fun handleOnDeleteToppingDialogConfirm() {
+        val focusedId = state.value.focusedToppingId ?: return
+
+        launch(key = DELETE_TOPPING_KEY, onError = { failToDeleteTopping(it, focusedId) }) {
+            // 상태를 블록 밖이 아니라 안에서 바꾼다 — `launch` 가 중복 호출을 걸러 아무것도
+            // 시작하지 않는 경우까지 모달이 닫히고 덮개만 남으면 안 된다
+            updateState { copy(showDeleteToppingDialog = false, isLoading = true) }
+
+            deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(focusedId))
+                .onSuccess {
+                    updateState {
+                        copy(
+                            toppings = toppings.filterNot { it.parfaitImageId == focusedId },
+                            deletedToppingIds = deletedToppingIds + focusedId,
+                            dirtyToppingIds = dirtyToppingIds - focusedId,
+                            focusedToppingId = null,
+                            isBorderPanelOpen = false,
+                            isLoading = false,
+                        )
+                    }
+                    // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
+                    // 취소돼 갱신이 끊긴다
+                    refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+
+                    postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
+                }.onFailure { throwable -> failToDeleteTopping(throwable, focusedId) }
+        }
+    }
+
+    private fun failToDeleteTopping(
+        throwable: Throwable,
+        toppingId: Long,
+    ) {
+        viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
+        updateState { copy(isLoading = false) }
+        postSideEffect(
+            effect = CanvasToppingArrangeEffect.ShowError(
+                throwable.toCanvasToppingArrangeError(unknown = CanvasToppingArrangeError.TOPPING_DELETE_UNKNOWN),
+            ),
+        )
+    }
+
+    private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
+        updateState {
+            // 패널이 열린 동안 화면은 토핑을 저장된 자리가 아닌 곳에 보여 준다. 그 상태에서 받은
+            // 이동량을 저장된 자리에 더하면 닫았을 때 토핑이 엉뚱한 데로 가 있다
+            if (isBorderPanelOpen) return@updateState this
+            val focusedId = focusedToppingId ?: return@updateState this
+
+            applyToppingTransform(focusedId) { topping ->
+                topping.copy(
+                    positionX = topping.positionX + intent.panX,
+                    positionY = topping.positionY + intent.panY,
+                    scale = (topping.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
+                    rotationDegrees = topping.rotationDegrees + intent.rotationDelta,
+                )
+            }
+        }
+    }
+
+    /**
+     * [transform]으로 크기/회전/위치를 바꾼다. 캔버스 밖으로 나가는 부분은 화면에서 클립되어 안 보이므로
+     * 여기서 위치를 되돌리지 않고 [transform] 결과를 그대로 반영한다.
+     */
+    private fun CanvasToppingArrangeUiState.applyToppingTransform(
+        toppingId: Long,
+        transform: (EditableTopping) -> EditableTopping,
+    ): CanvasToppingArrangeUiState = copy(
+        toppings = toppings.map { topping ->
+            if (topping.parfaitImageId != toppingId) topping else transform(topping)
+        },
+    ).markDirty(toppingId)
+
+    private fun CanvasToppingArrangeUiState.markDirty(toppingId: Long): CanvasToppingArrangeUiState =
+        copy(dirtyToppingIds = dirtyToppingIds + toppingId)
+
+    /**
+     * 저장이 끝나고 갱신까지 마친 뒤에야 화면을 넘긴다 — 먼저 나가면 캔버스 메인이 저장되지 않은
+     * 값을 그린 채로 서 있다가 다음 조회에서 슬그머니 되돌아간다.
+     */
+    private fun handleOnClickConfirm() {
+        launch(key = CONFIRM_KEY, onError = ::failToSaveUnexpectedly) {
+            updateState { copy(isLoading = true) }
+
+            val failedToppingIds = updateDirtyToppings()
+            // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다
+            updateState { copy(dirtyToppingIds = failedToppingIds) }
+
+            if (failedToppingIds.isNotEmpty()) {
+                // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
+                updateState { copy(isLoading = false) }
+                postSideEffect(
+                    effect = CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                )
+                return@launch
+            }
+
+            // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
+            // 취소돼 갱신이 끊긴다
+            refreshTodayParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
+
+            updateState { copy(isLoading = false) }
+            postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
+        }
+    }
+
+    private fun failToSaveUnexpectedly(throwable: Throwable) {
+        viewModelLogger.e(throwable) { "편집을 저장하지 못했다 - parfaitId: ${parfaitId.value}" }
+        updateState { copy(isLoading = false) }
+        postSideEffect(
+            effect = CanvasToppingArrangeEffect.ShowError(
+                throwable.toCanvasToppingArrangeError(unknown = CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+            ),
+        )
+    }
+
+    /**
+     * PATCH 대상은 지금 목록에 있으면서 손댄 토핑뿐이다. 대조를 dirty 안에서만 하는 것이 요점이다:
+     * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
+     *
+     * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
+     *
+     * @return 저장하지 못한 토핑의 id.
+     */
+    private suspend fun updateDirtyToppings(): Set<Long> = coroutineScope {
+        val current = state.value
+        val dirty = current.toppings.filter { it.parfaitImageId in current.dirtyToppingIds }
+
+        val transformChanged = dirty.filter { it.hasTransformChange() }
+        val borderChanged = dirty.filter { it.hasBorderChange() }
+
+        val transformFailures = saveTransforms(transformChanged)
+        val borderFailures = borderChanged
+            .map { topping -> async { topping.parfaitImageId.takeIf { saveBorder(topping).not() } } }
+            .awaitAll()
+            .filterNotNull()
+
+        transformFailures + borderFailures
+    }
+
+    /**
+     * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
+     * 섞이면 나머지까지 계속 막히는 것을 감수한 설계다 —
+     * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절.
+     *
+     * @return 저장하지 못한 토핑의 id.
+     */
+    private suspend fun saveTransforms(toppings: List<EditableTopping>): Set<Long> {
+        if (toppings.isEmpty()) return emptySet()
+
+        return updateToppingsUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            updates = toppings.map { it.toTransformUpdate() },
+        ).fold(
+            onSuccess = { emptySet() },
+            onFailure = { throwable ->
+                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - ${toppings.map { it.parfaitImageId }}" }
+                toppings.mapTo(mutableSetOf()) { it.parfaitImageId }
+            },
+        )
+    }
+
+    private suspend fun saveBorder(topping: EditableTopping): Boolean = updateToppingBorderUseCase(
+        groupId = groupId,
+        parfaitId = parfaitId,
+        parfaitImageId = ParfaitImageId(topping.parfaitImageId),
+        border = topping.border.toToppingBorder(),
+    ).onFailure { throwable ->
+        viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
+    }.isSuccess
+
+    /** 스냅샷에 없는 토핑을 바뀐 것으로 봐도 안전하다 — 갱신이 들여온 토핑은 dirty 에 안 들어온다. */
+    private fun EditableTopping.hasTransformChange(): Boolean {
+        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
+        return positionX != original.positionX ||
+            positionY != original.positionY ||
+            scale != original.scale ||
+            rotationDegrees != original.rotationDegrees
+    }
+
+    private fun EditableTopping.hasBorderChange(): Boolean {
+        val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
+        return border != original.border
+    }
+
+    /** 겹침 순서는 안 보낸다 — 앱에 z 조작 경로가 없어 서버 값을 그대로 둔다. */
+    private fun EditableTopping.toTransformUpdate(): ToppingTransformUpdate = ToppingTransformUpdate(
+        parfaitImageId = ParfaitImageId(parfaitImageId),
+        positionX = positionX.toDouble(),
+        positionY = positionY.toDouble(),
+        scale = scale.toDouble(),
+        rotation = rotationDegrees.toDouble(),
+    )
+
+    /**
+     * @param unknown 갈래를 가리지 못했을 때 쓸 값. 무엇을 하다 실패했는지는 부르는 쪽만 안다.
+     */
+    private fun Throwable.toCanvasToppingArrangeError(unknown: CanvasToppingArrangeError): CanvasToppingArrangeError =
+        when (this) {
+            is AppError.Network -> CanvasToppingArrangeError.NETWORK
+            else -> unknown
+        }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(
+            @Assisted("groupId") groupId: Long,
+            @Assisted("parfaitId") parfaitId: Long,
+            @Assisted("initialToppingId") initialToppingId: Long,
+        ): CanvasToppingArrangeViewModel
+    }
+
+    private companion object {
+        const val CONFIRM_KEY = "confirm"
+
+        const val DELETE_TOPPING_KEY = "deleteTopping"
+    }
+}
