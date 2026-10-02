@@ -66,6 +66,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
@@ -74,8 +76,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBackgroundPaletteColors
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasEditTab
-import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingItem
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 /** 배경 탭에서 토핑은 배경 선택의 참고로만 존재한다 — 고를 수 없다는 것을 불투명도로 알린다 */
@@ -92,7 +92,7 @@ internal fun CanvasBGEditScreen(
     onQuitDialogConfirm: () -> Unit,
     onQuitDialogCancel: () -> Unit,
     onClickConfirm: () -> Unit,
-    onClickTopping: (CanvasToppingItem) -> Unit,
+    onClickTopping: (EditableTopping) -> Unit,
     onClickDeselectTopping: () -> Unit,
     onClickDeleteTopping: () -> Unit,
     onDeleteToppingDialogConfirm: () -> Unit,
@@ -403,12 +403,12 @@ private fun PaletteColorCircle(
 }
 
 /** 배경 편집이 그리는 대상. 편집본이 있으면 그쪽이고, 그 파일은 투명 여백이 잘려 있다. */
-private val CanvasToppingItem.drawnModel: String
+private val EditableTopping.drawnModel: String
     get() = editedImagePath ?: imageUrl
 
 /** 두 탭이 공유하는 그리기 정보. [ToppingHitTarget]은 [BGEditHitEntry]가 얹는다 */
 private data class BGEditDrawEntry(
-    val topping: CanvasToppingItem,
+    val topping: EditableTopping,
     // Painter 로 좁히면 state 를 잃어 테두리 조건을 볼 수 없다
     val painter: AsyncImagePainter,
     val center: DpOffset,
@@ -419,7 +419,7 @@ private data class BGEditDrawEntry(
 /** 배치와 크기만 잰다. 거리판은 두 탭이 함께 보므로 호출부가 따로 띄워 넘긴다 */
 @Composable
 private fun rememberBGEditDrawEntries(
-    toppings: List<CanvasToppingItem>,
+    toppings: List<EditableTopping>,
     canvasWidth: Dp,
     canvasHeight: Dp,
 ): List<BGEditDrawEntry> = toppings.map { topping ->
@@ -449,8 +449,7 @@ private fun rememberBGEditDrawEntries(
             ),
             // 테두리를 그리지 않는 상태에서는 판정도 넓히지 않는다 — 그리지 않은 링만큼 부풀면
             // 판정이 외형과 어긋난다
-            drawnBorderWidthDp = topping.borderLayers
-                .firstOrNull()
+            drawnBorderWidthDp = topping.border
                 ?.takeIf { painterState is AsyncImagePainter.State.Success }
                 ?.widthDp
                 ?: 0f,
@@ -462,11 +461,11 @@ private data class BGEditHitEntry(
     val draw: BGEditDrawEntry,
     val target: ToppingHitTarget,
 ) {
-    val topping: CanvasToppingItem get() = draw.topping
+    val topping: EditableTopping get() = draw.topping
 }
 
 /**
- * @param outlines [CanvasToppingItem.drawnModel] 로 찾는다 — 그리는 대상과 다른 키를 쓰면
+ * @param outlines [EditableTopping.drawnModel] 로 찾는다 — 그리는 대상과 다른 키를 쓰면
  *   편집본의 잘린 여백만큼 실루엣이 어긋난다
  */
 @Composable
@@ -495,7 +494,7 @@ private fun rememberBGEditHitEntries(
 }
 
 /**
- * 캔버스 미리보기 박스 안, 저장된 배치([CanvasToppingItem.positionX]/[positionY])대로 겹쳐 그리는
+ * 캔버스 미리보기 박스 안, 저장된 배치([EditableTopping.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
  * 선택 시 보이는 스트로크·버튼은 이 이미지와 함께 돌지 않아야 해서 [ToppingCornerButtons]에서
@@ -517,7 +516,7 @@ private fun CanvasToppingImage(
     modifier: Modifier = Modifier,
 ) {
     val painterState by entry.painter.state.collectAsState()
-    val border = entry.topping.borderLayers.firstOrNull()
+    val border = entry.topping.border
     val description = stringResource(R.string.canvas_topping_content_description)
     val outlineInset = entry.drawnBorderWidthDp.dp
 
@@ -621,15 +620,15 @@ private const val PREVIEW_TOPPING_MODEL =
     "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
 
 private val previewToppings = listOf(
-    CanvasToppingItem(
+    EditableTopping(
         parfaitImageId = 1L,
         isMine = true,
         imageUrl = PREVIEW_TOPPING_MODEL,
         positionX = 0.3f,
         positionY = 0.4f,
-        borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFFFFFF.toInt(), widthDp = 4f)),
+        border = ToppingBorderStyle(colorArgb = 0xFFFFFFFF.toInt(), widthDp = 4f),
     ),
-    CanvasToppingItem(
+    EditableTopping(
         parfaitImageId = 2L,
         isMine = false,
         imageUrl = PREVIEW_TOPPING_MODEL,

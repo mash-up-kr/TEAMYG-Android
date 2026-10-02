@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -12,10 +11,8 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.android.extension.toRgbHex
-import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
-import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -23,7 +20,6 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.image.ImageType
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.usecase.image.UploadImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
@@ -33,7 +29,11 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
@@ -46,34 +46,6 @@ import kotlinx.coroutines.coroutineScope
 import java.io.File
 
 enum class CanvasEditTab { BACKGROUND, TOPPING }
-
-/**
- * 편집 화면이 다루는 토핑 하나.
- *
- * 위치·크기가 Dp 가 아니라 Canvas-Area 대비 0~1 비율인 이유: 저장된 배치가 그 단위이고
- * (`CanvasToppingVO.transform`), ViewModel 은 화면 크기를 모른다. Dp 로 들고 있으면 기기마다
- * 다른 자리에 놓이고 캔버스 메인([CanvasToppingLayer])과도 어긋난다 — 같은 캔버스가 두
- * 화면에서 다르게 보이면 안 된다.
- *
- * @param imageUrl 서버에 저장된 토핑 이미지 주소.
- * @param editedImagePath 편집을 마치고 나온 알맹이의 로컬 경로. 투명 여백이 걷혀 있고,
- *   테두리는 픽셀에 굽지 않고 [borderLayers] 로 따로 나른다(`adr/0025-topping-border-as-server-field.md`).
- *   있으면 [imageUrl] 대신 이걸 그린다 — 아직 서버에 올리기 전이라 이쪽이 최신이다.
- * @param cutoutImagePath 다시 편집할 때의 시작 마스크. 원본 좌표계를 지켜야 해 투명 여백을
- *   걷지 않는다 — 여백이 걷힌 [editedImagePath] 로는 대신할 수 없다.
- */
-data class CanvasToppingItem(
-    val parfaitImageId: Long,
-    val isMine: Boolean,
-    val imageUrl: String,
-    val positionX: Float,
-    val positionY: Float,
-    val scale: Float = 1f,
-    val rotationDegrees: Float = 0f,
-    val borderLayers: List<ToppingBorderLayer> = emptyList(),
-    val editedImagePath: String? = null,
-    val cutoutImagePath: String? = null,
-)
 
 val CanvasBackgroundPaletteColors = listOf(
     YGAtomicColors.Gray.White,
@@ -98,7 +70,7 @@ data class CanvasBGEditUiState(
     val selectedImageUri: String? = null,
     val selectedImageSource: PictureConfirmSource? = null,
     val showQuitDialog: Boolean = false,
-    val toppings: List<CanvasToppingItem> = emptyList(),
+    val toppings: List<EditableTopping> = emptyList(),
     val selectedToppingId: Long? = null,
     val showDeleteToppingDialog: Boolean = false,
     /**
@@ -148,7 +120,7 @@ sealed interface CanvasBGEditIntent : UiIntent {
 
     /** 내 토핑을 탭해 선택하거나, 이미 선택된 토핑을 다시 탭해 선택을 해제한다. */
     data class OnClickTopping(
-        val topping: CanvasToppingItem,
+        val topping: EditableTopping,
     ) : CanvasBGEditIntent
 
     /** 딤 처리된 영역(배경, 남의 토핑)을 탭해 지금 선택을 해제한다. */
@@ -245,7 +217,7 @@ constructor(
      * 서버가 마지막으로 준 그대로의 토핑. 확인 때 손댄 토핑의 **어느 축**이 바뀌었는지 가리는 데만
      * 쓴다 — 화면 렌더링에는 [CanvasBGEditUiState.toppings] 를 본다.
      */
-    private var serverToppings: List<CanvasToppingItem> = emptyList()
+    private var serverToppings: List<EditableTopping> = emptyList()
 
     init {
         viewModelLogger.i { "CanvasBGEditViewModel::init" }
@@ -270,7 +242,7 @@ constructor(
 
             val incoming = canvas.toppings
                 .sortedBy { topping -> topping.transform.positionZ }
-                .map { topping -> topping.toToppingItem() }
+                .map { topping -> topping.toEditableTopping() }
 
             serverToppings = incoming
             updateState { withCanvas(canvas).mergeToppings(incoming) }
@@ -304,7 +276,7 @@ constructor(
      * 최초 방출도 예외가 아니다 — 그때는 두 집합이 비어 있어 결과가 통째 대입과 같아진다.
      * 화면은 그 방출이 폴링에서 왔는지 강제 갱신에서 왔는지 구분하지 않는다.
      */
-    private fun CanvasBGEditUiState.mergeToppings(incoming: List<CanvasToppingItem>): CanvasBGEditUiState {
+    private fun CanvasBGEditUiState.mergeToppings(incoming: List<EditableTopping>): CanvasBGEditUiState {
         val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }
         val localById = toppings.associateBy { it.parfaitImageId }
 
@@ -322,32 +294,6 @@ constructor(
             deletedToppingIds = deletedToppingIds intersect incomingIds,
             selectedToppingId = selectedToppingId?.takeIf { it in incomingIds && it !in deletedToppingIds },
         )
-    }
-
-    private fun CanvasToppingVO.toToppingItem(): CanvasToppingItem = CanvasToppingItem(
-        parfaitImageId = parfaitImageId.value,
-        isMine = isMine,
-        imageUrl = imageUrl,
-        positionX = transform.positionX.toFloat(),
-        positionY = transform.positionY.toFloat(),
-        scale = transform.scale.toFloat(),
-        rotationDegrees = transform.rotation.toFloat(),
-        borderLayers = border.toBorderLayers(),
-    )
-
-    /**
-     * 서버는 테두리를 한 겹으로만 들고 있고 편집 화면은 겹의 목록으로 다룬다 — 한 겹짜리
-     * 목록으로 편다. 색을 못 읽으면 겹을 만들지 않는다(임의의 색을 두르는 것보다 낫다).
-     */
-    private fun ToppingBorder.toBorderLayers(): List<ToppingBorderLayer> = when (this) {
-        is ToppingBorder.None -> emptyList()
-
-        is ToppingBorder.Solid ->
-            color
-                .toColorOrNull()
-                ?.let { borderColor ->
-                    listOf(ToppingBorderLayer(colorArgb = borderColor.toArgb(), widthDp = width.toFloat()))
-                }.orEmpty()
     }
 
     override fun processIntent(intent: CanvasBGEditIntent) {
@@ -450,7 +396,7 @@ constructor(
      */
     private fun applyToppingTransform(
         toppingId: Long,
-        transform: (CanvasToppingItem) -> CanvasToppingItem,
+        transform: (EditableTopping) -> EditableTopping,
     ) {
         updateState {
             copy(
@@ -478,7 +424,7 @@ constructor(
                 // 서버는 잘라낸 결과만 들고 있어 원본과 누끼가 같은 그림이다
                 sourceImageUri = selected.cutoutImagePath ?: selected.imageUrl,
                 segmentationImageUri = selected.cutoutImagePath ?: selected.imageUrl,
-                borderLayers = selected.borderLayers,
+                borderLayers = listOfNotNull(selected.border?.let { ToppingBorderLayer(it.colorArgb, it.widthDp) }),
             ),
         )
     }
@@ -488,7 +434,9 @@ constructor(
         // 안 되는 것은 같다 — applyToppingTransform 이 함께 미는 위치 PATCH 는 무해하다
         applyToppingTransform(intent.toppingId) { topping ->
             topping.copy(
-                borderLayers = intent.result.borderLayers,
+                border = intent.result.borderLayers
+                    .lastOrNull()
+                    ?.let { ToppingBorderStyle(it.colorArgb, it.widthDp) },
                 editedImagePath = intent.result.subjectImagePath,
                 cutoutImagePath = File(intent.result.cutoutImagePath).toUri().toString(),
             )
@@ -588,7 +536,7 @@ constructor(
      *
      * @return 저장하지 못한 토핑의 id.
      */
-    private suspend fun saveTransforms(toppings: List<CanvasToppingItem>): Set<Long> {
+    private suspend fun saveTransforms(toppings: List<EditableTopping>): Set<Long> {
         if (toppings.isEmpty()) return emptySet()
 
         return updateToppingsUseCase(
@@ -604,17 +552,17 @@ constructor(
         )
     }
 
-    private suspend fun saveBorder(topping: CanvasToppingItem): Boolean = updateToppingBorderUseCase(
+    private suspend fun saveBorder(topping: EditableTopping): Boolean = updateToppingBorderUseCase(
         groupId = groupId,
         parfaitId = parfaitId,
         parfaitImageId = ParfaitImageId(topping.parfaitImageId),
-        border = topping.borderLayers.toToppingBorder(),
+        border = topping.border.toToppingBorder(),
     ).onFailure { throwable ->
         viewModelLogger.e(throwable) { "토핑 테두리를 저장하지 못했다 - ${topping.parfaitImageId}" }
     }.isSuccess
 
     /** 스냅샷에 없는 토핑을 바뀐 것으로 봐도 안전하다 — 갱신이 들여온 토핑은 dirty 에 안 들어온다. */
-    private fun CanvasToppingItem.hasTransformChange(): Boolean {
+    private fun EditableTopping.hasTransformChange(): Boolean {
         val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
         return positionX != original.positionX ||
             positionY != original.positionY ||
@@ -622,25 +570,19 @@ constructor(
             rotationDegrees != original.rotationDegrees
     }
 
-    private fun CanvasToppingItem.hasBorderChange(): Boolean {
+    private fun EditableTopping.hasBorderChange(): Boolean {
         val original = serverToppings.find { it.parfaitImageId == parfaitImageId } ?: return true
-        return borderLayers != original.borderLayers
+        return border != original.border
     }
 
     /** 겹침 순서는 안 보낸다 — 앱에 z 조작 경로가 없어 서버 값을 그대로 둔다. */
-    private fun CanvasToppingItem.toTransformUpdate(): ToppingTransformUpdate = ToppingTransformUpdate(
+    private fun EditableTopping.toTransformUpdate(): ToppingTransformUpdate = ToppingTransformUpdate(
         parfaitImageId = ParfaitImageId(parfaitImageId),
         positionX = positionX.toDouble(),
         positionY = positionY.toDouble(),
         scale = scale.toDouble(),
         rotation = rotationDegrees.toDouble(),
     )
-
-    /** 마지막 겹이 가장 바깥쪽, 즉 화면에 보이는 테두리다 — 서버는 그 한 겹만 값으로 받는다 */
-    private fun List<ToppingBorderLayer>.toToppingBorder(): ToppingBorder {
-        val layer = lastOrNull() ?: return ToppingBorder.None
-        return ToppingBorder.Solid(color = layer.colorArgb.toRgbHexString(), width = layer.widthDp.toDouble())
-    }
 
     /**
      * @return 저장된 배경. 실패하면 `null` 이고, 그때 실패 토스트는 여기서 이미 내보냈다.

@@ -34,6 +34,8 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.Called
@@ -142,7 +144,7 @@ class CanvasBGEditViewModelTest {
     }
 
     /** 실제 스텁 중 내 것 하나를 선택해 둔다 — 삭제·편집은 내 토핑에서만 열린다 */
-    private fun CanvasBGEditViewModel.selectMyTopping(): CanvasToppingItem {
+    private fun CanvasBGEditViewModel.selectMyTopping(): EditableTopping {
         val topping = state.value.toppings.first { it.isMine }
         processIntent(CanvasBGEditIntent.OnClickTopping(topping))
         return topping
@@ -155,8 +157,8 @@ class CanvasBGEditViewModelTest {
 
         // Then 저장된 배치를 그대로 들고, 내 토핑만 편집 대상이 된다
         val toppings = viewModel.state.value.toppings
-        assertEquals(listOf(1L, 2L), toppings.map(CanvasToppingItem::parfaitImageId))
-        assertEquals(listOf(true, false), toppings.map(CanvasToppingItem::isMine))
+        assertEquals(listOf(1L, 2L), toppings.map(EditableTopping::parfaitImageId))
+        assertEquals(listOf(true, false), toppings.map(EditableTopping::isMine))
         assertEquals(0.25f, toppings.first().positionX)
         assertEquals(0.75f, toppings.first().positionY)
     }
@@ -188,7 +190,7 @@ class CanvasBGEditViewModelTest {
         assertEquals(
             listOf(2L, 1L),
             viewModel.state.value.toppings
-                .map(CanvasToppingItem::parfaitImageId),
+                .map(EditableTopping::parfaitImageId),
         )
     }
 
@@ -966,7 +968,7 @@ class CanvasBGEditViewModelTest {
     }
 
     @Test
-    fun init_solidBorder_becomesOneEditableLayer() = runTest(mainDispatcherRule.dispatcher) {
+    fun init_solidBorder_becomesBorderStyle() = runTest(mainDispatcherRule.dispatcher) {
         // Given 테두리를 두른 토핑
         todayCanvases.value = canvas(
             toppings = listOf(
@@ -977,12 +979,13 @@ class CanvasBGEditViewModelTest {
         // When 화면이 열린다
         val viewModel = viewModel()
 
-        // Then 편집 화면이 되살릴 수 있는 겹 하나로 편다
-        val layers = viewModel.state.value.toppings
-            .first()
-            .borderLayers
-        assertEquals(1, layers.size)
-        assertEquals(4f, layers.first().widthDp)
+        // Then 화면이 들고 있는 테두리 값이 된다
+        assertEquals(
+            ToppingBorderStyle(colorArgb = 0xFFFF6B00.toInt(), widthDp = 4f),
+            viewModel.state.value.toppings
+                .first()
+                .border,
+        )
     }
 
     @Test
@@ -997,12 +1000,11 @@ class CanvasBGEditViewModelTest {
         // When 화면이 열린다
         val viewModel = viewModel()
 
-        // Then 임의의 색을 두르는 대신 겹을 만들지 않는다
-        assertTrue(
+        // Then 임의의 색을 두르는 대신 테두리를 만들지 않는다
+        assertNull(
             viewModel.state.value.toppings
                 .first()
-                .borderLayers
-                .isEmpty(),
+                .border,
         )
     }
 
