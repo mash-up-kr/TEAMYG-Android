@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.screen.ToppingPlaceQuitDialog
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceViewModel
@@ -34,6 +36,8 @@ internal fun CanvasToppingPlaceRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 CanvasToppingPlaceEffect.NavigateBack -> navigator.onBack()
+
+                CanvasToppingPlaceEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 // 알리고 화면엔 남는다 — 여기서 되감으면 이 Route에 매달린 toastPolicy까지 같이
                 // 폐기돼 안내가 잔상으로 끝난다. 닫기 버튼이 이미 있어 막다른 곳도 아니다
@@ -62,6 +66,8 @@ internal fun CanvasToppingPlaceRoute(
         }
     }
 
+    BackHandler { viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack) }
+
     YGScaffoldV2(
         modifier = modifier,
         isLoading = uiState.isLoading,
@@ -69,8 +75,18 @@ internal fun CanvasToppingPlaceRoute(
     ) { innerPadding ->
         CanvasToppingPlaceScreen(
             uiState = uiState,
+            onClickBack = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickBack) },
             onClickClose = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose) },
             onClickConfirm = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm) },
+            onClickTopping = { viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping) },
+            onToggleBorderPanel = { viewModel.processIntent(CanvasToppingPlaceIntent.OnToggleBorderPanel) },
+            onDismissBorderPanel = { viewModel.processIntent(CanvasToppingPlaceIntent.OnDismissBorderPanel) },
+            onSelectBorderColor = { colorArgb ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(colorArgb))
+            },
+            onChangeBorderWidth = { widthDp ->
+                viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(widthDp))
+            },
             onToppingTransform = { pan, zoom, rotationDelta ->
                 viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingTransform(pan, zoom, rotationDelta))
             },
@@ -84,6 +100,13 @@ internal fun CanvasToppingPlaceRoute(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
+        )
+    }
+
+    if (uiState.showQuitDialog) {
+        ToppingPlaceQuitDialog(
+            onConfirmQuit = { viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogConfirm) },
+            onDismiss = { viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogCancel) },
         )
     }
 }
