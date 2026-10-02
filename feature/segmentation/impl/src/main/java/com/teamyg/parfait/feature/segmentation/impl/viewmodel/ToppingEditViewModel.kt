@@ -194,6 +194,7 @@ class ToppingEditViewModel
     override fun processIntent(intent: ToppingEditIntent) {
         when (intent) {
             is ToppingEditIntent.ChangeTab -> {
+                if (intent.tab == ToppingEditTab.BORDER && !state.value.isBorderOnly) return
                 updateState { copy(tab = intent.tab) }
             }
 

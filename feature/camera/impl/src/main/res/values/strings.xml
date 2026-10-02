@@ -18,10 +18,5 @@
     <string name="camera_picture_confirm_reselect">다시 선택</string>
     <string name="camera_picture_confirm_next">다음</string>
 
-    <string name="camera_picture_confirm_quit_dialog_title">사진 추가를 그만둘까요?</string>
-    <string name="camera_picture_confirm_quit_dialog_body">지금까지 진행한 내용은 저장되지 않아요.\n정말 그만두시겠어요?</string>
-    <string name="camera_picture_confirm_quit_dialog_confirm">그만두기</string>
-    <string name="camera_picture_confirm_quit_dialog_cancel">계속 편집</string>
-
     <string name="camera_custom_guide_toast">대상이 배경과 선명하게 구분될수록 깔끔하게 선택돼요</string>
 </resources>

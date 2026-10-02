@@ -29,8 +29,6 @@ class EnsureDraftSubjectRecordedUseCaseTest {
                 nextPositionZ = 0,
                 subjectImagePath = subjectImagePath,
                 cutoutImagePath = null,
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = null,
             ),
         )
@@ -42,23 +40,21 @@ class EnsureDraftSubjectRecordedUseCaseTest {
 
         assertTrue(ensureDraftSubjectRecorded(SUBJECT_PATH))
 
-        coVerify(exactly = 0) { repository.record(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { repository.record(any(), any(), any()) }
     }
 
     @Test
     fun whenDraftPointsElsewhere_recordsTheSubjectOnly() = runTest {
         givenDraft(OTHER_PATH)
-        coEvery { repository.record(any(), any(), any(), any(), any()) } returns true
+        coEvery { repository.record(any(), any(), any()) } returns true
 
         assertTrue(ensureDraftSubjectRecorded(SUBJECT_PATH))
 
-        // 테두리까지 비우는 것이 규약이다 — 알맹이가 바뀌면 그 전 테두리는 설 자리가 없다
+        // 알맹이가 바뀌면 그 전 누끼와 원본 긴 변은 남의 것이다. 같이 비운다
         coVerify(exactly = 1) {
             repository.record(
                 subjectImagePath = SUBJECT_PATH,
                 cutoutImagePath = null,
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = null,
             )
         }
@@ -67,7 +63,7 @@ class EnsureDraftSubjectRecordedUseCaseTest {
     @Test
     fun whenRecordFails_returnsFalse() = runTest {
         givenDraft(null)
-        coEvery { repository.record(any(), any(), any(), any(), any()) } returns false
+        coEvery { repository.record(any(), any(), any()) } returns false
 
         assertFalse(ensureDraftSubjectRecorded(SUBJECT_PATH))
     }

@@ -12,8 +12,6 @@ internal fun ToppingDraft.toEntity(): ToppingDraftEntity = ToppingDraftEntity(
     nextPositionZ = nextPositionZ,
     subjectImagePath = subjectImagePath,
     cutoutImagePath = cutoutImagePath,
-    borderColorArgb = borderColorArgb,
-    borderWidthDp = borderWidthDp,
     sourceLongSide = sourceLongSide?.px,
 )
 
@@ -23,7 +21,5 @@ internal fun ToppingDraftEntity.toVO(): ToppingDraft = ToppingDraft(
     nextPositionZ = nextPositionZ,
     subjectImagePath = subjectImagePath,
     cutoutImagePath = cutoutImagePath,
-    borderColorArgb = borderColorArgb,
-    borderWidthDp = borderWidthDp,
     sourceLongSide = sourceLongSide?.let(::SourceLongSide),
 )

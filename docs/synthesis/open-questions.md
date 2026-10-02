@@ -827,8 +827,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-081
 - **출처**: `component/ygfloatingbar/YGFloatingBar.kt`(PR #188 develop 머지) — 4변형이 전부 갤러리에서만 렌더되고 feature 참조가 0건이다. 컴포넌트는 폭을 정하지 않고(`modifier` 몫) 상단 패딩만 갖는데, Figma도 화면 어디에 떠 있는지(상단 고정/하단/오버레이)를 주지 않았다. `YGFloatingBarEdit`의 중앙 문구도 Figma가 `Text` placeholder만 둬서 편집 대상 이름인지 모드 라벨인지 미확정이다.
 - **항목**: ① 캔버스·편집 화면 라운드에서 배치(위치·폭·safe area)를 어떻게 정할지, ② `Edit`의 중앙 문구가 무엇인지, ③ `EditTab`의 탭 문자열("영역"/"테두리")이 화면 소유인지 컴포넌트 기본값이어야 하는지.
-- **상태**: 부분 해소 (①③ **PR #221 develop 머지, 2026-08-14** / ② **잔존** — `Edit` 변형만 여전히 사용처 0건)
-- **해소 메모**: ① 배치가 확정됐다 — C-103~C-105 4화면이 전부 세로 `Column`의 맨 위/맨 아래에 `fillMaxWidth()`로 붙이는 형태이고 오버레이가 아니다(`BackClose` 추출·확인, `Close` 로딩·에러, `EditTab` 편집). safe area는 엔트리 `YGScaffold` 기본 `innerPadding`이 처리한다. ③ 탭 문자열은 **화면 소유**로 확정 — `ToppingEditTab` enum이 `@StringRes label`을 들고 화면이 `stringResource`로 풀어 넘긴다(feature `strings.xml`). ②는 `Edit` 변형에 첫 소비처가 생길 때 닫는다. [design-system](../architecture/design-system.md) 인벤토리 노트와 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)에 반영했고, [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) 열린 질문 3은 닫힌다.
+- **상태**: 부분 해소 (①③ **PR #221 develop 머지, 2026-08-14** / ② **잔존** — `YGFloatingBarEdit`의 소비처는 `ToppingEditScreen` 하나이고 중앙 문구로 화면 `strings.xml`의 모드 라벨 `topping_edit_area_only_title`·`topping_edit_border_only_title`을 넘긴다. 문구 출처를 디자인으로 확인한 기록은 이 항목에 없다)
+- **해소 메모**: ① 배치가 확정됐다 — C-103~C-105 4화면이 전부 세로 `Column`의 맨 위/맨 아래에 `fillMaxWidth()`로 붙이는 형태이고 오버레이가 아니다(`BackClose` 추출·확인, `Close` 로딩·에러, `EditTab` 편집). safe area는 엔트리 `YGScaffold` 기본 `innerPadding`이 처리한다. ③ 탭 문자열은 **화면 소유**로 확정 — `ToppingEditTab` enum이 `@StringRes label`을 들고 화면이 `stringResource`로 풀어 넘긴다(feature `strings.xml`). ②는 `Edit`의 중앙 문구가 무엇인지 디자인으로 확인되면 닫는다. 배치 화면(C-106)은 `Edit`가 아니라 뒤로 + 제목 + 닫기 변형 `YGFloatingBarBackTitleClose`를 세로 `Column` 맨 위에 쓰고 제목은 화면 `strings.xml`이 갖는다 — ①③의 답과 같은 쪽이다. [design-system](../architecture/design-system.md) 인벤토리 노트와 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)에 반영했고, [bar-listdate 스펙](../superpowers/specs/archive/2026-08-01-designsystem-bar-listdate-components.md) 열린 질문 3은 닫힌다.
   > 📌 **변형이 5종이 되고 배치가 한 갈래 늘었다(2026-08-30, PR #406 develop 머지)** — Figma에
   > `Status=Title`이 추가돼 `YGFloatingBarTitle`이 신설되고 C-102 갤러리 두 화면이 손으로 조립하던
   > `Row` + `YGCircleButton`을 그것으로 바꿨다. ①의 답은 여기서도 같다 — 세로 `Column` 맨 위에
@@ -2996,15 +2996,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   드래그·선택 토글도 예외로 두지 않는다(무리플이라 시각은 그대로, 스로틀만 얹힌다).
   ③ 편집 화면용 치수(60·14·2·7.5·9·7dp)를 토큰 스케일에 올릴지 — A-002·C-201이 남긴 "스케일 공백"
   지적과 같은 자리다.
-- **상태**: 부분 해소 (② 해소, ①③ 잔존 — **③은 두 번째 화면으로 복제됐다**)
+- **상태**: 부분 해소 (② 해소, ①③ 잔존 — ③의 리터럴 자리는 아래 메모)
   > 📌 **②의 대상이 아예 사라졌다(2026-08-27, PR #390)** — 토핑·딤의 클릭 모디파이어가 판정
   > 오버레이의 `pointerInput` 하나로 합쳐졌다. 관용구를 강제할지 묻던 자리가 없어진 것이지
   > 규약이 달라진 것은 아니다.
-  > 📌 **③이 복사됐다(2026-08-19, PR #290)** — C-106 배치 화면이 캔버스 영역에 **같은 값**
-  > (상단 60dp·하단 14dp)을 리터럴로 다시 적고 **"공통에 없음" 주석까지 그대로 옮겼다.** 리터럴이 두
-  > 화면에 흩어졌으므로 토큰으로 올릴 때 고칠 자리도 둘이다. ①(회전 가능한 점선 테두리)은 이번에
-  > `dashedBorder()`로 흡수되는 대신 **화면 밖 `component/` 패키지로 올라가 두 화면이 공유**하는
-  > 형태가 됐다 — 디자인시스템으로 가지 않았으니 물음 자체는 남는다.
+  > 📌 **③의 리터럴이 있는 자리** — 캔버스 영역 여백(상단 60dp·하단 14dp·좌우 21dp)은
+  > `CanvasBGEditScreen` 한 곳에 "공통에 없음" 주석과 함께 있다. C-106 배치 화면은
+  > `ToppingArrangeLayout`이 여백을 토큰(`YGTheme.layout.padding`)으로만 잡는다. 대신 토큰 밖
+  > 치수가 `ToppingBorderPanel`의 private 상수(선 굵기·화살표 터치 크기·아이콘 크기·라벨 간격)와
+  > `util/ToppingPanelFocus.kt`의 `PANEL_FOCUS_LIFT`에 있다. 토큰으로 올릴 때 고칠 자리는 이 셋과
+  > `util/ToppingGeometry.kt`다.
+  > 📌 **①의 자리** — 회전 가능한 점선 테두리는 `dashedBorder()`로 흡수되지 않고 화면 밖
+  > `component/` 패키지의 `ToppingSelectionStroke`를 두 화면이 공유한다. 디자인시스템으로 가지
+  > 않았으니 물음 자체는 남는다.
 - **해소 메모**: ①은 [design-system](../architecture/design-system.md) "그리기 프리미티브 소유"
   항목(현재 네 곳 + 이번 예외)과 함께 정한다. ②③은 [2026-08-04]·[2026-08-16] 규약 이탈 항목과 묶인다.
 
@@ -4428,10 +4432,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-256
 - **출처**: PR5 최종 브랜치 리뷰 — `core/util/android`의 `String.kt#toRgbHexString`이 알파가
   불투명(`0xFF`)이 아니면 `require()`로 던진다. 호출부
-  `CanvasToppingPlaceViewModel#toToppingBorder`는 `handleOnClickConfirm`에서 `launch { }` **앞에**
-  동기로 불린다 — `BaseViewModel.launch`의 `try`(성공·실패·예외·취소 네 경로를 한 곳에서 덮는 그
-  블록) 밖이라, 여기서 `require()`가 던지면 어디에도 안 걸리고 그대로 크래시한다.
-- **항목**: ① 지금은 이 화면의 `borderColorArgb`가 팔레트가 주는 불투명 색뿐이라 도달 불가능하지만,
+  `util/ToppingBorderMapper.kt`의 `ToppingBorderStyle?.toToppingBorder()`는
+  `CanvasToppingPlaceViewModel#handleOnClickConfirm`의 `launch { }` **안**, `addToppingUseCase`
+  호출 앞에서 불린다 — 던지면 `launch`의 `onError`가 `PlaceFailed`로 받는다. 이 호출이 `launch`
+  밖에 있으면 `require()`가 어디에도 안 걸리고 그대로 크래시한다.
+- **항목**: ① 지금은 이 화면의 `CanvasToppingPlaceUiState.border`(`ToppingBorderStyle.colorArgb`)가 팔레트가 주는 불투명 색뿐이라 도달 불가능하지만,
   그 전제가 코드 어디에도 강제돼 있지 않다 — 팔레트에 반투명 색이 하나라도 들어오면 사용자 손에서
   터진다. `require()`를 `runCatching`으로 감싸 `ToppingBorder.None`으로 폴백할지, 팔레트 타입을 좁혀
   반투명을 아예 표현 불가능하게 만들지, 아니면 이 상태를 계속 감수할지. ② 감수한다면 그 전제(팔레트가
@@ -4443,7 +4448,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `catch (e: Throwable)` → `onError` → `PlaceFailed`로 흡수되고, `finally`가 `isLoading`을
   > 내린다. 업로드보다 앞이라 **고아 이미지도 안 남는다.**
   > `CanvasToppingPlaceViewModelTest#onClickConfirm_nonOpaqueBorderColor_failsInsteadOfCrashing`이
-  > 그 경로를 잠근다(호출을 다시 `launch` 밖으로 빼면 `processIntent`가 그 자리에서 던져 실패한다).
+  > 그 경로를 잠근다(`OnSelectBorderColor`로 반투명 색을 넣고 확정한다. 호출을 `launch` 밖으로
+  > 빼면 `processIntent`가 그 자리에서 던져 실패한다).
   >
   > **`require()`는 그대로 뒀다** — `toRgbHexString`은 `core:util:android`의 public 확장이라
   > 누구든 부를 수 있고, public API 경계의 인자 검증은 그 자리가 맞다. 문제는 검사가 아니라
@@ -4457,7 +4463,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 색을 만났을 때 한 경로는 던지고 다른 경로는 통과하며, **로케일 결함은 기존 함수에만 남았다**
   > → OQ-P-263.
 - **해소 메모**: 남은 것은 **타입으로 불변식을 옮기는 것**이다 — 불투명 색 전용 타입을
-  팔레트 → 편집 화면 → 초안 → ViewModel까지 관통시키면 반투명 색이 표현 불가능해지고 `require()`도
+  팔레트 → `ToppingBorderPanel` → `CanvasToppingPlaceIntent.OnSelectBorderColor` →
+  `ToppingBorderStyle.colorArgb`까지 관통시키면 반투명 색이 표현 불가능해지고 `require()`도
   필요 없어진다. 커스텀 컬러피커처럼 진입점이 실제로 늘어나는 라운드에서 함께 한다.
   ②(전제를 어디에 못박을지)는 이 항목과 `toRgbHexString` KDoc이 지금 그 역할을 한다.
 
@@ -4955,12 +4962,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [c103-multi-subject-selection 스펙](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md)
   선택 시점 절 × PR2 최종 리뷰(2026-08-23) — 저장과 초안 기록이 화면 진입에서 **탭 시점으로**
   옮겨 오면서 생긴 새 동작이다. 이전에는 재탭이 이동만 했다.
-- **항목**: ① 확인·편집 화면에서 테두리를 두른 뒤 뒤로 와 **같은 후보를 다시 탭**하면
-  `SegmentationViewModel#selectCandidate`의 `record(borderColorArgb = null, borderWidthDp = null)`가
-  초안을 새 경로로 갈아 끼운다. 사용자가 두른 테두리가 말없이 사라진다. ② 그것이 의도인지
-  판단이 필요하다 — "다시 고르면 처음부터"가 자연스러울 수도 있고, 같은 후보를 다시 고른
-  경우만 갈라 초안을 건드리지 않는 선택지도 있다. ③ **다른 후보**를 고르는 경우는 알맹이가
-  바뀌므로 테두리를 지우는 것이 맞다(`ToppingDraftRepository.record` KDoc이 그 규칙을 적어 두었다).
+- **항목**: ① 확인 화면의 「사진 편집」으로 영역을 고친 뒤(`SegmentationConfirmViewModel`이
+  `recordEditResult`로 초안에 적는다) 뒤로 와 **같은 후보를 다시 탭**하면
+  `SegmentationViewModel#selectCandidate`가 후보를 새로 저장해 `recordToppingDraft`로 초안의
+  `subjectImagePath`·`cutoutImagePath`·`sourceLongSide`를 갈아 끼운다. 같은 후보인지는 가르지
+  않는다. 사용자가 고친 영역이 말없이 사라진다. ② 그것이 의도인지 판단이 필요하다 — "다시
+  고르면 처음부터"가 자연스러울 수도 있고, 같은 후보를 다시 고른 경우만 갈라 초안을 건드리지
+  않는 선택지도 있다. ③ **다른 후보**를 고르는 경우는 알맹이가 바뀌므로 편집 결과를 버리는
+  것이 맞다.
 - **상태**: 미해결 (스펙이 "선택 취소·다시 고르기 동선"을 범위 밖으로 두었으므로 이번 라운드의
   결함으로 세지 않는다. **실기기 확인 때 함께 본다**)
 - **해소 메모**: ①이 문제로 판명되면 같은 후보 재선택을 걸러 내는 것이 가장 작은 처방이다.
@@ -7816,4 +7825,27 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 기획 쪽이 C-101-Loading·C-103-Error 삭제·그만두기 팝업을 위키에 반영하면 이 항목을 닫는다.
   위키 [[open-questions]]에 대응 항목이 서면 링크를 붙인다.
 
-<!-- oq-next: 412 -->
+### [2026-10-02] 배치 화면 테두리 패널 — 다른 화면 높이에서의 가림과 터치 영역 겹침이 미확인이다
+
+- **ID**: OQ-P-412
+- **출처**: `util/ToppingPanelFocus.kt#panelFocusCenter`·`component/ToppingBorderPanel.kt`·
+  `component/ToppingArrangeLayout.kt` × [c105-arrange-border-merge 스펙](../superpowers/specs/2026-10-02-c105-arrange-border-merge-design.md)
+  「주의 / 열린 질문」.
+- **항목**: ① 패널이 열리면 토핑을 캔버스 세로 중앙에서 `PANEL_FOCUS_LIFT`만큼 올려 그리는데, 그 값은
+  피그마 한 프레임 크기에서 나온 고정값이다. 캔버스 영역은 폭에 비례해 커지고 패널 높이는 고정이라
+  화면 높이가 다른 기기에서 토핑이 패널에 가리는지 계산으로 정해지지 않고, 실기기에서 본 적도 없다.
+  머리글과 확정 버튼 사이 높이가 폭 기준 캔버스 높이보다 낮은 화면에서는 `ToppingArrangeLayout`이
+  캔버스를 높이에 맞춰 좁히므로 캔버스가 더 작아진다 — 이 경우는 `ToppingArrangeLayoutTest`가 밀도를
+  낮춰 흉내 낸 화면으로만 다루고, 그런 실기기에서 패널과 토핑이 어떻게 보이는지는 확인하지 않았다.
+  ② 캔버스 폭 이상으로 키운 토핑은 가운데로 옮겨도 패널에 가린다 — 크기를 줄이는 규칙이 정책에 없어
+  그대로 둔다. ③ 열린 패널의 화살표 터치 영역(44dp 정사각)이 슬라이더 터치 띠의 오른쪽 위 귀퉁이와
+  겹친다(기본 글꼴 배율에서 가로 30dp·세로 8dp, 트랙과 손잡이는 겹치지 않는다). 그 자리에서 슬라이더를
+  잡으려다 패널이 닫히는 일이 실제로 생기는지 확인되지 않았다. ④ 이 화면을 피그마(`5453:10418`,
+  `5461:9261`)와 실기기에서 대조한 기록이 없다.
+- **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
+- **해소 메모**: 화면 높이가 다른 기기 두 대(하나는 캔버스가 높이에 맞춰 좁아지는 낮은 화면)에서
+  패널을 열어 ①③을 본다. 가리면 올리는 양을 캔버스
+  높이에서 계산하도록 `panelFocusCenter`를 고치고 `ToppingPanelFocusTest`를 함께 고친다. ②는 기획이
+  줄이는 규칙을 정하면 스펙에 반영한다.
+
+<!-- oq-next: 413 -->

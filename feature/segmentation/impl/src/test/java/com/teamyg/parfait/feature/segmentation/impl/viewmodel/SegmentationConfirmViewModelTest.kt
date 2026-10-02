@@ -13,7 +13,6 @@ import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -57,23 +56,19 @@ class SegmentationConfirmViewModelTest {
 
     private fun givenDraft(draft: ToppingDraft?) {
         every { getToppingDraftFlow() } returns flowOf(draft)
-        coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         coEvery { ensureDraftSubjectRecorded(any()) } returns true
     }
 
     private fun draft(
         subjectImagePath: String? = SUBJECT_PATH,
         cutoutImagePath: String? = CUTOUT_PATH,
-        borderColorArgb: Int? = null,
-        borderWidthDp: Float? = null,
     ) = ToppingDraft(
         groupId = GroupId(1L),
         parfaitId = ParfaitId(2L),
         nextPositionZ = 3,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = cutoutImagePath,
-        borderColorArgb = borderColorArgb,
-        borderWidthDp = borderWidthDp,
     )
 
     private fun viewModel() = SegmentationConfirmViewModel(
@@ -152,9 +147,38 @@ class SegmentationConfirmViewModelTest {
     }
 
     @Test
+    fun canEditPhoto_isFalse_withoutSourceImage() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 되살릴 원본이 없는 재사용 진입
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 사진 편집을 보이지 않는다. 원본이 있는 진입은 보인다
+        assertFalse(viewModel.state.value.canEditPhoto)
+        assertTrue(viewModel().state.value.canEditPhoto)
+    }
+
+    @Test
+    fun tutorial_isHidden_whenPhotoCannotBeEdited() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아직 튜토리얼을 보지 않았지만 원본이 없는 진입
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
+        tutorialVisible.value = true
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        // Then 가리킬 버튼이 없으니 튜토리얼이 뜨지 않는다
+        assertFalse(viewModel.state.value.isTutorialVisible)
+    }
+
+    @Test
     fun state_followsTheDraft_notTheEntryArguments() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 편집을 거쳐 테두리까지 적힌 초안
-        givenDraft(draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f))
+        // Given 편집을 거쳐 진입 인자와 달라진 초안
+        givenDraft(draft(subjectImagePath = "/cache/segmentation/edited.png", cutoutImagePath = EDITED_CUTOUT_PATH))
 
         // When 화면이 열린다
         val viewModel = viewModel()
@@ -162,8 +186,8 @@ class SegmentationConfirmViewModelTest {
 
         // Then 겹치는 구간에서는 초안이 정본이다 — 편집을 거치면 진입 인자가 낡는다
         val state = viewModel.state.value
-        assertEquals(0xFF00FF00.toInt(), state.borderColorArgb)
-        assertEquals(4f, state.borderWidthDp)
+        assertEquals("/cache/segmentation/edited.png", state.subjectImagePath)
+        assertEquals(EDITED_CUTOUT_PATH, state.cutoutImagePath)
         assertTrue(state.isDraftReady)
     }
 
@@ -179,39 +203,7 @@ class SegmentationConfirmViewModelTest {
         // Then 화면이 열렸다는 이유로 초안에 쓰지 않는다 — 프로세스 사망 복원에서 진입 인자가
         // 편집 결과를 덮어쓰는 경로가 그렇게 생긴다
         coVerify(exactly = 0) { ensureDraftSubjectRecorded(any()) }
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun onEditResult_recordsBorderValues() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 초안이 열려 있다
-        givenDraft(draft())
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 편집을 마치고 돌아온다
-        viewModel.processIntent(
-            SegmentationConfirmIntent.OnEditResult(
-                ToppingEditResult(
-                    subjectImagePath = "/cache/segmentation/edited.png",
-                    cutoutImagePath = "/cache/segmentation/edited-cutout.png",
-                    borderLayers = listOf(ToppingBorderLayer(colorArgb = 0xFFFF0000.toInt(), widthDp = 8f)),
-                    sourceLongSide = null,
-                ),
-            ),
-        )
-        advanceUntilIdle()
-
-        // Then 테두리는 굽지 않고 값으로 적힌다
-        coVerify(exactly = 1) {
-            recordToppingDraft(
-                subjectImagePath = "/cache/segmentation/edited.png",
-                cutoutImagePath = "/cache/segmentation/edited-cutout.png",
-                borderColorArgb = 0xFFFF0000.toInt(),
-                borderWidthDp = 8f,
-                sourceLongSide = null,
-            )
-        }
+        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any()) }
     }
 
     @Test
@@ -239,27 +231,9 @@ class SegmentationConfirmViewModelTest {
             recordToppingDraft(
                 subjectImagePath = "/cache/edited-trimmed.png",
                 cutoutImagePath = "/cache/edited-canvas.png",
-                borderColorArgb = null,
-                borderWidthDp = null,
                 sourceLongSide = SourceLongSide(3024),
             )
         }
-    }
-
-    @Test
-    fun draft_carriesTheBorder_backIntoTheEditor() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 한 번 두른 테두리가 초안에 있다
-        givenDraft(draft(borderColorArgb = 0xFF0000FF.toInt(), borderWidthDp = 6f))
-
-        // When 화면이 열린다
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // Then 다시 편집을 열 때 벗겨진 채로 열리지 않는다
-        assertEquals(
-            listOf(ToppingBorderLayer(colorArgb = 0xFF0000FF.toInt(), widthDp = 6f)),
-            viewModel.state.value.borderLayers,
-        )
     }
 
     @Test
@@ -284,10 +258,10 @@ class SegmentationConfirmViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             // Given 정상 초안이 흐르다 캐시 파일이 사라져 두 번 연달아 비고, 다시 정상으로
             // 돌아왔다가 또 빈다 — 화면이 떠 있는 동안 저장소가 이 순서로 재방출할 수 있다
-            val normal = draft(borderColorArgb = 0xFF00FF00.toInt(), borderWidthDp = 4f)
+            val normal = draft()
             val empty = draft(subjectImagePath = null)
             every { getToppingDraftFlow() } returns flowOf(normal, empty, empty, normal, empty)
-            coEvery { recordToppingDraft(any(), any(), any(), any(), any()) } returns true
+            coEvery { recordToppingDraft(any(), any(), any()) } returns true
 
             // When 화면이 열린다
             val viewModel = viewModel()
@@ -324,17 +298,16 @@ class SegmentationConfirmViewModelTest {
 
     @Test
     fun reuseEntry_ensuresTheDraftPointsToTheSubject() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 최근 목록에서 고른 진입 — 초안에는 앞서 두른 테두리가 실려 있다
-        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null, borderColorArgb = 0xFF00FF00.toInt()))
+        // Given 최근 목록에서 고른 진입
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
 
         // When 화면이 열린다
-        val viewModel = reuseViewModel()
+        reuseViewModel()
         advanceUntilIdle()
 
-        // Then 진입 인자로 초안을 맞춘다. 이미 가리키던 초안을 덮어써 테두리를 지우지 않는 것은
+        // Then 진입 인자로 초안을 맞춘다. 이미 가리키던 초안을 덮어쓰지 않는 것은
         // 판정을 든 UseCase 가 지킨다
         coVerify(exactly = 1) { ensureDraftSubjectRecorded(REUSED_PATH) }
-        assertEquals(0xFF00FF00.toInt(), viewModel.state.value.borderColorArgb)
     }
 
     @Test
@@ -384,15 +357,13 @@ class SegmentationConfirmViewModelTest {
             draftFlow.value = draft(
                 subjectImagePath = "/cache/segmentation/edited.png",
                 cutoutImagePath = EDITED_CUTOUT_PATH,
-                borderColorArgb = 0xFFFF0000.toInt(),
-                borderWidthDp = 8f,
             )
 
             // When 프로세스가 죽었다 살아나 같은 진입 인자로 화면이 다시 열린다
             reuseViewModel(savedStateHandle)
             advanceUntilIdle()
 
-            // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 테두리와 편집 결과가
+            // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 편집 결과가
             // 말없이 사라진다. 맞추는 것은 첫 진입의 한 번뿐이다
             coVerify(exactly = 1) { ensureDraftSubjectRecorded(REUSED_PATH) }
         }

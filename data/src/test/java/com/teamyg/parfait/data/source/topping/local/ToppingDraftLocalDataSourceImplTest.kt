@@ -26,19 +26,17 @@ class ToppingDraftLocalDataSourceImplTest {
         nextPositionZ = 4,
         subjectImagePath = "/data/user/0/com.teamyg.parfait/cache/segmentation/subject.png",
         cutoutImagePath = "/data/user/0/com.teamyg.parfait/cache/segmentation/cutout.png",
-        borderColorArgb = 0xFFFF6B6B.toInt(),
-        borderWidthDp = 4f,
         sourceLongSide = SourceLongSide(4032),
     )
 
     @Test
     fun save_thenRead_roundTripsEveryField() = runTest {
-        // Given 이미지와 테두리까지 다 채워진 초안
+        // Given 이미지까지 다 채워진 초안
 
         // When 저장하고 다시 읽는다
         dataSource.save(filledDraft)
 
-        // Then 필드가 하나도 뒤바뀌지 않는다 — 값 클래스 둘과 널 넷을 거쳐 오므로 매퍼가
+        // Then 필드가 하나도 뒤바뀌지 않는다 — 값 클래스 둘과 널 셋을 거쳐 오므로 매퍼가
         // 뒤집혀도 컴파일러가 막지 못한다
         assertEquals(filledDraft, dataSource.draft.first())
     }
@@ -103,5 +101,22 @@ class ToppingDraftLocalDataSourceImplTest {
         // Then 초안을 통째로 버리지 않고 이 필드만 비운다 - 흐름 도중 앱을 껐다 켠 사용자를 잃지 않는다
         assertEquals("/cache/segmentation/subject.png", restored?.subjectImagePath)
         assertNull(restored?.sourceLongSide)
+    }
+
+    @Test
+    fun draft_legacyJsonWithBorderFields_keepsTheRest() = runTest {
+        // Given 테두리 필드가 아직 있던 옛 버전이 저장한 JSON 이 남아 있다
+        val legacyJson = """{"groupId":1,"parfaitId":2,"nextPositionZ":3,""" +
+            """"subjectImagePath":"/s.png","borderColorArgb":-16777216,"borderWidthDp":10.0}"""
+        dataStore.putRaw(ToppingDraftLocalDataSourceImpl.TOPPING_DRAFT_KEY_NAME, legacyJson)
+
+        // When 읽는다
+        val restored = dataSource.draft.first()
+
+        // Then 모르는 키에 디코드가 깨지지 않고 나머지 필드가 산다
+        assertEquals(GroupId(1L), restored?.groupId)
+        assertEquals(ParfaitId(2L), restored?.parfaitId)
+        assertEquals(3, restored?.nextPositionZ)
+        assertEquals("/s.png", restored?.subjectImagePath)
     }
 }

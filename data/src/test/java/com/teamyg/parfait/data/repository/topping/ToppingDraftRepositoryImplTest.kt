@@ -122,7 +122,7 @@ class ToppingDraftRepositoryImplTest {
 
     @Test
     fun record_keepsCanvasIdentity_andFillsImages() = runTest {
-        // Given 흐름 진입만 마친 초안(이미지·테두리가 비어 있다)
+        // Given 흐름 진입만 마친 초안(이미지가 비어 있다)
         givenStoredDraft(draft(subjectImagePath = null, cutoutImagePath = null))
         val saved = slot<ToppingDraft>()
         coEvery { toppingDraftLocalDataSource.save(capture(saved)) } returns Unit
@@ -131,8 +131,6 @@ class ToppingDraftRepositoryImplTest {
         val recorded = repository().record(
             subjectImagePath = "/cache/segmentation/subject.png",
             cutoutImagePath = "/cache/segmentation/cutout.png",
-            borderColorArgb = null,
-            borderWidthDp = null,
             sourceLongSide = null,
         )
 
@@ -151,32 +149,6 @@ class ToppingDraftRepositoryImplTest {
     }
 
     @Test
-    fun record_withoutBorder_dropsThePreviousOne() = runTest {
-        // Given 테두리까지 적혀 있던 초안
-        givenStoredDraft(
-            draft(
-                subjectImagePath = "/cache/segmentation/old.png",
-                cutoutImagePath = "/cache/segmentation/old-cutout.png",
-            ).copy(borderColorArgb = 0xFFFF0000.toInt(), borderWidthDp = 10f),
-        )
-        val saved = slot<ToppingDraft>()
-        coEvery { toppingDraftLocalDataSource.save(capture(saved)) } returns Unit
-
-        // When 테두리를 벗긴 편집 결과를 적는다
-        repository().record(
-            subjectImagePath = "/cache/segmentation/new.png",
-            cutoutImagePath = "/cache/segmentation/new-cutout.png",
-            borderColorArgb = null,
-            borderWidthDp = null,
-            sourceLongSide = null,
-        )
-
-        // Then 지난 테두리가 살아남지 않는다 — 병합하면 방금 벗긴 테두리가 배치까지 따라간다
-        assertNull(saved.captured.borderColorArgb)
-        assertNull(saved.captured.borderWidthDp)
-    }
-
-    @Test
     fun record_withNullCutoutPath_keepsDraftWritable() = runTest {
         // Given 흐름이 열려 있다
         givenStoredDraft(draft(subjectImagePath = null, cutoutImagePath = null))
@@ -186,8 +158,6 @@ class ToppingDraftRepositoryImplTest {
         val recorded = repository.record(
             subjectImagePath = "/data/files/recent_images/b.png",
             cutoutImagePath = null,
-            borderColorArgb = null,
-            borderWidthDp = null,
             sourceLongSide = null,
         )
 
@@ -209,8 +179,6 @@ class ToppingDraftRepositoryImplTest {
         val recorded = repository().record(
             subjectImagePath = "/cache/segmentation/subject.png",
             cutoutImagePath = "/cache/segmentation/cutout.png",
-            borderColorArgb = null,
-            borderWidthDp = null,
             sourceLongSide = null,
         )
 

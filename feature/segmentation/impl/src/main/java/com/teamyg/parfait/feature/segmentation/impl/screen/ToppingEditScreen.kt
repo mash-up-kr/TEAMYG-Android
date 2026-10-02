@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditActionButton
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -67,7 +67,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toPath
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.component.BorderColorChipRow
-import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
@@ -251,10 +250,8 @@ private fun ToppingEditContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            YGFloatingBarEditTab(
-                tabs = ToppingEditTab.entries.map { tab -> stringResource(tab.label) },
-                selectedIndex = state.tab.ordinal,
-                onTabSelect = { index -> onChangeTab(ToppingEditTab.entries[index]) },
+            YGFloatingBarEdit(
+                title = stringResource(R.string.topping_edit_area_only_title),
                 onCloseClick = onClickBack,
                 onConfirmClick = onClickDone,
                 modifier = Modifier.fillMaxWidth(),
@@ -558,7 +555,7 @@ private fun SegmentationAreaControls(
                 color = YGAtomicColors.Gray.Gray700,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
+            YGSlider(
                 value = brushWidth,
                 onValueChange = onChangeBrushWidth,
                 onValueChangeFinished = onChangeBrushWidthFinished,
@@ -615,7 +612,7 @@ private fun SegmentationBorderControls(
                 color = YGAtomicColors.Gray.Gray700,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
+            YGSlider(
                 value = borderWidth,
                 onValueChange = onChangeWidth,
                 valueRange = borderWidthRange,

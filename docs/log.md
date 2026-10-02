@@ -318,3 +318,9 @@ status.md C-106·C-301 조작 서술 · OQ-P-202 문구(핀치 기준, 미결 �
 
 ## [2026-09-30] restructure | C-101-Loading 반영 — 세그멘테이션 분석 흐름 문서 갱신, 스펙·계획 archive
 status·navigation-flow·data-layer·design-system·ADR-0012 갱신 · 해소 OQ-P-399, OQ-P-401, OQ-P-400(①~⑤) · OQ 신설 OQ-P-411
+
+## [2026-10-02] restructure | 배치 화면 테두리 패널(추가 플로우) 반영 — status 「토핑 생성·배치」 덮어쓰기, ADR-0034 신설
+ADR-0026 본문·인덱스에서 초안의 테두리 서술 정리 · OQ-P-081(②)·OQ-P-203(③) 사용처 고쳐 씀 · OQ 신설 OQ-P-412(실기기 미확인) · 유닛 1239 · 계측 30(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기 대조는 하지 않았다
+
+## [2026-10-02] lint | 배치 화면 테두리 패널 최종 리뷰 반영 — 낮은 화면에서 캔버스가 확정 버튼 밑으로 넘치던 배치 수정, 문서 6건 정정
+OQ-P-256 호출 경로·잠금 테스트 서술을 현재 코드에 맞춤(미결 유지) · OQ-P-412 출처에서 브랜치명 제거, 낮은 화면 실기기 미확인 추가(미결 유지) · status 「튜토리얼」 원본 없는 누끼 확인 진입 · ADR-0025 `related_adr`에 ADR-0034 · 유닛 `feature:groups:canvas:impl` 202·`domain` 130 · 계측 33(`feature:groups:canvas:impl`, 에뮬레이터 Pixel_7_API_36) · 낮은 화면 실기기 확인은 하지 않았다

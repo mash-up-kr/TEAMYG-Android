@@ -9,20 +9,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitAdd
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
-import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.camera.impl.screen.PictureConfirmScreen
 import com.teamyg.parfait.feature.camera.impl.viewmodel.PictureConfirmViewModel
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun PictureConfirmRoute(
@@ -78,18 +75,12 @@ internal fun PictureConfirmRoute(
     }
 
     if (showQuitDialog) {
-        YGModalPopup(
-            title = stringResource(R.string.camera_picture_confirm_quit_dialog_title),
-            body = stringResource(R.string.camera_picture_confirm_quit_dialog_body),
-            iconRes = DesignSystemR.drawable.ic_warning_round,
-            secondaryText = stringResource(R.string.camera_picture_confirm_quit_dialog_confirm),
-            onSecondaryClick = {
+        YGModalQuitAdd(
+            onConfirmQuit = {
                 showQuitDialog = false
                 navigator.popUpTo<NavKeyCanvasMain>()
             },
-            primaryText = stringResource(R.string.camera_picture_confirm_quit_dialog_cancel),
-            onPrimaryClick = { showQuitDialog = false },
-            onDismissRequest = { showQuitDialog = false },
+            onDismiss = { showQuitDialog = false },
         )
     }
 }
