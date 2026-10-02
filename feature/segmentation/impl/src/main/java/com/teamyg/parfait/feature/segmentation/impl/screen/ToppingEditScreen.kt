@@ -59,7 +59,6 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditActionButton
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
 import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -251,10 +250,8 @@ private fun ToppingEditContent(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            YGFloatingBarEditTab(
-                tabs = ToppingEditTab.entries.map { tab -> stringResource(tab.label) },
-                selectedIndex = state.tab.ordinal,
-                onTabSelect = { index -> onChangeTab(ToppingEditTab.entries[index]) },
+            YGFloatingBarEdit(
+                title = stringResource(R.string.topping_edit_area_only_title),
                 onCloseClick = onClickBack,
                 onConfirmClick = onClickDone,
                 modifier = Modifier.fillMaxWidth(),

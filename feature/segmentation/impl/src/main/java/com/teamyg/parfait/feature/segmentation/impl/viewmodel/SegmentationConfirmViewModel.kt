@@ -28,6 +28,10 @@ data class SegmentationConfirmState(
     /** 앱 설치 후 이 화면 첫 진입에서만 `true`. 화면 전체를 덮는다 */
     val isTutorialVisible: Boolean = false,
 ) : UiState {
+    /** 원본이 있어 영역을 고칠 수 있을 때만 "사진 편집"을 보인다 */
+    val canEditPhoto: Boolean
+        get() = sourceImageUri != null
+
     /** 되살릴 원본이 없으면 영역은 손댈 수 없고 테두리만 고칠 수 있다 */
     val isBorderOnlyEdit: Boolean
         get() = sourceImageUri == null
@@ -111,7 +115,7 @@ class SegmentationConfirmViewModel
 
     private fun observeTutorial() {
         launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.SEGMENTATION) }) { isVisible ->
-            updateState { copy(isTutorialVisible = isVisible) }
+            updateState { copy(isTutorialVisible = canEditPhoto && isVisible) }
         }
     }
 

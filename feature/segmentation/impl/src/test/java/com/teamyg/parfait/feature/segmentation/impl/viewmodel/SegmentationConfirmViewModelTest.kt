@@ -147,6 +147,35 @@ class SegmentationConfirmViewModelTest {
     }
 
     @Test
+    fun canEditPhoto_isFalse_withoutSourceImage() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 되살릴 원본이 없는 재사용 진입
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        advanceUntilIdle()
+
+        // Then 사진 편집을 보이지 않는다. 원본이 있는 진입은 보인다
+        assertFalse(viewModel.state.value.canEditPhoto)
+        assertTrue(viewModel().state.value.canEditPhoto)
+    }
+
+    @Test
+    fun tutorial_isHidden_whenPhotoCannotBeEdited() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 아직 튜토리얼을 보지 않았지만 원본이 없는 진입
+        givenDraft(draft(subjectImagePath = REUSED_PATH, cutoutImagePath = null))
+        tutorialVisible.value = true
+
+        // When 화면이 열린다
+        val viewModel = reuseViewModel()
+        backgroundScope.launch { viewModel.state.collect { } }
+        advanceUntilIdle()
+
+        // Then 가리킬 버튼이 없으니 튜토리얼이 뜨지 않는다
+        assertFalse(viewModel.state.value.isTutorialVisible)
+    }
+
+    @Test
     fun state_followsTheDraft_notTheEntryArguments() = runTest(mainDispatcherRule.dispatcher) {
         // Given 편집을 거쳐 진입 인자와 달라진 초안
         givenDraft(draft(subjectImagePath = "/cache/segmentation/edited.png", cutoutImagePath = EDITED_CUTOUT_PATH))
@@ -334,7 +363,7 @@ class SegmentationConfirmViewModelTest {
             reuseViewModel(savedStateHandle)
             advanceUntilIdle()
 
-            // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 테두리와 편집 결과가
+            // Then 진입 인자로 초안을 덮어쓰지 않는다 — 덮으면 방금 두른 편집 결과가
             // 말없이 사라진다. 맞추는 것은 첫 진입의 한 번뿐이다
             coVerify(exactly = 1) { ensureDraftSubjectRecorded(REUSED_PATH) }
         }

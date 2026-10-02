@@ -11,6 +11,7 @@ import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.SubjectMeasure
+import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.measureSubject
 import com.teamyg.parfait.feature.segmentation.impl.editor.trimTo
@@ -107,16 +108,40 @@ class ToppingEditViewModelTest {
         sourceImageUri: String = SOURCE_URI,
         segmentationImageUri: String = SEGMENTATION_URI,
         completion: ToppingEditCompletion = ToppingEditCompletion.RecordAndConfirm,
+        borderOnly: Boolean = false,
     ) = ToppingEditViewModel(
         sourceImageUri = sourceImageUri,
         segmentationImageUri = segmentationImageUri,
         initialBorderLayers = emptyList(),
-        borderOnly = false,
+        borderOnly = borderOnly,
         completion = completion,
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
     )
+
+    @Test
+    fun changeTab_toBorder_whenNotBorderOnly_isIgnored() = runTest {
+        // Given 새 토핑 흐름의 편집 화면
+        val viewModel = createViewModel(borderOnly = false)
+        advanceUntilIdle()
+
+        // When 테두리 탭으로 바꾸려 한다
+        viewModel.processIntent(ToppingEditIntent.ChangeTab(ToppingEditTab.BORDER))
+
+        // Then 영역 탭에 머문다
+        assertEquals(ToppingEditTab.AREA, viewModel.state.value.tab)
+    }
+
+    @Test
+    fun borderOnly_stillOpensOnBorderTab() = runTest {
+        // Given 테두리만 고치는 진입
+        val viewModel = createViewModel(borderOnly = true)
+        advanceUntilIdle()
+
+        // Then 테두리 탭으로 열린다
+        assertEquals(ToppingEditTab.BORDER, viewModel.state.value.tab)
+    }
 
     @Test
     fun loadImages_equalUris_sharesOneDecodedBitmap() = runTest {

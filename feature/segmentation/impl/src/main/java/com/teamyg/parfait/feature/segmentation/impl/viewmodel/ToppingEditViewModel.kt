@@ -194,6 +194,8 @@ class ToppingEditViewModel
     override fun processIntent(intent: ToppingEditIntent) {
         when (intent) {
             is ToppingEditIntent.ChangeTab -> {
+                // 테두리는 배치 화면의 패널이 고른다. 탭이 없는 진입에서는 들어올 길이 없다
+                if (intent.tab == ToppingEditTab.BORDER && !state.value.isBorderOnly) return
                 updateState { copy(tab = intent.tab) }
             }
 

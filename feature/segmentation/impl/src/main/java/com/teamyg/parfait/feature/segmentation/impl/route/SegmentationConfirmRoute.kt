@@ -80,6 +80,7 @@ internal fun SegmentationConfirmRoute(
             SegmentationConfirmScreen(
                 subjectImagePath = uiState.subjectImagePath,
                 isNextEnabled = uiState.isDraftReady,
+                showEditPhotoButton = uiState.canEditPhoto,
                 onClickBack = { navigator.onBack() },
                 onClickClose = { showQuitDialog = true },
                 onClickEditPhoto = {

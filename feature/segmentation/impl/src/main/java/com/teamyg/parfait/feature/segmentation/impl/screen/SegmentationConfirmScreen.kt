@@ -41,6 +41,7 @@ import com.teamyg.parfait.feature.segmentation.impl.R
 internal fun SegmentationConfirmScreen(
     subjectImagePath: String,
     isNextEnabled: Boolean,
+    showEditPhotoButton: Boolean,
     onClickBack: () -> Unit,
     onClickClose: () -> Unit,
     onClickEditPhoto: () -> Unit,
@@ -99,13 +100,15 @@ internal fun SegmentationConfirmScreen(
                     bottom = YGTheme.layout.padding.padding6,
                 ),
         ) {
-            YGButton(
-                text = stringResource(R.string.segmentation_confirm_edit_photo),
-                buttonType = YGButtonType.Medium.Secondary,
-                isEnabled = true,
-                onClick = onClickEditPhoto,
-                modifier = Modifier.weight(1f),
-            )
+            if (showEditPhotoButton) {
+                YGButton(
+                    text = stringResource(R.string.segmentation_confirm_edit_photo),
+                    buttonType = YGButtonType.Medium.Secondary,
+                    isEnabled = true,
+                    onClick = onClickEditPhoto,
+                    modifier = Modifier.weight(1f),
+                )
+            }
             YGButton(
                 text = stringResource(R.string.segmentation_confirm_next),
                 buttonType = YGButtonType.Medium.Primary,
@@ -123,6 +126,7 @@ private fun SegmentationConfirmScreenPreview() = PreviewBox {
     SegmentationConfirmScreen(
         subjectImagePath = "",
         isNextEnabled = true,
+        showEditPhotoButton = true,
         onClickBack = {},
         onClickClose = {},
         onClickEditPhoto = {},
