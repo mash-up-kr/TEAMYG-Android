@@ -50,7 +50,7 @@ class EnsureDraftSubjectRecordedUseCaseTest {
 
         assertTrue(ensureDraftSubjectRecorded(SUBJECT_PATH))
 
-        // 테두리까지 비우는 것이 규약이다 — 알맹이가 바뀌면 그 전 테두리는 설 자리가 없다
+        // 알맹이가 바뀌면 그 전 누끼와 원본 긴 변은 남의 것이다. 같이 비운다
         coVerify(exactly = 1) {
             repository.record(
                 subjectImagePath = SUBJECT_PATH,

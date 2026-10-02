@@ -40,9 +40,6 @@ fun YGFloatingBarBackClose(
     }
 }
 
-/**
- * 뒤로가기와 닫기 사이에 제목을 둔 변형
- */
 @Composable
 fun YGFloatingBarBackTitleClose(
     title: String,

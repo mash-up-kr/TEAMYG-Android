@@ -34,6 +34,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 private const val INPUT_TAG = "topping_place_input"
+private const val PANEL_TAG = "topping_border_panel"
 
 /** 좌우 여백 20dp 씩을 빼면 캔버스 폭이 300dp 다 */
 private val SCREEN_WIDTH = 340.dp
@@ -141,6 +142,23 @@ class CanvasToppingPlaceScreenTest {
             assertEquals(1, dismissCount)
             assertEquals(0, transformCount)
             assertEquals(0, clickToppingCount)
+        }
+    }
+
+    @Test
+    fun panelOpen_tapOnPanelBlankArea_keepsPanelOpen() {
+        isPanelOpen = true
+        setScreen()
+        awaitImageReady()
+
+        composeTestRule.onNodeWithTag(PANEL_TAG).performTouchInput { click(topLeft + Offset(4f, 4f)) }
+
+        composeTestRule.runOnIdle {
+            assertEquals(true, isPanelOpen)
+            assertEquals(0, dismissCount)
+            assertEquals(0, toggleCount)
+            assertEquals(0, clickToppingCount)
+            assertEquals(0, transformCount)
         }
     }
 
