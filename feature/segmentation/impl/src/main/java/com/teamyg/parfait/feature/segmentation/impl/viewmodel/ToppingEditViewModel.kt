@@ -175,8 +175,8 @@ class ToppingEditViewModel
 
             updateState { copy(originBitmap = originBitmap, segmentationBitmap = segmentationBitmap) }
 
-            // 성공 분기에서만 보낸다 — 디코드에 실패하면 곧 닫히는 화면에 "직접 선택해 주세요"를 띄우게 된다.
-            // 표시를 SavedStateHandle 에 남겨 프로세스가 되살아나 다시 만들어져도 두 번 띄우지 않는다
+            // 불러오기에 실패해 곧 닫힐 화면에는 안내를 띄우지 않으려고 성공한 뒤에 보낸다.
+            // 다시 만들어져도 한 번만 띄우도록 보냈다는 표시는 SavedStateHandle 에 둔다
             if (isDetectionFailed && savedStateHandle.get<Boolean>(KEY_DETECTION_FAILED_SHOWN) != true) {
                 savedStateHandle[KEY_DETECTION_FAILED_SHOWN] = true
                 postSideEffect(ToppingEditEffect.ShowDetectionFailed)

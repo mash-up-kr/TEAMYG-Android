@@ -167,6 +167,7 @@ class ToppingEditViewModelTest {
         val second = createViewModel(isDetectionFailed = true, savedStateHandle = savedStateHandle)
         advanceUntilIdle()
 
+        assertFalse(second.state.value.isLoading)
         second.effect.test {
             expectNoEvents()
         }
@@ -188,6 +189,7 @@ class ToppingEditViewModelTest {
         val viewModel = createViewModel(isDetectionFailed = false)
         advanceUntilIdle()
 
+        assertFalse(viewModel.state.value.isLoading)
         viewModel.effect.test {
             expectNoEvents()
         }
