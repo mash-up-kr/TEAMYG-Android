@@ -12,10 +12,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -55,9 +53,11 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditActionButton
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
 import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
@@ -90,9 +90,11 @@ internal fun ToppingEditScreen(
     onAddStroke: (ToppingEditStroke) -> Unit,
     onClickUndoArea: () -> Unit,
     onClickRedoArea: () -> Unit,
-    onClickDone: () -> Unit,
+    onClickNext: () -> Unit,
     onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
     modifier: Modifier = Modifier,
+    toast: @Composable () -> Unit = {},
 ) {
     Box(modifier = modifier) {
         ToppingEditContent(
@@ -102,8 +104,10 @@ internal fun ToppingEditScreen(
             onAddStroke = onAddStroke,
             onClickUndoArea = onClickUndoArea,
             onClickRedoArea = onClickRedoArea,
-            onClickDone = onClickDone,
+            onClickNext = onClickNext,
             onClickBack = onClickBack,
+            onClickClose = onClickClose,
+            toast = toast,
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -121,56 +125,66 @@ private fun ToppingEditContent(
     onAddStroke: (ToppingEditStroke) -> Unit,
     onClickUndoArea: () -> Unit,
     onClickRedoArea: () -> Unit,
-    onClickDone: () -> Unit,
+    onClickNext: () -> Unit,
     onClickBack: () -> Unit,
+    onClickClose: () -> Unit,
+    toast: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        ToppingEditHistoryActions(
-            history = state.areaHistory,
-            onClickUndo = onClickUndoArea,
-            onClickRedo = onClickRedoArea,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(YGTheme.layout.padding.padding7),
+        YGFloatingBarBackTitleClose(
+            title = stringResource(R.string.topping_edit_title),
+            onBackClick = onClickBack,
+            onCloseClick = onClickClose,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap6))
-
+        // 토스트가 화면 폭을 써야 해서 좌우 여백은 캔버스에만 준다
         Box(
-            contentAlignment = Alignment.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = YGTheme.layout.padding.padding7)
                 .weight(1f),
         ) {
-            // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
-            val originBitmap = state.originBitmap
-            val segmentationBitmap = state.segmentationBitmap
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = YGTheme.layout.padding.padding7),
+            ) {
+                // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
+                val originBitmap = state.originBitmap
+                val segmentationBitmap = state.segmentationBitmap
 
-            when {
-                originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
+                when {
+                    originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
 
-                else -> ToppingEditCanvas(
-                    originBitmap = originBitmap,
-                    segmentationBitmap = segmentationBitmap,
-                    strokes = state.strokes,
-                    mode = state.mode,
-                    brushWidthDp = state.brushWidthDp,
-                    onAddStroke = onAddStroke,
-                    isBrushPreviewVisible = isAdjustingBrushWidth,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                    else -> ToppingEditCanvas(
+                        originBitmap = originBitmap,
+                        segmentationBitmap = segmentationBitmap,
+                        strokes = state.strokes,
+                        mode = state.mode,
+                        brushWidthDp = state.brushWidthDp,
+                        onAddStroke = onAddStroke,
+                        isBrushPreviewVisible = isAdjustingBrushWidth,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            Box(
+                contentAlignment = Alignment.TopCenter,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                toast()
             }
         }
 
-        Spacer(modifier = Modifier.height(23.dp))
-
         SegmentationAreaControls(
             mode = state.mode,
+            history = state.areaHistory,
             brushWidth = state.brushWidthDp,
             brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
             isEnabled = !state.isLoading,
@@ -180,20 +194,29 @@ private fun ToppingEditContent(
                 onChangeBrushWidth(width)
             },
             onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
+            onClickUndo = onClickUndoArea,
+            onClickRedo = onClickRedoArea,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    top = YGTheme.layout.padding.padding6,
+                    top = YGTheme.layout.gap.gap5,
                     start = YGTheme.layout.padding.padding7,
                     end = YGTheme.layout.padding.padding7,
                 ),
         )
 
-        YGFloatingBarEdit(
-            title = stringResource(R.string.topping_edit_area_only_title),
-            onCloseClick = onClickBack,
-            onConfirmClick = onClickDone,
-            modifier = Modifier.fillMaxWidth(),
+        YGButton(
+            text = stringResource(R.string.topping_edit_next),
+            buttonType = YGButtonType.Large,
+            isEnabled = !state.isLoading,
+            onClick = onClickNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.gap.gap3,
+                ),
         )
     }
 }
@@ -473,37 +496,44 @@ private fun DrawScope.drawEditStroke(
 @Composable
 private fun SegmentationAreaControls(
     mode: ToppingEditMode,
+    history: UndoRedoStack<*>,
     brushWidth: Float,
     brushWidthRange: ClosedFloatingPointRange<Float>,
     isEnabled: Boolean,
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onChangeBrushWidthFinished: () -> Unit,
+    onClickUndo: () -> Unit,
+    onClickRedo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
     ) {
-        // 라벨과 바는 한 덩어리로 붙여야 해서 바깥 Column 의 간격을 타지 않도록 따로 감싼다
-        Column {
+        Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 text = stringResource(R.string.topping_edit_brush_width),
                 style = YGTheme.typography.caption.c01M,
                 color = YGAtomicColors.Gray.Gray700,
+                modifier = Modifier.weight(1f),
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            YGSlider(
-                value = brushWidth,
-                onValueChange = onChangeBrushWidth,
-                onValueChangeFinished = onChangeBrushWidthFinished,
-                valueRange = brushWidthRange,
-                isEnabled = isEnabled,
+            ToppingEditHistoryActions(
+                history = history,
+                onClickUndo = onClickUndo,
+                onClickRedo = onClickRedo,
             )
         }
 
-        // 하단 플로팅 바 바로 위에 붙어 모드 전환이 바와 한 덩어리로 보이게 둔다
-        Row {
+        YGSlider(
+            value = brushWidth,
+            onValueChange = onChangeBrushWidth,
+            onValueChangeFinished = onChangeBrushWidthFinished,
+            valueRange = brushWidthRange,
+            isEnabled = isEnabled,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1)) {
             YGEditButton(
                 text = stringResource(R.string.topping_edit_area_erase),
                 isSelected = mode == ToppingEditMode.ERASE,
@@ -541,8 +571,9 @@ private fun PreviewToppingEditScreen(
         onAddStroke = {},
         onClickUndoArea = {},
         onClickRedoArea = {},
-        onClickDone = {},
+        onClickNext = {},
         onClickBack = {},
+        onClickClose = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
