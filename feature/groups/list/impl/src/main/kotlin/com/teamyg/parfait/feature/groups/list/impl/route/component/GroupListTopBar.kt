@@ -3,9 +3,11 @@ package com.teamyg.parfait.feature.groups.list.impl.route.component
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButton
 import com.teamyg.parfait.core.designsystem.component.ygchipbutton.YGChipButtonColorsDefaults
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarEmpty
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
@@ -38,5 +40,34 @@ internal fun GroupListTopBar(
                 )
             }
         },
+    )
+}
+
+@Preview
+@Composable
+private fun GroupListTopBarPreview() = PreviewBox {
+    GroupListTopBar(
+        count = 3,
+        onClickSideMenu = {},
+        onClickAddGroup = {},
+    )
+}
+
+@Preview
+@Composable
+private fun GroupListTopBarZeroCountPreview() = PreviewBox {
+    GroupListTopBar(
+        count = 0,
+        onClickSideMenu = {},
+        onClickAddGroup = {},
+    )
+}
+
+@Preview
+@Composable
+private fun GroupListTopBarWithoutChipPreview() = PreviewBox {
+    GroupListTopBar(
+        count = null,
+        onClickSideMenu = {},
     )
 }

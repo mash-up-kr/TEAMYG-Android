@@ -150,7 +150,14 @@ fun YGTopBarEmpty(
 )
 
 // feature:groups:list:impl — 컴포지션이 드는 인트로 상태
-internal enum class GroupListEmptyIntroPhase { Entering, Shown, Dismissing, Dismissed }
+internal enum class GroupListEmptyIntroPhase {
+    Entering, Shown, Dismissing, Dismissed;
+
+    fun onTouchDown(): GroupListEmptyIntroPhase
+    fun onStop(): GroupListEmptyIntroPhase
+    fun enterValue(animated: Float): Float
+    fun exitValue(animated: Float): Float
+}
 
 @Stable
 internal class GroupListEmptyIntroState {
@@ -175,15 +182,16 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 - `rememberGroupListEmptyIntroState(enabled)` — `enabled`가 참이 되는 순간 한 번 `play()`를
   돌린다. 상태는 `remember`로 들어, 화면을 벗어났다 돌아오면 컴포지션과 함께 새로 만들어져
   다시 재생된다.
-- 단계 전이(`onTouchDown`, `onStop`)는 애니메이션 값과 분리된 순수 함수로 두어 단위
+- 단계 전이(`onTouchDown`, `onStop`)는 애니메이션 값과 분리된 enum 멤버 함수로 두어 단위
   테스트한다.
 
 ## 파일 구성
 
 | 파일 | 역할 |
 |---|---|
-| `feature/groups/list/impl/.../route/component/GroupListEmptyIntroPhase.kt` (신규) | 단계 전이·타임라인 상수·이징(순수 로직) |
-| `feature/groups/list/impl/.../route/component/GroupListEmptyIntroState.kt` (신규) | 애니메이션 값을 드는 상태 홀더 |
+| `feature/groups/list/impl/.../model/GroupListEmptyIntroPhase.kt` (신규) | 단계 열거형과 단계 전이·값 해석(순수 로직) |
+| `feature/groups/list/impl/.../model/GroupListEmptyIntroTimeline.kt` (신규) | 타임라인 상수·이징 |
+| `feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt` (신규) | 애니메이션 값을 드는 상태 홀더 |
 | `feature/groups/list/impl/.../model/GroupListEmptyDummyGroup.kt` (신규) | 더미 3개 정의 |
 | `feature/groups/list/impl/.../route/component/GroupListEmptyDummyGroups.kt` (신규) | 더미 그리기 |
 | `feature/groups/list/impl/.../route/GroupListScreen.kt` | 0건일 때 더미·툴팁 배치, 터치 다운 관찰, 라이프사이클 연결 |
