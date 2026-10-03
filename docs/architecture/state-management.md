@@ -277,7 +277,7 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
     쌓이는 것만 막는다.
   - 같은 모양의 계약이 갤러리 최근 누끼에도 있다 — `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤에만
     `NavigateToToppingPlace`를 보내고, 맞추는 동안 연타는 `launch(key)`가 막는다
-    → [topping-edit-entry-flow 스펙](../superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md).
+    → [topping-edit-entry-flow 스펙](../superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md).
 - ⚠️ **UI 타입 보유 사례(2026-08-15, PR #231)** — C-301 배경 편집의 `CanvasBGEditUiState`가 Compose
   `Color`를, `CanvasBGEditEffect.ConfirmBackground`가 디자인시스템 타입 `YGCanvasBackground`를 든다.
   선택 팔레트(`CanvasBackgroundPaletteColors`)도 ViewModel 파일의 public 상수다. 위 "표시 문자열을
