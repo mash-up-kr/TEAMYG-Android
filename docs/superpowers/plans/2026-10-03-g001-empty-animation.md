@@ -77,7 +77,7 @@ tags: [plan, parfait, G-001, animation]
   - `GroupListUiState`의 멤버 프로퍼티 `val isEmptyConfirmed: Boolean`
   - `R.string.group_list_title`
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다** — `GroupListViewModelTest.kt`에 추가
+- [x] **Step 1: 실패하는 테스트를 쓴다** — `GroupListViewModelTest.kt`에 추가
 
 ```kotlin
 @Test
@@ -96,34 +96,34 @@ fun isEmptyConfirmed_whileRefreshingWithNoGroups_staysTrue() {
 
 같은 파일에서 `enter_fillsTodayInTheHeader`를 지운다(날짜 상태가 없어진다).
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest --tests '*GroupListViewModelTest'`
 Expected: 컴파일 실패 — `isEmptyConfirmed` 미정의
 
-- [ ] **Step 3: `GroupListUiState`를 고친다** (`GroupListViewModel.kt`)
+- [x] **Step 3: `GroupListUiState`를 고친다** (`GroupListViewModel.kt`)
 
 - `dateString`, `dayOfWeekString` 필드와 `updateToday()`, 그 호출, 안 쓰게 된 import를 지운다
 - 파생값을 더한다: `val isEmptyConfirmed: Boolean get() = groupList?.isEmpty() == true`
 - `isTooltipVisible`은 이 태스크에서 건드리지 않는다
 - `core/util/jvm`의 `DateFormat.FullMonthWithDay`·`AbbreviatedDayOfWeek`는 이 ViewModel이 유일한 사용처였다. `grep`으로 남은 사용처가 테스트뿐임을 확인한 뒤 두 상수와 `DateFormatTest`의 해당 케이스를 지운다. 다른 사용처가 나오면 남긴다
 
-- [ ] **Step 4: `YGTopBarEmpty` 시그니처를 바꾼다** (`YGTopBar.kt`)
+- [x] **Step 4: `YGTopBarEmpty` 시그니처를 바꾼다** (`YGTopBar.kt`)
 
 `date`→`title`, `day`→`count: String?`. `count`는 괄호 없이 그대로 그리고(`Gray300`), `null`이면 그 `Text`를 그리지 않는다. 같은 파일 프리뷰 셋과 `YGTopBarPreviewScreen.kt` 호출 셋을 `title = "내 그룹"`, `count = "3"`(긴 제목 프리뷰는 긴 `title` 유지)로 맞춘다.
 
-- [ ] **Step 5: `GroupListTopBar`와 호출부를 맞춘다**
+- [x] **Step 5: `GroupListTopBar`와 호출부를 맞춘다**
 
 - `strings.xml`: `<string name="group_list_title">내 그룹</string>`
 - `GroupListTopBar`: `date`, `day` 대신 `count: Int?`. `YGTopBarEmpty(title = stringResource(R.string.group_list_title), count = count?.toString(), …)`
 - `GroupListScreen`, `GroupListErrorScreen`: `count = uiState.groupList?.size`. 두 파일의 프리뷰 상태에서 `dateString`·`dayOfWeekString` 인자를 지운다
 
-- [ ] **Step 6: 통과를 확인한다**
+- [x] **Step 6: 통과를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest :core:util:jvm:test :app-preview:compileDebugKotlin ktlintCheck`
 Expected: BUILD SUCCESSFUL, `GroupListViewModelTest` 전부 PASS
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 git add core/designsystem core/util/jvm app-preview feature/groups/list/impl
@@ -148,7 +148,7 @@ git commit -m "feat: 그룹 목록 상단 바를 날짜 대신 내 그룹 개수
   - `internal val GROUP_LIST_EMPTY_DUMMY_GROUPS: List<GroupListEmptyDummyGroup>` — 순서가 곧 `ToppingLayout` 자리(0 왼쪽 상단, 1 오른쪽 중단, 2 왼쪽 하단)이자 등장 순서
   - `R.string.group_list_empty_dummy_name_collector`, `_parfait`, `_daily`
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다** — `GroupListEmptyDummyGroupTest.kt`
+- [x] **Step 1: 실패하는 테스트를 쓴다** — `GroupListEmptyDummyGroupTest.kt`
 
 ```kotlin
 @Test
@@ -176,12 +176,12 @@ fun dummyGroups_followTheFigmaOrderAndVariants() {
 }
 ```
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest --tests '*GroupListEmptyDummyGroupTest'`
 Expected: 컴파일 실패 — `GROUP_LIST_EMPTY_DUMMY_GROUPS` 미정의
 
-- [ ] **Step 3: 이미지 3장을 Figma에서 받아 프레임에 맞춰 자른다**
+- [x] **Step 3: 이미지 3장을 Figma에서 받아 프레임에 맞춰 자른다**
 
 `figma:figma-design-to-code` 스킬을 먼저 불러오고, `get_design_context(fileKey = "QPoxqbNMNktsi8ktua3gMN", nodeId = "5417:6332")`로 에셋 URL을 새로 받는다(URL은 수명이 짧다). 반환 코드에서 `data-node-id`가 아래 노드인 `Topping-Group` 안 `<img>`의 `src`가 원본이다.
 
@@ -197,20 +197,20 @@ Expected: 컴파일 실패 — `GROUP_LIST_EMPTY_DUMMY_GROUPS` 미정의
 
 검증: `sips -g pixelWidth -g pixelHeight -g hasAlpha <파일>` 이 셋 다 `384`, `384`, `yes`. 그리고 각 파일을 `Read`로 열어 Figma 스크린샷의 피사체와 같은 구도인지 본다.
 
-- [ ] **Step 4: `YGToppingImage.Local`을 더한다**
+- [x] **Step 4: `YGToppingImage.Local`을 더한다**
 
 `YGToppingImage.kt`에 `@Immutable data class Local(@DrawableRes val drawableRes: Int)`(이웃 케이스와 같은 어노테이션). `YGToppingGroup.kt`의 `when (image)`에 분기를 더해 `Template`과 같은 방식(`painterResource`, `ContentScale.Fit`, `imageModifier`)으로 그린다. `Template` KDoc 옆에 한 줄 — 디자인 시스템 밖 모듈이 가진 이미지를 넘기는 길이라는 것.
 
-- [ ] **Step 5: 더미 정의를 쓴다** (`P/model/GroupListEmptyDummyGroup.kt`)
+- [x] **Step 5: 더미 정의를 쓴다** (`P/model/GroupListEmptyDummyGroup.kt`)
 
 `strings.xml`에 `group_list_empty_dummy_name_collector`=`예카수집가`, `_parfait`=`파르페`, `_daily`=`일상`. `GROUP_LIST_EMPTY_DUMMY_GROUPS`는 Step 1 테스트의 순서·값 그대로, 이미지는 순서대로 matcha, cap, camera.
 
-- [ ] **Step 6: 통과를 확인한다**
+- [x] **Step 6: 통과를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest :core:designsystem:compileDebugKotlin ktlintCheck`
 Expected: BUILD SUCCESSFUL
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 git add core/designsystem feature/groups/list/impl
@@ -234,7 +234,7 @@ git commit -m "feat: 그룹 목록 Empty 더미 그룹 이미지와 정의를 �
   - `internal fun GroupListEmptyIntroPhase.exitValue(animated: Float): Float` — 종료 배율을 단계로 해석
   - `internal object GroupListEmptyIntroTimeline` — `INITIAL_DELAY_MILLIS`, `DUMMY_STAGGER_MILLIS`, `DUMMY_DURATION_MILLIS`, `TOOLTIP_DELAY_MILLIS`, `TOOLTIP_DURATION_MILLIS`, `ENTER_TOTAL_MILLIS`, `EXIT_DURATION_MILLIS`(전부 `Int`), `fun dummyDelayMillis(index: Int): Int`, `val DummyEnterEasing: Easing`, `val ExitEasing: Easing`, `val TooltipEnterEasing: Easing`
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다** — `GroupListEmptyIntroPhaseTest.kt`
+- [x] **Step 1: 실패하는 테스트를 쓴다** — `GroupListEmptyIntroPhaseTest.kt`
 
 ```kotlin
 @Test
@@ -316,12 +316,12 @@ fun tooltipEnterEasing_followsTheFigmaSpringSamples() {
 }
 ```
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest --tests '*GroupListEmptyIntroPhaseTest'`
 Expected: 컴파일 실패 — 심볼 미정의
 
-- [ ] **Step 3: `GroupListEmptyIntroPhase.kt`를 구현한다**
+- [x] **Step 3: `GroupListEmptyIntroPhase.kt`를 구현한다**
 
 전이·해석 함수는 테스트가 정한 그대로다. `DummyEnterEasing`·`ExitEasing`은 Global Constraints의 `CubicBezierEasing`.
 
@@ -336,12 +336,12 @@ Expected: 컴파일 실패 — 심볼 미정의
 0.9998
 ```
 
-- [ ] **Step 4: 통과를 확인한다**
+- [x] **Step 4: 통과를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest --tests '*GroupListEmptyIntroPhaseTest' ktlintCheck`
 Expected: PASS
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 git add feature/groups/list/impl
@@ -392,11 +392,11 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 internal fun GroupListEmptyDummyGroups(intro: GroupListEmptyIntroState)
 ```
 
-- [ ] **Step 1: ViewModel에서 툴팁 상태를 걷는다**
+- [x] **Step 1: ViewModel에서 툴팁 상태를 걷는다**
 
 `GroupListViewModelTest.kt`에서 `noGroups_showsTheTooltip`, `withGroups_hidesTheTooltip`, `beforeTheFirstEmission_hidesTheTooltip`, `firstGroupIsCreated_dismissesTheTooltip`을 지운다 — 같은 조건을 Task 1의 `isEmptyConfirmed` 테스트가 잡는다. `GroupListUiState.isTooltipVisible`과 `observeGroups()`의 대입, 그 KDoc의 툴팁 문단을 지운다.
 
-- [ ] **Step 2: `GroupListEmptyIntroState`를 구현한다**
+- [x] **Step 2: `GroupListEmptyIntroState`를 구현한다**
 
 - 더미마다 `Animatable(0f)` 하나, 툴팁 `Animatable(0f)`, 종료 `Animatable(1f)`
 - `play()`: `coroutineScope` 안에서 더미 3개와 툴팁을 **각각 `launch`로 동시에** 띄운다. 더미 `index`는 `launch { delay(dummyDelayMillis(index)); animateTo(1f, tween(DUMMY_DURATION_MILLIS, easing = DummyEnterEasing)) }`, 툴팁은 `launch { delay(TOOLTIP_DELAY_MILLIS); animateTo(1f, tween(TOOLTIP_DURATION_MILLIS, easing = TooltipEnterEasing)) }`. `coroutineScope`가 전부 끝난 뒤 `phase`가 아직 `Entering`일 때만 `Shown`으로 올린다 — 3초 탭 게이트가 이 전이다. 순차로 돌리면 8초가 되는데 단위 테스트는 이를 못 잡는다(Task 5 에뮬레이터 확인이 유일한 검증)
@@ -404,14 +404,14 @@ internal fun GroupListEmptyDummyGroups(intro: GroupListEmptyIntroState)
 - `onTouchDown()`, `onStop()`: `phase = phase.onTouchDown()` / `phase.onStop()`
 - 값 getter는 Task 3의 `enterValue`·`exitValue`를 거친다. 그래서 `onStop()`은 `Animatable`을 건드리지 않고 단계만 바꿔도 화면이 완료 상태가 된다 — 이 이유를 KDoc에 남긴다
 
-- [ ] **Step 3: `rememberGroupListEmptyIntroState(enabled)`를 구현한다**
+- [x] **Step 3: `rememberGroupListEmptyIntroState(enabled)`를 구현한다**
 
 - `remember(enabled) { GroupListEmptyIntroState() }` — 0건이 풀렸다 다시 0건이 되면 새 상태로 처음부터 재생된다
 - `LaunchedEffect(state, enabled)`: `enabled`이고 `phase == Entering`이면 `state.play()`
 - `LaunchedEffect(state, state.phase)`: `phase == Dismissing`이면 `state.dismiss()`
 - `LifecycleStartEffect(state) { onStopOrDispose { state.onStop() } }`
 
-- [ ] **Step 4: `GroupListEmptyDummyGroups`를 구현한다**
+- [x] **Step 4: `GroupListEmptyDummyGroups`를 구현한다**
 
 `GROUP_LIST_EMPTY_DUMMY_GROUPS`를 돌며 `YGToppingGroup`을 **감싸는 레이아웃 없이** 바로 낸다 — `ToppingLayout`은 직계 자식을 자리 단위로 센다. 각 항목 modifier:
 
@@ -427,15 +427,15 @@ Modifier
 
 `DUMMY_ENTER_OFFSET_Y`는 이 파일의 `private val`(`(-60).dp`)이다. 클릭 modifier는 붙이지 않는다. `image = YGToppingImage.Local(imageRes)`, `timestamp = stringResource(R.string.group_list_timestamp_minutes, minutesAgo)`.
 
-- [ ] **Step 5: 툴팁 문구·색을 바꾼다** (`GroupListTooltip.kt`)
+- [x] **Step 5: 툴팁 문구·색을 바꾼다** (`GroupListTooltip.kt`)
 
 문구는 Global Constraints 그대로, 두 행 사이는 `\n`. 강조 구절 셋의 색과 테두리·화살표 색을 `YGAtomicColors.Soda.Soda500`으로 바꾼다. 나머지(패딩·화살표 치수·기존 `buildAnnotatedString` 방식)는 그대로 둔다.
 
-- [ ] **Step 6: `GroupListTopBar`에서 팝업을 걷는다**
+- [x] **Step 6: `GroupListTopBar`에서 팝업을 걷는다**
 
 `TooltipBox`·`rememberTooltipState`·`LaunchedEffect(showTooltip)`와 `isTooltipVisible` 파라미터를 지우고 `rightContent`에는 `YGChipButton`만 남긴다. 필요 없어진 `@OptIn(ExperimentalMaterial3Api::class)`와 import도 지운다. KDoc의 "칩과 툴팁을 함께 감춘다"와 `GroupListErrorScreen.kt`의 같은 취지 주석을 칩만으로 고친다.
 
-- [ ] **Step 7: `GroupListScreen`에 연결한다**
+- [x] **Step 7: `GroupListScreen`에 연결한다**
 
 - `GroupListScreen`에 파라미터 `intro: GroupListEmptyIntroState = rememberGroupListEmptyIntroState(enabled = uiState.isEmptyConfirmed)`를 더한다(`modifier` 뒤). 화면 지역값 `groupList`(새로고침 중 비워진다)를 보지 않는다. `GroupListRoute`는 이 인자를 넘기지 않는다
 - 루트 `Box`의 modifier 끝에 터치 다운 관찰을 붙인다. 소비하지 않는다:
@@ -466,12 +466,12 @@ GroupListTooltip(
 - `groupList` 주석의 "둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다"를 `isEmptyConfirmed`로 고친다
 - 프리뷰: `GroupListScreenPreviewParameterProvider`에서 0건 케이스를 빼고 `isTooltipVisible` 인자를 지운다. 0건은 `@YGPreview` 함수 둘을 따로 둔다 — `GroupListScreenEmptyShownPreview`(`intro = GroupListEmptyIntroState.settled(Shown)`), `GroupListScreenEmptyDismissedPreview`(`settled(Dismissed)`)
 
-- [ ] **Step 8: 통과를 확인한다**
+- [x] **Step 8: 통과를 확인한다**
 
 Run: `./gradlew :feature:groups:list:impl:testDebugUnitTest :feature:groups:list:impl:assembleDebug ktlintCheck`
 Expected: BUILD SUCCESSFUL, 테스트 전부 PASS
 
-- [ ] **Step 9: 커밋**
+- [x] **Step 9: 커밋**
 
 ```bash
 git add feature/groups/list/impl
@@ -518,7 +518,7 @@ git commit -m "feat: 그룹 목록이 비어 있을 때 더미 그룹과 툴팁 
 
 어긋나는 항목은 Task 4 파일에서 고치고 이 표를 다시 돈다.
 
-- [ ] **Step 2: 문서를 현재 상태로 맞춘다**
+- [x] **Step 2: 문서를 현재 상태로 맞춘다**
 
 - `docs/status.md` G-001 블록의 "상태" 문단을 덮어쓴다 — 0건일 때의 인트로(더미 3개·툴팁, 재진입마다 재생, 탭 종료)와 상단 바 표기. 앵커에 `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`를 더하고 설계 링크에 이 스펙을 더한다. 변경 서술("~로 바꿨다")을 쓰지 않는다
 - `docs/synthesis/open-questions.md`에서 이 변경으로 풀린 것을 정리한다. `OQ-P-082`(Top Bar 날짜 표기)는 날짜가 사라져 통째로 지운다. `OQ-P-047`은 ③ 해소 메모가 `isTooltipVisible`을 현재 사실로 적고 있으니 현재 상태(노출은 `isEmptyConfirmed`와 인트로 단계가 정한다)로 고쳐 쓰고, ④는 문구가 Figma 정책으로 정해졌음을 반영해 남은 미결만 남긴다
@@ -526,12 +526,12 @@ git commit -m "feat: 그룹 목록이 비어 있을 때 더미 그룹과 툴팁 
 - `docs/synthesis/open-questions.md`에 한 항목 — `G-001-Empty` 애니메이션 정책 원본이 `wiki/raw`에 없고, 위키의 툴팁 정책("0건이면 항상 뜬다")과 구현(등장 타임라인 끝에 뜨고 탭하면 재진입 전까지 안 뜬다)이 어긋난다. 그 파일의 기존 항목 형식과 번호 규칙을 따른다
 - 스펙 frontmatter `status: implemented`, 계획 frontmatter `status: done`·`archived_reason`, 두 README 표의 상태 칸. `archive/`로의 이동은 develop 머지 뒤에 한다
 
-- [ ] **Step 3: 링크를 확인한다**
+- [x] **Step 3: 링크를 확인한다**
 
 Run: `python3 docs/script/check_links.py docs`
 Expected: `깨진 링크 0건`
 
-- [ ] **Step 4: 커밋**
+- [x] **Step 4: 커밋**
 
 ```bash
 git add docs
