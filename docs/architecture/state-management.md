@@ -99,13 +99,13 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 > (`GetTutorialVisibleFlowUseCase`)는 DataStore 한 키를 읽는 구독인데 소비 둘
 > (`CanvasMainViewModel`·`CustomGalleryPickerViewModel`)이 모두
 > `launchWhileSubscribed`로 연다. **위 기준("이 구독이 서버를 계속 부르는가")으로는 `launch` 쪽**이고,
-> 실제로 얻는 것은 화면이 안 보일 때 로컬 구독이 잠깐 끊기는 것뿐이다. 쓰는 곳이 캔버스 세 화면에서
-> **여섯**이 됐고 그중 셋이 기준 밖이라, 문서의 기준과 코드의 관행이 갈렸다
+> 실제로 얻는 것은 화면이 안 보일 때 로컬 구독이 잠깐 끊기는 것뿐이다. `CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`도
+> 같은 도우미를 쓰고 이 튜토리얼 구독은 기준 밖이라, 문서의 기준과 코드의 관행이 갈렸다
 > → [open-questions](../synthesis/open-questions.md) OQ-P-368.
 >
 > 딸려 오는 것이 하나 있다 — 이 구독은 **화면이 `state`를 보는 동안에만** 열리므로 ViewModel 테스트가
 > `backgroundScope`에서 `state`를 수집해 라우트의 `collectAsStateWithLifecycle()`을 흉내 내야 한다.
-> 세 ViewModel 테스트가 각자 `shownViewModel()` 헬퍼로 같은 준비를 적는다.
+> `CustomGalleryPickerViewModelTest`가 `shownViewModel()` 헬퍼로 그 준비를 적는다.
 
 ## 신규 화면 추가 체크리스트
 1. **api 모듈**: `NavKeyXxx`(@Serializable) 정의([[navigation-flow]]).
