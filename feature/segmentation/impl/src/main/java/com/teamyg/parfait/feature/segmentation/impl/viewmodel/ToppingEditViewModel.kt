@@ -175,8 +175,7 @@ class ToppingEditViewModel
 
             updateState { copy(originBitmap = originBitmap, segmentationBitmap = segmentationBitmap) }
 
-            // 불러오기에 실패해 곧 닫힐 화면에는 안내를 띄우지 않으려고 성공한 뒤에 보낸다.
-            // 다시 만들어져도 한 번만 띄우도록 보냈다는 표시는 SavedStateHandle 에 둔다
+            // 불러오기에 실패해 곧 닫힐 화면에는 안내를 띄우지 않으려고 성공한 뒤에 보낸다
             if (isDetectionFailed && savedStateHandle.get<Boolean>(KEY_DETECTION_FAILED_SHOWN) != true) {
                 savedStateHandle[KEY_DETECTION_FAILED_SHOWN] = true
                 postSideEffect(ToppingEditEffect.ShowDetectionFailed)
