@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
@@ -92,9 +93,13 @@ class ToppingEditViewModelTest {
     private fun createViewModel(
         sourceImageUri: String = SOURCE_URI,
         segmentationImageUri: String = SEGMENTATION_URI,
+        isDetectionFailed: Boolean = false,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ) = ToppingEditViewModel(
         sourceImageUri = sourceImageUri,
         segmentationImageUri = segmentationImageUri,
+        isDetectionFailed = isDetectionFailed,
+        savedStateHandle = savedStateHandle,
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
@@ -138,6 +143,53 @@ class ToppingEditViewModelTest {
 
         viewModel.effect.test {
             assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+        }
+    }
+
+    @Test
+    fun init_detectionFailed_showsGuideOnceAfterLoading() = runTest {
+        val viewModel = createViewModel(isDetectionFailed = true)
+
+        viewModel.effect.test {
+            assertEquals(ToppingEditEffect.ShowDetectionFailed, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_detectionFailedRecreatedWithSameSavedState_doesNotShowAgain() = runTest {
+        val savedStateHandle = SavedStateHandle()
+        val first = createViewModel(isDetectionFailed = true, savedStateHandle = savedStateHandle)
+        first.effect.test {
+            assertEquals(ToppingEditEffect.ShowDetectionFailed, awaitItem())
+        }
+
+        val second = createViewModel(isDetectionFailed = true, savedStateHandle = savedStateHandle)
+        advanceUntilIdle()
+
+        second.effect.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_detectionFailedButLoadFails_onlyReportsLoadFailed() = runTest {
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IOException("decode failed"))
+        val viewModel = createViewModel(isDetectionFailed = true)
+
+        viewModel.effect.test {
+            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_notDetectionFailed_showsNothing() = runTest {
+        val viewModel = createViewModel(isDetectionFailed = false)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            expectNoEvents()
         }
     }
 
