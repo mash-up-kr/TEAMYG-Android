@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.segmentation.impl.viewmodel
+package com.teamyg.parfait.feature.segmentation.impl.model
 
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 

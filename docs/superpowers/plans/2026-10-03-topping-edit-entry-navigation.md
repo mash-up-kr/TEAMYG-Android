@@ -290,7 +290,7 @@ git commit -m "feat: 갤러리 최근 누끼를 고르면 초안을 맞추고 �
 - Modify: `feature/segmentation/impl/.../navigation/EntryBuilder.kt` (확인 화면 entry 제거)
 - Modify: `feature/segmentation/impl/src/main/res/values/strings.xml` (`segmentation_confirm_*` 전부 제거)
 - Modify: `feature/segmentation/api/.../NavKeyToppingEdit.kt` (`ToppingEditResult`·`TOPPING_EDIT_RESULT_KEY` 제거)
-- Create: `feature/segmentation/impl/.../viewmodel/ToppingEditResult.kt` — 기존 `ToppingEditDraft.kt`의 `recordEditResult`와 합쳐도 된다
+- Create: `feature/segmentation/impl/.../model/ToppingEditResult.kt` — 기존 `ToppingEditDraft.kt`의 `recordEditResult`와 합쳐도 된다
 - Modify: `domain/src/main/java/com/teamyg/parfait/domain/model/member/TutorialKind.kt`
 - Modify: `app/src/main/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreen.kt`, `app/src/test/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreenTest.kt`
 
