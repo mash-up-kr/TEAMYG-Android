@@ -1128,7 +1128,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-105
 - **출처**: PR #220 develop 머지 — `feature/groups/home/{api,impl}` 모듈 삭제(`NavKeyGroupHome`·`GroupHomeRoute`·`EntryBuilder`·`NavigationModule`)와 `LoginRoute`의 `ResultEffect<String>` Toast 제거. 둘은 짝이었다(홈이 `sendResult` + `onBack`, 로그인이 `ResultEffect`로 수신). `MainRoute`의 `rememberResultEventBusNavEntryDecorator`는 그대로 남고, 남은 실사용은 카메라·시스템 갤러리의 `sendResult` 3곳 + `CanvasMainRoute`의 `ResultEffect` 1곳인데 그 수신부는 이미 死경로로 등록돼 있다([2026-08-04] 항목).
 - **항목**: ① 결과 반환 관용구를 계속 쓸지 — 커스텀 갤러리·카메라는 이미 `goTo` 전진으로 갈아탔고 남은 소비처가 死경로뿐이라, 데코레이터째 걷어낼지 아니면 재사용처를 확정할지. ② 걷어낸다면 `Navigator.onBack()`의 `size <= 1` 가드 주석("`ResultEffect` 발동 상황에서 사이즈가 1인 경우 크래시")이 가리키는 전제도 같이 정리한다.
-- **상태**: 부분 해소 (① 토핑 편집 화면의 `TOPPING_EDIT_RESULT_KEY` 왕복은 걷혔다 — 편집 결과는 화면 밖으로 나가지 않고 초안에 기록된다. 지금 실사용 왕복은 배경 편집(C-301)이 `ResultEffect<PictureConfirmResult>`로 받는 것 하나다. 같은 화면이 전진(`goToAndPopCurrent`)과 반환을 **인자 하나로 겸하는** 형태라 데코레이터째 걷어내는 선택지는 이 하나에 달려 있다. / ② 가드는 여전히 필요하다 — 그룹 목록에서 백스택이 1개다. / [2026-08-04]의 死 `ResultEffect` 1건은 그대로다)
+- **상태**: 부분 해소 (① 토핑 편집 화면의 `TOPPING_EDIT_RESULT_KEY` 왕복은 걷혔다 — 편집 결과는 화면 밖으로 나가지 않고 초안에 기록된다. 지금 실사용 왕복은 둘이다 — 배경 편집(C-301)이 `ResultEffect<PictureConfirmResult>`로 받는 사진 확인 결과와, `CanvasImageSaveRoute`가 보내 `CanvasMainRoute`가 `ResultEffect<CanvasImageSaveResult>(CANVAS_IMAGE_SAVE_RESULT_KEY)`로 받는 캔버스 이미지 저장 결과다. 사진 확인 화면은 전진(`goToSingleClearTop`)과 반환을 **인자 하나로 겸한다.** / ② 가드는 여전히 필요하다 — 그룹 목록에서 백스택이 1개다. / [2026-08-04]의 死 `ResultEffect` 1건은 그대로다)
 - **해소 메모**: 남은 것은 死 수신부 정리([2026-08-04] 항목)다. [navigation-flow](../architecture/navigation-flow.md) 체크리스트 5번에 결과 반환이 남은 사례(배경 편집)를 적었다.
 
   > 📌 **남은 실사용 왕복(2026-08-15, PR #231)** — C-101-confirm이 `returnResultOnly`일 때 `PictureConfirmResult`를 돌려주고 C-301이 받는다.
@@ -6756,7 +6756,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   튜토리얼 한 장이 이 저장소 최대 크기 드로어블이다) 밀도별 세트가 아니라 xxhdpi 하나다.
 - **상태**: 미해결 (**동작은 의도대로** — 어긋남과 근거 부재의 문제다)
 - **해소 메모**: ③은 위키 판단이 선행이다 — 정책으로 확정되면 위키에 조항을 만들고 여기는 구현
-  소관만 남긴다. ①②는 [design-system](../architecture/design-system.md) 「튜토리얼 4종」 항목에
+  소관만 남긴다. ①②는 [design-system](../architecture/design-system.md) 「튜토리얼 컴포넌트」 항목에
   대응 규칙을 적는다(뚫는 방식으로 바꿀지, 목업을 유지하고 갱신 책임을 명시할지).
 
 ### [2026-09-05] 미리보기 NavKey가 캐시 파일 경로를 나른다 — 값이 썩을 수 있다
@@ -6854,14 +6854,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-05] `launchWhileSubscribed`를 고르는 기준과 실제 쓰임이 갈렸다
 
 - **ID**: OQ-P-368
-- **출처**: `CanvasMainViewModel#observeCanvasTutorial`·`CustomGalleryPickerViewModel#observeTutorial`·
+- **출처**: `CanvasMainViewModel#observeCanvasTutorial`·`CustomGalleryPickerViewModel#observeTutorial`
   (PR #449) — 둘 다 `launchWhileSubscribed`로 튜토리얼 노출 여부를 구독한다.
   [state-management](../architecture/state-management.md)가 적어 둔 선택 기준은 **"이 구독이 서버를 계속
   부르는가"**([ADR-0029](../adr/0029-canvas-today-ssot-polling.md))인데, 이 구독은 DataStore 한 키를 읽는다.
 - **항목**: ① 기준을 넓힐지(로컬 구독에도 기본으로 쓴다), 아니면 이 둘을 `launch`로 되돌릴지 —
-  지금은 문서의 기준과 코드의 관행이 어긋난 채 **쓰는 곳이 셋에서 여섯**이 됐다. ② 딸려 오는 비용이
+  지금은 문서의 기준과 코드의 관행이 어긋난 채 `CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`도 같은 도우미를 쓴다. ② 딸려 오는 비용이
   하나 있다 — 이 구독은 화면이 `state`를 보는 동안에만 열려서 **ViewModel 테스트가 `backgroundScope`에서
-  `state`를 수집해야** 하고, 세 테스트가 각자 `shownViewModel()` 헬퍼로 같은 준비를 적는다.
+  `state`를 수집해야** 하고, `CustomGalleryPickerViewModelTest`가 `shownViewModel()` 헬퍼로 그 준비를 적는다.
 - **상태**: 미해결 (**동작은 의도대로** — 기준 문서와 관행의 어긋남이다)
 - **해소 메모**: 정하면 [state-management](../architecture/state-management.md) 해당 절의 기준 문장을
   고친다. ②는 테스트 헬퍼를 `core:testing`으로 올릴지와 같은 자리에서 본다.
@@ -6882,7 +6882,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   한 장짜리인 갤러리는 누르는 즉시 남긴다. 앞의 것은 의도가 KDoc에 적혀 있으나 규칙으로 올라간 적은 없다.
 - **상태**: 미해결 (**동작은 의도대로** — 형태 분기와 규약 이탈이다)
 - **해소 메모**: ①②를 정하면 [state-management](../architecture/state-management.md) 「UI State가 담는 것」에
-  적고, ③은 [design-system](../architecture/design-system.md) 「튜토리얼 4종」에 노출·완료 규칙으로 적는다.
+  적고, ③은 [design-system](../architecture/design-system.md) 「튜토리얼 컴포넌트」에 노출·완료 규칙으로 적는다.
 
 ### [2026-09-05] 알림 권한 안내를 몇 번 보여줄지 정한 적이 없다
 
