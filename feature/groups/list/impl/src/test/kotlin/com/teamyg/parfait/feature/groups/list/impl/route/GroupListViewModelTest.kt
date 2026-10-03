@@ -161,18 +161,16 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_fillsTodayInTheHeader() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 그룹을 준다
-        every { getMyGroupsFlow() } returns flowOf(GROUPS)
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
+    fun isEmptyConfirmed_onlyWhenTheListArrivedEmpty() {
+        assertFalse(GroupListUiState(groupList = null).isEmptyConfirmed)
+        assertTrue(GroupListUiState(groupList = emptyList()).isEmptyConfirmed)
+        assertFalse(GroupListUiState(groupList = GROUPS).isEmptyConfirmed)
+    }
 
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 헤더의 날짜가 채워진다 — 자정을 넘겨 돌아와도 다시 세도록 진입에 묶여 있다
-        val state = viewModel.state.value
-        assertTrue(state.dateString.isNotEmpty())
-        assertTrue(state.dayOfWeekString.isNotEmpty())
+    @Test
+    fun isEmptyConfirmed_whileRefreshingWithNoGroups_staysTrue() {
+        // 0건에서 당겨도 켜진 채여야 인트로 상태가 버려지지 않아 다시 재생되지 않는다
+        assertTrue(GroupListUiState(groupList = emptyList(), isRefreshing = true).isEmptyConfirmed)
     }
 
     @Test

@@ -6,11 +6,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -19,7 +17,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.format
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -33,9 +30,9 @@ data class GroupListUiState(
     val isRefreshing: Boolean = false,
     /** 아직 목록을 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
-    val dateString: String = "",
-    val dayOfWeekString: String = "",
-) : UiState
+) : UiState {
+    val isEmptyConfirmed: Boolean get() = groupList?.isEmpty() == true
+}
 
 sealed interface GroupListIntent : UiIntent {
     /**
@@ -130,7 +127,6 @@ constructor(
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
             GroupListIntent.Enter -> {
-                updateToday()
                 loadGroups(isRefresh = false)
             }
 
@@ -187,17 +183,6 @@ constructor(
      */
     private fun closeAddGroup() {
         updateState { copy(groupAddButtonSelected = false) }
-    }
-
-    /** 앱을 켜 둔 채 파르페 하루 경계를 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
-    private fun updateToday() {
-        val today = parfaitToday()
-        updateState {
-            copy(
-                dateString = today.format(DateFormat.FullMonthWithDay),
-                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
-            )
-        }
     }
 
     /**
