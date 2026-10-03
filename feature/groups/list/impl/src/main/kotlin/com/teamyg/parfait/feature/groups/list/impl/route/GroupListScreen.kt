@@ -90,8 +90,7 @@ internal fun GroupListScreen(
     Box(modifier = modifier) {
         Column {
             GroupListTopBar(
-                date = uiState.dateString,
-                day = uiState.dayOfWeekString,
+                count = uiState.groupList?.size,
                 onClickSideMenu = onClickSideMenu,
                 onClickAddGroup = onClickChip,
                 isTooltipVisible = uiState.isTooltipVisible,
@@ -242,22 +241,16 @@ private class GroupListScreenPreviewParameterProvider :
                 groupList = groupList,
                 groupAddButtonSelected = false,
                 isTooltipVisible = false,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
             ),
             GroupListUiState(
                 groupList = groupList,
                 groupAddButtonSelected = true,
                 isTooltipVisible = false,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
             ),
             GroupListUiState(
                 groupList = emptyList(),
                 groupAddButtonSelected = false,
                 isTooltipVisible = true,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
             ),
         )
 }

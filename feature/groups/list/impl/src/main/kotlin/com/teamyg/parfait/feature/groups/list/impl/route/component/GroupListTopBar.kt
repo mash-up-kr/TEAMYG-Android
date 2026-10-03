@@ -27,8 +27,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun GroupListTopBar(
-    date: String,
-    day: String,
+    count: Int?,
     onClickSideMenu: () -> Unit,
     modifier: Modifier = Modifier,
     onClickAddGroup: (() -> Unit)? = null,
@@ -50,8 +49,8 @@ internal fun GroupListTopBar(
     }
 
     YGTopBarEmpty(
-        date = date,
-        day = day,
+        title = stringResource(R.string.group_list_title),
+        count = count?.toString(),
         onIconClick = onClickSideMenu,
         modifier = modifier,
         rightContent = {
