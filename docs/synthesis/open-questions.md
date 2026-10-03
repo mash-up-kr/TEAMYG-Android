@@ -825,7 +825,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] `YGFloatingBarEdit`의 중앙 문구 출처가 미확인이고 `YGFloatingBarEditTab`은 프로덕션 사용처가 없다
 - **ID**: OQ-P-081
-- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`. `YGFloatingBarEdit`를 쓰는 화면은 `CanvasBGEditScreen`(`canvas_bg_edit_title`) 하나이고, 화면 `strings.xml`의 모드 라벨을 넘긴다. Figma는 그 자리에 `Text` placeholder만 둔다. `YGFloatingBarEditTab`은 `:app-preview`의 `YGFloatingBarPreviewScreen` 말고 부르는 곳이 없고, 그 변형만 쓰는 `YGEditTabButton`도 프로덕션에서 닿지 않는다.
+- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`. `YGFloatingBarEdit`를 쓰는 프로덕션 화면이 없다 — `:app-preview`의 `YGFloatingBarPreviewScreen`만 부른다. Figma는 중앙 문구 자리에 `Text` placeholder만 둔다. `YGFloatingBarEditTab`은 `:app-preview`의 `YGFloatingBarPreviewScreen` 말고 부르는 곳이 없고, 그 변형만 쓰는 `YGEditTabButton`도 프로덕션에서 닿지 않는다.
 - **항목**: ① `Edit`의 중앙 문구가 모드 라벨이 맞는지 디자인으로 확인한 기록이 없다. ② `YGFloatingBarEditTab`·`YGEditTabButton`을 지울지 남길지 정하지 않았다.
 - **상태**: 미해결
 - **해소 메모**: ①은 디자인 확인 뒤 닫는다. ②에서 지우기로 하면 [design-system](../architecture/design-system.md) 인벤토리와 `:app-preview` 갤러리 항목을 함께 걷는다. `YGFloatingBarTitle`을 쓰는 갤러리의 빈 상태 제목은 OQ-P-331이 따로 쥔다.
@@ -2298,8 +2298,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-15] 배경 편집 미리보기가 `YGCanvas`를 재사용하지 않는다 — 편집 화면과 실제 캔버스가 다르다
 
 - **ID**: OQ-P-174
-- **출처**: `feature/groups/canvas/impl` `CanvasBGEditScreen`(PR #231) — 미리보기가 `Box` + `aspectRatio(CANVAS_ASPECT_RATIO)` + `border`로 직접 그려진다. 그래서 좌상단 컷 도형(`canvasCutCornerShape`)·날짜 라벨·Dot Grid·메뉴가 없고, 좌우 여백이 C-001의 `padding7`(20)이 아니라 **21dp 리터럴**이다(코드 주석 "21.dp 공통에 없음"이 토큰 부재를 자인한다). 위키 [[캔버스-반응형-레이아웃]]의 좌우 20·컷 도형 규정과 어긋나는 화면이 하나 더 생긴 셈이다.
-- **항목**: ① 미리보기를 `YGCanvas`(또는 그 축소 변형)로 바꿀지 — 지금 `YGCanvas`는 `fillMaxSize` 전제로 자기 배치를 계산해서 그대로 끼우면 어긋난다([c001 스펙](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md) 드리프트 7과 같은 뿌리). ② 아니면 편집 미리보기는 "실물 축소"가 아니라는 것을 정책으로 확정할지. ③ 21dp를 토큰으로 올릴지 20으로 맞출지.
+- **출처**: `feature/groups/canvas/impl` `CanvasBGEditScreen`(PR #231) — 미리보기가 `Box` + `aspectRatio(CANVAS_ASPECT_RATIO)` + `border`로 직접 그려진다. 그래서 좌상단 컷 도형(`canvasCutCornerShape`)·날짜 라벨·Dot Grid·메뉴가 없고, 좌우 여백이 C-001의 `padding7`(20)이 아니라 **44dp**(`SizeTokens.Size44`, 피그마 `5461:9337`의 288×512 캔버스)다. 위키 [[캔버스-반응형-레이아웃]]의 좌우 20·컷 도형 규정과 어긋나는 화면이 하나 더 생긴 셈이다.
+- **항목**: ① 미리보기를 `YGCanvas`(또는 그 축소 변형)로 바꿀지 — 지금 `YGCanvas`는 `fillMaxSize` 전제로 자기 배치를 계산해서 그대로 끼우면 어긋난다([c001 스펙](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md) 드리프트 7과 같은 뿌리). ② 아니면 편집 미리보기는 "실물 축소"가 아니라는 것을 정책으로 확정할지 — 피그마가 미리보기를 실물보다 좁게(좌우 44) 그리므로 디자인은 ② 쪽이다.
 - **상태**: 미해결
 - **해소 메모**: ①을 고르면 `YGCanvas`의 배치 계산을 파라미터로 분리하는 일이 선행한다. 정해지면 [design-system](../architecture/design-system.md) 캔버스 절과 [c301 스펙](../superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md) 드리프트 2를 정리한다.
 
