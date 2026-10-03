@@ -11,9 +11,12 @@ import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
 import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -23,6 +26,7 @@ import kotlinx.coroutines.launch
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import java.io.IOException
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -34,6 +38,9 @@ class CustomGalleryPickerViewModelTest {
     private val loadGroups: LoadFilterYGGalleryImageGroupsUseCase = mockk(relaxed = true)
     private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
     private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk {
+        coEvery { this@mockk(any()) } returns true
+    }
 
     /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
     private val tutorialVisible = MutableStateFlow(false)
@@ -63,6 +70,7 @@ class CustomGalleryPickerViewModelTest {
             loadFilterYGGalleryImageGroupsUseCase = loadGroups,
             getTutorialVisibleFlowUseCase = getTutorialVisible,
             completeTutorialUseCase = completeTutorial,
+            ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
         )
     }
 
@@ -151,8 +159,8 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun onClickCutoutImage_navigatesToSegmentationConfirmWithFilePath() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑 만들기 진입
+    fun onClickCutoutImage_draftAligned_navigatesToToppingPlace() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞출 수 있는 토핑 만들기 진입
         val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
         advanceUntilIdle()
 
@@ -160,11 +168,62 @@ class CustomGalleryPickerViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
 
-            // Then 확인 화면으로 가고, 넘기는 것은 uri 가 아니라 절대경로다 — 초안 계약이 경로다
-            assertEquals(
-                CustomGalleryPickerEffect.NavigateToSegmentationConfirm(cutout.filePath),
-                awaitItem(),
-            )
+            // Then 토핑 배치로 가고, 초안에 넘기는 것은 uri 가 아니라 절대경로다
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_draftNotAligned_showsDraftUnavailable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞출 수 없다
+        coEvery { ensureDraftSubjectRecorded(any()) } returns false
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        // When 알맹이를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+
+            // Then 안내를 띄운다
+            assertEquals(CustomGalleryPickerEffect.ShowDraftUnavailable, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_ensureThrows_showsDraftUnavailable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞추다 I/O 가 실패한다
+        coEvery { ensureDraftSubjectRecorded(any()) } throws IOException("disk")
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        // When 알맹이를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+
+            // Then 안내를 띄운다
+            assertEquals(CustomGalleryPickerEffect.ShowDraftUnavailable, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_tappedTwice_ensuresOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 맞추기가 끝나지 않은 채 멈춰 있다
+        val gate = CompletableDeferred<Boolean>()
+        coEvery { ensureDraftSubjectRecorded(any()) } coAnswers { gate.await() }
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 두 번 누른 뒤 풀어 준다
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+            gate.complete(true)
+
+            // Then 한 번만 맞추고 이펙트도 한 번이다
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
+            expectNoEvents()
         }
     }
 
