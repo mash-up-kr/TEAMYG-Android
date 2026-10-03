@@ -20,7 +20,6 @@ sealed interface YGToppingImage {
     @Immutable
     data class Template(val type: YGToppingTemplate) : YGToppingImage
 
-    /** 호출부가 고른 drawable 리소스를 그대로 넘기는 길이다. */
     @Immutable
     data class Local(@DrawableRes val drawableRes: Int) : YGToppingImage
 
