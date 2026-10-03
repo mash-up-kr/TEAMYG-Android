@@ -47,10 +47,7 @@ sealed interface SegmentationEffect : UiSideEffect {
 
     data object QuitToCanvas : SegmentationEffect
 
-    /**
-     * 누끼 편집으로 간다. [segmentationImagePath] 는 고른 후보의 저장본(원본 크기)이고,
-     * `null` 이면 자동 인식으로 대상을 못 얻은 것이라 편집이 원본 URI 를 그대로 읽는다.
-     */
+    /** [segmentationImagePath] 가 `null` 이면 감지 실패다 — 편집이 원본을 마스크로도 읽는다 */
     data class GoToEdit(val segmentationImagePath: String?) : SegmentationEffect
 }
 
@@ -168,10 +165,7 @@ class SegmentationViewModel
         deliver(outcome)
     }
 
-    /**
-     * 저장이 끝난 뒤에 이동한다. 초안은 여기서 적지 않는다 — 편집이 "다음"에서 적는다.
-     * 근거는 `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md`.
-     */
+    /** 초안은 여기서 적지 않는다 — 편집의 "다음"이 적는다 */
     private fun selectCandidate(index: Int) {
         val candidate = state.value.candidates.getOrNull(index) ?: return
 

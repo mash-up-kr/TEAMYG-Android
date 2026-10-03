@@ -7695,14 +7695,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `ImageSegmentationRepositoryImpl`의 `persistSubject`, `SegmentationResult`, `SegmentationViewModel`의
   `selectCandidate`.
 - **항목**: ① `ToppingDraft.cutoutImagePath`는 C-104 「다음」(`recordEditResult`)이 풀 해상도 누끼 PNG를
-  매번 저장해 쓰지만, 세그멘테이션 확인 화면을 걷은 뒤로 읽는 곳이 없다. `ToppingDraft`와
-  `ToppingEditResult`의 KDoc은 아직 "재편집 시작 마스크"를 쓰는 쪽이 있는 것처럼 적혀 있다.
+  매번 저장해 쓰지만, 세그멘테이션 확인 화면을 걷은 뒤로 읽는 곳이 없다. `ToppingDraft`의 KDoc은
+  아직 "재편집 시작 마스크"를 쓰는 쪽이 있는 것처럼 적혀 있다.
   ② `persistSubject`는 후보를 탭할 때마다 트리밍한 PNG(`SegmentationResult.trimmedSubjectImagePath`)를
   쓰고 `sourceLongSide`를 계산하지만, `selectCandidate`는 `subjectImagePath`만 쓴다.
   `SegmentationResult`의 KDoc은 트리밍한 쪽을 미리보기·배치에 쓴다고 적고 있다.
 - **상태**: 미해결 (정한 적 없음 — 동작 영향 없음, 디스크 쓰기와 계산만 낭비된다)
 - **해소 메모**: 필드와 쓰기를 걷을지, 이후 재편집 진입을 위해 둘지 정한다. 걷으면 초안 계약이 바뀌므로
-  [ADR-0026](../adr/0026-topping-draft-datastore-ssot.md)을 함께 본다. 두면 두 KDoc을 현재 읽는 곳이
+  [ADR-0026](../adr/0026-topping-draft-datastore-ssot.md)을 함께 본다. 두면 `ToppingDraft` KDoc을 현재 읽는 곳이
   없다는 사실에 맞게 고친다.
 
 <!-- oq-next: 425 -->
