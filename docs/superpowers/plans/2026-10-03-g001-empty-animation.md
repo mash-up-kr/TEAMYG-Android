@@ -1,7 +1,7 @@
 ---
 id: g001-empty-animation
 title: 그룹 목록 Empty 안내 애니메이션 (G-001-Empty)
-status: draft
+status: in-progress
 type: work-order
 created: 2026-10-03
 updated: 2026-10-03
