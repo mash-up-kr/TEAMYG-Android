@@ -254,7 +254,7 @@ private fun ToppingEditHistoryActions(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
         modifier = modifier,
     ) {
         YGEditActionButton(
