@@ -99,7 +99,7 @@
 - ⚠️ 디코드 실패로 편집에 간 경우 편집 화면도 같은 uri를 못 읽어 `LoadFailed` 토스트 후 사진 확인 화면으로 돌아온다(의도). 갤러리 content uri를 편집 화면이 다시 읽는 것은 실기기로 본 적이 없다 (OQ-P-400)
 - ⚠️ 위키에 C-103-Error·재시도 정책이 남아 있는데 구현에는 그 화면이 없다 — 정책 원본이 아직 들어오지 않았다 (OQ-P-411)
 - ⚠️ `applyAreaOpening`의 `countRuns`·`fillRuns`와 알파 정련 일부 루프에 취소 확인이 없어, 큰 판에서는 화면을 떠난 뒤에도 전체 패스가 끝까지 돈다 (OQ-P-318)
-- ⚠️ C-104 편집 화면을 Figma `C-104`·`C-104-Toast`와 렌더 결과·실기기로 대조한 기록이 없다 — 되돌리기·다시하기와 브러시 라벨의 겹침, 토스트 위치·색, 좁은 폭의 긴 문구 줄바꿈, 헤더 아래 오류 토스트 노출 (OQ-P-425)
+- ⚠️ C-104 편집 화면을 Figma `C-104`·`C-104-Toast`와 렌더 결과·실기기로 대조한 기록이 없다 — 되돌리기·다시하기의 자리, 토스트 위치·색, 좁은 폭의 긴 문구 줄바꿈, 헤더 아래 오류 토스트 노출 (OQ-P-425)
 - ⚠️ C-104 편집 화면의 빨간 틴트의 이름·동작은 위키·디자인 근거 없이 코드가 정했다 (OQ-P-347)
 - 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c101-loading](superpowers/specs/archive/2026-09-30-c101-loading-design.md), [topping-edit-entry-flow](superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
 
