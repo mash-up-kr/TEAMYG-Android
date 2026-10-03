@@ -12,6 +12,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -36,6 +37,7 @@ internal fun ToppingEditRoute(
             factory.create(
                 sourceImageUri = key.sourceImageUri,
                 segmentationImageUri = key.segmentationImageUri,
+                isDetectionFailed = key.isDetectionFailed,
             )
         },
     )
@@ -73,6 +75,12 @@ internal fun ToppingEditRoute(
                 }
 
                 is ToppingEditEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
+
+                is ToppingEditEffect.ShowDetectionFailed -> {
+                    toastPolicy.show(
+                        YGToastType.Edit(context.getString(R.string.topping_edit_detection_failed)),
+                    )
+                }
             }
         }
     }

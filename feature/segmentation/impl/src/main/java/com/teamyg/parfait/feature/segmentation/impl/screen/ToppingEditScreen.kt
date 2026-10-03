@@ -59,6 +59,8 @@ import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditA
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
 import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToast
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -574,6 +576,29 @@ private fun PreviewToppingEditScreen(
         onClickNext = {},
         onClickBack = {},
         onClickClose = {},
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@YGPreview
+@Composable
+private fun PreviewToppingEditScreenDetectionFailed() = PreviewBox {
+    ToppingEditScreen(
+        state = ToppingEditState(),
+        onChangeMode = {},
+        onChangeBrushWidth = {},
+        onAddStroke = {},
+        onClickUndoArea = {},
+        onClickRedoArea = {},
+        onClickNext = {},
+        onClickBack = {},
+        onClickClose = {},
+        toast = {
+            YGToast(
+                type = YGToastType.Edit(stringResource(R.string.topping_edit_detection_failed)),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
         modifier = Modifier.fillMaxSize(),
     )
 }

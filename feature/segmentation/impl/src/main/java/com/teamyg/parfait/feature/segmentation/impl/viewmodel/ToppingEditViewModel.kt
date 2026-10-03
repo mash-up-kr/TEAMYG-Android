@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -97,6 +98,8 @@ sealed interface ToppingEditEffect : UiSideEffect {
     data object DraftUnavailable : ToppingEditEffect
 
     data object QuitToCanvas : ToppingEditEffect
+
+    data object ShowDetectionFailed : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -104,6 +107,8 @@ class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
+    @Assisted private val isDetectionFailed: Boolean,
+    private val savedStateHandle: SavedStateHandle,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
@@ -169,6 +174,13 @@ class ToppingEditViewModel
             }
 
             updateState { copy(originBitmap = originBitmap, segmentationBitmap = segmentationBitmap) }
+
+            // 성공 분기에서만 보낸다 — 디코드에 실패하면 곧 닫히는 화면에 "직접 선택해 주세요"를 띄우게 된다.
+            // 표시를 SavedStateHandle 에 남겨 프로세스가 되살아나 다시 만들어져도 두 번 띄우지 않는다
+            if (isDetectionFailed && savedStateHandle.get<Boolean>(KEY_DETECTION_FAILED_SHOWN) != true) {
+                savedStateHandle[KEY_DETECTION_FAILED_SHOWN] = true
+                postSideEffect(ToppingEditEffect.ShowDetectionFailed)
+            }
         }
     }
 
@@ -259,6 +271,11 @@ class ToppingEditViewModel
         fun create(
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
+            isDetectionFailed: Boolean,
         ): ToppingEditViewModel
+    }
+
+    private companion object {
+        const val KEY_DETECTION_FAILED_SHOWN = "detectionFailedShown"
     }
 }
