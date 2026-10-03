@@ -15,7 +15,6 @@ import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
-import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -50,7 +49,6 @@ class SegmentationViewModelTest {
     private val clearSegmentationCache: ClearSegmentationCacheUseCase = mockk(relaxed = true)
     private val decodeImage: DecodeImageUseCase = mockk()
     private val segmentImage: SegmentImageUseCase = mockk()
-    private val recordToppingDraft: RecordToppingDraftUseCase = mockk(relaxed = true)
     private val persistSubject: PersistSubjectUseCase = mockk()
 
     private val originBitmap: Bitmap = mockk<Bitmap> {
@@ -95,7 +93,6 @@ class SegmentationViewModelTest {
         decodeImageUseCase = decodeImage,
         segmentImageUseCase = segmentImage,
         persistSubjectUseCase = persistSubject,
-        recordToppingDraft = recordToppingDraft,
     )
 
     @Test
@@ -227,15 +224,11 @@ class SegmentationViewModelTest {
 
         // Then 아직 아무것도 떨구지 않는다 — 고르지도 않은 후보를 디스크에 쓰지 않는다
         coVerify(exactly = 0) { persistSubject(any()) }
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any()) }
     }
 
     @Test
-    fun clickCandidate_succeeds_recordsTheDraftBeforeNavigating() = runTest {
-        // Given 화면이 열려 후보가 실려 있다
-        coEvery {
-            recordToppingDraft(any(), any(), any())
-        } returns true
+    fun clickCandidate_succeeds_goesToEditWithFullSizeSubject() = runTest {
+        // Given 저장 결과가 원본 크기본과 여백을 걷어 낸 저장본을 따로 돌려준다
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -243,58 +236,15 @@ class SegmentationViewModelTest {
         viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
         advanceUntilIdle()
 
-        // Then 초안을 다 적은 뒤에 이동한다 — 순서가 뒤집히면 확인 화면이 초안 없음으로 잠긴 채 뜬다
-        coVerifyOrder {
-            persistSubject(candidate)
-            recordToppingDraft(
-                subjectImagePath = TRIMMED_SUBJECT_PATH,
-                cutoutImagePath = SUBJECT_PATH,
-                sourceLongSide = success.sourceLongSide,
-            )
-        }
+        // Then 편집에는 원본 크기본을 실어 보낸다 — 초안은 편집이 "다음"에서 적는다
         viewModel.effect.test {
-            assertEquals(
-                SegmentationEffect.GoToConfirm(
-                    subjectImagePath = SUBJECT_PATH,
-                    trimmedSubjectImagePath = TRIMMED_SUBJECT_PATH,
-                ),
-                awaitItem(),
-            )
-        }
-    }
-
-    @Test
-    fun selectCandidate_recordsSourceLongSideFromResult() = runTest {
-        // Given 누끼 저장이 원본 긴 변을 함께 돌려준다
-        coEvery { persistSubject(any()) } returns Result.success(
-            SegmentationResult(
-                subjectImagePath = "/cache/canvas.png",
-                trimmedSubjectImagePath = "/cache/trimmed.png",
-                sourceLongSide = SourceLongSide(4032),
-            ),
-        )
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 후보를 고른다
-        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
-        advanceUntilIdle()
-
-        // Then 그 값이 초안에 실린다
-        coVerify {
-            recordToppingDraft(
-                subjectImagePath = "/cache/trimmed.png",
-                cutoutImagePath = "/cache/canvas.png",
-                sourceLongSide = SourceLongSide(4032),
-            )
+            assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = SUBJECT_PATH), awaitItem())
         }
     }
 
     @Test
     fun clickCandidate_succeeds_releasesTheLoadingOverlay() = runTest {
         // Given 화면이 열려 후보가 실려 있다
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -313,7 +263,6 @@ class SegmentationViewModelTest {
             delay(1_000.milliseconds)
             Result.success(success)
         }
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -345,24 +294,8 @@ class SegmentationViewModelTest {
     }
 
     @Test
-    fun clickCandidate_draftIsNotOpen_doesNotNavigate() = runTest {
-        // Given 흐름이 열려 있지 않아 record 가 false 를 돌려주는 상황
-        coEvery { recordToppingDraft(any(), any(), any()) } returns false
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        // When 후보를 탭한다
-        viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
-        advanceUntilIdle()
-
-        // Then 이동하지 않고 알린다 — 초안 없이 보내면 확인 화면이 어차피 막힌다
-        viewModel.effect.test { assertEquals(SegmentationEffect.ShowError, awaitItem()) }
-    }
-
-    @Test
     fun clickCandidate_tappedTwice_persistsOnlyOnce() = runTest {
         // Given 화면이 열려 후보가 실려 있다
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -395,7 +328,6 @@ class SegmentationViewModelTest {
         // Given 후보가 둘 잡혀 있다
         coEvery { segmentImage(bitmapWrapper) } returns Result.success(listOf(candidate, secondCandidate))
         coEvery { persistSubject(secondCandidate) } returns Result.success(success)
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
 
@@ -411,7 +343,6 @@ class SegmentationViewModelTest {
     @Test
     fun clickCandidate_tappedAgainAfterCompletion_persistsAgain() = runTest {
         // Given 첫 저장이 이미 끝난 상태
-        coEvery { recordToppingDraft(any(), any(), any()) } returns true
         val viewModel = viewModel()
         advanceUntilIdle()
         viewModel.processIntent(SegmentationIntent.ClickCandidate(index = 0))
@@ -437,7 +368,7 @@ class SegmentationViewModelTest {
         // Then 분석 없이 편집으로 보낸다. 교체 직전 프레임에 빈 선택 UI 가 비치지 않게 분석 상태는 그대로다
         assertTrue(viewModel.state.value.isAnalyzing)
         coVerify(exactly = 0) { segmentImage(any()) }
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
     }
 
     @Test
@@ -451,7 +382,7 @@ class SegmentationViewModelTest {
 
         // Then 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
     }
 
     @Test
@@ -465,7 +396,7 @@ class SegmentationViewModelTest {
 
         // Then 로딩에 갇히지 않고 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
     }
 
     @Test
@@ -479,7 +410,7 @@ class SegmentationViewModelTest {
 
         // Then 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit, awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
     }
 
     @Test
@@ -591,7 +522,7 @@ class SegmentationViewModelTest {
             viewModel.processIntent(SegmentationIntent.DismissQuit)
 
             // Then 그제야 편집으로 간다
-            assertEquals(SegmentationEffect.GoToEdit, awaitItem())
+            assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem())
         }
     }
 
