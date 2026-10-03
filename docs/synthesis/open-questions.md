@@ -7800,7 +7800,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-10-03] G-001-Empty 안내 애니메이션 정책 원본이 위키에 없다
 - **ID**: OQ-P-412
-- **출처**: `feature/groups/list/impl/route/component/GroupListEmptyIntroState.kt`·`GroupListEmptyIntroPhase.kt#GroupListEmptyIntroTimeline` × 위키 [[src-G-001-Empty-툴팁-노출-조건-정책-v0.1]] — 더미 그룹 3개의 등장 순서·간격·이징, 툴팁 등장 시각, 3초 이후 탭으로 닫기는 Figma 기준으로 구현했고 `wiki/raw`에 이 애니메이션의 정책 원본이 없다.
+- **출처**: `feature/groups/list/impl/model/GroupListEmptyIntroState.kt`·`GroupListEmptyIntroTimeline.kt` × 위키 [[src-G-001-Empty-툴팁-노출-조건-정책-v0.1]] — 더미 그룹 3개의 등장 순서·간격·이징, 툴팁 등장 시각, 3초 이후 탭으로 닫기는 Figma 기준으로 구현했고 `wiki/raw`에 이 애니메이션의 정책 원본이 없다.
 - **항목**: ① 위키는 툴팁이 "0건이면 항상 뜬다"고 적는데 구현은 등장 타임라인 끝(2.5초)에 뜨고, 탭으로 닫으면 화면에 다시 들어올 때까지 안 뜬다. ② 더미 그룹의 존재와 그 문구·시간 표기가 위키에 없다. ③ 에뮬레이터·실기기에서 타이밍과 TalkBack 동작을 확인한 기록이 아직 없다.
 - **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
 - **해소 메모**: 기획 쪽이 애니메이션 정책을 위키에 반영하면 ①②를 닫고 [OQ-P-047](#2026-08-01-g-001-파르페툴팁이-위키-정책과-미결선--화면-골격만-머지됨) ②와 함께 정리한다. ③은 실기기 확인 뒤 지운다.

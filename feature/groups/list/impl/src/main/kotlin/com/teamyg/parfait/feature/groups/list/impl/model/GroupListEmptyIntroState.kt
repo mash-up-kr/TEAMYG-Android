@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.list.impl.route.component
+package com.teamyg.parfait.feature.groups.list.impl.model
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -10,15 +10,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleStartEffect
-import com.teamyg.parfait.feature.groups.list.impl.model.GROUP_LIST_EMPTY_DUMMY_GROUPS
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.DUMMY_DURATION_MILLIS
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.DummyEnterEasing
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.EXIT_DURATION_MILLIS
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.ExitEasing
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.TOOLTIP_DELAY_MILLIS
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.TOOLTIP_DURATION_MILLIS
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.TooltipEnterEasing
-import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyIntroTimeline.dummyDelayMillis
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.DUMMY_DURATION_MILLIS
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.DummyEnterEasing
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.EXIT_DURATION_MILLIS
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.ExitEasing
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.TOOLTIP_DELAY_MILLIS
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.TOOLTIP_DURATION_MILLIS
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.TooltipEnterEasing
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroTimeline.dummyDelayMillis
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

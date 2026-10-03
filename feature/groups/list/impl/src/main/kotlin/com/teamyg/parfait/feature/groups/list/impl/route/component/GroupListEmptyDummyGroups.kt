@@ -10,6 +10,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGr
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.model.GROUP_LIST_EMPTY_DUMMY_GROUPS
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroState
 
 private val DUMMY_ENTER_OFFSET_Y = (-60).dp
 

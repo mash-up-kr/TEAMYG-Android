@@ -1,38 +1,7 @@
-package com.teamyg.parfait.feature.groups.list.impl.route.component
+package com.teamyg.parfait.feature.groups.list.impl.model
 
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
-
-internal enum class GroupListEmptyIntroPhase {
-    Entering,
-    Shown,
-    Dismissing,
-    Dismissed,
-}
-
-/** 등장이 끝나기 전의 터치는 무시한다. */
-internal fun GroupListEmptyIntroPhase.onTouchDown(): GroupListEmptyIntroPhase = when (this) {
-    GroupListEmptyIntroPhase.Shown -> GroupListEmptyIntroPhase.Dismissing
-    else -> this
-}
-
-/** 진행 중인 애니메이션을 끝 상태로 건너뛴다. */
-internal fun GroupListEmptyIntroPhase.onStop(): GroupListEmptyIntroPhase = when (this) {
-    GroupListEmptyIntroPhase.Entering -> GroupListEmptyIntroPhase.Shown
-    GroupListEmptyIntroPhase.Dismissing -> GroupListEmptyIntroPhase.Dismissed
-    else -> this
-}
-
-internal fun GroupListEmptyIntroPhase.enterValue(animated: Float): Float = when (this) {
-    GroupListEmptyIntroPhase.Entering -> animated
-    else -> 1f
-}
-
-internal fun GroupListEmptyIntroPhase.exitValue(animated: Float): Float = when (this) {
-    GroupListEmptyIntroPhase.Entering, GroupListEmptyIntroPhase.Shown -> 1f
-    GroupListEmptyIntroPhase.Dismissing -> animated
-    GroupListEmptyIntroPhase.Dismissed -> 0f
-}
 
 internal object GroupListEmptyIntroTimeline {
     const val INITIAL_DELAY_MILLIS = 500
