@@ -11,4 +11,7 @@
     <string name="group_list_timestamp_minutes">%1$d분전</string>
     <string name="group_list_timestamp_hours">%1$d시간전</string>
     <string name="group_list_timestamp_days">%1$d일전</string>
+    <string name="group_list_empty_dummy_name_collector">예카수집가</string>
+    <string name="group_list_empty_dummy_name_parfait">파르페</string>
+    <string name="group_list_empty_dummy_name_daily">일상</string>
 </resources>
