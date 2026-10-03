@@ -9,10 +9,10 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SubjectCoverage
+import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
 import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
@@ -238,7 +238,7 @@ class ToppingEditViewModel
             val result = ToppingEditResult(
                 subjectImagePath = subjectPath,
                 cutoutImagePath = cutoutPath,
-                sourceLongSide = sourceLongSide,
+                sourceLongSide = SourceLongSide(sourceLongSide),
             )
             finishSaving(completionEffect(result))
         }

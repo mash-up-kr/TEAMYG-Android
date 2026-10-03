@@ -25,7 +25,6 @@ import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,11 +46,6 @@ class NavKeyAnalyticsScreenTest {
             NavKeyCameraSystem to "C-101-system",
             NavKeySystemGalleryPicker to "C-102-system",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
-            NavKeySegmentationConfirm(
-                sourceImageUri = "uri",
-                subjectImagePath = "subject",
-                trimmedSubjectImagePath = "trimmed",
-            ) to "C-103-select",
             NavKeyCanvasToppingPlace to "C-106",
             NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09") to "C-001-image-save",
             NavKeyAppSetting to "S-001",

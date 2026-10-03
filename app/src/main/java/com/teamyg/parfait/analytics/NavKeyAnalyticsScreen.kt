@@ -24,7 +24,6 @@ import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 
 /**
@@ -73,8 +72,6 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeySystemGalleryPicker -> AnalyticsScreen("C-102-system", "NavKeySystemGalleryPicker")
 
     is NavKeySegmentation -> AnalyticsScreen("C-103", "NavKeySegmentation")
-
-    is NavKeySegmentationConfirm -> AnalyticsScreen("C-103-select", "NavKeySegmentationConfirm")
 
     is NavKeyToppingEdit -> AnalyticsScreen("C-104", "NavKeyToppingEdit")
 
