@@ -474,7 +474,7 @@ private fun SegmentationAreaControls(
             isEnabled = isEnabled,
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4)) {
             YGEditButton(
                 text = stringResource(R.string.topping_edit_area_erase),
                 isSelected = mode == ToppingEditMode.ERASE,
