@@ -71,6 +71,13 @@ fun YGToppingGroup(
                 modifier = imageModifier,
             )
 
+            is YGToppingImage.Local -> Image(
+                painter = painterResource(image.drawableRes),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = imageModifier,
+            )
+
             YGToppingImage.Error -> Image(
                 painter = painterResource(TOPPING_ERROR_DRAWABLE),
                 contentDescription = null,
