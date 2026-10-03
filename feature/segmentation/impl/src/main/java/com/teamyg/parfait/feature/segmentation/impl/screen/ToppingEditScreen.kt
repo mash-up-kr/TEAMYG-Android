@@ -45,10 +45,8 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -110,84 +108,82 @@ internal fun ToppingEditScreen(
 
         Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
 
-        ToppingEditBody(
-            photo = {
-                // 토스트가 화면 폭을 써야 해서 좌우 여백은 캔버스에만 준다
-                Box {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = YGTheme.layout.padding.padding7),
-                    ) {
-                        // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
-                        val originBitmap = state.originBitmap
-                        val segmentationBitmap = state.segmentationBitmap
-
-                        if (originBitmap != null && segmentationBitmap != null) {
-                            ToppingEditCanvas(
-                                originBitmap = originBitmap,
-                                segmentationBitmap = segmentationBitmap,
-                                strokes = state.strokes,
-                                mode = state.mode,
-                                brushWidthDp = state.brushWidthDp,
-                                onAddStroke = onAddStroke,
-                                isBrushPreviewVisible = isAdjustingBrushWidth,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    }
-
-                    Box(
-                        contentAlignment = Alignment.TopCenter,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        toast()
-                    }
-                }
-            },
-            brushLabel = {
-                Text(
-                    text = stringResource(R.string.topping_edit_brush_width),
-                    style = YGTheme.typography.caption.c01M,
-                    color = YGAtomicColors.Gray.Gray700,
-                    modifier = Modifier.padding(
-                        top = YGTheme.layout.gap.gap5,
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                    ),
-                )
-            },
-            controls = {
-                SegmentationAreaControls(
-                    mode = state.mode,
-                    brushWidth = state.brushWidthDp,
-                    brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
-                    isEnabled = !state.isLoading,
-                    onChangeMode = onChangeMode,
-                    onChangeBrushWidth = { width ->
-                        isAdjustingBrushWidth = true
-                        onChangeBrushWidth(width)
-                    },
-                    onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
-                    modifier = Modifier.padding(
-                        top = YGTheme.layout.gap.gap3,
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                    ),
-                )
-            },
-            historyActions = {
-                ToppingEditHistoryActions(
-                    history = state.areaHistory,
-                    onClickUndo = onClickUndoArea,
-                    onClickRedo = onClickRedoArea,
-                    modifier = Modifier.padding(end = YGTheme.layout.padding.padding7),
-                )
-            },
+        // 토스트가 화면 폭을 써야 해서 좌우 여백은 캔버스에만 준다
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = YGTheme.layout.padding.padding7),
+            ) {
+                // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
+                val originBitmap = state.originBitmap
+                val segmentationBitmap = state.segmentationBitmap
+
+                if (originBitmap != null && segmentationBitmap != null) {
+                    ToppingEditCanvas(
+                        originBitmap = originBitmap,
+                        segmentationBitmap = segmentationBitmap,
+                        strokes = state.strokes,
+                        mode = state.mode,
+                        brushWidthDp = state.brushWidthDp,
+                        onAddStroke = onAddStroke,
+                        isBrushPreviewVisible = isAdjustingBrushWidth,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            Box(
+                contentAlignment = Alignment.TopCenter,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                toast()
+            }
+        }
+
+        Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
+
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = YGTheme.layout.padding.padding7),
+        ) {
+            Text(
+                text = stringResource(R.string.topping_edit_brush_width),
+                style = YGTheme.typography.caption.c01M,
+                color = YGAtomicColors.Gray.Gray700,
+                modifier = Modifier.weight(1f),
+            )
+
+            ToppingEditHistoryActions(
+                history = state.areaHistory,
+                onClickUndo = onClickUndoArea,
+                onClickRedo = onClickRedoArea,
+            )
+        }
+
+        SegmentationAreaControls(
+            mode = state.mode,
+            brushWidth = state.brushWidthDp,
+            brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
+            isEnabled = !state.isLoading,
+            onChangeMode = onChangeMode,
+            onChangeBrushWidth = { width ->
+                isAdjustingBrushWidth = true
+                onChangeBrushWidth(width)
+            },
+            onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
+            modifier = Modifier.padding(
+                top = YGTheme.layout.gap.gap3,
+                start = YGTheme.layout.padding.padding7,
+                end = YGTheme.layout.padding.padding7,
+            ),
         )
 
         YGButton(
@@ -203,48 +199,6 @@ internal fun ToppingEditScreen(
                     top = YGTheme.layout.gap.gap3,
                 ),
         )
-    }
-}
-
-/**
- * 되돌리기·다시하기가 사진 아랫변에 겹쳐도 전체가 눌리도록 사진과 편집 영역을 한 레이아웃에 놓는다.
- * 슬롯마다 최상위 요소는 하나여야 한다.
- */
-@Composable
-private fun ToppingEditBody(
-    photo: @Composable () -> Unit,
-    brushLabel: @Composable () -> Unit,
-    controls: @Composable () -> Unit,
-    historyActions: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Layout(
-        content = {
-            photo()
-            brushLabel()
-            controls()
-            historyActions()
-        },
-        modifier = modifier,
-    ) { measurables, constraints ->
-        val width = constraints.maxWidth
-        val height = constraints.maxHeight
-        val rowConstraints = Constraints(minWidth = width, maxWidth = width, maxHeight = height)
-
-        val label = measurables[1].measure(rowConstraints)
-        val controlsPlaceable = measurables[2].measure(rowConstraints)
-        val actions = measurables[3].measure(Constraints(maxWidth = width, maxHeight = height))
-
-        val photoHeight = (height - label.height - controlsPlaceable.height).coerceAtLeast(0)
-        val photoPlaceable = measurables[0].measure(Constraints.fixed(width, photoHeight))
-        val labelBottom = photoHeight + label.height
-
-        layout(width, height) {
-            photoPlaceable.place(0, 0)
-            label.place(0, photoHeight)
-            controlsPlaceable.place(0, labelBottom)
-            actions.place(width - actions.width, (labelBottom - actions.height).coerceAtLeast(0))
-        }
     }
 }
 
