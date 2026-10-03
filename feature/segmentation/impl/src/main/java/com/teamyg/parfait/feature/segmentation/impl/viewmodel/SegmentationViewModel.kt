@@ -47,8 +47,11 @@ sealed interface SegmentationEffect : UiSideEffect {
 
     data object QuitToCanvas : SegmentationEffect
 
-    /** [segmentationImagePath] 가 `null` 이면 감지 실패다 — 편집이 원본을 마스크로도 읽는다 */
-    data class GoToEdit(val segmentationImagePath: String?) : SegmentationEffect
+    /** 고른 후보로 편집에 간다. [segmentationImagePath] 는 원본 크기 저장본이다 */
+    data class GoToEditCandidate(val segmentationImagePath: String) : SegmentationEffect
+
+    /** 대상을 못 얻어 편집에 간다. 편집이 원본을 마스크로도 읽는다 */
+    data object GoToEditDetectionFailed : SegmentationEffect
 }
 
 /** 분석이 낸 결과. 팝업이 떠 있으면 [SegmentationViewModel.deliver] 가 보류한다 */
@@ -125,7 +128,7 @@ class SegmentationViewModel
 
         when (outcome) {
             // 편집으로 갈 때 분석 상태를 먼저 끄면 교체 직전 한 프레임 동안 후보 0개인 선택 UI 가 보인다
-            Outcome.Edit -> postSideEffect(SegmentationEffect.GoToEdit(segmentationImagePath = null))
+            Outcome.Edit -> postSideEffect(SegmentationEffect.GoToEditDetectionFailed)
 
             is Outcome.Select ->
                 updateState { copy(candidates = outcome.candidates, isAnalyzing = false) }
@@ -182,7 +185,7 @@ class SegmentationViewModel
                 .onSuccess { result ->
                     // 이동이 goTo 라 이 화면이 백스택에 남는다. 켠 채 나가면 돌아왔을 때 갇힌다
                     releaseLoading()
-                    postSideEffect(SegmentationEffect.GoToEdit(segmentationImagePath = result.subjectImagePath))
+                    postSideEffect(SegmentationEffect.GoToEditCandidate(result.subjectImagePath))
                 }.onFailure {
                     releaseLoading()
                     postSideEffect(SegmentationEffect.ShowError)

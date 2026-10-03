@@ -238,7 +238,7 @@ class SegmentationViewModelTest {
 
         // Then 편집에는 원본 크기본을 실어 보낸다 — 초안은 편집이 "다음"에서 적는다
         viewModel.effect.test {
-            assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = SUBJECT_PATH), awaitItem())
+            assertEquals(SegmentationEffect.GoToEditCandidate(segmentationImagePath = SUBJECT_PATH), awaitItem())
         }
     }
 
@@ -368,7 +368,7 @@ class SegmentationViewModelTest {
         // Then 분석 없이 편집으로 보낸다. 교체 직전 프레임에 빈 선택 UI 가 비치지 않게 분석 상태는 그대로다
         assertTrue(viewModel.state.value.isAnalyzing)
         coVerify(exactly = 0) { segmentImage(any()) }
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEditDetectionFailed, awaitItem()) }
     }
 
     @Test
@@ -382,7 +382,7 @@ class SegmentationViewModelTest {
 
         // Then 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEditDetectionFailed, awaitItem()) }
     }
 
     @Test
@@ -396,7 +396,7 @@ class SegmentationViewModelTest {
 
         // Then 로딩에 갇히지 않고 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEditDetectionFailed, awaitItem()) }
     }
 
     @Test
@@ -410,7 +410,7 @@ class SegmentationViewModelTest {
 
         // Then 편집으로 보낸다
         assertTrue(viewModel.state.value.isAnalyzing)
-        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem()) }
+        viewModel.effect.test { assertEquals(SegmentationEffect.GoToEditDetectionFailed, awaitItem()) }
     }
 
     @Test
@@ -522,7 +522,7 @@ class SegmentationViewModelTest {
             viewModel.processIntent(SegmentationIntent.DismissQuit)
 
             // Then 그제야 편집으로 간다
-            assertEquals(SegmentationEffect.GoToEdit(segmentationImagePath = null), awaitItem())
+            assertEquals(SegmentationEffect.GoToEditDetectionFailed, awaitItem())
         }
     }
 

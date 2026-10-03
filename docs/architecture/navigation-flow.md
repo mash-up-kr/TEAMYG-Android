@@ -395,7 +395,7 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   또는 N개 그린다** — 두 상태의 UI가 같은 형태라 목적지를 쪼개면 NavKey·Route·EntryBuilder·
   ViewModel이 한 벌 늘고 거의 같은 코드가 복제된다. C-101-Loading도 같은 목적지 안에서
   **상태(`SegmentationState.isAnalyzing`)로 갈린다**(엔트리 수 불변).
-  다음 화면으로 가는 시점은 Route의 직접 호출이 아니라 이펙트(`GoToEdit`) 수신이다 — 저장이 탭 시점에 일어나
+  다음 화면으로 가는 시점은 Route의 직접 호출이 아니라 이펙트(`GoToEditCandidate`) 수신이다 — 저장이 탭 시점에 일어나
   이동이 비동기 결과에 걸리기 때문이다.
 
 > 📌 **마지막 목적지는 `NavKeyCanvasToppingPlace`다** — 편집 화면의 「다음」과 갤러리 최근 누끼가 여기로 온다.

@@ -180,7 +180,7 @@ Expected: 컴파일 실패
 - VM: `loadImages` 성공 분기에서 `isDetectionFailed && savedStateHandle[KEY_DETECTION_FAILED_SHOWN] != true`면 표시를 남기고 `ShowDetectionFailed`. 성공 분기인 이유를 주석으로 — 디코드 실패면 곧 닫히는 화면에 "직접 선택해 주세요"를 띄우지 않는다.
 - Factory에 `isDetectionFailed` 추가, Route가 `key.isDetectionFailed`를 넘긴다.
 - Route: `ShowDetectionFailed` → `toastPolicy.show(YGToastType.Edit(getString(topping_edit_detection_failed)))`.
-- `SegmentationRoute`의 감지 실패 갈래(`segmentationImagePath == null`)에 `isDetectionFailed = true`.
+- `SegmentationRoute`의 감지 실패 갈래(`GoToEditDetectionFailed`)에 `isDetectionFailed = true`.
 
 - [ ] **Step 4: 통과 확인**
 
