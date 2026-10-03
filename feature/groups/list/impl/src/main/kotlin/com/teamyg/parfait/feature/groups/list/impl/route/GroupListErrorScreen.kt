@@ -37,7 +37,7 @@ internal fun GroupListErrorScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        // 불러오기에 실패한 상태에서는 그룹 추가 칩과 툴팁을 감춘다.
+        // 불러오기에 실패한 상태에서는 그룹 추가 칩을 감춘다.
         GroupListTopBar(
             count = uiState.groupList?.size,
             onClickSideMenu = onClickSideMenu,
