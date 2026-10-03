@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,6 +11,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
+import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -37,29 +41,28 @@ internal fun ToppingEditRoute(
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val toastPolicy = rememberYGToastPolicy()
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ToppingEditEffect.LoadFailed -> {
+                    // 바로 화면을 닫아 화면 내 호스트로는 보이지 않는다
                     val message = context.getString(R.string.topping_edit_load_failed)
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     navigator.onBack()
                 }
 
                 is ToppingEditEffect.SaveFailed -> {
-                    val message = context.getString(R.string.topping_edit_save_failed)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    toastPolicy.showError(context.getString(R.string.topping_edit_save_failed))
                 }
 
                 is ToppingEditEffect.SubjectTooSmall -> {
-                    val message = context.getString(R.string.topping_edit_subject_too_small)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    toastPolicy.showError(context.getString(R.string.topping_edit_subject_too_small))
                 }
 
                 is ToppingEditEffect.DraftUnavailable -> {
-                    val message = context.getString(R.string.topping_edit_draft_unavailable)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    toastPolicy.showError(context.getString(R.string.topping_edit_draft_unavailable))
                 }
 
                 is ToppingEditEffect.GoToPlace -> {
@@ -85,6 +88,7 @@ internal fun ToppingEditRoute(
             onClickNext = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
             onClickBack = navigator::onBack,
             onClickClose = { viewModel.processIntent(ToppingEditIntent.ClickClose) },
+            toast = { YGToastHost(policy = toastPolicy, modifier = Modifier.fillMaxWidth()) },
             modifier = modifier.padding(innerPadding),
         )
     }
