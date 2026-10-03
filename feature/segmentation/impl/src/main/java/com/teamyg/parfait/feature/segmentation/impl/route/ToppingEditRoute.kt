@@ -85,7 +85,7 @@ internal fun ToppingEditRoute(
         }
     }
 
-    YGScaffoldV2 { innerPadding ->
+    YGScaffoldV2(isLoading = state.isLoading || state.isSaving) { innerPadding ->
         ToppingEditScreen(
             state = state,
             onChangeMode = { mode -> viewModel.processIntent(ToppingEditIntent.ChangeMode(mode)) },

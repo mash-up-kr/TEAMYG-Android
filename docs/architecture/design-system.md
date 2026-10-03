@@ -244,7 +244,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 > 아래 "네트워크 왕복인가"는 그래서 **"사용자가 기다려야 하는 비동기 작업인가"**로 읽는 편이 맞고,
 > 규약 승격 여부는 여전히 OQ-P-205 ②다.
 >
-> 📌 **헤더 아래 호스트를 쓰는 화면에 C-104 편집(`ToppingEditScreen`)이 있다** — 앵커는 `ToppingEditRoute`의 `rememberYGToastPolicy()`·`YGToastHost`와 Screen의 `toast` 슬롯이다. 층은 헤더 바로 아래, 저장 중 오버레이(`ToppingEditSavingOverlay`) 아래다. `YGScaffoldV2`에는 정책을 넘기지 않으므로 이 화면에도 스캐폴드가 만든 호스트가 하나 더 있다(OQ-P-312와 같은 사정). 불러오기 실패(`LoadFailed`)는 화면이 바로 닫혀 `android.widget.Toast`로 남는다.
+> 📌 **헤더 아래 호스트를 쓰는 화면에 C-104 편집(`ToppingEditScreen`)이 있다** — 앵커는 `ToppingEditRoute`의 `rememberYGToastPolicy()`·`YGToastHost`와 Screen의 `toast` 슬롯이다. 자리는 헤더에서 간격 하나를 둔 사진 영역 윗변이고, 층은 스캐폴드 로딩 덮개(`isLoading` — 불러오기·저장 중) 아래다. `YGScaffoldV2`에는 정책을 넘기지 않으므로 이 화면에도 스캐폴드가 만든 호스트가 하나 더 있다(OQ-P-312와 같은 사정). 불러오기 실패(`LoadFailed`)는 화면이 바로 닫혀 `android.widget.Toast`로 남는다.
 >
 > 📌 **현재: 화면 고유 로딩 화면이 하나 있다.** `SegmentationLoadingScreen`(C-101-Loading)이 분석 중 화면 전체를
 > 차지한다 — 흰 배경, 우상단 X, 가운데 `YGLoadingLottie(YGLoadingArt.Dark)`, 제목·부제. 딤 오버레이(`isLoading`)를

@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.segmentation.impl.screen
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,14 +43,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -102,41 +97,6 @@ internal fun ToppingEditScreen(
     modifier: Modifier = Modifier,
     toast: @Composable () -> Unit = {},
 ) {
-    Box(modifier = modifier) {
-        ToppingEditContent(
-            state = state,
-            onChangeMode = onChangeMode,
-            onChangeBrushWidth = onChangeBrushWidth,
-            onAddStroke = onAddStroke,
-            onClickUndoArea = onClickUndoArea,
-            onClickRedoArea = onClickRedoArea,
-            onClickNext = onClickNext,
-            onClickBack = onClickBack,
-            onClickClose = onClickClose,
-            toast = toast,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        if (state.isSaving) {
-            ToppingEditSavingOverlay(modifier = Modifier.matchParentSize())
-        }
-    }
-}
-
-@Composable
-private fun ToppingEditContent(
-    state: ToppingEditState,
-    onChangeMode: (ToppingEditMode) -> Unit,
-    onChangeBrushWidth: (Float) -> Unit,
-    onAddStroke: (ToppingEditStroke) -> Unit,
-    onClickUndoArea: () -> Unit,
-    onClickRedoArea: () -> Unit,
-    onClickNext: () -> Unit,
-    onClickBack: () -> Unit,
-    onClickClose: () -> Unit,
-    toast: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-) {
     // 붓 크기 미리보기는 슬라이더를 잡고 있는 동안만 띄운다
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
@@ -164,10 +124,8 @@ private fun ToppingEditContent(
                         val originBitmap = state.originBitmap
                         val segmentationBitmap = state.segmentationBitmap
 
-                        when {
-                            originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
-
-                            else -> ToppingEditCanvas(
+                        if (originBitmap != null && segmentationBitmap != null) {
+                            ToppingEditCanvas(
                                 originBitmap = originBitmap,
                                 segmentationBitmap = segmentationBitmap,
                                 strokes = state.strokes,
@@ -287,30 +245,6 @@ private fun ToppingEditBody(
             controlsPlaceable.place(0, labelBottom)
             actions.place(width - actions.width, (labelBottom - actions.height).coerceAtLeast(0))
         }
-    }
-}
-
-/**
- * 저장이 끝날 때까지 화면을 덮는 딤.
- *
- * 덮은 동안은 뒤쪽 조작이 닿으면 안 되므로 눌림도 여기서 삼킨다.
- * 맨 앞에서 먼저 받는 [PointerEventPass.Initial] 단계에 삼켜야 뒤쪽 획과 버튼이 함께 막힌다.
- */
-@Composable
-private fun ToppingEditSavingOverlay(modifier: Modifier = Modifier) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .background(YGAtomicColors.Transparency.Black50)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(PointerEventPass.Initial).changes.forEach { change -> change.consume() }
-                    }
-                }
-            },
-    ) {
-        CircularProgressIndicator(color = YGAtomicColors.Cherry.Cherry100)
     }
 }
 
@@ -604,20 +538,11 @@ private fun SegmentationAreaControls(
     }
 }
 
-private class ToppingEditStatePreviewParameterProvider : PreviewParameterProvider<ToppingEditState> {
-    override val values: Sequence<ToppingEditState> = sequenceOf(
-        ToppingEditState(),
-        ToppingEditState(isSaving = true),
-    )
-}
-
 @YGPreview
 @Composable
-private fun PreviewToppingEditScreen(
-    @PreviewParameter(ToppingEditStatePreviewParameterProvider::class) state: ToppingEditState,
-) = PreviewBox {
+private fun PreviewToppingEditScreen() = PreviewBox {
     ToppingEditScreen(
-        state = state,
+        state = ToppingEditState(),
         onChangeMode = {},
         onChangeBrushWidth = {},
         onAddStroke = {},
