@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -146,19 +148,17 @@ private fun ToppingEditContent(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        Spacer(modifier = Modifier.height(YGTheme.layout.padding.padding4))
+
         ToppingEditBody(
             photo = {
-                // 토스트는 헤더 바로 아래에 화면 폭으로 떠야 해서 헤더와의 간격·좌우 여백은 캔버스에만 준다
+                // 토스트가 화면 폭을 써야 해서 좌우 여백은 캔버스에만 준다
                 Box {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(
-                                top = YGTheme.layout.padding.padding4,
-                                start = YGTheme.layout.padding.padding7,
-                                end = YGTheme.layout.padding.padding7,
-                            ),
+                            .padding(horizontal = YGTheme.layout.padding.padding7),
                     ) {
                         // 상태를 통째로 넘기면 굵기 하나만 바뀌어도 캔버스가 함께 다시 그려지므로 쓰는 값만 넘긴다
                         val originBitmap = state.originBitmap
