@@ -196,7 +196,7 @@ internal fun ToppingEditScreen(
                 .padding(
                     start = YGTheme.layout.padding.padding7,
                     end = YGTheme.layout.padding.padding7,
-                    top = YGTheme.layout.gap.gap3,
+                    top = YGTheme.layout.padding.padding5,
                     bottom = YGTheme.layout.padding.padding1,
                 ),
         )
