@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -97,6 +98,8 @@ sealed interface ToppingEditEffect : UiSideEffect {
     data object DraftUnavailable : ToppingEditEffect
 
     data object QuitToCanvas : ToppingEditEffect
+
+    data object ShowDetectionFailed : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -104,6 +107,8 @@ class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
+    @Assisted private val isDetectionFailed: Boolean,
+    private val savedStateHandle: SavedStateHandle,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
@@ -169,6 +174,12 @@ class ToppingEditViewModel
             }
 
             updateState { copy(originBitmap = originBitmap, segmentationBitmap = segmentationBitmap) }
+
+            // 불러오기에 실패해 곧 닫힐 화면에는 안내를 띄우지 않으려고 성공한 뒤에 보낸다
+            if (isDetectionFailed && savedStateHandle.get<Boolean>(KEY_DETECTION_FAILED_SHOWN) != true) {
+                savedStateHandle[KEY_DETECTION_FAILED_SHOWN] = true
+                postSideEffect(ToppingEditEffect.ShowDetectionFailed)
+            }
         }
     }
 
@@ -259,6 +270,11 @@ class ToppingEditViewModel
         fun create(
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
+            isDetectionFailed: Boolean,
         ): ToppingEditViewModel
+    }
+
+    private companion object {
+        const val KEY_DETECTION_FAILED_SHOWN = "detectionFailedShown"
     }
 }

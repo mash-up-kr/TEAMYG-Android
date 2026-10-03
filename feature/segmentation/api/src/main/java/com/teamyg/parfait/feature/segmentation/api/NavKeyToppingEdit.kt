@@ -8,9 +8,11 @@ import kotlinx.serialization.Serializable
  *
  * @param sourceImageUri 원본 이미지. 제거했던 영역을 다시 채울 때 이 픽셀을 가져온다
  * @param segmentationImageUri Segmentation 으로 잘라낸 이미지. 이 이미지의 알파가 편집의 시작 마스크가 된다
+ * @param isDetectionFailed 자동 감지가 대상을 못 찾아 원본 그대로 들어왔다. 첫 진입에 안내 토스트를 띄운다
  */
 @Serializable
 data class NavKeyToppingEdit(
     val sourceImageUri: String,
     val segmentationImageUri: String,
+    val isDetectionFailed: Boolean = false,
 ) : NavKey

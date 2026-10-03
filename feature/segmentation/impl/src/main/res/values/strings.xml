@@ -11,7 +11,8 @@
     <string name="topping_edit_undo">실행 취소</string>
     <string name="topping_edit_redo">다시 실행</string>
 
-    <string name="topping_edit_area_only_title">영역</string>
+    <string name="topping_edit_title">대상 영역 선택</string>
+    <string name="topping_edit_next">다음</string>
 
     <string name="topping_edit_brush_width">브러시 크기</string>
     <string name="topping_edit_area_erase">영역 지우기</string>
@@ -20,5 +21,6 @@
     <string name="topping_edit_load_failed">이미지를 불러오지 못했습니다</string>
     <string name="topping_edit_save_failed">편집 결과를 저장하지 못했습니다</string>
     <string name="topping_edit_draft_unavailable">토핑을 이어서 만들 수 없어요. 캔버스에서 다시 시작해 주세요.</string>
+    <string name="topping_edit_detection_failed">대상 감지에 실패했어요, 영역을 직접 선택해 주세요</string>
     <string name="topping_edit_subject_too_small">남은 영역이 너무 작아 저장할 수 없습니다</string>
 </resources>

@@ -825,7 +825,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] `YGFloatingBarEdit`의 중앙 문구 출처가 미확인이고 `YGFloatingBarEditTab`은 프로덕션 사용처가 없다
 - **ID**: OQ-P-081
-- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`. `YGFloatingBarEdit`를 쓰는 화면은 `ToppingEditScreen`(중앙 문구 `topping_edit_area_only_title`)과 `CanvasBGEditScreen`(`canvas_bg_edit_title`) 둘이고, 둘 다 화면 `strings.xml`의 모드 라벨을 넘긴다. Figma는 그 자리에 `Text` placeholder만 둔다. `YGFloatingBarEditTab`은 `:app-preview`의 `YGFloatingBarPreviewScreen` 말고 부르는 곳이 없고, 그 변형만 쓰는 `YGEditTabButton`도 프로덕션에서 닿지 않는다.
+- **출처**: `component/ygfloatingbar/YGFloatingBar.kt`. `YGFloatingBarEdit`를 쓰는 화면은 `CanvasBGEditScreen`(`canvas_bg_edit_title`) 하나이고, 화면 `strings.xml`의 모드 라벨을 넘긴다. Figma는 그 자리에 `Text` placeholder만 둔다. `YGFloatingBarEditTab`은 `:app-preview`의 `YGFloatingBarPreviewScreen` 말고 부르는 곳이 없고, 그 변형만 쓰는 `YGEditTabButton`도 프로덕션에서 닿지 않는다.
 - **항목**: ① `Edit`의 중앙 문구가 모드 라벨이 맞는지 디자인으로 확인한 기록이 없다. ② `YGFloatingBarEditTab`·`YGEditTabButton`을 지울지 남길지 정하지 않았다.
 - **상태**: 미해결
 - **해소 메모**: ①은 디자인 확인 뒤 닫는다. ②에서 지우기로 하면 [design-system](../architecture/design-system.md) 인벤토리와 `:app-preview` 갤러리 항목을 함께 걷는다. `YGFloatingBarTitle`을 쓰는 갤러리의 빈 상태 제목은 OQ-P-331이 따로 쥔다.
@@ -7690,7 +7690,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-03] 초안의 재편집 시작 마스크와 후보 탭의 트리밍 결과를 읽는 곳이 없다
 
 - **ID**: OQ-P-424
-- **출처**: [누끼 편집 진입 흐름 스펙](../superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md),
+- **출처**: [누끼 편집 진입 흐름 스펙](../superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md),
   `ToppingDraft`의 `cutoutImagePath`, `ToppingEditViewModel`의 `completeEdit`·`ToppingEditResult`,
   `ImageSegmentationRepositoryImpl`의 `persistSubject`, `SegmentationResult`, `SegmentationViewModel`의
   `selectCandidate`.
@@ -7705,4 +7705,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   [ADR-0026](../adr/0026-topping-draft-datastore-ssot.md)을 함께 본다. 두면 `ToppingDraft` KDoc을 현재 읽는 곳이
   없다는 사실에 맞게 고친다.
 
-<!-- oq-next: 425 -->
+### [2026-10-03] 누끼 편집(C-104) 개편을 Figma·실기기와 대조하지 않았다
+
+- **ID**: OQ-P-425
+- **출처**: [누끼 편집 진입 흐름 스펙](../superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md),
+  `ToppingEditScreen`, `ToppingEditRoute`, Figma `C-104`·`C-104-Toast`.
+- **항목**: 렌더 미리보기·실기기와 시안을 나란히 본 적이 없다. ① 되돌리기·다시하기의 자리 —
+  사진 아래 간격 하나를 두고 브러시 라벨과 같은 줄 오른쪽 끝에 아랫변을 맞춰 놓는데, 그 자리가 시안과 같은지, ② 토스트의 위치·색, ③ 좁은 폭에서 긴 안내 문구의 줄바꿈, ④ 헤더 아래 오류 토스트가
+  실제로 보이는지.
+- **상태**: 미해결 (확인 안 함 — 동작 영향 없음)
+- **해소 메모**: `PreviewToppingEditScreen`과 실기기에서 ①~④를 보고 어긋나면 `ToppingEditScreen`을 고친다.
+  맞으면 `status.md` 「누끼 추출」의 ⚠️ 한 줄과 이 항목을 함께 걷는다.
+
+<!-- oq-next: 426 -->

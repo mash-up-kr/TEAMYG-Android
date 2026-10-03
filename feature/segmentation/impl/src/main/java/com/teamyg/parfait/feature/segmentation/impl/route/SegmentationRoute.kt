@@ -52,6 +52,7 @@ internal fun SegmentationRoute(
                     NavKeyToppingEdit(
                         sourceImageUri = key.sourceImageUri,
                         segmentationImageUri = key.sourceImageUri,
+                        isDetectionFailed = true,
                     ),
                 )
 

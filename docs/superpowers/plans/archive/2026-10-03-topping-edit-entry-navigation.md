@@ -1,7 +1,7 @@
 ---
 id: topping-edit-entry-navigation
 title: 누끼 편집(C-104) 진입 흐름 단축 — 네비게이션과 코드 제거 (계획 1/2)
-status: draft
+status: done
 type: work-order
 created: 2026-10-03
 updated: 2026-10-03
@@ -16,11 +16,14 @@ related_code:
   - feature/segmentation/impl/.../route/SegmentationRoute.kt#SegmentationRoute
   - feature/gallery/impl/.../viewmodel/CustomGalleryPickerViewModel.kt#handleOnClickCutoutImage
   - feature/gallery/impl/.../route/CustomGalleryPickerRoute.kt#CustomGalleryPickerRoute
-archived_reason:
+archived_reason: 구현 완료(2026-10-03, 5 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 화면 모양은 계획 2가 바꿨다.
 tags: [plan, parfait]
 ---
 
 # 누끼 편집 진입 흐름 — 네비게이션과 코드 제거 Implementation Plan
+
+> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 5 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 화면 모양은 계획 2가 바꿨다. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -30,11 +33,11 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose, Navigation3(`Navigator`), 자체 MVI(`BaseViewModel`), Hilt AssistedInject, JUnit + MockK + Turbine
 
-**Spec:** `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md`
+**Spec:** `docs/superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md`
 
 ## Global Constraints
 
-- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다.
+- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다.
 - 커밋 메시지: `type: 한국어 설명`. `Co-Authored-By` 줄을 넣지 않는다.
 - 브랜치: `feature/#566-topping-edit-ui-spec` 위에 새 브랜치를 따서 쌓는다(스택 PR).
 - 이 계획에서 C-104의 메시지는 지금처럼 `android.widget.Toast`다. 화면 내 토스트는 계획 2 몫이다.
