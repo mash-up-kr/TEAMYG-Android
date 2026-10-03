@@ -25,7 +25,6 @@ data class GroupListUiState(
     val groupList: List<MyParfaitGroupVO>? = null,
     val nickName: String? = null,
     val groupAddButtonSelected: Boolean = false,
-    val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
     val isRefreshing: Boolean = false,
     /** 아직 목록을 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
@@ -91,10 +90,6 @@ constructor(
      *
      * 덮개도 여기서 걷는다. 조회가 반환한 시점에 걷으면 캐시 방출이 그보다 늦어, 그 틈에
      * 토핑 없는 빈 파르페가 드러난다.
-     *
-     * 툴팁도 같은 자리에서 따라간다 — 마지막 그룹을 나가면 다시, 첫 그룹을 만들면 사라지도록.
-     * 아직 한 번도 받지 못한(`null`) 동안에는 켜지 않는다 — 0건인지 모르는 채로 띄우면
-     * 그룹이 있는 사용자에게도 한 번 스쳤다 사라진다.
      */
     private fun observeGroups() {
         viewModelScope.launch {
@@ -102,7 +97,6 @@ constructor(
                 updateState {
                     copy(
                         groupList = groups,
-                        isTooltipVisible = groups?.isEmpty() == true,
                         // 캐시는 구독하자마자 null 을 한 번 내므로 목록이 실제로 온 때만 걷는다
                         isInitialLoading = if (groups == null) isInitialLoading else false,
                     )
