@@ -35,7 +35,8 @@
     <string name="canvas_welcome_created_sub">초대코드는 %1$s이에요</string>
     <string name="canvas_welcome_invite_copy">복사하기</string>
     <string name="canvas_welcome_invite_copied">복사완료</string>
-    <string name="canvas_bg_edit_title">배경</string>
+    <string name="canvas_bg_edit_title">배경 변경</string>
+    <string name="canvas_bg_edit_save">저장하기</string>
     <string name="canvas_bg_edit_topping_delete">삭제</string>
     <string name="canvas_bg_edit_topping_delete_dialog_title">토핑을 삭제할까요?</string>
     <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>

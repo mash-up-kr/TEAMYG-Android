@@ -29,10 +29,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitBackground
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
+import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
@@ -63,20 +66,23 @@ internal fun CanvasBGEditScreen(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
+        YGFloatingBarTitle(
+            title = stringResource(R.string.canvas_bg_edit_title),
+            onCloseClick = onClickCloseButton,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(
-                    top = YGTheme.layout.padding.padding4,
-                    bottom = YGTheme.layout.padding.padding4,
-                ),
+                .padding(vertical = YGTheme.layout.padding.padding6),
             contentAlignment = Alignment.Center,
         ) {
+            // 너비를 채우라고 강제하지 않는다 — 낮은 화면에서는 높이에 맞춰 줄어야 팔레트를 밀어내지 않는다
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 21.dp) // 21.dp 공통에 없음
+                    .padding(horizontal = SizeTokens.Size44.getDp())
                     .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .clipToBounds()
                     .let { if (uiState.selectedImageUri == null) it.background(uiState.selectedColor) else it }
@@ -125,7 +131,6 @@ internal fun CanvasBGEditScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = YGTheme.layout.padding.padding6)
                 .horizontalScroll(rememberScrollState())
                 .padding(
                     horizontal = YGTheme.layout.padding.padding7,
@@ -158,15 +163,17 @@ internal fun CanvasBGEditScreen(
             }
         }
 
-        YGFloatingBarEdit(
-            title = stringResource(R.string.canvas_bg_edit_title),
-            onCloseClick = onClickCloseButton,
-            onConfirmClick = onClickConfirm,
+        YGButton(
+            text = stringResource(R.string.canvas_bg_edit_save),
+            buttonType = YGButtonType.Large,
+            isEnabled = true,
+            onClick = onClickConfirm,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
-                    top = YGTheme.layout.padding.padding6,
-                    bottom = YGTheme.layout.padding.padding1,
+                    start = YGTheme.layout.padding.padding7,
+                    top = YGTheme.layout.gap.gap3,
+                    end = YGTheme.layout.padding.padding7,
                 ),
         )
     }
