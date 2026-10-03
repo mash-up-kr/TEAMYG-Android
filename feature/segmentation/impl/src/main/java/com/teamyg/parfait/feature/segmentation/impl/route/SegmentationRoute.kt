@@ -17,7 +17,6 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationLoadingScreen
@@ -52,7 +51,6 @@ internal fun SegmentationRoute(
                     NavKeyToppingEdit(
                         sourceImageUri = key.sourceImageUri,
                         segmentationImageUri = key.sourceImageUri,
-                        completion = ToppingEditCompletion.RecordAndConfirm,
                     ),
                 )
 
