@@ -19,6 +19,7 @@ import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.measureSubject
 import com.teamyg.parfait.feature.segmentation.impl.editor.trimTo
+import com.teamyg.parfait.feature.segmentation.impl.model.ToppingEditResult
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
