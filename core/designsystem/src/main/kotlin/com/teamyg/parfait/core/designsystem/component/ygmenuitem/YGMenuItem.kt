@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,13 +44,7 @@ fun YGMenuItem(
     isEnabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
-    val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     val shape = YGTheme.shapes.radius.none
-    val backgroundColor = if (isEnabled && isPressed) {
-        YGAtomicColors.Gray.White
-    } else {
-        YGAtomicColors.Transparency.White75
-    }
     val borderColor = if (isEnabled) {
         YGAtomicColors.Gray.Gray500
     } else {
@@ -69,7 +61,7 @@ fun YGMenuItem(
             .fillMaxWidth()
             .height(SizeTokens.Size44.getDp())
             .background(
-                color = backgroundColor,
+                color = YGAtomicColors.Gray.White,
                 shape = shape,
             ).clip(shape)
             .border(

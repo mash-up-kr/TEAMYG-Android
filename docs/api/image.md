@@ -194,7 +194,7 @@ wire DTO는 `service/model/{request,response}/image/`(`IssueImageUploadUrlReques
 [open-questions](../synthesis/open-questions.md) OQ-P-146이 쥔다.
 
 ✅ **3단계가 처음으로 이어졌다**(2026-08-20 develop 머지, PR #322).
-`data/source/image/remote/PresignedUploadDataSource`가 S3 PUT을 수행하고,
+`data/source/image/remote/PresignedUploadRemoteDataSource`가 S3 PUT을 수행하고,
 `domain/repository/image/ImageUploadRepository`가 발급 → PUT → confirm 셋을 하나로 닫아 확정된
 `ImageId`를 돌려준다. 이전 판의 "S3 PUT을 수행하는 앱 코드가 통째로 없다"는 그것으로 닫혔다.
 

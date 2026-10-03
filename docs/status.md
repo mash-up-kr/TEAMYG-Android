@@ -48,10 +48,10 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 두 줄은 고정 문구로 두고 누를 때 미리 받아 둔 약관 목록에서 제목·주소를 꺼내 공용 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
 - 앵커: `AppSettingViewModel`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
-- ⚠️ 약관 목록 조회가 실패했거나 그 종류가 없으면 약관 줄을 눌러도 로그만 남고 아무 일이 없다 — 온보딩 약관은 재시도 문구가 있어 같은 API의 실패 표현이 화면마다 갈린다 (OQ-P-231)
+- ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
 - ⚠️ 로그아웃·탈퇴가 사용자 설정(`UserConfigRepository`)을 지우지 않아 같은 기기에서 계정을 바꾸면 앞사람의 튜토리얼 확인을 물려받는다 — `clearConfig` 호출부가 0건이다 (OQ-P-366)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
 - ⚠️ 로그아웃 요청 중 항목은 `enabled`만 꺼지고 색이 그대로라 사용자는 눌러도 반응이 없는 이유를 모른다 — 디자인시스템에 비활성 색이 없다 (OQ-P-186)
@@ -69,33 +69,36 @@
 - 설계: [c001-canvas-main](superpowers/specs/archive/2026-08-12-c001-canvas-main.md), [c001-canvas-today-detail](superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md), [c202-canvas-spotlight](superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [canvas-feedback-fixes](superpowers/specs/archive/2026-09-10-canvas-feedback-fixes.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0023](adr/0023-group-in-memory-ssot.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md), [ADR-0030](adr/0030-topping-outline-distance-field.md)
 
 ## 토핑 생성·배치 (C-101·C-102·C-105·C-106)
-- 상태: 캔버스 메인이 오늘 캔버스 id와 다음 깊이를 DataStore 초안에 못 박으면서 흐름이 시작되고, 촬영(C-101)이나 커스텀 갤러리(C-102 — 최근 줄은 부른 쪽에 따라 원본 또는 배치에 성공한 알맹이)로 고른 사진이 누끼·편집을 거쳐 초안에 알맹이와 테두리 한 겹을 남긴다. 배치 화면(C-106)은 폴러가 주는 오늘 캔버스 위에 정중앙·캔버스 폭 40%·짧은 변 48dp 하한으로 자동 배치하고, 확인하면 알맹이를 원본 긴 변 기준으로 축소·재인코딩해 올린 뒤 서버 좌표로 배치하며 성공했을 때만 초안을 비우고 캔버스로 되감는다.
+- 상태: 캔버스 메인이 오늘 캔버스 id와 다음 깊이를 DataStore 초안에 못 박으면서 흐름이 시작되고, 촬영(C-101)이나 커스텀 갤러리(C-102 — 최근 줄은 부른 쪽에 따라 원본 또는 배치에 성공한 알맹이)로 고른 사진이 누끼·편집을 거쳐 초안에 알맹이와 테두리 한 겹을 남긴다. 배치 화면(C-106)은 폴러가 주는 오늘 캔버스 위에 정중앙·캔버스 폭 40%·짧은 변 48dp 하한으로 자동 배치하고, 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)가 캔버스 어디서 시작하든 토핑 중심을 축으로 이동·회전·확대를 한 번에 반영하고 토핑 위 한 손가락 드래그는 이동만 하며, 확인하면 알맹이를 원본 긴 변 기준으로 축소·재인코딩해 올린 뒤 서버 좌표로 배치하며 성공했을 때만 초안을 비우고 캔버스로 되감는다.
 - 앵커: `CanvasToppingPlaceViewModel`, `AddToppingUseCase`, `ToppingDraftRepositoryImpl`, `UploadImagePreprocessorImpl`, `RecentImagePick`, `CustomCameraViewModel`
 - ⚠️ 커스텀 카메라는 `targetRotation` 없이 표시 방향 기준 회전값으로 보정해, 세로 고정 화면에서 가로로 들고 찍은 사진이 누운 채 누끼·배치·캔버스까지 흘러간다 (OQ-P-265)
 - ⚠️ 테두리는 편집 세션 안에서만 여러 겹이고 초안·서버에는 마지막 한 겹이 저장되는데 C-301 편집 화면만 첫 겹을 그린다. 굵기는 토핑 배율·기기 폭과 무관한 절대 dp이고 그 정책 근거가 없다 (OQ-P-324, OQ-P-245)
 - ⚠️ 토핑 업로드는 알맹이를 디코드해 다시 인코딩하므로 디코드 실패·ICC 프로파일 소실·미러 EXIF 미보정 갈래가 생기고, 빈 알맹이 하한은 축소 전 편집본 해상도에서 재며 `borderOnly` 진입은 판정에서 빠진다 (OQ-P-390, OQ-P-391)
 - ⚠️ 갤러리 최근 줄의 알맹이로 들어온 재편집(`borderOnly`)은 원본 자리에도 알맹이를 넣어 재편집 좌표계 전제가 진입마다 다르고, 영역 탭을 막는 가드 하나가 유일한 방어다 (OQ-P-338)
 - ⚠️ 새 토핑의 `positionZ`는 앱이 확정 시점에 구독 캔버스로 다시 세는 완화뿐이라, 폴링 주기 안에 두 사람이 확인을 누르면 깊이가 겹쳐 그리는 순서가 흔들린다 (OQ-P-322)
-- ⚠️ 배치·편집 화면이 공유하는 `ToppingDragHandleButton`은 `onClick`이 빈 람다라 스크린리더에는 눌러도 반응 없는 버튼이고 드래그의 대체 수단이 없다 (OQ-P-202)
+- ⚠️ 배치·편집 화면의 토핑 회전·확대는 두 손가락 제스처(`toppingTransformInput`)로만 되고 접근성 서비스가 대신할 조작이 없다 (OQ-P-202)
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md)
 
 ## 누끼 추출 (C-103·C-104)
-- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 세그멘테이션 화면은 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 실패는 `C-103-Error` 한 화면이 받아 「다시 시도」(0건이면 정규화·초점 크롭 회복 사다리를 사진당 한 번)와 「직접 편집」(원본을 C-104로)을 주고, C-104 영역 탭은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다.
+- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고, 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣는다)으로 치환한다. 편집 완료는 초안을 직접 기록하고 편집 화면을 백스택에 남긴 채 확인 화면으로 간다. 로딩·선택 UI·`SegmentationConfirm`의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고(로딩 중엔 시스템 뒤로도), 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 영역 탭은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다.
 - 앵커: `SegmentationViewModel`, `ImageSegmentationRepositoryImpl`, `SegmentationModuleInstaller`, `harvestSubjects`, `refineAlpha`, `ToppingEditViewModel`
 - ⚠️ 원본을 다운샘플 없이 디코드하고 다중 후보 비트맵도 선택 전까지 전부 들고 있어, 큰 사진에서 메모리 피크가 `largeHeap` 없이 위험 구간이다 — 현재 트리 기준 피크는 미측정 (OQ-P-228, OQ-P-266)
 - ⚠️ 전경 마스크 옵션과 다중 후보 옵션을 한 요청에 함께 켜면 ML Kit 모듈이 네이티브 `SIGSEGV`로 죽는다. `try/catch`도 Crashlytics도 못 잡으므로 두 옵션은 반드시 별도 요청으로 둔다 (OQ-P-409)
-- ⚠️ 세그멘테이션은 beta ML Kit에 기대고, 모듈 가용 판정이 ML Kit 내부 feature 이름 상수라 이름이 바뀌면 크래시 없이 설치 요청만 반복하다 실패 화면이 뜬다. 모듈을 끝내 못 받는 기기의 정책은 없고 「직접 편집」이 유일한 우회로다 (OQ-P-003, OQ-P-345, OQ-P-344)
-- ⚠️ 회복 사다리의 잠정값을 철회할 근거인 단계 로그가 Kermit `platformLogWriter` 하나라 logcat 밖으로 나가지 않고, 회복 경로를 강제로 태울 수단도 없다 (OQ-P-399)
+- ⚠️ 세그멘테이션은 beta ML Kit에 기대고, 모듈 가용 판정이 ML Kit 내부 feature 이름 상수라 이름이 바뀌면 크래시 없이 설치 요청만 반복하다 분석이 실패해 편집 화면으로 떨어진다. 모듈을 끝내 못 받는 기기의 정책은 없고 편집 화면(직접 편집)이 유일한 우회로다 (OQ-P-003, OQ-P-345, OQ-P-344)
+- ⚠️ 분석 이벤트 화면명은 로딩 중에도 `C-103`이다 — 로딩과 선택 UI가 같은 `NavKeySegmentation`이라 화면명을 못 가른다
+- ⚠️ 편집 완료(`RecordAndConfirm`)는 저장부터 초안 기록까지 `isSaving`으로 완료 탭을 막지만, 확인 화면으로 가기 직전에 내리므로 화면이 걷히기 전의 탭은 한 번 더 저장·기록한다. 확인 화면 이동은 편집 키가 맨 위일 때만 해 두 번 쌓이지 않고, 초안은 둘째 경로로 덮이며 확인 화면도 초안 흐름을 따라 둘째 결과를 본다. 첫 결과 파일만 캐시에 고아로 남는다
+- ⚠️ 디코드 실패로 편집에 간 경우 편집 화면도 같은 uri를 못 읽어 `LoadFailed` 토스트 후 확인 화면으로 돌아온다(의도). 갤러리 content uri를 편집 화면이 다시 읽는 것은 실기기로 본 적이 없다 (OQ-P-400)
+- ⚠️ 위키에 C-103-Error·재시도 정책이 남아 있는데 구현에는 그 화면이 없다 — 정책 원본이 아직 들어오지 않았다 (OQ-P-411)
 - ⚠️ `applyAreaOpening`의 `countRuns`·`fillRuns`와 알파 정련 일부 루프에 취소 확인이 없어, 큰 판에서는 화면을 떠난 뒤에도 전체 패스가 끝까지 돈다 (OQ-P-318)
-- ⚠️ C-104 영역 탭의 빨간 틴트와 `C-103-Error` 「직접 편집」 버튼의 이름·동작은 위키·디자인 근거 없이 코드가 정했다 (OQ-P-347, OQ-P-401)
-- 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c103-error-use-original](superpowers/specs/archive/2026-09-05-c103-error-use-original.md), [segmentation-retry-recovery](superpowers/specs/archive/2026-09-10-segmentation-retry-recovery.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
+- ⚠️ C-104 영역 탭의 빨간 틴트의 이름·동작은 위키·디자인 근거 없이 코드가 정했다 (OQ-P-347)
+- 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c101-loading](superpowers/specs/archive/2026-09-30-c101-loading-design.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
 
 ## 캔버스 편집 (C-301 배경·삭제)
-- 상태: 편집 화면은 캔버스 메인이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독하고, 배경·탭·선택은 최초 방출에만 시딩하며 이후 방출은 dirty·툼스톤 집합을 지키며 토핑 목록만 병합한다. 확인 버튼은 dirty 토핑의 변형을 일괄 PATCH 한 번, 테두리를 토핑별 PATCH로 보낸 뒤 배경(색 또는 업로드한 이미지)을 저장해 모두 성공해야 화면을 닫고, 토핑 삭제는 확인 모달에서 곧바로 DELETE 해 성공할 때만 닫으며, 실패는 모두 `CanvasBGEditError` 토스트 + 화면 잔류다.
+- 상태: 편집 화면은 캔버스 메인이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독하고, 배경·탭·선택은 최초 방출에만 시딩하며 이후 방출은 dirty·툼스톤 집합을 지키며 토핑 목록만 병합한다. 토핑 탭에서 본인 토핑을 고른 뒤에는 두 손가락 제스처가 캔버스 어디서(남의 토핑 위여도) 시작해도 선택된 토핑을 이동·회전·확대하고, 한 손가락 드래그는 선택된 토핑 위에서 시작했을 때만 옮기며(핀치 중 남은 한 손가락은 어디서든 계속 옮긴다), 삭제·편집 버튼은 첫 터치부터 모든 손가락을 뗄 때까지 숨는다. 선택이 없으면 제스처는 무시된다. 확인 버튼은 dirty 토핑의 변형을 일괄 PATCH 한 번, 테두리를 토핑별 PATCH로 보낸 뒤 배경(색 또는 업로드한 이미지)을 저장해 모두 성공해야 화면을 닫고, 토핑 삭제는 확인 모달에서 곧바로 DELETE 해 성공할 때만 닫으며, 실패는 모두 `CanvasBGEditError` 토스트 + 화면 잔류다.
 - 앵커: `CanvasBGEditViewModel`, `CanvasBGEditUiState`, `CanvasBGEditError`, `NavKeyCanvasBGEdit`, `UpdateToppingsUseCase`, `ChangeCanvasBackgroundUseCase`
 - ⚠️ 삭제는 모달 확인 시점에 영구가 되고 이동·크기·회전·테두리는 확인 버튼 시점에야 저장돼, 그만두기로 나가면 삭제만 남는데 화면은 그 차이를 말하지 않는다 (OQ-P-270)
 - ⚠️ 마감된 캔버스의 409를 배경·토핑 저장 모두 일반 오류 토스트로 접어 다시 눌러도 영원히 실패하고, 변형 일괄 PATCH는 부분 성공이 없어 한 토핑이 걸리면 보낸 토핑 전부가 dirty로 남는다 (OQ-P-261, OQ-P-334)
-- ⚠️ 크기는 하한만 있고 회전과 함께 상한이 없어 캔버스 밖으로 커진 배율이 그대로 PATCH 된다 — 배치 화면에는 상한이 있다 (OQ-P-271)
+- ⚠️ 크기는 배치·편집 화면 모두 하한(서버 scale `TOPPING_MIN_SCALE` 0.05)만 있고 회전과 함께 상한이 없어, 캔버스 밖으로 커진 배율과 손가락으로 다시 잡기 어려울 만큼 작아진 배율이 그대로 저장된다 (OQ-P-271, OQ-P-325)
 - ⚠️ 테두리를 그릴 때는 첫 겹, 저장할 때는 마지막 겹을 써서 겹이 둘 이상이면 보이는 테두리와 저장되는 테두리가 갈리고, 편집 결과의 `editedImagePath`는 상태에만 남는다 (OQ-P-324, OQ-P-276)
 - ⚠️ C-305(본인 토핑 편집)가 별도 화면이 아니라 이 화면의 토핑 탭이고, 캔버스 메인의 `isViewingToday` 가드 때문에 지난 캔버스에서 본인 토핑 탭은 무반응이다 (OQ-P-326)
 - ⚠️ 배경 업로드용 `copyToCache` 복사본이 `cacheDir/upload`에 쌓이기만 하고, 배경색은 `toRgbHex`로·테두리색은 로케일을 고정하지 않는 `toRgbHexString`으로 적는다 (OQ-P-262, OQ-P-263)
@@ -123,7 +126,7 @@
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).
-- 앵커: `ParfaitFirebaseMessagingService`, `PushDeepLinkParser`, `PushDeepLinkEventBusImpl`, `DeviceTokenRegistrarImpl`, `NotificationPermissionGate`, `NotificationPermissionManager`
+- 앵커: `ParfaitFirebaseMessagingService`, `PushDeepLinkParser`, `PushDeepLinkEventBusImpl`, `NotificationRepositoryImpl`, `NotificationPermissionGate`, `NotificationPermissionManager`
 - ⚠️ 수신부가 계약의 `date`를 읽지 않아 토핑 알림은 늘 그 그룹의 최신 캔버스로 열리고, 알림 id가 `messageId` 해시라 재시도로 온 같은 알림이 두 개로 쌓인다 (OQ-P-359)
 - ⚠️ 영구 거부 판정이 요청 직전·직후 rationale 비교라 이전 세션에서 이미 두 번 거부한 사용자에게는 "허용" 버튼이 설정으로도 안 보내고 아무 일도 하지 않는다. 이 갈래를 잠그는 테스트가 없다(모듈에 `androidTest` 소스셋 없음) (OQ-P-371, OQ-P-373)
 - ⚠️ 거부·"나중에"를 영속하지 않아 허용 전까지 그룹 생성·참여를 마칠 때마다 안내가 다시 뜬다. 노출 횟수는 정한 적이 없다 (OQ-P-370)
@@ -169,7 +172,7 @@
 - OQ-P-287 — 누끼 전처리의 임계·반경·정칙화·축소 하한이 측정 없이 정한 값이다(OQ-P-287~300, 판정 주체는 실기기 사진 세트)
 - OQ-P-301 — 카메라 권한 거부 화면의 수정 결과를 실기기에서 본 사람이 없다
 - OQ-P-337 — 토핑 테두리를 그리는 두 화면을 실기기에서 나란히 본 사람이 없어 어긋남의 크기를 잰 적이 없다(③)
-- OQ-P-400 — 세그멘테이션 재시도 회복 경로와 1차 경로 회귀를 실기기로 본 적이 없다
+- OQ-P-400 — 세그멘테이션 1차 경로 회귀와 C-101-Loading 흐름(갤러리 content uri 재읽기, 팝업 중 결과 보류, 편집 완료 뒤 백스택)을 실기기로 본 적이 없다
 - OQ-P-260 — 화면 전환 애니메이션의 모양·시간·방향을 실기기로 본 적이 없다
 - OQ-P-146 — 로그인 실기기 검증 항목과 앱의 첫 실서버 호출 왕복이 한 번도 돌지 않았다
 - OQ-P-350 — 교체된 스플래시 로고 애니메이션을 본 사람이 없고 되돌아가도 잡을 수단이 없다

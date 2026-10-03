@@ -29,7 +29,7 @@ jobs:
 
       # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지)
       - name: Compile instrumented tests
-        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest
+        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest :feature:groups:canvas:impl:assembleDebugAndroidTest
 
       # 실패해도 결과를 남긴다
       - name: Publish test report

@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -33,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
@@ -43,14 +43,12 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
 import com.teamyg.parfait.core.util.android.extension.centeredAt
-import com.teamyg.parfait.core.util.android.extension.dragBy
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
-import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 import java.io.File
 
@@ -60,16 +58,14 @@ import java.io.File
  * [CanvasBGEditScreen]의 토핑 탭과 UI가 비슷하지만, 이미 캔버스에 놓인 여러 토핑 중 하나를
  * 고르는 게 아니라 이제 막 편집을 마친 토핑 하나를 처음 배치하는 화면이라 더 단순하다 —
  * 탭 전환이 없고(하단 바 가운데는 고정 문구), 고를 대상도 하나뿐이라 탭해서 선택할 필요 없이
- * 처음부터 바로 드래그해서 옮기고, 리사이즈·회전만 가능하다(삭제·테두리 재편집 없음).
+ * 처음부터 바로 옮기고 크기·각도를 바꿀 수 있다(삭제·테두리 재편집 없음).
  */
 @Composable
 internal fun CanvasToppingPlaceScreen(
     uiState: CanvasToppingPlaceUiState,
     onClickClose: () -> Unit,
     onClickConfirm: () -> Unit,
-    onToppingMoveDrag: (DpOffset) -> Unit,
-    onToppingResize: (Float) -> Unit,
-    onToppingRotate: (Float) -> Unit,
+    onToppingTransform: (pan: DpOffset, zoom: Float, rotationDelta: Float) -> Unit,
     onCanvasMeasured: (DpSize) -> Unit,
     onToppingBaseSizeMeasured: (DpSize) -> Unit,
     onToppingImageReadyChanged: (Boolean) -> Unit,
@@ -127,7 +123,7 @@ internal fun CanvasToppingPlaceScreen(
                 if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
             }
 
-            // 이미지·스트로크·핸들이 같은 자리에 오려면 셋이 같은 값을 봐야 한다. 여기서 한 번만 계산한다
+            // 이미지와 스트로크가 같은 자리에 오려면 같은 값을 봐야 한다. 여기서 한 번만 계산한다
             val center = DpOffset(
                 x = uiState.offsetX + baseSize.width / 2,
                 y = uiState.offsetY + baseSize.height / 2,
@@ -149,6 +145,43 @@ internal fun CanvasToppingPlaceScreen(
                         color = YGAtomicColors.Gray.Gray500,
                     ),
             ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .toppingTransformInput(
+                            // 그림이 뜨기 전 크기는 폴백이라, 여기서 제스처를 받으면 초기 배치가 영영 안 걸린다
+                            targetAt = {
+                                if (!isToppingImageLoaded) {
+                                    null
+                                } else {
+                                    with(density) {
+                                        ToppingHitTarget(
+                                            centerXPx = center.x.toPx(),
+                                            centerYPx = center.y.toPx(),
+                                            imageWidthPx = sizeAfterScale.width.toPx(),
+                                            imageHeightPx = sizeAfterScale.height.toPx(),
+                                            rotationDegrees = uiState.rotationDegrees,
+                                            // 테두리를 안 그리면 판정도 넓히지 않는다
+                                            borderWidthPx = if (uiState.borderColorArgb != null) {
+                                                (uiState.borderWidthDp ?: 0f).dp.toPx()
+                                            } else {
+                                                0f
+                                            },
+                                            outline = outline,
+                                        )
+                                    }
+                                }
+                            },
+                            onTransform = { pan: Offset, zoom, rotationDelta ->
+                                onToppingTransform(
+                                    with(density) { DpOffset(pan.x.toDp(), pan.y.toDp()) },
+                                    zoom,
+                                    rotationDelta,
+                                )
+                            },
+                        ),
+                )
+
                 uiState.backgroundImageUrl?.let { imageUrl ->
                     Image(
                         painter = rememberAsyncImagePainter(model = imageUrl),
@@ -178,16 +211,12 @@ internal fun CanvasToppingPlaceScreen(
                 )
 
                 // Image()를 그냥 두면 painter.intrinsicSize로 스스로 크기를 맞춰(sizeToIntrinsics)
-                // 스트로크·핸들 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
+                // 스트로크 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
                 Box(
                     modifier = Modifier
                         .centeredAt(center)
                         .requiredSize(sizeAfterScale)
-                        .dragBy(Unit) { delta ->
-                            onToppingMoveDrag(
-                                with(density) { DpOffset(delta.x.toDp(), delta.y.toDp()) },
-                            )
-                        }.graphicsLayer(rotationZ = uiState.rotationDegrees),
+                        .graphicsLayer(rotationZ = uiState.rotationDegrees),
                 ) {
                     YGToppingCutoutImage(
                         painter = painter,
@@ -214,23 +243,6 @@ internal fun CanvasToppingPlaceScreen(
                     rotationDegrees = uiState.rotationDegrees,
                 )
             }
-
-            // 버튼 좌표는 캔버스 밖으로 나간 진짜 모서리 값을 그대로 쓰되(clamp 없음),
-            // 그려지는 픽셀은 토핑 이미지와 마찬가지로 캔버스 경계에서 잘리게 한다
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
-                    .clipToBounds(),
-            ) {
-                ToppingPlaceCornerButtons(
-                    center = center,
-                    sizeAfterScale = sizeAfterScale,
-                    rotationDegrees = uiState.rotationDegrees,
-                    onResize = onToppingResize,
-                    onRotate = onToppingRotate,
-                )
-            }
         }
 
         YGFloatingBarEdit(
@@ -247,42 +259,6 @@ internal fun CanvasToppingPlaceScreen(
     }
 }
 
-/** 배치 중인 토핑의 리사이즈·회전 두 모서리 버튼만 그린다(삭제·편집 없음). */
-@Composable
-private fun ToppingPlaceCornerButtons(
-    center: DpOffset,
-    sizeAfterScale: DpSize,
-    rotationDegrees: Float,
-    onResize: (Float) -> Unit,
-    onRotate: (Float) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val buttonPoints = computeToppingButtonPoints(
-        center = center,
-        sizeAfterScale = sizeAfterScale,
-        rotationDegrees = rotationDegrees,
-    )
-
-    Box(modifier = modifier) {
-        ToppingRotateHandleButton(
-            iconRes = DesignSystemR.drawable.ic_rotate,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
-            point = buttonPoints.topRight,
-            center = center,
-            key = Unit,
-            onRotate = onRotate,
-        )
-        ToppingResizeHandleButton(
-            iconRes = DesignSystemR.drawable.ic_scale,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
-            point = buttonPoints.bottomRight,
-            center = center,
-            key = Unit,
-            onResize = onResize,
-        )
-    }
-}
-
 @YGPreview
 @Composable
 private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
@@ -290,9 +266,7 @@ private fun PreviewCanvasToppingPlaceScreen() = PreviewBox {
         uiState = CanvasToppingPlaceUiState(),
         onClickClose = {},
         onClickConfirm = {},
-        onToppingMoveDrag = {},
-        onToppingResize = {},
-        onToppingRotate = {},
+        onToppingTransform = { _, _, _ -> },
         onCanvasMeasured = {},
         onToppingBaseSizeMeasured = {},
         onToppingImageReadyChanged = {},

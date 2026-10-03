@@ -5,7 +5,7 @@ status: draft                  # draft | in-progress | done | abandoned | supers
 type: work-order               # work-order | handoff
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
-platforms: android             # 이 repo는 TJYG-Android(Kotlin/Compose) 전용
+platforms: android             # 이 repo는 TEAMYG-Android(Kotlin/Compose) 전용
 owner:                         # 담당 팀/역할 (실명·개인정보 금지 — public repo)
 related_adr:
 related_spec:

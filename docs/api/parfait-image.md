@@ -123,9 +123,8 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
   재조회 없이 쓸 수 있다. 값 집합·배정 규칙은 [parfait-group.md](parfait-group.md) "Nametag-Chip 배정 규칙".
   근거: `PlaceParfaitImageControllerTest`가 `placedBy.nameTagChip`(`"TYPE6"`)을 `jsonPath`로 단언한다.
 
-  ⚠️ **응답 DTO 이름이 계층마다 갈렸다** — 서버 HTTP DTO는 `PlaceParfaitImagePlacedByResponse`인데
-  앱 `data/service/model/response/parfaitimage/`는 아직 `PlacedByResponse`다. "wire DTO는 서버의 거울"이라는
-  규약과 어긋난 자리다 → [Android 매핑](#android-매핑).
+  앱 DTO도 같은 이름이다(`data/service/model/response/parfaitimage/PlaceParfaitImagePlacedByResponse`).
+  캔버스 조회 응답의 `PlacedByResponse`와는 다른 타입이니 통일하지 않는다 → [Android 매핑](#android-매핑).
 
   ⚠️ **요청에 보낸 `borderType`·`borderColor`·`borderWidth`가 응답에 없다.** 저장은 되지만
   `PlaceParfaitImageResponse`에 필드가 없어 되돌려 받지 못한다. 다만 **되읽을 자리는 생겼다** —
@@ -480,7 +479,7 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 있는 것을 앱이 축 단위로 미러링한 결과다. **응답 `UpdatedToppingBorderVO`는 여전히 아무도 읽지 않는다**(실패만 로그로 접는다).
 
 ⚠️ **읽는 방향에 앱 클램프가 하나 생겼다**(2026-09-08, PR #464) — 응답을 도메인으로 옮기는 두
-`VOMapper`(`data/source/parfait/`·`data/source/parfaitimage/`)가 `ToppingBorder.Solid` 를 직접 만들지
+`VOMapper`(`data/source/parfait/`·`data/source/topping/`)가 `ToppingBorder.Solid` 를 직접 만들지
 않고 `ToppingBorder.solidClamped` 를 지나, 서버가 준 `borderWidth` 를 `WIDTH_RANGE_DP`(2.0..30.0)로
 가둔다. **서버가 범위를 검증하지 않는 자리를 앱이 임시로 메운 것**이라, 서버나 정책이 범위를 정하면
 걷을 코드다(위 「미결」·[open-questions](../synthesis/open-questions.md) OQ-P-381). 두
@@ -510,7 +509,7 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 
 **이름이 계층마다 갈린다.** `data`는 서버 언어(`ParfaitImageService`·`PlaceParfaitImageRequest`),
 `domain`은 제품 언어(`PlacedToppingVO`·`ToppingTransform`·`ToppingBorder`·`UpdatedToppingVO`) —
-제품 어디에도 "parfait image"라는 말이 없고 위키·기획은 전부 "토핑"이다. `source/parfaitimage/mapper/VOMapper.kt`가
+제품 어디에도 "parfait image"라는 말이 없고 위키·기획은 전부 "토핑"이다. `source/topping/mapper/VOMapper.kt`가
 그 번역 지점이다. 설계 근거는
 [specs/archive/2026-08-11-member-parfait-image-api-service-layer](../superpowers/specs/archive/2026-08-11-member-parfait-image-api-service-layer.md).
 

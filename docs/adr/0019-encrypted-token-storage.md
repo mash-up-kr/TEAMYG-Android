@@ -18,10 +18,10 @@ tags: [adr, parfait, security, network, data, auth]
 > 상태·날짜·결정자·대체 관계는 위 frontmatter가 단일 출처. 본문은 결정 내용에 집중.
 >
 > **코드 머지 확인(2026-08-04, PR #190)** — 아래 결정이 그대로 develop에 들어왔다
-> (`CryptoManager`·`TokenStore`·`EncryptedTokenStore`·`TokenStoreTokenProvider`, `EmptyTokenProvider` 삭제).
-> `EncryptedTokenStore.read()`의 `runCatching` 범위는 설계보다 넓다 — 복호화뿐 아니라 **DataStore
+> (`CryptoManager`·`TokenLocalDataSource`·`TokenLocalDataSourceImpl`·`TokenProviderImpl`, `EmptyTokenProvider` 삭제).
+> `TokenLocalDataSourceImpl.read()`의 `runCatching` 범위는 설계보다 넓다 — 복호화뿐 아니라 **DataStore
 > 읽기까지** 감싸고 복구 경로의 `clear()`도 `runCatching`으로 감싼다(아래 "키 유실 시 정책" 참고).
-> **검증 상태는 변하지 않았다**: `TokenStore.save()` 호출부가 develop 기준 0건이라 실기기 왕복도
+> **검증 상태는 변하지 않았다**: `TokenLocalDataSource.save()` 호출부가 develop 기준 0건이라 실기기 왕복도
 > 키 유실 경로도 확인하지 못했다.
 
 ## 맥락
@@ -43,13 +43,13 @@ tags: [adr, parfait, security, network, data, auth]
   - `encrypt(plainText)`가 매 호출마다 새 GCM IV를 뽑는다(`cipher.iv`, Cipher가 자동 생성) — GCM은
     동일 키로 IV를 재사용하면 안전성이 깨지기 때문이다. 복호화에 IV가 필요하므로 `IV + 암호문`을
     이어붙여 Base64 문자열 하나로 반환한다(`decrypt`는 앞 12바이트를 IV로 분리해 되돌림).
-  - `encrypt`/`decrypt`는 실패를 삼키지 않고 그대로 던진다 — 예외 처리는 호출자(`EncryptedTokenStore`)
+  - `encrypt`/`decrypt`는 실패를 삼키지 않고 그대로 던진다 — 예외 처리는 호출자(`TokenLocalDataSourceImpl`)
     책임으로 분리했다.
-- **`TokenStore`**(인터페이스) + **`EncryptedTokenStore`**(`data/source/token/local`) —
+- **`TokenLocalDataSource`**(인터페이스) + **`TokenLocalDataSourceImpl`**(`data/source/token/local`) —
   `getAccessToken()`·`getRefreshToken()`·`save(accessToken, refreshToken)`·`clear()`, 전부 suspend.
   `CryptoManager`로 암복호화한 문자열을 [ADR-0008](0008-datastore-local-persistence.md)의
   기존 `DataStore<Preferences>`(`DataStoreModule` 제공, 새 인스턴스 아님)에 넣고 뺀다.
-  > 📌 **as-built(PR #263, 2026-08-16)** — 암복호화·폐기를 `EncryptedTokenStore`가 직접 하지 않고
+  > 📌 **as-built(PR #263, 2026-08-16)** — 암복호화·폐기를 `TokenLocalDataSourceImpl`가 직접 하지 않고
   > **`EncryptedPreferences`**(`data/datastore/`)에 위임한다. 같은 저장 형태(값이 아니라 암호문)를
   > 쓰는 저장소가 둘이 되며(계정 정보, [ADR-0022](0022-user-info-local-ssot.md)) 세 가지 — 쓰기의
   > 암호화, 읽기의 복호화·역직렬화, **못 읽는 저장분 폐기** — 가 그대로 복제될 자리였고, 특히
@@ -57,8 +57,8 @@ tags: [adr, parfait, security, network, data, auth]
   > **어떻게 해석할지**뿐이다. `save`는 두 토큰을 **한 `edit` 블록**에서 써 반쪽만 저장된 상태가
   > 보이지 않게 한다.
 - **`TokenProvider`** — ADR-0017의 동기 인터페이스를 그대로 유지하고 구현만 교체한다
-  (`EmptyTokenProvider` → `TokenStoreTokenProvider`, `EmptyTokenProvider`는 삭제). `AuthInterceptor`는
-  시그니처 변경 없음. `TokenStoreTokenProvider.getToken()`은 `runBlocking { tokenStore.getAccessToken() }`으로
+  (`EmptyTokenProvider` → `TokenProviderImpl`, `EmptyTokenProvider`는 삭제). `AuthInterceptor`는
+  시그니처 변경 없음. `TokenProviderImpl.getToken()`은 `runBlocking { tokenLocalDataSource.getAccessToken() }`으로
   suspend 경계를 넘는다 — OkHttp `Interceptor.intercept`가 동기 API라 suspend를 직접 호출할 수 없고,
   이 코드는 OkHttp dispatcher 스레드에서 실행되므로 메인 스레드를 막지 않는다. 대안이던
   "메모리 캐시(StateFlow) + 동기 읽기"는 앱 시작 직후 캐시가 비어 있는 창에서 첫 요청이 토큰 없이
@@ -67,7 +67,7 @@ tags: [adr, parfait, security, network, data, auth]
 ## 키 유실 시 정책
 
 기기 복원·잠금 화면 자격증명 변경 등으로 Keystore 키가 무효화되면 `CryptoManager.decrypt`가 예외를
-던진다. **`EncryptedTokenStore`는 이 예외를 밖으로 전파하지 않는다** — 내부 `read()`가 복호화
+던진다. **`TokenLocalDataSourceImpl`는 이 예외를 밖으로 전파하지 않는다** — 내부 `read()`가 복호화
 실패를 잡아 `clear()`를 호출하고 `null`을 반환한다. 앱은 "토큰 없음" 상태가 되어 자연스럽게
 재로그인 경로로 간다.
 
@@ -80,7 +80,7 @@ tags: [adr, parfait, security, network, data, auth]
 > (`data/datastore/`)로 옮겨가며 **저장소 읽기 실패와 해석 실패가 갈렸다**: 값을 손에 넣고도
 > 복호화·역직렬화하지 못했을 때만 폐기하고, 읽기 자체가 실패하면(디스크 IO) **아무것도 지우지 않고
 > `null`만 돌려준다**. 근거는 값이 손상됐다는 근거가 없다는 것 — 일시적 실패로 지우면 다음 시도에
-> 살아날 세션까지 잃는다. `EncryptedTokenStore`는 자기 몫 하나만 남겼다: **폐기 범위가 한 짝 전체**
+> 살아날 세션까지 잃는다. `TokenLocalDataSourceImpl`는 자기 몫 하나만 남겼다: **폐기 범위가 한 짝 전체**
 > (`clear()`)라는 것. 두 토큰이 같은 키로 암호화돼 하나를 못 읽으면 다른 하나도 못 읽기 때문이고,
 > 프록시가 이 범위를 임의로 정하지 않도록 호출부가 `onDecodeFailure`로 넘긴다(계정 정보는 자기 키
 > 하나만 지운다 → [ADR-0022](0022-user-info-local-ssot.md)).
@@ -118,17 +118,17 @@ tags: [adr, parfait, security, network, data, auth]
 
 - Tink 대신 Keystore API를 직접 다루므로 암호화 로직(IV 관리·GCM 태그 크기 등)을 팀이 직접 들고
   있어야 한다.
-- 키 유실 경로(`EncryptedTokenStore.read()`의 `clear()` 분기)가 테스트 인프라 부재로 미검증인 채로
+- 키 유실 경로(`TokenLocalDataSourceImpl.read()`의 `clear()` 분기)가 테스트 인프라 부재로 미검증인 채로
   남는다.
 
 **위험·방어**
 
 - 코드베이스에 `test`/`androidTest` 디렉토리가 없고(무테스트 관례) Android Keystore는 JVM 유닛
   테스트에서 동작하지 않아, 이 라운드의 검증은 `:data:compileDebugKotlin`·`ktlintCheck`·
-  `:app:assembleDebug`(Hilt 그래프 전체 해소: `CryptoManager`→`EncryptedTokenStore`→`TokenStore`→
-  `TokenStoreTokenProvider`→`TokenProvider`→`AuthInterceptor` 체인)로 한정했다. **실기기 암복호화
+  `:app:assembleDebug`(Hilt 그래프 전체 해소: `CryptoManager`→`TokenLocalDataSourceImpl`→`TokenLocalDataSource`→
+  `TokenProviderImpl`→`TokenProvider`→`AuthInterceptor` 체인)로 한정했다. **실기기 암복호화
   왕복 검증(저장 → 앱 완전 종료 → 재시작 → 읽기)은 사람이 수행하면 된다고 봤으나 수행 불가였다** —
-  `TokenStore.save()` 호출부가 코드베이스에 0건이라 저장을 트리거할 방법이 없다(auth 도메인
+  `TokenLocalDataSource.save()` 호출부가 코드베이스에 0건이라 저장을 트리거할 방법이 없다(auth 도메인
   Service·RemoteDataSource·Repository가 이 라운드 범위 밖). 로그인 연동 라운드로 이월한다.
 - 키 유실 재현(기기 복원·잠금 자격증명 변경)과 위 실기기 왕복 검증은 이번 라운드에서 검증하지
   않았다 → [open-questions](../synthesis/open-questions.md)로 추적.

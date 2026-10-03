@@ -18,8 +18,6 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 
-private const val KEY_RECORDED_ENTRY_SUBJECT = "recorded_entry_subject"
-
 /**
  * @param subjectImagePath 초안이 아직 흐르기 전 첫 프레임에만 쓰는 초기값이다. 정본은 초안이다
  */
@@ -181,6 +179,7 @@ class SegmentationConfirmViewModel
     }
 
     private companion object {
-        const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
+        const val KEY_RECORDED_ENTRY_SUBJECT = "recorded_entry_subject"
+        const val COMPLETE_TUTORIAL_KEY = "complete-tutorial"
     }
 }

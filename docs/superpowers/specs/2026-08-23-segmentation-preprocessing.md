@@ -187,7 +187,7 @@ KDoc에 무엇을 하고 무엇을 안 하는지 함께 적는다(색공간과 `
 `androidx.exifinterface` 의존성을 새로 넣어야 한다.
 
 ⚠️ **이 전제가 develop에서 깨졌다**(2026-08-27, PR #369) — `decodeImage`가 스킴으로 갈라져,
-`https://`면 `RemoteImageDownloadDataSource`가 받은 바이트를 `BitmapFactory.decodeByteArray`로
+`https://`면 `ImageDownloadRemoteDataSource`가 받은 바이트를 `BitmapFactory.decodeByteArray`로
 디코드하고 **`decodeUriToBitmap`을 아예 타지 않는다.** 그래서 보정을 그 확장 함수 안에만 두면
 **서버 토핑을 다시 편집하는 경로에는 방향 보정도 하한 확대도 적용되지 않는다.** 구현할 때 정규화의
 자리를 `decodeImage` 본문(두 갈래가 합류한 뒤)으로 올릴지, 갈래마다 따로 부를지를 먼저 정한다

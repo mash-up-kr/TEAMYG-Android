@@ -1,15 +1,14 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -18,15 +17,14 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
-import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
+import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.impl.R
-import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationErrorScreen
+import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationQuitDialog
+import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationLoadingScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationIntent
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationViewModel
-import java.io.File
 
 @Composable
 internal fun SegmentationRoute(
@@ -41,21 +39,20 @@ internal fun SegmentationRoute(
     val toastPolicy = rememberYGToastPolicy()
     val errorMessage = stringResource(R.string.segmentation_error_message)
 
-    ResultEffect<ToppingEditResult>(resultKey = TOPPING_EDIT_RESULT_KEY) { result ->
-        viewModel.processIntent(SegmentationIntent.OnEditResult(result))
-    }
-
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is SegmentationEffect.ShowError -> toastPolicy.showError(errorMessage)
 
-                is SegmentationEffect.GoBack -> navigator.onBack()
+                // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
+                is SegmentationEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
 
-                is SegmentationEffect.GoToEdit -> navigator.goTo(
+                // 이 화면을 걷어 편집에서 뒤로가기 해도 분석 화면으로 돌아오지 않는다
+                is SegmentationEffect.GoToEdit -> navigator.goToAndPopCurrent(
                     NavKeyToppingEdit(
                         sourceImageUri = key.sourceImageUri,
-                        segmentationImageUri = File(effect.originImagePath).toUri().toString(),
+                        segmentationImageUri = key.sourceImageUri,
+                        completion = ToppingEditCompletion.RecordAndConfirm,
                     ),
                 )
 
@@ -71,18 +68,18 @@ internal fun SegmentationRoute(
         }
     }
 
-    // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
-    val onClickClose: () -> Unit = { navigator.popUpTo<NavKeyCanvasMain>() }
+    // 분석 중에는 되돌아갈 화면이 없다 — 뒤로가기도 X 와 같이 그만두기를 묻는다
+    BackHandler(enabled = state.isAnalyzing) {
+        viewModel.processIntent(SegmentationIntent.ClickClose)
+    }
 
     YGScaffoldV2(
-        isLoading = state.isLoading,
+        isLoading = state.isSaving,
         toastPolicy = toastPolicy,
     ) { innerPadding ->
-        if (state.isError) {
-            SegmentationErrorScreen(
-                onClickRetry = { viewModel.processIntent(SegmentationIntent.Retry) },
-                onClickEditManually = { viewModel.processIntent(SegmentationIntent.EditManually) },
-                onClickClose = onClickClose,
+        if (state.isAnalyzing) {
+            SegmentationLoadingScreen(
+                onClickClose = { viewModel.processIntent(SegmentationIntent.ClickClose) },
                 modifier = modifier.padding(innerPadding),
             )
         } else {
@@ -90,11 +87,18 @@ internal fun SegmentationRoute(
                 state = state,
                 modifier = modifier.padding(innerPadding),
                 onClickBack = { navigator.onBack() },
-                onClickClose = onClickClose,
+                onClickClose = { viewModel.processIntent(SegmentationIntent.ClickClose) },
                 onClickCandidate = { index ->
                     viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
                 },
             )
         }
+    }
+
+    if (state.showQuitDialog) {
+        SegmentationQuitDialog(
+            onConfirmQuit = { viewModel.processIntent(SegmentationIntent.ConfirmQuit) },
+            onDismiss = { viewModel.processIntent(SegmentationIntent.DismissQuit) },
+        )
     }
 }

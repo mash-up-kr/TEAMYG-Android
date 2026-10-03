@@ -1,25 +1,32 @@
 package com.teamyg.parfait.feature.gallery.impl.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -30,6 +37,7 @@ import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.feature.gallery.impl.R
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun GalleryImageGridComponent(
@@ -39,6 +47,8 @@ internal fun GalleryImageGridComponent(
     onClickCutoutImage: (RecentImage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val latestDate = groups.maxOfOrNull { it.date }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(count = 3),
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.padding.padding5),
@@ -83,6 +93,7 @@ internal fun GalleryImageGridComponent(
                 GalleryDateHeader(
                     date = group.date.format(DateTextFormat.monthDayFormat),
                     dayOfWeek = group.date.format(DateTextFormat.weekdayFormat),
+                    isDayBoundaryInfoVisible = group.date == latestDate,
                 )
             }
 
@@ -137,23 +148,52 @@ private fun GalleryDateHeader(
 private fun GalleryDateHeader(
     date: String,
     dayOfWeek: String,
+    isDayBoundaryInfoVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = YGTheme.layout.padding.padding5),
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
     ) {
-        Text(
-            text = date,
-            color = YGAtomicColors.Gray.Gray900,
-            style = YGTheme.typography.body.b02R,
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
+            modifier = Modifier.padding(vertical = YGTheme.layout.padding.padding1),
+        ) {
+            Text(
+                text = date,
+                color = YGAtomicColors.Gray.Gray900,
+                style = YGTheme.typography.body.b02R,
+            )
+            Text(
+                text = "($dayOfWeek)",
+                color = YGAtomicColors.Gray.Gray300,
+                style = YGTheme.typography.body.b02R,
+            )
+        }
+
+        if (isDayBoundaryInfoVisible) {
+            GalleryDayBoundaryInfo()
+        }
+    }
+}
+
+@Composable
+private fun GalleryDayBoundaryInfo(modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Image(
+            painter = painterResource(DesignSystemR.drawable.ic_info_round),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(color = YGAtomicColors.Soda.Soda500),
+            modifier = Modifier.size(SizeTokens.Size24.getDp()),
         )
         Text(
-            text = "($dayOfWeek)",
-            color = YGAtomicColors.Gray.Gray300,
-            style = YGTheme.typography.body.b02R,
+            text = stringResource(R.string.gallery_day_boundary_info),
+            color = YGAtomicColors.Soda.Soda500,
+            style = YGTheme.typography.caption.c01R,
         )
     }
 }

@@ -8,57 +8,60 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
-import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
 import com.teamyg.parfait.domain.model.SegmentationCandidate
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
-import com.teamyg.parfait.domain.usecase.image.RecoverCandidatesUseCase
-import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 
 data class SegmentationState(
-    val isLoading: Boolean = true,
+    /** 참이면 화면 전체가 `C-101-Loading` 이다 */
+    val isAnalyzing: Boolean = true,
+    /** 후보를 고른 뒤 저장하는 동안 화면을 덮는 오버레이 */
+    val isSaving: Boolean = false,
     val originBitmap: Bitmap? = null,
     val candidates: List<SegmentationCandidate> = emptyList(),
-    /** 참이면 화면 전체가 `C-103-Error` 로 바뀐다 */
-    val isError: Boolean = false,
+    val showQuitDialog: Boolean = false,
 ) : UiState
 
 sealed interface SegmentationIntent : UiIntent {
     data class ClickCandidate(val index: Int) : SegmentationIntent
 
-    data object Retry : SegmentationIntent
+    /** X 버튼, 분석 중 시스템 뒤로가기 */
+    data object ClickClose : SegmentationIntent
 
-    data object EditManually : SegmentationIntent
+    data object ConfirmQuit : SegmentationIntent
 
-    data class OnEditResult(val result: ToppingEditResult) : SegmentationIntent
+    data object DismissQuit : SegmentationIntent
 }
 
 sealed interface SegmentationEffect : UiSideEffect {
-    /** 화면을 덮지 않고 토스트로만 알리는 실패. 화면 전체를 바꾸는 실패는 [SegmentationState.isError] 가 받는다 */
+    /** 후보 저장 실패를 토스트로만 알린다 */
     data object ShowError : SegmentationEffect
 
-    /**
-     * 원본을 못 읽었다. 이 경로를 실패 화면으로 돌리면 「직접 편집」이 쓸 원본이 없는 상태가
-     * 생겨 버튼에 비활성 분기가 필요해진다.
-     */
-    data object GoBack : SegmentationEffect
+    data object QuitToCanvas : SegmentationEffect
 
-    data class GoToEdit(val originImagePath: String) : SegmentationEffect
+    /** 자동 인식으로 대상을 못 얻었다. 편집이 원본 URI 를 그대로 읽으므로 실어 보낼 값이 없다 */
+    data object GoToEdit : SegmentationEffect
 
     data class GoToConfirm(
         val subjectImagePath: String,
         val trimmedSubjectImagePath: String,
     ) : SegmentationEffect
+}
+
+/** 분석이 낸 결과. 팝업이 떠 있으면 [SegmentationViewModel.deliver] 가 보류한다 */
+private sealed interface Outcome {
+    data class Select(val candidates: List<SegmentationCandidate>) : Outcome
+
+    data object Edit : Outcome
 }
 
 @HiltViewModel(assistedFactory = SegmentationViewModel.Factory::class)
@@ -69,50 +72,31 @@ class SegmentationViewModel
     private val clearSegmentationCacheUseCase: ClearSegmentationCacheUseCase,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
-    private val recoverCandidatesUseCase: RecoverCandidatesUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
-    private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
-    /** `AndroidBitmap` 생성자가 모듈 내부라 `state.originBitmap` 으로는 다시 만들 수 없다 */
-    private var originBitmapWrapper: BitmapWrapper? = null
+    /** 팝업이 떠 있는 동안 나온 결과. 화면이 안 쓰는 값이라 상태로 올리지 않는다 */
+    private var pendingOutcome: Outcome? = null
 
-    private enum class LastFailure { EXCEPTION, EMPTY }
-
-    /** 재시도가 무엇을 돌지만 정한다. 화면이 안 쓰는 값이라 상태로 올리지 않는다 */
-    private var lastFailure: LastFailure? = null
-
-    /**
-     * 이 사진으로 사다리를 끝까지 돌렸는가. 입력이 같으면 결과도 같아서 한 번만 돈다.
-     *
-     * ⚠️ 1차에서 다시 0건이 나와도 되돌리지 않는다. 되돌리면 사다리가 한 번 걸러 되풀이된다.
-     */
-    private var recoveryAttempted = false
+    /** 그만두기를 확정했다. 이후 도착하는 분석 결과는 버린다 */
+    private var isQuitConfirmed = false
 
     init {
-        loadCandidates()
+        analyze()
     }
 
-    /**
-     * ⚠️ 진입과 재시도가 **같은 키**를 쓴다. 진입만 다른 경로로 띄우면 진입 흐름이 도는 중에
-     * 누른 재시도를 막지 못한다.
-     */
-    private fun loadCandidates() {
-        launch(key = LOAD_CANDIDATES_KEY) {
-            // 실패 표시를 걷지 않으면 재시도가 성공해도 에러 화면이 그대로 남는다
-            updateState { copy(isLoading = true, isError = false, candidates = emptyList()) }
-
-            // 이번 흐름이 파일을 만들기 전에 지운다 — 뒤에 두면 방금 만든 것을 지운다
-            // 지난 흐름의 파일을 못 지워도 이번 흐름은 진행돼야 한다 — 남은 파일은 다음 진입에서 다시 지운다
+    /** 실패는 모두 편집으로 접는다. `onError` 가 없으면 던진 예외에 로딩 화면에 갇힌다 */
+    private fun analyze() {
+        launch(key = LOAD_CANDIDATES_KEY, onError = { deliver(Outcome.Edit) }) {
+            // 이번 흐름이 파일을 만들기 전에 지운다(뒤에 두면 방금 만든 것을 지운다). 실패해도 진행한다
             runSuspendCatching { clearSegmentationCacheUseCase() }
 
             val bitmapWrapper = decodeImageUseCase(sourceImageUri).getOrNull()
 
             if (bitmapWrapper == null) {
-                updateState { copy(isLoading = false) }
-                postSideEffect(SegmentationEffect.GoBack)
+                deliver(Outcome.Edit)
                 return@launch
             }
 
@@ -120,67 +104,38 @@ class SegmentationViewModel
             runSuspendCatching { addRecentImageUseCase(source = sourceImageUri, kind = RecentImageKind.SOURCE) }
 
             val originBitmap = (bitmapWrapper as? AndroidBitmap)?.getRawData()
-            originBitmapWrapper = bitmapWrapper
             updateState { copy(originBitmap = originBitmap) }
 
             segmentImageUseCase(bitmapWrapper)
                 .onSuccess { candidates ->
-                    if (candidates.isEmpty()) {
-                        lastFailure = LastFailure.EMPTY
-                        updateState { copy(isError = true) }
-                        return@onSuccess
-                    }
-
-                    lastFailure = null
-                    updateState { copy(candidates = candidates) }
+                    deliver(if (candidates.isEmpty()) Outcome.Edit else Outcome.Select(candidates))
                 }.onFailure { throwable ->
-                    // 화면이 원인을 가르지 않으므로 원인은 여기에만 남는다
                     viewModelLogger.e(throwable) {
                         "세그멘테이션 실패 ${throwable::class.simpleName}, 원인 ${throwable.cause}"
                     }
-                    lastFailure = LastFailure.EXCEPTION
-                    updateState { copy(isError = true) }
+                    deliver(Outcome.Edit)
                 }
-
-            // 실패해도 로딩 오버레이에 갇히지 않도록 성공/실패와 무관하게 해제한다
-            updateState { copy(isLoading = false) }
         }
     }
 
     /**
-     * ⚠️ [LOAD_CANDIDATES_KEY] 를 진입·재시도와 공유한다. 다른 키를 쓰면 연타가 사다리를 겹쳐 돈다.
+     * 그만두기를 확정했으면 버리고, 팝업이 떠 있으면 [DismissQuit][SegmentationIntent.DismissQuit]
+     * 까지 보류한다. 고르는 중에 화면이 바뀌면 사용자의 선택이 무엇에 대한 것인지 모호해진다.
      */
-    private fun recover() {
-        val bitmapWrapper = originBitmapWrapper ?: return loadCandidates()
+    private fun deliver(outcome: Outcome) {
+        if (isQuitConfirmed) return
 
-        launch(
-            key = LOAD_CANDIDATES_KEY,
-            onError = {
-                lastFailure = LastFailure.EXCEPTION
-                updateState { copy(isLoading = false, isError = true) }
-            },
-        ) {
-            // 에러 표시를 안 걷으면 실패 화면 위에 로딩 덮개가 겹친다
-            updateState { copy(isLoading = true, isError = false, candidates = emptyList()) }
+        if (state.value.showQuitDialog) {
+            pendingOutcome = outcome
+            return
+        }
 
-            recoverCandidatesUseCase(bitmapWrapper)
-                .onSuccess { candidates ->
-                    // 끝까지 돌았다. 모듈 문제로 중간에 접히면 여기 오지 않아 다시 돌 기회가 남는다
-                    recoveryAttempted = true
-                    if (candidates.isEmpty()) {
-                        lastFailure = LastFailure.EMPTY
-                        updateState { copy(isError = true) }
-                    } else {
-                        lastFailure = null
-                        updateState { copy(candidates = candidates) }
-                    }
-                }.onFailure { throwable ->
-                    viewModelLogger.e(throwable) { "회복 실패 ${throwable::class.simpleName}" }
-                    lastFailure = LastFailure.EXCEPTION
-                    updateState { copy(isError = true) }
-                }
+        when (outcome) {
+            // 편집으로 갈 때 분석 상태를 먼저 끄면 교체 직전 한 프레임 동안 후보 0개인 선택 UI 가 보인다
+            Outcome.Edit -> postSideEffect(SegmentationEffect.GoToEdit)
 
-            updateState { copy(isLoading = false) }
+            is Outcome.Select ->
+                updateState { copy(candidates = outcome.candidates, isAnalyzing = false) }
         }
     }
 
@@ -193,13 +148,28 @@ class SegmentationViewModel
         when (intent) {
             is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
 
-            SegmentationIntent.Retry ->
-                if (lastFailure == LastFailure.EMPTY && !recoveryAttempted) recover() else loadCandidates()
+            SegmentationIntent.ClickClose -> updateState { copy(showQuitDialog = true) }
 
-            SegmentationIntent.EditManually -> editManually()
+            SegmentationIntent.DismissQuit -> dismissQuit()
 
-            is SegmentationIntent.OnEditResult -> recordEditResult(intent.result)
+            SegmentationIntent.ConfirmQuit -> {
+                if (isQuitConfirmed) return
+
+                isQuitConfirmed = true
+                pendingOutcome = null
+                // 화면이 걷히는 전환 동안 팝업이 캔버스 위에 남지 않게 닫는다
+                updateState { copy(showQuitDialog = false) }
+                postSideEffect(SegmentationEffect.QuitToCanvas)
+            }
         }
+    }
+
+    private fun dismissQuit() {
+        updateState { copy(showQuitDialog = false) }
+
+        val outcome = pendingOutcome ?: return
+        pendingOutcome = null
+        deliver(outcome)
     }
 
     /**
@@ -217,7 +187,7 @@ class SegmentationViewModel
                 postSideEffect(SegmentationEffect.ShowError)
             },
         ) {
-            updateState { copy(isLoading = true) }
+            updateState { copy(isSaving = true) }
 
             persistSubjectUseCase(candidate)
                 .onSuccess { result ->
@@ -251,64 +221,12 @@ class SegmentationViewModel
         }
     }
 
-    /** 초안은 여기서 적지 않고 편집 결과를 받은 뒤에 적는다 */
-    private fun editManually() {
-        val originBitmapWrapper = originBitmapWrapper ?: return
-
-        launch(
-            key = EDIT_MANUALLY_KEY,
-            onError = {
-                releaseLoading()
-                postSideEffect(SegmentationEffect.ShowError)
-            },
-        ) {
-            updateState { copy(isLoading = true) }
-
-            val path = saveBitmapUseCase(originBitmapWrapper).getOrElse {
-                releaseLoading()
-                postSideEffect(SegmentationEffect.ShowError)
-                return@launch
-            }
-
-            releaseLoading()
-            postSideEffect(SegmentationEffect.GoToEdit(originImagePath = path))
-        }
-    }
-
-    private fun recordEditResult(result: ToppingEditResult) {
-        launch(
-            key = EDIT_RESULT_KEY,
-            onError = {
-                releaseLoading()
-                postSideEffect(SegmentationEffect.ShowError)
-            },
-        ) {
-            updateState { copy(isLoading = true) }
-
-            val recorded = recordToppingDraft.recordEditResult(result)
-
-            releaseLoading()
-
-            if (recorded) {
-                postSideEffect(
-                    // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다(`ToppingEditResult` KDoc)
-                    SegmentationEffect.GoToConfirm(
-                        subjectImagePath = result.cutoutImagePath,
-                        trimmedSubjectImagePath = result.subjectImagePath,
-                    ),
-                )
-            } else {
-                postSideEffect(SegmentationEffect.ShowError)
-            }
-        }
-    }
-
     private fun releaseLoading() {
-        updateState { copy(isLoading = false) }
+        updateState { copy(isSaving = false) }
+    }
+
+    private companion object {
+        const val SELECT_CANDIDATE_KEY = "select-candidate"
+        const val LOAD_CANDIDATES_KEY = "load-candidates"
     }
 }
-
-private const val SELECT_CANDIDATE_KEY = "select-candidate"
-private const val LOAD_CANDIDATES_KEY = "loadCandidates"
-private const val EDIT_MANUALLY_KEY = "edit-manually"
-private const val EDIT_RESULT_KEY = "edit-result"

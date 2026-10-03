@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,11 +63,9 @@ import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingResizeHandleButton
-import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingRotateHandleButton
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
-import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingDragInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
+import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
@@ -97,9 +98,7 @@ internal fun CanvasBGEditScreen(
     onDeleteToppingDialogConfirm: () -> Unit,
     onDeleteToppingDialogCancel: () -> Unit,
     onClickEditTopping: () -> Unit,
-    onToppingResize: (Float) -> Unit,
-    onToppingRotate: (Float) -> Unit,
-    onToppingMoveDrag: (deltaX: Float, deltaY: Float) -> Unit,
+    onToppingTransform: (panX: Float, panY: Float, zoom: Float, rotationDelta: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -177,6 +176,7 @@ internal fun CanvasBGEditScreen(
                         val selectedEntry = myEntries.firstOrNull {
                             it.topping.parfaitImageId == uiState.selectedToppingId
                         }
+                        var isToppingGestureActive by remember { mutableStateOf(false) }
 
                         entries.filterNot { it.topping.isMine }.forEach { entry ->
                             CanvasToppingImage(
@@ -210,14 +210,17 @@ internal fun CanvasBGEditScreen(
                                     keyOf = { it.parfaitImageId },
                                     onHit = onClickTopping,
                                     onMiss = onClickDeselectTopping,
-                                ).toppingDragInput(
+                                ).toppingTransformInput(
                                     targetAt = { selectedEntry?.target },
-                                    onDrag = { amount ->
-                                        onToppingMoveDrag(
-                                            amount.x / canvasWidthPx,
-                                            amount.y / canvasHeightPx,
+                                    onTransform = { pan, zoom, rotationDelta ->
+                                        onToppingTransform(
+                                            pan.x / canvasWidthPx,
+                                            pan.y / canvasHeightPx,
+                                            zoom,
+                                            rotationDelta,
                                         )
                                     },
+                                    onGestureActiveChange = { isToppingGestureActive = it },
                                 ),
                         )
 
@@ -228,8 +231,7 @@ internal fun CanvasBGEditScreen(
                                 canvasHeight = canvasHeight,
                                 onClickDelete = onClickDeleteTopping,
                                 onClickEdit = onClickEditTopping,
-                                onResize = onToppingResize,
-                                onRotate = onToppingRotate,
+                                showActionButtons = !isToppingGestureActive,
                             )
                         }
                     }
@@ -558,8 +560,10 @@ private fun CanvasToppingImage(
 }
 
 /**
- * 선택된 토핑의 스트로크와 그 네 모서리에 놓는 버튼들.
- * 좌측 상단=삭제, 우측 상단=회전(드래그 핸들), 좌측 하단=편집, 우측 하단=크기조절(드래그 핸들).
+ * 선택된 토핑의 스트로크와 모서리 버튼(좌측 상단=삭제, 좌측 하단=편집).
+ *
+ * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
+ *   버튼을 빼야 두 번째 손가락을 버튼이 가로채지 않는다.
  */
 @Composable
 private fun ToppingCornerButtons(
@@ -568,8 +572,7 @@ private fun ToppingCornerButtons(
     canvasHeight: Dp,
     onClickDelete: () -> Unit,
     onClickEdit: () -> Unit,
-    onResize: (Float) -> Unit,
-    onRotate: (Float) -> Unit,
+    showActionButtons: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -594,36 +597,22 @@ private fun ToppingCornerButtons(
             sizeAfterScale = sizeAfterScale,
             rotationDegrees = entry.topping.rotationDegrees,
         )
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_close,
-            type = YGCircleButtonType.Small,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_delete),
-            onClick = onClickDelete,
-            modifier = Modifier.centeredAt(buttonPoints.topLeft),
-        )
-        ToppingRotateHandleButton(
-            iconRes = DesignSystemR.drawable.ic_rotate,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_rotate),
-            point = buttonPoints.topRight,
-            center = center,
-            key = entry.topping.parfaitImageId,
-            onRotate = onRotate,
-        )
-        YGCircleButton(
-            iconResource = DesignSystemR.drawable.ic_edit,
-            type = YGCircleButtonType.Small,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_edit),
-            onClick = onClickEdit,
-            modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
-        )
-        ToppingResizeHandleButton(
-            iconRes = DesignSystemR.drawable.ic_scale,
-            contentDescription = stringResource(R.string.canvas_bg_edit_topping_resize),
-            point = buttonPoints.bottomRight,
-            center = center,
-            key = entry.topping.parfaitImageId,
-            onResize = onResize,
-        )
+        if (showActionButtons) {
+            YGCircleButton(
+                iconResource = DesignSystemR.drawable.ic_close,
+                type = YGCircleButtonType.Small,
+                contentDescription = stringResource(R.string.canvas_bg_edit_topping_delete),
+                onClick = onClickDelete,
+                modifier = Modifier.centeredAt(buttonPoints.topLeft),
+            )
+            YGCircleButton(
+                iconResource = DesignSystemR.drawable.ic_edit,
+                type = YGCircleButtonType.Small,
+                contentDescription = stringResource(R.string.canvas_bg_edit_topping_edit),
+                onClick = onClickEdit,
+                modifier = Modifier.centeredAt(buttonPoints.bottomLeft),
+            )
+        }
     }
 }
 
@@ -673,9 +662,7 @@ private fun PreviewCanvasBGEditScreenBackgroundTab() = PreviewBox {
         onDeleteToppingDialogConfirm = {},
         onDeleteToppingDialogCancel = {},
         onClickEditTopping = {},
-        onToppingResize = {},
-        onToppingRotate = {},
-        onToppingMoveDrag = { _, _ -> },
+        onToppingTransform = { _, _, _, _ -> },
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -703,9 +690,7 @@ private fun PreviewCanvasBGEditScreenToppingTab() = PreviewBox {
         onDeleteToppingDialogConfirm = {},
         onDeleteToppingDialogCancel = {},
         onClickEditTopping = {},
-        onToppingResize = {},
-        onToppingRotate = {},
-        onToppingMoveDrag = { _, _ -> },
+        onToppingTransform = { _, _, _, _ -> },
         modifier = Modifier.fillMaxSize(),
     )
 }

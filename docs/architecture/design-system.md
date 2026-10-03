@@ -239,23 +239,16 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 > ⚠️ **그 대가로 두 화면에는 호스트가 둘이 됐다** — Route가 `toastPolicy`를 넘기지 않으므로
 > 스캐폴드는 **자기 기본 정책으로 호스트를 하나 더 만들고**, 그 호스트에는 아무도 발행할 수 없다.
 > 스캐폴드에 호스트를 끄는 수단이 없다 → [open-questions](../synthesis/open-questions.md) OQ-P-312.
-> 이로써 이 저장소의 화면 고유 로딩 화면은 **0개**다(OQ-P-205 ①③ 해소). **`isLoading`을 켜는 기준의
+> 이 라운드 끝에는 화면 고유 로딩 화면이 0개였다(OQ-P-205 ①③ 해소) — 현재는 아래 📌처럼 하나다. **`isLoading`을 켜는 기준의
 > 반례이기도 하다** — 세그멘테이션은 온디바이스 추론이라 네트워크 왕복이 아닌데 오버레이를 켠다.
 > 아래 "네트워크 왕복인가"는 그래서 **"사용자가 기다려야 하는 비동기 작업인가"**로 읽는 편이 맞고,
 > 규약 승격 여부는 여전히 OQ-P-205 ②다.
 >
-> 🔁 **둘 중 실패 화면만 이틀 만에 되돌아왔다(2026-08-24, PR #342 develop 머지)** —
-> `SegmentationErrorScreen`이 다시 생겼다. 뒤집힌 근거는 판단이 아니라 **디자인이 나온 것**이다
-> (Figma `C-103-Error`: 닫기만 있는 상단 바 + 경고 아이콘 + 문구 두 줄). #311이 삭제할 때의
-> 이유가 "그 화면이 위키가 정의한 실패 처리를 담은 적이 없다"였는데, 담을 것이 생겼다.
-> **토스트가 통째로 대체되지는 않았다** — 실패를 둘로 가른다: 대상을 아예 못 얻어 화면에서 할 수
-> 있는 것이 없으면 **화면**(`SegmentationState.isError`, 1회성 효과가 아니라 상태여야 재구성에서
-> 살아남는다), 고른 뒤의 저장 실패는 후보 목록이 살아 있으므로 **토스트**다.
-> **로딩 화면 0개는 그대로다**(되살아난 것은 실패 화면뿐이고 `isLoading`은 계속 `YGScaffoldV2`가
-> 받는다). ⚠️ 재시도·원본 사용 버튼은 디자인에 없어 넣지 않았고, 위키 [[누끼-따기]]
-> (link) 정책과
-> 갈리는 그 자리는 OQ-P-153 ④로 남았다 →
-> [c103-multi-subject-selection 스펙](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md).
+> 📌 **현재: 화면 고유 로딩 화면이 하나 있다.** `SegmentationLoadingScreen`(C-101-Loading)이 분석 중 화면 전체를
+> 차지한다 — 흰 배경, 우상단 X, 가운데 `YGLoadingLottie(YGLoadingArt.Dark)`, 제목·부제. 딤 오버레이(`isLoading`)를
+> 쓰지 않는다. `Dark`인 이유는 에셋 색이다(반투명 검정 원 위 회색 점 셋이라 흰 배경에서만 보이고, `Light`는 흰 점이라 안 보인다).
+> 후보를 고른 뒤 저장하는 동안만 `YGScaffoldV2(isLoading = state.isSaving)` 오버레이를 쓴다.
+> 세그멘테이션 실패 표현은 별도 화면이 아니라 편집 화면으로의 이동이다(→ [navigation-flow](navigation-flow.md)).
 >
 > 📌 **오버레이가 조회 화면으로 넘어왔다(2026-08-30, PR #407 develop 머지)** — 그때까지 `isLoading`을
 > 켜던 자리는 사용자가 **누른** 작업(로그인·가입·세그멘테이션·그룹 생성·참여)이었는데, G-001 그룹
@@ -377,13 +370,9 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 - **화면 적용(#218 develop 머지, 2026-08-11)**: A-002 로그인이 실물화되면서 `KakaoSignInButton`이 `RoundedCornerShape` 리터럴 → `YGTheme.shapes.radius.none`, 리터럴 dp 패딩 → `YGTheme.layout.padding.*`, 라벨 타이포 → `YGTheme.typography.body.b01SB`로 토큰화됐다. 다만 **버튼 자체는 DS 컴포넌트가 아니라 feature 로컬 Material3 `Button`**이고(외부 로그인 가이드 색을 따라야 해서 `YGButton` 변형에 안 맞는다), 주입한 `ButtonColors.contentColor`는 내부 `Text`가 색을 명시해 死필드다. 같은 화면 `PagerIndicator`의 활성/비활성 색은 여전히 리터럴이다 → [a002-login-onboarding 스펙](../superpowers/specs/archive/2026-08-11-a002-login-onboarding.md).
 - **버튼 신설 5종**(#183, `ygcirclebutton`·`ygeditbutton`·`ygedittabbutton`·`ygeditactionbutton`·`ygcamerashutter`): `YGCircleButton`만 변형 타입(`YGCircleButtonType`)이 색·아이콘 크기·tint·`paintsOuterCircle`을 들고(단 `@Immutable` + 평범한 `val`이라 `YGButtonType`의 `@get:Composable` 패턴과 갈린다), 나머지 4종은 컴포저블 본문 상태 분기다. Colors data class는 5종 모두 미분리 — 규약과 갈리는 판단(→ [open-questions](../synthesis/open-questions.md)). 선택형(`YGEditButton`·`YGEditTabButton`)은 `selectable`(`Role.Button`/`Role.Tab`), 나머지는 `clickable(indication = null)` + `role = Role.Button`. 밑줄 폭은 `width(IntrinsicSize.Max)`로 텍스트에 묶는다.
   - 📌 **첫 실화면 소비처(2026-08-14, PR #221)** — C-104/C-105 편집 화면이 `YGEditButton` 2개(모드 전환)·`YGEditActionButton` 2개(되돌리기/다시실행)를 쓰고, `YGEditTabButton`은 `YGFloatingBarEditTab`을 통해 간접 소비된다. `YGCircleButton`·`YGCameraShutter`(#182)에 이어 신설 5종이 전부 실화면에 닿았다.
-  - 📌 **`YGCircleButton`이 "버튼 아닌 손잡이"로도 쓰이기 시작했다(#264 develop 머지, 2026-08-16)** — C-301 토핑 탭의 모서리 4개 중 둘(크기조절·회전)이 `onClick = {}` 빈 람다에 `Modifier.dragBy`를 덧대 **드래그 핸들**로 쓴다. 컴포넌트는 여전히 `role = Role.Button`이라 스크린리더에는 눌리는 버튼으로 읽히고 눌러도 아무 일이 없다 — 조작 종류(탭 vs 드래그)를 표현할 API가 없다는 뜻이다 → [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md). 나머지 둘(삭제·편집)은 평범한 소비이고 `ic_edit`·`ic_scale` 아이콘 2종이 이때 신설됐다.
-    - 📌 **핸들 관용구가 화면 밖으로 나왔다(#290 develop 머지, 2026-08-19)** — 같은 조합을 감싼
-      `ToppingDragHandleButton`이 `feature/groups/canvas/impl`의 `component/` 패키지로 올라가
-      C-301 편집 탭과 C-106 배치 화면이 공유한다(제스처 추적 키가 `toppingId: Long` → `key: Any?`로
-      일반화돼, 대상이 하나뿐인 화면은 `Unit`을 넘긴다). **디자인시스템이 아니라 feature 로컬 공유**라
-      "조작 종류를 표현할 API가 없다"는 문제는 그대로이고, 이제 **두 화면**에 퍼졌다 →
-      [open-questions](../synthesis/open-questions.md) OQ-P-202 ③.
+  - `YGCircleButton`은 편집 탭·배치 화면 모두에서 버튼(삭제·편집)으로만 쓰인다. 이동·회전·확대는
+    `toppingTransformInput` 제스처가 맡고(한 손가락은 이동만), 접근성 대체 수단은 없다 →
+    [open-questions](../synthesis/open-questions.md) OQ-P-202 ③.
 - **캔버스 5종 + 컷 도형**(#185, `ygcanvas`·`ygcanvasmenu`·`ygcanvasdateselect`·`ygstrokebutton`·`ygmenuitem` + `shape/`): `YGCanvas`가 배경(`YGCanvasBackground` sealed — `Solid`/`Image`+Coil)·토핑 `BoxScope` 슬롯·날짜바·메뉴·Dim을 합성한다. Figma 5상태를 단일 enum이 아니라 **직교 불리언 플래그**(`isDimmed`·`isMenuExpanded`·`isEmpty`·`isCalendarVisible`)로 표현하고, 값 파라미터는 내용만 든다(모순 조합 방지는 호출자 책임). Dim은 항상 최상단에서 아래 레이어 터치를 **소비**하고 확장 메뉴·캘린더만 그 위로 승격하며, 승격 시 `Spacer(Size44)`로 총높이를 유지한다. 좌상단 컷 실루엣은 배경·날짜바·Dim이 공유하므로 `shape/canvasCutCornerShape()`로 분리했다(`border/`와 같은 "컴포넌트 아닌 그리기 프리미티브" 층위). 높이 44는 패딩 도출 대신 `SizeTokens.Size44` 고정. **첫 소비 화면(#199 develop 머지, 2026-08-11)** — C-001이 임시 `Button` 2개를 걷어내고 이 5종을 쓰면서 세 가지가 바뀌었다. ① `YGCanvas`가 **반응형 배치를 흡수**했다(`BoxWithConstraints` + private `calculateCanvasLayoutMetrics` — 좌우 패딩·상하 최소 gap·세로 중앙·세로 부족 시 축소가 컴포넌트 안으로 들어와 전제가 `fillMaxWidth`에서 `fillMaxSize`로 바뀌었다. 위키 [[캔버스-반응형-레이아웃]]의 크기·위치 우선순위를 컴포넌트가 구현한다). ② Dim 탭 닫기가 **컴포넌트 API로** 열렸다(`onDimClick`, 구현은 소비 전용 `pointerInput` → `clickable(indication = null)`이라 터치 소비는 유지) → [2026-08-01 항목](../synthesis/open-questions.md) ① 해소. ③ 인접 테두리를 `spacedBy(-1.dp)`로 겹쳐 접합선이 2dp에서 1dp가 됐다(스펙이 "그대로 둔다"고 적었던 것을 뒤집음). 화면 배경 점 격자는 `YGCanvas` 밖 `Modifier.ygBackgroundDotGrid()`로 신설됐다 → [c001-canvas-main 스펙](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md). **두 번째 캔버스 화면은 컴포넌트를 안 썼다(#231 develop 머지, 2026-08-15)** — C-301 배경 편집의 미리보기는 `YGCanvas`가 아니라 화면 로컬 `Box` + `aspectRatio` + `border`다. 그래서 컷 도형·Dot Grid·메뉴가 빠지고 좌우 여백이 `padding7`(20)이 아닌 21dp 리터럴이며, 캔버스 비율도 컴포넌트 private 상수가 아니라 `domain`에 새로 만든 `CANVAS_ASPECT_RATIO`를 쓴다. 🔁 **비율 상수는 하나로 모였다**(#334 develop 머지, 2026-08-22) — `domain` 쪽을 지우고 `YGCanvas`의 상수를 public으로 올려 이 미리보기도 그것을 참조한다. 미리보기가 `YGCanvas`를 안 쓰는 것 자체는 그대로다(OQ-P-174). `YGCanvasBackground`(`Solid`/`Image`)는 그 화면의 **이펙트 payload로만** 소비되고 실제 `YGCanvas`에는 여전히 안 넘어간다 → [c301 스펙](../superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md). **`calendarContent` 슬롯이 처음 채워졌다(#259 develop 머지, 2026-08-16)** — C-001이 `isCalendarVisible`을 켜고 화면 로컬 `CustomCalendar`를 넣는다. 이로써 `YGCanvas`의 직교 플래그 넷이 전부 실사용되고, Dim이 **메뉴와 캘린더 양쪽의 스크림을 겸한다**(`isDimmed = isMenuExpanded || isCalendarVisible`, `onDimClick`이 둘 다 닫는다). `YGCanvasBackground.Image` 렌더만 여전히 미검증이다 → [c201 스펙](../superpowers/specs/archive/2026-08-16-c201-canvas-calendar.md). **`background`·토핑 `content` 슬롯이 처음 채워졌다(#268 develop 머지, 2026-08-17)** — C-001이 캔버스 응답의 배경을 `YGCanvasBackground`로 옮겨 넘기고(`Solid`/`Image` 둘 다 실경로가 생겼다), `content`에 화면 로컬 `CanvasToppingLayer`를 넣는다. `isEmpty`도 상수에서 토핑 목록 파생이 됐다. 🔁 **컴포넌트가 배경 폴백을 갖지 않는다는 사실이 여기서 드러났다** — 미설정·미지 type·색 파싱 실패 셋을 화면이 각각 판정해 `Solid(Gray100)`(= 컴포넌트 기본값과 같은 값)으로 떨어뜨리므로 **기본값이 화면 쪽에 복제됐다**(이 복제는 #351이 걷었다, 아래 참고). 토핑 레이어는 자기 상자를 `fillMaxSize`로 정하지 않고 **호출자에게서 받는다**(배치가 받은 상자에 대한 비율이라 상자를 컴포넌트가 정하면 안 된다) — `YGCanvas`가 배치를 흡수한 것과 반대 방향의 선택이다 → [c001-canvas-today-detail 스펙](../superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md). **다섯 번째 슬롯 `overlayContent`가 생겼다(#298 develop 머지, 2026-08-20)** — 캔버스 본체 `Box`의 **형제**라 Dim·확장 메뉴·달력보다 위에 그려지고, 상단은 캔버스 위 여백에 맞추되 **폭은 캔버스가 아니라 화면 기준**이다. C-001이 여기에 `YGToastHost`를 꽂아 Spotlight 작성자 토스트를 띄우고, 그 결정이 이 화면의 다른 토스트 자리까지 정했다(스캐폴드가 아니라 이 호스트, OQ-P-167) → [c202-canvas-spotlight 스펙](../superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md). **달력 슬롯은 탭을 스스로 삼킨다(#319, 2026-08-20)** — 달력은 Dim 위에 겹쳐 있을 뿐이라 항목 사이 여백을 누르면 뒤의 Dim이 받아 달력이 닫혔다. 막는 자리를 슬롯 주입자가 아니라 **컴포넌트 쪽 `pointerInput`**에 둬서 `calendarContent`에 무엇이 들어와도 같은 규칙이 걸린다. **배경 폴백이 컴포넌트로 내려왔다(#351 develop 머지, 2026-08-25)** — `background`가 **nullable**이 되고 기본값이 `Solid(Gray100)`에서 `null`로 바뀌었다. `null`이면 컴포넌트가 **흰 바탕**을 깔고, 화면 쪽 `DEFAULT_CANVAS_BACKGROUND` 복제는 사라져 C-001은 미설정·미지 type·색 파싱 실패 셋을 전부 `null`로 넘긴다. 함께 **빈 안내판의 조건이 좁아졌다** — `isEmpty`만이 아니라 `isEmpty && background == null`일 때만 뜨고, 그때는 문구만 얹는 대신 `Gray100` **판**이 배경 자리를 통째로 덮는다(배경을 고른 캔버스는 토핑이 0개여도 고른 배경이 그대로 보인다). 직교 플래그 하나가 다른 파라미터와 얽힌 첫 사례라 "값 파라미터는 내용만 든다"는 이 컴포넌트의 원칙에서 한 칸 벗어나 있고, 노출 조건 자체는 정책 근거가 없다 → OQ-P-304. 이 규칙을 잠그는 계측 테스트 2건(`YGCanvasTest`)이 함께 들어왔으나 **CI는 계측을 컴파일만 한다**(OQ-P-102 ②).
   - 📌 **배경이 자기 로딩 상태를 밖으로 알린다(#440 develop 머지, 2026-09-04)** — `YGCanvas`에
     `reloadKey`·`onBackgroundStateChange`가 붙고 새 enum `YGCanvasBackgroundState`(`Loading`/`Loaded`/

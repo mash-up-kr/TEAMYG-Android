@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
@@ -19,6 +18,9 @@ import kotlin.math.sqrt
  * 돌아온 캔버스에서 달라진다.
  */
 const val TOPPING_BASE_LONG_SIDE_RATIO = 0.4f
+
+/** 서버 scale 단위의 하한. 앱이 정한 값이고 서버는 검증하지 않는다. 상한은 없다 */
+const val TOPPING_MIN_SCALE = 0.05f
 
 fun toppingLongSide(
     canvasWidth: Dp,
@@ -100,42 +102,6 @@ fun computeToppingButtonPoints(
     val pushedHalfWidth = halfWidth + push * (halfWidth / diagonalLength)
     val pushedHalfHeight = halfHeight + push * (halfHeight / diagonalLength)
     return rotatedRectangleCorners(center, pushedHalfWidth, pushedHalfHeight, rotationDegrees)
-}
-
-/**
- * 크기조절 핸들을 [dragDelta]만큼 끌었을 때 배율에 곱할 값. [handleVector]는 토핑 중심에서 그
- * 핸들까지의 벡터이며, 둘은 같은 단위이어야 한다.
- *
- * 배율에 고정량을 더하면 같은 손동작이 원본이 큰 사진에서 훨씬 크게 먹는다(#383).
- */
-fun resizeScaleFactor(
-    handleVector: Offset,
-    dragDelta: Offset,
-): Float {
-    val radiusSquared = handleVector.getDistanceSquared()
-    if (radiusSquared <= 0f) return 1f
-
-    val radialComponent = handleVector.x * dragDelta.x + handleVector.y * dragDelta.y
-    // 한 번에 중심 너머까지 끌면 음수가 된다 — 뒤집힌 토핑 대신 0에서 멈춘다
-    return (1f + radialComponent / radiusSquared).coerceAtLeast(0f)
-}
-
-/**
- * 회전 핸들을 [dragDelta]만큼 끌었을 때 늘어나는 각도. [handleVector]는 토핑 중심에서 그 핸들까지의
- * 벡터이며, 둘은 같은 단위이어야 한다.
- *
- * 드래그의 가로 성분만 보면 핸들이 놓인 모서리에 따라 회전 방향이 뒤집힌다(#383).
- */
-fun rotationDeltaDegrees(
-    handleVector: Offset,
-    dragDelta: Offset,
-): Float {
-    val radiusSquared = handleVector.getDistanceSquared()
-    if (radiusSquared <= 0f) return 0f
-
-    // 화면 좌표계(y 아래)에서 시계방향 접선은 (-y, x) 이고, 그 방향 성분을 반지름으로 나누면 라디안이다
-    val tangentComponent = handleVector.x * dragDelta.y - handleVector.y * dragDelta.x
-    return Math.toDegrees((tangentComponent / radiusSquared).toDouble()).toFloat()
 }
 
 /** [center]를 기준으로 반너비 [halfWidth], 반높이 [halfHeight]인 사각형을 [rotationDegrees]만큼(시계방향) 돌린 네 꼭짓점. */

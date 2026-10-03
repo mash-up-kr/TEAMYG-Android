@@ -48,6 +48,7 @@ fun YGCanvasMenu(
                     onClick = addAction.onClick,
                     iconResource = addAction.iconResource,
                     isEnabled = addAction.isEnabled,
+                    isBorderKeptWhenDisabled = true,
                     modifier = Modifier.weight(1f),
                 )
                 YGStrokeButton(
@@ -55,6 +56,7 @@ fun YGCanvasMenu(
                     onClick = editAction.onClick,
                     iconResource = editAction.iconResource,
                     isEnabled = editAction.isEnabled,
+                    isBorderKeptWhenDisabled = true,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -64,6 +66,7 @@ fun YGCanvasMenu(
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
                 isEnabled = editAction.isEnabled,
+                isBorderKeptWhenDisabled = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

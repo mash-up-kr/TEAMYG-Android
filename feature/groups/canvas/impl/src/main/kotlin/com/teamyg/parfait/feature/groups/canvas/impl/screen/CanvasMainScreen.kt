@@ -149,6 +149,7 @@ internal fun CanvasMainScreen(
                     text = stringResource(R.string.canvas_main_canvas_edit),
                     iconResource = DesignSystemR.drawable.ic_caret_right,
                     onClick = onClickEditCanvasBG,
+                    isEnabled = !isMenuExpanded,
                 )
             } else {
                 YGCanvasMenuAction(

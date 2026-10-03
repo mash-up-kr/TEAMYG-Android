@@ -563,7 +563,7 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
 
 `:data`·`:domain`에 API 표면이 구현됐다([spec](../superpowers/specs/archive/2026-08-03-data-api-service-layer.md)) —
 **2026-08-06 PR #197로 develop 머지 완료**다. 이 표면이 딛고 선 공용 인프라(`ApiCaller` 4진입점·
-`ApiResponse` envelope·`@NoAuth`·`TokenStoreTokenProvider`)는 PR #190으로 먼저 들어왔고, 아래
+`ApiResponse` envelope·`@NoAuth`·`TokenProviderImpl`)는 PR #190으로 먼저 들어왔고, 아래
 Service·DataSource·DTO·VO가 이번에 그 위에 올라갔다.
 **2026-08-15 — Repository 경계가 먼저 들어왔다**(PR #241 `80895eb1`). `ParfaitGroupRepository`/
 `ParfaitGroupRepositoryImpl`이 DataSource 8개 중 **5개**를 도메인에 올린다 —

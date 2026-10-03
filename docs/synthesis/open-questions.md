@@ -13,7 +13,7 @@ tags: [meta, parfait]
 ---
 # Open Questions — 구현 미결·열린 결정
 
-TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
+TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 정합 이슈를 추적한다.
 정책 기획 쪽 미결은 위키 [[open-questions]]에 있다. 여기는 **코드·ADR·architecture 소관**만 둔다.
 해소된 항목은 상태를 "해소됨"으로 바꾸고 관련 ADR/architecture 문서에 반영한다.
 
@@ -101,6 +101,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 실패해도 원본 사진이 그대로 남아 사용자가 뒤로 가 다른 사진을 고를 수 있다. 즉 **재시도가 없다는
   > 사실은 그대로이되, 없는 재시도를 기다리는 화면이 사라졌다.** 재시도 버튼이 생기면 이 결정을
   > 되돌려야 한다 — `ModuleNotReady`는 여전히 "잠시 후 다시"라고 안내하면서 다시 시도할 수단이 없다.
+  > 🔁 **현재(2026-09-30, C-101-Loading)**: 실패를 받는 화면도 재시도도 없다. 분석이 실패하면 곧장 편집 화면으로 가므로
+  > ①의 "재시도 동선"은 다시 없는 채로 굳었고, `ModuleNotReady`도 같은 편집 화면으로 떨어진다.
 - **해소 메모**: 정식(GA) 승급 시 버전 고정·문서 갱신. ③ 캐시 정리는 위에서 해소됨 —
   [ADR-0012](../adr/0012-mlkit-subject-segmentation.md) As-built 절에 반영 완료. ①(재시도 동선)은
   실행을 `init`에서 꺼내는 구조 변경과 재시도 버튼 디자인이 확정돼야 다룰 수 있고, 이제는
@@ -607,7 +609,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **출처**: Android `EmptyTokenProvider`(항상 null 반환) vs 서버 `SecurityConfig` 화이트리스트(`/actuator/health`·`/swagger-ui.html`·`/swagger-ui/**`·`/favicon.ico`·`/v3/api-docs/**`·`/api/v1/auth/kakao`·`/api/v1/auth/signup`·`/api/v1/auth/reissue`, [api/conventions.md](../api/conventions.md) "인증").
 - **항목**: 실 `TokenProvider` 구현 시점·토큰 저장 방식(DataStore 등) 확정.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지) — 단 **동작 확인은 아님**
-- **해소 메모**: `EmptyTokenProvider`가 삭제되고 `TokenStoreTokenProvider`(→`TokenStore`→`EncryptedTokenStore`, [ADR-0019](../adr/0019-encrypted-token-storage.md))가 들어왔다. [ADR-0017](../adr/0017-remote-network-datasource.md)·[data-layer](../architecture/data-layer.md) 갱신 + [api/conventions.md](../api/conventions.md) 표에서 제거. **저장소가 실제로 토큰을 돌려주는지는 미확인**이다 — `TokenStore.save()` 호출부가 develop에 0건이라 저장된 토큰 자체가 없다(아래 "실기기 암복호화 왕복 검증이 수행 불가" 항목).
+- **해소 메모**: `EmptyTokenProvider`가 삭제되고 `TokenProviderImpl`(→`TokenLocalDataSource`→`TokenLocalDataSourceImpl`, [ADR-0019](../adr/0019-encrypted-token-storage.md))가 들어왔다. [ADR-0017](../adr/0017-remote-network-datasource.md)·[data-layer](../architecture/data-layer.md) 갱신 + [api/conventions.md](../api/conventions.md) 표에서 제거. **저장소가 실제로 토큰을 돌려주는지는 미확인**이다 — `TokenLocalDataSource.save()` 호출부가 develop에 0건이라 저장된 토큰 자체가 없다(아래 "실기기 암복호화 왕복 검증이 수행 불가" 항목).
 
 ### [2026-08-02] 서버 URL 규약 3형태 혼재
 - **ID**: OQ-P-060
@@ -691,7 +693,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 키 유실(Keystore 무효화) 경로 미검증
 - **ID**: OQ-P-070
-- **출처**: [ADR-0019](../adr/0019-encrypted-token-storage.md) "키 유실 시 정책" — 기기 복원·잠금 화면 자격증명 변경 등으로 Keystore 키가 무효화되면 `CryptoManager.decrypt`가 예외를 던지고 `EncryptedTokenStore.read()`가 이를 잡아 `clear()` 후 `null`을 반환하도록 설계됐다. 코드베이스에 `test`/`androidTest`가 없고 Android Keystore는 JVM 유닛 테스트에서 동작하지 않아 이 경로를 재현·검증하지 못했다.
+- **출처**: [ADR-0019](../adr/0019-encrypted-token-storage.md) "키 유실 시 정책" — 기기 복원·잠금 화면 자격증명 변경 등으로 Keystore 키가 무효화되면 `CryptoManager.decrypt`가 예외를 던지고 `TokenLocalDataSourceImpl.read()`가 이를 잡아 `clear()` 후 `null`을 반환하도록 설계됐다. 코드베이스에 `test`/`androidTest`가 없고 Android Keystore는 JVM 유닛 테스트에서 동작하지 않아 이 경로를 재현·검증하지 못했다.
 - **항목**: 키 유실을 실기기에서 재현(기기 복원 또는 잠금 자격증명 변경)해 `clear()` 분기가 실제로 타는지, 앱이 정상적으로 "토큰 없음" 상태로 전환되는지 확인.
 - **상태**: 미해결 (재현 수단 없음)
   > 📌 **as-built 범위 확대(2026-08-04, PR #190 머지본)** — `read()`의 `runCatching`이 복호화뿐 아니라 **DataStore 읽기까지** 감싼다. 즉 일시적 저장소 I/O 실패도 같은 경로로 떨어져 토큰이 삭제된다 — 재현해야 할 경우의 수가 하나 늘었다.
@@ -700,17 +702,17 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 인터셉터 `runBlocking`이 코드리뷰를 통과할지 미확정
 - **ID**: OQ-P-071
-- **출처**: `AuthInterceptor` → `TokenStoreTokenProvider.getToken()`이 `runBlocking { tokenStore.getAccessToken() }`으로 suspend 경계를 넘는다([ADR-0019](../adr/0019-encrypted-token-storage.md) "결정", [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "`runBlocking` 사용 근거"). OkHttp dispatcher 스레드에서 실행돼 메인 스레드는 막지 않는다는 근거로 채택했으나, 코루틴 규율(구조화된 동시성) 이탈이라는 지적이 나올 수 있다.
+- **출처**: `AuthInterceptor` → `TokenProviderImpl.getToken()`이 `runBlocking { tokenLocalDataSource.getAccessToken() }`으로 suspend 경계를 넘는다([ADR-0019](../adr/0019-encrypted-token-storage.md) "결정", [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "`runBlocking` 사용 근거"). OkHttp dispatcher 스레드에서 실행돼 메인 스레드는 막지 않는다는 근거로 채택했으나, 코루틴 규율(구조화된 동시성) 이탈이라는 지적이 나올 수 있다.
 - **항목**: 코드리뷰에서 `runBlocking` 사용이 반려될지 확정. 반려되면 메모리 캐시(StateFlow) + 동기 읽기 방식으로 전환하고, 앱 시작 직후 캐시가 비어 있는 창(window)에서 첫 요청이 토큰 없이 나가는 타이밍 문제를 별도로 설계해야 한다.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지 — 반려되지 않음)
-- **해소 메모**: 리뷰 반영 커밋은 `AuthInterceptor`의 early return만 걷어냈고 `TokenStoreTokenProvider`의 `runBlocking`은 무수정으로 머지됐다. 메모리 캐시 전환은 불필요해졌다. 단 **런타임에 이 경로가 돌아간 적은 없다**(토큰 저장분 0건) — 실제 지연·ANR 관측은 로그인 연동 라운드 몫이다.
+- **해소 메모**: 리뷰 반영 커밋은 `AuthInterceptor`의 early return만 걷어냈고 `TokenProviderImpl`의 `runBlocking`은 무수정으로 머지됐다. 메모리 캐시 전환은 불필요해졌다. 단 **런타임에 이 경로가 돌아간 적은 없다**(토큰 저장분 0건) — 실제 지연·ANR 관측은 로그인 연동 라운드 몫이다.
 
 ### [2026-08-02] 실기기 암복호화 왕복 검증이 수행 불가
 - **ID**: OQ-P-072
-- **출처**: [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" — 저장 → 앱 완전 종료 → 재시작 → 읽기를 사람이 육안 확인하면 된다고 봤으나, `TokenStore.save()` 호출부가 코드베이스에 **0건**이라 저장을 트리거할 방법 자체가 없다(auth 도메인 Service·RemoteDataSource·Repository 구현이 이 라운드 범위 밖).
-- **항목**: 로그인이 실제로 붙어 `TokenStoreTokenProvider`/`EncryptedTokenStore.save()`가 호출되는 다음 라운드에서 저장 → 종료 → 재시작 → 읽기 왕복을 실기기로 확인한다(DataStore 파일에 평문이 없는지 포함).
+- **출처**: [specs/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" — 저장 → 앱 완전 종료 → 재시작 → 읽기를 사람이 육안 확인하면 된다고 봤으나, `TokenLocalDataSource.save()` 호출부가 코드베이스에 **0건**이라 저장을 트리거할 방법 자체가 없다(auth 도메인 Service·RemoteDataSource·Repository 구현이 이 라운드 범위 밖).
+- **항목**: 로그인이 실제로 붙어 `TokenProviderImpl`/`TokenLocalDataSourceImpl.save()`가 호출되는 다음 라운드에서 저장 → 종료 → 재시작 → 읽기 왕복을 실기기로 확인한다(DataStore 파일에 평문이 없는지 포함).
 - **상태**: 미해결 (로그인 연동 라운드로 이월)
-  > 📌 **코드가 develop에 머지됐어도 상태 불변(2026-08-04, PR #190)** — 저장 경로 전체가 develop에 들어왔지만 `TokenStore.save()` 호출부는 여전히 0건이다. 머지가 검증을 대신하지 않는다.
+  > 📌 **코드가 develop에 머지됐어도 상태 불변(2026-08-04, PR #190)** — 저장 경로 전체가 develop에 들어왔지만 `TokenLocalDataSource.save()` 호출부는 여전히 0건이다. 머지가 검증을 대신하지 않는다.
   > 📌 **로그인 화면이 다음 단계로 이어져도 상태 불변(2026-08-09, PR #220)** — 카카오 토큰은 `LoginState`에만 담기고 저장 호출은 여전히 0건이다 → [2026-08-10] 온보딩 체인 항목.
   > 📌 **저장 호출부는 생겼는데 검증은 그대로다(2026-08-16, PR #263)** — 로그인 결선(#241) 이후 저장이 실제로 일어나고, 같은 프록시(`EncryptedPreferences`)로 **계정 정보까지 암호화 저장**돼 확인 대상이 둘이 됐다(DataStore 파일에 닉네임·`memberId` 평문이 없는지 포함). 그런데 자동로그인 라운드의 **수동 확인 7항목이 미수행**이라 저장 → 종료 → 재시작 왕복은 여전히 사람이 본 적이 없다.
 - **해소 메모**: 로그인 연동 라운드에서 확인 후 [ADR-0019](../adr/0019-encrypted-token-storage.md)와 [specs/archive/2026-08-02-network-envelope-token-storage.md](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) "검증" 절을 갱신한다.
@@ -754,7 +756,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-02] 개발 서버가 평문 HTTP — 앱에서 전 요청이 cleartext 차단된다
 - **ID**: OQ-P-076
-- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TJYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
+- **출처**: 개발 서버 base URL이 `https`가 아니라 평문 `http`다(주소는 private submodule `project-paths.md` 참고). TEAMYG-Android는 `targetSdk = 36`이고 `AndroidManifest.xml`에 `usesCleartextTraffic`·`networkSecurityConfig`가 **둘 다 없다** → [api/conventions.md](../api/conventions.md) "직렬화 규약".
 - **항목**: Android 9(API 28)부터 평문 HTTP는 기본 차단이라, 실제 연동을 시작하면 **모든 요청이 `CLEARTEXT communication not permitted`로 실패**한다. 서버에 HTTPS를 적용할지(권장), 아니면 debug 빌드 한정으로 `network_security_config.xml`에 해당 호스트만 허용할지 결정한다. 후자는 release 빌드가 HTTPS 전환 전까지 동작하지 않는다는 뜻이므로 서버 일정과 묶인다.
 - **상태**: **해소됨** (2026-08-25, PR #358 — 서버가 ①을 채택하고 앱 매니페스트 조치가 같은 날 들어왔다)
   > 📌 **2026-08-14** — A-002 로그인 실기기 검증을 막고 있어 `app/src/main/AndroidManifest.xml`에
@@ -924,7 +926,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 ### [2026-08-04] `AuthInterceptor`의 `@NoAuth` 스킵 방식이 브랜치별로 갈렸다 — 토큰 조회 생략 여부
 - **ID**: OQ-P-091
-- **출처**: `data/.../network/AuthInterceptor.kt`. 두 형태가 공존한다. ① **`origin/feature/sync-api-service`·`origin/feature/set-up-backend-api` 커밋본** — `skipAuth`면 `chain.proceed(originalRequest)`로 **early return**해 `tokenProvider.getToken()` 호출 자체를 하지 않는다. ② **`feature/set-up-backend-api` 로컬 작업 트리(미커밋)** — early return을 없애고 헤더 부착 조건만 `token != null && skipAuth.not()`으로 바꿔, `skipAuth`여도 `getToken()`을 **항상 호출**한다. **헤더 부착 결과는 네 경우 모두 동일**하다(토큰 있음+`skipAuth`에도 헤더가 붙지 않는다) — 갈리는 것은 비용뿐이다. ②는 화이트리스트 경로(`postAuthKakao`·`postAuthSignup`·`postAuthReissue`·`getPolicies`) 요청마다 `TokenStoreTokenProvider`의 `runBlocking` + DataStore 읽기 + Keystore 복호화를 유발한다.
+- **출처**: `data/.../network/AuthInterceptor.kt`. 두 형태가 공존한다. ① **`origin/feature/sync-api-service`·`origin/feature/set-up-backend-api` 커밋본** — `skipAuth`면 `chain.proceed(originalRequest)`로 **early return**해 `tokenProvider.getToken()` 호출 자체를 하지 않는다. ② **`feature/set-up-backend-api` 로컬 작업 트리(미커밋)** — early return을 없애고 헤더 부착 조건만 `token != null && skipAuth.not()`으로 바꿔, `skipAuth`여도 `getToken()`을 **항상 호출**한다. **헤더 부착 결과는 네 경우 모두 동일**하다(토큰 있음+`skipAuth`에도 헤더가 붙지 않는다) — 갈리는 것은 비용뿐이다. ②는 화이트리스트 경로(`postAuthKakao`·`postAuthSignup`·`postAuthReissue`·`getPolicies`) 요청마다 `TokenProviderImpl`의 `runBlocking` + DataStore 읽기 + Keystore 복호화를 유발한다.
 - **항목**: ①②를 확정한다. ②를 택하면 [ADR-0017](../adr/0017-remote-network-datasource.md) "인증"·[data-layer](../architecture/data-layer.md) "인증"·[network-envelope-token-storage 스펙](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) 세 곳의 "스킵 대상이면 토큰 조회 자체를 생략한다"를 as-built로 정정해야 한다. `skipAuth` 판정 후 `val token = if (skipAuth) null else tokenProvider.getToken()`로 두면 early return 없이도 ① 의미를 지킬 수 있다.
 - **상태**: 해소됨 (2026-08-04, PR #190 develop 머지 — **②로 확정**)
 - **해소 메모**: PR #190의 마지막 커밋(`refactor: 코드 리뷰 반영`)이 early return을 걷어낸 단일 변경이다 — 즉 ②는 미커밋 실험이 아니라 **리뷰 결론**이었다. [ADR-0017](../adr/0017-remote-network-datasource.md) "인증"·[data-layer](../architecture/data-layer.md) "인증"·[network-envelope-token-storage 스펙](../superpowers/specs/archive/2026-08-02-network-envelope-token-storage.md) 세 곳의 "토큰 조회 자체를 생략한다"를 as-built로 정정하고, 절약 근거 문장을 비용 감수 서술로 바꿨다. 비용이 실제로 드는 시점은 `@NoAuth`를 붙인 서비스 메서드가 develop에 들어올 때다(현재 0건).
@@ -932,7 +934,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-04] `http/` 요청 모음과 `parfait/api/` 계약 문서가 같은 계약을 이중 관리
 
 - **ID**: OQ-P-092
-- **출처**: TJYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
+- **출처**: TEAMYG-Android 루트 `http/`(PR #190 develop 머지) — `auth.http`·`parfait-group.http`·`parfait.http`·`health.http`·`_reset.http` + `README.md`가 엔드포인트 경로·요청 바디·응답 형태·함정(예: `reissue`에 `Authorization`을 붙이면 막힘, `logout` 204라 본문 없음)을 서술한다. 같은 내용이 [api/](../api/README.md)의 도메인 문서 4건 + [api/conventions.md](../api/conventions.md)에도 있다. 두 표면 다 근거는 서버 코드지만 **갱신 절차가 다르다** — `api/`는 스킬 `sync-teamyg-server-api`가 서버 기준선 delta로 갱신하고, `http/`는 사람이 손으로 고친다.
 - **항목**: ① 서버 계약이 바뀔 때 `http/`도 함께 갱신하는 것을 `sync-teamyg-server-api` 절차에 넣을지(넣으면 이 위키 저장소의 스킬이 코드 저장소 파일을 고치게 된다), ② 아니면 `http/README.md`를 계약 서술 없이 "실행 방법"으로만 깎고 계약 근거는 `api/`로 단일화할지. 현재는 `http/README.md`가 envelope 5필드·204 예외·`errorDetail` 항상 null까지 자체 서술하고 있어 서버가 바뀌면 조용히 갈린다.
 - **상태**: 미해결 (**2026-08-10 실제로 갈렸다** — 아래 참고)
   > 📌 **표면이 더 커졌다(2026-08-06, PR #197)** — `policy.http`가 추가돼 요청 모음이 **14 엔드포인트 전량**을 덮고, `README.md`도 약관 `termsId` 출처·`url` 전문 가능성·성공 코드 2종 같은 계약 서술을 더 얹었다. 이중 관리 면적이 늘었다는 뜻이라 결정을 미룰수록 비싸진다.
@@ -1114,7 +1116,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-10] 온보딩 체인이 화면 전이만 결선 — 인증·동의 저장이 통째로 빠져 있다
 
 - **ID**: OQ-P-104
-- **출처**: PR #220 develop 머지 — `feature/login/impl` `LoginRoute.kt`·`LoginViewModel.kt`, `feature/intro/impl` `termagree/TermAgreeRoute.kt`. `Splash → Login → TermAgree → GroupList`가 이어졌지만 세 구멍이 그대로다. ① 카카오 로그인 성공 토큰은 `LoginState.token`에만 담기고 서버 `POST /api/v1/auth/login`·`/auth/signup` 호출도, `TokenStore` 저장도 없다 — [ADR-0019](../adr/0019-encrypted-token-storage.md)의 저장 경로는 여전히 호출자 0건이다. ② 서버 로그인 응답이 신규/기존 회원을 가르는데(`KakaoLoginResponse`의 `newUser` 판별자, [api/auth.md](../api/auth.md)) 화면은 분기 없이 **누구나 매번 약관 화면**을 지난다. ③ `TermAgreeViewModel`의 동의 저장은 여전히 `// Todo`라 `signup`이 필수로 받는 `agreements[].termsId`를 만들 자리가 없다(약관 목록도 `TERM_CONTENT_LIST` 리터럴).
+- **출처**: PR #220 develop 머지 — `feature/login/impl` `LoginRoute.kt`·`LoginViewModel.kt`, `feature/intro/impl` `termagree/TermAgreeRoute.kt`. `Splash → Login → TermAgree → GroupList`가 이어졌지만 세 구멍이 그대로다. ① 카카오 로그인 성공 토큰은 `LoginState.token`에만 담기고 서버 `POST /api/v1/auth/login`·`/auth/signup` 호출도, `TokenLocalDataSource` 저장도 없다 — [ADR-0019](../adr/0019-encrypted-token-storage.md)의 저장 경로는 여전히 호출자 0건이다. ② 서버 로그인 응답이 신규/기존 회원을 가르는데(`KakaoLoginResponse`의 `newUser` 판별자, [api/auth.md](../api/auth.md)) 화면은 분기 없이 **누구나 매번 약관 화면**을 지난다. ③ `TermAgreeViewModel`의 동의 저장은 여전히 `// Todo`라 `signup`이 필수로 받는 `agreements[].termsId`를 만들 자리가 없다(약관 목록도 `TERM_CONTENT_LIST` 리터럴).
 - **항목**: ① 서버 인증을 어느 단계에 넣을지 — 카카오 토큰 획득 직후 `login` 호출 후 `newUser`로 약관/그룹목록을 가를지, 아니면 약관 동의까지 받고 `signup` 한 번으로 끝낼지. ② ①이 정해져야 `clearBackStack()` 리셋 지점(현재 약관 → 그룹목록)이 맞는지도 확정된다 — 기존 회원이 약관을 건너뛰면 리셋 지점이 로그인 쪽으로 올라간다. ③ `termsId` 출처를 `GET /api/v1/policies` 연동으로 세우는 건([2026-08-03] 항목)이 이 체인의 선행 조건인지.
 - **상태**: 해소됨 (2026-08-15, PR #241·#242 — 세 구멍이 모두 닫혔다)
   > ✅ ① 서버 인증이 카카오 토큰 획득 직후 `POST /auth/kakao`로 들어갔고(#241), ② `isNewUser` 분기로
@@ -1164,7 +1166,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-10] `http/` 요청 모음이 서버 신규 엔드포인트 2건을 덮지 못한다
 
 - **ID**: OQ-P-108
-- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TJYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
+- **출처**: 서버 delta `5bb2a3a`로 엔드포인트가 16개가 됐는데 TEAMYG-Android 루트 `http/`에는 `images.http`가 없었다(당시 `auth`·`policy`·`parfait-group`·`parfait`·`health` 5개 파일 = 14 엔드포인트). PR #197 시점의 "전량 커버"가 깨졌다. 이는 [2026-08-04] `http/`↔`api/` 이중 관리 항목이 예고한 갈라짐이 **처음 실제로 발생한 사례**다.
 - **항목**: [2026-08-04] 항목의 선택지 ①(스킬이 `http/`도 갱신)·②(`http/`를 실행 방법으로만 축소) 중 무엇을 고를지. 갱신 경로가 둘이라는 구조 자체는 그대로다.
 - **상태**: 미해결 (**2026-08-16 서버 delta로 다시 25/27** — 다섯 번째 왕복, 구조 결정은 그대로.
   이번엔 `:data` 표면만 닫히고 `http/`는 안 닫혀 **두 표면이 처음으로 갈렸다**)
@@ -1312,7 +1314,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-11] 서버가 앱보다 7 엔드포인트 앞섰다 — 애플 로그인·회원·토핑 배치가 통째로 공백
 
 - **ID**: OQ-P-117
-- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TJYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `2c5499a` 기준 21 엔드포인트. TEAMYG-Android develop의 원격 표면은 `AuthService`·`ParfaitGroupService`·`ParfaitService`·`PolicyService` 4개(= 14 엔드포인트)로 그대로다. 공백은 image 2(미머지 브랜치 `feature/sync-backend-api-260810`에 `ImageService`가 있다) · 애플 로그인 1 · member 2 · parfait-image 2 → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 앱이 어느 순서로 따라갈지 — 화면 결선 순서(온보딩 → 캔버스)와 서버 순서가 다르다. ~~② **애플 로그인은 iOS만의 요구가 아니다** — Android가 붙일지, 붙는다면 `identityToken`·`authorizationCode`를 어디서 얻을지(애플 로그인 SDK가 Android에 없어 웹 플로가 필요하다) 결정한다.~~(해소 — 아래) ③ 토핑 배치(`parfait-image`)는 **목록 조회 API가 없어** 배치만 되고 다시 그릴 수 없다 — 앱 결선은 그 API를 기다려야 한다.
   > 📌 **② 해소(2026-08-11)** — **Android는 애플 로그인을 쓰지 않는다.** 서버 계약은 그대로 두되 앱 대응 심볼을 만들지 않고 `http/auth.http`에도 요청을 넣지 않는다. [api/README.md](../api/README.md) Android 열에 `해당 없음` 값을 신설해 `미구현`(아직 없음)과 구분했고 — 표면 개수를 셀 때 분모에서 뺀다 — [api/auth.md](../api/auth.md) 엔드포인트 표·Android 매핑 절에 반영했다. 근거는 [member·parfait-image 서비스 레이어 스펙](../superpowers/specs/archive/2026-08-11-member-parfait-image-api-service-layer.md) "범위". iOS가 붙으면 계약은 그대로 유효하다.
   > 📌 **공백이 곧 0이 된다(진행 중)** — 분모가 21에서 **20**으로 줄고(애플 1 제외), develop 14 + PR #229의 image 2 + 위 스펙의 member 2·parfait-image 2 = **20**이다. 즉 표면 공백 자체는 이 라운드로 닫히고 **①이 말하는 "순서" 문제는 표면이 아니라 소비처 쪽으로 옮겨간다.**
@@ -1734,7 +1736,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-146
 - **출처**: [a002-kakao-login-api 스펙](../superpowers/specs/archive/2026-08-13-a002-kakao-login-api.md) "실기기 검증" — 구현·유닛 테스트·리뷰는 끝났고 **PR #241로 2026-08-15 develop에 머지됐으나** 실물 기기·실제 카카오 계정·개발 서버가 필요한 항목은 하나도 돌지 않았다. 즉 **검증 안 된 로그인 경로가 develop에 있다.** 컴파일·ktlint·Hilt 어디에도 안 걸리는 종류의 결함이 여기서 처음 드러난다.
-- **항목**: ① 개발 서버에 요청이 나가는가(평문 HTTP 차단이면 즉시 중단 → OQ-P-076) ② 신규 계정 → 약관 화면, 응답 판별자 키가 실제로 `isNewUser`인가(`MissingFieldException`이면 [api/auth.md](../api/auth.md)가 틀린 것) ③ 기존 계정 → 그룹 목록, 백스택 비움 ④ 로그인 → 앱 종료 → 재시작 → 토큰 읽힘, DataStore 파일에 평문 없음(ADR-0019 검증) ⑤ 카카오 창 취소 → 로딩 풀림 ⑥ 버튼 연타 → 카카오 창 1회 ⑦ 비행기 모드 → 로딩 풀림 + `AppError.Network` 로그 ⑧ `TokenStoreTokenProvider`의 `runBlocking` 체감 지연 ⑨ **카카오 창 떠 있는 동안 화면 회전 → 로딩 풀림**(이번 라운드 fix 대상, 유닛 테스트로 못 덮는다)
+- **항목**: ① 개발 서버에 요청이 나가는가(평문 HTTP 차단이면 즉시 중단 → OQ-P-076) ② 신규 계정 → 약관 화면, 응답 판별자 키가 실제로 `isNewUser`인가(`MissingFieldException`이면 [api/auth.md](../api/auth.md)가 틀린 것) ③ 기존 계정 → 그룹 목록, 백스택 비움 ④ 로그인 → 앱 종료 → 재시작 → 토큰 읽힘, DataStore 파일에 평문 없음(ADR-0019 검증) ⑤ 카카오 창 취소 → 로딩 풀림 ⑥ 버튼 연타 → 카카오 창 1회 ⑦ 비행기 모드 → 로딩 풀림 + `AppError.Network` 로그 ⑧ `TokenProviderImpl`의 `runBlocking` 체감 지연 ⑨ **카카오 창 떠 있는 동안 화면 회전 → 로딩 풀림**(이번 라운드 fix 대상, 유닛 테스트로 못 덮는다)
 - **상태**: 미해결 (실기기 대기 — **검증 안 된 실서버 경로가 하루 만에 8 엔드포인트로 늘었다**)
   > ⚠️ **2026-08-15 같은 날 네 라운드가 더 머지됐다**(PR #242·#243·#244·#248) — 약관 조회·회원가입·
   > 그룹 목록·생성·참여 미리보기·참여·닉네임 변경이 전부 실서버를 타는데 **어느 것도 실기기로 안 돌았다**.
@@ -1801,9 +1803,9 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-149
 - **출처**: `feature/camera/impl/route/CustomCameraRoute.kt` — `runCatching { withContext(Dispatchers.IO) { saveViewfinderCapture(...) } }`. `withContext`가 suspend라 촬영 저장 중 화면을 벗어나면 취소가 `Result.failure`가 되고 "저장 실패" 경로로 분기한다. [data-layer](../architecture/data-layer.md) "suspend 를 감싸는 runCatching" 참고.
-- **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `EncryptedTokenStore.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
+- **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `TokenLocalDataSourceImpl.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
 - **상태**: 미해결 (교체 대상 확정, 라운드만 대기)
-- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`EncryptedTokenStoreTest`의 취소 케이스가 본보기다).
+- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`TokenLocalDataSourceImplTest`의 취소 케이스가 본보기다).
 
 ### [2026-08-15] 누끼 캔버스 Safe Margin +20%가 미이행 — 원본 전체 크기가 끝까지 실려 간다
 
@@ -1812,8 +1814,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **항목**: ① 정책대로 Safe Margin 캔버스를 만들지 — 만들면 편집·테두리 좌표계가 전부 그 캔버스 기준으로 바뀌고 원본 밖으로 번지는 테두리가 잘리지 않게 된다(현재는 원본 경계에서 잘린다), ② 안 만들 거면 정책을 개정할지 — 원본 유지는 "지운 자리를 원본에서 되살리는" 편집 방식과 잘 맞는 선택이기도 하다, ③ 캔버스 배치(C-106)가 받는 이미지 크기 계약을 어디에 적을지.
 - **상태**: 미해결 (정책 vs 코드 — 어느 쪽이 옳은지부터 결정 필요)
 
-  📌 **같은 20%가 다른 자리에서 먼저 쓰였다(2026-09-10, PR #487)**. 재시도 회복 2단계의 힌트 크롭 여유가
-  각 변 20%이고, 그 근거로 이 정책을 인용했다. 누끼 캔버스 Safe Margin을 이행한 것은 아니므로 이 항목은 그대로다.
+  📌 **재시도 회복 2단계가 이 정책을 인용해 쓰던 20% 힌트 크롭 여유는 사라졌다(2026-09-30, C-101-Loading)**. 이 항목은 그대로다.
 - **해소 메모**: 결정 후 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md) "정책 대조" 표와 위키 [[누끼-따기]] C-103-Selected 절을 한쪽으로 맞춘다. 메모리도 함께 본다 — 원본 해상도 비트맵 2장이 `UiState`에 상주하고 저장 시 2장을 더 만든다.
 
 ### [2026-08-15] 브러시·테두리 굵기 단위가 정책 px와 코드 dp로 갈린다
@@ -1935,7 +1936,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-15] 서버가 다시 5 엔드포인트 앞섰다 — 캔버스 조회·토핑 삭제/테두리·탈퇴가 통째로 공백
 
 - **ID**: OQ-P-158
-- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TJYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
+- **출처**: 서버 `36ecd1c` 기준 26 엔드포인트(+테스트 전용 1). TEAMYG-Android develop의 원격 표면은 PR #230 이후 그대로 20이다(`ParfaitService`는 `@GET .../parfaits/year` 하나, `MemberService`는 `@GET`·`@PATCH` 둘, `ParfaitImageService`는 `@POST`·`@PATCH` 둘) → [api/README.md](../api/README.md), [api/conventions.md](../api/conventions.md) "Android 불일치".
 - **항목**: ① 어느 것부터 붙일지 — **`GET .../parfaits/today`가 C-001 캔버스 결선의 선행**이라 우선순위가 가장 높다(배치 목록 부재라는 오래된 장애물이 이것으로 사라졌다, OQ-P-119). ② **회원 탈퇴는 응답이 본문 없는 204**라 앱 `ApiCaller`의 envelope 전제와 맞지 않는다 — `Response<Unit>` 계열 진입점을 새로 둘지, 서버에 envelope 통일을 요청할지 정해야 표면을 붙일 수 있다(OQ-P-162). ③ 토핑 삭제·테두리 수정은 C-105·C-106 편집 플로우와 짝이라 그 화면 결선 라운드에 함께 간다.
 - **상태**: **해소됨** (2026-08-15, PR #250 — 다섯 표면이 한 라운드에 들어왔다)
 - **해소 메모**: 선작성 스펙·플랜 한 쌍이 그대로 이행됐다
@@ -2961,25 +2962,21 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **해소 메모**: [state-management](../architecture/state-management.md) "화면 상태는 ViewModel이
   소유" 항목과 [navigation-flow](../architecture/navigation-flow.md) 결과 왕복 절에 함께 반영한다.
 
-### [2026-08-16] 편집 모드의 남의 토핑 취급이 C-202 정책과 다르고, 드래그 핸들에 대체 수단이 없다
+### [2026-08-16] 편집 모드의 남의 토핑 취급이 C-202 정책과 다르고, 핀치 제스처에 대체 수단이 없다
 
 - **ID**: OQ-P-202
 - **출처**: `CanvasBGEditScreen`(PR #264) — 토핑 탭은 남의 토핑을 딤 **아래**에 그리고 그 위 딤이
   탭을 받아 **선택 해제**만 한다. 위키 [[C-202-토핑-편집자-확인-규칙-v0.1]]([[토핑-spotlight]])은
   타인 토핑 탭에 Spotlight 강조 + 작성자 Toast를, 본인 토핑 탭에 C-305 편집 진입을 규정한다.
-  코드는 본인 토핑 탭이 곧 편집이 아니라 **선택**이고 편집은 모서리 버튼이다. 또 크기조절·회전 핸들이
-  `YGCircleButton(onClick = {})` + `Modifier.dragBy`라 접근성 서비스에는 눌리는 버튼으로 노출되지만
-  눌러도 아무 일이 없고 드래그의 대체 조작이 없다.
+  코드는 본인 토핑 탭이 곧 편집이 아니라 **선택**이고 편집은 모서리 버튼이다. 또 크기조절·회전은
+  버튼 없이 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)로만 되고,
+  접근성 서비스가 대신할 수 있는 조작이 없다. TalkBack에서는 두 손가락 핀치가 스크린리더에 가로채져
+  크기·회전을 바꿀 경로가 없다 — 한 손가락 드래그 패스스루로는 이동만 된다.
 - **항목**: ① C-202가 캔버스 상세(C-001) 전용인지, 편집 모드에도 적용되는지 — 적용된다면 편집 중
   타인 토핑 탭의 규칙을 정책에 명시해야 한다(위키 소관). ② 본인 토핑의 "탭 = 편집 진입" vs
-  "탭 = 선택 후 버튼"을 정책 쪽에 맞출지 코드 쪽으로 정책을 고칠지. ③ 드래그 조작의 접근성 대체 수단
+  "탭 = 선택 후 버튼"을 정책 쪽에 맞출지 코드 쪽으로 정책을 고칠지. ③ 핀치 제스처의 접근성 대체 수단
   (증분 버튼·semantics 커스텀 액션)을 둘지.
-- **상태**: 미해결 (**③은 화면 둘로 번졌다** — 2026-08-19)
-  > 📌 **핸들이 공용 컴포저블이 되면서 문제도 같이 옮겨 갔다(2026-08-19, PR #290)** — 같은 조합을 감싼
-  > `ToppingDragHandleButton`이 `groups/canvas/impl`의 `component/`로 올라가 C-301 편집 탭과 C-106 배치
-  > 화면이 공유한다. **공용화는 접근성을 고치지 않았다** — 여전히 `onClick = {}` + `Modifier.dragBy`라
-  > 스크린리더에는 눌리는 버튼인데 눌러도 아무 일이 없고, 이제 그런 자리가 두 화면에 있다.
-  > 고칠 자리가 한 곳으로 모인 것은 이득이다.
+- **상태**: 미해결 — 두 화면 모두 핀치만 있고 대체 조작이 없다
 - **해소 메모**: ①②는 위키 [[open-questions]]의 "에딧 모드 삭제 비고 vs C-301~C-306 잔존" 미결과
   같은 자리다. 정하면
   [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md) 정책 대조 표를 갱신한다.
@@ -3133,6 +3130,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > `SegmentationErrorScreen`의 실패는 공통 토스트로 갔다(OQ-P-167 정정). 그래서 ③("화면 고유 로딩
   > 화면을 V2가 흡수할 갈래인지 계속 별개로 둘지")은 **흡수하는 쪽**으로 답이 났다 — 이 저장소에서
   > 화면 고유 로딩 화면은 이제 0개다.
+  > 🔁 **다시 하나가 됐다(2026-09-30, C-101-Loading)** — 디자인 `C-101-Loading`이 나와 `SegmentationLoadingScreen`이 되살아났다
+  > (흰 배경 전면 + `YGLoadingLottie(YGLoadingArt.Dark)`, 딤 오버레이 없음). ③의 "흡수하는 쪽" 답은 이 화면에는 해당하지 않는다.
   > **뒤집힌 것은 이 항목이 아니라 [ygscaffold-v2 스펙](../superpowers/specs/archive/2026-08-16-ygscaffold-v2-common-loading-error.md)의
   > 제외 목록**이다("문구·닫기 버튼을 가진 로딩 화면은 V2가 다루는 갈래가 아니다"). 그 제외를 세웠던
   > 근거 둘이 다시 세어 보니 값이 없었다 — 문구는 `CircularProgressIndicator` 옆의 안내문 두 줄이었고,
@@ -3782,9 +3781,14 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **항목**: ① 실패·누락 시 토스트를 띄울지(호스트는 이미 있다). ② 아니면 조회가 실패한 동안 두 줄을
   비활성으로 보일지 — 문구가 고정이라 "누를 수 있어 보이는데 안 눌린다"가 현재 상태다.
   ③ 같은 API 실패 표현을 두 화면에서 맞출지(OQ-P-167 실패 표현 갈래와 같은 축).
-- **상태**: 미해결
-- **해소 메모**: 고치면 [app-setting-s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md)
-  as-built와 [api/policy.md](../api/policy.md) "앱 동작 메모"를 함께 갱신한다.
+- **상태**: 해소됨 (**PR #550 develop 머지, 2026-09-28** — 약관 두 줄이 더 이상 `strings.xml` 고정
+  문구가 아니라 `state.policies`를 순회해 그린다. 표시 여부와 클릭 가능 여부가 항상 같아져서(그
+  항목이 목록에 있으면 보이고 눌리며, 없으면 아예 안 보인다) "보이는데 눌러도 반응 없음"이던 원래
+  증상은 없다. 대신 조회가 실패하면 그 화면 방문 동안 두 줄이 통째로 안 보이고 재시도 UI도 없다
+  (화면을 나갔다 다시 들어가야 `AppSettingViewModel`이 새로 만들어지며 재조회된다) — 이건 새 증상이
+  아니라 명시적으로 채택한 트레이드오프라 별도 OQ로 남기지 않는다)
+- **해소 메모**: [api/policy.md](../api/policy.md) "앱 동작 메모"와 [status.md](../status.md) S-001
+  항목에 반영 완료.
 
 ### [2026-08-18] 웹뷰 목적지가 임의 `title`·`url`을 받는 범용 화면이 됐는데 출처 검증이 없다
 
@@ -4065,27 +4069,11 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   ② 최소 터치 방어를 **초기 배치에만** 적용할지 리사이즈 하한으로도 쓸지 — 코드는 후자를 골랐는데,
   정책 문구("스케일링된 토핑의 짧은 쪽이 48px 미만이면")는 초기 렌더링 절에 있다.
   ③ 회전 스냅(0·90·180·270 근처 흡착)이나 상한이 필요한지.
-- **상태**: 부분 해소 (**감도 둘은 2026-08-27 PR #397로 소멸** — 앱이 정한 것은 하한·상한 둘로 줄었다 / 나머지 잔존)
-  > ⚠️ **회전 무제한이 화면 안 문제가 아니게 됐다(2026-08-23, PR #336)** — C-301 편집 탭의 확인
-  > 버튼이 `rotationDegrees`를 그대로 `rotation`에 실어 PATCH 한다. 몇 바퀴를 돌리든 렌더는 같지만
-  > **저장되는 수치는 계속 커지고**, 서버도 범위를 검증하지 않는다
-  > ([api/parfait-image.md](../api/parfait-image.md) 미결). ③(스냅·상한)이 이제 저장 값의 문제이기도
-  > 하다. 같은 라운드에서 배율 쪽은 상한 자체가 사라졌다(OQ-P-271).
-  > ✅ **감도 상수 둘이 사라졌다(2026-08-27, PR #397)** — 이 항목이 "앱이 정한 넷"으로 셌던 것 중
-  > `TOPPING_DRAG_PX_PER_SCALE`·`TOPPING_DRAG_DEGREES_PER_PX`가 없어지고, 감도가 리터럴이 아니라
-  > **기하로 결정된다**. 크기조절은 핸들이 중심에서 멀어진 비율을 배율에 곱하고, 회전은 드래그를
-  > 핸들 벡터의 접선에 투영해 각도로 환산한다(`ToppingGeometry`의 `resizeScaleFactor`·
-  > `rotationDeltaDegrees`). 그래서 정책으로 끌어올릴지 물어야 할 것은 **하한·상한 둘**로 줄었다.
-  > ⚠️ **고친 계기는 이 미결이 아니라 결함이었다** — 회전 핸들은 우측 하단에 있는데 각도가 드래그의
-  > 가로 성분만 받아, 화면 좌표계에서 **시계방향으로 끌면 반시계로 돌았다**. 크기조절은 배율에
-  > 고정량을 더해서, 초기 배율이 작아지는 큰 원본 사진일수록 같은 손동작이 훨씬 크게 먹었다.
-  > ③(스냅·상한)은 손대지 않았고, 실기기로 감도를 확인한 적이 없다는 점도 그대로다 —
-  > 다만 이제 확인할 대상이 상수가 아니라 기하 자체다.
-  > 📌 **환산 자리가 ViewModel에서 화면으로 옮겨 왔다** — 핸들 위치를 아는 쪽이 화면이라,
-  > 인텐트가 픽셀이 아니라 **배율에 곱할 값**(`OnToppingResize`)과 **각도**(`OnToppingRotate`)를 싣고
-  > ViewModel은 누적만 한다(`OnToppingMoveDrag`가 비율을 받는 것과 같은 결이다). 핸들 벡터는
-  > `rememberUpdatedState`로 읽어야 한다 — `dragBy`의 제스처 블록은 키가 그대로면 시작 시점 람다를
-  > 계속 쓰므로, 값으로 캡처하면 처음 위치의 접선에 갇혀 한 바퀴를 돌지 못한다.
+- **상태**: 부분 해소 (①③ 잔존)
+  > 지금 조작은 두 손가락 제스처(`component/ToppingTransformInput.kt`의 `toppingTransformInput`)라 감도
+  > 상수가 없다. 배율은 두 화면이 `TOPPING_MIN_SCALE` 하한만 쓰고 상한이 없다(OQ-P-271·OQ-P-325).
+  > ②는 "48dp 방어는 초기 배치에만"으로 정해졌다. 회전은 여전히 무제한이고 `rotation`이 그대로 PATCH
+  > 되며 서버도 범위를 검증하지 않아, ③(스냅·상한)은 저장 값의 문제이기도 하다.
 - **해소 메모**: ①은 위키 정책 수집 요청이 선행이다(코드가 먼저 확정한 넷째 사례 — 앞의 셋은
   C-104 확대 상한·C-105 테두리 색 팔레트·토핑 테두리 렌더 규칙). 정하면
   [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md) 조작 절과 드리프트 ⑤를
@@ -4203,7 +4191,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-20] S3 업로드가 코루틴 취소를 따라가지 않는다
 
 - **ID**: OQ-P-246
-- **출처**: `data/source/image/remote/PresignedUploadDataSourceImpl#put`(PR1 `feature/#270-image-upload-transport`) — `withContext(Dispatchers.IO)` 안에서 OkHttp `Call.execute()`를 블로킹으로 부르고 `Call.cancel()`을 코루틴 취소에 잇지 않는다. 그 블록에 중단점이 없어 **호출 코루틴이 취소돼도 업로드는 `callTimeout`까지 계속 돈다.** 브랜치 최종 리뷰가 잡았고 "되돌리는 비용은 지금이 가장 싸다"고 평가했다.
+- **출처**: `data/source/image/remote/PresignedUploadRemoteDataSourceImpl#put`(PR1 `feature/#270-image-upload-transport`) — `withContext(Dispatchers.IO)` 안에서 OkHttp `Call.execute()`를 블로킹으로 부르고 `Call.cancel()`을 코루틴 취소에 잇지 않는다. 그 블록에 중단점이 없어 **호출 코루틴이 취소돼도 업로드는 `callTimeout`까지 계속 돈다.** 브랜치 최종 리뷰가 잡았고 "되돌리는 비용은 지금이 가장 싸다"고 평가했다.
 - **항목**: ① `suspendCancellableCoroutine` + `enqueue` + `invokeOnCancellation { call.cancel() }`로 바꿀지, 아니면 ② 지금 형태를 두고 화면이 취소를 안 하도록 설계할지. ①이면 취소를 실제로 관측하는 테스트 설계가 따로 필요하다(느린 응답 + 취소).
 - **상태**: 해소됨(PR5)
 - **해소 메모**: PR1에서 미룬 이유는 전송 메서드의 모양을 바꾸는 변경이라 단일 fix 웨이브에 태우면 클린한 브랜치를 늦게 흔들 위험이 이득보다 컸다는 것이다. PR5는 로딩 오버레이·실패 시 `popUpTo` 되감기가 있어 `viewModelScope` 취소가 흔한 화면이므로 그 라운드가 판정했다. `execute()` → `enqueue` + `suspendCancellableCoroutine`·`invokeOnCancellation { call.cancel() }`로 바꿨다. `onFailure`가 취소를 실패 `Result`로 둔갑시키지 않도록 `continuation.isActive` 가드를 뒀다.
@@ -4810,7 +4798,10 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 - **항목**: ① 상한을 되살릴지, 없는 것이 결정인지. ② 없는 것이 결정이라면 캔버스 밖으로 얼마든지
   커진 배치가 저장될 때 무엇이 막는지 — 지금은 앱도 서버도 안 막고, 그린 결과는 클리핑으로 잘릴 뿐
   값은 그대로 남는다. ③ 되살린다면 그 값의 근거를 어디서 받을지(2.5도 실측이 아니었다).
-- **상태**: 미해결 (**하루 만에 화면 밖 문제가 됐다** — 아래 참고)
+- **상태**: 부분 해소 (②③ 잔존 — ①은 "상한 없음"으로 정해졌다)
+  > ✅ **①이 정해졌다(2026-09-28)** — 두 손가락 제스처 전환 때 배치 화면도 편집 화면처럼 상한을
+  > 두지 않기로 했다. 두 화면이 `ToppingGeometry.kt`의 `TOPPING_MIN_SCALE` 하한 하나만 쓴다.
+  > 저장 값을 무엇이 막는지(②)는 그대로 남는다.
   > ⚠️ **"그때까지는 화면 안에서만"이 하루 만에 끝났다(2026-08-23, PR #336)** — 같은 화면의 확인
   > 버튼이 `scale`을 그대로 PATCH 본문에 싣는다. 서버도 범위를 검증하지 않으므로 **무한히 커진
   > 배율이 저장되고 다음 조회에서 그대로 돌아온다.** ②("무엇이 막는지")가 이제 실제 데이터의
@@ -4986,10 +4977,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   ③ 그래서 이 항목은 스펙에서 **조건부 구현**으로 표시했다 — 사진 세트에서 차이가 안 보이면 넣지 않는다.
 - **상태**: 미해결 (구현 전 판정 대상. 짧은 변 512 미만 사진 1장으로 갈린다)
 
-  📌 **재시도 경로에 한해 확대가 들어왔다(2026-09-10, PR #487)**. 후보 0건 뒤 재시도 사다리가 검출 입력을
-  짧은 변 512로 맞춘다(긴 변 2048 상한과 충돌하면 상한이 이긴다). `decodeImage` 전역 확대는 여전히 없고,
-  **이 질문의 답도 아직 없다.** 판정 수단이 사진 세트에서 단계 로그로 바뀌었는데, 그 로그가 logcat 밖으로
-  나가지 않는다(OQ-P-399).
+  📌 **재시도 경로에 한해 들어왔던 확대는 사라졌다(2026-09-30, C-101-Loading)**. 재시도 사다리가 없어져 검출 입력을
+  짧은 변 512로 맞추는 코드가 없고, `decodeImage` 전역 확대도 없다. **이 질문의 답은 아직 없다.**
 - **해소 메모**: 효과가 없으면 스펙의 해당 절과 `computeUpscaleTarget`을 함께 걷는다. 반대로
   효과가 크면 하한을 512보다 올릴 여지도 같은 사진으로 본다.
 
@@ -5058,7 +5047,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 
 - **ID**: OQ-P-282
 - **출처**: [segmentation-preprocessing 스펙](../superpowers/specs/2026-08-23-segmentation-preprocessing.md)
-  설계 2절 × `ToppingHandleComponents.kt#rememberToppingBaseSize` × `ToppingPlacement.kt` —
+  설계 2절 × `ToppingPlacementComponents.kt#rememberToppingBaseSize` × `ToppingPlacement.kt` —
   `rememberToppingBaseSize`가 알맹이 PNG의 인트린식 픽셀 치수를 그대로 dp로 환산하고, 그 값이
   배치 화면의 초기 크기이자 `toToppingTransform`이 계산하는 `scale`의 분자가 된다. 그 `scale`이
   서버에 저장된다([c106-topping-place-api](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md)).
@@ -5950,28 +5939,17 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-28] 토핑 배율 하한이 두 화면에서 갈렸고 편집 쪽 근거가 없다
 
 - **ID**: OQ-P-325
-- **출처**: PR #398(`[FIX] 배율 하한 수정`) — `CanvasBGEditViewModel`의 `TOPPING_MIN_SCALE`이
-  0.5에서 **0.05**가 됐다. 같은 저장소의 배치 화면은 상수가 아니라 **짧은 변 48dp**
-  (`CanvasToppingPlaceViewModel`의 `MIN_TOPPING_SHORT_SIDE`)에서 하한을 역산하고, 실측을 못 얻은
-  경우에만 `TOPPING_MIN_SCALE_FALLBACK = 0.5`로 물러난다. 위키
-  [[C-106-토핑-배치-정책-v0.1]]의 48px 최소 터치 방어가 그 역산의 근거다.
-- **항목**: ① 편집 탭의 새 하한에 근거가 없다 — 커밋 메시지와 KDoc이 "배율 하한 수정"이라고만
-  적는다. 무엇이 문제였는지(초기 배율이 커서 줄일 여지가 없었는지, 특정 이미지에서 걸렸는지)가
-  남아 있지 않다. ② 48dp 방어를 편집 탭에도 둘지 — 지금은 토핑을 최소 터치 크기 아래로 줄일 수
-  있고, 줄인 값이 그대로 PATCH로 나가 **다시 잡을 수 없는 토핑이 서버에 남는다.**
-  ③ 두 화면이 같은 규칙을 봐야 하는지 — 배치 규칙 셋은 이미 `ToppingGeometry`로 올라가 공유
-  중인데 하한만 갈라져 있다.
-- **상태**: 미해결 (**동작 영향 있음** — 편집 탭에서만 재현되고, 실기기 확인 0회)
-- **해소 메모**: ②가 참이면 처방은 `MIN_TOPPING_SHORT_SIDE` 역산을 편집 탭으로 옮기는 것이고,
-  그때 `ToppingGeometry`가 그 계산을 함께 든다. 반영처는
+- **출처**: PR #398(`[FIX] 배율 하한 수정`) — 편집 탭의 배율 하한이 0.5에서 **0.05**가 됐고 근거가 남지 않았다.
+  지금은 `util/ToppingGeometry.kt`의 `TOPPING_MIN_SCALE`(서버 scale 단위 0.05)을 배치·편집 두 화면이 함께
+  쓴다. 배치 화면은 이 값을 `CanvasToppingPlaceViewModel`의 `minScale`로 제 배율에 환산한다. 초기 자동
+  배치만 짧은 변 48dp 하한(`MIN_TOPPING_SHORT_SIDE`)을 따로 쓴다. 위키 [[C-106-토핑-배치-정책-v0.1]]의
+  48px 최소 터치 방어가 그 48dp의 근거다.
+- **항목**: ① 0.05에 근거가 없다 — 커밋 메시지와 KDoc이 "배율 하한 수정"이라고만 적는다. ② 공유 하한을
+  48dp 최소 터치 크기 수준으로 올릴지 — 지금은 두 화면 모두 토핑을 캔버스 폭의 약 2%까지 줄일 수 있고,
+  그 값이 그대로 저장돼 **다시 잡기 어려운 토핑이 서버에 남는다.** ③ 두 화면이 같은 규칙을 봐야 하는지.
+- **상태**: 부분 해소 (①② 잔존 — ③은 "같은 규칙"으로 정해졌다)
+- **해소 메모**: ②가 참이면 `TOPPING_MIN_SCALE` 하나를 올리면 두 화면에 함께 걸린다. 반영처는
   [c301-topping-edit-tab 스펙](../superpowers/specs/archive/2026-08-16-c301-topping-edit-tab.md) 드리프트 4다.
-  > 📌 **③의 대비가 한 뼘 더 벌어졌다(2026-08-27, PR #397)** — 크기조절 환산 자체가
-  > `ToppingGeometry#resizeScaleFactor`로 올라가 두 화면이 **같은 함수**를 부르게 됐는데, 그 함수는
-  > 배율에 곱할 값만 돌려주고 클램프는 여전히 호출부 몫이다(편집 탭은 상수 하한, 배치 화면은 48dp
-  > 역산). 공유되는 것이 넓어질수록 하한만 갈라져 있는 것이 눈에 띈다.
-  > ⚠️ 그 함수는 **중심 너머까지 한 번에 끌면 0에서 멈춘다** — 뒤집힌 토핑을 만들지 않으려는
-  > 방어이고, 실제 하한은 그다음 호출부의 클램프가 정한다. 즉 편집 탭의 0.05는 이제 두 겹 중
-  > 바깥쪽이다.
 
 ### [2026-08-28] 선작성 문서 셋이 이번 델타를 모른다
 
@@ -6067,9 +6045,9 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-08-28] 원격 이미지 다운로드가 응답 본문을 통째로 힙에 올린다
 
 - **ID**: OQ-P-327
-- **출처**: `RemoteImageDownloadDataSourceImpl.download`(PR #369) — `response.body?.bytes()`로
+- **출처**: `ImageDownloadRemoteDataSourceImpl.download`(PR #369) — `response.body?.bytes()`로
   전체를 읽어 `ByteArray`로 돌려주고, `ImageSegmentationRepositoryImpl.decodeImage`가 그것을
-  `BitmapFactory.decodeByteArray`에 넘긴다. 같은 저장소의 이웃인 `PresignedUploadDataSource`는
+  `BitmapFactory.decodeByteArray`에 넘긴다. 같은 저장소의 이웃인 `PresignedUploadRemoteDataSource`는
   반대로 **스트리밍 `RequestBody`**를 써서 바이트를 힙에 통째로 올리지 않는 것이 명시된 결정이다.
 - **항목**: ① 상한이 없다 — 서버가 주는 토핑 이미지 크기의 실측이 0건이고,
   `Content-Length` 확인도 없다. ② 디코드 직후 원본 `ByteArray`와 비트맵이 **동시에** 살아 있다
@@ -6451,8 +6429,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 위에 예고한 그대로 들어왔고 어긋난 자리가 없다.
   > - **②(등록 호출 시점)** — 세션 축 넷이다: `LoginWithKakaoUseCase`·`SignUpUseCase`의
   >   `refreshMyAccount` 뒤, `BootstrapSessionUseCase`의 성공 분기, `onNewToken`. 네 자리 모두
-  >   **`suspend`가 아닌 `DeviceTokenRegistrar.register()`** 하나를 부르고 실행은 `:data` 구현이
-  >   `@ApplicationScope`에서 한다. 재시도 3회(3초·6초)와 `Mutex`가 그 안에 있다.
+  >   **`suspend`가 아닌 `NotificationRepository.registerCurrentDeviceToken()`** 하나를 부르고 실행은 `:data` 구현이
+  >   `@ApplicationScope`에서 한다. 재시도 3회(3초 고정)와 `Mutex`가 그 안에 있다.
   > - **③(권한을 언제 묻는지)** — A-004·A-005 완료 직후다(OQ-P-358 해소).
   > - **④(거부 상태에서도 등록할지)** — **등록한다.** 서버가 권한 상태를 모르므로 발송이 나가고 OS가
   >   버리지만, 사용자가 나중에 설정에서 켜면 앱이 아무것도 안 해도 동작한다.
@@ -6547,6 +6525,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   🔁 **우회로의 모양이 바뀌었다(2026-09-10, PR #487)**. 그 버튼이 「직접 편집」이 되어 원본을 C-104 수동
   편집으로 보낸다. C-104는 세그멘테이션 모듈을 부르지 않으므로, 모듈 없이 토핑을 만드는 경로는 그대로 있다.
   ①의 선택지 가운데 "수동 편집(C-104)으로 우회"를 코드가 먼저 골랐고, 정책 근거는 여전히 없다(OQ-P-401).
+  🔁 **그 버튼도 사라졌다(2026-09-30, C-101-Loading)**. 지금은 분석이 실패하면 곧장 편집 화면(C-104)으로 간다. 모듈 없이 토핑을 만드는 경로는 그대로 있고, 그 우회로를 정책으로 둘지는 여전히 결정 전이다.
   아래는 1차 축소(같은 날 후속 관측) — 그 기기에 **모듈이 결국 도착했다.**
   오전 내내 `INTERNAL_ERROR`로 실패하던 설치가 몇 시간 뒤 성공했고 세그멘테이션이 정상 동작했다.
   "끝내 못 받는 기기"가 아니라 **아주 늦게 받는 기기**였을 수 있다. ①의 무게는 그만큼 줄었고,
@@ -6578,7 +6557,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-02] 원격 이미지 묶음 노출 — 미머지 브랜치가 로딩 표현을 바꾼다
 
 - **ID**: OQ-P-346
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(develop 기준선 위) —
   원격 이미지가 로딩 중 아무것도 그리지 않다가 성공하는 순간 불투명으로 튀던 것을 고치면서,
   캔버스 토핑과 G-001 그룹 목록을 각각 **한 묶음으로 모아 한 번에 드러내는** 규칙이 생겼다.
   `core:ui`에 `reveal/` 패키지(`rememberBatchReveal`·`rememberStaggeredReveal`과 그 순수 함수)가
@@ -6629,7 +6608,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-03] G-001 새로고침 — 미머지 브랜치가 로딩 문구와 실패 라우팅을 바꾼다
 
 - **ID**: OQ-P-348
-- **출처**: TJYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
+- **출처**: TEAMYG-Android 미머지 브랜치 `feature/image-loading-placeholder`(OQ-P-346과 같은 브랜치,
   커밋 `163cd194`·`1d68f167`) — 디자인 두 프레임을 근거로 G-001 당겨서 새로고침을 다시 짰다
   (Figma 파일 `QPoxqbNMNktsi8ktua3gMN`, 두 프레임 모두 이름이 `G-001-Error`다: 노드 `2019:10223`이
   새로고침 중, `1972:4873`이 실패). 셋이 바뀐다. ① `GroupListPullToRefreshBox`의 인디케이터가
@@ -6790,7 +6769,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-04] 서버 발송 페이로드가 앱 저장소에 복제됐는데 갈라짐을 세는 축이 없다
 
 - **ID**: OQ-P-354
-- **출처**: `http/fcm-test.http`(TJYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
+- **출처**: `http/fcm-test.http`(TEAMYG-Android, PR #451 `2b1dce3a`) × [api/notification.md](../api/notification.md)
   "어떤 페이로드가 가는가" × 서버 `NotificationMessageFactory`·`FcmNotificationSender`(`aa9cc9b`) —
   같은 값(문구 2종·`data` 키 4종·채널 id `parfait_default`·TTL 6시간·APNs 헤더)이 **세 곳**에 있다.
   파일 머리말이 "서버 코드를 정본으로 삼는다"고 적지만, 그 대조를 무엇이 언제 하는지는 정해지지 않았다.
@@ -6944,7 +6923,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 다만 ③이 닫히면서 **"로그인 화면 위에 캔버스가 얹힌다"는 갈래는 사라졌다.**
   > ⚠️ **이 항목이 근거로 삼았던 "등록 호출부가 0건"은 틀렸다** — PR #450(`da26d084a`)이
   > `BootstrapSessionUseCase`·`LoginWithKakaoUseCase`·`SignUpUseCase`·`onNewToken` 넷에
-  > `DeviceTokenRegistrar.register()`를 붙였고, 권한 요청도 `NotificationPermissionGate`가
+  > `NotificationRepository.registerCurrentDeviceToken()`을 붙였고, 권한 요청도 `NotificationPermissionGate`가
   > `GroupCreateRoute`·`GroupNickNameRoute` 두 자리에서 한다. **같은 문구가 OQ-P-351·OQ-P-352·
   > OQ-P-359의 상태에도 남아 있었고 2026-09-06 감사가 셋 다 걷었다.**
   > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`,
@@ -7005,7 +6984,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   > 로 바꾸고 ② 그 뒤 앱이 플래그를 켠다. 앱 플래그를 먼저 켜면 `getToken()` 이 던져 되돌아갈
   > 중간 상태가 없다.
   > 📌 **앱 쪽 전환 비용은 생각보다 작다** — `FirebaseInstallations.getId()` 로 FID 를 당겨올 수
-  > 있어 지금의 pull 모델이 그대로 성립한다. `DeviceTokenRegistrar` 와 세션 트리거 넷은 남고
+  > 있어 지금의 pull 모델이 그대로 성립한다. `NotificationRepository.registerCurrentDeviceToken()` 과 세션 트리거 넷은 남고
   > `FirebaseDeviceTokenProvider` 구현·`onNewToken`→`onRegistered`·매니페스트 플래그만 바뀐다.
   > (초판이 "값을 당겨오는 자리가 없어져 구조가 통째로 바뀐다"고 적었으나 사실이 아니다.)
   > 📌 브랜치는 등록 토큰 축에 남기로 하고 근거·전환 조건을
@@ -7126,7 +7105,10 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   **호출부가 0건**이다(쓰는 곳이 `observe`·`write`·`remove`만 쓴다) — 대칭을 위해 남길지.
   ③ 평문·암호문이 **같은 `DataStore<Preferences>` 하나**를 공유하므로 키가 섞인다 — 지금은 문제가
   없지만 어느 키가 어느 형태인지는 코드로만 안다.
-- **상태**: 미해결 (**동작 영향 0** — 복제와 미사용 표면의 문제다)
+- **상태**: 부분 해소 — ①② 해소, ③ 미해결 (**동작 영향 0**)
+  > 📌 **①② 해소(PR #534)** — `EncryptedPreferences`가 `DataStorePreferences`를 감싸 암복호화만 얹는다.
+  > 폐기 규칙은 `DataStorePreferences` 한 벌에만 있고, `DataStorePreferences.read`는 `EncryptedPreferences.read`가
+  > 부른다. ③(한 `DataStore<Preferences>`에 평문·암호문 키가 섞임)은 그대로다.
 - **해소 메모**: ①을 정하면 [data-layer](../architecture/data-layer.md) 「평문 DataStore 프록시」 항목에
   적고, 뽑아낸다면 [ADR-0019](../adr/0019-encrypted-token-storage.md)의 결정 범위를 건드리는지 함께 본다.
 
@@ -7631,8 +7613,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   둘 다 막혀 있고**, 잠정값 표(스펙 4-1)는 판정을 거치지 않은 채 확정값처럼 굳는다.
   ③ 같은 뿌리가 OQ-P-344 ③(모듈 설치 실패 빈도를 셀 수단이 없다)에도 있다. 원격으로 나가는 통로로는
   #478이 붙인 Firebase Analytics가 이미 있다.
-- **상태**: 미해결 (코드 사실은 확정. 원격 수집 여부는 결정 전)
-- **해소 메모**: 둘 중 하나로 닫는다. 단계 결과의 요약(돈 단계·걸린 가드·최종 후보 수)만 원격으로 올리거나,
+- **상태**: 해소됨 (2026-09-30, C-101-Loading — 재시도 회복 사다리와 그 단계 로그의 대상 코드가 삭제됐다. ③의 OQ-P-344 ③은 그대로 남는다)
+- **해소 메모**: (당시 메모) 둘 중 하나로 닫는다. 단계 결과의 요약(돈 단계·걸린 가드·최종 후보 수)만 원격으로 올리거나,
   스펙의 판정 수단을 "실패 사진을 확보한 뒤 로컬에서 재현"으로 고쳐 적는다. 앞쪽을 고르면 OQ-P-344 ③도 같은
   통로로 닫힌다.
 
@@ -7654,8 +7636,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   ⑥ **실기기 확인이 0회다.** 회복 경로는 강제 수단이 없어 돌지 않았고, 1차 경로 회귀 확인(계획 Task 8 Step 2:
   평범한 사진·다중 피사체·색 보존·로그 꼬리)도 기록이 없다. Task 4·5가 1차 경로의 수확을 옮기고 일반화했으며,
   캔버스 밖 후보를 버리는 동작 변경도 1차 경로에 걸렸다.
-- **상태**: 미해결 (②~⑤는 정리 대상, ①은 결정 대상, ⑥은 사람이 할 확인)
-- **해소 메모**: ⑥의 1차 경로 확인이 가장 먼저다. 매 촬영이 지나는 경로이기 때문이다. ①을 고치려면 타임아웃과
+- **상태**: 부분 해소 (①~⑤는 대상 코드 삭제로 해소됨(2026-09-30, C-101-Loading), ⑥ 잔존 — 회복 경로는 사라졌으나 1차 경로 회귀 확인은 그대로 필요하고, C-101-Loading 흐름의 실기기 확인이 같은 자리에 더해진다)
+- **해소 메모**: 이제 남은 확인은 둘이다. (a) 1차 경로 회귀 — 평범한 사진·다중 피사체·색 보존. (b) C-101-Loading 흐름 — 갤러리 content uri를 편집 화면이 다시 읽는지, 팝업이 떠 있는 동안 도착한 결과가 보류되는지, 편집 완료 뒤 백스택이 `PictureConfirm` · `ToppingEdit` · `SegmentationConfirm`인지, 저장 중 표시가 내려간 뒤 화면이 걷히기 전의 완료 탭이 확인 화면을 두 번 쌓지 않는지. (당시 메모) ⑥의 1차 경로 확인이 가장 먼저다. 매 촬영이 지나는 경로이기 때문이다. ①을 고치려면 타임아웃과
   끝까지 돈 경우를 ViewModel이 구별해야 하므로 `recoverCandidates`의 결과 표현을 함께 봐야 한다. ⑤는 위임 껍데기를
   지우거나, 테스트가 두 함수를 직접 부르게 옮기면 닫힌다.
 
@@ -7671,8 +7653,8 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   ② 동작도 달라졌다. 원본을 곧장 토핑 재료로 쓰던 버튼이 C-104 수동 편집을 거치게 됐다. 사용자는 한 단계를 더
   거치는 대신 배경을 지울 기회를 얻는다. ③ 위키에는 C-103-Error 버튼 조항이 없어 정책 쪽 기준도 없다.
   OQ-P-344 ①이 묻는 "우회로를 어떻게 둘지"와 같은 자리다.
-- **상태**: 미해결 (디자인 확인 대기)
-- **해소 메모**: 디자인 `C-103-Error` 최신본을 확인한다. 라벨·설명이 맞으면 c103-error-use-original 스펙의 🔁 배너에
+- **상태**: 해소됨 (2026-09-30, C-101-Loading — `C-103-Error`와 그 버튼이 삭제돼 대상이 없다. 후보 0건·실패는 곧장 편집 화면으로 간다)
+- **해소 메모**: (당시 메모) 디자인 `C-103-Error` 최신본을 확인한다. 라벨·설명이 맞으면 c103-error-use-original 스펙의 🔁 배너에
   근거를 적고 닫는다. 다르면 문구를 디자인에 맞춘다.
 
 ### [2026-09-16] 리모트 빌드 캐시 도입 문턱값이 없고, 하니스는 머지됐지만 측정이 안 돌았다
@@ -7740,7 +7722,7 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
 ### [2026-09-21] 같은 정책 위키가 두 저장소에 각각 존재하는데 어느 쪽이 정본인지 정한 문서가 없다
 
 - **ID**: OQ-P-405
-- **출처**: TJYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
+- **출처**: TEAMYG-Android `wiki/`(PR #511 develop 머지)와 이 저장소의 `wiki/`. 둘이 **같은 원본을
   각각 ingest한 결과**다. 소스 층은 사실상 같다 — 39건이 파일명까지 일치하고 차이는 한글 자모
   정규화(NFC/NFD)뿐이다. 갈라진 것은 그 위의 개념 층이다. 이쪽 `concepts/`는 19건이고 화면 단위로
   잘게 쪼갠 한글 이름(`카메라-뷰파인더`·`무한-파르페-그리드`·`nametag-chip`)인데, 저쪽은 8건이고
@@ -7842,5 +7824,18 @@ TJYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문서 
   [a004 스펙](../superpowers/specs/archive/2026-08-12-a004-group-invite-code.md)에 "⚠️ as-built
   갱신(머지일, PR #551)" 블록을 추가하고 "입력"·"포커스 칸" 두 절, 테스트 케이스 수를 갱신한다. 이
   항목의 ①②③을 그대로 대조표로 쓴다.
+
+### [2026-09-30] 위키 C-103-Error·재시도 정책과 구현이 어긋난다
+
+- **ID**: OQ-P-411
+- **출처**: C-101-Loading(이슈 #562, 상위 #517) × 위키 [[누끼-따기]] — 위키는 C-103-loading이 다중 검출 시 C-103-select로
+  분기하고 실패 시 재시도 또는 원본 사용 옵션을 주라고 적는다. [c101-loading 스펙](../superpowers/specs/archive/2026-09-30-c101-loading-design.md)
+  「범위」가 위키 갱신을 제외로 뒀다 — 정책 원본이 아직 위키에 들어오지 않았다.
+- **항목**: ① 구현에는 `C-103-Error`가 없다. 후보 0건·실패·던진 예외·디코드 실패는 전부 편집 화면(C-104)으로 간다.
+  ② 재시도 버튼과 재시도 회복이 없다. ③ 로딩이 별도 화면(`C-101-Loading`)이고 X·시스템 뒤로에 「사진 편집을 그만둘까요?」
+  팝업이 붙었다 — 위키에 이 팝업 조항이 없다. 위키가 정본이라 기획이 갱신되기 전에는 구현이 정책과 갈린 채다.
+- **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
+- **해소 메모**: 기획 쪽이 C-101-Loading·C-103-Error 삭제·그만두기 팝업을 위키에 반영하면 이 항목을 닫는다.
+  위키 [[open-questions]]에 대응 항목이 서면 링크를 붙인다.
 
 <!-- oq-next: 412 -->
