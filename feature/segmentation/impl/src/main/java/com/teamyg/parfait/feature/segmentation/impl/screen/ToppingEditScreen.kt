@@ -180,7 +180,7 @@ internal fun ToppingEditScreen(
             },
             onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
             modifier = Modifier.padding(
-                top = YGTheme.layout.gap.gap3,
+                top = YGTheme.layout.gap.gap2,
                 start = YGTheme.layout.padding.padding7,
                 end = YGTheme.layout.padding.padding7,
             ),
