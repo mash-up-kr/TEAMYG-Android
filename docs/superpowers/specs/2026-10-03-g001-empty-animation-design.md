@@ -199,14 +199,14 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 | `feature/groups/list/impl/.../route/component/GroupListTopBar.kt` | `TooltipBox` 제거, 제목·개수 전달 |
 | `feature/groups/list/impl/.../route/GroupListViewModel.kt` | 날짜·툴팁 상태 제거 |
 | `feature/groups/list/impl/.../route/GroupListErrorScreen.kt` | 상단 바 인자 교체 |
-| `feature/groups/list/impl/src/main/res/drawable*/` | 더미 이미지 PNG 3장 |
+| `core/designsystem/src/main/res/drawable-*/img_topping_dummy_{matcha,cap,camera}.png` | 더미 이미지 PNG 3장, 밀도 버킷 6개(`img_topping_template_*`와 같은 크기 규칙) |
 | `feature/groups/list/impl/src/main/res/values/strings.xml` | 더미 그룹명, "내 그룹". 툴팁 문구는 기존처럼 `GroupListTooltip` 안에 둔다 |
 | `core/designsystem/.../ygtoppinggroup/YGToppingImage.kt`, `YGToppingGroup.kt` | `Local` 케이스 |
 | `core/designsystem/.../ygtopbar/YGTopBar.kt` | `YGTopBarEmpty` 시그니처 |
 | `app-preview/.../YGTopBarPreviewScreen.kt` | 바뀐 시그니처 반영 |
 
 더미 이미지는 Figma MCP로 각 `Topping-Group`의 이미지 원본을 받아, 프레임(96dp 정사각)
-안의 배치대로 잘라 PNG로 넣는다. 회전은 `YGToppingGroupType`이 맡으므로 이미지에 굽지 않는다.
+안의 배치대로 잘라 PNG로 만든다. 원본은 384px(xxxhdpi)이고 나머지 버킷은 거기서 줄인다. 회전은 `YGToppingGroupType`이 맡으므로 이미지에 굽지 않는다.
 
 ### 검증
 
