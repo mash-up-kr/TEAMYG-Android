@@ -7,6 +7,8 @@ platforms: android
 verified: 2026-10-03
 related_code:
   - feature/groups/list/impl/.../route/GroupListScreen.kt#GroupListScreen
+  - feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt#GroupListEmptyIntroState
+  - feature/groups/list/impl/.../model/GroupListEmptyIntroPhase.kt#GroupListEmptyIntroPhase
   - feature/groups/list/impl/.../route/GroupListViewModel.kt#GroupListUiState
   - feature/groups/list/impl/.../route/component/GroupListTopBar.kt#GroupListTopBar
   - feature/groups/list/impl/.../route/component/GroupListTooltip.kt#GroupListTooltip
@@ -94,7 +96,7 @@ tags: [spec, parfait, G-001, animation]
 - `Entering` 도중 앱이 백그라운드로 내려가면 `Shown`으로 건너뛴다. 돌아오면 전부 드러난
   상태이고 바로 탭해 닫을 수 있다.
 - `Dismissing` 도중이면 `Dismissed`로 건너뛴다.
-- `Shown`·`Dismissed`는 그대로 유지한다. 포그라운드 복귀만으로는 다시 재생하지 않는다.
+- `Shown`·`Dismissed`는 그대로 유지한다. 복귀 조회가 성공하면 포그라운드 복귀만으로는 다시 재생하지 않는다. 0건에서 조회가 실패하는 경우는 아래 "주의 / 열린 질문"을 본다.
 
 ### 더미 그룹
 
@@ -177,7 +179,7 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 ```
 
 - `YGToppingImage.Local` — `Template`은 디자인 시스템이 가진 기본 템플릿 열거형에 묶여
-  있어, feature 모듈이 가진 이미지를 넘길 길이 없다.
+  있어, 열거형 밖 drawable을 넘길 길이 없다.
 - `YGTopBarEmpty.count` — `null`이면 개수 자리를 그리지 않는다.
 - `rememberGroupListEmptyIntroState(enabled)` — `enabled`가 참이 되는 순간 한 번 `play()`를
   돌린다. 상태는 `remember`로 들어, 화면을 벗어났다 돌아오면 컴포지션과 함께 새로 만들어져
@@ -191,10 +193,10 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 |---|---|
 | `feature/groups/list/impl/.../model/GroupListEmptyIntroPhase.kt` (신규) | 단계 열거형과 단계 전이·값 해석(순수 로직) |
 | `feature/groups/list/impl/.../model/GroupListEmptyIntroTimeline.kt` (신규) | 타임라인 상수·이징 |
-| `feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt` (신규) | 애니메이션 값을 드는 상태 홀더 |
+| `feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt` (신규) | 애니메이션 값을 드는 상태 홀더. 재생 시작·종료 실행과 `LifecycleStartEffect`(앱이 멈추면 끝 상태로 건너뜀) 연결도 여기서 한다 |
 | `feature/groups/list/impl/.../model/GroupListEmptyDummyGroup.kt` (신규) | 더미 3개 정의 |
 | `feature/groups/list/impl/.../route/component/GroupListEmptyDummyGroups.kt` (신규) | 더미 그리기 |
-| `feature/groups/list/impl/.../route/GroupListScreen.kt` | 0건일 때 더미·툴팁 배치, 터치 다운 관찰, 라이프사이클 연결 |
+| `feature/groups/list/impl/.../route/GroupListScreen.kt` | 0건일 때 더미·툴팁 배치, 터치 다운 관찰 |
 | `feature/groups/list/impl/.../route/component/GroupListTooltip.kt` | 문구·색 교체 |
 | `feature/groups/list/impl/.../route/component/GroupListTopBar.kt` | `TooltipBox` 제거, 제목·개수 전달 |
 | `feature/groups/list/impl/.../route/GroupListViewModel.kt` | 날짜·툴팁 상태 제거 |
@@ -230,7 +232,8 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 - **앱 첫 실행에서는 초기 대기 500ms 동안 크림이 자란다.** 목록을 받기 전에는 더미 없이
   측정되고, 0건이 확정되는 순간 더미 자리가 생기면서 `GroupListParfaitLayout`이 크림을
   늘린다. 다른 화면에서 돌아올 때는 처음부터 더미가 있어 자라는 모션이 없다.
-- **0건에서 당겨서 새로고침이 실패하면 다시 재생된다.** 에러 화면으로 바뀌며 인트로 상태가
+- **0건에서 조회가 실패하면 다시 재생된다.** 당겨서 새로고침뿐 아니라 재진입·포그라운드
+  복귀 조회가 실패해도 0건이면 에러 화면으로 바뀌며(`handleLoadFailure`), 인트로 상태가
   버려지기 때문이다. 재시도가 성공해 목록 화면으로 돌아오면 처음부터 돈다.
 - **화면 회전 등 구성 변경에서는 다시 재생된다.** 상태를 `remember`로만 들기 때문이다.
 - **백그라운드 복귀 동작은 정책에 없다.** "완료 상태로 표시"는 구현 쪽에서 정한 값이다.

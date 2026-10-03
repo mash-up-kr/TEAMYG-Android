@@ -149,6 +149,9 @@ internal fun GroupListScreen(
                 }
 
                 if (uiState.isEmptyConfirmed && isTooltipVisible) {
+                    // 화살표는 본체 경계 밖 위에 그려진다. graphicsLayer 가 padding 보다 바깥이어야
+                    // 알파 < 1 에서 레이어가 화살표를 자르지 않고, top 패딩은 화살표 높이
+                    // (GroupListTooltip 의 cornerHeight)와 같아야 화살표가 영역 밖으로 나가지 않는다
                     GroupListTooltip(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
