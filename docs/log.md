@@ -339,3 +339,6 @@ status 「토핑 생성·배치·배치 수정」 재조회 실패 서술 정정
 
 ## [2026-10-03] lint | 누끼 편집 진입 흐름 단축을 현재 상태 문서에 반영 — 확인 화면(`SegmentationConfirm`)·편집 결과 왕복 삭제
 status 「토핑 생성·배치·배치 수정」·「누끼 추출」·「튜토리얼」 · navigation-flow 토핑 생성 플로우 · state-management 저장 → 초안 기록 → 이동 순서 계약 · design-system 튜토리얼 소비처 · 고쳐 씀 OQ-P-105·OQ-P-269·OQ-P-347·OQ-P-368·OQ-P-369·OQ-P-400 · 해소 OQ-P-277·OQ-P-380 · ADR-0025·0026·0034에 현재 코드와 다른 점 표기
+
+## [2026-10-03] lint | 누끼 편집 화면 개편(C-104)을 현재 상태 문서에 반영 — 스펙·계획 2건을 archive로
+status 「누끼 추출」 · design-system 헤더 아래 토스트 호스트·`YGFloatingBar` 배치 · 추가 OQ-P-425 · 고쳐 씀 OQ-P-081(`Edit` 소비처) · 스펙·계획 링크를 archive 경로로
