@@ -308,6 +308,8 @@ sealed interface SegmentationEffect : UiSideEffect {
 
 ### 선택 시점에 일어나는 일의 순서
 
+> 이 순서는 [topping-edit-entry-flow 스펙](../2026-10-03-topping-edit-entry-flow-design.md)이 대체한다 — 후보 선택은 저장만 하고 초안 기록은 C-104 「다음」이 한다.
+
 **이 순서가 곧 계약이다.** 지금은 초안 기록이 `init`, 화면 이동이 탭이라 순서가 저절로 보장됐지만,
 둘 다 탭 시점으로 옮겨 오면서 순서를 지키지 않으면 다음 화면이 깨진다.
 

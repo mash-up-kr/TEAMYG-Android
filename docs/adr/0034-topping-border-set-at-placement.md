@@ -15,6 +15,8 @@ tags: [adr, parfait, topping, border, state]
 
 # ADR-0034: 토핑 테두리는 배치 단계에서 정하고 초안에 싣지 않는다
 
+> 📌 **현재 코드와 다른 점** — 본문의 확인 화면은 지금 없다. 배치 화면 헤더의 뒤로는 누끼 편집 화면(갤러리 최근 누끼로 들어왔으면 갤러리)으로 돌아가고, 버리는 규칙은 같다 → [스펙](../superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md).
+
 > 상태·날짜·결정자·대체 관계는 위 frontmatter가 단일 출처. 본문은 결정 내용에 집중.
 
 ## 맥락

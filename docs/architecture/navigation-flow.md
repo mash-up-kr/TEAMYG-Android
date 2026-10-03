@@ -38,7 +38,7 @@ Navigation3 위에 자체 Navigator·엔트리 빌더를 얹는다. 결정 근�
     기각했다. reified 버전은 호출부 편의이고 `KClass` 버전이 실제 구현·테스트 대상이다.
     **대상을 못 찾으면 아무것도 걷지 않고 `false`를 주므로 "백스택에 있는지" 확인이 반환값으로 끝난다** —
     별도 조회 API를 두지 않은 이유다. 소비처는 Route 넷이다: `PictureConfirmRoute`(`returnResultOnly = false`)·
-    `SegmentationRoute`·`SegmentationConfirmRoute`의 닫기 → `popUpTo<NavKeyCanvasMain>()`,
+    `SegmentationRoute`·`ToppingEditRoute`의 닫기 → `popUpTo<NavKeyCanvasMain>()`,
     `PictureConfirmRoute`(`returnResultOnly = true`)의 확인·닫기 → `popUpTo<NavKeyCanvasBGEdit>()`,
     `CanvasToppingPlaceRoute`의 배치 완료 → `popUpTo<NavKeyCanvasMain>()`
     ([segmentation-pipeline-hardening 스펙](../superpowers/specs/archive/2026-08-18-segmentation-pipeline-hardening.md)).
@@ -342,73 +342,64 @@ NavKeyGroupList ─┬─ 생성 ─▶ NavKeyGroupCreate(nickName) ──(확�
 NavKeyCameraCustom ─┐
                     ├─▶ NavKeyPictureConfirm(uri, source) ══▶ NavKeySegmentation(sourceImageUri)
 NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스택에 남는다)  │
-                                                                              ▼
-                          NavKeySegmentationConfirm(sourceImageUri?, subjectImagePath?, trimmedSubjectImagePath)
-                                     ▲              │  ▲ ToppingEditResult(ResultEventBus)  │
-   갤러리 "최근"의 알맹이 ────────────┘              ▼  │                                    ▼
-   (앞의 둘이 null — 편집 없음)      NavKeyToppingEdit(source, segmentation)                 NavKeyCanvasToppingPlace
-                                                                                             │ popUpTo<NavKeyCanvasMain>()
-                                                                                             ▼
-                                                                                        C-001 캔버스
-
-NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) ──▶ NavKeySegmentationConfirm
-   (후보 0개·실패 — goToAndPopCurrent 로 분석 화면을 치환)      (goTo — 편집 화면은 백스택에 남는다)
+                                                                              ├─ 후보 선택 (goTo) ─────────▶ NavKeyToppingEdit(source, segmentation)
+                                                                              └─ 후보 0개·실패 (goToAndPopCurrent) ▶ NavKeyToppingEdit(isDetectionFailed = true)
+                                                                                                                │ 「다음」 (초안 기록 후 goTo)
+                                                                                                                ▼
+   갤러리 "최근"의 알맹이 ──(초안 맞춤 후 goTo)──────────────────────────────────────────────▶ NavKeyCanvasToppingPlace
+                                                                                                                │ popUpTo<NavKeyCanvasMain>()
+                                                                                                                ▼
+                                                                                                           C-001 캔버스
 ```
 
-- 확인 화면(C-101-confirm) → 분석은 **`goToSingleClearTop(NavKeySegmentation)`**다(연타로 같은 키가 두 번
-  쌓이지 않게 `goTo` 대신 쓴다). 확인 화면이 로딩 아래 백스택에 남아, 선택 UI·편집에서 뒤로 가면 확인 화면으로 돌아온다.
+- 사진 확인 화면(C-101-confirm) → 분석은 **`goToSingleClearTop(NavKeySegmentation)`**다(연타로 같은 키가 두 번
+  쌓이지 않게 `goTo` 대신 쓴다). 확인 화면이 로딩 아래 백스택에 남아, 선택 UI에서 뒤로 가면 확인 화면으로 돌아온다.
 - 분석은 `NavKeySegmentation` 한 목적지가 **C-101-Loading → 후보 1개 이상이면 C-103 선택 UI**로 상태만 바꿔 받는다.
-  후보 0개·실패·던진 예외·디코드 실패는 전부 `goToAndPopCurrent(NavKeyToppingEdit(completion = RecordAndConfirm))`로
+  후보 0개·실패·던진 예외·디코드 실패는 전부 `goToAndPopCurrent(NavKeyToppingEdit(isDetectionFailed = true))`로
   **분석 화면을 편집 화면으로 치환**한다(`sourceImageUri`를 원본·마스크 자리 둘 다에 싣는다). 실패 전용 화면은 없다.
   백스택은 `PictureConfirm` · `ToppingEdit`이 된다.
-- 선택 UI에서 후보를 고르면 `Segmentation` → `SegmentationConfirm`은 평범한 `goTo`다 — 뒤로 가면 인식이
-  끝난 화면으로 돌아온다(재추출하지 않는다).
-- **편집 결과는 `ResultEventBus` 왕복이다** — `NavKeyToppingEdit`는 `@Serializable` NavKey라
-  *들어갈 때의 인자*만 담고, 나올 때는 `sendResult(TOPPING_EDIT_RESULT_KEY, ToppingEditResult)` +
-  `onBack()`으로 돌려준다. 확인 화면이 `ResultEffect<ToppingEditResult>`로 받아 `rememberSaveable`에 쌓는다.
-  **데코레이터 존치 여부를 묻던 항목이 실사용 소비처를 되찾았다** →
-  [open-questions](../synthesis/open-questions.md) [2026-08-10].
-- 재편집을 위해 확인 화면이 **최종본과 "테두리 전 알맹이"를 따로** 들고 있다가 알맹이 쪽을 마스크로
-  넘긴다. 최종본을 넘기면 테두리 색이 원본 픽셀로 덮여 사라진다.
-- 📌 **결과가 원본 사진의 긴 변도 나른다** — `ToppingEditResult.sourceLongSide`가 업로드 축소 배율의
-  분모다. 값 클래스가 아니라 벌거벗은 `Int`인 이유는 `feature/segmentation/api`가 `:domain`을 의존하지
-  않기 때문이고, 감싸는 곳은 소비처인 `SegmentationConfirmViewModel`이다
-  → [topping-upload-source-scaled 스펙](../superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md).
-- **편집 완료가 `ToppingEditCompletion`으로 갈린다** — `NavKeyToppingEdit.completion`이 `ReturnResult`(기본. 확인 화면의
-  "사진 편집": 위 `ResultEventBus` 왕복)이면 `sendResult` + `onBack`이고, `RecordAndConfirm`(분석 0개 경로)이면
-  `ToppingEditViewModel`이 파일 저장에 이어 초안까지 기록한 뒤 `GoToConfirm`을 내고 Route가 `goTo(NavKeySegmentationConfirm)`을 한다.
-  완료 방식은 `@Assisted` 인자로 VM이 받는다. **편집 화면은 확인 화면 아래 백스택에 남는다.**
-  저장부터 기록까지는 `isSaving`이 올라가 있어 그 사이의 완료 탭은 무시된다.
-  ⚠️ `isSaving`은 이동 전에 내린다(켠 채 나가면 확인 화면에서 돌아왔을 때 갇힌다). 그래서 화면이 걷히기 전에 들어온
-  완료 탭은 한 번 더 저장·기록한다 — 두 번째 결과는 저장 경로가 달라 확인 키가 달라지므로 `goToSingleClearTop`으로는 못 막고,
-  Route가 편집 키가 맨 위일 때만 이동해(`backStack.lastOrNull() == key`) 확인 화면이 두 번 쌓이는 것만 막는다.
-  그때 초안은 둘째 경로로 덮이고 확인 화면도 초안 흐름(`collectDraft`)을 따라 둘째 결과를 보므로 둘이 어긋나지 않는다. 첫 결과 파일만 캐시에 고아로 남는다.
-  경로 이름이 뒤집혀 있다: 확인 화면 인자의 `subjectImagePath = result.cutoutImagePath`, `trimmedSubjectImagePath = result.subjectImagePath`.
-- **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, `SegmentationConfirm`, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
+- 선택 UI에서 후보를 고르면 `Segmentation` → `ToppingEdit`은 평범한 `goTo`다 — 편집 화면에서 뒤로 가면 인식이
+  끝난 선택 UI로 돌아와 다른 후보를 고를 수 있다(재추출하지 않는다). 이펙트를 보낸 뒤 이동 전에 들어온 탭이
+  편집 화면을 두 번 쌓지 않도록 `SegmentationRoute`는 자신이 맨 위일 때만 이동한다.
+  선택 시점에는 알맹이를 파일로만 저장하고 **초안은 건드리지 않는다.** 편집 화면의 시작 마스크는 그 저장본이라
+  Route가 `file` 스킴 uri로 바꿔 싣는다(`File.toUri()`가 android `Uri`라 ViewModel이 아니라 Route가 한다).
+- **편집 화면의 「다음」이 초안을 기록하는 한 곳이다** — `ToppingEditViewModel`이 파일 저장에 이어
+  `RecordToppingDraftUseCase`로 초안을 기록한 뒤 `GoToPlace`를 내고, Route가 `goTo(NavKeyCanvasToppingPlace)`를 한다.
+  **편집 화면은 배치 화면 아래 백스택에 남아** 배치 화면 헤더의 뒤로가 편집 상태 그대로인 편집 화면으로 돌아온다.
+  편집 결과를 화면 밖으로 돌려주는 `ResultEventBus` 왕복은 없다(`ToppingEditResult`는 `:impl` 안에서만 쓴다).
+  초안 흐름이 닫혀 기록이 거절되면 저장 실패와 구분해 `DraftUnavailable`로 캔버스에서 다시 시작하라고 안내한다.
+  저장부터 기록까지는 `isSaving`이 올라가 있어 그 사이의 「다음」 탭은 무시된다.
+  ⚠️ `isSaving`은 이동 전에 내린다(켠 채 나가면 배치 화면에서 돌아왔을 때 갇힌다). 그래서 화면이 걷히기 전에 들어온
+  탭은 한 번 더 저장·기록한다. Route가 편집 키가 맨 위일 때만 이동해(`backStack.lastOrNull() == key`) 배치 화면이
+  두 번 쌓이는 것만 막고, 초안은 둘째 결과로 덮인다. 첫 결과 파일만 캐시에 고아로 남는다.
+- **감지 실패로 들어온 편집 화면은 안내 토스트를 한 번 띄운다** — `NavKeyToppingEdit.isDetectionFailed`가 켜져 있고
+  불러오기에 성공했을 때만이며, 띄웠다는 표시는 `SavedStateHandle`에 남아 프로세스가 되살아나도 다시 띄우지 않는다.
+  편집 화면의 헤더 뒤로·시스템 뒤로는 팝업 없이 `onBack()`이라 선택 UI(감지 실패면 `PictureConfirm`)로 간다.
+- **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, C-104 편집 화면, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
   팝업은 디자인시스템 `YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitEdit`이고 문구는 `core/designsystem`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
-  "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)와 편집 화면의 뒤로·닫기에는 팝업이 없다.
+  "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)에는 팝업이 없고, 편집 화면의 헤더 뒤로·시스템 뒤로도 팝업 없이 한 단계 돌아간다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.
+- **갤러리 "최근"의 누끼는 편집 화면을 거치지 않는다** — `CustomGalleryPickerViewModel`이 `EnsureDraftSubjectRecordedUseCase`로
+  초안이 그 알맹이를 가리키게 맞춘 뒤 `NavigateToToppingPlace`를 보내고, `CustomGalleryPickerRoute`는 자신이 맨 위일 때만
+  `goTo(NavKeyCanvasToppingPlace)`를 한다. 맞추지 못하면(거절·예외) 갤러리에 머문 채 토스트를 띄운다.
+  배치 화면 헤더의 뒤로는 갤러리로 돌아온다. 최근 줄에 무엇을 싣는지는 `RecentImagePick`(`SOURCE`·`CUTOUT`)이 정하고,
+  **배경 편집은 `SOURCE`·토핑 만들기는 `CUTOUT`**이다.
 - ⚠️ 분석 이벤트 화면명은 로딩 중에도 `C-103`이다 — 로딩과 선택 UI가 같은 `NavKeySegmentation`이라서다.
-- ✅ **플로우를 나가는 경로가 생겼다(2026-08-20, PR #309)** — 세 화면 + C-101-confirm의 `onClickClose`가
-  전부 빈 람다이던 것이 `popUpTo<NavKeyCanvasMain>()`으로 결선됐다(OQ-P-152 해소). 세그멘테이션 쪽은
-  로딩·에러·본문 세 화면이 콜백 하나를 공유해 **한 자리를 채우자 셋이 함께 출구를 얻었다.**
-- 엔트리 3개는 Route를 부르기만 하고 **스캐폴드(`YGScaffoldV2`)는 Route가 소유한다**(2026-08-20,
-  PR #309 이관). 빌더 하나(`featureSegmentationEntryBuilder`)가 세 entry를 등록하는 것은 그대로다.
-- 📌 **C-103-select를 별도 목적지로 만들지 않았다**(2026-08-24, PR #342). 위키 정책이 다중 검출
+- 세 화면(로딩·에러·본문)이 `SegmentationRoute`의 닫기 콜백 하나를 공유하고, 닫기는 팝업을 거쳐
+  `popUpTo<NavKeyCanvasMain>()`이다. 이 되감기가 플로우를 나가는 유일한 출구다.
+- 엔트리(`NavKeySegmentation`·`NavKeyToppingEdit`)는 Route를 부르기만 하고 **스캐폴드(`YGScaffoldV2`)는 Route가
+  소유한다.** 빌더 하나(`featureSegmentationEntryBuilder`)가 두 entry를 등록한다.
+- 📌 **C-103-select를 별도 목적지로 만들지 않았다** — 위키 정책이 다중 검출
   분기를 별도 화면 ID로 가르지만 **`NavKeySegmentation` 하나가 후보 수에 따라 점선 박스를 1개
   또는 N개 그린다** — 두 상태의 UI가 같은 형태라 목적지를 쪼개면 NavKey·Route·EntryBuilder·
   ViewModel이 한 벌 늘고 거의 같은 코드가 복제된다. C-101-Loading도 같은 목적지 안에서
   **상태(`SegmentationState.isAnalyzing`)로 갈린다**(엔트리 수 불변).
-  같은 라운드에서 **다음 화면으로 가는 시점이 Route의 직접 호출에서 이펙트 수신으로 옮겨 갔다** —
-  저장이 탭 시점으로 내려오면서 이동이 비동기 결과에 걸렸기 때문이다(`GoToConfirm`이 저장된 경로
-  둘을 싣는다). 그 순서가 곧 계약인 이유는 [state-management](state-management.md)와
-  [c103-multi-subject-selection 스펙](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md).
+  다음 화면으로 가는 시점은 Route의 직접 호출이 아니라 이펙트(`GoToEditCandidate`) 수신이다 — 저장이 탭 시점에 일어나
+  이동이 비동기 결과에 걸리기 때문이다.
 
-> 📌 **마지막 목적지가 실물로 바뀌었다(2026-08-19, PR #290)** — 확인 화면의 "다음"이 자리채움이던
-> `NavKeyCanvasMove`를 버리고 **`NavKeyCanvasToppingPlace`**로 간다(당시엔 `imageUri` 인자를 실었고, PR #334가 그것을 초안으로 옮기며 인자를 걷었다). 넘기는 값도 파일
-> 경로가 아니라 `File(...).toUri()`로 감싼 `file` 스킴 uri이고(배치 화면이 Coil로 읽는다), 그 대상은
-> 여백을 걷어낸 **트리밍본**이다(확인 화면이 `key.trimmedSubjectImagePath`로 초기화한다) →
+> 📌 **마지막 목적지는 `NavKeyCanvasToppingPlace`다** — 편집 화면의 「다음」과 갤러리 최근 누끼가 여기로 온다.
+> 배치할 알맹이는 인자가 아니라 DataStore 초안이 나르고, 배치 화면은 그 파일을 Coil로 읽는다 →
 > [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md).
 >
 > ✅ **되돌아가는 방식이 고쳐졌다(2026-08-20, PR #309)** — 배치 확정 이펙트가
@@ -424,11 +415,8 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
 > 초안이 나른다([ADR-0026](../adr/0026-topping-draft-datastore-ssot.md)). `camera`·`segmentation`
 > 모듈이 캔버스 개념을 떠안지 않는 것이 이 배치의 실익이다.
 >
-> ✅ **흐름에 두 번째 입구가 생겼다(2026-08-22, PR #334)** — 배치에 성공한 알맹이가 갤러리 "최근"에
-> 남고, 그것을 고르면 촬영·세그멘테이션을 건너뛰어 **확인 화면으로 직행**한다. 그래서
-> `NavKeySegmentationConfirm`의 `sourceImageUri`·`subjectImagePath`가 nullable로 넓어졌고, 둘이 없는
-> 진입에서는 「사진 편집」을 숨긴다(아래 항목). 확인 화면은 초안이 이번 알맹이를 가리키지 않으면 **스스로 초안을
-> 먼저 적은 뒤** 구독을 연다 — 순서를 뒤집으면 첫 방출의 `null`이 없는 실패를 알린다.
+> ✅ **흐름에 두 번째 입구가 있다** — 배치에 성공한 알맹이가 갤러리 "최근"에 남고, 그것을 고르면
+> 촬영·세그멘테이션·편집을 건너뛰어 **배치 화면으로 직행**한다(위 「갤러리 "최근"의 누끼」 항목).
 > 노출은 `returnResultOnly = false`인 토핑 만들기 진입에서만이라 배경 선택(C-301)에는 안 섞인다 →
 > [c106-topping-place-api 스펙](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md) 「누끼 알맹이 재사용 (PR6)」.
 >
@@ -437,11 +425,6 @@ NavKeySegmentation ══▶ NavKeyToppingEdit(completion = RecordAndConfirm) �
 > `NavKeyCustomGalleryPicker`가 받아 화면이 그대로 쓴다. 두 플래그가 우연히 같은 방향을 가리키던
 > 것을 부르는 쪽이 직접 고르게 갈랐고, **배경 편집은 `SOURCE`·토핑 만들기는 `CUTOUT`**이다.
 > 겸해 최근 목록의 정원도 종류별로 갈렸다([data-layer](data-layer.md) 「예: 최근 이미지」, OQ-P-258).
->
-> 🔁 **재사용 진입에는 「사진 편집」이 없다** — 되살릴 원본이 없어 확인 화면이 버튼을 숨긴다
-> (`SegmentationConfirmState.canEditPhoto`). 편집 화면은 영역 수정만 하므로 원본 없이 열 수 있는 모드가 없다.
-> 재사용 진입은 확인 화면이 진입 인자의 알맹이를 초안에 한 번만 적고, 그 표시를 `SavedStateHandle`
-> (`hasRecordedEntrySubject`)에 둔다 — 프로세스 사망 복원이 진입 인자로 초안을 다시 덮어쓰지 않게 한다.
 >
 > ✅ **호출자를 잃고 남았던 잔해가 지워졌다(2026-09-20, PR #514)** — `NavKeyCanvasMove`·
 > `CanvasMoveRoute`·`CanvasMoveScreen`과 엔트리 등록이 삭제됐다. 같은 라운드가
@@ -512,9 +495,7 @@ NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyC
 - **결과 왕복이 없다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
   저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤
   `popUpTo<NavKeyCanvasMain>()`으로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
-- **`NavKeyToppingEdit`의 호출자는 둘이다** — `SegmentationRoute`(분석 0건·실패, `RecordAndConfirm`)와
-  `SegmentationConfirmRoute`(「사진 편집」, `ReturnResult`). 캔버스 쪽은 그 목적지를 열지 않고
-  `TOPPING_EDIT_RESULT_KEY`를 받는 곳도 `SegmentationConfirmRoute` 하나다.
+- **`NavKeyToppingEdit`의 호출자는 `SegmentationRoute` 하나다**(후보 선택 `goTo`, 분석 0건·실패 `goToAndPopCurrent`). 캔버스 쪽은 그 목적지를 열지 않는다.
 - entry는 `NavKeyCanvasBGEdit`와 같이 `Modifier.fillMaxSize()`만 넘긴다 — Route가 `YGScaffoldV2`를 직접 든다.
 - 지난 캔버스에서 본인 토핑 탭이 무반응인 것은 → [open-questions](../synthesis/open-questions.md) OQ-P-326 ③.
 
@@ -625,9 +606,9 @@ C-001 캔버스 메인
    > 갤러리가 `sendResult` 대신 확인 화면으로 `goTo` 하도록 바뀌었는데, 호출 화면
    > `CanvasMainRoute`의 `ResultEffect<String>`는 그대로 남아 아무것도 받지 못한다
    > → [open-questions](../synthesis/open-questions.md) [2026-08-04].
-   > 📌 **반대로 되살아난 사례(2026-08-14, PR #221)** — 토핑 편집 화면이 `sendResult` +
-   > `ResultEffect` 왕복으로 결과를 돌려준다. NavKey가 담지 못하는 **나올 때의 값**을 넘겨야 해서
-   > 이 관용구를 다시 골랐다. 즉 "전진하며 `goTo`"와 "결과 반환"이 develop에 공존한다.
+   > 📌 **결과 반환이 남은 사례** — 배경 편집(`NavKeyCanvasBGEdit`)이 `ResultEffect<PictureConfirmResult>`로
+   > 사진 확인 화면의 결과를 받는다. NavKey가 담지 못하는 **나올 때의 값**을 넘겨야 해서 이 관용구를 쓴다.
+   > 즉 "전진하며 `goTo`"와 "결과 반환"이 develop에 공존한다.
    > 📌 **같은 화면이 둘 다 하는 사례(2026-08-15, PR #231)** — C-101-confirm이 `NavKeyPictureConfirm`
    > 인자 `returnResultOnly`로 갈린다: false면 전진(`goToSingleClearTop`), true면
    > `sendResult(PictureConfirmResult)` + 물러남. 반환 타입이 `String?`(카메라 실패 경로)과

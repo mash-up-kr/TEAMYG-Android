@@ -96,16 +96,16 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 > 존재를 모른다.
 
 > 📌 **서버를 부르지 않는 구독에도 쓰이기 시작했다(2026-09-05, PR #449)** — 튜토리얼 노출 여부
-> (`GetTutorialVisibleFlowUseCase`)는 DataStore 한 키를 읽는 구독인데 소비 셋
-> (`CanvasMainViewModel`·`CustomGalleryPickerViewModel`·`SegmentationConfirmViewModel`)이 모두
+> (`GetTutorialVisibleFlowUseCase`)는 DataStore 한 키를 읽는 구독인데 소비 둘
+> (`CanvasMainViewModel`·`CustomGalleryPickerViewModel`)이 모두
 > `launchWhileSubscribed`로 연다. **위 기준("이 구독이 서버를 계속 부르는가")으로는 `launch` 쪽**이고,
-> 실제로 얻는 것은 화면이 안 보일 때 로컬 구독이 잠깐 끊기는 것뿐이다. 쓰는 곳이 캔버스 세 화면에서
-> **여섯**이 됐고 그중 셋이 기준 밖이라, 문서의 기준과 코드의 관행이 갈렸다
+> 실제로 얻는 것은 화면이 안 보일 때 로컬 구독이 잠깐 끊기는 것뿐이다. `CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`도
+> 같은 도우미를 쓰고 이 튜토리얼 구독은 기준 밖이라, 문서의 기준과 코드의 관행이 갈렸다
 > → [open-questions](../synthesis/open-questions.md) OQ-P-368.
 >
 > 딸려 오는 것이 하나 있다 — 이 구독은 **화면이 `state`를 보는 동안에만** 열리므로 ViewModel 테스트가
 > `backgroundScope`에서 `state`를 수집해 라우트의 `collectAsStateWithLifecycle()`을 흉내 내야 한다.
-> 세 ViewModel 테스트가 각자 `shownViewModel()` 헬퍼로 같은 준비를 적는다.
+> `CustomGalleryPickerViewModelTest`가 `shownViewModel()` 헬퍼로 그 준비를 적는다.
 
 ## 신규 화면 추가 체크리스트
 1. **api 모듈**: `NavKeyXxx`(@Serializable) 정의([[navigation-flow]]).
@@ -264,19 +264,20 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
   > 곧바로 넘기면 뜨자마자 함께 사라지기 때문이다. 실패 안내가 이동을 지연시키는 첫 사례이고,
   > 기다리는 시간이 `YGToastPolicy`와 별개 상수라는 점은
   > [open-questions](../synthesis/open-questions.md) OQ-P-328이 쥔다.
-- **이동 전에 끝내야 하는 일이 있으면 순서가 계약이 된다** — C-103 후보 선택(2026-08-24, PR #342)이
-  그 사례다. 탭 하나가 **저장 → 초안 기록 완료 → `isLoading` 해제 → `GoToConfirm` post** 순으로
-  돌고, 이 순서를 지키는 이유는 다음 화면에 있다: `SegmentationConfirmViewModel`은 정상 진입에서
-  스스로 초안을 적지 않고 **구독만** 하므로 이 화면이 초안의 **유일한 writer**이고, 기록보다 이동이
-  앞서면 그 화면이 첫 방출에서 `DraftMissing`으로 "다음"을 잠근 채 뜬다. 기록이 실패하거나 흐름
-  미개시를 알리면 **이동하지 않고** 실패 이펙트로 접는다.
-  - **로딩 해제가 갈래마다 따로 놓인다** — 성공·`Result.failure`·`launch(onError)` 셋이다.
-    이동이 `goTo`라 이 화면과 ViewModel이 백스택에 남고, 켠 채 나가면 **돌아왔을 때 오버레이에
-    갇힌다.** 아래 "안티패턴" 1번이 금지하는 것은 마지막 줄 한 곳에 몰아 두는 형태이고, 여기서는
-    세 갈래가 각각 내린다.
-  - **중복 탭 방어는 `launch(key)`만으로 끝냈다** — 위 로그아웃 사례와 달리 State 플래그를 한 겹
-    더 두지 않는다. 눌리는 것이 버튼이 아니라 사진 위 점선 박스이고, `isLoading` 오버레이 자체가
-    이미 "받는 중"을 그리기 때문이다 → [c103-multi-subject-selection 스펙](../superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md).
+- **이동 전에 끝내야 하는 일이 있으면 순서가 계약이 된다** — C-104 누끼 편집의 「다음」이 그 사례다.
+  탭 하나가 **저장 → 초안 기록 완료 → `isSaving` 해제 → `GoToPlace` post** 순으로 돌고, 이 순서를
+  지키는 이유는 다음 화면에 있다: 토핑 배치(C-106)는 초안을 읽기만 하므로 **편집 화면이 초안의
+  유일한 writer**이고, 기록보다 이동이 앞서면 배치 화면이 빈 초안으로 뜬다. 기록이 실패하거나 흐름
+  미개시(`record`가 `false`)를 알리면 **이동하지 않고** 각각 `SaveFailed`·`DraftUnavailable`로 접는다.
+  후보 선택(C-103)은 이 계약에서 빠져 있다 — 파일 저장만 하고 초안은 건드리지 않은 채 편집 화면으로 간다.
+  - **`isSaving` 해제가 이동 전에 놓인다** — 이동이 `goTo`라 편집 화면과 ViewModel이 백스택에 남고,
+    켠 채 나가면 **배치 화면에서 돌아왔을 때 저장 딤에 갇힌다.** 아래 "안티패턴" 1번이 금지하는
+    것은 마지막 줄 한 곳에 몰아 두는 형태이고, 여기서는 갈래마다 따로 내린다. 그래서 화면이 걷히기
+    전의 탭은 한 번 더 저장·기록할 수 있고, Route가 편집 키가 맨 위일 때만 이동해 배치 화면이 두 번
+    쌓이는 것만 막는다.
+  - 같은 모양의 계약이 갤러리 최근 누끼에도 있다 — `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤에만
+    `NavigateToToppingPlace`를 보내고, 맞추는 동안 연타는 `launch(key)`가 막는다
+    → [topping-edit-entry-flow 스펙](../superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md).
 - ⚠️ **UI 타입 보유 사례(2026-08-15, PR #231)** — C-301 배경 편집의 `CanvasBGEditUiState`가 Compose
   `Color`를, `CanvasBGEditEffect.ConfirmBackground`가 디자인시스템 타입 `YGCanvasBackground`를 든다.
   선택 팔레트(`CanvasBackgroundPaletteColors`)도 ViewModel 파일의 public 상수다. 위 "표시 문자열을

@@ -180,7 +180,7 @@ Expected: 컴파일 실패
 - VM: `loadImages` 성공 분기에서 `isDetectionFailed && savedStateHandle[KEY_DETECTION_FAILED_SHOWN] != true`면 표시를 남기고 `ShowDetectionFailed`. 성공 분기인 이유를 주석으로 — 디코드 실패면 곧 닫히는 화면에 "직접 선택해 주세요"를 띄우지 않는다.
 - Factory에 `isDetectionFailed` 추가, Route가 `key.isDetectionFailed`를 넘긴다.
 - Route: `ShowDetectionFailed` → `toastPolicy.show(YGToastType.Edit(getString(topping_edit_detection_failed)))`.
-- `SegmentationRoute`의 감지 실패 갈래(`segmentationImagePath == null`)에 `isDetectionFailed = true`.
+- `SegmentationRoute`의 감지 실패 갈래(`GoToEditDetectionFailed`)에 `isDetectionFailed = true`.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -209,6 +209,8 @@ git commit -m "feat: 대상 감지에 실패해 들어온 누끼 편집에 안�
 - Modify: `docs/log.md` 한 줄
 
 - [ ] **Step 1: 고친다**
+
+- 스펙을 `archive/`로 옮긴 뒤 코드에 옛 경로가 남았는지 `grep -rn "2026-10-03-topping-edit-entry-flow-design" --include='*.kt' .`로 찾아 KDoc 참조(예: `SegmentationViewModel#selectCandidate`)를 아카이브 경로로 고친다. `check_links`는 `docs`만 훑는다.
 
 - [ ] **Step 2: 링크 확인**
 

@@ -15,6 +15,8 @@ tags: [adr, parfait, topping, state, datastore, navigation]
 
 # ADR-0026: 토핑 만들기 흐름 상태를 DataStore 초안 한 벌로 모은다
 
+> 📌 **현재 코드와 다른 점** — 아래 결정 당시의 확인 화면(`SegmentationConfirm`)·`TOPPING_EDIT_RESULT_KEY` 왕복은 지금 없다. 초안은 누끼 편집 화면(C-104)의 「다음」(`ToppingEditViewModel`)이 기록하고, 갤러리 최근 누끼는 `EnsureDraftSubjectRecordedUseCase`가 맞춘다. 결정(초안 한 벌을 DataStore에 둔다)은 그대로다 → [스펙](../superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md).
+
 > 상태·날짜·결정자·대체 관계는 위 frontmatter가 단일 출처. 본문은 결정 내용에 집중.
 
 ## 맥락
