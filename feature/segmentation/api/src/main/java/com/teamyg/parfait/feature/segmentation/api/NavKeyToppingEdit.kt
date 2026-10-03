@@ -8,24 +8,12 @@ import kotlinx.serialization.Serializable
  *
  * @param sourceImageUri 원본 이미지. 제거했던 영역을 다시 채울 때 이 픽셀을 가져온다
  * @param segmentationImageUri Segmentation 으로 잘라낸 이미지. 이 이미지의 알파가 편집의 시작 마스크가 된다
- * @param completion 기본은 [ToppingEditCompletion.ReturnResult] 다. [ToppingEditCompletion.RecordAndConfirm]
- * 이면 편집 화면이 닫히지 않고 확인 화면 아래 백스택에 남는다
  */
 @Serializable
 data class NavKeyToppingEdit(
     val sourceImageUri: String,
     val segmentationImageUri: String,
-    val completion: ToppingEditCompletion = ToppingEditCompletion.ReturnResult,
 ) : NavKey
-
-@Serializable
-enum class ToppingEditCompletion {
-    /** 결과를 [TOPPING_EDIT_RESULT_KEY] 로 돌려주고 닫는다. 기록·이동은 호출한 쪽 몫이다 */
-    ReturnResult,
-
-    /** 편집 화면이 초안을 직접 기록하고 확인 화면으로 간다 */
-    RecordAndConfirm,
-}
 
 /**
  * 편집 결과.

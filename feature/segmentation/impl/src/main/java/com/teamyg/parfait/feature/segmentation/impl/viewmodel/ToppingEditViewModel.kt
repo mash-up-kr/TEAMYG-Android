@@ -12,7 +12,6 @@ import com.teamyg.parfait.domain.model.SubjectCoverage
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
@@ -35,6 +34,7 @@ data class ToppingEditState(
     val brushWidthDp: Float = DEFAULT_BRUSH_WIDTH_DP,
     val areaHistory: UndoRedoStack<ToppingEditStroke> = UndoRedoStack(),
     val isSaving: Boolean = false,
+    val showQuitDialog: Boolean = false,
 ) : UiState {
     val isLoading: Boolean get() = originBitmap == null || segmentationBitmap == null
 
@@ -69,6 +69,13 @@ sealed interface ToppingEditIntent : UiIntent {
     data object RedoArea : ToppingEditIntent
 
     data object ClickDone : ToppingEditIntent
+
+    /** 닫기 버튼 */
+    data object ClickClose : ToppingEditIntent
+
+    data object ConfirmQuit : ToppingEditIntent
+
+    data object DismissQuit : ToppingEditIntent
 }
 
 sealed interface ToppingEditEffect : UiSideEffect {
@@ -84,13 +91,17 @@ sealed interface ToppingEditEffect : UiSideEffect {
      */
     data object SubjectTooSmall : ToppingEditEffect
 
-    data class EditCompleted(val result: ToppingEditResult) : ToppingEditEffect
+    /** 초안 기록을 마쳐 토핑 배치(C-106)로 간다 */
+    data object GoToPlace : ToppingEditEffect
 
-    /** 초안 기록을 마쳐 확인 화면으로 간다. 경로 이름은 확인 화면 키 기준이다 */
-    data class GoToConfirm(
-        val subjectImagePath: String,
-        val trimmedSubjectImagePath: String,
-    ) : ToppingEditEffect
+    /**
+     * 초안을 기록하지 못해 C-106 으로 이어 갈 수 없다.
+     *
+     * [SaveFailed] 와 합치지 않는 이유는 재시도로 풀리지 않아 캔버스에서 다시 시작해야 하기 때문이다.
+     */
+    data object DraftUnavailable : ToppingEditEffect
+
+    data object QuitToCanvas : ToppingEditEffect
 }
 
 @HiltViewModel(assistedFactory = ToppingEditViewModel.Factory::class)
@@ -98,11 +109,13 @@ class ToppingEditViewModel
 @AssistedInject constructor(
     @Assisted("sourceImageUri") private val sourceImageUri: String,
     @Assisted("segmentationImageUri") private val segmentationImageUri: String,
-    @Assisted private val completion: ToppingEditCompletion,
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(ToppingEditState()) {
+    /** 그만두기를 확정했다. 연타해도 캔버스로 나가는 이동은 한 번만 보낸다 */
+    private var isQuitConfirmed = false
+
     init {
         loadImages()
     }
@@ -130,6 +143,19 @@ class ToppingEditViewModel
             }
 
             ToppingEditIntent.ClickDone -> completeEdit()
+
+            ToppingEditIntent.ClickClose -> updateState { copy(showQuitDialog = true) }
+
+            ToppingEditIntent.DismissQuit -> updateState { copy(showQuitDialog = false) }
+
+            ToppingEditIntent.ConfirmQuit -> {
+                if (isQuitConfirmed) return
+
+                isQuitConfirmed = true
+                // 화면이 걷히는 전환 동안 팝업이 캔버스 위에 남지 않게 닫는다
+                updateState { copy(showQuitDialog = false) }
+                postSideEffect(ToppingEditEffect.QuitToCanvas)
+            }
         }
     }
 
@@ -218,24 +244,16 @@ class ToppingEditViewModel
         }
     }
 
-    private suspend fun completionEffect(result: ToppingEditResult): ToppingEditEffect = when (completion) {
-        ToppingEditCompletion.ReturnResult -> ToppingEditEffect.EditCompleted(result)
-
-        ToppingEditCompletion.RecordAndConfirm ->
-            if (recordToppingDraft.recordEditResult(result)) {
-                // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다(`ToppingEditResult` KDoc)
-                ToppingEditEffect.GoToConfirm(
-                    subjectImagePath = result.cutoutImagePath,
-                    trimmedSubjectImagePath = result.subjectImagePath,
-                )
-            } else {
-                ToppingEditEffect.SaveFailed
-            }
-    }
+    private suspend fun completionEffect(result: ToppingEditResult): ToppingEditEffect =
+        if (recordToppingDraft.recordEditResult(result)) {
+            ToppingEditEffect.GoToPlace
+        } else {
+            ToppingEditEffect.DraftUnavailable
+        }
 
     /**
      * 저장과 기록 사이에서 내리면 그 틈의 완료 탭이 한 번 더 저장하므로 끝난 뒤 한 번만 내린다.
-     * 확인 화면으로 갈 때도 내리는 것은 이 화면이 백스택에 남아, 켠 채 나가면 돌아왔을 때 갇히기 때문이다.
+     * 토핑 배치(C-106)로 갈 때도 내리는 것은 이 화면이 백스택에 남아, 켠 채 나가면 돌아왔을 때 갇히기 때문이다.
      */
     private fun finishSaving(effect: ToppingEditEffect) {
         updateState { copy(isSaving = false) }
@@ -247,7 +265,6 @@ class ToppingEditViewModel
         fun create(
             @Assisted("sourceImageUri") sourceImageUri: String,
             @Assisted("segmentationImageUri") segmentationImageUri: String,
-            completion: ToppingEditCompletion,
         ): ToppingEditViewModel
     }
 }
