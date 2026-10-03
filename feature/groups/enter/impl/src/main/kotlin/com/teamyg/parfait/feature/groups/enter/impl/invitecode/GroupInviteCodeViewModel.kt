@@ -107,25 +107,43 @@ constructor(
                 requestJoinPreview()
             }
 
-            // 커서를 기준으로 앞뒤를 나눠 각각 거른 뒤 다시 붙인다. 통째로 거르면 걸러진 글자가
-            // 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
             is GroupInviteCodeIntent.ChangeText -> {
                 updateState {
-                    val cursor = intent.cursor.coerceIn(0, intent.text.length)
-                    val head = intent.text
-                        .take(cursor)
-                        .filter(InviteCode::isCodeChar)
-                        .take(codeLength)
-                    val tail = intent.text
-                        .drop(cursor)
-                        .filter(InviteCode::isCodeChar)
-                    val newText = (head + tail).take(codeLength)
-                    copy(
-                        text = newText,
-                        focusedIndex = newText.focusedIndex(),
-                        // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
-                        inviteCodeError = inviteCodeError.takeIf { newText == text },
-                    )
+                    val replacement = replacingFilledCellsOrNull(intent)
+
+                    if (replacement != null) {
+                        copy(
+                            text = replacement.text,
+                            focusedIndex = replacement.focusedIndex,
+                            inviteCodeError = inviteCodeError.takeIf { replacement.text == text },
+                        )
+                    } else {
+                        // 커서를 기준으로 앞뒤를 나눠 각각 거른 뒤 다시 붙인다. 통째로 거르면 걸러진
+                        // 글자가 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.
+                        val newCursor = intent.cursor.coerceIn(0, intent.text.length)
+                        val head = intent.text
+                            .take(newCursor)
+                            .filter(InviteCode::isCodeChar)
+                            .take(codeLength)
+                        val tail = intent.text
+                            .drop(newCursor)
+                            .filter(InviteCode::isCodeChar)
+                        val newText = (head + tail).take(codeLength)
+                        // 글자 수가 줄었으면(지우기) 누른 자리에 지울 글자가 남아 있는 한 포커스를
+                        // 그 자리에 붙잡아 둔다 — 재선택 없이 지우기를 이어가면 그 자리로 밀려온
+                        // 글자가 계속 지워진다. 그 외(추가·붙여넣기)는 기존대로 끝을 따라간다.
+                        val newFocusedIndex = if (newText.length < text.length) {
+                            focusedIndexAfterShrink(oldFocusedIndex = focusedIndex, newLength = newText.length)
+                        } else {
+                            newText.focusedIndex()
+                        }
+                        copy(
+                            text = newText,
+                            focusedIndex = newFocusedIndex,
+                            // 코드가 실제로 안 바뀌면 사유도 남긴다 — 문구가 사라지며 화면이 튀지 않게
+                            inviteCodeError = inviteCodeError.takeIf { newText == text },
+                        )
+                    }
                 }
             }
 
@@ -227,6 +245,57 @@ constructor(
     }
 
     private fun String.focusedIndex(): Int = length.coerceAtMost(InviteCode.LENGTH - 1)
+
+    /**
+     * 지우기로 줄어든 다음 포커스 칸. 누른 자리([oldFocusedIndex])에 아직 글자가 남아 있으면
+     * ([oldFocusedIndex] < [newLength]) 그 자리를 그대로 유지하고, 더 당겨올 글자가 없어지면
+     * 새 텍스트의 마지막 칸으로 물러난다.
+     */
+    private fun focusedIndexAfterShrink(
+        oldFocusedIndex: Int,
+        newLength: Int,
+    ): Int = if (newLength == 0) 0 else minOf(oldFocusedIndex, newLength - 1)
+
+    /** [replacingFilledCellsOrNull]의 결과 — 밀지 않고 대신 끼워 넣은 새 텍스트와 그다음 포커스 칸 */
+    private data class FilledCellReplacement(val text: String, val focusedIndex: Int)
+
+    /**
+     * 이미 글자가 있는 칸을 다시 눌러 새 글자(들)를 끼워 넣으려는 삽입인지 확인해, 맞으면 밀지
+     * 않고 그 칸부터 순서대로 새 글자로 바꾼 결과를 돌려준다. 한 글자를 직접 타이핑하는 경우뿐
+     * 아니라 자동완성·스와이프 입력처럼 한 번의 편집으로 여러 글자가 한꺼번에 들어오는 경우도
+     * 같은 방식으로 다룬다 — 그렇지 않으면 그 경우만 기존 밀림 로직으로 새어 나간다. 대신할 칸보다
+     * 새 글자가 많으면 남는 칸이 없는 만큼은 버린다. 삭제·붙여넣기·코드 문자가 아닌 입력 등
+     * 삽입으로 볼 수 없는 경우는 `null`이다.
+     */
+    private fun GroupInviteCodeUiState.replacingFilledCellsOrNull(
+        intent: GroupInviteCodeIntent.ChangeText,
+    ): FilledCellReplacement? {
+        if (focusedIndex >= text.length) return null
+
+        val oldCursor = cursor
+        val insertedLength = intent.text.length - text.length
+        if (insertedLength <= 0) return null
+        if (intent.text.take(oldCursor) != text.take(oldCursor)) return null
+        if (intent.text.drop(oldCursor + insertedLength) != text.drop(oldCursor)) return null
+
+        val inserted = intent.text
+            .substring(oldCursor, oldCursor + insertedLength)
+            .filter(InviteCode::isCodeChar)
+        if (inserted.isEmpty()) return null
+
+        val replaceCount = minOf(inserted.length, text.length - focusedIndex)
+        val newText = (
+            text.take(focusedIndex) +
+                inserted.take(replaceCount) +
+                text.drop(focusedIndex + replaceCount) +
+                inserted.drop(replaceCount)
+            ).take(codeLength)
+        val placedCount = minOf(inserted.length, codeLength - focusedIndex)
+        return FilledCellReplacement(
+            text = newText,
+            focusedIndex = (focusedIndex + placedCount).coerceAtMost(codeLength - 1),
+        )
+    }
 
     private companion object {
         /** [launch] 중복 실행 가드 키 — 초대코드 조회 job 하나를 가리킨다 */

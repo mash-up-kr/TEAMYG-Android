@@ -68,7 +68,7 @@ internal fun InviteCodeInputField(
         value = TextFieldValue(text = text, selection = TextRange(cursor)),
         onValueChange = { value -> onTextChanged(value.text, value.selection.start) },
         keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Ascii,
+            keyboardType = KeyboardType.Password,
             autoCorrectEnabled = false,
             imeAction = ImeAction.Done,
         ),
