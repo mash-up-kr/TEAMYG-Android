@@ -47,26 +47,23 @@ internal fun SegmentationRoute(
                 // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
                 is SegmentationEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
 
-                // 감지 실패는 이 화면을 걷어 편집에서 뒤로가기 해도 분석으로 돌아오지 않게 하고,
-                // 후보는 쌓아서 뒤로가기 하면 선택 UI 로 돌아오게 한다
-                is SegmentationEffect.GoToEdit -> {
-                    val path = effect.segmentationImagePath
-                    if (path == null) {
-                        navigator.goToAndPopCurrent(
-                            NavKeyToppingEdit(
-                                sourceImageUri = key.sourceImageUri,
-                                segmentationImageUri = key.sourceImageUri,
-                            ),
-                        )
-                    } else if (navigator.backStack.lastOrNull() == key) {
-                        // 이펙트가 닿은 뒤 이동하기 전에 들어온 탭이 편집을 두 번 쌓지 않게 막는다
-                        navigator.goTo(
-                            NavKeyToppingEdit(
-                                sourceImageUri = key.sourceImageUri,
-                                segmentationImageUri = File(path).toUri().toString(),
-                            ),
-                        )
-                    }
+                // 이 화면을 걷어 편집에서 뒤로가기 해도 분석으로 돌아오지 않게 한다
+                is SegmentationEffect.GoToEditDetectionFailed -> navigator.goToAndPopCurrent(
+                    NavKeyToppingEdit(
+                        sourceImageUri = key.sourceImageUri,
+                        segmentationImageUri = key.sourceImageUri,
+                    ),
+                )
+
+                // 쌓아서 뒤로가기 하면 선택 UI 로 돌아오게 한다. 이펙트가 닿은 뒤 이동하기 전에
+                // 들어온 탭이 편집을 두 번 쌓지 않게 맨 위일 때만 간다
+                is SegmentationEffect.GoToEditCandidate -> if (navigator.backStack.lastOrNull() == key) {
+                    navigator.goTo(
+                        NavKeyToppingEdit(
+                            sourceImageUri = key.sourceImageUri,
+                            segmentationImageUri = File(effect.segmentationImagePath).toUri().toString(),
+                        ),
+                    )
                 }
             }
         }

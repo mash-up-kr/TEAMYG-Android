@@ -76,9 +76,9 @@ tags: [spec, parfait]
   화면이 `ContentResolver`로 읽으므로 `file` 스킴 uri로 바꿔 싣는다 — 지금 `SegmentationConfirmRoute`의
   「사진 편집」이 하던 변환과 같다. 변환은 **Route가 한다**. `File.toUri()`는 android `Uri`라 VM에서 부르면
   JVM 단위 테스트가 깨진다.
-- 이펙트 모양: `SegmentationEffect.GoToEdit(segmentationImagePath: String?)`. 값이 있으면 후보 경로 —
-  Route가 file uri로 바꿔 `goTo`. `null`이면 감지 실패 — Route가 원본 uri를 두 자리에 싣고
-  `isDetectionFailed = true`로 `goToAndPopCurrent`. 이동 방식 분기도 Route 몫이다.
+- 이펙트 모양: 이동 정책이 다르므로 이펙트를 둘로 나눈다. `SegmentationEffect.GoToEditCandidate(segmentationImagePath: String)`
+  — Route가 file uri로 바꿔 `goTo`. `SegmentationEffect.GoToEditDetectionFailed` — Route가 원본 uri를 두
+  자리에 싣고 `isDetectionFailed = true`로 `goToAndPopCurrent`.
 - 저장 실패는 지금처럼 `SegmentationEffect.ShowError`다.
 
 ### 감지 실패 → C-104
@@ -145,7 +145,7 @@ data class NavKeyToppingEdit(
   여부는 `ToppingEditState.showQuitDialog`. `SegmentationViewModel`과 같은 모양이다.
 - `CustomGalleryPickerEffect.NavigateToSegmentationConfirm` → `NavigateToToppingPlace`(인자 없음)로 바꾸고,
   실패 이펙트(`ShowDraftUnavailable`)를 추가한다.
-- `SegmentationEffect.GoToConfirm` 삭제, `GoToEdit`은 위 「후보 선택 → C-104」의 모양으로 바꾼다.
+- `SegmentationEffect.GoToConfirm` 삭제, `GoToEdit`은 위 「후보 선택 → C-104」의 두 이펙트로 나눈다.
 - `SegmentationViewModel` 생성자에서 `RecordToppingDraftUseCase`를 뺀다. 테스트의 생성 코드도 함께 고친다.
 
 ## 화면
@@ -205,8 +205,8 @@ Figma 기준. 색·간격은 디자인시스템 토큰으로 옮긴다.
     만들면 보내지 않는다. 불러오기 실패면 `LoadFailed`만 보낸다. `false`면 보내지 않는다.
   - X → 팝업 표시, 취소 → 닫힘, 확정 → `QuitToCanvas` 한 번(두 번 확정해도 한 번).
 - `SegmentationViewModelTest`
-  - 후보 선택이 저장만 하고 저장본 경로를 실은 `GoToEdit(segmentationImagePath = 경로)`를 보낸다.
-  - 0건·실패는 `GoToEdit(segmentationImagePath = null)`이다.
+  - 후보 선택이 저장만 하고 저장본 경로를 실은 `GoToEditCandidate(segmentationImagePath = 경로)`를 보낸다.
+  - 0건·실패는 `GoToEditDetectionFailed`다.
 - `CustomGalleryPickerViewModelTest`
   - 누끼 재사용이 맞춤 성공이면 `NavigateToToppingPlace`, 실패·예외면 `ShowDraftUnavailable`.
 - `NavKeyAnalyticsScreenTest`: 확인 화면 줄을 걷는다.
