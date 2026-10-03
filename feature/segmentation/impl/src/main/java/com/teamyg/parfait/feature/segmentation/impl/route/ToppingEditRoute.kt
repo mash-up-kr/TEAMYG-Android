@@ -63,14 +63,12 @@ internal fun ToppingEditRoute(
                 }
 
                 is ToppingEditEffect.GoToPlace -> {
-                    // 저장 중 표시는 이동 전에 내려가므로, 이 화면이 걷히기 전에 들어온 완료 탭은 한 번 더
-                    // 끝까지 간다. 이 화면이 맨 위일 때만 이동해 토핑 배치(C-106)가 두 번 쌓이지 않게 한다
+                    // 저장 중 표시가 이동 전에 내려가 그 틈의 탭이 한 번 더 온다. 맨 위일 때만 이동한다
                     if (navigator.backStack.lastOrNull() == key) {
                         navigator.goTo(NavKeyCanvasToppingPlace)
                     }
                 }
 
-                // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
                 is ToppingEditEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
             }
         }

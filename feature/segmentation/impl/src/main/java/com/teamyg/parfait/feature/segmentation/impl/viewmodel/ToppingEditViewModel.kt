@@ -91,14 +91,9 @@ sealed interface ToppingEditEffect : UiSideEffect {
      */
     data object SubjectTooSmall : ToppingEditEffect
 
-    /** 초안 기록을 마쳐 토핑 배치(C-106)로 간다 */
     data object GoToPlace : ToppingEditEffect
 
-    /**
-     * 초안을 기록하지 못해 C-106 으로 이어 갈 수 없다.
-     *
-     * [SaveFailed] 와 합치지 않는 이유는 재시도로 풀리지 않아 캔버스에서 다시 시작해야 하기 때문이다.
-     */
+    /** 초안 흐름이 닫혀 기록하지 못했다. 재시도로 풀리지 않아 [SaveFailed] 와 나눈다 */
     data object DraftUnavailable : ToppingEditEffect
 
     data object QuitToCanvas : ToppingEditEffect
@@ -113,7 +108,6 @@ class ToppingEditViewModel
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(ToppingEditState()) {
-    /** 그만두기를 확정했다. 연타해도 캔버스로 나가는 이동은 한 번만 보낸다 */
     private var isQuitConfirmed = false
 
     init {
@@ -253,7 +247,7 @@ class ToppingEditViewModel
 
     /**
      * 저장과 기록 사이에서 내리면 그 틈의 완료 탭이 한 번 더 저장하므로 끝난 뒤 한 번만 내린다.
-     * 토핑 배치(C-106)로 갈 때도 내리는 것은 이 화면이 백스택에 남아, 켠 채 나가면 돌아왔을 때 갇히기 때문이다.
+     * 이동할 때도 내리는 것은 이 화면이 백스택에 남아, 켠 채 나가면 돌아왔을 때 갇히기 때문이다.
      */
     private fun finishSaving(effect: ToppingEditEffect) {
         updateState { copy(isSaving = false) }

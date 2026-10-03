@@ -177,8 +177,7 @@ class CustomGalleryPickerViewModel
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
-    // C-106 은 초안을 읽기만 하므로, 들어가기 전에 초안이 이 알맹이를 가리키게 맞춰 둬야 한다.
-    // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션은 건너뛴다
+    // 배치 화면은 초안을 읽기만 하므로 들어가기 전에 이 알맹이를 가리키게 맞춘다
     private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
         launch(
             key = ENSURE_CUTOUT_DRAFT_KEY,
