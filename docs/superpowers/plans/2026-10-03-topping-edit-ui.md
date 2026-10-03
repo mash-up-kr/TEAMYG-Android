@@ -37,6 +37,7 @@ tags: [plan, parfait]
 - 색·간격·타이포는 디자인시스템 토큰(`YGTheme.layout`·`YGTheme.typography`·`YGAtomicColors`)으로만 쓴다. Figma 값에 맞는 토큰이 없으면 가장 가까운 토큰.
 - Figma: `C-104` `node-id=5461-6875`, `C-104-Toast` `node-id=5477-8932` (파일 키 `QPoxqbNMNktsi8ktua3gMN`).
 - 매 Task 끝에 `./gradlew ktlintCheck`가 통과해야 한다.
+- 문서에 라인번호·hex 색·변동 수치를 적지 않는다.
 
 ## Review Focus
 
@@ -65,7 +66,9 @@ tags: [plan, parfait]
 ```
 Column
 ├─ YGFloatingBarBackTitleClose(title = topping_edit_title, onBackClick = onClickBack, onCloseClick = onClickClose)
-├─ Box(weight 1f, 좌우 padding7) { ToppingEditCanvas 또는 로딩; 위에 toast() 를 TopCenter·fillMaxWidth 로 }
+├─ Box(weight 1f, fillMaxWidth — 좌우 여백 없음)
+│   ├─ Box(fillMaxSize, 좌우 padding7) { ToppingEditCanvas 또는 로딩 }
+│   └─ Box(TopCenter, fillMaxWidth) { toast() }   — 헤더 바로 아래, 화면 폭
 ├─ 편집 영역 Column(위 gap5, 좌우 padding7, 세로 spacedBy gap3)
 │   ├─ Row(라벨 「브러시 크기」 weight 1f, 오른쪽 끝 ToppingEditHistoryActions)  — 간격 gap1
 │   ├─ YGSlider
@@ -74,7 +77,7 @@ Column
 ```
 
 - `YGFloatingBarEdit`과 상단 `ToppingEditHistoryActions` 줄을 지운다.
-- 토스트는 사진 영역 Box가 아니라 **화면 폭**이어야 한다. 사진 영역 Box는 좌우 여백 안쪽이므로, 헤더 바로 아래에 별도 `Box(fillMaxWidth)`로 겹치거나 `ToppingArrangeLayout`처럼 `requiredWidth`로 넓힌다 — 둘 중 코드가 짧은 쪽.
+- 토스트가 화면 폭이어야 해서 좌우 여백은 바깥 Box가 아니라 캔버스 Box에만 준다.
 - 되돌리기 버튼이 Figma에서 편집 영역 위 경계에 걸친 정도는 미리보기로 대조하고, 라벨 줄 높이가 버튼 높이만큼 늘어나지 않게 맞춘다(필요하면 Row `verticalAlignment = Bottom`).
 - 저장 딤(`ToppingEditSavingOverlay`)은 지금처럼 맨 위.
 
@@ -186,7 +189,7 @@ Expected: PASS
 
 - [ ] **Step 5: 미리보기**
 
-토스트를 띄운 상태의 미리보기를 하나 더한다(작은 폭 포함). Figma `C-104-Toast`와 대조 — 헤더 바로 아래, 화면 폭, 노란 글자.
+토스트를 띄운 상태의 미리보기를 하나 더한다(작은 폭 포함). 토스트는 Route의 정책으로만 뜨므로 미리보기는 `toast = { YGToast(type = YGToastType.Edit(...)) }`로 정적 슬롯을 넘긴다. Figma `C-104-Toast`와 대조 — 헤더 바로 아래, 화면 폭, 노란 글자.
 
 - [ ] **Step 6: Commit**
 
@@ -201,8 +204,8 @@ git commit -m "feat: 대상 감지에 실패해 들어온 누끼 편집에 안�
 
 **Files:**
 - Modify: `docs/status.md` — 「누끼 추출」에 C-104 화면 구성(헤더·「다음」·감지 실패 토스트·화면 내 토스트 층) 반영
-- Modify: `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md` — `status: implemented`, `verified` 갱신 후 `archive/`로 옮기고 `specs/README.md` 갱신
-- Move: 계획 1·2를 `docs/superpowers/plans/archive/`로, `plans/README.md` 갱신
+- Modify: `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md` — `status: implemented`, `verified` 갱신 후 `archive/`로 옮기고 `specs/README.md` 아카이브 표로 행을 옮긴다
+- Move: 계획 1·2를 `docs/superpowers/plans/archive/`로 — 각각 `status: done`, `archived_reason`, 상단 Archived 배너(`plans/template.md` 사용법). `plans/README.md`는 활성 표에서 아카이브 표로 행을 옮긴다
 - Modify: `docs/log.md` 한 줄
 
 - [ ] **Step 1: 고친다**

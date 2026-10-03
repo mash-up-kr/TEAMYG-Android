@@ -48,6 +48,8 @@ tags: [plan, parfait]
 - 초안 흐름이 닫힌 채 C-104 「다음」 → 재시도 문구가 아니라 "캔버스에서 다시 시작" 문구(Task 1 `clickDone_recordReturnsFalse_showsDraftUnavailable`).
 - 후보 두 번 탭 → C-104가 한 번만 쌓인다(Task 2 기존 `clickCandidate_tappedTwice_persistsOnlyOnce` + Route 가드).
 - 갤러리 누끼 연타 → 맞춤 한 번, 이동 한 번(Task 3 `onClickCutoutImage_tappedTwice_ensuresOnce`).
+- 중간 커밋의 동작 공백 — Task 1~3 사이에는 확인 화면이 남아 있어 「사진 편집」 → C-104 → 「다음」이 결과를
+  돌려주지 않고 C-106으로 간다. 빌드·테스트는 통과한다. 이 계획의 PR은 Task 4까지 끝나기 전에 머지하지 않는다.
 
 ---
 
@@ -71,7 +73,14 @@ tags: [plan, parfait]
 
 - [ ] **Step 1: 테스트를 새 계약으로 고친다**
 
-`createViewModel`에서 `completion` 인자를 지운다. `confirm` 필드와 `clickDone_returnResult_completesWithoutRecording`을 지운다. 아래로 바꾸거나 더한다.
+`createViewModel`에서 `completion` 인자를 지운다. 지운다: `confirm` 필드, `result` 픽스처와 `ToppingEditResult` import,
+`clickDone_returnResult_completesWithoutRecording`. 대체한다:
+- `clickDone_recordAndConfirm_recordsDraftThenGoesToConfirmWithSwappedPaths` → `clickDone_recordsDraftThenGoesToPlace`
+- `clickDone_recordReturnsFalse_showsSaveFailed` → `clickDone_recordReturnsFalse_showsDraftUnavailable`
+- `clickDone_afterReturningFromConfirm_completesAgain` → `clickDone_afterReturningFromPlace_completesAgain`
+- `clickDone_tappedAgainWhileRecording_isIgnored`는 이름을 두고 기대값만 `GoToPlace`로
+
+새 계약과 추가 테스트:
 
 ```kotlin
 @Test
@@ -90,9 +99,9 @@ fun clickDone_recordsDraftThenGoesToPlace() = runTest {
 
 @Test
 fun clickDone_recordReturnsFalse_showsDraftUnavailable()  // coEvery record → false, 기대 DraftUnavailable
-
-// 기존 clickDone_recordThrows_showsSaveFailed 유지 (기대 SaveFailed)
-// 기존 clickDone_afterReturningFromConfirm_completesAgain → clickDone_afterReturningFromPlace_completesAgain, 기대 GoToPlace 두 번
+@Test
+fun clickDone_afterReturningFromPlace_completesAgain()     // 기대 GoToPlace 두 번
+// 기존 clickDone_recordThrows_showsSaveFailed 는 그대로 (기대 SaveFailed)
 
 @Test
 fun clickClose_showsQuitDialog()          // ClickClose 후 state.showQuitDialog == true
@@ -111,13 +120,13 @@ Expected: 컴파일 실패(`GoToPlace`·`ClickClose` 없음)
 
 - [ ] **Step 3: VM 구현**
 
-- 생성자에서 `completion`을 지운다. `completionEffect`는 기록 결과로 `GoToPlace` / `DraftUnavailable`을 고른다. 기록 예외는 지금처럼 `launch(onError)`가 `SaveFailed`로 받는다.
+- 생성자에서 `completion`을 지운다. `finishSaving` KDoc의 "확인 화면" 서술을 "토핑 배치(C-106)"로 고친다. `completionEffect`는 기록 결과로 `GoToPlace` / `DraftUnavailable`을 고른다. 기록 예외는 지금처럼 `launch(onError)`가 `SaveFailed`로 받는다.
 - 그만두기는 `SegmentationViewModel`과 같은 모양 — `private var isQuitConfirmed`로 `ConfirmQuit`을 한 번만 처리하고, 팝업을 내린 뒤 `QuitToCanvas`.
 - `NavKeyToppingEdit`·`ToppingEditCompletion` KDoc에서 `completion` 서술을 걷는다.
 
 - [ ] **Step 4: Route 구현**
 
-- `GoToPlace` → `if (navigator.backStack.lastOrNull() == key) navigator.goTo(NavKeyCanvasToppingPlace)`. 지금 `GoToConfirm`의 가드 주석을 옮긴다.
+- `GoToPlace` → `if (navigator.backStack.lastOrNull() == key) navigator.goTo(NavKeyCanvasToppingPlace)`. 지금 `GoToConfirm`의 가드 주석을 옮기되 "확인 화면"을 "토핑 배치(C-106)"로 고쳐 쓴다(`docs/code-conventions.md` 수명 기준).
 - `DraftUnavailable` → `android.widget.Toast`로 `topping_edit_draft_unavailable`.
 - `QuitToCanvas` → `navigator.popUpTo<NavKeyCanvasMain>()`.
 - `ToppingEditScreen`의 `onClickBack`(지금 플로팅 바 닫기)에 `ClickClose`를 연결한다. 헤더 뒤로 버튼은 계획 2에서 생긴다. 지금은 시스템 뒤로가 `onBack()`이다.
@@ -151,7 +160,12 @@ git commit -m "feat: 누끼 편집의 다음이 토핑 배치로 가고 닫기�
 
 - [ ] **Step 1: 테스트를 새 계약으로 고친다**
 
-- 생성 코드에서 `recordToppingDraft`를 지운다.
+- `recordToppingDraft` 필드와 그것을 거는 stub·검증을 전부 지운다 — 생성 코드 외에도
+  `clickCandidate_succeeds_releasesTheLoadingOverlay`, `clickCandidate_persisting_showsTheLoadingOverlay`,
+  `clickCandidate_tappedTwice_persistsOnlyOnce`, `clickCandidate_tapsTheSecondOfTwo_persistsTheTappedCandidate`,
+  `clickCandidate_tappedAgainAfterCompletion_persistsAgain`이 stub을 건다.
+- `init_segmentationSucceeds_persistsNothingYet`의 `recordToppingDraft` 미호출 검증은 지우고 `persistSubject`
+  미호출 검증만 남긴다.
 - 지운다: `clickCandidate_succeeds_recordsTheDraftBeforeNavigating`, `selectCandidate_recordsSourceLongSideFromResult`, `clickCandidate_draftIsNotOpen_doesNotNavigate`.
 - 더한다:
 
@@ -173,7 +187,7 @@ Expected: 컴파일 실패
 
 - [ ] **Step 3: VM 구현**
 
-`selectCandidate`는 저장 → `releaseLoading()` → `GoToEdit(result.subjectImagePath)`. 저장 실패는 지금처럼 `ShowError`. KDoc의 "저장 → 초안 기록 → 이동" 순서 근거(c103 다중 선택 스펙 링크)를 이 스펙(`2026-10-03-topping-edit-entry-flow-design.md`)으로 바꾼다. `Outcome.Edit` 전달은 `GoToEdit(null)`.
+`selectCandidate`는 저장 → `releaseLoading()` → `GoToEdit(result.subjectImagePath)`. 쓰지 않게 된 import(`RecordToppingDraftUseCase`, 남는다면 `runSuspendCatching`)는 지운다 — ktlint가 잡는다. 저장 실패는 지금처럼 `ShowError`. KDoc의 "저장 → 초안 기록 → 이동" 순서 근거(c103 다중 선택 스펙 링크)를 이 스펙(`2026-10-03-topping-edit-entry-flow-design.md`)으로 바꾼다. `Outcome.Edit` 전달은 `GoToEdit(null)`.
 
 - [ ] **Step 4: Route 구현**
 
@@ -248,7 +262,7 @@ Expected: 컴파일 실패
 
 - [ ] **Step 4: Route·의존 구현**
 
-- `NavigateToToppingPlace` → 맨 위 가드(`navigator.backStack.lastOrNull()`가 이 화면 키일 때만) 후 `navigator.goTo(NavKeyCanvasToppingPlace)`. Route가 받는 키 이름은 파일에서 확인한다.
+- `NavigateToToppingPlace` → `if (navigator.backStack.lastOrNull() is NavKeyCustomGalleryPicker) navigator.goTo(NavKeyCanvasToppingPlace)`. Route는 키를 받지 않고 풀린 값만 받으므로 타입으로 맨 위를 본다.
 - `ShowDraftUnavailable` → `toastPolicy.showError(...)`.
 - `build.gradle.kts`: `projects.feature.groups.canvas.api` 추가, `projects.feature.segmentation.api` 제거.
 
@@ -279,7 +293,6 @@ git commit -m "feat: 갤러리 최근 누끼를 고르면 초안을 맞추고 �
 - Create: `feature/segmentation/impl/.../viewmodel/ToppingEditResult.kt` — 기존 `ToppingEditDraft.kt`의 `recordEditResult`와 합쳐도 된다
 - Modify: `domain/src/main/java/com/teamyg/parfait/domain/model/member/TutorialKind.kt`
 - Modify: `app/src/main/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreen.kt`, `app/src/test/java/com/teamyg/parfait/analytics/NavKeyAnalyticsScreenTest.kt`
-- Test: `ToppingEditViewModelTest.kt` (import 경로·`sourceLongSide` 타입)
 
 **Interfaces:**
 - Produces: `internal data class ToppingEditResult(subjectImagePath: String, cutoutImagePath: String, sourceLongSide: SourceLongSide)` in impl. `recordEditResult`는 `sourceLongSide`를 그대로 넘긴다.
@@ -290,7 +303,7 @@ git commit -m "feat: 갤러리 최근 누끼를 고르면 초안을 맞추고 �
 
 - [ ] **Step 2: `ToppingEditResult`를 impl로 옮긴다**
 
-KDoc의 "domain을 의존하지 않아 `Int`로 나른다" 근거를 걷는다. 두 경로 KDoc(알맹이 vs 재편집 마스크)은 남긴다. 테스트의 `result` 픽스처를 `SourceLongSide(CUTOUT_SIDE)`로 바꾼다.
+KDoc의 "domain을 의존하지 않아 `Int`로 나른다" 근거를 걷는다. 두 경로 KDoc(알맹이 vs 재편집 마스크)은 남긴다.
 
 - [ ] **Step 3: 남은 참조가 없는지 확인**
 
