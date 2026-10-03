@@ -15,7 +15,6 @@ import com.teamyg.parfait.domain.usecase.image.ClearSegmentationCacheUseCase
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.PersistSubjectUseCase
 import com.teamyg.parfait.domain.usecase.image.SegmentImageUseCase
-import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -48,13 +47,11 @@ sealed interface SegmentationEffect : UiSideEffect {
 
     data object QuitToCanvas : SegmentationEffect
 
-    /** 자동 인식으로 대상을 못 얻었다. 편집이 원본 URI 를 그대로 읽으므로 실어 보낼 값이 없다 */
-    data object GoToEdit : SegmentationEffect
-
-    data class GoToConfirm(
-        val subjectImagePath: String,
-        val trimmedSubjectImagePath: String,
-    ) : SegmentationEffect
+    /**
+     * 누끼 편집으로 간다. [segmentationImagePath] 는 고른 후보의 저장본(원본 크기)이고,
+     * `null` 이면 자동 인식으로 대상을 못 얻은 것이라 편집이 원본 URI 를 그대로 읽는다.
+     */
+    data class GoToEdit(val segmentationImagePath: String?) : SegmentationEffect
 }
 
 /** 분석이 낸 결과. 팝업이 떠 있으면 [SegmentationViewModel.deliver] 가 보류한다 */
@@ -73,7 +70,6 @@ class SegmentationViewModel
     private val decodeImageUseCase: DecodeImageUseCase,
     private val segmentImageUseCase: SegmentImageUseCase,
     private val persistSubjectUseCase: PersistSubjectUseCase,
-    private val recordToppingDraft: RecordToppingDraftUseCase,
 ) : BaseViewModel<SegmentationState, SegmentationIntent, SegmentationEffect>(
     initialState = SegmentationState(),
 ) {
@@ -132,7 +128,7 @@ class SegmentationViewModel
 
         when (outcome) {
             // 편집으로 갈 때 분석 상태를 먼저 끄면 교체 직전 한 프레임 동안 후보 0개인 선택 UI 가 보인다
-            Outcome.Edit -> postSideEffect(SegmentationEffect.GoToEdit)
+            Outcome.Edit -> postSideEffect(SegmentationEffect.GoToEdit(segmentationImagePath = null))
 
             is Outcome.Select ->
                 updateState { copy(candidates = outcome.candidates, isAnalyzing = false) }
@@ -173,9 +169,8 @@ class SegmentationViewModel
     }
 
     /**
-     * 저장 → 초안 기록 → 이동 순서를 지킨다. 그 순서인 이유는
-     * `parfait/specs/2026-08-23-c103-multi-subject-selection.md`의 「선택 시점에 일어나는
-     * 일의 순서」절.
+     * 저장이 끝난 뒤에 이동한다. 초안은 여기서 적지 않는다 — 편집이 "다음"에서 적는다.
+     * 근거는 `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md`.
      */
     private fun selectCandidate(index: Int) {
         val candidate = state.value.candidates.getOrNull(index) ?: return
@@ -191,27 +186,9 @@ class SegmentationViewModel
 
             persistSubjectUseCase(candidate)
                 .onSuccess { result ->
-                    val recorded = runSuspendCatching {
-                        recordToppingDraft(
-                            subjectImagePath = result.trimmedSubjectImagePath,
-                            cutoutImagePath = result.subjectImagePath,
-                            sourceLongSide = result.sourceLongSide,
-                        )
-                    }.getOrDefault(false)
-
                     // 이동이 goTo 라 이 화면이 백스택에 남는다. 켠 채 나가면 돌아왔을 때 갇힌다
                     releaseLoading()
-
-                    if (recorded) {
-                        postSideEffect(
-                            SegmentationEffect.GoToConfirm(
-                                subjectImagePath = result.subjectImagePath,
-                                trimmedSubjectImagePath = result.trimmedSubjectImagePath,
-                            ),
-                        )
-                    } else {
-                        postSideEffect(SegmentationEffect.ShowError)
-                    }
+                    postSideEffect(SegmentationEffect.GoToEdit(segmentationImagePath = result.subjectImagePath))
                 }.onFailure {
                     releaseLoading()
                     postSideEffect(SegmentationEffect.ShowError)
