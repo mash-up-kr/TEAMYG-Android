@@ -15,7 +15,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -154,9 +153,13 @@ internal fun GroupListScreen(
                     // (GroupListTooltip 의 cornerHeight)와 같아야 화살표가 영역 밖으로 나가지 않는다
                     GroupListTooltip(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
+                            .fillMaxWidth()
                             .graphicsLayer { alpha = intro.tooltipAlpha * intro.exitAlpha }
-                            .padding(top = 16.dp, end = YGTheme.layout.padding.padding7),
+                            .padding(
+                                start = YGTheme.layout.padding.padding9,
+                                top = 16.dp,
+                                end = YGTheme.layout.padding.padding7,
+                            ),
                     )
                 }
             }

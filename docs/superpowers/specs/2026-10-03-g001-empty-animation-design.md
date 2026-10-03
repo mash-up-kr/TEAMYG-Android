@@ -121,6 +121,7 @@ tags: [spec, parfait, G-001, animation]
   - `새 그룹`을 만들거나 `그룹에 참여`하면
   - 내 그룹 목록을 `파르페`로 쌓을 수 있어요.
 - 강조 구절(`새 그룹`, `그룹에 참여`, `파르페`)과 테두리는 `YGAtomicColors.Soda.Soda500`.
+- 가로는 왼쪽 32dp·오른쪽 20dp를 뺀 남은 폭 전체를 차지한다.
 - 화살표는 그룹 추가 칩을 가리킨다.
 - 노출은 인트로 단계가 정한다. `GroupListUiState.isTooltipVisible`은 없앤다.
 

@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.list.impl.route.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ internal fun GroupListTooltip(modifier: Modifier = Modifier) {
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Black,
             textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
