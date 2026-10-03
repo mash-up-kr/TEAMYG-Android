@@ -16,11 +16,9 @@ class GroupListEmptyIntroTimelineTest {
 
     @Test
     fun timeline_tooltipStartsWhenTheLastDummyLands_andEndsTheEntrance() {
-        // Given 마지막 더미의 착지 시각
         val lastDummyEnd = GroupListEmptyIntroTimeline.dummyDelayMillis(2) +
             GroupListEmptyIntroTimeline.DUMMY_DURATION_MILLIS
 
-        // When/Then 툴팁이 그때 시작하고, 툴팁이 끝나는 때가 등장의 끝이다
         assertEquals(GroupListEmptyIntroTimeline.TOOLTIP_DELAY_MILLIS, lastDummyEnd)
         assertEquals(
             GroupListEmptyIntroTimeline.ENTER_TOTAL_MILLIS,
