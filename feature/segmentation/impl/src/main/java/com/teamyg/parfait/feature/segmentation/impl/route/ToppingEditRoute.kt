@@ -82,8 +82,9 @@ internal fun ToppingEditRoute(
             onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
             onClickUndoArea = { viewModel.processIntent(ToppingEditIntent.UndoArea) },
             onClickRedoArea = { viewModel.processIntent(ToppingEditIntent.RedoArea) },
-            onClickDone = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
-            onClickBack = { viewModel.processIntent(ToppingEditIntent.ClickClose) },
+            onClickNext = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
+            onClickBack = navigator::onBack,
+            onClickClose = { viewModel.processIntent(ToppingEditIntent.ClickClose) },
             modifier = modifier.padding(innerPadding),
         )
     }
