@@ -1,7 +1,7 @@
 ---
 id: g001-empty-animation
 title: 그룹 목록 Empty 안내 애니메이션 (G-001-Empty intro animation)
-status: draft
+status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-10-03
