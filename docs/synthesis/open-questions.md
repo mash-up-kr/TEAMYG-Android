@@ -1128,10 +1128,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-105
 - **출처**: PR #220 develop 머지 — `feature/groups/home/{api,impl}` 모듈 삭제(`NavKeyGroupHome`·`GroupHomeRoute`·`EntryBuilder`·`NavigationModule`)와 `LoginRoute`의 `ResultEffect<String>` Toast 제거. 둘은 짝이었다(홈이 `sendResult` + `onBack`, 로그인이 `ResultEffect`로 수신). `MainRoute`의 `rememberResultEventBusNavEntryDecorator`는 그대로 남고, 남은 실사용은 카메라·시스템 갤러리의 `sendResult` 3곳 + `CanvasMainRoute`의 `ResultEffect` 1곳인데 그 수신부는 이미 死경로로 등록돼 있다([2026-08-04] 항목).
 - **항목**: ① 결과 반환 관용구를 계속 쓸지 — 커스텀 갤러리·카메라는 이미 `goTo` 전진으로 갈아탔고 남은 소비처가 死경로뿐이라, 데코레이터째 걷어낼지 아니면 재사용처를 확정할지. ② 걷어낸다면 `Navigator.onBack()`의 `size <= 1` 가드 주석("`ResultEffect` 발동 상황에서 사이즈가 1인 경우 크래시")이 가리키는 전제도 같이 정리한다.
-- **상태**: 부분 해소 (① **PR #221 develop 머지, 2026-08-14** — 실사용 왕복이 하나 되살아났다. 토핑 편집 화면이 `sendResult(TOPPING_EDIT_RESULT_KEY, ToppingEditResult)` + `onBack()`으로 결과를 돌려주고 `SegmentationConfirmRoute`가 `ResultEffect<ToppingEditResult>`로 받는다. **NavKey가 담지 못하는 "나올 때의 값"이라 이 관용구를 다시 고른 것**이므로 데코레이터째 걷어내는 선택지는 사실상 닫혔다. / ② 가드는 여전히 필요하다 — 그룹 목록에서 백스택이 1개다. / [2026-08-04]의 死 `ResultEffect` 1건은 그대로다)
-- **해소 메모**: ①이 닫혔으니 남은 것은 死 수신부 정리([2026-08-04] 항목)뿐이다. [navigation-flow](../architecture/navigation-flow.md) 체크리스트 5번에 "되살아난 사례" 마커를 넣었고 "토핑 생성 플로우" 절에 왕복 경로를 적었다.
+- **상태**: 부분 해소 (① 토핑 편집 화면의 `TOPPING_EDIT_RESULT_KEY` 왕복은 걷혔다 — 편집 결과는 화면 밖으로 나가지 않고 초안에 기록된다. 지금 실사용 왕복은 배경 편집(C-301)이 `ResultEffect<PictureConfirmResult>`로 받는 것 하나다. 같은 화면이 전진(`goToAndPopCurrent`)과 반환을 **인자 하나로 겸하는** 형태라 데코레이터째 걷어내는 선택지는 이 하나에 달려 있다. / ② 가드는 여전히 필요하다 — 그룹 목록에서 백스택이 1개다. / [2026-08-04]의 死 `ResultEffect` 1건은 그대로다)
+- **해소 메모**: 남은 것은 死 수신부 정리([2026-08-04] 항목)다. [navigation-flow](../architecture/navigation-flow.md) 체크리스트 5번에 결과 반환이 남은 사례(배경 편집)를 적었다.
 
-  > 📌 **두 번째 실사용 왕복(2026-08-15, PR #231)** — C-101-confirm이 `returnResultOnly`일 때 `PictureConfirmResult`를 돌려주고 C-301이 받는다. 같은 화면이 전진(`goToAndPopCurrent`)과 반환을 **인자 하나로 겸하는** 형태라, 데코레이터 존치는 확정으로 봐도 된다.
+  > 📌 **남은 실사용 왕복(2026-08-15, PR #231)** — C-101-confirm이 `returnResultOnly`일 때 `PictureConfirmResult`를 돌려주고 C-301이 받는다.
 
 ### [2026-08-10] 이미지 업로드 확인 API에 소유자 검증이 없다
 
@@ -4669,13 +4669,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   매핑되므로 실무적으로 안전할 공산이 크지만 **문서로 보장된 바가 없다.** ② 위험하다면 선택지는
   둘이다 — 후보를 만들 때 우리 비트맵으로 복사하거나(메모리를 한 번 더 쓴다), segmenter를 화면
   수명 동안 열어 두거나(자원 점유가 길어진다).
-- **상태**: 미해결 (**①은 한 번 통과했다** — 아래 참고. 확인 화면까지 다녀오는 동선이 남았다)
+- **상태**: 미해결 (**①은 한 번 통과했다** — 아래 참고. 편집 화면까지 다녀오는 동선이 남았다)
 - **해소 메모**: 같은 API를 쓰는 프로덕션 사례(Telegram `StickerMakerView`)는 segmenter를 아예
   닫지 않는다. 그것이 우연인지 필요 때문인지가 이 항목의 답이다.
   > ✅ **닫은 뒤에도 그려진다(2026-08-23, Galaxy A35)** — 후보 하이라이트가 뜬다는 것이 곧
   > `segmenter.use { }`를 빠져나온 뒤의 비트맵이 유효하다는 뜻이다. ①의 답이 실무적으로는
   > "유효하다" 쪽이다. 다만 **문서 보장이 없다는 사실은 그대로**이고, 화면 수명 내내 들고 있다가
-  > 확인 화면을 다녀와 되돌아온 뒤에도 유효한지는 아직 안 봤다 — 그 동선에서 깨지면 예외가 아니라
+  > 편집 화면(C-104)을 다녀와 되돌아온 뒤에도 유효한지는 아직 안 봤다 — 그 동선에서 깨지면 예외가 아니라
   > **빈 자리**로 드러날 공산이 크다. ②(복사할지 segmenter를 열어 둘지)는 손대지 않았다.
 
 ### [2026-08-23] 토핑 삭제만 즉시 영구이고 화면을 떠나며, 나머지 변경은 확정 시점에 저장된다
@@ -4836,9 +4836,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   고르면 처음부터"가 자연스러울 수도 있고, 같은 후보를 다시 고른 경우만 갈라 초안을 건드리지
   않는 선택지도 있다. ③ **다른 후보**를 고르는 경우는 알맹이가 바뀌므로 편집 결과를 버리는
   것이 맞다.
-- **상태**: 미해결 (스펙이 "선택 취소·다시 고르기 동선"을 범위 밖으로 두었으므로 이번 라운드의
-  결함으로 세지 않는다. **실기기 확인 때 함께 본다**)
-- **해소 메모**: ①이 문제로 판명되면 같은 후보 재선택을 걸러 내는 것이 가장 작은 처방이다.
+- **상태**: 해소됨 (후보 선택이 초안을 기록하지 않게 되어 전제가 사라졌다 — 초안은 C-104 「다음」이 기록하고, 후보를 다시 고르면 편집 화면이 새로 열린다)
 
 ### [2026-08-23] 짧은 이미지를 512로 확대하면 세그멘테이션이 실제로 나아지는가
 
@@ -6339,7 +6337,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 이 틴트가 정책인지 임시 보조선인지 — 정책이면 위키 [[누끼-편집]]에 조항이 필요하고,
   임시면 걷는 조건이 필요하다. ② 색과 알파의 근거 — `Cherry500` 50%는 같은 화면 붓 미리보기와 같은
   색·같은 알파다. 편집 대상과 미리보기가 같은 색으로 보이는 것이 의도인지 확인 안 됐다.
-  ③ 테두리 편집 탭·확인 화면·배치 화면은 틴트 없이 그린다 — **같은 알맹이가 화면마다 다른 색으로
+  ③ 테두리 편집 탭·배치 화면은 틴트 없이 그린다 — **같은 알맹이가 화면마다 다른 색으로
   보인다.** 어디까지가 편집 중 표시인지 규칙이 없다.
 - **상태**: 미해결 (**동작 중** — develop 코드이고 영역 탭에서만 그린다)
 - **해소 메모**: ①이 먼저다. 정책으로 굳으면 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md)
@@ -6748,7 +6746,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-363
 - **출처**: `YGTutorialOverlay`·`CanvasTutorialStep`(PR #449 develop 머지) — `imageResource`가
   **딤까지 구워진 알파 없는 풀스크린 목업 PNG**이고 그 한 장이 실제 화면을 통째로 덮는다
-  (`img_canvas_tutorial_1~3`·`img_upload_tutorial`·`img_segmentation_tutorial`, `drawable-xxhdpi` 단일 밀도).
+  (`img_canvas_tutorial_1~3`·`img_upload_tutorial`, `drawable-xxhdpi` 단일 밀도).
   강조할 자리만 뚫은 오버레이가 아니다.
 - **항목**: ① **화면이 바뀌어도 그림은 안 따라온다** — 안내가 가리키는 버튼이 옮겨 가거나 문구가
   바뀌면 목업만 낡는데, 어긋남을 잡는 수단이 없다(계측 테스트도 없다). ② 통짜 스크린샷이라
@@ -6857,10 +6855,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-368
 - **출처**: `CanvasMainViewModel#observeCanvasTutorial`·`CustomGalleryPickerViewModel#observeTutorial`·
-  `SegmentationConfirmViewModel`(PR #449) — 셋 다 `launchWhileSubscribed`로 튜토리얼 노출 여부를 구독한다.
+  (PR #449) — 둘 다 `launchWhileSubscribed`로 튜토리얼 노출 여부를 구독한다.
   [state-management](../architecture/state-management.md)가 적어 둔 선택 기준은 **"이 구독이 서버를 계속
   부르는가"**([ADR-0029](../adr/0029-canvas-today-ssot-polling.md))인데, 이 구독은 DataStore 한 키를 읽는다.
-- **항목**: ① 기준을 넓힐지(로컬 구독에도 기본으로 쓴다), 아니면 이 셋을 `launch`로 되돌릴지 —
+- **항목**: ① 기준을 넓힐지(로컬 구독에도 기본으로 쓴다), 아니면 이 둘을 `launch`로 되돌릴지 —
   지금은 문서의 기준과 코드의 관행이 어긋난 채 **쓰는 곳이 셋에서 여섯**이 됐다. ② 딸려 오는 비용이
   하나 있다 — 이 구독은 화면이 `state`를 보는 동안에만 열려서 **ViewModel 테스트가 `backgroundScope`에서
   `state`를 수집해야** 하고, 세 테스트가 각자 `shownViewModel()` 헬퍼로 같은 준비를 적는다.
@@ -6872,7 +6870,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-369
 - **출처**: `CanvasMainUiState.tutorialStep: CanvasTutorialStep?` vs
-  `CustomGalleryPickerState.isTutorialVisible: Boolean`·`SegmentationConfirmState`(PR #449) —
+  `CustomGalleryPickerState.isTutorialVisible: Boolean`(PR #449) —
   여러 장짜리인 캔버스만 enum을 담는데, 그 `CanvasTutorialStep`이 `@DrawableRes`·`@StringRes` 상수를
   프로퍼티로 든다. State가 `Int`를 직접 담지는 않아도 **표시 리소스가 State를 타고 흐른다.**
 - **항목**: ① 리소스를 든 enum이 State에 있어도 되는가 — [state-management](../architecture/state-management.md)의
@@ -6881,7 +6879,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   떼어 화면 매핑으로 내리면 된다). ② 한 장짜리·여러 장짜리가 두 형태로 갈린 것을 유지할지 —
   네 번째 화면이 붙을 때 어느 쪽을 따를지 정해진 것이 없다. ③ 완료를 남기는 시점도 갈린다 —
   캔버스는 **마지막 장을 닫을 때만** 남기고(중간에 접으면 다음 진입에서 처음부터 다시 본다),
-  한 장짜리 둘은 누르는 즉시 남긴다. 앞의 것은 의도가 KDoc에 적혀 있으나 규칙으로 올라간 적은 없다.
+  한 장짜리인 갤러리는 누르는 즉시 남긴다. 앞의 것은 의도가 KDoc에 적혀 있으나 규칙으로 올라간 적은 없다.
 - **상태**: 미해결 (**동작은 의도대로** — 형태 분기와 규약 이탈이다)
 - **해소 메모**: ①②를 정하면 [state-management](../architecture/state-management.md) 「UI State가 담는 것」에
   적고, ③은 [design-system](../architecture/design-system.md) 「튜토리얼 4종」에 노출·완료 규칙으로 적는다.
@@ -7059,9 +7057,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 누끼 확인 → 배치로 넘어갈 때 캐시가 미스라 같은 그림을 두 번 디코딩하고 거리판도 두
   장 만든다. ② 그래서 배치 화면 진입 시 테두리가 한 박자 늦는다 — 깜빡임을 없애려고 넣은 동기
   조회(`ToppingOutlineCache.peek`)가 이 경로에서는 무력하다. ③ Coil 의 이미지 캐시도 같은 이유로 갈린다.
-- **상태**: 미해결 (**동작은 맞고 비용만 든다** — 두 판의 내용은 같다)
-- **해소 메모**: 두 화면이 같은 문자열을 쓰도록 맞추면 닫힌다. 어느 쪽으로 맞출지는 Coil 이 두
-  형식을 다 받으므로 취향이 아니라 **다른 호출부**를 보고 정해야 한다.
+- **상태**: 해소됨 (누끼 확인 화면이 없어져 같은 그림을 두 화면이 잡는 경로가 없다 — 편집 화면은 거리판 캐시를 쓰지 않는다)
 
 ### [2026-09-08] 테두리 굵기 범위를 코드가 정하고 두 플랫폼이 서로 다른 값을 본다
 
@@ -7358,7 +7354,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   평범한 사진·다중 피사체·색 보존·로그 꼬리)도 기록이 없다. Task 4·5가 1차 경로의 수확을 옮기고 일반화했으며,
   캔버스 밖 후보를 버리는 동작 변경도 1차 경로에 걸렸다.
 - **상태**: 부분 해소 (①~⑤는 대상 코드 삭제로 해소됨(2026-09-30, C-101-Loading), ⑥ 잔존 — 회복 경로는 사라졌으나 1차 경로 회귀 확인은 그대로 필요하고, C-101-Loading 흐름의 실기기 확인이 같은 자리에 더해진다)
-- **해소 메모**: 이제 남은 확인은 둘이다. (a) 1차 경로 회귀 — 평범한 사진·다중 피사체·색 보존. (b) C-101-Loading 흐름 — 갤러리 content uri를 편집 화면이 다시 읽는지, 팝업이 떠 있는 동안 도착한 결과가 보류되는지, 편집 완료 뒤 백스택이 `PictureConfirm` · `ToppingEdit` · `SegmentationConfirm`인지, 저장 중 표시가 내려간 뒤 화면이 걷히기 전의 완료 탭이 확인 화면을 두 번 쌓지 않는지. (당시 메모) ⑥의 1차 경로 확인이 가장 먼저다. 매 촬영이 지나는 경로이기 때문이다. ①을 고치려면 타임아웃과
+- **해소 메모**: 이제 남은 확인은 둘이다. (a) 1차 경로 회귀 — 평범한 사진·다중 피사체·색 보존. (b) C-101-Loading 흐름 — 갤러리 content uri를 편집 화면이 다시 읽는지, 팝업이 떠 있는 동안 도착한 결과가 보류되는지, 편집 「다음」 뒤 백스택이 `PictureConfirm` · `ToppingEdit` · `CanvasToppingPlace`인지, 저장 중 표시가 내려간 뒤 화면이 걷히기 전의 「다음」 탭이 배치 화면을 두 번 쌓지 않는지. (당시 메모) ⑥의 1차 경로 확인이 가장 먼저다. 매 촬영이 지나는 경로이기 때문이다. ①을 고치려면 타임아웃과
   끝까지 돈 경우를 ViewModel이 구별해야 하므로 `recoverCandidates`의 결과 표현을 함께 봐야 한다. ⑤는 위임 껍데기를
   지우거나, 테스트가 두 함수를 직접 부르게 옮기면 닫힌다.
 

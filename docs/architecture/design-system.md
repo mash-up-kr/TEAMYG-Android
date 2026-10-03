@@ -188,12 +188,12 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 > **이관이 끝난 화면은 채울 것이 생겨도 컨테이너를 손대지 않는다**는 것이 이 라운드가 보여 준 것이고,
 > 그래서 그때는 이관 수치(8화면·V1 잔여 6파일)도 그대로였다.
 >
-> 📌 **한 라운드가 8개 엔트리를 한꺼번에 옮겼다(2026-08-20, PR #309 develop 머지)** — 어차피
+> 📌 **한 라운드가 세 모듈의 엔트리를 한꺼번에 옮겼다(2026-08-20, PR #309 develop 머지)** — 어차피
 > 세 모듈(`camera`·`gallery`·`segmentation`) 파일을 다 여는 라운드라 스캐폴드 이관을 같이 태웠다.
 > `camera`(`NavKeyCameraCustom`·`NavKeyCameraSystem`·`NavKeyPictureConfirm`) · `gallery`
 > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) · `segmentation`
-> (`NavKeySegmentation`·`NavKeySegmentationConfirm`·`NavKeyToppingEdit`) 8개 엔트리가 이번에 V2로
-> 옮겨 **이관 화면이 16개**가 됐다. `CustomCameraScreen`·
+> (`NavKeySegmentation`·`NavKeyToppingEdit`) 엔트리가 이번에 V2로
+> 옮겨 **이관 화면이 크게 늘었다.** `CustomCameraScreen`·
 > `CustomGalleryPickerScreen`이 직접 꽂고 있던 `YGToastHost`·`toastPolicy` 파라미터를 걷어 스캐폴드로
 > 옮겼고, 세 모듈 모두 `isLoading`은 쓰지 않는다(로딩이 전부 화면 고유 표현이라 V2가 흡수하지 않는
 > 갈래). 카메라 촬영 실패는 이번에 `showError` 토스트가 붙었다(전에는 조용히 뒤로 갔다). **V1
@@ -507,12 +507,12 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
     나온다. 화면마다 다시 쓰면 `3/3`인데 "다음"인 조합이 언제든 만들어진다. `progress`를 넘기지 않으면
     한 장짜리라는 뜻이고, 라벨은 "시작하기"가 되며 **진행 표시가 비운 윗줄로 제목이 올라온다**(칩만
     남겨 두면 카드가 위아래로 벌어진다). 문자열 3건은 이 컴포넌트가 모듈 `res/`에 갖는다.
-  - **겹치는 자리는 스캐폴드 밖이다** — 소비 화면 셋이 모두 `Box` 안에서 `YGScaffoldV2`와 **형제**로
+  - **겹치는 자리는 스캐폴드 밖이다** — 소비 화면 둘이 모두 `Box` 안에서 `YGScaffoldV2`와 **형제**로
     놓는다. 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바 밑에서 끊기고 시스템바만 안 덮인 화면이 된다.
     카드만 인셋을 받아 글자가 시스템바를 피한다.
-  - **첫 소비처가 셋이다**(같은 PR) — C-001 캔버스(3장, `CanvasTutorialStep` enum이 순서·목업·문구·
-    카드 위치를 든다), 갤러리 업로드(1장), 누끼 확인(1장). **여러 장짜리를 감싸는 자리는 디자인시스템이
-    아니라 feature 로컬**이다(`canvas/impl`의 `CanvasTutorialOverlay`) — 한 장짜리 둘은 화면이
+  - **첫 소비처가 둘이다**(같은 PR) — C-001 캔버스(3장, `CanvasTutorialStep` enum이 순서·목업·문구·
+    카드 위치를 든다), 갤러리 업로드(1장). **여러 장짜리를 감싸는 자리는 디자인시스템이
+    아니라 feature 로컬**이다(`canvas/impl`의 `CanvasTutorialOverlay`) — 한 장짜리인 갤러리는 화면이
     `YGTutorialOverlay`를 직접 부른다. `boxPlacement`를 고르는 기준은 취향이 아니라 **그 장이 강조하는
     UI가 어디 있는가**이고, 카드는 그 반대편에 붙는다(달력을 여는 장만 `Bottom`이다).
   - ⚠️ **목업 이미지가 실제 화면과 어긋날 길이 열려 있다** — 안내가 가리키는 버튼이 옮겨 가거나 문구가
