@@ -71,8 +71,8 @@ fun YGTopBarDetail(
 
 @Composable
 fun YGTopBarEmpty(
-    date: String,
-    day: String,
+    title: String,
+    count: String?,
     onIconClick: () -> Unit,
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
@@ -93,18 +93,20 @@ fun YGTopBarEmpty(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(
-                    text = date,
+                    text = title,
                     style = YGTheme.typography.body.b01R,
                     color = YGAtomicColors.Gray.Gray800,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = "($day)",
-                    style = YGTheme.typography.body.b01R,
-                    color = YGAtomicColors.Gray.Gray300,
-                    maxLines = 1,
-                )
+                if (count != null) {
+                    Text(
+                        text = count,
+                        style = YGTheme.typography.body.b01R,
+                        color = YGAtomicColors.Gray.Gray300,
+                        maxLines = 1,
+                    )
+                }
             }
             rightContent()
         },
@@ -203,14 +205,14 @@ private fun YGTopBarPreview() = PreviewBox {
         YGTopBarBack(onIconClick = { }, modifier = Modifier.fillMaxWidth())
         YGTopBarDetail(title = "그룹이름", onIconClick = { }, modifier = Modifier.fillMaxWidth())
         YGTopBarEmpty(
-            date = "December 31",
-            day = "Wed",
+            title = "내 그룹",
+            count = "3",
             onIconClick = { },
             modifier = Modifier.fillMaxWidth(),
         )
         YGTopBarEmpty(
-            date = "December 31",
-            day = "Wed",
+            title = "내 그룹",
+            count = "3",
             onIconClick = {},
             rightContent = {
                 YGChipButton(
@@ -222,8 +224,8 @@ private fun YGTopBarPreview() = PreviewBox {
             },
         )
         YGTopBarEmpty(
-            date = "December 31, 2026 (아주 긴 날짜 문자열)",
-            day = "Wed",
+            title = "내 그룹이 아주 길어서 한 줄에 다 담기지 않는 제목",
+            count = "3",
             onIconClick = {},
             modifier = Modifier.fillMaxWidth(),
             rightContent = {

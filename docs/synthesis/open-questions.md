@@ -472,19 +472,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-01] G-001 파르페·툴팁이 위키 정책과 미결선 — 화면 골격만 머지됨
 - **ID**: OQ-P-047
-- **출처**: `feature/groups/list/impl/route/GroupListParfaitLayout.kt`·`GroupListScreen.kt`·`GroupListViewModel.kt`·`route/component/GroupListTooltip.kt`(PR #173·#176·#180 develop 머지) — ① `GroupListUiState.groupList`가 `List<String>` placeholder고 렌더에 쓰이지 않아 [[무한-파르페-그리드]]의 지그재그 배치·인셋·y좌표·6타입 변형·활동순 정렬·상대시간이 전부 미구현이다. ② 크림 반복이 정책의 "토핑 0~3 → 3개, 4개부터 1:1" 규칙이 아니라 `content` 높이를 덮을 때까지의 올림 나눗셈이다. ③ 툴팁이 `LaunchedEffect(Unit) { show() }`로 **진입 시 무조건** 뜬다 — [[g-001-empty-툴팁]]의 노출 조건은 "그룹 0건". ④ `GroupListUiState.isTooltipVisible`은 死필드이고 실제 노출은 화면 로컬 `rememberTooltipState`가 쥔다. ⑤ 툴팁 문구·앵커가 코드에 리터럴로 확정됐는데 위키 정책은 문구·앵커를 미정으로 둔다(정책 소스 미수집).
-- **항목**: ① 목록 조회 API가 붙는 라운드에서 파르페 좌표 정책을 어디까지 컴포넌트(`YGToppingGroup`)로 흡수할지, ② 크림 개수 규칙을 정책대로 되돌릴지 레이아웃 파생값으로 유지할지, ③ 툴팁 노출 조건을 `groupList.isEmpty()`로 결선하고 상태 소유를 VM/화면 중 어디로 정할지(`isTooltipVisible` 존폐), ④ 툴팁 문구·앵커를 위키 정책으로 역수집할지.
-- **상태**: 미해결 — **①은 부분 해소(2026-08-07, PR #194)**, **③은 해소(2026-08-25, PR #352)**, ②④ 잔존
-- **해소 메모**: **①**: 토핑 배치가 화면의 `ToppingLayout`(지그재그 커스텀 `Layout`)으로 들어왔고 좌·우 인셋 4·같은 side 갭 -12·`Right = Left + 86`·저개수 N≤3 +12가 전부 [[G-001-무한파르페-간격-정책-v0.3]]과 **일치**한다. 소유 갈림은 "컴포넌트(`YGToppingGroup`)는 한 토핑의 회전·오프셋만, 화면은 열·간격"으로 결론났다. 다만 **변형 타입은 정책의 랜덤 재부여가 아니라 index 순환**이라 별도 항목으로 뗀다([2026-08-07](#2026-08-07-토핑-변형-타입이-index-순환으로-부여됨--정책은-랜덤-재부여)). **②**: 크림 반복 기준이 접시 제외로 좁혀졌을 뿐 여전히 높이 파생이다. **③**: 조회가 아직 mock이라 그대로고, mock 기본값이 4건이라 **0건 아닌 상태에서도 툴팁이 뜬다**. **④**는 위키 소관이라 정책 소스 수집 요청이 먼저다([[open-questions]]의 툴팁 문구·앵커 미정 항목). 표 갱신은 [g001-group-list 스펙](../superpowers/specs/archive/2026-08-01-g001-group-list.md) "정책 대조"에 반영했다.
-  **③**: ✅ **해소(2026-08-25, PR #352)** — 조건과 상태 소유가 한꺼번에 정해졌다. `observeGroups`가
-  캐시를 구독하면서 `isTooltipVisible = groups?.isEmpty() == true`를 같은 자리에서 세우므로
-  **死필드였던 `isTooltipVisible`이 실제 노출을 결정하는 값이 됐고**(출처 ④도 함께 닫힌다),
-  `GroupListTopBar`는 그 값과 "그룹 추가 칩이 보이는가"를 **둘 다** 만족할 때만 툴팁을 띄운다
-  (에러 화면 제외는 종전대로다). 미조회(`null`)에서 안 띄우는 것이 이 결선의 핵심이다 — 0건인지
-  모르는 채로 띄우면 그룹이 있는 사용자에게도 한 번 스친다(ADR-0023이 `null`과 `emptyList()`를
-  가른 이유가 여기서 실제로 쓰였다). 마지막 그룹을 나가면 다시 뜨고 첫 그룹을 만들면 재조회 없이
-  그 자리에서 접힌다. 유닛 4건이 네 갈래를 잠근다. **닫힘 비영속**은 상태를 저장하지 않으므로
-  종전대로이고, 화면을 떠났다 돌아오면 컴포지션이 새로 서면서 다시 뜬다.
+- **출처**: `feature/groups/list/impl/route/GroupListParfaitLayout.kt`·`GroupListScreen.kt`·`route/component/GroupListTooltip.kt` — ① 크림 반복이 정책의 "토핑 0~3 → 3개, 4개부터 1:1" 규칙이 아니라 접시를 뺀 `content` 높이를 덮을 때까지의 올림 나눗셈이다. ② 툴팁 노출은 `GroupListUiState.isEmptyConfirmed`와 `GroupListEmptyIntroState`의 단계가 정한다. 문구·색·화살표 위치는 Figma가 정본이고 코드에 리터럴로 들어 있는데, 위키 [[g-001-empty-툴팁]]은 문구·앵커를 미정으로 둔다(정책 소스 미수집).
+- **항목**: ① 크림 개수 규칙을 정책대로 되돌릴지 레이아웃 파생값으로 유지할지, ② 툴팁 문구·앵커를 위키 정책으로 역수집할지.
+- **상태**: 미해결 — 토핑 배치·노출 조건은 닫혔고 ①②만 잔존
+- **해소 메모**: 토핑 배치는 화면의 `ToppingLayout`이 쥐고 좌·우 인셋·같은 side 갭·`Right = Left + 86`·저개수 +12가 [[G-001-무한파르페-간격-정책-v0.3]]과 일치한다. 변형 타입의 index 순환은 별도 항목([2026-08-07](#2026-08-07-토핑-변형-타입이-index-순환으로-부여됨--정책은-랜덤-재부여))이다. ②는 위키 소관이라 정책 소스 수집 요청이 먼저다. 툴팁의 등장 타이밍·종료 규칙은 [OQ-P-412](#2026-10-03-g-001-empty-안내-애니메이션-정책-원본이-위키에-없다)가 따로 추적한다.
 
 ### [2026-08-01] 테마 비의존 그리기 확장의 소유 모듈이 갈림
 - **ID**: OQ-P-048
@@ -835,15 +826,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `fillMaxWidth()`로 붙이고 오버레이가 아니다. **②(`Edit`의 중앙 문구)는 그대로 잔존**이고,
   > `Title`의 중앙 문구는 화면 `strings.xml`이 갖는다(③이 탭 문자열에서 고른 것과 같은 쪽).
   > 다만 **빈 상태에는 제목을 두지 않는데 그 근거가 작업자 지시뿐**이다 → OQ-P-331.
-
-### [2026-08-04] Top Bar 날짜 표기가 영문 고정 — 로케일·포맷 규칙 미정
-- **ID**: OQ-P-082
-- **출처**: `component/ygtopbar/YGTopBar.kt#YGTopBarEmpty`(PR #188) + `feature/groups/list/impl` `GroupListViewModel`·`core:util:jvm` `model/DateFormat` — 상단 바가 완성된 문자열 2개(`date`·`day`)를 받기만 하고, 실제 값은 VM이 `DateFormat.FullMonthWithDay`·`AbbreviatedDayOfWeek`로 만든다. 두 포맷 모두 **영문 표기**(Figma `December 31 (Wed)`)인데 앱 UI는 한국어다. 같은 화면의 `YGDate`도 같은 값을 쓴다.
-- **항목**: ① 날짜·요일 표기를 한국어로 갈지 Figma대로 영문을 유지할지(제품 결정), ② 포맷 소유를 `core:util:jvm` 상수로 둘지 로케일 기반 포맷터로 바꿀지, ③ 정책 소스가 위키에 없다 — 수집 대상인지.
-- **상태**: 미해결 (컴포넌트는 무관 — 호출 화면·정책 소관)
-  > 📌 **세 번째 소비처(2026-08-11, PR #199)** — C-001 캔버스 날짜 라벨이 같은 `DateTextFormat` 2종을 쓴다(`"May 20"` + `"(Wed)"`, 괄호는 화면이 문자열 결합으로 붙인다). 화면 3곳으로 퍼졌다.
-  > 📌 **두 번째 소비처(2026-08-04, PR #191)** — C-102 갤러리 목록의 날짜 헤더가 `core:util:jvm` `DateTextFormat`(`monthDayFormat`·`weekdayFormat`, 둘 다 영문 약어)을 쓴다. 즉 영문 표기가 상단 바 한 곳이 아니라 **화면 2곳·포맷 객체 2개**(`DateFormat`·`DateTextFormat`)로 퍼졌고, ②의 "포맷 소유" 질문에는 **같은 성격의 객체가 둘로 나뉜 것**도 포함된다.
-- **해소 메모**: ①이 정해지면 `DateFormat`·`DateTextFormat`과 [g001-group-list 스펙](../superpowers/specs/archive/2026-08-01-g001-group-list.md)·[c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md)을 함께 고친다. 위키 정책이 필요하면 소스 수집을 요청한다.
 
 ### [2026-08-04] 배경 블러가 실화면에 미배선 + API 31 미만 폴백 수용 여부
 - **ID**: OQ-P-083
@@ -7816,4 +7798,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 기획 쪽이 C-101-Loading·C-103-Error 삭제·그만두기 팝업을 위키에 반영하면 이 항목을 닫는다.
   위키 [[open-questions]]에 대응 항목이 서면 링크를 붙인다.
 
-<!-- oq-next: 412 -->
+### [2026-10-03] G-001-Empty 안내 애니메이션 정책 원본이 위키에 없다
+- **ID**: OQ-P-412
+- **출처**: `feature/groups/list/impl/model/GroupListEmptyIntroState.kt`·`GroupListEmptyIntroTimeline.kt` × 위키 [[src-G-001-Empty-툴팁-노출-조건-정책-v0.1]] — 더미 그룹 3개의 등장 순서·간격·이징, 툴팁 등장 시각, 3초 이후 탭으로 닫기는 Figma 기준으로 구현했고 `wiki/raw`에 이 애니메이션의 정책 원본이 없다.
+- **항목**: ① 위키는 툴팁이 "0건이면 항상 뜬다"고 적는데 구현은 등장 타임라인 끝(2.5초)에 뜨고, 탭으로 닫으면 화면에 다시 들어올 때까지 안 뜬다. ② 더미 그룹의 존재와 그 문구·시간 표기가 위키에 없다. ③ 에뮬레이터·실기기에서 타이밍과 TalkBack 동작을 확인한 기록이 아직 없다.
+- **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
+- **해소 메모**: 기획 쪽이 애니메이션 정책을 위키에 반영하면 ①②를 닫고 [OQ-P-047](#2026-08-01-g-001-파르페툴팁이-위키-정책과-미결선--화면-골격만-머지됨) ②와 함께 정리한다. ③은 실기기 확인 뒤 지운다.
+
+<!-- oq-next: 413 -->
