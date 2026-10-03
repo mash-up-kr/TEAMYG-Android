@@ -70,7 +70,6 @@ sealed interface ToppingEditIntent : UiIntent {
 
     data object ClickDone : ToppingEditIntent
 
-    /** 닫기 버튼 */
     data object ClickClose : ToppingEditIntent
 
     data object ConfirmQuit : ToppingEditIntent

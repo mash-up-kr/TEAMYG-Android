@@ -210,6 +210,8 @@ git commit -m "feat: 대상 감지에 실패해 들어온 누끼 편집에 안�
 
 - [ ] **Step 1: 고친다**
 
+- 스펙을 `archive/`로 옮긴 뒤 코드에 옛 경로가 남았는지 `grep -rn "2026-10-03-topping-edit-entry-flow-design" --include='*.kt' .`로 찾아 KDoc 참조(예: `SegmentationViewModel#selectCandidate`)를 아카이브 경로로 고친다. `check_links`는 `docs`만 훑는다.
+
 - [ ] **Step 2: 링크 확인**
 
 Run: `python3 docs/script/check_links.py docs`
