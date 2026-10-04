@@ -230,8 +230,9 @@ tags: [architecture, parfait]
 사진 확인 화면 진입에 미리 건다** — 촬영·갤러리 두 경로의 유일한 합류점이라 카메라에만 걸면 갤러리로
 고른 사용자가 사전 설치를 안 탄다. 실패는 여전히 `SegmentationException.ModuleNotReady`(일시적,
 재시도 가능) / `Process`(그 외)로 가르고, `Tasks.await`가 원인을 `ExecutionException`으로 감싸므로 한 겹
-벗겨 `MlKitException.UNAVAILABLE`을 판정하는 것도 그대로다. 화면은 그 둘을 `SegmentationErrorKind`로
-받아 문구를 가르고 재시도 버튼을 준다
+벗겨 `MlKitException.UNAVAILABLE`을 판정하는 것도 그대로다. 화면은 그 둘을 가르지 않는다 —
+`SegmentationViewModel`은 어떤 실패든 로그만 남기고 분석 화면을 편집 화면(C-104, `isDetectionFailed`)으로
+치환하며, 재시도 버튼은 없다
 → [segmentation-module-install 스펙](../superpowers/specs/archive/2026-09-02-segmentation-module-install.md).
 ⚠️ 모듈 판정에 `SubjectSegmenter`를 따로 열면 네이티브 그래프가 둘 떠서 죽는다 — `Feature` 하나만 든
 `OptionalModuleApi`를 쓰고, 그 feature 이름이 ML Kit 내부 값이라는 대가가 남는다
