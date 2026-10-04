@@ -31,21 +31,26 @@ internal val TOPPING_POINTER_MAX_JUMP = 48.dp
  * 않아서 먼저 닿은 두 손가락이 된다.
  *
  * @param onTransform `pan` 은 px, `rotationDelta` 는 `rotationZ` 와 같은 방향의 도 단위.
+ * @param enabled 첫 down 때 한 번만 읽는다. 거짓이면 뒤늦게 닿는 손가락까지 그 제스처를 통째로
+ *   버린다. 입력을 체인에서 빼는 대신 이것으로 끈다 — [dismissPanelOnTouch] 참고.
  */
 @Composable
 internal fun Modifier.toppingTransformInput(
     targetAt: () -> ToppingHitTarget?,
     onTransform: (pan: Offset, zoom: Float, rotationDelta: Float) -> Unit,
     onGestureActiveChange: (Boolean) -> Unit = {},
+    enabled: () -> Boolean = { true },
 ): Modifier {
     val latestTargetAt by rememberUpdatedState(targetAt)
     val latestOnTransform by rememberUpdatedState(onTransform)
     val latestOnGestureActiveChange by rememberUpdatedState(onGestureActiveChange)
+    val latestEnabled by rememberUpdatedState(enabled)
 
     val handler = remember {
         PointerInputEventHandler {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                if (!latestEnabled()) return@awaitEachGesture
                 val target = latestTargetAt() ?: return@awaitEachGesture
 
                 fun emit(

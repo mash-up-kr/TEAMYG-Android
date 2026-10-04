@@ -57,6 +57,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasWelcome
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
@@ -174,7 +175,14 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCanvasBGEdit(
                         groupId = effect.groupId.value,
                         parfaitId = effect.parfaitId.value,
-                        initialToppingId = effect.toppingId?.value,
+                    ),
+                )
+
+                is CanvasMainEffect.NavigateToToppingArrange -> navigator.goTo(
+                    destination = NavKeyCanvasToppingArrange(
+                        groupId = effect.groupId.value,
+                        parfaitId = effect.parfaitId.value,
+                        initialToppingId = effect.toppingId.value,
                     ),
                 )
 

@@ -32,8 +32,6 @@ internal fun ToppingEditRoute(
             factory.create(
                 sourceImageUri = key.sourceImageUri,
                 segmentationImageUri = key.segmentationImageUri,
-                borderLayers = key.borderLayers,
-                borderOnly = key.borderOnly,
                 completion = key.completion,
             )
         },
@@ -86,16 +84,11 @@ internal fun ToppingEditRoute(
     YGScaffoldV2 { innerPadding ->
         ToppingEditScreen(
             state = state,
-            onChangeTab = { tab -> viewModel.processIntent(ToppingEditIntent.ChangeTab(tab)) },
             onChangeMode = { mode -> viewModel.processIntent(ToppingEditIntent.ChangeMode(mode)) },
             onChangeBrushWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBrushWidth(width)) },
             onAddStroke = { stroke -> viewModel.processIntent(ToppingEditIntent.AddStroke(stroke)) },
             onClickUndoArea = { viewModel.processIntent(ToppingEditIntent.UndoArea) },
             onClickRedoArea = { viewModel.processIntent(ToppingEditIntent.RedoArea) },
-            onSelectBorderColor = { color -> viewModel.processIntent(ToppingEditIntent.SelectBorderColor(color)) },
-            onChangeBorderWidth = { width -> viewModel.processIntent(ToppingEditIntent.ChangeBorderWidth(width)) },
-            onClickUndoBorder = { viewModel.processIntent(ToppingEditIntent.UndoBorder) },
-            onClickRedoBorder = { viewModel.processIntent(ToppingEditIntent.RedoBorder) },
             onClickDone = { viewModel.processIntent(ToppingEditIntent.ClickDone) },
             onClickBack = { navigator.onBack() },
             modifier = modifier.padding(innerPadding),

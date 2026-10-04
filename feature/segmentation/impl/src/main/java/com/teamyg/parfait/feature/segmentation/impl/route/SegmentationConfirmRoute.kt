@@ -28,7 +28,7 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.TOPPING_EDIT_RESULT_KEY
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.R
-import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationQuitDialog
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationConfirmScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmEffect
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationConfirmIntent
@@ -71,31 +71,27 @@ internal fun SegmentationConfirmRoute(
         }
     }
 
-    val sourceImageUri = uiState.sourceImageUri
-
     // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
     // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
     Box(modifier = Modifier.fillMaxSize()) {
         YGScaffoldV2(toastPolicy = toastPolicy) { innerPadding ->
             SegmentationConfirmScreen(
                 subjectImagePath = uiState.subjectImagePath,
-                borderColorArgb = uiState.borderColorArgb,
-                borderWidthDp = uiState.borderWidthDp,
                 isNextEnabled = uiState.isDraftReady,
+                showEditPhotoButton = uiState.canEditPhoto,
                 onClickBack = { navigator.onBack() },
                 onClickClose = { showQuitDialog = true },
                 onClickEditPhoto = {
+                    // 버튼이 숨겨지는 갈래라 닿지 않지만, 원본이 없으면 되살릴 픽셀이 없어 열지 않는다
+                    val sourceImageUri = uiState.sourceImageUri ?: return@SegmentationConfirmScreen
+
                     // 편집 화면은 ContentResolver 로 읽으므로 파일 경로를 file 스킴 uri 로 바꿔서 넘긴다
                     val editImageUri = File(uiState.editImagePath).toUri().toString()
 
                     navigator.goTo(
                         NavKeyToppingEdit(
-                            // 되살릴 원본이 없는 진입은 원본 자리에도 알맹이를 넣는다 — 원본과
-                            // 누끼가 같은 그림이면 편집 결과가 알맹이 그대로다
-                            sourceImageUri = sourceImageUri ?: editImageUri,
+                            sourceImageUri = sourceImageUri,
                             segmentationImageUri = editImageUri,
-                            borderLayers = uiState.borderLayers,
-                            borderOnly = uiState.isBorderOnlyEdit,
                         ),
                     )
                 },
@@ -105,7 +101,7 @@ internal fun SegmentationConfirmRoute(
         }
 
         if (showQuitDialog) {
-            SegmentationQuitDialog(
+            YGModalQuitEdit(
                 // 토핑 만들기를 접고 캔버스로 돌아간다. 사이에 쌓인 화면은 모두 걷는다
                 onConfirmQuit = {
                     showQuitDialog = false

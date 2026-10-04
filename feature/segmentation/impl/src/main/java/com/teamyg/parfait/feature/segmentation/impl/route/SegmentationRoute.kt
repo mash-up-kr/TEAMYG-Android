@@ -19,7 +19,7 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
 import com.teamyg.parfait.feature.segmentation.impl.R
-import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationQuitDialog
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationLoadingScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
@@ -96,7 +96,7 @@ internal fun SegmentationRoute(
     }
 
     if (state.showQuitDialog) {
-        SegmentationQuitDialog(
+        YGModalQuitEdit(
             onConfirmQuit = { viewModel.processIntent(SegmentationIntent.ConfirmQuit) },
             onDismiss = { viewModel.processIntent(SegmentationIntent.DismissQuit) },
         )

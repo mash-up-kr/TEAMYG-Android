@@ -13,6 +13,7 @@ import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -75,18 +76,13 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
 
     is NavKeySegmentationConfirm -> AnalyticsScreen("C-103-select", "NavKeySegmentationConfirm")
 
-    // 두 경로(최근 알맹이 재사용·편집 모드 테두리)가 같은 키로 와 키만으로는 갈리지 않는다
-    is NavKeyToppingEdit -> AnalyticsScreen(
-        screenId = if (borderOnly) "C-105/C-306" else "C-104",
-        screenClass = "NavKeyToppingEdit",
-    )
+    is NavKeyToppingEdit -> AnalyticsScreen("C-104", "NavKeyToppingEdit")
 
     is NavKeyCanvasToppingPlace -> AnalyticsScreen("C-106", "NavKeyCanvasToppingPlace")
 
-    is NavKeyCanvasBGEdit -> AnalyticsScreen(
-        screenId = if (initialToppingId == null) "C-301" else "C-305",
-        screenClass = "NavKeyCanvasBGEdit",
-    )
+    is NavKeyCanvasBGEdit -> AnalyticsScreen("C-301", "NavKeyCanvasBGEdit")
+
+    is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")
 
     is NavKeyCanvasImageSave -> AnalyticsScreen("C-001-image-save", "NavKeyCanvasImageSave")
 

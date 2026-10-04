@@ -90,8 +90,8 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 
 > ✅ **코드가 들어왔다(2026-08-31, PR #404)** — 이 절은 구현 전에 쓰였고, 이제 `BaseViewModel`이
 > 실제로 `launchWhileSubscribed(stopTimeout, source, collector)`를 들고 있다. 활성 판정은
-> `state.subscriptionCount > 0`이고 유예는 상수 하나다. 쓰는 곳은 캔버스 세 화면
-> (`CanvasMainViewModel`·`CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`)이며, 폴러의
+> `state.subscriptionCount > 0`이고 유예는 상수 하나다. 쓰는 곳은 캔버스 네 화면
+> (`CanvasMainViewModel`·`CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`)이며, 폴러의
 > 참조 계수는 저장소 층이 구독의 `onStart`/`onCompletion`에 걸어 올리고 내린다 — 화면은 폴러의
 > 존재를 모른다.
 

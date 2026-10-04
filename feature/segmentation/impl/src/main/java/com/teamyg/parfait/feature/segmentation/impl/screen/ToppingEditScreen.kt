@@ -11,7 +11,6 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,18 +58,15 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygeditactionbutton.YGEditActionButton
 import com.teamyg.parfait.core.designsystem.component.ygeditbutton.YGEditButton
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEdit
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarEditTab
+import com.teamyg.parfait.core.designsystem.component.ygslider.YGSlider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toPath
 import com.teamyg.parfait.feature.segmentation.impl.R
-import com.teamyg.parfait.feature.segmentation.impl.component.BorderColorChipRow
-import com.teamyg.parfait.feature.segmentation.impl.component.BrushWidthSlider
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditMode
 import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditStroke
-import com.teamyg.parfait.feature.segmentation.impl.editor.ToppingEditTab
 import com.teamyg.parfait.feature.segmentation.impl.editor.UndoRedoStack
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.ToppingEditState
 import kotlin.math.roundToInt
@@ -89,16 +85,11 @@ private val BRUSH_PREVIEW_BORDER_WIDTH = 1.dp
 @Composable
 internal fun ToppingEditScreen(
     state: ToppingEditState,
-    onChangeTab: (ToppingEditTab) -> Unit,
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onAddStroke: (ToppingEditStroke) -> Unit,
     onClickUndoArea: () -> Unit,
     onClickRedoArea: () -> Unit,
-    onSelectBorderColor: (Color) -> Unit,
-    onChangeBorderWidth: (Float) -> Unit,
-    onClickUndoBorder: () -> Unit,
-    onClickRedoBorder: () -> Unit,
     onClickDone: () -> Unit,
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -106,16 +97,11 @@ internal fun ToppingEditScreen(
     Box(modifier = modifier) {
         ToppingEditContent(
             state = state,
-            onChangeTab = onChangeTab,
             onChangeMode = onChangeMode,
             onChangeBrushWidth = onChangeBrushWidth,
             onAddStroke = onAddStroke,
             onClickUndoArea = onClickUndoArea,
             onClickRedoArea = onClickRedoArea,
-            onSelectBorderColor = onSelectBorderColor,
-            onChangeBorderWidth = onChangeBorderWidth,
-            onClickUndoBorder = onClickUndoBorder,
-            onClickRedoBorder = onClickRedoBorder,
             onClickDone = onClickDone,
             onClickBack = onClickBack,
             modifier = Modifier.fillMaxSize(),
@@ -130,16 +116,11 @@ internal fun ToppingEditScreen(
 @Composable
 private fun ToppingEditContent(
     state: ToppingEditState,
-    onChangeTab: (ToppingEditTab) -> Unit,
     onChangeMode: (ToppingEditMode) -> Unit,
     onChangeBrushWidth: (Float) -> Unit,
     onAddStroke: (ToppingEditStroke) -> Unit,
     onClickUndoArea: () -> Unit,
     onClickRedoArea: () -> Unit,
-    onSelectBorderColor: (Color) -> Unit,
-    onChangeBorderWidth: (Float) -> Unit,
-    onClickUndoBorder: () -> Unit,
-    onClickRedoBorder: () -> Unit,
     onClickDone: () -> Unit,
     onClickBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -148,25 +129,14 @@ private fun ToppingEditContent(
     var isAdjustingBrushWidth by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        val historyModifier = Modifier
-            .fillMaxWidth()
-            .padding(YGTheme.layout.padding.padding7)
-
-        when (state.tab) {
-            ToppingEditTab.AREA -> ToppingEditHistoryActions(
-                history = state.areaHistory,
-                onClickUndo = onClickUndoArea,
-                onClickRedo = onClickRedoArea,
-                modifier = historyModifier,
-            )
-
-            ToppingEditTab.BORDER -> ToppingEditHistoryActions(
-                history = state.borderHistory,
-                onClickUndo = onClickUndoBorder,
-                onClickRedo = onClickRedoBorder,
-                modifier = historyModifier,
-            )
-        }
+        ToppingEditHistoryActions(
+            history = state.areaHistory,
+            onClickUndo = onClickUndoArea,
+            onClickRedo = onClickRedoArea,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(YGTheme.layout.padding.padding7),
+        )
 
         Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap6))
 
@@ -184,14 +154,6 @@ private fun ToppingEditContent(
             when {
                 originBitmap == null || segmentationBitmap == null -> CircularProgressIndicator()
 
-                state.tab == ToppingEditTab.BORDER -> ToppingBorderEditScreen(
-                    originBitmap = originBitmap,
-                    segmentationBitmap = segmentationBitmap,
-                    strokes = state.strokes,
-                    borderLayers = state.borderLayers,
-                    modifier = Modifier.fillMaxSize(),
-                )
-
                 else -> ToppingEditCanvas(
                     originBitmap = originBitmap,
                     segmentationBitmap = segmentationBitmap,
@@ -207,59 +169,32 @@ private fun ToppingEditContent(
 
         Spacer(modifier = Modifier.height(23.dp))
 
-        when (state.tab) {
-            ToppingEditTab.AREA -> SegmentationAreaControls(
-                mode = state.mode,
-                brushWidth = state.brushWidthDp,
-                brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
-                isEnabled = !state.isLoading,
-                onChangeMode = onChangeMode,
-                onChangeBrushWidth = { width ->
-                    isAdjustingBrushWidth = true
-                    onChangeBrushWidth(width)
-                },
-                onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        top = YGTheme.layout.padding.padding6,
-                        start = YGTheme.layout.padding.padding7,
-                        end = YGTheme.layout.padding.padding7,
-                    ),
-            )
+        SegmentationAreaControls(
+            mode = state.mode,
+            brushWidth = state.brushWidthDp,
+            brushWidthRange = state.minBrushWidthDp..state.maxBrushWidthDp,
+            isEnabled = !state.isLoading,
+            onChangeMode = onChangeMode,
+            onChangeBrushWidth = { width ->
+                isAdjustingBrushWidth = true
+                onChangeBrushWidth(width)
+            },
+            onChangeBrushWidthFinished = { isAdjustingBrushWidth = false },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = YGTheme.layout.padding.padding6,
+                    start = YGTheme.layout.padding.padding7,
+                    end = YGTheme.layout.padding.padding7,
+                ),
+        )
 
-            // 색상칩이 화면 끝까지 스크롤되도록 가로 여백은 컨트롤 안에서 항목별로 준다
-            ToppingEditTab.BORDER -> SegmentationBorderControls(
-                selectedColor = state.selectedBorderColor,
-                borderWidth = state.borderWidthDp,
-                borderWidthRange = state.minBorderWidthDp..state.maxBorderWidthDp,
-                isEnabled = !state.isLoading,
-                onSelectColor = onSelectBorderColor,
-                onChangeWidth = onChangeBorderWidth,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = YGTheme.layout.padding.padding6),
-            )
-        }
-
-        if (state.isBorderOnly) {
-            // 되살릴 원본이 없는 진입이라 영역|테두리 탭 전환 없이 테두리 편집만 연다
-            YGFloatingBarEdit(
-                title = stringResource(R.string.topping_edit_border_only_title),
-                onCloseClick = onClickBack,
-                onConfirmClick = onClickDone,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            YGFloatingBarEditTab(
-                tabs = ToppingEditTab.entries.map { tab -> stringResource(tab.label) },
-                selectedIndex = state.tab.ordinal,
-                onTabSelect = { index -> onChangeTab(ToppingEditTab.entries[index]) },
-                onCloseClick = onClickBack,
-                onConfirmClick = onClickDone,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        YGFloatingBarEdit(
+            title = stringResource(R.string.topping_edit_area_only_title),
+            onCloseClick = onClickBack,
+            onConfirmClick = onClickDone,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -287,7 +222,7 @@ private fun ToppingEditSavingOverlay(modifier: Modifier = Modifier) {
     }
 }
 
-/** 어느 탭의 스택이든 되돌릴 수 있는지만 보므로 [history] 가 무엇을 쌓는지는 알 필요가 없다 */
+/** 되돌릴 수 있는지만 보므로 [history] 가 무엇을 쌓는지는 알 필요가 없다 */
 @Composable
 private fun ToppingEditHistoryActions(
     history: UndoRedoStack<*>,
@@ -558,7 +493,7 @@ private fun SegmentationAreaControls(
                 color = YGAtomicColors.Gray.Gray700,
             )
             Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
+            YGSlider(
                 value = brushWidth,
                 onValueChange = onChangeBrushWidth,
                 onValueChangeFinished = onChangeBrushWidthFinished,
@@ -567,7 +502,7 @@ private fun SegmentationAreaControls(
             )
         }
 
-        // 하단 플로팅 바 바로 위에 붙어 모드 전환이 탭 전환과 한 덩어리로 보이게 둔다
+        // 하단 플로팅 바 바로 위에 붙어 모드 전환이 바와 한 덩어리로 보이게 둔다
         Row {
             YGEditButton(
                 text = stringResource(R.string.topping_edit_area_erase),
@@ -587,51 +522,6 @@ private fun SegmentationAreaControls(
     }
 }
 
-/**
- * 영역 탭의 모드 토글 자리를 색상칩이 대신한다.
- * 고른 색과 굵기가 되돌리기 스택에 쌓이므로 값은 화면이 아니라 [ToppingEditState] 가 들고 있다.
- */
-@Composable
-private fun SegmentationBorderControls(
-    selectedColor: Color,
-    borderWidth: Float,
-    borderWidthRange: ClosedFloatingPointRange<Float>,
-    isEnabled: Boolean,
-    onSelectColor: (Color) -> Unit,
-    onChangeWidth: (Float) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val horizontalPadding = YGTheme.layout.padding.padding7
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // 라벨과 바는 한 덩어리로 붙여야 해서 바깥 Column 의 간격을 타지 않도록 따로 감싼다
-        Column(modifier = Modifier.padding(horizontal = horizontalPadding)) {
-            Text(
-                text = stringResource(R.string.topping_edit_border_width),
-                style = YGTheme.typography.caption.c01M,
-                color = YGAtomicColors.Gray.Gray700,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            BrushWidthSlider(
-                value = borderWidth,
-                onValueChange = onChangeWidth,
-                valueRange = borderWidthRange,
-                isEnabled = isEnabled,
-            )
-        }
-
-        BorderColorChipRow(
-            selectedColor = selectedColor,
-            onSelectColor = onSelectColor,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = horizontalPadding),
-        )
-    }
-}
-
 private class ToppingEditStatePreviewParameterProvider : PreviewParameterProvider<ToppingEditState> {
     override val values: Sequence<ToppingEditState> = sequenceOf(
         ToppingEditState(),
@@ -646,16 +536,11 @@ private fun PreviewToppingEditScreen(
 ) = PreviewBox {
     ToppingEditScreen(
         state = state,
-        onChangeTab = {},
         onChangeMode = {},
         onChangeBrushWidth = {},
         onAddStroke = {},
         onClickUndoArea = {},
         onClickRedoArea = {},
-        onSelectBorderColor = {},
-        onChangeBorderWidth = {},
-        onClickUndoBorder = {},
-        onClickRedoBorder = {},
         onClickDone = {},
         onClickBack = {},
         modifier = Modifier.fillMaxSize(),

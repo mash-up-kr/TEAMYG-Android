@@ -11,7 +11,6 @@ import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingBorderLayer
 import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -25,16 +24,13 @@ data class SegmentationConfirmState(
     val subjectImagePath: String,
     val cutoutImagePath: String?,
     val sourceImageUri: String?,
-    val borderColorArgb: Int? = null,
-    val borderWidthDp: Float? = null,
-    val borderLayers: List<ToppingBorderLayer> = emptyList(),
     val isDraftReady: Boolean = false,
     /** 앱 설치 후 이 화면 첫 진입에서만 `true`. 화면 전체를 덮는다 */
     val isTutorialVisible: Boolean = false,
 ) : UiState {
-    /** 되살릴 원본이 없으면 영역은 손댈 수 없고 테두리만 고칠 수 있다 */
-    val isBorderOnlyEdit: Boolean
-        get() = sourceImageUri == null
+    /** 원본이 있어 영역을 고칠 수 있을 때만 "사진 편집"을 보인다 */
+    val canEditPhoto: Boolean
+        get() = sourceImageUri != null
 
     /** 편집 화면이 시작 마스크로 읽을 그림. 재편집 마스크가 없는 재사용 진입은 알맹이가 곧 재료다 */
     val editImagePath: String
@@ -78,7 +74,7 @@ class SegmentationConfirmViewModel
 
     /**
      * 이 진입이 초안에 알맹이를 적는 일을 이미 마쳤는가. ViewModel 필드로 두면 프로세스 사망을
-     * 못 넘겨, 복원된 화면이 진입 인자로 그 사이의 편집 결과와 테두리를 덮어쓴다.
+     * 못 넘겨, 복원된 화면이 진입 인자로 그 사이의 편집 결과를 덮어쓴다.
      */
     private var hasRecordedEntrySubject: Boolean
         get() = savedStateHandle[KEY_RECORDED_ENTRY_SUBJECT] ?: false
@@ -115,7 +111,7 @@ class SegmentationConfirmViewModel
 
     private fun observeTutorial() {
         launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.SEGMENTATION) }) { isVisible ->
-            updateState { copy(isTutorialVisible = isVisible) }
+            updateState { copy(isTutorialVisible = canEditPhoto && isVisible) }
         }
     }
 
@@ -138,17 +134,10 @@ class SegmentationConfirmViewModel
             // 초안이 다시 채워졌으니 이번에 또 비면 한 번 더 알려야 한다
             hasReportedMissingDraft = false
 
-            val border = draft.borderColorArgb?.let { argb ->
-                ToppingBorderLayer(colorArgb = argb, widthDp = draft.borderWidthDp ?: 0f)
-            }
             updateState {
                 copy(
                     subjectImagePath = subjectImagePath,
                     cutoutImagePath = draft.cutoutImagePath ?: cutoutImagePath,
-                    borderColorArgb = draft.borderColorArgb,
-                    borderWidthDp = draft.borderWidthDp,
-                    // 겹칠 수 없어 언제나 0개 아니면 1개다(`adr/0025-topping-border-as-server-field.md`)
-                    borderLayers = listOfNotNull(border),
                     isDraftReady = true,
                 )
             }

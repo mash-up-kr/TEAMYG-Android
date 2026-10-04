@@ -40,8 +40,6 @@ class ToppingDraftRepositoryImpl @Inject constructor(
     override suspend fun record(
         subjectImagePath: String,
         cutoutImagePath: String?,
-        borderColorArgb: Int?,
-        borderWidthDp: Float?,
         sourceLongSide: SourceLongSide?,
     ): Boolean {
         val current = toppingDraftLocalDataSource.draft.first() ?: return false
@@ -50,8 +48,6 @@ class ToppingDraftRepositoryImpl @Inject constructor(
             current.copy(
                 subjectImagePath = subjectImagePath,
                 cutoutImagePath = cutoutImagePath,
-                borderColorArgb = borderColorArgb,
-                borderWidthDp = borderWidthDp,
                 sourceLongSide = sourceLongSide,
             ),
         )

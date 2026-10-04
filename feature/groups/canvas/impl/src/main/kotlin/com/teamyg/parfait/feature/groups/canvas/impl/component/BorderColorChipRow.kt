@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.segmentation.impl.component
+package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -29,45 +31,48 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
-import com.teamyg.parfait.feature.segmentation.impl.editor.DEFAULT_TOPPING_BORDER_COLOR
-import com.teamyg.parfait.feature.segmentation.impl.editor.TOPPING_BORDER_COLORS
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_COLORS
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private val CHIP_SIZE = 36.dp
 private val CHIP_BORDER_WIDTH = 1.dp
 private val CHECK_ICON_SIZE = 24.dp
 
+private const val CHIP_TAG_PREFIX = "topping_border_chip_"
+private const val CHIP_NONE_TAG = "${CHIP_TAG_PREFIX}none"
+
 /**
- * 테두리 색을 고르는 가로 목록. 고르면 그 색으로 테두리가 한 겹 더 얹히므로,
- * 켜진 칩은 가장 바깥 겹의 색을 가리킨다. 투명 칩은 색이 아니라 아무 겹도 두르지 않은 상태다.
+ * 테두리 색을 고르는 가로 목록. 투명 칩은 색이 아니라 테두리를 두르지 않은 상태라 `null` 과 짝이다.
  *
  * 좌우 여백은 [modifier] 가 아니라 [contentPadding] 으로 준다.
  * 바깥에서 padding 을 걸면 스크롤 영역까지 좁아져 칩이 화면 끝에 닿기 전에 잘린다.
  */
 @Composable
 internal fun BorderColorChipRow(
-    selectedColor: Color,
-    onSelectColor: (Color) -> Unit,
+    selectedColorArgb: Int?,
+    onSelectColor: (Int?) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
-    colors: List<Color> = TOPPING_BORDER_COLORS,
 ) {
     LazyRow(
         modifier = modifier,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
     ) {
-        items(items = colors) { color ->
+        items(items = TOPPING_BORDER_COLORS) { color ->
             if (color == Color.Transparent) {
                 TransparentBorderColorChip(
-                    isSelected = color == selectedColor,
-                    onClick = { onSelectColor(color) },
+                    isSelected = selectedColorArgb == null,
+                    onClick = { onSelectColor(null) },
+                    modifier = Modifier.testTag(CHIP_NONE_TAG),
                 )
             } else {
+                val argb = color.toArgb()
                 BorderColorChip(
                     color = color,
-                    isSelected = color == selectedColor,
-                    onClick = { onSelectColor(color) },
+                    isSelected = selectedColorArgb == argb,
+                    onClick = { onSelectColor(argb) },
+                    modifier = Modifier.testTag(CHIP_TAG_PREFIX + "%08X".format(argb)),
                 )
             }
         }
@@ -148,17 +153,17 @@ private fun TransparentBorderColorChip(
     }
 }
 
-private class BorderColorChipRowPreviewParameterProvider : PreviewParameterProvider<Color> {
-    override val values: Sequence<Color> = sequenceOf(DEFAULT_TOPPING_BORDER_COLOR, TOPPING_BORDER_COLORS.last())
+private class BorderColorChipRowPreviewParameterProvider : PreviewParameterProvider<Int?> {
+    override val values: Sequence<Int?> = sequenceOf(null, TOPPING_BORDER_COLORS.last().toArgb())
 }
 
 @YGPreview
 @Composable
 private fun BorderColorChipRowPreview(
-    @PreviewParameter(BorderColorChipRowPreviewParameterProvider::class) selectedColor: Color,
+    @PreviewParameter(BorderColorChipRowPreviewParameterProvider::class) selectedColorArgb: Int?,
 ) = PreviewBox {
     BorderColorChipRow(
-        selectedColor = selectedColor,
+        selectedColorArgb = selectedColorArgb,
         onSelectColor = {},
     )
 }
