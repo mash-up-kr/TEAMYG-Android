@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -40,7 +39,6 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
-import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTutorialOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
@@ -316,51 +314,41 @@ internal fun CanvasMainRoute(
         }
     }
 
-    // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
-    // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
-    Box(modifier = modifier.fillMaxSize()) {
-        YGScaffoldV2(
-            isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
-            loadingOverlay = {
-                if (loadState == CanvasLoadState.Failed) {
-                    CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
-                } else {
-                    CanvasLoadingOverlay()
-                }
-            },
-        ) { innerPadding ->
-            CanvasMainScreen(
-                canvasState = canvasState,
-                onClickBack = { navigator.onBack() },
-                onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
-                onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
-                onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
-                onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
-                onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
-                onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
-                onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
-                onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
-                onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
-                onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
-                onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
-                onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
-                onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
-                onLoadStateChange = { loadState = it },
-                retryKey = retryKey,
-                toastPolicy = toastPolicy,
-                alertPolicy = alertPolicy,
-                graphicsLayer = graphicsLayer,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
-
-        canvasState.tutorialStep?.let { step ->
-            CanvasTutorialOverlay(
-                step = step,
-                onClickNext = { viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext) },
-            )
-        }
+    YGScaffoldV2(
+        modifier = modifier,
+        isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
+        loadingOverlay = {
+            if (loadState == CanvasLoadState.Failed) {
+                CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
+            } else {
+                CanvasLoadingOverlay()
+            }
+        },
+    ) { innerPadding ->
+        CanvasMainScreen(
+            canvasState = canvasState,
+            onClickBack = { navigator.onBack() },
+            onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
+            onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
+            onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
+            onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
+            onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
+            onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
+            onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
+            onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
+            onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
+            onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
+            onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
+            onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
+            onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
+            onLoadStateChange = { loadState = it },
+            retryKey = retryKey,
+            toastPolicy = toastPolicy,
+            alertPolicy = alertPolicy,
+            graphicsLayer = graphicsLayer,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
     }
 }
