@@ -2,11 +2,6 @@
 <resources>
     <string name="yg_loading_overlay_description">로딩 중</string>
 
-    <!-- 튜토리얼 카드. 진행 표시와 버튼 라벨은 YGTutorialBox 가 몇 번째 장인지 보고 고른다 -->
-    <string name="yg_tutorial_step">%1$d/%2$d</string>
-    <string name="yg_tutorial_next">다음</string>
-    <string name="yg_tutorial_start">시작하기</string>
-
     <!-- 그만두기 모달. 제목과 "계속" 버튼 문구만 흐름마다 다르다 -->
     <string name="yg_modal_quit_add_title">사진 추가를 그만둘까요?</string>
     <string name="yg_modal_quit_edit_title">사진 편집을 그만둘까요?</string>
