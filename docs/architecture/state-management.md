@@ -97,7 +97,12 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 
 > 📌 딸려 오는 것이 하나 있다 — 이 구독은 **화면이 `state`를 보는 동안에만** 열리므로 ViewModel 테스트가
 > `backgroundScope`에서 `state`를 수집해 라우트의 `collectAsStateWithLifecycle()`을 흉내 내야 한다.
-> `CanvasMainViewModelTest`가 `enteredViewModel()` 헬퍼로 그 준비를 적는다.
+> 캔버스 ViewModel 테스트 넷이 각자 그 준비를 둔다(예: `CanvasMainViewModelTest`의 `enteredViewModel()`).
+>
+> ⚠️ 서버를 부르지 않는 구독 둘도 이 도우미로 연다 — `CanvasMainViewModel`의 하루 경계
+> (`observeParfaitDayBoundaryUseCase`, 시계 타이머)와 갱신 실패 신호
+> (`observeTodayParfaitRefreshFailureUseCase`, 폴러를 잡지 않는다). 위 기준 한 문장으로는 설명되지
+> 않는다 → [open-questions](../synthesis/open-questions.md) OQ-P-368.
 
 ## 신규 화면 추가 체크리스트
 1. **api 모듈**: `NavKeyXxx`(@Serializable) 정의([[navigation-flow]]).

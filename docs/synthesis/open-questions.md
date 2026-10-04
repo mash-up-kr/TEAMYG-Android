@@ -6783,6 +6783,32 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 어렵다"고 본 판단이 실행 중에 뒤집혔다). 읽기·결과 왕복·미리보기 화면은 여전히 한 줄도 잠기지
   > 않는다 → [캔버스 저장 미리보기 캡처 전달 스펙](../superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md).
 
+### [2026-09-05] 평문 키와 암호문 키가 한 `DataStore<Preferences>`에 섞여 있다
+
+- **ID**: OQ-P-367
+- **출처**: `DataStoreModule`이 `parfait_preferences` 하나만 제공한다. `ToppingDraftLocalDataSourceImpl`·
+  `PastCanvasAlertLocalDataSourceImpl`·`RecentImageLocalDataSourceImpl`은 그 인스턴스에 평문으로 직접 쓰고,
+  `TokenLocalDataSourceImpl`·`UserInfoLocalDataSourceImpl`은 `EncryptedPreferences`(→ `DataStorePreferences`)를
+  거쳐 암호문으로 쓴다.
+- **항목**: 어느 키가 어느 형태인지는 코드로만 안다 — 파일을 나눌지, 키 이름 규칙으로 가를지.
+- **상태**: 미해결 (**동작 영향 0**)
+- **해소 메모**: 정하면 [data-layer](../architecture/data-layer.md) 「평문 DataStore 프록시」 항목에 적는다.
+
+### [2026-09-05] `launchWhileSubscribed`를 고르는 기준과 실제 쓰임이 갈렸다
+
+- **ID**: OQ-P-368
+- **출처**: `CanvasMainViewModel#observeDayBoundary`·`#observeTodayCanvasRefreshFailure` — 둘 다
+  `launchWhileSubscribed`로 여는데 source가 서버를 부르지 않는다(앞은 시계 타이머, 뒤는 폴러 실패 신호
+  구독). [state-management](../architecture/state-management.md)가 적어 둔 선택 기준은 **"이 구독이 서버를
+  계속 부르는가"**([ADR-0029](../adr/0029-canvas-today-ssot-polling.md))다.
+- **항목**: ① 기준을 "폴링 구독과 수명을 맞춰야 하는 구독"까지 넓혀 적을지, 이 둘을 `launch`로 돌릴지.
+  ② `backgroundScope`에서 `state`를 수집하는 테스트 준비가 캔버스 ViewModel 테스트 넷
+  (`CanvasMainViewModelTest`·`CanvasBGEditViewModelTest`·`CanvasToppingPlaceViewModelTest`·
+  `CanvasToppingArrangeViewModelTest`)에 따로 있다 — `core:testing`으로 올릴지.
+- **상태**: 미해결 (**동작은 의도대로** — 기준 문서와 관행의 어긋남이다)
+- **해소 메모**: 정하면 [state-management](../architecture/state-management.md) 해당 절의 기준 문장을
+  고친다.
+
 ### [2026-09-05] 알림 권한 안내를 몇 번 보여줄지 정한 적이 없다
 
 - **ID**: OQ-P-370
@@ -6796,8 +6822,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   ③ **안내를 지나친 뒤를 알리지 않는다**(OQ-P-358 ②에서 옮겨 온 항목) — 거부한 사용자는 알림이 왜
   안 오는지 앱 어디서도 알 수 없고, 표시 실패는 로그에도 안 남는다.
 - **상태**: 미해결 (**동작은 의도대로** — 근거 부재와 반복 노출이다)
-- **해소 메모**: ①②는 위키 판단이 선행이다. 1회로 정하면 `DataStorePreferences` 위에 평문
-  저장소를 하나 두는 것이 가장 싸고, 그때 [data-layer](../architecture/data-layer.md)
+- **해소 메모**: ①②는 위키 판단이 선행이다. 1회로 정하면 `PastCanvasAlertLocalDataSource`처럼
+  평문 키 하나를 둔 로컬 저장소를 새로 두면 되고, 그때 [data-layer](../architecture/data-layer.md)
   DataStore 항목과 위 스펙 결정 4를 함께 고친다.
 
 ### [2026-09-05] 이전 세션에서 이미 두 번 거부한 사용자는 설정으로 보내지 못한다

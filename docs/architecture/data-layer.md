@@ -73,7 +73,7 @@ tags: [architecture, parfait]
   ⚠️ **갱신 실패는 단계를 건드리지 않는다** —
   [canvas-adaptive-polling 스펙](../superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md).
 - **암호화 DataStore 프록시** — `EncryptedPreferences`(`data/datastore/`, PR #263). 저장 형태가 값이 아니라 **암호문**인 저장소들이 공유한다(`TokenLocalDataSourceImpl`·`UserInfoLocalDataSourceImpl`) — 아래 "토큰·계정 정보 저장 경로" 참고.
-- **평문 DataStore 프록시** — **`DataStorePreferences`**(`data/datastore/`, #449). `observe`·`read`·`write`·`remove`와 못 읽는 저장분을 버리는 규칙을 가진 **바닥 층**이고, `EncryptedPreferences`는 이것을 감싸 암복호화만 얹는다 — 폐기 규칙은 이 한 벌뿐이다. 평문 그대로 쓰는 저장소는 없다 — 직접 소비처는 `EncryptedPreferences` 하나다.
+- **평문 DataStore 프록시** — **`DataStorePreferences`**(`data/datastore/`, #449). `observe`·`read`·`write`·`remove`와 못 읽는 저장분을 버리는 규칙을 가진 **바닥 층**이고, `EncryptedPreferences`는 이것을 감싸 암복호화만 얹는다 — 폐기 규칙은 이 한 벌뿐이다. **이 프록시를 직접 쓰는 저장소는 없다** — 소비처는 `EncryptedPreferences` 하나이고, 평문 저장소 셋(`ToppingDraftLocalDataSourceImpl`·`PastCanvasAlertLocalDataSourceImpl`·`RecentImageLocalDataSourceImpl`)은 `DataStore<Preferences>`를 직접 잡아 못 읽는 값의 처리를 각자 둔다. ⚠️ 평문·암호문이 **같은 `DataStore<Preferences>` 하나**를 공유해 어느 키가 어느 형태인지는 코드로만 안다 → [open-questions](../synthesis/open-questions.md) OQ-P-367.
 - **시스템 미디어** — `GalleryMediaProvider`(시스템 갤러리 접근). **읽기 전용이 아니게 됐다**(#324) —
   `insertPendingImage`·`openOutputStream`·`finalizePendingImage`·`deleteImage`로 `MediaStore`에
   이미지를 쓴다(`GalleryRepository.saveImageToGallery` → `SaveCanvasToGalleryUseCase`, C-001 지난
@@ -113,7 +113,7 @@ tags: [architecture, parfait]
 
 | 모듈 | 제공/바인딩 |
 |------|-------------|
-| `RepositoryModule` | Repository 인터페이스 ↔ 구현 `@Binds @Singleton`(camera·gallery·image·auth·policy·parfaitGroup·member·**imageUpload·topping**(#322)·**imageFile**(#329)·**notification**(#450)·**pastCanvasAlert**(#477)) + `NonceGenerator`·**`userConfig`**(#449). `@Binds`는 `interface` 모듈에만 되므로 `object`인 `SingletonInjectModule` 대신 여기 모은다 |
+| `RepositoryModule` | Repository 인터페이스 ↔ 구현 `@Binds @Singleton`(camera·gallery·image·auth·policy·parfaitGroup·member·**imageUpload·topping**(#322)·**imageFile**(#329)·**notification**(#450)·**pastCanvasAlert**(#477)) + `NonceGenerator`. `@Binds`는 `interface` 모듈에만 되므로 `object`인 `SingletonInjectModule` 대신 여기 모은다 |
 | `ModuleInstallModule` | `ModuleInstallGateway` ↔ `PlayServicesModuleInstallGateway` `@Binds @Singleton`(2026-09-02). 리포지토리 결선이 아니라 `RepositoryModule`에 두지 않았다 — `di/`의 역할당 파일 1개 규약을 따른 것이다 |
 | `LocalDataSourceModule` | 로컬 DataSource 인터페이스 ↔ 구현(파일·DataStore·`TokenLocalDataSource` ↔ `TokenLocalDataSourceImpl`·`UserInfoLocalDataSource` ↔ `UserInfoLocalDataSourceImpl`·`GroupLocalDataSource` ↔ `GroupLocalDataSourceImpl`. `ToppingDraftLocalDataSource` ↔ `ToppingDraftLocalDataSourceImpl`(#334)·`ImageFileLocalDataSource` ↔ `ImageFileLocalDataSourceImpl`(#329)·**`CanvasLocalDataSource` ↔ `CanvasLocalDataSourceImpl`**(#404)·**`PastCanvasAlertLocalDataSource` ↔ `PastCanvasAlertLocalDataSourceImpl`**(#477)) |
 | `RemoteDataSourceModule` | 원격 DataSource 인터페이스 ↔ 구현 |

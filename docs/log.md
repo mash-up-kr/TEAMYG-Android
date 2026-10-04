@@ -350,4 +350,4 @@ status 「캔버스 배경 편집」 닫기·저장 서술 고쳐 씀 · 고쳐 
 247파일 +14457/-7959 · 유닛 1314 · 계측 91 · OQ 신설 없음 · 해소 없음
 
 ## [2026-10-04] lint | 튜토리얼 제거(#586)를 현재 상태 문서에 반영 — 캔버스·갤러리 오버레이와 `ygtutorial`·사용자 설정 저장소가 코드에서 빠짐
-status 「튜토리얼」 절 삭제 · design-system 튜토리얼 컴포넌트 · data-layer `UserConfig*`·평문 DataStore 소비처 · state-management `launchWhileSubscribed` 주석 · 해소 OQ-P-363, OQ-P-366, OQ-P-367, OQ-P-368, OQ-P-369, OQ-P-417 · 고쳐 씀 OQ-P-175, OQ-P-370
+status 「튜토리얼」 절 삭제 · design-system 튜토리얼 컴포넌트 · data-layer `UserConfig*`·평문 DataStore 소비처 · state-management `launchWhileSubscribed` 주석 · 해소 OQ-P-363, OQ-P-366, OQ-P-369, OQ-P-417 · 고쳐 씀 OQ-P-175, OQ-P-367, OQ-P-368, OQ-P-370
