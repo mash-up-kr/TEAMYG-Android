@@ -14,6 +14,5 @@ dependencies {
     implementation(projects.feature.camera.api)
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.groups.setting.api)
-    implementation(projects.feature.segmentation.api)
     implementation(projects.core.util.android)
 }

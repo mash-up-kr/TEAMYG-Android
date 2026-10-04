@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialBoxPlacement
 import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialOverlay
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -33,13 +34,14 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -68,6 +70,7 @@ internal fun CustomGalleryPickerRoute(
 
     val toastPolicy = rememberYGToastPolicy()
     val guideToastMessage = stringResource(R.string.gallery_custom_guide_toast)
+    val draftUnavailableMessage = stringResource(R.string.gallery_cutout_draft_unavailable)
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.isLoading, state.isEmpty, state.access) {
@@ -98,15 +101,14 @@ internal fun CustomGalleryPickerRoute(
                     )
                 }
 
-                is CustomGalleryPickerEffect.NavigateToSegmentationConfirm -> {
-                    navigator.goTo(
-                        NavKeySegmentationConfirm(
-                            sourceImageUri = null,
-                            subjectImagePath = null,
-                            trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
-                        ),
-                    )
+                is CustomGalleryPickerEffect.NavigateToToppingPlace -> {
+                    // 초안을 맞추는 사이 사용자가 뒤로 갔을 수 있어 맨 위가 아직 이 화면일 때만 간다
+                    if (navigator.backStack.lastOrNull() is NavKeyCustomGalleryPicker) {
+                        navigator.goTo(NavKeyCanvasToppingPlace)
+                    }
                 }
+
+                is CustomGalleryPickerEffect.ShowDraftUnavailable -> toastPolicy.showError(draftUnavailableMessage)
 
                 is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
             }

@@ -6,7 +6,7 @@ date: 2026-08-20
 deciders: Parfait 팀
 supersedes:
 superseded_by:
-related_adr: ADR-0005, ADR-0006, ADR-0030
+related_adr: ADR-0005, ADR-0006, ADR-0030, ADR-0034
 related_spec: c106-topping-place-api, c103-segmentation-topping-edit, c106-topping-place
 related_architecture: data-layer, design-system
 platforms: android
@@ -14,6 +14,8 @@ tags: [adr, parfait, topping, border, server-contract]
 ---
 
 # ADR-0025: 토핑 테두리를 픽셀에 굽지 않고 서버 필드로 보낸다
+
+> 📌 **현재 코드와 다른 점** — 본문의 누끼 확인 화면은 지금 없다. 테두리를 그리는 화면은 배치 화면과 캔버스다 → [스펙](../superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md).
 
 > 상태·날짜·결정자·대체 관계는 위 frontmatter가 단일 출처. 본문은 결정 내용에 집중.
 
@@ -44,8 +46,9 @@ C-301 테두리 재편집도 필드 수정으로는 성립하지 않고 이미�
   여백이 붙은 채 올리면 초기 배치(긴 변 40%·짧은 변 48dp 하한) 계산과 좌표가 어긋난다.
   **편집이 캐시에 남기는 파일은 여전히 둘이다** — 굽기 전에도 `cutout`과 트리밍본을 저장했고,
   바뀌는 것은 두 번째 파일의 내용뿐이다(테두리를 구운 판 → 테두리 없는 알맹이).
-- 테두리 색·굵기는 토핑 초안([ADR-0026](0026-topping-draft-datastore-ssot.md))에 값으로 싣고
-  배치 확정 때 `ToppingBorder.Solid`로 보낸다.
+- 테두리 색·굵기는 배치 화면의 상태(`CanvasToppingPlaceUiState.border`)가 값으로 들고
+  배치 확정 때 `ToppingBorder.Solid`로 보낸다. 토핑 초안([ADR-0026](0026-topping-draft-datastore-ssot.md))에는
+  싣지 않는다 ([ADR-0034](0034-topping-border-set-at-placement.md)).
 - **테두리를 그리는 화면 셋이 같은 렌더러를 쓴다.** 알맹이 위에 8방향 스탬프를 얹어 그리고,
   `CanvasToppingLayer`가 쥐고 있던 스탬프를 **`:core:designsystem`의 `YGToppingCutoutImage`로 올려**
   공유한다. feature 모듈의 `component/`가 아닌 이유는 나눠 쓰는 화면이 모듈 둘에 걸치기 때문이다
@@ -73,14 +76,14 @@ C-301 테두리 재편집도 필드 수정으로는 성립하지 않고 이미�
 - 서버 계약과 읽기 렌더러가 처음으로 실제 쓰인다. `updateToppingBorder`는 **쓰일 수 있게 된다** —
   실제 소비는 C-301 라운드다.
 - C-301 테두리 재편집이 필드 수정 한 번으로 끝난다(이미지 재업로드 불필요). 다만 **서버 쪽 이야기이고
-  그 화면이 값을 그리는 것은 별개**다 → [OQ-P-254](../synthesis/open-questions.md).
+  그 화면이 값을 그리는 것은 별개**다.
   > ✅ **그 화면도 그리기 시작했다**(2026-08-27 develop 머지, PR #388) — 배경 편집이 맨 `Image`에서
   > `YGToppingCutoutImage`로 갈아타 **테두리를 그리는 화면이 넷**이 됐다. 계기는 이 ADR이 아니라
   > [토핑 알파 판정](../superpowers/specs/archive/2026-08-26-topping-alpha-hit-test.md)이다 — 터치 판정을 보이는
   > 실루엣에 맞추려면 두 캔버스 화면이 같은 그림을 그려야 해서, 렌더링 통일이 그 스펙의 전제가 됐다.
   > 같은 라운드에서 8방향 스탬프의 방향 수가 `TOPPING_OUTLINE_STAMP_COUNT`로 공개됐다 — 판정이
-  > 같은 방향으로 되민 점을 읽으므로 **그리는 쪽이 정본을 갖는다.** 저장 경로(`borderLayers`가
-  > PATCH에 안 실린다, OQ-P-276)는 그대로다.
+  > 같은 방향으로 되민 점을 읽으므로 **그리는 쪽이 정본을 갖는다.** 저장은
+  > `UpdateToppingBorderUseCase`가 맡는다.
 - 같은 알맹이를 다른 캔버스에서 다른 테두리로 재사용할 여지가 생긴다(서버 `referenceCount`의
   전제와도 맞는다). 다만 **같은 파르페 안에서는 안 된다** — 배치가 `(parfaitId, imageId)` upsert라
   같은 이미지를 두 번 놓을 수 없다.

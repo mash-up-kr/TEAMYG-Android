@@ -463,14 +463,13 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 배치(POST, 2026-08-21 PR5) · 삭제(DELETE, 2026-08-23 PR #335) · **일괄 PATCH**(2026-09-01 PR #428) ·
 **테두리 PATCH**(2026-08-27 PR #369) 넷이고, **위치/크기/각도 단건 PATCH가 표면 0건**이다. 단건은
 2026-08-23 PR #336으로 표면·소비처를 얻었다가 그 소비처가 일괄로 옮겨 타면서 함께 걷혔다. 마지막 하나는 `ToppingRepository.updateBorder` →
-`UpdateToppingBorderUseCase`를 거쳐 C-301 편집 탭의 확인 버튼에 걸렸다(표면은 2026-08-12 PR #230 두 건
+`UpdateToppingBorderUseCase`를 거쳐 배치 수정 화면(`CanvasToppingArrangeViewModel`)의 확정 버튼에 걸려 있다(표면은 2026-08-12 PR #230 두 건
 + **2026-08-15 PR #250 두 건**).
 
-⚠️ **앱의 겹 목록을 서버의 한 겹으로 접는 자리는 `CanvasBGEditViewModel.toToppingBorder`다** —
-`borderLayers`의 **마지막 겹**만 `ToppingBorder.Solid`로 보내고, 비면 `None`을 보낸다. 되읽는 방향
-(`toBorderLayers`)은 반대로 한 겹짜리 목록으로 편다. 같은 화면이 **그릴 때는 첫 겹**을 쓰고 있어
-겹이 둘 이상이면 보이는 테두리와 저장되는 테두리가 갈린다
-→ [open-questions](../synthesis/open-questions.md) OQ-P-324.
+⚠️ **앱은 테두리를 한 겹(`ToppingBorderStyle?`)으로 든다** — `util/ToppingBorderMapper.kt`의
+`toToppingBorder`가 `null`을 `ToppingBorder.None`으로, 값을 `ToppingBorder.Solid`로 바꿔 보낸다. 되읽는
+방향은 `toToppingBorderStyleOrNull`이고, 서버가 준 색을 못 읽으면 임의의 색을 입히지 않고 테두리
+없음으로 본다. 배치(POST)와 테두리 PATCH가 같은 변환을 쓴다.
 
 ⚠️ **변형과 테두리가 확인 버튼 안에서 독립적으로 판정되고 독립적으로 나간다** —
 `updateDirtyToppings`가 dirty 토핑을 `hasTransformChange`·`hasBorderChange` 둘로 갈라, 변형이 바뀐
@@ -588,10 +587,10 @@ POST 응답에 없는 값을 지어내거나 nullable로 "모른다"와 "없다"
 [open-questions](../synthesis/open-questions.md).
 
 ✅ **삭제가 화면까지 이어졌다**(2026-08-23 develop 머지, PR #335) — `ToppingRepository.delete` ·
-`DeleteToppingUseCase`가 신설되고 C-301 편집 탭의 삭제 확인 모달이 그것을 부른다. **앱이 서버의
+`DeleteToppingUseCase`를 배치 수정 화면(`CanvasToppingArrangeViewModel`)의 삭제 확인 모달이 부른다. **앱이 서버의
 데이터를 지우는 첫 경로**이고, `safeApiCallWithoutData`(200 + `data: null`)가 이 라운드에 화면 쪽
 소비자까지 갖게 됐다. 성공해야 화면 목록에서 뺀다.
-✅ **정정 — 실패는 토스트로 닿는다.** `failToDeleteTopping`이 `CanvasBGEditError.TOPPING_DELETE_UNKNOWN`
+✅ **정정 — 실패는 토스트로 닿는다.** `failToDeleteTopping`이 `CanvasToppingArrangeError.TOPPING_DELETE_UNKNOWN`
 토스트를 내고 로딩만 내린다 — 이 절 초판이 "실패가 화면에 닿지 않는다"고 적은 것은 틀렸다.
 **dirty 집합과는 무관하다** — 삭제는 dirty 축을 안 쓴다(그 축이 붙잡는 것은 이동·크기·각도·테두리뿐이다),
 그래서 위치 PATCH가 실패 id를 `dirtyToppingIds`에 남겨 재시도하는 것과는 처분이 다르다
@@ -599,27 +598,21 @@ POST 응답에 없는 값을 지어내거나 nullable로 "모른다"와 "없다"
 `android_status`는 여전히 `partial`이다 — 위치·테두리 PATCH의 소비 화면이 없다.
 
 ✅ **위치 PATCH도 화면까지 이어졌다**(2026-08-23 develop 머지, PR #336) — `ToppingRepository.update` ·
-`UpdateToppingUseCase`가 신설되고 C-301 편집 탭의 **확인 버튼**이 그것을 부른다. 소비되지 않은
+`UpdateToppingUseCase`가 신설되고 편집 화면의 **확인 버튼**이 그것을 불렀다(지금 소비 화면은 배치 수정 화면이다). 소비되지 않은
 엔드포인트는 이제 **테두리 PATCH 하나**다. 설계에서 계약과 맞물리는 자리는 셋이다.
 
 - **바뀐 토핑만 보낸다.** ViewModel이 조회 응답 스냅샷(`serverToppings`)을 따로 들고 확인 시점에
   대조해, 위치·배율·각도 중 하나라도 달라진 토핑만 요청한다. 안 건드린 토핑은 요청이 0건이다.
 - **`positionZ`를 안 보낸다.** 이 PATCH가 부분 병합(`null`이면 유지)이라 겹침 순서는 서버 값이
   그대로 남는다. 앱에는 z 조작 경로 자체가 없다.
-- **토핑들끼리는 병렬, 배경보다는 앞.** `async` + `awaitAll`로 동시에 나가고 전부 끝난 뒤에야 배경
-  변경([parfait.md](parfait.md))이 이어진다. 둘을 얽으면 한쪽만 실패한 경우를 갈라 다뤄야 해서다.
 
-✅ **정정 — 실패는 화면에 닿는다.** `CanvasBGEditViewModel.handleOnClickConfirm`이 실패한 토핑
-id를 `dirtyToppingIds`에 남겨 다음 확인이 그것만 재시도하고, `CanvasBGEditError.TOPPING_SAVE_UNKNOWN`
+✅ **정정 — 실패는 화면에 닿는다.** `CanvasToppingArrangeViewModel.handleOnClickConfirm`이 실패한 토핑
+id를 `dirtyToppingIds`에 남겨 다음 확인이 그것만 재시도하고, `CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN`
 토스트를 내며 화면을 닫지 않는다 — 이 절 초판이 "실패가 화면에 닿지 않고 확인은 그대로 성공한다"고
 적은 것은 틀렸다 → [open-questions](../synthesis/open-questions.md) OQ-P-275.
-✅ **정정 — 둘 다 토스트를 낸다, 다만 완전히 같지는 않다.** 배경 실패는 `failToSave`가
-`toCanvasBGEditError`로 원인별 코드(`NETWORK`·`UNSUPPORTED_IMAGE`·`BACKGROUND_SAVE_UNKNOWN`)를
-가른다. 토핑 변형 실패는 원인을 안 가리고 항상 `TOPPING_SAVE_UNKNOWN` 하나로 접힌다. **같은
-확인에서 배경과 토핑이 함께 실패하면 배경 쪽 토스트만 뜬다** — `handleOnClickConfirm`의 `when`이
-`savedBackground == null`을 토핑 실패 분기(`failedToppingIds.isNotEmpty()`)보다 먼저 매칭해서다.
-다만 `dirtyToppingIds`는 그 분기 이전에 이미 갱신돼 있어, 토스트만 안 뜰 뿐 다음 확인의 재시도
-대상에서는 안 빠진다 → [open-questions](../synthesis/open-questions.md) OQ-P-261.
+배경 저장은 다른 화면(`CanvasBGEditViewModel`)이라 토핑 저장과 한 확인 안에서 겹치지 않는다. 토핑
+변형·테두리 저장이 실패로 돌아오면 원인을 가리지 않고 `TOPPING_SAVE_UNKNOWN` 하나로 접힌다 — 마감된
+캔버스의 409도 같은 토스트다 → [open-questions](../synthesis/open-questions.md) OQ-P-261.
 ⚠️ **범위 검증 없는 두 축이 그대로 요청 값이 된다** — 아래 [미결](#미결)의 `scale`·`rotation`
 서버 검증 부재가 이 라운드부터 실제로 닿는다. 앱 쪽 상한도 없다(OQ-P-271).
 `android_status`는 여전히 `partial`이다 — 테두리 PATCH의 소비 화면이 없다.

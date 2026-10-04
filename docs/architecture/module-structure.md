@@ -39,7 +39,7 @@ app / app-preview
 | core | `core:designsystem` | 테마(`YGMaterialTheme`)·토큰(`YGSemanticColors`, `SizeTokens` 등) | android-library + compose |
 | core | `core:navigation` | `Navigator`, NavKey 레지스트리, 엔트리 등록 | android-library |
 | core | `core:util:android` | Android 전용 유틸(`decodeUriToBitmap`, `AndroidBitmap`) — `decodeUriToBitmap`은 API 28 미만 갈래에서 EXIF 회전을 픽셀에 적용한다(`extension/ExifOrientation.kt#exifOrientationToDegrees` + 비공개 `rotatedToUpright`, #349. `androidx.exifinterface` 의존은 이 모듈만 쓴다). 모듈 로거 `Logger.kt#coreUtilAndroidLogger`([[0014-logging-abstraction-kermit]]) + Compose clickable 유틸(`clickable/`: `clickableYG`·`clickableYGNoRipple`·`ygDimRipple`·`ygScaleRipple`, 테마 비의존 — #284로 프로덕션 클릭 전량이 이 패키지를 탄다) + 포커스 유틸(`focus/`: `Modifier.clearFocusOnTap`) + Compose·플랫폼 확장(`extension/`: `Modifier.navigationBarsAndImePadding`·`Modifier.drawTooltipCornerTop`·`AnnotatedString.Builder.withStyle`·`List<Offset>.toPath`/`toAndroidPath`·`ClipDescription.isSensitive`·`Modifier.verticalScrollbar`(#259)·`Modifier.centeredAt`(#264. **부모보다 큰 자식도 중심이 맞는다** — 좌상단을 직접 계산해 `offset` 으로 넘기면 부모 제약으로 잘린 겉크기 안에 내용이 가운데 정렬되어 넘친 양의 절반만큼 밀린다. 이 계약을 계측 테스트 `ModifierCenteredAtTest` 가 두 방식을 나란히 재서 고정한다, #465)·`String.toColorOrNull`(#268 — 서버가 주는 `#RRGGBB` 색 문자열은 캔버스 전용이 아니라 어느 화면에나 온다)·**`File.readExifDegrees`**(#473 — `extension/File.kt`. `ExifInterface` 판독을 감싸 `exifOrientationToDegrees` 로 각도를 낸다. **못 읽으면 경고 로그를 남기고 0** — 태그가 깨진 것과 파일을 못 여는 것은 다른 사건이라 호출부의 디코드까지 막지 않는다. `decodeUriToBitmap` 의 `Uri` 판과 규약이 같고 받는 타입만 다르다)) + 권한 판정(`permission/`: `GalleryPermissionManager`·`GalleryWritePermissionManager`·**`NotificationPermissionManager`**(#450 — `POST_NOTIFICATIONS`가 API 33 신설이라 그 아래를 **허용으로 본다.** `sdkInt`를 인자로 받고 기본값만 `Build.VERSION.SDK_INT`인 것은 Robolectric 없이 이 갈림을 JVM 테스트로 덮기 위해서다)) + 앱 메타(`AppInfo.kt#APP_VERSION_NAME`, #295 — 이 모듈만 `buildFeatures.buildConfig`를 켜고 `:app`과 **같은 버전 카탈로그 항목**을 `buildConfigField`로 다시 심는다. `versionName`은 애플리케이션 모듈 속성이라 라이브러리 `BuildConfig`에 없기 때문이고, `:app`이 `versionNameSuffix`·플레이버로 갈아 끼우면 따라가지 않는다 → [open-questions](../synthesis/open-questions.md)) + **`outline/`**(PR #464 develop 머지 — `Bitmap.toToppingOutline`이 알파 채널에서 거리판을 만들고, `ToppingOutline.toBorderAlphaBitmap`·`toBorderArgbBitmap`이 그 거리판을 색 안 태운 `ALPHA_8` 띠 / 색까지 태운 `ARGB_8888` 띠로 굽는다. 아래 `core:util:jvm` 픽셀 연산 문단이 예고한 승격이 이 패키지로 실현된다). `core:util:jvm` 의존 | android-library + compose (+ **`parfait.test.compose`** #465 — 계측 소스셋에 Compose 테스트 하니스가 붙었다) |
-| core | `core:util:jvm` | 순수 Kotlin 유틸·로깅·플랫폼 무관 추상(`BitmapWrapper`) + 공용 날짜 포맷(`model/DateFormat`·`model/DateTextFormat`, `kotlinx-datetime`)·날짜 확장(`extension/LocalDateExtension`, #259) + 픽셀 연산 확장(`extension/`: `Int.argbAlpha`·`Int.fadeArgb`·`Int.mixArgb`·`IntArray.sumArgbAlpha`·`FloatArray.fillWithSquaredDistance`. 알파 총합은 #359 리뷰가 `data`에서 올렸다 — ARGB 알파를 꺼내 더하는 연산이라 세그멘테이션에 묶일 이유가 없다) + **`outline/`**(PR #464 develop 머지 — `ToppingOutline` 거리판 보유·이중선형 보간·불투명 판정. 값 타입 `ToppingBorderBand`·`ToppingBorderTarget` 과 담기 규격 `ToppingOutlineSpec` 은 `model/`에 있다. Android 타입 0건이라 순수 JVM 유닛으로 덮는다) | kotlin-jvm |
+| core | `core:util:jvm` | 순수 Kotlin 유틸·로깅·플랫폼 무관 추상(`BitmapWrapper`) + 공용 날짜 포맷(`model/DateTextFormat`, `kotlinx-datetime`)·날짜 확장(`extension/LocalDateExtension`, #259) + 픽셀 연산 확장(`extension/`: `Int.argbAlpha`·`Int.fadeArgb`·`Int.mixArgb`·`IntArray.sumArgbAlpha`·`FloatArray.fillWithSquaredDistance`. 알파 총합은 #359 리뷰가 `data`에서 올렸다 — ARGB 알파를 꺼내 더하는 연산이라 세그멘테이션에 묶일 이유가 없다) + **`outline/`**(PR #464 develop 머지 — `ToppingOutline` 거리판 보유·이중선형 보간·불투명 판정. 값 타입 `ToppingBorderBand`·`ToppingBorderTarget` 과 담기 규격 `ToppingOutlineSpec` 은 `model/`에 있다. Android 타입 0건이라 순수 JVM 유닛으로 덮는다) | kotlin-jvm |
 | core | `core:testing` | **테스트 전용** 공용 유틸(`MainDispatcherRule`). 테스트 소스셋만 소비하므로 위 의존 방향 그래프에 없다 | kotlin-jvm |
 | domain | `domain` | UseCase, Repository 인터페이스, 도메인 모델 + **이벤트 통로 `event/`**(#450 — `SessionEventBus`·`PushDeepLinkEventBus`가 `repository/session/`·`repository/push/`에서 옮겨 왔다. 둘 다 Repository가 아니다) + **`provider/`**(`DeviceTokenProvider` — 구현이 `:app`에 있는 공급자 인터페이스, 역시 `repository/` 밖이다) | `ModuleDomain`(kotlin-jvm) |
 | data | `data` | Repository 구현, DataSource, DI 모듈 + **`event/`**(#450 — `SessionEventBusImpl`·`PushDeepLinkEventBusImpl`이 `session/`·`push/`에서 옮겨 왔고 구현 이름이 `~Impl`로 통일됐다) + **`poller/`**(`CanvasPoller`·`CanvasPollInterval` — 리포지토리도 데이터 소스도 아닌 주기 갱신기) | `ModuleData` |
@@ -117,7 +117,7 @@ app / app-preview
   **컴포저블만 읽는 레이아웃 상수는 옮기지 않는다** — 그건 화면 소관이다.
   `core:designsystem`만 `utils`(복수)를 쓰는데 그쪽이 예외다(2026-08-18 기준 이름을 맞추지 않았다).
   > 📌 **화면 둘이 공유하는 컴포저블은 같은 모듈 `component/`에 둔다**(2026-08-19, PR #290) —
-  > `groups/canvas/impl`의 C-301 편집 탭과 C-106 배치 화면이 토핑 표시 조각 둘
+  > `groups/canvas/impl`의 배치 수정 화면과 C-106 배치 화면이 토핑 표시 조각 둘
   > (`ToppingPlacementComponents.kt`의 `rememberToppingBaseSize`·`ToppingSelectionStroke`)과 제스처 입력
   > (`ToppingHitTestInput.kt`·`ToppingTransformInput.kt`)을 나눠 쓴다.
   > **디자인시스템으로 올리지는 않았다** — 소비처가 한 모듈 안 두 화면이라
@@ -130,9 +130,9 @@ app / app-preview
   > 같은 모듈 화면 둘(캔버스 메인·배경 편집)이 나눠 쓴다.
   > 📌 **소비처가 모듈 경계를 넘으면 `:core:designsystem`으로 올린다**(2026-08-22 develop 머지,
   > PR #334) — 토핑 테두리를 그리는 8방향 스탬프가
-  > `component/ygtoppingcutout/YGToppingCutoutImage`로 올라갔다. 나눠 쓰는 화면이 누끼 확인
-  > (`:feature:segmentation:impl`)과 배치·캔버스(`:feature:groups:canvas:impl`) 셋이라 **모듈 둘에
-  > 걸친다** — 앞 항목처럼 한 모듈 `component/`에 두면 다른 모듈이 볼 길이 없고, `feature/common/*`은
+  > `component/ygtoppingcutout/YGToppingCutoutImage`로 올라갔다. 소비처는 지금
+  > `:feature:groups:canvas:impl`의 배치·캔버스 화면과 디자인시스템의 `YGToppingGroup`이다. 올린 시점에는 누끼 확인
+  > (`:feature:segmentation:impl`)까지 **모듈 둘에 걸쳤다** — 앞 항목처럼 한 모듈 `component/`에 두면 다른 모듈이 볼 길이 없고, `feature/common/*`은
   > 화면을 올리는 자리이지 컴포저블 조각을 올리는 자리가 아니다. **가르는 기준은 소비처 수가 아니라
   > 소비처가 몇 모듈에 걸치는가**다. 올린 이유 자체는 [ADR-0025](../adr/0025-topping-border-as-server-field.md)가
   > 쥔다 — 세 화면이 갈라진 그림을 그릴 여지를 구조로 없애려는 것이다.

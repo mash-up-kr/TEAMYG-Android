@@ -10,7 +10,5 @@ internal data class ToppingDraftEntity(
     val nextPositionZ: Int,
     val subjectImagePath: String? = null,
     val cutoutImagePath: String? = null,
-    val borderColorArgb: Int? = null,
-    val borderWidthDp: Float? = null,
     val sourceLongSide: Int? = null,
 )

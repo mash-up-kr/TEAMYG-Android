@@ -191,8 +191,12 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToCanvasBGEdit(
         val groupId: GroupId,
         val parfaitId: ParfaitId,
-        /** 특정 토핑을 탭해 들어온 경우에만 채운다 — 화면이 토핑 탭에서 그 토핑을 바로 선택해 연다 */
-        val toppingId: ParfaitImageId? = null,
+    ) : CanvasMainEffect
+
+    data class NavigateToToppingArrange(
+        val groupId: GroupId,
+        val parfaitId: ParfaitId,
+        val toppingId: ParfaitImageId,
     ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
@@ -688,14 +692,14 @@ constructor(
 
     /**
      * 오늘 캔버스를 보고 있을 때만 C-305 로 보낸다. 탭한 토핑 id 를 실어 보내
-     * 편집 화면이 토핑 탭에서 그 토핑을 바로 선택한 채로 열리게 한다.
+     * 편집 화면이 그 토핑을 고른 채로 열리게 한다.
      */
     private fun handleOnClickMyTopping(topping: CanvasToppingVO) {
         if (!state.value.isViewingToday) return
         val todayCanvas = state.value.todayCanvas ?: return
 
         postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvasBGEdit(
+            effect = CanvasMainEffect.NavigateToToppingArrange(
                 groupId = groupId,
                 parfaitId = todayCanvas.parfaitId,
                 toppingId = topping.parfaitImageId,

@@ -14,6 +14,7 @@ import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
@@ -24,7 +25,6 @@ import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.intro.api.NavKeyTermAgree
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,11 +46,6 @@ class NavKeyAnalyticsScreenTest {
             NavKeyCameraSystem to "C-101-system",
             NavKeySystemGalleryPicker to "C-102-system",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
-            NavKeySegmentationConfirm(
-                sourceImageUri = "uri",
-                subjectImagePath = "subject",
-                trimmedSubjectImagePath = "trimmed",
-            ) to "C-103-select",
             NavKeyCanvasToppingPlace to "C-106",
             NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09") to "C-001-image-save",
             NavKeyAppSetting to "S-001",
@@ -119,29 +114,29 @@ class NavKeyAnalyticsScreenTest {
     }
 
     @Test
-    fun toAnalyticsScreenOrNull_toppingEdit_mergesBorderOnlyIntoOneId() {
-        // Given, When borderOnly 진입은 두 경로에서 오는데 키만으로는 갈리지 않는다
-        val area = NavKeyToppingEdit(sourceImageUri = "src", segmentationImageUri = "seg")
-        val border = NavKeyToppingEdit(
-            sourceImageUri = "src",
-            segmentationImageUri = "seg",
-            borderOnly = true,
+    fun toAnalyticsScreenOrNull_toppingEdit_isC104() {
+        assertEquals(
+            "C-104",
+            NavKeyToppingEdit(sourceImageUri = "src", segmentationImageUri = "seg").toAnalyticsScreenOrNull()?.screenId,
         )
-
-        // Then 둘 중 하나로 몰지 않고 합친 값을 쓴다
-        assertEquals("C-104", area.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-105/C-306", border.toAnalyticsScreenOrNull()?.screenId)
     }
 
     @Test
-    fun toAnalyticsScreenOrNull_canvasBGEdit_splitsByInitialToppingId() {
-        // Given, When 편집 모드 진입과 특정 토핑을 탭한 진입
-        val mode = NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L)
-        val topping = NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L, initialToppingId = 3L)
+    fun toAnalyticsScreenOrNull_canvasBGEdit_isC301() {
+        assertEquals(
+            "C-301",
+            NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L).toAnalyticsScreenOrNull()?.screenId,
+        )
+    }
 
-        // Then
-        assertEquals("C-301", mode.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-305", topping.toAnalyticsScreenOrNull()?.screenId)
+    @Test
+    fun toAnalyticsScreenOrNull_toppingArrange_isC305() {
+        assertEquals(
+            "C-305",
+            NavKeyCanvasToppingArrange(groupId = 1L, parfaitId = 2L, initialToppingId = 3L)
+                .toAnalyticsScreenOrNull()
+                ?.screenId,
+        )
     }
 
     @Test

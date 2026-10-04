@@ -12,7 +12,6 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
-import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -22,17 +21,26 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.image.SourceLongSide
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
+import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,8 +55,11 @@ data class CanvasToppingPlaceUiState(
     /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
     val toppingImagePath: String? = null,
     val toppingSourceLongSide: SourceLongSide? = null,
-    val borderColorArgb: Int? = null,
-    val borderWidthDp: Float? = null,
+    val border: ToppingBorderStyle? = null,
+    /** 색을 고르기 전에 슬라이더로 맞춰 둔 굵기. 색을 고르는 순간 이 굵기로 테두리가 생긴다 */
+    val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
+    val isBorderPanelOpen: Boolean = false,
+    val showQuitDialog: Boolean = false,
     /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
     val isDraftLoaded: Boolean = false,
     /** 흐름 진입 때 초안에 못 박힌 캔버스다. 화면이 다시 고르지 않는다 */
@@ -72,12 +83,37 @@ data class CanvasToppingPlaceUiState(
     val toppingBaseSize: DpSize? = null,
     /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
     val hasUserAdjustedPlacement: Boolean = false,
-) : UiState
+) : UiState {
+    val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(border, pendingBorderWidthDp)
+}
 
 sealed interface CanvasToppingPlaceIntent : UiIntent {
+    data object OnClickBack : CanvasToppingPlaceIntent
+
     data object OnClickClose : CanvasToppingPlaceIntent
 
+    data object OnSystemBack : CanvasToppingPlaceIntent
+
+    data object OnQuitDialogConfirm : CanvasToppingPlaceIntent
+
+    data object OnQuitDialogCancel : CanvasToppingPlaceIntent
+
     data object OnClickConfirm : CanvasToppingPlaceIntent
+
+    data object OnClickTopping : CanvasToppingPlaceIntent
+
+    data object OnToggleBorderPanel : CanvasToppingPlaceIntent
+
+    data object OnDismissBorderPanel : CanvasToppingPlaceIntent
+
+    /** @param colorArgb `null` 은 테두리 없음 */
+    data class OnSelectBorderColor(
+        val colorArgb: Int?,
+    ) : CanvasToppingPlaceIntent
+
+    data class OnChangeBorderWidth(
+        val widthDp: Float,
+    ) : CanvasToppingPlaceIntent
 
     data class OnToppingTransform(
         val pan: DpOffset,
@@ -103,6 +139,9 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 
 sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     data object NavigateBack : CanvasToppingPlaceEffect
+
+    /** 토핑 만들기를 접는다. 사이에 쌓인 화면까지 걷고 캔버스로 되감는다 */
+    data object QuitToCanvas : CanvasToppingPlaceEffect
 
     /** 초안이 가리키던 캐시 파일은 초안보다 먼저 사라질 수 있다 */
     data object DraftMissing : CanvasToppingPlaceEffect
@@ -155,8 +194,6 @@ class CanvasToppingPlaceViewModel
                     copy(
                         toppingImagePath = draft?.subjectImagePath,
                         toppingSourceLongSide = draft?.sourceLongSide,
-                        borderColorArgb = draft?.borderColorArgb,
-                        borderWidthDp = draft?.borderWidthDp,
                         groupId = draft?.groupId,
                         parfaitId = draft?.parfaitId,
                         nextPositionZ = draft?.nextPositionZ,
@@ -214,9 +251,39 @@ class CanvasToppingPlaceViewModel
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
-            CanvasToppingPlaceIntent.OnClickClose -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
+            CanvasToppingPlaceIntent.OnClickBack -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
+
+            CanvasToppingPlaceIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
+
+            CanvasToppingPlaceIntent.OnSystemBack -> handleOnSystemBack()
+
+            CanvasToppingPlaceIntent.OnQuitDialogConfirm -> {
+                updateState { copy(showQuitDialog = false) }
+                postSideEffect(effect = CanvasToppingPlaceEffect.QuitToCanvas)
+            }
+
+            CanvasToppingPlaceIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
 
             CanvasToppingPlaceIntent.OnClickConfirm -> handleOnClickConfirm()
+
+            // 누른 대상이 달라 인텐트를 나눈다. 이 화면은 토핑이 하나뿐이라 둘의 결과가 같다
+            CanvasToppingPlaceIntent.OnClickTopping,
+            CanvasToppingPlaceIntent.OnToggleBorderPanel,
+            -> updateState {
+                // 그림이 뜨기 전에는 열지 않는다 — 테두리를 입힐 실루엣이 아직 없다. 닫기는 막지 않는다
+                copy(isBorderPanelOpen = !isBorderPanelOpen && isToppingImageReady)
+            }
+
+            CanvasToppingPlaceIntent.OnDismissBorderPanel -> updateState { copy(isBorderPanelOpen = false) }
+
+            is CanvasToppingPlaceIntent.OnSelectBorderColor -> updateState {
+                copy(border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp))
+            }
+
+            is CanvasToppingPlaceIntent.OnChangeBorderWidth -> updateState {
+                val widthDp = clampPanelBorderWidthDp(intent.widthDp)
+                copy(pendingBorderWidthDp = widthDp, border = border.withPanelWidth(widthDp))
+            }
 
             is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
@@ -234,8 +301,20 @@ class CanvasToppingPlaceViewModel
         }
     }
 
+    private fun handleOnSystemBack() {
+        updateState {
+            when (toppingPanelBackAction(isLoading = isLoading, isBorderPanelOpen = isBorderPanelOpen)) {
+                ToppingPanelBackAction.Ignore -> this
+                ToppingPanelBackAction.ClosePanel -> copy(isBorderPanelOpen = false)
+                ToppingPanelBackAction.ShowQuitDialog -> copy(showQuitDialog = true)
+            }
+        }
+    }
+
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
+            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
+
             // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
             val canvasSize = canvasSize ?: return@updateState this
             val baseSize = toppingBaseSize ?: return@updateState this
@@ -332,7 +411,7 @@ class CanvasToppingPlaceViewModel
             try {
                 // 테두리 조립은 던질 수 있다. launch 밖에서 부르면 그 예외가 onError 를 못 만나고
                 // 호출 스레드까지 올라가 크래시가 된다. 업로드보다 앞이라 고아 이미지도 안 남는다
-                val border = toToppingBorder(current.borderColorArgb, current.borderWidthDp)
+                val border = current.border.toToppingBorder()
 
                 addToppingUseCase(
                     groupId = groupId,
@@ -373,16 +452,6 @@ class CanvasToppingPlaceViewModel
                 updateState { copy(isLoading = false) }
             }
         }
-    }
-
-    /** 색이나 두께가 빠진 `SOLID` 는 서버가 400 으로 거절한다 — 둘 다 있을 때만 만든다 */
-    private fun toToppingBorder(
-        colorArgb: Int?,
-        widthDp: Float?,
-    ): ToppingBorder = if (colorArgb != null && widthDp != null) {
-        ToppingBorder.Solid(color = colorArgb.toRgbHexString(), width = widthDp.toDouble())
-    } else {
-        ToppingBorder.None
     }
 }
 

@@ -318,3 +318,30 @@ status.md C-106·C-301 조작 서술 · OQ-P-202 문구(핀치 기준, 미결 �
 
 ## [2026-09-30] restructure | C-101-Loading 반영 — 세그멘테이션 분석 흐름 문서 갱신, 스펙·계획 archive
 status·navigation-flow·data-layer·design-system·ADR-0012 갱신 · 해소 OQ-P-399, OQ-P-401, OQ-P-400(①~⑤) · OQ 신설 OQ-P-411
+
+## [2026-10-02] restructure | 배치 화면 테두리 패널(추가 플로우) 반영 — status 「토핑 생성·배치」 덮어쓰기, ADR-0034 신설
+ADR-0026 본문·인덱스에서 초안의 테두리 서술 정리 · OQ-P-081(②)·OQ-P-203(③) 사용처 고쳐 씀 · OQ 신설 OQ-P-412(실기기 미확인) · 유닛 1239 · 계측 30(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기 대조는 하지 않았다
+
+## [2026-10-02] lint | 배치 화면 테두리 패널 최종 리뷰 반영 — 낮은 화면에서 캔버스가 확정 버튼 밑으로 넘치던 배치 수정, 문서 6건 정정
+OQ-P-256 호출 경로·잠금 테스트 서술을 현재 코드에 맞춤(미결 유지) · OQ-P-412 출처에서 브랜치명 제거, 낮은 화면 실기기 미확인 추가(미결 유지) · status 「튜토리얼」 원본 없는 누끼 확인 진입 · ADR-0025 `related_adr`에 ADR-0034 · 유닛 `feature:groups:canvas:impl` 202·`domain` 130 · 계측 33(`feature:groups:canvas:impl`, 에뮬레이터 Pixel_7_API_36) · 낮은 화면 실기기 확인은 하지 않았다
+
+## [2026-10-02] restructure | 배치 수정 화면(`CanvasToppingArrange`) 반영 — status 「토핑 생성·배치·배치 수정」·「캔버스 배경 편집」 덮어쓰기, 스펙·계획 둘 archive
+navigation-flow·design-system·data-layer·api/parfait-image Android 매핑·ADR-0034 갱신 · 해소 OQ-P-201, OQ-P-276, OQ-P-324, OQ-P-337, OQ-P-338, OQ-P-379(이미 닫혀 있던 OQ-P-254 항목 삭제) · 고쳐 씀 OQ-P-081, OQ-P-175, OQ-P-202, OQ-P-203, OQ-P-326, OQ-P-391 · OQ 신설 OQ-P-413, OQ-P-414, OQ-P-415, OQ-P-416, OQ-P-417, OQ-P-418, OQ-P-419 · 유닛 1256 · 계측 44(`feature:groups:canvas:impl`, SM-A356N) · 피그마·실기기·TalkBack 대조는 하지 않았다
+
+## [2026-10-02] lint | 배치 수정 화면 최종 리뷰 반영 — 삭제 뒤 재조회 동안 로딩 유지, 이탈을 `popUpTo<NavKeyCanvasMain>()`으로, 그만두기 확인이 팝업을 닫음, 패널이 닫히는 동안 포커스된 토핑을 위에 유지, 포커스가 사라지면 삭제 모달도 닫음
+status 「토핑 생성·배치·배치 수정」·navigation-flow 이탈 경로 정정 · 고쳐 씀 OQ-P-270, OQ-P-414(본문 문구 추가), OQ-P-416(안 쓰는 기하 추가), OQ-P-418(재조회 예외 토스트만 남김) · OQ 신설 OQ-P-420, OQ-P-421, OQ-P-422, OQ-P-423 · 유닛 `feature:groups:canvas:impl` 227·`feature:segmentation:impl` 77·`app` 35 · 계측 44(`feature:groups:canvas:impl`, SM-A356N)
+
+## [2026-10-03] lint | 배치 수정 화면의 토스트를 헤더 아래 캔버스 윗변으로 내림 — 피그마 `5479:13704` 대조, 스캐폴드 자리는 헤더를 덮었다
+status 「토핑 생성·배치·배치 수정」에 토스트 자리(`ToppingArrangeLayout`의 `toast` 슬롯) 추가 · 고쳐 씀 OQ-P-419(토스트 모양 대조 항목 걷음) · 추가 플로우 배치 화면의 토스트는 스캐폴드 자리 그대로다
+
+## [2026-10-03] lint | PR 리뷰 반영 — 배치 수정 화면의 확정·삭제 뒤 재조회 예외를 실패로 알리지 않음, 삭제가 다른 토핑의 미저장 변경을 버리는 동작을 테스트로 고정
+status 「토핑 생성·배치·배치 수정」 재조회 실패 서술 정정 · 해소 OQ-P-418 · 고쳐 씀 OQ-P-270(고정하는 테스트 이름)
+
+## [2026-10-03] lint | 누끼 편집 진입 흐름 단축을 현재 상태 문서에 반영 — 확인 화면(`SegmentationConfirm`)·편집 결과 왕복 삭제
+status 「토핑 생성·배치·배치 수정」·「누끼 추출」·「튜토리얼」 · navigation-flow 토핑 생성 플로우 · state-management 저장 → 초안 기록 → 이동 순서 계약 · design-system 튜토리얼 소비처 · 고쳐 씀 OQ-P-105·OQ-P-269·OQ-P-347·OQ-P-368·OQ-P-369·OQ-P-400 · 해소 OQ-P-277·OQ-P-380 · ADR-0025·0026·0034에 현재 코드와 다른 점 표기
+
+## [2026-10-03] lint | 누끼 편집 화면 개편(C-104)을 현재 상태 문서에 반영 — 스펙·계획 2건을 archive로
+status 「누끼 추출」 · design-system 헤더 아래 토스트 호스트·`YGFloatingBar` 배치 · 추가 OQ-P-425 · 고쳐 씀 OQ-P-081(`Edit` 소비처) · 스펙·계획 링크를 archive 경로로
+
+## [2026-10-03] lint | 배경 변경 화면(C-301)을 피그마 `5461:9337`에 맞춤 — 상단 제목 바 + 하단 「저장하기」, 닫기 팝업은 남김
+status 「캔버스 배경 편집」 닫기·저장 서술 고쳐 씀 · 고쳐 씀 OQ-P-081(`YGFloatingBarEdit` 프로덕션 사용처 없음) · 고쳐 씀 OQ-P-174(좌우 여백 44dp, ③ 걷음)

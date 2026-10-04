@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygtoppinggroup
 
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import com.teamyg.parfait.core.designsystem.R
 
@@ -18,6 +19,9 @@ sealed interface YGToppingImage {
 
     @Immutable
     data class Template(val type: YGToppingTemplate) : YGToppingImage
+
+    @Immutable
+    data class Local(@DrawableRes val drawableRes: Int) : YGToppingImage
 
     data object Error : YGToppingImage
 }
