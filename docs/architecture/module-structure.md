@@ -130,9 +130,9 @@ app / app-preview
   > 같은 모듈 화면 둘(캔버스 메인·배경 편집)이 나눠 쓴다.
   > 📌 **소비처가 모듈 경계를 넘으면 `:core:designsystem`으로 올린다**(2026-08-22 develop 머지,
   > PR #334) — 토핑 테두리를 그리는 8방향 스탬프가
-  > `component/ygtoppingcutout/YGToppingCutoutImage`로 올라갔다. 나눠 쓰는 화면이 누끼 확인
-  > (`:feature:segmentation:impl`)과 배치·캔버스(`:feature:groups:canvas:impl`) 셋이라 **모듈 둘에
-  > 걸친다** — 앞 항목처럼 한 모듈 `component/`에 두면 다른 모듈이 볼 길이 없고, `feature/common/*`은
+  > `component/ygtoppingcutout/YGToppingCutoutImage`로 올라갔다. 소비처는 지금
+  > `:feature:groups:canvas:impl`의 배치·캔버스 화면과 디자인시스템의 `YGToppingGroup`이다. 올린 시점에는 누끼 확인
+  > (`:feature:segmentation:impl`)까지 **모듈 둘에 걸쳤다** — 앞 항목처럼 한 모듈 `component/`에 두면 다른 모듈이 볼 길이 없고, `feature/common/*`은
   > 화면을 올리는 자리이지 컴포저블 조각을 올리는 자리가 아니다. **가르는 기준은 소비처 수가 아니라
   > 소비처가 몇 모듈에 걸치는가**다. 올린 이유 자체는 [ADR-0025](../adr/0025-topping-border-as-server-field.md)가
   > 쥔다 — 세 화면이 갈라진 그림을 그릴 여지를 구조로 없애려는 것이다.

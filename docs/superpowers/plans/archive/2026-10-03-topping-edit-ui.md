@@ -1,7 +1,7 @@
 ---
 id: topping-edit-ui
 title: 누끼 편집(C-104) 화면 개편과 감지 실패 토스트 (계획 2/2)
-status: draft
+status: done
 type: work-order
 created: 2026-10-03
 updated: 2026-10-03
@@ -14,11 +14,14 @@ related_code:
   - feature/segmentation/impl/.../route/ToppingEditRoute.kt#ToppingEditRoute
   - feature/segmentation/impl/.../viewmodel/ToppingEditViewModel.kt#loadImages
   - feature/segmentation/api/.../NavKeyToppingEdit.kt#NavKeyToppingEdit
-archived_reason:
+archived_reason: 구현 완료(2026-10-03, 4 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425.
 tags: [plan, parfait]
 ---
 
 # 누끼 편집 화면 개편과 감지 실패 토스트 Implementation Plan
+
+> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 4 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -28,11 +31,11 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose, 디자인시스템(`YGFloatingBar`·`YGButton`·`YGToastHost`), Hilt AssistedInject, JUnit + MockK + Turbine
 
-**Spec:** `docs/superpowers/specs/2026-10-03-topping-edit-entry-flow-design.md`
+**Spec:** `docs/superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md`
 
 ## Global Constraints
 
-- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다.
+- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다.
 - 커밋 메시지: `type: 한국어 설명`. `Co-Authored-By` 줄을 넣지 않는다.
 - 색·간격·타이포는 디자인시스템 토큰(`YGTheme.layout`·`YGTheme.typography`·`YGAtomicColors`)으로만 쓴다. Figma 값에 맞는 토큰이 없으면 가장 가까운 토큰.
 - Figma: `C-104` `node-id=5461-6875`, `C-104-Toast` `node-id=5477-8932` (파일 키 `QPoxqbNMNktsi8ktua3gMN`).
@@ -180,7 +183,7 @@ Expected: 컴파일 실패
 - VM: `loadImages` 성공 분기에서 `isDetectionFailed && savedStateHandle[KEY_DETECTION_FAILED_SHOWN] != true`면 표시를 남기고 `ShowDetectionFailed`. 성공 분기인 이유를 주석으로 — 디코드 실패면 곧 닫히는 화면에 "직접 선택해 주세요"를 띄우지 않는다.
 - Factory에 `isDetectionFailed` 추가, Route가 `key.isDetectionFailed`를 넘긴다.
 - Route: `ShowDetectionFailed` → `toastPolicy.show(YGToastType.Edit(getString(topping_edit_detection_failed)))`.
-- `SegmentationRoute`의 감지 실패 갈래(`segmentationImagePath == null`)에 `isDetectionFailed = true`.
+- `SegmentationRoute`의 감지 실패 갈래(`GoToEditDetectionFailed`)에 `isDetectionFailed = true`.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -209,6 +212,8 @@ git commit -m "feat: 대상 감지에 실패해 들어온 누끼 편집에 안�
 - Modify: `docs/log.md` 한 줄
 
 - [ ] **Step 1: 고친다**
+
+- 스펙을 `archive/`로 옮긴 뒤 코드에 옛 경로가 남았는지 `grep -rn "2026-10-03-topping-edit-entry-flow-design" --include='*.kt' .`로 찾아 KDoc 참조(예: `SegmentationViewModel#selectCandidate`)를 아카이브 경로로 고친다. `check_links`는 `docs`만 훑는다.
 
 - [ ] **Step 2: 링크 확인**
 

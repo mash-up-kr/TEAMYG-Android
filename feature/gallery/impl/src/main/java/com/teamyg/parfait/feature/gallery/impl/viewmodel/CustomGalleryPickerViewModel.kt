@@ -16,6 +16,7 @@ import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
 import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -45,9 +46,9 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
         val uri: String,
     ) : CustomGalleryPickerEffect()
 
-    data class NavigateToSegmentationConfirm(
-        val trimmedSubjectImagePath: String,
-    ) : CustomGalleryPickerEffect()
+    data object NavigateToToppingPlace : CustomGalleryPickerEffect()
+
+    data object ShowDraftUnavailable : CustomGalleryPickerEffect()
 
     data object NavigateToBack : CustomGalleryPickerEffect()
 }
@@ -84,6 +85,7 @@ class CustomGalleryPickerViewModel
     private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
     private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
     private val completeTutorialUseCase: CompleteTutorialUseCase,
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
@@ -175,11 +177,22 @@ class CustomGalleryPickerViewModel
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
-    // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션을 건너뛴다
+    // 배치 화면은 초안을 읽기만 하므로 들어가기 전에 이 알맹이를 가리키게 맞춘다
     private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
-        postSideEffect(
-            CustomGalleryPickerEffect.NavigateToSegmentationConfirm(intent.recentImage.filePath),
-        )
+        launch(
+            key = ENSURE_CUTOUT_DRAFT_KEY,
+            onError = { postSideEffect(CustomGalleryPickerEffect.ShowDraftUnavailable) },
+        ) {
+            val isAligned = ensureDraftSubjectRecorded(intent.recentImage.filePath)
+
+            postSideEffect(
+                if (isAligned) {
+                    CustomGalleryPickerEffect.NavigateToToppingPlace
+                } else {
+                    CustomGalleryPickerEffect.ShowDraftUnavailable
+                },
+            )
+        }
     }
 
     private fun handleOnCancel() {
@@ -205,5 +218,6 @@ class CustomGalleryPickerViewModel
 
     private companion object {
         const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
+        const val ENSURE_CUTOUT_DRAFT_KEY = "ensureCutoutDraft"
     }
 }

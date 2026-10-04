@@ -15,6 +15,8 @@ tags: [adr, parfait, topping, border, server-contract]
 
 # ADR-0025: 토핑 테두리를 픽셀에 굽지 않고 서버 필드로 보낸다
 
+> 📌 **현재 코드와 다른 점** — 본문의 누끼 확인 화면은 지금 없다. 테두리를 그리는 화면은 배치 화면과 캔버스다 → [스펙](../superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md).
+
 > 상태·날짜·결정자·대체 관계는 위 frontmatter가 단일 출처. 본문은 결정 내용에 집중.
 
 ## 맥락

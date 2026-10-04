@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.segmentation.impl.viewmodel
 
 import android.graphics.Bitmap
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
@@ -8,8 +9,6 @@ import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
 import com.teamyg.parfait.domain.usecase.image.SaveBitmapUseCase
 import com.teamyg.parfait.domain.usecase.topping.RecordToppingDraftUseCase
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditCompletion
-import com.teamyg.parfait.feature.segmentation.api.ToppingEditResult
 import com.teamyg.parfait.feature.segmentation.impl.editor.SubjectMeasure
 import com.teamyg.parfait.feature.segmentation.impl.editor.buildCutoutBitmap
 import com.teamyg.parfait.feature.segmentation.impl.editor.measureSubject
@@ -66,17 +65,6 @@ class ToppingEditViewModelTest {
         alphaSum = 255L * CUTOUT_SIDE * CUTOUT_SIDE,
     )
 
-    private val result = ToppingEditResult(
-        subjectImagePath = TRIMMED_PATH,
-        cutoutImagePath = CUTOUT_PATH,
-        sourceLongSide = CUTOUT_SIDE,
-    )
-
-    private val confirm = ToppingEditEffect.GoToConfirm(
-        subjectImagePath = CUTOUT_PATH,
-        trimmedSubjectImagePath = TRIMMED_PATH,
-    )
-
     /**
      * 비트맵을 실제로 만드는 편집 헬퍼는 JVM 테스트에서 돌지 않아 통째로 갈아 끼운다.
      * 그래서 여기서 검증되는 것은 저장 이후의 순서이고, 픽셀 합성은 아니다.
@@ -105,11 +93,13 @@ class ToppingEditViewModelTest {
     private fun createViewModel(
         sourceImageUri: String = SOURCE_URI,
         segmentationImageUri: String = SEGMENTATION_URI,
-        completion: ToppingEditCompletion = ToppingEditCompletion.RecordAndConfirm,
+        isDetectionFailed: Boolean = false,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ) = ToppingEditViewModel(
         sourceImageUri = sourceImageUri,
         segmentationImageUri = segmentationImageUri,
-        completion = completion,
+        isDetectionFailed = isDetectionFailed,
+        savedStateHandle = savedStateHandle,
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
@@ -117,7 +107,7 @@ class ToppingEditViewModelTest {
 
     @Test
     fun loadImages_equalUris_sharesOneDecodedBitmap() = runTest {
-        // Given 원본과 분석 결과가 같은 주소다(RecordAndConfirm 진입)
+        // Given 원본과 분석 결과가 같은 주소다
         val viewModel = createViewModel(sourceImageUri = SOURCE_URI, segmentationImageUri = SOURCE_URI)
 
         // When 이미지를 불러온다
@@ -157,15 +147,63 @@ class ToppingEditViewModelTest {
     }
 
     @Test
-    fun clickDone_recordAndConfirm_recordsDraftThenGoesToConfirmWithSwappedPaths() = runTest {
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+    fun init_detectionFailed_showsGuideOnceAfterLoading() = runTest {
+        val viewModel = createViewModel(isDetectionFailed = true)
+
+        viewModel.effect.test {
+            assertEquals(ToppingEditEffect.ShowDetectionFailed, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_detectionFailedRecreatedWithSameSavedState_doesNotShowAgain() = runTest {
+        val savedStateHandle = SavedStateHandle()
+        val first = createViewModel(isDetectionFailed = true, savedStateHandle = savedStateHandle)
+        first.effect.test {
+            assertEquals(ToppingEditEffect.ShowDetectionFailed, awaitItem())
+        }
+
+        val second = createViewModel(isDetectionFailed = true, savedStateHandle = savedStateHandle)
+        advanceUntilIdle()
+
+        assertFalse(second.state.value.isLoading)
+        second.effect.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_detectionFailedButLoadFails_onlyReportsLoadFailed() = runTest {
+        coEvery { decodeImage(SOURCE_URI) } returns Result.failure(IOException("decode failed"))
+        val viewModel = createViewModel(isDetectionFailed = true)
+
+        viewModel.effect.test {
+            assertEquals(ToppingEditEffect.LoadFailed, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun init_notDetectionFailed_showsNothing() = runTest {
+        val viewModel = createViewModel(isDetectionFailed = false)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.isLoading)
+        viewModel.effect.test {
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun clickDone_recordsDraftThenGoesToPlace() = runTest {
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
 
-            // 편집 결과와 확인 화면 키는 경로 이름이 서로 반대다
-            assertEquals(confirm, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
             assertFalse(viewModel.state.value.isSaving)
         }
 
@@ -179,15 +217,15 @@ class ToppingEditViewModelTest {
     }
 
     @Test
-    fun clickDone_recordReturnsFalse_showsSaveFailed() = runTest {
+    fun clickDone_recordReturnsFalse_showsDraftUnavailable() = runTest {
         coEvery { recordToppingDraft(any(), any(), any()) } returns false
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
 
-            assertEquals(ToppingEditEffect.SaveFailed, awaitItem())
+            assertEquals(ToppingEditEffect.DraftUnavailable, awaitItem())
             assertFalse(viewModel.state.value.isSaving)
         }
     }
@@ -195,7 +233,7 @@ class ToppingEditViewModelTest {
     @Test
     fun clickDone_recordThrows_showsSaveFailed() = runTest {
         coEvery { recordToppingDraft(any(), any(), any()) } throws IOException("disk full")
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
@@ -209,7 +247,7 @@ class ToppingEditViewModelTest {
     @Test
     fun clickDone_saveFails_showsSaveFailedWithoutRecording() = runTest {
         coEvery { saveBitmap(trimmedCutout.toAndroidBitmap()) } returns Result.failure(IOException("disk full"))
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
@@ -223,27 +261,10 @@ class ToppingEditViewModelTest {
     }
 
     @Test
-    fun clickDone_returnResult_completesWithoutRecording() = runTest {
-        val viewModel = createViewModel(completion = ToppingEditCompletion.ReturnResult)
-        advanceUntilIdle()
-
-        viewModel.effect.test {
-            viewModel.processIntent(ToppingEditIntent.ClickDone)
-
-            val effect = awaitItem()
-            assertEquals(ToppingEditEffect.EditCompleted(result), effect)
-            assertEquals(CUTOUT_SIDE, (effect as ToppingEditEffect.EditCompleted).result.sourceLongSide)
-            assertFalse(viewModel.state.value.isSaving)
-        }
-
-        coVerify(exactly = 0) { recordToppingDraft(any(), any(), any()) }
-    }
-
-    @Test
     fun clickDone_subjectTooSmall_emitsSubjectTooSmallAndSavesNothing() = runTest {
         // Given 알파가 전부 0 이라 남은 영역이 하한에 못 미친다 (편집 헬퍼를 갈아 끼웠으므로 측정값으로 만든다)
         every { cutout.measureSubject() } returns fullMeasure.copy(alphaSum = 0L)
-        val viewModel = createViewModel(completion = ToppingEditCompletion.ReturnResult)
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
@@ -267,7 +288,7 @@ class ToppingEditViewModelTest {
             releaseRecord.await()
             true
         }
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
@@ -280,7 +301,7 @@ class ToppingEditViewModelTest {
             releaseRecord.complete(Unit)
 
             // Then 저장도 기록도 한 번뿐이다
-            assertEquals(confirm, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
             advanceUntilIdle()
             expectNoEvents()
         }
@@ -290,18 +311,71 @@ class ToppingEditViewModelTest {
     }
 
     @Test
-    fun clickDone_afterReturningFromConfirm_completesAgain() = runTest {
-        val viewModel = createViewModel(completion = ToppingEditCompletion.RecordAndConfirm)
+    fun clickDone_afterReturningFromPlace_completesAgain() = runTest {
+        val viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.effect.test {
             viewModel.processIntent(ToppingEditIntent.ClickDone)
-            assertEquals(confirm, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
 
             viewModel.processIntent(ToppingEditIntent.ClickDone)
-            assertEquals(confirm, awaitItem())
+            assertEquals(ToppingEditEffect.GoToPlace, awaitItem())
         }
 
         coVerify(exactly = 2) { recordToppingDraft(any(), any(), any()) }
+    }
+
+    @Test
+    fun clickClose_showsQuitDialog() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.processIntent(ToppingEditIntent.ClickClose)
+
+        assertTrue(viewModel.state.value.showQuitDialog)
+    }
+
+    @Test
+    fun dismissQuit_hidesQuitDialog() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickClose)
+            viewModel.processIntent(ToppingEditIntent.DismissQuit)
+
+            assertFalse(viewModel.state.value.showQuitDialog)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun confirmQuit_hidesDialogAndQuitsToCanvas() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickClose)
+            viewModel.processIntent(ToppingEditIntent.ConfirmQuit)
+
+            assertFalse(viewModel.state.value.showQuitDialog)
+            assertEquals(ToppingEditEffect.QuitToCanvas, awaitItem())
+        }
+    }
+
+    @Test
+    fun confirmQuit_twice_quitsOnce() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            viewModel.processIntent(ToppingEditIntent.ClickClose)
+            viewModel.processIntent(ToppingEditIntent.ConfirmQuit)
+            viewModel.processIntent(ToppingEditIntent.ConfirmQuit)
+
+            assertEquals(ToppingEditEffect.QuitToCanvas, awaitItem())
+            expectNoEvents()
+        }
     }
 }
