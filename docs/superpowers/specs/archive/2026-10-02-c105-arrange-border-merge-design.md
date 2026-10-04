@@ -28,7 +28,7 @@ tags: [spec, parfait]
 
 # Spec: 배치 화면에 테두리 설정 합치기
 
-> **구현 완료(2026-10-02, develop 머지 전).** 구현이 이 스펙과 다르게 간 자리와 남은 물음은
+> **구현 완료(2026-10-02, develop 머지 PR #572 `d4ca59eaf`).** 구현이 이 스펙과 다르게 간 자리와 남은 물음은
 > [open-questions](../../../synthesis/open-questions.md) OQ-P-413~OQ-P-419에 있다. 현재 상태는
 > [status.md](../../../status.md) 「토핑 생성·배치·배치 수정」과 [ADR-0034](../../../adr/0034-topping-border-set-at-placement.md).
 

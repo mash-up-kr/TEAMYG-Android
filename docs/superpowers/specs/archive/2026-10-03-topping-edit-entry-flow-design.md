@@ -28,7 +28,7 @@ tags: [spec, parfait]
 
 # Spec: 누끼 편집(C-104) 진입 흐름 단축과 화면 개편
 
-> **구현 완료(2026-10-03, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전).** 화면 개편의 피그마·실기기 대조는 돌리지 않았다 —
+> **구현 완료(2026-10-03, develop 머지 PR #576 `2a025706b`).** 화면 개편의 피그마·실기기 대조는 돌리지 않았다 —
 > [open-questions](../../../synthesis/open-questions.md) OQ-P-425. 현재 상태는
 > [status.md](../../../status.md) 「누끼 추출」.
 

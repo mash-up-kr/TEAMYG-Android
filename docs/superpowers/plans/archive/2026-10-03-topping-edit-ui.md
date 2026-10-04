@@ -14,13 +14,13 @@ related_code:
   - feature/segmentation/impl/.../route/ToppingEditRoute.kt#ToppingEditRoute
   - feature/segmentation/impl/.../viewmodel/ToppingEditViewModel.kt#loadImages
   - feature/segmentation/api/.../NavKeyToppingEdit.kt#NavKeyToppingEdit
-archived_reason: 구현 완료(2026-10-03, 4 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425.
+archived_reason: 구현 완료(2026-10-03, 4 Task 수행, develop 머지 PR #576 `2a025706b`). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425.
 tags: [plan, parfait]
 ---
 
 # 누끼 편집 화면 개편과 감지 실패 토스트 Implementation Plan
 
-> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 4 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 4 Task 수행, develop 머지 PR #576 `2a025706b`). 피그마·실기기 대조는 돌리지 않았다, OQ-P-425. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
 > 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
