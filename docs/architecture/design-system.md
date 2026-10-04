@@ -45,7 +45,6 @@ component/
   yglistdate/             ← YGListDate (C-201 날짜 셀 = YGDateButton + YGChipColorIndicator) (#188 develop 머지)
   ygfloatingbar/          ← YGFloatingBar* 5변형 + private 컨테이너·버튼 2종 (4변형 #188 · Title #406, 둘 다 develop 머지)
   ygtopbar/               ← YGTopBar* 4변형 + YGTopBarDefaults(배경 블러 반경 #188, 상단 인셋 #194)
-  ygtutorial/             ← YGTutorialOverlay + YGTutorialBox + YGTutorialProgress + YGTutorialBoxPlacement (화면 첫 진입 튜토리얼, #449 develop 머지)
 border/
   DashedBorder.kt         ← dashedBorder() Modifier (점선 사각형 테두리, drawBehind+dashPathEffect) (#159 develop 머지)
 shape/
@@ -59,7 +58,7 @@ screen/                   ← 화면 루트 컨테이너 (아래 "화면 컨테�
 image/                    ← ParfaitImageLoader.kt: newParfaitImageLoader(전역 Coil 로더 팩토리) + rememberReloadableImageRequest (#440 develop 머지)
   YGScreenScope.kt        YGScreenScope + OnBack(@Composable, BackHandler 래핑)
 res/font/                 ← suit_regular/medium/semi_bold/bold.ttf (SUIT **수정본**, #366 — 아래 참고)
-res/values/strings.xml    ← 모듈 최초의 문자열(#267) — 로딩 오버레이 접근성 contentDescription 1건 + 튜토리얼 카드의 진행 표시·버튼 라벨 3건(#449)
+res/values/strings.xml    ← 모듈 최초의 문자열(#267) — 로딩 오버레이 접근성 contentDescription 1건
 res/raw/                  ← 로딩 로띠 3종(밝은 바탕용·어두운 바탕용 #305, 캔버스 토핑용 `loading_topping` #440) — 모듈 최초의 raw 리소스
 res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-002 온보딩 일러스트 `image_onboarding_*` 추가, #264로 `ic_edit`·`ic_scale` 추가)
 (모듈 루트)
@@ -358,7 +357,6 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 | `YGGrouptagChip`(+`YGGrouptagChipType`) | `component/yggrouptagchip/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
 | `YGToppingGroup`(+`YGToppingGroupType`·`YGToppingImage`·`YGToppingTemplate`) | `component/ygtoppinggroup/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
 | `YGToppingCutoutImage` — 위 `YGToppingImage`와 **다른 물건**(아래 항목), #334 develop 머지 | `component/ygtoppingcutout/` | [ADR-0025](../adr/0025-topping-border-as-server-field.md) · [c106-topping-place-api](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md) |
-| `YGTutorialOverlay` / `YGTutorialBox`(+`YGTutorialProgress`·`YGTutorialBoxPlacement`), #449 develop 머지 | `component/ygtutorial/` | (선작성 스펙 없음 — 아래 항목) |
 | `YGScreen` / `YGScaffold`(+`YGScreenScope`·`OnBack`) | `screen/` | [designsystem-ygscreen-scaffold](../superpowers/specs/archive/2026-07-20-designsystem-ygscreen-scaffold.md) (위 "화면 컨테이너") |
 
 - **`YGIconButton` = 공통 아이콘 버튼**: 정사각 컨테이너 + 중앙 아이콘 + enabled/pressed tint, 크기 프리셋 enum(`YGIconButtonSize` — `SIZE_48` 아이콘 크기는 #183에서 교정). `YGTextField`의 clear 아이콘은 이미 인라인 `Box`+`Image`에서 `YGIconButton(size = YGIconButtonSize.SIZE_44)`로 치환됨(`YGTextFieldImpl.kt`). `YGListItem` trailing caret도 `YGIconButton`으로 치환(#136 develop 머지 #148).
@@ -497,29 +495,6 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
     - `clickableYGNoRipple`에 `interactionSource: MutableInteractionSource? = null`이 첫 파라미터로 추가됐다(다른 네 변형과 같은 자리). 없으면 hoisted `interactionSource`를 넘기던 컴포넌트 9종의 눌림 표현이 끊긴다.
     - **300ms 스로틀이 함께 딸려온다.** 게이트는 `remember`라 **Modifier 노드마다 하나**여서 다른 요소로 옮겨 누르는 것은 막지 않고 같은 요소 연타만 막는다. 이관 지점은 전부 단일 선택이거나 멱등이고, 셔터·재시도·`goTo` 유발 클릭은 오히려 중복 실행이 막힌다.
     - **리플이 유일한 피드백이었다가 사라진 곳은 `clickableYG`(Dim) 승격 후보다** — `NotionWebView` 재시도, `TermAgreeScreen` 재시도·약관 링크 caret, `InviteCodePasteBar`, `GalleryImageGridComponent` 셀 → [open-questions](../synthesis/open-questions.md) [2026-08-17]. (여섯째였던 `CanvasImageSelectScreen` 이미지는 #514에서 화면이 삭제돼 후보에서 빠졌다.)
-- **튜토리얼 컴포넌트**(#449 develop 머지, 2026-09-05, `ygtutorial/`): 화면 첫 진입에서 한 번 도는 안내를
-  `YGTutorialOverlay`(화면을 덮는 한 장) + `YGTutorialBox`(설명 카드) + `YGTutorialProgress`(몇 번째 장인가)
-  + `YGTutorialBoxPlacement`(카드가 위·아래 중 어디에 붙는가)로 나눠 담는다. **강조할 자리만 뚫은
-  오버레이가 아니다** — `imageResource`가 딤까지 구워진 **알파 없는 풀스크린 목업**이고 그 한 장이 실제
-  화면을 통째로 덮는다. 그래서 목업은 시스템바를 뺀 자리에만 그리고(`windowInsetsPadding(systemBars)`)
-  딤 자체는 인셋을 받지 않아 화면 끝까지 이어진다. 딤은 `clickableYGNoRipple`로 **클릭을 삼킨다** —
-  안내가 떠 있는 동안 아래 화면이 눌리면 사용자가 무엇을 건드렸는지 모른 채 다른 화면에 가 있게 된다.
-  - **버튼 라벨을 호출부가 정하지 않는다** — 마지막 장의 버튼은 "다음"이 아니라 "시작하기"인데, 그
-    판단이 `YGTutorialProgress.isLast` 하나로 끝나므로 진행 표시(`2/3`)와 라벨이 **같은 사실 하나**에서
-    나온다. 화면마다 다시 쓰면 `3/3`인데 "다음"인 조합이 언제든 만들어진다. `progress`를 넘기지 않으면
-    한 장짜리라는 뜻이고, 라벨은 "시작하기"가 되며 **진행 표시가 비운 윗줄로 제목이 올라온다**(칩만
-    남겨 두면 카드가 위아래로 벌어진다). 문자열 3건은 이 컴포넌트가 모듈 `res/`에 갖는다.
-  - **겹치는 자리는 스캐폴드 밖이다** — 소비 화면 둘이 모두 `Box` 안에서 `YGScaffoldV2`와 **형제**로
-    놓는다. 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바 밑에서 끊기고 시스템바만 안 덮인 화면이 된다.
-    카드만 인셋을 받아 글자가 시스템바를 피한다.
-  - **첫 소비처가 둘이다**(같은 PR) — C-001 캔버스(3장, `CanvasTutorialStep` enum이 순서·목업·문구·
-    카드 위치를 든다), 갤러리 업로드(1장). **여러 장짜리를 감싸는 자리는 디자인시스템이
-    아니라 feature 로컬**이다(`canvas/impl`의 `CanvasTutorialOverlay`) — 한 장짜리인 갤러리는 화면이
-    `YGTutorialOverlay`를 직접 부른다. `boxPlacement`를 고르는 기준은 취향이 아니라 **그 장이 강조하는
-    UI가 어디 있는가**이고, 카드는 그 반대편에 붙는다(달력을 여는 장만 `Bottom`이다).
-  - ⚠️ **목업 이미지가 실제 화면과 어긋날 길이 열려 있다** — 안내가 가리키는 버튼이 옮겨 가거나 문구가
-    바뀌어도 PNG는 따라오지 않고, 통짜 스크린샷이라 기기 폭·글자 크기·테마에 맞춰 다시 그려지지도
-    않는다(`ContentScale.Crop`으로 잘린다). 정책 근거도 없다 → [open-questions](../synthesis/open-questions.md) OQ-P-363.
 
 > **과도기 — 컨벤션 분기(정리 대상)**
 > - **`YGStrokeButton.borderWidth`**(#259): `Dp.Hairline`이면 테두리를 **안 그린다**(`Modifier.border`는 `Dp.Hairline`을 1px 선으로 그리므로 `then`으로 직접 걸러낸다). 배경·높이·눌림 색만 재사용하고 테두리는 감싸는 쪽이 한 번만 긋는 사용법이고, C-201 캘린더 드롭다운이 그 첫 소비처다 — 버튼마다 두르고 겹쳐 지우는 방식은 겹침이 빠지는 순간 두께가 두 배가 된다.

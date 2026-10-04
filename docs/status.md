@@ -52,7 +52,6 @@
 - 앵커: `AppSettingViewModel`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
 - ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
-- ⚠️ 로그아웃·탈퇴가 사용자 설정(`UserConfigRepository`)을 지우지 않아 같은 기기에서 계정을 바꾸면 앞사람의 튜토리얼 확인을 물려받는다 — `clearConfig` 호출부가 0건이다 (OQ-P-366)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
 - ⚠️ 로그아웃 요청 중 항목은 `enabled`만 꺼지고 색이 그대로라 사용자는 눌러도 반응이 없는 이유를 모른다 — 디자인시스템에 비활성 색이 없다 (OQ-P-186)
 - 설계: [app-setting-s001](superpowers/specs/archive/2026-07-19-app-setting-s001.md), [s002-account-info](superpowers/specs/archive/2026-07-22-s002-account-info.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
@@ -107,7 +106,6 @@
 - 상태: 배경 편집 화면은 캔버스 메인의 편집 버튼이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독한다. 배경(색 또는 이미지)은 최초 방출에만 시딩하고, 토핑 목록은 방출마다 갈아 끼워 배경 위에 반투명으로 보여 주기만 한다 — 이 화면에서 토핑은 고칠 수 없다. 팔레트 색이나 카메라·갤러리에서 받아 온 사진을 고른 뒤 하단 「저장하기」를 누르면 사진은 업로드부터 하고 배경을 저장한 다음 오늘 캔버스를 다시 받고 닫으며, 서버에 이미 있던 배경 이미지를 그대로 둔 채 저장하면 요청 없이 닫는다. 실패는 `CanvasBGEditError` 토스트 + 화면 잔류이고, 상단 바(`YGFloatingBarTitle`)의 닫기는 「배경 변경을 그만둘까요?」 팝업(`YGModalQuitBackground`)을 거친다 — 피그마 `5461:9337`은 "모달 없이 C-001 이동"이라 적는데 구현은 팝업을 남겼다.
 - 앵커: `CanvasBGEditViewModel`, `CanvasBGEditUiState`, `CanvasBGEditError`, `NavKeyCanvasBGEdit`, `ChangeCanvasBackgroundUseCase`, `EditableToppingImage`
 - ⚠️ 마감된 캔버스의 409를 배경 저장이 일반 오류 토스트로 접어 다시 눌러도 영원히 실패한다 (OQ-P-261)
-- ⚠️ 캔버스 튜토리얼(`canvas_tutorial_canvas_edit_description`)은 편집 버튼으로 "배경과 토핑을 자유롭게 꾸밀 수 있어요"라고 안내하는데 그 버튼이 여는 화면은 배경만 다룬다. 토핑은 캔버스에서 직접 탭해야 고칠 수 있다 (OQ-P-417)
 - ⚠️ 위키 v7은 `C-301`을 삭제하고 `C-304`(캔버스 수정)를 배경 탭 + 토핑 탭을 가진 편집 허브로 두는데, 구현은 탭 없는 배경 전용 화면이고 분석 화면 id로 `C-301`을 보낸다 (OQ-P-175, OQ-P-415)
 - ⚠️ 배경 업로드용 `copyToCache` 복사본이 `cacheDir/upload`에 쌓이기만 하고, 배경색은 `toRgbHex`로·테두리색은 로케일을 고정하지 않는 `toRgbHexString`으로 적는다 (OQ-P-262, OQ-P-263)
 - 설계: [c301-canvas-background-edit](superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md)
@@ -142,16 +140,6 @@
 - ⚠️ 수신부 KDoc이 근거로 드는 "FCM 페이로드 스펙 v1"은 어느 저장소에도 없고, `data` 키·채널 id 문자열이 서버·`http/fcm-test.http`·앱 코드에 복제돼 있어 어긋나면 딥링크가 평범한 실행처럼 조용히 무시되거나 알림이 안 뜬다 (OQ-P-361, OQ-P-354)
 - ⚠️ `getToken`·`onNewToken`은 deprecated지만 FID 전환은 서버가 Admin SDK를 올려 `setFid`로 바꾼 뒤에만 할 수 있다. 앱이 매니페스트 플래그를 먼저 켜면 모든 발송이 실패한다 (OQ-P-362)
 - 설계: [push-notification-permission-and-device-token](superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [ADR-0013](adr/0013-firebase-fcm-crashlytics.md), [navigation-flow](architecture/navigation-flow.md)
-
-## 튜토리얼 (ygtutorial)
-- 상태: 디자인시스템 `YGTutorialOverlay`는 딤까지 구워진 풀스크린 목업 PNG 한 장으로 실제 화면을 덮고 클릭을 삼킨다. 버튼 라벨(「다음」/「시작하기」)은 `YGTutorialProgress`가 정한다. 소비 화면은 C-001 캔버스(`CanvasTutorialStep` 3장)와 C-102 갤러리(1장) 둘이다. 각 화면은 `GetTutorialVisibleFlowUseCase`로 `TutorialKind`별 노출 여부를 구독하고, `CompleteTutorialUseCase`로 평문 DataStore의 `UserConfigRepository`에 "봤다"를 남긴다. 캔버스는 마지막 장을 닫을 때, 한 장짜리 갤러리는 누르는 즉시 남긴다.
-- 앵커: `YGTutorialOverlay`, `YGTutorialProgress`, `CanvasTutorialStep`, `GetTutorialVisibleFlowUseCase`, `UserConfigRepository`, `core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/component/ygtutorial`
-- ⚠️ `clearConfig`는 계약과 구현만 있고 부르는 곳이 없다. 로그아웃·탈퇴가 이 설정을 지우지 않아서, 같은 기기에서 계정을 바꾸면 앞사람의 "봤다" 기록을 물려받아 튜토리얼이 뜨지 않는다 (OQ-P-366)
-- ⚠️ 목업 PNG는 실제 화면이 바뀌어도 따라 바뀌지 않는다. `ContentScale.Crop`이라 폭이 다른 기기에서는 잘리고, 위키에 튜토리얼 정책 조항이 없다 (OQ-P-363)
-- ⚠️ 같은 튜토리얼 상태가 화면마다 두 형태다. 캔버스는 리소스 ID를 든 `CanvasTutorialStep`을 State에 싣고, 갤러리는 `Boolean`을 쓴다. 완료를 기록하는 시점도 둘로 갈린다 (OQ-P-369)
-- ⚠️ 튜토리얼 구독 둘이 모두 `launchWhileSubscribed`를 쓰는데, 문서의 선택 기준은 "서버를 계속 부르는 구독"이다. 이 구독은 DataStore 키 하나만 읽는다 (OQ-P-368)
-- ⚠️ 평문 `DataStorePreferences`와 암호화 프록시가 암호화 두 줄만 빼고 같은 코드다. 평문 쪽 `read`는 부르는 곳이 없다 (OQ-P-367)
-- 설계: [design-system](architecture/design-system.md), [state-management](architecture/state-management.md), [data-layer](architecture/data-layer.md), [ADR-0008](adr/0008-datastore-local-persistence.md)
 
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.

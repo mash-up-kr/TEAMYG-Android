@@ -2296,7 +2296,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   한 화면이 배치와 테두리를 함께 고치고, 테두리 전용 화면은 없다.
 - **항목**: ① 편집 진입을 위키 v7의 허브(배경 탭 + 토핑 탭) 쪽으로 맞출지, 구현의 두 화면 구조를 정책에
   올릴지(정책 소관). ② 배경 편집 화면의 분석 화면 id를 v7에 없는 `C-301`로 계속 보낼지 — id 전반은
-  OQ-P-415가 쥔다. ③ 편집 버튼이 배경만 연다는 것을 사용자에게 어떻게 알릴지 — 튜토리얼 문구는 OQ-P-417.
+  OQ-P-415가 쥔다. ③ 편집 버튼이 배경만 연다는 것을 사용자에게 어떻게 알릴지.
 - **상태**: 미해결 (구현의 화면 구조는 피그마 수정 플로우를 따랐고 위키에는 그 원본이 없다. 위키는 이 저장소가 고치지 않는다)
 - **해소 메모**: 기획이 화면 구조를 위키에 반영하면 그쪽 id에 맞춰 `toAnalyticsScreenOrNull`과 `status.md` 머리말을 고친다.
 
@@ -6723,24 +6723,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 그대로이고, 바뀐 것은 **어긋났을 때의 대가**다: 전에는 브랜치 하나가 못 나가는 것이었고 지금은
   > 발송이 전부 실패하는 것이다. 서버 delta 회차에 `FcmNotificationSender` 와 Admin SDK 판을 함께 본다.
 
-### [2026-09-05] 튜토리얼이 실제 화면 대신 목업 스크린샷을 덮는다 — 어긋날 길과 정책 근거
-
-- **ID**: OQ-P-363
-- **출처**: `YGTutorialOverlay`·`CanvasTutorialStep`(PR #449 develop 머지) — `imageResource`가
-  **딤까지 구워진 알파 없는 풀스크린 목업 PNG**이고 그 한 장이 실제 화면을 통째로 덮는다
-  (`img_canvas_tutorial_1~3`·`img_upload_tutorial`, `drawable-xxhdpi` 단일 밀도).
-  강조할 자리만 뚫은 오버레이가 아니다.
-- **항목**: ① **화면이 바뀌어도 그림은 안 따라온다** — 안내가 가리키는 버튼이 옮겨 가거나 문구가
-  바뀌면 목업만 낡는데, 어긋남을 잡는 수단이 없다(계측 테스트도 없다). ② 통짜 스크린샷이라
-  **기기 폭·글자 크기·다크 테마**에 맞춰 다시 그려지지 않는다 — `ContentScale.Crop`이라 폭이 다른
-  기기에서는 잘린다. ③ **정책 근거가 없다** — 위키에 튜토리얼 조항 자체가 없고, 노출 조건(설치 후
-  화면별 첫 진입 1회)·문구·장 수·카드 위치가 전부 코드에만 있다. ④ 에셋이 큰 편인데(업로드
-  튜토리얼 한 장이 이 저장소 최대 크기 드로어블이다) 밀도별 세트가 아니라 xxhdpi 하나다.
-- **상태**: 미해결 (**동작은 의도대로** — 어긋남과 근거 부재의 문제다)
-- **해소 메모**: ③은 위키 판단이 선행이다 — 정책으로 확정되면 위키에 조항을 만들고 여기는 구현
-  소관만 남긴다. ①②는 [design-system](../architecture/design-system.md) 「튜토리얼 컴포넌트」 항목에
-  대응 규칙을 적는다(뚫는 방식으로 바꿀지, 목업을 유지하고 갱신 책임을 명시할지).
-
 ### [2026-09-05] 미리보기 NavKey가 캐시 파일 경로를 나른다 — 값이 썩을 수 있다
 
 - **ID**: OQ-P-364
@@ -6801,71 +6783,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 어렵다"고 본 판단이 실행 중에 뒤집혔다). 읽기·결과 왕복·미리보기 화면은 여전히 한 줄도 잠기지
   > 않는다 → [캔버스 저장 미리보기 캡처 전달 스펙](../superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md).
 
-### [2026-09-05] 사용자 설정을 지우는 계약만 있고 부르는 자리가 없다
-
-- **ID**: OQ-P-366
-- **출처**: `UserConfigRepository.clearConfig`·`UserConfigRepositoryImpl.clearConfig`·
-  `UserConfigLocalDataSourceImpl.clear`(PR #449) — 계약·구현·데이터소스까지 다 있는데 **호출부가 0건**이다.
-  로그아웃(`LogoutUseCase`)·탈퇴(`WithdrawUseCase`)는 계정 정보와 토큰만 지운다.
-- **항목**: ① 로그아웃·탈퇴가 이 설정을 지워야 하는가 — 지우면 같은 기기에서 계정을 바꾼 사람이
-  튜토리얼을 다시 보고, 안 지우면 **다른 계정이 앞사람의 "봤다"를 물려받는다.** 둘 다 근거가 없다.
-  ② 지운다면 자리가 어디인가 — 계정 정보를 지우는 자리와 같은 곳인지, 설정이 계정에 매이는 것이
-  맞는지(지금 이 저장소는 계정 축이 아니라 **기기 축**이다). ③ 쓰이지 않는 계약을 남겨 둘지.
-- **상태**: 미해결 (**동작 영향 있음** — 계정 전환 시 튜토리얼이 안 뜬다)
-- **해소 메모**: 정하면 [data-layer](../architecture/data-layer.md) DataStore 항목에 소유 축(계정 vs 기기)을
-  적는다. 계정 축이면 [ADR-0022](../adr/0022-user-info-local-ssot.md)의 정리 경로에 합류시킨다.
-
-### [2026-09-05] 평문·암호화 DataStore 프록시가 서로의 복제다
-
-- **ID**: OQ-P-367
-- **출처**: `DataStorePreferences`(PR #449) · `EncryptedPreferences`(PR #263) — `observe`·`read`·
-  `write`(단건·다건)·`remove`·`decodeOrDiscard`가 **KDoc까지 같고**, 다른 것은 쓰기의
-  `cryptoManager.encrypt`와 읽기의 `decrypt` 두 줄뿐이다.
-- **항목**: ① 한쪽이 다른 쪽을 감싸거나 공통 부분을 뽑을지 — 지금은 폐기 규칙(못 읽는 저장분을 버린다)
-  같은 미묘한 결정이 **두 벌로 존재**해서, 한쪽만 고치면 조용히 갈린다. ② `DataStorePreferences.read`는
-  **호출부가 0건**이다(쓰는 곳이 `observe`·`write`·`remove`만 쓴다) — 대칭을 위해 남길지.
-  ③ 평문·암호문이 **같은 `DataStore<Preferences>` 하나**를 공유하므로 키가 섞인다 — 지금은 문제가
-  없지만 어느 키가 어느 형태인지는 코드로만 안다.
-- **상태**: 부분 해소 — ①② 해소, ③ 미해결 (**동작 영향 0**)
-  > 📌 **①② 해소(PR #534)** — `EncryptedPreferences`가 `DataStorePreferences`를 감싸 암복호화만 얹는다.
-  > 폐기 규칙은 `DataStorePreferences` 한 벌에만 있고, `DataStorePreferences.read`는 `EncryptedPreferences.read`가
-  > 부른다. ③(한 `DataStore<Preferences>`에 평문·암호문 키가 섞임)은 그대로다.
-- **해소 메모**: ①을 정하면 [data-layer](../architecture/data-layer.md) 「평문 DataStore 프록시」 항목에
-  적고, 뽑아낸다면 [ADR-0019](../adr/0019-encrypted-token-storage.md)의 결정 범위를 건드리는지 함께 본다.
-
-### [2026-09-05] `launchWhileSubscribed`를 고르는 기준과 실제 쓰임이 갈렸다
-
-- **ID**: OQ-P-368
-- **출처**: `CanvasMainViewModel#observeCanvasTutorial`·`CustomGalleryPickerViewModel#observeTutorial`
-  (PR #449) — 둘 다 `launchWhileSubscribed`로 튜토리얼 노출 여부를 구독한다.
-  [state-management](../architecture/state-management.md)가 적어 둔 선택 기준은 **"이 구독이 서버를 계속
-  부르는가"**([ADR-0029](../adr/0029-canvas-today-ssot-polling.md))인데, 이 구독은 DataStore 한 키를 읽는다.
-- **항목**: ① 기준을 넓힐지(로컬 구독에도 기본으로 쓴다), 아니면 이 둘을 `launch`로 되돌릴지 —
-  지금은 문서의 기준과 코드의 관행이 어긋난 채 `CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`도 같은 도우미를 쓴다. ② 딸려 오는 비용이
-  하나 있다 — 이 구독은 화면이 `state`를 보는 동안에만 열려서 **ViewModel 테스트가 `backgroundScope`에서
-  `state`를 수집해야** 하고, `CustomGalleryPickerViewModelTest`가 `shownViewModel()` 헬퍼로 그 준비를 적는다.
-- **상태**: 미해결 (**동작은 의도대로** — 기준 문서와 관행의 어긋남이다)
-- **해소 메모**: 정하면 [state-management](../architecture/state-management.md) 해당 절의 기준 문장을
-  고친다. ②는 테스트 헬퍼를 `core:testing`으로 올릴지와 같은 자리에서 본다.
-
-### [2026-09-05] 같은 튜토리얼 상태가 화면마다 두 형태다 — 한쪽은 리소스를 State에 싣는다
-
-- **ID**: OQ-P-369
-- **출처**: `CanvasMainUiState.tutorialStep: CanvasTutorialStep?` vs
-  `CustomGalleryPickerState.isTutorialVisible: Boolean`(PR #449) —
-  여러 장짜리인 캔버스만 enum을 담는데, 그 `CanvasTutorialStep`이 `@DrawableRes`·`@StringRes` 상수를
-  프로퍼티로 든다. State가 `Int`를 직접 담지는 않아도 **표시 리소스가 State를 타고 흐른다.**
-- **항목**: ① 리소스를 든 enum이 State에 있어도 되는가 — [state-management](../architecture/state-management.md)의
-  "표시 문자열·리소스 ID를 State에 담지 않는다"와 [ADR-0016](../adr/0016-domain-result-presentation-string-mapping.md)에
-  걸린다(도메인 의미만 담고 화면이 리소스를 고르는 형태로 하려면 `CanvasTutorialStep`에서 리소스를
-  떼어 화면 매핑으로 내리면 된다). ② 한 장짜리·여러 장짜리가 두 형태로 갈린 것을 유지할지 —
-  네 번째 화면이 붙을 때 어느 쪽을 따를지 정해진 것이 없다. ③ 완료를 남기는 시점도 갈린다 —
-  캔버스는 **마지막 장을 닫을 때만** 남기고(중간에 접으면 다음 진입에서 처음부터 다시 본다),
-  한 장짜리인 갤러리는 누르는 즉시 남긴다. 앞의 것은 의도가 KDoc에 적혀 있으나 규칙으로 올라간 적은 없다.
-- **상태**: 미해결 (**동작은 의도대로** — 형태 분기와 규약 이탈이다)
-- **해소 메모**: ①②를 정하면 [state-management](../architecture/state-management.md) 「UI State가 담는 것」에
-  적고, ③은 [design-system](../architecture/design-system.md) 「튜토리얼 컴포넌트」에 노출·완료 규칙으로 적는다.
-
 ### [2026-09-05] 알림 권한 안내를 몇 번 보여줄지 정한 적이 없다
 
 - **ID**: OQ-P-370
@@ -6873,14 +6790,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   "지금 권한이 없다" 하나이므로, 허용하기 전까지 **그룹 생성·참여 흐름을 탈 때마다 다시 뜬다.**
   스펙이 이 사실을 적고 미결로 남겼다
   ([결정 4](../superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md)).
-- **항목**: ① 최초 1회로 줄일지 — 줄이려면 "안내를 보여줬다"를 로컬에 영속해야 하고, 자리는 이미 있다
-  (`UserConfigRepository`, PR #449). ② 반대로 매번 뜨는 것이 의도인지 — 그룹을 새로 만들 때마다 묻는
+- **항목**: ① 최초 1회로 줄일지 — 줄이려면 "안내를 보여줬다"를 로컬에 영속해야 하는데, 그 자리가 지금은 없다
+  (기기 축 설정 저장소를 새로 둬야 한다). ② 반대로 매번 뜨는 것이 의도인지 — 그룹을 새로 만들 때마다 묻는
   것은 맥락이 달라졌다고 볼 수도 있다. **정책 근거가 없다** — 위키에 알림 권한 조항 자체가 없다.
   ③ **안내를 지나친 뒤를 알리지 않는다**(OQ-P-358 ②에서 옮겨 온 항목) — 거부한 사용자는 알림이 왜
   안 오는지 앱 어디서도 알 수 없고, 표시 실패는 로그에도 안 남는다.
 - **상태**: 미해결 (**동작은 의도대로** — 근거 부재와 반복 노출이다)
-- **해소 메모**: ①②는 위키 판단이 선행이다. 1회로 정하면 `TutorialKind`와 같은 자리
-  (`UserConfigVO`)에 항목을 더하는 것이 가장 싸고, 그때 [data-layer](../architecture/data-layer.md)
+- **해소 메모**: ①②는 위키 판단이 선행이다. 1회로 정하면 `DataStorePreferences` 위에 평문
+  저장소를 하나 두는 것이 가장 싸고, 그때 [data-layer](../architecture/data-layer.md)
   DataStore 항목과 위 스펙 결정 4를 함께 고친다.
 
 ### [2026-09-05] 이전 세션에서 이미 두 번 거부한 사용자는 설정으로 보내지 못한다
@@ -7615,16 +7532,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (동작 영향 없음)
 - **해소 메모**: 지우면 `ToppingOutlineTest`의 해당 케이스와 [module-structure](../architecture/module-structure.md)의
   `core:util:jvm`·`core:util:android` 줄을 함께 고친다. `YGFloatingBarEditTab`은 OQ-P-081이 쥔다.
-
-### [2026-10-02] 캔버스 튜토리얼이 편집 버튼으로 토핑도 꾸밀 수 있다고 안내한다
-
-- **ID**: OQ-P-417
-- **출처**: `canvas_tutorial_canvas_edit_description`("캔버스 편집 버튼을 눌러 배경과 토핑을 자유롭게 꾸밀 수
-  있어요") × `CanvasMainViewModel#handleOnClickCanvasEdit` — 그 버튼이 여는 `NavKeyCanvasBGEdit`는
-  배경만 다룬다. 토핑은 캔버스에서 본인 토핑을 탭해야 고칠 수 있고 튜토리얼에 그 안내가 없다.
-- **항목**: 튜토리얼 문구와 목업 이미지를 고칠지 — 문구는 기획 소관이다.
-- **상태**: 미해결 (기획 확인 전)
-- **해소 메모**: 목업 PNG가 실제 화면을 따라가지 않는 문제는 OQ-P-363과 같은 자리다.
 
 ### [2026-10-02] 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
 
