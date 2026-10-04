@@ -6,11 +6,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.jvm.model.DateFormat
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
-import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -19,7 +17,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.format
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -28,14 +25,13 @@ data class GroupListUiState(
     val groupList: List<MyParfaitGroupVO>? = null,
     val nickName: String? = null,
     val groupAddButtonSelected: Boolean = false,
-    val isTooltipVisible: Boolean = false,
     val isError: Boolean = false,
     val isRefreshing: Boolean = false,
     /** 아직 목록을 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
-    val dateString: String = "",
-    val dayOfWeekString: String = "",
-) : UiState
+) : UiState {
+    val isEmptyConfirmed: Boolean get() = groupList?.isEmpty() == true
+}
 
 sealed interface GroupListIntent : UiIntent {
     /**
@@ -94,10 +90,6 @@ constructor(
      *
      * 덮개도 여기서 걷는다. 조회가 반환한 시점에 걷으면 캐시 방출이 그보다 늦어, 그 틈에
      * 토핑 없는 빈 파르페가 드러난다.
-     *
-     * 툴팁도 같은 자리에서 따라간다 — 마지막 그룹을 나가면 다시, 첫 그룹을 만들면 사라지도록.
-     * 아직 한 번도 받지 못한(`null`) 동안에는 켜지 않는다 — 0건인지 모르는 채로 띄우면
-     * 그룹이 있는 사용자에게도 한 번 스쳤다 사라진다.
      */
     private fun observeGroups() {
         viewModelScope.launch {
@@ -105,7 +97,6 @@ constructor(
                 updateState {
                     copy(
                         groupList = groups,
-                        isTooltipVisible = groups?.isEmpty() == true,
                         // 캐시는 구독하자마자 null 을 한 번 내므로 목록이 실제로 온 때만 걷는다
                         isInitialLoading = if (groups == null) isInitialLoading else false,
                     )
@@ -130,7 +121,6 @@ constructor(
     override fun processIntent(intent: GroupListIntent) {
         when (intent) {
             GroupListIntent.Enter -> {
-                updateToday()
                 loadGroups(isRefresh = false)
             }
 
@@ -187,17 +177,6 @@ constructor(
      */
     private fun closeAddGroup() {
         updateState { copy(groupAddButtonSelected = false) }
-    }
-
-    /** 앱을 켜 둔 채 파르페 하루 경계를 넘겨도 헤더가 어제에 머물지 않도록, 화면에 설 때마다 다시 센다 */
-    private fun updateToday() {
-        val today = parfaitToday()
-        updateState {
-            copy(
-                dateString = today.format(DateFormat.FullMonthWithDay),
-                dayOfWeekString = today.format(DateFormat.AbbreviatedDayOfWeek),
-            )
-        }
     }
 
     /**

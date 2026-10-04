@@ -1,16 +1,24 @@
 package com.teamyg.parfait.feature.groups.list.impl.route
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -33,8 +41,13 @@ import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.list.impl.R
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroPhase
+import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroState
+import com.teamyg.parfait.feature.groups.list.impl.model.rememberGroupListEmptyIntroState
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListEmptyDummyGroups
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListParfaitLayout
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListPullToRefreshBox
+import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTooltip
 import com.teamyg.parfait.feature.groups.list.impl.route.component.GroupListTopBar
 import com.teamyg.parfait.feature.groups.list.impl.route.component.ToppingLayout
 import com.teamyg.parfait.feature.groups.list.impl.util.borderedImageUrls
@@ -68,9 +81,10 @@ internal fun GroupListScreen(
     onClickTopping: (GroupId) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    intro: GroupListEmptyIntroState = rememberGroupListEmptyIntroState(enabled = uiState.isEmptyConfirmed),
 ) {
     // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
-    // 둘을 가르는 일은 툴팁 쪽(isTooltipVisible)이 맡는다.
+    // 둘을 가르는 일은 isEmptyConfirmed 가 맡는다.
     //
     // 새로고침을 캐시나 UiState 가 아니라 여기서 비우는 이유: StateFlow 인 캐시는 같은 목록을
     // 다시 받으면 재방출하지 않아, 비운 값이 그대로 굳는다
@@ -87,37 +101,66 @@ internal fun GroupListScreen(
         staggered = staggerOnEntry,
     )
 
-    Box(modifier = modifier) {
+    // 보이지 않는 동안 컴포지션에서 빼야 TalkBack 이 안 보이는 문구를 읽지 않는다
+    val isTooltipVisible by remember(intro) {
+        derivedStateOf { intro.tooltipAlpha * intro.exitAlpha > 0f }
+    }
+
+    Box(
+        modifier = modifier.pointerInput(intro) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                intro.onTouchDown()
+            }
+        },
+    ) {
         Column {
             GroupListTopBar(
-                date = uiState.dateString,
-                day = uiState.dayOfWeekString,
+                count = uiState.groupList?.size,
                 onClickSideMenu = onClickSideMenu,
                 onClickAddGroup = onClickChip,
-                isTooltipVisible = uiState.isTooltipVisible,
             )
 
-            GroupListPullToRefreshBox(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = onRefresh,
-            ) {
-                LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = YGTheme.layout.padding.padding7,
-                        top = YGTheme.layout.padding.padding10,
-                        end = YGTheme.layout.padding.padding7,
-                        bottom = YGTheme.layout.padding.padding6,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
+            Box {
+                GroupListPullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = onRefresh,
                 ) {
-                    item {
-                        GroupListContent(
-                            groupList = groupList,
-                            onClickTopping = onClickTopping,
-                            reveal = reveal,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            start = YGTheme.layout.padding.padding7,
+                            top = YGTheme.layout.padding.padding10,
+                            end = YGTheme.layout.padding.padding7,
+                            bottom = YGTheme.layout.padding.padding6,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        item {
+                            GroupListContent(
+                                groupList = groupList,
+                                onClickTopping = onClickTopping,
+                                reveal = reveal,
+                                emptyIntro = intro.takeIf { uiState.isEmptyConfirmed },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
+                }
+
+                if (uiState.isEmptyConfirmed && isTooltipVisible) {
+                    // 화살표는 본체 경계 밖 위에 그려진다. graphicsLayer 가 padding 보다 바깥이어야
+                    // 알파 < 1 에서 레이어가 화살표를 자르지 않고, top 패딩은 화살표 높이
+                    // (GroupListTooltip 의 cornerHeight)와 같아야 화살표가 영역 밖으로 나가지 않는다
+                    GroupListTooltip(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = intro.tooltipAlpha * intro.exitAlpha }
+                            .padding(
+                                start = YGTheme.layout.padding.padding9,
+                                top = 16.dp,
+                                end = YGTheme.layout.padding.padding7,
+                            ),
+                    )
                 }
             }
         }
@@ -130,6 +173,7 @@ internal fun GroupListContent(
     onClickTopping: (GroupId) -> Unit,
     modifier: Modifier = Modifier,
     reveal: RevealState = RevealState.AllRevealed,
+    emptyIntro: GroupListEmptyIntroState? = null,
 ) {
     val borderedImageUrls = remember(groupList) { groupList.borderedImageUrls() }
     val outlines = rememberToppingOutlines(models = borderedImageUrls, retryKey = 0)
@@ -175,9 +219,14 @@ internal fun GroupListContent(
                 end = YGTheme.layout.padding.padding2,
                 start = YGTheme.layout.padding.padding2,
             ),
-            reveal = reveal,
+            reveal = if (emptyIntro != null) RevealState.AllRevealed else reveal,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            if (emptyIntro != null) {
+                GroupListEmptyDummyGroups(emptyIntro)
+                return@ToppingLayout
+            }
+
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
             val now = remember(groupList) { Clock.System.now() }
 
@@ -241,23 +290,10 @@ private class GroupListScreenPreviewParameterProvider :
             GroupListUiState(
                 groupList = groupList,
                 groupAddButtonSelected = false,
-                isTooltipVisible = false,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
             ),
             GroupListUiState(
                 groupList = groupList,
                 groupAddButtonSelected = true,
-                isTooltipVisible = false,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
-            ),
-            GroupListUiState(
-                groupList = emptyList(),
-                groupAddButtonSelected = false,
-                isTooltipVisible = true,
-                dateString = "July 26",
-                dayOfWeekString = "Wed",
             ),
         )
 }
@@ -273,5 +309,31 @@ private fun GroupListScreenPreview(
         onClickSideMenu = {},
         onClickTopping = {},
         onRefresh = {},
+    )
+}
+
+@YGPreview
+@Composable
+private fun GroupListScreenEmptyShownPreview() = PreviewBox {
+    GroupListScreen(
+        uiState = GroupListUiState(groupList = emptyList()),
+        onClickChip = {},
+        onClickSideMenu = {},
+        onClickTopping = {},
+        onRefresh = {},
+        intro = GroupListEmptyIntroState.settled(GroupListEmptyIntroPhase.Shown),
+    )
+}
+
+@YGPreview
+@Composable
+private fun GroupListScreenEmptyDismissedPreview() = PreviewBox {
+    GroupListScreen(
+        uiState = GroupListUiState(groupList = emptyList()),
+        onClickChip = {},
+        onClickSideMenu = {},
+        onClickTopping = {},
+        onRefresh = {},
+        intro = GroupListEmptyIntroState.settled(GroupListEmptyIntroPhase.Dismissed),
     )
 }

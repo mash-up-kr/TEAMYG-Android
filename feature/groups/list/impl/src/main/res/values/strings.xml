@@ -3,6 +3,7 @@
     <string name="group_add">그룹 추가하기</string>
     <string name="group_create">그룹 만들기</string>
     <string name="group_enter">그룹 들어가기</string>
+    <string name="group_list_title">내 그룹</string>
     <string name="group_list_error">앗, 파르페를 불러오지 못했어요.\n아래로 당겨 다시 시도해 주세요.</string>
     <string name="group_list_refreshing">파르페를 다시 불러오고 있어요.\n조금만 기다려 주세요!</string>
     <string name="group_list_timestamp_no_image">아직 없어요</string>
@@ -10,4 +11,7 @@
     <string name="group_list_timestamp_minutes">%1$d분전</string>
     <string name="group_list_timestamp_hours">%1$d시간전</string>
     <string name="group_list_timestamp_days">%1$d일전</string>
+    <string name="group_list_empty_dummy_name_collector">예카수집가</string>
+    <string name="group_list_empty_dummy_name_parfait">파르페</string>
+    <string name="group_list_empty_dummy_name_daily">일상</string>
 </resources>

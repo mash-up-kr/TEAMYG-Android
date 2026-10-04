@@ -60,8 +60,8 @@ internal fun YGTopBarPreviewScreen(
             item {
                 PreviewSection("YGTopBarEmpty") {
                     YGTopBarEmpty(
-                        date = "December 31",
-                        day = "Wed",
+                        title = "내 그룹",
+                        count = "3",
                         onIconClick = {},
                         windowInsets = WindowInsets(0),
                     )
@@ -70,8 +70,8 @@ internal fun YGTopBarPreviewScreen(
             item {
                 PreviewSection("YGTopBarDefault") {
                     YGTopBarEmpty(
-                        date = "December 31",
-                        day = "Wed",
+                        title = "내 그룹",
+                        count = "3",
                         onIconClick = {},
                         windowInsets = WindowInsets(0),
                         rightContent = {
@@ -104,8 +104,8 @@ internal fun YGTopBarPreviewScreen(
                             }
                         }
                         YGTopBarEmpty(
-                            date = "December 31",
-                            day = "Wed",
+                            title = "내 그룹",
+                            count = "3",
                             onIconClick = {},
                             hazeState = hazeState,
                             windowInsets = WindowInsets(0),
