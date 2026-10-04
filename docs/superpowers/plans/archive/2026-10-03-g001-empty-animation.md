@@ -1,10 +1,10 @@
 ---
 id: g001-empty-animation
 title: 그룹 목록 Empty 안내 애니메이션 (G-001-Empty)
-status: in-progress
+status: done
 type: work-order
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-04
 platforms: android
 owner:
 related_adr:
@@ -16,11 +16,14 @@ related_code:
   - feature/groups/list/impl/.../route/component/GroupListTooltip.kt#GroupListTooltip
   - core/designsystem/.../component/ygtoppinggroup/YGToppingImage.kt#YGToppingImage
   - core/designsystem/.../component/ygtopbar/YGTopBar.kt#YGTopBarEmpty
-archived_reason:
+archived_reason: 구현 완료·develop 머지(PR #580 `4c40ddfee`, 5 Task 수행 — Task 5 Step 1의 에뮬레이터 확인만 돌리지 않았다, OQ-P-426 ③).
 tags: [plan, parfait, G-001, animation]
 ---
 
 # G-001-Empty 안내 애니메이션 Implementation Plan
+
+> **Archived (2026-10-04)** — 구현 완료·develop 머지(PR #580 `4c40ddfee`, 5 Task 수행 — Task 5 Step 1의 에뮬레이터 확인만 돌리지 않았다, OQ-P-426 ③). 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -30,11 +33,11 @@ tags: [plan, parfait, G-001, animation]
 
 **Tech Stack:** Kotlin, Jetpack Compose(`Animatable`, `graphicsLayer`, `pointerInput`), `androidx.lifecycle.compose.LifecycleStartEffect`, `BaseViewModel`(MVI), kotlin-test + MockK + Turbine, Figma MCP.
 
-**Spec:** [`docs/superpowers/specs/2026-10-03-g001-empty-animation-design.md`](../specs/2026-10-03-g001-empty-animation-design.md) — 타임라인 표·단계 정의·문구·알려진 한계는 스펙이 정본이다.
+**Spec:** [`docs/superpowers/specs/2026-10-03-g001-empty-animation-design.md`](../../specs/archive/2026-10-03-g001-empty-animation-design.md) — 타임라인 표·단계 정의·문구·알려진 한계는 스펙이 정본이다.
 
 ## Global Constraints
 
-- 코드 주석·KDoc 규약: [`docs/code-conventions.md`](../../code-conventions.md)
+- 코드 주석·KDoc 규약: [`docs/code-conventions.md`](../../../code-conventions.md)
 - 커밋 메시지는 `type: 한국어 설명` 꼴. `Co-Authored-By` 줄을 붙이지 않는다
 - data class는 `impl/model`에 둔다(`impl/viewmodel`·`route/component`에 두지 않는다)
 - 경로 약어: `P` = `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl`, `T` = `feature/groups/list/impl/src/test/kotlin/com/teamyg/parfait/feature/groups/list/impl`, `DS` = `core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem`
@@ -491,7 +494,7 @@ git commit -m "feat: 그룹 목록이 비어 있을 때 더미 그룹과 툴팁 
 **Interfaces:**
 - Consumes: Task 1~4 전부
 
-- [ ] **Step 1: 그룹 0건 계정으로 앱을 띄워 확인한다**
+- [ ] **Step 1: 그룹 0건 계정으로 앱을 띄워 확인한다**[^step1-unverified]
 
 `android-emulator-skill`로 빌드·설치·실행한다. 0건 계정 로그인이 필요하다 — 없으면 멈추고 사용자에게 요청한다. 화면 녹화(`adb shell screenrecord`)로 타이밍을 본다.
 
@@ -537,3 +540,5 @@ Expected: `깨진 링크 0건`
 git add docs
 git commit -m "docs: 그룹 목록 Empty 안내 애니메이션 구현 상태를 반영한다"
 ```
+
+[^step1-unverified]: 수행하지 않았다. 타이밍·TalkBack 확인은 [OQ-P-426](../../../synthesis/open-questions.md) ③으로 이월했다.

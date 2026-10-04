@@ -1,10 +1,10 @@
 ---
 id: g001-empty-animation
 title: 그룹 목록 Empty 안내 애니메이션 (G-001-Empty intro animation)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-10-03
+verified: 2026-10-04
 related_code:
   - feature/groups/list/impl/.../route/GroupListScreen.kt#GroupListScreen
   - feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt#GroupListEmptyIntroState
@@ -24,6 +24,9 @@ tags: [spec, parfait, G-001, animation]
 ---
 
 # Spec: 그룹 목록 Empty 안내 애니메이션
+
+> **구현 완료·develop 머지(PR #580 `4c40ddfee`).** 에뮬레이터·실기기 타이밍과 TalkBack 확인은 돌리지 않았다 —
+> [open-questions](../../../synthesis/open-questions.md) OQ-P-426 ③. 현재 상태는 [status.md](../../../status.md) 「그룹 목록」을 본다.
 
 > 상태·날짜·대상·관련은 위 frontmatter가 단일 출처(source of truth). 본문은 설계 내용에 집중.
 

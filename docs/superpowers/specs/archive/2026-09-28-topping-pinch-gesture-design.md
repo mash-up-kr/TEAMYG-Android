@@ -4,14 +4,13 @@ title: 토핑 두 손가락 변환 제스처 (Topping pinch/rotate/pan gesture)
 status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-09-28
+verified: 2026-10-04
 related_code:
   - feature/groups/canvas/impl/.../component/ToppingTransformInput.kt#toppingTransformInput
   - feature/groups/canvas/impl/.../component/ToppingHitTestInput.kt#toppingTapInput
   - feature/groups/canvas/impl/.../util/ToppingHitTarget.kt#ToppingHitTarget
-  - feature/groups/canvas/impl/.../screen/CanvasBGEditScreen.kt#ToppingCornerButtons
   - feature/groups/canvas/impl/.../viewmodel/CanvasToppingPlaceViewModel.kt#OnToppingTransform
-  - feature/groups/canvas/impl/.../viewmodel/CanvasBGEditViewModel.kt#OnToppingTransform
+  - feature/groups/canvas/impl/.../viewmodel/CanvasToppingArrangeViewModel.kt#OnToppingTransform
 related_adr:
 related_spec: c106-topping-place, c301-topping-edit-tab
 related_architecture:
@@ -21,6 +20,9 @@ tags: [spec, parfait]
 ---
 
 # Spec: 토핑 두 손가락 변환 제스처
+
+> **구현 완료·develop 머지(PR #553 `970f25ea5`).** 본문의 편집 화면(`CanvasBGEdit*`, C-301 토핑 탭) 서술은 작성 시점 기준이다 — 편집 쪽 제스처는 그 뒤 배치 수정 화면(`CanvasToppingArrange`)으로 옮겨 갔다. 현재 상태는
+> [status.md](../../../status.md) 「토핑 생성·배치·배치 수정」을 본다.
 
 ## 목표
 
