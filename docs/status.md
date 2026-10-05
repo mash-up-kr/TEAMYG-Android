@@ -149,7 +149,7 @@
 - ⚠️ `WithdrawUseCase`가 `LogoutUseCase`를 재사용해 탈퇴가 끝난 계정으로 서버 로그아웃을 한 번 더 보내고, 그 401이 `TokenAuthenticator` 재발급까지 깨워 강제 로그아웃과 화면 이펙트가 같은 목적지로 겹친다 (OQ-P-242)
 - ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실리고 앱에 오픈소스 고지 화면이 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
-- ⚠️ CI는 `core:util:android`·`core:designsystem` 두 모듈의 계측 테스트를 컴파일만 하고 실행하지 않으며, `core:ui`의 계측 소스셋은 컴파일 대상에도 없다 (OQ-P-102)
+- ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)
 - ⚠️ 서버 실패를 화면이 표현하는 방식이 하나로 모이지 않았고, 실패 문구가 화면마다 복제돼 있다 (OQ-P-167)
 - 설계: [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0003](adr/0003-convention-plugins-version-catalog.md), [ADR-0027](adr/0027-portrait-orientation-lock.md), [module-structure](architecture/module-structure.md), [design-system](architecture/design-system.md)

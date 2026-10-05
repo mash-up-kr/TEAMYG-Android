@@ -357,3 +357,6 @@ module-structure `core:ui` 행·enum 변환 공용화 항목 · design-system �
 
 ## [2026-10-05] restructure | 전역 Coil 로더 팩토리 `newParfaitImageLoader`를 `core:designsystem`에서 `core:ui` `image/`로 옮김 — 디자인시스템에 남은 `rememberReloadableImageRequest`는 파일명이 `ReloadableImageRequest.kt`가 됨
 module-structure `core:ui` 행 · design-system 디렉터리 표·이미지 로딩·이미지 로더 항목 · `ParfaitImageLoaderTest`가 `core:ui` 계측 소스셋으로 가며 CI 컴파일 대상에서 빠짐(OQ-P-102)
+
+## [2026-10-05] restructure | CI 계측 컴파일 대상을 손으로 적던 목록에서 루트 `assembleAllDebugAndroidTest`로 바꿈 — `parfait.test.android` 적용 모듈이 자동으로 걸려 `core:ui` 계측 소스셋도 컴파일된다
+status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행)는 그대로 미결
