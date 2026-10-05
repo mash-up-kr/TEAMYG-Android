@@ -354,3 +354,6 @@ status 「튜토리얼」 절 삭제 · design-system 튜토리얼 컴포넌트 
 
 ## [2026-10-05] restructure | 그만두기 팝업(`YGModalQuit.kt`)을 `core:designsystem`에서 `core:ui` `component/modal/`로 옮김 — `core:ui` → `core:designsystem` `implementation` 간선 신설
 module-structure `core:ui` 행·enum 변환 공용화 항목 · design-system 컴포넌트 표 · navigation-flow 그만두기 팝업 · status 배치 수정 화면 · 고쳐 씀 OQ-P-027, OQ-P-414
+
+## [2026-10-05] restructure | 전역 Coil 로더 팩토리 `newParfaitImageLoader`를 `core:designsystem`에서 `core:ui` `image/`로 옮김 — 디자인시스템에 남은 `rememberReloadableImageRequest`는 파일명이 `ReloadableImageRequest.kt`가 됨
+module-structure `core:ui` 행 · design-system 디렉터리 표·이미지 로딩·이미지 로더 항목 · `ParfaitImageLoaderTest`가 `core:ui` 계측 소스셋으로 가며 CI 컴파일 대상에서 빠짐(OQ-P-102)
