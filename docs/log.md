@@ -363,3 +363,6 @@ status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행
 
 ## [2026-10-05] restructure | CI 시간 단축 — `org.gradle.parallel` 재도입(힙 4096m·`kotlin.daemon.jvmargs`), 시딩 태스크를 `assembleAllDebugAndroidTest`로 맞춤, `test.yml` Gradle 호출 통합, 문서 전용 PR은 스텝 건너뜀(`detect-code-changes`), `test`·`ktlint` concurrency 취소
 병렬 검증: 캐시 없이 전체 재실행한 `test`+`assembleAllDebugAndroidTest`+`ktlintCheck`·`assembleRelease` 통과, `lint`는 병렬과 무관한 기존 오류로 실패 · 고쳐 씀 OQ-P-114(configuration cache만 남김) · 신설 OQ-P-427
+
+## [2026-10-05] lint | 리뷰 지적 반영 — `detect-code-changes`가 rename 이전 경로와 3000개 초과 PR을 코드로 보고, `test.yml`에 `--continue`, `ktlint.yml`에 `permissions` 명시
+고쳐 씀 OQ-P-102(② 계측 컴파일 대상·규모를 현재 상태로 덮어쓰고 날짜별 누적 단락 제거), OQ-P-114 출처 · module-structure enum 변환 공용화 항목

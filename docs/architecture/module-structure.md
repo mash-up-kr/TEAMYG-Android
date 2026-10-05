@@ -157,7 +157,7 @@ app / app-preview
   셋 다 `NametagChipType`의 모든 상수를 덮는 exhaustive `when`이라 **폴백 분기가 없다** — 그래서
   "모르는 값"을 처리하는 자리는 여기가 아니라 `:data` 매퍼 하나다([ADR-0024](../adr/0024-nametag-chip-unknown-fold.md)). **공용화하지 않은 이유는
   자리가 없어서가 아니다** — 변환의 입력은 `:domain`, 출력은 `:core:designsystem`이고 `core:ui`가
-  둘을 모두 보므로 새 간선도 필요 없다(`:core:designsystem`은 `core:ui`를 모르니 순환도 없다). 막는 것은
+  둘을 모두 `implementation`으로 본다(`:core:designsystem`은 `core:ui`를 모르니 순환도 없다). 막는 것은
   **바로 위 항목의 `implementation`/`api` 가시성 미결**이다. 같은 형태의 매핑을 두 번째로 올리면서 그
   결정을 조용히 굳힐 수 없어 복제를 택했다.
   ⚠️ **컴파일러는 앱이 그 enum에 상수를 더할 때의 arm 누락만 잡는다.** 서버에 새 타입이 생기면 매퍼가

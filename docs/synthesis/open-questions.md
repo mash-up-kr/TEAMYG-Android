@@ -1053,31 +1053,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-09] 테스트 기반 구조에 검증되지 않은 표면 3건
 
 - **ID**: OQ-P-102
-- **출처**: PR #219 develop 머지([unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md)). 유닛 테스트는 배선·통과했지만 세 표면이 실제로 동작하는지는 증명되지 않았다. ① `MainDispatcherRule`은 사용처가 0건이다 — 배선(`@get:Rule` + `runTest(rule.dispatcher)` 컴파일·통과)까지만 확인했고 `Dispatchers.setMain` 적용·복원과 스케줄러 공유가 무엇을 막아주는지는 미검증이다. 이번 범위(`domain`·`data`·`core:util:*`)에 ViewModel이 없어서다. ② 계측 테스트 2건(`YGThemeSmokeTest`·`ContextExtensionTest`)은 CI에서 `assembleDebugAndroidTest` 컴파일까지만 검증돼 런타임 오류가 드러나지 않는다(**2026-08-25 기준 파일 5개·`@Test` 14건으로 늘었고 조건은 그대로다** — 아래 참고). ③ `core:util:android`는 `parfait-test-unit`이 적용됐지만 unit 테스트가 0개다(내용물이 Compose Modifier·Context/Bitmap 확장이라 대상 없음).
+- **출처**: PR #219 develop 머지([unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md)). 유닛 테스트는 배선·통과했지만 세 표면이 실제로 동작하는지는 증명되지 않았다. ① `MainDispatcherRule`은 사용처가 0건이다 — 배선(`@get:Rule` + `runTest(rule.dispatcher)` 컴파일·통과)까지만 확인했고 `Dispatchers.setMain` 적용·복원과 스케줄러 공유가 무엇을 막아주는지는 미검증이다. 이번 범위(`domain`·`data`·`core:util:*`)에 ViewModel이 없어서다. ② 계측 테스트는 CI에서 컴파일까지만 검증돼 단언이 한 번도 실행되지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고(루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest` — `core:ui`·`core:designsystem`·`core:util:android`·`feature:groups:canvas:impl`), 규모는 파일 19개·`@Test` 91건이다. 잠그려는 규칙 가운데 덮개 아래 접근성 차단·드러나기 전 클릭 차단·재시도 시 캐시 우회·`centeredAt` 배치는 눈으로는 확인이 안 되는 종류다. ③ `core:util:android`는 `parfait-test-unit`이 적용됐지만 unit 테스트가 0개다(내용물이 Compose Modifier·Context/Bitmap 확장이라 대상 없음).
 - **항목**: ① 첫 ViewModel 테스트를 쓸 때 룰 자체를 검증하는 테스트를 함께 추가할지 — 계측 소스셋에서 코루틴을 다루려면 `bundles.test-android`에 `kotlinx-coroutines-test`를 넣어야 하고(현재 없고 `:core:testing`도 계측에 미배선), `runTest`를 인자 없이 부르면 스케줄러가 갈려 `advanceUntilIdle()`이 Main 큐를 비우지 못한다. ② CI에 기기·에뮬레이터를 붙일 시점. ③ Android 비의존 로직이 `core:util:android`에 생기는 시점에 채운다.
 - **상태**: 미해결 (셋 다 트리거 대기 — ViewModel 등장 / CI 기기 도입 / 대상 로직 추가)
-  > 📌 **②의 규모가 일곱 배가 됐는데 실행은 여전히 0회다(2026-08-25, PR #351)** — `YGCanvasTest`
-  > 2건이 붙어 계측 소스셋이 **파일 5개·`@Test` 14건**이 됐다(`YGThemeSmokeTest`·`ContextExtensionTest`
-  > ·`YGLoadingOverlayTest`·`YGScaffoldV2Test`·`YGCanvasTest`). CI `test.yml`은 그대로
-  > `:core:util:android:assembleDebugAndroidTest`·`:core:designsystem:assembleDebugAndroidTest`
-  > 두 줄이라 **컴파일만 되고 단언은 한 번도 실행되지 않는다.** 이번에 들어온 둘은 `YGCanvas`의
-  > 새 규칙(배경 미설정일 때만 빈 안내판)을 잠그려고 쓴 것이라, 잠갔다고 적기 어려운 상태가
-  > 새 규칙 하나를 더 덮는다. ②(CI 기기 도입)의 값어치가 라운드마다 커진다.
-  > 📌 **②의 규모가 또 두 배가 됐다(2026-09-04, PR #440 develop 머지)** — 계측이 파일 6·`@Test` 17건에서
-  > **파일 11·`@Test` 35건**이 됐다(디자인시스템에 `YGLoadingLottieTest`·`ParfaitImageLoaderTest` 신설 +
-  > `YGCanvasTest` 2 → 8 · `YGScaffoldV2Test` 5 → 7 · `YGLoadingOverlayTest` 2 → 3, `core:ui`에
-  > `reveal/` 계측 3파일 6건 신설). **`core:ui`가 계측 소스셋을 처음 갖게 됐고**
-  > (`parfait.test.android`·`parfait.test.compose`), CI `test.yml`은 여전히 두 모듈의
-  > `assembleDebugAndroidTest` 두 줄이라 **새 모듈의 계측은 컴파일조차 안 된다.** 이번에 들어온 것들이
-  > 잠그려는 규칙(덮개 아래 접근성 차단·드러나기 전 클릭 차단·재시도 시 캐시 우회)은 전부 **눈으로는
-  > 확인이 안 되는 종류**라 ②의 값어치가 또 커졌다.
-  > 📌 **처음으로 계측이 "컴파일은 되는" 자리에 들어왔다(2026-09-08, PR #465 develop 머지)** —
-  > 계측이 파일 11·`@Test` 35건에서 **파일 12·`@Test` 37건**이 됐다(`core:util:android` 에
-  > `ModifierCenteredAtTest` 2건 신설, 이 모듈에 `parfait.test.compose` 가 붙었다). 이 모듈은
-  > CI `test.yml` 의 `assembleDebugAndroidTest` 두 줄 중 하나라 **컴파일은 된다** — 그래도 단언은
-  > 여전히 실행되지 않는다. 이번에 들어온 계약(부모보다 큰 자식을 `centeredAt` 으로 놓으면 중심이
-  > 맞고 `offset` 으로 놓으면 넘친 양의 절반만큼 밀린다)은 **눈으로 보기 전에는 드러나지 않는
-  > 배치 규칙**이라 ②의 값어치가 또 커졌다.
   > 📌 **①이 한 라운드 더 버텼다(2026-08-12, PR #230)** — `data` 유닛 테스트가 3건 늘었는데(`ImageRemoteDataSourceImplTest`·`MemberRemoteDataSourceImplTest`·`ParfaitImageRemoteDataSourceImplTest`) **`MainDispatcherRule` 사용처는 여전히 0건**이다. 셋 다 `runTest`만 쓰고 `Dispatchers.Main`을 건드리지 않는다 — 원인은 그대로 "테스트 대상에 ViewModel이 없다"이고 그 조건은 소비처 결선 라운드까지 안 바뀐다.
 - **해소 메모**: 해소 시 [unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md) "주의 / 열린 질문" 절의 대응 항목을 지운다.
 
@@ -1265,9 +1243,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-11] CI 빌드 성능 후속 — configuration cache
 
 - **ID**: OQ-P-114
-- **출처**: [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절이 configuration cache를 처음부터 뺐다. 같은 항목이 함께 추적하던 `org.gradle.parallel`은 `gradle.properties`에 힙·`kotlin.daemon.jvmargs`와 함께 들어가 있다.
+- **출처**: [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절이 configuration cache를 처음부터 뺐다.
 - **항목**: configuration cache를 CI에서 살릴지 — `setup-gradle`의 `cache-encryption-key` 입력 + repo secret 생성이 필요하고 Crashlytics·google-services 플러그인 호환을 따로 검증해야 한다. 지금 상태로는 매 런 새 러너인 CI에서 이득이 0이다. PR `unit-test` 런에서 데몬 기동부터 첫 태스크까지가 12초 안팎이라 얻을 수 있는 상한도 그 정도다.
-- **상태**: 미해결 (병렬 실행의 CI 효과를 본 뒤 별건으로)
+- **상태**: 미해결 (별건으로)
 - **해소 메모**: 착수 시 [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절을 근거로 삼고, 결과를 새 스펙으로 분리한다.
 
 ### [2026-08-11] GitHub Actions Node 20 deprecation 경고
