@@ -329,7 +329,6 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 | `YGChipButton`(+`YGChipButtonColors`·`YGChipButtonColorsDefaults`) | `component/ygchipbutton/` | [ygchipbutton](../superpowers/specs/archive/2026-07-16-ygchipbutton.md) |
 | `YGInviteCard`(+`YGInviteCardStatus`) | `component/card/` | [yginvitecard](../superpowers/specs/archive/2026-07-14-yginvitecard.md) |
 | `YGModalPopup` | `component/modal/` | [ygmodalpopup](../superpowers/specs/archive/2026-07-15-ygmodalpopup.md) |
-| `YGModalQuitAdd` / `YGModalQuitEdit` / `YGModalQuitBackground` — 그만두기 팝업. 제목과 계속 버튼 문구만 변형마다 다르다 | `component/modal/` | — |
 | `YGSlider` | `component/ygslider/` | [c105-arrange-border-merge](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md) |
 | `YGNametagChip`(+`YGNametagChipStyle`·`YGColorChipType`·`YGNametagChipPreviewData`) / `YGUserChip`(+`YGUserNameStyle`) / `YGChipColorIndicator` | `component/ygcolorchip/` | [ygcolorchip](../superpowers/specs/archive/2026-07-18-ygcolorchip.md) |
 | `YGDate` / `YGLabel` | `component/ygtext/` | [ygtext-date-label](../superpowers/specs/archive/2026-07-18-ygtext-date-label.md) |

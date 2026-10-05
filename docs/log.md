@@ -351,3 +351,6 @@ status 「캔버스 배경 편집」 닫기·저장 서술 고쳐 씀 · 고쳐 
 
 ## [2026-10-04] lint | 튜토리얼 제거(#586)를 현재 상태 문서에 반영 — 캔버스·갤러리 오버레이와 `ygtutorial`·사용자 설정 저장소가 코드에서 빠짐
 status 「튜토리얼」 절 삭제 · design-system 튜토리얼 컴포넌트 · data-layer `UserConfig*`·평문 DataStore 소비처 · state-management `launchWhileSubscribed` 주석 · 해소 OQ-P-363, OQ-P-366, OQ-P-369, OQ-P-417 · 고쳐 씀 OQ-P-175, OQ-P-367, OQ-P-368, OQ-P-370
+
+## [2026-10-05] restructure | 그만두기 팝업(`YGModalQuit.kt`)을 `core:designsystem`에서 `core:ui` `component/modal/`로 옮김 — `core:ui` → `core:designsystem` `implementation` 간선 신설
+module-structure `core:ui` 행·enum 변환 공용화 항목 · design-system 컴포넌트 표 · navigation-flow 그만두기 팝업 · status 배치 수정 화면 · 고쳐 씀 OQ-P-027, OQ-P-414
