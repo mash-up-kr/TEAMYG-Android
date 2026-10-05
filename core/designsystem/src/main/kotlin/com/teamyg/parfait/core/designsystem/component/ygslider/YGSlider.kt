@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -69,10 +70,19 @@ fun YGSlider(
                         .fillMaxWidth()
                         .height(TRACK_HEIGHT)
                         .drawBehind {
-                            drawRect(color = YGAtomicColors.Gray.Gray100)
+                            // Slider 는 thumb 이 끝에서 삐져나오지 않도록 트랙을 thumb 반 폭씩 안으로 들여 놓는다.
+                            // 막대는 양 끝까지 닿아야 하므로 들여진 만큼 바깥으로 넘겨 그린다
+                            val inset = THUMB_SIZE.toPx() / 2f
+                            val start = Offset(x = -inset, y = 0f)
+                            drawRect(
+                                color = YGAtomicColors.Gray.Gray100,
+                                topLeft = start,
+                                size = size.copy(width = size.width + inset * 2f),
+                            )
                             drawRect(
                                 color = YGAtomicColors.Gray.Gray850,
-                                size = size.copy(width = size.width * sliderState.passedFraction),
+                                topLeft = start,
+                                size = size.copy(width = size.width * sliderState.passedFraction + inset),
                             )
                         },
                 )
