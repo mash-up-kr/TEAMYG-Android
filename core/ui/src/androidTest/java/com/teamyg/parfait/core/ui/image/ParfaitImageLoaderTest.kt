@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.image
+package com.teamyg.parfait.core.ui.image
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
