@@ -37,10 +37,11 @@ jobs:
 
       # 유닛 테스트 수행 (전체 모듈. 테스트가 없는 모듈은 NO-SOURCE 로 즉시 스킵된다).
       # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지).
-      # 한 번의 호출로 묶어야 두 그래프가 병렬로 함께 스케줄된다
+      # 한 번의 호출로 묶어야 두 그래프가 병렬로 함께 스케줄된다.
+      # --continue: 계측 컴파일이 먼저 깨져도 유닛 테스트는 끝까지 돌려 리포트를 남긴다
       - name: Run unit tests and compile instrumented tests
         if: steps.changes.outputs.code == 'true'
-        run: ./gradlew test assembleAllDebugAndroidTest
+        run: ./gradlew test assembleAllDebugAndroidTest --continue
 
       # 실패해도 결과를 남긴다
       - name: Publish test report

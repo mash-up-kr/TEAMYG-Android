@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [ develop ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 # 같은 PR 에 새 커밋이 오면 앞 런의 결과는 쓸 데가 없다
 concurrency:
   group: ktlint-${{ github.event.pull_request.number }}
