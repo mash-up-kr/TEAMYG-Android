@@ -1,13 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="yg_loading_overlay_description">로딩 중</string>
-
-    <!-- 그만두기 모달. 제목과 "계속" 버튼 문구만 흐름마다 다르다 -->
-    <string name="yg_modal_quit_add_title">사진 추가를 그만둘까요?</string>
-    <string name="yg_modal_quit_edit_title">사진 편집을 그만둘까요?</string>
-    <string name="yg_modal_quit_background_title">배경 변경을 그만둘까요?</string>
-    <string name="yg_modal_quit_body">지금까지 진행한 내용은 저장되지 않아요.\n정말 그만두시겠어요?</string>
-    <string name="yg_modal_quit_confirm">그만두기</string>
-    <string name="yg_modal_quit_continue_add">계속 추가</string>
-    <string name="yg_modal_quit_continue_edit">계속 편집</string>
 </resources>

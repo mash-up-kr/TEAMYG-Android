@@ -9,32 +9,40 @@ permissions:
   checks: write
   pull-requests: write
 
+concurrency:
+  group: test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   unit-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      # unit-test 는 필수 체크라 paths-ignore 대신 스텝만 건너뛴다
+      - id: changes
+        uses: ./.github/actions/detect-code-changes
+
       - uses: ./.github/actions/setup-android-build
+        if: steps.changes.outputs.code == 'true'
 
       - name: Restore app secrets
+        if: steps.changes.outputs.code == 'true'
         uses: ./.github/actions/restore-app-secrets
         with:
           kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
           google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
-      # 유닛 테스트 수행 (전체 모듈. 테스트가 없는 모듈은 NO-SOURCE 로 즉시 스킵된다)
-      - name: Run unit tests
-        run: ./gradlew test
-
-      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지)
-      - name: Compile instrumented tests
-        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest :feature:groups:canvas:impl:assembleDebugAndroidTest
+      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지).
+      # --continue: 계측 컴파일이 먼저 깨져도 유닛 테스트는 끝까지 돌려 리포트를 남긴다
+      - name: Run unit tests and compile instrumented tests
+        if: steps.changes.outputs.code == 'true'
+        run: ./gradlew test assembleAllDebugAndroidTest --continue
 
       # 실패해도 결과를 남긴다
       - name: Publish test report
         uses: dorny/test-reporter@v2
-        if: always()
+        if: always() && steps.changes.outputs.code == 'true'
         with:
           name: Unit Test Results
           path: '**/build/test-results/**/TEST-*.xml'
@@ -43,7 +51,7 @@ jobs:
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.changes.outputs.code == 'true'
         with:
           name: test-reports
           path: '**/build/reports/tests/**'

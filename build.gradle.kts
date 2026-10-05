@@ -15,7 +15,16 @@ plugins {
     alias(libs.plugins.google.firebase) apply false
     alias(libs.plugins.google.firebase.crashlytics) apply false
 }
+// CI 가 계측 테스트 모듈을 손으로 나열하지 않게, `parfait.test.android` 적용 모듈을 여기로 모은다
+val assembleAllDebugAndroidTest by tasks.registering {
+    group = "verification"
+}
 subprojects {
     apply(plugin = rootProject.libs.plugins.ktlint.get().pluginId)
+
+    pluginManager.withPlugin(rootProject.libs.plugins.parfait.test.android.get().pluginId) {
+        val modulePath = path
+        assembleAllDebugAndroidTest.configure { dependsOn("$modulePath:assembleDebugAndroidTest") }
+    }
 }
 apply(from = "gradle/projectDependencyGraph.gradle")

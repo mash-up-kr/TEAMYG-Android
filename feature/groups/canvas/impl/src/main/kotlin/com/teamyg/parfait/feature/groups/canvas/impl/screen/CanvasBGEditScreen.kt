@@ -28,7 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitBackground
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitBackground
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPECT_RATIO

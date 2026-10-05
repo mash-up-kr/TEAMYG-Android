@@ -4,7 +4,7 @@ import android.app.Application
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
-import com.teamyg.parfait.core.designsystem.image.newParfaitImageLoader
+import com.teamyg.parfait.core.ui.image.newParfaitImageLoader
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp

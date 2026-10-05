@@ -376,7 +376,7 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   불러오기에 성공했을 때만이며, 띄웠다는 표시는 `SavedStateHandle`에 남아 프로세스가 되살아나도 다시 띄우지 않는다.
   편집 화면의 헤더 뒤로·시스템 뒤로는 팝업 없이 `onBack()`이라 선택 UI(감지 실패면 `PictureConfirm`)로 간다.
 - **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, C-104 편집 화면, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
-  팝업은 디자인시스템 `YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitEdit`이고 문구는 `core/designsystem`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
+  팝업은 `core:ui` `component/modal/YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitEdit`이고 문구는 `core/ui`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
   로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
   "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)에는 팝업이 없고, 편집 화면의 헤더 뒤로·시스템 뒤로도 팝업 없이 한 단계 돌아간다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.

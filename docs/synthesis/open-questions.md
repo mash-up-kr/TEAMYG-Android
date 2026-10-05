@@ -313,7 +313,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-07-29] `core:ui` 공용 UI 컴포넌트의 프리뷰·규약 범위 미정
 - **ID**: OQ-P-027
 - **출처**: `core/ui/VerticalGridLayout.kt`(PR #179 develop 머지) — 프리뷰가 `@Preview` + **public** 함수 + `Random` 색이고, `core:designsystem`의 `@YGPreview`+`PreviewBox`(private) 규약을 따르지 않는다. `core:ui`는 그동안 MVI 베이스만 있어 규약 대상이 아니었으나 공용 Compose 레이아웃이 들어오면서 경계가 모호해졌다.
-- **항목**: ① 공용 UI 컴포넌트를 `core:ui`에 둘지 `core:designsystem`으로 옮길지, ② `core:ui`에도 프리뷰 규약(`@YGPreview`+`PreviewBox`, 프리뷰 함수 private)을 적용할지 — `core:ui`가 `core:designsystem`에 의존하는지부터 확인 필요.
+- **항목**: ① 공용 UI 컴포넌트를 `core:ui`에 둘지 `core:designsystem`으로 옮길지, ② `core:ui`에도 프리뷰 규약(`@YGPreview`+`PreviewBox`, 프리뷰 함수 private)을 적용할지 — `core:ui`는 `core:designsystem`을 `implementation`으로 보므로 규약을 쓰는 데 막히는 것은 없다(`component/modal/YGModalQuit.kt`는 이미 따른다).
 - **상태**: 미해결
 - **해소 메모**: 방침 확정 시 [module-structure](../architecture/module-structure.md) `core:ui` 행과 [design-system](../architecture/design-system.md) 프리뷰 규약 범위를 함께 갱신. [2026-07-23 프리뷰 관용구 부분 회귀](#2026-07-23-프리뷰-관용구-부분-회귀--신규-컴포넌트가-ygpreview-표준-이탈)와 함께 관리.
 
@@ -1053,31 +1053,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-09] 테스트 기반 구조에 검증되지 않은 표면 3건
 
 - **ID**: OQ-P-102
-- **출처**: PR #219 develop 머지([unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md)). 유닛 테스트는 배선·통과했지만 세 표면이 실제로 동작하는지는 증명되지 않았다. ① `MainDispatcherRule`은 사용처가 0건이다 — 배선(`@get:Rule` + `runTest(rule.dispatcher)` 컴파일·통과)까지만 확인했고 `Dispatchers.setMain` 적용·복원과 스케줄러 공유가 무엇을 막아주는지는 미검증이다. 이번 범위(`domain`·`data`·`core:util:*`)에 ViewModel이 없어서다. ② 계측 테스트 2건(`YGThemeSmokeTest`·`ContextExtensionTest`)은 CI에서 `assembleDebugAndroidTest` 컴파일까지만 검증돼 런타임 오류가 드러나지 않는다(**2026-08-25 기준 파일 5개·`@Test` 14건으로 늘었고 조건은 그대로다** — 아래 참고). ③ `core:util:android`는 `parfait-test-unit`이 적용됐지만 unit 테스트가 0개다(내용물이 Compose Modifier·Context/Bitmap 확장이라 대상 없음).
+- **출처**: PR #219 develop 머지([unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md)). 유닛 테스트는 배선·통과했지만 세 표면이 실제로 동작하는지는 증명되지 않았다. ① `MainDispatcherRule`은 사용처가 0건이다 — 배선(`@get:Rule` + `runTest(rule.dispatcher)` 컴파일·통과)까지만 확인했고 `Dispatchers.setMain` 적용·복원과 스케줄러 공유가 무엇을 막아주는지는 미검증이다. 이번 범위(`domain`·`data`·`core:util:*`)에 ViewModel이 없어서다. ② 계측 테스트는 CI에서 컴파일까지만 검증돼 단언이 한 번도 실행되지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고(루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest` — `core:ui`·`core:designsystem`·`core:util:android`·`feature:groups:canvas:impl`), 규모는 파일 19개·`@Test` 91건이다. 잠그려는 규칙 가운데 덮개 아래 접근성 차단·드러나기 전 클릭 차단·재시도 시 캐시 우회·`centeredAt` 배치는 눈으로는 확인이 안 되는 종류다. ③ `core:util:android`는 `parfait-test-unit`이 적용됐지만 unit 테스트가 0개다(내용물이 Compose Modifier·Context/Bitmap 확장이라 대상 없음).
 - **항목**: ① 첫 ViewModel 테스트를 쓸 때 룰 자체를 검증하는 테스트를 함께 추가할지 — 계측 소스셋에서 코루틴을 다루려면 `bundles.test-android`에 `kotlinx-coroutines-test`를 넣어야 하고(현재 없고 `:core:testing`도 계측에 미배선), `runTest`를 인자 없이 부르면 스케줄러가 갈려 `advanceUntilIdle()`이 Main 큐를 비우지 못한다. ② CI에 기기·에뮬레이터를 붙일 시점. ③ Android 비의존 로직이 `core:util:android`에 생기는 시점에 채운다.
 - **상태**: 미해결 (셋 다 트리거 대기 — ViewModel 등장 / CI 기기 도입 / 대상 로직 추가)
-  > 📌 **②의 규모가 일곱 배가 됐는데 실행은 여전히 0회다(2026-08-25, PR #351)** — `YGCanvasTest`
-  > 2건이 붙어 계측 소스셋이 **파일 5개·`@Test` 14건**이 됐다(`YGThemeSmokeTest`·`ContextExtensionTest`
-  > ·`YGLoadingOverlayTest`·`YGScaffoldV2Test`·`YGCanvasTest`). CI `test.yml`은 그대로
-  > `:core:util:android:assembleDebugAndroidTest`·`:core:designsystem:assembleDebugAndroidTest`
-  > 두 줄이라 **컴파일만 되고 단언은 한 번도 실행되지 않는다.** 이번에 들어온 둘은 `YGCanvas`의
-  > 새 규칙(배경 미설정일 때만 빈 안내판)을 잠그려고 쓴 것이라, 잠갔다고 적기 어려운 상태가
-  > 새 규칙 하나를 더 덮는다. ②(CI 기기 도입)의 값어치가 라운드마다 커진다.
-  > 📌 **②의 규모가 또 두 배가 됐다(2026-09-04, PR #440 develop 머지)** — 계측이 파일 6·`@Test` 17건에서
-  > **파일 11·`@Test` 35건**이 됐다(디자인시스템에 `YGLoadingLottieTest`·`ParfaitImageLoaderTest` 신설 +
-  > `YGCanvasTest` 2 → 8 · `YGScaffoldV2Test` 5 → 7 · `YGLoadingOverlayTest` 2 → 3, `core:ui`에
-  > `reveal/` 계측 3파일 6건 신설). **`core:ui`가 계측 소스셋을 처음 갖게 됐고**
-  > (`parfait.test.android`·`parfait.test.compose`), CI `test.yml`은 여전히 두 모듈의
-  > `assembleDebugAndroidTest` 두 줄이라 **새 모듈의 계측은 컴파일조차 안 된다.** 이번에 들어온 것들이
-  > 잠그려는 규칙(덮개 아래 접근성 차단·드러나기 전 클릭 차단·재시도 시 캐시 우회)은 전부 **눈으로는
-  > 확인이 안 되는 종류**라 ②의 값어치가 또 커졌다.
-  > 📌 **처음으로 계측이 "컴파일은 되는" 자리에 들어왔다(2026-09-08, PR #465 develop 머지)** —
-  > 계측이 파일 11·`@Test` 35건에서 **파일 12·`@Test` 37건**이 됐다(`core:util:android` 에
-  > `ModifierCenteredAtTest` 2건 신설, 이 모듈에 `parfait.test.compose` 가 붙었다). 이 모듈은
-  > CI `test.yml` 의 `assembleDebugAndroidTest` 두 줄 중 하나라 **컴파일은 된다** — 그래도 단언은
-  > 여전히 실행되지 않는다. 이번에 들어온 계약(부모보다 큰 자식을 `centeredAt` 으로 놓으면 중심이
-  > 맞고 `offset` 으로 놓으면 넘친 양의 절반만큼 밀린다)은 **눈으로 보기 전에는 드러나지 않는
-  > 배치 규칙**이라 ②의 값어치가 또 커졌다.
   > 📌 **①이 한 라운드 더 버텼다(2026-08-12, PR #230)** — `data` 유닛 테스트가 3건 늘었는데(`ImageRemoteDataSourceImplTest`·`MemberRemoteDataSourceImplTest`·`ParfaitImageRemoteDataSourceImplTest`) **`MainDispatcherRule` 사용처는 여전히 0건**이다. 셋 다 `runTest`만 쓰고 `Dispatchers.Main`을 건드리지 않는다 — 원인은 그대로 "테스트 대상에 ViewModel이 없다"이고 그 조건은 소비처 결선 라운드까지 안 바뀐다.
 - **해소 메모**: 해소 시 [unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md) "주의 / 열린 질문" 절의 대응 항목을 지운다.
 
@@ -1262,13 +1240,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 디자인이 정본이라는 것이 확인됐고, 새로고침 문구(`group_list_refreshing`)는 여전히 Figma에만 있다.
 - **해소 메모**: 확정 시 [g001-group-list 스펙](../superpowers/specs/archive/2026-08-01-g001-group-list.md) 정책 대조 표의 로딩 행을 갱신하고, 문구 정책이 수집되면 위키 쪽 미결과 함께 닫는다.
 
-### [2026-08-11] CI 빌드 성능 후속 2축 — `org.gradle.parallel` 재도입과 configuration cache
+### [2026-08-11] CI 빌드 성능 후속 — configuration cache
 
 - **ID**: OQ-P-114
-- **출처**: PR #227 develop 머지([ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md)) — 캐시 시딩은 들어갔고 효과도 확인됐다(PR `unit-test` 6m16s → 2m45s). 초안에 있던 `org.gradle.parallel`·힙 상향·`kotlin.daemon.jvmargs`는 **의도적으로 되돌렸고**, configuration cache는 처음부터 범위 밖이었다. 둘 다 "안 하기로" 한 것이 아니라 **별건으로 미룬 것**이다.
-- **항목**: ① `parallel` 재도입 여부 — 다시 켠다면 검증을 `test` 그래프 하나로 끝내지 말고 `assembleRelease`·`lint`까지 돌려야 한다(미선언 모듈 간 의존은 태스크 그래프마다 다르게 나타나고 릴리스 간헐 실패는 "플래키"로 오진되기 쉽다). 힙과 `kotlin.daemon.jvmargs`가 함께 가야 한다 — 적지 않으면 Kotlin 데몬이 Gradle 데몬 `-Xmx`를 상속해 조용히 2배 예약이 된다. ② configuration cache를 CI에서 살릴지 — `setup-gradle`의 `cache-encryption-key` 입력 + repo secret 생성이 필요하고 Crashlytics·google-services 플러그인 호환을 따로 검증해야 한다. 지금 상태로는 매 런 새 러너인 CI에서 이득이 0이다.
-- **상태**: 미해결 (효과 측정이 끝난 뒤 별건으로 — 캐시 변경과 섞으면 원인을 못 가른다)
-- **해소 메모**: 착수 시 [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "검토했다가 뺀 것"·"범위" 절을 근거로 삼고, 결과를 새 스펙으로 분리한다.
+- **출처**: [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절이 configuration cache를 처음부터 뺐다.
+- **항목**: configuration cache를 CI에서 살릴지 — `setup-gradle`의 `cache-encryption-key` 입력 + repo secret 생성이 필요하고 Crashlytics·google-services 플러그인 호환을 따로 검증해야 한다. 지금 상태로는 매 런 새 러너인 CI에서 이득이 0이다. PR `unit-test` 런에서 데몬 기동부터 첫 태스크까지가 12초 안팎이라 얻을 수 있는 상한도 그 정도다.
+- **상태**: 미해결 (별건으로)
+- **해소 메모**: 착수 시 [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절을 근거로 삼고, 결과를 새 스펙으로 분리한다.
 
 ### [2026-08-11] GitHub Actions Node 20 deprecation 경고
 
@@ -7317,8 +7295,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 순서가 있다. ①을 먼저 정하고, G0를 돌려 통과하면 ②로 쌍을 고정한 뒤 측정한다.
   측정치는 머신마다 달라 커밋하지 않으므로(`runs/`는 `.gitignore`), 판단에 실제로 쓴 수치만 후속 스펙으로
   옮긴다. `T_remote`가 전송 시간을 0으로 놓는 **낙관적 상한**이고 `S4` 쪽이 사전 빌드를 더 돌아 한 방향으로
-  부풀려진다는 점을 문턱값과 함께 읽어야 한다. 빌드 성능의 다른 두 축(`org.gradle.parallel`·configuration
-  cache)은 [2026-08-11] 항목이 따로 추적한다.
+  부풀려진다는 점을 문턱값과 함께 읽어야 한다. 빌드 성능의 다른 축(configuration cache)은
+  [2026-08-11] 항목(OQ-P-114)이 따로 추적한다.
 
 ### [2026-09-17] `Navigator` 만 명시적 backing field 로 옮겨 상태 노출 관용구가 두 갈래가 됐다
 
@@ -7521,9 +7499,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
 - **항목**: ① 정책 메모는 닫기가 변경사항이 있을 때만 확인을 띄운다고 적는데 구현은 `dirtyToppingIds`를
   보지 않고 항상 띄운다. 스펙이 알고 고른 차이이고 기획 확인은 받지 않았다. ② 스펙은 팝업 제목을
-  "편집을 그만둘까요?"로 적었는데 구현은 디자인시스템 `YGModalQuitEdit`의 「사진 편집을 그만둘까요?」를
+  "편집을 그만둘까요?"로 적었는데 구현은 `core:ui` `YGModalQuitEdit`의 「사진 편집을 그만둘까요?」를
   쓴다. 본문도 스펙이 가리킨 "기존 편집 내용은 모두 사라지며 캔버스 화면으로 돌아가요"가 아니라
-  디자인시스템 공통 문구(`yg_modal_quit_body`) 「지금까지 진행한 내용은 저장되지 않아요. 정말
+  그만두기 팝업 공통 문구(`yg_modal_quit_body`) 「지금까지 진행한 내용은 저장되지 않아요. 정말
   그만두시겠어요?」다. `YGModalQuit.kt`의 세 변형 가운데 편집용을 고른 것이고 사용자 확인 전이다.
 - **상태**: 미해결 (①은 기획, ②는 사용자 확인 전)
 - **해소 메모**: ①을 정책대로 하면 `dirtyToppingIds`가 비었을 때 팝업 없이 `NavigateBack`을 내고
@@ -7661,4 +7639,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
 - **해소 메모**: 기획 쪽이 애니메이션 정책을 위키에 반영하면 ①②를 닫고 [OQ-P-047](#2026-08-01-g-001-파르페툴팁이-위키-정책과-미결선--화면-골격만-머지됨) ②와 함께 정리한다. ③은 실기기 확인 뒤 지운다.
 
-<!-- oq-next: 427 -->
+### [2026-10-05] `./gradlew lint`가 Android Lint 오류로 실패한다
+
+- **ID**: OQ-P-427
+- **출처**: `./gradlew lint` — `:feature:segmentation:impl:lintDebug`(오류 5·경고 1)와 `:feature:groups:canvas:impl:lintDebug`(오류 4·경고 1)가 실패한다. 첫 실패는 각각 `ToppingEditRoute.kt`·`CanvasToppingPlaceRoute.kt`에서 `LocalContext.current`로 리소스 값을 읽는 자리다. 병렬 실행을 켜고 끈 두 경우 모두 같은 결과라 스케줄링과는 무관하다.
+- **항목**: ① 오류 9건을 고칠지 baseline으로 묶을지. ② Android Lint를 CI 게이트로 둘지 — 지금 CI는 `ktlintCheck`만 돌려 이 오류가 PR에서 드러나지 않는다.
+- **상태**: 미해결 (코드 수정 대상)
+- **해소 메모**: ②를 넣으면 `gradle-cache-seed.yml`의 시딩 태스크에도 `lint`를 더한다.
+
+<!-- oq-next: 428 -->

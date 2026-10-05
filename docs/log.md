@@ -351,3 +351,21 @@ status 「캔버스 배경 편집」 닫기·저장 서술 고쳐 씀 · 고쳐 
 
 ## [2026-10-04] lint | 튜토리얼 제거(#586)를 현재 상태 문서에 반영 — 캔버스·갤러리 오버레이와 `ygtutorial`·사용자 설정 저장소가 코드에서 빠짐
 status 「튜토리얼」 절 삭제 · design-system 튜토리얼 컴포넌트 · data-layer `UserConfig*`·평문 DataStore 소비처 · state-management `launchWhileSubscribed` 주석 · 해소 OQ-P-363, OQ-P-366, OQ-P-369, OQ-P-417 · 고쳐 씀 OQ-P-175, OQ-P-367, OQ-P-368, OQ-P-370
+
+## [2026-10-05] restructure | 그만두기 팝업(`YGModalQuit.kt`)을 `core:designsystem`에서 `core:ui` `component/modal/`로 옮김 — `core:ui` → `core:designsystem` `implementation` 간선 신설
+module-structure `core:ui` 행·enum 변환 공용화 항목 · design-system 컴포넌트 표 · navigation-flow 그만두기 팝업 · status 배치 수정 화면 · 고쳐 씀 OQ-P-027, OQ-P-414
+
+## [2026-10-05] restructure | 전역 Coil 로더 팩토리 `newParfaitImageLoader`를 `core:designsystem`에서 `core:ui` `image/`로 옮김 — 디자인시스템에 남은 `rememberReloadableImageRequest`는 파일명이 `ReloadableImageRequest.kt`가 됨
+module-structure `core:ui` 행 · design-system 디렉터리 표·이미지 로딩·이미지 로더 항목 · `ParfaitImageLoaderTest`가 `core:ui` 계측 소스셋으로 가며 CI 컴파일 대상에서 빠짐(OQ-P-102)
+
+## [2026-10-05] restructure | CI 계측 컴파일 대상을 손으로 적던 목록에서 루트 `assembleAllDebugAndroidTest`로 바꿈 — `parfait.test.android` 적용 모듈이 자동으로 걸려 `core:ui` 계측 소스셋도 컴파일된다
+status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행)는 그대로 미결
+
+## [2026-10-05] restructure | CI 시간 단축 — `org.gradle.parallel` 재도입(힙 4096m·`kotlin.daemon.jvmargs`), 시딩 태스크를 `assembleAllDebugAndroidTest`로 맞춤, `test.yml` Gradle 호출 통합, 문서 전용 PR은 스텝 건너뜀(`detect-code-changes`), `test`·`ktlint` concurrency 취소
+병렬 검증: 캐시 없이 전체 재실행한 `test`+`assembleAllDebugAndroidTest`+`ktlintCheck`·`assembleRelease` 통과, `lint`는 병렬과 무관한 기존 오류로 실패 · 고쳐 씀 OQ-P-114(configuration cache만 남김) · 신설 OQ-P-427
+
+## [2026-10-05] lint | 리뷰 지적 반영 — `detect-code-changes`가 rename 이전 경로와 3000개 초과 PR을 코드로 보고, `test.yml`에 `--continue`, `ktlint.yml`에 `permissions` 명시
+고쳐 씀 OQ-P-102(② 계측 컴파일 대상·규모를 현재 상태로 덮어쓰고 날짜별 누적 단락 제거), OQ-P-114 출처 · module-structure enum 변환 공용화 항목
+
+## [2026-10-05] lint | PR #591 리뷰 반영 — `core:ui` → `:core:designsystem` 간선이 `implementation`인 이유와 OQ-P-142와의 경계를 module-structure에 적음
+module-structure `core:ui` 의존 항목 신설 · enum 변환 공용화 항목의 가시성 미결 서술

@@ -10,7 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.LocalResultEventBus
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitAdd
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitAdd
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult

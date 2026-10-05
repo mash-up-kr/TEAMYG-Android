@@ -1,11 +1,13 @@
-package com.teamyg.parfait.core.designsystem.component.modal
+package com.teamyg.parfait.core.ui.component.modal
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.ui.R as CoreR
 
 /** 사진을 새로 쌓는 흐름을 그만둘지 묻는다 */
 @Composable
@@ -13,8 +15,8 @@ fun YGModalQuitAdd(
     onConfirmQuit: () -> Unit,
     onDismiss: () -> Unit,
 ) = YGModalQuit(
-    titleRes = R.string.yg_modal_quit_add_title,
-    continueRes = R.string.yg_modal_quit_continue_add,
+    titleRes = CoreR.string.yg_modal_quit_add_title,
+    continueRes = CoreR.string.yg_modal_quit_continue_add,
     onConfirmQuit = onConfirmQuit,
     onDismiss = onDismiss,
 )
@@ -25,8 +27,8 @@ fun YGModalQuitEdit(
     onConfirmQuit: () -> Unit,
     onDismiss: () -> Unit,
 ) = YGModalQuit(
-    titleRes = R.string.yg_modal_quit_edit_title,
-    continueRes = R.string.yg_modal_quit_continue_edit,
+    titleRes = CoreR.string.yg_modal_quit_edit_title,
+    continueRes = CoreR.string.yg_modal_quit_continue_edit,
     onConfirmQuit = onConfirmQuit,
     onDismiss = onDismiss,
 )
@@ -37,8 +39,8 @@ fun YGModalQuitBackground(
     onConfirmQuit: () -> Unit,
     onDismiss: () -> Unit,
 ) = YGModalQuit(
-    titleRes = R.string.yg_modal_quit_background_title,
-    continueRes = R.string.yg_modal_quit_continue_edit,
+    titleRes = CoreR.string.yg_modal_quit_background_title,
+    continueRes = CoreR.string.yg_modal_quit_continue_edit,
     onConfirmQuit = onConfirmQuit,
     onDismiss = onDismiss,
 )
@@ -53,9 +55,9 @@ private fun YGModalQuit(
 ) {
     YGModalPopup(
         title = stringResource(titleRes),
-        body = stringResource(R.string.yg_modal_quit_body),
-        iconRes = R.drawable.ic_warning_round,
-        secondaryText = stringResource(R.string.yg_modal_quit_confirm),
+        body = stringResource(CoreR.string.yg_modal_quit_body),
+        iconRes = DesignSystemR.drawable.ic_warning_round,
+        secondaryText = stringResource(CoreR.string.yg_modal_quit_confirm),
         onSecondaryClick = onConfirmQuit,
         primaryText = stringResource(continueRes),
         onPrimaryClick = onDismiss,
