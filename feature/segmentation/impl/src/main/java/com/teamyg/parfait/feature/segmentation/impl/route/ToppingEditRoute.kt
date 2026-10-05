@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy

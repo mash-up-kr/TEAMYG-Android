@@ -17,7 +17,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasToppingPlaceScreen
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceIntent
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceViewModel

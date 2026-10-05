@@ -18,7 +18,7 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentation
 import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
 import com.teamyg.parfait.feature.segmentation.impl.R
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalQuitEdit
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationLoadingScreen
 import com.teamyg.parfait.feature.segmentation.impl.screen.SegmentationScreen
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationEffect
