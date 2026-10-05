@@ -1262,13 +1262,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 디자인이 정본이라는 것이 확인됐고, 새로고침 문구(`group_list_refreshing`)는 여전히 Figma에만 있다.
 - **해소 메모**: 확정 시 [g001-group-list 스펙](../superpowers/specs/archive/2026-08-01-g001-group-list.md) 정책 대조 표의 로딩 행을 갱신하고, 문구 정책이 수집되면 위키 쪽 미결과 함께 닫는다.
 
-### [2026-08-11] CI 빌드 성능 후속 2축 — `org.gradle.parallel` 재도입과 configuration cache
+### [2026-08-11] CI 빌드 성능 후속 — configuration cache
 
 - **ID**: OQ-P-114
-- **출처**: PR #227 develop 머지([ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md)) — 캐시 시딩은 들어갔고 효과도 확인됐다(PR `unit-test` 6m16s → 2m45s). 초안에 있던 `org.gradle.parallel`·힙 상향·`kotlin.daemon.jvmargs`는 **의도적으로 되돌렸고**, configuration cache는 처음부터 범위 밖이었다. 둘 다 "안 하기로" 한 것이 아니라 **별건으로 미룬 것**이다.
-- **항목**: ① `parallel` 재도입 여부 — 다시 켠다면 검증을 `test` 그래프 하나로 끝내지 말고 `assembleRelease`·`lint`까지 돌려야 한다(미선언 모듈 간 의존은 태스크 그래프마다 다르게 나타나고 릴리스 간헐 실패는 "플래키"로 오진되기 쉽다). 힙과 `kotlin.daemon.jvmargs`가 함께 가야 한다 — 적지 않으면 Kotlin 데몬이 Gradle 데몬 `-Xmx`를 상속해 조용히 2배 예약이 된다. ② configuration cache를 CI에서 살릴지 — `setup-gradle`의 `cache-encryption-key` 입력 + repo secret 생성이 필요하고 Crashlytics·google-services 플러그인 호환을 따로 검증해야 한다. 지금 상태로는 매 런 새 러너인 CI에서 이득이 0이다.
-- **상태**: 미해결 (효과 측정이 끝난 뒤 별건으로 — 캐시 변경과 섞으면 원인을 못 가른다)
-- **해소 메모**: 착수 시 [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "검토했다가 뺀 것"·"범위" 절을 근거로 삼고, 결과를 새 스펙으로 분리한다.
+- **출처**: [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절이 configuration cache를 처음부터 뺐다. 같은 항목이 함께 추적하던 `org.gradle.parallel`은 `gradle.properties`에 힙·`kotlin.daemon.jvmargs`와 함께 들어가 있다.
+- **항목**: configuration cache를 CI에서 살릴지 — `setup-gradle`의 `cache-encryption-key` 입력 + repo secret 생성이 필요하고 Crashlytics·google-services 플러그인 호환을 따로 검증해야 한다. 지금 상태로는 매 런 새 러너인 CI에서 이득이 0이다. PR `unit-test` 런에서 데몬 기동부터 첫 태스크까지가 12초 안팎이라 얻을 수 있는 상한도 그 정도다.
+- **상태**: 미해결 (병렬 실행의 CI 효과를 본 뒤 별건으로)
+- **해소 메모**: 착수 시 [ci-gradle-cache-seeding 스펙](../superpowers/specs/archive/2026-08-10-ci-gradle-cache-seeding.md) "범위" 절을 근거로 삼고, 결과를 새 스펙으로 분리한다.
 
 ### [2026-08-11] GitHub Actions Node 20 deprecation 경고
 
@@ -7317,8 +7317,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 순서가 있다. ①을 먼저 정하고, G0를 돌려 통과하면 ②로 쌍을 고정한 뒤 측정한다.
   측정치는 머신마다 달라 커밋하지 않으므로(`runs/`는 `.gitignore`), 판단에 실제로 쓴 수치만 후속 스펙으로
   옮긴다. `T_remote`가 전송 시간을 0으로 놓는 **낙관적 상한**이고 `S4` 쪽이 사전 빌드를 더 돌아 한 방향으로
-  부풀려진다는 점을 문턱값과 함께 읽어야 한다. 빌드 성능의 다른 두 축(`org.gradle.parallel`·configuration
-  cache)은 [2026-08-11] 항목이 따로 추적한다.
+  부풀려진다는 점을 문턱값과 함께 읽어야 한다. 빌드 성능의 다른 축(configuration cache)은
+  [2026-08-11] 항목(OQ-P-114)이 따로 추적한다.
 
 ### [2026-09-17] `Navigator` 만 명시적 backing field 로 옮겨 상태 노출 관용구가 두 갈래가 됐다
 
@@ -7661,4 +7661,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
 - **해소 메모**: 기획 쪽이 애니메이션 정책을 위키에 반영하면 ①②를 닫고 [OQ-P-047](#2026-08-01-g-001-파르페툴팁이-위키-정책과-미결선--화면-골격만-머지됨) ②와 함께 정리한다. ③은 실기기 확인 뒤 지운다.
 
-<!-- oq-next: 427 -->
+### [2026-10-05] `./gradlew lint`가 Android Lint 오류로 실패한다
+
+- **ID**: OQ-P-427
+- **출처**: `./gradlew lint` — `:feature:segmentation:impl:lintDebug`(오류 5·경고 1)와 `:feature:groups:canvas:impl:lintDebug`(오류 4·경고 1)가 실패한다. 첫 실패는 각각 `ToppingEditRoute.kt`·`CanvasToppingPlaceRoute.kt`에서 `LocalContext.current`로 리소스 값을 읽는 자리다. 병렬 실행을 켜고 끈 두 경우 모두 같은 결과라 스케줄링과는 무관하다.
+- **항목**: ① 오류 9건을 고칠지 baseline으로 묶을지. ② Android Lint를 CI 게이트로 둘지 — 지금 CI는 `ktlintCheck`만 돌려 이 오류가 PR에서 드러나지 않는다.
+- **상태**: 미해결 (코드 수정 대상)
+- **해소 메모**: ②를 넣으면 `gradle-cache-seed.yml`의 시딩 태스크에도 `lint`를 더한다.
+
+<!-- oq-next: 428 -->
