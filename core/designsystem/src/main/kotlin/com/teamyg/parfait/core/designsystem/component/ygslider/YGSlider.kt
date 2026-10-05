@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -23,6 +25,9 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private val TRACK_HEIGHT = 2.dp
 private val THUMB_SIZE = 16.dp
+
+/** Material 기본 최소 터치 크기(48dp)를 그대로 두면 위아래로 디자인에 없는 여백이 붙는다 */
+private val SLIDER_HEIGHT = 32.dp
 
 /**
  * Material 기본 트랙은 stop indicator 와 gap 이 함께 그려져 디자인과 어긋나므로,
@@ -38,40 +43,42 @@ fun YGSlider(
     isEnabled: Boolean = true,
     onValueChangeFinished: () -> Unit = {},
 ) {
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        onValueChangeFinished = onValueChangeFinished,
-        valueRange = valueRange,
-        enabled = isEnabled,
-        modifier = modifier,
-        thumb = {
-            Box(
-                modifier = Modifier
-                    .size(THUMB_SIZE)
-                    .background(
-                        color = YGAtomicColors.Gray.Gray850,
-                        shape = YGTheme.shapes.radius.round,
-                    ),
-            )
-        },
-        track = { sliderState ->
-            // 지나온 구간을 draw 단계에서 그린다. 값을 여기서 읽어야 드래그 중 recomposition 없이
-            // 다시 그리기만 한다
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(TRACK_HEIGHT)
-                    .drawBehind {
-                        drawRect(color = YGAtomicColors.Gray.Gray100)
-                        drawRect(
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides SLIDER_HEIGHT) {
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            valueRange = valueRange,
+            enabled = isEnabled,
+            modifier = modifier,
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(THUMB_SIZE)
+                        .background(
                             color = YGAtomicColors.Gray.Gray850,
-                            size = size.copy(width = size.width * sliderState.passedFraction),
-                        )
-                    },
-            )
-        },
-    )
+                            shape = YGTheme.shapes.radius.round,
+                        ),
+                )
+            },
+            track = { sliderState ->
+                // 지나온 구간을 draw 단계에서 그린다. 값을 여기서 읽어야 드래그 중 recomposition 없이
+                // 다시 그리기만 한다
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(TRACK_HEIGHT)
+                        .drawBehind {
+                            drawRect(color = YGAtomicColors.Gray.Gray100)
+                            drawRect(
+                                color = YGAtomicColors.Gray.Gray850,
+                                size = size.copy(width = size.width * sliderState.passedFraction),
+                            )
+                        },
+                )
+            },
+        )
+    }
 }
 
 /** 트랙 전체에서 지나온 구간이 차지하는 비율 */
