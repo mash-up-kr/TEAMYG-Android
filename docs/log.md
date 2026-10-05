@@ -366,3 +366,6 @@ status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행
 
 ## [2026-10-05] lint | 리뷰 지적 반영 — `detect-code-changes`가 rename 이전 경로와 3000개 초과 PR을 코드로 보고, `test.yml`에 `--continue`, `ktlint.yml`에 `permissions` 명시
 고쳐 씀 OQ-P-102(② 계측 컴파일 대상·규모를 현재 상태로 덮어쓰고 날짜별 누적 단락 제거), OQ-P-114 출처 · module-structure enum 변환 공용화 항목
+
+## [2026-10-05] lint | PR #591 리뷰 반영 — `core:ui` → `:core:designsystem` 간선이 `implementation`인 이유와 OQ-P-142와의 경계를 module-structure에 적음
+module-structure `core:ui` 의존 항목 신설 · enum 변환 공용화 항목의 가시성 미결 서술

@@ -150,6 +150,7 @@ app / app-preview
   둔다** — 감춘 자리도 배치가 살아 있어야 이미지 요청이 이어진다. 시맨틱은 `hideFromAccessibility`가
   아니라 `clearAndSetSemantics`로 지운다(앞의 것은 그 노드 하나만 감추고 자식 문구는 트리에 남는다).
   같은 라운드에 이 모듈이 **계측 소스셋을 처음 갖게 됐다**(`parfait.test.android`·`parfait.test.compose`).
+- **`core:ui` → `:core:designsystem` 의존은 `implementation`이고 public API에 디자인시스템 타입이 없다** — 이 간선을 쓰는 것은 `component/modal/YGModalQuit.kt`뿐이고 공개 함수 셋의 시그니처는 람다 둘이라, 소비자가 `:core:designsystem`을 몰라도 컴파일된다. 그래서 위 항목의 `implementation`/`api` 미결(OQ-P-142)을 넓히지 않는다. **디자인시스템 타입을 받거나 돌려주는 public 선언을 `core:ui`에 두면 같은 미결에 걸린다** — 그 전에 OQ-P-142를 먼저 정한다.
 - **도메인 enum → 디자인시스템 타입 변환은 feature impl의 `util` 패키지에 둔다**(2026-08-19, PR #308·#310
   develop 머지) — 지금 셋이다: `setting/impl/util/ColorChipType.kt`(12종 1:1 + `DEFAULT` → 중립) ·
   `canvas/impl/util/ColorChipType.kt`(같은 규칙, 앞의 것과 글자까지 같다) ·
@@ -158,8 +159,9 @@ app / app-preview
   "모르는 값"을 처리하는 자리는 여기가 아니라 `:data` 매퍼 하나다([ADR-0024](../adr/0024-nametag-chip-unknown-fold.md)). **공용화하지 않은 이유는
   자리가 없어서가 아니다** — 변환의 입력은 `:domain`, 출력은 `:core:designsystem`이고 `core:ui`가
   둘을 모두 `implementation`으로 본다(`:core:designsystem`은 `core:ui`를 모르니 순환도 없다). 막는 것은
-  **바로 위 항목의 `implementation`/`api` 가시성 미결**이다. 같은 형태의 매핑을 두 번째로 올리면서 그
-  결정을 조용히 굳힐 수 없어 복제를 택했다.
+  **위 두 항목의 `implementation`/`api` 가시성 미결**(OQ-P-142)이다 — 이 변환을 `core:ui`에 올리면 public
+  시그니처에 `:domain`과 `:core:designsystem` 타입이 함께 드러난다. 같은 형태의 매핑을 두 번째로 올리면서
+  그 결정을 조용히 굳힐 수 없어 복제를 택했다.
   ⚠️ **컴파일러는 앱이 그 enum에 상수를 더할 때의 arm 누락만 잡는다.** 서버에 새 타입이 생기면 매퍼가
   모르는 문자열을 `NametagChipType.DEFAULT`로 접어 컴파일이 안 깨지고(2026-08-19까지는 `null`로 접었고
   결과는 같았다), 셋 중 하나에서 색만 바꾸는 것도 못 잡는다. **색을 고칠 때는 셋을 함께 본다.**
