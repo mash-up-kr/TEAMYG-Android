@@ -9,9 +9,8 @@ outputs:
 runs:
   using: composite
   steps:
-    # 목록을 못 받으면 건너뛰지 않고 돌린다 — 필수 체크가 조용히 초록이 되는 쪽이 더 나쁘다.
-    # files API 는 3000개에서 잘리므로 그 이상이면 목록을 믿지 않는다.
-    # previous_filename 까지 봐야 코드를 docs/ 로 옮기기만 한 PR 이 문서로 분류되지 않는다.
+    # 목록을 못 받거나 3000개에서 잘리면 건너뛰지 않고 돌린다.
+    # previous_filename: 코드를 docs/ 로 옮기기만 한 PR 을 문서로 보지 않기 위해서다
     - id: filter
       shell: bash
       env:
