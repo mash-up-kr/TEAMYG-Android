@@ -47,11 +47,6 @@ constructor(
         }
     }
 
-    suspend fun write(
-        key: Preferences.Key<String>,
-        value: String,
-    ) = write(mapOf(Pair(key, value)))
-
     suspend fun remove(vararg keys: Preferences.Key<String>) {
         dataStore.edit { preferences -> keys.forEach(preferences::remove) }
     }

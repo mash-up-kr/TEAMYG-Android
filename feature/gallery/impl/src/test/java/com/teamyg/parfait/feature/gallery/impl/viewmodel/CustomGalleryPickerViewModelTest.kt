@@ -4,11 +4,8 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
@@ -17,18 +14,13 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.launch
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import java.io.IOException
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class CustomGalleryPickerViewModelTest {
     @get:Rule
@@ -36,14 +28,9 @@ class CustomGalleryPickerViewModelTest {
 
     private val getRecentCacheImages: GetRecentCacheImagesUseCase = mockk()
     private val loadGroups: LoadFilterYGGalleryImageGroupsUseCase = mockk(relaxed = true)
-    private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
-    private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk {
         coEvery { this@mockk(any()) } returns true
     }
-
-    /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
-    private val tutorialVisible = MutableStateFlow(false)
 
     private val source = RecentImage(
         uri = "content://recent/a.jpg",
@@ -61,65 +48,14 @@ class CustomGalleryPickerViewModelTest {
         returnResultOnly: Boolean = false,
     ): CustomGalleryPickerViewModel {
         every { getRecentCacheImages() } returns flowOf(listOf(source, cutout))
-        every { getTutorialVisible(TutorialKind.UPLOAD) } returns tutorialVisible
 
         return CustomGalleryPickerViewModel(
             returnResultOnly = returnResultOnly,
             recentImagePick = recentImagePick,
             getRecentCacheImagesUseCase = getRecentCacheImages,
             loadFilterYGGalleryImageGroupsUseCase = loadGroups,
-            getTutorialVisibleFlowUseCase = getTutorialVisible,
-            completeTutorialUseCase = completeTutorial,
             ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
         )
-    }
-
-    /**
-     * 튜토리얼 구독은 `launchWhileSubscribed` 라 [CustomGalleryPickerViewModel.state] 를 보는
-     * 쪽이 있어야 열린다 — 라우트의 `collectAsStateWithLifecycle()` 을 여기서 흉내 낸다.
-     */
-    private fun TestScope.shownViewModel() =
-        createViewModel(recentImagePick = RecentImagePick.CUTOUT).also { viewModel ->
-            backgroundScope.launch { viewModel.state.collect { } }
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun tutorial_onFirstEntry_coversTheScreen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 아직 업로드 튜토리얼을 보지 않은 사용자
-        tutorialVisible.value = true
-
-        // When 화면이 열린다
-        val viewModel = shownViewModel()
-
-        // Then 튜토리얼이 뜬다
-        assertTrue(viewModel.state.value.isTutorialVisible)
-    }
-
-    @Test
-    fun tutorial_alreadySeen_doesNotOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 본 사용자(기본 스텁)
-
-        // When 화면이 열린다
-        val viewModel = shownViewModel()
-
-        // Then 아무것도 덮지 않는다
-        assertFalse(viewModel.state.value.isTutorialVisible)
-    }
-
-    @Test
-    fun tutorial_onConfirm_closesItAndMarksItSeen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 튜토리얼이 떠 있다
-        tutorialVisible.value = true
-        val viewModel = shownViewModel()
-
-        // When 칩을 누른다
-        viewModel.processIntent(CustomGalleryPickerIntent.OnConfirmTutorial)
-        advanceUntilIdle()
-
-        // Then 닫히고, 다음 진입부터 뜨지 않도록 저장한다
-        assertFalse(viewModel.state.value.isTutorialVisible)
-        coVerify(exactly = 1) { completeTutorial(TutorialKind.UPLOAD) }
     }
 
     @Test

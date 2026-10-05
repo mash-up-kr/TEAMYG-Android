@@ -8,7 +8,7 @@ verified: 2026-09-05
 related_spec: c103-multi-subject-selection, c201-canvas-calendar, c201-canvas-calendar-server, session-token-refresh-infra, user-info-ssot, c301-topping-edit-tab, ygscaffold-v2-common-loading-error, s101-group-setting-api, group-ssot, intro-term-agree
 related_adr: ADR-0001, ADR-0005, ADR-0009, ADR-0020, ADR-0021, ADR-0022, ADR-0023, ADR-0029
 related_architecture: data-layer, navigation-flow
-related_code: core:ui, BaseViewModel, MviContract, AppError, GetToppingDraftFlowUseCase, EnsureDraftSubjectRecordedUseCase, PastCanvasAlertRepository, LoginViewModel, AccountInfoViewModel, AppSettingViewModel, GetMyAccountFlowUseCase, GetMyGroupsFlowUseCase, GetGroupDetailUseCase, GroupListViewModel, GroupSettingViewModel, CanvasMainViewModel, CanvasBGEditViewModel, CanvasToppingPlaceViewModel, TermAgreeViewModel, TermAgreeError, GetTutorialVisibleFlowUseCase, CompleteTutorialUseCase, CanvasTutorialStep
+related_code: core:ui, BaseViewModel, MviContract, AppError, GetToppingDraftFlowUseCase, EnsureDraftSubjectRecordedUseCase, PastCanvasAlertRepository, LoginViewModel, AccountInfoViewModel, AppSettingViewModel, GetMyAccountFlowUseCase, GetMyGroupsFlowUseCase, GetGroupDetailUseCase, GroupListViewModel, GroupSettingViewModel, CanvasMainViewModel, CanvasBGEditViewModel, CanvasToppingPlaceViewModel, TermAgreeViewModel, TermAgreeError
 tags: [architecture, parfait]
 ---
 # 상태 관리 (MVI) · 데이터 흐름
@@ -95,17 +95,14 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 > 참조 계수는 저장소 층이 구독의 `onStart`/`onCompletion`에 걸어 올리고 내린다 — 화면은 폴러의
 > 존재를 모른다.
 
-> 📌 **서버를 부르지 않는 구독에도 쓰이기 시작했다(2026-09-05, PR #449)** — 튜토리얼 노출 여부
-> (`GetTutorialVisibleFlowUseCase`)는 DataStore 한 키를 읽는 구독인데 소비 둘
-> (`CanvasMainViewModel`·`CustomGalleryPickerViewModel`)이 모두
-> `launchWhileSubscribed`로 연다. **위 기준("이 구독이 서버를 계속 부르는가")으로는 `launch` 쪽**이고,
-> 실제로 얻는 것은 화면이 안 보일 때 로컬 구독이 잠깐 끊기는 것뿐이다. `CanvasBGEditViewModel`·`CanvasToppingPlaceViewModel`·`CanvasToppingArrangeViewModel`도
-> 같은 도우미를 쓰고 이 튜토리얼 구독은 기준 밖이라, 문서의 기준과 코드의 관행이 갈렸다
-> → [open-questions](../synthesis/open-questions.md) OQ-P-368.
->
-> 딸려 오는 것이 하나 있다 — 이 구독은 **화면이 `state`를 보는 동안에만** 열리므로 ViewModel 테스트가
+> 📌 딸려 오는 것이 하나 있다 — 이 구독은 **화면이 `state`를 보는 동안에만** 열리므로 ViewModel 테스트가
 > `backgroundScope`에서 `state`를 수집해 라우트의 `collectAsStateWithLifecycle()`을 흉내 내야 한다.
-> `CustomGalleryPickerViewModelTest`가 `shownViewModel()` 헬퍼로 그 준비를 적는다.
+> 캔버스 ViewModel 테스트 넷이 각자 그 준비를 둔다(예: `CanvasMainViewModelTest`의 `enteredViewModel()`).
+>
+> ⚠️ 서버를 부르지 않는 구독 둘도 이 도우미로 연다 — `CanvasMainViewModel`의 하루 경계
+> (`observeParfaitDayBoundaryUseCase`, 시계 타이머)와 갱신 실패 신호
+> (`observeTodayParfaitRefreshFailureUseCase`, 폴러를 잡지 않는다). 위 기준 한 문장으로는 설명되지
+> 않는다 → [open-questions](../synthesis/open-questions.md) OQ-P-368.
 
 ## 신규 화면 추가 체크리스트
 1. **api 모듈**: `NavKeyXxx`(@Serializable) 정의([[navigation-flow]]).
@@ -119,11 +116,6 @@ launch(key = …, onError = { postSideEffect(XxxSideEffect.ShowError(it)) }) { �
 ## UI State가 담는 것 / 담지 않는 것
 
 - **표시 문자열·리소스 ID를 State에 담지 않는다.** State는 도메인 의미를 들고, 표시 변환은 화면이 렌더 시점에 한다. 유효성 결과가 대표 사례다 — `NameValidResult.Error?`를 담고 화면이 `core:ui`의 `toStringResource(fieldType)` 확장으로 문자열을 얻는다([ADR-0016](../adr/0016-domain-result-presentation-string-mapping.md), 원안 수렴 — #223 develop 머지 2026-08-13). ViewModel이 `@StringRes Int`를 산출해 담던 과도기 형태는 같은 매핑을 feature마다 복제해 폐기됐다.
-- ⚠️ **리소스 ID를 든 enum이 State에 들어왔다**(2026-09-05, PR #449) — `CanvasMainUiState.tutorialStep`이
-  `CanvasTutorialStep?`인데, 그 enum이 `@DrawableRes`·`@StringRes` 상수를 프로퍼티로 든다. State가
-  직접 `Int`를 담지는 않아도 **표시 리소스가 State를 타고 흐르는 것은 같다.** 같은 라운드의 한 장짜리
-  튜토리얼 둘은 `isTutorialVisible: Boolean`만 담고 리소스는 화면이 고른다 — **같은 기능이 화면 수에
-  따라 두 형태로 갈렸다** → [open-questions](../synthesis/open-questions.md) OQ-P-369.
 - **in-flight는 원인별로 나눠 들고 화면 덮개는 그 OR로 판단한다**(2026-08-17, PR #285·#287) —
   `GroupSettingUiState`가 `isLoadingDetail`·`isSubmittingNickname`·`isSubmittingDialogAction` 셋을
   따로 두고 `isLoading`이 파생이다. 합쳐 하나로 두면 "첫 조회 중"과 "왕복 중"을 가르지 못해 버튼
