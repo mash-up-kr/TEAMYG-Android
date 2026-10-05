@@ -1,23 +1,26 @@
 ---
 id: topping-pinch-gesture
 title: 토핑 두 손가락 변환 제스처
-status: draft
+status: done
 type: work-order
 created: 2026-09-28
-updated: 2026-09-28
+updated: 2026-10-04
 platforms: android
 owner: android
 related_adr:
 related_spec: topping-pinch-gesture
 related_code:
-  - ToppingHitTestInput.kt#toppingTransformInput
+  - ToppingTransformInput.kt#toppingTransformInput
   - CanvasToppingPlaceViewModel.kt#CanvasToppingPlaceIntent
-  - CanvasBGEditViewModel.kt#CanvasBGEditIntent
-archived_reason:
+  - CanvasToppingArrangeViewModel.kt#CanvasToppingArrangeIntent
+archived_reason: 구현 완료·develop 머지(PR #553 `970f25ea5`, 5 Task 수행). 편집 쪽 제스처는 그 뒤 배치 수정 화면(`CanvasToppingArrange`)으로 옮겨 갔다.
 tags: [plan, parfait]
 ---
 
 # 토핑 두 손가락 변환 제스처 Implementation Plan
+
+> **Archived (2026-10-04)** — 구현 완료·develop 머지(PR #553 `970f25ea5`, 5 Task 수행). 편집 쪽 제스처는 그 뒤 배치 수정 화면(`CanvasToppingArrange`)으로 옮겨 갔다. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -27,11 +30,11 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose pointer input (`awaitEachGesture`, `calculatePan/Zoom/Rotation`), JUnit4 + MockK + coroutines-test, Compose UI 계측 테스트(`createComposeRule`).
 
-**Spec:** [`docs/superpowers/specs/2026-09-28-topping-pinch-gesture-design.md`](../specs/2026-09-28-topping-pinch-gesture-design.md)
+**Spec:** [`docs/superpowers/specs/2026-09-28-topping-pinch-gesture-design.md`](../../specs/archive/2026-09-28-topping-pinch-gesture-design.md)
 
 ## Global Constraints
 
-- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다. 구현·리뷰 서브에이전트 브리프에 이 링크를 넣는다.
+- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다. 구현·리뷰 서브에이전트 브리프에 이 링크를 넣는다.
 - 경로 약어: `C` = `feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl`, `T` = 같은 모듈 `src/test/...`, `A` = 같은 모듈 `src/androidTest/kotlin/...`.
 - 두 손가락 시작 위치: 캔버스 어디서든. 한 손가락 이동: down 좌표가 `ToppingHitTarget.containsPoint` 안일 때만.
 - 편집 화면에서 선택된 토핑이 없으면 제스처를 무시한다. 자동 선택하지 않는다.

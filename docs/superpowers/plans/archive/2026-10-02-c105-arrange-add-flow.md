@@ -15,13 +15,13 @@ related_code:
   - ToppingEditScreen.kt#ToppingEditScreen
   - SegmentationConfirmViewModel.kt#SegmentationConfirmViewModel
   - ToppingDraft.kt#ToppingDraft
-archived_reason: 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 전.
+archived_reason: 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 PR #572 `d4ca59eaf`.
 tags: [plan, parfait]
 ---
 
 # 배치 화면 테두리 패널 — 추가 플로우 Implementation Plan
 
-> **Archived (2026-10-02)** — 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 전. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> **Archived (2026-10-02)** — 구현 완료(2026-10-02, 7 Task 수행 — 피그마·실기기 대조만 돌리지 않았다, OQ-P-412). develop 머지 PR #572 `d4ca59eaf`. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
 > 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

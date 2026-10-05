@@ -16,13 +16,13 @@ related_code:
   - feature/segmentation/impl/.../route/SegmentationRoute.kt#SegmentationRoute
   - feature/gallery/impl/.../viewmodel/CustomGalleryPickerViewModel.kt#handleOnClickCutoutImage
   - feature/gallery/impl/.../route/CustomGalleryPickerRoute.kt#CustomGalleryPickerRoute
-archived_reason: 구현 완료(2026-10-03, 5 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 화면 모양은 계획 2가 바꿨다.
+archived_reason: 구현 완료(2026-10-03, 5 Task 수행, develop 머지 PR #576 `2a025706b`). 화면 모양은 계획 2가 바꿨다.
 tags: [plan, parfait]
 ---
 
 # 누끼 편집 진입 흐름 — 네비게이션과 코드 제거 Implementation Plan
 
-> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 5 Task 수행, 브랜치 `feature/#566-topping-edit-ui`, develop 머지 전). 화면 모양은 계획 2가 바꿨다. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
+> **Archived (2026-10-03)** — 구현 완료(2026-10-03, 5 Task 수행, develop 머지 PR #576 `2a025706b`). 화면 모양은 계획 2가 바꿨다. 본문은 작성 시점의 계획이고 식별자·문구는 그때 이름이다.
 > 현재 상태는 [status.md](../../../status.md)를 본다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
