@@ -27,9 +27,10 @@ jobs:
       - name: Run unit tests
         run: ./gradlew test
 
-      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지)
+      # 계측 테스트는 에뮬레이터 없이 컴파일만 검증한다 (배선·매니페스트 회귀 방지).
+      # 대상은 parfait.test.android 를 적용한 모듈 전부다 (루트 build.gradle.kts)
       - name: Compile instrumented tests
-        run: ./gradlew :core:util:android:assembleDebugAndroidTest :core:designsystem:assembleDebugAndroidTest :feature:groups:canvas:impl:assembleDebugAndroidTest
+        run: ./gradlew assembleAllDebugAndroidTest
 
       # 실패해도 결과를 남긴다
       - name: Publish test report
