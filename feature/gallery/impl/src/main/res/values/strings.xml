@@ -9,5 +9,4 @@
     <string name="gallery_cutout_draft_unavailable">토핑을 이어서 만들 수 없어요. 캔버스에서 다시 시작해 주세요.</string>
     <string name="gallery_recent_uploaded_header">최근 업로드한 사진</string>
     <string name="gallery_today_photos_title">오늘 찍은 사진</string>
-    <string name="gallery_day_boundary_info">늦은 밤까지 담도록, 새벽 3시를 기준으로 하루의 사진을 불러와요</string>
 </resources>
