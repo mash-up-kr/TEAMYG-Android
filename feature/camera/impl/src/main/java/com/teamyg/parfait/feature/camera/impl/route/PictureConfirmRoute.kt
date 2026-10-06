@@ -67,17 +67,15 @@ internal fun PictureConfirmRoute(
     }
 
     if (showQuitDialog) {
-        val onConfirmQuit = {
+        fun quitToCanvas() {
             showQuitDialog = false
             navigator.popUpTo<NavKeyCanvasMain>()
-            Unit
         }
-        val onDismiss = { showQuitDialog = false }
 
         if (returnResultOnly) {
-            YGModalQuitBackground(onConfirmQuit = onConfirmQuit, onDismiss = onDismiss)
+            YGModalQuitBackground(onConfirmQuit = ::quitToCanvas, onDismiss = { showQuitDialog = false })
         } else {
-            YGModalQuitAdd(onConfirmQuit = onConfirmQuit, onDismiss = onDismiss)
+            YGModalQuitAdd(onConfirmQuit = ::quitToCanvas, onDismiss = { showQuitDialog = false })
         }
     }
 }
