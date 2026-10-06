@@ -116,20 +116,23 @@ class CustomGalleryPickerViewModel
                 // 권한 결과가 다시 오면 접근 수준이 달라졌을 수 있어 이전 조회를 버리고 새로 읽는다
                 loadGroupsJob?.cancel()
                 loadGroupsJob = viewModelScope.launch {
-                    runSuspendCatching { loadGalleryImageGroupsUseCase() }
-                        .onSuccess { images ->
+                    val result = runSuspendCatching { loadGalleryImageGroupsUseCase() }
+
+                    result.fold(
+                        onSuccess = { images ->
                             updateState {
                                 copy(
                                     isLoading = false,
                                     groups = images,
                                 )
                             }
-                        }
-                        .onFailure { e ->
+                        },
+                        onFailure = { e ->
                             viewModelLogger.e(e) { "갤러리 이미지 조회 실패" }
 
                             updateState { copy(isLoading = false) }
-                        }
+                        },
+                    )
                 }
             }
 
