@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.camera.impl.route
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,7 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 import com.teamyg.parfait.feature.camera.impl.R
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -152,6 +154,10 @@ internal fun CustomCameraRoute(
 
                 is CustomCameraEffect.Cancel -> navigator.onBack()
 
+                is CustomCameraEffect.CancelToCanvas -> {
+                    if (!navigator.popUpTo<NavKeyCanvasMain>()) navigator.onBack()
+                }
+
                 is CustomCameraEffect.CaptureFailed -> {
                     toastPolicy.showError(captureFailedMessage)
                 }
@@ -167,6 +173,12 @@ internal fun CustomCameraRoute(
                 }
             }
         }
+    }
+
+    // 권한 없음 화면의 시스템 뒤로가기는 X 버튼과 같은 길을 탄다.
+    // 그 외에는 가로채지 않는다 — 가로채면 예측형 뒤로가기 전환이 사라진다
+    BackHandler(enabled = state.isPermissionDeniedShown) {
+        viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
 
     LifecycleResumeEffect(Unit) {
