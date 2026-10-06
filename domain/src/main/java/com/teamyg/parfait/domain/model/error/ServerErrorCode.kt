@@ -125,6 +125,7 @@ object ServerErrorCode {
          */
         const val INVALID_BORDER = "INVALID_BORDER"
 
+        /** 404 — 파르페가 아니라 그 배치(토핑)가 없다. 토핑 삭제에서는 이미 지워졌다는 뜻이다 */
         const val PARFAIT_IMAGE_NOT_FOUND = "PARFAIT_IMAGE_NOT_FOUND"
     }
 
