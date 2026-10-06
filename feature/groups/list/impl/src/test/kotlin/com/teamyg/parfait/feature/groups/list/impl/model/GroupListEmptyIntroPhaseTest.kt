@@ -25,6 +25,18 @@ class GroupListEmptyIntroPhaseTest {
     }
 
     @Test
+    fun onClickAddGroup_whileEntering_skipsToShown() {
+        assertEquals(Shown, Entering.onClickAddGroup())
+    }
+
+    @Test
+    fun onClickAddGroup_afterEntering_keepsPhase() {
+        assertEquals(Shown, Shown.onClickAddGroup())
+        assertEquals(Dismissing, Dismissing.onClickAddGroup())
+        assertEquals(Dismissed, Dismissed.onClickAddGroup())
+    }
+
+    @Test
     fun onStop_skipsTheRunningAnimationToItsEnd() {
         assertEquals(Shown, Entering.onStop())
         assertEquals(Dismissed, Dismissing.onStop())

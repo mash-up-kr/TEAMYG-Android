@@ -12,6 +12,11 @@ internal enum class GroupListEmptyIntroPhase {
         else -> this
     }
 
+    fun onClickAddGroup(): GroupListEmptyIntroPhase = when (this) {
+        Entering -> Shown
+        else -> this
+    }
+
     fun onStop(): GroupListEmptyIntroPhase = when (this) {
         Entering -> Shown
         Dismissing -> Dismissed

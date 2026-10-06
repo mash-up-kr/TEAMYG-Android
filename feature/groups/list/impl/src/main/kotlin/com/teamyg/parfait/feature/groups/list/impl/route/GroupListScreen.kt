@@ -118,7 +118,10 @@ internal fun GroupListScreen(
             GroupListTopBar(
                 count = uiState.groupList?.size,
                 onClickSideMenu = onClickSideMenu,
-                onClickAddGroup = onClickChip,
+                onClickAddGroup = {
+                    intro.onClickAddGroup()
+                    onClickChip()
+                },
             )
 
             Box {
