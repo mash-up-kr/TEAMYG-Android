@@ -31,7 +31,7 @@ class ToppingBorderPanelRulesTest {
     }
 
     @Test
-    fun toppingPanelBackAction_showsQuitDialog_whenPanelIsClosed() {
+    fun toppingPanelBackAction_navigatesBack_whenPanelIsClosed() {
         assertEquals(
             ToppingPanelBackAction.NavigateBack,
             toppingPanelBackAction(isLoading = false, isBorderPanelOpen = false),
