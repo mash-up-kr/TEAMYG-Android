@@ -369,3 +369,6 @@ status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행
 
 ## [2026-10-05] lint | PR #591 리뷰 반영 — `core:ui` → `:core:designsystem` 간선이 `implementation`인 이유와 OQ-P-142와의 경계를 module-structure에 적음
 module-structure `core:ui` 의존 항목 신설 · enum 변환 공용화 항목의 가시성 미결 서술
+
+## [2026-10-06] audit | 닫기·뒤로가기 팝업 흐름 변경(#589)을 문서에 반영
+status 토핑 생성·배치·누끼·배경 편집 항목 · navigation-flow `popUpTo` 소비처와 그만두기 팝업·배경 편집 복귀 항목 · ADR-0034 현재 코드 메모 · OQ-P-411 ③ · OQ-P-414(① 변경 없을 때 팝업 해소, 제목·본문만 남김)
