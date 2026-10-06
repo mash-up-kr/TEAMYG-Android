@@ -559,6 +559,24 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun clickClose_whileLoading_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
+        val viewModel = viewModel()
+        viewModel.drag()
+        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isLoading)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
+
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
+    }
+
+    @Test
     fun systemBack_withPanelOpen_onlyClosesPanel() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         viewModel.click(FIRST_ID)

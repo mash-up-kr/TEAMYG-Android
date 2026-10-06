@@ -326,7 +326,10 @@ constructor(
     }
 
     private fun requestQuit() {
-        if (state.value.dirtyToppingIds.isEmpty()) {
+        val current = state.value
+        if (current.isLoading) return
+
+        if (current.dirtyToppingIds.isEmpty()) {
             postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
         } else {
             updateState { copy(showQuitDialog = true) }
