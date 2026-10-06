@@ -116,9 +116,6 @@ class CanvasToppingArrangeViewModelTest {
         CanvasToppingArrangeIntent.OnToppingTransform(panX = panX, panY = 0f, zoom = 1f, rotationDelta = 0f),
     )
 
-    private fun CanvasToppingArrangeViewModel.clickDelete() =
-        processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
-
     private fun stubDelete(
         id: Long,
         result: Result<Unit> = Result.success(Unit),
@@ -445,7 +442,7 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
         viewModel.click(FIRST_ID)
 
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
         assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
@@ -611,7 +608,7 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
         stubDelete(FIRST_ID)
         val refreshGate = holdTheRefresh()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
@@ -869,7 +866,7 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
 
         viewModel.effect.test {
-            viewModel.clickDelete()
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
             expectNoEvents()
         }
@@ -891,7 +888,7 @@ class CanvasToppingArrangeViewModelTest {
         val moved = viewModel.topping(FIRST_ID).positionX
         viewModel.click(SECOND_ID)
 
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         assertEquals(moved, viewModel.topping(FIRST_ID).positionX)
         assertEquals(setOf(FIRST_ID), viewModel.state.value.dirtyToppingIds)
@@ -900,7 +897,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun clickDelete_thenClickOtherOwnTopping_focusesIt() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.click(SECOND_ID)
 
@@ -911,7 +908,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun clickClose_withOnlyADelete_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
@@ -924,7 +921,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun quitDialogConfirm_afterDelete_leavesWithoutDeleting() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
 
         viewModel.effect.test {
@@ -939,7 +936,7 @@ class CanvasToppingArrangeViewModelTest {
     fun confirm_afterDelete_deletesThenRefreshesThenNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         stubDelete(FIRST_ID)
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         val refreshGate = holdTheRefresh()
 
         viewModel.effect.test {
@@ -967,7 +964,7 @@ class CanvasToppingArrangeViewModelTest {
         stubDelete(FIRST_ID)
         viewModel.drag()
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSelectBorderColor(ORANGE_ARGB))
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -986,7 +983,7 @@ class CanvasToppingArrangeViewModelTest {
         stubDelete(SECOND_ID)
         viewModel.drag()
         viewModel.click(SECOND_ID)
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1006,7 +1003,7 @@ class CanvasToppingArrangeViewModelTest {
         coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
         viewModel.drag()
         viewModel.click(SECOND_ID)
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1026,7 +1023,7 @@ class CanvasToppingArrangeViewModelTest {
     fun confirm_deleteFails_showsErrorAndKeepsItPending() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         stubDelete(FIRST_ID, result = Result.failure(RuntimeException("실패")))
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1056,7 +1053,7 @@ class CanvasToppingArrangeViewModelTest {
                 AppError.Server(code = "PARFAIT_IMAGE_NOT_FOUND", statusCode = 404, serverMessage = "없음"),
             ),
         )
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1074,7 +1071,7 @@ class CanvasToppingArrangeViewModelTest {
                 AppError.Server(code = "PARFAIT_ALREADY_CLOSED", statusCode = 409, serverMessage = "마감"),
             ),
         )
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1092,9 +1089,9 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
         stubDelete(FIRST_ID)
         stubDelete(SECOND_ID, result = Result.failure(RuntimeException("실패")))
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         viewModel.click(SECOND_ID)
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1122,9 +1119,9 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
         stubDelete(FIRST_ID)
         stubDelete(SECOND_ID, result = Result.failure(RuntimeException("실패")))
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         viewModel.click(SECOND_ID)
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1202,7 +1199,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun merge_deletedTopping_doesNotComeBack() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         todayCanvases.value = canvas().copy(lastClosedDate = parfaitToday())
         advanceUntilIdle()
@@ -1216,7 +1213,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun merge_whenTheServerDropsIt_clearsThePendingDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        viewModel.clickDelete()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
         assertEquals(setOf(FIRST_ID), viewModel.state.value.pendingDeleteToppingIds)
 
         todayCanvases.value = canvas(toppings = listOf(toppingVO(SECOND_ID)))
