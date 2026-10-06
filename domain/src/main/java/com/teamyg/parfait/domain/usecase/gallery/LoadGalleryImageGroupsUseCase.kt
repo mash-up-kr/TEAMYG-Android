@@ -6,19 +6,19 @@ import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
 import kotlinx.datetime.LocalDate
 import javax.inject.Inject
 
-class LoadFilterYGGalleryImageGroupsUseCase
+class LoadGalleryImageGroupsUseCase
 @Inject
 constructor(
     private val galleryRepository: GalleryRepository,
 ) {
     init {
-        useCaseLogger.i { "LoadFilterYGGalleryImageGroupsUseCase::init" }
+        useCaseLogger.i { "LoadGalleryImageGroupsUseCase::init" }
     }
 
     suspend operator fun invoke(): List<GalleryImageGroup> {
-        val hashMap: LinkedHashMap<LocalDate, MutableList<String>> = galleryRepository.loadFilterYGGalleryImages()
+        val hashMap: LinkedHashMap<LocalDate, MutableList<String>> = galleryRepository.loadGalleryImages()
 
-        useCaseLogger.d { "LoadFilterYGGalleryImageGroupsUseCase - hashMap.size: ${hashMap.size}" }
+        useCaseLogger.d { "LoadGalleryImageGroupsUseCase - hashMap.size: ${hashMap.size}" }
 
         return hashMap.map { (date, uris) ->
             GalleryImageGroup(

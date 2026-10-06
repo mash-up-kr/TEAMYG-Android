@@ -4,7 +4,7 @@ import app.cash.turbine.test
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
@@ -27,7 +27,7 @@ class CustomGalleryPickerViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getRecentCacheImages: GetRecentCacheImagesUseCase = mockk()
-    private val loadGroups: LoadFilterYGGalleryImageGroupsUseCase = mockk(relaxed = true)
+    private val loadGroups: LoadGalleryImageGroupsUseCase = mockk(relaxed = true)
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk {
         coEvery { this@mockk(any()) } returns true
     }
@@ -53,7 +53,7 @@ class CustomGalleryPickerViewModelTest {
             returnResultOnly = returnResultOnly,
             recentImagePick = recentImagePick,
             getRecentCacheImagesUseCase = getRecentCacheImages,
-            loadFilterYGGalleryImageGroupsUseCase = loadGroups,
+            loadGalleryImageGroupsUseCase = loadGroups,
             ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
         )
     }

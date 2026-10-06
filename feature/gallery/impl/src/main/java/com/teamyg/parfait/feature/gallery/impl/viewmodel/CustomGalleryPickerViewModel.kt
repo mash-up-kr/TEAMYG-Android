@@ -12,7 +12,7 @@ import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
@@ -74,7 +74,7 @@ class CustomGalleryPickerViewModel
     @Assisted private val returnResultOnly: Boolean,
     @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
-    private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
+    private val loadGalleryImageGroupsUseCase: LoadGalleryImageGroupsUseCase,
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
@@ -111,7 +111,7 @@ class CustomGalleryPickerViewModel
                 }
 
                 viewModelScope.launch {
-                    val images = loadFilterYGGalleryImageGroupsUseCase()
+                    val images = loadGalleryImageGroupsUseCase()
 
                     updateState {
                         copy(

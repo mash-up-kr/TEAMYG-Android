@@ -29,7 +29,7 @@ constructor(
         repositoryLogger.i { "GalleryRepositoryImpl::init" }
     }
 
-    override suspend fun loadFilterYGGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
+    override suspend fun loadGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
         withContext(Dispatchers.IO) {
             val uri: Uri = galleryMediaProvider
                 .collectionUri
