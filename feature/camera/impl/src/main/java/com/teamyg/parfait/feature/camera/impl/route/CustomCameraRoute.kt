@@ -152,9 +152,7 @@ internal fun CustomCameraRoute(
                     )
                 }
 
-                is CustomCameraEffect.Cancel -> navigator.onBack()
-
-                is CustomCameraEffect.CancelToCanvas -> {
+                is CustomCameraEffect.Cancel -> {
                     if (!navigator.popUpTo<NavKeyCanvasMain>()) navigator.onBack()
                 }
 
@@ -175,9 +173,8 @@ internal fun CustomCameraRoute(
         }
     }
 
-    // 권한 없음 화면의 시스템 뒤로가기는 X 버튼과 같은 길을 탄다.
-    // 그 외에는 가로채지 않는다 — 가로채면 예측형 뒤로가기 전환이 사라진다
-    BackHandler(enabled = state.isPermissionDeniedShown) {
+    // 캔버스에서 바로 온 경로는 가로채지 않는다 — 예측형 뒤로가기 전환이 사라진다
+    BackHandler(enabled = returnResultOnly) {
         viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
 

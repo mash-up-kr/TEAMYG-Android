@@ -51,30 +51,4 @@ class CustomCameraViewModelTest {
             expectNoEvents()
         }
     }
-
-    @Test
-    fun cancel_whenPermissionDenied_goesBackToCanvas() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.effect.test {
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = false))
-            assertEquals(CustomCameraEffect.RequestPermission, awaitItem())
-
-            viewModel.processIntent(CustomCameraIntent.OnCancel)
-
-            assertEquals(CustomCameraEffect.CancelToCanvas, awaitItem())
-        }
-    }
-
-    @Test
-    fun cancel_whenPermissionGranted_goesBackToCaller() = runTest {
-        val viewModel = createViewModel()
-
-        viewModel.effect.test {
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = true))
-            viewModel.processIntent(CustomCameraIntent.OnCancel)
-
-            assertEquals(CustomCameraEffect.Cancel, awaitItem())
-        }
-    }
 }

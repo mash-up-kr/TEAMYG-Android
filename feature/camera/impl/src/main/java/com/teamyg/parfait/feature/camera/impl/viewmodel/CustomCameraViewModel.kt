@@ -22,18 +22,12 @@ sealed interface CustomCameraEffect : UiSideEffect {
     ) : CustomCameraEffect
 
     /**
-     * 촬영을 접고 부른 쪽으로 돌아간다.
+     * 촬영을 접고 캔버스로 돌아간다.
      *
      * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, 예전처럼 `null` 을 결과 버스에
      * 흘리면 그것을 결과로 아는 화면이 받아 터진다.
      */
     data object Cancel : CustomCameraEffect
-
-    /**
-     * 권한이 없어 찍을 수 없는 화면을 닫는다. 부른 화면이 아니라 캔버스까지 되감는다 —
-     * 배경 편집에서 들어왔어도 같다.
-     */
-    data object CancelToCanvas : CustomCameraEffect
 
     /** 촬영이 실패했다. 알리고 그 자리에 머문다 — 되돌아가면 사용자는 왜 아무 일도 없었는지 모른다 */
     data object CaptureFailed : CustomCameraEffect
@@ -82,11 +76,7 @@ data class CustomCameraState(
     val zoomRatio: Float = 1f,
     val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
     val flashMode: FlashMode = FlashMode.OFF,
-) : UiState {
-    /** 첫 권한 확인 전에는 `hasPermission` 이 아직 답이 아니라 [isInit] 을 함께 본다 */
-    val isPermissionDeniedShown: Boolean
-        get() = isInit && !hasPermission
-}
+) : UiState
 
 @HiltViewModel
 class CustomCameraViewModel
@@ -194,13 +184,7 @@ constructor(
     }
 
     private fun handleOnCancel() {
-        val effect = if (state.value.isPermissionDeniedShown) {
-            CustomCameraEffect.CancelToCanvas
-        } else {
-            CustomCameraEffect.Cancel
-        }
-
-        postSideEffect(effect)
+        postSideEffect(CustomCameraEffect.Cancel)
     }
 }
 
