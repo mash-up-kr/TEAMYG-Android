@@ -27,10 +27,6 @@ class GalleryMediaProvider(
     val sortOrder: String =
         "COALESCE(${MediaStore.Images.Media.DATE_TAKEN}, ${MediaStore.Images.Media.DATE_ADDED} * 1000) DESC"
 
-    val selection: String =
-        "(${MediaStore.Images.Media.DATE_TAKEN} >= ? AND ${MediaStore.Images.Media.DATE_TAKEN} < ?) " +
-            "OR ${MediaStore.Images.Media.DATE_TAKEN} IS NULL"
-
     fun query(
         uri: Uri,
         projection: Array<String>?,

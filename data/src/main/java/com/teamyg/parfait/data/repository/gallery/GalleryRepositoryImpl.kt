@@ -7,7 +7,6 @@ import android.provider.MediaStore
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.core.util.jvm.model.BitmapWrapper
-import com.teamyg.parfait.domain.model.DayWindow
 import com.teamyg.parfait.data.utils.GalleryMediaProvider
 import com.teamyg.parfait.data.utils.repositoryLogger
 import com.teamyg.parfait.domain.repository.gallery.GalleryRepository
@@ -17,7 +16,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
 class GalleryRepositoryImpl
@@ -35,11 +33,6 @@ constructor(
                 .collectionUri
                 ?: return@withContext LinkedHashMap<LocalDate, MutableList<String>>()
             val timeZone: TimeZone = TimeZone.currentSystemDefault()
-            val window: DayWindow = DayWindow.current(timeZone)
-            val selectionArgs: Array<String> = arrayOf(
-                window.startMs.toString(),
-                window.endMs.toString(),
-            )
 
             val grouped = linkedMapOf<LocalDate, MutableList<String>>()
 
@@ -47,8 +40,8 @@ constructor(
                 .query(
                     uri = uri,
                     projection = galleryMediaProvider.projection,
-                    selection = galleryMediaProvider.selection,
-                    selectionArgs = selectionArgs,
+                    selection = null,
+                    selectionArgs = null,
                     sortOrder = galleryMediaProvider.sortOrder,
                 )?.use { cursor ->
                     val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
@@ -64,13 +57,8 @@ constructor(
                             addedColumn = addedColumn,
                         )
 
-                        if (timestampMs !in window) {
-                            continue
-                        }
-
                         val dateKey: LocalDate = Instant
                             .fromEpochMilliseconds(timestampMs)
-                            .minus(DayWindow.DAY_BOUNDARY_HOUR.hours)
                             .toLocalDateTime(timeZone)
                             .date
 
