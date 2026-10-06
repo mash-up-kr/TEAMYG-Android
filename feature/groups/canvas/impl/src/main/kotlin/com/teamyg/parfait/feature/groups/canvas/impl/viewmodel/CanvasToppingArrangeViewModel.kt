@@ -53,7 +53,9 @@ data class CanvasToppingArrangeUiState(
     val isBorderPanelOpen: Boolean = false,
     val showQuitDialog: Boolean = false,
     val dirtyToppingIds: Set<Long> = emptySet(),
-    /** DELETE 가 끝나도 서버 목록에서 사라질 때까지 남긴다 — 그 전에 출발한 갱신 응답이 지운 토핑을 되살린다 */
+    /** 화면에서 지웠지만 서버에는 아직 있는 토핑. 확인 때 DELETE 로 나간다 */
+    val pendingDeleteToppingIds: Set<Long> = emptySet(),
+    /** 서버에서 지운 토핑의 툼스톤 — 그 전에 출발한 갱신 응답이 뒤늦게 도착하면 지운 토핑이 되살아난다 */
     val deletedToppingIds: Set<Long> = emptySet(),
     /**
      * 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템 뒤로가기는 덮개를 거치지 않아, 그쪽은
@@ -70,7 +72,7 @@ data class CanvasToppingArrangeUiState(
 
     val canOpenBorderPanel: Boolean get() = focusedToppingId != null
 
-    val hasUnsavedChanges: Boolean get() = dirtyToppingIds.isNotEmpty() || deletedToppingIds.isNotEmpty()
+    val hasUnsavedChanges: Boolean get() = dirtyToppingIds.isNotEmpty() || pendingDeleteToppingIds.isNotEmpty()
 }
 
 sealed interface CanvasToppingArrangeIntent : UiIntent {
@@ -215,18 +217,21 @@ constructor(
         val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitImageId }
         val localById = toppings.associateBy { it.parfaitImageId }
 
+        val removedIds = pendingDeleteToppingIds + deletedToppingIds
+
         val merged = incoming
-            .filterNot { it.parfaitImageId in deletedToppingIds }
+            .filterNot { it.parfaitImageId in removedIds }
             .map { server ->
                 if (server.parfaitImageId in dirtyToppingIds) localById[server.parfaitImageId] ?: server else server
             }
-        val remainingFocusId = focusedToppingId?.takeIf { it in incomingIds && it !in deletedToppingIds }
+        val remainingFocusId = focusedToppingId?.takeIf { it in incomingIds && it !in removedIds }
 
         return copy(
             toppings = merged,
-            // 서버 목록에서 사라진 것은 두 집합에서도 뺀다 — 없는 토핑에 PATCH 를 보낼 수 없고,
+            // 서버 목록에서 사라진 것은 세 집합에서도 뺀다 — 없는 토핑에 PATCH·DELETE 를 보낼 수 없고,
             // 툼스톤도 제 역할을 다했다
             dirtyToppingIds = dirtyToppingIds intersect incomingIds,
+            pendingDeleteToppingIds = pendingDeleteToppingIds intersect incomingIds,
             deletedToppingIds = deletedToppingIds intersect incomingIds,
             focusedToppingId = remainingFocusId,
             // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
@@ -302,7 +307,7 @@ constructor(
 
                 else -> copy(
                     toppings = toppings.filterNot { it.parfaitImageId == focusedId },
-                    deletedToppingIds = deletedToppingIds + focusedId,
+                    pendingDeleteToppingIds = pendingDeleteToppingIds + focusedId,
                     dirtyToppingIds = dirtyToppingIds - focusedId,
                     focusedToppingId = null,
                 )
@@ -479,14 +484,27 @@ constructor(
         transformFailures + borderFailures
     }
 
-    /** 다시 누르면 이미 지운 토핑에도 DELETE 가 또 나간다 — 그 404 는 지워진 것으로 친다 */
+    /** @return 대기 중인 삭제가 모두 서버에 반영됐는가. */
     private suspend fun deletePendingToppings(): Boolean = coroutineScope {
-        state.value.deletedToppingIds
-            .map { toppingId -> async { deleteTopping(toppingId) } }
+        val pendingIds = state.value.pendingDeleteToppingIds
+        val deletedIds = pendingIds
+            .map { toppingId -> async { toppingId.takeIf { deleteTopping(it) } } }
             .awaitAll()
-            .all { it }
+            .filterNotNull()
+            .toSet()
+
+        // 지운 것만 옮긴다 — 다시 누른 확인이 못 지운 토핑만 보낸다
+        updateState {
+            copy(
+                pendingDeleteToppingIds = pendingDeleteToppingIds - deletedIds,
+                deletedToppingIds = deletedToppingIds + deletedIds,
+            )
+        }
+
+        deletedIds.size == pendingIds.size
     }
 
+    /** DELETE 가 서버에 닿고 응답만 잃었다면 다시 보낸 요청은 404 다 — 그것은 지워진 것으로 친다 */
     private suspend fun deleteTopping(toppingId: Long): Boolean =
         deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(toppingId)).fold(
             onSuccess = { true },

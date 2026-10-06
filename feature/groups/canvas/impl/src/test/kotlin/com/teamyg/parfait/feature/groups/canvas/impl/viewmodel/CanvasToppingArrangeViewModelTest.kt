@@ -450,7 +450,7 @@ class CanvasToppingArrangeViewModelTest {
         assertFalse(viewModel.state.value.isBorderPanelOpen)
         assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
         assertTrue(
-            viewModel.state.value.deletedToppingIds
+            viewModel.state.value.pendingDeleteToppingIds
                 .isEmpty(),
         )
     }
@@ -1019,7 +1019,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerify(exactly = 0) { deleteTopping(any(), any(), any()) }
-        assertEquals(setOf(SECOND_ID), viewModel.state.value.deletedToppingIds)
+        assertEquals(setOf(SECOND_ID), viewModel.state.value.pendingDeleteToppingIds)
     }
 
     @Test
@@ -1038,7 +1038,7 @@ class CanvasToppingArrangeViewModelTest {
             expectNoEvents()
         }
 
-        assertEquals(setOf(FIRST_ID), viewModel.state.value.deletedToppingIds)
+        assertEquals(setOf(FIRST_ID), viewModel.state.value.pendingDeleteToppingIds)
         assertTrue(
             viewModel.state.value.toppings
                 .none { it.parfaitImageId == FIRST_ID },
@@ -1063,6 +1063,31 @@ class CanvasToppingArrangeViewModelTest {
 
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
+    }
+
+    @Test
+    fun confirmAgain_afterAPartialDeleteFailure_resendsOnlyTheFailedOne() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        stubDelete(FIRST_ID)
+        stubDelete(SECOND_ID, result = Result.failure(RuntimeException("실패")))
+        viewModel.clickDelete()
+        viewModel.click(SECOND_ID)
+        viewModel.clickDelete()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+            stubDelete(SECOND_ID)
+
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        coVerify(exactly = 1) { deleteTopping(any(), any(), ParfaitImageId(FIRST_ID)) }
+        coVerify(exactly = 2) { deleteTopping(any(), any(), ParfaitImageId(SECOND_ID)) }
     }
 
     @Test
@@ -1140,13 +1165,13 @@ class CanvasToppingArrangeViewModelTest {
     fun merge_whenTheServerDropsIt_clearsThePendingDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         viewModel.clickDelete()
-        assertEquals(setOf(FIRST_ID), viewModel.state.value.deletedToppingIds)
+        assertEquals(setOf(FIRST_ID), viewModel.state.value.pendingDeleteToppingIds)
 
         todayCanvases.value = canvas(toppings = listOf(toppingVO(SECOND_ID)))
         advanceUntilIdle()
 
         assertTrue(
-            viewModel.state.value.deletedToppingIds
+            viewModel.state.value.pendingDeleteToppingIds
                 .isEmpty(),
         )
     }
