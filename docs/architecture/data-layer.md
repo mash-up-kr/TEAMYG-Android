@@ -98,7 +98,7 @@ tags: [architecture, parfait]
 
 > **표시 포맷은 data가 만들지 않는다**(2026-08-04, PR #191) — `GalleryImageGroup.date`가 문자열에서
 > `LocalDate`로 바뀌고 `GalleryMediaProvider`의 날짜 포맷이 삭제됐다. 포맷은 화면이
-> `core:util:jvm` `DateTextFormat`으로 만든다. 날짜 그룹 키의 하루 경계는 `DayWindow`(도메인 모델) 소관.
+> `core:util:jvm` `DateTextFormat`으로 만든다. 날짜 그룹 키는 기기 시간대의 달력 날짜다(03시 경계 없음).
 >
 > 📌 **같은 원칙이 원격 시각에도 적용됐다(2026-08-15, PR #248)** — `MyParfaitGroupVO.recentImageUploadedAt`이
 > `kotlinx.datetime.LocalDateTime`(벽시계)에서 **`kotlin.time.Instant`(절대 시점)**로 바뀌었고, 상대시간

@@ -381,3 +381,6 @@ status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-i
 
 ## [2026-10-06] lint | G-001-Empty 정책 v0.3 대조 — 등장 도중 그룹 추가 칩을 누르면 `Shown`으로 건너뛰고(`GroupListEmptyIntroPhase.onClickAddGroup`), 버튼이 받은 터치는 종료로 치지 않게 고침
 고쳐 씀 status 「그룹 목록」 · g001-empty-animation 스펙(단계·종료·주의) · OQ-P-426(④ 신설, 상태)
+
+## [2026-10-06] lint | #599 갤러리 03시 창 제한·날짜 키 03시 경계 해제 — `loadGalleryImages`로 개명, OQ-P-089 서술을 현재 이름으로
+고쳐 씀 OQ-P-089 · data-layer 날짜 그룹 키 서술 · 위키 `C-102` 03시 창 정책(`wiki/pages/concepts/canvas.md` 등)은 코드와 어긋나 있어 위키 쪽 결정을 기다린다

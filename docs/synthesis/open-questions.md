@@ -887,8 +887,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 부분 해소 (② 해소 — 정리 쪽으로 닫힘, 2026-09-20 PR #514 / ① 잔존)
   > ✅ **②가 "없다"로 닫혔다(2026-09-20, PR #514)** — `LoadAllGalleryImageGroupsUseCase`가 삭제되고
   > `GalleryRepository.loadAllGalleryImages`와 `GalleryRepositoryImpl`의 구현까지 함께 걷혔다.
-  > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은 03시 창
-  > 필터본 `loadFilterYGGalleryImages` 하나만 쓴다.
+  > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은
+  > `loadGalleryImages` 하나만 쓴다(#599에서 03시 창 제한을 걷고 이름의 `Filter`도 뗐다).
   > ⚠️ **①은 그대로다** — `GalleryPartialAccessBanner.kt`가 참조 0건으로 남아 있다. 같은 청소
   > 라운드가 바로 옆 死코드는 지우면서 이 파일은 건드리지 않았다.
 - **해소 메모**: ①만 남았다. 정리 시 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 파일 구성·주의 절과 [data-layer](../architecture/data-layer.md) 레이어 배치의 `GalleryRepository` 서술을 맞춘다.
@@ -1394,7 +1394,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > (`PARFAIT_TIME_ZONE`·`parfaitToday()`). 정한 이유가 표시 정합이 아니라 **동작**이라는 점이 중요하다:
   > 캔버스 행이 KST 날짜를 키로 저장돼, 기기 시간대로 오늘을 세면 오늘 조회의 자정 경계 재시도가
   > 하루 한 번이 아니라 **로드마다** 돌고 달력이 지금 보는 날을 미래로 보고 잠근다. **경계 00:00은
-  > 그대로**라 ①(`DayWindow` 03:00으로 옮길지)은 열려 있고, `DayWindow`는 여전히 C-102 갤러리만 쓴다.
+  > 그대로**라 ①(`DayWindow` 03:00으로 옮길지)은 열려 있고, `DayWindow.current()`는 이제 최근 이미지 축출(`GetRecentCacheImagesUseCase`)만 쓴다(갤러리는 #599에서 걷어 냈다).
   > **`today` 이중 계산은 해소됐다** — 로드 함수가 날짜를 만들지 않게 되어 UiState 기본값 한 자리다
   > → [c001-canvas-today-detail 스펙](../superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md).
   > ⚠️ **경계 00:00을 읽는 자리가 늘었다(2026-08-17, PR #297)** — 재진입마다 도는 `syncToday()`가
@@ -4042,17 +4042,17 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-243
 - **출처**: `domain/model/DayWindow.kt`의 `DAY_BOUNDARY_HOUR` × `domain/model/ParfaitDay.kt`의
-  `parfaitToday()` × `GetRecentCacheImagesUseCase`·`GalleryRepositoryImpl` — PR #308이 앱의 하루 경계를
+  `parfaitToday()` × `GetRecentCacheImagesUseCase` — PR #308이 앱의 하루 경계를
   03시로 옮길 때 **경계 값을 두 곳에 적지 않으려고** 기존 `DayWindow.DAY_BOUNDARY_HOUR`를 재사용했다.
   그 자체는 옳은 판단이지만, 지금 그 상수는 **성격이 다른 두 하루**를 정한다 — `parfaitToday()`의 하루는
   **서버 마감 배치 시각의 거울**(고정 KST, 계약이 값을 내려주지 않아 앱이 복제한 것)이고,
-  `DayWindow.current()`의 하루는 **기기 기준 최근 사진 윈도우**(기기 시간대)다. KDoc은 "시각만 공유하고
+  `DayWindow.current()`의 하루는 **기기 기준 최근 이미지 축출 윈도우**(기기 시간대)다. KDoc은 "시각만 공유하고
   시간대는 공유하지 않는다"까지 적었으나, **서버가 배치 시각을 바꿀 때 무엇을 해야 하는지**는 적히지
-  않았다. 그 경우 상수를 고치면 갤러리 윈도우가 함께 움직이고, 갈라 두면 "두 곳에 적으면 한쪽만
+  않았다. 그 경우 상수를 고치면 최근 이미지 윈도우가 함께 움직이고, 갈라 두면 "두 곳에 적으면 한쪽만
   고쳐진다"던 원래 문제로 돌아간다.
-- **항목**: ① 서버 배치 시각이 바뀔 때 상수를 갈라 각자 갖게 할지, 아니면 갤러리 윈도우도 같이 움직이는
+- **항목**: ① 서버 배치 시각이 바뀔 때 상수를 갈라 각자 갖게 할지, 아니면 최근 이미지 윈도우도 같이 움직이는
   것이 의도라고 못박을지. ② 계약에 하루 경계를 내려주는 필드를 서버에 요청할지 — 있으면 복제가 사라져
-  이 결합 자체가 없어진다. ③ 갤러리 윈도우의 경계가 03시여야 하는 근거가 정책에 있는지(파르페 마감과
+  이 결합 자체가 없어진다. ③ 최근 이미지 윈도우의 경계가 03시여야 하는 근거가 정책에 있는지(파르페 마감과
   같은 값을 쓰는 것이 우연인지 의도인지 어디에도 안 적혀 있다).
 - **상태**: 미해결 (지금은 두 값이 같아야 맞는 상태라 발화하지 않는다)
 - **해소 메모**: 정하면 [api/parfait.md](../api/parfait.md) "하루 경계"와
