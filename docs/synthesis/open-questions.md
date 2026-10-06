@@ -882,7 +882,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] 갤러리 死코드 2건 — 부분 접근 배너·전체 조회 UseCase
 - **ID**: OQ-P-089
-- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 03시 창 필터본 `LoadFilterYGGalleryImageGroupsUseCase`만 쓴다). 둘 다 PR #191 이후 상태.
+- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 `LoadGalleryImageGroupsUseCase`(당시 이름 `LoadFilterYGGalleryImageGroupsUseCase`)만 쓴다). 둘 다 PR #191 이후 상태.
 - **항목**: ① 배너를 지울지(대체 완료) 다른 접근 수준 안내로 되살릴지, ② 전체 조회 UseCase가 앞으로 쓰일 화면이 있는지(있으면 유지, 없으면 Repository의 `loadAllGalleryImages`까지 함께 정리).
 - **상태**: 부분 해소 (② 해소 — 정리 쪽으로 닫힘, 2026-09-20 PR #514 / ① 잔존)
   > ✅ **②가 "없다"로 닫혔다(2026-09-20, PR #514)** — `LoadAllGalleryImageGroupsUseCase`가 삭제되고
@@ -1382,7 +1382,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-12] 캔버스 날짜가 03시 경계를 안 쓴다 — 같은 저장소에 `DayWindow`가 있는데도
 
 - **ID**: OQ-P-127
-- **출처**: `feature/groups/canvas/impl` `viewmodel/CanvasMainViewModel.kt#loadCanvasMainInfo`(PR #199 develop 머지) — 캔버스 날짜 라벨을 `Clock.System.todayIn(TimeZone.currentSystemDefault())`로 만든다. 위키 [[캔버스-마감-스케줄]]은 하루 경계가 **03:00 KST 고정**이고(서버 기준 KST), `domain`의 `DayWindow.current(timeZone, clock)`가 그 경계를 이미 구현해 C-102 갤러리가 쓰고 있다. 지금 구현은 경계가 00:00이고 시간대도 기기 설정을 따른다 — 00:00~02:59 사이에는 화면이 **캔버스의 실제 날짜보다 하루 뒤 날짜**를 보여준다.
+- **출처**: `feature/groups/canvas/impl` `viewmodel/CanvasMainViewModel.kt#loadCanvasMainInfo`(PR #199 develop 머지) — 캔버스 날짜 라벨을 `Clock.System.todayIn(TimeZone.currentSystemDefault())`로 만든다. 위키 [[캔버스-마감-스케줄]]은 하루 경계가 **03:00 KST 고정**이고(서버 기준 KST), `domain`의 `DayWindow.current(timeZone, clock)`가 그 경계를 이미 구현해 있다(갤러리는 #599에서 이 경계를 걷어 냈고 지금은 최근 이미지 축출만 쓴다). 지금 구현은 경계가 00:00이고 시간대도 기기 설정을 따른다 — 00:00~02:59 사이에는 화면이 **캔버스의 실제 날짜보다 하루 뒤 날짜**를 보여준다.
 - **항목**: ① 화면 날짜를 `DayWindow` 기준으로 옮길지(경계·시간대 둘 다), ② 시간대를 KST로 고정할지 기기 시간대를 인정할지 — 서버가 KST로 캔버스를 마감하므로 해외 사용자는 어느 쪽이든 정책 결정이 필요하다. ③ 날짜가 화면에서 계산되는 구조 자체를 유지할지(서버가 캔버스 날짜를 내려주면 표시만 남는다).
 - **상태**: 미해결 (그룹·캔버스 데이터 미결선이라 지금은 표시만 틀린다)
   > ⚠️ **범위가 커졌다(2026-08-16, PR #259)** — 같은 `today` 값이 이제 **캘린더의 미래 날짜 잠금과 오늘
