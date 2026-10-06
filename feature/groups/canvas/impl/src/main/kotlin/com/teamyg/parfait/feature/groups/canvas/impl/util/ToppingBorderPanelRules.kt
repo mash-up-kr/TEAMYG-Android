@@ -5,7 +5,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 internal enum class ToppingPanelBackAction {
     Ignore,
     ClosePanel,
-    ShowQuitDialog,
+    NavigateBack,
 }
 
 /** 테두리 패널이 있는 화면이 시스템 뒤로가기를 받았을 때 할 일. 로딩 중에는 패널도 닫지 않는다 */
@@ -15,7 +15,7 @@ internal fun toppingPanelBackAction(
 ): ToppingPanelBackAction = when {
     isLoading -> ToppingPanelBackAction.Ignore
     isBorderPanelOpen -> ToppingPanelBackAction.ClosePanel
-    else -> ToppingPanelBackAction.ShowQuitDialog
+    else -> ToppingPanelBackAction.NavigateBack
 }
 
 /**

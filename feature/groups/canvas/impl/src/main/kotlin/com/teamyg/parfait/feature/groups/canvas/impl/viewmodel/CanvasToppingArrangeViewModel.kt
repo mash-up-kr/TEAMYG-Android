@@ -272,8 +272,7 @@ constructor(
                 copy(showDeleteToppingDialog = false)
             }
 
-            // 변경 여부와 무관하게 팝업을 띄운다
-            CanvasToppingArrangeIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
+            CanvasToppingArrangeIntent.OnClickClose -> requestQuit()
 
             CanvasToppingArrangeIntent.OnSystemBack -> handleOnSystemBack()
 
@@ -317,12 +316,20 @@ constructor(
     }
 
     private fun handleOnSystemBack() {
-        updateState {
-            when (toppingPanelBackAction(isLoading = isLoading, isBorderPanelOpen = isBorderPanelOpen)) {
-                ToppingPanelBackAction.Ignore -> this
-                ToppingPanelBackAction.ClosePanel -> copy(isBorderPanelOpen = false)
-                ToppingPanelBackAction.ShowQuitDialog -> copy(showQuitDialog = true)
-            }
+        val current = state.value
+
+        when (toppingPanelBackAction(current.isLoading, current.isBorderPanelOpen)) {
+            ToppingPanelBackAction.Ignore -> Unit
+            ToppingPanelBackAction.ClosePanel -> updateState { copy(isBorderPanelOpen = false) }
+            ToppingPanelBackAction.NavigateBack -> postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
+        }
+    }
+
+    private fun requestQuit() {
+        if (state.value.dirtyToppingIds.isEmpty()) {
+            postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
+        } else {
+            updateState { copy(showQuitDialog = true) }
         }
     }
 

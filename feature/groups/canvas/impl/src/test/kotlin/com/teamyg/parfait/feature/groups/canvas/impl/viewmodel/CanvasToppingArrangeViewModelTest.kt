@@ -534,11 +534,27 @@ class CanvasToppingArrangeViewModelTest {
     // 닫기
 
     @Test
-    fun clickClose_withoutChanges_stillShowsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickClose_withoutChanges_navigatesBackWithoutQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
 
-        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
 
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
+    }
+
+    @Test
+    fun clickClose_withChanges_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.drag()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
+
+            expectNoEvents()
+        }
         assertTrue(viewModel.state.value.showQuitDialog)
     }
 
@@ -554,12 +570,16 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
-    fun systemBack_withPanelClosed_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+    fun systemBack_withChanges_navigatesBackWithoutQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
+        viewModel.drag()
 
-        viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
 
-        assertTrue(viewModel.state.value.showQuitDialog)
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test
@@ -572,9 +592,11 @@ class CanvasToppingArrangeViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
 
-        viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
 
-        assertFalse(viewModel.state.value.showQuitDialog)
+            expectNoEvents()
+        }
     }
 
     @Test
@@ -585,16 +607,19 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
         advanceUntilIdle()
 
-        viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnSystemBack)
 
-        // 팝업이 뜨면 삭제가 낼 되감기와 팝업의 되감기가 겹친다
-        assertFalse(viewModel.state.value.showQuitDialog)
+            // 여기서 되감으면 삭제가 낼 되감기와 겹친다
+            expectNoEvents()
+        }
         refreshGate.complete(Unit)
     }
 
     @Test
     fun quitDialogConfirm_closesDialogAndEmitsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
+        viewModel.drag()
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickClose)
         assertTrue(viewModel.state.value.showQuitDialog)
 
