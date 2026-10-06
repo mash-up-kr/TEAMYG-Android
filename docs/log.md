@@ -372,3 +372,6 @@ module-structure `core:ui` 의존 항목 신설 · enum 변환 공용화 항목�
 
 ## [2026-10-06] audit | 닫기·뒤로가기 팝업 흐름 변경(#589)을 문서에 반영
 status 토핑 생성·배치·누끼·배경 편집 항목 · navigation-flow `popUpTo` 소비처와 그만두기 팝업·배경 편집 복귀 항목 · ADR-0034 현재 코드 메모 · OQ-P-411 ③ · OQ-P-414(① 변경 없을 때 팝업 해소, 제목·본문만 남김)
+
+## [2026-10-06] restructure | 배치 수정 화면의 삭제를 즉시 DELETE에서 확정 시점 일괄 반영으로 바꿈 — 삭제 버튼은 화면에서만 빼고, 확정이 PATCH 뒤에 DELETE를 보낸다
+status 「토핑 생성·배치·배치 수정」 삭제 서술·주의 줄 · data-layer·api/parfait-image·api/README 삭제 소비처 서술 · 해소 OQ-P-270
