@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.gallery.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
+import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
@@ -17,6 +18,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -176,6 +178,42 @@ class CustomGalleryPickerViewModelTest {
             // Then 지금까지의 경로 그대로다
             assertEquals(CustomGalleryPickerEffect.NavigateToConfirm(source.uri), awaitItem())
         }
+    }
+
+    @Test
+    fun permission_whenLoadGroupsThrows_stopsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 사진 조회가 실패한다
+        coEvery { loadGroups() } throws IOException("cursor")
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.SOURCE)
+        advanceUntilIdle()
+
+        // When 권한이 허용된 결과가 온다
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.FULL))
+        advanceUntilIdle()
+
+        // Then 로딩이 끝난다 — 남아 있으면 화면이 영영 로딩 상태다
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun permission_whenResultRepeats_keepsLatestLoadOnly() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 첫 조회가 끝나지 않는 상태에서
+        val first = CompletableDeferred<List<GalleryImageGroup>>()
+        val second = listOf(GalleryImageGroup(date = LocalDate(2026, 10, 6), images = listOf("content://a")))
+        coEvery { loadGroups() } coAnswers { first.await() } andThenAnswer { second }
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.SOURCE)
+        advanceUntilIdle()
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.PARTIAL))
+        advanceUntilIdle()
+
+        // When 권한 결과가 다시 오고 이전 조회가 뒤늦게 끝난다
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.FULL))
+        advanceUntilIdle()
+        first.complete(emptyList())
+        advanceUntilIdle()
+
+        // Then 최신 조회 결과가 남는다 — 이전 조회가 덮어쓰면 안 된다
+        assertEquals(second, viewModel.state.value.groups)
     }
 
     @Test

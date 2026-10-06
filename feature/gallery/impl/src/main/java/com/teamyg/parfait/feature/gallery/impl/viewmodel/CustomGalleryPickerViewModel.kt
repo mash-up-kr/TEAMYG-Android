@@ -9,6 +9,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
@@ -19,6 +20,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @Immutable
@@ -80,6 +82,7 @@ class CustomGalleryPickerViewModel
     initialState = CustomGalleryPickerState(),
 ) {
     private var hasRequestedPermission = false
+    private var loadGroupsJob: Job? = null
 
     init {
         viewModelLogger.i { "CustomGalleryPickerViewModel::init" }
@@ -110,15 +113,23 @@ class CustomGalleryPickerViewModel
                     )
                 }
 
-                viewModelScope.launch {
-                    val images = loadGalleryImageGroupsUseCase()
+                // 권한 결과가 다시 오면 접근 수준이 달라졌을 수 있어 이전 조회를 버리고 새로 읽는다
+                loadGroupsJob?.cancel()
+                loadGroupsJob = viewModelScope.launch {
+                    runSuspendCatching { loadGalleryImageGroupsUseCase() }
+                        .onSuccess { images ->
+                            updateState {
+                                copy(
+                                    isLoading = false,
+                                    groups = images,
+                                )
+                            }
+                        }
+                        .onFailure { e ->
+                            viewModelLogger.e(e) { "갤러리 이미지 조회 실패" }
 
-                    updateState {
-                        copy(
-                            isLoading = false,
-                            groups = images,
-                        )
-                    }
+                            updateState { copy(isLoading = false) }
+                        }
                 }
             }
 
