@@ -1066,6 +1066,58 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun confirm_deleteRejectedForAnotherReason_isAFailure() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        stubDelete(
+            id = FIRST_ID,
+            result = Result.failure(
+                AppError.Server(code = "PARFAIT_ALREADY_CLOSED", statusCode = 409, serverMessage = "마감"),
+            ),
+        )
+        viewModel.clickDelete()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun confirm_oneOfTwoDeletesFails_showsErrorAndKeepsBothOffScreen() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        stubDelete(FIRST_ID)
+        stubDelete(SECOND_ID, result = Result.failure(RuntimeException("실패")))
+        viewModel.clickDelete()
+        viewModel.click(SECOND_ID)
+        viewModel.clickDelete()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+            expectNoEvents()
+        }
+
+        // 서버에서 이미 지워진 토핑이 뒤늦은 응답으로 되살아나지 않는다
+        todayCanvases.value = canvas().copy(lastClosedDate = parfaitToday())
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(OTHERS_ID),
+            viewModel.state.value.toppings
+                .map(EditableTopping::parfaitImageId),
+        )
+    }
+
+    @Test
     fun confirmAgain_afterAPartialDeleteFailure_resendsOnlyTheFailedOne() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         stubDelete(FIRST_ID)
