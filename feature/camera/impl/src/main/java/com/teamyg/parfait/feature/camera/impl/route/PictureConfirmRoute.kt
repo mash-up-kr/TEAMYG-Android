@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitAdd
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitBackground
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
@@ -60,27 +61,23 @@ internal fun PictureConfirmRoute(
                     )
                 }
             },
-            // 배경 편집에서 들어온 경우 캔버스까지 튀면 편집 중이던 배경이 날아간다.
-            // 그 경로의 닫기는 부른 화면으로 돌아가는 것이고, 확인 버튼과 같은 처리다.
-            // 그 외 경로는 편집 내용이 버려지므로 그만둘지 먼저 묻는다
-            onClickClose = {
-                if (returnResultOnly) {
-                    navigator.popUpTo<NavKeyCanvasBGEdit>()
-                } else {
-                    showQuitDialog = true
-                }
-            },
+            onClickClose = { showQuitDialog = true },
             modifier = modifier.padding(innerPadding),
         )
     }
 
     if (showQuitDialog) {
-        YGModalQuitAdd(
-            onConfirmQuit = {
-                showQuitDialog = false
-                navigator.popUpTo<NavKeyCanvasMain>()
-            },
-            onDismiss = { showQuitDialog = false },
-        )
+        val onConfirmQuit = {
+            showQuitDialog = false
+            navigator.popUpTo<NavKeyCanvasMain>()
+            Unit
+        }
+        val onDismiss = { showQuitDialog = false }
+
+        if (returnResultOnly) {
+            YGModalQuitBackground(onConfirmQuit = onConfirmQuit, onDismiss = onDismiss)
+        } else {
+            YGModalQuitAdd(onConfirmQuit = onConfirmQuit, onDismiss = onDismiss)
+        }
     }
 }
