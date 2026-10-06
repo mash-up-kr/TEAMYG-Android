@@ -38,15 +38,10 @@
     <string name="canvas_bg_edit_title">배경 변경</string>
     <string name="canvas_bg_edit_save">저장하기</string>
     <string name="canvas_bg_edit_topping_delete">삭제</string>
-    <string name="canvas_bg_edit_topping_delete_dialog_title">토핑을 삭제할까요?</string>
-    <string name="canvas_bg_edit_topping_delete_dialog_body">삭제한 토핑은 다시 복구할 수 없어요\n다시 한번 확인해 주세요</string>
-    <string name="canvas_bg_edit_topping_delete_dialog_confirm">삭제하기</string>
-    <string name="canvas_bg_edit_topping_delete_dialog_cancel">그만두기</string>
     <string name="canvas_bg_edit_save_error_network">네트워크 연결을 확인하고 다시 시도해 주세요</string>
     <string name="canvas_bg_edit_save_error_unsupported_image">이 사진은 배경으로 쓸 수 없어요\n다른 사진을 골라 주세요</string>
     <string name="canvas_bg_edit_save_error_unknown">배경을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
     <string name="canvas_bg_edit_topping_save_error_unknown">토핑 편집을 저장하지 못했어요\n잠시 후 다시 시도해 주세요</string>
-    <string name="canvas_bg_edit_topping_delete_error_unknown">토핑을 삭제하지 못했어요\n잠시 후 다시 시도해 주세요</string>
     <string name="canvas_topping_place_title">배치</string>
     <string name="canvas_topping_border_panel_collapsed">테두리 설정</string>
     <string name="canvas_topping_border_panel_width">테두리 굵기</string>

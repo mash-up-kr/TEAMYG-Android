@@ -302,12 +302,12 @@ class CanvasToppingPlaceViewModel
     }
 
     private fun handleOnSystemBack() {
-        updateState {
-            when (toppingPanelBackAction(isLoading = isLoading, isBorderPanelOpen = isBorderPanelOpen)) {
-                ToppingPanelBackAction.Ignore -> this
-                ToppingPanelBackAction.ClosePanel -> copy(isBorderPanelOpen = false)
-                ToppingPanelBackAction.ShowQuitDialog -> copy(showQuitDialog = true)
-            }
+        val current = state.value
+
+        when (toppingPanelBackAction(current.isLoading, current.isBorderPanelOpen)) {
+            ToppingPanelBackAction.Ignore -> Unit
+            ToppingPanelBackAction.ClosePanel -> updateState { copy(isBorderPanelOpen = false) }
+            ToppingPanelBackAction.NavigateBack -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
         }
     }
 

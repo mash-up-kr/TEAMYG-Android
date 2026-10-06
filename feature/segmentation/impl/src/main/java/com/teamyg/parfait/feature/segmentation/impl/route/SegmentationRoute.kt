@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,11 +67,6 @@ internal fun SegmentationRoute(
                 }
             }
         }
-    }
-
-    // 분석 중에는 되돌아갈 화면이 없다 — 뒤로가기도 X 와 같이 그만두기를 묻는다
-    BackHandler(enabled = state.isAnalyzing) {
-        viewModel.processIntent(SegmentationIntent.ClickClose)
     }
 
     YGScaffoldV2(

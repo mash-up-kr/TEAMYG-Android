@@ -33,7 +33,6 @@ data class SegmentationState(
 sealed interface SegmentationIntent : UiIntent {
     data class ClickCandidate(val index: Int) : SegmentationIntent
 
-    /** X 버튼, 분석 중 시스템 뒤로가기 */
     data object ClickClose : SegmentationIntent
 
     data object ConfirmQuit : SegmentationIntent

@@ -22,7 +22,7 @@ sealed interface CustomCameraEffect : UiSideEffect {
     ) : CustomCameraEffect
 
     /**
-     * 촬영을 접고 부른 쪽으로 돌아간다.
+     * 촬영을 접고 캔버스로 돌아간다.
      *
      * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, 예전처럼 `null` 을 결과 버스에
      * 흘리면 그것을 결과로 아는 화면이 받아 터진다.

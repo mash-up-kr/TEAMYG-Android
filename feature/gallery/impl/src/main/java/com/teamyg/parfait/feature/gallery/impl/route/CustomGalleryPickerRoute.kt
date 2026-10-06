@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.gallery.impl.route
 
 import android.app.Activity
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +32,7 @@ import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
@@ -106,9 +108,15 @@ internal fun CustomGalleryPickerRoute(
 
                 is CustomGalleryPickerEffect.ShowDraftUnavailable -> toastPolicy.showError(draftUnavailableMessage)
 
-                is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
+                is CustomGalleryPickerEffect.NavigateToBack -> navigator.popUpTo<NavKeyCanvasMain>()
             }
         }
+    }
+
+    // 배경 편집에서 온 경로만 가로채 캔버스로 되감는다. 캔버스에서 바로 온 경로는 기본
+    // 뒤로가기가 이미 캔버스라 두면 예측형 뒤로가기 전환이 산다
+    BackHandler(enabled = returnResultOnly) {
+        viewModel.processIntent(CustomGalleryPickerIntent.OnCancel)
     }
 
     DisposableEffect(lifecycleOwner) {

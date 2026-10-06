@@ -917,12 +917,15 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onSystemBack_withPanelClosed_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+    fun onSystemBack_withPanelClosed_navigatesBackWithoutQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = readyViewModel()
 
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
 
-        assertTrue(viewModel.state.value.showQuitDialog)
+            assertEquals(CanvasToppingPlaceEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test

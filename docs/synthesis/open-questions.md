@@ -4638,23 +4638,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 편집 화면(C-104)을 다녀와 되돌아온 뒤에도 유효한지는 아직 안 봤다 — 그 동선에서 깨지면 예외가 아니라
   > **빈 자리**로 드러날 공산이 크다. ②(복사할지 segmenter를 열어 둘지)는 손대지 않았다.
 
-### [2026-08-23] 토핑 삭제만 즉시 영구이고 화면을 떠나며, 나머지 변경은 확정 시점에 저장된다
-
-- **ID**: OQ-P-270
-- **출처**: `CanvasToppingArrangeViewModel#handleOnDeleteToppingDialogConfirm`·`handleOnClickConfirm` —
-  삭제 확인 모달의 "삭제하기"가 곧 `DeleteToppingUseCase` 호출이다. 성공하면 오늘 캔버스를 다시 받은 뒤
-  `NavigateBack`으로 캔버스에 돌아간다. 이동·크기·회전·테두리는 `dirtyToppingIds`에 모였다가 확정 버튼에서만
-  나간다. 삭제 실패는 `failToDeleteTopping`이 `CanvasToppingArrangeError`의 `NETWORK` 또는
-  `TOPPING_DELETE_UNKNOWN` 토스트로 알리고 화면에 남는다 — 403·409·404를 한 문구로 접는다.
-- **항목**: ② 한 화면 안에서 저장 시점이 갈린다. 삭제는 모달 확인 시점에 영구이고 되돌릴 수 없으며,
-  나머지는 확정 버튼을 눌러야 저장된다. 화면은 그 차이를 말하지 않는다. 삭제가 성공하면 곧바로 화면을
-  떠나므로, 그때까지 다른 토핑에 해 둔 미저장 변경은 묻지 않고 버려진다 — 삭제 전에 저장할지, 물을지,
-  화면에 남을지 정한 적이 없다. 번호는 다른 문서가 가리키는 ②를 그대로 둔다.
-- **상태**: 미해결 (정한 적 없음)
-- **해소 메모**: 마감된 캔버스 409의 처분은 OQ-P-261이 쥔다.
-  지금 동작은 `CanvasToppingArrangeViewModelTest`의 `deleteConfirm_success_discardsOtherDirtyToppings`가 고정한다.
-  정하면 `deleteConfirm_success_*` 계열을 함께 고친다.
-
 ### [2026-08-23] 토핑 크기 상한이 근거 없이 사라졌다 — 이제 막는 자리가 앱에도 서버에도 없다
 
 - **ID**: OQ-P-271
@@ -7452,7 +7435,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   분기하고 실패 시 재시도 또는 원본 사용 옵션을 주라고 적는다. [c101-loading 스펙](../superpowers/specs/archive/2026-09-30-c101-loading-design.md)
   「범위」가 위키 갱신을 제외로 뒀다 — 정책 원본이 아직 위키에 들어오지 않았다.
 - **항목**: ① 구현에는 `C-103-Error`가 없다. 후보 0건·실패·던진 예외·디코드 실패는 전부 편집 화면(C-104)으로 간다.
-  ② 재시도 버튼과 재시도 회복이 없다. ③ 로딩이 별도 화면(`C-101-Loading`)이고 X·시스템 뒤로에 「사진 편집을 그만둘까요?」
+  ② 재시도 버튼과 재시도 회복이 없다. ③ 로딩이 별도 화면(`C-101-Loading`)이고 X에 「사진 편집을 그만둘까요?」
   팝업이 붙었다 — 위키에 이 팝업 조항이 없다. 위키가 정본이라 기획이 갱신되기 전에는 구현이 정책과 갈린 채다.
 - **상태**: 미해결 (정책 원본 미수신. 위키는 이 저장소가 고치지 않는다)
 - **해소 메모**: 기획 쪽이 C-101-Loading·C-103-Error 삭제·그만두기 팝업을 위키에 반영하면 이 항목을 닫는다.
@@ -7491,22 +7474,18 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 전)
 - **해소 메모**: 문구가 갈리면 `ToppingArrangeLayout`이 버튼 문구를 인자로 받게 한다.
 
-### [2026-10-02] 배치 수정 화면의 그만두기 팝업이 변경이 없어도 뜨고, 제목·본문이 스펙과 다르다
+### [2026-10-02] 배치 수정 화면 그만두기 팝업의 제목·본문이 스펙과 다르다
 
 - **ID**: OQ-P-414
-- **출처**: `CanvasToppingArrangeViewModel`의 `OnClickClose`·`handleOnSystemBack`,
-  `CanvasToppingArrangeRoute`의 `YGModalQuitEdit` × 피그마 수정 플로우 정책 메모 ·
+- **출처**: `CanvasToppingArrangeRoute`의 `YGModalQuitEdit` ×
   [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
-- **항목**: ① 정책 메모는 닫기가 변경사항이 있을 때만 확인을 띄운다고 적는데 구현은 `dirtyToppingIds`를
-  보지 않고 항상 띄운다. 스펙이 알고 고른 차이이고 기획 확인은 받지 않았다. ② 스펙은 팝업 제목을
+- **항목**: 스펙은 팝업 제목을
   "편집을 그만둘까요?"로 적었는데 구현은 `core:ui` `YGModalQuitEdit`의 「사진 편집을 그만둘까요?」를
   쓴다. 본문도 스펙이 가리킨 "기존 편집 내용은 모두 사라지며 캔버스 화면으로 돌아가요"가 아니라
   그만두기 팝업 공통 문구(`yg_modal_quit_body`) 「지금까지 진행한 내용은 저장되지 않아요. 정말
   그만두시겠어요?」다. `YGModalQuit.kt`의 세 변형 가운데 편집용을 고른 것이고 사용자 확인 전이다.
-- **상태**: 미해결 (①은 기획, ②는 사용자 확인 전)
-- **해소 메모**: ①을 정책대로 하면 `dirtyToppingIds`가 비었을 때 팝업 없이 `NavigateBack`을 내고
-  `CanvasToppingArrangeViewModelTest`를 함께 고친다. ②에서 다른 문구가 필요하면 `YGModalQuit.kt`에
-  변형을 더한다.
+- **상태**: 미해결 (사용자 확인 전)
+- **해소 메모**: 다른 문구가 필요하면 `YGModalQuit.kt`에 변형을 더한다.
 
 ### [2026-10-02] 배치·배치 수정·배경 편집 화면의 분석 화면 id가 위키 v7·피그마와 맞지 않는다
 
@@ -7571,8 +7550,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: `saveTransforms`·`saveBorder`는 유스케이스가 돌려준 `Result.failure`의 원인을 로그에만 남기고
   실패한 id만 돌려주므로, `handleOnClickConfirm`은 원인이 `AppError.Network`여도 항상
   `TOPPING_SAVE_UNKNOWN`을 낸다. `NETWORK` 문구는 유스케이스가 예외를 **던져** `failToSaveUnexpectedly`로
-  갔을 때만 나온다. 삭제(`failToDeleteTopping`)는 `Result.failure`의 원인도 가린다 — 두 경로가 갈린 것이
-  의도인지 정한 적이 없다.
+  갔을 때만 나온다. 확정이 함께 보내는 삭제(`deletePendingToppings`)도 같은 식으로 접힌다 — 원인을
+  가리지 않는 것이 의도인지 정한 적이 없다.
 - **상태**: 미해결 (정한 적 없음)
 - **해소 메모**: 가리게 하면 `CanvasToppingArrangeViewModelTest`의 `confirm_failure_keepsPanelOpen`이
   기대하는 오류 값을 함께 고친다. 409를 일반 오류로 접는 것은 OQ-P-261.
@@ -7594,10 +7573,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-423
 - **출처**: `feature/groups/canvas/impl`의 `strings.xml` — `canvas_bg_edit_topping_delete`,
-  `canvas_bg_edit_topping_delete_dialog_title`·`_body`·`_confirm`·`_cancel`,
-  `canvas_bg_edit_topping_save_error_unknown`, `canvas_bg_edit_topping_delete_error_unknown`.
-- **항목**: 읽는 곳은 `CanvasToppingArrangeScreen`의 삭제 모달, `ToppingFocusDecoration`의 삭제 버튼,
-  `CanvasToppingArrangeError`뿐이고 배경 편집 화면(`CanvasBGEdit`)은 쓰지 않는다. 키 이름이 쓰는 화면과 맞지 않는다.
+  `canvas_bg_edit_topping_save_error_unknown`.
+- **항목**: 읽는 곳은 `ToppingFocusDecoration`의 삭제 버튼과 `CanvasToppingArrangeError`뿐이고 배경 편집 화면(`CanvasBGEdit`)은 쓰지 않는다. 키 이름이 쓰는 화면과 맞지 않는다.
 - **상태**: 미해결 (동작 영향 없음)
 - **해소 메모**: 이름을 바꾸면 `canvas_topping_arrange_*`로 맞춘다. `NETWORK` 문구
   `canvas_bg_edit_save_error_network`는 두 화면이 함께 쓴다.

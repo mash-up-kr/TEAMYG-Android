@@ -19,7 +19,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.lerp
-import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -43,7 +42,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_R
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelFocusCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingArrangeUiState
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private const val INPUT_TAG = "topping_arrange_input"
 
@@ -70,8 +68,6 @@ internal fun CanvasToppingArrangeScreen(
     onChangeBorderWidth: (Float) -> Unit,
     onToppingTransform: (panX: Float, panY: Float, zoom: Float, rotationDelta: Float) -> Unit,
     onClickDeleteTopping: () -> Unit,
-    onDeleteToppingDialogConfirm: () -> Unit,
-    onDeleteToppingDialogCancel: () -> Unit,
     modifier: Modifier = Modifier,
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
 ) {
@@ -208,19 +204,6 @@ internal fun CanvasToppingArrangeScreen(
             }
         }
     }
-
-    if (uiState.showDeleteToppingDialog) {
-        YGModalPopup(
-            title = stringResource(R.string.canvas_bg_edit_topping_delete_dialog_title),
-            body = stringResource(R.string.canvas_bg_edit_topping_delete_dialog_body),
-            iconRes = DesignSystemR.drawable.ic_warning_round,
-            secondaryText = stringResource(R.string.canvas_bg_edit_topping_delete_dialog_confirm),
-            onSecondaryClick = onDeleteToppingDialogConfirm,
-            primaryText = stringResource(R.string.canvas_bg_edit_topping_delete_dialog_cancel),
-            onPrimaryClick = onDeleteToppingDialogCancel,
-            onDismissRequest = onDeleteToppingDialogCancel,
-        )
-    }
 }
 
 /** 실제 리소스라야 painter 가 Success 에 닿아 테두리도 함께 그려진다 */
@@ -269,8 +252,6 @@ private fun PreviewCanvasToppingArrangeScreen(
         onChangeBorderWidth = {},
         onToppingTransform = { _, _, _, _ -> },
         onClickDeleteTopping = {},
-        onDeleteToppingDialogConfirm = {},
-        onDeleteToppingDialogCancel = {},
         modifier = Modifier.fillMaxSize(),
     )
 }
