@@ -5853,11 +5853,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-331
 - **출처**: `CustomGalleryPickerScreen#GalleryContent`(PR #406) — 사진이 있으면
-  `YGFloatingBarTitle`("오늘 찍은 사진"), `isEmpty` 면 제목 없는 `YGFloatingBarClose` 다.
+  `YGFloatingBarTitle`("사진 선택"), `isEmpty` 면 제목 없는 `YGFloatingBarClose` 다.
   Figma 는 `Floating Bar` 에 `Status=Title` 을 추가했을 뿐 **어느 상태에 무엇을 쓰는지**를 주지 않았고,
   스펙이 이 갈래의 출처로 적은 것은 작업자 지시 한 줄이다. 권한 미허용 갈래도 제목이 없다.
 - **항목**: ① 빈 상태에 제목이 없어야 하는가 — 같은 화면이 상태에 따라 머리글을 잃는 것이라
-  스크린리더에는 화면 이름이 사라지는 것과 같다. ② 문구 "오늘 찍은 사진"이 화면 이름인지 목록
+  스크린리더에는 화면 이름이 사라지는 것과 같다. ② 문구 "사진 선택"이 화면 이름인지 목록
   머리글인지 — 위키에 C-102 문구 정책이 없다(빈 상태 안내문은 있고 제목은 없다).
 - **상태**: 미해결 (**동작 영향 0** — 육안 대조도 아직 없다. 이 라운드 검증은 기계 검사뿐이었다)
 - **해소 메모**: 정해지면 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 상단바

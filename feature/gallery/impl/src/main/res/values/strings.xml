@@ -8,5 +8,5 @@
     <string name="gallery_empty_today_description">오늘 찍은 사진이 없어요\n사진을 찍고 토핑을 추가해 보세요</string>
     <string name="gallery_cutout_draft_unavailable">토핑을 이어서 만들 수 없어요. 캔버스에서 다시 시작해 주세요.</string>
     <string name="gallery_recent_uploaded_header">최근 업로드한 사진</string>
-    <string name="gallery_today_photos_title">오늘 찍은 사진</string>
+    <string name="gallery_title">사진 선택</string>
 </resources>

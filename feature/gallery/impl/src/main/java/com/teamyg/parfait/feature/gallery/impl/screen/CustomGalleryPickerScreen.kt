@@ -98,7 +98,7 @@ private fun GalleryContent(
             )
         } else {
             YGFloatingBarTitle(
-                title = stringResource(R.string.gallery_today_photos_title),
+                title = stringResource(R.string.gallery_title),
                 onCloseClick = onClickCancel,
                 modifier = Modifier.fillMaxWidth(),
             )
