@@ -272,8 +272,6 @@ class CanvasToppingArrangeScreenTest {
                         onChangeBorderWidth = {},
                         onToppingTransform = { _, _, _, _ -> },
                         onClickDeleteTopping = {},
-                        onDeleteToppingDialogConfirm = {},
-                        onDeleteToppingDialogCancel = {},
                         modifier = Modifier
                             .requiredWidth(SCREEN_WIDTH)
                             .fillMaxHeight(),

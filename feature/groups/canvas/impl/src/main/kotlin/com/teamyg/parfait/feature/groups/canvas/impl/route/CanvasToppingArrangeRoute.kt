@@ -102,12 +102,6 @@ internal fun CanvasToppingArrangeRoute(
             onClickDeleteTopping = {
                 viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
             },
-            onDeleteToppingDialogConfirm = {
-                viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm)
-            },
-            onDeleteToppingDialogCancel = {
-                viewModel.processIntent(CanvasToppingArrangeIntent.OnDeleteToppingDialogCancel)
-            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),

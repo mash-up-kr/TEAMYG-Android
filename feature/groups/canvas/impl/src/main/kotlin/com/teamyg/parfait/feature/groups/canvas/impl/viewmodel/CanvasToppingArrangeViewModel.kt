@@ -12,6 +12,7 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
@@ -51,22 +52,12 @@ data class CanvasToppingArrangeUiState(
     val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
     val isBorderPanelOpen: Boolean = false,
     val showQuitDialog: Boolean = false,
-    val showDeleteToppingDialog: Boolean = false,
-    /**
-     * 아직 서버에 반영되지 않은 로컬 변경. 이동·크기조절·회전·테두리 편집이 여기 든다.
-     *
-     * **삭제는 넣지 않는다** — 삭제 모달의 확인이 곧 DELETE 라 이미 서버에 반영돼 있고,
-     * 확인 버튼은 삭제를 다루지 않는다.
-     */
     val dirtyToppingIds: Set<Long> = emptySet(),
-    /**
-     * 지운 토핑의 툼스톤. 삭제 직전에 출발한 갱신 응답이 뒤늦게 도착하면 그 토핑이 아직 서버
-     * 목록에 있어서, 이게 없으면 방금 지운 토핑이 되살아난다.
-     */
+    /** DELETE 가 끝나도 서버 목록에서 사라질 때까지 남긴다 — 그 전에 출발한 갱신 응답이 지운 토핑을 되살린다 */
     val deletedToppingIds: Set<Long> = emptySet(),
     /**
-     * 확인과 삭제가 한 깃발을 나눠 쓴다. 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템
-     * 뒤로가기는 덮개를 거치지 않아, 그쪽은 ViewModel 이 이 값을 보고 직접 막는다.
+     * 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템 뒤로가기는 덮개를 거치지 않아, 그쪽은
+     * ViewModel 이 이 값을 보고 직접 막는다.
      */
     val isLoading: Boolean = false,
 ) : UiState {
@@ -78,6 +69,8 @@ data class CanvasToppingArrangeUiState(
     val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(focusedTopping?.border, pendingBorderWidthDp)
 
     val canOpenBorderPanel: Boolean get() = focusedToppingId != null
+
+    val hasUnsavedChanges: Boolean get() = dirtyToppingIds.isNotEmpty() || deletedToppingIds.isNotEmpty()
 }
 
 sealed interface CanvasToppingArrangeIntent : UiIntent {
@@ -109,10 +102,6 @@ sealed interface CanvasToppingArrangeIntent : UiIntent {
     ) : CanvasToppingArrangeIntent
 
     data object OnClickDeleteToppingButton : CanvasToppingArrangeIntent
-
-    data object OnDeleteToppingDialogConfirm : CanvasToppingArrangeIntent
-
-    data object OnDeleteToppingDialogCancel : CanvasToppingArrangeIntent
 
     data object OnClickClose : CanvasToppingArrangeIntent
 
@@ -240,9 +229,8 @@ constructor(
             dirtyToppingIds = dirtyToppingIds intersect incomingIds,
             deletedToppingIds = deletedToppingIds intersect incomingIds,
             focusedToppingId = remainingFocusId,
-            // 패널과 삭제 모달은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
+            // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
             isBorderPanelOpen = isBorderPanelOpen && remainingFocusId != null,
-            showDeleteToppingDialog = showDeleteToppingDialog && remainingFocusId != null,
         )
     }
 
@@ -265,12 +253,6 @@ constructor(
             is CanvasToppingArrangeIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
             CanvasToppingArrangeIntent.OnClickDeleteToppingButton -> handleOnClickDeleteToppingButton()
-
-            CanvasToppingArrangeIntent.OnDeleteToppingDialogConfirm -> handleOnDeleteToppingDialogConfirm()
-
-            CanvasToppingArrangeIntent.OnDeleteToppingDialogCancel -> updateState {
-                copy(showDeleteToppingDialog = false)
-            }
 
             CanvasToppingArrangeIntent.OnClickClose -> requestQuit()
 
@@ -311,7 +293,20 @@ constructor(
 
     private fun handleOnClickDeleteToppingButton() {
         updateState {
-            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(showDeleteToppingDialog = true)
+            val focusedId = focusedToppingId
+
+            when {
+                isBorderPanelOpen -> copy(isBorderPanelOpen = false)
+
+                focusedId == null -> this
+
+                else -> copy(
+                    toppings = toppings.filterNot { it.parfaitImageId == focusedId },
+                    deletedToppingIds = deletedToppingIds + focusedId,
+                    dirtyToppingIds = dirtyToppingIds - focusedId,
+                    focusedToppingId = null,
+                )
+            }
         }
     }
 
@@ -329,10 +324,10 @@ constructor(
         val current = state.value
         if (current.isLoading) return
 
-        if (current.dirtyToppingIds.isEmpty()) {
-            postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
-        } else {
+        if (current.hasUnsavedChanges) {
             updateState { copy(showQuitDialog = true) }
+        } else {
+            postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
         }
     }
 
@@ -375,37 +370,6 @@ constructor(
         }
     }
 
-    /** 지우면 곧바로 떠난다. 다른 토핑의 미저장 변경은 묻지 않고 버린다 — OQ-P-270 */
-    private fun handleOnDeleteToppingDialogConfirm() {
-        val focusedId = state.value.focusedToppingId ?: return
-
-        launch(key = DELETE_TOPPING_KEY, onError = { failToDeleteTopping(it, focusedId) }) {
-            // 상태를 블록 밖이 아니라 안에서 바꾼다 — `launch` 가 중복 호출을 걸러 아무것도
-            // 시작하지 않는 경우까지 모달이 닫히고 덮개만 남으면 안 된다
-            updateState { copy(showDeleteToppingDialog = false, isLoading = true) }
-
-            deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(focusedId))
-                .onSuccess {
-                    updateState {
-                        copy(
-                            toppings = toppings.filterNot { it.parfaitImageId == focusedId },
-                            deletedToppingIds = deletedToppingIds + focusedId,
-                            dirtyToppingIds = dirtyToppingIds - focusedId,
-                            focusedToppingId = null,
-                            isBorderPanelOpen = false,
-                        )
-                    }
-                    // 되감기 전에 기다린다 — 먼저 나가면 라우트가 되감기며 viewModelScope 가
-                    // 취소돼 갱신이 끊긴다. 그동안 덮개를 걷으면 시스템 뒤로가기가 되감기를
-                    // 하나 더 낸다
-                    refreshTodayCanvas()
-
-                    updateState { copy(isLoading = false) }
-                    postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
-                }.onFailure { throwable -> failToDeleteTopping(throwable, focusedId) }
-        }
-    }
-
     /**
      * 저장·삭제는 이미 끝난 뒤다. 갱신이 터져도 그 실패로 알리지 않는다 — 캔버스 메인이 다음
      * 조회에서 따라잡는다.
@@ -415,19 +379,6 @@ constructor(
             .onFailure { throwable ->
                 viewModelLogger.e(throwable) { "오늘 캔버스를 다시 받지 못했다 - parfaitId: ${parfaitId.value}" }
             }
-    }
-
-    private fun failToDeleteTopping(
-        throwable: Throwable,
-        toppingId: Long,
-    ) {
-        viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
-        updateState { copy(isLoading = false) }
-        postSideEffect(
-            effect = CanvasToppingArrangeEffect.ShowError(
-                throwable.toCanvasToppingArrangeError(unknown = CanvasToppingArrangeError.TOPPING_DELETE_UNKNOWN),
-            ),
-        )
     }
 
     private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
@@ -473,7 +424,10 @@ constructor(
             // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다
             updateState { copy(dirtyToppingIds = failedToppingIds) }
 
-            if (failedToppingIds.isNotEmpty()) {
+            // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다
+            val isSaved = failedToppingIds.isEmpty() && deletePendingToppings()
+
+            if (!isSaved) {
                 // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
                 updateState { copy(isLoading = false) }
                 postSideEffect(
@@ -524,6 +478,28 @@ constructor(
 
         transformFailures + borderFailures
     }
+
+    /** 다시 누르면 이미 지운 토핑에도 DELETE 가 또 나간다 — 그 404 는 지워진 것으로 친다 */
+    private suspend fun deletePendingToppings(): Boolean = coroutineScope {
+        state.value.deletedToppingIds
+            .map { toppingId -> async { deleteTopping(toppingId) } }
+            .awaitAll()
+            .all { it }
+    }
+
+    private suspend fun deleteTopping(toppingId: Long): Boolean =
+        deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(toppingId)).fold(
+            onSuccess = { true },
+            onFailure = { throwable ->
+                val isAlreadyGone = throwable is AppError.Server &&
+                    throwable.code == ServerErrorCode.ParfaitImage.PARFAIT_IMAGE_NOT_FOUND
+
+                if (!isAlreadyGone) {
+                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
+                }
+                isAlreadyGone
+            },
+        )
 
     /**
      * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
@@ -600,7 +576,5 @@ constructor(
 
     private companion object {
         const val CONFIRM_KEY = "confirm"
-
-        const val DELETE_TOPPING_KEY = "deleteTopping"
     }
 }
