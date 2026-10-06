@@ -375,3 +375,6 @@ status 토핑 생성·배치·누끼·배경 편집 항목 · navigation-flow `p
 
 ## [2026-10-06] restructure | 배치 수정 화면의 삭제를 즉시 DELETE에서 확정 시점 일괄 반영으로 바꿈 — 삭제 버튼은 화면에서만 빼고, 확정이 PATCH 뒤에 DELETE를 보낸다
 status 「토핑 생성·배치·배치 수정」 삭제 서술·주의 줄 · data-layer·api/parfait-image·api/README 삭제 소비처 서술 · 해소 OQ-P-270
+
+## [2026-10-06] lint | 리뷰 지적 반영 — 배치 수정 화면의 삭제 대기(`pendingDeleteToppingIds`)와 툼스톤(`deletedToppingIds`)을 가름, 끝난 삭제는 재확정 때 다시 나가지 않는다
+status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-image 삭제 소비처 서술

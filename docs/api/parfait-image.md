@@ -589,11 +589,12 @@ POST 응답에 없는 값을 지어내거나 nullable로 "모른다"와 "없다"
 ✅ **삭제가 화면까지 이어졌다**(2026-08-23 develop 머지, PR #335) — `ToppingRepository.delete` ·
 `DeleteToppingUseCase`를 배치 수정 화면(`CanvasToppingArrangeViewModel`)의 확정 버튼이 부른다
 (`deletePendingToppings`). **앱이 서버의 데이터를 지우는 첫 경로**이고, `safeApiCallWithoutData`
-(200 + `data: null`)의 화면 쪽 소비자다. 삭제 버튼은 화면 목록에서만 빼고 `deletedToppingIds`에
+(200 + `data: null`)의 화면 쪽 소비자다. 삭제 버튼은 화면 목록에서만 빼고 `pendingDeleteToppingIds`에
 대기로 남기며, DELETE는 확정 때 위치·테두리 PATCH가 전부 성공한 뒤에 토핑별로 나간다.
 실패는 `CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN` 토스트로 닿고 화면에 남는다.
-**삭제가 멱등이 아닌 것을 앱이 흡수한다** — 끝난 삭제도 대기 집합에 남아 재시도 때 다시 나가므로
-`PARFAIT_IMAGE_NOT_FOUND`를 지워진 것으로 친다(`ServerErrorCode.ParfaitImage`).
+**삭제가 멱등이 아닌 것을 앱이 흡수한다** — DELETE가 서버에 닿고 응답만 잃으면 재시도는 404라서
+`PARFAIT_IMAGE_NOT_FOUND`를 지워진 것으로 친다(`ServerErrorCode.ParfaitImage`). 끝난 삭제는 대기에서
+빠져 다시 나가지 않는다.
 `android_status`는 여전히 `partial`이다 — 위치·테두리 PATCH의 소비 화면이 없다.
 
 ✅ **위치 PATCH도 화면까지 이어졌다**(2026-08-23 develop 머지, PR #336) — `ToppingRepository.update` ·
