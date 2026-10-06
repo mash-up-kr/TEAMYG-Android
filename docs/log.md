@@ -378,3 +378,6 @@ status 「토핑 생성·배치·배치 수정」 삭제 서술·주의 줄 · d
 
 ## [2026-10-06] lint | 리뷰 지적 반영 — 배치 수정 화면의 삭제 대기(`pendingDeleteToppingIds`)와 툼스톤(`deletedToppingIds`)을 가름, 끝난 삭제는 재확정 때 다시 나가지 않는다
 status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-image 삭제 소비처 서술
+
+## [2026-10-06] lint | G-001-Empty 정책 v0.3 대조 — 등장 도중 그룹 추가 칩을 누르면 `Shown`으로 건너뛰고(`GroupListEmptyIntroPhase.onClickAddGroup`), 버튼이 받은 터치는 종료로 치지 않게 고침
+고쳐 씀 status 「그룹 목록」 · g001-empty-animation 스펙(단계·종료·주의) · OQ-P-426(④ 신설, 상태)

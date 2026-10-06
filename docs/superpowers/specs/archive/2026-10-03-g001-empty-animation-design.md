@@ -4,7 +4,7 @@ title: 그룹 목록 Empty 안내 애니메이션 (G-001-Empty intro animation)
 status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-10-04
+verified: 2026-10-06
 related_code:
   - feature/groups/list/impl/.../route/GroupListScreen.kt#GroupListScreen
   - feature/groups/list/impl/.../model/GroupListEmptyIntroState.kt#GroupListEmptyIntroState
@@ -35,7 +35,7 @@ tags: [spec, parfait, G-001, animation]
 그룹이 0건인 사용자가 G-001에 설 때, 빈 파르페 위에 더미 그룹 3개와 안내 툴팁을 순서대로
 등장시켜 "그룹을 만들면 이렇게 쌓인다"를 보여 준다. 화면을 탭하면 함께 사라진다.
 
-이슈 #579. 디자인 원본은 Figma `G-001-Empty` 프레임 둘이다 — 등장 `5417:6332`, 탭 종료
+이슈 #579, 정책 v0.3(2026-10-05) 대조는 #597. 디자인 원본은 Figma `G-001-Empty` 프레임 둘이다 — 등장 `5417:6332`, 탭 종료
 `5685:18397`.
 
 ## 범위
@@ -63,7 +63,7 @@ tags: [spec, parfait, G-001, animation]
 
 | 단계 | 조건 | 화면 |
 |---|---|---|
-| `Entering` | 타임라인 시작 ~ 3,000ms | 더미·툴팁이 차례로 등장. 탭으로 종료할 수 없다 |
+| `Entering` | 타임라인 시작 ~ 3,000ms | 더미·툴팁이 차례로 등장. 탭으로 종료할 수 없다. 그룹 추가 칩을 누르면 `Shown`으로 건너뛴다 |
 | `Shown` | 3,000ms 이후 | 전부 드러난 채 탭을 기다린다 |
 | `Dismissing` | `Shown`에서 탭 | 더미·툴팁이 함께 사라지는 중 |
 | `Dismissed` | 종료 애니메이션 끝 | 빈 파르페만 남는다. 다시 진입하기 전까지 유지 |
@@ -87,12 +87,18 @@ tags: [spec, parfait, G-001, animation]
 
 ### 종료
 
-- `Shown`에서 화면 안 아무 곳이나 한 번 누르면 더미 3개와 툴팁이 **동시에** 불투명도
+- `Shown`에서 버튼이 아닌 화면 안 아무 곳이나 한 번 누르면 더미 3개와 툴팁이 **동시에** 불투명도
   `1 → 0`으로 사라진다. 300ms, `CubicBezierEasing(0f, 0f, 0.58f, 1f)`.
 - `Entering` 동안의 터치는 종료를 일으키지 않는다.
 - 터치는 **소비하지 않는다.** 상단 바의 메뉴·그룹 추가 버튼은 어느 단계에서든 그대로
-  동작하고, `Shown`에서 버튼을 누르면 종료와 버튼 동작이 함께 일어난다.
-- 종료 판정은 터치 다운이다. 스크롤이나 당겨서 새로고침을 시작하는 터치도 종료로 친다.
+  동작한다.
+- **버튼이 받은 터치는 종료로 치지 않는다.** `Shown`에서 그룹 추가 칩을 눌러도 더미·툴팁은
+  그대로 남는다. 루트가 `PointerEventPass.Final`에서 소비되지 않은 다운만 보고, `clickable`은
+  다운을 소비한다.
+- `Entering` 도중 그룹 추가 칩을 누르면 `Shown`으로 건너뛴다. 오버레이의 딤을 눌러 닫으면
+  전부 드러난 상태로 돌아오고 바로 탭해 닫을 수 있다. 딤 터치는 목록 화면에 닿지 않아
+  종료를 일으키지 않는다.
+- 종료 판정은 소비되지 않은 터치 다운이다. 스크롤이나 당겨서 새로고침을 시작하는 터치도 종료로 친다.
 
 ### 백그라운드 복귀
 
@@ -160,6 +166,7 @@ internal enum class GroupListEmptyIntroPhase {
     Entering, Shown, Dismissing, Dismissed;
 
     fun onTouchDown(): GroupListEmptyIntroPhase
+    fun onClickAddGroup(): GroupListEmptyIntroPhase
     fun onStop(): GroupListEmptyIntroPhase
     fun enterValue(animated: Float): Float
     fun exitValue(animated: Float): Float
@@ -175,6 +182,7 @@ internal class GroupListEmptyIntroState {
     suspend fun play()
     suspend fun dismiss()
     fun onTouchDown()
+    fun onClickAddGroup()
     fun onStop()
 }
 
@@ -188,7 +196,7 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 - `rememberGroupListEmptyIntroState(enabled)` — `enabled`가 참이 되는 순간 한 번 `play()`를
   돌린다. 상태는 `remember`로 들어, 화면을 벗어났다 돌아오면 컴포지션과 함께 새로 만들어져
   다시 재생된다.
-- 단계 전이(`onTouchDown`, `onStop`)는 애니메이션 값과 분리된 enum 멤버 함수로 두어 단위
+- 단계 전이(`onTouchDown`, `onClickAddGroup`, `onStop`)는 애니메이션 값과 분리된 enum 멤버 함수로 두어 단위
   테스트한다.
 
 ## 파일 구성
@@ -217,10 +225,10 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
 ### 검증
 
 - 단위 테스트: 단계 전이 — `Entering`에서 터치 다운 무시, `Shown`에서 터치 다운 시
-  `Dismissing`, `onStop`의 단계별 결과.
+  `Dismissing`, `Entering`에서 그룹 추가 칩을 누르면 `Shown`, `onStop`의 단계별 결과.
 - `GroupListViewModelTest`: 날짜·툴팁 상태를 보던 케이스 정리.
 - 프리뷰: 0건 화면의 `Shown`·`Dismissed`.
-- 에뮬레이터: 등장 순서·간격, 3초 이전 탭 무시, 탭 종료, 버튼 동작, 재진입 재생, 등장 도중
+- 에뮬레이터: 등장 순서·간격, 3초 이전 탭 무시, 탭 종료, 버튼 탭으로는 종료되지 않음, 재진입 재생, 등장 도중
   백그라운드 복귀.
 
 ## 주의 / 열린 질문
@@ -240,4 +248,7 @@ internal fun rememberGroupListEmptyIntroState(enabled: Boolean): GroupListEmptyI
   복귀 조회가 실패해도 0건이면 에러 화면으로 바뀌며(`handleLoadFailure`), 인트로 상태가
   버려지기 때문이다. 재시도가 성공해 목록 화면으로 돌아오면 처음부터 돈다.
 - **화면 회전 등 구성 변경에서는 다시 재생된다.** 상태를 `remember`로만 들기 때문이다.
-- **백그라운드 복귀 동작은 정책에 없다.** "완료 상태로 표시"는 구현 쪽에서 정한 값이다.
+- **`Shown`에서 그룹 추가 칩을 누를 때의 동작은 정책에 없다.** 정책 v0.3은 등장 도중 누른
+  경우만 "재생 완료 상태 유지"로 적는다. 구현은 그 경우와 같게 유지하는 쪽으로 정했다.
+- **`Dismissing` 도중 백그라운드 복귀 동작은 정책에 없다.** `Dismissed`로 건너뛰는 것은 구현
+  쪽에서 정한 값이다. 등장 도중 복귀는 정책 v0.3이 "재생 완료 상태"로 적는다.
