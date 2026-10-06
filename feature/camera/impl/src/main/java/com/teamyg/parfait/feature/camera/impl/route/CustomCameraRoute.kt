@@ -152,9 +152,7 @@ internal fun CustomCameraRoute(
                     )
                 }
 
-                is CustomCameraEffect.Cancel -> {
-                    if (!navigator.popUpTo<NavKeyCanvasMain>()) navigator.onBack()
-                }
+                is CustomCameraEffect.Cancel -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 is CustomCameraEffect.CaptureFailed -> {
                     toastPolicy.showError(captureFailedMessage)
@@ -173,7 +171,8 @@ internal fun CustomCameraRoute(
         }
     }
 
-    // 캔버스에서 바로 온 경로는 가로채지 않는다 — 예측형 뒤로가기 전환이 사라진다
+    // 배경 편집에서 온 경로만 가로채 캔버스로 되감는다. 캔버스에서 바로 온 경로는 기본
+    // 뒤로가기가 이미 캔버스라 두면 예측형 뒤로가기 전환이 산다
     BackHandler(enabled = returnResultOnly) {
         viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
