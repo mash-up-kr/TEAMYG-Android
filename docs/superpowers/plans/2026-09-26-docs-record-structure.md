@@ -442,7 +442,7 @@ git commit -m "docs: add append-only log.md and drop closed lint reports"
 <머리말 인용문 두 개 — 원문 유지>
 
 ## 현재 기준선
-- **repo**: `TJYG-Android` (`mash-up-kr/TEAMYG-Android`) `develop`
+- **repo**: `TEAMYG-Android` (`mash-up-kr/TEAMYG-Android`) `develop`
 - **커밋**: `143cda87b` (`Merge pull request #511 from mash-up-kr/feature/ai/llm-wiki-document`)
 - **검증일**: 2026-09-21 (83회차)
 - **테스트 수**: 유닛 1298 · 계측 46

@@ -31,11 +31,11 @@ tags: [plan, parfait, login, debug]
 
 **Spec:** [`parfait/specs/2026-08-28-login-debug-mode.md`](../specs/2026-08-28-login-debug-mode.md)
 
-**작업 저장소:** `TJYG-Android` (remote `mash-up-kr/TEAMYG-Android`). 로컬 절대경로는 `wiki/personal-private/project-paths.md`에 있다. 브랜치 `feature/debug-mode` 위에서 작업한다 — 그 브랜치는 지금 `develop`과 같고 작업 트리는 깨끗하다.
+**작업 저장소:** `TEAMYG-Android` (remote `mash-up-kr/TEAMYG-Android`). 로컬 절대경로는 `wiki/personal-private/project-paths.md`에 있다. 브랜치 `feature/debug-mode` 위에서 작업한다 — 그 브랜치는 지금 `develop`과 같고 작업 트리는 깨끗하다.
 
 ## Global Constraints
 
-- **작업 위치**: `TJYG-Android` 저장소의 **본 체크아웃**, 현재 브랜치 `feature/debug-mode`. **git worktree를 만들지 않는다.**
+- **작업 위치**: `TEAMYG-Android` 저장소의 **본 체크아웃**, 현재 브랜치 `feature/debug-mode`. **git worktree를 만들지 않는다.**
 - **커밋하지 않는다.** 사용자가 커밋을 요청하지 않았다. 각 Task는 코드 편집 + 검증까지만 하고 멈춘다. `git add`·`git commit`·`git push` 모두 금지.
 - **코드 주석·KDoc 규약**(`parfait/CLAUDE.md` 요지):
   - 코드가 이미 말하는 것은 쓰지 않는다.

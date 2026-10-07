@@ -314,7 +314,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'migrate_links'`
 
 ```python
 #!/usr/bin/env python3
-"""parfait 문서를 TJYG-Android 의 docs/ 로 복사하며 상대 링크를 재작성한다.
+"""parfait 문서를 TEAMYG-Android 의 docs/ 로 복사하며 상대 링크를 재작성한다.
 
 일회성 도구다. 원본 저장소 절대 경로를 하드코딩하므로 저장소에 커밋하지 않는다.
 원본 저장소는 읽기만 한다.
@@ -619,7 +619,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```markdown
 # parfait/android 범위 규약
 
-TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`architecture`·`specs`·`plans`·
+TEAMYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`architecture`·`specs`·`plans`·
 `synthesis`·`doc-baseline.md`)가 적용 범위다. 플랫폼 공용인 `parfait/api/`·`parfait/pm/`에는
 적용하지 않는다 — 그쪽 경계는 [`parfait/CLAUDE.md`](index.md)가 적는다.
 
@@ -643,7 +643,7 @@ TJYG-Android 구현 작업에 적용되는 규약. 이 디렉토리(`adr`·`arch
 
 문서 끝의 그 절에서 ⚠️ 경고와 근거 설명을 지운다. 근거는 그 절 자신의 문장이다:
 
-> ⚠️ **이 파일은 TJYG-Android에서 일하는 서브에이전트에게 자동으로 닿지 않는다.** CLAUDE.md는 그 디렉토리 파일을 열 때 로드되는데 구현 서브에이전트는 다른 저장소에서 브리프만 읽는다.
+> ⚠️ **이 파일은 TEAMYG-Android에서 일하는 서브에이전트에게 자동으로 닿지 않는다.** CLAUDE.md는 그 디렉토리 파일을 열 때 로드되는데 구현 서브에이전트는 다른 저장소에서 브리프만 읽는다.
 
 이 저장소로 들어왔으므로 더는 참이 아니다. 절 제목과 아래 문장만 남긴다:
 

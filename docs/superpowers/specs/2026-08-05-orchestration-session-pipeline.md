@@ -20,7 +20,7 @@ tags: [spec, parfait, tooling, orchestration]
 
 ## 목표
 
-TJYG-Android 기능 요구사항 하나를 사람이 던지면, Orca orchestration과 git worktree로
+TEAMYG-Android 기능 요구사항 하나를 사람이 던지면, Orca orchestration과 git worktree로
 분석·설계·계획·TDD 구현·리뷰까지 다수 에이전트가 나눠 수행하고, 최종 변경만 사람이 있는
 브랜치로 돌려주는 파이프라인을 만든다. 진입점은 새 스킬 `start-orchestration-session`.
 
@@ -38,7 +38,7 @@ TJYG-Android 기능 요구사항 하나를 사람이 던지면, Orca orchestrati
 
 - 포함: 파이프라인 토폴로지, 워커별 계약, 게이트·에스컬레이션 정책, 모델 분배 기준,
   산출물 반환 방식, 스킬 파일 2종(`start-orchestration-session` 신설, `start-default-session` 개명).
-- 제외: TJYG-Android 코드 변경 자체(이 파이프라인이 나중에 만들어낼 결과물),
+- 제외: TEAMYG-Android 코드 변경 자체(이 파이프라인이 나중에 만들어낼 결과물),
   파이프라인 실행 자동화 스크립트(스킬 문서로만 규정하고 코디네이터가 CLI를 직접 호출),
   Gradle 빌드 튜닝(동시 실행 문제가 실제로 관측된 뒤에 대응).
 
@@ -48,17 +48,17 @@ TJYG-Android 기능 요구사항 하나를 사람이 던지면, Orca orchestrati
 |---|---|
 | Orca 런타임 | 1.4.164, `orchestration.contract.v1` 보유 |
 | orchestration 기능 | 활성(바인딩된 Run이 없다는 응답까지 정상 도달) |
-| TJYG-Android | Orca repo로 등록됨. 현재 worktree는 `develop` 하나 |
+| TEAMYG-Android | Orca repo로 등록됨. 현재 worktree는 `develop` 하나 |
 | 설치된 에이전트 CLI | `claude`만. codex·gemini·opencode·droid·grok·cursor 없음 |
 | `start-session` 참조처 | 자기 자신 2줄 + 아카이브 스펙 1건뿐 — 개명이 안전 |
-| TJYG-Android·team-yg 시작 정책 | 둘 다 `setupAgentStartupPolicy: start-immediately`, setup 스크립트 비어 있음 → **모델 지정 2단계 경로 사용 가능** |
+| TEAMYG-Android·team-yg 시작 정책 | 둘 다 `setupAgentStartupPolicy: start-immediately`, setup 스크립트 비어 있음 → **모델 지정 2단계 경로 사용 가능** |
 
 에이전트 CLI가 하나뿐이라 **리뷰어를 다른 벤더로 두는 독립성 확보는 불가능**하다.
 Claude 모델 티어 안에서만 나눈다.
 
 ## 토폴로지
 
-Run 하나가 요구사항 하나에 대응한다. 코디네이터는 TJYG-Android의 `feature/xxxxx-master`
+Run 하나가 요구사항 하나에 대응한다. 코디네이터는 TEAMYG-Android의 `feature/xxxxx-master`
 worktree에서 도는 세션이고, 사람과 대화하는 유일한 지점이다.
 
 ```
@@ -77,7 +77,7 @@ feature/xxxxx-master   ← 사람 ↔ 코디네이터 (Run 바인딩, 게이트,
           └─ 최종 diff를 master 작업 트리에 apply (커밋하지 않음) → 사람 보고
 ```
 
-문서 단계(W1~W4)는 TJYG-Android 코드를 건드리지 않고 team-yg repo의 `parfait/` 아래에
+문서 단계(W1~W4)는 TEAMYG-Android 코드를 건드리지 않고 team-yg repo의 `parfait/` 아래에
 절대경로로 쓴다. 그래서 worktree가 필요 없고, master worktree에
 `terminal create --worktree current`로 터미널만 띄운 뒤 그 handle에 task를 붙인다
 (모델 티어 지정이 필요하므로 — 아래 "실행 메커니즘"). Gradle 비용 0, 파일 충돌 0.
@@ -244,7 +244,7 @@ PR에 올라가지 않고 로컬 브랜치에만 남는다. 파이프라인의 �
 있어야 하고, 재수정 요청이 오면 거기서 이어가기 때문이다. 사람이 명시적으로 정리를
 요청할 때 archive한다.
 
-**커밋 정책 예외** — 기존 규칙은 "TJYG-Android는 구현이 끝나도 커밋하지 않는다"이다.
+**커밋 정책 예외** — 기존 규칙은 "TEAMYG-Android는 구현이 끝나도 커밋하지 않는다"이다.
 이 파이프라인에 한해 **자식 worktree 브랜치의 커밋은 병합 수단으로 허용**한다.
 master 브랜치는 커밋하지 않고, push와 PR은 종전대로 사람 승인을 받는다.
 
@@ -331,7 +331,7 @@ orca orchestration worker-start --task <task_id> --terminal <handle> --json
 그대로 유지된다.
 
 대가가 하나 있다. 이 경로는 repo의 `wait-for-setup` 시작 정책을 강제하지 못한다.
-TJYG-Android는 `setupAgentStartupPolicy: start-immediately`이고 setup 스크립트도 비어 있어
+TEAMYG-Android는 `setupAgentStartupPolicy: start-immediately`이고 setup 스크립트도 비어 있어
 이 경로를 써도 잃는 것이 없다(2026-08-05 확인). 정책이 나중에 `wait-for-setup`으로 바뀌면
 모델 지정을 포기하고 `--agent claude`(기본 모델)로 간다.
 
@@ -402,7 +402,7 @@ orca orchestration task-list --brief --json
 
 `start-orchestration-session` 스킬이 담을 것:
 
-- 전제 확인 절차(Orca 런타임, orchestration 활성, TJYG-Android worktree 존재)
+- 전제 확인 절차(Orca 런타임, orchestration 활성, TEAMYG-Android worktree 존재)
 - Run 생성과 요구사항 수집(프로필 선택, 자동진행 여부)
 - 단계별 워커 기동 명령과 task spec 템플릿
 - 게이트·에스컬레이션 처리
@@ -416,9 +416,9 @@ orca orchestration task-list --brief --json
   어떻게 나타나는지는 첫 실행에서 관측한 뒤 판단한다.
 - **모듈 분할이 항상 성립하지는 않는다.** 한 모듈 안에서 파일이 많이 겹치는 요구사항은
   병렬화 이득이 없고, 이때 planner가 단일 워커로 결정할 수 있어야 한다.
-- **문서 산출물이 team-yg repo에, 코드가 TJYG-Android repo에** 나뉘어 있어 두 repo의
+- **문서 산출물이 team-yg repo에, 코드가 TEAMYG-Android repo에** 나뉘어 있어 두 repo의
   커밋·PR 흐름이 별개다. 스펙·계획 문서의 커밋은 이 파이프라인 밖에서 사람이 승인한다.
-- **문서 워커의 작업 디렉토리는 TJYG-Android worktree인데 쓰기 대상은 team-yg repo**다.
+- **문서 워커의 작업 디렉토리는 TEAMYG-Android worktree인데 쓰기 대상은 team-yg repo**다.
   cwd 밖 절대경로 쓰기가 권한 프롬프트에 걸리면 워커가 사람 개입 없이 진행하지 못한다.
   스킬 §0 전제 확인에 cross-repo 쓰기 probe를 넣어 파이프라인 시작 전에 판정하고,
   막히면 **문서 워커만 team-yg worktree에서 띄우는** 대체 경로로 간다(구현 워커는 영향 없음).

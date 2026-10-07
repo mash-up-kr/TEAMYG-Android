@@ -45,7 +45,7 @@ tags: [plan, parfait]
 
 ## Global Constraints
 
-- **작업 저장소는 `TJYG-Android`다**(이 계획 문서가 있는 repo와 다르다).
+- **작업 저장소는 `TEAMYG-Android`다**(이 계획 문서가 있는 repo와 다르다).
   **베이스는 `develop`이다(2026-08-24 정정).** 초판은 `feature/c103-multi-subject-ui` 팁
   (`ab196483`) 위에 스택으로 쌓게 했다 — 측정이 C-103 다중 후보 화면과 면적 1% 필터를 필요로
   하는데 그 둘이 당시 `develop`에 없었기 때문이다. **PR #342(`34bf1939`)가 그 스택을 통째로
@@ -1304,7 +1304,7 @@ git commit -m "feat: 토핑 촬영만 무손실로 남기고 저장 중 셔터�
 - Modify: `parfait/plans/README.md`
 - Modify: `parfait/synthesis/open-questions.md`
 
-⚠️ 문서는 `TJYG-Android`가 아니라 **이 계획이 있는 repo**에 있다. 브랜치를 따로 딴다.
+⚠️ 문서는 `TEAMYG-Android`가 아니라 **이 계획이 있는 repo**에 있다. 브랜치를 따로 딴다.
 
 - [ ] **Step 1: 회귀를 확인한다**
 

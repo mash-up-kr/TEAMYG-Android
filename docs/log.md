@@ -387,3 +387,6 @@ status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-i
 
 ## [2026-10-07] lint | #599 03시 창 갤러리 조회를 미사용으로 남김 — 되돌림 대비, 새 OQ-P-428로 제거 시점 추적
 추가 OQ-P-428
+
+## [2026-10-08] lint | 진행 중 문서의 저장소 옛 이름 `TJYG-Android`를 `TEAMYG-Android`로 바꿈
+고쳐 씀 plans·specs 진행 중 문서와 README · api/server-baseline · 절대경로, `orca --repo name:` 명령, 셸 변수, archive, 과거 log는 실제 값·과거 기록이라 그대로 둠

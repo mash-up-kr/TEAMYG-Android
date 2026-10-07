@@ -31,18 +31,18 @@ tags: [plan, parfait, tooling, orchestration]
 
 **Architecture:** 산출물은 마크다운 스킬 문서 2개와 라우팅 한 줄이다. 실행 로직은 코드가 아니라 스킬 문서에 적힌 절차이고, 그 절차를 코디네이터 세션이 `orca orchestration` CLI로 직접 수행한다. 기존 `start-session`은 `start-default-session`으로 개명해 두 진입점을 구분한다.
 
-**Tech Stack:** Markdown(SKILL.md frontmatter + 본문), `orca` CLI 1.4.164(`orchestration.contract.v1`), git worktree, Gradle(TJYG-Android).
+**Tech Stack:** Markdown(SKILL.md frontmatter + 본문), `orca` CLI 1.4.164(`orchestration.contract.v1`), git worktree, Gradle(TEAMYG-Android).
 
 ## Global Constraints
 
-- 대상 저장소는 team-yg-pesonal-agent(이 repo)다. TJYG-Android 코드는 이 계획에서 **한 줄도 건드리지 않는다**.
+- 대상 저장소는 team-yg-pesonal-agent(이 repo)다. TEAMYG-Android 코드는 이 계획에서 **한 줄도 건드리지 않는다**.
 - 브랜치는 `feat/orchestration-session-skill`. `main` 직접 커밋 금지.
 - **`git push`와 PR 생성(`gh pr create`)은 실행 전 사용자 확인 필수.** `git commit`은 로컬이라
   확인 없이 한다(실행 중 사용자가 완화, `CLAUDE.md`의 "Git 워크플로 (필수)" 절 참조).
 - 스킬 디렉토리명과 `SKILL.md` frontmatter의 `name` 값은 **반드시 일치**해야 한다. 불일치 시 스킬이 로드되지 않는다.
 - 스킬 문서 본문은 한국어. 스킬 안에 인용하는 CLI 명령·플래그·frontmatter 키는 원문 그대로.
 - 검증에 쓰는 `orca` 명령은 **읽기 전용만**(`--help`, `status`, `repo list`, `worktree list`). `run-create`·`task-create`·`worker-start`처럼 상태를 만드는 명령은 이 계획에서 실행하지 않는다.
-- 확정된 사실(2026-08-05 실측): Orca 1.4.164 / `orchestration.contract.v1` 보유 / 설치된 에이전트 CLI는 `claude` 하나 / TJYG-Android·team-yg 모두 `setupAgentStartupPolicy: start-immediately`.
+- 확정된 사실(2026-08-05 실측): Orca 1.4.164 / `orchestration.contract.v1` 보유 / 설치된 에이전트 CLI는 `claude` 하나 / TEAMYG-Android·team-yg 모두 `setupAgentStartupPolicy: start-immediately`.
 - 스펙 정본: `parfait/specs/2026-08-05-orchestration-session-pipeline.md`. 계획과 스펙이 어긋나면 스펙이 정답이고, 스펙을 고쳐야 하면 사용자에게 먼저 알린다.
 
 ---
@@ -179,8 +179,8 @@ orca worktree list --json
 | 런타임 | `result.runtime.state == "ready"` |
 | orchestration | `result.runtime.capabilities`에 `orchestration.contract.v1` 포함 |
 | TJYG-Android 등록 | `repo list`에 `TJYG-Android` 존재 |
-| master worktree | `worktree list`에 `feature/…-master` 브랜치의 TJYG-Android worktree 존재 |
-| 시작 정책 | TJYG-Android `hookSettings.setupAgentStartupPolicy` 값을 기록해 둔다 |
+| master worktree | `worktree list`에 `feature/…-master` 브랜치의 TEAMYG-Android worktree 존재 |
+| 시작 정책 | TEAMYG-Android `hookSettings.setupAgentStartupPolicy` 값을 기록해 둔다 |
 
 `feature/…-master` worktree가 없으면 만들고 시작한다.
 
@@ -299,12 +299,12 @@ git commit -m "feat(skills): start-orchestration-session 골격 — 전제 확�
 
 - [x] **Step 1: 문서 워커의 작업 디렉토리 제약을 실측**
 
-문서 워커는 TJYG-Android worktree에서 돌면서 team-yg repo의 `parfait/` 아래에 쓴다.
+문서 워커는 TEAMYG-Android worktree에서 돌면서 team-yg repo의 `parfait/` 아래에 쓴다.
 cwd 밖 절대경로 쓰기가 막히는지 먼저 확인한다.
 
 ```bash
 # 경로는 wiki/personal-private/project-paths.md에서 읽어 채운다(public repo라 직접 적지 않는다)
-TJYG="<TJYG-Android 절대경로>"
+TJYG="<TEAMYG-Android 절대경로>"
 TEAMYG="<team-yg-pesonal-agent 절대경로>"
 
 cd "$TJYG"
@@ -315,14 +315,14 @@ rm "$TEAMYG/.orch-write-probe"
 
 `OK`가 나오면 Step 2의 표를 그대로 쓴다.
 막히면 문서 워커 4종의 `--worktree`를 team-yg repo worktree로 바꾸고(§3 표의 "실행 위치" 열),
-그 경우 워커가 TJYG-Android 코드를 읽을 때는 절대경로로 읽는다는 문장을 함께 적는다.
+그 경우 워커가 TEAMYG-Android 코드를 읽을 때는 절대경로로 읽는다는 문장을 함께 적는다.
 
 - [x] **Step 2: `## 3. 문서 단계` 절 — 워커 배치표 추가**
 
 ```markdown
 ## 3. 문서 단계 (W1 → W2 → G1 → W3 → W4 → G2)
 
-문서 단계는 TJYG-Android 코드를 건드리지 않는다. 산출물은 team-yg repo의 `parfait/` 아래에
+문서 단계는 TEAMYG-Android 코드를 건드리지 않는다. 산출물은 team-yg repo의 `parfait/` 아래에
 절대경로로 쓴다. 그래서 worktree를 새로 파지 않고 터미널만 띄운다.
 
 | 워커 | 실행 위치 | 모델(균형 프로필) | 산출물 |
@@ -345,7 +345,7 @@ orca orchestration task-create --spec "$(cat <<'SPEC'
 [역할] 요구사항 분석 + 설계. 산출물은 설계 스펙 문서 하나다.
 
 [읽어라]
-- 코드 대상: <TJYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조. 코디네이터가
+- 코드 대상: <TEAMYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조. 코디네이터가
   §0에서 이 문서를 읽어 실제 경로로 채워 넣은 뒤 워커에게 전달한다>
 - 규약: <team-yg>/CLAUDE.md, <team-yg>/parfait/index.md, <team-yg>/parfait/specs/README.md
 - 형식: <team-yg>/parfait/specs/template.md
@@ -362,7 +362,7 @@ orca orchestration task-create --spec "$(cat <<'SPEC'
 4. parfait/specs/README.md 인덱스에 한 줄 등록한다.
 
 [금지]
-- TJYG-Android 코드 수정. 이 단계는 읽기만 한다.
+- TEAMYG-Android 코드 수정. 이 단계는 읽기만 한다.
 - placeholder("TBD", "추후 결정", 빈 섹션). 결정할 수 없으면 열린 질문 절에 근거와 함께 적는다.
 - wiki/ 파일 수정.
 
@@ -468,7 +468,7 @@ orca orchestration task-create --spec "$(cat <<'SPEC'
 
 [읽어라]
 - 확정 스펙: <스펙 절대경로>
-- 코드 대상: <TJYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조. 코디네이터가
+- 코드 대상: <TEAMYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조. 코디네이터가
   §0에서 이 문서를 읽어 실제 경로로 채워 넣은 뒤 워커에게 전달한다>
 - 형식: <team-yg>/parfait/plans/template.md, 규약: parfait/plans/README.md
 
@@ -494,7 +494,7 @@ orca orchestration task-create --spec "$(cat <<'SPEC'
   그 판단과 근거를 계획서에 적는다.
 
 [금지]
-- TJYG-Android 코드 수정.
+- TEAMYG-Android 코드 수정.
 - placeholder. "적절히 처리", "테스트 추가" 같은 서술.
 
 [보고]
@@ -869,7 +869,7 @@ git status --short
 
 ### 커밋 정책
 
-기본 규칙은 "TJYG-Android는 구현이 끝나도 커밋하지 않는다"이다.
+기본 규칙은 "TEAMYG-Android는 구현이 끝나도 커밋하지 않는다"이다.
 이 파이프라인에 한해 **자식 worktree 브랜치의 커밋은 병합 수단으로 허용**한다.
 master 브랜치는 커밋하지 않고, push와 PR은 사용자 승인을 받는다.
 ```
@@ -962,7 +962,7 @@ git commit -m "feat(skills): 통합·코드 리뷰·최종 산출·에스컬레�
 아래로 교체한다.
 
 ```markdown
-| [2026-08-05-orchestration-session-pipeline.md](2026-08-05-orchestration-session-pipeline.md) | 오케스트레이션 파이프라인 스킬 구현(6 Task, **TJYG-Android 코드 변경 0**): `start-session` → `start-default-session` 개명 → `start-orchestration-session` 골격(전제 확인·요구사항 수집·Run 생성) → 문서 단계 W1~W4 + 게이트 G1·G2 → 구현 단계(모듈 worktree·모델 지정 2단계 경로·RED/GREEN 증거 계약) → 통합·코드리뷰·최종 산출·에스컬레이션 → CLAUDE.md 라우팅. 산출물은 마크다운 스킬 문서 2개뿐이라 자동 테스트가 없고, 검증은 **frontmatter `name`↔디렉토리명 일치 · placeholder grep · 문서에 적은 orca 명령·플래그가 `--help`에 실재하는지 대조**로 한다. 스펙: [specs](../specs/2026-08-05-orchestration-session-pipeline.md) |
+| [2026-08-05-orchestration-session-pipeline.md](2026-08-05-orchestration-session-pipeline.md) | 오케스트레이션 파이프라인 스킬 구현(6 Task, **TEAMYG-Android 코드 변경 0**): `start-session` → `start-default-session` 개명 → `start-orchestration-session` 골격(전제 확인·요구사항 수집·Run 생성) → 문서 단계 W1~W4 + 게이트 G1·G2 → 구현 단계(모듈 worktree·모델 지정 2단계 경로·RED/GREEN 증거 계약) → 통합·코드리뷰·최종 산출·에스컬레이션 → CLAUDE.md 라우팅. 산출물은 마크다운 스킬 문서 2개뿐이라 자동 테스트가 없고, 검증은 **frontmatter `name`↔디렉토리명 일치 · placeholder grep · 문서에 적은 orca 명령·플래그가 `--help`에 실재하는지 대조**로 한다. 스펙: [specs](../specs/2026-08-05-orchestration-session-pipeline.md) |
 ```
 
 - [x] **Step 4: 전체 정합 검증**
@@ -1001,7 +1001,7 @@ Task 1 Step 1의 주의대로 **정상 매치**이며, 실제 결함은 `.claude
 grep -rn "/Users/" .claude/skills/start-orchestration-session/SKILL.md
 ```
 
-출력이 있으면 그 줄들을 `<TJYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조>`
+출력이 있으면 그 줄들을 `<TEAMYG-Android 절대경로 — wiki/personal-private/project-paths.md 참조>`
 형태의 플레이스홀더로 바꾸고, 스킬이 실행 시점에 `wiki/personal-private/project-paths.md`를
 읽어 경로를 얻도록 §0 전제 확인에 한 줄 추가한다.
 
