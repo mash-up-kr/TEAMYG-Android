@@ -68,6 +68,10 @@ internal class GroupListEmptyIntroState private constructor(initialPhase: GroupL
         phase = phase.onTouchDown()
     }
 
+    fun onClickAddGroup() {
+        phase = phase.onClickAddGroup()
+    }
+
     fun onStop() {
         phase = phase.onStop()
     }
