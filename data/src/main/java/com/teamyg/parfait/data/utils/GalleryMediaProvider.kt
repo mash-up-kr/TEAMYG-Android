@@ -27,6 +27,11 @@ class GalleryMediaProvider(
     val sortOrder: String =
         "COALESCE(${MediaStore.Images.Media.DATE_TAKEN}, ${MediaStore.Images.Media.DATE_ADDED} * 1000) DESC"
 
+    /** 03시 하루 창으로 거르는 조회 조건. [GalleryRepositoryImpl.loadFilterYGGalleryImages] 만 쓴다. */
+    val selection: String =
+        "(${MediaStore.Images.Media.DATE_TAKEN} >= ? AND ${MediaStore.Images.Media.DATE_TAKEN} < ?) " +
+            "OR ${MediaStore.Images.Media.DATE_TAKEN} IS NULL"
+
     fun query(
         uri: Uri,
         projection: Array<String>?,

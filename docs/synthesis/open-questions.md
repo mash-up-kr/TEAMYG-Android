@@ -7624,4 +7624,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (코드 수정 대상)
 - **해소 메모**: ②를 넣으면 `gradle-cache-seed.yml`의 시딩 태스크에도 `lint`를 더한다.
 
-<!-- oq-next: 428 -->
+### [2026-10-07] 03시 창 갤러리 조회가 미사용으로 남아 있다 — 제한 해제 확정 뒤 지울 것
+- **ID**: OQ-P-428
+- **출처**: `domain/.../usecase/gallery/LoadFilterYGGalleryImageGroupsUseCase.kt` · `GalleryRepository#loadFilterYGGalleryImages` · `GalleryMediaProvider#selection` (PR #599) — 갤러리가 전체 사진을 보여주도록 바뀌면서 화면은 `LoadGalleryImageGroupsUseCase`(`loadGalleryImages`)만 부른다. 03시 창으로 거르던 기존 경로는 **일부러 지우지 않고 호출부 0건으로 남겼다** — 내부 배포 반응을 보고 제한을 되돌릴 수도 있어서다.
+- **항목**: ① 제한 해제가 확정되면 위 세 선언과 `GalleryRepositoryImpl`의 구현을 함께 지운다. ② 되돌리기로 정해지면 `CustomGalleryPickerViewModel`이 부르는 UseCase만 바꾸고, 전체 조회 경로(`loadGalleryImages`)와 갤러리 안내 문구 삭제는 별도로 판단한다.
+- **상태**: 미해결 (의도된 미사용 — 死코드 정리 대상이 아니다)
+- **해소 메모**: 정해지면 [data-layer](../architecture/data-layer.md)의 날짜 그룹 키 서술과 OQ-P-243의 `DayWindow.current()` 소비처를 맞춘다.
+
+<!-- oq-next: 429 -->
