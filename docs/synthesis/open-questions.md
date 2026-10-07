@@ -372,13 +372,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 해소됨 (**PR #182 develop 머지, 2026-08-01** — ①②는 치환으로 닫힘, ③ 줌은 컨트롤 자체가 화면에서 빠져 [2026-08-01 줌 死코드 항목](#2026-08-01-카메라-줌-ui가-死코드로-남음)으로 넘어갔다)
 - **해소 메모**: `component/controls/ShutterButton.kt`·`FlipCameraButton.kt`가 삭제되고 `CameraControlComponent`가 `YGCameraShutter` + `YGCircleButton`(플래시·전환) 조합으로 바뀌었다. 취소는 맨 `TextButton` 대신 상단 `YGCircleButton`(`ic_close`)이다. flip 아이콘은 `ic_reverse`·`YGCircleButtonType.Default`로 구현했다(Figma `Type=Small` 여부는 대조하지 않았고, 화면이 정본이 된 상태). [design-system](../architecture/design-system.md) 인벤토리에 화면 적용 줄 추가, 상세는 [c101 스펙](../superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md).
 
-### [2026-07-30] Button-Edit-Action이 정수 토큰 재조립으로 2dp 커짐 + Small 테두리 소수 잔존
+### [2026-07-30] Button-Circle Small 테두리가 Figma 소수 두께를 1dp로 정규화한 채다
 - **ID**: OQ-P-034
-- **출처**: [미구현 컴포넌트 스펙](../superpowers/specs/archive/2026-07-30-designsystem-button-missing-components.md) "치수 도출 원칙" — Figma `Button-Edit-Action`은 아이콘 프레임이 22이고 `SizeTokens`에 대응 스케일이 없다. 스펙은 `Size22`를 만들지 않고 `Size24`로 옮기기로 정했고, 그 결과 내부 원과 바깥 프레임이 각각 2dp 커진다. 또 `Button-Circle` `Type=Small`의 테두리는 재조회 후에도 소수(0.636)로 남아 1dp로 정규화한다.
-  > ✅ **부분 해소(2026-07-30 재조회)** — `Button-Circle` `Type=Small`이 Figma에서 **정수 치수로 정리**됐다(내부 원 28 명시·아이콘 18·글리프 12·바깥 폭 44 명시, 구조도 "패딩 도출"에서 "지름 고정 + 중앙 아이콘"으로 바뀜). `SizeTokens.Size18` 추가를 합의해 Circle 3변형의 치수 오차는 없어졌다. 남은 것은 Edit-Action 2dp와 Small 테두리 두께다.
-- **항목**: ① Edit-Action의 2dp 차이를 디자이너가 수용하는지, 아니면 Figma를 정수 치수(아이콘 24 또는 원 40)로 정리해줄 수 있는지, ② 수용도 정리도 안 되면 `Size22`를 스케일에 넣을지 해당 컴포넌트만 리터럴 dp를 허용할지, ③ Small 테두리 0.636을 1로 정리해줄 수 있는지.
-- **상태**: 미해결 (의도된 절충 — 구현 완료, 정수 토큰으로 반영. PR #183 develop 머지, 2026-08-01)
-- **해소 메모**: `YGEditActionButton`이 내부 `padding3` + 아이콘 `SizeTokens.Size24`, 바깥 `padding1` 래핑으로 구현됐다(2026-07-30). 확인 후 값이 바뀌면 해당 컴포넌트 치수와 스펙 "치수 도출 원칙" 표를 함께 고친다.
+- **출처**: [미구현 컴포넌트 스펙](../superpowers/specs/archive/2026-07-30-designsystem-button-missing-components.md) "치수 도출 원칙" — `Button-Circle` `Type=Small`의 테두리는 Figma에서 소수(0.636)이고 `YGCircleButton`은 1dp로 그린다. 같은 항목이 묻던 `Button-Edit-Action` 치수는 닫혔다 — `YGEditActionButton`이 아이콘을 파일 상수 `ICON_SIZE`(22dp)로 그려 내부 원 38·바깥 42가 Figma와 같다. `SizeTokens`에 `Size22`는 만들지 않았다.
+- **항목**: ① Small 테두리 0.636을 디자이너가 1로 정리해줄 수 있는지.
+- **상태**: 미해결 (의도된 절충 — 1dp로 구현)
+- **해소 메모**: Figma가 정리되면 이 항목을 지운다. 값이 바뀌면 `YGCircleButton`과 스펙 "치수 도출 원칙" 표를 함께 고친다.
 
 ### [2026-07-30] Camera-Shutter에 바인딩된 Transparency.Black5의 용도 불명
 - **ID**: OQ-P-035
@@ -7406,28 +7405,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 실기기 점검 회차를 한 번 돌려 항목별로 확인하고, 확인한 항목은 해당 스펙 「검증」 절에 기록한 뒤 여기서 지운다. 확인 중 결함이 나오면 개별 OQ로 분리한다.
 
-### [2026-09-30] PR #551(미머지)이 A-004 초대코드 입력의 찬 칸 삽입·삭제 포커스 정책을 바꾼다 — 머지 시 스펙 갱신 필요
-
-- **ID**: OQ-P-411
-- **출처**: `bugfix/invite-code-inplace-edit` 브랜치(PR #551, 아직 `develop` 미머지) —
-  `GroupInviteCodeViewModel.kt`에 `replacingFilledCellsOrNull`·`focusedIndexAfterShrink`가 새로
-  생겼다. [a004 스펙](../superpowers/specs/archive/2026-08-12-a004-group-invite-code.md)
-  "동작/상태"의 "입력"·"포커스 칸" 두 절은 여전히 6라운드(#466) 시점 그대로라 이 브랜치의 변경과
-  어긋난다.
-- **항목**: ① 이미 찬 칸을 다시 눌러 타이핑하면(한 글자든, 자동완성·스와이프 입력처럼 한 번에 여러
-  글자든) 밀지 않고 그 칸부터 순서대로 교체한다 — 스펙은 아직 "포커스 칸은 새 길이에서 다시
-  구한다"(텍스트 필드 기본 삽입 동작을 그대로 씀)로 적혀 있어, PR 리뷰에서 지적된 회귀(찬 칸
-  재입력 시 다음 칸부터 밀리고 마지막 글자가 잘림)가 스펙상으로는 여전히 "의도된 동작"처럼 보인다.
-  ② 지우기의 포커스 정책도 바뀌었다 — 예전엔 지우기 한 번마다 포커스가 끝으로 점프했는데, 이제
-  지운 자리에 아직 지울 글자가 남아 있는 한(뒤 글자가 당겨와 채우는 한) 그 자리에 머문다. ③ 테스트가
-  34→45케이스로 늘었다.
-- **상태**: 미해결 (PR #551 develop 머지 대기 — [doc-baseline](../doc-baseline.md) 규율상 머지 전에는
-  스펙 본문을 고치지 않는다)
-- **해소 메모**: PR #551이 develop에 머지되면
-  [a004 스펙](../superpowers/specs/archive/2026-08-12-a004-group-invite-code.md)에 "⚠️ as-built
-  갱신(머지일, PR #551)" 블록을 추가하고 "입력"·"포커스 칸" 두 절, 테스트 케이스 수를 갱신한다. 이
-  항목의 ①②③을 그대로 대조표로 쓴다.
-
 ### [2026-09-30] 위키 C-103-Error·재시도 정책과 구현이 어긋난다
 
 - **ID**: OQ-P-411
@@ -7455,7 +7432,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   낮춰 흉내 낸 화면으로만 다루고, 그런 실기기에서 패널과 토핑이 어떻게 보이는지는 확인하지 않았다.
   ② 캔버스 폭 이상으로 키운 토핑은 가운데로 옮겨도 패널에 가린다 — 크기를 줄이는 규칙이 정책에 없어
   그대로 둔다. ③ 열린 패널의 화살표 터치 영역(44dp 정사각)이 슬라이더 터치 띠의 오른쪽 위 귀퉁이와
-  겹친다(기본 글꼴 배율에서 가로 30dp·세로 8dp, 트랙과 손잡이는 겹치지 않는다). 그 자리에서 슬라이더를
+  겹친다(기본 글꼴 배율에서 가로 30dp·세로 8dp, 트랙과 손잡이는 겹치지 않는다 — 다만 `YGSlider` 높이가
+  32dp라 손잡이 위 가장자리가 겹친 띠의 아래 가장자리와 여백 없이 맞닿는다). 그 자리에서 슬라이더를
   잡으려다 패널이 닫히는 일이 실제로 생기는지 확인되지 않았다. ④ 이 화면을 피그마(`5453:10418`,
   `5461:9261`)와 실기기에서 대조한 기록이 없다.
 - **상태**: 미해결 (실기기 미확인 — 관찰된 결함은 없다)
