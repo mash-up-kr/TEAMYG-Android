@@ -9,16 +9,18 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @Immutable
@@ -74,12 +76,13 @@ class CustomGalleryPickerViewModel
     @Assisted private val returnResultOnly: Boolean,
     @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
-    private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
+    private val loadGalleryImageGroupsUseCase: LoadGalleryImageGroupsUseCase,
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
     private var hasRequestedPermission = false
+    private var loadGroupsJob: Job? = null
 
     init {
         viewModelLogger.i { "CustomGalleryPickerViewModel::init" }
@@ -110,15 +113,26 @@ class CustomGalleryPickerViewModel
                     )
                 }
 
-                viewModelScope.launch {
-                    val images = loadFilterYGGalleryImageGroupsUseCase()
+                // 권한 결과가 다시 오면 접근 수준이 달라졌을 수 있어 이전 조회를 버리고 새로 읽는다
+                loadGroupsJob?.cancel()
+                loadGroupsJob = viewModelScope.launch {
+                    val result = runSuspendCatching { loadGalleryImageGroupsUseCase() }
 
-                    updateState {
-                        copy(
-                            isLoading = false,
-                            groups = images,
-                        )
-                    }
+                    result.fold(
+                        onSuccess = { images ->
+                            updateState {
+                                copy(
+                                    isLoading = false,
+                                    groups = images,
+                                )
+                            }
+                        },
+                        onFailure = { e ->
+                            viewModelLogger.e(e) { "갤러리 이미지 조회 실패" }
+
+                            updateState { copy(isLoading = false) }
+                        },
+                    )
                 }
             }
 

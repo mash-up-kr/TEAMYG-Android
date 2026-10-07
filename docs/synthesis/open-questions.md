@@ -882,13 +882,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] 갤러리 死코드 2건 — 부분 접근 배너·전체 조회 UseCase
 - **ID**: OQ-P-089
-- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 03시 창 필터본 `LoadFilterYGGalleryImageGroupsUseCase`만 쓴다). 둘 다 PR #191 이후 상태.
+- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 `LoadGalleryImageGroupsUseCase`(당시 이름 `LoadFilterYGGalleryImageGroupsUseCase`)만 쓴다). 둘 다 PR #191 이후 상태.
 - **항목**: ① 배너를 지울지(대체 완료) 다른 접근 수준 안내로 되살릴지, ② 전체 조회 UseCase가 앞으로 쓰일 화면이 있는지(있으면 유지, 없으면 Repository의 `loadAllGalleryImages`까지 함께 정리).
 - **상태**: 부분 해소 (② 해소 — 정리 쪽으로 닫힘, 2026-09-20 PR #514 / ① 잔존)
   > ✅ **②가 "없다"로 닫혔다(2026-09-20, PR #514)** — `LoadAllGalleryImageGroupsUseCase`가 삭제되고
   > `GalleryRepository.loadAllGalleryImages`와 `GalleryRepositoryImpl`의 구현까지 함께 걷혔다.
-  > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은 03시 창
-  > 필터본 `loadFilterYGGalleryImages` 하나만 쓴다.
+  > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은
+  > `loadGalleryImages` 하나만 쓴다(#599에서 03시 창 제한을 걷고 이름의 `Filter`도 뗐다).
   > ⚠️ **①은 그대로다** — `GalleryPartialAccessBanner.kt`가 참조 0건으로 남아 있다. 같은 청소
   > 라운드가 바로 옆 死코드는 지우면서 이 파일은 건드리지 않았다.
 - **해소 메모**: ①만 남았다. 정리 시 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 파일 구성·주의 절과 [data-layer](../architecture/data-layer.md) 레이어 배치의 `GalleryRepository` 서술을 맞춘다.
@@ -1382,7 +1382,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-12] 캔버스 날짜가 03시 경계를 안 쓴다 — 같은 저장소에 `DayWindow`가 있는데도
 
 - **ID**: OQ-P-127
-- **출처**: `feature/groups/canvas/impl` `viewmodel/CanvasMainViewModel.kt#loadCanvasMainInfo`(PR #199 develop 머지) — 캔버스 날짜 라벨을 `Clock.System.todayIn(TimeZone.currentSystemDefault())`로 만든다. 위키 [[캔버스-마감-스케줄]]은 하루 경계가 **03:00 KST 고정**이고(서버 기준 KST), `domain`의 `DayWindow.current(timeZone, clock)`가 그 경계를 이미 구현해 C-102 갤러리가 쓰고 있다. 지금 구현은 경계가 00:00이고 시간대도 기기 설정을 따른다 — 00:00~02:59 사이에는 화면이 **캔버스의 실제 날짜보다 하루 뒤 날짜**를 보여준다.
+- **출처**: `feature/groups/canvas/impl` `viewmodel/CanvasMainViewModel.kt#loadCanvasMainInfo`(PR #199 develop 머지) — 캔버스 날짜 라벨을 `Clock.System.todayIn(TimeZone.currentSystemDefault())`로 만든다. 위키 [[캔버스-마감-스케줄]]은 하루 경계가 **03:00 KST 고정**이고(서버 기준 KST), `domain`의 `DayWindow.current(timeZone, clock)`가 그 경계를 이미 구현해 있다(갤러리는 #599에서 이 경계를 걷어 냈고 지금은 최근 이미지 축출만 쓴다). 지금 구현은 경계가 00:00이고 시간대도 기기 설정을 따른다 — 00:00~02:59 사이에는 화면이 **캔버스의 실제 날짜보다 하루 뒤 날짜**를 보여준다.
 - **항목**: ① 화면 날짜를 `DayWindow` 기준으로 옮길지(경계·시간대 둘 다), ② 시간대를 KST로 고정할지 기기 시간대를 인정할지 — 서버가 KST로 캔버스를 마감하므로 해외 사용자는 어느 쪽이든 정책 결정이 필요하다. ③ 날짜가 화면에서 계산되는 구조 자체를 유지할지(서버가 캔버스 날짜를 내려주면 표시만 남는다).
 - **상태**: 미해결 (그룹·캔버스 데이터 미결선이라 지금은 표시만 틀린다)
   > ⚠️ **범위가 커졌다(2026-08-16, PR #259)** — 같은 `today` 값이 이제 **캘린더의 미래 날짜 잠금과 오늘
@@ -1394,7 +1394,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > (`PARFAIT_TIME_ZONE`·`parfaitToday()`). 정한 이유가 표시 정합이 아니라 **동작**이라는 점이 중요하다:
   > 캔버스 행이 KST 날짜를 키로 저장돼, 기기 시간대로 오늘을 세면 오늘 조회의 자정 경계 재시도가
   > 하루 한 번이 아니라 **로드마다** 돌고 달력이 지금 보는 날을 미래로 보고 잠근다. **경계 00:00은
-  > 그대로**라 ①(`DayWindow` 03:00으로 옮길지)은 열려 있고, `DayWindow`는 여전히 C-102 갤러리만 쓴다.
+  > 그대로**라 ①(`DayWindow` 03:00으로 옮길지)은 열려 있고, `DayWindow.current()`는 이제 최근 이미지 축출(`GetRecentCacheImagesUseCase`)만 쓴다(갤러리는 #599에서 걷어 냈다).
   > **`today` 이중 계산은 해소됐다** — 로드 함수가 날짜를 만들지 않게 되어 UiState 기본값 한 자리다
   > → [c001-canvas-today-detail 스펙](../superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md).
   > ⚠️ **경계 00:00을 읽는 자리가 늘었다(2026-08-17, PR #297)** — 재진입마다 도는 `syncToday()`가
@@ -4042,17 +4042,17 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-243
 - **출처**: `domain/model/DayWindow.kt`의 `DAY_BOUNDARY_HOUR` × `domain/model/ParfaitDay.kt`의
-  `parfaitToday()` × `GetRecentCacheImagesUseCase`·`GalleryRepositoryImpl` — PR #308이 앱의 하루 경계를
+  `parfaitToday()` × `GetRecentCacheImagesUseCase` — PR #308이 앱의 하루 경계를
   03시로 옮길 때 **경계 값을 두 곳에 적지 않으려고** 기존 `DayWindow.DAY_BOUNDARY_HOUR`를 재사용했다.
   그 자체는 옳은 판단이지만, 지금 그 상수는 **성격이 다른 두 하루**를 정한다 — `parfaitToday()`의 하루는
   **서버 마감 배치 시각의 거울**(고정 KST, 계약이 값을 내려주지 않아 앱이 복제한 것)이고,
-  `DayWindow.current()`의 하루는 **기기 기준 최근 사진 윈도우**(기기 시간대)다. KDoc은 "시각만 공유하고
+  `DayWindow.current()`의 하루는 **기기 기준 최근 이미지 축출 윈도우**(기기 시간대)다. KDoc은 "시각만 공유하고
   시간대는 공유하지 않는다"까지 적었으나, **서버가 배치 시각을 바꿀 때 무엇을 해야 하는지**는 적히지
-  않았다. 그 경우 상수를 고치면 갤러리 윈도우가 함께 움직이고, 갈라 두면 "두 곳에 적으면 한쪽만
+  않았다. 그 경우 상수를 고치면 최근 이미지 윈도우가 함께 움직이고, 갈라 두면 "두 곳에 적으면 한쪽만
   고쳐진다"던 원래 문제로 돌아간다.
-- **항목**: ① 서버 배치 시각이 바뀔 때 상수를 갈라 각자 갖게 할지, 아니면 갤러리 윈도우도 같이 움직이는
+- **항목**: ① 서버 배치 시각이 바뀔 때 상수를 갈라 각자 갖게 할지, 아니면 최근 이미지 윈도우도 같이 움직이는
   것이 의도라고 못박을지. ② 계약에 하루 경계를 내려주는 필드를 서버에 요청할지 — 있으면 복제가 사라져
-  이 결합 자체가 없어진다. ③ 갤러리 윈도우의 경계가 03시여야 하는 근거가 정책에 있는지(파르페 마감과
+  이 결합 자체가 없어진다. ③ 최근 이미지 윈도우의 경계가 03시여야 하는 근거가 정책에 있는지(파르페 마감과
   같은 값을 쓰는 것이 우연인지 의도인지 어디에도 안 적혀 있다).
 - **상태**: 미해결 (지금은 두 값이 같아야 맞는 상태라 발화하지 않는다)
 - **해소 메모**: 정하면 [api/parfait.md](../api/parfait.md) "하루 경계"와
@@ -5853,11 +5853,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-331
 - **출처**: `CustomGalleryPickerScreen#GalleryContent`(PR #406) — 사진이 있으면
-  `YGFloatingBarTitle`("오늘 찍은 사진"), `isEmpty` 면 제목 없는 `YGFloatingBarClose` 다.
+  `YGFloatingBarTitle`("사진 선택"), `isEmpty` 면 제목 없는 `YGFloatingBarClose` 다.
   Figma 는 `Floating Bar` 에 `Status=Title` 을 추가했을 뿐 **어느 상태에 무엇을 쓰는지**를 주지 않았고,
   스펙이 이 갈래의 출처로 적은 것은 작업자 지시 한 줄이다. 권한 미허용 갈래도 제목이 없다.
 - **항목**: ① 빈 상태에 제목이 없어야 하는가 — 같은 화면이 상태에 따라 머리글을 잃는 것이라
-  스크린리더에는 화면 이름이 사라지는 것과 같다. ② 문구 "오늘 찍은 사진"이 화면 이름인지 목록
+  스크린리더에는 화면 이름이 사라지는 것과 같다. ② 문구 "사진 선택"이 화면 이름인지 목록
   머리글인지 — 위키에 C-102 문구 정책이 없다(빈 상태 안내문은 있고 제목은 없다).
 - **상태**: 미해결 (**동작 영향 0** — 육안 대조도 아직 없다. 이 라운드 검증은 기계 검사뿐이었다)
 - **해소 메모**: 정해지면 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 상단바
@@ -7624,4 +7624,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (코드 수정 대상)
 - **해소 메모**: ②를 넣으면 `gradle-cache-seed.yml`의 시딩 태스크에도 `lint`를 더한다.
 
-<!-- oq-next: 428 -->
+### [2026-10-07] 03시 창 갤러리 조회가 미사용으로 남아 있다 — 제한 해제 확정 뒤 지울 것
+- **ID**: OQ-P-428
+- **출처**: `domain/.../usecase/gallery/LoadFilterYGGalleryImageGroupsUseCase.kt` · `GalleryRepository#loadFilterYGGalleryImages` · `GalleryMediaProvider#selection` (PR #599) — 갤러리가 전체 사진을 보여주도록 바뀌면서 화면은 `LoadGalleryImageGroupsUseCase`(`loadGalleryImages`)만 부른다. 03시 창으로 거르던 기존 경로는 **일부러 지우지 않고 호출부 0건으로 남겼다** — 내부 배포 반응을 보고 제한을 되돌릴 수도 있어서다.
+- **항목**: ① 제한 해제가 확정되면 위 세 선언과 `GalleryRepositoryImpl`의 구현을 함께 지운다. ② 되돌리기로 정해지면 `CustomGalleryPickerViewModel`이 부르는 UseCase만 바꾸고, 전체 조회 경로(`loadGalleryImages`)와 갤러리 안내 문구 삭제는 별도로 판단한다.
+- **상태**: 미해결 (의도된 미사용 — 死코드 정리 대상이 아니다)
+- **해소 메모**: 정해지면 [data-layer](../architecture/data-layer.md)의 날짜 그룹 키 서술과 OQ-P-243의 `DayWindow.current()` 소비처를 맞춘다.
+
+<!-- oq-next: 429 -->
