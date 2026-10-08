@@ -10,10 +10,10 @@
 
 ## 현재 기준선
 - **repo**: `mash-up-kr/TEAMYG-Android` `develop`
-- **커밋**: `4c40ddfee` (`Merge pull request #580 from mash-up-kr/feature/#579-group-list-empty-animation`)
-- **검증일**: 2026-10-04 (85회차)
-- **테스트 수**: 유닛 1314 · 계측 91
-- **미머지 추적 항목**: 하나(`feature/debug-mode`, OQ-P-311 계보)
+- **커밋**: `5b7180670` (`Merge pull request #598 from mash-up-kr/feature/#597-sync-group-list-animation`)
+- **검증일**: 2026-10-07 (86회차)
+- **테스트 수**: 유닛 1328 · 계측 91
+- **미머지 추적 항목**: 둘(`feature/debug-mode`, OQ-P-311 계보 · `feature/#599-unlock-gallery-date-filter`, PR #600 — 문서 수정을 브랜치가 들고 있다)
 - **실기기 미확인 이월**: [status.md 「실기기 미확인」](status.md#실기기-미확인)
 
 ## 점검 절차 (다음 요청 시)

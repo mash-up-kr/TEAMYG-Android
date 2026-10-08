@@ -4,7 +4,7 @@ title: 배치 화면에 테두리 설정 합치기 (C-105-Arrange border panel)
 status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-10-02
+verified: 2026-10-07
 related_code:
   - feature/groups/canvas/impl/.../screen/CanvasToppingPlaceScreen.kt#CanvasToppingPlaceScreen
   - feature/groups/canvas/impl/.../viewmodel/CanvasToppingPlaceViewModel.kt#CanvasToppingPlaceViewModel
@@ -52,8 +52,9 @@ tags: [spec, parfait]
 이 정책은 아직 `wiki/`에 반영되지 않았다. 위키 반영은 별도 `ingest` 작업이고 이 스펙의
 범위가 아니다.
 
-정책 메모와 다르게 정한 것이 하나 있다. 메모는 수정 플로우의 닫기가 "변경사항 있으면 확인
-팝업"이라 적지만, 이 스펙은 변경 여부와 무관하게 언제나 팝업을 띄운다.
+수정 플로우의 닫기는 정책 메모대로 "변경사항 있으면 확인 팝업"이다. 처음에는 변경 여부와
+무관하게 띄우기로 정했으나 #589에서 메모 쪽으로 돌아갔다. 닫기·뒤로가기와 삭제의 현재 동작은
+아래 「시스템 뒤로가기」「수정 플로우」에 적는다(#589, #593).
 
 ## 범위
 
@@ -244,10 +245,11 @@ data class NavKeyCanvasToppingArrange(
 |---|---|
 | 로딩 덮개가 떠 있다 | 무시한다 |
 | 패널 열림 | 패널만 닫힌다 |
-| 패널 닫힘 | 그만두기 팝업을 띄운다 |
+| 패널 닫힘 | 팝업 없이 이전 화면으로 돌아간다 |
 
-추가 플로우에서 헤더의 뒤로 버튼은 팝업 없이 확인 화면으로 돌아가지만, 시스템 뒤로가기는
-팝업을 띄운다.
+판정은 `toppingPanelBackAction`(`util/ToppingBorderPanelRules.kt`)이 한다. 추가 플로우에서 시스템
+뒤로가기는 헤더의 뒤로 버튼과 같은 결과다. 수정 플로우의 시스템 뒤로가기는 저장하지 않은
+변경이 있어도 팝업을 띄우지 않는다 — 변경을 묻는 것은 닫기뿐이다.
 
 ### 추가 플로우 (`CanvasToppingPlace`)
 
@@ -266,8 +268,8 @@ data class NavKeyCanvasToppingArrange(
 ### 수정 플로우 (`CanvasToppingArrange`)
 
 `CanvasBGEditViewModel`의 토핑 부분을 새 ViewModel로 옮긴다. 오늘 캔버스 구독,
-`dirtyToppingIds`, `deletedToppingIds` 툼스톤, 삭제 모달, 변형 처리, `updateDirtyToppings`가
-따라간다. 좌표는 캔버스 대비 비율을 유지한다.
+`dirtyToppingIds`, `deletedToppingIds` 툼스톤, 변형 처리, `updateDirtyToppings`가
+따라간다(삭제 모달은 #593에서 없어졌다 — 아래 「삭제」). 좌표는 캔버스 대비 비율을 유지한다.
 
 `CanvasToppingItem`은 그대로 옮기지 않고 고친다.
 
@@ -303,14 +305,18 @@ data class NavKeyCanvasToppingArrange(
 **포커스가 사라질 때**: 폴링 병합이 서버 목록에서 빠진 사진의 포커스를 푼다. 패널이 열려
 있었다면 함께 닫는다.
 
-**삭제**: 지금과 같다. 삭제 모달을 확인하면 서버에서 지우고, 성공하면 오늘 캔버스를 갱신한
-뒤 캔버스 메인으로 돌아간다. 삭제 뒤 이 화면에 남는 상태는 없다.
+**삭제**: 삭제 버튼은 모달 없이 사진을 화면에서만 빼고 `pendingDeleteToppingIds`에 넣는다.
+서버에는 확정 때 나간다 — 변형 PATCH가 끝난 뒤 DELETE를 보낸다. 서버에서 지워진 것은
+`deletedToppingIds` 툼스톤으로 옮겨 폴링 병합이 되살리지 않게 하고, 다시 확정해도 또 나가지
+않는다. 삭제 대기는 `hasUnsavedChanges`에 들어가 닫기 팝업을 띄운다. 패널이 열려 있으면 삭제
+버튼은 패널만 닫는다.
 
 **패널**: 포커스된 사진의 `border`를 직접 갱신하고 `dirtyToppingIds`에 넣는다. 화면을 옮기지
 않는다. 서버 굵기는 읽을 때 범위에 가두므로, 범위 밖 굵기였던 사진을 포커스만 하고 손대지
 않으면 PATCH는 나가지 않는다.
 
-**닫기**: 변경 여부를 보지 않고 언제나 그만두기 팝업을 띄운다. 확인하면 캔버스 메인으로
+**닫기**: 저장하지 않은 변경(`hasUnsavedChanges` — 변형·테두리·삭제 대기)이 있을 때만 그만두기
+팝업을 띄우고, 없으면 바로 돌아간다. 로딩 중에는 무시한다. 확인하면 캔버스 메인으로
 돌아간다. 팝업 문구는 지금 배경·토핑 편집의 것("편집을 그만둘까요?")을 쓴다.
 
 **확정**: `updateDirtyToppings()`가 전부 성공하면 `refreshTodayParfaitDetailUseCase`를 기다린
@@ -350,7 +356,8 @@ data class NavKeyCanvasToppingArrange(
 - 그만두기 팝업 문구는 플로우마다 다르다. 추가는 "사진 편집을 그만둘까요?", 수정은
   "편집을 그만둘까요?"다. 추가 쪽 문자열 네 개는 canvas impl `strings.xml`에 새로 둔다.
   segmentation 것과 같은 문구이고, 모듈 사이에 리소스를 나누지 않는다.
-- 두 플로우 모두 닫기와 시스템 뒤로가기의 팝업은 변경 여부와 무관하게 뜬다.
+- 추가 플로우의 닫기는 변경 여부와 무관하게 팝업을 띄운다. 수정 플로우의 닫기는 변경이 있을 때만
+  띄운다. 시스템 뒤로가기는 두 플로우 모두 팝업을 띄우지 않는다.
 - 하단 버튼 문구는 두 플로우 모두 "캔버스에 쌓기"다.
 - 분석 화면 id는 지금 값을 유지한다. 추가는 `"C-106"`, 수정은 `"C-305"`, 배경 편집은
   `"C-301"`이다. `NavKeyToppingEdit`의 `"C-105/C-306"` 갈래는 `borderOnly`와 함께 사라진다.
@@ -465,9 +472,9 @@ data class NavKeyCanvasToppingArrange(
   어색하다. 피그마대로 만든다.
 - 정책은 수정 플로우를 C-105-Arrange라 부르지만 분석 화면 id는 `"C-305"`를 유지한다.
   화면 id 체계를 정책에 맞출지는 정하지 않았다.
-- 수정 플로우의 닫기는 정책 메모와 달리 변경이 없어도 팝업을 띄운다.
-- 추가 플로우에서 헤더의 뒤로는 팝업 없이 돌아가고 시스템 뒤로가기는 팝업을 띄운다. 두
-  입력의 결과가 다르다.
+- 수정 플로우에서 시스템 뒤로가기는 저장하지 않은 변경이 있어도 묻지 않고 나간다. 닫기는
+  묻는다. 두 입력의 결과가 다르다.
+- 수정 플로우의 확정에서 삭제 일부만 성공하면 이미 나간 삭제는 그만두기로 되돌릴 수 없다.
 - 추가 플로우에서 뒤로 갔다 다시 오거나 프로세스가 죽으면 고른 테두리가 사라진다.
 - 두 손가락 제스처를 대신할 접근성 조작은 여전히 없다(OQ-P-202 ③).
 - 계획 B 뒤에는 `YGFloatingBarEditTab`과 여러 겹 띠 렌더링(`buildBorderPixels`,
