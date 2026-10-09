@@ -369,3 +369,27 @@ status 「빌드·인프라」 CI 계측 줄 · OQ-P-102 ②(기기에서 실행
 
 ## [2026-10-05] lint | PR #591 리뷰 반영 — `core:ui` → `:core:designsystem` 간선이 `implementation`인 이유와 OQ-P-142와의 경계를 module-structure에 적음
 module-structure `core:ui` 의존 항목 신설 · enum 변환 공용화 항목의 가시성 미결 서술
+
+## [2026-10-06] audit | 닫기·뒤로가기 팝업 흐름 변경(#589)을 문서에 반영
+status 토핑 생성·배치·누끼·배경 편집 항목 · navigation-flow `popUpTo` 소비처와 그만두기 팝업·배경 편집 복귀 항목 · ADR-0034 현재 코드 메모 · OQ-P-411 ③ · OQ-P-414(① 변경 없을 때 팝업 해소, 제목·본문만 남김)
+
+## [2026-10-06] restructure | 배치 수정 화면의 삭제를 즉시 DELETE에서 확정 시점 일괄 반영으로 바꿈 — 삭제 버튼은 화면에서만 빼고, 확정이 PATCH 뒤에 DELETE를 보낸다
+status 「토핑 생성·배치·배치 수정」 삭제 서술·주의 줄 · data-layer·api/parfait-image·api/README 삭제 소비처 서술 · 해소 OQ-P-270
+
+## [2026-10-06] lint | 리뷰 지적 반영 — 배치 수정 화면의 삭제 대기(`pendingDeleteToppingIds`)와 툼스톤(`deletedToppingIds`)을 가름, 끝난 삭제는 재확정 때 다시 나가지 않는다
+status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-image 삭제 소비처 서술
+
+## [2026-10-06] lint | G-001-Empty 정책 v0.3 대조 — 등장 도중 그룹 추가 칩을 누르면 `Shown`으로 건너뛰고(`GroupListEmptyIntroPhase.onClickAddGroup`), 버튼이 받은 터치는 종료로 치지 않게 고침
+고쳐 씀 status 「그룹 목록」 · g001-empty-animation 스펙(단계·종료·주의) · OQ-P-426(④ 신설, 상태)
+
+## [2026-10-06] lint | #599 갤러리 03시 창 제한·날짜 키 03시 경계 해제 — `loadGalleryImages`로 개명, OQ-P-089 서술을 현재 이름으로
+고쳐 씀 OQ-P-089 · data-layer 날짜 그룹 키 서술 · 위키 `C-102` 03시 창 정책(`wiki/pages/concepts/canvas.md` 등)은 코드와 어긋나 있어 위키 쪽 결정을 기다린다
+
+## [2026-10-07] lint | #599 03시 창 갤러리 조회를 미사용으로 남김 — 되돌림 대비, 새 OQ-P-428로 제거 시점 추적
+추가 OQ-P-428
+
+## [2026-10-07] audit | 5b7180670 — #598 G-001-Empty 정책 v0.3 · #592 편집 UI 치수 · #595 · #591 · #587 · #551 초대코드 찬 칸 교체 · #585
+100파일 +1275/-1639 · 유닛 1328 · 계측 91 · OQ 신설 없음 · 해소 OQ-P-411(PR #551 예고 쪽 — 같은 ID를 쓰던 C-103-Error 항목은 남음) · 고쳐 씀 OQ-P-034, OQ-P-412
+
+## [2026-10-07] lint | 86회차 누락 보완 — c105-arrange-border-merge 스펙이 #589·#593 이전의 닫기·시스템 뒤로가기·즉시 삭제를 그대로 적고 있었음
+고쳐 씀 스펙 「시스템 뒤로가기」「수정 플로우」 삭제·닫기·주의 절(`toppingPanelBackAction`, `pendingDeleteToppingIds`, `hasUnsavedChanges`)

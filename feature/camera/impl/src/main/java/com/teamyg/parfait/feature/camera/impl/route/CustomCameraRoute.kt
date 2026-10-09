@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.camera.impl.route
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +46,7 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 import com.teamyg.parfait.feature.camera.impl.R
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -150,7 +152,7 @@ internal fun CustomCameraRoute(
                     )
                 }
 
-                is CustomCameraEffect.Cancel -> navigator.onBack()
+                is CustomCameraEffect.Cancel -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 is CustomCameraEffect.CaptureFailed -> {
                     toastPolicy.showError(captureFailedMessage)
@@ -167,6 +169,12 @@ internal fun CustomCameraRoute(
                 }
             }
         }
+    }
+
+    // 배경 편집에서 온 경로만 가로채 캔버스로 되감는다. 캔버스에서 바로 온 경로는 기본
+    // 뒤로가기가 이미 캔버스라 두면 예측형 뒤로가기 전환이 산다
+    BackHandler(enabled = returnResultOnly) {
+        viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
 
     LifecycleResumeEffect(Unit) {

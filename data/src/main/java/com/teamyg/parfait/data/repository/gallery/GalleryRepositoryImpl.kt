@@ -87,6 +87,54 @@ constructor(
             return@withContext grouped
         }
 
+    override suspend fun loadGalleryImages(): LinkedHashMap<LocalDate, MutableList<String>> =
+        withContext(Dispatchers.IO) {
+            val uri: Uri = galleryMediaProvider
+                .collectionUri
+                ?: return@withContext LinkedHashMap<LocalDate, MutableList<String>>()
+            val timeZone: TimeZone = TimeZone.currentSystemDefault()
+
+            val grouped = linkedMapOf<LocalDate, MutableList<String>>()
+
+            galleryMediaProvider
+                .query(
+                    uri = uri,
+                    projection = galleryMediaProvider.projection,
+                    selection = null,
+                    selectionArgs = null,
+                    sortOrder = galleryMediaProvider.sortOrder,
+                )?.use { cursor ->
+                    val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+                    val takenColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN)
+                    val addedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+                    while (cursor.moveToNext()) {
+                        val id: Long = cursor.getLong(idColumn)
+
+                        val timestampMs: Long = galleryMediaProvider.resolveTimestampMs(
+                            cursor = cursor,
+                            takenColumn = takenColumn,
+                            addedColumn = addedColumn,
+                        )
+
+                        val dateKey: LocalDate = Instant
+                            .fromEpochMilliseconds(timestampMs)
+                            .toLocalDateTime(timeZone)
+                            .date
+
+                        val imageUri: String = ContentUris
+                            .withAppendedId(uri, id)
+                            .toString()
+
+                        grouped
+                            .getOrPut(dateKey) { mutableListOf() }
+                            .add(imageUri)
+                    }
+                }
+
+            return@withContext grouped
+        }
+
     /**
      * IS_PENDING 으로 등록해 두고 바이트를 다 쓴 뒤에야 내린다 — 쓰다 만 파일이 갤러리에
      * 잠깐이라도 온전한 것처럼 보이지 않게 하려는 것이다(API 29+). 어느 단계에서든 실패하면

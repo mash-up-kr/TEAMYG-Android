@@ -4,7 +4,7 @@ title: A-004 그룹 참여 초대코드 입력 화면 (GroupInviteCode)
 status: implemented
 category: ui-spec
 platforms: android
-verified: 2026-09-21
+verified: 2026-10-07
 related_code:
   - NavKeyGroupInviteCode
   - GroupInviteCodeRoute.kt#GroupInviteCodeRoute
@@ -77,6 +77,12 @@ tags: [spec, parfait, groups, invite-code, a004]
 > `focusedIndex` 는 `Int?` 에서 `Int` 로 좁혀져 "밑줄을 칠 칸"만 뜻하고, 키보드 노출은 `isFocused` 가
 > 따로 든다 — 구 코드는 한 필드가 둘을 겸했다. 코드 문자 집합 밖의 글자를 입력 단계에서 거른다
 > (`InviteCode.isCodeChar` 신설). 실기기 확인 완료.
+
+> ⚠️ **as-built 갱신(2026-10-07 대조, PR #551 develop 머지)**:
+> **찬 칸을 다시 눌러 타이핑하면 밀지 않고 그 칸부터 교체한다.** 6라운드는 텍스트 필드의 기본 삽입을
+> 그대로 써서, 찬 칸에 다시 입력하면 다음 칸부터 밀리고 마지막 글자가 잘렸다. 지우기의 포커스도
+> 바뀌었다 — 지울 때마다 끝으로 가던 포커스가 누른 자리에 머문다. 키보드 타입은 IME 조합을 끄려고
+> `KeyboardType.Password`가 됐다. 상세는 아래 「동작 / 상태」의 입력·포커스 칸.
 
 - **화면 ID**: A-004 (그룹 참여 — 초대 코드 입력)
 - **대상 모듈**: `feature/groups/enter/impl`(`invitecode/`) + `feature/groups/enter/api`(NavKey) + `domain`(UseCase·model) + `core:designsystem`(`YGTopBarDetail`·`YGButton`. 🔁 #261에서 `YGModalPopup` 소비가 S-102로 이관)
@@ -192,12 +198,19 @@ sealed interface GroupInviteCodeSideEffect : UiSideEffect {
 
 - **입력**(`ChangeText`, 🔁 6라운드): 텍스트 필드가 통째로 넘긴 문자열과 커서를 받는다. 커서를 기준으로
   앞뒤를 나눠 각각 `InviteCode.isCodeChar`로 거른 뒤 다시 붙이고 `codeLength`로 자른다 — **통째로 거르면
-  걸러진 글자가 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.** 포커스 칸은 새 길이에서
-  다시 구한다. 사유(`inviteCodeError`)는 **코드가 실제로 바뀔 때만** 지운다 — 걸러져서 아무것도 안 바뀐
+  걸러진 글자가 커서 앞이었는지 뒤였는지를 잃어 포커스가 엉뚱한 칸으로 간다.** 사유(`inviteCodeError`)는 **코드가 실제로 바뀔 때만** 지운다 — 걸러져서 아무것도 안 바뀐
   입력에 문구가 사라지면 그 순간 화면이 튄다(에러 문구가 `LazyColumn` item이라서).
-- **포커스 칸**(🔁 6라운드): `min(입력한 글자 수, codeLength - 1)`. 입력한 만큼 뒤로 가되 **더 갈 칸이
-  없으면 마지막 칸에 멈춘다** — 구 코드는 `takeIf { it < codeLength }`로 `null`이 되어 6자를 채우면
-  밑줄이 사라졌다.
+- **찬 칸 교체**(`replacingFilledCellsOrNull`, 🔁 #551): 위 경로보다 먼저 판정한다. 포커스 칸이 차 있고
+  (`focusedIndex < text.length`) 새 문자열이 옛 커서 자리에 글자를 끼워 넣기만 한 것이면(앞뒤가 그대로),
+  밀지 않고 **포커스 칸부터 순서대로 새 글자로 바꾼다.** 한 글자 타이핑뿐 아니라 자동완성·스와이프처럼
+  한 번에 여러 글자가 들어오는 편집도 같은 경로다. 바꿀 칸보다 새 글자가 많으면 남은 글자는 뒤에 붙이고
+  `codeLength`로 자른다. 포커스는 놓은 글자 수만큼 뒤로 가되 마지막 칸에서 멈춘다. 삭제, 끼워 넣은
+  글자가 전부 걸러진 입력, 앞뒤가 함께 바뀐 편집은 `null`이라 위 경로로 간다.
+- **포커스 칸**(🔁 6라운드 / #551): 글자가 늘거나 그대로면 `min(입력한 글자 수, codeLength - 1)`.
+  입력한 만큼 뒤로 가되 **더 갈 칸이 없으면 마지막 칸에 멈춘다** — 구 코드는 `takeIf { it < codeLength }`로
+  `null`이 되어 6자를 채우면 밑줄이 사라졌다. **글자가 줄면**(`focusedIndexAfterShrink`) 누른 자리에
+  글자가 남아 있는 한 그 자리에 머물고(`min(이전 포커스 칸, 새 길이 - 1)`), 다 지워지면 0이다 — 다시
+  누르지 않고 지우기를 이어가면 그 자리로 당겨온 글자가 계속 지워진다.
 - **커서 파생**(`cursor`, 6라운드): 지우기는 커서 앞 글자를 지운다. 포커스 칸이 차 있으면 커서를 그 뒤에,
   비어 있으면 그 자리에 둔다. 이 한 규칙으로 **"찬 칸은 그 칸이, 빈 칸은 앞 칸이" 지워진다.** 6자를 채운
   상태와 칸을 탭한 상태가 전자에 해당한다.
@@ -252,7 +265,8 @@ sealed interface GroupInviteCodeSideEffect : UiSideEffect {
     안 부르면 `layoutResult`가 잡히지 않아 **키보드가 올라올 때 입력줄로 스크롤되지 않는다**(이 필드가
     `LazyColumn` 안에 있어 작은 화면에서 가려진다).
   - 커서는 칸의 밑줄로 나타내므로 `cursorBrush`는 투명이다.
-  - `KeyboardType.Ascii` · `autoCorrectEnabled = false` · `imeAction = Done` · **`singleLine = true`**.
+  - `KeyboardType.Password`(🔁 #551 — IME 조합을 끈다. `visualTransformation`은 주지 않아 글자는 그대로
+    보인다) · `autoCorrectEnabled = false` · `imeAction = Done` · **`singleLine = true`**.
     `singleLine`이 없으면 `TYPE_TEXT_FLAG_MULTI_LINE`이 켜져 다수 IME가 `Done` 대신 개행 키를 낸다.
   - 대문자 자동 변환(`KeyboardCapitalization.Characters`)은 넣지 않았다 — 입력값 자체를 바꾸는 동작이라
     별도 결정이 필요하다.
@@ -292,6 +306,8 @@ sealed interface GroupInviteCodeSideEffect : UiSideEffect {
   옮겨가고 미리보기 성공이 "초대코드·그룹명을 들고 이동"을 검증하는 형태로 바뀌었다(붙여넣기 케이스는
   유지). 6라운드에서 34케이스로 늘었다 — 연속 삭제·중간 삭제 당김·문자 필터·커서 파생·경계
   (꽉 찬 코드 중간 삽입·커서 앞부분만으로 길이 초과·전부 걸러져 빈 문자열·커서 방어)·사유 유지.
+  #551에서 45케이스가 됐다 — 찬 칸 교체(한 글자·여러 글자)·지우기 포커스 유지·부분 입력에서 중간부터
+  이어 타이핑.
   `InviteCodeTest`에 `isCodeChar` 2케이스.
 
 ## 정책 대조 (위키)

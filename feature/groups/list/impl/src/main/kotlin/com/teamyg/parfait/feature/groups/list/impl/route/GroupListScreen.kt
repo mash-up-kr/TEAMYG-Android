@@ -109,7 +109,8 @@ internal fun GroupListScreen(
     Box(
         modifier = modifier.pointerInput(intro) {
             awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                // Final 이라야 clickable 이 소비한 다운(버튼 탭)이 종료에서 빠진다
+                awaitFirstDown(pass = PointerEventPass.Final)
                 intro.onTouchDown()
             }
         },
@@ -118,7 +119,10 @@ internal fun GroupListScreen(
             GroupListTopBar(
                 count = uiState.groupList?.size,
                 onClickSideMenu = onClickSideMenu,
-                onClickAddGroup = onClickChip,
+                onClickAddGroup = {
+                    intro.onClickAddGroup()
+                    onClickChip()
+                },
             )
 
             Box {

@@ -4,7 +4,7 @@ title: 디자인시스템 버튼 영역 미구현 컴포넌트 신설 (Design Sy
 status: implemented
 category: ui-spec
 platforms: android
-verified: 2026-08-01
+verified: 2026-10-07
 related_code:
   - YGEditTabButton.kt#YGEditTabButton
   - YGEditButton.kt#YGEditButton
@@ -124,8 +124,8 @@ Figma "버튼" 영역 14종 대조에서 **대응 구현체가 아예 없던 5�
 | Circle `Default`·`Secondary` | `padding3` + 아이콘 `Size28` | 44 | 44 / 아이콘 28 — 일치 |
 | Circle `Small` 바깥 | `padding3` + 내부 원 | 44 | 44 — 일치 |
 | Circle `Small` 내부 원 | 지름 `Size28` 고정 + 중앙 아이콘 `Size18` | 28 | 28 / 아이콘 18 — 일치 |
-| Edit-Action 내부 원 | `padding3` + 아이콘 `Size24` | 40 | 38 / 아이콘 22 — 2dp 큼 |
-| Edit-Action 바깥 | `padding1` 래핑 | 44 | 42 — 2dp 큼 |
+| Edit-Action 내부 원 | `padding3` + 아이콘 22dp(파일 상수 `ICON_SIZE`) | 38 | 38 / 아이콘 22 — 일치 |
+| Edit-Action 바깥 | `padding1` 래핑 | 42 | 42 — 일치 |
 | Camera-Shutter | `padding2` + 내부 원 `Size48` | 56 | 56 / 내부 48 — 일치 |
 
 `SizeTokens`에 `Size28`·`Size18`을 추가한다([design-system](../../../architecture/design-system.md)
@@ -133,8 +133,8 @@ Figma "버튼" 영역 14종 대조에서 **대응 구현체가 아예 없던 5�
 
 만들지 않는 것:
 - `Size56` — 셔터 외곽은 `padding2` + 내부 `Size48`로 도출된다.
-- `Size22` — `Button-Edit-Action` 아이콘만 쓰는 값이라 스케일을 늘리지 않고 `Size24`로 옮긴다.
-  그 결과 내부 원·바깥 프레임이 2dp 커진다(열린 질문).
+- `Size22` — `Button-Edit-Action` 아이콘만 쓰는 값이라 스케일을 늘리지 않는다. 컴포넌트가 파일 상수
+  `ICON_SIZE`(22dp)를 직접 든다.
 
 ## API / 인터페이스
 
@@ -395,10 +395,8 @@ Figma가 아이콘 색을 에셋에 구워 tint를 노출하지 않으므로 `Gr
   → [parfait open-questions](../../../synthesis/open-questions.md) 등록
 - **`Button-Circle` 변형과 카메라 컨트롤의 대응 미확정** — `Small`의 `ic_rotate` 글리프가 카메라 전환
   버튼처럼 보이지만 Figma 컴포넌트 시트만으로는 단정할 수 없다. 화면 노드 대조가 필요하다. → 위 항목과 함께 추적
-- **`Button-Edit-Action` 2dp 오차** — 아이콘 22를 `Size24`로 옮겨 내부 원(38→40)과 바깥 프레임(42→44)이
-  2dp 커진다. `Size22`를 만들지 않는 절충이다. `Button-Circle`은 2026-07-30 Figma 정수화 + `Size18` 추가로
-  오차가 없어졌다. 디자이너가 Edit-Action도 정수 치수로 정리해주면 오차가 사라진다.
-  → open-questions 등록
+- **`Button-Circle` `Small` 테두리 두께** — Figma 0.636을 1dp로 정규화했다. → OQ-P-034.
+  `Button-Edit-Action`은 아이콘을 22dp 리터럴 상수로 그려 Figma 치수와 같다(`Size22`는 만들지 않았다).
 - **`Camera-Shutter`의 `Transparency.Black5` 용도 미확인** — Figma 변수 목록에 잡히지만 두 원의
   채움 색으로는 설명되지 않는다(외곽 테두리나 그림자일 가능성). 이번 구현은 두 원만 그린다.
   → open-questions 등록

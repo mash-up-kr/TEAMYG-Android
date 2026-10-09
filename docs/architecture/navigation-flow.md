@@ -37,10 +37,11 @@ Navigation3 위에 자체 Navigator·엔트리 빌더를 얹는다. 결정 근�
     개에 `groupId`를 실어 나르는 대안은 배경 편집처럼 그 값이 무의미한 경로에도 인자를 붙이게 돼
     기각했다. reified 버전은 호출부 편의이고 `KClass` 버전이 실제 구현·테스트 대상이다.
     **대상을 못 찾으면 아무것도 걷지 않고 `false`를 주므로 "백스택에 있는지" 확인이 반환값으로 끝난다** —
-    별도 조회 API를 두지 않은 이유다. 소비처는 Route 넷이다: `PictureConfirmRoute`(`returnResultOnly = false`)·
-    `SegmentationRoute`·`ToppingEditRoute`의 닫기 → `popUpTo<NavKeyCanvasMain>()`,
-    `PictureConfirmRoute`(`returnResultOnly = true`)의 확인·닫기 → `popUpTo<NavKeyCanvasBGEdit>()`,
-    `CanvasToppingPlaceRoute`의 배치 완료 → `popUpTo<NavKeyCanvasMain>()`
+    별도 조회 API를 두지 않은 이유다. 소비처: `CustomCameraRoute`·`CustomGalleryPickerRoute`·
+    `PictureConfirmRoute`·`SegmentationRoute`·`ToppingEditRoute`·`CanvasToppingPlaceRoute`의 닫기와
+    `CanvasToppingPlaceRoute`의 배치 완료, `CanvasToppingArrangeRoute`를 떠나는 모든 길 →
+    `popUpTo<NavKeyCanvasMain>()`, `PictureConfirmRoute`(`returnResultOnly = true`)의 확인 →
+    `popUpTo<NavKeyCanvasBGEdit>()`
     ([segmentation-pipeline-hardening 스펙](../superpowers/specs/archive/2026-08-18-segmentation-pipeline-hardening.md)).
 - **NavKey**(각 feature `:api`, `@Serializable`) — 목적지 식별. 예: `NavKeyLogin`, `NavKeySegmentation`, `NavKeyCameraCustom`. groups·app 계열은 목적지가 많다: `NavKeyGroupList`·`NavKeyGroupSetting`·`NavKeyGroupInviteCode`, canvas의 `NavKeyCanvasMain`·`NavKeyCanvasBGEdit`(#231)·`NavKeyCanvasToppingPlace`(#290)·`NavKeyCanvasImageSave`(#445), `NavKeyAppSetting` 등(`NavKeyCanvasEdit`·`NavKeyCanvasImageSelect`·`NavKeyCanvasMove` 셋은 도달 불가로 남아 있다가 #514에서 삭제됐다). 전체 목록은 `feature/*/api`에서 확인(모듈 목록은 [module-structure](module-structure.md)).
 - **엔트리 빌더**(각 feature `:impl`) — `entry<NavKeyXxx> { ... }`를 등록하는 함수(예: `featureLoginEntryBuilder()`). Hilt 멀티바인딩 `Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>`로 주입. **빌더 하나가 여러 entry를 등록할 수 있다** — 예: `featureCanvasEntryBuilder()`는 canvas NavKey(`Main`·`BGEdit`·`ImageSave`(#445)·`ToppingPlace`) entry를 한 함수에서 등록(`Edit`·`ImageSelect`·`Move` 셋은 #514에서 삭제).
@@ -375,10 +376,18 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
 - **감지 실패로 들어온 편집 화면은 안내 토스트를 한 번 띄운다** — `NavKeyToppingEdit.isDetectionFailed`가 켜져 있고
   불러오기에 성공했을 때만이며, 띄웠다는 표시는 `SavedStateHandle`에 남아 프로세스가 되살아나도 다시 띄우지 않는다.
   편집 화면의 헤더 뒤로·시스템 뒤로는 팝업 없이 `onBack()`이라 선택 UI(감지 실패면 `PictureConfirm`)로 간다.
-- **토핑 만들기 경로의 X는 그만두기 팝업을 띄운다** — C-101-Loading, C-103 선택 UI, C-104 편집 화면, `PictureConfirm`(토핑 경로). 제목만 다르다: `PictureConfirm`은 "사진 추가를 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
-  팝업은 `core:ui` `component/modal/YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitEdit`이고 문구는 `core/ui`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
-  로딩 중에는 시스템 뒤로도 같은 팝업이다(선택 UI의 시스템 뒤로는 `PictureConfirm`으로 간다). "그만두기"는 `popUpTo<NavKeyCanvasMain>()`,
-  "계속 편집"은 팝업만 닫는다. 배경 편집 경로(`returnResultOnly = true`)에는 팝업이 없고, 편집 화면의 헤더 뒤로·시스템 뒤로도 팝업 없이 한 단계 돌아간다.
+- **카메라·갤러리의 X는 팝업 없이 캔버스로 간다** — 권한이 있든 없든, 캔버스에서 왔든 배경 편집에서 왔든
+  `popUpTo<NavKeyCanvasMain>()`이다. 시스템 뒤로도 같은 곳으로 간다. 캔버스에서 바로 온 경로는 기본 `onBack()`이
+  이미 캔버스라 가로채지 않고, 배경 편집 경로만 `BackHandler(enabled = returnResultOnly)`가 X와 같은 인텐트로 보낸다.
+- **`PictureConfirm`부터는 X가 그만두기 팝업을 띄운다** — `PictureConfirm`, C-101-Loading, C-103 선택 UI, C-104 편집 화면.
+  제목만 다르다: `PictureConfirm`은 토핑 경로면 "사진 추가를 그만둘까요?", 배경 편집 경로면 "배경 변경을 그만둘까요?", 그 밖은 "사진 편집을 그만둘까요?".
+  팝업은 `core:ui` `component/modal/YGModalQuit.kt`의 `YGModalQuitAdd`·`YGModalQuitBackground`·`YGModalQuitEdit`이고 문구는 `core/ui`의 `strings.xml`(`yg_modal_quit_*`)에 있다.
+  "그만두기"는 어느 경로든 `popUpTo<NavKeyCanvasMain>()`, "계속 편집"은 팝업만 닫는다.
+  이 화면들의 시스템 뒤로와 헤더 뒤로는 팝업 없이 `onBack()`으로 한 단계 돌아간다 — 로딩·선택 UI에서는 `PictureConfirm`으로 간다.
+- **배치·배치 수정 화면의 시스템 뒤로는 팝업을 띄우지 않는다** — `toppingPanelBackAction`(`util/ToppingBorderPanelRules.kt`)이
+  로딩 중이면 무시, 패널이 열려 있으면 패널만 닫기, 그 밖은 `NavigateBack`으로 가른다. 배치 화면은 헤더 뒤로와 같이 `onBack()`이고,
+  배치 수정 화면은 캔버스로 가며 저장 안 된 변경을 묻지 않고 버린다. X는 배치 화면이 항상, 배치 수정 화면이
+  `dirtyToppingIds`가 있을 때만 `YGModalQuitEdit`을 띄운다.
   팝업이 떠 있는 동안 도착한 분석 결과는 `SegmentationViewModel`이 보류했다가 "계속 편집"에서 적용하고 "그만두기"에서 버린다.
 - **갤러리 "최근"의 누끼는 편집 화면을 거치지 않는다** — `CustomGalleryPickerViewModel`이 `EnsureDraftSubjectRecordedUseCase`로
   초안이 그 알맹이를 가리키게 맞춘 뒤 `NavigateToToppingPlace`를 보내고, `CustomGalleryPickerRoute`는 자신이 맨 위일 때만
@@ -442,7 +451,7 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
                                             └─▶ NavKeyCustomGalleryPicker(recentImagePick=SOURCE, 나머지 동일) ──┤
                                                                                                                  ▼
                                                         NavKeyPictureConfirm(uri, source, returnResultOnly=true)
-                                                             │ sendResult(PictureConfirmResult) + popUpTo<NavKeyCanvasBGEdit>()
+                                                             │ 「다음」: sendResult(PictureConfirmResult) + popUpTo<NavKeyCanvasBGEdit>()
                                                              ▼
                                                         NavKeyCanvasBGEdit (ResultEffect<PictureConfirmResult>)
 ```
@@ -451,9 +460,10 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
   `goToSingleClearTop(NavKeySegmentation)`으로 전진하고, true면 결과를 돌려주고 물러난다.
   `showGuideToast`도 같은 부류로, 카메라·갤러리 가이드 토스트를 토핑 생성 경로에서만 띄운다.
   즉 **화면이 그릴 값이 아니라 호출자가 고르는 동작 플래그가 백스택 키에 실린 첫 사례**다.
-- ~~**복귀가 `onBack()` 2회 하드코딩**이다~~ → ✅ **깊이 대신 타입이 됐다(2026-08-20, PR #309)**.
-  확인·닫기 두 콜백 모두 `popUpTo<NavKeyCanvasBGEdit>()`라 사이에 화면이 몇 장 끼든 부른 화면으로
-  되감는다. 목적지를 타입으로 특정할 수 있는 근거는 `returnResultOnly = true`를 주는 곳이
+- **복귀는 깊이가 아니라 타입으로 한다.** 확인 콜백이 `popUpTo<NavKeyCanvasBGEdit>()`라 사이에 화면이 몇 장
+  끼든 부른 화면으로 되감는다. **닫기는 배경 편집으로 돌아오지 않는다** — 카메라·갤러리의 X와 시스템 뒤로,
+  확인 화면의 X(팝업 확정)는 전부 `popUpTo<NavKeyCanvasMain>()`이라 고르던 배경이 버려진다. 확인 화면의
+  「다시 찍기」·시스템 뒤로만 한 단계 돌아간다. 목적지를 타입으로 특정할 수 있는 근거는 `returnResultOnly = true`를 주는 곳이
   `CanvasBGEditRoute` 하나뿐이라는 것이고, **대가는 `feature:camera:impl`이 자기를 부른 화면을 이름으로
   안다는 결합**이다(닫기 결선 때문에 이미 `NavKeyCanvasMain`을 알고 있어 방향이 새로 생기지는 않았다).
 - 카메라 실패·취소가 결과를 **보내지 않게 됐다**(2026-08-20, PR #309) — `CustomCameraEffect.ReturnResult(uri: String?)`가
