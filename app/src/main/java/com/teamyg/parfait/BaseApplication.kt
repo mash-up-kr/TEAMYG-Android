@@ -7,10 +7,10 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.kakao.sdk.common.KakaoSdk
-import com.teamyg.parfait.analytics.AnalyticsLogger
 import com.teamyg.parfait.analytics.AnalyticsUserProperty
 import com.teamyg.parfait.analytics.currentDeviceInfo
 import com.teamyg.parfait.core.ui.image.newParfaitImageLoader
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.jvm.analytics.LoggerInitializer
 import com.teamyg.parfait.push.ParfaitFirebaseMessagingService
 import dagger.hilt.android.HiltAndroidApp

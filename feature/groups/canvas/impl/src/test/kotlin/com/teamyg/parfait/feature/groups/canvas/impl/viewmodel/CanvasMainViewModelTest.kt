@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -80,6 +81,7 @@ class CanvasMainViewModelTest {
 
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
     private val pastCanvasAlertRepository: PastCanvasAlertRepository = mockk(relaxUnitFun = true)
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
@@ -144,6 +146,7 @@ class CanvasMainViewModelTest {
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
         startToppingDraft = startToppingDraft,
         pastCanvasAlertRepository = pastCanvasAlertRepository,
+        analyticsLogger = analyticsLogger,
     )
 
     /**

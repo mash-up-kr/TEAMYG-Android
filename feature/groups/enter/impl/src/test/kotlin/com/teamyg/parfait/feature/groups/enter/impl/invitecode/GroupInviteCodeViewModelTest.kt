@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.enter.impl.invitecode
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.InviteCode
@@ -35,12 +36,14 @@ class GroupInviteCodeViewModelTest {
 
     private val getGroupJoinPreview: GetGroupJoinPreviewUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupInviteCodeViewModel {
         every { getMyAccountFlow() } returns accountFlow
         return GroupInviteCodeViewModel(
             getGroupJoinPreview = getGroupJoinPreview,
             getMyAccountFlow = getMyAccountFlow,
+            analyticsLogger = analyticsLogger,
         )
     }
 

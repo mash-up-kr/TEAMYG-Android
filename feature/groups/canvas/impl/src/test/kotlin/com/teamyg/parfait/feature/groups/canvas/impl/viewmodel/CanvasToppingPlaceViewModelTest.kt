@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -99,6 +100,8 @@ class CanvasToppingPlaceViewModelTest {
 
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
 
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
+
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
@@ -120,6 +123,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
             advanceUntilIdle()
@@ -554,6 +558,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         )
         advanceUntilIdle()
 
@@ -597,6 +602,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         )
 
         // When 화면이 열린다
@@ -917,12 +923,15 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
-    fun onSystemBack_withPanelClosed_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+    fun onSystemBack_withPanelClosed_navigatesBackWithoutQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = readyViewModel()
 
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
 
-        assertTrue(viewModel.state.value.showQuitDialog)
+            assertEquals(CanvasToppingPlaceEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     @Test

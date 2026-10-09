@@ -1,6 +1,9 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsScreen
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import kotlin.test.Test
@@ -19,6 +22,8 @@ private class FakeAnalyticsLogger : AnalyticsLogger {
     override fun logScreenView(screen: AnalyticsScreen) {
         screenViews += screen
     }
+
+    override fun logEvent(event: AnalyticsEvent) = Unit
 }
 
 class ScreenViewTrackerTest {

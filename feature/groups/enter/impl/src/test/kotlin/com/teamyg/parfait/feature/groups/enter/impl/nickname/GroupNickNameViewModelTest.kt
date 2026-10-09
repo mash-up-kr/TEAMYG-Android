@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.enter.impl.nickname
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
@@ -34,6 +35,7 @@ class GroupNickNameViewModelTest {
 
     private val joinGroup: JoinGroupUseCase = mockk()
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(nickName: String = "") = GroupNickNameViewModel(
         inviteCodeValue = INVITE_CODE,
@@ -42,6 +44,7 @@ class GroupNickNameViewModelTest {
         checkNickNameValid = CheckNameValidUseCase(),
         joinGroup = joinGroup,
         changeGroupNickname = changeGroupNickname,
+        analyticsLogger = analyticsLogger,
     )
 
     private fun viewModelWith(nickName: String): GroupNickNameViewModel = viewModel().apply {
