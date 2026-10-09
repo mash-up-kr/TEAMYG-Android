@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -71,6 +72,7 @@ class CanvasToppingArrangeViewModelTest {
     private val deleteTopping: DeleteToppingUseCase = mockk()
     private val updateToppings: UpdateToppingsUseCase = mockk()
     private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
@@ -100,6 +102,7 @@ class CanvasToppingArrangeViewModelTest {
             deleteToppingUseCase = deleteTopping,
             updateToppingsUseCase = updateToppings,
             updateToppingBorderUseCase = updateToppingBorder,
+            analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
             advanceUntilIdle()

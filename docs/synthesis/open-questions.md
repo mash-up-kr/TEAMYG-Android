@@ -7609,4 +7609,71 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (의도된 미사용 — 死코드 정리 대상이 아니다)
 - **해소 메모**: 정해지면 [data-layer](../architecture/data-layer.md)의 날짜 그룹 키 서술과 OQ-P-243의 `DayWindow.current()` 소비처를 맞춘다.
 
-<!-- oq-next: 429 -->
+### [2026-10-07] `canvas_edit_*` 화면 분류가 정본 문서와 코드에서 다르고, `canvas_edit_border_tapped`는 아직 못 심었다
+
+- **ID**: OQ-P-430
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본, 작성자
+  김남수)는 `canvas_edit`를 "캔버스 편집(C105)" 하나로 묶는데, 2026-10-02 PR #572
+  (`c105-arrange-edit-flow`)로 그 화면이 실제로는 둘로 쪼개져 있다 — 토핑을 처음 올리는
+  화면은 `C-106`(`CanvasToppingPlaceViewModel`), 이미 올라간 토핑을 다시 고치는 화면은
+  `C-305`(`CanvasToppingArrangeViewModel`).
+- **항목**: ① `canvas_edit_stack_tapped`는 최초 배치(`C-106`)에서만 찍도록 확인받아 그렇게
+  심었는데, 정본 문서의 "C105"가 재편집(`C-305`)까지 포함할 의도였다면 어긋난다.
+- **상태**: 부분 해소 (② 해소, ① 잔존 — 정본 문서 작성자 확인 필요)
+  > ✅ **②가 닫혔다(2026-10-09)** — "테두리 편집 탭"(`canvas_edit_border_tapped`)을
+  > `CanvasToppingArrangeViewModel.OnToggleBorderPanel`에 심었다. `canvas_edit_stack_tapped`의
+  > `is_border_on`이 "최초 배치 시 최종 테두리 여부"(결과 스냅샷)만 주고 재편집 화면(`C-305`)의
+  > 테두리 조작은 전혀 못 잡는다는 공백을 메우려는 것이라, 패널이 **닫혀 있다가 열리는 전환에만**
+  > 찍는다(토글이라 닫는 쪽까지 세면 과다 집계된다).
+- **해소 메모**: ①은 확인 후 필요하면 `CanvasToppingArrangeViewModel.handleOnClickConfirm`에도
+  `canvas_edit_stack_tapped`를 추가한다.
+
+### [2026-10-09] `canvas_camera_photo_selected`의 `source: "today"`가 가리키던 "오늘 사진" 구분이 제품에서 없어졌다
+
+- **ID**: OQ-P-431
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본, 작성자
+  김남수, 2026-10-06 작성)는 `source`: `"recent"`/`"today"`로 "C102 최근 사진 / 오늘 사진 탭"을
+  구분하는데, 같은 날 올라간 커밋(`e515fe48` "03시 하루 창과 날짜 키 경계를 없애고 기기의 모든
+  사진을 달력 날짜로 묶는다", `e0fb9dc7` "갤러리 상단 제목을 오늘 찍은 사진에서 사진 선택으로
+  바꾼다", 둘 다 2026-10-06~07)가 "오늘 사진"이라는 구분 자체를 화면에서 없앴다
+  (`gallery_today_photos_title` → `gallery_title`("사진 선택")). OQ-P-428이 그 03시 창 코드가
+  의도적 미사용으로 남아 있다고 확인해 준다.
+- **항목**: `CustomGalleryPickerViewModel.handleOnClickImage`는 지금도 `source="today"`로 찍는데,
+  실제로는 "오늘 찍은 사진"이 아니라 "날짜 구분 없는 일반 갤러리 선택" 전체를 가리킨다. 정본
+  문서가 이 제품 변경을 반영 못 한 건지, 아니면 `today`/`recent` 네이밍을 그대로 유지하되
+  의미만 "일반 선택"/"최근 재사용"으로 재정의할 건지 확인 필요.
+- **상태**: 미해결 (정본 문서 작성자 확인 필요)
+- **해소 메모**: 확인 후 `source` 값 이름을 바꿀지(`general`/`recent` 등), 그대로 둘지 정해서
+  `CustomGalleryPickerViewModel`에 반영한다.
+
+### [2026-10-09] `canvas_edit_stack_tapped`/`canvas_topping_closed_unchanged`를 2026-10-06 이후 화면 변경(PR #601)에 맞춰 다시 배선했다
+
+- **ID**: OQ-P-432
+- **출처**: `origin/develop`이 80d06e6d → 239d4b59로 40커밋 더 나간 사이, 커밋 `b9cd8182`
+  ("토핑 배치·수정 화면의 시스템 뒤로가기가 이전 화면으로 가고 수정 화면의 닫기는 변경이 있을
+  때만 묻게 한다")가 `CanvasToppingArrangeViewModel`의 닫기·뒤로가기 흐름을 바꿨다 —
+  `requestQuit()`이 새로 생겨 **변경사항이 없으면 그만두기 팝업 없이 바로 `NavigateBack`**으로
+  나간다. 또 삭제 흐름이 "버튼 → 즉시 DELETE"에서 "버튼 → 로컬 보류(`pendingDeleteToppingIds`)
+  → 확인 시점에 함께 반영"으로 바뀌었다.
+- **항목**: 이 변경 전 기준으로 짠 분석 로깅이 두 군데 어긋났었다 — ① `OnQuitDialogConfirm`에서만
+  `close`를 찍어서, 팝업 없이 바로 나가는(변경 없음) 경로가 안 잡혔다. ② "수정 없음" 판정이
+  `dirtyToppingIds`만 보고 `pendingDeleteToppingIds`(삭제 보류)는 안 봐서, 삭제만 하고 확인을
+  누르면 `done`(무변경)으로 잘못 찍혔다.
+- **상태**: 해소됨(2026-10-09) — `requestQuit()`의 "변경 없음 → 바로 나감" 분기에도
+  `logClosed("close")`를 추가했고, `handleOnClickConfirm`의 무변경 판정을 팀이 이미 만들어 둔
+  `state.hasUnsavedChanges`(dirty + pendingDelete를 함께 본다) 기준으로 바꿨다.
+  > 🔧 **정정(2026-10-09)** — 서버가 404로 거절하는 "이미 지워진 토핑" 특수 케이스
+  > (`PARFAIT_IMAGE_NOT_FOUND`)를 한때 "분석 로깅 범위 밖"이라며 실패로 통일하게 걷어냈는데,
+  > PR 리뷰봇이 `docs/api/parfait-image.md`("삭제가 멱등이 아닌 것을 앱이 흡수한다")를
+  > 근거로 지적해 되돌렸다. 범위 밖 부수 코드가 아니라 **DELETE가 서버에 닿고 응답만 잃었을
+  > 때의 재시도 안전성**을 보장하는 문서화된 계약이었다 — 지웠으면 네트워크가 끊긴 뒤
+  > 재시도한 사용자가 이미 성공한 삭제를 영구 실패로 보게 될 뻔했다.
+  > 🔧 **정정(2026-10-09, 2번째)** — PR 리뷰봇이 `canvas_topping_closed_unchanged`가 이름과
+  > 달리 `OnQuitDialogConfirm`(변경사항을 버리고 나가는 경로)에서도 `action="close"`로
+  > 찍히는 걸 지적했다. 그 경로는 로컬 편집을 서버에 한 번도 안 보내고 버리므로, 건드렸든
+  > 안 건드렸든 캔버스엔 실제로 아무 변화가 없다 — 그래서 action을 더 쪼개는 대신
+  > `OnQuitDialogConfirm`의 로깅 자체를 뺐다. 이제 이 이벤트는 `requestQuit()`의 무변경
+  > 분기(`close`)와 `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍혀, 이름
+  > 그대로 "진짜 변경 없이 닫힘"만 잡는다.
+
+<!-- oq-next: 433 -->

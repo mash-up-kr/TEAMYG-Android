@@ -11,6 +11,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -169,6 +171,7 @@ class CanvasToppingPlaceViewModel
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
@@ -433,6 +436,17 @@ class CanvasToppingPlaceViewModel
                     // 기다리면 확인 버튼을 누른 뒤 네트워크 왕복만큼 멈춘 것처럼 보이고,
                     // PlaceSucceeded 뒤로 옮기면 되감기가 문 viewModelScope 취소로 아예 안 돈다
                     requestTodayParfaitRefreshUseCase(groupId)
+
+                    analyticsLogger.logEvent(
+                        AnalyticsEvent(
+                            eventId = "C-106-01",
+                            eventName = "canvas_edit_stack_tapped",
+                            params = mapOf(
+                                "group_id" to groupId.value.toString(),
+                                "is_border_on" to (current.border != null).toString(),
+                            ),
+                        ),
+                    )
 
                     // 되감기를 먼저 알린다 — clearToppingDraft() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다

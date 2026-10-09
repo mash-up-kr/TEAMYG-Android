@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.list.impl.route
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -47,6 +48,7 @@ class GroupListViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupListViewModel {
         every { getMyAccountFlow() } returns accountFlow
@@ -54,6 +56,7 @@ class GroupListViewModelTest {
             getMyGroupsFlow = getMyGroupsFlow,
             refreshMyGroups = refreshMyGroups,
             getMyAccountFlow = getMyAccountFlow,
+            analyticsLogger = analyticsLogger,
         )
     }
 

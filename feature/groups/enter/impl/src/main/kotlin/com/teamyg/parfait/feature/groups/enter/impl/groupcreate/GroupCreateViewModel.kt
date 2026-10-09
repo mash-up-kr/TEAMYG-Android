@@ -5,6 +5,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -67,6 +69,7 @@ constructor(
     @Assisted nickName: String,
     private val checkNameValid: CheckNameValidUseCase,
     private val createGroup: CreateGroupUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupCreateUiState, GroupCreateIntent, GroupCreateSideEffect>(
     initialState = GroupCreateUiState(nickName = nickName),
 ) {
@@ -145,6 +148,7 @@ constructor(
 
     private fun onGroupCreated(createdGroup: CreatedGroupVO) {
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
+        analyticsLogger.logEvent(AnalyticsEvent(eventId = "G-001-01", eventName = "group_list_created"))
         postSideEffect(
             GroupCreateSideEffect.NavigateToNext(
                 groupId = createdGroup.groupId.value,

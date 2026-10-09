@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -38,6 +39,7 @@ class AccountInfoViewModelTest {
 
     private val changeGlobalNickname: ChangeGlobalNicknameUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(null)): AccountInfoViewModel {
         every { getMyAccountFlow() } returns accountFlow
@@ -45,6 +47,7 @@ class AccountInfoViewModelTest {
             getMyAccountFlow = getMyAccountFlow,
             checkNameValid = CheckNameValidUseCase(),
             changeGlobalNickname = changeGlobalNickname,
+            analyticsLogger = analyticsLogger,
         )
     }
 

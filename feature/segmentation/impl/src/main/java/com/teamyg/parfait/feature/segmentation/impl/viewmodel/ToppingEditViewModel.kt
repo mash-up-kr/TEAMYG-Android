@@ -7,6 +7,8 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SubjectCoverage
@@ -112,6 +114,7 @@ class ToppingEditViewModel
     private val decodeImageUseCase: DecodeImageUseCase,
     private val saveBitmapUseCase: SaveBitmapUseCase,
     private val recordToppingDraft: RecordToppingDraftUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<ToppingEditState, ToppingEditIntent, ToppingEditEffect>(ToppingEditState()) {
     private var isQuitConfirmed = false
 
@@ -174,6 +177,17 @@ class ToppingEditViewModel
             }
 
             updateState { copy(originBitmap = originBitmap, segmentationBitmap = segmentationBitmap) }
+
+            if (savedStateHandle.get<Boolean>(KEY_DETECTION_COMPLETED_LOGGED) != true) {
+                savedStateHandle[KEY_DETECTION_COMPLETED_LOGGED] = true
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        eventId = "C-104-01",
+                        eventName = "canvas_camera_detection_completed",
+                        params = mapOf("success" to (!isDetectionFailed).toString()),
+                    ),
+                )
+            }
 
             // 불러오기에 실패해 곧 닫힐 화면에는 안내를 띄우지 않으려고 성공한 뒤에 보낸다
             if (isDetectionFailed && savedStateHandle.get<Boolean>(KEY_DETECTION_FAILED_SHOWN) != true) {
@@ -276,5 +290,6 @@ class ToppingEditViewModel
 
     private companion object {
         const val KEY_DETECTION_FAILED_SHOWN = "detectionFailedShown"
+        const val KEY_DETECTION_COMPLETED_LOGGED = "detectionCompletedLogged"
     }
 }

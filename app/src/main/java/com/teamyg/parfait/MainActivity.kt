@@ -14,6 +14,8 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
@@ -44,9 +46,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var screenViewTracker: ScreenViewTracker
 
+    @Inject
+    lateinit var analyticsLogger: AnalyticsLogger
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        consumePushDeepLink(intent)
+        // savedInstanceState != null 은 구성 변경·프로세스 재생성이다 — 그때는 intent 가 이전
+        // 인스턴스에서 이미 처리한 푸시 딥링크를 다시 들고 올 수 있어, 진짜 첫 실행일 때만 본다
+        if (savedInstanceState == null) {
+            consumePushDeepLink(intent)
+        }
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
         // 근거는 parfait/adr/0028-system-bar-light-fixed.md 에 있다.
         enableEdgeToEdge(
@@ -81,6 +90,15 @@ class MainActivity : ComponentActivity() {
     private fun consumePushDeepLink(intent: Intent) {
         val deepLink = intent.toPushDeepLinkOrNull() ?: return
         setIntent(Intent())
+        deepLink.type?.let { type ->
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    eventId = "N-001",
+                    eventName = "app_push_opened",
+                    params = mapOf("type" to type.name),
+                ),
+            )
+        }
         pushDeepLinkEventBus.post(deepLink)
     }
 }

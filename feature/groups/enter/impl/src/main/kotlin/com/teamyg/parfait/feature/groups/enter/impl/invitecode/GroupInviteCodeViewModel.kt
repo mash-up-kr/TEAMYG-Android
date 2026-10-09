@@ -5,6 +5,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.group.InviteCode
@@ -82,6 +84,7 @@ class GroupInviteCodeViewModel
 constructor(
     private val getGroupJoinPreview: GetGroupJoinPreviewUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupInviteCodeUiState, GroupInviteCodeIntent, GroupInviteCodeSideEffect>(
     initialState = GroupInviteCodeUiState(),
 ) {
@@ -171,8 +174,11 @@ constructor(
             }
 
             GroupInviteCodeIntent.ClickPasteInviteCode -> {
+                val pastedCode = state.value.clipboardInviteCode ?: return
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
+                )
                 updateState {
-                    val pastedCode = clipboardInviteCode ?: return@updateState this
                     val newText = pastedCode.take(codeLength)
                     // 코드가 모두 채워지므로 포커스를 놓아 키보드를 내린다
                     copy(

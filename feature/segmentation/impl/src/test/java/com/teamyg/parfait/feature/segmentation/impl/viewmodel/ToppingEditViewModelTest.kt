@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.usecase.image.DecodeImageUseCase
@@ -48,6 +49,7 @@ class ToppingEditViewModelTest {
     private val decodeImage: DecodeImageUseCase = mockk()
     private val saveBitmap: SaveBitmapUseCase = mockk()
     private val recordToppingDraft: RecordToppingDraftUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private val sourceBitmap: Bitmap = mockk(relaxed = true)
     private val segmentationBitmap: Bitmap = mockk(relaxed = true)
@@ -103,6 +105,7 @@ class ToppingEditViewModelTest {
         decodeImageUseCase = decodeImage,
         saveBitmapUseCase = saveBitmap,
         recordToppingDraft = recordToppingDraft,
+        analyticsLogger = analyticsLogger,
     )
 
     @Test

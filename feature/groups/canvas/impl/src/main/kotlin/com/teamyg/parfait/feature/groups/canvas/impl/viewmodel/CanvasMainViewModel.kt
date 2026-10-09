@@ -9,6 +9,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.ElapsedTimeBucket
 import com.teamyg.parfait.core.util.jvm.extension.toElapsedTimeBucket
@@ -303,6 +305,7 @@ constructor(
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
     private val pastCanvasAlertRepository: PastCanvasAlertRepository,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -614,6 +617,17 @@ constructor(
     private fun handleOnClickTopping(topping: CanvasToppingVO) {
         if (state.value.spotlightedToppingId != null) return
 
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                eventId = "C-001-01",
+                eventName = "canvas_topping_editor_checked",
+                params = mapOf(
+                    "group_id" to groupId.value.toString(),
+                    "is_mine" to topping.isMine.toString(),
+                ),
+            ),
+        )
+
         if (topping.isMine) {
             handleOnClickMyTopping(topping)
             return
@@ -679,6 +693,14 @@ constructor(
     private fun handleClickDate(date: LocalDate) {
         val current = state.value
 
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                eventId = "C-001-02",
+                eventName = "canvas_calendar_date_tapped",
+                params = mapOf("group_id" to groupId.value.toString()),
+            ),
+        )
+
         // 이미 그려져 있는 날을 다시 눌러도 닫는다
         updateState { copy(isCalendarVisible = false) }
         if (date == current.selectedDate) return
@@ -706,6 +728,14 @@ constructor(
      */
     private fun handleClickPastCanvasAlertDate(date: LocalDate) {
         if (date == state.value.selectedDate) return
+
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                eventId = "C-001-03",
+                eventName = "canvas_calendar_past_parfait_tapped",
+                params = mapOf("group_id" to groupId.value.toString()),
+            ),
+        )
 
         launch(key = LOAD_PAST_CANVAS_ALERT_YEAR_KEY) {
             val parfaitId = findParfaitId(date) ?: return@launch
@@ -792,6 +822,13 @@ constructor(
 
             saveCanvasToGalleryUseCase(bitmap.toAndroidBitmap(), displayName)
                 .onSuccess {
+                    analyticsLogger.logEvent(
+                        AnalyticsEvent(
+                            eventId = "C-001-04",
+                            eventName = "canvas_save_gallery_saved",
+                            params = mapOf("format" to "image"),
+                        ),
+                    )
                     postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = date))
                 }.onFailure {
                     postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))

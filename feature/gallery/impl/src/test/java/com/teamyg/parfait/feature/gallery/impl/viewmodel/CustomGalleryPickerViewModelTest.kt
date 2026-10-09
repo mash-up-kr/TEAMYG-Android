@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.gallery.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
@@ -33,6 +34,7 @@ class CustomGalleryPickerViewModelTest {
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk {
         coEvery { this@mockk(any()) } returns true
     }
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private val source = RecentImage(
         uri = "content://recent/a.jpg",
@@ -57,6 +59,7 @@ class CustomGalleryPickerViewModelTest {
             getRecentCacheImagesUseCase = getRecentCacheImages,
             loadGalleryImageGroupsUseCase = loadGroups,
             ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
+            analyticsLogger = analyticsLogger,
         )
     }
 

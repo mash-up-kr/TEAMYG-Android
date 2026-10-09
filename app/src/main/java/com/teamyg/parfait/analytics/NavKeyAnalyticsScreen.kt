@@ -1,6 +1,7 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsScreen
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom

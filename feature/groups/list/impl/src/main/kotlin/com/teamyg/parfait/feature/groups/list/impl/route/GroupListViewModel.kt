@@ -6,6 +6,8 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -76,6 +78,7 @@ constructor(
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase,
     private val refreshMyGroups: RefreshMyGroupsUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupListUiState, GroupListIntent, GroupListSideEffect>(
     initialState = GroupListUiState(),
 ) {
@@ -150,7 +153,12 @@ constructor(
                 postSideEffect(GroupListSideEffect.NavigateToInviteCode)
             }
 
-            GroupListIntent.Refresh -> loadGroups(isRefresh = true)
+            GroupListIntent.Refresh -> {
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(eventId = "G-001-03", eventName = "group_list_refreshed"),
+                )
+                loadGroups(isRefresh = true)
+            }
         }
     }
 

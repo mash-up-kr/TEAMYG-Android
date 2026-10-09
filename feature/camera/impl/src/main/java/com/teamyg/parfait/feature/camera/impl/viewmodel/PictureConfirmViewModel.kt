@@ -3,8 +3,11 @@ package com.teamyg.parfait.feature.camera.impl.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.usecase.image.PrepareSegmentationModuleUseCase
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +24,7 @@ class PictureConfirmViewModel
 @Inject
 constructor(
     private val prepareSegmentationModuleUseCase: PrepareSegmentationModuleUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : ViewModel() {
     /** 결과를 안 본다 — 이 화면은 준비를 걸기만 하고 사용자를 붙잡지 않는다 */
     fun prepareSegmentationModule() {
@@ -28,5 +32,14 @@ constructor(
             runSuspendCatching { prepareSegmentationModuleUseCase() }
                 .onFailure { viewModelLogger.w(it) { "세그멘테이션 모듈 사전 준비가 실패했다" } }
         }
+    }
+
+    /** 갤러리 소스의 "다시 선택"은 C-101 범위 밖이라 찍지 않는다 */
+    fun onClickRetake(source: PictureConfirmSource) {
+        if (source != PictureConfirmSource.CAMERA) return
+
+        analyticsLogger.logEvent(
+            AnalyticsEvent(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
+        )
     }
 }

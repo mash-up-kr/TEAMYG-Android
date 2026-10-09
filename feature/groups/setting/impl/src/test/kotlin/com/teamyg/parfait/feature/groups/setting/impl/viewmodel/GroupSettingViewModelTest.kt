@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -64,6 +65,7 @@ class GroupSettingViewModelTest {
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
     private val leaveGroup: LeaveGroupUseCase = mockk()
     private val reportGroup: ReportGroupUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -91,6 +93,7 @@ class GroupSettingViewModelTest {
         changeGroupNickname = changeGroupNickname,
         leaveGroup = leaveGroup,
         reportGroup = reportGroup,
+        analyticsLogger = analyticsLogger,
     )
 
     /** 만들자마자 상세 조회가 끝난 상태로 넘긴다 — 화면이 실제로 서 있는 지점이 여기다 */

@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.enter.impl.groupcreate
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.CreatedGroupVO
@@ -28,11 +29,13 @@ class GroupCreateViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val createGroupUseCase: CreateGroupUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(nickName: String = NICKNAME) = GroupCreateViewModel(
         nickName = nickName,
         checkNameValid = CheckNameValidUseCase(),
         createGroup = createGroupUseCase,
+        analyticsLogger = analyticsLogger,
     )
 
     private val createdGroup = CreatedGroupVO(
