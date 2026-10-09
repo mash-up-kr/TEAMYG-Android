@@ -264,8 +264,7 @@ constructor(
                         analyticsLogger.logEvent(
                             AnalyticsEvent(eventId = "S-101-03", eventName = "group_menu_nickname_changed"),
                         )
-                    }
-                    .onFailure { throwable ->
+                    }.onFailure { throwable ->
                         viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
                         postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                     }
@@ -357,8 +356,7 @@ constructor(
                     .onSuccess {
                         onSuccess()
                         postSideEffect(GroupSettingSideEffect.NavigateToGroupList)
-                    }
-                    .onFailure { onDialogActionFailed(it, action) }
+                    }.onFailure { onDialogActionFailed(it, action) }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isSubmittingDialogAction = false) }

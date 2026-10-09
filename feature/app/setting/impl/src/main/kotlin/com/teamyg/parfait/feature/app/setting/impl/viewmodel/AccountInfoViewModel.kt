@@ -173,8 +173,7 @@ constructor(
                         analyticsLogger.logEvent(
                             AnalyticsEvent(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
                         )
-                    }
-                    .onFailure(::handleFailure)
+                    }.onFailure(::handleFailure)
             } finally {
                 // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
                 // 영구 비활성으로 남는 것을 여기서 막는다
