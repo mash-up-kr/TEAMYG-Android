@@ -166,7 +166,7 @@ class CustomGalleryPickerViewModel
         postSideEffect(CustomGalleryPickerEffect.RequestPermission)
     }
 
-    // "오늘" 구분은 03시 하루 창이 없어지며 화면에서도 사라졌다(OQ-P-429) — 정본 문서 값을
+    // "오늘" 구분은 03시 하루 창이 없어지며 화면에서도 사라졌다(OQ-P-431) — 정본 문서 값을
     // 그대로 쓰지만 실제로는 "일반 갤러리 선택"을 가리킨다
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
         logPhotoSelected(source = "today")

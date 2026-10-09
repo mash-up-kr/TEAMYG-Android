@@ -51,7 +51,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        consumePushDeepLink(intent)
+        // savedInstanceState != null 은 구성 변경·프로세스 재생성이다 — 그때는 intent 가 이전
+        // 인스턴스에서 이미 처리한 푸시 딥링크를 다시 들고 올 수 있어, 진짜 첫 실행일 때만 본다
+        if (savedInstanceState == null) {
+            consumePushDeepLink(intent)
+        }
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
         // 근거는 parfait/adr/0028-system-bar-light-fixed.md 에 있다.
         enableEdgeToEdge(

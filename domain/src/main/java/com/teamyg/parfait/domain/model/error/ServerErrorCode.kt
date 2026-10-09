@@ -124,6 +124,9 @@ object ServerErrorCode {
          * 서버 계약에는 있다 — `api/parfait-image.md` 배치(POST) 실패 표).
          */
         const val INVALID_BORDER = "INVALID_BORDER"
+
+        /** 404 — 파르페가 아니라 그 배치(토핑)가 없다. 토핑 삭제에서는 이미 지워졌다는 뜻이다 */
+        const val PARFAIT_IMAGE_NOT_FOUND = "PARFAIT_IMAGE_NOT_FOUND"
     }
 
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */

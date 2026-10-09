@@ -14,6 +14,7 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
@@ -265,7 +266,6 @@ constructor(
 
             CanvasToppingArrangeIntent.OnQuitDialogConfirm -> {
                 updateState { copy(showQuitDialog = false) }
-                logClosed(action = "close")
                 postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
             }
 
@@ -533,12 +533,18 @@ constructor(
         deletedIds.size == pendingIds.size
     }
 
+    /** DELETE 가 서버에 닿고 응답만 잃었다면 다시 보낸 요청은 404 다 — 그것은 지워진 것으로 친다 */
     private suspend fun deleteTopping(toppingId: Long): Boolean =
         deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(toppingId)).fold(
             onSuccess = { true },
             onFailure = { throwable ->
-                viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
-                false
+                val isAlreadyGone = throwable is AppError.Server &&
+                    throwable.code == ServerErrorCode.ParfaitImage.PARFAIT_IMAGE_NOT_FOUND
+
+                if (!isAlreadyGone) {
+                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
+                }
+                isAlreadyGone
             },
         )
 

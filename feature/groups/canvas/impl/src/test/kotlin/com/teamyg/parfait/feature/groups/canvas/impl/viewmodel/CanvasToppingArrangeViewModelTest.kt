@@ -1048,6 +1048,24 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun confirm_deleteOfAnAlreadyGoneTopping_countsAsDeleted() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        stubDelete(
+            id = FIRST_ID,
+            result = Result.failure(
+                AppError.Server(code = "PARFAIT_IMAGE_NOT_FOUND", statusCode = 404, serverMessage = "없음"),
+            ),
+        )
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+    }
+
+    @Test
     fun confirm_deleteRejectedForAnotherReason_isAFailure() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         stubDelete(

@@ -7661,8 +7661,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   누르면 `done`(무변경)으로 잘못 찍혔다.
 - **상태**: 해소됨(2026-10-09) — `requestQuit()`의 "변경 없음 → 바로 나감" 분기에도
   `logClosed("close")`를 추가했고, `handleOnClickConfirm`의 무변경 판정을 팀이 이미 만들어 둔
-  `state.hasUnsavedChanges`(dirty + pendingDelete를 함께 본다) 기준으로 바꿨다. 서버가 404로
-  거절하는 "이미 지워진 토핑" 특수 케이스(`PARFAIT_IMAGE_NOT_FOUND`)는 별도 판단 — 실패로
-  통일했다(이 특수 케이스를 분석 로깅과 함께 들여오지 않기로 확인받음).
+  `state.hasUnsavedChanges`(dirty + pendingDelete를 함께 본다) 기준으로 바꿨다.
+  > 🔧 **정정(2026-10-09)** — 서버가 404로 거절하는 "이미 지워진 토핑" 특수 케이스
+  > (`PARFAIT_IMAGE_NOT_FOUND`)를 한때 "분석 로깅 범위 밖"이라며 실패로 통일하게 걷어냈는데,
+  > PR 리뷰봇이 `docs/api/parfait-image.md`("삭제가 멱등이 아닌 것을 앱이 흡수한다")를
+  > 근거로 지적해 되돌렸다. 범위 밖 부수 코드가 아니라 **DELETE가 서버에 닿고 응답만 잃었을
+  > 때의 재시도 안전성**을 보장하는 문서화된 계약이었다 — 지웠으면 네트워크가 끊긴 뒤
+  > 재시도한 사용자가 이미 성공한 삭제를 영구 실패로 보게 될 뻔했다.
+  > 🔧 **정정(2026-10-09, 2번째)** — PR 리뷰봇이 `canvas_topping_closed_unchanged`가 이름과
+  > 달리 `OnQuitDialogConfirm`(변경사항을 버리고 나가는 경로)에서도 `action="close"`로
+  > 찍히는 걸 지적했다. 그 경로는 로컬 편집을 서버에 한 번도 안 보내고 버리므로, 건드렸든
+  > 안 건드렸든 캔버스엔 실제로 아무 변화가 없다 — 그래서 action을 더 쪼개는 대신
+  > `OnQuitDialogConfirm`의 로깅 자체를 뺐다. 이제 이 이벤트는 `requestQuit()`의 무변경
+  > 분기(`close`)와 `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍혀, 이름
+  > 그대로 "진짜 변경 없이 닫힘"만 잡는다.
 
 <!-- oq-next: 433 -->
