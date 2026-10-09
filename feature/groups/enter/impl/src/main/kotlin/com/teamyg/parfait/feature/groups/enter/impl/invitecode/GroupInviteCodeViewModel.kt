@@ -174,11 +174,11 @@ constructor(
             }
 
             GroupInviteCodeIntent.ClickPasteInviteCode -> {
+                val pastedCode = state.value.clipboardInviteCode ?: return
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
+                )
                 updateState {
-                    val pastedCode = clipboardInviteCode ?: return@updateState this
-                    analyticsLogger.logEvent(
-                        AnalyticsEvent(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
-                    )
                     val newText = pastedCode.take(codeLength)
                     // 코드가 모두 채워지므로 포커스를 놓아 키보드를 내린다
                     copy(
