@@ -14,6 +14,8 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
@@ -43,6 +45,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var screenViewTracker: ScreenViewTracker
+
+    @Inject
+    lateinit var analyticsLogger: AnalyticsLogger
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +86,15 @@ class MainActivity : ComponentActivity() {
     private fun consumePushDeepLink(intent: Intent) {
         val deepLink = intent.toPushDeepLinkOrNull() ?: return
         setIntent(Intent())
+        deepLink.type?.let { type ->
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    eventId = "N-001",
+                    eventName = "app_push_opened",
+                    params = mapOf("type" to type.name),
+                ),
+            )
+        }
         pushDeepLinkEventBus.post(deepLink)
     }
 }
