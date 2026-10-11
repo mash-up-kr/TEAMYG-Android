@@ -7612,8 +7612,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-07] `canvas_edit_*` 화면 분류가 정본 문서와 코드에서 다르고, `canvas_edit_border_tapped`는 아직 못 심었다
 
 - **ID**: OQ-P-430
-- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본, 작성자
-  김남수)는 `canvas_edit`를 "캔버스 편집(C105)" 하나로 묶는데, 2026-10-02 PR #572
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본)는 `canvas_edit`를 "캔버스 편집(C105)" 하나로 묶는데, 2026-10-02 PR #572
   (`c105-arrange-edit-flow`)로 그 화면이 실제로는 둘로 쪼개져 있다 — 토핑을 처음 올리는
   화면은 `C-106`(`CanvasToppingPlaceViewModel`), 이미 올라간 토핑을 다시 고치는 화면은
   `C-305`(`CanvasToppingArrangeViewModel`).
@@ -7631,8 +7630,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-09] `canvas_camera_photo_selected`의 `source: "today"`가 가리키던 "오늘 사진" 구분이 제품에서 없어졌다
 
 - **ID**: OQ-P-431
-- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본, 작성자
-  김남수, 2026-10-06 작성)는 `source`: `"recent"`/`"today"`로 "C102 최근 사진 / 오늘 사진 탭"을
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본, 2026-10-06 작성)는 `source`: `"recent"`/`"today"`로 "C102 최근 사진 / 오늘 사진 탭"을
   구분하는데, 같은 날 올라간 커밋(`e515fe48` "03시 하루 창과 날짜 키 경계를 없애고 기기의 모든
   사진을 달력 날짜로 묶는다", `e0fb9dc7` "갤러리 상단 제목을 오늘 찍은 사진에서 사진 선택으로
   바꾼다", 둘 다 2026-10-06~07)가 "오늘 사진"이라는 구분 자체를 화면에서 없앴다

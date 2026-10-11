@@ -101,3 +101,7 @@ Firebase 도입은 ADR-0013 이 FCM·Crashlytics 와 함께 Analytics 까지 묶
   `ScreenViewTracker` 테스트가 중복 push·뒤로 가기 복귀·재생성 재방출을 각각 본다.
 - ✅ 실기기에서 이벤트 도착을 확인했다(2026-09-09). 화면 전환이 실제로 `screen_view` 가 된다.
 - ⚠️ 뒤로 가기 복귀·Activity 재생성·사용자 속성 7종은 실기기로 아직 안 봤다.
+- ✅ 액션 이벤트도 실기기 DebugView 로 확인했다(2026-10-11, SM-S921N) — `canvas_calendar_date_tapped`·
+  `canvas_topping_editor_checked`·`canvas_save_gallery_saved` 3종이 `eventName` 그대로 도착했다.
+  `-Panalytics.isDebug=false` 로 다시 빌드해 수집을 켠 debug 빌드 + `adb shell setprop
+  debug.firebase.analytics.app <applicationId>` 로 봤다. 나머지 16개 액션 이벤트는 아직 안 봤다.
