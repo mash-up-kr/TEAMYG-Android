@@ -5,8 +5,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -171,7 +173,10 @@ constructor(
                 changeGlobalNickname(GlobalNickname(nickname))
                     .onSuccess {
                         analyticsLogger.logEvent(
-                            AnalyticsEvent(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
+                            AnalyticsEvent(
+                                eventId = AnalyticsEventId.APP_ACCOUNT_NICKNAME_CHANGED,
+                                eventName = AnalyticsEventName.APP_ACCOUNT_NICKNAME_CHANGED,
+                            ),
                         )
                     }.onFailure(::handleFailure)
             } finally {

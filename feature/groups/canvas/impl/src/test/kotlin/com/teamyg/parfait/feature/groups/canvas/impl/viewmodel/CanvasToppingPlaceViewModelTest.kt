@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO

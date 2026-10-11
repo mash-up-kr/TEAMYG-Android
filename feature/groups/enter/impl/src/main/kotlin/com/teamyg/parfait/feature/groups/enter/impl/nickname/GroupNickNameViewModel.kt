@@ -5,8 +5,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -106,7 +108,12 @@ constructor(
                     handleJoinFailure(throwable)
                     return@launch
                 }
-                analyticsLogger.logEvent(AnalyticsEvent(eventId = "G-001-02", eventName = "group_list_joined"))
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        eventId = AnalyticsEventId.GROUP_LIST_JOINED,
+                        eventName = AnalyticsEventName.GROUP_LIST_JOINED,
+                    ),
+                )
 
                 changeGroupNickname(groupId = joined.groupId, groupNickname = GroupNickname(state.value.nickName))
                     .onFailure { throwable ->

@@ -2,7 +2,7 @@ package com.teamyg.parfait.feature.groups.enter.impl.nickname
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName

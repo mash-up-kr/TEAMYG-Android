@@ -3,8 +3,10 @@ package com.teamyg.parfait.feature.camera.impl.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.usecase.image.PrepareSegmentationModuleUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
@@ -39,7 +41,10 @@ constructor(
         if (source != PictureConfirmSource.CAMERA) return
 
         analyticsLogger.logEvent(
-            AnalyticsEvent(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
+            AnalyticsEvent(
+                eventId = AnalyticsEventId.CANVAS_CAMERA_RETAKE_TAPPED,
+                eventName = AnalyticsEventName.CANVAS_CAMERA_RETAKE_TAPPED,
+            ),
         )
     }
 }

@@ -2,9 +2,9 @@ package com.teamyg.parfait.analytics
 
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsScreen
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsScreen
 import javax.inject.Inject
 import javax.inject.Singleton
 

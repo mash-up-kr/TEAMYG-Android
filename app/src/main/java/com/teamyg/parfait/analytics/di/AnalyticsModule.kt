@@ -3,7 +3,7 @@ package com.teamyg.parfait.analytics.di
 import android.content.Context
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.teamyg.parfait.analytics.FirebaseAnalyticsLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

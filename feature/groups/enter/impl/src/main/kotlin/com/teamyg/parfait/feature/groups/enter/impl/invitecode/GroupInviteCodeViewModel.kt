@@ -5,8 +5,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.group.InviteCode
@@ -176,7 +178,10 @@ constructor(
             GroupInviteCodeIntent.ClickPasteInviteCode -> {
                 val pastedCode = state.value.clipboardInviteCode ?: return
                 analyticsLogger.logEvent(
-                    AnalyticsEvent(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
+                    AnalyticsEvent(
+                        eventId = AnalyticsEventId.GROUP_LIST_INVITE_CODE_PASTED,
+                        eventName = AnalyticsEventName.GROUP_LIST_INVITE_CODE_PASTED,
+                    ),
                 )
                 updateState {
                     val newText = pastedCode.take(codeLength)

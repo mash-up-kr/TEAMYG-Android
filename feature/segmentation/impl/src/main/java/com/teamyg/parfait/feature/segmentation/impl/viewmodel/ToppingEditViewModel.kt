@@ -7,8 +7,10 @@ import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
 import com.teamyg.parfait.domain.model.SubjectCoverage
@@ -182,8 +184,8 @@ class ToppingEditViewModel
                 savedStateHandle[KEY_DETECTION_COMPLETED_LOGGED] = true
                 analyticsLogger.logEvent(
                     AnalyticsEvent(
-                        eventId = "C-104-01",
-                        eventName = "canvas_camera_detection_completed",
+                        eventId = AnalyticsEventId.CANVAS_CAMERA_DETECTION_COMPLETED,
+                        eventName = AnalyticsEventName.CANVAS_CAMERA_DETECTION_COMPLETED,
                         params = mapOf("success" to (!isDetectionFailed).toString()),
                     ),
                 )

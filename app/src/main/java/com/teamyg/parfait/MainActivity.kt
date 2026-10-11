@@ -14,8 +14,10 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
@@ -93,8 +95,8 @@ class MainActivity : ComponentActivity() {
         deepLink.type?.let { type ->
             analyticsLogger.logEvent(
                 AnalyticsEvent(
-                    eventId = "N-001",
-                    eventName = "app_push_opened",
+                    eventId = AnalyticsEventId.APP_PUSH_OPENED,
+                    eventName = AnalyticsEventName.APP_PUSH_OPENED,
                     params = mapOf("type" to type.name),
                 ),
             )

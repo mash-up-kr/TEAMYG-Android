@@ -11,8 +11,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -439,8 +441,8 @@ class CanvasToppingPlaceViewModel
 
                     analyticsLogger.logEvent(
                         AnalyticsEvent(
-                            eventId = "C-106-01",
-                            eventName = "canvas_edit_stack_tapped",
+                            eventId = AnalyticsEventId.CANVAS_EDIT_STACK_TAPPED,
+                            eventName = AnalyticsEventName.CANVAS_EDIT_STACK_TAPPED,
                             params = mapOf(
                                 "group_id" to groupId.value.toString(),
                                 "is_border_on" to (current.border != null).toString(),

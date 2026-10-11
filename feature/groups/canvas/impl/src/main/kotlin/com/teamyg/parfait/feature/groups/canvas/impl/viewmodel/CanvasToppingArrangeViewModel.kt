@@ -8,8 +8,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -324,7 +326,10 @@ constructor(
         }
         if (isOpening) {
             analyticsLogger.logEvent(
-                AnalyticsEvent(eventId = "C-305-02", eventName = "canvas_edit_border_tapped"),
+                AnalyticsEvent(
+                    eventId = AnalyticsEventId.CANVAS_EDIT_BORDER_TAPPED,
+                    eventName = AnalyticsEventName.CANVAS_EDIT_BORDER_TAPPED,
+                ),
             )
         }
     }
@@ -355,8 +360,8 @@ constructor(
     private fun logClosed(action: String) {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = "C-305-01",
-                eventName = "canvas_topping_closed_unchanged",
+                eventId = AnalyticsEventId.CANVAS_TOPPING_CLOSED_UNCHANGED,
+                eventName = AnalyticsEventName.CANVAS_TOPPING_CLOSED_UNCHANGED,
                 params = mapOf("action" to action),
             ),
         )

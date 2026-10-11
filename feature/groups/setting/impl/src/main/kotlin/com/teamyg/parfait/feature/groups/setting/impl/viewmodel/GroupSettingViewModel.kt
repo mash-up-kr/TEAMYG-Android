@@ -6,8 +6,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -262,7 +264,10 @@ constructor(
                         updateState { copy(isEditing = false, nicknameError = null) }
                         // "얼마나 변경했는지"는 파라미터가 아니라 사용자별 이벤트 발생 횟수로 집계한다
                         analyticsLogger.logEvent(
-                            AnalyticsEvent(eventId = "S-101-03", eventName = "group_menu_nickname_changed"),
+                            AnalyticsEvent(
+                                eventId = AnalyticsEventId.GROUP_MENU_NICKNAME_CHANGED,
+                                eventName = AnalyticsEventName.GROUP_MENU_NICKNAME_CHANGED,
+                            ),
                         )
                     }.onFailure { throwable ->
                         viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
@@ -290,7 +295,10 @@ constructor(
     private fun handleClickCopyInviteCode() {
         updateState { copy(isCodeCopied = true) }
         analyticsLogger.logEvent(
-            AnalyticsEvent(eventId = "S-101-01", eventName = "group_menu_invite_code_copied"),
+            AnalyticsEvent(
+                eventId = AnalyticsEventId.GROUP_MENU_INVITE_CODE_COPIED,
+                eventName = AnalyticsEventName.GROUP_MENU_INVITE_CODE_COPIED,
+            ),
         )
         postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
 
@@ -316,7 +324,12 @@ constructor(
             key = KEY_LEAVE_GROUP,
             action = LEAVE_ACTION,
             onSuccess = {
-                analyticsLogger.logEvent(AnalyticsEvent(eventId = "S-101-02", eventName = "group_menu_left"))
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        eventId = AnalyticsEventId.GROUP_MENU_LEFT,
+                        eventName = AnalyticsEventName.GROUP_MENU_LEFT,
+                    ),
+                )
             },
         ) {
             leaveGroup(groupId)

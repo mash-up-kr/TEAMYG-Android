@@ -8,8 +8,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.android.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.GalleryImageGroup
@@ -166,16 +168,14 @@ class CustomGalleryPickerViewModel
         postSideEffect(CustomGalleryPickerEffect.RequestPermission)
     }
 
-    // "오늘" 구분은 03시 하루 창이 없어지며 화면에서도 사라졌다(OQ-P-431) — 정본 문서 값을
-    // 그대로 쓰지만 실제로는 "일반 갤러리 선택"을 가리킨다
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
-        logPhotoSelected(source = "today")
+        logPhotoSelected(source = PhotoSelectSource.TODAY)
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
     // 배치 화면은 초안을 읽기만 하므로 들어가기 전에 이 알맹이를 가리키게 맞춘다
     private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
-        logPhotoSelected(source = "recent")
+        logPhotoSelected(source = PhotoSelectSource.RECENT)
         launch(
             key = ENSURE_CUTOUT_DRAFT_KEY,
             onError = { postSideEffect(CustomGalleryPickerEffect.ShowDraftUnavailable) },
@@ -192,14 +192,19 @@ class CustomGalleryPickerViewModel
         }
     }
 
-    private fun logPhotoSelected(source: String) {
+    private fun logPhotoSelected(source: PhotoSelectSource) {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = "C-102-01",
-                eventName = "canvas_camera_photo_selected",
-                params = mapOf("source" to source),
+                eventId = AnalyticsEventId.CANVAS_CAMERA_PHOTO_SELECTED,
+                eventName = AnalyticsEventName.CANVAS_CAMERA_PHOTO_SELECTED,
+                params = mapOf("source" to source.analyticsValue),
             ),
         )
+    }
+
+    private enum class PhotoSelectSource(val analyticsValue: String) {
+        TODAY("today"),
+        RECENT("recent"),
     }
 
     private fun handleOnCancel() {
