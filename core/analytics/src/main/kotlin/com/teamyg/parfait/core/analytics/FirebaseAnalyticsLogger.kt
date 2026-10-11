@@ -1,4 +1,4 @@
-package com.teamyg.parfait.analytics
+package com.teamyg.parfait.core.analytics
 
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
