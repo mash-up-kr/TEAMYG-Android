@@ -12,5 +12,4 @@ dependencies {
     implementation(projects.feature.groups.enter.api)
     implementation(projects.feature.groups.canvas.api)
     implementation(projects.feature.app.setting.api)
-    implementation(projects.core.util.android)
 }

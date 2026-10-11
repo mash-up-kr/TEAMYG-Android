@@ -11,5 +11,4 @@ dependencies {
     implementation(projects.feature.app.setting.api)
     implementation(projects.feature.common.terms.api)
     implementation(projects.feature.login.api)
-    implementation(projects.core.util.android)
 }
