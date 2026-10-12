@@ -34,97 +34,75 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
  * [ScreenViewTracker] 에 있다.
  */
 fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
-    is NavKeySplash -> AnalyticsScreen(AnalyticsScreenId.SPLASH, AnalyticsScreenClass.SPLASH)
+    is NavKeySplash -> AnalyticsScreenType.SPLASH.toAnalyticsScreen()
 
-    is NavKeyLogin -> AnalyticsScreen(AnalyticsScreenId.LOGIN, AnalyticsScreenClass.LOGIN)
+    is NavKeyLogin -> AnalyticsScreenType.LOGIN.toAnalyticsScreen()
 
-    is NavKeyTermAgree -> AnalyticsScreen(AnalyticsScreenId.TERM_AGREE, AnalyticsScreenClass.TERM_AGREE)
+    is NavKeyTermAgree -> AnalyticsScreenType.TERM_AGREE.toAnalyticsScreen()
 
-    is NavKeyGroupInviteCode -> AnalyticsScreen(
-        AnalyticsScreenId.GROUP_INVITE_CODE,
-        AnalyticsScreenClass.GROUP_INVITE_CODE,
-    )
+    is NavKeyGroupInviteCode -> AnalyticsScreenType.GROUP_INVITE_CODE.toAnalyticsScreen()
 
-    is NavKeyGroupNickName -> AnalyticsScreen(AnalyticsScreenId.GROUP_NICK_NAME, AnalyticsScreenClass.GROUP_NICK_NAME)
+    is NavKeyGroupNickName -> AnalyticsScreenType.GROUP_NICK_NAME.toAnalyticsScreen()
 
-    is NavKeyGroupCreate -> AnalyticsScreen(AnalyticsScreenId.GROUP_CREATE, AnalyticsScreenClass.GROUP_CREATE)
+    is NavKeyGroupCreate -> AnalyticsScreenType.GROUP_CREATE.toAnalyticsScreen()
 
-    is NavKeyGroupList -> AnalyticsScreen(AnalyticsScreenId.GROUP_LIST, AnalyticsScreenClass.GROUP_LIST)
+    is NavKeyGroupList -> AnalyticsScreenType.GROUP_LIST.toAnalyticsScreen()
 
-    is NavKeyCanvasMain -> AnalyticsScreen(AnalyticsScreenId.CANVAS_MAIN, AnalyticsScreenClass.CANVAS_MAIN)
+    is NavKeyCanvasMain -> AnalyticsScreenType.CANVAS_MAIN.toAnalyticsScreen()
 
-    is NavKeyCameraCustom -> AnalyticsScreen(
-        screenId = if (returnResultOnly) {
-            AnalyticsScreenId.CAMERA_CUSTOM_RETURN_RESULT
-        } else {
-            AnalyticsScreenId.CAMERA_CUSTOM
-        },
-        screenClass = AnalyticsScreenClass.CAMERA_CUSTOM,
-    )
+    is NavKeyCameraCustom -> if (returnResultOnly) {
+        AnalyticsScreenType.CAMERA_CUSTOM_RETURN_RESULT
+    } else {
+        AnalyticsScreenType.CAMERA_CUSTOM
+    }.toAnalyticsScreen()
 
-    is NavKeyCameraSystem -> AnalyticsScreen(AnalyticsScreenId.CAMERA_SYSTEM, AnalyticsScreenClass.CAMERA_SYSTEM)
+    is NavKeyCameraSystem -> AnalyticsScreenType.CAMERA_SYSTEM.toAnalyticsScreen()
 
-    is NavKeyPictureConfirm -> AnalyticsScreen(
-        screenId = when (source) {
-            PictureConfirmSource.CAMERA ->
-                if (returnResultOnly) {
-                    AnalyticsScreenId.PICTURE_CONFIRM_CAMERA_RETURN_RESULT
-                } else {
-                    AnalyticsScreenId.PICTURE_CONFIRM_CAMERA
-                }
+    is NavKeyPictureConfirm -> when (source) {
+        PictureConfirmSource.CAMERA ->
+            if (returnResultOnly) {
+                AnalyticsScreenType.PICTURE_CONFIRM_CAMERA_RETURN_RESULT
+            } else {
+                AnalyticsScreenType.PICTURE_CONFIRM_CAMERA
+            }
 
-            PictureConfirmSource.GALLERY ->
-                if (returnResultOnly) {
-                    AnalyticsScreenId.PICTURE_CONFIRM_GALLERY_RETURN_RESULT
-                } else {
-                    AnalyticsScreenId.PICTURE_CONFIRM_GALLERY
-                }
-        },
-        screenClass = AnalyticsScreenClass.PICTURE_CONFIRM,
-    )
+        PictureConfirmSource.GALLERY ->
+            if (returnResultOnly) {
+                AnalyticsScreenType.PICTURE_CONFIRM_GALLERY_RETURN_RESULT
+            } else {
+                AnalyticsScreenType.PICTURE_CONFIRM_GALLERY
+            }
+    }.toAnalyticsScreen()
 
-    is NavKeyCustomGalleryPicker -> AnalyticsScreen(
-        screenId = if (returnResultOnly) {
-            AnalyticsScreenId.GALLERY_CUSTOM_RETURN_RESULT
-        } else {
-            AnalyticsScreenId.GALLERY_CUSTOM
-        },
-        screenClass = AnalyticsScreenClass.GALLERY_CUSTOM,
-    )
+    is NavKeyCustomGalleryPicker -> if (returnResultOnly) {
+        AnalyticsScreenType.GALLERY_CUSTOM_RETURN_RESULT
+    } else {
+        AnalyticsScreenType.GALLERY_CUSTOM
+    }.toAnalyticsScreen()
 
-    is NavKeySystemGalleryPicker -> AnalyticsScreen(
-        AnalyticsScreenId.GALLERY_SYSTEM,
-        AnalyticsScreenClass.GALLERY_SYSTEM,
-    )
+    is NavKeySystemGalleryPicker -> AnalyticsScreenType.GALLERY_SYSTEM.toAnalyticsScreen()
 
-    is NavKeySegmentation -> AnalyticsScreen(AnalyticsScreenId.SEGMENTATION, AnalyticsScreenClass.SEGMENTATION)
+    is NavKeySegmentation -> AnalyticsScreenType.SEGMENTATION.toAnalyticsScreen()
 
-    is NavKeyToppingEdit -> AnalyticsScreen(AnalyticsScreenId.TOPPING_EDIT, AnalyticsScreenClass.TOPPING_EDIT)
+    is NavKeyToppingEdit -> AnalyticsScreenType.TOPPING_EDIT.toAnalyticsScreen()
 
-    is NavKeyCanvasToppingPlace -> AnalyticsScreen(
-        AnalyticsScreenId.CANVAS_TOPPING_PLACE,
-        AnalyticsScreenClass.CANVAS_TOPPING_PLACE,
-    )
+    is NavKeyCanvasToppingPlace -> AnalyticsScreenType.CANVAS_TOPPING_PLACE.toAnalyticsScreen()
 
-    is NavKeyCanvasBGEdit -> AnalyticsScreen(AnalyticsScreenId.CANVAS_BG_EDIT, AnalyticsScreenClass.CANVAS_BG_EDIT)
+    is NavKeyCanvasBGEdit -> AnalyticsScreenType.CANVAS_BG_EDIT.toAnalyticsScreen()
 
-    is NavKeyCanvasToppingArrange -> AnalyticsScreen(
-        AnalyticsScreenId.CANVAS_TOPPING_ARRANGE,
-        AnalyticsScreenClass.CANVAS_TOPPING_ARRANGE,
-    )
+    is NavKeyCanvasToppingArrange -> AnalyticsScreenType.CANVAS_TOPPING_ARRANGE.toAnalyticsScreen()
 
-    is NavKeyCanvasImageSave -> AnalyticsScreen(
-        AnalyticsScreenId.CANVAS_IMAGE_SAVE,
-        AnalyticsScreenClass.CANVAS_IMAGE_SAVE,
-    )
+    is NavKeyCanvasImageSave -> AnalyticsScreenType.CANVAS_IMAGE_SAVE.toAnalyticsScreen()
 
-    is NavKeyAppSetting -> AnalyticsScreen(AnalyticsScreenId.APP_SETTING, AnalyticsScreenClass.APP_SETTING)
+    is NavKeyAppSetting -> AnalyticsScreenType.APP_SETTING.toAnalyticsScreen()
 
-    is NavKeyAccountInfo -> AnalyticsScreen(AnalyticsScreenId.ACCOUNT_INFO, AnalyticsScreenClass.ACCOUNT_INFO)
+    is NavKeyAccountInfo -> AnalyticsScreenType.ACCOUNT_INFO.toAnalyticsScreen()
 
-    is NavKeyGroupSetting -> AnalyticsScreen(AnalyticsScreenId.GROUP_SETTING, AnalyticsScreenClass.GROUP_SETTING)
+    is NavKeyGroupSetting -> AnalyticsScreenType.GROUP_SETTING.toAnalyticsScreen()
 
-    is NavKeyWebView -> AnalyticsScreen(AnalyticsScreenId.WEB_VIEW, AnalyticsScreenClass.WEB_VIEW)
+    is NavKeyWebView -> AnalyticsScreenType.WEB_VIEW.toAnalyticsScreen()
 
     else -> null
 }
+
+private fun AnalyticsScreenType.toAnalyticsScreen() = AnalyticsScreen(screenId, screenClass)
