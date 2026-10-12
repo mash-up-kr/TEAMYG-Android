@@ -6,8 +6,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -152,8 +151,7 @@ constructor(
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.GROUP_LIST_CREATED,
-                eventName = AnalyticsEventName.GROUP_LIST_CREATED,
+                type = AnalyticsEventType.GROUP_LIST_CREATED,
             ),
         )
         postSideEffect(

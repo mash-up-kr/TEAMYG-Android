@@ -7,8 +7,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -265,8 +264,7 @@ constructor(
                         // "얼마나 변경했는지"는 파라미터가 아니라 사용자별 이벤트 발생 횟수로 집계한다
                         analyticsLogger.logEvent(
                             AnalyticsEvent(
-                                eventId = AnalyticsEventId.GROUP_MENU_NICKNAME_CHANGED,
-                                eventName = AnalyticsEventName.GROUP_MENU_NICKNAME_CHANGED,
+                                type = AnalyticsEventType.GROUP_MENU_NICKNAME_CHANGED,
                             ),
                         )
                     }.onFailure { throwable ->
@@ -296,8 +294,7 @@ constructor(
         updateState { copy(isCodeCopied = true) }
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.GROUP_MENU_INVITE_CODE_COPIED,
-                eventName = AnalyticsEventName.GROUP_MENU_INVITE_CODE_COPIED,
+                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
             ),
         )
         postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
@@ -326,8 +323,7 @@ constructor(
             onSuccess = {
                 analyticsLogger.logEvent(
                     AnalyticsEvent(
-                        eventId = AnalyticsEventId.GROUP_MENU_LEFT,
-                        eventName = AnalyticsEventName.GROUP_MENU_LEFT,
+                        type = AnalyticsEventType.GROUP_MENU_LEFT,
                     ),
                 )
             },

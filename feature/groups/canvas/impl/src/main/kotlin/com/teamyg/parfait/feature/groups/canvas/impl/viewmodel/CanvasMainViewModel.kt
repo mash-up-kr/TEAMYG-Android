@@ -10,8 +10,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.ElapsedTimeBucket
@@ -621,8 +620,7 @@ constructor(
 
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.CANVAS_TOPPING_EDITOR_CHECKED,
-                eventName = AnalyticsEventName.CANVAS_TOPPING_EDITOR_CHECKED,
+                type = AnalyticsEventType.CANVAS_TOPPING_EDITOR_CHECKED,
                 params = mapOf(
                     "group_id" to groupId.value.toString(),
                     "is_mine" to topping.isMine.toString(),
@@ -697,8 +695,7 @@ constructor(
 
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.CANVAS_CALENDAR_DATE_TAPPED,
-                eventName = AnalyticsEventName.CANVAS_CALENDAR_DATE_TAPPED,
+                type = AnalyticsEventType.CANVAS_CALENDAR_DATE_TAPPED,
                 params = mapOf("group_id" to groupId.value.toString()),
             ),
         )
@@ -733,8 +730,7 @@ constructor(
 
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.CANVAS_CALENDAR_PAST_PARFAIT_TAPPED,
-                eventName = AnalyticsEventName.CANVAS_CALENDAR_PAST_PARFAIT_TAPPED,
+                type = AnalyticsEventType.CANVAS_CALENDAR_PAST_PARFAIT_TAPPED,
                 params = mapOf("group_id" to groupId.value.toString()),
             ),
         )
@@ -826,8 +822,7 @@ constructor(
                 .onSuccess {
                     analyticsLogger.logEvent(
                         AnalyticsEvent(
-                            eventId = AnalyticsEventId.CANVAS_SAVE_GALLERY_SAVED,
-                            eventName = AnalyticsEventName.CANVAS_SAVE_GALLERY_SAVED,
+                            type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
                             params = mapOf("format" to "image"),
                         ),
                     )

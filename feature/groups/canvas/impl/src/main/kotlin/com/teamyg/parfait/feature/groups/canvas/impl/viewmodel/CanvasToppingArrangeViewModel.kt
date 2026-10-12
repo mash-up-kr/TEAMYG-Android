@@ -9,8 +9,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -327,8 +326,7 @@ constructor(
         if (isOpening) {
             analyticsLogger.logEvent(
                 AnalyticsEvent(
-                    eventId = AnalyticsEventId.CANVAS_EDIT_BORDER_TAPPED,
-                    eventName = AnalyticsEventName.CANVAS_EDIT_BORDER_TAPPED,
+                    type = AnalyticsEventType.CANVAS_EDIT_BORDER_TAPPED,
                 ),
             )
         }
@@ -360,8 +358,7 @@ constructor(
     private fun logClosed(action: String) {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.CANVAS_TOPPING_CLOSED_UNCHANGED,
-                eventName = AnalyticsEventName.CANVAS_TOPPING_CLOSED_UNCHANGED,
+                type = AnalyticsEventType.CANVAS_TOPPING_CLOSED_UNCHANGED,
                 params = mapOf("action" to action),
             ),
         )

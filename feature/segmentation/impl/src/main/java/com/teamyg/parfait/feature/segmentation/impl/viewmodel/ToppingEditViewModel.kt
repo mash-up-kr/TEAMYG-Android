@@ -8,8 +8,7 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.android.model.AndroidBitmap
@@ -184,8 +183,7 @@ class ToppingEditViewModel
                 savedStateHandle[KEY_DETECTION_COMPLETED_LOGGED] = true
                 analyticsLogger.logEvent(
                     AnalyticsEvent(
-                        eventId = AnalyticsEventId.CANVAS_CAMERA_DETECTION_COMPLETED,
-                        eventName = AnalyticsEventName.CANVAS_CAMERA_DETECTION_COMPLETED,
+                        type = AnalyticsEventType.CANVAS_CAMERA_DETECTION_COMPLETED,
                         params = mapOf("success" to (!isDetectionFailed).toString()),
                     ),
                 )

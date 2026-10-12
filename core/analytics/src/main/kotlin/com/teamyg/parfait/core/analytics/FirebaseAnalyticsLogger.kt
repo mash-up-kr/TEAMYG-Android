@@ -35,10 +35,10 @@ class FirebaseAnalyticsLogger @Inject constructor(
 
     override fun logEvent(event: AnalyticsEvent) {
         val params = Bundle().apply {
-            putString(Param.EVENT_ID, event.eventId)
+            putString(Param.EVENT_ID, event.type.eventId)
             event.params.forEach { (key, value) -> putString(key, value) }
         }
-        firebaseAnalytics.logEvent(event.eventName, params)
+        firebaseAnalytics.logEvent(event.type.eventName, params)
     }
 
     private object Param {

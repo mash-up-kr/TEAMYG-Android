@@ -9,8 +9,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
@@ -195,8 +194,7 @@ class CustomGalleryPickerViewModel
     private fun logPhotoSelected(source: PhotoSelectSource) {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                eventId = AnalyticsEventId.CANVAS_CAMERA_PHOTO_SELECTED,
-                eventName = AnalyticsEventName.CANVAS_CAMERA_PHOTO_SELECTED,
+                type = AnalyticsEventType.CANVAS_CAMERA_PHOTO_SELECTED,
                 params = mapOf("source" to source.analyticsValue),
             ),
         )

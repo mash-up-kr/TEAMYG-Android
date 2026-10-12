@@ -25,7 +25,6 @@ data class AnalyticsScreen(
 
 /** 화면 진입이 아니라 화면 안에서의 액션 — `docs/superpowers/specs/2026-10-06-user-events-design.md` */
 data class AnalyticsEvent(
-    val eventId: String,
-    val eventName: String,
+    val type: AnalyticsEventType,
     val params: Map<String, String> = emptyMap(),
 )

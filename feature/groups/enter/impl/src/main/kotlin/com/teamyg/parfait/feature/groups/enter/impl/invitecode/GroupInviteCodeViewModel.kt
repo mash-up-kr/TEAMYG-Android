@@ -6,8 +6,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -179,8 +178,7 @@ constructor(
                 val pastedCode = state.value.clipboardInviteCode ?: return
                 analyticsLogger.logEvent(
                     AnalyticsEvent(
-                        eventId = AnalyticsEventId.GROUP_LIST_INVITE_CODE_PASTED,
-                        eventName = AnalyticsEventName.GROUP_LIST_INVITE_CODE_PASTED,
+                        type = AnalyticsEventType.GROUP_LIST_INVITE_CODE_PASTED,
                     ),
                 )
                 updateState {

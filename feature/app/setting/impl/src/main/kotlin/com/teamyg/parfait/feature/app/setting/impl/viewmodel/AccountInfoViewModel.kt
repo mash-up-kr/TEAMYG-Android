@@ -6,8 +6,7 @@ import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventId
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventName
+import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEventType
 import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -174,8 +173,7 @@ constructor(
                     .onSuccess {
                         analyticsLogger.logEvent(
                             AnalyticsEvent(
-                                eventId = AnalyticsEventId.APP_ACCOUNT_NICKNAME_CHANGED,
-                                eventName = AnalyticsEventName.APP_ACCOUNT_NICKNAME_CHANGED,
+                                type = AnalyticsEventType.APP_ACCOUNT_NICKNAME_CHANGED,
                             ),
                         )
                     }.onFailure(::handleFailure)
