@@ -12,7 +12,7 @@ class OnboardingPagesPreviewParameterProvider : PreviewParameterProvider<List<On
                     painterResourceId = DesignSystemR.drawable.image_onboarding_1,
                 ),
                 OnboardingPage(
-                    description = "오늘 찍은 사진을 친구들과 함께 캔버스에 붙여요",
+                    description = "친구들과 함께 남기고 싶은 순간을 캔버스에 붙여요",
                     painterResourceId = DesignSystemR.drawable.image_onboarding_2,
                 ),
                 OnboardingPage(
