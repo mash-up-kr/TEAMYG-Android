@@ -1,13 +1,6 @@
 package com.teamyg.parfait.core.util.jvm.useranalytics
 
-/**
- * 분석 도구로 나가는 유일한 창구 — `parfait/adr/0031-analytics-central-screen-mapping.md`.
- *
- * `app` 모듈이 아니라 `core:util:jvm`에 있는 이유는, 각 feature `impl` 모듈의 `ViewModel`이
- * 액션 이벤트를 찍으려면 이 인터페이스를 직접 참조해야 하는데 `app` → `feature:*:impl` 방향
- * 의존만 허용되는 모듈 구조상 역방향 참조가 안 되기 때문이다. 구현체(`FirebaseAnalyticsLogger`)는
- * Firebase SDK를 직접 참조하므로 Android 의존이 필요해 Hilt 바인딩과 함께 여전히 `app` 모듈에 있다.
- */
+/** 분석 도구로 나가는 유일한 창구 — 모듈 배치 근거는 `parfait/adr/0031-analytics-central-screen-mapping.md`. */
 interface AnalyticsLogger {
     fun setCollectionEnabled(enabled: Boolean)
 
