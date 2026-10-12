@@ -30,7 +30,7 @@
 
     <!-- 그룹 생성·참여 직후 캔버스 첫 진입에서 1회만 뜨는 환영 배너 -->
     <string name="canvas_welcome_joined_title">%1$s 그룹에 참여했어요</string>
-    <string name="canvas_welcome_joined_sub">+버튼을 눌러 토핑을 쌓아보세요</string>
+    <string name="canvas_welcome_joined_sub">+ 버튼을 눌러 캔버스를 꾸며 보세요</string>
     <string name="canvas_welcome_created_title">%1$s 그룹을 만들었어요</string>
     <string name="canvas_welcome_created_sub">초대코드는 %1$s이에요</string>
     <string name="canvas_welcome_invite_copy">복사하기</string>
