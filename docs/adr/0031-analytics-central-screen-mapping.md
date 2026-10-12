@@ -45,17 +45,12 @@ Firebase 도입은 ADR-0013 이 FCM·Crashlytics 와 함께 Analytics 까지 묶
   운영 지표에 섞인다. 게이트는 `BuildConfig.DEBUG` 가 아니라 새 `ANALYTICS_IS_DEBUG` 필드이고
   Gradle 프로퍼티로 덮어쓸 수 있어, debug 빌드로도 전송을 확인할 수 있다.
 
-> 📌 **`AnalyticsLogger` 가 `core:util:jvm` 으로 옮겨졌다(2026-10-11)** — 대안 C 가 기각하며
-> 예고한 "액션 이벤트가 feature 로 내려가는 라운드"가 이거다. `AnalyticsLogger`·`AnalyticsScreen`·
-> `AnalyticsEvent`·`AnalyticsEventType`을 패키지 `…jvm.useranalytics`로 옮겼다
-> (같은 모듈의 `…jvm.analytics`는 로깅 패키지라 이름을 분리). `NavKeyAnalyticsScreen`(매핑)·
-> `ScreenViewTracker`(전송 판정)은 feature `:api` 26개 전부를 봐야 해서 여전히 `:app`에 있다.
-> 이 ADR의 나머지 결정은 그대로 유효하다.
->
-> 📌 **`FirebaseAnalyticsLogger`도 `core:analytics` 로 옮겨졌다(2026-10-12)** — Hilt 바인딩은
-> `:app`이 아닌 모듈에서도 `SingletonComponent`에 올릴 수 있고, Firebase SDK도 `google-services`
-> 플러그인 없이 AAR만 의존하면 다른 Android 모듈에서 호출할 수 있어, [ADR-0013](0013-firebase-fcm-crashlytics.md)의
-> "Firebase 의존은 `app`에 집중" 원칙에선 Analytics만 예외가 됐다 — 자세한 경계는 그 ADR에.
+> 📌 **분석 코드가 `core:analytics` 로 옮겨졌다(2026-10-12)** — 
+> `AnalyticsLogger`·`AnalyticsScreen` · `AnalyticsEvent`·`AnalyticsEventType`(계약)과 `FirebaseAnalyticsLogger`·`AnalyticsModule`(구현체)
+> 전부 새 모듈 `core:analytics`에 모았다 — Hilt `@Binds` 는 `:app`이 아닌 모듈에서도 `SingletonComponent`에 올라가고, Firebase SDK도 `google-services` 플러그인 없이 AAR만
+> 의존하면 다른 Android 모듈에서 호출할 수 있어서 가능했다. [ADR-0013](0013-firebase-fcm-crashlytics.md)의 "Firebase 의존은 `app`에 집중" 원칙에선 Analytics만 예외가 됐다 — 자세한 경계는 그 ADR에.
+> `NavKeyAnalyticsScreen`(매핑)·`ScreenViewTracker`(전송 판정)은 feature `:api` 26개 전부를
+> 봐야 해서 여전히 `:app`에 있다. 이 ADR의 나머지 결정은 그대로 유효하다.
 
 ## 대안
 
