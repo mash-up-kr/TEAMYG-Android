@@ -1,8 +1,11 @@
-package com.teamyg.parfait.analytics
+package com.teamyg.parfait.core.analytics
 
 /**
  * [AnalyticsScreen][com.teamyg.parfait.core.analytics.AnalyticsScreen]을 만드는
  * `screenId`/`screenClass` 상수.
+ *
+ * @property screenClass `NavKey` 이름. 리플렉션이 아니라 상수다 —
+ *   release 는 R8 난독화가 켜져 있어 `simpleName` 이 뭉개진다
  */
 enum class AnalyticsScreenType(
     val screenId: String,

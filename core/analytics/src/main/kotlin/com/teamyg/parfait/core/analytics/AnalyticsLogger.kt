@@ -14,13 +14,8 @@ interface AnalyticsLogger {
     fun logEvent(event: AnalyticsEvent)
 }
 
-/**
- * @property screenClass `NavKey` 이름. 리플렉션이 아니라 상수다 —
- *   release 는 R8 난독화가 켜져 있어 `simpleName` 이 뭉개진다
- */
 data class AnalyticsScreen(
-    val screenId: String,
-    val screenClass: String,
+    val type: AnalyticsScreenType,
 )
 
 /** 화면 진입이 아니라 화면 안에서의 액션 — `docs/superpowers/specs/2026-10-06-user-events-design.md` */

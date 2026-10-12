@@ -24,8 +24,8 @@ class FirebaseAnalyticsLogger @Inject constructor(
     // 보낸 값은 버려질 수 있다.
     override fun logScreenView(screen: AnalyticsScreen) {
         val params = Bundle().apply {
-            putString(FirebaseAnalytics.Param.SCREEN_NAME, screen.screenId)
-            putString(FirebaseAnalytics.Param.SCREEN_CLASS, screen.screenClass)
+            putString(FirebaseAnalytics.Param.SCREEN_NAME, screen.type.screenId)
+            putString(FirebaseAnalytics.Param.SCREEN_CLASS, screen.type.screenClass)
         }
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, params)
     }
