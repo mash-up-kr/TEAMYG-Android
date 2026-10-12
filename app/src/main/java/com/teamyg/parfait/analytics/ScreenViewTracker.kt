@@ -2,7 +2,7 @@ package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.util.jvm.analytics.Loggers
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import javax.inject.Inject
 

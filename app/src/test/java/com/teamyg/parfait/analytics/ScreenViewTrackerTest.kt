@@ -1,9 +1,9 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsEvent
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsLogger
-import com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsScreen
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.analytics.AnalyticsScreen
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import kotlin.test.Test

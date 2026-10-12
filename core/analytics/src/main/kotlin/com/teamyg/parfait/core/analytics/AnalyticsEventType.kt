@@ -1,6 +1,6 @@
-package com.teamyg.parfait.core.util.jvm.useranalytics
+package com.teamyg.parfait.core.analytics
 
-/** [AnalyticsEvent.type] 상수. 값은 사용자 이벤트 설계 문서(정본, 삭제됨) 작성 시점 결정을 따른다 */
+/** [AnalyticsEvent.type] 상수. 값은 [사용자 이벤트 설계](../../../../../../../../../../docs/superpowers/specs/2026-10-06-user-events-design.md) 정본을 따른다 */
 enum class AnalyticsEventType(
     val eventId: String,
     val eventName: String,

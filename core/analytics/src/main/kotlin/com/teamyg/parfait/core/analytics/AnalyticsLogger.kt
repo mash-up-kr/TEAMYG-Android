@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.util.jvm.useranalytics
+package com.teamyg.parfait.core.analytics
 
 /** 분석 도구로 나가는 유일한 창구 — 모듈 배치 근거는 `parfait/adr/0031-analytics-central-screen-mapping.md`. */
 interface AnalyticsLogger {

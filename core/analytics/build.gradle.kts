@@ -9,8 +9,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.util.jvm)
-
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
 }

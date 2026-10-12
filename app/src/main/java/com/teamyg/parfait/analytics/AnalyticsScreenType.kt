@@ -1,7 +1,7 @@
 package com.teamyg.parfait.analytics
 
 /**
- * [AnalyticsScreen][com.teamyg.parfait.core.util.jvm.useranalytics.AnalyticsScreen]을 만드는
+ * [AnalyticsScreen][com.teamyg.parfait.core.analytics.AnalyticsScreen]을 만드는
  * `screenId`/`screenClass` 상수.
  */
 enum class AnalyticsScreenType(
