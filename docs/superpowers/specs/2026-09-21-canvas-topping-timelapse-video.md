@@ -228,8 +228,11 @@ sealed interface CanvasSaveResult {
 
 `GalleryMediaProvider.insertPendingVideo`의 MIME은 `video/mp4`, `RELATIVE_PATH`는 `Movies/Parfait`다.
 `IS_PENDING` 2단 커밋과 실패 시 등록 되돌리기는 이미지 경로와 같은 구조다. 영상은 이미 파일로
-존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사하고, **결과와 상관없이 그
-캐시 파일을 지운다.** 권한이 거부돼 저장에 이르지 못한 파일은 `CanvasMainRoute`가 지운다.
+존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사한다. 그 파일은 읽기만 한다.
+
+**캐시 mp4를 지우는 자리는 `CanvasMainViewModel` 하나다.** `SaveRecordedVideo`는 저장 결과와
+상관없이 지우고, 권한이 거부돼 저장에 이르지 못한 파일은 Route가 `DiscardRecordedVideo`로 넘겨
+지운다. 다시 시도할 길이 없는 파일이라 실패해도 남기지 않는다.
 
 ### 권한 흐름
 
