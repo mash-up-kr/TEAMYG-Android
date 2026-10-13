@@ -2,7 +2,6 @@ package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -220,18 +219,6 @@ internal fun CanvasMainScreen(
         ) {
             val density = LocalDensity.current
 
-            // 저장 미리보기의 녹화 레이어가 같은 dp 폭을 써야 테두리 굵기 비율이 이미지
-            // 저장물과 같아진다. 이 Box 가 Canvas-Area 와 같은 크기이므로 여기서 재서 올린다
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .onSizeChanged { size ->
-                        with(density) {
-                            onCanvasAreaSizeChange(size.width.toDp(), size.height.toDp())
-                        }
-                    },
-            )
-
             CanvasToppingLayer(
                 toppings = canvasState.toppings,
                 spotlightedToppingId = canvasState.spotlightedToppingId,
@@ -242,7 +229,15 @@ internal fun CanvasMainScreen(
                 revealResetKey = canvasState.displayedCanvas?.parfaitId,
                 retryKey = retryKey,
                 onLoadStateChange = { toppingState = it },
-                modifier = Modifier.fillMaxSize(),
+                // 저장 미리보기의 녹화 레이어가 같은 dp 크기로 그려야 테두리 굵기 비율이 이미지
+                // 저장물과 같아진다
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { size ->
+                        with(density) {
+                            onCanvasAreaSizeChange(size.width.toDp(), size.height.toDp())
+                        }
+                    },
             )
         }
     }

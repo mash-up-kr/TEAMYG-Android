@@ -4,13 +4,10 @@ import android.content.Context
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import com.teamyg.parfait.core.util.android.video.Mp4VideoEncoder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoRecordOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
-
-/** 산출물 가로 픽셀. 캔버스 영역이 세로 9:16 이라 높이는 이 값의 16/9 다 */
-internal const val CANVAS_VIDEO_WIDTH_PX = 1080
-internal const val CANVAS_VIDEO_HEIGHT_PX = 1920
 
 private const val VIDEO_CACHE_FILE_NAME = "canvas_timelapse.mp4"
 
@@ -38,8 +35,8 @@ internal suspend fun recordCanvasVideo(
 
     Mp4VideoEncoder(
         outputFile = output,
-        width = CANVAS_VIDEO_WIDTH_PX,
-        height = CANVAS_VIDEO_HEIGHT_PX,
+        width = VideoRecordOptions.WIDTH_PX,
+        height = VideoRecordOptions.HEIGHT_PX,
         framesPerSecond = VideoTimelineOptions.FRAMES_PER_SECOND,
     ).use { encoder ->
         for (frameIndex in 0 until frameCount) {

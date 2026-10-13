@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
 import android.content.ClipData
-import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +42,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOver
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasVideoSource
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PendingGallerySave
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.toYGCanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
@@ -67,6 +67,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
+import java.io.File
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
@@ -126,18 +127,13 @@ internal fun CanvasMainRoute(
     ) { granted ->
         val pending = pendingGallerySave
         pendingGallerySave = null
-        when (pending) {
-            null -> Unit
-
-            is PendingGallerySave.Image -> if (granted) {
-                viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(pending.bitmap))
+        if (pending != null) {
+            if (granted) {
+                viewModel.processIntent(pending.toSaveIntent())
             } else {
-                toastPolicy.showError(gallerySaveFailureMessage)
-            }
-
-            is PendingGallerySave.Video -> if (granted) {
-                viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(pending.filePath))
-            } else {
+                if (pending is PendingGallerySave.Video) {
+                    scope.launch(Dispatchers.IO) { File(pending.filePath).delete() }
+                }
                 toastPolicy.showError(gallerySaveFailureMessage)
             }
         }
@@ -147,13 +143,7 @@ internal fun CanvasMainRoute(
     // 길이 같은 곳으로 모이도록 여기 한 번만 적는다
     val saveWithPermission: (PendingGallerySave) -> Unit = { pending ->
         if (GalleryWritePermissionManager.hasPermission(context)) {
-            when (pending) {
-                is PendingGallerySave.Image ->
-                    viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(pending.bitmap))
-
-                is PendingGallerySave.Video ->
-                    viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(pending.filePath))
-            }
+            viewModel.processIntent(pending.toSaveIntent())
         } else {
             pendingGallerySave = pending
             galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
@@ -401,9 +391,7 @@ internal fun CanvasMainRoute(
     }
 }
 
-/** 권한 승인을 기다리는 저장 대상. 이미지와 영상이 서로 다른 것을 나르므로 갈라 둔다 */
-private sealed interface PendingGallerySave {
-    data class Image(val bitmap: Bitmap) : PendingGallerySave
-
-    data class Video(val filePath: String) : PendingGallerySave
+private fun PendingGallerySave.toSaveIntent(): CanvasMainIntent = when (this) {
+    is PendingGallerySave.Image -> CanvasMainIntent.SaveCapturedCanvas(bitmap)
+    is PendingGallerySave.Video -> CanvasMainIntent.SaveRecordedVideo(filePath)
 }
