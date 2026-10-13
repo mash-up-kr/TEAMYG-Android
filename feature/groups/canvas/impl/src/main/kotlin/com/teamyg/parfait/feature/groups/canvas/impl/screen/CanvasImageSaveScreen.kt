@@ -47,12 +47,15 @@ import kotlinx.datetime.format
  *
  * 저장 자체는 하지 않는다 — 확정을 호출부에 알리기만 하고, 갤러리에 넣는 일과 결과를 알리는
  * 일은 캔버스 메인이 맡는다.
+ *
+ * @param isImageSaveEnabled 영상을 만드는 동안에는 두 버튼을 모두 막는다
  */
 @Composable
 internal fun CanvasImageSaveScreen(
     bitmap: ImageBitmap?,
     fallbackImagePath: String,
     date: LocalDate,
+    isImageSaveEnabled: Boolean,
     isVideoSaveEnabled: Boolean,
     onClickClose: () -> Unit,
     onClickSaveImage: () -> Unit,
@@ -162,7 +165,7 @@ internal fun CanvasImageSaveScreen(
             YGButton(
                 text = stringResource(R.string.canvas_image_save_confirm),
                 buttonType = YGButtonType.Medium.Primary,
-                isEnabled = true,
+                isEnabled = isImageSaveEnabled,
                 onClick = onClickSaveImage,
             )
 
@@ -195,6 +198,7 @@ private fun PreviewCanvasImageSaveScreen(
         bitmap = null,
         fallbackImagePath = "",
         date = date,
+        isImageSaveEnabled = true,
         isVideoSaveEnabled = true,
         onClickClose = {},
         onClickSaveImage = {},
