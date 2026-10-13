@@ -22,7 +22,6 @@ class BitmapSurfaceWriterTest {
     @Test
     fun draw_solidBitmap_paintsThatColorOnSurface() {
         // Given RGBA_8888 을 받는 소비자와, 한 색으로 채운 비트맵
-        // FLEX_RGBA_8888 은 이 기기(에뮬레이터)가 거부해 PixelFormat.RGBA_8888 로 대체했다
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         val bitmap = createBitmap(width, height).apply { eraseColor(Color.rgb(255, 0, 0)) }
 
