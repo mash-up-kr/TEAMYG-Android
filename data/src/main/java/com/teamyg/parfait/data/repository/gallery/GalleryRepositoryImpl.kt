@@ -156,7 +156,7 @@ constructor(
                     rawBitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
                 } ?: error("갤러리 이미지의 출력 스트림을 열지 못했다")
 
-                galleryMediaProvider.finalizePendingImage(uri)
+                galleryMediaProvider.finalizePendingMedia(uri)
             } catch (throwable: Throwable) {
                 galleryMediaProvider.deletePendingMedia(uri)
                 throw throwable
@@ -179,7 +179,7 @@ constructor(
                     source.inputStream().use { input -> input.copyTo(output) }
                 } ?: error("갤러리 영상의 출력 스트림을 열지 못했다")
 
-                galleryMediaProvider.finalizePendingVideo(uri)
+                galleryMediaProvider.finalizePendingMedia(uri)
             } catch (throwable: Throwable) {
                 galleryMediaProvider.deletePendingMedia(uri)
                 throw throwable
