@@ -3609,8 +3609,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-18] 원본 다운샘플 미적용 — 세그멘테이션 실측 메모리 피크가 largeHeap 없이 위험 구간
 - **ID**: OQ-P-228
-- **출처**: `ImageSegmentationRepositoryImpl.kt#segmentImage`(원본 해상도 그대로 처리, 다운샘플
-  없음) × 독립 코드 리뷰(2026-08-18, `refactor/segmentation-logic` 최종 리뷰) — ~~12MP 사진 기준
+- **출처**: `ImageSegmentationRepositoryImpl.kt#segmentImage`(긴 변 4096px 이하는 원본 해상도 그대로
+  처리) × 독립 코드 리뷰(2026-08-18, `refactor/segmentation-logic` 최종 리뷰) — ~~12MP 사진 기준
   실측: `segmentImage` 내부에 살아 있는 비트맵 총량이 피크에서 약 244MB, 토핑 편집 화면까지
   이어지면(스택 아래 `SegmentationState.originBitmap`이 겹쳐 살아 있는 채) 약 390MB.~~ `app` 모듈
   매니페스트는 `largeHeap`을 선언하지 않는다.
@@ -3633,7 +3633,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   >   `edited`까지 겹치는 구간이 있어 정확한 피크를 내려면 `ToppingBorderOutline`의 치수 캡핑까지
   >   따라가야 한다 — 이번 정정에서는 그 도출을 하지 않았다. **현재 트리 기준 토핑 편집 피크는
   >   미측정으로 남는다.** 재측정 없이 옛 390MB를 새 수치인 것처럼 쓰지 않는다.
-  > - 위험 자체(다운샘플 상한 없음, `largeHeap` 미선언)는 안 바뀐다. 항목 ①~③과 상태는 그대로
+  > - 위험 자체(12MP 급에 걸리는 다운샘플 상한 없음, `largeHeap` 미선언)는 안 바뀐다. 항목 ①~③과 상태는 그대로
   >   둔다.
   >
   > 🔧 **위 정정의 전제가 하루 만에 사라졌다(2026-08-19, PR #290 머지)** — 정정이 "develop에는 없다"고
@@ -3648,28 +3648,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 📌 **세그멘테이션 라운드가 머지됐다(2026-08-20, PR #309)** — 이 항목이 겨눈 `segmentImage`는
   > 이제 develop에서 `getPixels` 1회 + 배열 내 마스킹으로 돌고 저장 구간이 `try`/`finally`로 감싸여
   > `subjectBitmap`·trimmed 비트맵의 회수가 실패 경로에서도 보장된다. **동시 생존 버퍼가 준 것은
-  > 아니다** — 배열 하나를 아끼는 재작성이었고 다운샘플 상한은 여전히 없으며 `largeHeap`도 그대로
+  > 아니다** — 배열 하나를 아끼는 재작성이었고 12MP 급에 걸리는 다운샘플 상한은 없으며 `largeHeap`도 그대로
   > 미선언이다. 위 두 실측치는 다른 트리에서 잰 값이라 되살리지 않는다 — **현재 develop 기준 피크는
   > 세그멘테이션·토핑 편집 둘 다 미측정으로 남는다.** 항목 ①~③과 상태는 그대로다.
   >
-  > 📌 **디코드 공통 경로에 긴 변 4096px 상한이 걸려 있다** — `decodeUriToBitmap`이
-  > `cappedDecodeSize`(`DECODE_LONG_SIDE_LIMIT`)로 줄여 디코드한다. 이 값은 **메모리가 아니라 그리기
-  > 제한**을 기준으로 골랐다: 소프트웨어 비트맵이 100MB(ARGB_8888 약 26.2MP)를 넘으면
-  > `RecordingCanvas.throwIfCannotDraw`가 `Canvas: trying to draw too large` 로 던지고, 이건 힙과
-  > 무관해 `largeHeap`으로 못 막는다. 4096×4096 도 약 67MB 라 어떤 비율이든 제한 아래다. 누끼 업로드가
-  > 원본 긴 변 1280 기준으로 줄어(`UploadImagePlan`) 산출물 화질은 그대로다. **12MP 급(4000×3000)은
-  > 상한 아래라 여전히 원본 해상도로 돈다 — 이 항목의 메모리 위험은 안 줄었다.** 원격 URL
-  > 갈래(`BitmapFactory.decodeByteArray`)에는 상한이 없다.
-  >
-  > 📌 **상한 4096 대 2048 실측(SM-A356N·Android 16, 4080×3060 사진 1장, 각 1회, `dumpsys meminfo`
-  > 폴링)** — 머무는 화면의 Native+Graphics 는 줄었다: 후보 선택 201MB → 138MB, 영역 편집 332MB →
-  > 190MB. **분석 중 순간 피크는 거의 그대로다**: Native Heap 최대 415MB → 405MB. 입력이 1/4 로 줄어도
-  > 안 내려가므로 이 피크는 우리 비트맵 치수가 아닌 다른 것이 지배한다 — 무엇인지는 미확인(ML Kit
-  > 내부 버퍼로 추정). 화면 배율에서 본 누끼 경계는 두 상한이 구분되지 않았다.
-- **항목**: ① 상한을 4096 보다 더 내릴지(예: 2048 — 머무는 화면 메모리는 30~40% 줄지만 분석 중
-  피크는 안 줄었다). 그 피크를 무엇이 만드는지부터 프로파일러로 가려야 한다. ② 다운샘플 대신 `largeHeap`
-  선언으로 버틸지(저사양 기기에서 여전히 위험할 수 있다). ③ `ToppingBorderOutline`이 쓰는 치수 캡 관용구를 세그멘테이션 파이프라인 전체의
-  표준으로 승격할지.
+  > 📌 **디코드 공통 경로에 긴 변 4096px 상한이 걸려 있다**(`DECODE_LONG_SIDE_LIMIT`) — 그리기 제한을
+  > 막으려는 값이지 메모리를 겨눈 값이 아니다. **12MP 급(4000×3000)은 상한 아래라 여전히 원본
+  > 해상도로 돌고, 이 항목의 메모리 위험은 안 줄었다.** 값의 근거와 4096 대 2048 실측은
+  > [ADR-0012](../adr/0012-mlkit-subject-segmentation.md) 「원본 디코드 상한」에 있다.
+- **항목**: ① 분석 중 Native Heap 순간 피크를 무엇이 만드는지 — 입력 치수를 1/4 로 줄여도 안
+  내려가 우리 비트맵이 아닌 것이 지배한다(미확인, ML Kit 내부 버퍼로 추정). 프로파일러로 가린 뒤에야
+  상한을 4096 보다 더 내릴지 정할 수 있다. ② 다운샘플 대신 `largeHeap` 선언으로 버틸지(저사양
+  기기에서 여전히 위험할 수 있다). ③ `ToppingBorderOutline`이 쓰는 치수 캡 관용구를 세그멘테이션
+  파이프라인 전체의 표준으로 승격할지.
 - **상태**: 미해결
 - **해소 메모**: 다운샘플 도입 또는 `largeHeap` 채택 시
   [segmentation-pipeline-hardening 스펙](../superpowers/specs/archive/2026-08-18-segmentation-pipeline-hardening.md)

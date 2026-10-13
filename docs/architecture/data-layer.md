@@ -139,7 +139,7 @@ tags: [architecture, parfait]
 > 시간순을 지킨다(종류로 묶으면 뭉쳐서 순서가 깨진다).
 
 ## 예: 이미지 세그멘테이션(누끼)
-`ImageSegmentationRepositoryImpl`이 온디바이스 ML Kit Subject Segmentation으로 전경을 분리([[0012-mlkit-subject-segmentation]]). `contentResolver.decodeUriToBitmap`로 URI→비트맵 디코딩(반환은 `BitmapWrapper`, [[0011-cross-module-bitmap-abstraction]] — **API 28 미만 갈래는 EXIF 회전을 적용해 세워서 준다**, #349. 색공간·`Bitmap.Config`·해상도 하한은 여전히 손대지 않는다), subject 이미지는 `cacheDir`의 **세그멘테이션 전용 하위 디렉토리**에 PNG로 저장해 경로를 반환. 실패는 `Result<…>` + `SegmentationException`. 소비는 `DecodeImageUseCase`·`SegmentImageUseCase`·`PersistSubjectUseCase`·`SaveBitmapUseCase`·`ClearSegmentationCacheUseCase`.
+`ImageSegmentationRepositoryImpl`이 온디바이스 ML Kit Subject Segmentation으로 전경을 분리([[0012-mlkit-subject-segmentation]]). `contentResolver.decodeUriToBitmap`로 URI→비트맵 디코딩(반환은 `BitmapWrapper`, [[0011-cross-module-bitmap-abstraction]] — **API 28 미만 갈래는 EXIF 회전을 적용해 세워서 준다**, #349. 긴 변은 4096px 상한(`DECODE_LONG_SIDE_LIMIT`)으로 줄여 디코드한다. 색공간·`Bitmap.Config`·해상도 하한은 여전히 손대지 않는다), subject 이미지는 `cacheDir`의 **세그멘테이션 전용 하위 디렉토리**에 PNG로 저장해 경로를 반환. 실패는 `Result<…>` + `SegmentationException`. 소비는 `DecodeImageUseCase`·`SegmentImageUseCase`·`PersistSubjectUseCase`·`SaveBitmapUseCase`·`ClearSegmentationCacheUseCase`.
 
 **결과 모델 재편(2026-08-14, PR #221)** — `SegmentationResult`가 `BitmapWrapper`를 더 이상 담지 않는다.
 `subjectImagePath`(파일 경로) + `subjectBounds: SegmentationBounds?`(원본 픽셀 좌표계 바운딩 박스,
