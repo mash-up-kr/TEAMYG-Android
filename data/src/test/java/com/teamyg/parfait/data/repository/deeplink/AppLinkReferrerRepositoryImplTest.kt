@@ -95,6 +95,21 @@ class AppLinkReferrerRepositoryImplTest {
         coVerify(exactly = 0) { localDataSource.markChecked() }
     }
 
+    @Test
+    fun skipLookup_marksCheckedWithoutQueryingGateway() = runTest {
+        // Given
+        val localDataSource = fakeLocalDataSource(hasChecked = false)
+        val gateway = mockk<AppLinkReferrerGateway>()
+        val repository = AppLinkReferrerRepositoryImpl(gateway, localDataSource)
+
+        // When
+        repository.skipLookup()
+
+        // Then
+        coVerify(exactly = 1) { localDataSource.markChecked() }
+        coVerify(exactly = 0) { gateway.getReferrer() }
+    }
+
     private fun fakeLocalDataSource(hasChecked: Boolean): AppLinkReferrerLocalDataSource = mockk {
         coEvery { this@mockk.hasChecked() } returns hasChecked
         coEvery { markChecked() } returns Unit
