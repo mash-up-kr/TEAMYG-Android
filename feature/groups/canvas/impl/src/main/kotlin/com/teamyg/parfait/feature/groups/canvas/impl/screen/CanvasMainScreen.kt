@@ -85,8 +85,7 @@ internal fun CanvasMainScreen(
     // 녹화 인자들은 모두 기본값을 둔다 — 녹화는 Route 만 켤 수 있는 흐름이라 프리뷰처럼
     // 녹화가 없는 호출부는 한 줄도 적지 않아야 한다
     recordLayer: GraphicsLayer = rememberGraphicsLayer(),
-    recordVisibleToppingCount: Int = 0,
-    recordLastToppingPopProgress: Float = 1f,
+    recordToppingPopProgresses: List<Float> = emptyList(),
     /** 녹화 레이어가 쓸 Canvas-Area dp. [onCanvasAreaSizeChange] 로 재서 올린 값이 되돌아온다 */
     recordCanvasWidth: Dp = 0.dp,
     recordCanvasHeight: Dp = 0.dp,
@@ -266,8 +265,7 @@ internal fun CanvasMainScreen(
                 CanvasVideoRecordLayer(
                     toppings = canvasState.toppings,
                     background = canvasBackground,
-                    visibleToppingCount = recordVisibleToppingCount,
-                    lastToppingPopProgress = recordLastToppingPopProgress,
+                    toppingPopProgresses = recordToppingPopProgresses,
                     canvasWidth = recordCanvasWidth,
                     canvasHeight = recordCanvasHeight,
                     targetWidthPx = CANVAS_VIDEO_WIDTH_PX,
