@@ -6,6 +6,12 @@ enum class AnalyticsEventType(
     val eventName: String,
 ) {
     APP_PUSH_OPENED(eventId = "N-001", eventName = "app_push_opened"),
+
+    /**
+     * 외부 링크(App Links, 설치 후 Install Referrer 복원)로 앱이 열렸을 때. 웹 폴백 페이지의 이벤트와
+     * 같은 스키마를 공유해야 GA4에서 캠페인별 클릭→오픈 전환을 함께 집계한다.
+     */
+    APP_LINK_OPENED(eventId = "AppLink", eventName = "app_link_opened"),
     APP_ACCOUNT_NICKNAME_CHANGED(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
 
     CANVAS_CAMERA_RETAKE_TAPPED(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
