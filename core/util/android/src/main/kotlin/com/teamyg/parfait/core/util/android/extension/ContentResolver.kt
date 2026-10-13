@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
 import com.teamyg.parfait.core.util.android.coreUtilAndroidLogger
 
@@ -15,13 +16,26 @@ fun ContentResolver.decodeUriToBitmap(uri: Uri): Bitmap = if (Build.VERSION.SDK_
     ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
         decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         decoder.isMutableRequired = true
-        decoder.setTargetSize(info.size.width, info.size.height)
+        val target = cappedDecodeSize(width = info.size.width, height = info.size.height)
+        decoder.setTargetSize(target.width, target.height)
     }
 } else {
     @Suppress("DEPRECATION")
     MediaStore.Images.Media
         .getBitmap(this, uri)
+        .cappedToDecodeSize()
         .rotatedToUpright(this, uri)
+}
+
+/** 회전보다 먼저 줄인다 — 회전은 판을 하나 더 만들어, 줄이기 전이면 전체 해상도 둘이 함께 산다 */
+private fun Bitmap.cappedToDecodeSize(): Bitmap {
+    val target = cappedDecodeSize(width = width, height = height)
+    if (target.width == width && target.height == height) return this
+
+    val scaled = scale(target.width, target.height)
+    recycle()
+
+    return scaled
 }
 
 /** [uri] 가 가리키는 내용 전부. `content://` 든 `file://` 든 열 수 없으면 던진다 */
