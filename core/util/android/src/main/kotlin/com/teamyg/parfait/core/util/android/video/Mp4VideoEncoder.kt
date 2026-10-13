@@ -12,21 +12,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-private const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
-private const val BIT_RATE = 6_000_000
-private const val I_FRAME_INTERVAL_SECONDS = 1
-private const val DEQUEUE_TIMEOUT_MICROS = 10_000L
-
-private const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1L
-
-/**
- * EOS 대기 상한. [Mp4VideoEncoder.finish] 가 호출부 스레드를 막으므로 상한이 없으면 코덱이 멈출 때
- * 실패가 아니라 ANR 이 된다. 입력 ANR 판정(5초)보다 짧게 잡는다
- */
-private const val EOS_DRAIN_TIMEOUT_MILLIS = 3_000L
-
-private const val NANOS_PER_MILLI = 1_000_000L
-
 /**
  * 비트맵 시퀀스를 무음 mp4 로 쓴다.
  *
@@ -231,5 +216,22 @@ class Mp4VideoEncoder(
         } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
+    }
+
+    private companion object {
+        const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC
+        const val BIT_RATE = 6_000_000
+        const val I_FRAME_INTERVAL_SECONDS = 1
+        const val DEQUEUE_TIMEOUT_MICROS = 10_000L
+
+        const val EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 1L
+
+        /**
+         * EOS 대기 상한. [finish] 가 호출부 스레드를 막으므로 상한이 없으면 코덱이 멈출 때
+         * 실패가 아니라 ANR 이 된다. 입력 ANR 판정(5초)보다 짧게 잡는다
+         */
+        const val EOS_DRAIN_TIMEOUT_MILLIS = 3_000L
+
+        const val NANOS_PER_MILLI = 1_000_000L
     }
 }
