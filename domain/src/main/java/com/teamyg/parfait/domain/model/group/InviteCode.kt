@@ -31,7 +31,7 @@ value class InviteCode(val value: String) {
          * [messageTemplate] 을 주면 초대 메시지 템플릿의 코드 자리에 있는 값만 정확히 뽑는다.
          * 템플릿과 형태가 다르면 텍스트 전체가 초대코드일 때(코드만 복사한 경우)에만 인정한다.
          *
-         * @param messageTemplate `%1$s` 자리에 초대코드가 들어가는 초대 메시지 템플릿
+         * @param messageTemplate `%1$s` 자리에 초대코드가 들어가는 초대 메시지 템플릿. 자리가 여럿이면 첫 자리만 쓴다
          */
         fun parseOrNull(
             text: String?,
@@ -48,8 +48,11 @@ value class InviteCode(val value: String) {
         }
 
         /**
-         * 초대 메시지 템플릿을 정규식으로 바꿔 코드 자리의 값만 추출한다.
-         * 코드 앞뒤 문구는 그대로 매치해야 하므로 이스케이프해서 사용한다.
+         * 초대 메시지 템플릿의 첫 코드 자리 앞 문구를 정규식으로 바꿔 그 뒤의 값만 추출한다.
+         * 코드 앞 문구는 그대로 매치해야 하므로 이스케이프해서 사용한다.
+         *
+         * 코드 뒤 문구는 보지 않는다. 메시지에 링크 줄이 더해져 코드가 한 번 더 나오게 됐지만
+         * 링크가 없던 옛 버전 앱의 메시지도 계속 읽혀야 하고, 링크 줄은 새 정보를 주지 않는다.
          */
         private fun String.findCodeByTemplate(template: String): String? {
             val placeholderIndex = template.indexOf(CODE_PLACEHOLDER)
@@ -58,8 +61,7 @@ value class InviteCode(val value: String) {
             }
 
             val prefix = template.take(placeholderIndex)
-            val suffix = template.drop(placeholderIndex + CODE_PLACEHOLDER.length)
-            val templateRegex = Regex(Regex.escape(prefix) + "($CODE_PATTERN)" + Regex.escape(suffix))
+            val templateRegex = Regex(Regex.escape(prefix) + "($CODE_PATTERN)")
 
             return templateRegex.find(this)?.groupValues?.get(1)
         }
