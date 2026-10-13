@@ -22,7 +22,7 @@ import com.teamyg.parfait.deeplink.toAppLinkDeepLinkOrNull
 import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
-import com.teamyg.parfait.domain.repository.deeplink.AppLinkReferrerRepository
+import com.teamyg.parfait.domain.usecase.deeplink.ConsumeInstallReferrerDeepLinkUseCase
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
     lateinit var appLinkDeepLinkEventBus: AppLinkDeepLinkEventBus
 
     @Inject
-    lateinit var appLinkReferrerRepository: AppLinkReferrerRepository
+    lateinit var consumeInstallReferrerDeepLink: ConsumeInstallReferrerDeepLinkUseCase
 
     @Inject
     lateinit var hasActiveSession: HasActiveSessionUseCase
@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
             // 콜드 스타트에서만 확인한다 — Install Referrer 는 "이번 설치"의 스토어 진입 정보라
             // onNewIntent(같은 프로세스가 살아있는 재진입)에서 다시 물어봐도 의미가 없다.
             lifecycleScope.launch {
-                appLinkReferrerRepository.consumeDeepLinkOnce()?.let(appLinkDeepLinkEventBus::post)
+                consumeInstallReferrerDeepLink()?.let(appLinkDeepLinkEventBus::post)
             }
         }
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
