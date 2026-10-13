@@ -6,6 +6,6 @@ import android.graphics.Bitmap
 internal sealed interface PendingGallerySave {
     data class Image(val bitmap: Bitmap) : PendingGallerySave
 
-    /** @param filePath 미리보기가 캐시에 만든 mp4. 저장하지 않게 되면 지워야 한다 */
+    /** @param filePath 미리보기가 캐시에 만든 mp4. 저장하지 않게 되면 `DiscardRecordedVideo` 로 지운다 */
     data class Video(val filePath: String) : PendingGallerySave
 }

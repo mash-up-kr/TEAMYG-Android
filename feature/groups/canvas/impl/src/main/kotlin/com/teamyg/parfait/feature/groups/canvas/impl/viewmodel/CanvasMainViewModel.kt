@@ -46,6 +46,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -53,12 +54,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import java.io.File
 import kotlin.math.abs
 import kotlin.time.Clock
 
@@ -280,6 +283,9 @@ sealed interface CanvasMainIntent : UiIntent {
 
     /** 저장 미리보기가 녹화를 마쳐 캐시에 mp4 를 완성하고 돌아왔다 */
     data class SaveRecordedVideo(val videoFilePath: String) : CanvasMainIntent
+
+    /** 쓰기 권한이 거부돼 만들어 온 mp4 를 저장하지 않게 됐다 */
+    data class DiscardRecordedVideo(val videoFilePath: String) : CanvasMainIntent
 
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
@@ -614,6 +620,8 @@ constructor(
 
             is CanvasMainIntent.SaveRecordedVideo -> handleSaveRecordedVideo(intent.videoFilePath)
 
+            is CanvasMainIntent.DiscardRecordedVideo -> handleDiscardRecordedVideo(intent.videoFilePath)
+
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
@@ -860,6 +868,9 @@ constructor(
                 displayName = displayName,
             )
 
+            // 다시 시도할 길이 없는 캐시 파일이라 결과와 상관없이 지운다
+            deleteRecordedVideo(videoFilePath)
+
             postSideEffect(
                 effect = CanvasMainEffect.ShowGallerySaveResult(
                     isSuccess = result.isSuccess,
@@ -867,6 +878,14 @@ constructor(
                 ),
             )
         }
+    }
+
+    private fun handleDiscardRecordedVideo(videoFilePath: String) {
+        launch { deleteRecordedVideo(videoFilePath) }
+    }
+
+    private suspend fun deleteRecordedVideo(videoFilePath: String) {
+        withContext(Dispatchers.IO) { File(videoFilePath).delete() }
     }
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */

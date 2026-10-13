@@ -67,7 +67,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
-import java.io.File
 
 private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
@@ -132,7 +131,7 @@ internal fun CanvasMainRoute(
                 viewModel.processIntent(pending.toSaveIntent())
             } else {
                 if (pending is PendingGallerySave.Video) {
-                    scope.launch(Dispatchers.IO) { File(pending.filePath).delete() }
+                    viewModel.processIntent(CanvasMainIntent.DiscardRecordedVideo(pending.filePath))
                 }
                 toastPolicy.showError(gallerySaveFailureMessage)
             }
