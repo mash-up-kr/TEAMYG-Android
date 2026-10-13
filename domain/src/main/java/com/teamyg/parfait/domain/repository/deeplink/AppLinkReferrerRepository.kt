@@ -10,7 +10,8 @@ interface AppLinkReferrerRepository {
     /**
      * 이 기기에서 한 번도 확인한 적 없으면 Install Referrer 를 조회해 목적지로 바꾼다.
      * 이미 확인했으면(또는 딥링크로 볼 수 없는 값이면) `null` — 앱을 열 때마다 같은 화면으로
-     * 되돌리지 않기 위해 딱 한 번만 값을 낸다.
+     * 되돌리지 않기 위해 딱 한 번만 값을 낸다. 조회가 일시적으로 실패하면 확인한 것으로
+     * 치지 않아 다음 실행에서 다시 시도한다.
      */
     suspend fun consumeDeepLinkOnce(): AppLinkDeepLink?
 }
