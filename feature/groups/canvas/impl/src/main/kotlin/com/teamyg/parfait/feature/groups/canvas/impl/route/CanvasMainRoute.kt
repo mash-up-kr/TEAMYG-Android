@@ -119,8 +119,7 @@ internal fun CanvasMainRoute(
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
     // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 저장할 것을 여기서 들고 있다가
-    // 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다).
-    // 이미지는 비트맵, 영상은 파일 경로라 한 타입으로는 못 담는다
+    // 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
     var pendingGallerySave by remember { mutableStateOf<PendingGallerySave?>(null) }
     val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -253,7 +252,6 @@ internal fun CanvasMainRoute(
                         }.onFailure { toastPolicy.showError(captureFailureMessage) }
                 }
 
-                // 이미지와 영상이 같은 문구를 쓴다
                 is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
                     val message = gallerySaveSuccessFormat.format(effect.date.month.number, effect.date.day)
                     toastPolicy.show(YGToastType.InviteCode(message))

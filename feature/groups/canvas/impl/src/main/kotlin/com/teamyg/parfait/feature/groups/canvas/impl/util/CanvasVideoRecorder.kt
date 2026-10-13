@@ -25,8 +25,7 @@ private const val VIDEO_CACHE_FILE_NAME = "canvas_timelapse.mp4"
  * @param advanceFrame 프레임 인덱스를 받아 그 상태가 실제로 **그려질 때까지** 대기한다.
  *   호출부가 `withFrameNanos` 로 프레임 경계를 기다려야 한다
  * @return 완성된 mp4 파일. 실패하면 `Result.failure` 이고 부분 파일은 남지 않는다.
- *   **취소는 실패로 접지 않는다** — 화면을 떠나 코루틴이 취소된 것을 실패로 돌려주면 호출부가
- *   실패 이펙트를 이펙트 채널에 남기고, 그것이 다음 재진입 때 엉뚱한 토스트로 뜬다
+ *   **취소는 실패로 접지 않는다** — 화면을 떠난 것이 "저장 실패" 토스트로 둔갑하면 안 된다
  */
 internal suspend fun recordCanvasVideo(
     context: Context,
@@ -46,8 +45,7 @@ internal suspend fun recordCanvasVideo(
             advanceFrame(frameIndex)
 
             val bitmap = captureLayer.toImageBitmap().asAndroidBitmap()
-            // 디스패처를 갈아 부르지 않는다. 인코더는 전용 단일 스레드를 소유하고 EGL 컨텍스트가
-            // 그 스레드에 묶여 있어, 내부에서 스스로 그 스레드로 넘긴다(Mp4VideoEncoder KDoc)
+            // 디스패처를 갈아 부르지 않는다 — 인코더가 스스로 전용 스레드로 넘긴다
             encoder.encodeFrame(bitmap)
             bitmap.recycle()
         }
@@ -55,12 +53,9 @@ internal suspend fun recordCanvasVideo(
         encoder.finish()
     }
 
-    // moov 박스는 finish() 가 아니라 close() 가 쓴다 — use 블록이 닫힌 **뒤에야** 재생 가능한
-    // 파일이라, 산출물을 호출부로 넘기는 것도 블록 밖인 여기서 한다(Mp4VideoEncoder KDoc)
+    // moov 박스는 close() 가 쓴다 — use 블록이 닫힌 **뒤에야** 재생 가능한 파일이다
     output
 }.onFailure { throwable ->
-    // 취소는 실패가 아니다. runCatching 이 CancellationException 까지 접어 버리므로 여기서
-    // 다시 던져, 화면을 떠난 것이 "영상 저장 실패" 토스트로 둔갑하지 않게 한다.
-    // use 블록의 close() 는 이미 돌아 부분 파일도 지워진 상태다
+    // runCatching 이 CancellationException 까지 접으므로 다시 던진다
     if (throwable is CancellationException) throw throwable
 }
