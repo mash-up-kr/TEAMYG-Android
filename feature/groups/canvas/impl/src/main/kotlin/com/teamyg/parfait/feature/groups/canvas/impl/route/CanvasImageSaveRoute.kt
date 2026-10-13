@@ -21,28 +21,28 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.ui.screenLogger
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoRecordLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoRecordOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasImageSaveScreen
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_WIDTH_PX
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopProgresses
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
 
 /**
  * ViewModel 이 없다 — navKey 인자와 전역 홀더만 읽어 그리면 되고, 갤러리에 넣는 일은 결과를
  * 받는 캔버스 메인의 몫이다.
  *
- * 영상은 여기서 **만들기까지** 한다. 녹화는 컴포지션을 프레임마다 읽는 일인데, 이 화면이 떠 있는
- * 동안 캔버스 메인은 컴포지션에서 빠져 있어 그쪽에서는 찍을 수 없다. 만드는 동안 화면은 그대로
- * 두고 버튼과 닫기만 막는다.
+ * 영상은 여기서 **만들기까지** 한다(ADR-0035). 만드는 동안 화면은 그대로 두고 버튼과 닫기만 막는다.
  */
 @Composable
 internal fun CanvasImageSaveRoute(
@@ -84,10 +84,11 @@ internal fun CanvasImageSaveRoute(
             CanvasSaveResult.VideoFailed
         } else {
             // 첫 프레임을 빈 그림으로 찍지 않는다 — 배경과 토핑 이미지가 다 모여야 시작한다
-            val settledLoadState = snapshotFlow { recordLoadState }
-                .first { it != CanvasLoadState.Loading }
+            val settledLoadState = withTimeoutOrNull(VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS) {
+                snapshotFlow { recordLoadState }.first { it != CanvasLoadState.Loading }
+            }
 
-            if (settledLoadState == CanvasLoadState.Failed) {
+            if (settledLoadState != CanvasLoadState.Loaded) {
                 CanvasSaveResult.VideoFailed
             } else {
                 recordCanvasVideo(
@@ -106,7 +107,10 @@ internal fun CanvasImageSaveRoute(
                     withFrameNanos { }
                 }.fold(
                     onSuccess = { file -> CanvasSaveResult.Video(videoPath = file.absolutePath) },
-                    onFailure = { CanvasSaveResult.VideoFailed },
+                    onFailure = { throwable ->
+                        screenLogger.e(throwable) { "CanvasImageSaveRoute - 캔버스 영상 녹화 실패" }
+                        CanvasSaveResult.VideoFailed
+                    },
                 )
             }
         }
@@ -147,7 +151,7 @@ internal fun CanvasImageSaveRoute(
                 toppingPopProgresses = recordPopProgresses,
                 canvasWidth = videoSource.canvasWidth,
                 canvasHeight = videoSource.canvasHeight,
-                targetWidthPx = CANVAS_VIDEO_WIDTH_PX,
+                targetWidthPx = VideoRecordOptions.WIDTH_PX,
                 retryKey = videoSource.retryKey,
                 captureLayer = recordLayer,
                 onLoadStateChange = { recordLoadState = it },

@@ -1,6 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
-/** 타임랩스 영상의 타임라인 수치. iOS 저장본(`CanvasImageExporter`)과 같은 값이어야 한다 */
+/** 타임랩스 영상의 타임라인 수치. 값의 기준은 스펙 `canvas-topping-timelapse-video` 「수치의 기준」 */
 internal object VideoTimelineOptions {
     /** 프레임 인덱스로 진행하므로 기기 성능이 결과를 바꾸지 않는다 */
     const val FRAMES_PER_SECOND: Int = 30

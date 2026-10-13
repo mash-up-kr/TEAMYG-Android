@@ -48,7 +48,7 @@ import kotlinx.datetime.format
  * 저장 자체는 하지 않는다 — 확정을 호출부에 알리기만 하고, 갤러리에 넣는 일과 결과를 알리는
  * 일은 캔버스 메인이 맡는다.
  *
- * @param isImageSaveEnabled 영상을 만드는 동안에는 두 버튼을 모두 막는다
+ * @param isImageSaveEnabled 영상을 만드는 동안 거짓이다
  */
 @Composable
 internal fun CanvasImageSaveScreen(
