@@ -6,6 +6,9 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import com.teamyg.parfait.core.util.android.video.Mp4VideoEncoder
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoRecordOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -33,25 +36,36 @@ internal suspend fun recordCanvasVideo(
 ): Result<File> = runCatching {
     val output = File(context.cacheDir, VIDEO_CACHE_FILE_NAME)
 
-    Mp4VideoEncoder(
-        outputFile = output,
-        width = VideoRecordOptions.WIDTH_PX,
-        height = VideoRecordOptions.HEIGHT_PX,
-        framesPerSecond = VideoTimelineOptions.FRAMES_PER_SECOND,
-    ).use { encoder ->
+    // 인코더 호출은 부른 스레드를 막는다(Mp4VideoEncoder KDoc). 메인에 두면 만드는 동안 화면이
+    // 멈추므로 레이어 읽기만 메인에 남기고 나머지는 넘긴다
+    val encoder = withContext(Dispatchers.Default) {
+        Mp4VideoEncoder(
+            outputFile = output,
+            width = VideoRecordOptions.WIDTH_PX,
+            height = VideoRecordOptions.HEIGHT_PX,
+            framesPerSecond = VideoTimelineOptions.FRAMES_PER_SECOND,
+        )
+    }
+
+    try {
         for (frameIndex in 0 until frameCount) {
             advanceFrame(frameIndex)
 
             val bitmap = captureLayer.toImageBitmap().asAndroidBitmap()
-            // 디스패처를 갈아 부르지 않는다 — 인코더가 스스로 전용 스레드로 넘긴다
-            encoder.encodeFrame(bitmap)
-            bitmap.recycle()
+            try {
+                withContext(Dispatchers.Default) { encoder.encodeFrame(bitmap) }
+            } finally {
+                bitmap.recycle()
+            }
         }
 
-        encoder.finish()
+        withContext(Dispatchers.Default) { encoder.finish() }
+    } finally {
+        // 취소된 뒤에도 닫아야 코덱이 풀리고 부분 파일이 지워진다
+        withContext(NonCancellable + Dispatchers.Default) { encoder.close() }
     }
 
-    // moov 박스는 close() 가 쓴다 — use 블록이 닫힌 **뒤에야** 재생 가능한 파일이다
+    // moov 박스는 close() 가 쓴다 — 닫힌 **뒤에야** 재생 가능한 파일이다
     output
 }.onFailure { throwable ->
     // runCatching 이 CancellationException 까지 접으므로 다시 던진다
