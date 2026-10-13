@@ -17,6 +17,7 @@ related_code:
   - CanvasVideoSource.kt#CanvasVideoSource
   - CanvasVideoSourceHolder.kt#CanvasVideoSourceHolder
   - ToppingVideoTimeline.kt#toppingPopProgresses
+  - VideoTimelineOptions.kt#VideoTimelineOptions
   - YGCanvas.kt#CANVAS_AREA_ASPECT_RATIO
   - ToppingGeometry.kt#TOPPING_BASE_LONG_SIDE_RATIO
   - YGToppingCutoutImage.kt#YGToppingCutoutImage
@@ -45,7 +46,7 @@ tags: [spec, parfait, canvas, gallery, video]
 
 | 조각 | 상태 |
 |------|------|
-| `ToppingVideoTimeline` | 구현됨 |
+| `ToppingVideoTimeline` · `VideoTimelineOptions` | 구현됨 |
 | `Mp4VideoEncoder` · `BitmapSurfaceWriter` | 구현됨. 계측 테스트는 CI가 컴파일만 한다(OQ-P-102) |
 | 갤러리 영상 저장(`data`·`domain`) | 구현됨 |
 | `CanvasToppingLayer` 등장 진행도 · `CanvasVideoRecordLayer` · 프레임 루프 · `CanvasSaveResult` · 미리보기 버튼 · ViewModel 경로 | 구현됨. 실기기 미확인 |
@@ -96,7 +97,7 @@ iOS와 다르게 남겨 둔 것은 하나다. 토핑 0건에서 영상 버튼을
 
 ## 타임라인
 
-30fps, **2초 고정**(`CANVAS_VIDEO_FRAME_COUNT` = 60). 길이는 토핑 수와 무관하다. 프레임
+30fps, **2초 고정**(`VideoTimelineOptions.FRAME_COUNT` = 60). 길이는 토핑 수와 무관하다. 프레임
 인덱스로 진행하므로 기기 성능과 무관하게 같은 결과가 나온다.
 
 - 토핑 N개의 **시작 시각**을 1.5초 구간에 고르게 나눈다. `order`번째 토핑은 `1.5 × order / N`초에
@@ -112,7 +113,7 @@ iOS와 다르게 남겨 둔 것은 하나다. 토핑 0건에서 영상 버튼을
   계수 1.70158.
 - `alpha`: 진행도 그대로. 팝인 전체에 걸쳐 선형으로 오른다.
 
-수치는 `ToppingVideoTimeline.kt` 최상위 상수다.
+수치는 `model/VideoTimelineOptions`에 모여 있다.
 
 ## 인코딩 규격
 
@@ -174,7 +175,7 @@ Canvas-Area와 다르게 잡으면, 캔버스 폭에 대한 테두리 굵기의 
 
 | 조각 | 위치 | 책임 |
 |------|------|------|
-| `ToppingVideoTimeline` | `feature/groups/canvas/impl/util/` | 토핑 개수·프레임 인덱스 → 토핑별 진행도, 진행도 → 배율·알파. 순수 Kotlin |
+| `ToppingVideoTimeline` | `feature/groups/canvas/impl/util/` | 토핑 개수·프레임 인덱스 → 토핑별 진행도, 진행도 → 배율·알파. 순수 Kotlin. 수치는 `model/VideoTimelineOptions` |
 | `CanvasVideoSource` · `CanvasVideoSourceHolder` | `impl/model/` · `impl/util/` | 미리보기를 연 순간의 토핑·배경·Canvas-Area dp·`retryKey`. 캔버스 메인이 넣고 미리보기가 읽는다 |
 | `CanvasVideoRecordLayer` | `impl/component/` | 배경과 `CanvasToppingLayer`를 고정 픽셀 폭으로 띄우고 레이어에만 기록 |
 | `recordCanvasVideo` | `impl/util/` | 레이어를 읽어 인코더에 넘긴다. **프레임 루프의 소유자는 Route다** — 상태 전진과 `withFrameNanos` 대기는 Route가 하고 이 함수가 `advanceFrame` 으로 위임받는다 |
