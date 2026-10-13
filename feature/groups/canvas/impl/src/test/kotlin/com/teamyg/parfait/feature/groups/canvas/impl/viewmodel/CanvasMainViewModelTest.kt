@@ -57,6 +57,7 @@ import kotlinx.datetime.minus
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
+import java.io.File
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -983,21 +984,23 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun saveRecordedVideo_useCaseFails_reportsFailure() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 갤러리 저장이 실패한다
+    fun saveRecordedVideo_useCaseFails_reportsFailureAndDeletesTheCacheFile() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 갤러리 저장이 실패하고, 미리보기가 만들어 온 캐시 파일이 있다
         coEvery { saveCanvasVideoToGallery(any(), any()) } returns Result.failure(RuntimeException("저장 실패"))
+        val videoFile = File.createTempFile("canvas_video", ".mp4").apply { deleteOnExit() }
         val viewModel = enteredViewModel()
 
         viewModel.effect.test {
-            // When 미리보기가 만들어 온 파일을 넘긴다
-            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = "/cache/a.mp4"))
+            // When 그 파일을 넘긴다
+            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = videoFile.absolutePath))
             advanceUntilIdle()
 
-            // Then 이미지 저장과 같은 실패로 알린다
+            // Then 이미지 저장과 같은 실패로 알리고, 다시 쓸 길이 없는 캐시 파일을 지운다
             assertEquals(
                 CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
                 awaitItem(),
             )
+            assertFalse(videoFile.exists())
         }
     }
 

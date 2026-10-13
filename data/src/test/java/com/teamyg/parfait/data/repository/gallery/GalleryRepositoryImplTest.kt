@@ -8,7 +8,6 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
@@ -49,7 +48,6 @@ class GalleryRepositoryImplTest {
         assertTrue(result.isSuccess)
         assertTrue(output.toByteArray().contentEquals(byteArrayOf(7, 8, 9)))
         verify(exactly = 1) { galleryMediaProvider.finalizePendingMedia(uri) }
-        assertFalse(file.exists())
     }
 
     @Test
@@ -64,9 +62,8 @@ class GalleryRepositoryImplTest {
             displayName = "parfait_1.mp4",
         )
 
-        // Then 지울 등록이 없으므로 삭제를 부르지 않는다. 캐시 파일은 실패해도 지운다
+        // Then 지울 등록이 없으므로 삭제를 부르지 않는다
         assertTrue(result.isFailure)
-        assertFalse(file.exists())
         verify(exactly = 0) { galleryMediaProvider.deletePendingMedia(any()) }
     }
 

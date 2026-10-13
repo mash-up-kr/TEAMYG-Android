@@ -184,9 +184,6 @@ constructor(
                 galleryMediaProvider.deletePendingMedia(uri)
                 throw throwable
             }
-        }.also {
-            // 다시 시도할 길이 없는 캐시 파일이라 결과와 상관없이 지운다
-            File(videoFilePath).delete()
         }
     }
 }
