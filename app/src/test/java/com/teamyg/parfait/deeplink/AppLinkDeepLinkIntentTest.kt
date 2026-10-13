@@ -29,6 +29,15 @@ class AppLinkDeepLinkIntentTest {
     }
 
     @Test
+    fun toAppLinkDeepLinkOrNull_malformedInviteCode_returnsNull() {
+        // Given, When 초대코드 규칙(6자 영숫자)에 맞지 않는 inviteCode
+        val result = appLinkIntent(inviteCode = "abc").toAppLinkDeepLinkOrNull()
+
+        // Then 잘못된 코드로 초대코드 화면을 열지 않는다
+        assertNull(result)
+    }
+
+    @Test
     fun toAppLinkDeepLinkOrNull_notViewAction_returnsNull() {
         // Given, When VIEW 가 아닌 액션(예: MAIN, 평범한 콜드 스타트)
         val intent = mockk<Intent> {
