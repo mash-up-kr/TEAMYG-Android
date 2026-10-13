@@ -21,20 +21,30 @@ constructor(
         // endConnection 을 두 경로(정상 응답, 코루틴 취소) 모두에서 호출해야 서비스 바인딩이 샌다.
         continuation.invokeOnCancellation { client.endConnection() }
 
-        client.startConnection(
-            object : InstallReferrerStateListener {
-                override fun onInstallReferrerSetupFinished(responseCode: Int) {
-                    val lookup = lookupFor(client, responseCode)
+        fun finish(lookup: ReferrerLookup) {
+            client.endConnection()
+            if (continuation.isActive) continuation.resume(lookup)
+        }
 
-                    client.endConnection()
-                    if (continuation.isActive) continuation.resume(lookup)
-                }
+        // 일부 기기는 startConnection 자체가 SecurityException 등을 던진다.
+        runCatching {
+            client.startConnection(
+                object : InstallReferrerStateListener {
+                    override fun onInstallReferrerSetupFinished(responseCode: Int) {
+                        finish(lookupFor(client, responseCode))
+                    }
 
-                override fun onInstallReferrerServiceDisconnected() {
-                    // 여기선 재시도하지 않는다 — 다음 콜드 스타트에서 다시 시도된다.
-                }
-            },
-        )
+                    // 이 콜백으로 끝나면 setup 콜백은 오지 않아 resume 하지 않으면 영구 대기한다.
+                    override fun onInstallReferrerServiceDisconnected() {
+                        repositoryLogger.i { "[APP-LINK] Install Referrer 서비스 연결이 끊겼다" }
+                        finish(ReferrerLookup.TransientFailure)
+                    }
+                },
+            )
+        }.onFailure {
+            repositoryLogger.w(it) { "[APP-LINK] Install Referrer 연결을 시작하지 못했다" }
+            finish(ReferrerLookup.TransientFailure)
+        }
     }
 
     private fun lookupFor(
