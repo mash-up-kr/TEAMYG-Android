@@ -10,10 +10,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import java.io.OutputStream
 
-private const val IMAGE_MIME_TYPE = "image/png"
-private const val VIDEO_MIME_TYPE = "video/mp4"
-private const val SAVE_SUBDIRECTORY = "Parfait"
-
 class GalleryMediaProvider(
     private val context: Context,
 ) {
@@ -123,5 +119,11 @@ class GalleryMediaProvider(
     /** 바이트를 다 못 썼을 때 갤러리에 빈 파일이 남지 않게 등록을 되돌린다 */
     fun deleteImage(uri: Uri) {
         context.contentResolver?.delete(uri, null, null)
+    }
+
+    private companion object {
+        const val IMAGE_MIME_TYPE = "image/png"
+        const val VIDEO_MIME_TYPE = "video/mp4"
+        const val SAVE_SUBDIRECTORY = "Parfait"
     }
 }
