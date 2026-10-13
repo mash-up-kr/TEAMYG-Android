@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -8,7 +9,7 @@ class ToppingVideoTimelineTest {
     @Test
     fun canvasVideoFrameCount_always_isTwoSeconds() {
         // Then 30fps 로 2초
-        assertEquals(60, CANVAS_VIDEO_FRAME_COUNT)
+        assertEquals(60, VideoTimelineOptions.FRAME_COUNT)
     }
 
     @Test
@@ -49,7 +50,7 @@ class ToppingVideoTimelineTest {
     @Test
     fun toppingPopProgresses_lastFrame_showsEveryToppingSettled() {
         // When 토핑 60개의 마지막 프레임
-        val progresses = toppingPopProgresses(toppingCount = 60, frameIndex = CANVAS_VIDEO_FRAME_COUNT - 1)
+        val progresses = toppingPopProgresses(toppingCount = 60, frameIndex = VideoTimelineOptions.FRAME_COUNT - 1)
 
         // Then 전부 팝인이 끝나 있다 — 이미지 저장물과 같은 장면이어야 한다
         assertTrue(progresses.all { it == 1f })

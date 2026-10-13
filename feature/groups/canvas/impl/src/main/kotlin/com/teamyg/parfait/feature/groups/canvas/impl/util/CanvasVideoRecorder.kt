@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import com.teamyg.parfait.core.util.android.video.Mp4VideoEncoder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -39,7 +40,7 @@ internal suspend fun recordCanvasVideo(
         outputFile = output,
         width = CANVAS_VIDEO_WIDTH_PX,
         height = CANVAS_VIDEO_HEIGHT_PX,
-        framesPerSecond = CANVAS_VIDEO_FRAMES_PER_SECOND,
+        framesPerSecond = VideoTimelineOptions.FRAMES_PER_SECOND,
     ).use { encoder ->
         for (frameIndex in 0 until frameCount) {
             advanceFrame(frameIndex)
