@@ -61,7 +61,12 @@
                 <data
                     android:scheme="https"
                     android:host="parfait-app.store"
-                    android:pathPrefix="/link" />
+                    android:path="/link" />
+                <!-- 끝 슬래시(/link/?inviteCode=…)만 따로 받는다. 하위 경로(/link/ABC123)는 열지 않는다. -->
+                <data
+                    android:scheme="https"
+                    android:host="parfait-app.store"
+                    android:path="/link/" />
             </intent-filter>
         </activity>
 
