@@ -7692,7 +7692,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   ⑤ 토핑 0건에서 영상 버튼을 막는 것은 iOS와 다르다.
   ⑥ 저장 미리보기 Route의 녹화 흐름에 테스트가 없다.
 - **상태**: 미해결
-- **해소 메모**: ①~③은 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③이 거슬리면 `CanvasTopping`의 `graphicsLayer` 합성 방식을 본다. ④⑤는 기획·디자인 확정을 받아 `ToppingVideoTimeline.kt`와 `CanvasImageSaveScreen`에 반영한다.
+- **해소 메모**: ①~③은 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③이 거슬리면 `CanvasTopping`의 `graphicsLayer` 합성 방식을 본다. ④⑤는 기획·디자인 확정을 받아 `VideoTimelineOptions`와 `CanvasImageSaveScreen`에 반영한다.
 
 ### [2026-09-27] 녹화 밀도에서 토핑 테두리 판 캐시가 미스된다
 

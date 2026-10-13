@@ -25,8 +25,8 @@ import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoRecordLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.model.VideoTimelineOptions
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasImageSaveScreen
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_FRAME_COUNT
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_WIDTH_PX
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
@@ -92,7 +92,7 @@ internal fun CanvasImageSaveRoute(
             } else {
                 recordCanvasVideo(
                     context = context,
-                    frameCount = CANVAS_VIDEO_FRAME_COUNT,
+                    frameCount = VideoTimelineOptions.FRAME_COUNT,
                     captureLayer = recordLayer,
                 ) { frameIndex ->
                     recordPopProgresses = toppingPopProgresses(
