@@ -61,6 +61,7 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 | name | parameters | 시점 |
 |------|------------|------|
 | `app_push_opened` | `type`: `"TOPPING"` / `"REMIND_AM"` / `"REMIND_PM"` | 푸시 알림으로 앱 진입 |
+| `app_link_opened` | `destination`: 도착 화면 ID (`"A-004"` 초대코드 입력) | 외부 링크(App Links, 설치 후 Install Referrer 복원)로 앱 진입 |
 | `app_account_nickname_changed` | — | 계정정보에서 닉네임 변경 완료 |
 
 ### canvas

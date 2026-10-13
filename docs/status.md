@@ -141,6 +141,13 @@
 - ⚠️ `getToken`·`onNewToken`은 deprecated지만 FID 전환은 서버가 Admin SDK를 올려 `setFid`로 바꾼 뒤에만 할 수 있다. 앱이 매니페스트 플래그를 먼저 켜면 모든 발송이 실패한다 (OQ-P-362)
 - 설계: [push-notification-permission-and-device-token](superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [ADR-0013](adr/0013-firebase-fcm-crashlytics.md), [navigation-flow](architecture/navigation-flow.md)
 
+## App Links — 초대 링크
+- 상태: `https://parfait-app.store/link?inviteCode={code}`만 앱으로 열리고(`autoVerify`), `MainRoute`가 `awaitAppLinkReady`로 스플래시 이탈과 `NavKeyGroupList` 안착(세션이 없을 때)을 기다린 뒤 초대코드 입력 화면에 코드를 채워 보낸다. 앱 미설치 유저는 Play Install Referrer를 첫 실행에 한 번만 읽어 같은 화면으로 보낸다. 초대 메시지 복사본에도 같은 링크가 들어간다. iOS는 미구현이다.
+- 앵커: `AppLinkDeepLink`, `toAppLinkDeepLinkOrNull`, `awaitAppLinkReady`, `AppLinkDeepLinkEventBusImpl`, `AppLinkReferrerRepositoryImpl`, `PlayInstallReferrerGateway`, `group_invite_message`
+- ⚠️ 서버가 `/.well-known/assetlinks.json`을 배포하기 전에는 검증이 붙지 않아 시스템이 앱·브라우저 선택지를 띄운다. 웹 폴백이 스토어 링크에 `referrer`를 싣는지, `destination` 값이 앱과 같은지 확인 전이다 (OQ-P-433)
+- ⚠️ 링크 호스트·경로가 매니페스트·파서 상수·`strings.xml` 세 곳에 따로 적혀 있다 (OQ-P-434)
+- 설계: [navigation-flow 「App Links 이동」](architecture/navigation-flow.md#app-links-이동-초대-링크)
+
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.
 - 앵커: `TokenAuthenticator`, `WithdrawUseCase`, `YGFontFamily`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/AndroidConfig.kt`, `.github/workflows/test.yml`, `app/src/main/AndroidManifest.xml`
