@@ -10,5 +10,4 @@ android {
 dependencies {
     implementation(projects.feature.groups.setting.api)
     implementation(projects.feature.groups.list.api)
-    implementation(projects.core.analytics)
 }

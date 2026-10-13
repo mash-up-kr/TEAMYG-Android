@@ -13,5 +13,4 @@ dependencies {
     implementation(projects.feature.groups.canvas.api)
     implementation(projects.core.util.android)
     implementation(projects.core.util.jvm)
-    implementation(projects.core.analytics)
 }

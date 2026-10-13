@@ -15,5 +15,4 @@ dependencies {
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.groups.setting.api)
     implementation(projects.core.util.android)
-    implementation(projects.core.analytics)
 }
