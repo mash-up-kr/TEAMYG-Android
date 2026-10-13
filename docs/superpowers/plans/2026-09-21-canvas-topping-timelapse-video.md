@@ -16,21 +16,30 @@ Hilt, mockk, Turbine, AndroidJUnit4
 
 ## 진행 상태
 
-**Task 1~4 완료, Task 5~8 미착수.** 화면 아래 조각(타임라인·인코더·갤러리 영상 저장)만 들어왔고
-화면 결선은 아직 없다(OQ-P-429). Task 5~8을 구현한 사본은 로컬 브랜치
-`feature/video-4-topping-layer-reveal`·`feature/video-5-wiring`에 있다(develop 미머지).
+**Task 1~8 구현 완료. 실기기에서 영상을 뽑아 본 적은 없다**(OQ-P-429).
 
-as-built 이탈 — 아래 Task 본문의 코드 블록은 계획 당시 그대로이고, 현재 코드와 다음이 다르다.
+as-built 이탈 — 아래 Task 본문과 Global Constraints의 수치·코드 블록은 계획 당시 그대로이고,
+현재 코드와 다음이 다르다. 현재 사양은 [스펙](../specs/2026-09-21-canvas-topping-timelapse-video.md)이 정본이다.
 
-- **Task 1**: 타임라인 수치 상수는 `util/ToppingVideoTimeline.kt` 최상위가 아니라
-  `model/VideoTimelineOptions` object에 있다. `CANVAS_VIDEO_FRAMES_PER_SECOND`는
-  `VideoTimelineOptions.FRAMES_PER_SECOND`로 바뀌었고, `ToppingVideoFrame`은 `model/`로 옮겨졌다.
-  `POP_OVERSHOOT`는 `0.08f`가 아니라 easeOutBack 계수 `1.5f`다 — 정점이 스펙의 1.08이 되는 값이다.
+- **타임라인(Task 1)**: 도입 15 + 토핑당 12 + 마무리 30 프레임이 아니라 **2초 고정 60프레임**이다.
+  토핑 시작 시각을 1.5초에 고르게 나누고 팝인은 0.25초라 토핑끼리 겹칠 수 있다. 그래서
+  `toppingVideoFrames`·`ToppingVideoFrame`(`visibleCount`·`popProgress`)이 없고
+  `toppingPopProgresses(toppingCount, frameIndex)`가 토핑별 진행도 목록을 낸다. 배율은
+  0.6에서 시작하고 easeOutBack 계수는 1.70158, 알파는 선형이다. 수치는 iOS 저장본과 같다.
+- **해상도**: 720 × 1280이 아니라 **1080 × 1920**이다.
 - **Task 2**: `BitmapSurfaceWriter.draw`가 `Config.HARDWARE` 비트맵을 `ARGB_8888`로 복사해
   업로드한다. 계획에 없던 변경이고 없으면 API 28 이상에서 녹화가 항상 실패한다(스펙 「주의」).
-- **Task 3**: `Mp4VideoEncoder`가 전용 단일 스레드를 소유하고 EOS 대기에 상한을 둔다. 상수는
-  파일 최상위가 아니라 `private companion object`에 있다.
-- **Task 2·3·4**: 주석은 [`code-conventions.md`](../../code-conventions.md)에 맞춰 줄였다.
+- **Task 3**: `Mp4VideoEncoder`가 전용 단일 스레드를 소유하고 EOS 대기에 상한을 둔다.
+- **결과 타입(Task 5)**: `CanvasSaveResult.Video`는 `data object`가 아니라 `videoPath`를 싣고,
+  `VideoFailed`가 더 있다.
+- **버튼·토스트(Task 6·7)**: 버튼 문구는 「영상으로 저장」이고 결과 토스트는 이미지 저장과 같은
+  문구다. `ShowGallerySaveResult`에 `isVideo`가 없고 영상 전용 문자열도 없다.
+- **녹화 위치(Task 7·8)**: 캔버스 메인이 아니라 **저장 미리보기 Route**가 녹화한다.
+  `CanvasMainUiState.isRecordingVideo`·`StartCanvasVideoRecording`·`OnClickSaveVideoToGallery`·
+  `CanvasVideoRecordFailed`·`YGLoadingOverlay`가 없다. 캔버스 메인은 미리보기를 열 때
+  `CanvasVideoSourceHolder`에 재료를 넣고, 돌아온 `CanvasSaveResult.Video`를 `SaveRecordedVideo`로
+  갤러리에 넣기만 한다. `CanvasToppingLayer`의 녹화 인자는 `visibleToppingCount`·
+  `lastToppingPopProgress`가 아니라 `toppingPopProgresses` 하나다.
 
 ## Global Constraints
 
