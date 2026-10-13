@@ -6,7 +6,7 @@ date: 2026-07-18
 deciders: Parfait 팀
 supersedes:
 superseded_by:
-related_adr: ADR-0014, ADR-0021
+related_adr: ADR-0014, ADR-0021, ADR-0031
 related_spec:
 related_architecture:
 platforms: android
@@ -126,6 +126,13 @@ tags: [adr, parfait]
 **긍정**
 - 푸시·크래시·기초 지표를 단일 콘솔에서 운영. BoM으로 버전 정합 자동.
 - Firebase 의존이 `app` 모듈에만 있어 `core/data/domain`은 SDK에 비노출(경계 유지).
+
+> **Analytics 만 이 경계 밖으로 나갔다(2026-10-12)** — `FirebaseAnalyticsLogger`와 그 Hilt
+> 바인딩(`AnalyticsModule`)을 새 모듈 `core:analytics`(`com.google.gms.google-services` 플러그인
+> 없이 `firebase-analytics` AAR만 의존)로 옮겼다. 플러그인이 `google-services.json`을 처리하는
+> `:app`과, SDK를 호출하는 코드가 반드시 같은 모듈일 필요는 없어서 가능했다. Crashlytics·FCM은
+> 그대로 `:app`에 남아 있다 — 묶어서 다시 본 적은 없고, 지금은 액션 이벤트 계측
+> ([[0031-analytics-central-screen-mapping]])이 그 계기였던 Analytics만 옮긴 비대칭 상태다.
 
 **트레이드오프**
 - **GMS(Play services) 의존** — GMS 없는 기기에서 푸시·일부 기능 제약(세그멘테이션과 동일 제약).

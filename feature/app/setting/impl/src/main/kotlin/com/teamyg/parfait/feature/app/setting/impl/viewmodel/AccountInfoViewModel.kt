@@ -5,6 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -71,6 +74,7 @@ constructor(
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val checkNameValid: CheckNameValidUseCase,
     private val changeGlobalNickname: ChangeGlobalNicknameUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<AccountInfoUiState, AccountInfoIntent, AccountInfoSideEffect>(
     initialState = AccountInfoUiState(),
 ) {
@@ -165,7 +169,14 @@ constructor(
             try {
                 // 성공해도 여기서 `nickname` 을 쓰지 않는다 — 새 값은 위 구독이 SSoT 로부터
                 // 되돌려준다. 직접 쓰면 SSoT 저장이 실패해도 화면만 낙관적으로 바뀐 상태가 된다.
-                changeGlobalNickname(GlobalNickname(nickname)).onFailure(::handleFailure)
+                changeGlobalNickname(GlobalNickname(nickname))
+                    .onSuccess {
+                        analyticsLogger.logEvent(
+                            AnalyticsEvent(
+                                type = AnalyticsEventType.APP_ACCOUNT_NICKNAME_CHANGED,
+                            ),
+                        )
+                    }.onFailure(::handleFailure)
             } finally {
                 // `finally` 는 예외·취소 어느 경로로 빠져나가도 돈다 — 버튼이
                 // 영구 비활성으로 남는 것을 여기서 막는다

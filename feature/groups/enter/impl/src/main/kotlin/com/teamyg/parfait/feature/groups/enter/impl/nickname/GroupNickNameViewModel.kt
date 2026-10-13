@@ -5,6 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -58,6 +61,7 @@ constructor(
     private val checkNickNameValid: CheckNameValidUseCase,
     private val joinGroup: JoinGroupUseCase,
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(groupName = groupName, nickName = nickName),
 ) {
@@ -103,6 +107,11 @@ constructor(
                     handleJoinFailure(throwable)
                     return@launch
                 }
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        type = AnalyticsEventType.GROUP_LIST_JOINED,
+                    ),
+                )
 
                 changeGroupNickname(groupId = joined.groupId, groupNickname = GroupNickname(state.value.nickName))
                     .onFailure { throwable ->

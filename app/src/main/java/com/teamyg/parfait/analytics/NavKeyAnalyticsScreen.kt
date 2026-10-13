@@ -1,6 +1,8 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.analytics.AnalyticsScreen
+import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
@@ -33,63 +35,79 @@ import com.teamyg.parfait.feature.segmentation.api.NavKeyToppingEdit
  * [ScreenViewTracker] 에 있다.
  */
 fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
-    is NavKeySplash -> AnalyticsScreen("A-001", "NavKeySplash")
+    is NavKeySplash -> AnalyticsScreen(AnalyticsScreenType.SPLASH)
 
-    is NavKeyLogin -> AnalyticsScreen("A-002", "NavKeyLogin")
+    is NavKeyLogin -> AnalyticsScreen(AnalyticsScreenType.LOGIN)
 
-    is NavKeyTermAgree -> AnalyticsScreen("A-003", "NavKeyTermAgree")
+    is NavKeyTermAgree -> AnalyticsScreen(AnalyticsScreenType.TERM_AGREE)
 
-    is NavKeyGroupInviteCode -> AnalyticsScreen("A-004", "NavKeyGroupInviteCode")
+    is NavKeyGroupInviteCode -> AnalyticsScreen(AnalyticsScreenType.GROUP_INVITE_CODE)
 
-    is NavKeyGroupNickName -> AnalyticsScreen("A-004-naming", "NavKeyGroupNickName")
+    is NavKeyGroupNickName -> AnalyticsScreen(AnalyticsScreenType.GROUP_NICK_NAME)
 
-    is NavKeyGroupCreate -> AnalyticsScreen("A-005", "NavKeyGroupCreate")
+    is NavKeyGroupCreate -> AnalyticsScreen(AnalyticsScreenType.GROUP_CREATE)
 
-    is NavKeyGroupList -> AnalyticsScreen("G-001", "NavKeyGroupList")
+    is NavKeyGroupList -> AnalyticsScreen(AnalyticsScreenType.GROUP_LIST)
 
-    is NavKeyCanvasMain -> AnalyticsScreen("C-001", "NavKeyCanvasMain")
+    is NavKeyCanvasMain -> AnalyticsScreen(AnalyticsScreenType.CANVAS_MAIN)
 
     is NavKeyCameraCustom -> AnalyticsScreen(
-        screenId = if (returnResultOnly) "C-302" else "C-101",
-        screenClass = "NavKeyCameraCustom",
+        if (returnResultOnly) {
+            AnalyticsScreenType.CAMERA_CUSTOM_RETURN_RESULT
+        } else {
+            AnalyticsScreenType.CAMERA_CUSTOM
+        },
     )
 
-    is NavKeyCameraSystem -> AnalyticsScreen("C-101-system", "NavKeyCameraSystem")
+    is NavKeyCameraSystem -> AnalyticsScreen(AnalyticsScreenType.CAMERA_SYSTEM)
 
     is NavKeyPictureConfirm -> AnalyticsScreen(
-        screenId = when (source) {
-            PictureConfirmSource.CAMERA -> if (returnResultOnly) "C-302-confirm" else "C-101-confirm"
-            PictureConfirmSource.GALLERY -> if (returnResultOnly) "C-303-confirm" else "C-102-confirm"
+        when (source) {
+            PictureConfirmSource.CAMERA ->
+                if (returnResultOnly) {
+                    AnalyticsScreenType.PICTURE_CONFIRM_CAMERA_RETURN_RESULT
+                } else {
+                    AnalyticsScreenType.PICTURE_CONFIRM_CAMERA
+                }
+
+            PictureConfirmSource.GALLERY ->
+                if (returnResultOnly) {
+                    AnalyticsScreenType.PICTURE_CONFIRM_GALLERY_RETURN_RESULT
+                } else {
+                    AnalyticsScreenType.PICTURE_CONFIRM_GALLERY
+                }
         },
-        screenClass = "NavKeyPictureConfirm",
     )
 
     is NavKeyCustomGalleryPicker -> AnalyticsScreen(
-        screenId = if (returnResultOnly) "C-303" else "C-102",
-        screenClass = "NavKeyCustomGalleryPicker",
+        if (returnResultOnly) {
+            AnalyticsScreenType.GALLERY_CUSTOM_RETURN_RESULT
+        } else {
+            AnalyticsScreenType.GALLERY_CUSTOM
+        },
     )
 
-    is NavKeySystemGalleryPicker -> AnalyticsScreen("C-102-system", "NavKeySystemGalleryPicker")
+    is NavKeySystemGalleryPicker -> AnalyticsScreen(AnalyticsScreenType.GALLERY_SYSTEM)
 
-    is NavKeySegmentation -> AnalyticsScreen("C-103", "NavKeySegmentation")
+    is NavKeySegmentation -> AnalyticsScreen(AnalyticsScreenType.SEGMENTATION)
 
-    is NavKeyToppingEdit -> AnalyticsScreen("C-104", "NavKeyToppingEdit")
+    is NavKeyToppingEdit -> AnalyticsScreen(AnalyticsScreenType.TOPPING_EDIT)
 
-    is NavKeyCanvasToppingPlace -> AnalyticsScreen("C-106", "NavKeyCanvasToppingPlace")
+    is NavKeyCanvasToppingPlace -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TOPPING_PLACE)
 
-    is NavKeyCanvasBGEdit -> AnalyticsScreen("C-301", "NavKeyCanvasBGEdit")
+    is NavKeyCanvasBGEdit -> AnalyticsScreen(AnalyticsScreenType.CANVAS_BG_EDIT)
 
-    is NavKeyCanvasToppingArrange -> AnalyticsScreen("C-305", "NavKeyCanvasToppingArrange")
+    is NavKeyCanvasToppingArrange -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TOPPING_ARRANGE)
 
-    is NavKeyCanvasImageSave -> AnalyticsScreen("C-001-image-save", "NavKeyCanvasImageSave")
+    is NavKeyCanvasImageSave -> AnalyticsScreen(AnalyticsScreenType.CANVAS_IMAGE_SAVE)
 
-    is NavKeyAppSetting -> AnalyticsScreen("S-001", "NavKeyAppSetting")
+    is NavKeyAppSetting -> AnalyticsScreen(AnalyticsScreenType.APP_SETTING)
 
-    is NavKeyAccountInfo -> AnalyticsScreen("S-002", "NavKeyAccountInfo")
+    is NavKeyAccountInfo -> AnalyticsScreen(AnalyticsScreenType.ACCOUNT_INFO)
 
-    is NavKeyGroupSetting -> AnalyticsScreen("S-101", "NavKeyGroupSetting")
+    is NavKeyGroupSetting -> AnalyticsScreen(AnalyticsScreenType.GROUP_SETTING)
 
-    is NavKeyWebView -> AnalyticsScreen("S-004", "NavKeyWebView")
+    is NavKeyWebView -> AnalyticsScreen(AnalyticsScreenType.WEB_VIEW)
 
     else -> null
 }

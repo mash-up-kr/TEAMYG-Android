@@ -8,6 +8,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -138,6 +141,7 @@ constructor(
     private val deleteToppingUseCase: DeleteToppingUseCase,
     private val updateToppingsUseCase: UpdateToppingsUseCase,
     private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasToppingArrangeUiState, CanvasToppingArrangeIntent, CanvasToppingArrangeEffect>(
     initialState = CanvasToppingArrangeUiState(),
 ) {
@@ -245,9 +249,7 @@ constructor(
 
             CanvasToppingArrangeIntent.OnClickEmptyCanvas -> handleOnClickEmptyCanvas()
 
-            CanvasToppingArrangeIntent.OnToggleBorderPanel -> updateState {
-                if (focusedToppingId == null) this else copy(isBorderPanelOpen = !isBorderPanelOpen)
-            }
+            CanvasToppingArrangeIntent.OnToggleBorderPanel -> handleOnToggleBorderPanel()
 
             CanvasToppingArrangeIntent.OnDismissBorderPanel -> updateState { copy(isBorderPanelOpen = false) }
 
@@ -315,6 +317,21 @@ constructor(
         }
     }
 
+    /** 닫혀 있다가 열릴 때만 "탭"으로 센다 — 토글이라 닫는 쪽까지 세면 과다 집계된다 */
+    private fun handleOnToggleBorderPanel() {
+        val isOpening = state.value.focusedToppingId != null && !state.value.isBorderPanelOpen
+        updateState {
+            if (focusedToppingId == null) this else copy(isBorderPanelOpen = !isBorderPanelOpen)
+        }
+        if (isOpening) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.CANVAS_EDIT_BORDER_TAPPED,
+                ),
+            )
+        }
+    }
+
     private fun handleOnSystemBack() {
         val current = state.value
 
@@ -332,8 +349,19 @@ constructor(
         if (current.hasUnsavedChanges) {
             updateState { copy(showQuitDialog = true) }
         } else {
+            // 바꾼 게 없어 그만두기 팝업 없이 바로 나가는 경로 — X로 나간 걸로 센다
+            logClosed(action = "close")
             postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
         }
+    }
+
+    private fun logClosed(action: String) {
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_TOPPING_CLOSED_UNCHANGED,
+                params = mapOf("action" to action),
+            ),
+        )
     }
 
     private fun handleOnSelectBorderColor(intent: CanvasToppingArrangeIntent.OnSelectBorderColor) {
@@ -422,6 +450,8 @@ constructor(
      * 값을 그린 채로 서 있다가 다음 조회에서 슬그머니 되돌아간다.
      */
     private fun handleOnClickConfirm() {
+        val hadNoChanges = !state.value.hasUnsavedChanges
+
         launch(key = CONFIRM_KEY, onError = ::failToSaveUnexpectedly) {
             updateState { copy(isLoading = true) }
 
@@ -446,6 +476,7 @@ constructor(
             refreshTodayCanvas()
 
             updateState { copy(isLoading = false) }
+            if (hadNoChanges) logClosed(action = "done")
             postSideEffect(effect = CanvasToppingArrangeEffect.NavigateBack)
         }
     }

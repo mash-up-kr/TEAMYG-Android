@@ -35,6 +35,7 @@ include(
     ":app-preview",
 )
 include(
+    ":core:analytics",
     ":core:designsystem",
     ":core:ui",
     ":core:util:android",

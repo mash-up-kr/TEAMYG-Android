@@ -1,4 +1,4 @@
-package com.teamyg.parfait.analytics
+package com.teamyg.parfait.core.analytics
 
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -24,9 +24,21 @@ class FirebaseAnalyticsLogger @Inject constructor(
     // 보낸 값은 버려질 수 있다.
     override fun logScreenView(screen: AnalyticsScreen) {
         val params = Bundle().apply {
-            putString(FirebaseAnalytics.Param.SCREEN_NAME, screen.screenId)
-            putString(FirebaseAnalytics.Param.SCREEN_CLASS, screen.screenClass)
+            putString(FirebaseAnalytics.Param.SCREEN_NAME, screen.type.screenId)
+            putString(FirebaseAnalytics.Param.SCREEN_CLASS, screen.type.screenClass)
         }
         firebaseAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, params)
+    }
+
+    override fun logEvent(event: AnalyticsEvent) {
+        val params = Bundle().apply {
+            putString(Param.EVENT_ID, event.type.eventId)
+            event.params.forEach { (key, value) -> putString(key, value) }
+        }
+        firebaseAnalytics.logEvent(event.type.eventName, params)
+    }
+
+    private object Param {
+        const val EVENT_ID = "event_id"
     }
 }

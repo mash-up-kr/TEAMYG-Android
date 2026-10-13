@@ -6,6 +6,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -125,6 +128,7 @@ constructor(
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
     private val leaveGroup: LeaveGroupUseCase,
     private val reportGroup: ReportGroupUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupSettingUiState, GroupSettingIntent, GroupSettingSideEffect>(
     initialState = GroupSettingUiState(),
 ) {
@@ -255,8 +259,15 @@ constructor(
             updateState { copy(isSubmittingNickname = true) }
             try {
                 changeGroupNickname(groupId = groupId, groupNickname = nickname)
-                    .onSuccess { updateState { copy(isEditing = false, nicknameError = null) } }
-                    .onFailure { throwable ->
+                    .onSuccess {
+                        updateState { copy(isEditing = false, nicknameError = null) }
+                        // "얼마나 변경했는지"는 파라미터가 아니라 사용자별 이벤트 발생 횟수로 집계한다
+                        analyticsLogger.logEvent(
+                            AnalyticsEvent(
+                                type = AnalyticsEventType.GROUP_MENU_NICKNAME_CHANGED,
+                            ),
+                        )
+                    }.onFailure { throwable ->
                         viewModelLogger.e(throwable) { "그룹 닉네임을 바꾸지 못했다 - groupId: ${groupId.value}" }
                         postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                     }
@@ -281,6 +292,11 @@ constructor(
 
     private fun handleClickCopyInviteCode() {
         updateState { copy(isCodeCopied = true) }
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
+            ),
+        )
         postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
 
         copyResetJob?.cancel()
@@ -301,7 +317,17 @@ constructor(
     private fun handleConfirmLeaveGroup() {
         if (state.value.visibleDialog != GroupSettingDialog.Leave) return
 
-        submitDialogAction(key = KEY_LEAVE_GROUP, action = LEAVE_ACTION) {
+        submitDialogAction(
+            key = KEY_LEAVE_GROUP,
+            action = LEAVE_ACTION,
+            onSuccess = {
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        type = AnalyticsEventType.GROUP_MENU_LEFT,
+                    ),
+                )
+            },
+        ) {
             leaveGroup(groupId)
         }
     }
@@ -328,6 +354,7 @@ constructor(
     private fun submitDialogAction(
         key: String,
         action: String,
+        onSuccess: () -> Unit = {},
         request: suspend () -> Result<*>,
     ) {
         updateState { copy(visibleDialog = null, isSubmittingDialogAction = true) }
@@ -335,8 +362,10 @@ constructor(
         launch(key = key, onError = { onDialogActionFailed(it, action) }) {
             try {
                 request()
-                    .onSuccess { postSideEffect(GroupSettingSideEffect.NavigateToGroupList) }
-                    .onFailure { onDialogActionFailed(it, action) }
+                    .onSuccess {
+                        onSuccess()
+                        postSideEffect(GroupSettingSideEffect.NavigateToGroupList)
+                    }.onFailure { onDialogActionFailed(it, action) }
             } finally {
                 // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isSubmittingDialogAction = false) }
