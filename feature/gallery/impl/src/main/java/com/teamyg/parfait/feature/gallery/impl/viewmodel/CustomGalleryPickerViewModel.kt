@@ -8,6 +8,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.GalleryImageGroup
@@ -78,6 +81,7 @@ class CustomGalleryPickerViewModel
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
     private val loadGalleryImageGroupsUseCase: LoadGalleryImageGroupsUseCase,
     private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
@@ -164,11 +168,13 @@ class CustomGalleryPickerViewModel
     }
 
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
+        logPhotoSelected(source = PhotoSelectSource.TODAY)
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
     // 배치 화면은 초안을 읽기만 하므로 들어가기 전에 이 알맹이를 가리키게 맞춘다
     private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
+        logPhotoSelected(source = PhotoSelectSource.RECENT)
         launch(
             key = ENSURE_CUTOUT_DRAFT_KEY,
             onError = { postSideEffect(CustomGalleryPickerEffect.ShowDraftUnavailable) },
@@ -183,6 +189,20 @@ class CustomGalleryPickerViewModel
                 },
             )
         }
+    }
+
+    private fun logPhotoSelected(source: PhotoSelectSource) {
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_CAMERA_PHOTO_SELECTED,
+                params = mapOf("source" to source.analyticsValue),
+            ),
+        )
+    }
+
+    private enum class PhotoSelectSource(val analyticsValue: String) {
+        TODAY("today"),
+        RECENT("recent"),
     }
 
     private fun handleOnCancel() {

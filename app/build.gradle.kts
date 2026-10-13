@@ -91,6 +91,7 @@ dependencies {
 
     implementation(projects.domain)
     implementation(projects.data)
+    implementation(projects.core.analytics)
     implementation(projects.core.ui)
     implementation(projects.core.util.android)
     implementation(projects.core.util.jvm)
@@ -111,7 +112,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
 
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.messaging)
     // AAR 로 들어오는 CameraX·DataStore 네이티브 라이브러리가 시그널로 죽으면 JVM 예외가 남지

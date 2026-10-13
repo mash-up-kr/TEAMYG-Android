@@ -5,6 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -67,6 +70,7 @@ constructor(
     @Assisted nickName: String,
     private val checkNameValid: CheckNameValidUseCase,
     private val createGroup: CreateGroupUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupCreateUiState, GroupCreateIntent, GroupCreateSideEffect>(
     initialState = GroupCreateUiState(nickName = nickName),
 ) {
@@ -145,6 +149,11 @@ constructor(
 
     private fun onGroupCreated(createdGroup: CreatedGroupVO) {
         viewModelLogger.i { "그룹 생성 성공 — groupId=${createdGroup.groupId.value}" }
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.GROUP_LIST_CREATED,
+            ),
+        )
         postSideEffect(
             GroupCreateSideEffect.NavigateToNext(
                 groupId = createdGroup.groupId.value,

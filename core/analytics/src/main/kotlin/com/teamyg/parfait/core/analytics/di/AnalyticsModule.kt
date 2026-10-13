@@ -1,9 +1,9 @@
-package com.teamyg.parfait.analytics.di
+package com.teamyg.parfait.core.analytics.di
 
 import android.content.Context
 import com.google.firebase.analytics.FirebaseAnalytics
-import com.teamyg.parfait.analytics.AnalyticsLogger
-import com.teamyg.parfait.analytics.FirebaseAnalyticsLogger
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.analytics.FirebaseAnalyticsLogger
 import dagger.Binds
 import dagger.Module
 import dagger.Provides

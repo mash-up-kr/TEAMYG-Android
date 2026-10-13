@@ -56,7 +56,7 @@ class NavKeyAnalyticsScreenTest {
 
         // When, Then 각 키가 그 화면 ID 로 간다
         expected.forEach { (navKey, screenId) ->
-            assertEquals(screenId, navKey.toAnalyticsScreenOrNull()?.screenId, "$navKey")
+            assertEquals(screenId, navKey.toAnalyticsScreenOrNull()?.type?.screenId, "$navKey")
         }
     }
 
@@ -66,7 +66,7 @@ class NavKeyAnalyticsScreenTest {
         val screen = NavKeyCanvasMain(groupId = 1L).toAnalyticsScreenOrNull()
 
         // Then 클래스명은 리플렉션이 아니라 상수라 R8 난독화에도 살아남는다
-        assertEquals("NavKeyCanvasMain", screen?.screenClass)
+        assertEquals("NavKeyCanvasMain", screen?.type?.screenClass)
     }
 
     @Test
@@ -76,8 +76,8 @@ class NavKeyAnalyticsScreenTest {
         val edit = NavKeyCameraCustom(returnResultOnly = true)
 
         // Then
-        assertEquals("C-101", topping.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-302", edit.toAnalyticsScreenOrNull()?.screenId)
+        assertEquals("C-101", topping.toAnalyticsScreenOrNull()?.type?.screenId)
+        assertEquals("C-302", edit.toAnalyticsScreenOrNull()?.type?.screenId)
     }
 
     @Test
@@ -93,8 +93,8 @@ class NavKeyAnalyticsScreenTest {
         )
 
         // Then
-        assertEquals("C-102", topping.toAnalyticsScreenOrNull()?.screenId)
-        assertEquals("C-303", edit.toAnalyticsScreenOrNull()?.screenId)
+        assertEquals("C-102", topping.toAnalyticsScreenOrNull()?.type?.screenId)
+        assertEquals("C-303", edit.toAnalyticsScreenOrNull()?.type?.screenId)
     }
 
     @Test
@@ -109,7 +109,7 @@ class NavKeyAnalyticsScreenTest {
 
         // Then
         expected.forEach { (navKey, screenId) ->
-            assertEquals(screenId, navKey.toAnalyticsScreenOrNull()?.screenId, "$navKey")
+            assertEquals(screenId, navKey.toAnalyticsScreenOrNull()?.type?.screenId, "$navKey")
         }
     }
 
@@ -117,7 +117,10 @@ class NavKeyAnalyticsScreenTest {
     fun toAnalyticsScreenOrNull_toppingEdit_isC104() {
         assertEquals(
             "C-104",
-            NavKeyToppingEdit(sourceImageUri = "src", segmentationImageUri = "seg").toAnalyticsScreenOrNull()?.screenId,
+            NavKeyToppingEdit(
+                sourceImageUri = "src",
+                segmentationImageUri = "seg",
+            ).toAnalyticsScreenOrNull()?.type?.screenId,
         )
     }
 
@@ -125,7 +128,7 @@ class NavKeyAnalyticsScreenTest {
     fun toAnalyticsScreenOrNull_canvasBGEdit_isC301() {
         assertEquals(
             "C-301",
-            NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L).toAnalyticsScreenOrNull()?.screenId,
+            NavKeyCanvasBGEdit(groupId = 1L, parfaitId = 2L).toAnalyticsScreenOrNull()?.type?.screenId,
         )
     }
 
@@ -135,6 +138,7 @@ class NavKeyAnalyticsScreenTest {
             "C-305",
             NavKeyCanvasToppingArrange(groupId = 1L, parfaitId = 2L, initialToppingId = 3L)
                 .toAnalyticsScreenOrNull()
+                ?.type
                 ?.screenId,
         )
     }

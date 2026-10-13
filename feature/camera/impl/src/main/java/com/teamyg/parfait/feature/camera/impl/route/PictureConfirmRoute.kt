@@ -44,7 +44,10 @@ internal fun PictureConfirmRoute(
         PictureConfirmScreen(
             uri = uri,
             source = source,
-            onClickReCapture = { navigator.onBack() },
+            onClickReCapture = {
+                viewModel.onClickRetake(source)
+                navigator.onBack()
+            },
             onClickConfirm = {
                 if (returnResultOnly) {
                     resultEventBus.sendResult(PictureConfirmResult(uri = uri, source = source))
