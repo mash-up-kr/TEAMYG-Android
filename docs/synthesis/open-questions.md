@@ -7702,4 +7702,20 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 보류 (실기기 관찰 후 처방)
 - **해소 메모**: 처방이 공용 캐시를 건드려야 하고 기기 없이 측정할 수 없다. OQ-P-429 ①과 함께 본다.
 
-<!-- oq-next: 435 -->
+### [2026-10-14] App Links — 서버·웹 연동이 앱 쪽 가정과 맞는지 확인되지 않았다
+
+- **ID**: OQ-P-435
+- **출처**: `feature/app-link-deeplink` — `AppLinkDeepLink`, `AppLinkReferrerRepositoryImpl`, `MainRoute`의 `app_link_opened`. 링크 양식(`{host}/link?inviteCode={code}`)은 확정됐다.
+- **항목**: 앱이 기대하지만 서버·웹 쪽에서 확인하지 못한 것 넷. ① 서버가 `/.well-known/assetlinks.json`을 배포하는가(없으면 `autoVerify`가 붙지 않는다). ② 웹 폴백 페이지가 Play 스토어 링크에 `referrer=inviteCode%3D…`를 싣는가(안 싣으면 설치 후 복원이 동작하지 않는다). ③ 웹 폴백이 같은 이벤트에 보내는 `destination` 값이 앱의 `A-004`와 같은가. ④ iOS Team ID·Bundle ID가 비어 있어 AASA `details`가 비었다.
+- **상태**: 미해결 (서버·웹·iOS 담당 확인 필요)
+- **해소 메모**: 확인되면 [navigation-flow](../architecture/navigation-flow.md) 「App Links 이동」과 [status](../status.md)의 ⚠️를 걷는다. ③이 다르면 `MainRoute`의 `destination`을 맞춘다.
+
+### [2026-10-14] App Links — 링크 호스트·경로가 세 곳에 따로 적혀 있다
+
+- **ID**: OQ-P-436
+- **출처**: `AndroidManifest.xml`(`host`·`pathPrefix`), `AppLinkDeepLinkIntent.kt`(`APP_LINK_PATH`), `core/ui` `strings.xml`(`group_invite_message`의 URL).
+- **항목**: 호스트 `parfait-app.store`와 경로 `/link`가 매니페스트(XML)·파서 상수·문자열 리소스에 같은 값으로 따로 있다. 한 곳만 바뀌면 복사한 링크가 앱으로 열리지 않거나 앱이 링크를 거절한다. 매니페스트와 리소스는 코드 상수를 참조할 수 없다(쿼리 키 `inviteCode`는 `AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY`로 한 곳이다).
+- **상태**: 미해결 (필요하면 `manifestPlaceholders`·`resValue`로 빌드 설정 한 곳에서 주입)
+- **해소 메모**: 호스트가 환경별로 갈라지거나 바뀔 일이 생기면 그때 한 곳으로 모은다. 그 전에는 값을 바꿀 때 세 곳을 함께 본다.
+
+<!-- oq-next: 437 -->
