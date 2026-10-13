@@ -18,6 +18,8 @@ related_code:
   - CanvasVideoSourceHolder.kt#CanvasVideoSourceHolder
   - ToppingVideoTimeline.kt#toppingPopProgresses
   - VideoTimelineOptions.kt#VideoTimelineOptions
+  - VideoRecordOptions.kt#VideoRecordOptions
+  - PendingGallerySave.kt#PendingGallerySave
   - YGCanvas.kt#CANVAS_AREA_ASPECT_RATIO
   - ToppingGeometry.kt#TOPPING_BASE_LONG_SIDE_RATIO
   - YGToppingCutoutImage.kt#YGToppingCutoutImage
@@ -29,7 +31,7 @@ related_code:
   - GalleryWritePermissionManager.kt#GalleryWritePermissionManager
 related_adr: ADR-0035
 related_spec:
-related_architecture: module-structure
+related_architecture: module-structure, navigation-flow, data-layer
 supersedes:
 superseded_by:
 tags: [spec, parfait, canvas, gallery, video]
@@ -128,8 +130,8 @@ iOS와 다르게 남겨 둔 것은 하나다. 토핑 0건에서 영상 버튼을
 | 오디오 | 없음 |
 | 파일명 | `parfait_<epochMillis>.mp4` |
 
-해상도는 캔버스 영역 비율(`CANVAS_AREA_ASPECT_RATIO` = 9/16)을 따른다. 짝수 치수라 H.264
-요구를 만족한다. 비트레이트와 키프레임 간격은 iOS가 값을 지정하지 않아(`AVAssetWriter` 기본값)
+폭은 `VideoRecordOptions.WIDTH_PX`이고 높이는 캔버스 영역 비율(`CANVAS_AREA_ASPECT_RATIO`)에서
+유도한다. 짝수 치수라 H.264 요구를 만족한다. 비트레이트와 키프레임 간격은 iOS가 값을 지정하지 않아(`AVAssetWriter` 기본값)
 맞출 대상이 없다.
 
 **인코더는 전용 단일 스레드를 소유한다.** EGL 컨텍스트가 생성 스레드에 묶이고 다른 스레드에서
@@ -210,21 +212,24 @@ sealed interface CanvasSaveResult {
 2. 미리보기에서 「영상으로 저장」을 누르면 Route가 `isRecordingVideo`를 세운다. 그 동안 두
    버튼이 비활성이고 닫기와 뒤로가기가 막히며, 녹화 레이어가 컴포지션에 들어간다.
 3. Route가 **배경과 토핑 이미지 전부의 로드 완료를 기다린다.** 녹화 레이어가 둘을 접어 보고하는
-   `onLoadStateChange` 하나만 본다. 첫 프레임을 이미지 없이 찍는 사고를 여기서 막는다.
+   `onLoadStateChange` 하나만 본다. 첫 프레임을 이미지 없이 찍는 사고를 여기서 막는다. 대기에는
+   상한(`VideoRecordOptions.SOURCE_LOAD_TIMEOUT_MILLIS`)이 있다 — 그 동안 닫기와 뒤로가기가 막혀
+   있어, 상한이 없으면 로드가 끝나지 않을 때 화면에 갇힌다.
 4. 60프레임을 돌아 캐시에 mp4를 완성하고 `CanvasSaveResult.Video`를 보낸 뒤 닫힌다. 재료가
    없거나 로드·녹화가 실패하면 `VideoFailed`를 보내고 닫힌다.
 5. 캔버스 메인의 `ResultEffect`가 `Video`를 권한 흐름에 태워 `CanvasMainIntent.SaveRecordedVideo`로
    넘기고, ViewModel이 `SaveCanvasVideoToGalleryUseCase`를 부른 뒤 `ShowGallerySaveResult`로 알린다.
    `VideoFailed`는 실패 토스트만 띄운다.
 
-미리보기에 ViewModel을 두지 않는다. 녹화는 컴포지션 캡처라 화면 계층 책임이고, 그 밖에 들 상태가
-`isRecordingVideo` 하나뿐이다.
+미리보기에 ViewModel을 두지 않는다. 녹화는 컴포지션 캡처라 화면 계층 책임이고, 드는 상태
+(녹화 중 여부·토핑별 진행도·로드 상태)가 전부 그 녹화에만 쓰인다.
 
 ### 갤러리 저장
 
 `GalleryMediaProvider.insertPendingVideo`의 MIME은 `video/mp4`, `RELATIVE_PATH`는 `Movies/Parfait`다.
 `IS_PENDING` 2단 커밋과 실패 시 등록 되돌리기는 이미지 경로와 같은 구조다. 영상은 이미 파일로
-존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사한다.
+존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사하고, **결과와 상관없이 그
+캐시 파일을 지운다.** 권한이 거부돼 저장에 이르지 못한 파일은 `CanvasMainRoute`가 지운다.
 
 ### 권한 흐름
 
@@ -252,10 +257,10 @@ sealed interface CanvasSaveResult {
 | 실패 지점 | 처리 |
 |-----------|------|
 | 홀더가 비어 있음(프로세스 재시작) · Canvas-Area 미측정 | 녹화 시작 안 함. `VideoFailed` |
-| 토핑·배경 이미지 로드 실패 | 녹화 시작 안 함. `VideoFailed` |
-| 프레임 캡처·인코딩 실패 | 캐시 mp4 삭제. `VideoFailed` |
-| 갤러리 등록 후 쓰기 실패 | `IS_PENDING` 되돌리기가 빈 항목 제거. 실패 토스트 |
-| 권한 거부 (API 28 이하) | 실패 토스트 |
+| 토핑·배경 이미지 로드 실패 · 로드 대기 상한 초과 | 녹화 시작 안 함. `VideoFailed` |
+| 프레임 캡처·인코딩 실패 · `muxer.stop()` 실패 | 캐시 mp4 삭제. 원인을 로그로 남기고 `VideoFailed` |
+| 갤러리 등록 후 쓰기 실패 | `IS_PENDING` 되돌리기가 빈 항목 제거. 캐시 mp4 삭제. 실패 토스트 |
+| 권한 거부 (API 28 이하) | 캐시 mp4 삭제. 실패 토스트 |
 
 화면을 떠나 녹화 코루틴이 취소된 것은 실패로 접지 않는다(`recordCanvasVideo`가
 `CancellationException`을 다시 던진다).
