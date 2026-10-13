@@ -11,7 +11,7 @@ related_code:
   - GalleryWritePermissionManager.kt#GalleryWritePermissionManager
   - GalleryMediaProvider.kt#insertPendingImage
   - GalleryMediaProvider.kt#openOutputStream
-  - GalleryMediaProvider.kt#finalizePendingImage
+  - GalleryMediaProvider.kt#finalizePendingMedia
   - GalleryMediaProvider.kt#deletePendingMedia
   - GalleryRepository.kt#saveImageToGallery
   - GalleryRepositoryImpl.kt#saveImageToGallery
@@ -134,7 +134,7 @@ ViewModel은 비트맵을 만들 수 없다(Compose `GraphicsLayer`는 컴포지
 ### 쓰다 만 파일을 갤러리에 보이지 않게 한다
 
 `GalleryMediaProvider`가 네 조각으로 갈렸다 — `insertPendingImage` · `openOutputStream` ·
-`finalizePendingImage` · `deletePendingMedia`. 순서는 **등록(`IS_PENDING = 1`) → 바이트 쓰기 → 표시로 내림**
+`finalizePendingMedia` · `deletePendingMedia`. 순서는 **등록(`IS_PENDING = 1`) → 바이트 쓰기 → 표시로 내림**
 이고, 어느 단계에서든 던지면 `deletePendingMedia`로 등록 자체를 되돌린다. 갤러리 앱이 반쯤 쓰인 파일을
 온전한 것처럼 보여 주지 않게 하려는 것이다.
 
