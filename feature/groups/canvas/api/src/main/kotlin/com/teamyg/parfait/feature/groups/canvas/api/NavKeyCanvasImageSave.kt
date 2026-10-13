@@ -25,21 +25,18 @@ data class NavKeyCanvasImageSave(
 /**
  * 미리보기에서 저장을 확정했다는 결과.
  *
- * 저장 자체를 여기서 하지 않는 이유: 결과 토스트가 뜨는 자리는 캔버스 메인이다. 미리보기가
+ * 갤러리에 넣는 일을 여기서 하지 않는 이유: 결과 토스트가 뜨는 자리는 캔버스 메인이다. 미리보기가
  * 저장까지 하고 나면 알림만 남기고 사라지는 화면이 되어, 실패했을 때 알릴 곳이 없다.
- *
- * 종류를 플래그가 아니라 sealed 로 가르는 이유: [Video] 는 [Image.imagePath] 를 쓰지 않는다.
- * 한 클래스에 두면 아무도 읽지 않는 값이 결과에 실린다.
  */
 sealed interface CanvasSaveResult {
     /** @param imagePath 저장할 이미지의 경로. 넘겨받은 [NavKeyCanvasImageSave.imagePath] 를 그대로 돌려준다 */
     data class Image(val imagePath: String) : CanvasSaveResult
 
-    /**
-     * 캔버스 메인이 토핑 배치 순서대로 프레임을 찍어 동영상을 만든다. 경로를 싣지 않는 이유는
-     * 평면 PNG 가 아니라 **토핑 목록**에서 다시 그리기 때문이다.
-     */
-    data object Video : CanvasSaveResult
+    /** @param videoPath 미리보기가 캐시에 만들어 둔 mp4 의 경로 */
+    data class Video(val videoPath: String) : CanvasSaveResult
+
+    /** 미리보기가 영상을 만들지 못했다. 저장할 파일이 없고 실패만 알리면 된다 */
+    data object VideoFailed : CanvasSaveResult
 }
 
 /** [CanvasSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */

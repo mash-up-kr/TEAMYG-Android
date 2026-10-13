@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -15,8 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -31,7 +28,6 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.result.ResultEffect
 import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
-import com.teamyg.parfait.core.designsystem.component.ygloading.YGLoadingOverlay
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
@@ -46,12 +42,12 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOv
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_FRAME_COUNT
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasVideoSource
+import com.teamyg.parfait.feature.groups.canvas.impl.screen.toYGCanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
-import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopProgresses
 import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
 import com.teamyg.parfait.core.navigation.Navigator
@@ -68,7 +64,6 @@ import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
@@ -94,29 +89,6 @@ internal fun CanvasMainRoute(
     ),
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
-
-    // 이 컴포지션이 실제로 "새로 서는" 순간의 값을 여기, 컴포지션 본문에서 붙잡아 둔다.
-    // ⚠️ 아래 LaunchedEffect 본문 안에서 viewModel.state.value 를 다시 읽으면 안 된다 — 이
-    // 화면의 유일한 정상 녹화 시작 경로인 ResultEffect(OnClickSaveVideoToGallery)는 미리보기
-    // 화면에서 "영상으로 저장"을 눌러 돌아온, 이 Route 의 새 컴포지션의 **첫 재개**에서 곧바로
-    // isRecordingVideo=true 를 세운다(NavDisplay 가 백스택 아래 엔트리를 컴포지션에서 빼므로,
-    // 미리보기에서 돌아오는 것 자체가 이 Route 를 처음부터 다시 세우는 일이다 — 아래 canvasState
-    // 폴링부의 "백스택 아래 깔린 엔트리는 컴포지션에서 빠진다" 주석 참고). 즉 정상 녹화도
-    // "이 컴포지션이 막 서는 시점"에 시작될 수 있다 — ①의 최초 판별 논거였던 "정상 녹화는
-    // 화면이 이미 떠 있던 도중에만 시작된다"는 전제가 이 경로에서는 성립하지 않는다.
-    // 컴포지션 안 이펙트들은 선언 순서를 따르는 FIFO 로 실행되므로, 만약 저 아래 복구용
-    // LaunchedEffect 본문 안에서 state 를 읽는다면 ResultEffect → 효과 수집기 → 복구 검사
-    // 순으로 같은 최초 실행 배치에서 돌면서, 복구 검사가 ResultEffect 가 방금 세운 새 값을
-    // "이전 컴포지션이 남긴 stale 값"으로 오판해 막 시작한 정상 녹화를 그 자리에서 취소해
-    // 버린다. `remember{}` 는 어떤 `LaunchedEffect` 본문보다도 먼저, 컴포지션 단계에서
-    // 평가되므로 여기서 값을 붙잡아 두면 그 뒤 어떤 이펙트가 state 를 바꾸든 이 값은
-    // "컴포지션이 서던 바로 그 순간"에 고정된다 — 이 값이 참이면 이 컴포지션이 시작되기도
-    // 전에, 즉 완전히 다른 죽은 컴포지션에서 이미 녹화 중이었다는 뜻이라 유실로 확정할 수
-    // 있다. 두 경우(막 시작한 녹화 vs 유실된 녹화)를 "언제 검사했는가"라는 타이밍이 아니라
-    // "어디서 읽었는가"라는 구조로 가르는 것이 이 필드의 존재 이유다 — "본문에서 읽으나
-    // 이펙트 안에서 읽으나 어차피 같은 값 아니냐"고 보고 이 줄을 지우면 안 된다
-    val wasRecordingAtEntry = remember { viewModel.state.value.isRecordingVideo }
-
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
@@ -132,8 +104,6 @@ internal fun CanvasMainRoute(
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
-    val gallerySaveVideoSuccessFormat = stringResource(R.string.canvas_main_gallery_video_save_success)
-    val gallerySaveVideoFailureMessage = stringResource(R.string.canvas_main_gallery_video_save_failure)
     val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
     val closedCanvasAlertTitleFormat = stringResource(R.string.canvas_main_closed_canvas_alert_title)
     val closedCanvasAlertSubFormat = stringResource(R.string.canvas_main_closed_canvas_alert_sub)
@@ -166,12 +136,10 @@ internal fun CanvasMainRoute(
                 toastPolicy.showError(gallerySaveFailureMessage)
             }
 
-            // 영상은 거부도 인텐트로 돌려보낸다 — 토스트만 띄우면 isRecordingVideo 가 남아
-            // 로딩 오버레이가 영원히 걷히지 않는다
             is PendingGallerySave.Video -> if (granted) {
                 viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(pending.filePath))
             } else {
-                viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
+                toastPolicy.showError(gallerySaveFailureMessage)
             }
         }
     }
@@ -193,19 +161,14 @@ internal fun CanvasMainRoute(
         }
     }
 
-    // 녹화는 컴포지션을 프레임마다 읽는 일이라 화면 계층 책임이다 — 프레임 상태를 여기서 들고
-    // CanvasMainScreen 의 녹화 레이어로 내려보낸다
-    val recordLayer = rememberGraphicsLayer()
-    var recordPopProgresses by remember { mutableStateOf(emptyList<Float>()) }
-    // 배경과 토핑을 접은 신호다. 배경 이미지가 붙기 전에 첫 프레임을 찍지 않으려면 둘이 함께
-    // 들어와야 한다 — 접는 일은 녹화 레이어가 한다
-    var recordLoadState by remember { mutableStateOf(CanvasLoadState.Loading) }
+    // 저장 미리보기가 영상을 다시 그릴 때 같은 dp 크기·같은 재시도 키를 써야 해서 여기서 들고 있다
     var canvasAreaWidth by remember { mutableStateOf(0.dp) }
     var canvasAreaHeight by remember { mutableStateOf(0.dp) }
+    var retryKey by remember { mutableIntStateOf(0) }
 
     // 미리보기에서 저장을 확정하고 돌아왔다. 이미지는 보여 준 그림 그대로 남겨야 하므로 캔버스를
-    // 다시 캡처하지 않고 미리보기가 쓰던 파일을 읽는다. 동영상은 평면 PNG 로는 만들 수 없어
-    // ViewModel 이 든 토핑 목록에서 다시 그린다
+    // 다시 캡처하지 않고 미리보기가 쓰던 파일을 읽는다. 동영상은 미리보기가 이미 캐시에 만들어
+    // 왔고 여기서는 갤러리에 넣기만 한다
     ResultEffect<CanvasSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
         when (result) {
             is CanvasSaveResult.Image -> scope.launch {
@@ -214,8 +177,9 @@ internal fun CanvasMainRoute(
                     .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
             }
 
-            is CanvasSaveResult.Video ->
-                viewModel.processIntent(CanvasMainIntent.OnClickSaveVideoToGallery)
+            is CanvasSaveResult.Video -> saveWithPermission(PendingGallerySave.Video(result.videoPath))
+
+            is CanvasSaveResult.VideoFailed -> toastPolicy.showError(gallerySaveFailureMessage)
         }
     }
 
@@ -261,15 +225,24 @@ internal fun CanvasMainRoute(
                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                     val selectedDate = viewModel.state.value.selectedDate
                     // 캡처와 같은 시점의 값이어야 한다 — 아래 정지 지점(파일 쓰기) 사이 폴링으로
-                    // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 개수가 이미 캡처된
+                    // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
                     // 그림과 어긋난다
-                    val toppingCount = viewModel.state.value.toppings.size
+                    val capturedState = viewModel.state.value
+                    val toppingCount = capturedState.toppings.size
+                    val videoSource = CanvasVideoSource(
+                        toppings = capturedState.toppings,
+                        background = capturedState.canvasBackground.toYGCanvasBackground(),
+                        canvasWidth = canvasAreaWidth,
+                        canvasHeight = canvasAreaHeight,
+                        retryKey = retryKey,
+                    )
 
                     withContext(Dispatchers.IO) { bitmap.writeToCanvasCaptureCache(context) }
                         .onSuccess { file ->
                             // ⚠️ 홀더에 건넸다고 파일 쓰기를 지우면 안 된다 — 위 ResultEffect 가
                             // 저장할 때 그 파일을 읽는다
                             CanvasCaptureHolder.put(bitmap)
+                            CanvasVideoSourceHolder.put(videoSource)
                             navigator.goTo(
                                 destination = NavKeyCanvasImageSave(
                                     imagePath = file.absolutePath,
@@ -280,62 +253,12 @@ internal fun CanvasMainRoute(
                         }.onFailure { toastPolicy.showError(captureFailureMessage) }
                 }
 
-                is CanvasMainEffect.StartCanvasVideoRecording -> {
-                    val toppingCount = viewModel.state.value.toppings.size
-
-                    // 캔버스를 아직 재지 못했으면 녹화 레이어를 띄울 수 없다(밀도를 0 으로
-                    // 나눈다). 아래 대기까지 가면 붙지 않을 레이어를 로딩 오버레이 밑에서
-                    // 영원히 기다리므로, 대기 **전에** 끊는다
-                    if (canvasAreaWidth <= 0.dp) {
-                        viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
-                    } else {
-                        // 첫 프레임을 빈 그림으로 찍지 않는다 — 토핑 이미지가 다 모여야 시작한다
-                        val settledLoadState = snapshotFlow { recordLoadState }
-                            .first { it != CanvasLoadState.Loading }
-
-                        if (settledLoadState == CanvasLoadState.Failed) {
-                            viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
-                        } else {
-                            recordCanvasVideo(
-                                context = context,
-                                frameCount = CANVAS_VIDEO_FRAME_COUNT,
-                                captureLayer = recordLayer,
-                            ) { frameIndex ->
-                                recordPopProgresses = toppingPopProgresses(
-                                    toppingCount = toppingCount,
-                                    frameIndex = frameIndex,
-                                )
-                                // 상태를 세운 뒤 실제로 그려진 프레임을 기다린다. 이 대기가
-                                // 없으면 직전 상태를 두 번 찍는다.
-                                // **두 번** 부르는 이유: AndroidUiDispatcher 는 Choreographer 의
-                                // ANIMATION 콜백에서 awaiter 를 깨우는데 Compose 의 draw 는 그
-                                // 뒤인 TRAVERSAL 콜백에서 돈다. 한 번만 기다리면 아직 그려지지
-                                // 않은 시점에 레이어를 읽어 매 프레임이 한 칸씩 밀린다
-                                withFrameNanos { }
-                                withFrameNanos { }
-                            }.onSuccess { file ->
-                                saveWithPermission(PendingGallerySave.Video(file.absolutePath))
-                            }.onFailure {
-                                viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
-                            }
-                        }
-                    }
-
-                    // 녹화가 끝나면 레이어가 컴포지션에서 빠진다. 여기서 되돌리지 않으면 다음
-                    // 녹화가 남아 있는 Loaded 를 보고 새 레이어의 첫 보고를 기다리지 않는다
-                    recordLoadState = CanvasLoadState.Loading
-                    recordPopProgresses = emptyList()
-                }
-
-                // 저장 경로는 이미지와 영상이 같고 문구만 갈린다
+                // 이미지와 영상이 같은 문구를 쓴다
                 is CanvasMainEffect.ShowGallerySaveResult -> if (effect.isSuccess) {
-                    val format = if (effect.isVideo) gallerySaveVideoSuccessFormat else gallerySaveSuccessFormat
-                    val message = format.format(effect.date.month.number, effect.date.day)
+                    val message = gallerySaveSuccessFormat.format(effect.date.month.number, effect.date.day)
                     toastPolicy.show(YGToastType.InviteCode(message))
                 } else {
-                    toastPolicy.showError(
-                        if (effect.isVideo) gallerySaveVideoFailureMessage else gallerySaveFailureMessage,
-                    )
+                    toastPolicy.showError(gallerySaveFailureMessage)
                 }
 
                 is CanvasMainEffect.ShowSpotlightToast -> toastPolicy.show(
@@ -397,21 +320,6 @@ internal fun CanvasMainRoute(
         }
     }
 
-    // wasRecordingAtEntry(위 선언부의 긴 주석 참고)가 참이면, 그 값을 세운 주체는 이 컴포지션이
-    // 아니라 "이전에 살아 있던" 다른 컴포지션이다 — 이 컴포지션이 서기도 전에 이미 참이었다는
-    // 뜻이기 때문이다. 즉 녹화를 몰던 컴포지션이(Activity 재생성·백스택 이탈 등으로) 죽었고,
-    // 그 StartCanvasVideoRecording 이펙트는 죽은 컴포지션의 수집기가 이미 소비해 두 번 다시
-    // 오지 않는다(BaseViewModel.effect KDoc — Channel 은 한 번 소비된 이펙트를 재전달하지
-    // 않는다). 유실된 녹화를 실패로 접어 로딩 오버레이를 걷는다. LaunchedEffect(Unit) 으로
-    // 이 컴포지션 생애주기당 딱 한 번만 검사한다 — 리컴포지션마다 다시 돌면 막 시작한 정상
-    // 녹화까지 실패로 접어 버린다. ⚠️ 여기서 viewModel.state.value 를 다시 읽지 않는다 —
-    // 그러면 wasRecordingAtEntry 를 둔 의미가 없어져 위에서 막은 회귀가 되돌아온다
-    LaunchedEffect(Unit) {
-        if (wasRecordingAtEntry) {
-            viewModel.processIntent(CanvasMainIntent.CanvasVideoRecordFailed)
-        }
-    }
-
     // Spotlight 상태에서 앱이 백그라운드로 이동했다가 돌아오면 Default 로 복귀한다
     LifecycleStartEffect(viewModel) {
         viewModel.processIntent(CanvasMainIntent.OnAppReturnedFromBackground)
@@ -420,8 +328,6 @@ internal fun CanvasMainRoute(
 
     // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
     var loadState by remember { mutableStateOf(CanvasLoadState.Loaded) }
-
-    var retryKey by remember { mutableIntStateOf(0) }
 
     // 폴링이 남이 올린 토핑을 실어 올 때마다 보고 있던 캔버스가 덮개 뒤로 사라져서다
     val displayedCanvasId = canvasState.displayedCanvas?.parfaitId
@@ -454,60 +360,46 @@ internal fun CanvasMainRoute(
         }
     }
 
-    // 녹화 오버레이를 스캐폴드 위에 겹치려고 Box 로 감싼다
-    Box(modifier = modifier.fillMaxSize()) {
-        YGScaffoldV2(
-            isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
-            loadingOverlay = {
-                if (loadState == CanvasLoadState.Failed) {
-                    CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
-                } else {
-                    CanvasLoadingOverlay()
-                }
+    YGScaffoldV2(
+        modifier = modifier,
+        isLoading = canvasState.isInitialLoading || (firstPaintDone.not() && loadState != CanvasLoadState.Loaded),
+        loadingOverlay = {
+            if (loadState == CanvasLoadState.Failed) {
+                CanvasLoadErrorOverlay(onClickRetry = { retryKey++ })
+            } else {
+                CanvasLoadingOverlay()
+            }
+        },
+    ) { innerPadding ->
+        CanvasMainScreen(
+            canvasState = canvasState,
+            onClickBack = { navigator.onBack() },
+            onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
+            onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
+            onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
+            onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
+            onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
+            onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
+            onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
+            onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
+            onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
+            onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
+            onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
+            onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
+            onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
+            onLoadStateChange = { loadState = it },
+            retryKey = retryKey,
+            toastPolicy = toastPolicy,
+            alertPolicy = alertPolicy,
+            graphicsLayer = graphicsLayer,
+            onCanvasAreaSizeChange = { width, height ->
+                canvasAreaWidth = width
+                canvasAreaHeight = height
             },
-        ) { innerPadding ->
-            CanvasMainScreen(
-                canvasState = canvasState,
-                onClickBack = { navigator.onBack() },
-                onClickDateSelect = { viewModel.processIntent(CanvasMainIntent.OnClickDateSelect) },
-                onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
-                onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
-                onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
-                onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
-                onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
-                onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
-                onDismissCalendar = { viewModel.processIntent(CanvasMainIntent.DismissCalendar) },
-                onSelectYear = { viewModel.processIntent(CanvasMainIntent.SelectYear(it)) },
-                onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
-                onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
-                onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
-                onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
-                onLoadStateChange = { loadState = it },
-                retryKey = retryKey,
-                toastPolicy = toastPolicy,
-                alertPolicy = alertPolicy,
-                graphicsLayer = graphicsLayer,
-                recordLayer = recordLayer,
-                recordToppingPopProgresses = recordPopProgresses,
-                recordCanvasWidth = canvasAreaWidth,
-                recordCanvasHeight = canvasAreaHeight,
-                onCanvasAreaSizeChange = { width, height ->
-                    canvasAreaWidth = width
-                    canvasAreaHeight = height
-                },
-                onRecordLoadStateChange = { recordLoadState = it },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-            )
-        }
-
-        // 녹화 중에는 화면을 덮는다. 오버레이가 클릭을 삼켜 별도 차단 장치가 필요 없다.
-        // CanvasLoadingOverlay 가 아니라 문구 없는 공통 로딩을 쓰는 이유: 그쪽은 "캔버스를
-        // 불러오는 중"이라고 말하는데, 영상을 만드는 중에 그 문구는 거짓 안내다
-        if (canvasState.isRecordingVideo) {
-            YGLoadingOverlay()
-        }
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        )
     }
 }
 
