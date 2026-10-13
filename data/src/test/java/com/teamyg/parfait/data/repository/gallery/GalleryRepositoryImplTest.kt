@@ -48,7 +48,7 @@ class GalleryRepositoryImplTest {
         // Then 파일 내용이 그대로 들어가고 대기 표시가 내려간다
         assertTrue(result.isSuccess)
         assertTrue(output.toByteArray().contentEquals(byteArrayOf(7, 8, 9)))
-        verify(exactly = 1) { galleryMediaProvider.finalizePendingVideo(uri) }
+        verify(exactly = 1) { galleryMediaProvider.finalizePendingMedia(uri) }
         assertFalse(file.exists())
     }
 
@@ -86,7 +86,7 @@ class GalleryRepositoryImplTest {
         // Then 빈 항목이 갤러리에 남지 않게 등록을 되돌린다
         assertTrue(result.isFailure)
         verify(exactly = 1) { galleryMediaProvider.deletePendingMedia(uri) }
-        verify(exactly = 0) { galleryMediaProvider.finalizePendingVideo(uri) }
+        verify(exactly = 0) { galleryMediaProvider.finalizePendingMedia(uri) }
     }
 
     @Test
