@@ -150,9 +150,8 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -162,19 +161,21 @@ internal fun CanvasImageSaveScreen(
                     bottom = YGTheme.layout.padding.padding7,
                 ),
         ) {
-            YGButton(
-                text = stringResource(R.string.canvas_image_save_confirm),
-                buttonType = YGButtonType.Medium.Primary,
-                isEnabled = isImageSaveEnabled,
-                onClick = onClickSaveImage,
-            )
-
             // 쌓일 것이 없으면 영상이 성립하지 않는다 — 토핑 0건에서는 누를 수 없다
             YGButton(
                 text = stringResource(R.string.canvas_image_save_video),
                 buttonType = YGButtonType.Medium.Secondary,
                 isEnabled = isVideoSaveEnabled,
                 onClick = onClickSaveVideo,
+                modifier = Modifier.weight(1f),
+            )
+
+            YGButton(
+                text = stringResource(R.string.canvas_image_save_confirm),
+                buttonType = YGButtonType.Medium.Primary,
+                isEnabled = isImageSaveEnabled,
+                onClick = onClickSaveImage,
+                modifier = Modifier.weight(1f),
             )
         }
     }
