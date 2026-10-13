@@ -14,4 +14,7 @@ interface AppLinkReferrerRepository {
      * 치지 않아 다음 실행에서 다시 시도한다.
      */
     suspend fun consumeDeepLinkOnce(): AppLinkDeepLink?
+
+    /** 조회하지 않고 "확인함"으로만 남긴다. 이 앱을 이미 쓰던 기기에는 복원할 설치 전 링크가 없다. */
+    suspend fun skipLookup()
 }
