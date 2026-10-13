@@ -18,10 +18,12 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.deeplink.toAppLinkDeepLinkOrNull
 import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
+import com.teamyg.parfait.domain.model.deeplink.AppLinkDeepLink
 import com.teamyg.parfait.domain.usecase.deeplink.ConsumeInstallReferrerDeepLinkUseCase
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
 import com.teamyg.parfait.push.toPushDeepLinkOrNull
@@ -71,7 +73,7 @@ class MainActivity : ComponentActivity() {
             // 콜드 스타트에서만 확인한다 — Install Referrer 는 "이번 설치"의 스토어 진입 정보라
             // onNewIntent(같은 프로세스가 살아있는 재진입)에서 다시 물어봐도 의미가 없다.
             lifecycleScope.launch {
-                consumeInstallReferrerDeepLink()?.let(appLinkDeepLinkEventBus::post)
+                consumeInstallReferrerDeepLink()?.let(::publishAppLinkDeepLink)
             }
         }
         // light 는 바 배경이 밝다는 뜻이라 아이콘이 어두워진다. 다크모드를 따라가지 않는
@@ -90,7 +92,6 @@ class MainActivity : ComponentActivity() {
                     appLinkDeepLinkEventBus = appLinkDeepLinkEventBus,
                     hasActiveSession = hasActiveSession,
                     screenViewTracker = screenViewTracker,
-                    analyticsLogger = analyticsLogger,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -126,6 +127,21 @@ class MainActivity : ComponentActivity() {
     private fun consumeAppLinkDeepLink(intent: Intent) {
         val deepLink = intent.toAppLinkDeepLinkOrNull() ?: return
         setIntent(Intent())
+        publishAppLinkDeepLink(deepLink)
+    }
+
+    // 오픈 이벤트는 발행 지점에서 찍는다 — 로그인 대기를 지난 뒤에 찍으면 로그인 화면에서
+    // 이탈한 유저는 링크로 열었는데도 집계에서 빠진다.
+    private fun publishAppLinkDeepLink(deepLink: AppLinkDeepLink) {
+        val destination = when (deepLink) {
+            is AppLinkDeepLink.OpenGroupInvite -> AnalyticsScreenType.GROUP_INVITE_CODE
+        }
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.APP_LINK_OPENED,
+                params = mapOf("destination" to destination.screenId),
+            ),
+        )
         appLinkDeepLinkEventBus.post(deepLink)
     }
 }

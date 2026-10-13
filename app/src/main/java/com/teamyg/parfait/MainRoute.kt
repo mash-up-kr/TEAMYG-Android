@@ -12,10 +12,6 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.analytics.ScreenViewTracker
-import com.teamyg.parfait.core.analytics.AnalyticsEvent
-import com.teamyg.parfait.core.analytics.AnalyticsEventType
-import com.teamyg.parfait.core.analytics.AnalyticsScreenType
-import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.deeplink.awaitAppLinkReady
@@ -42,7 +38,6 @@ fun MainRoute(
     appLinkDeepLinkEventBus: AppLinkDeepLinkEventBus,
     hasActiveSession: HasActiveSessionUseCase,
     screenViewTracker: ScreenViewTracker,
-    analyticsLogger: AnalyticsLogger,
     modifier: Modifier = Modifier,
 ) {
     // 세션 사건은 화면 하나가 결정할 수 없다. 여기 한 곳에서만 수집한다 —
@@ -86,15 +81,9 @@ fun MainRoute(
             )
 
             when (deepLink) {
-                is AppLinkDeepLink.OpenGroupInvite -> {
-                    analyticsLogger.logEvent(
-                        AnalyticsEvent(
-                            type = AnalyticsEventType.APP_LINK_OPENED,
-                            params = mapOf("destination" to AnalyticsScreenType.GROUP_INVITE_CODE.screenId),
-                        ),
-                    )
-                    navigator.goTo(destination = NavKeyGroupInviteCode(inviteCode = deepLink.inviteCode))
-                }
+                is AppLinkDeepLink.OpenGroupInvite -> navigator.goTo(
+                    destination = NavKeyGroupInviteCode(inviteCode = deepLink.inviteCode),
+                )
             }
         }
     }
