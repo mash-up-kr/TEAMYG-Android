@@ -18,7 +18,6 @@ private const val POP_START_SCALE = 0.6f
 /** 표준 easeOutBack 계수. iOS 저장본과 같은 곡선이어야 해서 값을 맞춘다 */
 private const val POP_OVERSHOOT = 1.70158f
 
-/** 영상 전체 프레임 수 */
 const val CANVAS_VIDEO_FRAME_COUNT: Int = (VIDEO_DURATION_SECONDS * CANVAS_VIDEO_FRAMES_PER_SECOND).toInt()
 
 /**

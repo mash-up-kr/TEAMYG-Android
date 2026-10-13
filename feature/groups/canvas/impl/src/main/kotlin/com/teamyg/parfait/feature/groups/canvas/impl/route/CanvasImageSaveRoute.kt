@@ -99,12 +99,9 @@ internal fun CanvasImageSaveRoute(
                         toppingCount = videoSource.toppings.size,
                         frameIndex = frameIndex,
                     )
-                    // 상태를 세운 뒤 실제로 그려진 프레임을 기다린다. 이 대기가 없으면 직전
-                    // 상태를 두 번 찍는다.
-                    // **두 번** 부르는 이유: AndroidUiDispatcher 는 Choreographer 의 ANIMATION
-                    // 콜백에서 awaiter 를 깨우는데 Compose 의 draw 는 그 뒤인 TRAVERSAL
-                    // 콜백에서 돈다. 한 번만 기다리면 아직 그려지지 않은 시점에 레이어를 읽어
-                    // 매 프레임이 한 칸씩 밀린다
+                    // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
+                    // Choreographer 의 ANIMATION 콜백에서 깨는데 draw 는 그 뒤 TRAVERSAL 에서
+                    // 돈다 — 한 번이면 매 프레임이 한 칸씩 밀린다
                     withFrameNanos { }
                     withFrameNanos { }
                 }.fold(

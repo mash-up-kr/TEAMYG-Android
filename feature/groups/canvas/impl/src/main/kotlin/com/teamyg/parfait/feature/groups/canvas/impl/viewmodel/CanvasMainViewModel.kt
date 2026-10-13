@@ -820,11 +820,8 @@ constructor(
     }
 
     /**
-     * 캡처를 요청하기 **전에** Spotlight 를 반드시 해제한다. 캡처 레이어는 [CanvasMainUiState]
-     * 를 그대로 읽는 화면의 내부 Box(배경 + content)라, Spotlight 가 켜진 채로 캡처하면 Dim 과
-     * 맨 위로 옮겨진 토핑이 그대로 PNG 에 구워진다 — 녹화 레이어는 애초에 `spotlightedToppingId`
-     * 를 null 로 고정해 Dim 이 없으므로, 여기서 해제하지 않으면 이미지 저장물과 영상의 마지막
-     * 장면이 달라진다.
+     * 캡처 **전에** Spotlight 를 해제한다. 켠 채로 캡처하면 Dim 과 맨 위로 옮겨진 토핑이 PNG 에
+     * 구워지는데 녹화 레이어에는 Dim 이 없어, 이미지와 영상의 마지막 장면이 달라진다
      */
     private fun handleClickSaveToGallery() {
         resetSpotlight()
@@ -845,19 +842,9 @@ constructor(
                             params = mapOf("format" to "image"),
                         ),
                     )
-                    postSideEffect(
-                        effect = CanvasMainEffect.ShowGallerySaveResult(
-                            isSuccess = true,
-                            date = date,
-                        ),
-                    )
+                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = date))
                 }.onFailure {
-                    postSideEffect(
-                        effect = CanvasMainEffect.ShowGallerySaveResult(
-                            isSuccess = false,
-                            date = date,
-                        ),
-                    )
+                    postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))
                 }
         }
     }

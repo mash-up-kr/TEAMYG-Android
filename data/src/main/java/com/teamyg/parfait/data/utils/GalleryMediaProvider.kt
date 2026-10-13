@@ -87,10 +87,7 @@ class GalleryMediaProvider(
         return context.contentResolver?.insert(collection, values)
     }
 
-    /**
-     * 영상 컬렉션에 새 항목을 등록한다. 구조는 [insertPendingImage] 와 같고 갈리는 것은 컬렉션·MIME·
-     * 저장 디렉토리뿐이다 — 이미지와 영상은 서로 다른 MediaStore 컬렉션이라 한 함수로 합칠 수 없다.
-     */
+    /** 이미지와 영상은 서로 다른 MediaStore 컬렉션이라 [insertPendingImage] 와 합칠 수 없다 */
     fun insertPendingVideo(displayName: String): Uri? {
         val collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val values = ContentValues().apply {
@@ -115,7 +112,7 @@ class GalleryMediaProvider(
         context.contentResolver?.update(uri, values, null, null)
     }
 
-    /** [insertPendingVideo] 로 걸어 둔 IS_PENDING 표시를 내려, 갤러리 앱에 실제로 보이게 한다. */
+    /** [insertPendingVideo] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
     fun finalizePendingVideo(uri: Uri) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
