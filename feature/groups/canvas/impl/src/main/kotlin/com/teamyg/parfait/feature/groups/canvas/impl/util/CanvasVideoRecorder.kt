@@ -8,8 +8,8 @@ import java.io.File
 import kotlin.coroutines.cancellation.CancellationException
 
 /** 산출물 가로 픽셀. 캔버스 영역이 세로 9:16 이라 높이는 이 값의 16/9 다 */
-internal const val CANVAS_VIDEO_WIDTH_PX = 720
-internal const val CANVAS_VIDEO_HEIGHT_PX = 1280
+internal const val CANVAS_VIDEO_WIDTH_PX = 1080
+internal const val CANVAS_VIDEO_HEIGHT_PX = 1920
 
 private const val VIDEO_CACHE_FILE_NAME = "canvas_timelapse.mp4"
 

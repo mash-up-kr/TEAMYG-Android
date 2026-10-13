@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,11 +46,12 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOv
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CANVAS_VIDEO_FRAME_COUNT
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingVideoFrames
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopProgresses
 import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasMainViewModel
 import com.teamyg.parfait.core.navigation.Navigator
@@ -196,8 +196,7 @@ internal fun CanvasMainRoute(
     // 녹화는 컴포지션을 프레임마다 읽는 일이라 화면 계층 책임이다 — 프레임 상태를 여기서 들고
     // CanvasMainScreen 의 녹화 레이어로 내려보낸다
     val recordLayer = rememberGraphicsLayer()
-    var recordVisibleToppingCount by remember { mutableIntStateOf(0) }
-    var recordLastToppingPopProgress by remember { mutableFloatStateOf(1f) }
+    var recordPopProgresses by remember { mutableStateOf(emptyList<Float>()) }
     // 배경과 토핑을 접은 신호다. 배경 이미지가 붙기 전에 첫 프레임을 찍지 않으려면 둘이 함께
     // 들어와야 한다 — 접는 일은 녹화 레이어가 한다
     var recordLoadState by remember { mutableStateOf(CanvasLoadState.Loading) }
@@ -282,9 +281,7 @@ internal fun CanvasMainRoute(
                 }
 
                 is CanvasMainEffect.StartCanvasVideoRecording -> {
-                    val frames = toppingVideoFrames(
-                        toppingCount = viewModel.state.value.toppings.size,
-                    )
+                    val toppingCount = viewModel.state.value.toppings.size
 
                     // 캔버스를 아직 재지 못했으면 녹화 레이어를 띄울 수 없다(밀도를 0 으로
                     // 나눈다). 아래 대기까지 가면 붙지 않을 레이어를 로딩 오버레이 밑에서
@@ -301,12 +298,13 @@ internal fun CanvasMainRoute(
                         } else {
                             recordCanvasVideo(
                                 context = context,
-                                frameCount = frames.size,
+                                frameCount = CANVAS_VIDEO_FRAME_COUNT,
                                 captureLayer = recordLayer,
                             ) { frameIndex ->
-                                val frame = frames[frameIndex]
-                                recordVisibleToppingCount = frame.visibleCount
-                                recordLastToppingPopProgress = frame.popProgress
+                                recordPopProgresses = toppingPopProgresses(
+                                    toppingCount = toppingCount,
+                                    frameIndex = frameIndex,
+                                )
                                 // 상태를 세운 뒤 실제로 그려진 프레임을 기다린다. 이 대기가
                                 // 없으면 직전 상태를 두 번 찍는다.
                                 // **두 번** 부르는 이유: AndroidUiDispatcher 는 Choreographer 의
@@ -326,8 +324,7 @@ internal fun CanvasMainRoute(
                     // 녹화가 끝나면 레이어가 컴포지션에서 빠진다. 여기서 되돌리지 않으면 다음
                     // 녹화가 남아 있는 Loaded 를 보고 새 레이어의 첫 보고를 기다리지 않는다
                     recordLoadState = CanvasLoadState.Loading
-                    recordVisibleToppingCount = 0
-                    recordLastToppingPopProgress = 1f
+                    recordPopProgresses = emptyList()
                 }
 
                 // 저장 경로는 이미지와 영상이 같고 문구만 갈린다
@@ -490,8 +487,7 @@ internal fun CanvasMainRoute(
                 alertPolicy = alertPolicy,
                 graphicsLayer = graphicsLayer,
                 recordLayer = recordLayer,
-                recordVisibleToppingCount = recordVisibleToppingCount,
-                recordLastToppingPopProgress = recordLastToppingPopProgress,
+                recordToppingPopProgresses = recordPopProgresses,
                 recordCanvasWidth = canvasAreaWidth,
                 recordCanvasHeight = canvasAreaHeight,
                 onCanvasAreaSizeChange = { width, height ->

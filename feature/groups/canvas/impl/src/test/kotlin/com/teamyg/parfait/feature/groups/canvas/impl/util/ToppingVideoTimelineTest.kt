@@ -6,68 +6,58 @@ import org.junit.Test
 
 class ToppingVideoTimelineTest {
     @Test
-    fun toppingVideoFrames_noToppings_isIntroPlusOutroOnly() {
-        // When 토핑이 없다
-        val frames = toppingVideoFrames(toppingCount = 0)
-
-        // Then 도입 15 + 마무리 30 프레임만 남는다
-        assertEquals(45, frames.size)
-        assertTrue(frames.all { it.visibleCount == 0 })
-        assertTrue(frames.all { it.popProgress == 0f })
+    fun canvasVideoFrameCount_always_isTwoSeconds() {
+        // Then 30fps 로 2초
+        assertEquals(60, CANVAS_VIDEO_FRAME_COUNT)
     }
 
     @Test
-    fun toppingVideoFrames_threeToppings_countsIntroToppingsAndOutro() {
-        // When 토핑 3개
-        val frames = toppingVideoFrames(toppingCount = 3)
-
-        // Then 15 + 12*3 + 30
-        assertEquals(81, frames.size)
+    fun toppingPopProgresses_noToppings_isEmpty() {
+        assertTrue(toppingPopProgresses(toppingCount = 0, frameIndex = 0).isEmpty())
     }
 
     @Test
-    fun toppingVideoFrames_introFrames_showNothing() {
-        // When 토핑 1개
-        val frames = toppingVideoFrames(toppingCount = 1)
+    fun toppingPopProgresses_firstFrame_startsFirstToppingWithoutIntro() {
+        // When 토핑 3개의 첫 프레임
+        val progresses = toppingPopProgresses(toppingCount = 3, frameIndex = 0)
 
-        // Then 앞 15프레임은 배경만이다
-        assertTrue(frames.take(15).all { it.visibleCount == 0 && it.popProgress == 0f })
+        // Then 도입 구간 없이 첫 토핑이 0초에 시작하고 나머지는 아직이다
+        assertEquals(listOf(0f, 0f, 0f), progresses)
+        assertTrue(toppingPopProgresses(toppingCount = 3, frameIndex = 1)[0] > 0f)
     }
 
     @Test
-    fun toppingVideoFrames_lastFrame_showsEveryToppingSettled() {
-        // When 토핑 4개
-        val frames = toppingVideoFrames(toppingCount = 4)
+    fun toppingPopProgresses_threeToppings_spreadsStartsOverAppearWindow() {
+        // When 토핑 3개 — 시작 시각은 0초, 0.5초, 1초
+        val atSecondStart = toppingPopProgresses(toppingCount = 3, frameIndex = 15)
+        val atThirdStart = toppingPopProgresses(toppingCount = 3, frameIndex = 30)
 
-        // Then 마지막 프레임은 전부 보이고 팝인이 끝나 있다 — 이미지 저장물과 같은 장면이어야 한다
-        assertEquals(4, frames.last().visibleCount)
-        assertEquals(1f, frames.last().popProgress, 0f)
+        // Then 앞 토핑은 팝인(0.25초)을 끝냈고 다음 토핑이 막 시작한다
+        assertEquals(listOf(1f, 0f, 0f), atSecondStart)
+        assertEquals(listOf(1f, 1f, 0f), atThirdStart)
     }
 
     @Test
-    fun toppingVideoFrames_firstFrameOfEachTopping_startsPopFromZero() {
-        // When 토핑 2개
-        val frames = toppingVideoFrames(toppingCount = 2)
+    fun toppingPopProgresses_manyToppings_overlapsPops() {
+        // When 토핑 12개 — 시작 간격 0.125초가 팝인 0.25초보다 짧다
+        val progresses = toppingPopProgresses(toppingCount = 12, frameIndex = 6)
 
-        // Then 각 토핑의 첫 프레임에서 그 토핑이 막 나타난다
-        assertEquals(1, frames[15].visibleCount)
-        assertEquals(0f, frames[15].popProgress, 0f)
-        assertEquals(2, frames[27].visibleCount)
-        assertEquals(0f, frames[27].popProgress, 0f)
+        // Then 두 토핑이 동시에 팝인 중이다
+        assertEquals(2, progresses.count { it > 0f && it < 1f })
     }
 
     @Test
-    fun toppingVideoFrames_holdFrames_keepPopFinished() {
-        // When 토핑 1개
-        val frames = toppingVideoFrames(toppingCount = 1)
+    fun toppingPopProgresses_lastFrame_showsEveryToppingSettled() {
+        // When 토핑 60개의 마지막 프레임
+        val progresses = toppingPopProgresses(toppingCount = 60, frameIndex = CANVAS_VIDEO_FRAME_COUNT - 1)
 
-        // Then 팝인 8프레임 뒤 유지 4프레임은 진행도가 1이다
-        assertTrue(frames.subList(23, 27).all { it.popProgress == 1f })
+        // Then 전부 팝인이 끝나 있다 — 이미지 저장물과 같은 장면이어야 한다
+        assertTrue(progresses.all { it == 1f })
     }
 
     @Test
-    fun toppingPopScale_atStart_isZero() {
-        assertEquals(0f, toppingPopScale(0f), 0.0001f)
+    fun toppingPopScale_atStart_isStartScale() {
+        assertEquals(0.6f, toppingPopScale(0f), 0.0001f)
     }
 
     @Test
@@ -82,13 +72,9 @@ class ToppingVideoTimelineTest {
     }
 
     @Test
-    fun toppingPopAlpha_halfway_isAlreadyOpaque() {
-        // Then 알파는 팝인 앞 절반에서 끝난다 — 크기가 자리 잡기 전에 색이 먼저 선다
-        assertEquals(1f, toppingPopAlpha(0.5f), 0.0001f)
-    }
-
-    @Test
-    fun toppingPopAlpha_atStart_isTransparent() {
+    fun toppingPopAlpha_always_isLinear() {
         assertEquals(0f, toppingPopAlpha(0f), 0.0001f)
+        assertEquals(0.5f, toppingPopAlpha(0.5f), 0.0001f)
+        assertEquals(1f, toppingPopAlpha(1f), 0.0001f)
     }
 }

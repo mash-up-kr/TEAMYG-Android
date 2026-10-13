@@ -28,26 +28,26 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 
 /**
- * 타임랩스 녹화만을 위해 캔버스를 한 벌 더 띄운다. **화면에는 나타나지 않는다** —
+ * 타임랩스 녹화만을 위해 캔버스를 한 벌 띄운다. **화면에는 나타나지 않는다** —
  * `drawContent` 를 레이어에 기록만 하고 `drawLayer` 를 부르지 않는다.
  *
- * 사용자에게 보이는 캔버스를 프레임마다 흔들지 않으려고 따로 띄운다. 그쪽을 쓰면 녹화 중
- * 캔버스가 깜빡이고, 스포트라이트·판정 같은 화면 상태가 영상에 섞인다.
+ * 저장 미리보기가 녹화하는 동안에만 붙인다. 캔버스 메인은 그때 컴포지션에서 빠져 있어
+ * 그쪽 캔버스를 읽을 수 없다.
  *
  * ⚠️ **배경을 토핑 아래에 직접 그린다.** 이미지 저장 경로(`YGCanvas` 의 `CanvasArea`)가
  * 기록하는 것이 "배경 + 토핑"이라, 여기서 배경을 빼면 빈 자리가 알파 0으로 기록되고
  * `BitmapSurfaceWriter` 가 블렌딩 없이 텍셀을 그대로 써서 **영상이 검정**으로 나온다.
- * 그러면 도입 구간(배경만, 토핑 0개)이 검정 화면이 되고, "마지막 프레임 = 이미지 저장물"
+ * 그러면 토핑이 덮지 않은 자리가 전부 검정이 되고, "마지막 프레임 = 이미지 저장물"
  * 이라는 약속도 깨진다. 세 갈래(미설정·[YGCanvasBackground.Solid]·[YGCanvasBackground.Image])
  * 를 [CanvasArea][com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas] 와 같은
  * 방식으로 그린다.
  *
- * ⚠️ **[canvasWidth]·[canvasHeight] 는 화면의 Canvas-Area 와 같은 dp 여야 한다.** 토핑 테두리
+ * ⚠️ **[canvasWidth]·[canvasHeight] 는 캔버스 메인의 Canvas-Area 와 같은 dp 여야 한다.** 토핑 테두리
  * 굵기가 화면 기준 dp 고정이라(ADR-0025), dp 폭이 달라지면 캔버스 폭에 대한 굵기 비율이 달라져
  * 영상의 테두리가 이미지 저장물과 다른 두께로 앉는다.
  *
  * 출력 픽셀 크기는 [Density] 를 덮어써서 고정한다 — dp 기하는 화면과 같게 두고 픽셀만 옮기는
- * 유일한 방법이다(`adr/0033-canvas-video-onscreen-capture-encoding.md`).
+ * 유일한 방법이다(`adr/0035-canvas-video-onscreen-capture-encoding.md`).
  *
  * @param background 화면이 [YGCanvas][com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvas]
  *   에 넘기는 것과 **같은 값**을 받아야 한다. 변환을 두 번 하면 어긋날 수 있다
@@ -61,8 +61,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 internal fun CanvasVideoRecordLayer(
     toppings: List<CanvasToppingVO>,
     background: YGCanvasBackground?,
-    visibleToppingCount: Int,
-    lastToppingPopProgress: Float,
+    toppingPopProgresses: List<Float>,
     canvasWidth: Dp,
     canvasHeight: Dp,
     targetWidthPx: Int,
@@ -131,11 +130,10 @@ internal fun CanvasVideoRecordLayer(
                 onClickTopping = {},
                 onClickSpotlightDim = {},
                 hitTestEnabled = false,
-                // 하나씩 등장하는 것이 이 영상의 전부다. 한꺼번에 드러내는 빗장을 걸면 안 된다
+                // 차례로 등장하는 것이 이 영상의 전부다. 한꺼번에 드러내는 빗장을 걸면 안 된다
                 revealTogether = false,
                 retryKey = retryKey,
-                visibleToppingCount = visibleToppingCount,
-                lastToppingPopProgress = lastToppingPopProgress,
+                toppingPopProgresses = toppingPopProgresses,
                 onLoadStateChange = { toppingState = it },
                 modifier = Modifier.requiredSize(width = canvasWidth, height = canvasHeight),
             )

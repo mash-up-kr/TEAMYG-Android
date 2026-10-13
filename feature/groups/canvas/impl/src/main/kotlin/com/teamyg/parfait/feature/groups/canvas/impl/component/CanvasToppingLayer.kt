@@ -79,13 +79,11 @@ internal fun CanvasToppingLayer(
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
     /**
-     * 그릴 토핑 개수. 앞에서부터 이만큼만 그린다. `null` 이면 전부 그린다.
+     * 토핑별 팝인 진행도(0~1). [toppings] 와 같은 순서다. `null` 이면 전부 다 보인다.
      *
-     * 타임랩스 녹화가 프레임마다 이 값을 올려 토핑이 하나씩 나타나게 만든다.
+     * 타임랩스 녹화가 프레임마다 이 값을 갈아 토핑이 차례로 튀어나오게 만든다.
      */
-    visibleToppingCount: Int? = null,
-    /** [visibleToppingCount] 의 마지막 토핑에만 적용하는 팝인 진행도(0~1) */
-    lastToppingPopProgress: Float = 1f,
+    toppingPopProgresses: List<Float>? = null,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -100,12 +98,6 @@ internal fun CanvasToppingLayer(
             retryKey = retryKey,
         )
         val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
-
-        // 녹화가 프레임마다 개수를 올린다. 자르기만 하면 되는 이유는 목록이 이미 positionZ
-        // 오름차순, 즉 배치 순서라서다
-        val visibleEntries = visibleToppingCount
-            ?.let { count -> entries.take(count) }
-            ?: entries
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
         // 다시 시도할 때도 처음부터 모아야 한다
@@ -127,11 +119,11 @@ internal fun CanvasToppingLayer(
                 .matchParentSize()
                 .revealed(toppingsVisible),
         ) {
-            visibleEntries.forEachIndexed { index, entry ->
+            entries.forEachIndexed { index, entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {
-                    // 팝인은 지금 막 등장한 마지막 토핑의 몫이다. 앞의 것들은 이미 자리를 잡았다
-                    val isLast = index == visibleEntries.lastIndex
-                    val popProgress = if (isLast) lastToppingPopProgress else 1f
+                    // 목록이 이미 positionZ 오름차순, 즉 배치 순서라 인덱스가 곧 등장 순서다.
+                    // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
+                    val popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f
 
                     CanvasTopping(
                         entry = entry,
@@ -181,8 +173,7 @@ internal fun CanvasToppingLayer(
                     .toppingTapInput(
                         // 강조된 토핑이 있으면 그것만 본다. 딤이 전면을 덮어 나머지는 닿지 않는다
                         entries = {
-                            // 아직 안 보이는 토핑이 눌리면 안 된다
-                            (spotlighted?.let(::listOf) ?: visibleEntries).map { it.topping to it.target }
+                            (spotlighted?.let(::listOf) ?: entries).map { it.topping to it.target }
                         },
                         keyOf = { it.parfaitImageId },
                         onHit = onClickTopping,
