@@ -37,6 +37,10 @@ constructor(
         }
     }
 
+    override suspend fun skipLookup() {
+        localDataSource.markChecked()
+    }
+
     /**
      * referrer 는 `Uri` 가 아니라 쿼리스트링 조각(`inviteCode=ABC123&utm_source=...`)만 온다 —
      * [android.net.Uri] 가 기대하는 스킴·호스트가 없어 직접 나눠 읽는다.
