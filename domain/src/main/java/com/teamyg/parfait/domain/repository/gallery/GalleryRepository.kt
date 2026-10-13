@@ -25,8 +25,9 @@ interface GalleryRepository {
     ): Result<Unit>
 
     /**
-     * 비트맵이 아니라 경로를 받는다. 영상은 인코더가 이미 파일로 완성해 둬서, 바이트를 메모리로
-     * 올려 나르면 수십 MB 를 한 번 더 들게 된다
+     * 비트맵이 아니라 경로를 받는다. 영상은 인코더가 이미 파일로 완성해 둬서 스트림으로 옮기면 된다.
+     *
+     * ⚠️ 저장 결과와 상관없이 [videoFilePath] 의 파일을 지운다
      */
     suspend fun saveVideoToGallery(
         videoFilePath: String,
