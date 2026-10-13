@@ -38,47 +38,61 @@ class BitmapSurfaceWriter(
     private var isClosed = false
 
     init {
-        display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
-        check(display != EGL14.EGL_NO_DISPLAY) { "EGL 디스플레이를 얻지 못했다" }
+        var createdDisplay = EGL14.EGL_NO_DISPLAY
+        var createdContext = EGL14.EGL_NO_CONTEXT
+        var createdSurface = EGL14.EGL_NO_SURFACE
 
-        val version = IntArray(2)
-        check(EGL14.eglInitialize(display, version, 0, version, 1)) { "EGL 초기화에 실패했다" }
+        try {
+            createdDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
+            check(createdDisplay != EGL14.EGL_NO_DISPLAY) { "EGL 디스플레이를 얻지 못했다" }
 
-        val config = chooseConfig()
-        context = EGL14.eglCreateContext(
-            display,
-            config,
-            EGL14.EGL_NO_CONTEXT,
-            intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE),
-            0,
-        )
-        check(context != EGL14.EGL_NO_CONTEXT) { "EGL 컨텍스트를 만들지 못했다" }
+            val version = IntArray(2)
+            check(EGL14.eglInitialize(createdDisplay, version, 0, version, 1)) { "EGL 초기화에 실패했다" }
 
-        eglSurface = EGL14.eglCreateWindowSurface(
-            display,
-            config,
-            surface,
-            intArrayOf(EGL14.EGL_NONE),
-            0,
-        )
-        check(eglSurface != EGL14.EGL_NO_SURFACE) { "EGL 윈도우 표면을 만들지 못했다" }
+            val config = chooseConfig(createdDisplay)
+            createdContext = EGL14.eglCreateContext(
+                createdDisplay,
+                config,
+                EGL14.EGL_NO_CONTEXT,
+                intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE),
+                0,
+            )
+            check(createdContext != EGL14.EGL_NO_CONTEXT) { "EGL 컨텍스트를 만들지 못했다" }
 
-        check(EGL14.eglMakeCurrent(display, eglSurface, eglSurface, context)) {
-            "EGL 컨텍스트를 현재로 만들지 못했다"
+            createdSurface = EGL14.eglCreateWindowSurface(
+                createdDisplay,
+                config,
+                surface,
+                intArrayOf(EGL14.EGL_NONE),
+                0,
+            )
+            check(createdSurface != EGL14.EGL_NO_SURFACE) { "EGL 윈도우 표면을 만들지 못했다" }
+
+            check(EGL14.eglMakeCurrent(createdDisplay, createdSurface, createdSurface, createdContext)) {
+                "EGL 컨텍스트를 현재로 만들지 못했다"
+            }
+
+            program = buildProgram()
+            positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
+            texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
+
+            val textures = IntArray(1)
+            GLES20.glGenTextures(1, textures, 0)
+            textureId = textures[0]
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        } catch (throwable: Throwable) {
+            // 생성자가 던지면 close() 를 부를 인스턴스가 없다. 여기서 놓으면 EGL 객체가 샌다
+            releaseEgl(createdDisplay, createdSurface, createdContext)
+            throw throwable
         }
 
-        program = buildProgram()
-        positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
-        texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
-
-        val textures = IntArray(1)
-        GLES20.glGenTextures(1, textures, 0)
-        textureId = textures[0]
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        display = createdDisplay
+        context = createdContext
+        eglSurface = createdSurface
     }
 
     /**
@@ -128,19 +142,29 @@ class BitmapSurfaceWriter(
         if (isClosed) return
         isClosed = true
 
+        releaseEgl(display, eglSurface, context)
+    }
+
+    private fun releaseEgl(
+        display: EGLDisplay,
+        surface: EGLSurface,
+        context: EGLContext,
+    ) {
+        if (display == EGL14.EGL_NO_DISPLAY) return
+
         EGL14.eglMakeCurrent(
             display,
             EGL14.EGL_NO_SURFACE,
             EGL14.EGL_NO_SURFACE,
             EGL14.EGL_NO_CONTEXT,
         )
-        EGL14.eglDestroySurface(display, eglSurface)
-        EGL14.eglDestroyContext(display, context)
+        if (surface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, surface)
+        if (context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, context)
         EGL14.eglReleaseThread()
         EGL14.eglTerminate(display)
     }
 
-    private fun chooseConfig(): EGLConfig {
+    private fun chooseConfig(display: EGLDisplay): EGLConfig {
         val attributes = intArrayOf(
             EGL14.EGL_RED_SIZE, 8,
             EGL14.EGL_GREEN_SIZE, 8,

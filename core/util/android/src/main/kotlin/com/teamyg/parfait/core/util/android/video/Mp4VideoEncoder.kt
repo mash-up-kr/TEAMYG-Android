@@ -111,18 +111,19 @@ class Mp4VideoEncoder(
         if (isClosed) return
         isClosed = true
 
+        var muxerStopFailure: Throwable? = null
+
         runOnEncoderThread {
             runCatching { writer.close() }
             runCatching {
                 codec.stop()
                 codec.release()
             }
-            runCatching {
-                if (isMuxerStarted) muxer.stop()
-                muxer.release()
-            }
+            // moov 박스를 쓰는 것이 stop() 이라, 여기서 실패하면 마감했어도 재생할 수 없는 파일이다
+            muxerStopFailure = runCatching { if (isMuxerStarted) muxer.stop() }.exceptionOrNull()
+            runCatching { muxer.release() }
 
-            if (!isFinished && outputFile.exists()) {
+            if ((!isFinished || muxerStopFailure != null) && outputFile.exists()) {
                 // 헤더가 덜 쓰인 mp4 는 재생되지 않는다. 호출부가 그것을 갤러리에 올리지 못하게 지운다
                 val deleted = outputFile.delete()
                 if (!deleted) {
@@ -134,6 +135,9 @@ class Mp4VideoEncoder(
         // 녹화가 끝난 뒤 전용 스레드가 남지 않게 한다
         executor.shutdown()
         runCatching { executor.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS) }
+
+        // 마감까지 한 호출부가 성공으로 알면 안 된다. 마감 전에 닫은 것은 원래 실패 경로라 던지지 않는다
+        if (isFinished) muxerStopFailure?.let { throw it }
     }
 
     /**
@@ -150,15 +154,17 @@ class Mp4VideoEncoder(
         }
 
         while (true) {
+            // 분기마다가 아니라 여기서 본다 — 어느 반환값이 되풀이돼도 루프가 끝나야 한다
+            if (eosDeadlineNanos != null) {
+                check(System.nanoTime() < eosDeadlineNanos) {
+                    "코덱이 ${EOS_DRAIN_TIMEOUT_MILLIS}ms 안에 EOS 를 내놓지 않았다"
+                }
+            }
+
             val outputIndex = codec.dequeueOutputBuffer(bufferInfo, DEQUEUE_TIMEOUT_MICROS)
 
             when {
-                outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> {
-                    if (!endOfStream) return
-                    check(System.nanoTime() < checkNotNull(eosDeadlineNanos)) {
-                        "코덱이 ${EOS_DRAIN_TIMEOUT_MILLIS}ms 안에 EOS 를 내놓지 않았다"
-                    }
-                }
+                outputIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> if (!endOfStream) return
 
                 outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
                     check(!isMuxerStarted) { "출력 포맷이 두 번 바뀌었다" }
