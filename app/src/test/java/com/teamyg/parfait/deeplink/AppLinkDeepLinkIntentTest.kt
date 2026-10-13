@@ -52,6 +52,24 @@ class AppLinkDeepLinkIntentTest {
     }
 
     @Test
+    fun toAppLinkDeepLinkOrNull_trailingSlashPath_returnsOpenGroupInvite() {
+        // Given, When 끝 슬래시가 붙은 /link/ 에 inviteCode 가 붙어 열림
+        val result = appLinkIntent(inviteCode = "ABC123", path = "/link/").toAppLinkDeepLinkOrNull()
+
+        // Then
+        assertEquals(AppLinkDeepLink.OpenGroupInvite(inviteCode = "ABC123"), result)
+    }
+
+    @Test
+    fun toAppLinkDeepLinkOrNull_subPath_returnsNull() {
+        // Given, When 코드를 경로로 실은 /link/ABC123
+        val result = appLinkIntent(inviteCode = "ABC123", path = "/link/ABC123").toAppLinkDeepLinkOrNull()
+
+        // Then 링크 양식은 쿼리 파라미터뿐이다
+        assertNull(result)
+    }
+
+    @Test
     fun toAppLinkDeepLinkOrNull_rootPath_returnsNull() {
         // Given, When 랜딩 페이지(루트)에 inviteCode 가 붙어 열림
         val result = appLinkIntent(inviteCode = "ABC123", path = "").toAppLinkDeepLinkOrNull()
