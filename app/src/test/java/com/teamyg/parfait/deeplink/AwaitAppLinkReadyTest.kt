@@ -12,27 +12,43 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AwaitAppLinkReadyTest {
     @Test
-    fun awaitAppLinkReady_whileSplash_waits() = runTest {
+    fun awaitAppLinkReady_whileSplash_waitsAndChecksSessionOnlyAfterLeavingSplash() = runTest {
         // Given 스플래시가 아직 목적지를 확정하지 않았다
         val top = MutableStateFlow<NavKey?>(NavKeySplash)
+        var sessionChecks = 0
         var navigable = false
-        val job = launch {
-            awaitAppLinkReady(currentNavKey = top, hasActiveSession = { true })
+        launch {
+            awaitAppLinkReady(
+                currentNavKey = top,
+                hasActiveSession = {
+                    sessionChecks++
+                    true
+                },
+            )
             navigable = true
         }
 
         // When
         advanceUntilIdle()
 
-        // Then 스플래시의 replaceAll 에 지워지니 쌓지 않는다
+        // Then 스플래시의 replaceAll 에 지워지니 쌓지 않고, 부트스트랩이 토큰을 지우기 전이니 세션도 묻지 않는다
         assertFalse(navigable)
-        job.cancel()
+        assertEquals(0, sessionChecks)
+
+        // When 스플래시가 캔버스로 목적지를 확정한다
+        top.value = NavKeyCanvasMain(groupId = 1)
+        advanceUntilIdle()
+
+        // Then 그제야 세션을 한 번 확인하고 통과한다
+        assertTrue(navigable)
+        assertEquals(1, sessionChecks)
     }
 
     @Test
