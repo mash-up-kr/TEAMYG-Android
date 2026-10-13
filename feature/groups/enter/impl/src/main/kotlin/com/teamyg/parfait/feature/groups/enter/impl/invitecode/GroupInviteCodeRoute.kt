@@ -26,6 +26,7 @@ import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.isSensitive
 import com.teamyg.parfait.core.util.android.extension.navigationBarsAndImePadding
 import com.teamyg.parfait.domain.model.group.InviteCode
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupNickName
 import com.teamyg.parfait.core.ui.R as CoreUiR
 
@@ -33,6 +34,7 @@ import com.teamyg.parfait.core.ui.R as CoreUiR
 @Composable
 fun GroupInviteCodeRoute(
     navigator: Navigator,
+    navKey: NavKeyGroupInviteCode,
     modifier: Modifier = Modifier,
     viewModel: GroupInviteCodeViewModel = hiltViewModel(),
 ) {
@@ -78,8 +80,15 @@ fun GroupInviteCodeRoute(
         }
     }
 
+    // App Links 로 들어왔으면(navKey.inviteCode) 입력칸만 미리 채운다 — 참여 여부는 사용자가
+    // 화면을 보고 직접 다음 버튼을 눌러 확정한다. 수동 진입이면 첫 칸에 포커스를 준다.
     LaunchedEffect(Unit) {
-        viewModel.processIntent(GroupInviteCodeIntent.RequestFocus)
+        val prefillCode = navKey.inviteCode
+        if (prefillCode != null) {
+            viewModel.processIntent(GroupInviteCodeIntent.ChangeText(text = prefillCode, cursor = prefillCode.length))
+        } else {
+            viewModel.processIntent(GroupInviteCodeIntent.RequestFocus)
+        }
     }
 
     LaunchedEffect(uiState.isFocused) {
