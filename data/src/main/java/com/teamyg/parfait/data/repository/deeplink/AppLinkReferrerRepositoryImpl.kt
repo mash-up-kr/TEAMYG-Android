@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.repository.deeplink
 
 import com.teamyg.parfait.data.installer.deeplink.AppLinkReferrerGateway
+import com.teamyg.parfait.data.installer.deeplink.ReferrerLookup
 import com.teamyg.parfait.data.source.deeplink.local.AppLinkReferrerLocalDataSource
 import com.teamyg.parfait.domain.model.deeplink.AppLinkDeepLink
 import com.teamyg.parfait.domain.repository.deeplink.AppLinkReferrerRepository
@@ -15,12 +16,25 @@ constructor(
 ) : AppLinkReferrerRepository {
     override suspend fun consumeDeepLinkOnce(): AppLinkDeepLink? {
         if (localDataSource.hasChecked()) return null
-        localDataSource.markChecked()
 
-        val referrer = gateway.getReferrer() ?: return null
-        val inviteCode = referrerQueryParameter(referrer, key = AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY)
+        // 일시 실패는 "확인함"으로 남기지 않는다 — 남기면 한 번의 실패로 복원 기회가 영구히 사라진다.
+        return when (val lookup = gateway.getReferrer()) {
+            is ReferrerLookup.Found -> {
+                localDataSource.markChecked()
+                val inviteCode = referrerQueryParameter(
+                    lookup.referrer,
+                    key = AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY,
+                )
+                AppLinkDeepLink.OpenGroupInvite.parse(inviteCode)
+            }
 
-        return AppLinkDeepLink.OpenGroupInvite.parse(inviteCode)
+            ReferrerLookup.NotAvailable -> {
+                localDataSource.markChecked()
+                null
+            }
+
+            ReferrerLookup.TransientFailure -> null
+        }
     }
 
     /**

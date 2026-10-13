@@ -15,7 +15,7 @@ class PlayInstallReferrerGateway
 constructor(
     @ApplicationContext private val context: Context,
 ) : AppLinkReferrerGateway {
-    override suspend fun getReferrer(): String? = suspendCancellableCoroutine { continuation ->
+    override suspend fun getReferrer(): ReferrerLookup = suspendCancellableCoroutine { continuation ->
         val client = InstallReferrerClient.newBuilder(context).build()
 
         // endConnection 을 두 경로(정상 응답, 코루틴 취소) 모두에서 호출해야 서비스 바인딩이 샌다.
@@ -24,17 +24,10 @@ constructor(
         client.startConnection(
             object : InstallReferrerStateListener {
                 override fun onInstallReferrerSetupFinished(responseCode: Int) {
-                    val referrer = if (responseCode == InstallReferrerResponse.OK) {
-                        runCatching { client.installReferrer.installReferrer }
-                            .onFailure { repositoryLogger.w(it) { "[APP-LINK] Install Referrer 조회가 실패했다" } }
-                            .getOrNull()
-                    } else {
-                        repositoryLogger.i { "[APP-LINK] Install Referrer 응답 코드 $responseCode" }
-                        null
-                    }
+                    val lookup = lookupFor(client, responseCode)
 
                     client.endConnection()
-                    if (continuation.isActive) continuation.resume(referrer)
+                    if (continuation.isActive) continuation.resume(lookup)
                 }
 
                 override fun onInstallReferrerServiceDisconnected() {
@@ -42,5 +35,25 @@ constructor(
                 }
             },
         )
+    }
+
+    private fun lookupFor(
+        client: InstallReferrerClient,
+        responseCode: Int,
+    ): ReferrerLookup = when (responseCode) {
+        InstallReferrerResponse.OK -> runCatching { client.installReferrer.installReferrer }
+            .onFailure { repositoryLogger.w(it) { "[APP-LINK] Install Referrer 조회가 실패했다" } }
+            .getOrNull()
+            ?.let(ReferrerLookup::Found)
+            ?: ReferrerLookup.TransientFailure
+
+        InstallReferrerResponse.SERVICE_UNAVAILABLE,
+        InstallReferrerResponse.SERVICE_DISCONNECTED,
+        -> ReferrerLookup.TransientFailure
+
+        else -> {
+            repositoryLogger.i { "[APP-LINK] Install Referrer 응답 코드 $responseCode" }
+            ReferrerLookup.NotAvailable
+        }
     }
 }
