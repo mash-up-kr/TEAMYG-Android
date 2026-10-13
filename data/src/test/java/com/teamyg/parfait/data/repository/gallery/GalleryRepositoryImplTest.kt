@@ -8,6 +8,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
@@ -48,6 +49,7 @@ class GalleryRepositoryImplTest {
         assertTrue(result.isSuccess)
         assertTrue(output.toByteArray().contentEquals(byteArrayOf(7, 8, 9)))
         verify(exactly = 1) { galleryMediaProvider.finalizePendingVideo(uri) }
+        assertFalse(file.exists())
     }
 
     @Test
@@ -62,9 +64,10 @@ class GalleryRepositoryImplTest {
             displayName = "parfait_1.mp4",
         )
 
-        // Then 지울 대상이 없으므로 삭제를 부르지 않는다
+        // Then 지울 등록이 없으므로 삭제를 부르지 않는다. 캐시 파일은 실패해도 지운다
         assertTrue(result.isFailure)
-        verify(exactly = 0) { galleryMediaProvider.deleteImage(any()) }
+        assertFalse(file.exists())
+        verify(exactly = 0) { galleryMediaProvider.deletePendingMedia(any()) }
     }
 
     @Test
@@ -82,7 +85,7 @@ class GalleryRepositoryImplTest {
 
         // Then 빈 항목이 갤러리에 남지 않게 등록을 되돌린다
         assertTrue(result.isFailure)
-        verify(exactly = 1) { galleryMediaProvider.deleteImage(uri) }
+        verify(exactly = 1) { galleryMediaProvider.deletePendingMedia(uri) }
         verify(exactly = 0) { galleryMediaProvider.finalizePendingVideo(uri) }
     }
 
@@ -100,6 +103,6 @@ class GalleryRepositoryImplTest {
 
         // Then 실패로 접고 등록을 되돌린다
         assertTrue(result.isFailure)
-        verify(exactly = 1) { galleryMediaProvider.deleteImage(uri) }
+        verify(exactly = 1) { galleryMediaProvider.deletePendingMedia(uri) }
     }
 }
