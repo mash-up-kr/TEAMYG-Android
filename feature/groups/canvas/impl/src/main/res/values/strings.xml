@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="canvas_topping_content_description">사진</string>
-    <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n첫번째 사진을 올려 캔버스를 채워보세요</string>
+    <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n친구들과 함께 남기고 싶은 순간을 캔버스에 붙여 주세요</string>
     <string name="canvas_main_topping_add">사진 추가</string>
     <string name="canvas_main_canvas_edit">배경 변경</string>
     <string name="canvas_main_save_to_gallery">갤러리에 저장</string>
