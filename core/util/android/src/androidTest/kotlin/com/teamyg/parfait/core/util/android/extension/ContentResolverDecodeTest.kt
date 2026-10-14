@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.teamyg.parfait.core.util.android.model.DecodeSize
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -27,13 +28,13 @@ class ContentResolverDecodeTest {
     @Test
     fun decodeUriToBitmap_longSideOverLimit_isDecodedAtCappedSize() {
         // Given 긴 변이 상한의 두 배인 띠. 치수만 넘기면 되므로 픽셀 수는 작게 잡는다
-        writeJpeg(width = DECODE_LONG_SIDE_LIMIT * 2, height = 64)
+        writeJpeg(width = DecodeSize.LONG_SIDE_LIMIT * 2, height = 64)
 
         // When
         val decoded = context.contentResolver.decodeUriToBitmap(file.toUri())
 
         // Then
-        assertEquals(DECODE_LONG_SIDE_LIMIT, decoded.width)
+        assertEquals(DecodeSize.LONG_SIDE_LIMIT, decoded.width)
         assertEquals(32, decoded.height)
     }
 

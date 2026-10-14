@@ -10,13 +10,14 @@ import android.provider.MediaStore
 import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
 import com.teamyg.parfait.core.util.android.coreUtilAndroidLogger
+import com.teamyg.parfait.core.util.android.model.DecodeSize
 
 fun ContentResolver.decodeUriToBitmap(uri: Uri): Bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
     val source = ImageDecoder.createSource(this, uri)
     ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
         decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         decoder.isMutableRequired = true
-        val target = cappedDecodeSize(width = info.size.width, height = info.size.height)
+        val target = DecodeSize.capped(width = info.size.width, height = info.size.height)
         decoder.setTargetSize(target.width, target.height)
     }
 } else {
@@ -29,7 +30,7 @@ fun ContentResolver.decodeUriToBitmap(uri: Uri): Bitmap = if (Build.VERSION.SDK_
 
 /** 회전보다 먼저 줄인다 — 회전은 판을 하나 더 만들어, 줄이기 전이면 전체 해상도 둘이 함께 산다 */
 private fun Bitmap.cappedToDecodeSize(): Bitmap {
-    val target = cappedDecodeSize(width = width, height = height)
+    val target = DecodeSize.capped(width = width, height = height)
     if (target.width == width && target.height == height) return this
 
     val scaled = scale(target.width, target.height)
