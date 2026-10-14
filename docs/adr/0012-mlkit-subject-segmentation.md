@@ -226,3 +226,39 @@ dynamite 모듈로 배달된다. 모듈이 도착해 실제로 동작하는 시�
 > `recoverCandidates`·`C-103-Error`·「다시 시도」가 사라졌고, 분석은 1차 경로 한 번뿐이다(세그멘터는 최대 두 번:
 > 다중 subject 다음 전경 폴백). 후보 0건·실패·던진 예외·디코드 실패는 전부 편집 화면으로 간다. 이 절은 당시 판단의
 > 기록으로 보존한다. OQ-P-399는 대상 코드 삭제로 해소됐다 → [c101-loading 스펙](../superpowers/specs/archive/2026-09-30-c101-loading-design.md).
+
+## 원본 디코드 상한
+
+세그멘테이션에 넣는 원본은 긴 변 **4096px** 로 줄여 디코드한다(`DecodeSize.LONG_SIDE_LIMIT`,
+`DecodeSize.capped`). 이 ADR 의 다른 절과 달리 모델이 아니라 **입력 비트맵의 크기**에 대한 결정이다.
+
+**막으려는 것은 메모리가 아니라 그리기 제한이다.** 소프트웨어 비트맵이 100MB(ARGB_8888 약 26.2MP)를
+넘으면 그리는 순간 `RecordingCanvas.throwIfCannotDraw` 가
+`Canvas: trying to draw too large(…bytes) bitmap` 으로 던진다. 힙과 무관해 `largeHeap` 으로 못 막고,
+누끼 편집이 `getPixels` 와 mutable 을 요구해 하드웨어 비트맵으로도 못 피한다. 실제로 5520×7742
+(170,943,360 bytes) 사진이 후보 선택 화면에서 이 예외로 죽었다.
+
+**4096 인 이유**
+
+- 4096×4096 도 약 64MB 라 어떤 비율이든 제한 아래다.
+- 기기 기본 촬영 해상도(12MP 급, 긴 변 4000~4080)가 상한 아래라 기존 동작이 바뀌지 않는다.
+- 산출물 화질을 잃지 않는다 — 누끼 업로드가 원본 긴 변 1280 기준으로 줄어든다
+  ([ADR-0032](0032-android-own-topping-upload-scale.md)).
+
+**더 내리지 않은 이유** — 2048 로 내려도 문제 구간인 분석 중 순간 피크가 줄지 않았다.
+
+| SM-A356N · Android 16 · 4080×3060 사진 1장 · 각 1회 · `dumpsys meminfo` 폴링 | 4096 | 2048 |
+|---|---|---|
+| 후보 선택 화면 Native+Graphics | 201MB | 138MB |
+| 영역 편집 화면 Native+Graphics | 332MB | 190MB |
+| 분석 중 Native Heap 최대 | 415MB | 405MB |
+
+화면 배율에서 본 누끼 경계는 두 상한이 구분되지 않았다. 피크를 무엇이 만드는지는
+[open-questions](../synthesis/open-questions.md) OQ-P-228 이 추적한다.
+
+**남은 구멍**
+
+- API 28 미만 갈래는 `MediaStore.getBitmap` 이 전체 해상도로 먼저 디코드한 뒤 줄인다. 그리기
+  크래시는 막지만 큰 사진의 디코드 시점 OOM 은 남는다.
+- 원격 URL 갈래(`BitmapFactory.decodeByteArray`)에는 상한이 없다.
+
