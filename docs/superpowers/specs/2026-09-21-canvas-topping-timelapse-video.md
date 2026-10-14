@@ -244,8 +244,8 @@ sealed interface CanvasSaveResult {
 
 ## 표시·제어 규칙
 
-- 하단에 버튼 둘을 같은 폭으로 나란히 둔다. 왼쪽이 「영상으로 저장」(Secondary), 오른쪽이
-  「갤러리에 저장」(Primary)이다.
+- 하단에 버튼 둘을 전체 폭으로 위아래에 쌓는다. 위가 「사진으로 저장」(`YGButtonType.Large`), 아래가
+  「영상으로 저장」(`YGButtonType.Medium.Secondary`)이다.
 - 영상 버튼은 **토핑이 0건이면 비활성**이다. 미리보기는 평면 PNG 경로와 날짜만 받아 토핑을 셀
   수 없어 `NavKeyCanvasImageSave.toppingCount`로 실어 나른다.
 - 생성 중에는 화면을 덮지 않는다. 두 버튼을 비활성으로 두고 닫기 버튼과 시스템 뒤로가기를
