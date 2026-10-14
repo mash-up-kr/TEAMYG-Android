@@ -150,8 +150,8 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
+        Column(
+            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -161,21 +161,20 @@ internal fun CanvasImageSaveScreen(
                     bottom = YGTheme.layout.padding.padding7,
                 ),
         ) {
-            // 쌓일 것이 없으면 영상이 성립하지 않는다 — 토핑 0건에서는 누를 수 없다
+            YGButton(
+                text = stringResource(R.string.canvas_image_save_confirm),
+                buttonType = YGButtonType.Large,
+                isEnabled = isImageSaveEnabled,
+                onClick = onClickSaveImage,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
             YGButton(
                 text = stringResource(R.string.canvas_image_save_video),
                 buttonType = YGButtonType.Medium.Secondary,
                 isEnabled = isVideoSaveEnabled,
                 onClick = onClickSaveVideo,
-                modifier = Modifier.weight(1f),
-            )
-
-            YGButton(
-                text = stringResource(R.string.canvas_image_save_confirm),
-                buttonType = YGButtonType.Medium.Primary,
-                isEnabled = isImageSaveEnabled,
-                onClick = onClickSaveImage,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -185,7 +184,6 @@ private class CanvasImageSaveScreenPreviewParameterProvider : PreviewParameterPr
     override val values: Sequence<LocalDate>
         get() = sequenceOf(
             LocalDate(2026, 5, 20),
-            // 마감된 지난 캔버스도 같은 화면으로 저장한다
             LocalDate(2026, 5, 3),
         )
 }
