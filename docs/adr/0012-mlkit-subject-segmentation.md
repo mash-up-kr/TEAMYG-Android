@@ -229,8 +229,8 @@ dynamite 모듈로 배달된다. 모듈이 도착해 실제로 동작하는 시�
 
 ## 원본 디코드 상한
 
-세그멘테이션에 넣는 원본은 긴 변 **4096px** 로 줄여 디코드한다(`DECODE_LONG_SIDE_LIMIT`,
-`cappedDecodeSize`). 이 ADR 의 다른 절과 달리 모델이 아니라 **입력 비트맵의 크기**에 대한 결정이다.
+세그멘테이션에 넣는 원본은 긴 변 **4096px** 로 줄여 디코드한다(`DecodeSize.LONG_SIDE_LIMIT`,
+`DecodeSize.capped`). 이 ADR 의 다른 절과 달리 모델이 아니라 **입력 비트맵의 크기**에 대한 결정이다.
 
 **막으려는 것은 메모리가 아니라 그리기 제한이다.** 소프트웨어 비트맵이 100MB(ARGB_8888 약 26.2MP)를
 넘으면 그리는 순간 `RecordingCanvas.throwIfCannotDraw` 가
