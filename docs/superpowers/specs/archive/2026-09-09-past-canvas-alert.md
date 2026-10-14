@@ -82,9 +82,14 @@ tags: [spec, parfait, canvas, alert]
 
 ### 인원 수
 
-문구의 인원 수는 오늘 캔버스의 멤버가 아니라 **그 마감 당시의 참여자**다. `findParfaitId`로
-그 날짜의 `parfaitId`를 찾아 `GetParfaitDetailUseCase`로 상세를 받고 그 응답의 `members`
-크기를 쓴다. 조회가 실패하면 알럿을 띄우지 않는다.
+문구의 인원 수는 **그날 캔버스에 토핑을 올린 사람 수**다. `findParfaitId`로 그 날짜의
+`parfaitId`를 찾아 `GetParfaitDetailUseCase`로 상세를 받고, `toppings`를
+`placedBy.groupMemberId`로 중복 없이 센다. 조회가 실패하면 알럿을 띄우지 않는다.
+
+응답의 `members`는 쓰지 않는다. 서버 `groupMembers`는 마감 당시가 아니라 **조회 시점에 탈퇴하지
+않은 그룹원 전체**라([parfait.md](../../../api/parfait.md)) 토핑을 안 올린 사람까지 든다.
+`placedBy`는 탈퇴자를 거르지 않으므로 올린 뒤 탈퇴한 사람도 센다. 0이 되는 경우는 없다 — 토핑
+0건으로 마감된 날은 `EMPTY`라 `lastClosedDate`에 잡히지 않아 알럿 대상이 아니다.
 
 ### "보러가기" 이동
 

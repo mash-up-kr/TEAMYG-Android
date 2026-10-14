@@ -379,12 +379,16 @@ class CanvasMainViewModelTest {
     @Test
     fun todayCanvas_lastClosedDateChangedFromPreviouslySeenDate_showsPastCanvasAlertAndMarksSeen() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 이 그룹은 그저께까지는 확인한 적이 있고, 어제 마감 당시 그룹원은 두 명이었다
-            // — 오늘 시점 그룹원 수(예: 그 뒤 합류·탈퇴)와는 별개다
+            // Given 그저께까지 확인했고, 어제는 세 명 중 두 명이 토핑을 올렸다(한 명은 두 장)
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
-                    members = listOf(member("모카"), member("연경이")),
+                    members = listOf(member("모카"), member("연경이"), member("판다")),
+                    toppings = listOf(
+                        topping(positionZ = 1, placedByGroupMemberId = 1L),
+                        topping(positionZ = 2, placedByGroupMemberId = 1L),
+                        topping(positionZ = 3, placedByGroupMemberId = 2L),
+                    ),
                 ),
             )
             val viewModel = enteredViewModel()
@@ -393,9 +397,9 @@ class CanvasMainViewModelTest {
                 // When 03시 회전으로 어제까지 마감된 오늘 캔버스를 받아 온다
                 todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
 
-                // Then 새로 마감된 날과, 그날 마감 당시 그룹원 수를 실어 알린다
+                // Then 그룹원 수도 토핑 장수도 아니라 올린 사람 수를 싣는다
                 assertEquals(
-                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, memberCount = 2),
+                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 2),
                     awaitItem(),
                 )
             }
@@ -405,9 +409,37 @@ class CanvasMainViewModelTest {
         }
 
     @Test
+    fun todayCanvas_closedCanvasHasToppingFromLeftMember_countsLeftMemberAsContributor() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 어제 올린 두 명 중 한 명은 탈퇴해 그룹원 목록에 없다
+            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
+                canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
+                    members = listOf(member("모카")),
+                    toppings = listOf(
+                        topping(positionZ = 1, placedByGroupMemberId = 1L),
+                        topping(positionZ = 2, placedByGroupMemberId = 9L),
+                    ),
+                ),
+            )
+            val viewModel = enteredViewModel()
+
+            viewModel.effect.test {
+                // When
+                todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
+
+                // Then 탈퇴한 사람도 센다
+                assertEquals(
+                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 2),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
     fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlertAndDoesNotMarkSeen() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 그룹원 수를 세려고 어제 캔버스를 조회하는데 실패한다
+            // Given 토핑을 올린 사람 수를 세려고 어제 캔버스를 조회하는데 실패한다
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns
                 Result.failure(IOException("network"))
@@ -447,6 +479,7 @@ class CanvasMainViewModelTest {
             coEvery { getParfaitDetail(any(), ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(DAY_BEFORE_YESTERDAY_PARFAIT_ID, dayBeforeYesterday).copy(
                     members = listOf(member("모카")),
+                    toppings = listOf(topping(positionZ = 1)),
                 ),
             )
             val viewModel = enteredViewModel()
@@ -457,7 +490,7 @@ class CanvasMainViewModelTest {
 
                 // Then 그저께 마감을 알린다 — "처음 확인하는 순간"이면 며칠이 지났어도 보여준다
                 assertEquals(
-                    CanvasMainEffect.ShowPastCanvasAlert(date = dayBeforeYesterday, memberCount = 1),
+                    CanvasMainEffect.ShowPastCanvasAlert(date = dayBeforeYesterday, contributorCount = 1),
                     awaitItem(),
                 )
             }

@@ -111,7 +111,7 @@
 - 설계: [c301-canvas-background-edit](superpowers/specs/archive/2026-08-15-c301-canvas-background-edit.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md)
 
 ## 달력·지난 캔버스 (C-201)
-- 상태: 달력은 캔버스 메인 안에서 연도 목록과 해마다 한 번만 받는 기록 캐시로 그려지고, 보고 있는 달의 기록 있는 날과 오늘만 열린다. 지난 날을 고르면 상세 조회 결과를 오늘 구독과 분리된 칸에 두고 메뉴가 갤러리 저장·오늘로 가기로 바뀌며, 오늘 캔버스의 마지막 마감일을 이 기기·이 그룹에서 처음 보는 순간 그 마감 당시 인원 수로 지난 캔버스 알럿을 한 번 띄운다.
+- 상태: 달력은 캔버스 메인 안에서 연도 목록과 해마다 한 번만 받는 기록 캐시로 그려지고, 보고 있는 달의 기록 있는 날과 오늘만 열린다. 지난 날을 고르면 상세 조회 결과를 오늘 구독과 분리된 칸에 두고 메뉴가 갤러리 저장·오늘로 가기로 바뀌며, 오늘 캔버스의 마지막 마감일을 이 기기·이 그룹에서 처음 보는 순간 그날 토핑을 올린 사람 수(탈퇴자 포함)로 지난 캔버스 알럿을 한 번 띄운다.
 - 앵커: `CanvasMainUiState`, `CustomCalendar`, `GetParfaitHistoriesUseCase`, `PastCanvasVO`, `PastCanvasAlertRepositoryImpl`
 - ⚠️ 상세 조회가 먼저 온 호출이 이기는 `launch(key)` 가드라, 날짜를 연달아 고르면 뒤 선택은 조회되지 않고 앞 응답은 날짜 재확인에 걸려 버려져 머리말과 그림이 어긋난 채 남는다 (OQ-P-212)
 - ⚠️ 연도별 기록 캐시에는 무효화 경로가 없고, 파생 `parfaitHistories`가 "안 받은 해"와 "빈 해"를 같은 빈 목록으로 뭉갠다 (OQ-P-214)
