@@ -51,6 +51,7 @@ placedBy에 ownerType(ME/OTHER) 필드 추가`, PR #115). 오늘·상세 두 캔
 |---|---|---|---|---|---|
 | GET | `/api/v1/groups/{groupId}/parfaits/year` | 필요 | path `groupId` Long | `ParfaitYearsResponse` | 결선됨 |
 | GET | `/api/v1/groups/{groupId}/parfaits/today` | 필요 | path `groupId` Long | `GetTodayParfaitResponse` | 결선됨[^dayboundary] |
+| GET | `/api/v2/groups/{groupId}/parfaits/today` | 필요 | path `groupId` Long, 헤더 `If-None-Match`(선택) | `GetTodayParfaitResponse` 또는 **304 본문 없음** | 결선됨(폴러) |
 | GET | `/api/v1/groups/{groupId}/parfaits` | 필요 | query `from`·`to`(선택) | `PastParfaitsResponse` | 결선됨 |
 | GET | `/api/v1/groups/{groupId}/parfaits/{parfaitId}` | 필요 | path `groupId`·`parfaitId` Long | `GetTodayParfaitResponse`(**재사용**) | 결선됨 |
 | PATCH | `/api/v1/groups/{groupId}/parfaits/{parfaitId}/background` | 필요 | `ChangeParfaitBackgroundRequest` | `ChangeParfaitBackgroundResponse` | 결선됨 |
@@ -256,6 +257,19 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
   근거: `ParfaitControllerTest`가 성공·빈 캔버스(`background`·`images` 널)·403 세 케이스를 직접 검증한다.
   **`groupName`은 같은 테스트가 응답 JSON에 실리는 것을 확인하고**, `GetTodayParfaitServiceTest`가
   결과 객체에 담기는 것을 단언한다.
+
+### GET /api/v2/groups/{groupId}/parfaits/today
+
+서버 PR #164(`[Feat/#158]`)가 더한 **조건부 오늘 조회**다. v1 `today`와 본문 구조·부작용(없으면 생성)이 같고,
+`ETag`/`If-None-Match`로 변경 없는 폴링의 비용을 줄인다. v1은 그대로 남아 있다.
+
+- **응답 헤더**: 200·304 모두 `ETag`(약한 검증자 `W/"p{캔버스}-v{버전}-g{그룹버전}-m{멤버}"`)와
+  `Cache-Control: private, no-cache`. 앱은 값을 **해석하지 않고 불투명 문자열로** 되돌려 보낸다.
+- **304**: `If-None-Match`가 현재 ETag와 같을 때. 본문도 공통 응답 래퍼도 없다. 권한 확인이 먼저라
+  비멤버는 304가 아니라 에러를 받는다.
+- **ETag에 든 것**: 캔버스 id·캔버스 version(이미지 배치·수정·삭제·테두리·배경), 그룹 version(가입·닉네임
+  변경·탈퇴 등), **요청 멤버 id**. 그래서 하루 경계를 넘기면(캔버스 id가 바뀌어) 저절로 200이고, 계정이
+  바뀌면 같은 ETag가 일치하지 않는다.
 
 ### GET /api/v1/groups/{groupId}/parfaits
 
@@ -699,7 +713,8 @@ ViewModel 안에서 **캔버스 조회는 계약을 타고 달력 조회는 안 
 | 엔드포인트 | Service 함수 | DataSource 함수 |
 |---|---|---|
 | GET `/api/v1/groups/{groupId}/parfaits/year` | `ParfaitService#getGroupsByGroupIdParfaitsYear` | `ParfaitRemoteDataSource#getYears` |
-| GET `.../parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsToday` | `ParfaitRemoteDataSource#getTodayCanvas(groupId)` |
+| GET `.../parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsToday` | `ParfaitRemoteDataSource#getTodayCanvas(groupId)` (폴러는 부르지 않는다) |
+| GET `/api/v2/groups/{groupId}/parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsTodayIfChanged` | `ParfaitRemoteDataSource#getTodayCanvasIfChanged(groupId, etag)` → `TodayCanvasFetch` |
 | GET `.../parfaits` | `ParfaitService#getGroupsByGroupIdParfaits` | `ParfaitRemoteDataSource#getPastCanvases(groupId, from, to)` |
 | GET `.../parfaits/{parfaitId}` | `ParfaitService#getGroupsByGroupIdParfaitsByParfaitId` | `ParfaitRemoteDataSource#getCanvasDetail(groupId, parfaitId)` |
 | PATCH `.../parfaits/{parfaitId}/background` | `ParfaitService#patchGroupsByGroupIdParfaitsByParfaitIdBackground` | `ParfaitRemoteDataSource#changeCanvasBackground(groupId, parfaitId, background)` |
@@ -775,11 +790,11 @@ DataSource 테스트는 29 케이스이고, 배경 변경 요청 바디의 **조
 ✅ **`today`·상세 두 갈래를 부르는 주체가 화면에서 저장소 층으로 내려갔다**(2026-08-31 develop 머지, PR #404).
 엔드포인트·요청·응답은 하나도 안 바뀌었고 `android_status`도 `done` 그대로다. 바뀐 것은 **누가 언제 부르는가**다 —
 세 화면이 각자 부르던 자리를 `:data`의 `CanvasPoller` 하나가 가져가고, 화면은 `ParfaitRepository.todayCanvas(groupId)`
-`Flow`를 구독만 한다. 주기 갱신은 **부작용 없는 상세 조회**를 쓰고 `today`는 **캐시가 비었거나 실린 날짜가
-오늘이 아닐 때**, 즉 캔버스를 만들 필요가 있을 때만 부른다. 위가 "억제가 화면의 `launch(key)` 하나에 걸려
+`Flow`를 구독만 한다. 주기 갱신은 **조건부 오늘 조회(v2 `today`)** 하나다 — 직전 응답의 ETag를 `If-None-Match`로 보내
+304면 캐시를 그대로 둔다(ETag는 캐시에 실린 날짜가 오늘일 때만 보낸다). 상세 조회는 과거 날짜를 볼 때만 쓴다. 위가 "억제가 화면의 `launch(key)` 하나에 걸려
 있다"고 적던 상태는 끝났다 — **억제 지점이 폴러의 그룹별 진행 중 가드 한 곳으로 모였고** 다른 소비자가
-따로 규율을 지킬 필요가 없다. 다만 **경계 티커가 발화하면 그 그룹을 보고 있는 클라이언트가 각자 한 번씩
-`today`를 태우므로** 서버 쪽 중복 생성 방지 여부는 여전히 확인되지 않았다(OQ-P-323).
+따로 규율을 지킬 필요가 없다. 다만 **v2 `today`는 304 경로에서도 서버가 오늘 캔버스를 확보(ensure)하고, 매 주기 보고 있는 클라이언트마다
+부르므로** 서버 쪽 중복 생성 방지 여부는 여전히 확인되지 않았다(OQ-P-323).
 
 ✅ **2026-08-31 서버 delta가 낸 공백을 같은 날 닫았고 이튿날 develop에 들어왔다**(PR #428 `e870fb87`) — 과거 목록 원소의 `status`를 앱 DTO
 `PastParfaitResponse`와 `PastCanvasVO`가 받는다. 매핑은 `today`·상세가 이미 쓰던
