@@ -1,6 +1,7 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
 import com.teamyg.parfait.data.network.ApiCaller
+import com.teamyg.parfait.data.network.NetworkConstValue.ETAG_HEADER
 import com.teamyg.parfait.data.service.ParfaitService
 import com.teamyg.parfait.data.source.parfait.mapper.toCanvasBackground
 import com.teamyg.parfait.data.source.parfait.mapper.toCanvasVO
@@ -28,6 +29,20 @@ class ParfaitRemoteDataSourceImpl @Inject constructor(
     override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> = apiCaller.safeApiCall(
         block = { parfaitService.getGroupsByGroupIdParfaitsToday(groupId.value) },
         transform = { it.toCanvasVO() },
+    )
+
+    override suspend fun getTodayCanvasIfChanged(
+        groupId: GroupId,
+        etag: String?,
+    ): Result<TodayCanvasFetch> = apiCaller.safeConditionalApiCall(
+        block = {
+            parfaitService.getGroupsByGroupIdParfaitsTodayIfChanged(
+                groupId = groupId.value,
+                ifNoneMatch = etag,
+            )
+        },
+        notModified = TodayCanvasFetch.NotModified,
+        transform = { data, headers -> TodayCanvasFetch.Modified(data.toCanvasVO(), headers[ETAG_HEADER]) },
     )
 
     override suspend fun getPastCanvases(
