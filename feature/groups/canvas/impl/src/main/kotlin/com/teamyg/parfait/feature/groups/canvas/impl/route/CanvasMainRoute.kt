@@ -249,7 +249,6 @@ internal fun CanvasMainRoute(
                                     ),
                                 )
                             }
-                            // 복사 확인 문구로 바꿔 다시 띄운다 — 같은 배너를 새 타이머로 한 번 더 보여준다
                             alertPolicy.show(
                                 title = welcomeCreatedTitleFormat.format(welcome.groupName),
                                 sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
