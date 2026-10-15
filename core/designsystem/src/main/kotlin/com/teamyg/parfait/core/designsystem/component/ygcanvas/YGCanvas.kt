@@ -60,6 +60,9 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
  */
 const val CANVAS_AREA_ASPECT_RATIO = 9f / 16f
 
+/** Figma 에서 캔버스는 상단 바와 16dp, 오버레이는 13dp 떨어진다 */
+private val OVERLAY_RAISE = 3.dp
+
 /** 이미지 배경이 아니면 기다릴 것이 없어 [Loaded] 다 */
 enum class YGCanvasBackgroundState { Loading, Loaded, Failed }
 
@@ -94,13 +97,13 @@ fun YGCanvas(
      * 캡처할 수 있게 한다.
      */
     captureGraphicsLayer: GraphicsLayer? = null,
-    /** 캔버스 프레임의 진짜 상단 테두리 선에 위쪽이 맞춰지는 오버레이 자리(토스트·얼럿 등)다 */
+    /** 캔버스 상단보다 조금 위에서 시작하는 오버레이 자리(토스트·얼럿 등)다 */
     overlayContent: @Composable BoxScope.() -> Unit = {},
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shape = canvasCutCornerShape()
     val defaultHorizontalPadding = YGTheme.layout.padding.padding7
-    val minVerticalGap = YGTheme.layout.padding.padding5
+    val minVerticalGap = YGTheme.layout.padding.padding6
     val menuHeight = SizeTokens.Size44.getDp()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -191,12 +194,10 @@ fun YGCanvas(
             }
         }
 
-        // metrics.verticalGap 은 캔버스 프레임(테두리 포함)의 실제 상단 위치라, 여기서 그대로
-        // 써야 오버레이 위쪽이 캔버스 상단 테두리 선에 정확히 걸린다
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = metrics.verticalGap + 1.dp),
+                .padding(top = metrics.verticalGap - OVERLAY_RAISE),
         ) {
             overlayContent()
         }
