@@ -21,6 +21,17 @@ interface ParfaitRemoteDataSource {
     suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
 
     /**
+     * [getTodayCanvas] 와 같되 [etag] 가 서버의 현재 값과 같으면 본문 없이 [TodayCanvasFetch.NotModified] 다.
+     * 없으면 서버가 만드는 부작용도 같다.
+     *
+     * @param etag 직전 응답에서 받은 값. `null` 이면 항상 본문이 온다.
+     */
+    suspend fun getTodayCanvasIfChanged(
+        groupId: GroupId,
+        etag: String?,
+    ): Result<TodayCanvasFetch>
+
+    /**
      * 과거 캔버스 목록. 범위를 생략하면 서버 기본값(오늘 - 30일 ~ 오늘)이다.
      *
      * 페이지네이션도 범위 상한도 없다 — 넓게 주면 그만큼 전량이 내려온다.
