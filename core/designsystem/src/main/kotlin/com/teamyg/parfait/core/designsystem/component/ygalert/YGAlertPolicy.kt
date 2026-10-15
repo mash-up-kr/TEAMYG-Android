@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -28,12 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
-import kotlin.time.Duration.Companion.milliseconds
 
-private const val DISMISS_DELAY = 2500L
 private const val ANIMATION_DURATION = 300
 private const val SWIPE_DISMISS_THRESHOLD = -100f
 private const val FLING_DISMISS_VELOCITY = -500f
@@ -86,11 +82,6 @@ fun YGAlertHost(
 
     Box(modifier = modifier) {
         policy.alert?.let { alert ->
-            LaunchedEffect(alert.id) {
-                delay(DISMISS_DELAY.milliseconds)
-                policy.clearAlert()
-            }
-
             AnimatedVisibility(
                 visible = alert.visible,
                 enter = slideInVertically(tween(ANIMATION_DURATION)) { -it },

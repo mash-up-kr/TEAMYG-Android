@@ -12,15 +12,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlert
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.SegmentationBounds
-import com.teamyg.parfait.feature.segmentation.impl.component.GuideBanner
+import com.teamyg.parfait.feature.segmentation.impl.R
 import com.teamyg.parfait.feature.segmentation.impl.component.SegmentationSubjectHighlight
 import com.teamyg.parfait.feature.segmentation.impl.viewmodel.SegmentationState
+
+/** Figma 에서 상단 바와 사진은 38dp, 얼럿은 13dp 떨어진다 */
+private val IMAGE_TOP_GAP = 38.dp
+private val ALERT_TOP_GAP = 13.dp
 
 /** 후보를 하나 이상 얻은 뒤의 상태만 그린다 */
 @Composable
@@ -30,6 +37,7 @@ internal fun SegmentationScreen(
     onClickClose: () -> Unit,
     onClickCandidate: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
+    alert: @Composable () -> Unit = {},
 ) {
     Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
         YGFloatingBarBackClose(
@@ -38,27 +46,33 @@ internal fun SegmentationScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Column(
+        // 얼럿이 화면 폭을 써야 해서 좌우 여백은 사진에만 준다
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .padding(
-                    start = YGTheme.layout.padding.padding7,
-                    top = YGTheme.layout.padding.padding6,
-                    end = YGTheme.layout.padding.padding7,
-                    bottom = YGTheme.layout.padding.padding6,
-                ),
+                .fillMaxWidth(),
         ) {
-            GuideBanner(modifier = Modifier.fillMaxWidth())
-
             SegmentationResultImage(
                 originBitmap = state.originBitmap,
                 boundsList = state.candidates.map { it.bounds },
                 onClickCandidate = onClickCandidate,
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxSize()
+                    .padding(
+                        start = YGTheme.layout.padding.padding7,
+                        top = IMAGE_TOP_GAP,
+                        end = YGTheme.layout.padding.padding7,
+                        bottom = YGTheme.layout.padding.padding6,
+                    ),
             )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = ALERT_TOP_GAP),
+            ) {
+                alert()
+            }
         }
     }
 }
@@ -103,6 +117,15 @@ private fun PreviewSegmentationScreen() = PreviewBox {
         onClickBack = {},
         onClickClose = {},
         onClickCandidate = {},
+        alert = {
+            YGAlert(
+                title = stringResource(R.string.segmentation_manual_select_alert_title),
+                sub = stringResource(R.string.segmentation_manual_select_alert_sub),
+                buttonText = stringResource(R.string.segmentation_manual_select_alert_button),
+                onButtonClick = {},
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
         modifier = Modifier.fillMaxSize(),
     )
 }

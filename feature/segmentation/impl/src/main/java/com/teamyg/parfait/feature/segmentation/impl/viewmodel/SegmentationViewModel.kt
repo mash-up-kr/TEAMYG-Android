@@ -33,6 +33,8 @@ data class SegmentationState(
 sealed interface SegmentationIntent : UiIntent {
     data class ClickCandidate(val index: Int) : SegmentationIntent
 
+    data object ClickManualSelect : SegmentationIntent
+
     data object ClickClose : SegmentationIntent
 
     data object ConfirmQuit : SegmentationIntent
@@ -51,6 +53,9 @@ sealed interface SegmentationEffect : UiSideEffect {
 
     /** 대상을 못 얻어 편집에 간다. 편집이 원본을 마스크로도 읽는다 */
     data object GoToEditDetectionFailed : SegmentationEffect
+
+    /** 직접 고르러 편집에 간다. 마스크는 원본 전체다 */
+    data object GoToEditManual : SegmentationEffect
 }
 
 /** 분석이 낸 결과. 팝업이 떠 있으면 [SegmentationViewModel.deliver] 가 보류한다 */
@@ -142,6 +147,11 @@ class SegmentationViewModel
     override fun processIntent(intent: SegmentationIntent) {
         when (intent) {
             is SegmentationIntent.ClickCandidate -> selectCandidate(intent.index)
+
+            // 저장 중이면 그 결과로 편집에 간다
+            SegmentationIntent.ClickManualSelect -> if (!state.value.isSaving) {
+                postSideEffect(SegmentationEffect.GoToEditManual)
+            }
 
             SegmentationIntent.ClickClose -> updateState { copy(showQuitDialog = true) }
 
