@@ -15,7 +15,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlert
-import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackClose
+import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
@@ -40,7 +40,8 @@ internal fun SegmentationScreen(
     alert: @Composable () -> Unit = {},
 ) {
     Column(modifier = modifier.background(YGAtomicColors.Gray.White)) {
-        YGFloatingBarBackClose(
+        YGFloatingBarBackTitleClose(
+            title = stringResource(R.string.segmentation_title),
             onBackClick = onClickBack,
             onCloseClick = onClickClose,
             modifier = Modifier.fillMaxWidth(),

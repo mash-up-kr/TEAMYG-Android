@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="segmentation_title">대상 선택</string>
+
     <string name="segmentation_manual_select_alert_title">대상을 직접 선택할 수 있어요</string>
     <string name="segmentation_manual_select_alert_sub">원하는 대상이 없다면 직접 편집해요</string>
     <string name="segmentation_manual_select_alert_button">직접 선택</string>
