@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="segmentation_guide_banner">토핑으로 사용할 대상을 하나 선택해 주세요</string>
+    <string name="segmentation_guide_banner">캔버스에 올릴 대상을 하나 선택해 주세요</string>
 
     <string name="segmentation_error_message">사진 편집에 실패했어요. 잠시 후 다시 시도해 주세요.</string>
 

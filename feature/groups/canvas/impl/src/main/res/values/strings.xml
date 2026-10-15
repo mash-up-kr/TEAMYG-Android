@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="canvas_topping_content_description">사진</string>
-    <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n첫번째 사진을 올려 캔버스를 채워보세요</string>
+    <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n친구들과 함께 남기고 싶은 순간을 캔버스에 붙여 주세요</string>
     <string name="canvas_main_topping_add">사진 추가</string>
     <string name="canvas_main_canvas_edit">배경 변경</string>
     <string name="canvas_main_save_to_gallery">갤러리에 저장</string>
@@ -10,7 +10,7 @@
     <string name="canvas_main_gallery_select">갤러리에서 선택</string>
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
-    <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요. 나중에 다시 시도해 주세요</string>
+    <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요, 나중에 다시 시도해 주세요</string>
     <string name="canvas_main_capture_failure">미리보기를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_main_closed_canvas_alert_title">%1$d월 %2$d일의 파르페 완성</string>
     <string name="canvas_main_closed_canvas_alert_sub">%1$d명의 친구들과 함께했어요</string>

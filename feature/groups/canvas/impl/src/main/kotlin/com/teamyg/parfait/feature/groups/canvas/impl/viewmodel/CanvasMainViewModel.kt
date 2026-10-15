@@ -230,7 +230,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
      */
     data class ShowPastCanvasAlert(
         val date: LocalDate,
-        val memberCount: Int,
+        val contributorCount: Int,
     ) : CanvasMainEffect
 }
 
@@ -409,27 +409,31 @@ constructor(
                 return@launch
             }
 
-            val memberCount = closedCanvasMemberCount(lastClosedDate) ?: return@launch
+            val contributorCount = closedCanvasContributorCount(lastClosedDate) ?: return@launch
             pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
 
             postSideEffect(
                 CanvasMainEffect.ShowPastCanvasAlert(
                     date = lastClosedDate,
-                    memberCount = memberCount,
+                    contributorCount = contributorCount,
                 ),
             )
         }
     }
 
     /**
-     * [date] 마감 당시의 그룹원 수. 지난 캔버스 조회 API로 따로 불러와 그 응답의 members 를 쓴다.
+     * [date] 캔버스에 토핑을 올린 사람 수. 탈퇴한 사람도 센다.
+     *
+     * members 는 토핑을 안 올린 그룹원까지 들어 쓰지 않는다 —
+     * docs/superpowers/specs/archive/2026-09-09-past-canvas-alert.md "인원 수".
      */
-    private suspend fun closedCanvasMemberCount(date: LocalDate): Int? {
+    private suspend fun closedCanvasContributorCount(date: LocalDate): Int? {
         val parfaitId = findParfaitId(date) ?: return null
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.members
+            ?.toppings
+            ?.distinctBy { it.placedBy.groupMemberId }
             ?.size
     }
 
