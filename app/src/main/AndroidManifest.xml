@@ -46,6 +46,28 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+                App Links. autoVerify 는 서버가 /.well-known/assetlinks.json 을 배포해야
+                실제로 검증이 붙는다 — 그전까지는 시스템이 앱과 브라우저 중 고르는 선택지로
+                내려간다. 링크 양식은 `https://parfait-app.store/link?inviteCode={code}` 로 확정이다.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="parfait-app.store"
+                    android:path="/link" />
+                <!-- 끝 슬래시(/link/?inviteCode=…)만 따로 받는다. 하위 경로(/link/ABC123)는 열지 않는다. -->
+                <data
+                    android:scheme="https"
+                    android:host="parfait-app.store"
+                    android:path="/link/" />
+            </intent-filter>
         </activity>
 
         <service

@@ -38,7 +38,7 @@ class NavKeyAnalyticsScreenTest {
             NavKeySplash to "A-001",
             NavKeyLogin to "A-002",
             NavKeyTermAgree(registrationToken = "token") to "A-003",
-            NavKeyGroupInviteCode to "A-004",
+            NavKeyGroupInviteCode() to "A-004",
             NavKeyGroupNickName(inviteCode = "CODE", groupName = "그룹", nickName = "닉") to "A-004-naming",
             NavKeyGroupCreate(nickName = "닉") to "A-005",
             NavKeyGroupList to "G-001",
