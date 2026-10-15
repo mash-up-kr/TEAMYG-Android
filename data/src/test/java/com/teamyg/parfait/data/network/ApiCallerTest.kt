@@ -4,6 +4,7 @@ import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException
@@ -215,5 +216,109 @@ class ApiCallerTest {
         assertFailsWith<CancellationException> {
             apiCaller.safeApiCallNoContent { throw exception }
         }
+    }
+
+    @Test
+    fun safeConditionalApiCall_304_returnsTheNotModifiedValue() = runTest {
+        // Given 본문 없는 304
+        val response = notModifiedResponse<ApiResponse<String>>()
+
+        // When 조건부 호출
+        val result = apiCaller.safeConditionalApiCall(
+            block = { response },
+            notModified = "NOT_MODIFIED",
+            transform = { data, _ -> data },
+        )
+
+        // Then 304 를 에러가 아니라 성공 값으로 돌려준다
+        assertEquals("NOT_MODIFIED", result.getOrThrow())
+    }
+
+    @Test
+    fun safeConditionalApiCall_200_handsTheDataAndHeadersToTransform() = runTest {
+        // Given ETag 헤더가 붙은 200
+        val response = Response.success(
+            success("payload"),
+            Headers.headersOf("ETag", "W/\"v1\""),
+        )
+
+        // When 조건부 호출
+        val result = apiCaller.safeConditionalApiCall(
+            block = { response },
+            notModified = "NOT_MODIFIED",
+            transform = { data, headers -> "$data|${headers["ETag"]}" },
+        )
+
+        // Then 본문과 헤더 값이 함께 변환에 들어온다
+        assertEquals("payload|W/\"v1\"", result.getOrThrow())
+    }
+
+    @Test
+    fun safeConditionalApiCall_errorStatus_isConvertedLikeOtherCalls() = runTest {
+        // Given 비즈니스 에러 본문이 실린 404
+        val body = """{"success":false,"code":"PARFAIT_NOT_FOUND","message":"없음"}"""
+        val response = Response.error<ApiResponse<String>>(
+            404,
+            body.toResponseBody("application/json".toMediaType()),
+        )
+
+        // When 조건부 호출
+        val result = apiCaller.safeConditionalApiCall(
+            block = { response },
+            notModified = "NOT_MODIFIED",
+            transform = { data, _ -> data },
+        )
+
+        // Then 다른 호출과 같이 Business 로 바뀌고 HTTP status 를 담는다
+        val error = assertIs<ApiException.Business>(result.exceptionOrNull())
+        assertEquals("PARFAIT_NOT_FOUND", error.code)
+        assertEquals(404, error.statusCode)
+    }
+
+    @Test
+    fun safeConditionalApiCall_blockThrowsCancellation_propagatesInsteadOfWrapping() = runTest {
+        // Given 코루틴 취소 예외
+        val exception = CancellationException("cancelled")
+
+        // When / Then Result 로 감싸지 않고 그대로 던진다
+        assertFailsWith<CancellationException> {
+            apiCaller.safeConditionalApiCall<String, String>(
+                block = { throw exception },
+                notModified = "NOT_MODIFIED",
+                transform = { data, _ -> data },
+            )
+        }
+    }
+
+    @Test
+    fun safeConditionalApiCall_successFalseOn200_returnsBusiness() = runTest {
+        // Given success=false 인 200
+        val response = Response.success(ApiResponse<String>(success = false, code = "FAIL", message = "실패"))
+
+        // When 조건부 호출
+        val result = apiCaller.safeConditionalApiCall(
+            block = { response },
+            notModified = "NOT_MODIFIED",
+            transform = { data, _ -> data },
+        )
+
+        // Then 본문의 success 를 믿지 않고 Business 실패다
+        assertEquals("FAIL", assertIs<ApiException.Business>(result.exceptionOrNull()).code)
+    }
+
+    @Test
+    fun safeConditionalApiCall_2xxWithoutBody_returnsUnknown() = runTest {
+        // Given 본문이 없는 200
+        val response = Response.success<ApiResponse<String>>(null)
+
+        // When 조건부 호출
+        val result = apiCaller.safeConditionalApiCall(
+            block = { response },
+            notModified = "NOT_MODIFIED",
+            transform = { data, _ -> data },
+        )
+
+        // Then NPE 로 터지지 않고 실패 값으로 돌아온다
+        assertIs<ApiException.Unknown>(result.exceptionOrNull())
     }
 }
