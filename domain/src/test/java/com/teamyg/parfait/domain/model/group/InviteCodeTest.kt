@@ -7,7 +7,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class InviteCodeTest {
-    private val messageTemplate = $$"친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s"
+    private val messageTemplate =
+        $$"친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s\n바로가기: https://parfait-app.store/link?inviteCode=%1$s"
 
     private fun message(code: String) = messageTemplate.format(code)
 
@@ -21,6 +22,30 @@ class InviteCodeTest {
 
         // Then 자리 표시자 위치의 값이 추출된다
         assertEquals(InviteCode("E54W1A"), inviteCode)
+    }
+
+    @Test
+    fun parseOrNull_withTemplate_messageHasCodeInLinkToo_extractsCodeOnce() {
+        // Given 코드가 본문과 링크에 두 번 들어간 초대 메시지
+        val text = message("KS479J")
+
+        // When 템플릿을 함께 넘겨 추출
+        val inviteCode = InviteCode.parseOrNull(text, messageTemplate)
+
+        // Then 본문 자리의 값이 한 번만 추출된다
+        assertEquals(InviteCode("KS479J"), inviteCode)
+    }
+
+    @Test
+    fun parseOrNull_withTemplate_oldMessageWithoutLinkLine_stillExtractsCode() {
+        // Given 링크 줄이 없던 옛 버전 앱이 만든 초대 메시지
+        val text = "친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? KS479J"
+
+        // When 새 템플릿을 함께 넘겨 추출
+        val inviteCode = InviteCode.parseOrNull(text, messageTemplate)
+
+        // Then 옛 메시지도 읽힌다
+        assertEquals(InviteCode("KS479J"), inviteCode)
     }
 
     @Test
