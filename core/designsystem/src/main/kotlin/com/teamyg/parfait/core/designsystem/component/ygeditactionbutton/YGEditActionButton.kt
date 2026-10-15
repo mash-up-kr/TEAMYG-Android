@@ -25,10 +25,11 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
-import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
+
+private val ICON_SIZE = 22.dp
 
 /**
  * Figma Button-Edit-Action
@@ -76,7 +77,7 @@ fun YGEditActionButton(
                 painter = painterResource(id = iconResource),
                 contentDescription = contentDescription,
                 colorFilter = ColorFilter.tint(color = YGAtomicColors.Gray.White),
-                modifier = Modifier.size(SizeTokens.Size24.getDp()),
+                modifier = Modifier.size(ICON_SIZE),
             )
         }
     }

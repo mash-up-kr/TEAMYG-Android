@@ -17,13 +17,9 @@ import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 
 @Composable
 internal fun CameraControlComponent(
-    zoomRatio: Float,
-    zoomRange: ClosedFloatingPointRange<Float>,
-    onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
-    onClickCancel: () -> Unit,
     flashMode: FlashMode,
     modifier: Modifier = Modifier,
 ) {
@@ -66,13 +62,9 @@ internal fun CameraControlComponent(
 @Composable
 private fun PreviewCameraControlComponent() = PreviewBox {
     CameraControlComponent(
-        zoomRatio = 1f,
-        zoomRange = 0.5f..10f,
-        onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
         onClickFlash = {},
-        onClickCancel = {},
         flashMode = FlashMode.OFF,
         modifier = Modifier.fillMaxWidth(),
     )

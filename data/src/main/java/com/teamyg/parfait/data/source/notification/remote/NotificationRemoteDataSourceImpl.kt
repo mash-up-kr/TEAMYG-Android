@@ -12,7 +12,7 @@ class NotificationRemoteDataSourceImpl @Inject constructor(
 ) : NotificationRemoteDataSource {
     /**
      * 서버가 token 을 유일 키로 upsert 하므로 앱 시작·토큰 갱신처럼 반복되는 자리에서 그대로
-     * 불러도 된다(`api/notification.md`).
+     * 불러도 된다(`docs/api/notification.md`).
      */
     override suspend fun registerDeviceToken(deviceToken: DeviceToken): Result<Unit> = apiCaller
         .safeApiCallNoContent {

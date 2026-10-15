@@ -10,5 +10,5 @@ android {
 dependencies {
     implementation(projects.feature.gallery.api)
     implementation(projects.feature.camera.api)
-    implementation(projects.feature.segmentation.api)
+    implementation(projects.feature.groups.canvas.api)
 }

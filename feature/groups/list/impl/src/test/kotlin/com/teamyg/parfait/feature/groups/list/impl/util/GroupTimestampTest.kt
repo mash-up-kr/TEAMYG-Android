@@ -71,7 +71,7 @@ class GroupTimestampTest {
     fun futureUploadedAt_isJustNow() {
         // Given 기기 시계가 서버보다 뒤처져 업로드 시각이 미래로 들어온다
         // When 경과 단위를 고른다
-        val timestamp = timestampAfter(-5.minutes)
+        val timestamp = timestampAfter((-5).minutes)
 
         // Then 음수 경과를 노출하지 않고 방금 전으로 본다
         assertEquals(GroupTimestamp.JustNow, timestamp)

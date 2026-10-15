@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.gallery.impl.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -139,22 +140,26 @@ private fun GalleryDateHeader(
     dayOfWeek: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = YGTheme.layout.padding.padding5),
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
     ) {
-        Text(
-            text = date,
-            color = YGAtomicColors.Gray.Gray900,
-            style = YGTheme.typography.body.b02R,
-        )
-        Text(
-            text = "($dayOfWeek)",
-            color = YGAtomicColors.Gray.Gray300,
-            style = YGTheme.typography.body.b02R,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
+            modifier = Modifier.padding(vertical = YGTheme.layout.padding.padding1),
+        ) {
+            Text(
+                text = date,
+                color = YGAtomicColors.Gray.Gray900,
+                style = YGTheme.typography.body.b02R,
+            )
+            Text(
+                text = "($dayOfWeek)",
+                color = YGAtomicColors.Gray.Gray300,
+                style = YGTheme.typography.body.b02R,
+            )
+        }
     }
 }
 

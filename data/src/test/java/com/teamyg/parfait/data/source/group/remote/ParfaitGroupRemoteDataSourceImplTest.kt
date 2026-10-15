@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupRespon
 import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberResponse
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -35,10 +36,17 @@ class ParfaitGroupRemoteDataSourceImplTest {
     private fun groupResponse(
         lastPlacedByNametagChip: String?,
         recentImageUploadedAt: String? = null,
+        recentImageUrl: String? = null,
+        recentImageBorderType: String? = null,
+        recentImageBorderColor: String? = null,
+        recentImageBorderWidth: Double? = null,
     ) = MyParfaitGroupResponse(
         groupId = 1L,
         groupName = "모카의 파르페",
-        recentImageUrl = null,
+        recentImageUrl = recentImageUrl,
+        recentImageBorderType = recentImageBorderType,
+        recentImageBorderColor = recentImageBorderColor,
+        recentImageBorderWidth = recentImageBorderWidth,
         recentImageUploadedAt = recentImageUploadedAt,
         lastPlacedByNameTagChip = lastPlacedByNametagChip,
     )
@@ -149,6 +157,87 @@ class ParfaitGroupRemoteDataSourceImplTest {
 
         // Then 던지지 않고 null 그대로 둔다 — 널 허용을 유지하기로 한 결정을 여기서 잠근다
         assertNull(result.getOrNull()?.single()?.recentImageUploadedAt)
+    }
+
+    @Test
+    fun getMyGroups_solidRecentImageBorder_becomesSolid() = runTest {
+        // Given 최신 토핑에 실선 테두리가 있다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+            listOf(
+                groupResponse(
+                    lastPlacedByNametagChip = null,
+                    recentImageUrl = "https://cdn.example.com/a.png",
+                    recentImageBorderType = "SOLID",
+                    recentImageBorderColor = "#FFD54F",
+                    recentImageBorderWidth = 6.0,
+                ),
+            ),
+        )
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then Solid 로 온다
+        assertEquals(
+            ToppingBorder.Solid(color = "#FFD54F", width = 6.0),
+            result.getOrNull()?.single()?.recentImageBorder,
+        )
+    }
+
+    @Test
+    fun getMyGroups_noneRecentImageBorder_becomesNoneIgnoringColor() = runTest {
+        // Given 종류는 NONE 인데 색·두께 값이 남아 있다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+            listOf(
+                groupResponse(
+                    lastPlacedByNametagChip = null,
+                    recentImageUrl = "https://cdn.example.com/a.png",
+                    recentImageBorderType = "NONE",
+                    recentImageBorderColor = "#FFD54F",
+                    recentImageBorderWidth = 6.0,
+                ),
+            ),
+        )
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 남은 값으로 테두리를 만들지 않는다
+        assertEquals(ToppingBorder.None, result.getOrNull()?.single()?.recentImageBorder)
+    }
+
+    @Test
+    fun getMyGroups_solidRecentImageBorderMissingWidth_fallsBackToNone() = runTest {
+        // Given SOLID 인데 두께가 비어 있다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+            listOf(
+                groupResponse(
+                    lastPlacedByNametagChip = null,
+                    recentImageUrl = "https://cdn.example.com/a.png",
+                    recentImageBorderType = "SOLID",
+                    recentImageBorderColor = "#FFD54F",
+                    recentImageBorderWidth = null,
+                ),
+            ),
+        )
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 목록은 실패하지 않고 None 으로 접힌다
+        assertEquals(ToppingBorder.None, result.getOrNull()?.single()?.recentImageBorder)
+    }
+
+    @Test
+    fun getMyGroups_noRecentImage_hasNoBorder() = runTest {
+        // Given 이미지와 테두리 필드가 null 이다
+        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse(null)))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 테두리는 None 이다
+        assertEquals(ToppingBorder.None, result.getOrNull()?.single()?.recentImageBorder)
     }
 
     @Test

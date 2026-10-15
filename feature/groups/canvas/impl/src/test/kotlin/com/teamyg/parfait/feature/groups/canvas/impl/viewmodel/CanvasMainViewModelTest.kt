@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -18,7 +19,6 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
-import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -27,8 +27,6 @@ import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -36,13 +34,13 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,6 +64,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanvasMainViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -79,20 +78,16 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
-    private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
-    private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
 
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
     private val pastCanvasAlertRepository: PastCanvasAlertRepository = mockk(relaxUnitFun = true)
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
 
     /** 폴러의 갱신 실패 신호. 캐시는 실패했을 때 아무것도 방출하지 않아 이 축이 따로 있다 */
     private val refreshFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-
-    /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
-    private val canvasTutorialVisible = MutableStateFlow(false)
 
     private val today = parfaitToday()
 
@@ -125,7 +120,6 @@ class CanvasMainViewModelTest {
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(canvas(YESTERDAY_PARFAIT_ID, yesterday))
         every { getMyGroupsFlow() } returns flowOf(listOf(GROUP))
         coEvery { refreshMyGroups() } returns Result.success(Unit)
-        every { getTutorialVisible(TutorialKind.CANVAS) } returns canvasTutorialVisible
         coEvery { pastCanvasAlertRepository.lastSeenClosedDate(any()) } returns null
     }
 
@@ -150,10 +144,9 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
-        getTutorialVisibleFlowUseCase = getTutorialVisible,
-        completeTutorialUseCase = completeTutorial,
         startToppingDraft = startToppingDraft,
         pastCanvasAlertRepository = pastCanvasAlertRepository,
+        analyticsLogger = analyticsLogger,
     )
 
     /**
@@ -165,61 +158,6 @@ class CanvasMainViewModelTest {
         backgroundScope.launch { viewModel.state.collect { } }
         viewModel.processIntent(CanvasMainIntent.Enter)
         advanceUntilIdle()
-    }
-
-    @Test
-    fun tutorial_onFirstLaunch_opensAtTheFirstStep() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 아직 튜토리얼을 보지 않은 사용자
-        canvasTutorialVisible.value = true
-
-        // When 캔버스 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 첫 장이 뜬다
-        assertEquals(CanvasTutorialStep.first, viewModel.state.value.tutorialStep)
-    }
-
-    @Test
-    fun tutorial_alreadySeen_doesNotOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 튜토리얼을 끝낸 사용자(기본 스텁)
-
-        // When 캔버스 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 아무것도 덮지 않는다
-        assertNull(viewModel.state.value.tutorialStep)
-    }
-
-    @Test
-    fun tutorial_clickingNextBeforeTheLastStep_doesNotMarkItSeen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 첫 장이 떠 있다
-        canvasTutorialVisible.value = true
-        val viewModel = enteredViewModel()
-
-        // When 칩을 한 번 누른다
-        viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext)
-        advanceUntilIdle()
-
-        // Then 다음 장으로 넘어갈 뿐, 중간에 끊긴 튜토리얼을 봤다고 남기지 않는다
-        assertEquals(CanvasTutorialStep.first.next, viewModel.state.value.tutorialStep)
-        coVerify(exactly = 0) { completeTutorial(TutorialKind.CANVAS) }
-    }
-
-    @Test
-    fun tutorial_clickingNextOnTheLastStep_closesItAndMarksItSeen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 튜토리얼이 떠 있다
-        canvasTutorialVisible.value = true
-        val viewModel = enteredViewModel()
-
-        // When 마지막 장까지 칩을 눌러 넘긴다
-        repeat(CanvasTutorialStep.totalCount) {
-            viewModel.processIntent(CanvasMainIntent.OnClickTutorialNext)
-            advanceUntilIdle()
-        }
-
-        // Then 튜토리얼이 닫히고, 다음 진입부터 뜨지 않도록 저장한다
-        assertNull(viewModel.state.value.tutorialStep)
-        coVerify(exactly = 1) { completeTutorial(TutorialKind.CANVAS) }
     }
 
     @Test
@@ -246,7 +184,7 @@ class CanvasMainViewModelTest {
         // Then launchWhileSubscribed 가 업스트림을 열지 않아 폴링도 시작되지 않는다
         verify(exactly = 0) { getTodayParfaitFlow(any(), any()) }
         val state = viewModel.state.value
-        assertTrue(state.displayedCanvas == null)
+        assertNull(state.displayedCanvas)
     }
 
     @Test
@@ -441,12 +379,16 @@ class CanvasMainViewModelTest {
     @Test
     fun todayCanvas_lastClosedDateChangedFromPreviouslySeenDate_showsPastCanvasAlertAndMarksSeen() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 이 그룹은 그저께까지는 확인한 적이 있고, 어제 마감 당시 그룹원은 두 명이었다
-            // — 오늘 시점 그룹원 수(예: 그 뒤 합류·탈퇴)와는 별개다
+            // Given 그저께까지 확인했고, 어제는 세 명 중 두 명이 토핑을 올렸다(한 명은 두 장)
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
-                    members = listOf(member("모카"), member("연경이")),
+                    members = listOf(member("모카"), member("연경이"), member("판다")),
+                    toppings = listOf(
+                        topping(positionZ = 1, placedByGroupMemberId = 1L),
+                        topping(positionZ = 2, placedByGroupMemberId = 1L),
+                        topping(positionZ = 3, placedByGroupMemberId = 2L),
+                    ),
                 ),
             )
             val viewModel = enteredViewModel()
@@ -455,9 +397,9 @@ class CanvasMainViewModelTest {
                 // When 03시 회전으로 어제까지 마감된 오늘 캔버스를 받아 온다
                 todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
 
-                // Then 새로 마감된 날과, 그날 마감 당시 그룹원 수를 실어 알린다
+                // Then 그룹원 수도 토핑 장수도 아니라 올린 사람 수를 싣는다
                 assertEquals(
-                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, memberCount = 2),
+                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 2),
                     awaitItem(),
                 )
             }
@@ -467,9 +409,37 @@ class CanvasMainViewModelTest {
         }
 
     @Test
+    fun todayCanvas_closedCanvasHasToppingFromLeftMember_countsLeftMemberAsContributor() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 어제 올린 두 명 중 한 명은 탈퇴해 그룹원 목록에 없다
+            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
+                canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
+                    members = listOf(member("모카")),
+                    toppings = listOf(
+                        topping(positionZ = 1, placedByGroupMemberId = 1L),
+                        topping(positionZ = 2, placedByGroupMemberId = 9L),
+                    ),
+                ),
+            )
+            val viewModel = enteredViewModel()
+
+            viewModel.effect.test {
+                // When
+                todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
+
+                // Then 탈퇴한 사람도 센다
+                assertEquals(
+                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 2),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
     fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlertAndDoesNotMarkSeen() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 그룹원 수를 세려고 어제 캔버스를 조회하는데 실패한다
+            // Given 토핑을 올린 사람 수를 세려고 어제 캔버스를 조회하는데 실패한다
             coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
             coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns
                 Result.failure(IOException("network"))
@@ -509,6 +479,7 @@ class CanvasMainViewModelTest {
             coEvery { getParfaitDetail(any(), ParfaitId(DAY_BEFORE_YESTERDAY_PARFAIT_ID)) } returns Result.success(
                 canvas(DAY_BEFORE_YESTERDAY_PARFAIT_ID, dayBeforeYesterday).copy(
                     members = listOf(member("모카")),
+                    toppings = listOf(topping(positionZ = 1)),
                 ),
             )
             val viewModel = enteredViewModel()
@@ -519,7 +490,7 @@ class CanvasMainViewModelTest {
 
                 // Then 그저께 마감을 알린다 — "처음 확인하는 순간"이면 며칠이 지났어도 보여준다
                 assertEquals(
-                    CanvasMainEffect.ShowPastCanvasAlert(date = dayBeforeYesterday, memberCount = 1),
+                    CanvasMainEffect.ShowPastCanvasAlert(date = dayBeforeYesterday, contributorCount = 1),
                     awaitItem(),
                 )
             }
@@ -656,7 +627,7 @@ class CanvasMainViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When 화면이 열린다
-        val viewModel = viewModel()
+        viewModel()
         advanceUntilIdle()
 
         // Then 목록을 한 번 받아 온다. 실패해도 캔버스는 계속 그린다
@@ -836,7 +807,7 @@ class CanvasMainViewModelTest {
     }
 
     @Test
-    fun clickTopping_placedByMe_navigatesToCanvasBGEditInsteadOfSpotlighting() =
+    fun clickTopping_placedByMe_navigatesToToppingArrangeInsteadOfSpotlighting() =
         runTest(mainDispatcherRule.dispatcher) {
             // Given 서버가 내 것으로 판정한 토핑이 놓여 있다
             val myTopping = topping(positionZ = 1, isMine = true)
@@ -850,7 +821,7 @@ class CanvasMainViewModelTest {
 
                 // Then Spotlight 가 아니라 C-305 토핑 편집으로, 탭한 토핑 id 를 실어 보낸다
                 assertEquals(
-                    CanvasMainEffect.NavigateToCanvasBGEdit(
+                    CanvasMainEffect.NavigateToToppingArrange(
                         groupId = GroupId(GROUP_ID),
                         parfaitId = ParfaitId(TODAY_PARFAIT_ID),
                         toppingId = myTopping.parfaitImageId,
@@ -863,8 +834,8 @@ class CanvasMainViewModelTest {
 
     @Test
     fun clickTopping_placedByMe_whileViewingAPastDate_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 지난 날의 내 토핑을 보고 있다 — CanvasBGEdit 은 넘겨받은 parfaitId 와 무관하게
-        // 항상 오늘 캔버스를 다시 조회하므로, 여기서 열면 지난 날이 아니라 오늘 것이 열린다
+        // Given 지난 날의 내 토핑을 보고 있다 — 토핑 편집 화면은 넘겨받은 parfaitId 와 무관하게
+        // 항상 오늘 캔버스를 구독하므로, 여기서 열면 지난 날이 아니라 오늘 것이 열린다
         val myTopping = topping(positionZ = 1, isMine = true)
         coEvery { getParfaitDetail(any(), any()) } returns Result.success(
             canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(toppings = listOf(myTopping)),
@@ -1095,6 +1066,7 @@ class CanvasMainViewModelTest {
             groupId = GroupId(GROUP_ID),
             groupName = GroupName("아메리카노"),
             recentImageUrl = null,
+            recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
             lastPlacedByNametagChip = NametagChipType.DEFAULT,
         )

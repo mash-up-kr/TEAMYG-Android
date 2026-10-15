@@ -6,7 +6,6 @@ import coil3.ColorImage
 import coil3.ImageLoader
 import coil3.decode.DataSource
 import coil3.request.ErrorResult
-import coil3.intercept.Interceptor
 import coil3.request.SuccessResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -20,7 +19,7 @@ fun neverFinishingImageLoader(): ImageLoader {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     return ImageLoader
         .Builder(context)
-        .components { add(Interceptor { awaitCancellation() }) }
+        .components { add { awaitCancellation() } }
         .build()
 }
 
@@ -33,19 +32,17 @@ fun instantlySucceedingImageLoader(): ImageLoader {
     return ImageLoader
         .Builder(context)
         .components {
-            add(
-                Interceptor { chain ->
-                    SuccessResult(
-                        image = ColorImage(
-                            color = Color.RED,
-                            width = FAKE_IMAGE_SIDE_PX,
-                            height = FAKE_IMAGE_SIDE_PX,
-                        ),
-                        request = chain.request,
-                        dataSource = DataSource.NETWORK,
-                    )
-                },
-            )
+            add { chain ->
+                SuccessResult(
+                    image = ColorImage(
+                        color = Color.RED,
+                        width = FAKE_IMAGE_SIDE_PX,
+                        height = FAKE_IMAGE_SIDE_PX,
+                    ),
+                    request = chain.request,
+                    dataSource = DataSource.NETWORK,
+                )
+            }
         }.build()
 }
 
@@ -57,15 +54,13 @@ fun instantlyFailingImageLoader(): ImageLoader {
     return ImageLoader
         .Builder(context)
         .components {
-            add(
-                Interceptor { chain ->
-                    ErrorResult(
-                        image = null,
-                        request = chain.request,
-                        throwable = IllegalStateException("테스트용 실패"),
-                    )
-                },
-            )
+            add { chain ->
+                ErrorResult(
+                    image = null,
+                    request = chain.request,
+                    throwable = IllegalStateException("테스트용 실패"),
+                )
+            }
         }.build()
 }
 
@@ -81,20 +76,18 @@ class ControllableImageLoader {
         ImageLoader
             .Builder(context)
             .components {
-                add(
-                    Interceptor { chain ->
-                        gate.await()
-                        SuccessResult(
-                            image = ColorImage(
-                                color = Color.RED,
-                                width = FAKE_IMAGE_SIDE_PX,
-                                height = FAKE_IMAGE_SIDE_PX,
-                            ),
-                            request = chain.request,
-                            dataSource = DataSource.NETWORK,
-                        )
-                    },
-                )
+                add { chain ->
+                    gate.await()
+                    SuccessResult(
+                        image = ColorImage(
+                            color = Color.RED,
+                            width = FAKE_IMAGE_SIDE_PX,
+                            height = FAKE_IMAGE_SIDE_PX,
+                        ),
+                        request = chain.request,
+                        dataSource = DataSource.NETWORK,
+                    )
+                }
             }.build()
     }
 

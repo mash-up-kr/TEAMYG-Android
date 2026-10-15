@@ -7,10 +7,10 @@ import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.session.SessionBootstrap
-import com.teamyg.parfait.domain.notification.DeviceTokenRegistrar
 import com.teamyg.parfait.domain.repository.auth.AuthRepository
 import com.teamyg.parfait.domain.repository.group.ParfaitGroupRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
+import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import io.mockk.coEvery
@@ -26,7 +26,7 @@ class BootstrapSessionUseCaseTest {
     private val memberRepository: MemberRepository = mockk(relaxed = true)
     private val parfaitGroupRepository: ParfaitGroupRepository = mockk(relaxed = true)
     private val parfaitRepository: ParfaitRepository = mockk(relaxed = true)
-    private val deviceTokenRegistrar: DeviceTokenRegistrar = mockk(relaxed = true)
+    private val notificationRepository: NotificationRepository = mockk(relaxed = true)
 
     // 정리 경로는 실물 LogoutUseCase 를 통과시킨다 — mock 으로 바꾸면 "정리를 위임했다"만
     // 검증되고 정작 무엇이 지워지는지는 이 테스트가 놓친다.
@@ -34,7 +34,7 @@ class BootstrapSessionUseCaseTest {
         authRepository = authRepository,
         memberRepository = memberRepository,
         logout = LogoutUseCase(authRepository, memberRepository, parfaitGroupRepository, parfaitRepository),
-        deviceTokenRegistrar = deviceTokenRegistrar,
+        notificationRepository = notificationRepository,
     )
 
     @Test
@@ -178,7 +178,7 @@ class BootstrapSessionUseCaseTest {
         bootstrap()
 
         // Then 이 세션의 기기 토큰을 등록한다 — 등록 유실을 앱 진입마다 메우는 자리다
-        verify(exactly = 1) { deviceTokenRegistrar.register() }
+        verify(exactly = 1) { notificationRepository.registerCurrentDeviceToken() }
     }
 
     @Test
@@ -192,7 +192,7 @@ class BootstrapSessionUseCaseTest {
         bootstrap()
 
         // Then 등록은 성공 분기에서만 돈다
-        verify(exactly = 0) { deviceTokenRegistrar.register() }
+        verify(exactly = 0) { notificationRepository.registerCurrentDeviceToken() }
     }
 
     @Test
@@ -204,6 +204,6 @@ class BootstrapSessionUseCaseTest {
         bootstrap()
 
         // Then 인증이 필요한 등록을 부르지 않는다
-        verify(exactly = 0) { deviceTokenRegistrar.register() }
+        verify(exactly = 0) { notificationRepository.registerCurrentDeviceToken() }
     }
 }

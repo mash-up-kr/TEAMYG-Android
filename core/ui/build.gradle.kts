@@ -12,6 +12,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.designsystem)
     implementation(projects.core.util.android)
     implementation(projects.core.util.jvm)
     implementation(projects.domain)

@@ -9,6 +9,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toAndroidBitmap
 import com.teamyg.parfait.core.util.jvm.extension.ElapsedTimeBucket
 import com.teamyg.parfait.core.util.jvm.extension.toElapsedTimeBucket
@@ -23,15 +26,12 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
-import com.teamyg.parfait.domain.model.member.TutorialKind
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitHistoriesUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
@@ -39,7 +39,6 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasTutorialStep
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -112,11 +111,6 @@ data class CanvasMainUiState(
     val spotlightedToppingId: ParfaitImageId? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
-    /**
-     * 지금 보여 주는 튜토리얼 장. `null` 이면 튜토리얼이 떠 있지 않다 — 이미 본 사람과
-     * 마지막 장을 닫은 사람이 같은 상태다.
-     */
-    val tutorialStep: CanvasTutorialStep? = null,
 ) : UiState {
     /** 지난 날 상세를 기다리는 동안에는 직전에 보던 것을 그대로 둔다 */
     val displayedCanvas: CanvasVO?
@@ -191,8 +185,12 @@ sealed interface CanvasMainEffect : UiSideEffect {
     data class NavigateToCanvasBGEdit(
         val groupId: GroupId,
         val parfaitId: ParfaitId,
-        /** 특정 토핑을 탭해 들어온 경우에만 채운다 — 화면이 토핑 탭에서 그 토핑을 바로 선택해 연다 */
-        val toppingId: ParfaitImageId? = null,
+    ) : CanvasMainEffect
+
+    data class NavigateToToppingArrange(
+        val groupId: GroupId,
+        val parfaitId: ParfaitId,
+        val toppingId: ParfaitImageId,
     ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
@@ -232,7 +230,7 @@ sealed interface CanvasMainEffect : UiSideEffect {
      */
     data class ShowPastCanvasAlert(
         val date: LocalDate,
-        val memberCount: Int,
+        val contributorCount: Int,
     ) : CanvasMainEffect
 }
 
@@ -287,9 +285,6 @@ sealed interface CanvasMainIntent : UiIntent {
 
     /** 앱이 백그라운드로 이동했다가 복귀했다. Spotlight 를 해제한다 */
     data object OnAppReturnedFromBackground : CanvasMainIntent
-
-    /** 튜토리얼 칩을 눌렀다. 다음 장으로 넘기고, 마지막 장이었으면 튜토리얼을 끝낸다 */
-    data object OnClickTutorialNext : CanvasMainIntent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -309,10 +304,9 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
-    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
-    private val completeTutorialUseCase: CompleteTutorialUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
     private val pastCanvasAlertRepository: PastCanvasAlertRepository,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasMainUiState, CanvasMainIntent, CanvasMainEffect>(
     initialState = CanvasMainUiState(),
 ) {
@@ -334,7 +328,6 @@ constructor(
         loadCanvasMainInfo()
         // 연도 목록은 해가 바뀔 때만 늘어나 재진입마다 물어볼 값이 아니다
         loadParfaitYears()
-        observeCanvasTutorial()
 
         // 백스택 재진입에서는 ViewModel 이 새로 만들어지지 않으므로, 이 배너는 그룹 생성·참여
         // 직후의 첫 진입에서 딱 한 번만 뜬다
@@ -416,27 +409,31 @@ constructor(
                 return@launch
             }
 
-            val memberCount = closedCanvasMemberCount(lastClosedDate) ?: return@launch
+            val contributorCount = closedCanvasContributorCount(lastClosedDate) ?: return@launch
             pastCanvasAlertRepository.markSeen(groupId, lastClosedDate)
 
             postSideEffect(
                 CanvasMainEffect.ShowPastCanvasAlert(
                     date = lastClosedDate,
-                    memberCount = memberCount,
+                    contributorCount = contributorCount,
                 ),
             )
         }
     }
 
     /**
-     * [date] 마감 당시의 그룹원 수. 지난 캔버스 조회 API로 따로 불러와 그 응답의 members 를 쓴다.
+     * [date] 캔버스에 토핑을 올린 사람 수. 탈퇴한 사람도 센다.
+     *
+     * members 는 토핑을 안 올린 그룹원까지 들어 쓰지 않는다 —
+     * docs/superpowers/specs/archive/2026-09-09-past-canvas-alert.md "인원 수".
      */
-    private suspend fun closedCanvasMemberCount(date: LocalDate): Int? {
+    private suspend fun closedCanvasContributorCount(date: LocalDate): Int? {
         val parfaitId = findParfaitId(date) ?: return null
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.members
+            ?.toppings
+            ?.distinctBy { it.placedBy.groupMemberId }
             ?.size
     }
 
@@ -615,39 +612,6 @@ constructor(
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
 
             is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
-
-            is CanvasMainIntent.OnClickTutorialNext -> handleClickTutorialNext()
-        }
-    }
-
-    /**
-     * 앱을 설치하고 캔버스에 처음 들어온 사람에게만 튜토리얼을 연다.
-     *
-     * 진행 중인 장을 덮지 않는 이유: 저장분이 다시 방출되는 계기(다른 설정 변경 등)마다
-     * 보고 있던 장이 첫 장으로 되감기면, 사용자는 튜토리얼에서 빠져나올 수 없다.
-     */
-    private fun observeCanvasTutorial() {
-        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.CANVAS) }) { isVisible ->
-            updateState {
-                when {
-                    isVisible.not() -> copy(tutorialStep = null)
-                    tutorialStep == null -> copy(tutorialStep = CanvasTutorialStep.first)
-                    else -> this
-                }
-            }
-        }
-    }
-
-    /**
-     * 마지막 장을 닫는 순간에만 "봤다"로 남긴다 — 중간에 앱을 접은 사람에게는 다음 진입에서
-     * 처음부터 다시 보여 주는 편이 낫다.
-     */
-    private fun handleClickTutorialNext() {
-        val next = (state.value.tutorialStep ?: return).next
-        updateState { copy(tutorialStep = next) }
-
-        if (next == null) {
-            launch(key = COMPLETE_CANVAS_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.CANVAS) }
         }
     }
 
@@ -657,6 +621,16 @@ constructor(
      */
     private fun handleOnClickTopping(topping: CanvasToppingVO) {
         if (state.value.spotlightedToppingId != null) return
+
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_TOPPING_EDITOR_CHECKED,
+                params = mapOf(
+                    "group_id" to groupId.value.toString(),
+                    "is_mine" to topping.isMine.toString(),
+                ),
+            ),
+        )
 
         if (topping.isMine) {
             handleOnClickMyTopping(topping)
@@ -688,14 +662,14 @@ constructor(
 
     /**
      * 오늘 캔버스를 보고 있을 때만 C-305 로 보낸다. 탭한 토핑 id 를 실어 보내
-     * 편집 화면이 토핑 탭에서 그 토핑을 바로 선택한 채로 열리게 한다.
+     * 편집 화면이 그 토핑을 고른 채로 열리게 한다.
      */
     private fun handleOnClickMyTopping(topping: CanvasToppingVO) {
         if (!state.value.isViewingToday) return
         val todayCanvas = state.value.todayCanvas ?: return
 
         postSideEffect(
-            effect = CanvasMainEffect.NavigateToCanvasBGEdit(
+            effect = CanvasMainEffect.NavigateToToppingArrange(
                 groupId = groupId,
                 parfaitId = todayCanvas.parfaitId,
                 toppingId = topping.parfaitImageId,
@@ -722,6 +696,13 @@ constructor(
      */
     private fun handleClickDate(date: LocalDate) {
         val current = state.value
+
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_CALENDAR_DATE_TAPPED,
+                params = mapOf("group_id" to groupId.value.toString()),
+            ),
+        )
 
         // 이미 그려져 있는 날을 다시 눌러도 닫는다
         updateState { copy(isCalendarVisible = false) }
@@ -750,6 +731,13 @@ constructor(
      */
     private fun handleClickPastCanvasAlertDate(date: LocalDate) {
         if (date == state.value.selectedDate) return
+
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_CALENDAR_PAST_PARFAIT_TAPPED,
+                params = mapOf("group_id" to groupId.value.toString()),
+            ),
+        )
 
         launch(key = LOAD_PAST_CANVAS_ALERT_YEAR_KEY) {
             val parfaitId = findParfaitId(date) ?: return@launch
@@ -836,6 +824,12 @@ constructor(
 
             saveCanvasToGalleryUseCase(bitmap.toAndroidBitmap(), displayName)
                 .onSuccess {
+                    analyticsLogger.logEvent(
+                        AnalyticsEvent(
+                            type = AnalyticsEventType.CANVAS_SAVE_GALLERY_SAVED,
+                            params = mapOf("format" to "image"),
+                        ),
+                    )
                     postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = date))
                 }.onFailure {
                     postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))
@@ -955,8 +949,6 @@ constructor(
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
-
-        const val COMPLETE_CANVAS_TUTORIAL_KEY = "completeCanvasTutorial"
 
         const val PAST_CANVAS_ALERT_KEY = "pastCanvasAlert"
     }

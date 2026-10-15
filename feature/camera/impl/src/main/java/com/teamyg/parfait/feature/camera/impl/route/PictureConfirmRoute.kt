@@ -3,9 +3,15 @@ package com.teamyg.parfait.feature.camera.impl.route
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitAdd
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitBackground
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.camera.api.PictureConfirmResult
@@ -32,11 +38,16 @@ internal fun PictureConfirmRoute(
         if (!returnResultOnly) viewModel.prepareSegmentationModule()
     }
 
+    var showQuitDialog by rememberSaveable { mutableStateOf(false) }
+
     YGScaffoldV2 { innerPadding ->
         PictureConfirmScreen(
             uri = uri,
             source = source,
-            onClickReCapture = { navigator.onBack() },
+            onClickReCapture = {
+                viewModel.onClickRetake(source)
+                navigator.onBack()
+            },
             onClickConfirm = {
                 if (returnResultOnly) {
                     resultEventBus.sendResult(PictureConfirmResult(uri = uri, source = source))
@@ -44,23 +55,30 @@ internal fun PictureConfirmRoute(
                     // 뒤로가기를 세어 돌아가면 그 경로에 화면이 하나 끼는 날 조용히 어긋난다
                     navigator.popUpTo<NavKeyCanvasBGEdit>()
                 } else {
-                    navigator.goToAndPopCurrent(
+                    // 세그멘테이션 로딩이 이 화면 위에서 돈다. 실패·뒤로가기 때 돌아올 수 있게 백스택에 남기고,
+                    // 연타로 같은 키가 겹쳐 쌓이지 않게 한다
+                    navigator.goToSingleClearTop(
                         destination = NavKeySegmentation(
                             sourceImageUri = uri,
                         ),
                     )
                 }
             },
-            // 배경 편집에서 들어온 경우 캔버스까지 튀면 편집 중이던 배경이 날아간다.
-            // 그 경로의 닫기는 부른 화면으로 돌아가는 것이고, 확인 버튼과 같은 처리다
-            onClickClose = {
-                if (returnResultOnly) {
-                    navigator.popUpTo<NavKeyCanvasBGEdit>()
-                } else {
-                    navigator.popUpTo<NavKeyCanvasMain>()
-                }
-            },
+            onClickClose = { showQuitDialog = true },
             modifier = modifier.padding(innerPadding),
         )
+    }
+
+    if (showQuitDialog) {
+        fun quitToCanvas() {
+            showQuitDialog = false
+            navigator.popUpTo<NavKeyCanvasMain>()
+        }
+
+        if (returnResultOnly) {
+            YGModalQuitBackground(onConfirmQuit = ::quitToCanvas, onDismiss = { showQuitDialog = false })
+        } else {
+            YGModalQuitAdd(onConfirmQuit = ::quitToCanvas, onDismiss = { showQuitDialog = false })
+        }
     }
 }

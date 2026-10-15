@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -27,12 +28,14 @@ import com.teamyg.parfait.domain.usecase.group.LeaveGroupUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshGroupDetailUseCase
 import com.teamyg.parfait.domain.usecase.group.ReportGroupUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
+import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingViewModelTest.Companion.DETAIL
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -49,7 +52,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupSettingViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -60,6 +65,7 @@ class GroupSettingViewModelTest {
     private val changeGroupNickname: ChangeGroupNicknameUseCase = mockk()
     private val leaveGroup: LeaveGroupUseCase = mockk()
     private val reportGroup: ReportGroupUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -87,6 +93,7 @@ class GroupSettingViewModelTest {
         changeGroupNickname = changeGroupNickname,
         leaveGroup = leaveGroup,
         reportGroup = reportGroup,
+        analyticsLogger = analyticsLogger,
     )
 
     /** 만들자마자 상세 조회가 끝난 상태로 넘긴다 — 화면이 실제로 서 있는 지점이 여기다 */
@@ -344,13 +351,13 @@ class GroupSettingViewModelTest {
 
         // When 복사 버튼을 누르고 2초 직전까지 시간이 흐름
         viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-        advanceTimeBy(1_999)
+        advanceTimeBy(1_999.milliseconds)
 
         // Then 아직 복사됨 상태가 유지된다
         assertTrue(viewModel.state.value.isCodeCopied)
 
         // When 나머지 시간이 흘러 2초를 채움
-        advanceTimeBy(1)
+        advanceTimeBy(1.milliseconds)
         runCurrent()
 
         // Then 복사됨 상태가 풀리고 원래 문구로 돌아간다
@@ -363,17 +370,17 @@ class GroupSettingViewModelTest {
             // Given 복사 버튼을 누르고 1초가 지난 상태
             val viewModel = viewModel()
             viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-            advanceTimeBy(1_000)
+            advanceTimeBy(1_000.milliseconds)
 
             // When 1초 시점에 다시 눌러 타이머를 리셋한 뒤 1.5초가 더 지남
             viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
-            advanceTimeBy(1_500)
+            advanceTimeBy(1_500.milliseconds)
 
             // Then 첫 타이머가 취소되었으므로(첫 타이머 기준으로는 이미 지났을 시점) 여전히 복사됨 상태다
             assertTrue(viewModel.state.value.isCodeCopied)
 
             // When 두 번째 클릭 기준 2초를 마저 채움
-            advanceTimeBy(500)
+            advanceTimeBy(500.milliseconds)
             runCurrent()
 
             // Then 복사됨 상태가 풀린다

@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
@@ -42,9 +44,7 @@ import kotlinx.datetime.format
 internal fun CustomCameraScreen(
     state: CustomCameraState,
     toastPolicy: YGToastPolicy,
-    onClickGrantPermission: () -> Unit,
     onClickOpenAppSettings: () -> Unit,
-    onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
@@ -55,10 +55,7 @@ internal fun CustomCameraScreen(
 ) {
     when (state.hasPermission) {
         true -> CameraContent(
-            zoomRatio = state.zoomRatio,
-            zoomRange = state.zoomRange,
             toastPolicy = toastPolicy,
-            onClickZoomLevel = onClickZoomLevel,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
@@ -71,8 +68,6 @@ internal fun CustomCameraScreen(
 
         false -> CameraPermissionRequestComponent(
             isInit = state.isInit,
-            permanentlyDenied = state.permanentlyDenied,
-            onClickGrantPermission = onClickGrantPermission,
             onClickOpenAppSettings = onClickOpenAppSettings,
             onClickCancel = onClickCancel,
             modifier = modifier,
@@ -82,10 +77,7 @@ internal fun CustomCameraScreen(
 
 @Composable
 private fun CameraContent(
-    zoomRatio: Float,
-    zoomRange: ClosedFloatingPointRange<Float>,
     toastPolicy: YGToastPolicy,
-    onClickZoomLevel: (Float) -> Unit,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
@@ -146,13 +138,9 @@ private fun CameraContent(
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
             CameraControlComponent(
-                zoomRatio = zoomRatio,
-                zoomRange = zoomRange,
-                onClickZoomLevel = onClickZoomLevel,
                 onClickShutter = onClickShutter,
                 onClickFlip = onClickFlip,
                 onClickFlash = onClickFlash,
-                onClickCancel = onClickCancel,
                 flashMode = flashMode,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -160,68 +148,27 @@ private fun CameraContent(
     }
 }
 
-@YGPreview
-@Composable
-private fun PreviewCustomCameraScreenPermissionDenied() = PreviewBox {
-    CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = false,
-        ),
-        toastPolicy = rememberYGToastPolicy(),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
-        onClickFlash = {},
-        onClickCancel = {},
-        onViewfinderRectChange = {},
-        modifier = Modifier.fillMaxSize(),
-        cameraFeed = @Composable {},
-    )
+private class CustomCameraScreenPreviewParameterProvider : PreviewParameterProvider<CustomCameraState> {
+    override val values: Sequence<CustomCameraState>
+        get() = sequenceOf(
+            CustomCameraState(isInit = true, hasPermission = false),
+            CustomCameraState(isInit = true, hasPermission = true),
+        )
 }
 
 @YGPreview
 @Composable
-private fun PreviewCustomCameraScreenPermissionPermanentlyDenied() = PreviewBox {
+private fun PreviewCustomCameraScreen(
+    @PreviewParameter(CustomCameraScreenPreviewParameterProvider::class) state: CustomCameraState,
+) = PreviewBox {
     CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = false,
-            permanentlyDenied = true,
-        ),
+        state = state,
         toastPolicy = rememberYGToastPolicy(),
-        onClickGrantPermission = {},
         onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
         onClickShutter = {},
         onClickFlip = {},
-        onClickCancel = {},
         onClickFlash = {},
-        onViewfinderRectChange = {},
-        modifier = Modifier.fillMaxSize(),
-        cameraFeed = @Composable {},
-    )
-}
-
-@YGPreview
-@Composable
-private fun PreviewCustomCameraScreenPermissionGranted() = PreviewBox {
-    CustomCameraScreen(
-        state = CustomCameraState(
-            isInit = true,
-            hasPermission = true,
-            permanentlyDenied = false,
-        ),
-        toastPolicy = rememberYGToastPolicy(),
-        onClickGrantPermission = {},
-        onClickOpenAppSettings = {},
-        onClickZoomLevel = {},
-        onClickShutter = {},
-        onClickFlip = {},
         onClickCancel = {},
-        onClickFlash = {},
         onViewfinderRectChange = {},
         modifier = Modifier.fillMaxSize(),
         cameraFeed = @Composable {},

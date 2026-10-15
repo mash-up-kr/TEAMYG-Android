@@ -28,7 +28,7 @@ fun YGCanvasMenu(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(-1.dp),
+        verticalArrangement = Arrangement.spacedBy((-1).dp),
     ) {
         if (isExpanded) {
             expandedItems.forEach { item ->
@@ -41,13 +41,14 @@ fun YGCanvasMenu(
         if (addAction != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(-1.dp),
+                horizontalArrangement = Arrangement.spacedBy((-1).dp),
             ) {
                 YGStrokeButton(
                     text = addAction.text,
                     onClick = addAction.onClick,
                     iconResource = addAction.iconResource,
                     isEnabled = addAction.isEnabled,
+                    isBorderKeptWhenDisabled = true,
                     modifier = Modifier.weight(1f),
                 )
                 YGStrokeButton(
@@ -55,6 +56,7 @@ fun YGCanvasMenu(
                     onClick = editAction.onClick,
                     iconResource = editAction.iconResource,
                     isEnabled = editAction.isEnabled,
+                    isBorderKeptWhenDisabled = true,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -64,6 +66,7 @@ fun YGCanvasMenu(
                 onClick = editAction.onClick,
                 iconResource = editAction.iconResource,
                 isEnabled = editAction.isEnabled,
+                isBorderKeptWhenDisabled = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

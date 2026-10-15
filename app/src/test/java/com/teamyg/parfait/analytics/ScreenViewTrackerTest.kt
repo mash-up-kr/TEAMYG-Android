@@ -1,6 +1,9 @@
 package com.teamyg.parfait.analytics
 
 import androidx.navigation3.runtime.NavKey
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.analytics.AnalyticsScreen
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import kotlin.test.Test
@@ -19,6 +22,8 @@ private class FakeAnalyticsLogger : AnalyticsLogger {
     override fun logScreenView(screen: AnalyticsScreen) {
         screenViews += screen
     }
+
+    override fun logEvent(event: AnalyticsEvent) = Unit
 }
 
 class ScreenViewTrackerTest {
@@ -32,7 +37,7 @@ class ScreenViewTrackerTest {
         tracker.track(backStackSize = 1, top = NavKeyGroupList)
 
         // Then 이동이 없었으므로 한 번만 나간다
-        assertEquals(listOf("G-001"), logger.screenViews.map { it.screenId })
+        assertEquals(listOf("G-001"), logger.screenViews.map { it.type.screenId })
     }
 
     @Test
@@ -43,7 +48,7 @@ class ScreenViewTrackerTest {
         tracker.track(backStackSize = 2, top = NavKeyGroupList)
 
         // Then 화면은 실제로 바뀌었으므로 두 번 나간다
-        assertEquals(listOf("G-001", "G-001"), logger.screenViews.map { it.screenId })
+        assertEquals(listOf("G-001", "G-001"), logger.screenViews.map { it.type.screenId })
     }
 
     @Test
@@ -56,7 +61,7 @@ class ScreenViewTrackerTest {
         // Then 복귀도 조회로 센다
         assertEquals(
             listOf("G-001", "C-001", "G-001"),
-            logger.screenViews.map { it.screenId },
+            logger.screenViews.map { it.type.screenId },
         )
     }
 

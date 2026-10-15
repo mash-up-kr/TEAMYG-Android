@@ -9,7 +9,6 @@ import com.teamyg.parfait.data.repository.image.ImageFileRepositoryImpl
 import com.teamyg.parfait.data.repository.image.ImageUploadRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
-import com.teamyg.parfait.data.repository.member.UserConfigRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.PastCanvasAlertRepositoryImpl
@@ -26,7 +25,6 @@ import com.teamyg.parfait.domain.repository.image.ImageFileRepository
 import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
-import com.teamyg.parfait.domain.repository.member.UserConfigRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
@@ -82,10 +80,6 @@ interface RepositoryModule {
     @Binds
     @Singleton
     fun bindMemberRepository(memberRepositoryImpl: MemberRepositoryImpl): MemberRepository
-
-    @Binds
-    @Singleton
-    fun bindUserConfigRepository(userConfigRepositoryImpl: UserConfigRepositoryImpl): UserConfigRepository
 
     @Binds
     @Singleton

@@ -5,7 +5,7 @@ import com.teamyg.parfait.data.model.exception.UnsupportedImageException
 import com.teamyg.parfait.data.model.image.PreparedUploadImage
 import com.teamyg.parfait.data.model.image.UploadImageFormat
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSource
 import com.teamyg.parfait.data.utils.image.UploadImagePreprocessor
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.ImageId
@@ -30,11 +30,11 @@ import kotlin.time.Duration.Companion.seconds
 
 class ImageUploadRepositoryImplTest {
     private val imageRemoteDataSource: ImageRemoteDataSource = mockk()
-    private val presignedUploadDataSource: PresignedUploadDataSource = mockk()
+    private val presignedUploadRemoteDataSource: PresignedUploadRemoteDataSource = mockk()
     private val uploadImagePreprocessor: UploadImagePreprocessor = mockk()
     private val repository = ImageUploadRepositoryImpl(
         imageRemoteDataSource = imageRemoteDataSource,
-        presignedUploadDataSource = presignedUploadDataSource,
+        presignedUploadRemoteDataSource = presignedUploadRemoteDataSource,
         uploadImagePreprocessor = uploadImagePreprocessor,
     )
 
@@ -70,7 +70,7 @@ class ImageUploadRepositoryImplTest {
             )
         }
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.success(issued)
-        coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.success(Unit)
+        coEvery { presignedUploadRemoteDataSource.put(any(), any(), any()) } returns Result.success(Unit)
         // 확인 응답의 id 를 발급 id 와 다르게 둔다 — 같은 값이면 확인을 건너뛴 구현도 통과한다
         coEvery { imageRemoteDataSource.confirmUpload(any()) } returns Result.success(
             ConfirmedImageVO(
@@ -105,7 +105,7 @@ class ImageUploadRepositoryImplTest {
         // Then 서버 계약이 정한 순서 그대로다 — 발급 전 PUT 은 서명이 없고, 전송 전 확인은 빈 객체를 굳힌다
         coVerifyOrder {
             imageRemoteDataSource.issueUploadUrl(any(), any(), any())
-            presignedUploadDataSource.put(any(), any(), any())
+            presignedUploadRemoteDataSource.put(any(), any(), any())
             imageRemoteDataSource.confirmUpload(any())
         }
     }
@@ -117,7 +117,7 @@ class ImageUploadRepositoryImplTest {
         val putUrl = slot<String>()
         val putFile = slot<File>()
         coEvery {
-            presignedUploadDataSource.put(capture(putUrl), any(), capture(putFile))
+            presignedUploadRemoteDataSource.put(capture(putUrl), any(), capture(putFile))
         } returns Result.success(Unit)
 
         // When 업로드한다
@@ -138,7 +138,7 @@ class ImageUploadRepositoryImplTest {
             imageRemoteDataSource.issueUploadUrl(any(), capture(issuedContentType), any())
         } returns Result.success(issued)
         coEvery {
-            presignedUploadDataSource.put(any(), capture(putContentType), any())
+            presignedUploadRemoteDataSource.put(any(), capture(putContentType), any())
         } returns Result.success(Unit)
 
         // When 업로드한다
@@ -213,7 +213,7 @@ class ImageUploadRepositoryImplTest {
 
         // Then 다음 단계로 넘어가지 않고 도메인 에러로 바뀌어 나온다
         assertIs<AppError.Network>(result.exceptionOrNull())
-        coVerify(exactly = 0) { presignedUploadDataSource.put(any(), any(), any()) }
+        coVerify(exactly = 0) { presignedUploadRemoteDataSource.put(any(), any(), any()) }
         coVerify(exactly = 0) { imageRemoteDataSource.confirmUpload(any()) }
     }
 
@@ -222,7 +222,7 @@ class ImageUploadRepositoryImplTest {
         // Given 발급은 되고 전송이 실패한다
         givenAllStepsSucceed()
         coEvery { imageRemoteDataSource.issueUploadUrl(any(), any(), any()) } returns Result.success(issued)
-        coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(
+        coEvery { presignedUploadRemoteDataSource.put(any(), any(), any()) } returns Result.failure(
             ApiException.Network(IOException("broken pipe")),
         )
 
@@ -302,7 +302,7 @@ class ImageUploadRepositoryImplTest {
             imageRemoteDataSource.issueUploadUrl(any(), capture(issuedContentType), any())
         } returns Result.success(issued)
         coEvery {
-            presignedUploadDataSource.put(any(), capture(putContentType), capture(putFile))
+            presignedUploadRemoteDataSource.put(any(), capture(putContentType), capture(putFile))
         } returns Result.success(Unit)
 
         // When 업로드한다
@@ -338,7 +338,7 @@ class ImageUploadRepositoryImplTest {
         coEvery { uploadImagePreprocessor.prepare(any(), any(), any()) } returns Result.success(
             PreparedUploadImage(file = prepared, format = UploadImageFormat.JPEG, isTemporary = true),
         )
-        coEvery { presignedUploadDataSource.put(any(), any(), any()) } returns Result.failure(IOException("boom"))
+        coEvery { presignedUploadRemoteDataSource.put(any(), any(), any()) } returns Result.failure(IOException("boom"))
 
         // When 업로드한다
         repository.upload(filePath = file.absolutePath, imageType = ImageType.BACKGROUND, sourceLongSide = null)

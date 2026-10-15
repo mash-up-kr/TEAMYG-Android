@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * 한 묶음을 한꺼번에 내지 않고 [stepMillis] 간격으로 하나씩 드러낸다.
@@ -27,7 +28,7 @@ class StaggeredRevealState(
         // 첫 자리는 기다리지 않고 낸다 — 덮개가 걷힌 뒤 한 박자 비면 멈춘 것처럼 보인다
         while (revealedCount < total) {
             revealedCount++
-            if (revealedCount < total) delay(stepMillis)
+            if (revealedCount < total) delay(stepMillis.milliseconds)
         }
     }
 

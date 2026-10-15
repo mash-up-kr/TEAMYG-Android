@@ -4,22 +4,22 @@ import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSource
 import com.teamyg.parfait.data.source.auth.remote.AuthRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSource
 import com.teamyg.parfait.data.source.group.remote.ParfaitGroupRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSource
+import com.teamyg.parfait.data.source.image.remote.ImageDownloadRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSource
 import com.teamyg.parfait.data.source.image.remote.ImageRemoteDataSourceImpl
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSource
-import com.teamyg.parfait.data.source.image.remote.PresignedUploadDataSourceImpl
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSource
-import com.teamyg.parfait.data.source.image.remote.RemoteImageDownloadDataSourceImpl
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSource
+import com.teamyg.parfait.data.source.image.remote.PresignedUploadRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSource
 import com.teamyg.parfait.data.source.member.remote.MemberRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSource
 import com.teamyg.parfait.data.source.notification.remote.NotificationRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSourceImpl
-import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteDataSource
-import com.teamyg.parfait.data.source.parfaitimage.remote.ParfaitImageRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSource
+import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -63,15 +63,15 @@ interface RemoteDataSourceModule {
 
     @Binds
     @Singleton
-    fun bindPresignedUploadDataSource(
-        presignedUploadDataSourceImpl: PresignedUploadDataSourceImpl,
-    ): PresignedUploadDataSource
+    fun bindPresignedUploadRemoteDataSource(
+        presignedUploadRemoteDataSourceImpl: PresignedUploadRemoteDataSourceImpl,
+    ): PresignedUploadRemoteDataSource
 
     @Binds
     @Singleton
-    fun bindRemoteImageDownloadDataSource(
-        remoteImageDownloadDataSourceImpl: RemoteImageDownloadDataSourceImpl,
-    ): RemoteImageDownloadDataSource
+    fun bindImageDownloadRemoteDataSource(
+        imageDownloadRemoteDataSourceImpl: ImageDownloadRemoteDataSourceImpl,
+    ): ImageDownloadRemoteDataSource
 
     @Binds
     @Singleton

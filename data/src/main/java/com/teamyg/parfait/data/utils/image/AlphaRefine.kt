@@ -10,10 +10,10 @@ private const val OPAQUE = 255f
 /**
  * 반경 [radius] 창의 평균을 낸다.
  *
- * ⚠️ 적분 영상을 쓰지 않는다. 12MP 판에서 누적값이 `Float` 정밀도를 넘어 창 차분이 무너진다.
+ * 적분 영상을 쓰지 않는다. 12MP 판에서 누적값이 `Float` 정밀도를 넘어 창 차분이 무너진다.
  * 슬라이딩 합 2패스는 누적 구간이 한 행·한 열이라 그 문제가 없고 계산량도 같다.
  *
- * 가장자리에서는 창이 잘리므로 **실제 포함된 픽셀 수로 나눈다.**
+ * 가장자리에서는 창이 잘리므로 실제 포함된 픽셀 수로 나눈다.
  */
 internal suspend fun boxMean(
     src: FloatArray,
@@ -57,8 +57,9 @@ internal suspend fun boxMean(
 }
 
 /**
- * 안내자를 휘도로 바꾸며 [factor] 배율로 줄인다. 컬러 3채널을 쓰지 않는 이유는
- * `specs/2026-08-25-segmentation-alpha-refinement.md` 「범위 - 제외」 참고.
+ * 안내자를 휘도로 바꾸며 [factor] 배율로 줄인다.
+ *
+ * 컬러 3채널을 쓰지 않는 근거: `specs/2026-08-25-segmentation-alpha-refinement.md` 「범위 - 제외」
  */
 internal suspend fun downscaleLuminance(
     pixels: IntArray,
@@ -77,7 +78,7 @@ internal suspend fun downscaleAlpha(
 }
 
 /**
- * 가장자리 블록은 **존재하는 칸만** 평균한다 — 없는 칸을 0으로 치면 오른쪽·아래 가장자리의
+ * 가장자리 블록은 존재하는 칸만 평균한다. 없는 칸을 0으로 치면 오른쪽·아래 가장자리의
  * 안내자가 어두워져 경계가 그쪽으로 끌린다.
  */
 private suspend inline fun downscale(
@@ -122,10 +123,10 @@ internal class GuidedCoefficients(
 /**
  * 창마다 `q = a·I + b` 의 계수를 구하고 그 계수를 다시 창 평균한다.
  *
- * `a` 는 안내자와 입력의 공분산을 안내자의 분산으로 나눈 값이라 **안내자에 경계가 있는 자리에서만
- * 커진다.** [epsilon] 이 크면 `a` 가 눌려 평균 필터로 퇴화한다.
+ * `a` 는 안내자와 입력의 공분산을 안내자의 분산으로 나눈 값이라 안내자에 경계가 있는 자리에서만
+ * 커진다. [epsilon] 이 크면 `a` 가 눌려 평균 필터로 퇴화한다.
  *
- * 근거는 `specs/2026-08-25-segmentation-alpha-refinement.md` 「설계 - 정련 알고리즘」에 있다.
+ * 근거: `specs/2026-08-25-segmentation-alpha-refinement.md` 「설계 - 정련 알고리즘」
  */
 internal suspend fun guidedCoefficients(
     guidance: FloatArray,
@@ -174,7 +175,7 @@ internal suspend fun guidedCoefficients(
 /**
  * 축소판 계수를 이중선형으로 되올려 원본 알파에 적용한다.
  *
- * **경계 선명도는 이 단계에서 나온다** — 계수는 저주파라 축소해도 되지만 곱해지는 안내자는 원본
+ * 경계 선명도는 이 단계에서 나온다. 계수는 저주파라 축소해도 되지만 곱해지는 안내자는 원본
  * 해상도다. nearest 로 되올리면 계수 자체의 블록 경계가 알파에 찍힌다.
  *
  * @param guidance ARGB. 휘도를 픽셀마다 즉석 계산한다 — 원본 해상도 실수 배열을 만들지 않는다
@@ -242,13 +243,13 @@ internal suspend fun applyCoefficients(
 }
 
 /**
- * 원본 휘도를 안내자로 알파 경계를 정련한다. 알파를 **그 자리에서** 고친다.
+ * 원본 휘도를 안내자로 알파 경계를 정련한다. 알파를 그 자리에서 고친다.
  *
- * 계수는 [downscale] 배율 축소판에서 구하고 적용만 원본 해상도에서 한다. 근거와 전체 설계는
- * `specs/2026-08-25-segmentation-alpha-refinement.md` 참고.
+ * 계수는 [downscale] 배율 축소판에서 구하고 적용만 원본 해상도에서 한다.
+ * 근거: `specs/2026-08-25-segmentation-alpha-refinement.md`
  *
- * @param guidance [alpha] 와 같은 크기·같은 좌표계의 ARGB. **ML Kit 이 배경을 도려낸 판이 아니라
- *   원본 사진에서 읽은 것이어야 한다** — 도려낸 판을 주면 안내자 경계가 알파 경계와 겹쳐
+ * @param guidance [alpha] 와 같은 크기·같은 좌표계의 ARGB. ML Kit 이 배경을 도려낸 판이 아니라
+ *   원본 사진에서 읽은 것이어야 한다. 도려낸 판을 주면 안내자 경계가 알파 경계와 겹쳐
  *   정련이 지금 경계를 그대로 재현한다
  * @return 알파가 한 픽셀이라도 바뀌었으면 true
  */

@@ -66,11 +66,11 @@ private class InviteCodeInputFieldElementPreviewParameterProvider :
     PreviewParameterProvider<InviteCodeInputFieldElementParam> {
     override val values: Sequence<InviteCodeInputFieldElementParam>
         get() = sequenceOf(
-            InviteCodeInputFieldElementParam("", true, false),
-            InviteCodeInputFieldElementParam("h", true, false),
-            InviteCodeInputFieldElementParam("h", false, false),
-            InviteCodeInputFieldElementParam("h", true, true),
-            InviteCodeInputFieldElementParam("h", false, true),
+            InviteCodeInputFieldElementParam("", isFocus = true, isError = false),
+            InviteCodeInputFieldElementParam("h", isFocus = true, isError = false),
+            InviteCodeInputFieldElementParam("h", isFocus = false, isError = false),
+            InviteCodeInputFieldElementParam("h", isFocus = true, isError = true),
+            InviteCodeInputFieldElementParam("h", isFocus = false, isError = true),
         )
 }
 

@@ -31,7 +31,7 @@ internal fun applyAlphaInPlace(
 /**
  * 출력 판을 bounds 크기로 바로 만든다. 원본 크기로 만들고 나중에 자르면 큰 배열이 헛돈다.
  *
- * ⚠️ [applyAlphaInPlace] 와 합치지 마라 — 소스 인덱싱이 다르다. 이쪽은 [pixels] 도 [alpha] 도
+ * [applyAlphaInPlace] 와 합치지 않는다. 소스 인덱싱이 다르다. 이쪽은 [pixels] 도 [alpha] 도
  * 같은 [rowStride] 를 쓰는 판 로컬 좌표계라 두 배열을 같은 오프셋으로 읽는다. [applyAlphaInPlace]
  * 는 [alpha] 만 원본 좌표계고 pixels 는 이미 bounds 크기로 잘려 있어 오프셋이 따로 든다. 합치면
  * 폴백 경로에 bounds 크기 배열이 한 벌 더 생긴다(12MP 면 48MB).

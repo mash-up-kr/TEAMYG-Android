@@ -12,7 +12,7 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
- * 자격증명을 붙이지 않는 클라이언트가 메인 클라이언트와 **무엇을 공유하지 않는지**를 못박는다.
+ * 자격증명을 붙이지 않는 클라이언트가 메인 클라이언트와 무엇을 공유하지 않는지를 못박는다.
  *
  * 이건 동작이 아니라 배선의 구조적 성질이라 [dagger.Provides] 함수를 직접 불러 확인한다.
  * 실제 데드락(같은 `Dispatcher` 의 per-host 슬롯이 전부 블록된 인증기에 잡혀 재발급이

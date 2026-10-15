@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * 헬퍼다. [updateCount] 는 쓰기가 몇 번의 `edit` 으로 나갔는지 센다.
  */
 internal class FakePreferencesDataStore : DataStore<Preferences> {
-    private val state = MutableStateFlow<Preferences>(emptyPreferences())
+    private val state = MutableStateFlow(emptyPreferences())
 
     var updateCount: Int = 0
         private set

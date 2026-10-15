@@ -7,7 +7,6 @@ import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.teamyg.parfait.buildlogic.utils.extensions.androidTestImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.debugImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.libs
-import com.teamyg.parfait.buildlogic.utils.extensions.project
 import com.teamyg.parfait.buildlogic.utils.extensions.testImplementation
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies

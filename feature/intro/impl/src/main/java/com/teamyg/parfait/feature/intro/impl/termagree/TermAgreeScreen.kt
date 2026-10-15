@@ -213,7 +213,7 @@ private class TermAgreeScreenPreviewParameterProvider : PreviewParameterProvider
         PolicyVO(
             termsId = TermsId(2L),
             type = PolicyType.PRIVACY_POLICY,
-            title = "개인정보 처리방침",
+            title = "개인정보처리방침",
             url = "https://example.com/privacy",
             required = true,
         ),

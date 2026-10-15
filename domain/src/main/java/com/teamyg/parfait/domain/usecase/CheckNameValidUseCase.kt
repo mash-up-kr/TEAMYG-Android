@@ -45,7 +45,6 @@ private enum class NameValidation(
     /**
      * `isLetter()`·`isDigit()`·`isWhitespace()` 는 유니코드 전체를 받아 서버보다 넓어진다 —
      * 일본어·아랍 숫자·non-breaking space 가 통과한 뒤 서버에서만 400 으로 튕긴다.
-     * 자모 단독(`ㅋㅋ`·`ㅠㅠ`)은 2026-08-15 서버 변경으로 허용 대상이 됐다.
      */
     CheckValidCharacter(
         isValid = { name ->

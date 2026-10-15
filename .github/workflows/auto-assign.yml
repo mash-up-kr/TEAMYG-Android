@@ -30,21 +30,23 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const labelMap = {
-              '[Feature]': '기능',
-              '[Refactoring]': '리펙터링',
-              '[Refactor]': '리펙터링',
-              '[Build]': '빌드',
-              '[Docs]': '문서화',
-              '[Chore]': '기타',
-              '[Bug]': '버그',
-              '[Deploy]': '배포'
+            const titleLabelMap = {
+              'Feature': '기능',
+              'Refactoring': '리펙터링',
+              'Refactor': '리펙터링',
+              'Build': '빌드',
+              'Docs': '문서화',
+              'Chore': '기타',
+              'Bug': '버그',
+              'Deploy': '배포'
             };
 
             const pr_number = context.payload.pull_request.number;
             const title = context.payload.pull_request.title;
 
-            const label = Object.entries(labelMap).find(([prefix]) => title.startsWith(prefix))?.[1];
+            const match = title.match(/^\[([A-Za-z]+)(?:\/[^\]]+)?\]/);
+            const label = match ? titleLabelMap[match[1]] : undefined;
+
             if (label) {
               await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels',{
                 owner: context.repo.owner,

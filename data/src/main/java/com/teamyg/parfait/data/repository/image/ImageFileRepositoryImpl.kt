@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.repository.image
 
-import com.teamyg.parfait.data.model.error.mapErrorToAppError
+import com.teamyg.parfait.data.model.mapper.exception.mapErrorToAppError
 import com.teamyg.parfait.data.source.image.local.ImageFileLocalDataSource
 import com.teamyg.parfait.domain.repository.image.ImageFileRepository
 import kotlinx.coroutines.Dispatchers

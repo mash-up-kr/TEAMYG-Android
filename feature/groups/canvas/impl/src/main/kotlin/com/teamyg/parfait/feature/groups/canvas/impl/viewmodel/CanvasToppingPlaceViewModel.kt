@@ -11,8 +11,10 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
-import com.teamyg.parfait.core.util.android.extension.toRgbHexString
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -22,32 +24,32 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.image.SourceLongSide
-import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.image.AddRecentImageUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCase
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
+import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.withPanelWidth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import javax.inject.Inject
-
-// 캔버스·토핑 실측 전(치수를 아직 모를 때)에만 쓰는 임시 하한·상한.
-private const val TOPPING_MIN_SCALE_FALLBACK = 0.5f
-private const val TOPPING_MAX_SCALE_FALLBACK = 2.5f
-
-/**
- * 원본이 큰 사진은 그 배율만으로는 캔버스를 못 벗어나 "아무리 키워도 안 벗어나는" 것처럼 보인다 —
- * 최대 배율을 캔버스 대비 객체의 실제 크기로 역산해야 원본 크기와 무관하게 항상 벗어날 수 있다.
- */
-private const val TOPPING_MAX_OVERFLOW_RATIO = 1.5f
 
 /** 스케일링된 토핑의 짧은 변이 이보다 작아지면, 그 변을 이 크기로 맞추도록 강제 상향한다 */
 private val MIN_TOPPING_SHORT_SIDE = 48.dp
@@ -56,8 +58,11 @@ data class CanvasToppingPlaceUiState(
     /** 올릴 알맹이의 파일 시스템 절대경로. `file://` uri 가 아니다 */
     val toppingImagePath: String? = null,
     val toppingSourceLongSide: SourceLongSide? = null,
-    val borderColorArgb: Int? = null,
-    val borderWidthDp: Float? = null,
+    val border: ToppingBorderStyle? = null,
+    /** 색을 고르기 전에 슬라이더로 맞춰 둔 굵기. 색을 고르는 순간 이 굵기로 테두리가 생긴다 */
+    val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
+    val isBorderPanelOpen: Boolean = false,
+    val showQuitDialog: Boolean = false,
     /** `false` 인 동안은 "아직 못 읽음"과 "비었음"을 구분하지 못한다 */
     val isDraftLoaded: Boolean = false,
     /** 흐름 진입 때 초안에 못 박힌 캔버스다. 화면이 다시 고르지 않는다 */
@@ -81,26 +86,42 @@ data class CanvasToppingPlaceUiState(
     val toppingBaseSize: DpSize? = null,
     /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
     val hasUserAdjustedPlacement: Boolean = false,
-) : UiState
+) : UiState {
+    val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(border, pendingBorderWidthDp)
+}
 
 sealed interface CanvasToppingPlaceIntent : UiIntent {
+    data object OnClickBack : CanvasToppingPlaceIntent
+
     data object OnClickClose : CanvasToppingPlaceIntent
+
+    data object OnSystemBack : CanvasToppingPlaceIntent
+
+    data object OnQuitDialogConfirm : CanvasToppingPlaceIntent
+
+    data object OnQuitDialogCancel : CanvasToppingPlaceIntent
 
     data object OnClickConfirm : CanvasToppingPlaceIntent
 
-    /** 토핑을 잡고 드래그한 만큼 넘어온다. 드래그한 그대로 위치를 옮긴다. */
-    data class OnToppingMoveDrag(
-        val delta: DpOffset,
+    data object OnClickTopping : CanvasToppingPlaceIntent
+
+    data object OnToggleBorderPanel : CanvasToppingPlaceIntent
+
+    data object OnDismissBorderPanel : CanvasToppingPlaceIntent
+
+    /** @param colorArgb `null` 은 테두리 없음 */
+    data class OnSelectBorderColor(
+        val colorArgb: Int?,
     ) : CanvasToppingPlaceIntent
 
-    /** 크기조절 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **배율에 곱할 값**이며, 환산은 화면 몫이다. */
-    data class OnToppingResize(
-        val scaleFactor: Float,
+    data class OnChangeBorderWidth(
+        val widthDp: Float,
     ) : CanvasToppingPlaceIntent
 
-    /** 회전 핸들을 끈 만큼 넘어온다. 픽셀이 아니라 **각도**이며, 환산은 핸들 위치를 아는 화면 몫이다. */
-    data class OnToppingRotate(
-        val deltaDegrees: Float,
+    data class OnToppingTransform(
+        val pan: DpOffset,
+        val zoom: Float,
+        val rotationDelta: Float,
     ) : CanvasToppingPlaceIntent
 
     /** 화면이 Canvas-Area 를 실측해 알려준다. C-106 초기 배치를 계산하는 데 쓴다 */
@@ -121,6 +142,9 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
 
 sealed interface CanvasToppingPlaceEffect : UiSideEffect {
     data object NavigateBack : CanvasToppingPlaceEffect
+
+    /** 토핑 만들기를 접는다. 사이에 쌓인 화면까지 걷고 캔버스로 되감는다 */
+    data object QuitToCanvas : CanvasToppingPlaceEffect
 
     /** 초안이 가리키던 캐시 파일은 초안보다 먼저 사라질 수 있다 */
     data object DraftMissing : CanvasToppingPlaceEffect
@@ -148,6 +172,7 @@ class CanvasToppingPlaceViewModel
     private val addRecentImageUseCase: AddRecentImageUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasToppingPlaceUiState, CanvasToppingPlaceIntent, CanvasToppingPlaceEffect>(
     initialState = CanvasToppingPlaceUiState(),
 ) {
@@ -173,8 +198,6 @@ class CanvasToppingPlaceViewModel
                     copy(
                         toppingImagePath = draft?.subjectImagePath,
                         toppingSourceLongSide = draft?.sourceLongSide,
-                        borderColorArgb = draft?.borderColorArgb,
-                        borderWidthDp = draft?.borderWidthDp,
                         groupId = draft?.groupId,
                         parfaitId = draft?.parfaitId,
                         nextPositionZ = draft?.nextPositionZ,
@@ -232,15 +255,41 @@ class CanvasToppingPlaceViewModel
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
         when (intent) {
-            CanvasToppingPlaceIntent.OnClickClose -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
+            CanvasToppingPlaceIntent.OnClickBack -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
+
+            CanvasToppingPlaceIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
+
+            CanvasToppingPlaceIntent.OnSystemBack -> handleOnSystemBack()
+
+            CanvasToppingPlaceIntent.OnQuitDialogConfirm -> {
+                updateState { copy(showQuitDialog = false) }
+                postSideEffect(effect = CanvasToppingPlaceEffect.QuitToCanvas)
+            }
+
+            CanvasToppingPlaceIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
 
             CanvasToppingPlaceIntent.OnClickConfirm -> handleOnClickConfirm()
 
-            is CanvasToppingPlaceIntent.OnToppingMoveDrag -> handleOnToppingMoveDrag(intent)
+            // 누른 대상이 달라 인텐트를 나눈다. 이 화면은 토핑이 하나뿐이라 둘의 결과가 같다
+            CanvasToppingPlaceIntent.OnClickTopping,
+            CanvasToppingPlaceIntent.OnToggleBorderPanel,
+            -> updateState {
+                // 그림이 뜨기 전에는 열지 않는다 — 테두리를 입힐 실루엣이 아직 없다. 닫기는 막지 않는다
+                copy(isBorderPanelOpen = !isBorderPanelOpen && isToppingImageReady)
+            }
 
-            is CanvasToppingPlaceIntent.OnToppingResize -> handleOnToppingResize(intent)
+            CanvasToppingPlaceIntent.OnDismissBorderPanel -> updateState { copy(isBorderPanelOpen = false) }
 
-            is CanvasToppingPlaceIntent.OnToppingRotate -> handleOnToppingRotate(intent)
+            is CanvasToppingPlaceIntent.OnSelectBorderColor -> updateState {
+                copy(border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp))
+            }
+
+            is CanvasToppingPlaceIntent.OnChangeBorderWidth -> updateState {
+                val widthDp = clampPanelBorderWidthDp(intent.widthDp)
+                copy(pendingBorderWidthDp = widthDp, border = border.withPanelWidth(widthDp))
+            }
+
+            is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
             is CanvasToppingPlaceIntent.OnCanvasMeasured -> {
                 updateState { copy(canvasSize = intent.canvasSize).applyInitialPlacementIfNeeded() }
@@ -256,30 +305,29 @@ class CanvasToppingPlaceViewModel
         }
     }
 
-    private fun handleOnToppingMoveDrag(intent: CanvasToppingPlaceIntent.OnToppingMoveDrag) {
-        updateState {
-            copy(
-                offsetX = offsetX + intent.delta.x,
-                offsetY = offsetY + intent.delta.y,
-                hasUserAdjustedPlacement = true,
-            )
+    private fun handleOnSystemBack() {
+        val current = state.value
+
+        when (toppingPanelBackAction(current.isLoading, current.isBorderPanelOpen)) {
+            ToppingPanelBackAction.Ignore -> Unit
+            ToppingPanelBackAction.ClosePanel -> updateState { copy(isBorderPanelOpen = false) }
+            ToppingPanelBackAction.NavigateBack -> postSideEffect(effect = CanvasToppingPlaceEffect.NavigateBack)
         }
     }
 
-    private fun handleOnToppingResize(intent: CanvasToppingPlaceIntent.OnToppingResize) {
+    private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
         updateState {
-            copy(
-                scale = (scale * intent.scaleFactor)
-                    .coerceIn(minScaleForTouchTarget(), maxScaleToOverflowCanvas()),
-                hasUserAdjustedPlacement = true,
-            )
-        }
-    }
+            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
 
-    private fun handleOnToppingRotate(intent: CanvasToppingPlaceIntent.OnToppingRotate) {
-        updateState {
+            // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
+            val canvasSize = canvasSize ?: return@updateState this
+            val baseSize = toppingBaseSize ?: return@updateState this
+
             copy(
-                rotationDegrees = rotationDegrees + intent.deltaDegrees,
+                offsetX = offsetX + intent.pan.x,
+                offsetY = offsetY + intent.pan.y,
+                scale = (scale * intent.zoom).coerceAtLeast(minScale(canvasSize, baseSize)),
+                rotationDegrees = rotationDegrees + intent.rotationDelta,
                 hasUserAdjustedPlacement = true,
             )
         }
@@ -312,32 +360,13 @@ class CanvasToppingPlaceViewModel
         )
     }
 
-    /**
-     * 리사이즈로 도달할 수 있는 하한. 고정 배율(0.5)로 두면, 초기 배치 배율이 그보다 작은
-     * 큰 원본 사진(예: 0.23)은 한 번이라도 리사이즈를 건드리는 순간 원래 크기보다 작게는
-     * 다시 못 줄인다 — [applyInitialPlacementIfNeeded]와 같은 최소 터치 영역 기준으로 역산해
-     * 원본 크기와 무관하게 항상 처음 크기까지는 줄일 수 있게 한다.
-     */
-    private fun CanvasToppingPlaceUiState.minScaleForTouchTarget(): Float {
-        val baseSize = toppingBaseSize ?: return TOPPING_MIN_SCALE_FALLBACK
-        val shorterBaseSide = minOf(baseSize.width, baseSize.height)
-        if (shorterBaseSide <= 0.dp) return TOPPING_MIN_SCALE_FALLBACK
-
-        return MIN_TOPPING_SHORT_SIDE / shorterBaseSide
-    }
-
-    /**
-     * 리사이즈로 도달할 수 있는 상한.
-     */
-    private fun CanvasToppingPlaceUiState.maxScaleToOverflowCanvas(): Float {
-        val canvasSize = canvasSize ?: return TOPPING_MAX_SCALE_FALLBACK
-        val baseSize = toppingBaseSize ?: return TOPPING_MAX_SCALE_FALLBACK
-        val longerCanvasSide = maxOf(canvasSize.width, canvasSize.height).value
-        val longerBaseSide = maxOf(baseSize.width, baseSize.height).value
-        if (longerBaseSide <= 0f) return TOPPING_MAX_SCALE_FALLBACK
-
-        val overflowScale = (longerCanvasSide * TOPPING_MAX_OVERFLOW_RATIO) / longerBaseSide
-        return maxOf(overflowScale, TOPPING_MAX_SCALE_FALLBACK)
+    /** [TOPPING_MIN_SCALE] 을 이 화면 배율로 환산한다. [toToppingTransform] 의 역산이다 */
+    private fun minScale(
+        canvasSize: DpSize,
+        baseSize: DpSize,
+    ): Float {
+        val longerBaseSide = maxOf(baseSize.width, baseSize.height)
+        return canvasSize.width * (TOPPING_MIN_SCALE * TOPPING_BASE_LONG_SIDE_RATIO) / longerBaseSide
     }
 
     /**
@@ -386,7 +415,7 @@ class CanvasToppingPlaceViewModel
             try {
                 // 테두리 조립은 던질 수 있다. launch 밖에서 부르면 그 예외가 onError 를 못 만나고
                 // 호출 스레드까지 올라가 크래시가 된다. 업로드보다 앞이라 고아 이미지도 안 남는다
-                val border = toToppingBorder(current.borderColorArgb, current.borderWidthDp)
+                val border = current.border.toToppingBorder()
 
                 addToppingUseCase(
                     groupId = groupId,
@@ -409,6 +438,16 @@ class CanvasToppingPlaceViewModel
                     // PlaceSucceeded 뒤로 옮기면 되감기가 문 viewModelScope 취소로 아예 안 돈다
                     requestTodayParfaitRefreshUseCase(groupId)
 
+                    analyticsLogger.logEvent(
+                        AnalyticsEvent(
+                            type = AnalyticsEventType.CANVAS_EDIT_STACK_TAPPED,
+                            params = mapOf(
+                                "group_id" to groupId.value.toString(),
+                                "is_border_on" to (current.border != null).toString(),
+                            ),
+                        ),
+                    )
+
                     // 되감기를 먼저 알린다 — clearToppingDraft() 가 초안을 비우면 구독이 알맹이를 null 로
                     // 되돌려, 오버레이가 내려간 화면에 빈 캔버스가 잠깐 조작 가능한 상태로 남는다
                     postSideEffect(effect = CanvasToppingPlaceEffect.PlaceSucceeded)
@@ -427,16 +466,6 @@ class CanvasToppingPlaceViewModel
                 updateState { copy(isLoading = false) }
             }
         }
-    }
-
-    /** 색이나 두께가 빠진 `SOLID` 는 서버가 400 으로 거절한다 — 둘 다 있을 때만 만든다 */
-    private fun toToppingBorder(
-        colorArgb: Int?,
-        widthDp: Float?,
-    ): ToppingBorder = if (colorArgb != null && widthDp != null) {
-        ToppingBorder.Solid(color = colorArgb.toRgbHexString(), width = widthDp.toDouble())
-    } else {
-        ToppingBorder.None
     }
 }
 

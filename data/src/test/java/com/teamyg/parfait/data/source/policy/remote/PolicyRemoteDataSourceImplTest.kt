@@ -173,7 +173,7 @@ class PolicyRemoteDataSourceImplTest {
                     PolicyItemResponse(
                         termsId = 7L,
                         type = "PRIVACY_POLICY",
-                        title = "개인정보 처리방침",
+                        title = "개인정보처리방침",
                         url = "https://example.com/privacy",
                         required = false,
                     ),
@@ -187,7 +187,7 @@ class PolicyRemoteDataSourceImplTest {
         // Then 모든 필드가 제자리에 들어간다 (title 과 url 은 둘 다 String 이라 뒤바뀌어도 컴파일된다)
         assertEquals(TermsId(7L), vo.termsId)
         assertEquals(PolicyType.PRIVACY_POLICY, vo.type)
-        assertEquals("개인정보 처리방침", vo.title)
+        assertEquals("개인정보처리방침", vo.title)
         assertEquals("https://example.com/privacy", vo.url)
         assertEquals(false, vo.required)
     }

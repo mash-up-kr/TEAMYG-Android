@@ -1,0 +1,11 @@
+# graphify 산출물 중 자주 다시 쓰이는 큰 파일만 막는다. graphify가 워크스페이스에
+# 파일을 쓸 때마다 Claude Code 프롬프트 캐시가 무효화되어 다음 턴에 전체
+# 재업로드가 발생한다.
+wiki/graphify-out/graph.json
+wiki/graphify-out/graph.html
+wiki/graphify-out/cache/
+
+# wiki/graphify-out/GRAPH_REPORT.md는 일부러 뺐다 — wiki/routing.json의 research
+# 의도가 이 파일을 reference 후보로 내보낸다. 여기서 막으면 라우팅이 열라고 건넨
+# 문서를 열 수 없다(route.py는 존재만 확인하고 읽을 수 있는지는 보지 않아 종료
+# 코드 0으로 통과한다).

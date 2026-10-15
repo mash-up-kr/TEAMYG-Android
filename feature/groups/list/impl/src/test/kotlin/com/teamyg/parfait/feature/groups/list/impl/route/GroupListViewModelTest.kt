@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.list.impl.route
 
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.group.GroupName
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -11,6 +12,7 @@ import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
+import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -19,6 +21,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,8 +37,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GroupListViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -43,6 +48,7 @@ class GroupListViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(accountFlow: Flow<MyAccountVO?> = flowOf(ACCOUNT)): GroupListViewModel {
         every { getMyAccountFlow() } returns accountFlow
@@ -50,6 +56,7 @@ class GroupListViewModelTest {
             getMyGroupsFlow = getMyGroupsFlow,
             refreshMyGroups = refreshMyGroups,
             getMyAccountFlow = getMyAccountFlow,
+            analyticsLogger = analyticsLogger,
         )
     }
 
@@ -134,7 +141,7 @@ class GroupListViewModelTest {
         coEvery { refreshMyGroups() } returns Result.success(Unit)
 
         // When ViewModel 만 만들어지고 화면은 아직 앞에 서지 않았다
-        val viewModel = viewModel()
+        viewModel()
         advanceUntilIdle()
 
         // Then 조회는 화면이 설 때 나간다 — 생성만으로 부르면 재진입 조회와 겹쳐 두 번 나간다
@@ -157,18 +164,16 @@ class GroupListViewModelTest {
     }
 
     @Test
-    fun enter_fillsTodayInTheHeader() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 서버가 그룹을 준다
-        every { getMyGroupsFlow() } returns flowOf(GROUPS)
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
+    fun isEmptyConfirmed_onlyWhenTheListArrivedEmpty() {
+        assertFalse(GroupListUiState(groupList = null).isEmptyConfirmed)
+        assertTrue(GroupListUiState(groupList = emptyList()).isEmptyConfirmed)
+        assertFalse(GroupListUiState(groupList = GROUPS).isEmptyConfirmed)
+    }
 
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 헤더의 날짜가 채워진다 — 자정을 넘겨 돌아와도 다시 세도록 진입에 묶여 있다
-        val state = viewModel.state.value
-        assertTrue(state.dateString.isNotEmpty())
-        assertTrue(state.dayOfWeekString.isNotEmpty())
+    @Test
+    fun isEmptyConfirmed_whileRefreshingWithNoGroups_staysTrue() {
+        // 0건에서 당겨도 켜진 채여야 인트로 상태가 버려지지 않아 다시 재생되지 않는다
+        assertTrue(GroupListUiState(groupList = emptyList(), isRefreshing = true).isEmptyConfirmed)
     }
 
     @Test
@@ -261,7 +266,7 @@ class GroupListViewModelTest {
 
         // When 당겨서 새로고침을 하고 최소 노출 시간이 차기 직전까지만 시간을 흘린다
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS - 1)
+        advanceTimeBy((REFRESH_MINIMUM_VISIBLE_MILLIS - 1).milliseconds)
         runCurrent()
 
         // Then 조회가 끝났다고 바로 걷으면 인디케이터가 깜빡이기만 하고 사라진다
@@ -277,7 +282,7 @@ class GroupListViewModelTest {
 
         // When 당겨서 새로고침을 하고 최소 노출 시간을 채운다
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS)
+        advanceTimeBy(REFRESH_MINIMUM_VISIBLE_MILLIS.milliseconds)
         runCurrent()
 
         // Then 최소 노출 시간은 걷을 시점을 미룰 뿐이라, 다 채우면 더 붙잡지 않는다
@@ -294,11 +299,11 @@ class GroupListViewModelTest {
 
         // When 조회가 끝나는 시점까지만 시간을 흘린다
         coEvery { refreshMyGroups() } coAnswers {
-            delay(slowQueryMillis)
+            delay(slowQueryMillis.milliseconds)
             Result.success(Unit)
         }
         viewModel.processIntent(GroupListIntent.Refresh)
-        advanceTimeBy(slowQueryMillis)
+        advanceTimeBy(slowQueryMillis.milliseconds)
         runCurrent()
 
         // Then 이미 최소 노출 시간을 넘겼으므로 조회 뒤에 지연을 더 얹지 않는다
@@ -318,62 +323,6 @@ class GroupListViewModelTest {
         val state = viewModel.state.value
         assertTrue(state.groupList.isNullOrEmpty())
         assertFalse(state.isError)
-    }
-
-    @Test
-    fun noGroups_showsTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 가입한 그룹이 없어 빈 배열이 온다
-        every { getMyGroupsFlow() } returns flowOf(emptyList())
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
-
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 어디를 눌러 시작하는지 알려 줄 자리가 여기뿐이라 툴팁을 띄운다
-        assertTrue(viewModel.state.value.isTooltipVisible)
-    }
-
-    @Test
-    fun withGroups_hidesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 가입한 그룹이 있다
-        every { getMyGroupsFlow() } returns flowOf(GROUPS)
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
-
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 그룹을 만들 줄 아는 사용자이므로 목록을 가리지 않는다
-        assertFalse(viewModel.state.value.isTooltipVisible)
-    }
-
-    @Test
-    fun beforeTheFirstEmission_hidesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 캐시가 아직 아무것도 내놓지 않았다
-        every { getMyGroupsFlow() } returns flowOf(null)
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
-
-        // When 화면이 열린다
-        val viewModel = enteredViewModel()
-
-        // Then 0건인지 모르는 채로 띄우면 그룹이 있는 사용자에게도 한 번 스친다
-        assertFalse(viewModel.state.value.isTooltipVisible)
-    }
-
-    @Test
-    fun firstGroupIsCreated_dismissesTheTooltip() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 그룹이 0건이라 툴팁이 떠 있는 화면
-        val cache = MutableStateFlow<List<MyParfaitGroupVO>?>(emptyList())
-        every { getMyGroupsFlow() } returns cache
-        coEvery { refreshMyGroups() } returns Result.success(Unit)
-        val viewModel = enteredViewModel()
-        assertTrue(viewModel.state.value.isTooltipVisible)
-
-        // When 첫 그룹을 만들어 캐시가 바뀐다
-        cache.value = GROUPS
-        advanceUntilIdle()
-
-        // Then 다시 조회하지 않아도 그 자리에서 접힌다
-        assertFalse(viewModel.state.value.isTooltipVisible)
     }
 
     @Test
@@ -680,6 +629,7 @@ class GroupListViewModelTest {
                 groupId = GroupId(1L),
                 groupName = GroupName("모카의 파르페"),
                 recentImageUrl = "https://cdn.example.com/a.png",
+                recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
                 lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),
@@ -687,6 +637,7 @@ class GroupListViewModelTest {
                 groupId = GroupId(2L),
                 groupName = GroupName("우리집"),
                 recentImageUrl = null,
+                recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = null,
                 lastPlacedByNametagChip = NametagChipType.DEFAULT,
             ),

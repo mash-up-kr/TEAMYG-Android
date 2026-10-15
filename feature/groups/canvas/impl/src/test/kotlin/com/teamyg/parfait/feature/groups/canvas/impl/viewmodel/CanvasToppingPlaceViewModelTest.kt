@@ -1,11 +1,11 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -31,17 +31,16 @@ import com.teamyg.parfait.domain.usecase.parfait.RequestTodayParfaitRefreshUseCa
 import com.teamyg.parfait.domain.usecase.topping.AddToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import java.io.IOException
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,8 +53,17 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDateTime
 import org.junit.Rule
+import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val SCALE_DELTA = 1e-4f
+
+private const val BLACK_ARGB = 0xFF0E0E0E.toInt()
 
 /** 초안이 못 박은 캔버스와 구독 캔버스가 같은 경우를 표현하는 기본값 */
 private val PARFAIT_ID = ParfaitId(2L)
@@ -63,6 +71,7 @@ private val PARFAIT_ID = ParfaitId(2L)
 /** 구독 캔버스가 초안과 다른 캔버스를 가리키는 경우(하루 경계를 넘긴 상황)를 표현한다 */
 private val OTHER_PARFAIT_ID = ParfaitId(99L)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CanvasToppingPlaceViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -73,8 +82,6 @@ class CanvasToppingPlaceViewModelTest {
 
     private fun draft(
         subjectImagePath: String? = "/cache/segmentation/subject.png",
-        borderColorArgb: Int? = null,
-        borderWidthDp: Float? = null,
         parfaitId: ParfaitId = PARFAIT_ID,
         nextPositionZ: Int = 3,
     ) = ToppingDraft(
@@ -83,8 +90,6 @@ class CanvasToppingPlaceViewModelTest {
         nextPositionZ = nextPositionZ,
         subjectImagePath = subjectImagePath,
         cutoutImagePath = "/cache/segmentation/cutout.png",
-        borderColorArgb = borderColorArgb,
-        borderWidthDp = borderWidthDp,
     )
 
     private val addToppingUseCase: AddToppingUseCase = mockk()
@@ -94,6 +99,8 @@ class CanvasToppingPlaceViewModelTest {
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase = mockk()
 
     private val requestTodayParfaitRefreshUseCase: RequestTodayParfaitRefreshUseCase = mockk(relaxed = true)
+
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
     private val todayCanvases = MutableStateFlow<CanvasVO?>(null)
@@ -116,6 +123,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
             advanceUntilIdle()
@@ -133,77 +141,138 @@ class CanvasToppingPlaceViewModelTest {
         viewModel(draft).apply { measureAndReady(this) }
 
     @Test
-    fun onToppingResize_multipliesScale() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 배율 1배
-        val viewModel = viewModel()
+    fun onToppingTransform_appliesPanZoomAndRotationTogether() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 실측을 마쳐 초기 배치가 걸린 상태
+        val viewModel = readyViewModel()
+        val before = viewModel.state.value
 
-        // When 핸들이 중심에서 10퍼센트 멀어질 만큼 끈 결과가 넘어온다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+        // When 이동·확대·회전을 한 프레임에 받는다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(
+                pan = DpOffset(10.dp, 20.dp),
+                zoom = 1.1f,
+                rotationDelta = 15f,
+            ),
+        )
 
-        // Then 배율에 그대로 곱해진다
-        assertEquals(1.1f, viewModel.state.value.scale, SCALE_DELTA)
+        // Then 한 번에 반영된다
+        val state = viewModel.state.value
+        assertEquals(before.offsetX + 10.dp, state.offsetX)
+        assertEquals(before.offsetY + 20.dp, state.offsetY)
+        assertEquals(before.scale * 1.1f, state.scale, SCALE_DELTA)
+        assertEquals(15f, state.rotationDegrees, SCALE_DELTA)
+        assertTrue(state.hasUserAdjustedPlacement)
     }
 
     @Test
-    fun onToppingResize_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = viewModel()
+    fun onToppingTransform_accumulatesAcrossFrames() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        val before = viewModel.state.value.scale
 
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 1.1f))
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1.1f, rotationDelta = 20f),
+        )
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1.1f, rotationDelta = 10f),
+        )
 
-        assertEquals(1.21f, viewModel.state.value.scale, SCALE_DELTA)
-    }
-
-    @Test
-    fun onToppingResize_clampsAtMaxScale() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 기본 배율
-        val viewModel = viewModel()
-
-        // When 최대 배율을 훌쩍 넘도록 키운다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 100f))
-
-        // Then 상한(2.5)에서 멈춘다
-        assertEquals(2.5f, viewModel.state.value.scale, SCALE_DELTA)
-    }
-
-    @Test
-    fun onToppingResize_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 기본 배율
-        val viewModel = viewModel()
-
-        // When 중심 너머까지 끌어 배율이 0으로 떨어질 만한 값이 넘어온다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingResize(scaleFactor = 0f))
-
-        // Then 하한(0.5)에서 멈춘다
-        assertEquals(0.5f, viewModel.state.value.scale, SCALE_DELTA)
-    }
-
-    @Test
-    fun onToppingRotate_accumulatesAcrossMultipleDrags() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 기본 상태(회전 0도)
-        val viewModel = viewModel()
-
-        // When 여러 번에 걸쳐 회전 핸들을 끈다
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 20f))
-        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingRotate(deltaDegrees = 10f))
-
-        // Then 각 드래그의 각도 변화가 그대로 누적된다
+        assertEquals(before * 1.21f, viewModel.state.value.scale, SCALE_DELTA)
         assertEquals(30f, viewModel.state.value.rotationDegrees, SCALE_DELTA)
     }
 
     @Test
-    fun draft_fillsTheToppingImageAndBorder() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 테두리까지 적힌 초안
-        val viewModel = viewModel(draft(borderColorArgb = 0xFFFF0000.toInt(), borderWidthDp = 8f))
+    fun onToppingTransform_largeZoom_isNotClamped() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 실측을 마친 상태
+        val viewModel = readyViewModel()
+        val before = viewModel.state.value.scale
+
+        // When 크게 확대한다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 100f, rotationDelta = 0f),
+        )
+
+        // Then 상한 없이 커진다
+        assertEquals(before * 100f, viewModel.state.value.scale, SCALE_DELTA)
+    }
+
+    @Test
+    fun onToppingTransform_clampsAtMinScale() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스 360dp 폭, 토핑 긴 변 100dp
+        val viewModel = readyViewModel()
+
+        // When 배율이 0으로 떨어질 만한 핀치가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 0f, rotationDelta = 0f),
+        )
+
+        // Then 서버 scale 0.05 에 해당하는 배율에서 멈춘다(0.05 × 360 × 0.4 ÷ 100)
+        assertEquals(0.072f, viewModel.state.value.scale, SCALE_DELTA)
+    }
+
+    @Test
+    fun onToppingTransform_atClampBoundary_reversesImmediately() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 하한(0.072)에 닿은 상태
+        val viewModel = readyViewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 0f, rotationDelta = 0f),
+        )
+
+        // When 반대 방향으로 핀치한다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 2f, rotationDelta = 0f),
+        )
+
+        // Then 누적된 초과분 없이 곱셈 그대로 반영된다
+        assertEquals(0.144f, viewModel.state.value.scale, SCALE_DELTA)
+    }
+
+    @Test
+    fun onToppingTransform_beforeBaseSizeMeasured_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스만 실측한 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnCanvasMeasured(DpSize(360.dp, 640.dp)))
+
+        // When 두 손가락 제스처가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(10.dp, 20.dp), zoom = 1.1f, rotationDelta = 15f),
+        )
+
+        // Then 아무 것도 바뀌지 않는다
+        assertUntouched(viewModel.state.value)
+    }
+
+    @Test
+    fun onToppingTransform_beforeCanvasMeasured_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 토핑만 실측한 상태
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToppingBaseSizeMeasured(DpSize(100.dp, 50.dp)))
+
+        // When 두 손가락 제스처가 들어온다
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(10.dp, 20.dp), zoom = 1.1f, rotationDelta = 15f),
+        )
+
+        // Then 아무 것도 바뀌지 않는다
+        assertUntouched(viewModel.state.value)
+    }
+
+    private fun assertUntouched(state: CanvasToppingPlaceUiState) {
+        assertEquals(0.dp, state.offsetX)
+        assertEquals(0.dp, state.offsetY)
+        assertEquals(1f, state.scale, SCALE_DELTA)
+        assertEquals(0f, state.rotationDegrees, SCALE_DELTA)
+        assertFalse(state.hasUserAdjustedPlacement)
+    }
+
+    @Test
+    fun draft_fillsTheToppingImage() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel(draft())
 
         // When 화면이 초안을 읽는다
         advanceUntilIdle()
 
-        // Then 올릴 알맹이와 그릴 테두리가 상태에 실린다 — NavKey 인자로 나르지 않는다
-        val state = viewModel.state.value
-        assertEquals("/cache/segmentation/subject.png", state.toppingImagePath)
-        assertEquals(0xFFFF0000.toInt(), state.borderColorArgb)
-        assertEquals(8f, state.borderWidthDp)
+        // Then 올릴 알맹이가 상태에 실린다 — NavKey 인자로 나르지 않는다
+        assertEquals("/cache/segmentation/subject.png", viewModel.state.value.toppingImagePath)
     }
 
     @Test
@@ -349,10 +418,10 @@ class CanvasToppingPlaceViewModelTest {
         } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
 
-        val viewModel = readyViewModel(
-            draft(borderColorArgb = Color(0xFFFF6B00).toArgb(), borderWidthDp = 4f),
-        )
+        val viewModel = readyViewModel()
         advanceUntilIdle()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(0xFFFF6B00.toInt()))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(4f))
 
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
         advanceUntilIdle()
@@ -374,7 +443,7 @@ class CanvasToppingPlaceViewModelTest {
         } returns Result.success(mockk())
         coEvery { clearToppingDraft() } returns Unit
 
-        val viewModel = readyViewModel(draft(borderColorArgb = null, borderWidthDp = null))
+        val viewModel = readyViewModel()
         advanceUntilIdle()
 
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
@@ -386,10 +455,10 @@ class CanvasToppingPlaceViewModelTest {
 
     @Test
     fun onClickConfirm_nonOpaqueBorderColor_failsInsteadOfCrashing() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 팔레트가 아닌 곳에서 반투명 색이 흘러든 초안 — 지금은 도달하지 않지만
-        // 진입점이 늘면(예: 커스텀 컬러피커) 열리는 경로다
-        val viewModel = readyViewModel(draft(borderColorArgb = 0x80FF6B00.toInt(), borderWidthDp = 4f))
+        // Given 팔레트 밖의 반투명 색 — 인텐트가 Int 를 그대로 받아서 열려 있는 경로다
+        val viewModel = readyViewModel()
         advanceUntilIdle()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(0x80FF6B00.toInt()))
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
@@ -444,7 +513,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_whileLoading_doesNotStartASecondUpload() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(mockk())
         }
         coEvery { clearToppingDraft() } returns Unit
@@ -462,7 +531,7 @@ class CanvasToppingPlaceViewModelTest {
     @Test
     fun onClickConfirm_setsLoadingWhileInFlight() = runTest(mainDispatcherRule.dispatcher) {
         coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             Result.success(mockk())
         }
         coEvery { clearToppingDraft() } returns Unit
@@ -470,7 +539,7 @@ class CanvasToppingPlaceViewModelTest {
         advanceUntilIdle()
 
         viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
-        advanceTimeBy(500)
+        advanceTimeBy(500.milliseconds)
         assertTrue(viewModel.state.value.isLoading)
 
         advanceUntilIdle()
@@ -489,6 +558,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         )
         advanceUntilIdle()
 
@@ -532,6 +602,7 @@ class CanvasToppingPlaceViewModelTest {
             addRecentImageUseCase = addRecentImageUseCase,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             requestTodayParfaitRefreshUseCase = requestTodayParfaitRefreshUseCase,
+            analyticsLogger = analyticsLogger,
         )
 
         // When 화면이 열린다
@@ -619,6 +690,288 @@ class CanvasToppingPlaceViewModelTest {
                 sourceLongSide = SourceLongSide(4032),
             )
         }
+    }
+
+    @Test
+    fun onClickTopping_opensPanel() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        assertTrue(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onClickTopping_beforeImageReady_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onClickTopping_whilePanelOpen_closesPanel() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onToggleBorderPanel_flipsOpenState() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToggleBorderPanel)
+        assertTrue(viewModel.state.value.isBorderPanelOpen)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToggleBorderPanel)
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onToggleBorderPanel_beforeImageReady_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnToggleBorderPanel)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onDismissBorderPanel_closesPanel() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnDismissBorderPanel)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+    }
+
+    @Test
+    fun onSelectBorderColor_usesPendingWidth() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(14f))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(BLACK_ARGB))
+
+        assertEquals(ToppingBorderStyle(BLACK_ARGB, 14f), viewModel.state.value.border)
+    }
+
+    @Test
+    fun onChangeBorderWidth_withBorder_changesBorderAndPending() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(BLACK_ARGB))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(6f))
+
+        val state = viewModel.state.value
+        assertEquals(6f, state.border?.widthDp)
+        assertEquals(6f, state.pendingBorderWidthDp)
+    }
+
+    @Test
+    fun onSelectBorderColor_null_removesBorderAndKeepsLastWidth() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(BLACK_ARGB))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(20f))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSelectBorderColor(null))
+
+        val state = viewModel.state.value
+        assertNull(state.border)
+        assertEquals(20f, state.panelBorderWidthDp)
+    }
+
+    @Test
+    fun onChangeBorderWidth_isClampedToRange() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(100f))
+        assertEquals(30f, viewModel.state.value.pendingBorderWidthDp)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(0f))
+        assertEquals(2f, viewModel.state.value.pendingBorderWidthDp)
+    }
+
+    @Test
+    fun onToppingTransform_whilePanelOpen_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초기 배치가 걸린 뒤 패널을 열었다
+        val viewModel = readyViewModel()
+        val before = viewModel.state.value
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(30.dp, 30.dp), zoom = 1f, rotationDelta = 0f),
+        )
+
+        val state = viewModel.state.value
+        assertEquals(before.offsetX, state.offsetX)
+        assertEquals(before.offsetY, state.offsetY)
+        assertEquals(before.scale, state.scale)
+        assertEquals(before.rotationDegrees, state.rotationDegrees)
+        assertFalse(state.hasUserAdjustedPlacement)
+    }
+
+    @Test
+    fun onClickConfirm_whilePanelOpen_sendsStoredPlacement() = runTest(mainDispatcherRule.dispatcher) {
+        val transformSlot = slot<ToppingTransform>()
+        coEvery {
+            addToppingUseCase(any(), any(), any(), transform = capture(transformSlot), any(), any())
+        } returns Result.success(mockk())
+        coEvery { clearToppingDraft() } returns Unit
+
+        // Given 가운데가 아닌 자리로 옮긴 뒤 패널을 열었다. 화면은 토핑을 가운데로 옮겨 보여 준다
+        val viewModel = readyViewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(20.dp, 10.dp), zoom = 1f, rotationDelta = 0f),
+        )
+        val beforeOpen = viewModel.state.value
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        // Then 서버에는 옮겨 둔 자리가 간다
+        val expected = toToppingTransform(
+            offsetX = beforeOpen.offsetX,
+            offsetY = beforeOpen.offsetY,
+            scale = beforeOpen.scale,
+            rotationDegrees = beforeOpen.rotationDegrees,
+            canvasSize = DpSize(360.dp, 640.dp),
+            toppingBaseSize = DpSize(100.dp, 50.dp),
+            positionZ = 3,
+        )
+        assertEquals(expected, transformSlot.captured)
+        // 가운데였다면 0.5 다 — 기대값이 우연히 가운데와 같아지지 않았는지 확인한다
+        assertTrue(transformSlot.captured.positionX > 0.5)
+    }
+
+    @Test
+    fun onClickConfirm_withoutColor_sendsNoBorder() = runTest(mainDispatcherRule.dispatcher) {
+        val borderSlot = slot<ToppingBorder>()
+        coEvery {
+            addToppingUseCase(any(), any(), any(), any(), border = capture(borderSlot), sourceLongSide = any())
+        } returns Result.success(mockk())
+        coEvery { clearToppingDraft() } returns Unit
+        val viewModel = readyViewModel()
+
+        // When 색은 고르지 않고 굵기만 바꾼 채 확정한다
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnChangeBorderWidth(20f))
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        assertEquals(ToppingBorder.None, borderSlot.captured)
+    }
+
+    @Test
+    fun confirmFailure_keepsPanelOpen() = runTest(mainDispatcherRule.dispatcher) {
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.isBorderPanelOpen)
+        assertFalse(state.isLoading)
+    }
+
+    @Test
+    fun onClickBack_emitsNavigateBack() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickBack)
+
+            assertEquals(CanvasToppingPlaceEffect.NavigateBack, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickClose_showsQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.value.showQuitDialog)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun onSystemBack_withPanelOpen_onlyClosesPanel() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.state.value.isBorderPanelOpen)
+            assertFalse(viewModel.state.value.showQuitDialog)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun onSystemBack_withPanelClosed_navigatesBackWithoutQuitDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
+
+            assertEquals(CanvasToppingPlaceEffect.NavigateBack, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
+    }
+
+    @Test
+    fun onSystemBack_whileLoading_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 확정이 끝나지 않고 걸려 있다
+        coEvery { addToppingUseCase(any(), any(), any(), any(), any(), any()) } coAnswers { awaitCancellation() }
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickTopping)
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isLoading)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnSystemBack)
+
+        val state = viewModel.state.value
+        assertTrue(state.isBorderPanelOpen)
+        assertFalse(state.showQuitDialog)
+    }
+
+    @Test
+    fun onQuitDialogConfirm_emitsQuitToCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogConfirm)
+
+            assertEquals(CanvasToppingPlaceEffect.QuitToCanvas, awaitItem())
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
+    }
+
+    @Test
+    fun onQuitDialogCancel_hidesDialog() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = readyViewModel()
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickClose)
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnQuitDialogCancel)
+
+        assertFalse(viewModel.state.value.showQuitDialog)
     }
 
     private fun canvas(

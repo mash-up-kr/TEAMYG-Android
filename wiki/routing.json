@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "intents": {
+    "ingest": {
+      "required": ["wiki/conventions.md", "wiki/open-questions.md",
+                   "wiki/pages/purpose.md", "wiki/pages/index.md"],
+      "reference": ["wiki/references/ingest-checklist.md"]
+    },
+    "query": {
+      "required": ["wiki/open-questions.md", "wiki/pages/index.md"],
+      "reference": []
+    },
+    "research": {
+      "required": ["wiki/conventions.md", "wiki/pages/purpose.md",
+                   "wiki/pages/overview.md", "wiki/open-questions.md"],
+      "reference": ["wiki/references/research.md",
+                    "wiki/graphify-out/GRAPH_REPORT.md"]
+    },
+    "delete-source": {
+      "required": ["wiki/conventions.md", "wiki/references/cascade-delete.md"],
+      "reference": []
+    },
+    "lint": {
+      "required": ["wiki/conventions.md"],
+      "reference": ["wiki/references/lint-rules.md"]
+    },
+    "schema-change": {
+      "required": ["wiki/conventions.md"],
+      "reference": []
+    },
+    "unclear": {
+      "action": "stop",
+      "message": "의도를 사용자에게 확인한다"
+    }
+  },
+  "expansion": {
+    "weights": {
+      "source_overlap": 4,
+      "direct_link": 3,
+      "shared_neighbor": 1.5,
+      "same_type": 1
+    },
+    "min_score": 4,
+    "top_k": 5,
+    "hops": 1
+  }
+}

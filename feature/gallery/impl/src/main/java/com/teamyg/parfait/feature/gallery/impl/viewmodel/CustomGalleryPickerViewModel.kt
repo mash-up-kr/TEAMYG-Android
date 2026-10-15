@@ -8,19 +8,22 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.model.member.TutorialKind
-import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
+import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @Immutable
@@ -29,8 +32,6 @@ data class CustomGalleryPickerState(
     val access: GalleryPermissionManager.GalleryAccessLevel = GalleryPermissionManager.GalleryAccessLevel.INITIAL,
     val groups: List<GalleryImageGroup> = emptyList(),
     val recentImages: List<RecentImage> = emptyList(),
-    /** 앱 설치 후 이 화면 첫 진입에서만 `true`. 화면 전체를 덮는다 */
-    val isTutorialVisible: Boolean = false,
 ) : UiState {
     val isEmpty: Boolean
         get() = groups.all { it.images.isEmpty() } && recentImages.isEmpty()
@@ -45,9 +46,9 @@ sealed class CustomGalleryPickerEffect private constructor() : UiSideEffect {
         val uri: String,
     ) : CustomGalleryPickerEffect()
 
-    data class NavigateToSegmentationConfirm(
-        val trimmedSubjectImagePath: String,
-    ) : CustomGalleryPickerEffect()
+    data object NavigateToToppingPlace : CustomGalleryPickerEffect()
+
+    data object ShowDraftUnavailable : CustomGalleryPickerEffect()
 
     data object NavigateToBack : CustomGalleryPickerEffect()
 }
@@ -56,8 +57,6 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
     data class OnPermissionResult(
         val access: GalleryPermissionManager.GalleryAccessLevel,
     ) : CustomGalleryPickerIntent()
-
-    data object OnRequestPermission : CustomGalleryPickerIntent()
 
     data object OnRequestOpenSettings : CustomGalleryPickerIntent()
 
@@ -72,9 +71,6 @@ sealed class CustomGalleryPickerIntent private constructor() : UiIntent {
     ) : CustomGalleryPickerIntent()
 
     data object OnCancel : CustomGalleryPickerIntent()
-
-    /** 튜토리얼 칩을 눌렀다. 한 장뿐이라 그대로 닫고 다시 뜨지 않게 남긴다 */
-    data object OnConfirmTutorial : CustomGalleryPickerIntent()
 }
 
 @HiltViewModel(assistedFactory = CustomGalleryPickerViewModel.Factory::class)
@@ -83,13 +79,14 @@ class CustomGalleryPickerViewModel
     @Assisted private val returnResultOnly: Boolean,
     @Assisted private val recentImagePick: RecentImagePick,
     private val getRecentCacheImagesUseCase: GetRecentCacheImagesUseCase,
-    private val loadFilterYGGalleryImageGroupsUseCase: LoadFilterYGGalleryImageGroupsUseCase,
-    private val getTutorialVisibleFlowUseCase: GetTutorialVisibleFlowUseCase,
-    private val completeTutorialUseCase: CompleteTutorialUseCase,
+    private val loadGalleryImageGroupsUseCase: LoadGalleryImageGroupsUseCase,
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CustomGalleryPickerState, CustomGalleryPickerIntent, CustomGalleryPickerEffect>(
     initialState = CustomGalleryPickerState(),
 ) {
     private var hasRequestedPermission = false
+    private var loadGroupsJob: Job? = null
 
     init {
         viewModelLogger.i { "CustomGalleryPickerViewModel::init" }
@@ -97,31 +94,16 @@ class CustomGalleryPickerViewModel
         viewModelScope.launch {
             collectRecentCacheImages()
         }
-
-        observeTutorial()
-    }
-
-    private fun observeTutorial() {
-        launchWhileSubscribed(source = { getTutorialVisibleFlowUseCase(TutorialKind.UPLOAD) }) { isVisible ->
-            updateState { copy(isTutorialVisible = isVisible) }
-        }
-    }
-
-    private fun handleConfirmTutorial() {
-        updateState { copy(isTutorialVisible = false) }
-        launch(key = COMPLETE_TUTORIAL_KEY) { completeTutorialUseCase(TutorialKind.UPLOAD) }
     }
 
     override fun processIntent(intent: CustomGalleryPickerIntent) {
         when (intent) {
             is CustomGalleryPickerIntent.OnPermissionResult -> handleOnPermissionResult(intent)
-            is CustomGalleryPickerIntent.OnRequestPermission -> handleOnRequestPermission()
             is CustomGalleryPickerIntent.OnRequestOpenSettings -> handleOnRequestOpenSettings()
             is CustomGalleryPickerIntent.OnRequestManageMedia -> handleOnRequestManageMedia()
             is CustomGalleryPickerIntent.OnClickImage -> handleOnClickImage(intent)
             is CustomGalleryPickerIntent.OnClickCutoutImage -> handleOnClickCutoutImage(intent)
             is CustomGalleryPickerIntent.OnCancel -> handleOnCancel()
-            is CustomGalleryPickerIntent.OnConfirmTutorial -> handleConfirmTutorial()
         }
     }
 
@@ -135,15 +117,26 @@ class CustomGalleryPickerViewModel
                     )
                 }
 
-                viewModelScope.launch {
-                    val images = loadFilterYGGalleryImageGroupsUseCase()
+                // 권한 결과가 다시 오면 접근 수준이 달라졌을 수 있어 이전 조회를 버리고 새로 읽는다
+                loadGroupsJob?.cancel()
+                loadGroupsJob = viewModelScope.launch {
+                    val result = runSuspendCatching { loadGalleryImageGroupsUseCase() }
 
-                    updateState {
-                        copy(
-                            isLoading = false,
-                            groups = images,
-                        )
-                    }
+                    result.fold(
+                        onSuccess = { images ->
+                            updateState {
+                                copy(
+                                    isLoading = false,
+                                    groups = images,
+                                )
+                            }
+                        },
+                        onFailure = { e ->
+                            viewModelLogger.e(e) { "갤러리 이미지 조회 실패" }
+
+                            updateState { copy(isLoading = false) }
+                        },
+                    )
                 }
             }
 
@@ -166,10 +159,6 @@ class CustomGalleryPickerViewModel
         postSideEffect(CustomGalleryPickerEffect.RequestPermission)
     }
 
-    private fun handleOnRequestPermission() {
-        postSideEffect(CustomGalleryPickerEffect.RequestPermission)
-    }
-
     private fun handleOnRequestOpenSettings() {
         postSideEffect(CustomGalleryPickerEffect.OpenAppSettings)
     }
@@ -179,14 +168,41 @@ class CustomGalleryPickerViewModel
     }
 
     private fun handleOnClickImage(intent: CustomGalleryPickerIntent.OnClickImage) {
+        logPhotoSelected(source = PhotoSelectSource.TODAY)
         postSideEffect(CustomGalleryPickerEffect.NavigateToConfirm(intent.uri))
     }
 
-    // 이미 누끼가 끝난 알맹이라 카메라·세그멘테이션을 건너뛴다
+    // 배치 화면은 초안을 읽기만 하므로 들어가기 전에 이 알맹이를 가리키게 맞춘다
     private fun handleOnClickCutoutImage(intent: CustomGalleryPickerIntent.OnClickCutoutImage) {
-        postSideEffect(
-            CustomGalleryPickerEffect.NavigateToSegmentationConfirm(intent.recentImage.filePath),
+        logPhotoSelected(source = PhotoSelectSource.RECENT)
+        launch(
+            key = ENSURE_CUTOUT_DRAFT_KEY,
+            onError = { postSideEffect(CustomGalleryPickerEffect.ShowDraftUnavailable) },
+        ) {
+            val isAligned = ensureDraftSubjectRecorded(intent.recentImage.filePath)
+
+            postSideEffect(
+                if (isAligned) {
+                    CustomGalleryPickerEffect.NavigateToToppingPlace
+                } else {
+                    CustomGalleryPickerEffect.ShowDraftUnavailable
+                },
+            )
+        }
+    }
+
+    private fun logPhotoSelected(source: PhotoSelectSource) {
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_CAMERA_PHOTO_SELECTED,
+                params = mapOf("source" to source.analyticsValue),
+            ),
         )
+    }
+
+    private enum class PhotoSelectSource(val analyticsValue: String) {
+        TODAY("today"),
+        RECENT("recent"),
     }
 
     private fun handleOnCancel() {
@@ -211,6 +227,6 @@ class CustomGalleryPickerViewModel
     }
 
     private companion object {
-        const val COMPLETE_TUTORIAL_KEY = "completeTutorial"
+        const val ENSURE_CUTOUT_DRAFT_KEY = "ensureCutoutDraft"
     }
 }

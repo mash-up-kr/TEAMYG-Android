@@ -132,15 +132,17 @@ private fun BoxScope.ToppingBorder(
             .matchParentSize()
             .onSizeChanged { size -> boxSize = size },
     ) {
-        val current = plate ?: return@Canvas
         val currentBoxWidth = size.width.roundToInt()
         val currentBoxHeight = size.height.roundToInt()
 
         // 판은 지금 상자와 크기가 다를 수 있어, 자리와 크기를 지금 상자 기준으로 다시 잰다
         val realSubject = fitSize(aspectRatio, IntSize(currentBoxWidth, currentBoxHeight))
+        val realSubjectLongSide = max(realSubject.width, realSubject.height)
 
-        // 너무 어긋난 판을 늘려 그리면 굵기 dp 고정이 깨진다 — 새 판이 올 때까지 안 그린다
-        if (!current.fitsSubject(max(realSubject.width, realSubject.height))) return@Canvas
+        // 너무 어긋난 판을 늘려 그리면 굵기 dp 고정이 깨진다. 상태의 판은 다른 크기로 그린 화면이 넣은 것일 수 있다
+        val current = plate?.takeIf { made -> made.fitsSubject(realSubjectLongSide) }
+            ?: ToppingBorderPlateCache.get(outline, outsetPx, aspectRatio, realSubjectLongSide)
+            ?: return@Canvas
 
         val plateSubjectWidth = current.image.width - current.padding * 2
         val drawScale = if (plateSubjectWidth > 0) realSubject.width.toFloat() / plateSubjectWidth else 1f

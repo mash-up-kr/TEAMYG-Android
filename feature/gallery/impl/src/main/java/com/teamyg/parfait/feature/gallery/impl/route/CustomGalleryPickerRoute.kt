@@ -2,11 +2,10 @@ package com.teamyg.parfait.feature.gallery.impl.route
 
 import android.app.Activity
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,21 +24,22 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
-import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialBoxPlacement
-import com.teamyg.parfait.core.designsystem.component.ygtutorial.YGTutorialOverlay
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.gallery.impl.R
 import com.teamyg.parfait.feature.gallery.impl.screen.CustomGalleryPickerScreen
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerEffect
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerIntent
 import com.teamyg.parfait.feature.gallery.impl.viewmodel.CustomGalleryPickerViewModel
-import com.teamyg.parfait.feature.segmentation.api.NavKeySegmentationConfirm
 
 @Composable
 internal fun CustomGalleryPickerRoute(
@@ -68,6 +68,7 @@ internal fun CustomGalleryPickerRoute(
 
     val toastPolicy = rememberYGToastPolicy()
     val guideToastMessage = stringResource(R.string.gallery_custom_guide_toast)
+    val draftUnavailableMessage = stringResource(R.string.gallery_cutout_draft_unavailable)
     var hasShownGuideToast by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.isLoading, state.isEmpty, state.access) {
@@ -98,19 +99,24 @@ internal fun CustomGalleryPickerRoute(
                     )
                 }
 
-                is CustomGalleryPickerEffect.NavigateToSegmentationConfirm -> {
-                    navigator.goTo(
-                        NavKeySegmentationConfirm(
-                            sourceImageUri = null,
-                            subjectImagePath = null,
-                            trimmedSubjectImagePath = effect.trimmedSubjectImagePath,
-                        ),
-                    )
+                is CustomGalleryPickerEffect.NavigateToToppingPlace -> {
+                    // 초안을 맞추는 사이 사용자가 뒤로 갔을 수 있어 맨 위가 아직 이 화면일 때만 간다
+                    if (navigator.backStack.lastOrNull() is NavKeyCustomGalleryPicker) {
+                        navigator.goTo(NavKeyCanvasToppingPlace)
+                    }
                 }
 
-                is CustomGalleryPickerEffect.NavigateToBack -> navigator.onBack()
+                is CustomGalleryPickerEffect.ShowDraftUnavailable -> toastPolicy.showError(draftUnavailableMessage)
+
+                is CustomGalleryPickerEffect.NavigateToBack -> navigator.popUpTo<NavKeyCanvasMain>()
             }
         }
+    }
+
+    // 배경 편집에서 온 경로만 가로채 캔버스로 되감는다. 캔버스에서 바로 온 경로는 기본
+    // 뒤로가기가 이미 캔버스라 두면 예측형 뒤로가기 전환이 산다
+    BackHandler(enabled = returnResultOnly) {
+        viewModel.processIntent(CustomGalleryPickerIntent.OnCancel)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -128,37 +134,21 @@ internal fun CustomGalleryPickerRoute(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 튜토리얼은 스캐폴드 **밖**에 겹친다 — 안에 넣으면 컨텐츠 인셋을 받아 딤이 상태바
-    // 밑에서 끊기고, 시스템바만 안 덮인 화면이 된다
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
-        YGScaffoldV2 { innerPadding ->
-            CustomGalleryPickerScreen(
-                state = state,
-                toastPolicy = toastPolicy,
-                onClickGrantPermission = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestPermission) },
-                onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
-                onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
-                onClickImage = { uri ->
-                    viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
-                },
-                onClickCutoutImage = { recentImage ->
-                    viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
-                },
-                onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
-                modifier = modifier.padding(innerPadding),
-            )
-        }
-
-        if (state.isTutorialVisible) {
-            // 강조 대상이 화면 위쪽(오늘 찍은 사진 목록)이라 카드는 아래에 붙인다
-            YGTutorialOverlay(
-                imageResource = R.drawable.img_upload_tutorial,
-                title = stringResource(R.string.gallery_upload_tutorial_title),
-                description = stringResource(R.string.gallery_upload_tutorial_description),
-                onClickButton = { viewModel.processIntent(CustomGalleryPickerIntent.OnConfirmTutorial) },
-                placement = YGTutorialBoxPlacement.Bottom,
-            )
-        }
+    // 프레임 Box 안에 YGToastHost 를 직접 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
+    YGScaffoldV2 { innerPadding ->
+        CustomGalleryPickerScreen(
+            state = state,
+            toastPolicy = toastPolicy,
+            onClickOpenSettings = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestOpenSettings) },
+            onClickManageMedia = { viewModel.processIntent(CustomGalleryPickerIntent.OnRequestManageMedia) },
+            onClickImage = { uri ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickImage(uri = uri))
+            },
+            onClickCutoutImage = { recentImage ->
+                viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(recentImage))
+            },
+            onClickCancel = { viewModel.processIntent(CustomGalleryPickerIntent.OnCancel) },
+            modifier = modifier.padding(innerPadding),
+        )
     }
 }

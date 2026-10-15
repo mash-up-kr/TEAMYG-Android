@@ -35,6 +35,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
  * Figma Button-Stroke
  *
  * @param borderWidth 테두리 두께. [Dp.Hairline] 이면 테두리를 그리지 않는다.
+ * @param isBorderKeptWhenDisabled 비활성이어도 활성 테두리 색을 유지한다. 다른 버튼과 외곽선을 이어야 하는 자리에서 쓴다.
  */
 @Composable
 fun YGStrokeButton(
@@ -45,17 +46,18 @@ fun YGStrokeButton(
     isSelected: Boolean = false,
     isEnabled: Boolean = true,
     borderWidth: Dp = SizeTokens.Size1.getDp(),
+    isBorderKeptWhenDisabled: Boolean = false,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
     val shape = YGTheme.shapes.radius.none
     val isHighlighted = isEnabled && (isSelected || isPressed)
-    val backgroundColor = if (isHighlighted) {
-        YGAtomicColors.Gray.Gray100
-    } else {
-        YGAtomicColors.Gray.White
+    val backgroundColor = when {
+        !isEnabled -> YGAtomicColors.Gray.Gray200
+        isHighlighted -> YGAtomicColors.Gray.Gray100
+        else -> YGAtomicColors.Gray.White
     }
-    val borderColor = if (isEnabled) {
+    val borderColor = if (isEnabled || isBorderKeptWhenDisabled) {
         YGAtomicColors.Gray.Gray500
     } else {
         YGAtomicColors.Gray.Gray200

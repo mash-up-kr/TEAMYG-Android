@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val STEP_MILLIS = 400L
 private const val TOTAL = 3
@@ -30,7 +31,7 @@ class StaggeredRevealStateTest {
         val state = StaggeredRevealState(STEP_MILLIS)
 
         backgroundScope.launch { state.reveal(TOTAL) }
-        advanceTimeBy(STEP_MILLIS)
+        advanceTimeBy(STEP_MILLIS.milliseconds)
         runCurrent()
 
         assertTrue(state.isRevealed(1))
@@ -42,7 +43,7 @@ class StaggeredRevealStateTest {
         val state = StaggeredRevealState(STEP_MILLIS)
 
         backgroundScope.launch { state.reveal(TOTAL) }
-        advanceTimeBy(STEP_MILLIS * TOTAL)
+        advanceTimeBy((STEP_MILLIS * TOTAL).milliseconds)
         runCurrent()
 
         repeat(TOTAL) { index ->
@@ -55,7 +56,7 @@ class StaggeredRevealStateTest {
         val state = StaggeredRevealState(STEP_MILLIS)
 
         backgroundScope.launch { state.reveal(TOTAL) }
-        advanceTimeBy(STEP_MILLIS * TOTAL)
+        advanceTimeBy((STEP_MILLIS * TOTAL).milliseconds)
         runCurrent()
 
         backgroundScope.launch { state.reveal(TOTAL + 2) }

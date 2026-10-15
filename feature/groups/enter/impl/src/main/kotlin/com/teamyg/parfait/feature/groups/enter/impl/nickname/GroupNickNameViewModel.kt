@@ -5,6 +5,9 @@ import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
 import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.error.ServerErrorCode
@@ -18,6 +21,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 data class GroupNickNameUiState(
     val groupName: String = "",
@@ -57,6 +61,7 @@ constructor(
     private val checkNickNameValid: CheckNameValidUseCase,
     private val joinGroup: JoinGroupUseCase,
     private val changeGroupNickname: ChangeGroupNicknameUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<GroupNickNameUiState, GroupNickNameIntent, GroupNickNameSideEffect>(
     initialState = GroupNickNameUiState(groupName = groupName, nickName = nickName),
 ) {
@@ -102,6 +107,11 @@ constructor(
                     handleJoinFailure(throwable)
                     return@launch
                 }
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        type = AnalyticsEventType.GROUP_LIST_JOINED,
+                    ),
+                )
 
                 changeGroupNickname(groupId = joined.groupId, groupNickname = GroupNickname(state.value.nickName))
                     .onFailure { throwable ->
@@ -132,7 +142,7 @@ constructor(
      */
     private suspend fun noticeNicknameNotApplied() {
         postSideEffect(GroupNickNameSideEffect.ShowError(GroupNickNameError.NICKNAME_NOT_APPLIED))
-        delay(NICKNAME_NOTICE_DURATION)
+        delay(NICKNAME_NOTICE_DURATION.milliseconds)
     }
 
     /** `Result.failure` 가 아니라 예외로 튄 경로 — 갈래를 가릴 수 없어 한 갈래로 접는다 */

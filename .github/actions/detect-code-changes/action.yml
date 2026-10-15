@@ -1,0 +1,27 @@
+name: Detect Code Changes
+description: PR이 빌드에 닿는 파일을 바꿨는지 본다. docs/·wiki/·마크다운만 바꾼 PR이면 false다
+
+outputs:
+  code:
+    description: 빌드에 닿는 파일이 하나라도 바뀌었으면 "true"
+    value: ${{ steps.filter.outputs.code }}
+
+runs:
+  using: composite
+  steps:
+    # 목록을 못 받거나 3000개에서 잘리면 건너뛰지 않고 돌린다.
+    # previous_filename: 코드를 docs/ 로 옮기기만 한 PR 을 문서로 보지 않기 위해서다
+    - id: filter
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        FILES_API: repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files
+        CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+      run: |
+        if [ "$CHANGED_FILES" -lt 3000 ] \
+          && files=$(gh api --paginate "$FILES_API" --jq '.[] | .filename, (.previous_filename // empty)') \
+          && ! grep -qvE '^(docs|wiki)/|\.md$' <<< "$files"; then
+          echo "code=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "code=true" >> "$GITHUB_OUTPUT"
+        fi

@@ -1,42 +1,40 @@
 package com.teamyg.parfait.feature.gallery.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager.GalleryAccessLevel
+import com.teamyg.parfait.domain.model.GalleryImageGroup
 import com.teamyg.parfait.domain.model.image.RecentImage
 import com.teamyg.parfait.domain.model.image.RecentImageKind
-import com.teamyg.parfait.domain.model.member.TutorialKind
-import com.teamyg.parfait.domain.usecase.gallery.LoadFilterYGGalleryImageGroupsUseCase
+import com.teamyg.parfait.domain.usecase.gallery.LoadGalleryImageGroupsUseCase
 import com.teamyg.parfait.domain.usecase.image.GetRecentCacheImagesUseCase
-import com.teamyg.parfait.domain.usecase.member.CompleteTutorialUseCase
-import com.teamyg.parfait.domain.usecase.member.GetTutorialVisibleFlowUseCase
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.domain.usecase.topping.EnsureDraftSubjectRecordedUseCase
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import java.io.IOException
 
 class CustomGalleryPickerViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getRecentCacheImages: GetRecentCacheImagesUseCase = mockk()
-    private val loadGroups: LoadFilterYGGalleryImageGroupsUseCase = mockk(relaxed = true)
-    private val getTutorialVisible: GetTutorialVisibleFlowUseCase = mockk()
-    private val completeTutorial: CompleteTutorialUseCase = mockk(relaxed = true)
-
-    /** 기본값은 "이미 본 사용자" — 튜토리얼이 다른 테스트의 화면 상태에 끼어들지 않게 한다 */
-    private val tutorialVisible = MutableStateFlow(false)
+    private val loadGroups: LoadGalleryImageGroupsUseCase = mockk(relaxed = true)
+    private val ensureDraftSubjectRecorded: EnsureDraftSubjectRecordedUseCase = mockk {
+        coEvery { this@mockk(any()) } returns true
+    }
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private val source = RecentImage(
         uri = "content://recent/a.jpg",
@@ -54,64 +52,15 @@ class CustomGalleryPickerViewModelTest {
         returnResultOnly: Boolean = false,
     ): CustomGalleryPickerViewModel {
         every { getRecentCacheImages() } returns flowOf(listOf(source, cutout))
-        every { getTutorialVisible(TutorialKind.UPLOAD) } returns tutorialVisible
 
         return CustomGalleryPickerViewModel(
             returnResultOnly = returnResultOnly,
             recentImagePick = recentImagePick,
             getRecentCacheImagesUseCase = getRecentCacheImages,
-            loadFilterYGGalleryImageGroupsUseCase = loadGroups,
-            getTutorialVisibleFlowUseCase = getTutorialVisible,
-            completeTutorialUseCase = completeTutorial,
+            loadGalleryImageGroupsUseCase = loadGroups,
+            ensureDraftSubjectRecorded = ensureDraftSubjectRecorded,
+            analyticsLogger = analyticsLogger,
         )
-    }
-
-    /**
-     * 튜토리얼 구독은 `launchWhileSubscribed` 라 [CustomGalleryPickerViewModel.state] 를 보는
-     * 쪽이 있어야 열린다 — 라우트의 `collectAsStateWithLifecycle()` 을 여기서 흉내 낸다.
-     */
-    private fun TestScope.shownViewModel() =
-        createViewModel(recentImagePick = RecentImagePick.CUTOUT).also { viewModel ->
-            backgroundScope.launch { viewModel.state.collect { } }
-            advanceUntilIdle()
-        }
-
-    @Test
-    fun tutorial_onFirstEntry_coversTheScreen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 아직 업로드 튜토리얼을 보지 않은 사용자
-        tutorialVisible.value = true
-
-        // When 화면이 열린다
-        val viewModel = shownViewModel()
-
-        // Then 튜토리얼이 뜬다
-        assertTrue(viewModel.state.value.isTutorialVisible)
-    }
-
-    @Test
-    fun tutorial_alreadySeen_doesNotOpen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 이미 본 사용자(기본 스텁)
-
-        // When 화면이 열린다
-        val viewModel = shownViewModel()
-
-        // Then 아무것도 덮지 않는다
-        assertFalse(viewModel.state.value.isTutorialVisible)
-    }
-
-    @Test
-    fun tutorial_onConfirm_closesItAndMarksItSeen() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 튜토리얼이 떠 있다
-        tutorialVisible.value = true
-        val viewModel = shownViewModel()
-
-        // When 칩을 누른다
-        viewModel.processIntent(CustomGalleryPickerIntent.OnConfirmTutorial)
-        advanceUntilIdle()
-
-        // Then 닫히고, 다음 진입부터 뜨지 않도록 저장한다
-        assertFalse(viewModel.state.value.isTutorialVisible)
-        coVerify(exactly = 1) { completeTutorial(TutorialKind.UPLOAD) }
     }
 
     @Test
@@ -151,8 +100,8 @@ class CustomGalleryPickerViewModelTest {
     }
 
     @Test
-    fun onClickCutoutImage_navigatesToSegmentationConfirmWithFilePath() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 토핑 만들기 진입
+    fun onClickCutoutImage_draftAligned_navigatesToToppingPlace() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞출 수 있는 토핑 만들기 진입
         val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
         advanceUntilIdle()
 
@@ -160,11 +109,62 @@ class CustomGalleryPickerViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
 
-            // Then 확인 화면으로 가고, 넘기는 것은 uri 가 아니라 절대경로다 — 초안 계약이 경로다
-            assertEquals(
-                CustomGalleryPickerEffect.NavigateToSegmentationConfirm(cutout.filePath),
-                awaitItem(),
-            )
+            // Then 토핑 배치로 가고, 초안에 넘기는 것은 uri 가 아니라 절대경로다
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_draftNotAligned_showsDraftUnavailable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞출 수 없다
+        coEvery { ensureDraftSubjectRecorded(any()) } returns false
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        // When 알맹이를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+
+            // Then 안내를 띄운다
+            assertEquals(CustomGalleryPickerEffect.ShowDraftUnavailable, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_ensureThrows_showsDraftUnavailable() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안을 맞추다 I/O 가 실패한다
+        coEvery { ensureDraftSubjectRecorded(any()) } throws IOException("disk")
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        // When 알맹이를 누른다
+        viewModel.effect.test {
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+
+            // Then 안내를 띄운다
+            assertEquals(CustomGalleryPickerEffect.ShowDraftUnavailable, awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickCutoutImage_tappedTwice_ensuresOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 초안 맞추기가 끝나지 않은 채 멈춰 있다
+        val gate = CompletableDeferred<Boolean>()
+        coEvery { ensureDraftSubjectRecorded(any()) } coAnswers { gate.await() }
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.CUTOUT)
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 두 번 누른 뒤 풀어 준다
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+            viewModel.processIntent(CustomGalleryPickerIntent.OnClickCutoutImage(cutout))
+            gate.complete(true)
+
+            // Then 한 번만 맞추고 이펙트도 한 번이다
+            assertEquals(CustomGalleryPickerEffect.NavigateToToppingPlace, awaitItem())
+            coVerify(exactly = 1) { ensureDraftSubjectRecorded(cutout.filePath) }
+            expectNoEvents()
         }
     }
 
@@ -181,6 +181,42 @@ class CustomGalleryPickerViewModelTest {
             // Then 지금까지의 경로 그대로다
             assertEquals(CustomGalleryPickerEffect.NavigateToConfirm(source.uri), awaitItem())
         }
+    }
+
+    @Test
+    fun permission_whenLoadGroupsThrows_stopsLoading() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 사진 조회가 실패한다
+        coEvery { loadGroups() } throws IOException("cursor")
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.SOURCE)
+        advanceUntilIdle()
+
+        // When 권한이 허용된 결과가 온다
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.FULL))
+        advanceUntilIdle()
+
+        // Then 로딩이 끝난다 — 남아 있으면 화면이 영영 로딩 상태다
+        assertEquals(false, viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun permission_whenResultRepeats_keepsLatestLoadOnly() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 첫 조회가 끝나지 않는 상태에서
+        val first = CompletableDeferred<List<GalleryImageGroup>>()
+        val second = listOf(GalleryImageGroup(date = LocalDate(2026, 10, 6), images = listOf("content://a")))
+        coEvery { loadGroups() } coAnswers { first.await() } andThenAnswer { second }
+        val viewModel = createViewModel(recentImagePick = RecentImagePick.SOURCE)
+        advanceUntilIdle()
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.PARTIAL))
+        advanceUntilIdle()
+
+        // When 권한 결과가 다시 오고 이전 조회가 뒤늦게 끝난다
+        viewModel.processIntent(CustomGalleryPickerIntent.OnPermissionResult(GalleryAccessLevel.FULL))
+        advanceUntilIdle()
+        first.complete(emptyList())
+        advanceUntilIdle()
+
+        // Then 최신 조회 결과가 남는다 — 이전 조회가 덮어쓰면 안 된다
+        assertEquals(second, viewModel.state.value.groups)
     }
 
     @Test

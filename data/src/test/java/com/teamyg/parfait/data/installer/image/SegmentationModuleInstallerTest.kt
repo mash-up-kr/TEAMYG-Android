@@ -1,6 +1,10 @@
 package com.teamyg.parfait.data.installer.image
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -8,18 +12,19 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.milliseconds
 
 private class FakeModuleInstallGateway(private var available: Boolean = false) : ModuleInstallGateway {
     var installCount: Int = 0
         private set
 
-    private var listener: ((ModuleInstallSignal) -> Unit)? = null
+    private var pending: CompletableDeferred<ModuleInstallSignal>? = null
 
     override suspend fun isAvailable(): Boolean = available
 
-    override fun install(onSignal: (ModuleInstallSignal) -> Unit) {
+    override fun install(): Deferred<ModuleInstallSignal> {
         installCount++
-        listener = onSignal
+        return CompletableDeferred<ModuleInstallSignal>().also { pending = it }
     }
 
     /** 게이트웨이가 신호를 흘리는 순간을 테스트가 정한다 */
@@ -28,10 +33,11 @@ private class FakeModuleInstallGateway(private var available: Boolean = false) :
         becomesAvailable: Boolean = false,
     ) {
         available = becomesAvailable
-        listener?.invoke(signal)
+        pending?.complete(signal)
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SegmentationModuleInstallerTest {
     @Test
     fun ensureInstalled_alreadyAvailable_doesNotRequestInstall() = runTest {
@@ -109,7 +115,7 @@ class SegmentationModuleInstallerTest {
         val installer = SegmentationModuleInstaller(gateway)
 
         val first = async { installer.ensureInstalled() }
-        advanceTimeBy(SegmentationModuleInstaller.INSTALL_TIMEOUT_MS + 1)
+        advanceTimeBy((SegmentationModuleInstaller.INSTALL_TIMEOUT_MS + 1).milliseconds)
         advanceUntilIdle()
 
         assertEquals(ModuleInstallOutcome.TimedOut, first.await())
@@ -132,7 +138,7 @@ class SegmentationModuleInstallerTest {
         gateway.emit(ModuleInstallSignal.Failed(installState = 5, errorCode = 8))
         first.await()
 
-        val second = async { installer.ensureInstalled() }
+        launch { installer.ensureInstalled() }
         runCurrent()
 
         // 끝난 대기를 재사용하면 재시도가 영영 옛 실패만 돌려준다

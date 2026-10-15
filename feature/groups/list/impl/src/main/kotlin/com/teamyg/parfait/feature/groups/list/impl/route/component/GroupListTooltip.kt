@@ -3,6 +3,7 @@ package com.teamyg.parfait.feature.groups.list.impl.route.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +24,7 @@ internal fun GroupListTooltip(modifier: Modifier = Modifier) {
         modifier = modifier
             .background(color = YGAtomicColors.Gray.White)
             .drawTooltipCornerTop(
-                borderColor = YGAtomicColors.Melon.Melon500,
+                borderColor = YGAtomicColors.Soda.Soda500,
                 backgroundColor = YGAtomicColors.Gray.White,
                 cornerWidth = 17.dp,
                 cornerHeight = 16.dp,
@@ -31,33 +32,27 @@ internal fun GroupListTooltip(modifier: Modifier = Modifier) {
                 borderWidth = (1.25).dp,
             ).border(
                 width = (1.25).dp,
-                color = YGAtomicColors.Melon.Melon500,
+                color = YGAtomicColors.Soda.Soda500,
             ).padding(
                 vertical = YGTheme.layout.padding.padding6,
                 horizontal = YGTheme.layout.padding.padding9,
             ),
     ) {
+        val emphasisStyle = YGTheme.typography.body.b02B
+            .copy(color = YGAtomicColors.Soda.Soda500)
         Text(
             text = buildAnnotatedString {
-                append("여기를 눌러 ")
-                withStyle(
-                    textStyle = YGTheme.typography.body.b02B
-                        .copy(color = YGAtomicColors.Melon.Melon600),
-                ) {
-                    append("새 그룹")
-                }
-                append("을 만들거나,\n친구에게 받은 초대코드로 ")
-                withStyle(
-                    textStyle = YGTheme.typography.body.b02B
-                        .copy(color = YGAtomicColors.Melon.Melon600),
-                ) {
-                    append("그룹에 참여")
-                }
-                append("해 보세요.")
+                withStyle(textStyle = emphasisStyle) { append("새 그룹") }
+                append("을 만들거나 ")
+                withStyle(textStyle = emphasisStyle) { append("그룹에 참여") }
+                append("하면\n내 그룹 목록을 ")
+                withStyle(textStyle = emphasisStyle) { append("파르페") }
+                append("로 쌓을 수 있어요.")
             },
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Black,
             textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

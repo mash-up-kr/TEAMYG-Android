@@ -10,11 +10,11 @@ import kotlin.coroutines.startCoroutine
 /**
  * `isActive` 조회 수를 세는 [Job]. 커널이 행 경계마다 취소를 확인하는지 검증하는 데 쓴다.
  *
- * ⚠️ `Job by delegate` 는 [CoroutineContext] 의 `get`·`fold`·`minusKey`·`plus` 까지 위임한다.
+ * `Job by delegate` 는 [CoroutineContext] 의 `get`·`fold`·`minusKey`·`plus` 까지 위임한다.
  * 넷을 다 오버라이드하지 않으면 컨텍스트 조회가 위임 대상을 돌려주어 [isActive] 가 영영 안 불리고,
  * 증상은 "테스트가 조용히 통과한다"다.
  *
- * ⚠️ 코루틴이 [Job] 상속에 opt-in 을 요구하고 장래 에러 승격을 예고했다. 버전을 올릴 때 이 위임이
+ * 코루틴이 [Job] 상속에 opt-in 을 요구하고 장래 에러 승격을 예고했다. 버전을 올릴 때 이 위임이
  * 막힐 수 있다.
  */
 @OptIn(InternalForInheritanceCoroutinesApi::class)
@@ -56,10 +56,10 @@ internal class CountingJob(
 /**
  * [block] 을 [job] 만 담긴 컨텍스트에서 돌린다.
  *
- * ⚠️ `withContext(job)` 을 쓰면 안 된다. 새 `ScopeCoroutine` 이 만들어져 컨텍스트의 [Job] 자리를
+ * `withContext(job)` 을 쓰면 안 된다. 새 `ScopeCoroutine` 이 만들어져 컨텍스트의 [Job] 자리를
  * 차지하므로 커널이 [job] 을 못 본다.
  *
- * ⚠️ 컨텍스트에 `ContinuationInterceptor`(디스패처)를 넣으면 안 된다. 본문이 비동기로 제출되고
+ * 컨텍스트에 `ContinuationInterceptor`(디스패처)를 넣으면 안 된다. 본문이 비동기로 제출되고
  * 이 함수가 즉시 반환해, 확인 호출 수가 0 인 채로 단언이 통과한다. 아래 완료 단언이 그것을 잡는다.
  *
  * 이 하니스는 커널에 중단 지점이 없다는 것을 전제한다.

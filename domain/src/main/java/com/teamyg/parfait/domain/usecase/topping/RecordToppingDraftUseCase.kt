@@ -11,14 +11,10 @@ class RecordToppingDraftUseCase @Inject constructor(
     suspend operator fun invoke(
         subjectImagePath: String,
         cutoutImagePath: String?,
-        borderColorArgb: Int?,
-        borderWidthDp: Float?,
         sourceLongSide: SourceLongSide?,
     ): Boolean = toppingDraftRepository.record(
         subjectImagePath = subjectImagePath,
         cutoutImagePath = cutoutImagePath,
-        borderColorArgb = borderColorArgb,
-        borderWidthDp = borderWidthDp,
         sourceLongSide = sourceLongSide,
     )
 }

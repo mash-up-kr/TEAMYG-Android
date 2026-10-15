@@ -116,7 +116,7 @@ fun YGCanvas(
                 .width(metrics.canvasWidth)
                 .height(metrics.canvasAreaHeight + menuHeight - 1.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(-1.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy((-1).dp)) {
                 CanvasArea(
                     shape = shape,
                     background = background,
