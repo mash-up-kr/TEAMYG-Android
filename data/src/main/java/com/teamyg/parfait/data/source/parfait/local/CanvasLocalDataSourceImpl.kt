@@ -13,6 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class CanvasLocalDataSourceImpl @Inject constructor() : CanvasLocalDataSource {
     private val canvases = MutableStateFlow<Map<GroupId, CanvasVO>>(emptyMap())
+    private val etags = MutableStateFlow<Map<GroupId, String>>(emptyMap())
 
     /**
      * 맵 전체가 아니라 한 그룹으로 좁혀서 낸다 — [distinctUntilChanged] 가 없으면 남의 그룹
@@ -24,14 +25,20 @@ class CanvasLocalDataSourceImpl @Inject constructor() : CanvasLocalDataSource {
 
     override fun cachedTodayCanvas(groupId: GroupId): CanvasVO? = canvases.value[groupId]
 
+    override fun cachedTodayEtag(groupId: GroupId): String? = etags.value[groupId]
+
     override fun saveTodayCanvas(
         groupId: GroupId,
         canvas: CanvasVO,
+        etag: String?,
     ) {
+        // 구독자가 새 캔버스를 받는 시점에 짝이 되는 ETag 가 이미 있어야 해서 캔버스보다 먼저 쓴다
+        etags.update { if (etag == null) it - groupId else it + (groupId to etag) }
         canvases.update { it + (groupId to canvas) }
     }
 
     override fun clear() {
+        etags.value = emptyMap()
         canvases.value = emptyMap()
     }
 }
