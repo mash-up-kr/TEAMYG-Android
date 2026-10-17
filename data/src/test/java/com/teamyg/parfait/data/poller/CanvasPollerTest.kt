@@ -47,16 +47,25 @@ class CanvasPollerTest {
 
     /**
      * [gate] 를 주면 응답을 붙들어 둔다 — 중첩 가드와 정리 경합을 재현하는 데 쓴다.
-     * 서버처럼 보낸 ETag 가 [etag] 와 같으면 304 를 낸다. 폴러가 부르지 않는 메서드는
-     * `error("폴러가 부르지 않는다")` 로 채운다.
+     * 폴러가 부르지 않는 메서드는 `error("폴러가 부르지 않는다")` 로 채운다.
      */
     private class FakeRemote(
-        /** 폴링 도중에 서버가 다른 값을 주는 상황을 만드는 데 쓴다. 바꿀 때 [etag] 도 함께 올린다 */
-        var response: CanvasVO,
+        initial: CanvasVO,
         private val gate: CompletableDeferred<Unit>? = null,
         private val failure: Throwable? = null,
     ) : ParfaitRemoteDataSource {
-        var etag: String = "W/\"v1\""
+        private var response = initial
+        private var etag: String? = "W/\"v1\""
+
+        /** 보낸 ETag 가 현재 값과 같으면 304 라, 본문만 바꾸면 가짜로 통과한다. 둘을 함께 바꾼다 */
+        fun serve(
+            canvas: CanvasVO,
+            etag: String?,
+        ) {
+            response = canvas
+            this.etag = etag
+        }
+
         var callCount = 0
             private set
         val receivedEtags = mutableListOf<String?>()
@@ -74,7 +83,7 @@ class CanvasPollerTest {
             gate?.await()
             failure?.let { return Result.failure(it) }
             return Result.success(
-                when (etag == this.etag) {
+                when (etag != null && etag == this.etag) {
                     true -> TodayCanvasFetch.NotModified
                     false -> TodayCanvasFetch.Modified(response, this.etag)
                 },
@@ -157,6 +166,8 @@ class CanvasPollerTest {
         advanceTimeBy(24.seconds)
         runCurrent()
 
+        // 두 번째 요청은 저장된 ETag 를 실어 304 를 받은 회차다
+        assertEquals(listOf(null, "W/\"v1\""), remote.receivedEtags)
         assertEquals(afterFirst + 1, remote.callCount)
     }
 
@@ -171,8 +182,7 @@ class CanvasPollerTest {
         runCurrent()
 
         // 같은 값이 두 번 왔으니 다음 주기는 15초다. 그 회차에서 값이 달라진다
-        remote.response = canvas().copy(lastClosedDate = LocalDate(2026, 1, 1))
-        remote.etag = "W/\"v2\""
+        remote.serve(canvas().copy(lastClosedDate = LocalDate(2026, 1, 1)), etag = "W/\"v2\"")
         advanceTimeBy(15.seconds)
         runCurrent()
         val afterChange = remote.callCount
@@ -213,6 +223,23 @@ class CanvasPollerTest {
 
         assertEquals(listOf(null, "W/\"v1\""), remote.receivedEtags)
         assertEquals(canvas(), local.cachedTodayCanvas(GROUP))
+        assertEquals("W/\"v1\"", local.cachedTodayEtag(GROUP))
+    }
+
+    @Test
+    fun poll_whenTheServerSendsNoEtag_keepsAskingWithoutOne() = runTest {
+        val remote = FakeRemote(canvas())
+        remote.serve(canvas(), etag = null)
+        val local = CanvasLocalDataSourceImpl()
+        val poller = CanvasPoller(backgroundScope, remote, local)
+
+        poller.acquire(GROUP)
+        runCurrent()
+        advanceTimeBy(10.seconds)
+        runCurrent()
+
+        assertEquals(listOf<String?>(null, null), remote.receivedEtags)
+        assertEquals(canvas(), local.cachedTodayCanvas(GROUP))
     }
 
     @Test
@@ -224,8 +251,7 @@ class CanvasPollerTest {
         runCurrent()
 
         val changed = canvas().copy(lastClosedDate = LocalDate(2026, 1, 1))
-        remote.response = changed
-        remote.etag = "W/\"v2\""
+        remote.serve(changed, etag = "W/\"v2\"")
         advanceTimeBy(10.seconds)
         runCurrent()
 
@@ -400,7 +426,7 @@ class CanvasPollerTest {
         private val response: CanvasVO,
         private val gates: List<CompletableDeferred<Unit>>,
     ) : ParfaitRemoteDataSource {
-        var todayCallCount = 0
+        var callCount = 0
             private set
 
         override suspend fun getYears(groupId: GroupId): Result<List<Int>> = error("폴러가 부르지 않는다")
@@ -411,8 +437,8 @@ class CanvasPollerTest {
             groupId: GroupId,
             etag: String?,
         ): Result<TodayCanvasFetch> {
-            val gate = gates[todayCallCount]
-            todayCallCount++
+            val gate = gates[callCount]
+            callCount++
             gate.await()
             return Result.success(TodayCanvasFetch.Modified(response, null))
         }
@@ -444,13 +470,13 @@ class CanvasPollerTest {
 
         poller.acquire(GROUP)
         runCurrent()
-        assertEquals(1, remote.todayCallCount)
+        assertEquals(1, remote.callCount)
 
         // 이전 세대의 요청이 아직 걸려 있는 채로 stopAll 뒤 곧바로 재구독한다
         poller.stopAll()
         poller.acquire(GROUP)
         runCurrent()
-        assertEquals(2, remote.todayCallCount)
+        assertEquals(2, remote.callCount)
 
         // 이전 세대(gen0)의 지연 응답이 뒤늦게 도착한다
         gateGen0.complete(Unit)
@@ -459,7 +485,7 @@ class CanvasPollerTest {
         // gen1이 아직 진행 중인데 세 번째 트리거가 들어와도 "진행 중" 가드에 걸려 건너뛰어야 한다
         poller.refreshNow(GROUP)
         runCurrent()
-        assertEquals(2, remote.todayCallCount)
+        assertEquals(2, remote.callCount)
 
         gateGen1.complete(Unit)
         runCurrent()
