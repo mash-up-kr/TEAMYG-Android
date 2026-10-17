@@ -47,7 +47,7 @@ class NavKeyAnalyticsScreenTest {
             NavKeySystemGalleryPicker to "C-102-system",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
             NavKeyCanvasToppingPlace to "C-106",
-            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09") to "C-001-image-save",
+            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09", toppingCount = 1) to "C-001-image-save",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
             NavKeyGroupSetting(groupId = 1L) to "S-101",

@@ -25,6 +25,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
@@ -56,6 +57,7 @@ import kotlinx.datetime.minus
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
+import java.io.File
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -78,6 +80,7 @@ class CanvasMainViewModelTest {
     private val getMyGroupsFlow: GetMyGroupsFlowUseCase = mockk()
     private val refreshMyGroups: RefreshMyGroupsUseCase = mockk()
     private val saveCanvasToGallery: SaveCanvasToGalleryUseCase = mockk()
+    private val saveCanvasVideoToGallery: SaveCanvasVideoToGalleryUseCase = mockk()
 
     private val startToppingDraft: StartToppingDraftUseCase = mockk(relaxUnitFun = true)
     private val pastCanvasAlertRepository: PastCanvasAlertRepository = mockk(relaxUnitFun = true)
@@ -144,6 +147,7 @@ class CanvasMainViewModelTest {
         getMyGroupsFlowUseCase = getMyGroupsFlow,
         refreshMyGroupsUseCase = refreshMyGroups,
         saveCanvasToGalleryUseCase = saveCanvasToGallery,
+        saveCanvasVideoToGalleryUseCase = saveCanvasVideoToGallery,
         startToppingDraft = startToppingDraft,
         pastCanvasAlertRepository = pastCanvasAlertRepository,
         analyticsLogger = analyticsLogger,
@@ -712,6 +716,24 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun onClickSaveToGallery_whileSpotlighted_clearsTheSpotlightBeforeCapturing() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 남이 올린 토핑이 Spotlight 로 강조돼 있다
+            val othersTopping = topping(positionZ = 1, isMine = false)
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(toppings = listOf(othersTopping))
+            val viewModel = enteredViewModel()
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+
+            // When 저장 버튼을 누른다
+            viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
+
+            // Then Dim 이 캡처에 구워지지 않도록 캡처를 요청하기 전에 Spotlight 부터 해제한다
+            assertNull(viewModel.state.value.spotlightedToppingId)
+        }
+
+    @Test
     fun saveCapturedCanvas_useCaseSucceeds_showsSuccessWithTheViewedDate() = runTest(mainDispatcherRule.dispatcher) {
         // Given 화면이 열린 상태(오늘을 보고 있다)이고 저장이 성공한다
         val viewModel = enteredViewModel()
@@ -939,6 +961,46 @@ class CanvasMainViewModelTest {
                 CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
                 awaitItem(),
             )
+        }
+    }
+
+    @Test
+    fun saveRecordedVideo_useCaseSucceeds_reportsSuccess() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 갤러리 저장이 성공한다
+        coEvery { saveCanvasVideoToGallery(any(), any()) } returns Result.success(Unit)
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 미리보기가 만들어 온 파일을 넘긴다
+            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = "/cache/a.mp4"))
+            advanceUntilIdle()
+
+            // Then 이미지 저장과 같은 성공으로 알린다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = true, date = today),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
+    fun saveRecordedVideo_useCaseFails_reportsFailureAndDeletesTheCacheFile() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 갤러리 저장이 실패하고, 미리보기가 만들어 온 캐시 파일이 있다
+        coEvery { saveCanvasVideoToGallery(any(), any()) } returns Result.failure(RuntimeException("저장 실패"))
+        val videoFile = File.createTempFile("canvas_video", ".mp4").apply { deleteOnExit() }
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그 파일을 넘긴다
+            viewModel.processIntent(CanvasMainIntent.SaveRecordedVideo(videoFilePath = videoFile.absolutePath))
+            advanceUntilIdle()
+
+            // Then 이미지 저장과 같은 실패로 알리고, 다시 쓸 길이 없는 캐시 파일을 지운다
+            assertEquals(
+                CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = today),
+                awaitItem(),
+            )
+            assertFalse(videoFile.exists())
         }
     }
 

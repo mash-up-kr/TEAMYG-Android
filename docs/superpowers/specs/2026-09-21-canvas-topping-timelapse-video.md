@@ -136,8 +136,10 @@ iOS와 다르게 남겨 둔 것은 하나다. 토핑 0건에서 영상 버튼을
 
 **인코더는 전용 단일 스레드를 소유한다.** EGL 컨텍스트가 생성 스레드에 묶이고 다른 스레드에서
 그리면 예외 없이 조용히 실패하기 때문이다(ADR-0035). 호출부는 어느 스레드에서 불러도 되지만
-**그 스레드가 블록된다** — 프레임 루프가 `withFrameNanos` 를 쓰므로 실제 호출부는 UI 스레드이고,
-그래서 코덱 대기에는 상한이 있어야 한다. 상한이 없으면 코덱이 멈출 때 실패가 아니라 ANR 이 된다.
+**그 스레드가 블록된다.** 프레임 루프는 `withFrameNanos` 때문에 UI 스레드에서 돌므로,
+`recordCanvasVideo`가 레이어 읽기만 메인에 두고 인코더 생성·`encodeFrame`·`finish`·`close`를
+`Dispatchers.Default`로 넘긴다. 코덱 대기의 상한은 그래도 둔다 — 없으면 코덱이 멈출 때 녹화가
+끝나지 않고, 그 동안 미리보기의 닫기와 뒤로가기가 막혀 있다.
 
 ## 프레임 합성: 컴포지션을 프레임마다 캡처한다
 
@@ -228,8 +230,11 @@ sealed interface CanvasSaveResult {
 
 `GalleryMediaProvider.insertPendingVideo`의 MIME은 `video/mp4`, `RELATIVE_PATH`는 `Movies/Parfait`다.
 `IS_PENDING` 2단 커밋과 실패 시 등록 되돌리기는 이미지 경로와 같은 구조다. 영상은 이미 파일로
-존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사하고, **결과와 상관없이 그
-캐시 파일을 지운다.** 권한이 거부돼 저장에 이르지 못한 파일은 `CanvasMainRoute`가 지운다.
+존재하므로 `saveVideoToGallery`는 캐시 파일 경로를 받아 스트림을 복사한다. 그 파일은 읽기만 한다.
+
+**캐시 mp4를 지우는 자리는 `CanvasMainViewModel` 하나다.** `SaveRecordedVideo`는 저장 결과와
+상관없이 지우고, 권한이 거부돼 저장에 이르지 못한 파일은 Route가 `DiscardRecordedVideo`로 넘겨
+지운다. 다시 시도할 길이 없는 파일이라 실패해도 남기지 않는다.
 
 ### 권한 흐름
 
@@ -239,8 +244,8 @@ sealed interface CanvasSaveResult {
 
 ## 표시·제어 규칙
 
-- 하단에 버튼 둘을 같은 폭으로 나란히 둔다. 왼쪽이 「영상으로 저장」(Secondary), 오른쪽이
-  「갤러리에 저장」(Primary)이다.
+- 하단에 버튼 둘을 전체 폭으로 위아래에 쌓는다. 위가 「사진으로 저장」(`YGButtonType.Large`), 아래가
+  「영상으로 저장」(`YGButtonType.Medium.Secondary`)이다.
 - 영상 버튼은 **토핑이 0건이면 비활성**이다. 미리보기는 평면 PNG 경로와 날짜만 받아 토핑을 셀
   수 없어 `NavKeyCanvasImageSave.toppingCount`로 실어 나른다.
 - 생성 중에는 화면을 덮지 않는다. 두 버튼을 비활성으로 두고 닫기 버튼과 시스템 뒤로가기를

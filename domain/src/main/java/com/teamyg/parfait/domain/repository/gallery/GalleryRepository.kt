@@ -23,4 +23,13 @@ interface GalleryRepository {
         bitmap: BitmapWrapper,
         displayName: String,
     ): Result<Unit>
+
+    /**
+     * 비트맵이 아니라 경로를 받는다. 영상은 인코더가 이미 파일로 완성해 둬서 스트림으로 옮기면 된다.
+     * [videoFilePath] 의 파일은 읽기만 한다 — 지우는 것은 만든 쪽 몫이다
+     */
+    suspend fun saveVideoToGallery(
+        videoFilePath: String,
+        displayName: String,
+    ): Result<Unit>
 }

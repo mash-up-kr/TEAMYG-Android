@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
 import android.content.ClipData
-import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +20,7 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -34,14 +34,18 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
-import com.teamyg.parfait.feature.groups.canvas.api.CanvasImageSaveResult
+import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadErrorOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasLoadingOverlay
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasMainScreen
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasVideoSource
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PendingGallerySave
+import com.teamyg.parfait.feature.groups.canvas.impl.screen.toYGCanvasBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.readCanvasCaptureCache
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightTimeLabel
 import com.teamyg.parfait.feature.groups.canvas.impl.util.writeToCanvasCaptureCache
@@ -114,39 +118,56 @@ internal fun CanvasMainRoute(
     val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
-    // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 캡처한 비트맵을 여기서
-    // 들고 있다가 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
-    var pendingGalleryBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    // WRITE_EXTERNAL_STORAGE 요청은 Activity 가 있어야만 가능해, 저장할 것을 여기서 들고 있다가
+    // 승인이 오면 그때 ViewModel 로 넘긴다(API 29+ 는 애초에 필요 없어 안 걸린다)
+    var pendingGallerySave by remember { mutableStateOf<PendingGallerySave?>(null) }
     val galleryWritePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        val bitmap = pendingGalleryBitmap
-        pendingGalleryBitmap = null
-        if (granted && bitmap != null) {
-            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
-        } else if (bitmap != null) {
-            toastPolicy.showError(gallerySaveFailureMessage)
+        val pending = pendingGallerySave
+        pendingGallerySave = null
+        if (pending != null) {
+            if (granted) {
+                viewModel.processIntent(pending.toSaveIntent())
+            } else {
+                if (pending is PendingGallerySave.Video) {
+                    viewModel.processIntent(CanvasMainIntent.DiscardRecordedVideo(pending.filePath))
+                }
+                toastPolicy.showError(gallerySaveFailureMessage)
+            }
         }
     }
 
     // 갤러리 저장은 권한을 물어야 시작할 수 있다 — 미리보기에서 돌아온 길과 권한 승인 뒤의
     // 길이 같은 곳으로 모이도록 여기 한 번만 적는다
-    val saveWithPermission: (Bitmap) -> Unit = { bitmap ->
+    val saveWithPermission: (PendingGallerySave) -> Unit = { pending ->
         if (GalleryWritePermissionManager.hasPermission(context)) {
-            viewModel.processIntent(CanvasMainIntent.SaveCapturedCanvas(bitmap))
+            viewModel.processIntent(pending.toSaveIntent())
         } else {
-            pendingGalleryBitmap = bitmap
+            pendingGallerySave = pending
             galleryWritePermissionLauncher.launch(GalleryWritePermissionManager.PERMISSION)
         }
     }
 
-    // 미리보기에서 저장을 확정하고 돌아왔다. 보여 준 그림 그대로 남겨야 하므로 캔버스를 다시
-    // 캡처하지 않고 미리보기가 쓰던 파일을 읽는다
-    ResultEffect<CanvasImageSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
-        scope.launch {
-            withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
-                .onSuccess(saveWithPermission)
-                .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
+    // 저장 미리보기가 영상을 다시 그릴 때 같은 dp 크기·같은 재시도 키를 써야 해서 여기서 들고 있다
+    var canvasAreaWidth by remember { mutableStateOf(0.dp) }
+    var canvasAreaHeight by remember { mutableStateOf(0.dp) }
+    var retryKey by remember { mutableIntStateOf(0) }
+
+    // 미리보기에서 저장을 확정하고 돌아왔다. 이미지는 보여 준 그림 그대로 남겨야 하므로 캔버스를
+    // 다시 캡처하지 않고 미리보기가 쓰던 파일을 읽는다. 동영상은 미리보기가 이미 캐시에 만들어
+    // 왔고 여기서는 갤러리에 넣기만 한다
+    ResultEffect<CanvasSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
+        when (result) {
+            is CanvasSaveResult.Image -> scope.launch {
+                withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }
+                    .onSuccess { bitmap -> saveWithPermission(PendingGallerySave.Image(bitmap)) }
+                    .onFailure { toastPolicy.showError(gallerySaveFailureMessage) }
+            }
+
+            is CanvasSaveResult.Video -> saveWithPermission(PendingGallerySave.Video(result.videoPath))
+
+            is CanvasSaveResult.VideoFailed -> toastPolicy.showError(gallerySaveFailureMessage)
         }
     }
 
@@ -191,16 +212,30 @@ internal fun CanvasMainRoute(
                 is CanvasMainEffect.RequestCanvasCaptureForPreview -> {
                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                     val selectedDate = viewModel.state.value.selectedDate
+                    // 캡처와 같은 시점의 값이어야 한다 — 아래 정지 지점(파일 쓰기) 사이 폴링으로
+                    // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
+                    // 그림과 어긋난다
+                    val capturedState = viewModel.state.value
+                    val toppingCount = capturedState.toppings.size
+                    val videoSource = CanvasVideoSource(
+                        toppings = capturedState.toppings,
+                        background = capturedState.canvasBackground.toYGCanvasBackground(),
+                        canvasWidth = canvasAreaWidth,
+                        canvasHeight = canvasAreaHeight,
+                        retryKey = retryKey,
+                    )
 
                     withContext(Dispatchers.IO) { bitmap.writeToCanvasCaptureCache(context) }
                         .onSuccess { file ->
                             // ⚠️ 홀더에 건넸다고 파일 쓰기를 지우면 안 된다 — 위 ResultEffect 가
                             // 저장할 때 그 파일을 읽는다
                             CanvasCaptureHolder.put(bitmap)
+                            CanvasVideoSourceHolder.put(videoSource)
                             navigator.goTo(
                                 destination = NavKeyCanvasImageSave(
                                     imagePath = file.absolutePath,
                                     date = selectedDate.toString(),
+                                    toppingCount = toppingCount,
                                 ),
                             )
                         }.onFailure { toastPolicy.showError(captureFailureMessage) }
@@ -280,8 +315,6 @@ internal fun CanvasMainRoute(
     // 캔버스 영역만 덮으면 그 밖의 날짜 선택과 메뉴가 그대로 눌린다
     var loadState by remember { mutableStateOf(CanvasLoadState.Loaded) }
 
-    var retryKey by remember { mutableIntStateOf(0) }
-
     // 폴링이 남이 올린 토핑을 실어 올 때마다 보고 있던 캔버스가 덮개 뒤로 사라져서다
     val displayedCanvasId = canvasState.displayedCanvas?.parfaitId
     var paintedCanvasIds by remember { mutableStateOf(emptySet<ParfaitId>()) }
@@ -345,9 +378,18 @@ internal fun CanvasMainRoute(
             toastPolicy = toastPolicy,
             alertPolicy = alertPolicy,
             graphicsLayer = graphicsLayer,
+            onCanvasAreaSizeChange = { width, height ->
+                canvasAreaWidth = width
+                canvasAreaHeight = height
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
         )
     }
+}
+
+private fun PendingGallerySave.toSaveIntent(): CanvasMainIntent = when (this) {
+    is PendingGallerySave.Image -> CanvasMainIntent.SaveCapturedCanvas(bitmap)
+    is PendingGallerySave.Video -> CanvasMainIntent.SaveRecordedVideo(filePath)
 }

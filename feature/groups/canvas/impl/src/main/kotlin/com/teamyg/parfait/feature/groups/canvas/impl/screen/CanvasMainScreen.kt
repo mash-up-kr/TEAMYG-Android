@@ -15,9 +15,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
@@ -76,6 +79,8 @@ internal fun CanvasMainScreen(
     retryKey: Int,
     modifier: Modifier = Modifier,
     graphicsLayer: GraphicsLayer = rememberGraphicsLayer(),
+    /** Canvas-Area 의 dp 크기. 저장 미리보기의 녹화 레이어가 같은 크기로 다시 그려야 해서 Route 가 받아 둔다 */
+    onCanvasAreaSizeChange: (width: Dp, height: Dp) -> Unit = { _, _ -> },
     toastPolicy: YGToastPolicy = rememberYGToastPolicy(),
     alertPolicy: YGAlertPolicy = rememberYGAlertPolicy(),
 ) {
@@ -212,6 +217,8 @@ internal fun CanvasMainScreen(
                 .weight(1f)
                 .fillMaxWidth(),
         ) {
+            val density = LocalDensity.current
+
             CanvasToppingLayer(
                 toppings = canvasState.toppings,
                 spotlightedToppingId = canvasState.spotlightedToppingId,
@@ -222,7 +229,15 @@ internal fun CanvasMainScreen(
                 revealResetKey = canvasState.displayedCanvas?.parfaitId,
                 retryKey = retryKey,
                 onLoadStateChange = { toppingState = it },
-                modifier = Modifier.fillMaxSize(),
+                // 저장 미리보기의 녹화 레이어가 같은 dp 크기로 그려야 테두리 굵기 비율이 이미지
+                // 저장물과 같아진다
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { size ->
+                        with(density) {
+                            onCanvasAreaSizeChange(size.width.toDp(), size.height.toDp())
+                        }
+                    },
             )
         }
     }
@@ -232,7 +247,7 @@ internal fun CanvasMainScreen(
  * 배경이 미설정이거나 앱이 모르는 type 이면 null 이 온다. 색을 못 읽었을 때도 미설정으로
  * 떨어뜨린다 — 캔버스를 못 그리는 것보다 [YGCanvas] 의 기본 배경을 깔아 주는 편이 낫다.
  */
-private fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
+internal fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = when (this) {
     null -> null
     is CanvasBackground.Color -> value.toColorOrNull()?.let(YGCanvasBackground::Solid)
     is CanvasBackground.Image -> YGCanvasBackground.Image(url)

@@ -10,9 +10,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import java.io.OutputStream
 
-private const val IMAGE_MIME_TYPE = "image/png"
-private const val SAVE_SUBDIRECTORY = "Parfait"
-
 class GalleryMediaProvider(
     private val context: Context,
 ) {
@@ -74,30 +71,58 @@ class GalleryMediaProvider(
      */
     fun insertPendingImage(displayName: String): Uri? {
         val collection = collectionUri ?: return null
+
+        return insertPendingMedia(
+            collection = collection,
+            displayName = displayName,
+            mimeType = IMAGE_MIME_TYPE,
+            directory = Environment.DIRECTORY_PICTURES,
+        )
+    }
+
+    fun insertPendingVideo(displayName: String): Uri? = insertPendingMedia(
+        collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+        displayName = displayName,
+        mimeType = VIDEO_MIME_TYPE,
+        directory = Environment.DIRECTORY_MOVIES,
+    )
+
+    fun openOutputStream(uri: Uri): OutputStream? = context.contentResolver?.openOutputStream(uri)
+
+    /** [insertPendingImage]·[insertPendingVideo] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
+    fun finalizePendingMedia(uri: Uri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+
+        val values = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+        context.contentResolver?.update(uri, values, null, null)
+    }
+
+    /** 바이트를 다 못 썼을 때 갤러리에 빈 파일이 남지 않게 등록을 되돌린다 */
+    fun deletePendingMedia(uri: Uri) {
+        context.contentResolver?.delete(uri, null, null)
+    }
+
+    private fun insertPendingMedia(
+        collection: Uri,
+        displayName: String,
+        mimeType: String,
+        directory: String,
+    ): Uri? {
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
-            put(MediaStore.Images.Media.MIME_TYPE, IMAGE_MIME_TYPE)
+            put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/$SAVE_SUBDIRECTORY")
-                put(MediaStore.Images.Media.IS_PENDING, 1)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "$directory/$SAVE_SUBDIRECTORY")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
         }
 
         return context.contentResolver?.insert(collection, values)
     }
 
-    fun openOutputStream(uri: Uri): OutputStream? = context.contentResolver?.openOutputStream(uri)
-
-    /** [insertPendingImage] 가 건 IS_PENDING 을 내려 갤러리에 보이게 한다 */
-    fun finalizePendingImage(uri: Uri) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-
-        val values = ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }
-        context.contentResolver?.update(uri, values, null, null)
-    }
-
-    /** 바이트를 다 못 썼을 때 갤러리에 빈 파일이 남지 않게 등록을 되돌린다 */
-    fun deleteImage(uri: Uri) {
-        context.contentResolver?.delete(uri, null, null)
+    private companion object {
+        const val IMAGE_MIME_TYPE = "image/png"
+        const val VIDEO_MIME_TYPE = "video/mp4"
+        const val SAVE_SUBDIRECTORY = "Parfait"
     }
 }
