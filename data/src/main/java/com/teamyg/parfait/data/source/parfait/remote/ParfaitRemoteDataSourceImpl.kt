@@ -26,6 +26,7 @@ class ParfaitRemoteDataSourceImpl @Inject constructor(
             transform = { it.years },
         )
 
+    @Suppress("OVERRIDE_DEPRECATION")
     override suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO> = apiCaller.safeApiCall(
         block = { parfaitService.getGroupsByGroupIdParfaitsToday(groupId.value) },
         transform = { it.toCanvasVO() },
