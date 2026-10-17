@@ -393,3 +393,6 @@ status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-i
 
 ## [2026-10-07] lint | 86회차 누락 보완 — c105-arrange-border-merge 스펙이 #589·#593 이전의 닫기·시스템 뒤로가기·즉시 삭제를 그대로 적고 있었음
 고쳐 씀 스펙 「시스템 뒤로가기」「수정 플로우」 삭제·닫기·주의 절(`toppingPanelBackAction`, `pendingDeleteToppingIds`, `hasUnsavedChanges`)
+
+## [2026-10-17] struct | #604 미사용 `NavKeyCameraSystem`·`NavKeySystemGalleryPicker`와 Route·Screen·ViewModel·분석 화면 ID(`C-101-system`·`C-102-system`) 삭제
+해소 OQ-P-239 ②
