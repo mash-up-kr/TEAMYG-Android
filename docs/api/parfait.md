@@ -713,7 +713,7 @@ ViewModel 안에서 **캔버스 조회는 계약을 타고 달력 조회는 안 
 | 엔드포인트 | Service 함수 | DataSource 함수 |
 |---|---|---|
 | GET `/api/v1/groups/{groupId}/parfaits/year` | `ParfaitService#getGroupsByGroupIdParfaitsYear` | `ParfaitRemoteDataSource#getYears` |
-| GET `.../parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsToday` | `ParfaitRemoteDataSource#getTodayCanvas(groupId)` (폴러는 부르지 않는다) |
+| GET `.../parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsToday` | `ParfaitRemoteDataSource#getTodayCanvas(groupId)` (`@Deprecated` — 호출처 없음, 안정화 후 삭제 예정. 폴러는 아래 v2 행을 쓴다) |
 | GET `/api/v2/groups/{groupId}/parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsTodayIfChanged` | `ParfaitRemoteDataSource#getTodayCanvasIfChanged(groupId, etag)` → `TodayCanvasFetch` |
 | GET `.../parfaits` | `ParfaitService#getGroupsByGroupIdParfaits` | `ParfaitRemoteDataSource#getPastCanvases(groupId, from, to)` |
 | GET `.../parfaits/{parfaitId}` | `ParfaitService#getGroupsByGroupIdParfaitsByParfaitId` | `ParfaitRemoteDataSource#getCanvasDetail(groupId, parfaitId)` |
