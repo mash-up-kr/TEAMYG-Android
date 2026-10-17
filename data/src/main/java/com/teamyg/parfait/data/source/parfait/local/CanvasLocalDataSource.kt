@@ -31,7 +31,7 @@ interface CanvasLocalDataSource {
     fun saveTodayCanvas(
         groupId: GroupId,
         canvas: CanvasVO,
-        etag: String? = null,
+        etag: String?,
     )
 
     fun clear()
