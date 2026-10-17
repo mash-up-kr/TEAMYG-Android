@@ -17,8 +17,6 @@ interface ParfaitRemoteDataSource {
      *
      * 오늘 날짜가 이미 마감돼 있으면 그대로 돌려준다(status 가 ACTIVE 가 아닐 수 있다). 그 캔버스에 쓰면
      * 409 PARFAIT_ALREADY_CLOSED 다.
-     *
-     * 폴러가 [getTodayCanvasIfChanged] 로 옮겨 가 호출처가 없다. 조건부 조회가 안정화된 뒤 지운다.
      */
     @Deprecated(
         message = "조건부 조회로 대체됐다. 안정화 이후 삭제 예정",
