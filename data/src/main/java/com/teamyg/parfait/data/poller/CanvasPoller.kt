@@ -174,19 +174,12 @@ class CanvasPoller @Inject constructor(
                             // 구독자 없이 나간 갱신(화면 밖 푸시)이 단계를 올려 두면 다음
                             // 진입이 가장 촘촘한 단계에서 시작하지 못한다
                             val subscribed = subscriberCounts.containsKey(groupId)
-                            when (fetch) {
-                                TodayCanvasFetch.NotModified -> if (subscribed) interval.onUnchanged(groupId)
-
-                                is TodayCanvasFetch.Modified -> {
-                                    if (subscribed) {
-                                        if (cached != fetch.canvas) {
-                                            interval.onChanged(groupId)
-                                        } else {
-                                            interval.onUnchanged(groupId)
-                                        }
-                                    }
-                                    local.saveTodayCanvas(groupId, fetch.canvas, fetch.etag)
-                                }
+                            val changed = fetch is TodayCanvasFetch.Modified && fetch.canvas != cached
+                            if (subscribed) {
+                                if (changed) interval.onChanged(groupId) else interval.onUnchanged(groupId)
+                            }
+                            if (fetch is TodayCanvasFetch.Modified) {
+                                local.saveTodayCanvas(groupId, fetch.canvas, fetch.etag)
                             }
                         }
                     }
