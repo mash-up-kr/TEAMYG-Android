@@ -393,3 +393,6 @@ status 「토핑 생성·배치·배치 수정」 삭제 서술 · api/parfait-i
 
 ## [2026-10-07] lint | 86회차 누락 보완 — c105-arrange-border-merge 스펙이 #589·#593 이전의 닫기·시스템 뒤로가기·즉시 삭제를 그대로 적고 있었음
 고쳐 씀 스펙 「시스템 뒤로가기」「수정 플로우」 삭제·닫기·주의 절(`toppingPanelBackAction`, `pendingDeleteToppingIds`, `hasUnsavedChanges`)
+
+## [2026-10-15] struct | 캔버스 폴링을 v2 today(ETag/304) 하나로 — ADR-0029 폴링 경로 개정
+고쳐 씀 ADR-0029 · api/parfait.md(v2 절·매핑) · OQ-P-323(오늘 캔버스 확보가 매 주기로 늘어남)
