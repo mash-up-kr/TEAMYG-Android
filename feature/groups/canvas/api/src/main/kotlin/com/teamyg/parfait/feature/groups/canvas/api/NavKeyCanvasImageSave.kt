@@ -12,22 +12,32 @@ import kotlinx.serialization.Serializable
  * @param imagePath 캡처한 캔버스 PNG 의 경로. 미리보기가 닫히면 쓸모가 없어지는 캐시 파일이다
  * @param date 어느 날의 캔버스인지. `LocalDate.toString()`(ISO-8601) 형태 — 이 모듈은
  *  kotlinx-datetime 을 쓰지 않아 문자열로 나르고, 받는 쪽이 `LocalDate.parse` 로 되돌린다
+ * @param toppingCount 그 캔버스의 토핑 개수. 동영상 저장은 쌓을 것이 있어야 성립하므로 0이면
+ *  그 버튼을 비활성화한다 — 미리보기는 평면 PNG 만 받아 토핑을 셀 수 없어 여기로 실어 나른다
  */
 @Serializable
 data class NavKeyCanvasImageSave(
     val imagePath: String,
     val date: String,
+    val toppingCount: Int,
 ) : NavKey
 
 /**
  * 미리보기에서 저장을 확정했다는 결과.
  *
- * 저장 자체를 여기서 하지 않는 이유: 결과 토스트가 뜨는 자리는 캔버스 메인이다. 미리보기가
+ * 갤러리에 넣는 일을 여기서 하지 않는 이유: 결과 토스트가 뜨는 자리는 캔버스 메인이다. 미리보기가
  * 저장까지 하고 나면 알림만 남기고 사라지는 화면이 되어, 실패했을 때 알릴 곳이 없다.
- *
- * @param imagePath 저장할 이미지의 경로. 넘겨받은 [NavKeyCanvasImageSave.imagePath] 를 그대로 돌려준다
  */
-data class CanvasImageSaveResult(val imagePath: String)
+sealed interface CanvasSaveResult {
+    /** @param imagePath 저장할 이미지의 경로. 넘겨받은 [NavKeyCanvasImageSave.imagePath] 를 그대로 돌려준다 */
+    data class Image(val imagePath: String) : CanvasSaveResult
 
-/** [CanvasImageSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */
-const val CANVAS_IMAGE_SAVE_RESULT_KEY = "canvas_image_save_result"
+    /** @param videoPath 미리보기가 캐시에 만들어 둔 mp4 의 경로 */
+    data class Video(val videoPath: String) : CanvasSaveResult
+
+    /** 미리보기가 영상을 만들지 못했다. 저장할 파일이 없고 실패만 알리면 된다 */
+    data object VideoFailed : CanvasSaveResult
+}
+
+/** [CanvasSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */
+const val CANVAS_SAVE_RESULT_KEY = "canvas_save_result"

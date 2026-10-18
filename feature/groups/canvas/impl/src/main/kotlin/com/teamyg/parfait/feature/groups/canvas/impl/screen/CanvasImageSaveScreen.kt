@@ -47,14 +47,19 @@ import kotlinx.datetime.format
  *
  * 저장 자체는 하지 않는다 — 확정을 호출부에 알리기만 하고, 갤러리에 넣는 일과 결과를 알리는
  * 일은 캔버스 메인이 맡는다.
+ *
+ * @param isImageSaveEnabled 영상을 만드는 동안 거짓이다
  */
 @Composable
 internal fun CanvasImageSaveScreen(
     bitmap: ImageBitmap?,
     fallbackImagePath: String,
     date: LocalDate,
+    isImageSaveEnabled: Boolean,
+    isVideoSaveEnabled: Boolean,
     onClickClose: () -> Unit,
-    onClickSave: () -> Unit,
+    onClickSaveImage: () -> Unit,
+    onClickSaveVideo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -145,8 +150,8 @@ internal fun CanvasImageSaveScreen(
             )
         }
 
-        Box(
-            contentAlignment = Alignment.Center,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(
@@ -158,9 +163,18 @@ internal fun CanvasImageSaveScreen(
         ) {
             YGButton(
                 text = stringResource(R.string.canvas_image_save_confirm),
-                buttonType = YGButtonType.Medium.Primary,
-                isEnabled = true,
-                onClick = onClickSave,
+                buttonType = YGButtonType.Large,
+                isEnabled = isImageSaveEnabled,
+                onClick = onClickSaveImage,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            YGButton(
+                text = stringResource(R.string.canvas_image_save_video),
+                buttonType = YGButtonType.Medium.Secondary,
+                isEnabled = isVideoSaveEnabled,
+                onClick = onClickSaveVideo,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -170,7 +184,6 @@ private class CanvasImageSaveScreenPreviewParameterProvider : PreviewParameterPr
     override val values: Sequence<LocalDate>
         get() = sequenceOf(
             LocalDate(2026, 5, 20),
-            // 마감된 지난 캔버스도 같은 화면으로 저장한다
             LocalDate(2026, 5, 3),
         )
 }
@@ -184,8 +197,11 @@ private fun PreviewCanvasImageSaveScreen(
         bitmap = null,
         fallbackImagePath = "",
         date = date,
+        isImageSaveEnabled = true,
+        isVideoSaveEnabled = true,
         onClickClose = {},
-        onClickSave = {},
+        onClickSaveImage = {},
+        onClickSaveVideo = {},
         modifier = Modifier.fillMaxSize(),
     )
 }

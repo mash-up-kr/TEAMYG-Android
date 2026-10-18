@@ -538,7 +538,8 @@ C-001 캔버스 메인
                       ─▶ [Route] graphicsLayer.toImageBitmap()
                                  writeToCanvasCaptureCache(Dispatchers.IO)
                                    성공 ─▶ CanvasCaptureHolder.put(bitmap)
-                                           goTo(NavKeyCanvasImageSave(imagePath, date))
+                                           CanvasVideoSourceHolder.put(videoSource)
+                                           goTo(NavKeyCanvasImageSave(imagePath, date, toppingCount))
                                    실패 ─▶ 토스트(canvas_main_capture_failure)
                                               │
                               C-001 저장 미리보기(CanvasImageSaveRoute, ViewModel 없음)
@@ -546,19 +547,31 @@ C-001 캔버스 메인
                                      비트맵 있음 ─▶ Image(bitmap)
                                      비트맵 없음 ─▶ AsyncImage(fallbackImagePath)
                                    닫기 ─▶ onBack()
-                                   저장 ─▶ sendResult(CANVAS_IMAGE_SAVE_RESULT_KEY,
-                                              CanvasImageSaveResult(imagePath)) + onBack()
+                                   갤러리에 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
+                                              CanvasSaveResult.Image(imagePath)) + onBack()
+                                   영상으로 저장 ─▶ 녹화 레이어를 붙여 캐시에 mp4 를 만든 뒤
+                                              sendResult(CanvasSaveResult.Video(videoPath)
+                                                         | CanvasSaveResult.VideoFailed) + onBack()
                                               │
-  [Route] ResultEffect<CanvasImageSaveResult> ─▶ readCanvasCaptureCache(Dispatchers.IO)
+  [Route] ResultEffect<CanvasSaveResult>
+            Image       ─▶ readCanvasCaptureCache(Dispatchers.IO)
                                    성공 ─▶ 권한 있음: SaveCapturedCanvas(bitmap)
                                            권한 없음: 런처 → 승인 시 같은 자리로 합류
                                    실패 ─▶ 토스트(canvas_main_gallery_save_failure)
+            Video       ─▶ 같은 권한 흐름 ─▶ SaveRecordedVideo(videoFilePath)
+            VideoFailed ─▶ 토스트(canvas_main_gallery_save_failure)
                       ─▶ [VM] ShowGallerySaveResult(isSuccess, date) ─▶ [Route] 토스트
 ```
 
-- **미리보기는 저장하지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
-  맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 돌려주는 결과는
-  받은 경로를 그대로 되돌리는 `CanvasImageSaveResult` 하나뿐이다.
+- **미리보기는 갤러리에 넣지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
+  맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 sealed
+  `CanvasSaveResult`로 무엇을 저장할지만 돌려준다 — 이미지는 받은 경로 그대로, 영상은 만들어 둔
+  mp4 경로다.
+- **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
+  동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
+  `CanvasVideoSourceHolder`에 넣어 둔다. 만드는 동안 두 버튼·닫기·시스템 백이 막힌다 →
+  [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md),
+  [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
 - **ViewModel이 없는 두 번째 화면이다**(`NavKeyWebView` 이후) — navKey 인자와 전역 CanvasCaptureHolder만 읽어 그리면 되고 부를 API가 없다.
   엔트리 빌더가 `navKey`를 Route에 그대로 넘기고 Route가 `LocalResultEventBus`만 잡는다.
 - **돌아온 뒤 캔버스를 다시 캡처하지 않는다.** 사용자가 보고 확정한 그림과 갤러리에 남는 그림이
@@ -567,11 +580,12 @@ C-001 캔버스 메인
 - **정상 경로는 미리보기가 파일을 다시 열지 않는다**(2026-09-07, PR #463) — 캔버스 메인이 `goTo` 직전에
   `CanvasCaptureHolder.put(bitmap)`으로 방금 캡처한 비트맵을 넘기고, 미리보기가
   `remember { CanvasCaptureHolder.peek()?.asImageBitmap() }`로 받아 `Image`로 그린다. 파일을 열어
-  전체 해상도 PNG를 디코드하고 크로스페이드하던 자리가 사라진다. **`NavKeyCanvasImageSave`는 그대로다** —
-  키가 나르는 것은 여전히 경로와 날짜이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
+  전체 해상도 PNG를 디코드하고 크로스페이드하던 자리가 사라진다. **`NavKeyCanvasImageSave`는 비트맵을
+  싣지 않는다** — 키가 나르는 것은 경로·날짜·토핑 개수이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
   것이다). 홀더는 `internal object`라 프로세스 전역이고 **읽으면서 비우지 않는다** — 미리보기는 화면에서
   사라지지 않고도 다시 컴포즈되므로(Activity 재생성·백스택 하강 후 복귀) 읽으며 비우면 그때마다 보고
-  있던 그림을 잃는다. **비우는 자리는 미리보기의 `onDispose` 하나**이고, 거기서 자기 키가
+  있던 그림을 잃는다. **비우는 자리는 미리보기의 `onDispose` 하나**이고(`CanvasVideoSourceHolder`도
+  같은 자리에서 함께 비운다), 거기서 자기 키가
   `Navigator.backStack`에 아직 있는지 보아 없을 때만 비운다 — 잠깐 내려간 것과 화면이 끝난 것을
   가르는 조건이 그것이고, 닫기·저장 확정·시스템 백이 전부 이 하나로 모인다(`NavDisplay`가
   `onBack = navigator::onBack`으로 시스템 백을 직접 받아, 화면의 닫기 콜백만으로는 그 경로가 안 걸린다).
