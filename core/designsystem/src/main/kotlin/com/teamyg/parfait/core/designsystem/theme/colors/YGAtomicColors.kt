@@ -49,6 +49,45 @@ object YGAtomicColors {
         val Soda500: Color = Color(0xFF2B9BE7)
     }
 
+    /**
+     * 텍스트 토핑 색 팔레트. [Stroke] 는 `Function/Text/Stroke` 계열(진한 톤 — 테두리·Default
+     * 타입 글자색), [Fill] 은 `Function/Text/Fill` 계열(옅은 톤 — Fill·Fill+Stroke 타입의
+     * 네모배경색)이다.
+     *
+     * Black/White 만 예외로 자기 색의 옅은 버전을 쓰지 않고 서로 교차한다 — White 텍스트의 Fill
+     * 배경은 [Gray.Black], Black 텍스트의 Fill 배경은 [Gray.White]. 둘 다 이미 [Gray] 에 있어
+     * 여기 새 값을 두지 않는다.
+     */
+    object Pink {
+        val Stroke: Color = Color(0xFFFA91A2)
+        val Fill: Color = Color(0xFFFFF9FA)
+    }
+
+    object Orange {
+        val Stroke: Color = Color(0xFFFFBB42)
+        val Fill: Color = Color(0xFFFFFBF3)
+    }
+
+    object Yellow {
+        val Stroke: Color = Color(0xFFFFD21F)
+        val Fill: Color = Color(0xFFFEFEF6)
+    }
+
+    object Green {
+        val Stroke: Color = Color(0xFF64DB88)
+        val Fill: Color = Color(0xFFF4FCF7)
+    }
+
+    object Blue {
+        val Stroke: Color = Color(0xFF6DBBF2)
+        val Fill: Color = Color(0xFFF6FBFE)
+    }
+
+    object Violet {
+        val Stroke: Color = Color(0xFFCEA8FC)
+        val Fill: Color = Color(0xFFFAF4FF)
+    }
+
     object Transparency {
         private val GeneralWhite = Color(0xFFFFFFFF)
 
