@@ -250,6 +250,53 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
 알림을 직접 띄우고 이 콜백을 거치지 않는다) — 다만 폴러 수명이 화면 구독에 매여 있어 잃는 것이 없다
 → [canvas-adaptive-polling 스펙](../superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md).
 
+## App Links 이동 (초대 링크)
+
+푸시 딥링크와 같은 모양(`MainActivity` 발행 → 이벤트 버스 → `MainRoute` 단일 수집)이지만 **통로가 따로**
+(`AppLinkDeepLinkEventBus`)다 — 발행 경로가 Intent data URI와 Install Referrer라 푸시와 다르고,
+목적지 타입(`AppLinkDeepLink`)도 합치지 않았다.
+
+```
+링크 탭 → MainActivity → Intent.toAppLinkDeepLinkOrNull() ─┐
+첫 실행   → AppLinkReferrerRepository.consumeDeepLinkOnce() ─┴→ AppLinkDeepLinkEventBus.post()
+    → MainRoute LaunchedEffect 단일 수집 → awaitAppLinkReady() → goTo(NavKeyGroupInviteCode(inviteCode))
+```
+
+- **앱으로 열리는 링크는 `https://parfait-app.store/link?inviteCode={code}` 하나뿐이다.** 매니페스트는
+  `path="/link"`와 `path="/link/"`(끝 슬래시) 정확 일치 둘만 두어 `/linkage`·`/link/ABC123`·루트를 시스템
+  단계에서 거른다(루트는 랜딩 페이지라 앱으로 열면 안 된다). `toAppLinkDeepLinkOrNull`이 같은 두 경로로
+  한 번 더 거르는 것은 필터와 코드가 어긋나도 엉뚱한 경로가 초대코드 화면을 열지 않게 하는 이중 장치다.
+  서버의 iOS 설정(AASA)은 `/link/*`까지 열어 두어 iOS는 하위 경로도 앱으로 열 수 있다 — 범위가 다르다.
+- ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 위키의 푸시 규칙(미로그인이면 폐기)은 푸시
+  경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다(#612 논의). 초대
+  링크는 계정이 없는 신규 유저가 가장 먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
+  쌓은 화면을 지운다) ② 세션이 없으면 `NavKeyGroupList`가 맨 위가 될 때까지 더 기다린다. 로그인(기존
+  유저)과 약관 동의(신규 유저)가 둘 다 `replaceAll(NavKeyGroupList)`로 끝나므로 그 뒤에 쌓아야
+  지워지지 않고, 뒤로 가면 그룹 목록이 남는다. **"계정이 생긴 시점"은 기준이 못 된다** — 약관 동의
+  화면이 아직 맨 위인 때가 있다. 세션 판정이 스플래시 대기 뒤인 이유는 푸시와 같다(부트스트랩이 인증
+  거절을 받으면 토큰을 지운다). 순서는 `AwaitAppLinkReadyTest`가 잠근다.
+- **링크는 입력칸을 미리 채울 뿐 참여를 확정하지 않는다.** `NavKeyGroupInviteCode.inviteCode`가 있으면
+  `GroupInviteCodeRoute`가 `ChangeText`로 채우고, 다음 버튼은 사용자가 누른다. 수동 진입은 `null`이다.
+- **Install Referrer는 콜드 스타트에서 한 번만 본다.** `MainActivity`가 `savedInstanceState == null`일 때만
+  `ConsumeInstallReferrerDeepLinkUseCase`를 부르고, 확인 여부는 DataStore(`app_link_referrer_checked`)에
+  남는다. 메모리에만 두면 프로세스가 죽을 때마다 같은 referrer를 다시 읽어 앱을 켤 때마다 초대코드
+  화면으로 끌려간다.
+- ⚠️ **"확인함"을 남기는 시점이 정해져 있다.** 게이트웨이가 `ReferrerLookup`(`Found`·`NotAvailable`·
+  `TransientFailure`)로 값 없음 확정과 일시 실패를 가른다. 앞의 둘만 `markChecked()`를 남기고, 일시
+  실패(Play 서비스 연결 실패·끊김)는 남기지 않아 다음 실행에서 다시 시도한다 — 조회 전에 남기면 한 번의
+  실패로 복원 기회가 영구히 사라진다. 또 **세션이 이미 있는 기기는 조회 없이 확인함만 남긴다**
+  (`skipLookup`): referrer가 설치 후 약 90일 남아서, 이 기능이 들어간 버전으로 업데이트한 기존 유저가
+  초대코드 화면으로 끌려갈 수 있기 때문이다.
+  referrer는 `inviteCode=…&utm_…` 쿼리스트링 조각이라 `Uri`가 아니라 직접 나눠 읽는다. Play 스토어를 거치지
+  않은 설치에는 값이 없다.
+- 초대 메시지(`group_invite_message`)도 같은 링크를 담는다. 붙여넣기 감지는 템플릿이 아니라 **텍스트 맨 뒤
+  6자**를 코드로 읽는다(`InviteCode.parseFromMessageOrNull`) — iOS 가 읽는 방식과 같아서, 메시지는 코드로
+  끝나야 하고 앞 문구가 달라도(링크 줄이 없던 옛 메시지 포함) 읽힌다. 6자보다 긴 영숫자로 끝나는 텍스트는
+  뒤 6자를 코드로 오인할 수 있다. 링크 쿼리 값처럼 코드 하나만 와야 하는 입력은 전체 일치(`parseOrNull`)다.
+- 분석: `AppLink`(`destination` = `"group_invite"`)는 **발행 지점인 `MainActivity.publishAppLinkDeepLink`에서**
+  찍는다(푸시와 같은 자리). 이름과 값은 iOS와 같게 맞춘 것이라 다른 이벤트의 snake_case 규칙에서 벗어난다. 로그인 대기를 지난 뒤에 찍으면
+  로그인 화면에서 이탈한 유저가 집계에서 빠진다.
+
 ## 그룹 생성·참여 플로우 (2026-08-12, PR #224)
 
 그룹 목록에서 갈라진 두 갈래가 **목록으로 되돌아오며 닫혔다**. 이전에는 양쪽 끝이 stub이라 들어가면 나올 수 없었다.

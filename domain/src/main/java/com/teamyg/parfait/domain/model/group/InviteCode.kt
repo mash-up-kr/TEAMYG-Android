@@ -11,9 +11,6 @@ value class InviteCode(val value: String) {
          */
         private const val MAX_PARSABLE_LENGTH = 200
 
-        /** 초대 메시지 템플릿의 초대코드 자리 표시자 */
-        private const val CODE_PLACEHOLDER = $$"%1$s"
-
         private const val CODE_CHAR_PATTERN = "[A-Za-z0-9]"
 
         private const val CODE_PATTERN = "$CODE_CHAR_PATTERN{$LENGTH}"
@@ -26,50 +23,28 @@ value class InviteCode(val value: String) {
         fun isCodeChar(char: Char): Boolean = CODE_CHAR_REGEX.matches(char.toString())
 
         /**
-         * 클립보드처럼 초대코드 외의 문구가 섞인 텍스트에서 초대코드를 추출한다.
-         *
-         * [messageTemplate] 을 주면 초대 메시지 템플릿의 코드 자리에 있는 값만 정확히 뽑는다.
-         * 템플릿과 형태가 다르면 텍스트 전체가 초대코드일 때(코드만 복사한 경우)에만 인정한다.
-         *
-         * @param messageTemplate `%1$s` 자리에 초대코드가 들어가는 초대 메시지 템플릿
+         * 클립보드의 초대 메시지에서 맨 뒤 [LENGTH]자를 코드로 읽는다. iOS 가 읽는 방식과 같아서, 메시지는
+         * 코드로 끝나야 하고 코드 앞 문구는 보지 않는다.
          */
-        fun parseOrNull(
-            text: String?,
-            messageTemplate: String? = null,
-        ): InviteCode? {
+        fun parseFromMessageOrNull(text: String?): InviteCode? {
             if (text.isNullOrBlank() || text.length > MAX_PARSABLE_LENGTH) {
                 return null
             }
 
-            val code = messageTemplate?.let { template -> text.findCodeByTemplate(template) }
-                ?: text.toCodeOrNull()
-
-            return code?.let(::InviteCode)
+            return text
+                .trim()
+                .takeLast(LENGTH)
+                .takeIf { it.length == LENGTH && it.all(::isCodeChar) }
+                ?.let(::InviteCode)
         }
 
-        /**
-         * 초대 메시지 템플릿을 정규식으로 바꿔 코드 자리의 값만 추출한다.
-         * 코드 앞뒤 문구는 그대로 매치해야 하므로 이스케이프해서 사용한다.
-         */
-        private fun String.findCodeByTemplate(template: String): String? {
-            val placeholderIndex = template.indexOf(CODE_PLACEHOLDER)
-            if (placeholderIndex < 0) {
+        /** 전체가 코드인 텍스트만 인정한다 — 링크 쿼리 값처럼 코드 하나만 와야 하는 입력용이다 */
+        fun parseOrNull(text: String?): InviteCode? {
+            if (text.isNullOrBlank() || text.length > MAX_PARSABLE_LENGTH) {
                 return null
             }
 
-            val prefix = template.take(placeholderIndex)
-            val suffix = template.drop(placeholderIndex + CODE_PLACEHOLDER.length)
-            val templateRegex = Regex(Regex.escape(prefix) + "($CODE_PATTERN)" + Regex.escape(suffix))
-
-            return templateRegex.find(this)?.groupValues?.get(1)
+            return text.trim().takeIf(CODE_REGEX::matches)?.let(::InviteCode)
         }
-
-        /**
-         * 코드만 복사한 경우를 위해, 텍스트 전체가 초대코드일 때만 코드로 인정한다.
-         *
-         * 문장 속에서 6자 토큰을 찾으면 초대와 무관한 텍스트(예: `group_invite_message` 같은 식별자)에서도
-         * 코드를 주워오게 되므로 부분 매치는 허용하지 않는다.
-         */
-        private fun String.toCodeOrNull(): String? = trim().takeIf(CODE_REGEX::matches)
     }
 }
