@@ -267,8 +267,9 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   단계에서 거른다(루트는 랜딩 페이지라 앱으로 열면 안 된다). `toAppLinkDeepLinkOrNull`이 같은 두 경로로
   한 번 더 거르는 것은 필터와 코드가 어긋나도 엉뚱한 경로가 초대코드 화면을 열지 않게 하는 이중 장치다.
   서버의 iOS 설정(AASA)은 `/link/*`까지 열어 두어 iOS는 하위 경로도 앱으로 열 수 있다 — 범위가 다르다.
-- ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 초대 링크는 계정이 없는 신규 유저가 가장
-  먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
+- ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 위키의 푸시 규칙(미로그인이면 폐기)은 푸시
+  경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다(#612 논의). 초대
+  링크는 계정이 없는 신규 유저가 가장 먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
   쌓은 화면을 지운다) ② 세션이 없으면 `NavKeyGroupList`가 맨 위가 될 때까지 더 기다린다. 로그인(기존
   유저)과 약관 동의(신규 유저)가 둘 다 `replaceAll(NavKeyGroupList)`로 끝나므로 그 뒤에 쌓아야
   지워지지 않고, 뒤로 가면 그룹 목록이 남는다. **"계정이 생긴 시점"은 기준이 못 된다** — 약관 동의
@@ -290,8 +291,8 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   않은 설치에는 값이 없다.
 - 초대 메시지(`group_invite_message`)도 같은 링크를 담는다. 코드 추출은 **코드 앞 문구만** 본다
   (`InviteCode.parseOrNull(text, template)`) — 링크 줄이 없던 옛 메시지도 읽혀야 해서다.
-- 분석: `app_link_opened`(`destination` = `AnalyticsScreenType.GROUP_INVITE_CODE.screenId`)는 **발행 지점인
-  `MainActivity.publishAppLinkDeepLink`에서** 찍는다(푸시와 같은 자리). 로그인 대기를 지난 뒤에 찍으면
+- 분석: `AppLink`(`destination` = `"group_invite"`)는 **발행 지점인 `MainActivity.publishAppLinkDeepLink`에서**
+  찍는다(푸시와 같은 자리). 이름과 값은 iOS와 같게 맞춘 것이라 다른 이벤트의 snake_case 규칙에서 벗어난다. 로그인 대기를 지난 뒤에 찍으면
   로그인 화면에서 이탈한 유저가 집계에서 빠진다. 서버·웹 연동 미확인 항목은 [open-questions](../synthesis/open-questions.md) OQ-P-435.
 
 ## 그룹 생성·참여 플로우 (2026-08-12, PR #224)
