@@ -111,6 +111,43 @@ class SegmentationViewModelTest {
     }
 
     @Test
+    fun clickManualSelect_goesToManualEdit() = runTest {
+        // Given 후보가 뜬 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 얼럿의 직접 선택을 누른다
+            viewModel.processIntent(SegmentationIntent.ClickManualSelect)
+
+            // Then 직접 편집으로 간다
+            assertEquals(SegmentationEffect.GoToEditManual, awaitItem())
+        }
+    }
+
+    @Test
+    fun clickManualSelect_whileSaving_isIgnored() = runTest {
+        // Given 후보 저장이 끝나지 않는 상황
+        coEvery { persistSubject(candidate) } coAnswers {
+            delay(1_000.milliseconds)
+            Result.success(success)
+        }
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(SegmentationIntent.ClickCandidate(0))
+        runCurrent()
+
+        viewModel.effect.test {
+            // When 저장 중에 직접 선택을 누른다
+            viewModel.processIntent(SegmentationIntent.ClickManualSelect)
+
+            // Then 직접 편집으로 가지 않고 후보 결과만 기다린다
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun init_always_clearsTheCacheBeforeDecoding() = runTest {
         // Given 정상 응답
         // When 화면이 열린다

@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.segmentation.impl.route
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -9,6 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygalert.YGAlertHost
+import com.teamyg.parfait.core.designsystem.component.ygalert.rememberYGAlertPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -37,6 +40,19 @@ internal fun SegmentationRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
     val errorMessage = stringResource(R.string.segmentation_error_message)
+    val alertPolicy = rememberYGAlertPolicy()
+    val manualSelectAlertTitle = stringResource(R.string.segmentation_manual_select_alert_title)
+    val manualSelectAlertSub = stringResource(R.string.segmentation_manual_select_alert_sub)
+    val manualSelectAlertButton = stringResource(R.string.segmentation_manual_select_alert_button)
+
+    LaunchedEffect(alertPolicy) {
+        alertPolicy.show(
+            title = manualSelectAlertTitle,
+            sub = manualSelectAlertSub,
+            buttonText = manualSelectAlertButton,
+            onButtonClick = { viewModel.processIntent(SegmentationIntent.ClickManualSelect) },
+        )
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -57,6 +73,15 @@ internal fun SegmentationRoute(
 
                 // 쌓아서 뒤로가기 하면 선택 UI 로 돌아오게 한다. 이펙트가 닿은 뒤 이동하기 전에
                 // 들어온 탭이 편집을 두 번 쌓지 않게 맨 위일 때만 간다
+                is SegmentationEffect.GoToEditManual -> if (navigator.backStack.lastOrNull() == key) {
+                    navigator.goTo(
+                        NavKeyToppingEdit(
+                            sourceImageUri = key.sourceImageUri,
+                            segmentationImageUri = key.sourceImageUri,
+                        ),
+                    )
+                }
+
                 is SegmentationEffect.GoToEditCandidate -> if (navigator.backStack.lastOrNull() == key) {
                     navigator.goTo(
                         NavKeyToppingEdit(
@@ -87,6 +112,7 @@ internal fun SegmentationRoute(
                 onClickCandidate = { index ->
                     viewModel.processIntent(SegmentationIntent.ClickCandidate(index))
                 },
+                alert = { YGAlertHost(policy = alertPolicy, modifier = Modifier.fillMaxWidth()) },
             )
         }
     }
