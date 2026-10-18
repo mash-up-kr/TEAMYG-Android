@@ -40,4 +40,4 @@ sealed interface CanvasSaveResult {
 }
 
 /** [CanvasSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */
-const val CANVAS_IMAGE_SAVE_RESULT_KEY = "canvas_image_save_result"
+const val CANVAS_SAVE_RESULT_KEY = "canvas_save_result"

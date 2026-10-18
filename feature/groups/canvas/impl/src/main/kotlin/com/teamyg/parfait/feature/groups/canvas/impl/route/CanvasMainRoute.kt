@@ -33,7 +33,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.util.android.permission.GalleryWritePermissionManager
 import com.teamyg.parfait.domain.model.id.ParfaitId
-import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
+import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -157,7 +157,7 @@ internal fun CanvasMainRoute(
     // 미리보기에서 저장을 확정하고 돌아왔다. 이미지는 보여 준 그림 그대로 남겨야 하므로 캔버스를
     // 다시 캡처하지 않고 미리보기가 쓰던 파일을 읽는다. 동영상은 미리보기가 이미 캐시에 만들어
     // 왔고 여기서는 갤러리에 넣기만 한다
-    ResultEffect<CanvasSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
+    ResultEffect<CanvasSaveResult>(resultKey = CANVAS_SAVE_RESULT_KEY) { result ->
         when (result) {
             is CanvasSaveResult.Image -> scope.launch {
                 withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }

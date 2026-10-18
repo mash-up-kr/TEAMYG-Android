@@ -22,7 +22,7 @@ import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.screenLogger
-import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_IMAGE_SAVE_RESULT_KEY
+import com.teamyg.parfait.feature.groups.canvas.api.CANVAS_SAVE_RESULT_KEY
 import com.teamyg.parfait.feature.groups.canvas.api.CanvasSaveResult
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasVideoRecordLayer
@@ -115,7 +115,7 @@ internal fun CanvasImageSaveRoute(
             }
         }
 
-        resultEventBus.sendResult(CANVAS_IMAGE_SAVE_RESULT_KEY, result)
+        resultEventBus.sendResult(CANVAS_SAVE_RESULT_KEY, result)
         navigator.onBack()
     }
 
@@ -130,7 +130,7 @@ internal fun CanvasImageSaveRoute(
                 onClickClose = { if (isRecordingVideo.not()) navigator.onBack() },
                 onClickSaveImage = {
                     resultEventBus.sendResult(
-                        CANVAS_IMAGE_SAVE_RESULT_KEY,
+                        CANVAS_SAVE_RESULT_KEY,
                         CanvasSaveResult.Image(imagePath = navKey.imagePath),
                     )
                     navigator.onBack()
