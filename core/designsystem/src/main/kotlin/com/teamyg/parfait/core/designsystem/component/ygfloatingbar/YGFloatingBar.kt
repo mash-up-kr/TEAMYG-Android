@@ -101,15 +101,50 @@ fun YGFloatingBarEditTab(
 ) {
     YGFloatingBarContent(modifier = modifier) {
         YGFloatingBarCloseButton(onClick = onCloseClick)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            tabs.forEachIndexed { index, label ->
-                YGEditTabButton(
-                    text = label,
-                    isSelected = index == selectedIndex,
-                    onClick = { onTabSelect(index) },
-                )
-            }
+        tabs.forEachIndexed { index, label ->
+            YGEditTabButton(
+                text = label,
+                isSelected = index == selectedIndex,
+                onClick = { onTabSelect(index) },
+            )
         }
+        YGFloatingBarConfirmButton(onClick = onConfirmClick)
+    }
+}
+
+/**
+ * Figma Floating Bar / Status=Title-Confirm
+ *
+ * 버튼이 오른쪽 하나뿐이라 [YGFloatingBarContent] 의 weight(1f) 슬롯 방식으로는 제목이 버튼 폭의
+ * 절반만큼 왼쪽으로 치우친다(양쪽에 버튼이 있는 [YGFloatingBarEdit] 과 다름) — [YGFloatingBarTitle]
+ * 과 같은 방식으로 버튼 폭만큼 양쪽 여백을 reserve 해 바 전체 기준으로 가운데에 둔다.
+ */
+@Composable
+fun YGFloatingBarTitleConfirm(
+    title: String,
+    onConfirmClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.padding(
+            start = YGTheme.layout.padding.padding7,
+            top = YGTheme.layout.padding.padding6,
+            end = YGTheme.layout.padding.padding7,
+        ),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Text(
+            text = title,
+            style = YGTheme.typography.body.b01R,
+            color = YGAtomicColors.Gray.Gray800,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = SizeTokens.Size44.getDp()),
+        )
         YGFloatingBarConfirmButton(onClick = onConfirmClick)
     }
 }
@@ -249,6 +284,11 @@ private fun YGFloatingBarPreview() = PreviewBox {
             selectedIndex = 0,
             onTabSelect = {},
             onCloseClick = {},
+            onConfirmClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
+        YGFloatingBarTitleConfirm(
+            title = "배치",
             onConfirmClick = {},
             modifier = Modifier.fillMaxWidth(),
         )
