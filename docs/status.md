@@ -146,7 +146,6 @@
 ## App Links — 초대 링크
 - 상태: `https://parfait-app.store/link?inviteCode={code}`만 앱으로 열리고(`autoVerify`), `MainRoute`가 `awaitAppLinkReady`로 스플래시 이탈과 `NavKeyGroupList` 안착(세션이 없을 때)을 기다린 뒤 초대코드 입력 화면에 코드를 채워 보낸다. 앱 미설치 유저는 Play Install Referrer를 첫 실행에 한 번만 읽어 같은 화면으로 보낸다. 초대 메시지 복사본에도 같은 링크가 들어간다. iOS는 미구현이다.
 - 앵커: `AppLinkDeepLink`, `toAppLinkDeepLinkOrNull`, `awaitAppLinkReady`, `AppLinkDeepLinkEventBusImpl`, `AppLinkReferrerRepositoryImpl`, `PlayInstallReferrerGateway`, `group_invite_message`
-- ⚠️ 서버가 `/.well-known/assetlinks.json`을 배포하기 전에는 검증이 붙지 않아 시스템이 앱·브라우저 선택지를 띄운다. 웹 폴백이 스토어 링크에 `referrer`를 싣는지, `destination` 값이 앱과 같은지 확인 전이다 (OQ-P-435)
 - ⚠️ 링크 호스트·경로가 매니페스트·파서 상수·`strings.xml` 세 곳에 따로 적혀 있다 (OQ-P-436)
 - 설계: [navigation-flow 「App Links 이동」](architecture/navigation-flow.md#app-links-이동-초대-링크)
 

@@ -295,7 +295,7 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   뒤 6자를 코드로 오인할 수 있다. 링크 쿼리 값처럼 코드 하나만 와야 하는 입력은 전체 일치(`parseOrNull`)다.
 - 분석: `AppLink`(`destination` = `"group_invite"`)는 **발행 지점인 `MainActivity.publishAppLinkDeepLink`에서**
   찍는다(푸시와 같은 자리). 이름과 값은 iOS와 같게 맞춘 것이라 다른 이벤트의 snake_case 규칙에서 벗어난다. 로그인 대기를 지난 뒤에 찍으면
-  로그인 화면에서 이탈한 유저가 집계에서 빠진다. 서버·웹 연동 미확인 항목은 [open-questions](../synthesis/open-questions.md) OQ-P-435.
+  로그인 화면에서 이탈한 유저가 집계에서 빠진다.
 
 ## 그룹 생성·참여 플로우 (2026-08-12, PR #224)
 
