@@ -1210,12 +1210,12 @@ Expected: PASS
 - Produces:
   - `sealed interface CanvasSaveResult`, `CanvasSaveResult.Image(val imagePath: String)`, `CanvasSaveResult.Video`
   - `NavKeyCanvasImageSave(val imagePath: String, val date: String, val toppingCount: Int)`
-  - 결과 키 `CANVAS_IMAGE_SAVE_RESULT_KEY`는 이름과 값 그대로 유지한다
+  - 결과 키 `CANVAS_SAVE_RESULT_KEY` (`"canvas_save_result"`) — 결과 타입이 이미지·영상을 함께 담아 키 이름도 `CanvasSaveResult`에 맞춘다
 
 - [ ] **Step 1: api 모듈의 타입을 바꾼다**
 
 `NavKeyCanvasImageSave.kt`에서 `data class NavKeyCanvasImageSave`와 `CanvasImageSaveResult`를
-아래로 치환한다. `CANVAS_IMAGE_SAVE_RESULT_KEY` 선언은 그대로 둔다.
+아래로 치환하고, 결과 키 선언을 `const val CANVAS_SAVE_RESULT_KEY = "canvas_save_result"`로 바꾼다.
 
 ```kotlin
 /**
@@ -1272,14 +1272,14 @@ sealed interface CanvasSaveResult {
             onClickClose = { navigator.onBack() },
             onClickSaveImage = {
                 resultEventBus.sendResult(
-                    CANVAS_IMAGE_SAVE_RESULT_KEY,
+                    CANVAS_SAVE_RESULT_KEY,
                     CanvasSaveResult.Image(imagePath = navKey.imagePath),
                 )
                 navigator.onBack()
             },
             onClickSaveVideo = {
                 resultEventBus.sendResult(
-                    CANVAS_IMAGE_SAVE_RESULT_KEY,
+                    CANVAS_SAVE_RESULT_KEY,
                     CanvasSaveResult.Video,
                 )
                 navigator.onBack()
@@ -1299,7 +1299,7 @@ sealed interface CanvasSaveResult {
     // 미리보기에서 저장을 확정하고 돌아왔다. 이미지는 보여 준 그림 그대로 남겨야 하므로 캔버스를
     // 다시 캡처하지 않고 미리보기가 쓰던 파일을 읽는다. 동영상은 평면 PNG 로는 만들 수 없어
     // ViewModel 이 든 토핑 목록에서 다시 그린다
-    ResultEffect<CanvasSaveResult>(resultKey = CANVAS_IMAGE_SAVE_RESULT_KEY) { result ->
+    ResultEffect<CanvasSaveResult>(resultKey = CANVAS_SAVE_RESULT_KEY) { result ->
         when (result) {
             is CanvasSaveResult.Image -> scope.launch {
                 withContext(Dispatchers.IO) { readCanvasCaptureCache(result.imagePath) }

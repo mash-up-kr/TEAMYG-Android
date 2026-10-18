@@ -203,7 +203,7 @@ sealed interface CanvasSaveResult {
 }
 ```
 
-결과 키(`CANVAS_IMAGE_SAVE_RESULT_KEY`)는 하나다. 같은 화면에서 나온 같은 "저장 확정" 사건이고
+결과 키(`CANVAS_SAVE_RESULT_KEY`)는 하나다. 같은 화면에서 나온 같은 "저장 확정" 사건이고
 종류만 다르다. 갤러리 저장을 미리보기에서 하지 않는 이유는 결과 토스트가 뜨는 자리가 캔버스
 메인이라서다 — 미리보기가 저장까지 하고 사라지면 실패를 알릴 곳이 없다.
 

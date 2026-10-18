@@ -547,7 +547,7 @@ C-001 캔버스 메인
                                      비트맵 있음 ─▶ Image(bitmap)
                                      비트맵 없음 ─▶ AsyncImage(fallbackImagePath)
                                    닫기 ─▶ onBack()
-                                   갤러리에 저장 ─▶ sendResult(CANVAS_IMAGE_SAVE_RESULT_KEY,
+                                   갤러리에 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
                                               CanvasSaveResult.Image(imagePath)) + onBack()
                                    영상으로 저장 ─▶ 녹화 레이어를 붙여 캐시에 mp4 를 만든 뒤
                                               sendResult(CanvasSaveResult.Video(videoPath)
