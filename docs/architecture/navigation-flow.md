@@ -289,8 +289,10 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   초대코드 화면으로 끌려갈 수 있기 때문이다.
   referrer는 `inviteCode=…&utm_…` 쿼리스트링 조각이라 `Uri`가 아니라 직접 나눠 읽는다. Play 스토어를 거치지
   않은 설치에는 값이 없다.
-- 초대 메시지(`group_invite_message`)도 같은 링크를 담는다. 코드 추출은 **코드 앞 문구만** 본다
-  (`InviteCode.parseOrNull(text, template)`) — 링크 줄이 없던 옛 메시지도 읽혀야 해서다.
+- 초대 메시지(`group_invite_message`)도 같은 링크를 담는다. 붙여넣기 감지는 템플릿이 아니라 **텍스트 맨 뒤
+  6자**를 코드로 읽는다(`InviteCode.parseFromMessageOrNull`) — iOS 가 읽는 방식과 같아서, 메시지는 코드로
+  끝나야 하고 앞 문구가 달라도(링크 줄이 없던 옛 메시지 포함) 읽힌다. 6자보다 긴 영숫자로 끝나는 텍스트는
+  뒤 6자를 코드로 오인할 수 있다. 링크 쿼리 값처럼 코드 하나만 와야 하는 입력은 전체 일치(`parseOrNull`)다.
 - 분석: `AppLink`(`destination` = `"group_invite"`)는 **발행 지점인 `MainActivity.publishAppLinkDeepLink`에서**
   찍는다(푸시와 같은 자리). 이름과 값은 iOS와 같게 맞춘 것이라 다른 이벤트의 snake_case 규칙에서 벗어난다. 로그인 대기를 지난 뒤에 찍으면
   로그인 화면에서 이탈한 유저가 집계에서 빠진다. 서버·웹 연동 미확인 항목은 [open-questions](../synthesis/open-questions.md) OQ-P-435.
