@@ -13,12 +13,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.analytics.ScreenViewTracker
+import com.teamyg.parfait.analytics.toOpenedEvent
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.analytics.AnalyticsEvent
 import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
-import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.deeplink.toAppLinkDeepLinkOrNull
 import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
@@ -133,15 +133,7 @@ class MainActivity : ComponentActivity() {
     // 오픈 이벤트는 발행 지점에서 찍는다 — 로그인 대기를 지난 뒤에 찍으면 로그인 화면에서
     // 이탈한 유저는 링크로 열었는데도 집계에서 빠진다.
     private fun publishAppLinkDeepLink(deepLink: AppLinkDeepLink) {
-        val destination = when (deepLink) {
-            is AppLinkDeepLink.OpenGroupInvite -> AnalyticsScreenType.GROUP_INVITE_CODE
-        }
-        analyticsLogger.logEvent(
-            AnalyticsEvent(
-                type = AnalyticsEventType.APP_LINK_OPENED,
-                params = mapOf("destination" to destination.screenId),
-            ),
-        )
+        analyticsLogger.logEvent(deepLink.toOpenedEvent())
         appLinkDeepLinkEventBus.post(deepLink)
     }
 }

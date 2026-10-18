@@ -11,7 +11,7 @@ enum class AnalyticsEventType(
      * 외부 링크(App Links, 설치 후 Install Referrer 복원)로 앱이 열렸을 때. 파라미터 스키마는
      * [사용자 이벤트 설계](../../../../../../../../../../docs/superpowers/specs/2026-10-06-user-events-design.md)가 정본이다.
      */
-    APP_LINK_OPENED(eventId = "AppLink", eventName = "app_link_opened"),
+    APP_LINK_OPENED(eventId = "AppLink", eventName = "AppLink"),
     APP_ACCOUNT_NICKNAME_CHANGED(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
 
     CANVAS_CAMERA_RETAKE_TAPPED(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
