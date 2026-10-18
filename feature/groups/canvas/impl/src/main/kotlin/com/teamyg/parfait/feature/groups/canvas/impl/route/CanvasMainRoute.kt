@@ -55,6 +55,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasWelcome
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -167,6 +168,10 @@ internal fun CanvasMainRoute(
                 // 원본까지 실으면 한 흐름이 남긴 두 장이 같은 사진으로 나란히 뜬다(OQ-P-258)
                 is CanvasMainEffect.NavigateToCanvas -> navigator.goTo(
                     destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
+                )
+
+                CanvasMainEffect.NavigateToTextInput -> navigator.goTo(
+                    destination = NavKeyCanvasTextInput,
                 )
 
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(
@@ -331,6 +336,7 @@ internal fun CanvasMainRoute(
             onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
             onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
             onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
+            onClickTextInput = { viewModel.processIntent(CanvasMainIntent.OnClickTextInput) },
             onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
             onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
             onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },

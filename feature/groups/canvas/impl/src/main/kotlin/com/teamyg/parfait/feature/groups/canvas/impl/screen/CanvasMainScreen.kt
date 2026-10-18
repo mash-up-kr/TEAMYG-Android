@@ -63,6 +63,7 @@ internal fun CanvasMainScreen(
     onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
+    onClickTextInput: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
     onClickSaveToGallery: () -> Unit,
     onClickGoToToday: () -> Unit,
@@ -207,6 +208,13 @@ internal fun CanvasMainScreen(
                         onClickGallery()
                     },
                 ),
+                YGCanvasMenuItem(
+                    text = stringResource(R.string.canvas_main_text_input),
+                    onClick = {
+                        isMenuExpanded = false
+                        onClickTextInput()
+                    },
+                ),
             ),
             modifier = Modifier
                 .weight(1f)
@@ -282,6 +290,7 @@ private fun PreviewCanvasMainScreen(
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
@@ -318,6 +327,7 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
@@ -358,6 +368,7 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
