@@ -881,13 +881,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] 갤러리 死코드 2건 — 부분 접근 배너·전체 조회 UseCase
 - **ID**: OQ-P-089
-- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 `LoadGalleryImageGroupsUseCase`(당시 이름 `LoadFilterYGGalleryImageGroupsUseCase`)만 쓴다). 둘 다 PR #191 이후 상태.
+- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 당시 `LoadFilterYGGalleryImageGroupsUseCase`만 썼다(지금은 `LoadGalleryImageGroupsUseCase`. 옛 것은 호출부 0건으로 남았다 → OQ-P-428)). 둘 다 PR #191 이후 상태.
 - **항목**: ① 배너를 지울지(대체 완료) 다른 접근 수준 안내로 되살릴지, ② 전체 조회 UseCase가 앞으로 쓰일 화면이 있는지(있으면 유지, 없으면 Repository의 `loadAllGalleryImages`까지 함께 정리).
 - **상태**: 부분 해소 (② 해소 — 정리 쪽으로 닫힘, 2026-09-20 PR #514 / ① 잔존)
   > ✅ **②가 "없다"로 닫혔다(2026-09-20, PR #514)** — `LoadAllGalleryImageGroupsUseCase`가 삭제되고
   > `GalleryRepository.loadAllGalleryImages`와 `GalleryRepositoryImpl`의 구현까지 함께 걷혔다.
   > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은
-  > `loadGalleryImages` 하나만 쓴다(#599에서 03시 창 제한을 걷고 이름의 `Filter`도 뗐다).
+  > `loadGalleryImages` 하나만 쓴다(03시 창 없는 조회를 새로 두었고, 03시 창 경로 `loadFilterYGGalleryImages`는 호출부 0건으로 남았다 → OQ-P-428).
   > ⚠️ **①은 그대로다** — `GalleryPartialAccessBanner.kt`가 참조 0건으로 남아 있다. 같은 청소
   > 라운드가 바로 옆 死코드는 지우면서 이 파일은 건드리지 않았다.
 - **해소 메모**: ①만 남았다. 정리 시 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 파일 구성·주의 절과 [data-layer](../architecture/data-layer.md) 레이어 배치의 `GalleryRepository` 서술을 맞춘다.
@@ -3607,7 +3607,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   [api/conventions.md](../api/conventions.md) 직렬화 규약 절과
   [data-layer](../architecture/data-layer.md)에 반영한다.
 
-### [2026-08-18] 원본 다운샘플 미적용 — 세그멘테이션 실측 메모리 피크가 largeHeap 없이 위험 구간
+### [2026-08-18] 12MP 급 원본 다운샘플 미적용 — 세그멘테이션 실측 메모리 피크가 largeHeap 없이 위험 구간
 - **ID**: OQ-P-228
 - **출처**: `ImageSegmentationRepositoryImpl.kt#segmentImage`(긴 변 4096px 이하는 원본 해상도 그대로
   처리) × 독립 코드 리뷰(2026-08-18, `refactor/segmentation-logic` 최종 리뷰) — ~~12MP 사진 기준
@@ -5524,16 +5524,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-314
 - **출처**: PR #389 develop 머지 — `feature/groups/canvas/impl` `strings.xml`의
-  `canvas_topping_content_description`("토핑", `TODO(접근성)` 주석 동반)·`canvas_spotlight_dismiss`
-  ("토핑 강조 닫기"). 판정이 레이어로 올라가면서 토핑별 `clickable`이 사라져, 그것이 붙여 주던
+  `canvas_topping_content_description`("사진", `TODO(접근성)` 주석 없음)·`canvas_spotlight_dismiss`
+  ("사진 강조 닫기"). 판정이 레이어로 올라가면서 토핑별 `clickable`이 사라져, 그것이 붙여 주던
   클릭 시맨틱스를 `semantics(mergeDescendants = true)`로 다시 만들어야 했고 그때 읽을 문구가
   필요해졌다.
-- **항목**: ① 토핑을 무엇으로 읽어 줄지 — 지금은 열두 개가 전부 "토핑"이라 스크린리더 사용자가
+- **항목**: ① 토핑을 무엇으로 읽어 줄지 — 지금은 열두 개가 전부 "사진"이라 스크린리더 사용자가
   서로를 구분할 수 없다. 작성자 닉네임이 후보이지만 캔버스 메인은 이미 `placedBy` 조인이 임시다
   (OQ-P-224 잔여). ② 딤 해제 액션 문구. ③ 배경 편집의 토핑도 같은 문자열을 공유하는데 그 화면의
   탭은 선택이지 강조가 아니라, 같은 문구가 맞는지 확인되지 않았다.
 - **상태**: 미해결 (임시 문자열로 머지됨 — 시맨틱스 자체는 있으므로 포커스는 잡힌다)
-- **해소 메모**: 문구가 정해지면 `strings.xml` 두 항목과 `TODO(접근성)` 주석을 함께 지운다.
+- **해소 메모**: 문구가 정해지면 `strings.xml` 두 항목을 고친다(`TODO(접근성)` 주석은 이미 지워졌다).
 
 ### [2026-08-27] 배경 편집에 테두리가 생겼는데 코너 스트로크·버튼과의 관계를 확인하지 않았다
 
@@ -5990,8 +5990,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   갈래 둘(참여/생성)을 코드가 확정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
   "백스택 재진입에서는 새로 만들어지지 않는다"는 주석이 방어의 전부라, 프로세스 사망 후 복원처럼
   키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다). ③ **복사 완료
-  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르므로 자동 소멸
-  타이머가 처음부터 다시 돌고, 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
+  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르고(얼럿에는 자동 소멸이 없어
+  스와이프할 때까지 남는다), 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
   다시 복사할 수 없다**. ④ 복사 성공·실패를 사용자에게 알리는 것도 그 문구 교체뿐이다
   (`clipboard.setClipEntry`가 실패해도 문구는 바뀐다).
 - **항목**: ① 배너 문구·노출 갈래를 기획·디자인 소스로 확정받을지. ② 1회를 무엇으로 보장할지 —
@@ -6430,7 +6430,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > **정본은 서버라는 뜻이지만 그 사실을 적어 둔 곳이 양쪽 코드의 상수뿐**이라 ③(무엇이 어긋남을
   > 잡는가)은 그대로다 — 오히려 같은 문자열을 가진 자리가 셋(서버·`fcm-test.http`·앱)이 됐다.
   > 📌 **②도 앱이 정했다** — 중요도 `IMPORTANCE_HIGH`, 표시 이름 `파르페 알림`, 설명
-  > `새 토핑, 캔버스 마감 안내 알림`(`strings.xml`). ⚠️ **설명이 서버가 안 보내는 알림을 약속한다** —
+  > `신규 사진, 캔버스 마감 안내 알림`(`strings.xml`). ⚠️ **설명이 서버가 안 보내는 알림을 약속한다** —
   > 캔버스 마감 알림은 발송 코드가 없다(OQ-P-343 ①). 이 문구를 승인한 정책 문서도 없다(OQ-P-351 ①).
   > ⚠️ **채널이 있어도 표시되지 않는 구간이 새로 드러났다** — 권한을 묻는 코드가 없어 Android 13+
   > 에서는 채널과 무관하게 막힌다(OQ-P-358).
@@ -6638,7 +6638,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > "페이로드 스펙 v1 §3.1"을 인용하는데 **그 문서는 여전히 어느 저장소에도 없다.**
 - **항목**: ① 그 스펙이 실재하는지 — 노션 등 저장소 밖에 있다면 어디인지 적어야 하고, 구두 합의였다면
   근거가 코드 주석뿐이다. ② P-02/P-03의 트리거·문구·발송 시각을 누가 정하는지 — 채널 설명 문구
-  (`새 토핑, 캔버스 마감 안내 알림`)는 이미 마감 알림을 약속하고 있다. ③ 앱이 서버보다 앞서 구현한
+  (`신규 사진, 캔버스 마감 안내 알림`)는 이미 마감 알림을 약속하고 있다. ③ 앱이 서버보다 앞서 구현한
   경로를 무엇이 지키는지 — `route=group`은 **아무도 안 보내므로 테스트도 실기기도 지나가지 않는다.**
   ④ 이 저장소의 `parfait/api/notification.md`가 그 스펙의 자리를 대신할지.
 - **상태**: **부분 해소** (2026-09-08 — 서버가 두 알림을 실제로 보내기 시작해 ③은 닫혔다.
@@ -7132,7 +7132,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-10] 알럿 판정이 폴링 회차마다 돌아 실패가 반복 조회를 부른다
 
 - **ID**: OQ-P-393
-- **출처**: `CanvasMainViewModel#checkShowPastCanvasAlert`·`#closedCanvasMemberCount`.
+- **출처**: `CanvasMainViewModel#checkShowPastCanvasAlert`·`#closedCanvasContributorCount`.
 - **항목**: 판정은 오늘 캔버스를 받을 때마다 돌고, 인원 수를 얻는 지난 캔버스 상세 조회가 실패하면
   `markSeen` 을 부르지 않는다(그 마감을 영영 못 보는 것을 막는 의도적 설계다). 그래서 그 조회가
   계속 실패하는 상황에서는 **폴링 회차마다 상세 조회가 한 번씩 더 나간다.**
@@ -7615,7 +7615,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (의도된 미사용 — 死코드 정리 대상이 아니다)
 - **해소 메모**: 정해지면 [data-layer](../architecture/data-layer.md)의 날짜 그룹 키 서술과 OQ-P-243의 `DayWindow.current()` 소비처를 맞춘다.
 
-### [2026-10-07] `canvas_edit_*` 화면 분류가 정본 문서와 코드에서 다르고, `canvas_edit_border_tapped`는 아직 못 심었다
+### [2026-10-07] canvas_edit_* 화면 분류가 정본 문서와 코드에서 다르다
 
 - **ID**: OQ-P-430
 - **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본)는 `canvas_edit`를 "캔버스 편집(C105)" 하나로 묶는데, 2026-10-02 PR #572
@@ -7624,6 +7624,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `C-305`(`CanvasToppingArrangeViewModel`).
 - **항목**: ① `canvas_edit_stack_tapped`는 최초 배치(`C-106`)에서만 찍도록 확인받아 그렇게
   심었는데, 정본 문서의 "C105"가 재편집(`C-305`)까지 포함할 의도였다면 어긋난다.
+  ② ✅ 재편집 화면(`C-305`)의 테두리 조작을 잡을 이벤트가 없었다 — 해소, 「상태」 참고.
 - **상태**: 부분 해소 (② 해소, ① 잔존 — 정본 문서 작성자 확인 필요)
   > ✅ **②가 닫혔다(2026-10-09)** — "테두리 편집 탭"(`canvas_edit_border_tapped`)을
   > `CanvasToppingArrangeViewModel.OnToggleBorderPanel`에 심었다. `canvas_edit_stack_tapped`의
@@ -7650,35 +7651,23 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 확인 후 `source` 값 이름을 바꿀지(`general`/`recent` 등), 그대로 둘지 정해서
   `CustomGalleryPickerViewModel`에 반영한다.
 
-### [2026-10-09] `canvas_edit_stack_tapped`/`canvas_topping_closed_unchanged`를 2026-10-06 이후 화면 변경(PR #601)에 맞춰 다시 배선했다
+### [2026-10-09] `canvas_edit_stack_tapped`/`canvas_topping_closed_unchanged`를 2026-10-06 이후 화면 변경에 맞춰 다시 배선했다
 
 - **ID**: OQ-P-432
-- **출처**: `origin/develop`이 80d06e6d → 239d4b59로 40커밋 더 나간 사이, 커밋 `b9cd8182`
-  ("토핑 배치·수정 화면의 시스템 뒤로가기가 이전 화면으로 가고 수정 화면의 닫기는 변경이 있을
-  때만 묻게 한다")가 `CanvasToppingArrangeViewModel`의 닫기·뒤로가기 흐름을 바꿨다 —
-  `requestQuit()`이 새로 생겨 **변경사항이 없으면 그만두기 팝업 없이 바로 `NavigateBack`**으로
-  나간다. 또 삭제 흐름이 "버튼 → 즉시 DELETE"에서 "버튼 → 로컬 보류(`pendingDeleteToppingIds`)
-  → 확인 시점에 함께 반영"으로 바뀌었다.
-- **항목**: 이 변경 전 기준으로 짠 분석 로깅이 두 군데 어긋났었다 — ① `OnQuitDialogConfirm`에서만
-  `close`를 찍어서, 팝업 없이 바로 나가는(변경 없음) 경로가 안 잡혔다. ② "수정 없음" 판정이
-  `dirtyToppingIds`만 보고 `pendingDeleteToppingIds`(삭제 보류)는 안 봐서, 삭제만 하고 확인을
-  누르면 `done`(무변경)으로 잘못 찍혔다.
-- **상태**: 해소됨(2026-10-09) — `requestQuit()`의 "변경 없음 → 바로 나감" 분기에도
-  `logClosed("close")`를 추가했고, `handleOnClickConfirm`의 무변경 판정을 팀이 이미 만들어 둔
-  `state.hasUnsavedChanges`(dirty + pendingDelete를 함께 본다) 기준으로 바꿨다.
-  > 🔧 **정정(2026-10-09)** — 서버가 404로 거절하는 "이미 지워진 토핑" 특수 케이스
-  > (`PARFAIT_IMAGE_NOT_FOUND`)를 한때 "분석 로깅 범위 밖"이라며 실패로 통일하게 걷어냈는데,
-  > PR 리뷰봇이 `docs/api/parfait-image.md`("삭제가 멱등이 아닌 것을 앱이 흡수한다")를
-  > 근거로 지적해 되돌렸다. 범위 밖 부수 코드가 아니라 **DELETE가 서버에 닿고 응답만 잃었을
-  > 때의 재시도 안전성**을 보장하는 문서화된 계약이었다 — 지웠으면 네트워크가 끊긴 뒤
-  > 재시도한 사용자가 이미 성공한 삭제를 영구 실패로 보게 될 뻔했다.
-  > 🔧 **정정(2026-10-09, 2번째)** — PR 리뷰봇이 `canvas_topping_closed_unchanged`가 이름과
-  > 달리 `OnQuitDialogConfirm`(변경사항을 버리고 나가는 경로)에서도 `action="close"`로
-  > 찍히는 걸 지적했다. 그 경로는 로컬 편집을 서버에 한 번도 안 보내고 버리므로, 건드렸든
-  > 안 건드렸든 캔버스엔 실제로 아무 변화가 없다 — 그래서 action을 더 쪼개는 대신
-  > `OnQuitDialogConfirm`의 로깅 자체를 뺐다. 이제 이 이벤트는 `requestQuit()`의 무변경
-  > 분기(`close`)와 `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍혀, 이름
-  > 그대로 "진짜 변경 없이 닫힘"만 잡는다.
+- **출처**: `CanvasToppingArrangeViewModel#requestQuit`·`#handleOnClickConfirm`·`#logClosed` — 수정 화면의
+  닫기는 변경사항이 없으면 그만두기 팝업 없이 바로 `NavigateBack`으로 나가고, 삭제는 로컬 보류
+  (`pendingDeleteToppingIds`) 뒤 확인 시점에 함께 반영된다.
+- **항목**: 이 흐름 이전 기준으로 짠 분석 로깅이 두 군데 어긋났었다 — ① 팝업 없이 바로 나가는
+  (변경 없음) 경로가 `close`로 안 잡혔다. ② "수정 없음" 판정이 삭제 보류를 안 봐서, 삭제만 하고
+  확인을 누르면 `done`(무변경)으로 잘못 찍혔다.
+- **상태**: 해소됨(2026-10-09) — 무변경 판정은 `state.hasUnsavedChanges`(dirty + 삭제 보류를 함께 본다)
+  기준이다.
+  > ⚠️ `canvas_topping_closed_unchanged`는 `requestQuit()`의 무변경 분기(`close`)와
+  > `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍힌다. `OnQuitDialogConfirm`(변경을
+  > 버리고 나감)은 서버에 아무것도 보내지 않아 캔버스에 변화가 없어도 일부러 찍지 않는다.
+  > 시스템 뒤로가기(`handleOnSystemBack`)로 나가는 경로도 찍지 않는다.
+  > ⚠️ 삭제의 `PARFAIT_IMAGE_NOT_FOUND`(이미 지워진 토핑) 흡수는 분석 로깅과 무관하게 남겨야 한다 —
+  > DELETE가 서버에 닿고 응답만 잃었을 때의 재시도 안전성 계약이다([parfait-image](../api/parfait-image.md)).
 
 ### [2026-09-27] 캔버스 타임랩스 동영상 저장 — 실기기 미확인과 정책 원본 부재
 
@@ -7713,9 +7702,25 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-14] App Links — 링크 호스트·경로가 세 곳에 따로 적혀 있다
 
 - **ID**: OQ-P-436
-- **출처**: `AndroidManifest.xml`(`host`·`pathPrefix`), `AppLinkDeepLinkIntent.kt`(`APP_LINK_PATH`), `core/ui` `strings.xml`(`group_invite_message`의 URL).
+- **출처**: `AndroidManifest.xml`(`host`·`path`), `AppLinkDeepLinkIntent.kt`(`APP_LINK_PATHS`), `core/ui` `strings.xml`(`group_invite_message`의 URL).
 - **항목**: 호스트 `parfait-app.store`와 경로 `/link`가 매니페스트(XML)·파서 상수·문자열 리소스에 같은 값으로 따로 있다. 한 곳만 바뀌면 복사한 링크가 앱으로 열리지 않거나 앱이 링크를 거절한다. 매니페스트와 리소스는 코드 상수를 참조할 수 없다(쿼리 키 `inviteCode`는 `AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY`로 한 곳이다).
 - **상태**: 보류 (2026-10-18 현재 상태 유지로 결정. 필요해지면 `manifestPlaceholders`·`resValue`로 빌드 설정 한 곳에서 주입)
 - **해소 메모**: 호스트가 환경별로 갈라지거나 바뀔 일이 생기면 그때 한 곳으로 모은다. 그 전에는 값을 바꿀 때 세 곳을 함께 본다.
 
-<!-- oq-next: 437 -->
+### [2026-10-20] 캔버스 영상 저장이 canvas_save_gallery_saved를 남기지 않는다
+
+- **ID**: OQ-P-437
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본) × `CanvasMainViewModel#handleSaveRecordedVideo`·`#handleSaveCapturedCanvas`
+- **항목**: 정본은 `canvas_save_gallery_saved`의 `format`을 `"image"`/`"video"` 둘로 정하지만, 이미지 저장 경로(`handleSaveCapturedCanvas`)만 성공 시 `format=image`로 찍고 영상 저장 경로(`handleSaveRecordedVideo`)에는 로깅이 없다. 영상 저장은 집계에 잡히지 않는다.
+- **상태**: 미해결
+- **해소 메모**: 영상 저장 성공 시 `format=video`로 찍고, 두 경로의 로깅을 `CanvasMainViewModel` 테스트로 고정한다.
+
+### [2026-10-20] C-103 「직접 선택」 얼럿이 편집 화면에서 돌아오면 다시 뜬다
+
+- **ID**: OQ-P-438
+- **출처**: `SegmentationRoute`의 `rememberYGAlertPolicy()`(`remember { YGAlertPolicy() }`)와 `LaunchedEffect(alertPolicy)` 안의 `alertPolicy.show(…)`
+- **항목**: 「직접 선택」 얼럿은 정책 객체가 새로 생길 때마다 뜬다. 정책이 `rememberSaveable`이 아닌 일반 `remember`라 C-103에서 편집 화면(C-104)으로 갔다가 뒤로 돌아오면 정책이 다시 만들어지고 얼럿도 다시 뜰 것으로 보인다(실기기 미확인). 재진입마다 띄우는 것이 의도인지 진입 1회만 띄울지 기획 확인이 필요하다.
+- **상태**: 미해결
+- **해소 메모**: 1회로 정해지면 표시 여부를 화면 상태나 저장되는 값으로 들고, 뒤로 돌아온 경우를 실기기에서 확인한다.
+
+<!-- oq-next: 439 -->
