@@ -2987,7 +2987,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md).
   > 📌 **①의 다른 답이 한 라운드에 8엔트리를 옮겼다(2026-08-20, PR #309)** — `camera` 3
   > (`NavKeyCameraCustom`·`NavKeyCameraSystem`·`NavKeyPictureConfirm`) · `gallery` 2
-  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) · `segmentation` 3
+  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 #604에서 삭제 · `segmentation` 3
   > (`NavKeySegmentation`·`NavKeySegmentationConfirm`·`NavKeyToppingEdit`)이 한꺼번에 갔다. 계기는
   > 로딩·실패가 아니라 **세 모듈 파일을 어차피 다 여는 라운드**였다는 것이고(위 #296·#305와 같은
   > 갈래), 실제로 여덟 엔트리 중 `isLoading`을 넘기는 곳이 하나도 없다 — 세 모듈의 로딩이 전부 화면
@@ -3936,7 +3936,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   이유로 되돌렸는데**, 그 이유가 #290 머지로 사라졌다.
 - **항목**: ① 셋을 지울지 — 지우면 도달 불가 화면 목록에서 하나가 빠진다. ② 같은 부류
   (`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)와 묶어 한 번에 정리할지.
-- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ②는 별개로 남는다)
+- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ② 같은 부류 둘도 #604에서 지웠다)
   > 📌 **2026-08-20 — `refactor/segmentation-develop`이 되살리지 않기로 했다.** 그 브랜치가 두 번째
   > 리베이스에서 같이 처리할 후보였으나(아래 해소 메모의 옛 권고), **이 잔해는 그 라운드가 만든 것이
   > 아니라 #290이 남긴 것**이라 리뷰 대상 diff를 넓힐 값이 없다고 판단했다
@@ -3960,11 +3960,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 딸려 걷힌 것 셋: ① `NavTransition.Fade.metadata` 예외(OQ-P-260 ③), ② `LocalSharedTransitionScope`와
   > 두 루트의 `SharedTransitionLayout` 껍질, ③ `NavKeyAnalyticsScreen`의 화면 ID 셋
   > (`C-001-edit`·`C-001-image-select`·`C-001-move`)과 그 테스트 기대값.
-  > ⚠️ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)는 그대로다** — 이 라운드가 캔버스 셋만
-  > 보고 그 둘은 건드리지 않았다. 도달 불가 화면이 0이 된 것은 **캔버스 쪽만**이다.
+  > ✅ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)도 지웠다(#604)** — #514가 캔버스 셋만
+  > 보고 그 둘은 건드리지 않았는데, 이쪽도 `goTo` 호출부가 0건인 채 엔트리 등록과 분석 화면 ID
+  > (`C-101-system`·`C-102-system`)만 남아 있었다. 둘의 Route·Screen·ViewModel·엔트리·분석 매핑을 걷었다.
 - **해소 메모**: [navigation-flow](../architecture/navigation-flow.md) "인자 있는 목적지" 목록과 토핑
-  생성 플로우 절의 도달 불가 표기는 이 회차(2026-09-21) 점검에서 걷었다. ②는 별개 항목으로 남는다 —
-  같은 부류 둘의 존폐는 아직 아무도 결정하지 않았다.
+  생성 플로우 절의 도달 불가 표기는 이 회차(2026-09-21) 점검에서 걷었다.
 
 ### [2026-08-19] 배치 화면이 보여 주는 캔버스가 실제 캔버스가 아니다
 
