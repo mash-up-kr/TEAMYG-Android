@@ -127,7 +127,8 @@ DataSource 배치 관례를 확립한다.
   > 머지한 뒤, PR #197이 이를 `data/consumer-rules.pro`로 옮기고
   > `AndroidConfig.kt#setConfigAndroidLibrary`에 `consumerProguardFiles("consumer-rules.pro")`를
   > 등록했다. develop의 라이브러리 모듈 전부가 `consumer-rules.pro`를 이미 갖고 있어 등록이 다른
-  > 모듈을 깨지 않는다. 잔여 미검증 항목(Retrofit 밖 OkHttp 직접 요청, release 빌드 실행 확인)은
+  > 모듈을 깨지 않는다. 새 라이브러리 모듈도 빈 파일이라도 `consumer-rules.pro`를 둬야 한다 —
+  > `setConfigAndroidLibrary`가 무조건 등록해 없으면 release 빌드가 깨진다. 잔여 미검증 항목(Retrofit 밖 OkHttp 직접 요청, release 빌드 실행 확인)은
   > [open-questions](../synthesis/open-questions.md).
 - **로깅**: `HttpLoggingInterceptor` 레벨을 `BuildConfig.DEBUG`로 게이팅한다(debug=`BODY`,
   release=`NONE`). release 빌드에서 `Authorization` 토큰과 요청/응답 바디가 로그로 노출되는 것을

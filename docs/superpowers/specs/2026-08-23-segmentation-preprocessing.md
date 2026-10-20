@@ -4,8 +4,8 @@ title: 세그멘테이션 입력 전처리 — 촬영 손실·해상도 하한·
 status: in-progress
 category: behavior-spec
 platforms: android
-verified: 2026-08-25
-related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewComponent.kt, CameraCrop.kt#saveViewfinderCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit
+verified: 2026-10-20
+related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewComponent.kt, CameraCrop.kt#saveViewfinderCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit, DecodeSize.kt#capped
 related_adr: ADR-0012
 related_spec: c103-multi-subject-selection, segmentation-pipeline-hardening, c106-topping-place-api
 related_architecture: data-layer
@@ -86,6 +86,9 @@ tags: [spec, parfait]
   이득이 0이고 업로드 용량만 커진다. **포맷 선택은 진입 인자로 가른다.**
 - **원본 다운샘플**(OQ-P-228 잔존) — 목표가 자원이 아니다. 마스크가 입력 크기로 나오므로
   축소한 마스크를 되올리는 보간 손실이 새로 생긴다. 정확도를 목표로 두는 한 방향이 반대다.
+  디코드 공통 경로(`decodeUriToBitmap`)에 긴 변 상한(`DecodeSize.LONG_SIDE_LIMIT`)이 따로 걸려 있다.
+  그리기 제한 방어이고 12MP 급은 상한 아래라 이 절의 판단과 충돌하지 않는다 →
+  [ADR-0012 「원본 디코드 상한」](../../adr/0012-mlkit-subject-segmentation.md#원본-디코드-상한).
 - **뷰파인더 크롭이 정확도에 주는 영향** — 카메라 경로에서 모델이 보는 것은 센서 프레임이 아니라
   뷰파인더 사각형으로 잘린 조각이다. 피사체가 변에 걸치면 후보로 안 잡히거나 면적 필터에 걸려
   사라질 수 있다. 이 라운드는 `saveViewfinderCapture`를 열지만 크롭 정책은 손대지 않는다.
@@ -323,7 +326,7 @@ API 26·27 실기기는 구하기 어려우므로 **API 27 에뮬레이터를 �
   API 28 이상을 보정하지 않는 쪽을 기본값으로 둔다.
 - **OQ-P-281** — 색공간·`Bitmap.Config`·HEIC를 `decodeImage`가 다루지 않는다.
 - **OQ-P-282** — 배치 화면의 초기 토핑 크기가 알맹이의 절대 픽셀에서 나와 서버 `scale`로 굳는다.
-- **OQ-P-228 잔존** — 원본 다운샘플은 여전히 없다.
+- **OQ-P-228 잔존** — 12MP 급에 걸리는 다운샘플은 없다(긴 변 상한 초과분만 줄인다).
 - 후처리 항목들(최대 연결 요소·모폴로지·알파 램프·경계 색 오염)은 기전이 분명하고 눈에 보이는
   개선이 예상되나 이번 범위 밖이다. 이 스펙의 사진 세트가 그대로 다음 라운드의 기준선이 된다.
 

@@ -1,3 +1,24 @@
+---
+id: canvas-topping-timelapse-video
+title: 캔버스 토핑 타임랩스 동영상 저장 구현 계획
+status: done
+type: work-order
+created: 2026-09-21
+updated: 2026-10-20
+platforms: android
+owner:
+related_adr: ADR-0035
+related_spec: canvas-topping-timelapse-video
+related_code:
+  - ToppingVideoTimeline.kt#toppingPopProgresses
+  - Mp4VideoEncoder.kt#Mp4VideoEncoder
+  - BitmapSurfaceWriter.kt#BitmapSurfaceWriter
+  - CanvasVideoRecorder.kt#recordCanvasVideo
+  - CanvasMainViewModel.kt#handleSaveRecordedVideo
+archived_reason: 구현 완료. Task 8 Step 6(로딩 오버레이)은 스펙이 범위에서 뺐고, Step 8(실기기)은 미수행 — OQ-P-429.
+tags: [plan, parfait, canvas, gallery, video]
+---
+
 # 캔버스 토핑 타임랩스 동영상 저장 구현 계획
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -12,14 +33,14 @@
 **Tech Stack:** Kotlin, Jetpack Compose, `MediaCodec`/`MediaMuxer`/EGL14/GLES20(플랫폼 API),
 Hilt, mockk, Turbine, AndroidJUnit4
 
-**Spec:** [`../specs/2026-09-21-canvas-topping-timelapse-video.md`](../specs/2026-09-21-canvas-topping-timelapse-video.md)
+**Spec:** [`../../specs/archive/2026-09-21-canvas-topping-timelapse-video.md`](../../specs/archive/2026-09-21-canvas-topping-timelapse-video.md)
 
 ## 진행 상태
 
 **Task 1~8 구현 완료. 실기기에서 영상을 뽑아 본 적은 없다**(OQ-P-429).
 
 as-built 이탈 — 아래 Task 본문과 Global Constraints의 수치·코드 블록은 계획 당시 그대로이고,
-현재 코드와 다음이 다르다. 현재 사양은 [스펙](../specs/2026-09-21-canvas-topping-timelapse-video.md)이 정본이다.
+현재 코드와 다음이 다르다. 현재 사양은 [스펙](../../specs/archive/2026-09-21-canvas-topping-timelapse-video.md)이 정본이다.
 
 - **타임라인(Task 1)**: 도입 15 + 토핑당 12 + 마무리 30 프레임이 아니라 **2초 고정 60프레임**이다.
   토핑 시작 시각을 1.5초에 고르게 나누고 팝인은 0.25초라 토핑끼리 겹칠 수 있다. 그래서
@@ -51,7 +72,7 @@ as-built 이탈 — 아래 Task 본문과 Global Constraints의 수치·코드 �
   (ADR-0035).
 - **기존 파일을 전문으로 덮어쓰지 않는다.** 추가·치환 지시만 따른다.
 - `minSdk` 26, `targetSdk` 36, `compileSdk` 37.
-- **코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md) 규약을 따른다.** 무엇을 하는지가 아니라 **왜
+- **코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md) 규약을 따른다.** 무엇을 하는지가 아니라 **왜
   그렇게 했는지**를 적는다. 코드를 읽으면 아는 사실을 옮겨 쓰지 않는다. 주석은 한국어다.
 - **매퍼 단독 테스트(`XxxVOMapperTest`)와 DTO 직렬화 테스트를 만들지 않는다.** 판단이 든 변환은
   DataSource·Repository 테스트의 케이스로 덮는다.
@@ -1212,7 +1233,7 @@ Expected: PASS
   - `NavKeyCanvasImageSave(val imagePath: String, val date: String, val toppingCount: Int)`
   - 결과 키 `CANVAS_SAVE_RESULT_KEY` (`"canvas_save_result"`) — 결과 타입이 이미지·영상을 함께 담아 키 이름도 `CanvasSaveResult`에 맞춘다
 
-- [ ] **Step 1: api 모듈의 타입을 바꾼다**
+- [x] **Step 1: api 모듈의 타입을 바꾼다**
 
 `NavKeyCanvasImageSave.kt`에서 `data class NavKeyCanvasImageSave`와 `CanvasImageSaveResult`를
 아래로 치환하고, 결과 키 선언을 `const val CANVAS_SAVE_RESULT_KEY = "canvas_save_result"`로 바꾼다.
@@ -1258,7 +1279,7 @@ sealed interface CanvasSaveResult {
 }
 ```
 
-- [ ] **Step 2: 미리보기 Route가 두 결과를 발행하게 고친다**
+- [x] **Step 2: 미리보기 Route가 두 결과를 발행하게 고친다**
 
 `CanvasImageSaveRoute.kt`의 import에서 `CanvasImageSaveResult`를 `CanvasSaveResult`로 바꾸고,
 `CanvasImageSaveScreen` 호출을 아래로 치환한다.
@@ -1290,7 +1311,7 @@ sealed interface CanvasSaveResult {
         )
 ```
 
-- [ ] **Step 3: 캔버스 메인이 두 결과를 갈라 받게 고친다**
+- [x] **Step 3: 캔버스 메인이 두 결과를 갈라 받게 고친다**
 
 `CanvasMainRoute.kt`에서 `ResultEffect<CanvasImageSaveResult>` 블록을 아래로 치환한다. import도
 `CanvasSaveResult`로 바꾼다. `saveWithPermission`은 아직 비트맵만 받는다 — Task 7에서 일반화한다.
@@ -1313,7 +1334,7 @@ sealed interface CanvasSaveResult {
     }
 ```
 
-- [ ] **Step 4: 미리보기로 넘어가는 자리에 토핑 개수를 싣는다**
+- [x] **Step 4: 미리보기로 넘어가는 자리에 토핑 개수를 싣는다**
 
 `CanvasMainRoute.kt`의 `RequestCanvasCaptureForPreview` 분기에서 `NavKeyCanvasImageSave` 생성을
 아래로 치환한다.
@@ -1328,7 +1349,7 @@ sealed interface CanvasSaveResult {
                             )
 ```
 
-- [ ] **Step 5: 컴파일이 통과하는 것을 확인한다**
+- [x] **Step 5: 컴파일이 통과하는 것을 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:api:compileDebugKotlin`
 Expected: PASS
@@ -1352,7 +1373,7 @@ Expected: PASS
 - Produces:
   - `CanvasImageSaveScreen(bitmap, fallbackImagePath, date, isVideoSaveEnabled, onClickClose, onClickSaveImage, onClickSaveVideo, modifier)`
 
-- [ ] **Step 1: 문구를 더한다**
+- [x] **Step 1: 문구를 더한다**
 
 `strings.xml`의 `canvas_image_save_confirm` 아래에 더한다.
 
@@ -1362,7 +1383,7 @@ Expected: PASS
     <string name="canvas_main_gallery_video_save_failure">영상 저장에 실패했어요. 나중에 다시 시도해 주세요.</string>
 ```
 
-- [ ] **Step 2: 화면 시그니처와 하단 버튼 영역을 고친다**
+- [x] **Step 2: 화면 시그니처와 하단 버튼 영역을 고친다**
 
 `CanvasImageSaveScreen`의 파라미터에서 `onClickSave`를 지우고 셋을 더한다.
 
@@ -1414,7 +1435,7 @@ internal fun CanvasImageSaveScreen(
 > `YGButtonType.Medium.Secondary`가 없으면 `YGButtonType`의 실제 하위 타입을 확인해 보조 스타일에
 > 해당하는 것으로 바꾼다. 디자인 시스템에 없는 타입을 새로 만들지 않는다.
 
-- [ ] **Step 3: 프리뷰를 고친다**
+- [x] **Step 3: 프리뷰를 고친다**
 
 `PreviewCanvasImageSaveScreen`의 호출을 아래로 치환한다.
 
@@ -1431,14 +1452,14 @@ internal fun CanvasImageSaveScreen(
     )
 ```
 
-- [ ] **Step 4: 컴파일과 ktlint를 확인한다**
+- [x] **Step 4: 컴파일과 ktlint를 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:impl:compileDebugKotlin`
 Expected: `OnClickSaveVideoToGallery` 미정의로만 실패한다. 다른 오류가 나면 이 Task 안에서 고친다.
 
 ---
 
-### Task 7: ViewModel의 영상 저장 경로
+### Task 7: ViewModel의 영상 저장 경로[^task7-as-built]
 
 녹화 시작 요청, 녹화 중 상태, 완성된 파일의 갤러리 저장, 결과 알림을 ViewModel에 붙인다. 녹화
 자체는 화면이 하므로 ViewModel은 상태와 저장만 든다.
@@ -1457,7 +1478,7 @@ Expected: `OnClickSaveVideoToGallery` 미정의로만 실패한다. 다른 오�
   - `CanvasMainUiState.isRecordingVideo: Boolean`
   - `CanvasMainEffect.ShowGallerySaveResult(isSuccess, date, isVideo)`
 
-- [ ] **Step 1: 실패하는 테스트를 쓴다**
+- [x] **Step 1: 실패하는 테스트를 쓴다**
 
 `CanvasMainViewModelTest.kt`에 더한다. 기존 테스트의 `createViewModel` 헬퍼 이름과 인자는 파일을
 열어 그대로 따른다. `saveCanvasVideoToGallery` mock을 생성자 인자에 추가해야 한다.
@@ -1576,7 +1597,7 @@ Expected: `OnClickSaveVideoToGallery` 미정의로만 실패한다. 다른 오�
     }
 ```
 
-- [ ] **Step 2: 테스트가 실패하는 것을 확인한다**
+- [x] **Step 2: 테스트가 실패하는 것을 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasMainViewModelTest*"`
 Expected: 컴파일 실패 — `Unresolved reference: OnClickSaveVideoToGallery`
@@ -1584,7 +1605,7 @@ Expected: 컴파일 실패 — `Unresolved reference: OnClickSaveVideoToGallery`
 > ⚠️ `ShowGallerySaveResult`에 인자가 하나 늘어나므로 **기존 갤러리 저장 테스트 2건도 함께
 > 고쳐야** 컴파일된다. 기존 단언에 `isVideo = false`를 더한다.
 
-- [ ] **Step 3: 상태·이펙트·인텐트를 더한다**
+- [x] **Step 3: 상태·이펙트·인텐트를 더한다**
 
 `CanvasMainUiState`의 `tutorialStep` 아래에 더한다.
 
@@ -1631,7 +1652,7 @@ Expected: 컴파일 실패 — `Unresolved reference: OnClickSaveVideoToGallery`
     data object CanvasVideoRecordFailed : CanvasMainIntent
 ```
 
-- [ ] **Step 4: 인텐트 분기와 핸들러를 더한다**
+- [x] **Step 4: 인텐트 분기와 핸들러를 더한다**
 
 `processIntent`의 `SaveCapturedCanvas` 분기 아래에 더한다.
 
@@ -1697,17 +1718,19 @@ Expected: 컴파일 실패 — `Unresolved reference: OnClickSaveVideoToGallery`
     private val saveCanvasVideoToGalleryUseCase: SaveCanvasVideoToGalleryUseCase,
 ```
 
-- [ ] **Step 5: 테스트가 통과하는 것을 확인한다**
+- [x] **Step 5: 테스트가 통과하는 것을 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasMainViewModelTest*"`
 Expected: PASS (기존 전량 + 신규 5건)
 
-- [ ] **Step 6: ktlint를 통과시킨다**
+- [x] **Step 6: ktlint를 통과시킨다**
 
 Run: `./gradlew :feature:groups:canvas:impl:ktlintCheck`
 Expected: PASS
 
 ---
+
+[^task7-as-built]: `StartCanvasVideoRecording`·`isRecordingVideo`·`CanvasVideoRecordFailed`·`isVideo`는 만들지 않고 `SaveRecordedVideo`·`DiscardRecordedVideo`로 대체(「진행 상태」 녹화 위치 참조).
 
 ### Task 8: 녹화 레이어와 프레임 루프를 결선한다
 
@@ -1729,7 +1752,7 @@ Expected: PASS
   `CanvasMainUiState.isRecordingVideo` (Task 7)
 - Produces: 없음 (마지막 Task)
 
-- [ ] **Step 1: `CanvasToppingLayer`에 등장 진행도를 주입할 파라미터를 더한다**
+- [x] **Step 1: `CanvasToppingLayer`에 등장 진행도를 주입할 파라미터를 더한다**
 
 기본값을 두어 기존 호출부 세 곳은 한 줄도 바뀌지 않는다.
 
@@ -1798,7 +1821,7 @@ Expected: PASS
 > ⚠️ `hitTestEnabled && toppingsVisible` 블록의 `entries`도 `visibleEntries`로 바꿔야 한다.
 > 안 보이는 토핑이 눌리면 안 된다.
 
-- [ ] **Step 2: 녹화용 레이어를 만든다**
+- [x] **Step 2: 녹화용 레이어를 만든다**
 
 ```kotlin
 package com.teamyg.parfait.feature.groups.canvas.impl.component
@@ -1873,7 +1896,7 @@ internal fun CanvasVideoRecordLayer(
 }
 ```
 
-- [ ] **Step 3: 프레임 루프를 만든다**
+- [x] **Step 3: 프레임 루프를 만든다**
 
 ```kotlin
 package com.teamyg.parfait.feature.groups.canvas.impl.util
@@ -1935,7 +1958,7 @@ suspend fun recordCanvasVideo(
 }
 ```
 
-- [ ] **Step 4: 화면에 녹화 레이어를 넣고 Canvas-Area dp 폭을 보고한다**
+- [x] **Step 4: 화면에 녹화 레이어를 넣고 Canvas-Area dp 폭을 보고한다**
 
 `CanvasMainScreen`에 파라미터를 더한다.
 
@@ -1981,7 +2004,7 @@ suspend fun recordCanvasVideo(
 > 둘이다. 녹화 레이어가 **Canvas-Area와 같은 dp 크기**를 받는 것, 그리고 화면에 보이는
 > `CanvasToppingLayer`의 파라미터가 **하나도 바뀌지 않는** 것이다.
 
-- [ ] **Step 5: Route에서 녹화를 돌리고 권한 흐름을 일반화한다**
+- [x] **Step 5: Route에서 녹화를 돌리고 권한 흐름을 일반화한다**
 
 `CanvasMainRoute.kt`의 `pendingGalleryBitmap`과 런처, `saveWithPermission`을 아래로 치환한다.
 
@@ -2134,7 +2157,7 @@ private sealed interface PendingGallerySave {
                 },
 ```
 
-- [ ] **Step 6: 로딩 오버레이를 덮는다**
+- [ ] **Step 6: 로딩 오버레이를 덮는다**[^task8-step6]
 
 `CanvasMainRoute`의 스캐폴드 안, 튜토리얼 오버레이 옆에 더한다.
 
@@ -2145,7 +2168,7 @@ private sealed interface PendingGallerySave {
         }
 ```
 
-- [ ] **Step 7: 전체 빌드와 테스트를 돌린다**
+- [x] **Step 7: 전체 빌드와 테스트를 돌린다**
 
 Run: `./gradlew :feature:groups:canvas:impl:compileDebugKotlin`
 Expected: PASS
@@ -2156,20 +2179,23 @@ Expected: PASS (기존 전량 + 이 계획이 더한 유닛)
 Run: `./gradlew ktlintCheck`
 Expected: PASS
 
-- [ ] **Step 8: 실기기로 확인한다 (사용자 판정)**
+- [ ] **Step 8: 실기기로 확인한다 (사용자 판정)**[^task8-step8]
 
 저장소에서 확인할 수 없는 항목이다. 아래 일곱 갈래를 사람이 본다.
 
 1. **오늘 캔버스, 토핑 3개** — 저장 → 미리보기 → 동영상 저장. 갤러리 `Movies/Parfait`에 mp4가
    생기고 재생된다. 토핑이 배치 순서대로 하나씩 팝인한다.
 2. **마지막 프레임 대조** — 같은 캔버스를 이미지로도 저장해, 영상 마지막 프레임과 **테두리 굵기와
-   토핑 위치가 같은지** 본다. 이것이 ADR-0033이 진 가장 큰 위험이다.
+   토핑 위치가 같은지** 본다. 이것이 ADR-0035가 진 가장 큰 위험이다.
 3. **지난(마감된) 캔버스** — 달력에서 지난 날을 골라 같은 흐름을 태운다.
 4. **토핑 0건** — 동영상 버튼이 비활성이다.
 5. **녹화 중 화면** — 로딩 오버레이가 덮여 있고, 그 아래 캔버스가 깜빡이지 않는다.
 6. **토핑 다수(10개 이상)** — 생성 시간이 견딜 만한지, 영상 길이가 `0.5 + 0.4N + 1.0`초에 맞는지.
 7. **회전·방향** — 영상이 뒤집히거나 좌우가 바뀌지 않았다. `BitmapSurfaceWriter`의 텍스처 좌표
    반전이 맞는지 여기서 드러난다.
+
+[^task8-step6]: 미수행 — 스펙이 오버레이를 범위에서 뺐고 녹화 중엔 버튼·닫기·뒤로가기를 막는다.
+[^task8-step8]: 미수행 — OQ-P-429.
 
 ---
 
