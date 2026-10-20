@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
@@ -44,27 +45,31 @@ internal fun ToppingEditRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val toastPolicy = rememberYGToastPolicy()
+    val loadFailedMessage = stringResource(R.string.topping_edit_load_failed)
+    val saveFailedMessage = stringResource(R.string.topping_edit_save_failed)
+    val subjectTooSmallMessage = stringResource(R.string.topping_edit_subject_too_small)
+    val draftUnavailableMessage = stringResource(R.string.topping_edit_draft_unavailable)
+    val detectionFailedMessage = stringResource(R.string.topping_edit_detection_failed)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is ToppingEditEffect.LoadFailed -> {
                     // 바로 화면을 닫아 화면 내 호스트로는 보이지 않는다
-                    val message = context.getString(R.string.topping_edit_load_failed)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, loadFailedMessage, Toast.LENGTH_SHORT).show()
                     navigator.onBack()
                 }
 
                 is ToppingEditEffect.SaveFailed -> {
-                    toastPolicy.showError(context.getString(R.string.topping_edit_save_failed))
+                    toastPolicy.showError(saveFailedMessage)
                 }
 
                 is ToppingEditEffect.SubjectTooSmall -> {
-                    toastPolicy.showError(context.getString(R.string.topping_edit_subject_too_small))
+                    toastPolicy.showError(subjectTooSmallMessage)
                 }
 
                 is ToppingEditEffect.DraftUnavailable -> {
-                    toastPolicy.showError(context.getString(R.string.topping_edit_draft_unavailable))
+                    toastPolicy.showError(draftUnavailableMessage)
                 }
 
                 is ToppingEditEffect.GoToPlace -> {
@@ -77,9 +82,7 @@ internal fun ToppingEditRoute(
                 is ToppingEditEffect.QuitToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 is ToppingEditEffect.ShowDetectionFailed -> {
-                    toastPolicy.show(
-                        YGToastType.Edit(context.getString(R.string.topping_edit_detection_failed)),
-                    )
+                    toastPolicy.show(YGToastType.Edit(detectionFailedMessage))
                 }
             }
         }
