@@ -13,7 +13,7 @@ related_code:
   - CanvasCaptureCache.kt#writeToCanvasCaptureCache
   - CanvasCaptureCache.kt#readCanvasCaptureCache
   - NavKeyCanvasImageSave.kt#NavKeyCanvasImageSave
-  - NavKeyCanvasImageSave.kt#CanvasImageSaveResult
+  - NavKeyCanvasImageSave.kt#CanvasSaveResult
   - CanvasMainViewModel.kt#CanvasMainEffect.RequestCanvasCaptureForPreview
   - CanvasMainViewModel.kt#handleSaveCapturedCanvas
   - CanvasMainViewModel.kt#observeDayBoundary

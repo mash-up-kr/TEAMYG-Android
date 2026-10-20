@@ -18,7 +18,7 @@ related_code:
   - SaveCanvasToGalleryUseCase.kt#SaveCanvasToGalleryUseCase
   - CanvasMainViewModel.kt#CanvasMainEffect.RequestCanvasCaptureForPreview
   - NavKeyCanvasImageSave.kt#NavKeyCanvasImageSave
-  - NavKeyCanvasImageSave.kt#CanvasImageSaveResult
+  - NavKeyCanvasImageSave.kt#CanvasSaveResult
   - CanvasImageSaveRoute.kt#CanvasImageSaveRoute
   - CanvasImageSaveScreen.kt#CanvasImageSaveScreen
   - CanvasCaptureCache.kt#writeToCanvasCaptureCache

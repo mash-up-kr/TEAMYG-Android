@@ -7683,7 +7683,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-27] 캔버스 타임랩스 동영상 저장 — 실기기 미확인과 정책 원본 부재
 
 - **ID**: OQ-P-429
-- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md)
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md)
 - **항목**:
   ① 실기기에서 영상을 뽑아 본 적이 없다 — 재생 여부, 1080 × 1920 생성 시간, 생성 중 진행 표시 없이 버튼만 잠긴 화면이 견딜 만한지.
   ② 영상 마지막 프레임과 이미지 저장물의 테두리 비율을 대조한 적이 없다.
@@ -7697,7 +7697,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-27] 녹화 밀도에서 토핑 테두리 판 캐시가 미스된다
 
 - **ID**: OQ-P-433
-- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
 - **항목**: `ToppingBorderPlateCache` 판 열쇠가 밀도 의존 `outsetPx`를 포함해 녹화 레이어의 판은 새로 만들어진다. 녹화 게이트가 판 생성을 기다리지 않아 이른 프레임의 토핑이 테두리 없이 등장할 수 있고, 캐시 용량을 넘기면 화면용 판을 축출해 녹화 뒤 화면 테두리가 다시 만들어진다.
 - **상태**: 보류 (실기기 관찰 후 처방)
 - **해소 메모**: 처방이 공용 캐시를 건드려야 하고 기기 없이 측정할 수 없다. OQ-P-429 ①과 함께 본다.

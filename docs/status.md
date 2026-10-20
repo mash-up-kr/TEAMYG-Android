@@ -130,7 +130,7 @@
 - ⚠️ 미리보기 키가 캐시 파일 절대경로와 날짜 문자열을 나른다 — OS가 캐시를 정리하면 확정 시 읽기 실패 토스트로 끝나고, `LocalDate.parse` 실패는 아무도 잡지 않는다 (OQ-P-364)
 - ⚠️ API 29 미만에서는 `Pictures/Parfait` 하위 폴더도 `IS_PENDING` 보호도 없이 기본 위치에 쓰고 쓰기 권한 다이얼로그가 추가로 뜬다 (OQ-P-274)
 - ⚠️ 오늘 캔버스에서도 저장되는 것에 기획 근거가 없고, 저장 아이콘 노출이 빈 안내판 조건의 부정으로 따로 적혀 있어 안내판 조건이 바뀌면 말없이 따라 바뀐다 (OQ-P-340)
-- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0035](adr/0035-canvas-video-onscreen-capture-encoding.md)
+- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0035](adr/0035-canvas-video-onscreen-capture-encoding.md)
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).

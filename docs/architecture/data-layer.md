@@ -86,7 +86,7 @@ tags: [architecture, parfait]
   (`GalleryRepository.saveVideoToGallery` → `SaveCanvasVideoToGalleryUseCase`), 압축 없이 캐시의 mp4를
   스트림으로 복사한다. 등록 규칙은 `insertPendingMedia` 한 벌이 이미지와 영상을 함께 맡는다.
   **캐시 mp4는 읽기만 한다** — 지우는 것은 만든 쪽(feature)의 몫이다
-  → [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md).
+  → [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md).
 - **원격(raw HTTP)** — **`PresignedUploadRemoteDataSource`**(#322)와 **`ImageDownloadRemoteDataSource`**(#369).
   저장소에서 **Retrofit을 거치지 않고 raw OkHttp `Request`를 만드는 두 자리**다(발급받은 presigned
   URL로 PUT · 서버가 준 공개 이미지 URL에서 GET). 그래서 `@NoAuth` 판정이 안 걸리고, 그 때문에

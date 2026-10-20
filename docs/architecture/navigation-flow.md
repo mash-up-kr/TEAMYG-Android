@@ -617,7 +617,7 @@ C-001 캔버스 메인
 - **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
   동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
   `CanvasVideoSourceHolder`에 넣어 둔다. 만드는 동안 두 버튼·닫기·시스템 백이 막힌다 →
-  [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md),
+  [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md),
   [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
 - **ViewModel이 없는 두 번째 화면이다**(`NavKeyWebView` 이후) — navKey 인자와 전역 CanvasCaptureHolder만 읽어 그리면 되고 부를 API가 없다.
   엔트리 빌더가 `navKey`를 Route에 그대로 넘기고 Route가 `LocalResultEventBus`만 잡는다.

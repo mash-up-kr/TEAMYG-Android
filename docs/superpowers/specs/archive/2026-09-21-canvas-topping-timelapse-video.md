@@ -1,10 +1,10 @@
 ---
 id: canvas-topping-timelapse-video
 title: 캔버스 토핑 타임랩스 동영상 저장 (Canvas Topping Timelapse Video)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-10-13
+verified: 2026-10-20
 related_code:
   - CanvasImageSaveScreen.kt#CanvasImageSaveScreen
   - CanvasImageSaveRoute.kt#CanvasImageSaveRoute
@@ -43,15 +43,7 @@ tags: [spec, parfait, canvas, gallery, video]
 
 ## 구현 상태
 
-타임라인·인코더·갤러리 영상 저장·녹화 레이어·미리보기 버튼까지 결선돼 있다. 유닛 테스트는
-통과하지만 **실기기에서 영상을 뽑아 본 적이 없다**(OQ-P-429).
-
-| 조각 | 상태 |
-|------|------|
-| `ToppingVideoTimeline` · `VideoTimelineOptions` | 구현됨 |
-| `Mp4VideoEncoder` · `BitmapSurfaceWriter` | 구현됨. 계측 테스트는 CI가 컴파일만 한다(OQ-P-102) |
-| 갤러리 영상 저장(`data`·`domain`) | 구현됨 |
-| `CanvasToppingLayer` 등장 진행도 · `CanvasVideoRecordLayer` · 프레임 루프 · `CanvasSaveResult` · 미리보기 버튼 · ViewModel 경로 | 구현됨. 실기기 미확인 |
+전 조각 구현·머지됨. 실기기 확인은 OQ-P-429. `Mp4VideoEncoder`·`BitmapSurfaceWriter` 계측 테스트는 CI가 컴파일만 한다(OQ-P-102).
 
 ## 목표
 
@@ -107,7 +99,7 @@ iOS와 다르게 남겨 둔 것은 하나다. 토핑 0건에서 영상 버튼을
 - 토핑 하나의 팝인은 0.25초다. N이 7 이상이면 시작 간격이 0.25초보다 짧아 **앞뒤 토핑의 팝인이
   겹친다.** 그래서 프레임 상태는 "보이는 개수"가 아니라 토핑별 진행도 목록이다
   (`toppingPopProgresses`).
-- 마지막 토핑이 자리 잡은 뒤 남는 시간(0.25초 이상 0.5초 이하)은 완성본을 보여 준다.
+- 마지막 토핑이 자리 잡은 뒤 남는 시간(0.25 + 1.5/N초 — 토핑 1개면 1.75초, 많을수록 0.25초에 가까워진다)은 완성본을 보여 준다.
 
 팝인은 진행도(0~1)를 배율과 알파로 옮긴다.
 
@@ -187,7 +179,7 @@ Canvas-Area와 다르게 잡으면, 캔버스 폭에 대한 테두리 굵기의 
 | `BitmapSurfaceWriter` | `core/util/android/video/` | 비트맵을 GL 텍스처로 올려 코덱 입력 표면에 그리는 EGL 통로 |
 | 갤러리 저장 | `data/`·`domain/` | `insertPendingVideo` · `saveVideoToGallery` · `SaveCanvasVideoToGalleryUseCase` |
 
-`Mp4VideoEncoder`만 기기 의존이라 계측 테스트 대상이다. 나머지 경계는 JVM에서 검증된다.
+`core/util/android/video/`의 두 조각(`Mp4VideoEncoder`·`BitmapSurfaceWriter`)이 계측 테스트 대상이고, 타임라인·ViewModel·갤러리 저장은 JVM에서 검증된다. 녹화 레이어와 미리보기 Route는 자동 검증이 없다.
 
 ## 데이터 흐름
 
@@ -275,8 +267,9 @@ sealed interface CanvasSaveResult {
 - `ToppingVideoTimeline` — 프레임 수, 시작 시각 분배, 팝인 겹침, 마지막 프레임, 배율·알파 경계값.
   JVM 단위 테스트.
 - `CanvasMainViewModel` — `SaveRecordedVideo` 성공·실패 side effect.
+- `GalleryRepositoryImpl.saveVideoToGallery` — 복사·마감, 등록 실패, 스트림 null, 원본 없음. JVM 단위 테스트.
 - `Mp4VideoEncoder` · `BitmapSurfaceWriter` — `core/util/android/src/androidTest` 계측 테스트.
-  mp4가 열리는지와 프레임 수·길이를 `MediaMetadataRetriever`로 확인한다.
+  mp4가 열리는지와 길이는 `MediaMetadataRetriever`, 샘플 수는 `MediaExtractor`로 확인한다.
 - 미리보기 Route의 녹화 흐름에는 테스트가 없다.
 
 ## 주의 / 열린 질문
@@ -297,7 +290,7 @@ sealed interface CanvasSaveResult {
 - ⚠️ **토핑 테두리 판 캐시(`ToppingBorderPlateCache`)가 녹화 밀도에서 미스된다.** 판 열쇠가
   `outsetPx`(밀도 의존)를 포함하므로 녹화용 판은 새로 만들어진다. 판 재생성 자체는 옳지만
   (판이 출력 해상도에 맞아야 한다) 녹화 게이트가 판 생성을 기다리지 않아 **이른 프레임의 토핑이
-  테두리 없이 등장할 수 있고**, 캐시 용량(32칸)을 넘기면 화면용 판을 축출해 녹화 후 화면 테두리가
+  테두리 없이 등장할 수 있고**, 캐시 용량(`ToppingBorderPlateCache.MAX_ENTRIES`)을 넘기면 화면용 판을 축출해 녹화 후 화면 테두리가
   다시 만들어진다. 처방이 공용 캐시를 건드려야 하고 기기 없이 측정할 수 없어 **실기기 관찰 후
   고치기로 유보했다**(OQ-P-433).
 - ⚠️ **홀더는 프로세스 사망을 넘지 못한다.** 미리보기가 복원되면 PNG는 캐시 파일에서 다시 읽지만
