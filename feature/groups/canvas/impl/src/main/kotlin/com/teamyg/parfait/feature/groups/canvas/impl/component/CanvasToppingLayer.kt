@@ -46,6 +46,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopAlpha
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -76,6 +78,12 @@ internal fun CanvasToppingLayer(
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
+    /**
+     * 토핑별 팝인 진행도(0~1). [toppings] 와 같은 순서다. `null` 이면 전부 다 보인다.
+     *
+     * 타임랩스 녹화가 프레임마다 이 값을 갈아 토핑이 차례로 튀어나오게 만든다.
+     */
+    toppingPopProgresses: List<Float>? = null,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -111,14 +119,19 @@ internal fun CanvasToppingLayer(
                 .matchParentSize()
                 .revealed(toppingsVisible),
         ) {
-            entries.forEach { entry ->
+            entries.forEachIndexed { index, entry ->
                 if (entry.topping.parfaitImageId != spotlightedToppingId) {
+                    // 목록이 이미 positionZ 오름차순, 즉 배치 순서라 인덱스가 곧 등장 순서다.
+                    // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
+                    val popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f
+
                     CanvasTopping(
                         entry = entry,
                         canvasWidth = areaWidth,
                         canvasHeight = areaHeight,
                         onClick = { onClickTopping(entry.topping) },
                         clickable = hitTestEnabled,
+                        popProgress = popProgress,
                     )
                 }
             }
@@ -189,6 +202,7 @@ private fun CanvasTopping(
     canvasHeight: Dp,
     onClick: () -> Unit,
     clickable: Boolean,
+    popProgress: Float = 1f,
 ) {
     val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
@@ -206,8 +220,16 @@ private fun CanvasTopping(
             )
             // size 는 부모 constraints 로 clamp 돼 토핑이 잘리는 대신 작아진다 — requiredSize 를 쓴다
             .requiredSize(side)
-            .graphicsLayer { rotationZ = transform.rotation.toFloat() }
-            .then(
+            .graphicsLayer {
+                rotationZ = transform.rotation.toFloat()
+                // 테두리 띠가 상자 밖으로 나가는데 alpha < 1 이면 그만큼 잘린다 — 진행 중에만 건다
+                if (popProgress < 1f) {
+                    val pop = toppingPopScale(popProgress)
+                    scaleX = pop
+                    scaleY = pop
+                    alpha = toppingPopAlpha(popProgress)
+                }
+            }.then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
                 if (clickable) {
                     Modifier.semantics(mergeDescendants = true) {

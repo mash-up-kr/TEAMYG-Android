@@ -7,8 +7,8 @@
     <string name="error_empty_space_nickname">닉네임은 비워둘 수 없어요</string>
     <string name="error_empty_space_groupname">그룹명은 비워둘 수 없어요</string>
 
-    <!-- 초대코드 복사(그룹 설정)와 붙여넣기 감지(초대코드 입력)가 같은 템플릿을 공유한다 -->
-    <string name="group_invite_message">친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s</string>
+    <!-- 붙여넣기 감지는 맨 뒤 6자를 코드로 읽는다(iOS 와 같다) — 코드가 메시지 끝에 와야 한다 -->
+    <string name="group_invite_message">친구가 파르페에 초대했어요.\n체리 올리러 가볼까요? %1$s\n바로가기: https://parfait-app.store/link?inviteCode=%1$s</string>
 
     <string name="login_provider_kakao">Kakao</string>
     <string name="login_provider_apple">Apple</string>

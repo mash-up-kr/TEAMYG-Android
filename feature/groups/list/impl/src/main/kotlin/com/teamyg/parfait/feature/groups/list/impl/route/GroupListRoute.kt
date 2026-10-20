@@ -51,7 +51,7 @@ internal fun GroupListRoute(
                 }
 
                 is GroupListSideEffect.NavigateToInviteCode -> {
-                    navigator.goTo(NavKeyGroupInviteCode)
+                    navigator.goTo(NavKeyGroupInviteCode())
                 }
             }
         }

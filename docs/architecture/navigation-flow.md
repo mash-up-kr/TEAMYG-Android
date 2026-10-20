@@ -250,6 +250,53 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
 알림을 직접 띄우고 이 콜백을 거치지 않는다) — 다만 폴러 수명이 화면 구독에 매여 있어 잃는 것이 없다
 → [canvas-adaptive-polling 스펙](../superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md).
 
+## App Links 이동 (초대 링크)
+
+푸시 딥링크와 같은 모양(`MainActivity` 발행 → 이벤트 버스 → `MainRoute` 단일 수집)이지만 **통로가 따로**
+(`AppLinkDeepLinkEventBus`)다 — 발행 경로가 Intent data URI와 Install Referrer라 푸시와 다르고,
+목적지 타입(`AppLinkDeepLink`)도 합치지 않았다.
+
+```
+링크 탭 → MainActivity → Intent.toAppLinkDeepLinkOrNull() ─┐
+첫 실행   → AppLinkReferrerRepository.consumeDeepLinkOnce() ─┴→ AppLinkDeepLinkEventBus.post()
+    → MainRoute LaunchedEffect 단일 수집 → awaitAppLinkReady() → goTo(NavKeyGroupInviteCode(inviteCode))
+```
+
+- **앱으로 열리는 링크는 `https://parfait-app.store/link?inviteCode={code}` 하나뿐이다.** 매니페스트는
+  `path="/link"`와 `path="/link/"`(끝 슬래시) 정확 일치 둘만 두어 `/linkage`·`/link/ABC123`·루트를 시스템
+  단계에서 거른다(루트는 랜딩 페이지라 앱으로 열면 안 된다). `toAppLinkDeepLinkOrNull`이 같은 두 경로로
+  한 번 더 거르는 것은 필터와 코드가 어긋나도 엉뚱한 경로가 초대코드 화면을 열지 않게 하는 이중 장치다.
+  서버의 iOS 설정(AASA)은 `/link/*`까지 열어 두어 iOS는 하위 경로도 앱으로 열 수 있다 — 범위가 다르다.
+- ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 위키의 푸시 규칙(미로그인이면 폐기)은 푸시
+  경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다(#612 논의). 초대
+  링크는 계정이 없는 신규 유저가 가장 먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
+  쌓은 화면을 지운다) ② 세션이 없으면 `NavKeyGroupList`가 맨 위가 될 때까지 더 기다린다. 로그인(기존
+  유저)과 약관 동의(신규 유저)가 둘 다 `replaceAll(NavKeyGroupList)`로 끝나므로 그 뒤에 쌓아야
+  지워지지 않고, 뒤로 가면 그룹 목록이 남는다. **"계정이 생긴 시점"은 기준이 못 된다** — 약관 동의
+  화면이 아직 맨 위인 때가 있다. 세션 판정이 스플래시 대기 뒤인 이유는 푸시와 같다(부트스트랩이 인증
+  거절을 받으면 토큰을 지운다). 순서는 `AwaitAppLinkReadyTest`가 잠근다.
+- **링크는 입력칸을 미리 채울 뿐 참여를 확정하지 않는다.** `NavKeyGroupInviteCode.inviteCode`가 있으면
+  `GroupInviteCodeRoute`가 `ChangeText`로 채우고, 다음 버튼은 사용자가 누른다. 수동 진입은 `null`이다.
+- **Install Referrer는 콜드 스타트에서 한 번만 본다.** `MainActivity`가 `savedInstanceState == null`일 때만
+  `ConsumeInstallReferrerDeepLinkUseCase`를 부르고, 확인 여부는 DataStore(`app_link_referrer_checked`)에
+  남는다. 메모리에만 두면 프로세스가 죽을 때마다 같은 referrer를 다시 읽어 앱을 켤 때마다 초대코드
+  화면으로 끌려간다.
+- ⚠️ **"확인함"을 남기는 시점이 정해져 있다.** 게이트웨이가 `ReferrerLookup`(`Found`·`NotAvailable`·
+  `TransientFailure`)로 값 없음 확정과 일시 실패를 가른다. 앞의 둘만 `markChecked()`를 남기고, 일시
+  실패(Play 서비스 연결 실패·끊김)는 남기지 않아 다음 실행에서 다시 시도한다 — 조회 전에 남기면 한 번의
+  실패로 복원 기회가 영구히 사라진다. 또 **세션이 이미 있는 기기는 조회 없이 확인함만 남긴다**
+  (`skipLookup`): referrer가 설치 후 약 90일 남아서, 이 기능이 들어간 버전으로 업데이트한 기존 유저가
+  초대코드 화면으로 끌려갈 수 있기 때문이다.
+  referrer는 `inviteCode=…&utm_…` 쿼리스트링 조각이라 `Uri`가 아니라 직접 나눠 읽는다. Play 스토어를 거치지
+  않은 설치에는 값이 없다.
+- 초대 메시지(`group_invite_message`)도 같은 링크를 담는다. 붙여넣기 감지는 템플릿이 아니라 **텍스트 맨 뒤
+  6자**를 코드로 읽는다(`InviteCode.parseFromMessageOrNull`) — iOS 가 읽는 방식과 같아서, 메시지는 코드로
+  끝나야 하고 앞 문구가 달라도(링크 줄이 없던 옛 메시지 포함) 읽힌다. 6자보다 긴 영숫자로 끝나는 텍스트는
+  뒤 6자를 코드로 오인할 수 있다. 링크 쿼리 값처럼 코드 하나만 와야 하는 입력은 전체 일치(`parseOrNull`)다.
+- 분석: `AppLink`(`destination` = `"group_invite"`)는 **발행 지점인 `MainActivity.publishAppLinkDeepLink`에서**
+  찍는다(푸시와 같은 자리). 이름과 값은 iOS와 같게 맞춘 것이라 다른 이벤트의 snake_case 규칙에서 벗어난다. 로그인 대기를 지난 뒤에 찍으면
+  로그인 화면에서 이탈한 유저가 집계에서 빠진다.
+
 ## 그룹 생성·참여 플로우 (2026-08-12, PR #224)
 
 그룹 목록에서 갈라진 두 갈래가 **목록으로 되돌아오며 닫혔다**. 이전에는 양쪽 끝이 stub이라 들어가면 나올 수 없었다.
@@ -538,7 +585,8 @@ C-001 캔버스 메인
                       ─▶ [Route] graphicsLayer.toImageBitmap()
                                  writeToCanvasCaptureCache(Dispatchers.IO)
                                    성공 ─▶ CanvasCaptureHolder.put(bitmap)
-                                           goTo(NavKeyCanvasImageSave(imagePath, date))
+                                           CanvasVideoSourceHolder.put(videoSource)
+                                           goTo(NavKeyCanvasImageSave(imagePath, date, toppingCount))
                                    실패 ─▶ 토스트(canvas_main_capture_failure)
                                               │
                               C-001 저장 미리보기(CanvasImageSaveRoute, ViewModel 없음)
@@ -546,19 +594,31 @@ C-001 캔버스 메인
                                      비트맵 있음 ─▶ Image(bitmap)
                                      비트맵 없음 ─▶ AsyncImage(fallbackImagePath)
                                    닫기 ─▶ onBack()
-                                   저장 ─▶ sendResult(CANVAS_IMAGE_SAVE_RESULT_KEY,
-                                              CanvasImageSaveResult(imagePath)) + onBack()
+                                   갤러리에 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
+                                              CanvasSaveResult.Image(imagePath)) + onBack()
+                                   영상으로 저장 ─▶ 녹화 레이어를 붙여 캐시에 mp4 를 만든 뒤
+                                              sendResult(CanvasSaveResult.Video(videoPath)
+                                                         | CanvasSaveResult.VideoFailed) + onBack()
                                               │
-  [Route] ResultEffect<CanvasImageSaveResult> ─▶ readCanvasCaptureCache(Dispatchers.IO)
+  [Route] ResultEffect<CanvasSaveResult>
+            Image       ─▶ readCanvasCaptureCache(Dispatchers.IO)
                                    성공 ─▶ 권한 있음: SaveCapturedCanvas(bitmap)
                                            권한 없음: 런처 → 승인 시 같은 자리로 합류
                                    실패 ─▶ 토스트(canvas_main_gallery_save_failure)
+            Video       ─▶ 같은 권한 흐름 ─▶ SaveRecordedVideo(videoFilePath)
+            VideoFailed ─▶ 토스트(canvas_main_gallery_save_failure)
                       ─▶ [VM] ShowGallerySaveResult(isSuccess, date) ─▶ [Route] 토스트
 ```
 
-- **미리보기는 저장하지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
-  맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 돌려주는 결과는
-  받은 경로를 그대로 되돌리는 `CanvasImageSaveResult` 하나뿐이다.
+- **미리보기는 갤러리에 넣지 않는다.** 결과 토스트가 뜨는 자리는 캔버스 메인이고, 미리보기가 저장까지
+  맡으면 알림만 남기고 사라지는 화면이 되어 실패했을 때 알릴 곳이 없다. 그래서 sealed
+  `CanvasSaveResult`로 무엇을 저장할지만 돌려준다 — 이미지는 받은 경로 그대로, 영상은 만들어 둔
+  mp4 경로다.
+- **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
+  동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
+  `CanvasVideoSourceHolder`에 넣어 둔다. 만드는 동안 두 버튼·닫기·시스템 백이 막힌다 →
+  [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md),
+  [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
 - **ViewModel이 없는 두 번째 화면이다**(`NavKeyWebView` 이후) — navKey 인자와 전역 CanvasCaptureHolder만 읽어 그리면 되고 부를 API가 없다.
   엔트리 빌더가 `navKey`를 Route에 그대로 넘기고 Route가 `LocalResultEventBus`만 잡는다.
 - **돌아온 뒤 캔버스를 다시 캡처하지 않는다.** 사용자가 보고 확정한 그림과 갤러리에 남는 그림이
@@ -567,11 +627,12 @@ C-001 캔버스 메인
 - **정상 경로는 미리보기가 파일을 다시 열지 않는다**(2026-09-07, PR #463) — 캔버스 메인이 `goTo` 직전에
   `CanvasCaptureHolder.put(bitmap)`으로 방금 캡처한 비트맵을 넘기고, 미리보기가
   `remember { CanvasCaptureHolder.peek()?.asImageBitmap() }`로 받아 `Image`로 그린다. 파일을 열어
-  전체 해상도 PNG를 디코드하고 크로스페이드하던 자리가 사라진다. **`NavKeyCanvasImageSave`는 그대로다** —
-  키가 나르는 것은 여전히 경로와 날짜이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
+  전체 해상도 PNG를 디코드하고 크로스페이드하던 자리가 사라진다. **`NavKeyCanvasImageSave`는 비트맵을
+  싣지 않는다** — 키가 나르는 것은 경로·날짜·토핑 개수이고 홀더는 비트맵만 담는다(표시할 날짜의 출처를 하나로 두려는
   것이다). 홀더는 `internal object`라 프로세스 전역이고 **읽으면서 비우지 않는다** — 미리보기는 화면에서
   사라지지 않고도 다시 컴포즈되므로(Activity 재생성·백스택 하강 후 복귀) 읽으며 비우면 그때마다 보고
-  있던 그림을 잃는다. **비우는 자리는 미리보기의 `onDispose` 하나**이고, 거기서 자기 키가
+  있던 그림을 잃는다. **비우는 자리는 미리보기의 `onDispose` 하나**이고(`CanvasVideoSourceHolder`도
+  같은 자리에서 함께 비운다), 거기서 자기 키가
   `Navigator.backStack`에 아직 있는지 보아 없을 때만 비운다 — 잠깐 내려간 것과 화면이 끝난 것을
   가르는 조건이 그것이고, 닫기·저장 확정·시스템 백이 전부 이 하나로 모인다(`NavDisplay`가
   `onBack = navigator::onBack`으로 시스템 백을 직접 받아, 화면의 닫기 콜백만으로는 그 경로가 안 걸린다).
