@@ -45,3 +45,10 @@ fun String.truncateToGraphemeClusters(maxClusters: Int): String {
     if (starts.size <= maxClusters) return this
     return substring(0, starts[maxClusters])
 }
+
+/** 마지막 그래핌 클러스터(화면에 보이는 마지막 한 글자). 빈 문자열이면 null */
+fun String.lastGraphemeCluster(): String? {
+    val starts = graphemeClusterStartOffsets()
+    if (starts.isEmpty()) return null
+    return substring(starts.last())
+}

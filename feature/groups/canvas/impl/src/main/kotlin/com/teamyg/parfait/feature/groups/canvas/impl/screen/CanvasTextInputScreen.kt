@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +13,15 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.delete
+import androidx.compose.foundation.text.input.placeCursorAtEnd
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.then
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,27 +31,30 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.lerp
@@ -61,7 +69,8 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
-import com.teamyg.parfait.core.util.android.extension.centeredAt
+import com.teamyg.parfait.core.util.jvm.extension.graphemeClusterCount
+import com.teamyg.parfait.core.util.jvm.extension.lastGraphemeCluster
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasTextInputToolbar
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
@@ -79,25 +88,14 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.detectTextToppingScript
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputUiState
-import kotlinx.coroutines.delay
+import kotlin.math.round
+import kotlin.math.roundToInt
 
-/** 입력 상태바(52dp hug)의 공칭 높이 — 편집 중 텍스트를 키보드 위 어디에 둘지 계산할 때만 쓴다 */
-private val TEXT_TOPPING_TOOLBAR_HEIGHT = 52.dp
-
-/** 빈 상태 플레이스홀더를 선택 색의 흐린 힌트로 보여 줄 때의 불투명도 */
-private const val TEXT_TOPPING_PLACEHOLDER_ALPHA = 0.5f
-
-/** 자동 크기: 글자 가로 최대(글자만 기준, 배경 여백 불포함) */
+/** 글자 가로 최대(글자만 기준, 배경 여백 불포함) */
 private val TEXT_TOPPING_MAX_TEXT_WIDTH = 335.dp
 
-/** 자동 크기: 하한은 없지만(스펙) 0 과 무한 루프를 막는 바닥값 */
-private const val TEXT_TOPPING_MIN_FONT_SIZE_SP = 0.5f
-
-/** 자동 크기 이진 탐색 반복 수 — 24sp 범위를 2^10 로 쪼개 약 0.02sp 정밀도 */
-private const val AUTO_SIZE_SEARCH_ITERATIONS = 10
-
-/** 자동 크기 재계산 디바운스(ms) — 타이핑·키보드 애니메이션이 멈춘 뒤에만 다시 잰다 */
-private const val AUTO_SIZE_DEBOUNCE_MS = 50L
+/** 편집 중 pin 전, 박스의 아래변을 캔버스의 이 비율 지점에 고정한다(0.5=정중앙 높이) */
+private const val TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO = 0.5f
 
 /** 글자가 아주 작아져도 배치 모드 재탭·드래그 판정 영역은 이보다 작아지지 않는다(시각 크기는 그대로) */
 private val TEXT_TOPPING_MIN_TOUCH = 44.dp
@@ -107,7 +105,7 @@ private const val TEXT_TOPPING_LINE_HEIGHT_RATIO = 1.5f
 
 /**
  * 글자 크기에 맞춰 행간을 건다. 자간·글꼴은 호출부가 스크립트별로 base 스타일에 미리 박아 둔다
- * (자간은 em 이라 크기에 자동 비례). 측정(자동 크기)과 렌더가 같은 base·식을 써야 높이 계산이 맞다.
+ * (자간은 em 이라 크기에 자동 비례). hug 폭 측정과 렌더가 같은 base·식을 써야 폭이 맞다.
  */
 private fun TextStyle.withTextToppingSizing(fontSizeSp: Float): TextStyle = copy(
     fontSize = fontSizeSp.sp,
@@ -115,11 +113,70 @@ private fun TextStyle.withTextToppingSizing(fontSizeSp: Float): TextStyle = copy
 )
 
 /**
+ * 편집↔배치 전환용 세로 배치. 배치([focusFraction]=0)는 [arrangeCenter] 에 박스 중심을 맞춘다
+ * (기존 동작). 편집([focusFraction]=1)은 박스를 가로로 캔버스 중앙에 두고 윗변을 [editTopPx] 에 맞춘다
+ */
+private fun Modifier.editingTopAnchored(
+    arrangeCenter: DpOffset,
+    editTopPx: Int,
+    canvasWidthPx: Int,
+    focusFraction: Float,
+): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        val arrangeLeft = arrangeCenter.x.roundToPx() - placeable.width / 2
+        val arrangeTop = arrangeCenter.y.roundToPx() - placeable.height / 2
+        val editLeft = (canvasWidthPx - placeable.width) / 2
+        placeable.placeRelative(
+            x = arrangeLeft + ((editLeft - arrangeLeft) * focusFraction).roundToInt(),
+            y = arrangeTop + ((editTopPx - arrangeTop) * focusFraction).roundToInt(),
+        )
+    }
+}
+
+/**
+ * 박스가 [maxWidthPx]×[maxHeightPx] 를 넘으면 **전체가 다 들어오게 비율 축소**한다.
+ * 편집 중엔 [maxWidthPx] 를 무한대로 넘겨 높이만 제한하고, 배치 모드에선 캔버스
+ * [onNaturalSizeChanged] 는 **스케일 전** 원본 크기를 보고한다.
+ */
+private fun Modifier.scaleBoxToFit(
+    maxWidthPx: Int,
+    maxHeightPx: Int,
+    onNaturalSizeChanged: (IntSize) -> Unit = {},
+): Modifier = layout { measurable, constraints ->
+    // 가로·세로 제한을 풀고 재야 박스의 **자연 크기**(안 잘린 전체 크기)가 나온다.
+    val placeable = measurable.measure(Constraints())
+    onNaturalSizeChanged(IntSize(placeable.width, placeable.height))
+    // 둘 다 안에 들어오면(축소 불필요) **레이어 없이** 그대로 둔다
+    // 하나라도 넘치면, 전체가 다 들어오도록 더 작은 쪽 비율로 축소한다
+    val fits = (maxWidthPx <= 0 || placeable.width <= maxWidthPx) &&
+        (maxHeightPx <= 0 || placeable.height <= maxHeightPx)
+    if (fits) {
+        return@layout layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
+    }
+    val widthScale = if (maxWidthPx > 0) maxWidthPx.toFloat() / placeable.width else 1f
+    val heightScale = if (maxHeightPx > 0) maxHeightPx.toFloat() / placeable.height else 1f
+    val scale = minOf(widthScale, heightScale)
+    val scaledWidth = (placeable.width * scale).roundToInt()
+    val scaledHeight = (placeable.height * scale).roundToInt()
+    layout(scaledWidth, scaledHeight) {
+        placeable.placeRelativeWithLayer(
+            x = (scaledWidth - placeable.width) / 2,
+            y = 0,
+        ) {
+            scaleX = scale
+            scaleY = scale
+            transformOrigin = TransformOrigin(0.5f, 0f)
+        }
+    }
+}
+
+/**
  * C-106 텍스트 입력 ↔ 배치. 인스타그램 스토리 텍스트처럼 화면 전환이 없다 — 편집 모드(가운데
  * 포커스, 전체 화면 딤, '배치' 제목+✓ 헤더, 하단 색·타입·정렬 툴바)와 배치 모드(저장된 자리, 딤
  * 해제, 팬·핀치, '배치' 제목+X 헤더, 하단 '캔버스에 쌓기' 버튼)를 **같은 화면 안에서** [isEditing]
- * 하나로 가른다. 딤은 다른 캔버스 화면과 같은 [ToppingArrangeCanvasDim]. 글자 크기는 자동(연속
- * 축소), 글꼴·자간은 입력 언어로 가른다([detectTextToppingScript]).
+ * 하나로 가른다. 딤은 다른 캔버스 화면과 같은 [ToppingArrangeCanvasDim]. 글자는 24sp 고정으로 그리고
+ * 영역을 넘으면 박스를 비율 축소([scaleBoxToFit]), 글꼴·자간은 입력 언어로 가른다([detectTextToppingScript]).
  *
  * ⚠️ [isEditing] 은 `WindowInsets.isImeVisible` 이 아니라 **텍스트 필드의 포커스**로 구동한다
  * ([onFocusChanged]). 시스템 키보드 노출 여부로 이 모드를 걸면 [BasicTextField] 자체가 "키보드가
@@ -129,7 +186,7 @@ private fun TextStyle.withTextToppingSizing(fontSizeSp: Float): TextStyle = copy
  *
  * ⚠️ 배경(캔버스 프레임)은 `imePadding` 을 받지 않는 **정적 레이어**다 — 키보드가 떠도 C-001 과
  * 같은 크기 그대로 있고, 키보드 위에 떠야 하는 것(툴바·색상바)만 아래쪽 [Column] 이 `imePadding`
- * 을 받는다. 편집 중 텍스트만 키보드 위 영역 가운데로 [animatePanelFocusFraction] 으로 보간한다.
+ * 을 받는다. 편집 중 텍스트만 키보드 위 영역 안에서 [animatePanelFocusFraction] 으로 보간한다.
  */
 @Composable
 internal fun CanvasTextInputScreen(
@@ -153,17 +210,55 @@ internal fun CanvasTextInputScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
+    // 줄바꿈 하나당 딱 한 번만 지운다. 그 뒤에 같은 글자가 또 오면 의도한 입력으로 보고 통과시킨다
+    val dedupeHangulEnterTransformation = remember {
+        var correctedThisNewline = false
+        InputTransformation {
+            val old = originalText.toString()
+            val new = asCharSequence().toString()
+            if (!new.startsWith(old)) return@InputTransformation
+            val added = new.substring(old.length)
+            if (added == "\n") {
+                // 새 줄바꿈이 커밋됨 — 이 줄에 대한 보정 기회를 새로 연다
+                correctedThisNewline = false
+                return@InputTransformation
+            }
+            if (correctedThisNewline) return@InputTransformation
+            if (old.isEmpty() || old.last() != '\n') return@InputTransformation
+            val beforeNewline = old.dropLast(1).lastGraphemeCluster() ?: return@InputTransformation
+
+            if (beforeNewline != "\n" && added == beforeNewline) {
+                delete(old.length, new.length)
+                placeCursorAtEnd()
+                correctedThisNewline = true
+            }
+        }
+    }
+
+    val maxLengthTransformation = remember {
+        InputTransformation {
+            if (asCharSequence().toString().graphemeClusterCount() > TEXT_TOPPING_MAX_LENGTH) {
+                revertAllChanges()
+            }
+        }
+    }
+    val textFieldState = rememberTextFieldState(initialText = uiState.content)
+    LaunchedEffect(textFieldState) {
+        snapshotFlow { textFieldState.text.toString() }
+            .collect { content -> onContentChange(content) }
+    }
+
     var isEditing by remember { mutableStateOf(true) }
     // attach 때 들어오는 최초 false 로 모드가 깜빡이지 않게, 한 번이라도 포커스를 얻은 뒤의 상실만 배치로 친다
     var everFocused by remember { mutableStateOf(false) }
 
-    // 편집 중 텍스트를 "키보드 위 영역" 가운데에 두려면 화면 전체 높이와 캔버스의 화면상 위치가 필요하다
-    var rootHeightPx by remember { mutableIntStateOf(0) }
-    var canvasTopInRootPx by remember { mutableFloatStateOf(0f) }
+    // 키보드가 내려갔는지 감지용(편집 종료 판정)
     val imeBottomPx = WindowInsets.ime.getBottom(density)
     val isImeVisible = imeBottomPx > 0
+    // 화면(root) 전체 높이. 키보드 윗변의 화면 절대 y 좌표 = rootHeightPx - imeBottomPx 를 구할 때 쓴다
+    var rootHeightPx by remember { mutableIntStateOf(0) }
 
-    // C-106 진입과 동시에 자판이 뜬다(스펙 "캔버스 중앙에 생성, 키보드 ↑")
+    // C-106 진입과 동시에 자판이 뜬다
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         keyboardController?.show()
@@ -180,10 +275,6 @@ internal fun CanvasTextInputScreen(
         }
     }
 
-    // 안드로이드 백 버튼은 시스템이 IME 만 내리고 필드 포커스는 그대로 둔다(= isEditing 유지) — 그
-    // 첫 백은 BackHandler 로도 못 잡는다. 그래서 "포커스가 살아 있는데 키보드만 사라진" 순간을
-    // 집어 종료로 친다. 포커스를 잃고 내려간 경우(다이얼로그 등)는 onFocusChanged 가 먼저 isEditing 을
-    // 내려서 여기 조건(isEditing)에 안 걸리므로, 이 관측은 사실상 '백으로 인한 IME dismiss'만 집는다.
     var keyboardWasShown by remember { mutableStateOf(false) }
     LaunchedEffect(isImeVisible) {
         if (isImeVisible) {
@@ -202,64 +293,95 @@ internal fun CanvasTextInputScreen(
         keyboardController?.show()
     }
 
-    // 자동 크기: Text-Area(캔버스 상단~툴바 위, = 캔버스높이 − 키보드 − 툴바52) 안에 모든 줄이
-    // 들어오는 가장 큰 크기를 24sp 부터 연속 축소로 찾는다. 가로는 글자 최대 335px(캔버스 폭 제한).
-    // 편집 중에만 다시 재고, 배치 모드에선 마지막 값을 얼려 둔다(핀치 배율은 이 위에 별도 적용).
-    val textMeasurer = rememberTextMeasurer()
     // 입력 언어로 글꼴·자간을 통째 고른다(일→Line Seed JP, 중→TW/자간0%, 그 외→SUIT/자간-1.1%).
-    // base 에 박아 두면 아래 측정·렌더가 같은 글꼴로 돌아 자동 크기 높이 계산이 어긋나지 않는다
     val textScript = remember(uiState.content) { detectTextToppingScript(uiState.content) }
     val autoSizeBaseStyle = YGTheme.typography.body.b01R.copy(
         fontFamily = textScript.fontFamily,
         letterSpacing = textScript.letterSpacingEm.em,
     )
-    // 글자 래핑 폭(글자 최대 335px, 캔버스 폭 제한). 이 값으로 측정도 하고 실제 필드 폭도 묶어야
-    // 화면 래핑과 측정이 일치하고 335px 를 넘지 않는다
-    val textMaxWidthDp = uiState.canvasSize?.width?.coerceAtMost(TEXT_TOPPING_MAX_TEXT_WIDTH)
+    // 좌우 여백
+    val editSideMargin = YGTheme.layout.padding.padding2
+    // 글자 래핑 폭(최대 335dp, 캔버스 폭에서 좌우 여백을 뺀 값으로 제한).
+    val textMaxWidthDp = uiState.canvasSize
+        ?.let { (it.width - editSideMargin * 2).coerceAtMost(TEXT_TOPPING_MAX_TEXT_WIDTH) }
         ?: TEXT_TOPPING_MAX_TEXT_WIDTH
-    val textMaxWidthPx = with(density) { textMaxWidthDp.toPx().toInt() }
-    val textAreaHeightPx = uiState.canvasSize?.let { canvasSize ->
-        with(density) {
-            val canvasHeightPx = canvasSize.height.toPx()
-            val toolbarTopPx = rootHeightPx - imeBottomPx - TEXT_TOPPING_TOOLBAR_HEIGHT.toPx()
-            (toolbarTopPx - canvasTopInRootPx).coerceIn(0f, canvasHeightPx).toInt()
-        }
-    } ?: 0
-    var autoFontSizeSp by remember { mutableFloatStateOf(TEXT_TOPPING_FONT_SIZE_SP) }
-    LaunchedEffect(uiState.content, textAreaHeightPx, textMaxWidthPx, isEditing) {
-        if (!isEditing || textAreaHeightPx <= 0 || textMaxWidthPx <= 0) return@LaunchedEffect
-        // 연속 변화(빠른 타이핑·키보드 애니메이션) 중엔 멈춘 뒤에만 다시 잰다 — 매 프레임 측정 방지
-        delay(AUTO_SIZE_DEBOUNCE_MS)
-        autoFontSizeSp = computeAutoFontSizeSp(
-            measurer = textMeasurer,
-            text = uiState.content,
-            maxWidthPx = textMaxWidthPx,
-            maxHeightPx = textAreaHeightPx,
-            baseStyle = autoSizeBaseStyle,
-            maxSp = TEXT_TOPPING_FONT_SIZE_SP,
-        )
+    // 캔버스가 화면(root) 안에서 시작하는 y — 아래 두 한계를 캔버스 로컬 좌표로 환산할 때 쓴다
+    var canvasTopPx by remember { mutableFloatStateOf(0f) }
+
+    val editAreaHeightPx = with(density) { (uiState.canvasSize?.height ?: 0.dp).roundToPx() }
+
+    // 상단 여백(상태바 바로 아래)과 하단 여백(키보드 바로 위, "살짝 위")
+    val topPaddingPx = with(density) { 12.dp.roundToPx() }
+    val bottomPaddingPx = with(density) { 12.dp.roundToPx() }
+
+    // 상단 핀 위치: 시스템 상태바 바로 아래 지점을 캔버스 local Y 좌표로 환산.
+    val statusBarTopPx = WindowInsets.statusBars.getTop(density)
+    val editTopMarginPx: Int = if (canvasTopPx > 0f) {
+        round(statusBarTopPx - canvasTopPx + topPaddingPx).toInt()
+    } else {
+        with(density) { 16.dp.roundToPx() }
     }
-    val fontSizeSp by animateFloatAsState(targetValue = autoFontSizeSp, label = "textToppingAutoSize")
+
+    // 하단 한계 위치: 키보드 바로 위 지점을 캔버스 local Y 좌표로 환산(
+    val editBottomLimitPx: Int = if (rootHeightPx > 0 && canvasTopPx > 0f) {
+        val keyboardTopPx = rootHeightPx - imeBottomPx
+        round(keyboardTopPx - canvasTopPx - bottomPaddingPx).toInt()
+    } else {
+        editAreaHeightPx - with(density) { 16.dp.roundToPx() }
+    }
+
+    // 세로 예산: 상태바 부근 ~ 키보드 바로 위 사이의 최대 가용 영역
+    val editBudgetPx: Int = (editBottomLimitPx - editTopMarginPx).coerceAtLeast(1)
+
+    // 매 편집 세션이 항상 가운데에서 시작하도록 강제한다
+    var hasMeasuredThisEditSession by remember { mutableStateOf(false) }
+    LaunchedEffect(isEditing) {
+        if (isEditing) hasMeasuredThisEditSession = false
+    }
+    val editBoxHeightPx = if (hasMeasuredThisEditSession) {
+        with(density) { (uiState.textBoxSize?.height ?: 0.dp).toPx() }
+    } else {
+        0f
+    }
+    // 박스의 **아래변**을 캔버스의 [TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO] 지점에 고정한다
+    val editNaturalTopPx: Int = round(
+        editAreaHeightPx * TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO - editBoxHeightPx,
+    ).toInt()
+    var everPinned by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.textBoxSize, editAreaHeightPx, editTopMarginPx, isEditing, uiState.content.isEmpty()) {
+        if (!isEditing || uiState.content.isEmpty()) {
+            everPinned = false
+        } else if (editAreaHeightPx > 0 && editNaturalTopPx <= editTopMarginPx) {
+            everPinned = true
+        }
+    }
+    // 윗변: pin 전엔 아래변 고정 기준(박스 커질수록 위로만), pin 후엔 상단 여백 고정. 애니메이션
+    // 없이 즉시 적용 — 첫 노출·자판 전환 때 미끄러지지 않고 바로 자리에 둔다
+    val editTopPx = if (everPinned) editTopMarginPx else maxOf(editTopMarginPx, editNaturalTopPx)
+
+    // [스케일 방식] 글자는 늘 24sp 로 그린다. 박스가 세로 예산을 넘으면 graphicsLayer 로 비율 축소
+    val fontSizeSp = TEXT_TOPPING_FONT_SIZE_SP
+
+    val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
 
     val focusFraction by animatePanelFocusFraction(isEditing)
     val storedCenter = DpOffset(
         x = uiState.offsetX + (uiState.textBoxSize?.width ?: 0.dp) / 2,
         y = uiState.offsetY + (uiState.textBoxSize?.height ?: 0.dp) / 2,
     )
-    // 편집 중 중심: Text-Area(캔버스 상단~툴바 위) 한가운데. 사이징에 쓰는 [textAreaHeightPx] 와
-    // 똑같은 높이의 절반을 캔버스 로컬 y 로 쓴다 — 그래야 Text-Area 높이까지 커진 텍스트가 [0,
-    // textAreaHeight] ⊂ 캔버스 안에 머물고 상단으로 삐져나가지 않는다. 화면 높이를 못 잰 첫
-    // 프레임엔 캔버스 정중앙으로 폴백(y≈0 플래시 방지)
+    // 블록(박스)은 가로로 늘 캔버스 중앙에 둔다.
+    val canvasWidthPx = with(density) { (uiState.canvasSize?.width ?: 0.dp).roundToPx() }
+
+    // 드래그·히트 판정이 쓰는 "현재 그려진 중심". x 는 캔버스 중앙, y 는 윗변 + 박스높이/2
     val editingCenter = uiState.canvasSize?.let { canvasSize ->
-        if (rootHeightPx <= 0) {
-            DpOffset(x = canvasSize.width / 2, y = canvasSize.height / 2)
-        } else {
-            with(density) {
-                DpOffset(x = canvasSize.width / 2, y = (textAreaHeightPx / 2f).toDp())
-            }
+        with(density) {
+            DpOffset(x = canvasSize.width / 2, y = (editTopPx + editBoxHeightPx / 2f).toDp())
         }
     } ?: storedCenter
     val drawnCenter = lerp(storedCenter, editingCenter, focusFraction)
+    // 편집 중엔 처음 작성할 때처럼 배율·회전 없이(1배·0도) 보여야 한다
+    val drawnScale = uiState.scale + (1f - uiState.scale) * focusFraction
+    val drawnRotationDegrees = uiState.rotationDegrees * (1f - focusFraction)
 
     // 키보드 ↑ 상태에서 텍스트를 끌면: 점프 없이 지금 자리를 배치 좌표로 심고 → 키보드를 내려
     // 배치로 전환 → 이후 이동을 이어 간다(스펙 "놓은 곳이 새 위치"). 빈 내용은 끌기 불가
@@ -298,9 +420,6 @@ internal fun CanvasTextInputScreen(
             .fillMaxSize()
             .onSizeChanged { size -> rootHeightPx = size.height },
     ) {
-        // 캔버스 프레임 바깥(여백·상태바 자리)까지 같은 톤으로 깐 전체 화면 딤. 다른 캔버스
-        // 화면들의 딤([ToppingArrangeCanvasDim] = Black25)과 같은 톤이다. imePadding 을 안 받는다 —
-        // 키보드가 그 위를 그대로 덮으므로 밑에서 비워 둘 필요가 없다
         if (isEditing) {
             Box(
                 modifier = Modifier
@@ -309,8 +428,7 @@ internal fun CanvasTextInputScreen(
             )
         }
 
-        // 캔버스를 그대로 가져온다 — YGCanvas 와 같은 9:16 비율·좌우 padding7 여백. 키보드와
-        // 무관한 정적 레이어라 자판이 떠도 배경이 줄거나 움직이지 않는다
+        // 캔버스를 그대로 가져온다
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -318,18 +436,19 @@ internal fun CanvasTextInputScreen(
                 .padding(horizontal = YGTheme.layout.padding.padding7),
         ) {
             Box(
+
                 modifier = Modifier
                     .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
-                    .onGloballyPositioned { coordinates ->
-                        canvasTopInRootPx = coordinates.boundsInRoot().top
-                    },
+                    .let { if (isEditing) it else it.clipToBounds() },
             ) {
                 ToppingArrangeCanvasSurface(
                     backgroundColor = uiState.backgroundColor,
                     backgroundImageUrl = uiState.backgroundImageUrl,
                     modifier = Modifier
                         .fillMaxSize()
-                        .onSizeChanged { size ->
+                        .onGloballyPositioned { coordinates ->
+                            canvasTopPx = coordinates.boundsInRoot().top
+                        }.onSizeChanged { size ->
                             with(density) {
                                 onCanvasMeasured(DpSize(size.width.toDp(), size.height.toDp()))
                             }
@@ -363,107 +482,108 @@ internal fun CanvasTextInputScreen(
                                 },
                         )
                     }
+                }
 
-                    // 텍스트는 늘 같은 자리(centeredAt + graphicsLayer)에 그린다. 끌기 감지는
-                    // graphicsLayer 앞에 달아 델타가 캔버스 좌표로 들어오게 한다(편집 중 scale=1).
-                    // 모드와 무관하게 늘 달아 둬야 끌기 도중 배치로 바뀌어도 제스처가 안 끊긴다
-                    Box(
-                        modifier = Modifier
-                            .centeredAt(drawnCenter)
-                            .onSizeChanged { size ->
-                                with(density) {
-                                    onTextBoxMeasured(DpSize(size.width.toDp(), size.height.toDp()))
-                                }
-                            }.textEditDragInput(
-                                enabled = { isEditing && uiState.content.isNotBlank() },
-                                onDragStart = onEditDragStart,
-                                onDrag = onEditDrag,
-                            ).graphicsLayer(
-                                scaleX = uiState.scale,
-                                scaleY = uiState.scale,
-                                rotationZ = uiState.rotationDegrees,
-                            ),
+                Box(
+                    modifier = Modifier
+                        .editingTopAnchored(
+                            arrangeCenter = storedCenter,
+                            editTopPx = editTopPx,
+                            canvasWidthPx = canvasWidthPx,
+                            focusFraction = focusFraction,
+                        ).textEditDragInput(
+                            enabled = { isEditing && uiState.content.isNotBlank() },
+                            onDragStart = onEditDragStart,
+                            onDrag = onEditDrag,
+                        )
+                        .scaleBoxToFit(
+                            maxWidthPx = if (isEditing) 0 else canvasWidthPx,
+                            maxHeightPx = if (isEditing) editBudgetPx else editAreaHeightPx,
+                        ) { naturalSize ->
+                            with(density) {
+                                onTextBoxMeasured(DpSize(naturalSize.width.toDp(), naturalSize.height.toDp()))
+                            }
+                            hasMeasuredThisEditSession = true
+                        }.graphicsLayer(
+                            scaleX = drawnScale,
+                            scaleY = drawnScale,
+                            rotationZ = drawnRotationDegrees,
+                        ),
+                ) {
+                    TextToppingBackground(
+                        type = uiState.textType,
+                        color = uiState.selectedColor,
+                        fontSizeSp = fontSizeSp,
                     ) {
-                        TextToppingBackground(
-                            type = uiState.textType,
-                            color = uiState.selectedColor,
-                            fontSizeSp = fontSizeSp,
-                        ) {
-                            // 늘 떠 있고 readOnly 도 아니다 — 포커스 유무가 곧 편집/배치다(클래스 KDoc 참고)
-                            BasicTextField(
-                                value = uiState.content,
-                                onValueChange = onContentChange,
-                                textStyle = autoSizeBaseStyle
-                                    .withTextToppingSizing(fontSizeSp)
-                                    .copy(
-                                        color = uiState.selectedColor.stroke,
-                                        textAlign = uiState.align,
-                                    ),
-                                modifier = Modifier
-                                    // 글자 폭을 래핑 폭(=측정 폭)으로 묶는다 — 화면이 측정보다 넓게
-                                    // 흐르거나 335px 를 넘지 않게. 짧은 글자는 그대로 hug 된다
-                                    .widthIn(max = textMaxWidthDp)
-                                    .focusRequester(focusRequester)
-                                    // 포커스 유무만 모드에 반영한다. "빈 내용이면 취소"는 의도한 종료
-                                    // 지점(endEditing·백 감지)에서만 판정한다 — 다이얼로그 등이 포커스를
-                                    // 잠깐 가져가는 경우까지 생성 취소로 처리하지 않기 위함
-                                    .onFocusChanged { focusState ->
-                                        if (focusState.isFocused) {
-                                            everFocused = true
-                                            isEditing = true
-                                        } else if (everFocused) {
-                                            isEditing = false
-                                        }
-                                    },
-                                // 빈 상태 플레이스홀더. 선택 색을 흐리게 깐 힌트로, 글자 크기·정렬은 본문과 동일
-                                decorationBox = { innerTextField ->
-                                    if (uiState.content.isEmpty()) {
-                                        Text(
-                                            text = stringResource(R.string.canvas_text_input_placeholder),
-                                            style = autoSizeBaseStyle
-                                                .withTextToppingSizing(fontSizeSp)
-                                                .copy(
-                                                    color = uiState.selectedColor.stroke
-                                                        .copy(alpha = TEXT_TOPPING_PLACEHOLDER_ALPHA),
-                                                    textAlign = uiState.align,
-                                                ),
-                                        )
-                                    }
-                                    innerTextField()
-                                },
-                            )
-                        }
-                    }
-
-                    // 배치 모드의 탭·팬·핀치는 텍스트 **위** 전면 오버레이가 독점한다 — 필드가
-                    // 포인터를 먼저 가로채면 재탭(onHit→resumeEditing)이 안 뜬다
-                    if (!isEditing) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .toppingTapInput(
-                                    entries = { listOfNotNull(hitTarget()?.let { target -> Unit to target }) },
-                                    keyOf = { it },
-                                    onHit = { resumeEditing() },
-                                    onMiss = {},
-                                ).toppingTransformInput(
-                                    targetAt = hitTarget,
-                                    onTransform = { pan, zoom, rotationDelta ->
-                                        onToppingTransform(
-                                            with(density) { DpOffset(pan.x.toDp(), pan.y.toDp()) },
-                                            zoom,
-                                            rotationDelta,
-                                        )
-                                    },
+                        // 포커스 유무가 곧 편집/배치다(클래스 KDoc 참고)
+                        BasicTextField(
+                            state = textFieldState,
+                            inputTransformation = dedupeHangulEnterTransformation.then(maxLengthTransformation),
+                            textStyle = autoSizeBaseStyle
+                                .withTextToppingSizing(fontSizeSp)
+                                .copy(
+                                    color = uiState.selectedColor.stroke,
+                                    textAlign = uiState.align,
                                 ),
+                            modifier = Modifier
+                                // 글자 폭을 래핑 폭(=측정 폭)으로 묶는다
+                                .widthIn(max = textMaxWidthDp)
+                                .focusRequester(focusRequester)
+                                // 포커스 유무만 모드에 반영한다. "빈 내용이면 취소"는 의도한 종료
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        everFocused = true
+                                        isEditing = true
+                                    } else if (everFocused) {
+                                        isEditing = false
+                                    }
+                                },
+                            // 빈 상태 플레이스홀더. 글자 크기·정렬은 본문과 동일
+                            decorator = { innerTextField ->
+                                if (textFieldState.text.isEmpty()) {
+                                    Text(
+                                        text = placeholderText,
+                                        style = autoSizeBaseStyle
+                                            .withTextToppingSizing(fontSizeSp)
+                                            .copy(
+                                                color = YGAtomicColors.Transparency.White75,
+                                                textAlign = uiState.align,
+                                            ),
+                                    )
+                                }
+                                innerTextField()
+                            },
                         )
                     }
+                }
+
+                // 배치 모드의 탭·팬·핀치는 텍스트 **위** 전면 오버레이가 독점한다. 텍스트와 같은 이유로
+                // 캔버스 밖(형제)에 둬야 z-order(텍스트 위)가 유지된다
+                if (!isEditing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .toppingTapInput(
+                                entries = { listOfNotNull(hitTarget()?.let { target -> Unit to target }) },
+                                keyOf = { it },
+                                onHit = { resumeEditing() },
+                                onMiss = {},
+                            ).toppingTransformInput(
+                                targetAt = hitTarget,
+                                onTransform = { pan, zoom, rotationDelta ->
+                                    onToppingTransform(
+                                        with(density) { DpOffset(pan.x.toDp(), pan.y.toDp()) },
+                                        zoom,
+                                        rotationDelta,
+                                    )
+                                },
+                            ),
+                    )
                 }
             }
         }
 
-        // 헤더 — 정적(상태바 자리). 양쪽 모드 모두 "배치" 제목을 상단 가운데 둔다. 편집은 ✓(편집
-        // 마치고 배치로), 배치는 X(그만두기)를 제목과 함께 띄운다
+        // 헤더
         if (isEditing) {
             YGFloatingBarTitleConfirm(
                 title = stringResource(R.string.canvas_text_input_title),
@@ -484,8 +604,7 @@ internal fun CanvasTextInputScreen(
             )
         }
 
-        // 편집 모드: 색상바·툴바만 키보드 위에 뜬다. 빈 곳(버튼 사이)을 눌러도 밑의 배경
-        // 탭-아웃으로 새지 않도록 이 영역 전체가 터치를 흡수한다
+        // 편집 모드: 색상바·툴바만 키보드 위에 뜬다.
         if (isEditing) {
             Column(
                 modifier = Modifier
@@ -520,7 +639,6 @@ internal fun CanvasTextInputScreen(
                 )
             }
         } else {
-            // 배치 모드: 바닥에 '캔버스에 쌓기' CTA(YGButton Large = 상하 padding5·좌우 padding4)
             YGButton(
                 text = stringResource(R.string.canvas_topping_arrange_confirm),
                 buttonType = YGButtonType.Large,
@@ -535,42 +653,6 @@ internal fun CanvasTextInputScreen(
             )
         }
     }
-}
-
-/**
- * [maxSp] 부터 [text] 가 [maxWidthPx]×[maxHeightPx] 안에 모든 줄이 들어오는 가장 큰 크기를 이진
- * 탐색으로 찾는다. 하한은 없지만 0·무한 루프를 막게 [TEXT_TOPPING_MIN_FONT_SIZE_SP] 를 바닥으로 둔다.
- * 텍스트 높이는 크기에 대해 단조라 이진 탐색이 성립한다.
- */
-private fun computeAutoFontSizeSp(
-    measurer: TextMeasurer,
-    text: String,
-    maxWidthPx: Int,
-    maxHeightPx: Int,
-    baseStyle: TextStyle,
-    maxSp: Float,
-): Float {
-    if (text.isEmpty()) return maxSp
-
-    fun fitsAt(sizeSp: Float): Boolean {
-        val height = measurer
-            .measure(
-                text = text,
-                style = baseStyle.withTextToppingSizing(sizeSp),
-                constraints = Constraints(maxWidth = maxWidthPx),
-            ).size.height
-        return height <= maxHeightPx
-    }
-
-    if (fitsAt(maxSp)) return maxSp
-
-    var low = TEXT_TOPPING_MIN_FONT_SIZE_SP
-    var high = maxSp
-    repeat(AUTO_SIZE_SEARCH_ITERATIONS) {
-        val mid = (low + high) / 2f
-        if (fitsAt(mid)) low = mid else high = mid
-    }
-    return low
 }
 
 @YGPreview
