@@ -4,12 +4,10 @@ import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
-import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
-import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
@@ -38,16 +36,14 @@ class NavKeyAnalyticsScreenTest {
             NavKeySplash to "A-001",
             NavKeyLogin to "A-002",
             NavKeyTermAgree(registrationToken = "token") to "A-003",
-            NavKeyGroupInviteCode to "A-004",
+            NavKeyGroupInviteCode() to "A-004",
             NavKeyGroupNickName(inviteCode = "CODE", groupName = "그룹", nickName = "닉") to "A-004-naming",
             NavKeyGroupCreate(nickName = "닉") to "A-005",
             NavKeyGroupList to "G-001",
             NavKeyCanvasMain(groupId = 1L) to "C-001",
-            NavKeyCameraSystem to "C-101-system",
-            NavKeySystemGalleryPicker to "C-102-system",
             NavKeySegmentation(sourceImageUri = "uri") to "C-103",
             NavKeyCanvasToppingPlace to "C-106",
-            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09") to "C-001-image-save",
+            NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09", toppingCount = 1) to "C-001-image-save",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
             NavKeyGroupSetting(groupId = 1L) to "S-101",

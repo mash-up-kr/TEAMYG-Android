@@ -14,12 +14,16 @@ import androidx.navigation3.ui.NavDisplay
 import com.teamyg.parfait.analytics.ScreenViewTracker
 import com.teamyg.parfait.core.navigation.NavTransition
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.deeplink.awaitAppLinkReady
+import com.teamyg.parfait.domain.model.deeplink.AppLinkDeepLink
 import com.teamyg.parfait.domain.model.push.PushDeepLink
 import com.teamyg.parfait.domain.model.session.SessionEvent
 import com.teamyg.parfait.domain.usecase.session.HasActiveSessionUseCase
+import com.teamyg.parfait.domain.event.AppLinkDeepLinkEventBus
 import com.teamyg.parfait.domain.event.PushDeepLinkEventBus
 import com.teamyg.parfait.domain.event.SessionEventBus
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupInviteCode
 import com.teamyg.parfait.feature.groups.list.api.NavKeyGroupList
 import com.teamyg.parfait.feature.intro.api.NavKeySplash
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
@@ -31,6 +35,7 @@ fun MainRoute(
     entryBuilders: Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>,
     sessionEventBus: SessionEventBus,
     pushDeepLinkEventBus: PushDeepLinkEventBus,
+    appLinkDeepLinkEventBus: AppLinkDeepLinkEventBus,
     hasActiveSession: HasActiveSessionUseCase,
     screenViewTracker: ScreenViewTracker,
     modifier: Modifier = Modifier,
@@ -63,6 +68,22 @@ fun MainRoute(
                 )
 
                 is PushDeepLink.GroupList -> navigator.goTo(destination = NavKeyGroupList)
+            }
+        }
+    }
+
+    // App Links 딥링크도 같은 이유로 여기 한 곳에서만 수집한다.
+    LaunchedEffect(Unit) {
+        appLinkDeepLinkEventBus.deepLinks.collect { deepLink ->
+            awaitAppLinkReady(
+                currentNavKey = snapshotFlow { navigator.backStack.lastOrNull() },
+                hasActiveSession = { hasActiveSession() },
+            )
+
+            when (deepLink) {
+                is AppLinkDeepLink.OpenGroupInvite -> navigator.goTo(
+                    destination = NavKeyGroupInviteCode(inviteCode = deepLink.inviteCode),
+                )
             }
         }
     }

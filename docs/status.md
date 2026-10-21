@@ -2,7 +2,7 @@
 
 > 현재형으로 쓰고, 바뀌면 덮어쓴다. 이력은 [`log.md`](log.md), 결정 이유는 `adr/`, 설계는 스펙.
 > 영역 형식과 규칙: [기록 구조 설계](superpowers/specs/2026-09-26-docs-record-structure-design.md) §3.1.
-> 코드 대조 기준: 작업 브랜치 HEAD `119ff16d0`.
+> 코드 대조 기준: 작업 브랜치 HEAD `10a394ab7`.
 
 ## 앱 진입·인증 — 스플래시·로그인·약관 (A-001·A-002)
 - 상태: 앱은 스플래시에서 시작해 `BootstrapSessionUseCase`의 세션 검증 결과(저장 토큰 + `users/me` 조회)와 로띠 재생 종료가 둘 다 모여야 그룹 목록 또는 로그인으로 `replaceAll`하며, 세션은 401·`MEMBER_NOT_FOUND`일 때만 지우고 나머지 실패는 토큰을 남긴 채 로그인으로 보낸다. 로그인은 카카오 SDK ID 토큰을 서버에 보내 기존 회원은 그룹 목록으로, 신규 회원은 등록 토큰을 들고 약관 동의로 가고, 약관 동의는 서버 약관 목록으로 필수 동의를 가려 가입·세션 저장 뒤 그룹 목록으로 가며 약관 전문은 서버가 준 `url`을 공용 웹뷰로 연다.
@@ -88,7 +88,7 @@
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md), [ADR-0034](adr/0034-topping-border-set-at-placement.md)
 
 ## 누끼 추출 (C-103·C-104)
-- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고, 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
+- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 긴 변 상한(`DecodeSize.LONG_SIDE_LIMIT`)으로 디코드한 원본으로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고(선택 UI는 「직접 선택」 얼럿으로 후보 없이 원본 전체를 마스크로 편집 화면에 갈 수 있다), 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
 - 앵커: `SegmentationViewModel`, `ImageSegmentationRepositoryImpl`, `SegmentationModuleInstaller`, `harvestSubjects`, `refineAlpha`, `ToppingEditViewModel`, `ToppingEditScreen`, `ToppingEditRoute`, `EnsureDraftSubjectRecordedUseCase`, `RecordToppingDraftUseCase`
 - ⚠️ 디코드 상한이 긴 변 4096px(`DecodeSize.LONG_SIDE_LIMIT`)이라 12MP 급 사진은 줄지 않고 원본 해상도로 돌며, 다중 후보 비트맵도 선택 전까지 전부 들고 있어 메모리 피크가 `largeHeap` 없이 위험 구간이다 — 현재 트리 기준 피크는 미측정 (OQ-P-228, OQ-P-266)
 - ⚠️ 전경 마스크 옵션과 다중 후보 옵션을 한 요청에 함께 켜면 ML Kit 모듈이 네이티브 `SIGSEGV`로 죽는다. `try/catch`도 Crashlytics도 못 잡으므로 두 옵션은 반드시 별도 요청으로 둔다 (OQ-P-409)
@@ -123,12 +123,14 @@
 ## 캔버스 이미지 저장
 - 상태: 날짜바의 저장 아이콘(오늘·지난 캔버스 모두, 빈 안내판이 없을 때만)을 누르면 `CanvasMainRoute`가 `YGCanvas` 프레임의 GraphicsLayer를 캡처해 고정 이름 캐시 PNG로 굽고 비트맵은 `CanvasCaptureHolder`에 실어 ViewModel 없는 미리보기로 보낸다. 미리보기에서 확정하면 결과 버스로 경로만 돌려주고, 캔버스 메인이 그 파일을 다시 읽어(API 28 이하는 쓰기 권한을 물은 뒤) `SaveCanvasToGalleryUseCase` → `GalleryMediaProvider`로 MediaStore에 PNG를 쓰고 결과를 캔버스 프레임 토스트로 알린다.
 - 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`
+- 영상: 같은 미리보기의 「영상으로 저장」이 토핑이 `positionZ` 순서로 차례로 팝인하는 2초 mp4(1080×1920)를 만든다. 캔버스 메인이 미리보기를 열 때 `CanvasVideoSourceHolder`에 토핑·배경·Canvas-Area dp를 넣고, 미리보기 Route가 `CanvasVideoRecordLayer`를 화면에 그리지 않고 띄워 프레임마다 읽어 `Mp4VideoEncoder`로 캐시에 쓴 뒤 경로를 결과로 돌려준다. 갤러리 저장(`SaveCanvasVideoToGalleryUseCase`)과 토스트는 이미지와 같은 길을 탄다. 앵커: `toppingPopProgresses`, `recordCanvasVideo`, `CanvasSaveResult`
+- ⚠️ 영상 저장은 실기기에서 뽑아 본 적이 없고, 타임라인·해상도·문구는 정책 원본 없이 iOS 구현 값을 따랐다 (OQ-P-429). 녹화 밀도에서 테두리 판 캐시가 미스된다 (OQ-P-433)
 - ⚠️ 캡처는 지금 그려진 것을 그대로 복사해 배경 이미지가 아직 안 왔으면 배경 없이 담기고, 해상도도 기기 화면 크기에 종속된다 (OQ-P-272)
 - ⚠️ 캡처 파일 이름이 고정이고 지우는 호출이 없으며, 홀더도 한 장만 들어 연달아 캡처하면(푸시로 다른 그룹 캔버스에 갔다 오는 경우 포함) 미리보기가 다른 그림을 원래 날짜 라벨과 함께 보여 준다. 읽기·결과 왕복·미리보기 화면에 테스트가 없다 (OQ-P-365)
 - ⚠️ 미리보기 키가 캐시 파일 절대경로와 날짜 문자열을 나른다 — OS가 캐시를 정리하면 확정 시 읽기 실패 토스트로 끝나고, `LocalDate.parse` 실패는 아무도 잡지 않는다 (OQ-P-364)
 - ⚠️ API 29 미만에서는 `Pictures/Parfait` 하위 폴더도 `IS_PENDING` 보호도 없이 기본 위치에 쓰고 쓰기 권한 다이얼로그가 추가로 뜬다 (OQ-P-274)
 - ⚠️ 오늘 캔버스에서도 저장되는 것에 기획 근거가 없고, 저장 아이콘 노출이 빈 안내판 조건의 부정으로 따로 적혀 있어 안내판 조건이 바뀌면 말없이 따라 바뀐다 (OQ-P-340)
-- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md)
+- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0035](adr/0035-canvas-video-onscreen-capture-encoding.md)
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).
@@ -140,6 +142,20 @@
 - ⚠️ 수신부 KDoc이 근거로 드는 "FCM 페이로드 스펙 v1"은 어느 저장소에도 없고, `data` 키·채널 id 문자열이 서버·`http/fcm-test.http`·앱 코드에 복제돼 있어 어긋나면 딥링크가 평범한 실행처럼 조용히 무시되거나 알림이 안 뜬다 (OQ-P-361, OQ-P-354)
 - ⚠️ `getToken`·`onNewToken`은 deprecated지만 FID 전환은 서버가 Admin SDK를 올려 `setFid`로 바꾼 뒤에만 할 수 있다. 앱이 매니페스트 플래그를 먼저 켜면 모든 발송이 실패한다 (OQ-P-362)
 - 설계: [push-notification-permission-and-device-token](superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [ADR-0013](adr/0013-firebase-fcm-crashlytics.md), [navigation-flow](architecture/navigation-flow.md)
+
+## App Links — 초대 링크
+- 상태: `https://parfait-app.store/link?inviteCode={code}`만 앱으로 열리고(`autoVerify`), `MainRoute`가 `awaitAppLinkReady`로 스플래시 이탈과 `NavKeyGroupList` 안착(세션이 없을 때)을 기다린 뒤 초대코드 입력 화면에 코드를 채워 보낸다. 앱 미설치 유저는 Play Install Referrer를 첫 실행에 한 번만 읽어 같은 화면으로 보낸다. 초대 메시지 복사본에도 같은 링크가 들어간다.
+- 앵커: `AppLinkDeepLink`, `toAppLinkDeepLinkOrNull`, `awaitAppLinkReady`, `AppLinkDeepLinkEventBusImpl`, `AppLinkReferrerRepositoryImpl`, `PlayInstallReferrerGateway`, `group_invite_message`
+- ⚠️ 링크 호스트·경로가 매니페스트·파서 상수·`strings.xml` 세 곳에 따로 적혀 있다 (OQ-P-436)
+- 설계: [navigation-flow 「App Links 이동」](architecture/navigation-flow.md#app-links-이동-초대-링크)
+
+## 분석 계측
+- 상태: 화면 진입은 `:app`의 `ScreenViewTracker`가 `NavKeyAnalyticsScreen` 매핑으로 `NavKey`를 화면 id로 바꿔 `screen_view`로 보내고, 매핑에 대응이 없으면 보내지 않고 경고 로그만 남긴다. 액션 이벤트는 feature `impl`의 ViewModel(푸시·App Links 열기는 `MainActivity`)이 `core:analytics`의 `AnalyticsLogger`에 `AnalyticsEventType` 상수로 직접 찍고, 구현은 `FirebaseAnalyticsLogger` 하나다. 이벤트 이름·파라미터의 정본은 사용자 이벤트 설계 문서다.
+- 앵커: `AnalyticsEventType`, `AnalyticsLogger`, `FirebaseAnalyticsLogger`, `core:analytics`, `NavKeyAnalyticsScreen`, `ScreenViewTracker`
+- ⚠️ 영상 저장은 `canvas_save_gallery_saved`를 남기지 않는다 — 이미지 저장만 `format: "image"`로 찍고 `"video"`는 배선이 없다 (OQ-P-437)
+- ⚠️ `canvas_edit_*` 화면 분류가 정본 문서(C105 하나)와 코드(최초 배치 `C-106`·재편집 `C-305`)에서 달라, `canvas_edit_stack_tapped`가 최초 배치에서만 찍힌다 (OQ-P-430)
+- ⚠️ `canvas_camera_photo_selected`의 `source: "today"`가 가리키던 「오늘 사진」 구분이 갤러리에서 없어져, 지금은 날짜 구분 없는 일반 선택 전체를 뜻한다 (OQ-P-431)
+- 설계: [user-events-design](superpowers/specs/2026-10-06-user-events-design.md), [ADR-0031](adr/0031-analytics-central-screen-mapping.md)
 
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.
@@ -178,11 +194,14 @@
 - OQ-P-215 — 리플을 걷어 피드백이 사라진 클릭 자리를 실기기 촉감으로 판정하지 않았다
 - OQ-P-325 — 토핑 배율 하한이 두 화면에서 갈렸고, 편집 쪽 값이 손에 맞는지 본 적이 없다
 - OQ-P-382 — 띠 한 장을 만드는 비용 증가와 리사이즈 중 재생성을 실기기 성능으로 잰 적이 없다
-- OQ-P-038 — 토핑 그룹 두 변형이 코드상 같아 실제 화면에서 구분되는지 확인하지 않았다
 - OQ-P-050 — 날짜 칩 배경이 테두리를 덮는지 실기기 렌더로 확인하지 않았다
 - OQ-P-357 — 파르페 쌓임 연출의 간격을 실기기에서 본 적이 없다
 - OQ-P-412 — 배치 화면의 테두리 패널이 열렸을 때 화면 높이가 다른 기기에서 토핑이 패널에 가리는지, 화살표와 슬라이더의 터치 영역 겹침이 손에 걸리는지 본 적이 없다
 - OQ-P-419 — 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
 - OQ-P-425 — 누끼 편집(C-104) 개편을 피그마·실기기와 나란히 본 적이 없다
 - OQ-P-426 — G-001-Empty 안내 애니메이션의 타이밍과 TalkBack 동작을 에뮬레이터·실기기로 확인한 기록이 없다
+- OQ-P-429 — 캔버스 타임랩스 영상을 실기기에서 뽑아 본 적이 없다(재생·생성 시간·마지막 프레임 테두리 비율·팝인 중 띠 잘림). 테두리 판 캐시 미스(OQ-P-433)도 같이 본다
+- OQ-P-438 — C-103 「직접 선택」 얼럿이 편집 화면에서 돌아올 때 다시 뜨는 동작을 실기기로 본 적이 없다
+- OQ-P-400·OQ-P-410 — 긴 변 4096px(`DecodeSize.LONG_SIDE_LIMIT`)을 넘는 사진으로 C-103·C-104의 그리기 크래시가 사라졌는지 실기기로 확인하지 않았다(세그멘테이션 실기기 항목에 함께 묶인다)
+- ADR-0031 — 액션 이벤트는 일부만 실기기 DebugView로 도착을 확인했고(`canvas_calendar_date_tapped`·`canvas_topping_editor_checked`·`canvas_save_gallery_saved`), 나머지와 뒤로 가기 복귀·Activity 재생성의 `screen_view`·사용자 속성은 보지 않았다
 - OQ-P-410 — 세션·푸시·캔버스·업로드·카메라·세그멘테이션 영역에서 이월된 나머지 실기기·실서버 항목

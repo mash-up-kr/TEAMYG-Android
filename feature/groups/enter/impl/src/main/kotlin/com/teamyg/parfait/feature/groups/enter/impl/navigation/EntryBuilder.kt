@@ -16,9 +16,10 @@ import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameRoute
 import com.teamyg.parfait.feature.groups.enter.impl.nickname.GroupNickNameViewModel
 
 fun EntryProviderScope<NavKey>.featureGroupInviteCodeEntryBuilder(navigator: Navigator) {
-    entry<NavKeyGroupInviteCode> {
+    entry<NavKeyGroupInviteCode> { navKey ->
         GroupInviteCodeRoute(
             navigator = navigator,
+            navKey = navKey,
             modifier = Modifier.fillMaxSize(),
         )
     }

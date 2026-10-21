@@ -30,6 +30,7 @@ import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
 import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasToGalleryUseCase
+import com.teamyg.parfait.domain.usecase.gallery.SaveCanvasVideoToGalleryUseCase
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetParfaitDetailUseCase
@@ -45,6 +46,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -52,12 +54,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
+import java.io.File
 import kotlin.math.abs
 import kotlin.time.Clock
 
@@ -281,6 +285,12 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 미리보기에서 저장을 확정하고 돌아왔다. 미리 보여 준 그 이미지를 화면이 다시 읽어 넘긴다 */
     data class SaveCapturedCanvas(val bitmap: Bitmap) : CanvasMainIntent
 
+    /** 저장 미리보기가 녹화를 마쳐 캐시에 mp4 를 완성하고 돌아왔다 */
+    data class SaveRecordedVideo(val videoFilePath: String) : CanvasMainIntent
+
+    /** 쓰기 권한이 거부돼 만들어 온 mp4 를 저장하지 않게 됐다 */
+    data class DiscardRecordedVideo(val videoFilePath: String) : CanvasMainIntent
+
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
 
@@ -308,6 +318,7 @@ constructor(
     private val getMyGroupsFlowUseCase: GetMyGroupsFlowUseCase,
     private val refreshMyGroupsUseCase: RefreshMyGroupsUseCase,
     private val saveCanvasToGalleryUseCase: SaveCanvasToGalleryUseCase,
+    private val saveCanvasVideoToGalleryUseCase: SaveCanvasVideoToGalleryUseCase,
     private val startToppingDraft: StartToppingDraftUseCase,
     private val pastCanvasAlertRepository: PastCanvasAlertRepository,
     private val analyticsLogger: AnalyticsLogger,
@@ -613,6 +624,10 @@ constructor(
 
             is CanvasMainIntent.SaveCapturedCanvas -> handleSaveCapturedCanvas(intent.bitmap)
 
+            is CanvasMainIntent.SaveRecordedVideo -> handleSaveRecordedVideo(intent.videoFilePath)
+
+            is CanvasMainIntent.DiscardRecordedVideo -> handleDiscardRecordedVideo(intent.videoFilePath)
+
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
@@ -818,7 +833,12 @@ constructor(
         }
     }
 
+    /**
+     * 캡처 **전에** Spotlight 를 해제한다. 켠 채로 캡처하면 Dim 과 맨 위로 옮겨진 토핑이 PNG 에
+     * 구워지는데 녹화 레이어에는 Dim 이 없어, 이미지와 영상의 마지막 장면이 달라진다
+     */
     private fun handleClickSaveToGallery() {
+        resetSpotlight()
         postSideEffect(effect = CanvasMainEffect.RequestCanvasCaptureForPreview)
     }
 
@@ -841,6 +861,37 @@ constructor(
                     postSideEffect(effect = CanvasMainEffect.ShowGallerySaveResult(isSuccess = false, date = date))
                 }
         }
+    }
+
+    private fun handleSaveRecordedVideo(videoFilePath: String) {
+        val date = state.value.selectedDate
+
+        launch(key = SAVE_CANVAS_VIDEO_TO_GALLERY_KEY) {
+            val displayName = "parfait_${System.currentTimeMillis()}.mp4"
+
+            val result = saveCanvasVideoToGalleryUseCase(
+                videoFilePath = videoFilePath,
+                displayName = displayName,
+            )
+
+            // 다시 시도할 길이 없는 캐시 파일이라 결과와 상관없이 지운다
+            deleteRecordedVideo(videoFilePath)
+
+            postSideEffect(
+                effect = CanvasMainEffect.ShowGallerySaveResult(
+                    isSuccess = result.isSuccess,
+                    date = date,
+                ),
+            )
+        }
+    }
+
+    private fun handleDiscardRecordedVideo(videoFilePath: String) {
+        launch { deleteRecordedVideo(videoFilePath) }
+    }
+
+    private suspend fun deleteRecordedVideo(videoFilePath: String) {
+        withContext(Dispatchers.IO) { File(videoFilePath).delete() }
     }
 
     /** 달을 미리 못 정하는 이유: 그 해에 어떤 달이 있는지는 목록을 받아 봐야 안다 */
@@ -957,6 +1008,8 @@ constructor(
         const val LOAD_GROUP_NAME_KEY = "loadGroupName"
 
         const val SAVE_CANVAS_TO_GALLERY_KEY = "saveCanvasToGallery"
+
+        const val SAVE_CANVAS_VIDEO_TO_GALLERY_KEY = "saveCanvasVideoToGallery"
 
         const val START_TOPPING_FLOW_KEY = "startToppingFlow"
 

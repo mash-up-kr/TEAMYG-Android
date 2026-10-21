@@ -6,12 +6,10 @@ import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
-import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
-import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
@@ -60,8 +58,6 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
         },
     )
 
-    is NavKeyCameraSystem -> AnalyticsScreen(AnalyticsScreenType.CAMERA_SYSTEM)
-
     is NavKeyPictureConfirm -> AnalyticsScreen(
         when (source) {
             PictureConfirmSource.CAMERA ->
@@ -87,8 +83,6 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
             AnalyticsScreenType.GALLERY_CUSTOM
         },
     )
-
-    is NavKeySystemGalleryPicker -> AnalyticsScreen(AnalyticsScreenType.GALLERY_SYSTEM)
 
     is NavKeySegmentation -> AnalyticsScreen(AnalyticsScreenType.SEGMENTATION)
 
