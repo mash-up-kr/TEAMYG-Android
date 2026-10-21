@@ -1,6 +1,10 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +19,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.delete
@@ -25,6 +29,7 @@ import androidx.compose.foundation.text.input.then
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,11 +40,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.layout
@@ -52,6 +59,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -172,21 +180,11 @@ private fun Modifier.scaleBoxToFit(
 }
 
 /**
- * C-106 텍스트 입력 ↔ 배치. 인스타그램 스토리 텍스트처럼 화면 전환이 없다 — 편집 모드(가운데
- * 포커스, 전체 화면 딤, '배치' 제목+✓ 헤더, 하단 색·타입·정렬 툴바)와 배치 모드(저장된 자리, 딤
- * 해제, 팬·핀치, '배치' 제목+X 헤더, 하단 '캔버스에 쌓기' 버튼)를 **같은 화면 안에서** [isEditing]
- * 하나로 가른다. 딤은 다른 캔버스 화면과 같은 [ToppingArrangeCanvasDim]. 글자는 24sp 고정으로 그리고
- * 영역을 넘으면 박스를 비율 축소([scaleBoxToFit]), 글꼴·자간은 입력 언어로 가른다([detectTextToppingScript]).
+ * C-106 텍스트 입력 ↔ 배치. 인스타그램 스토리 텍스트처럼 화면 전환이 없다 — 편집 모드와 배치 모드를 **같은 화면 안에서** [isEditing]
+ * 하나로 가른다.
  *
- * ⚠️ [isEditing] 은 `WindowInsets.isImeVisible` 이 아니라 **텍스트 필드의 포커스**로 구동한다
- * ([onFocusChanged]). 시스템 키보드 노출 여부로 이 모드를 걸면 [BasicTextField] 자체가 "키보드가
- * 떠야 보이는" 조건부 노드가 돼서 — 포커스를 받을 대상이 애초에 없어 자판이 영영 못 뜨는 닭과
- * 달걀 문제가 생긴다. 필드는 늘 떠 있고(readOnly 도 안 쓴다), 포커스를 얻으면 편집·잃으면 배치다.
- * 그래서 어떤 경로로 키보드가 내려가든(완료·빈 곳 탭·필드 blur) 툴바·색상바·딤이 함께 사라진다.
- *
- * ⚠️ 배경(캔버스 프레임)은 `imePadding` 을 받지 않는 **정적 레이어**다 — 키보드가 떠도 C-001 과
- * 같은 크기 그대로 있고, 키보드 위에 떠야 하는 것(툴바·색상바)만 아래쪽 [Column] 이 `imePadding`
- * 을 받는다. 편집 중 텍스트만 키보드 위 영역 안에서 [animatePanelFocusFraction] 으로 보간한다.
+ * [isEditing] 은 `**텍스트 필드의 포커스**로 구동한다
+ * 어떤 경로로 키보드가 내려가든 툴바·색상바·딤이 함께 사라진다.
  */
 @Composable
 internal fun CanvasTextInputScreen(
@@ -338,31 +336,55 @@ internal fun CanvasTextInputScreen(
     LaunchedEffect(isEditing) {
         if (isEditing) hasMeasuredThisEditSession = false
     }
-    val editBoxHeightPx = if (hasMeasuredThisEditSession) {
+    val editBoxHeightTargetPx = if (hasMeasuredThisEditSession) {
         with(density) { (uiState.textBoxSize?.height ?: 0.dp).toPx() }
     } else {
         0f
     }
     // 박스의 **아래변**을 캔버스의 [TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO] 지점에 고정한다
     val editNaturalTopPx: Int = round(
-        editAreaHeightPx * TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO - editBoxHeightPx,
+        editAreaHeightPx * TEXT_TOPPING_EDIT_BOTTOM_ANCHOR_RATIO - editBoxHeightTargetPx,
     ).toInt()
-    var everPinned by remember { mutableStateOf(false) }
+    // editAreaHeightPx 가 아직 0(최초 측정 전)인 프레임에는 직전 값을 그대로 둔다
+    var isPinned by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.textBoxSize, editAreaHeightPx, editTopMarginPx, isEditing, uiState.content.isEmpty()) {
         if (!isEditing || uiState.content.isEmpty()) {
-            everPinned = false
-        } else if (editAreaHeightPx > 0 && editNaturalTopPx <= editTopMarginPx) {
-            everPinned = true
+            isPinned = false
+        } else if (editAreaHeightPx > 0) {
+            isPinned = editNaturalTopPx <= editTopMarginPx
         }
     }
-    // 윗변: pin 전엔 아래변 고정 기준(박스 커질수록 위로만), pin 후엔 상단 여백 고정. 애니메이션
-    // 없이 즉시 적용 — 첫 노출·자판 전환 때 미끄러지지 않고 바로 자리에 둔다
-    val editTopPx = if (everPinned) editTopMarginPx else maxOf(editTopMarginPx, editNaturalTopPx)
+    // 윗변: pin 전엔 아래변 고정 기준(박스 커질수록 위로, 줄어들수록 아래로), pin 중엔 상단 여백 고정
+    val editTopTargetPx = if (isPinned) editTopMarginPx else maxOf(editTopMarginPx, editNaturalTopPx)
+
+    var editTopWasEditingLastFrame by remember { mutableStateOf(isEditing) }
+    val skipEditTopAnimationThisFrame = isEditing != editTopWasEditingLastFrame
+    SideEffect { editTopWasEditingLastFrame = isEditing }
+    val editTopPx by animateIntAsState(
+        targetValue = editTopTargetPx,
+        animationSpec = if (skipEditTopAnimationThisFrame) snap() else tween(durationMillis = 90),
+        label = "editTopPx",
+    )
+    // 윗변과 같은 타이밍으로 높이도 같이 애니메이션한다
+    val editBoxHeightPx by animateFloatAsState(
+        targetValue = editBoxHeightTargetPx,
+        animationSpec = if (skipEditTopAnimationThisFrame) snap() else tween(durationMillis = 90),
+        label = "editBoxHeightPx",
+    )
 
     // [스케일 방식] 글자는 늘 24sp 로 그린다. 박스가 세로 예산을 넘으면 graphicsLayer 로 비율 축소
     val fontSizeSp = TEXT_TOPPING_FONT_SIZE_SP
 
     val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
+
+    // 직접 재서 폭을 명시적으로 고정한다.
+    val textMeasurer = rememberTextMeasurer()
+    val hugRenderStyle = autoSizeBaseStyle.withTextToppingSizing(fontSizeSp)
+    val hugMeasureText = textFieldState.text.toString().ifEmpty { placeholderText }
+    val hugWidthDp = remember(hugMeasureText, hugRenderStyle, textMaxWidthDp, density) {
+        val naturalWidthPx = textMeasurer.measure(text = hugMeasureText, style = hugRenderStyle).size.width
+        with(density) { naturalWidthPx.toDp() }.coerceAtMost(textMaxWidthDp)
+    }
 
     val focusFraction by animatePanelFocusFraction(isEditing)
     val storedCenter = DpOffset(
@@ -436,7 +458,6 @@ internal fun CanvasTextInputScreen(
                 .padding(horizontal = YGTheme.layout.padding.padding7),
         ) {
             Box(
-
                 modifier = Modifier
                     .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
                     .let { if (isEditing) it else it.clipToBounds() },
@@ -495,8 +516,7 @@ internal fun CanvasTextInputScreen(
                             enabled = { isEditing && uiState.content.isNotBlank() },
                             onDragStart = onEditDragStart,
                             onDrag = onEditDrag,
-                        )
-                        .scaleBoxToFit(
+                        ).scaleBoxToFit(
                             maxWidthPx = if (isEditing) 0 else canvasWidthPx,
                             maxHeightPx = if (isEditing) editBudgetPx else editAreaHeightPx,
                         ) { naturalSize ->
@@ -508,7 +528,18 @@ internal fun CanvasTextInputScreen(
                             scaleX = drawnScale,
                             scaleY = drawnScale,
                             rotationZ = drawnRotationDegrees,
-                        ),
+                        ).let {
+                            // 편집 중: 아직 폰트 자동축소가 안 걸린 동안에만 윗변과 같은 리듬으로 아래쪽을 가려 두다가 드러낸다.
+                            if (isEditing && editBoxHeightTargetPx <= editBudgetPx) {
+                                it.drawWithContent {
+                                    clipRect(left = 0f, top = 0f, right = size.width, bottom = editBoxHeightPx) {
+                                        this@drawWithContent.drawContent()
+                                    }
+                                }
+                            } else {
+                                it
+                            }
+                        },
                 ) {
                     TextToppingBackground(
                         type = uiState.textType,
@@ -526,8 +557,9 @@ internal fun CanvasTextInputScreen(
                                     textAlign = uiState.align,
                                 ),
                             modifier = Modifier
-                                // 글자 폭을 래핑 폭(=측정 폭)으로 묶는다
-                                .widthIn(max = textMaxWidthDp)
+                                // hugWidthDp 가 이미 335dp 캡과 실측 폭 중 작은 쪽이라 hug 와 랩 캡을
+                                // 둘 다 만족한다(위 hugWidthDp 계산 참고)
+                                .width(hugWidthDp)
                                 .focusRequester(focusRequester)
                                 // 포커스 유무만 모드에 반영한다. "빈 내용이면 취소"는 의도한 종료
                                 .onFocusChanged { focusState ->
