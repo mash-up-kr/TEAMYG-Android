@@ -101,12 +101,14 @@ fun YGFloatingBarEditTab(
 ) {
     YGFloatingBarContent(modifier = modifier) {
         YGFloatingBarCloseButton(onClick = onCloseClick)
-        tabs.forEachIndexed { index, label ->
-            YGEditTabButton(
-                text = label,
-                isSelected = index == selectedIndex,
-                onClick = { onTabSelect(index) },
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            tabs.forEachIndexed { index, label ->
+                YGEditTabButton(
+                    text = label,
+                    isSelected = index == selectedIndex,
+                    onClick = { onTabSelect(index) },
+                )
+            }
         }
         YGFloatingBarConfirmButton(onClick = onConfirmClick)
     }
