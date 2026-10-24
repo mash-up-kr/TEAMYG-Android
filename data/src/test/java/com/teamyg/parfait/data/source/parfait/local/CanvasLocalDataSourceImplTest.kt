@@ -43,7 +43,7 @@ class CanvasLocalDataSourceImplTest {
         dataSource.todayCanvas(GROUP_A).test {
             assertNull(awaitItem())
 
-            dataSource.saveTodayCanvas(GROUP_A, canvas(100L))
+            dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = null)
 
             assertEquals(ParfaitId(100L), awaitItem()?.parfaitId)
         }
@@ -56,7 +56,7 @@ class CanvasLocalDataSourceImplTest {
         dataSource.todayCanvas(GROUP_A).test {
             assertNull(awaitItem())
 
-            dataSource.saveTodayCanvas(GROUP_B, canvas(200L))
+            dataSource.saveTodayCanvas(GROUP_B, canvas(200L), etag = null)
 
             expectNoEvents()
         }
@@ -67,7 +67,7 @@ class CanvasLocalDataSourceImplTest {
         val dataSource = CanvasLocalDataSourceImpl()
         assertNull(dataSource.cachedTodayCanvas(GROUP_A))
 
-        dataSource.saveTodayCanvas(GROUP_A, canvas(100L))
+        dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = null)
 
         assertEquals(ParfaitId(100L), dataSource.cachedTodayCanvas(GROUP_A)?.parfaitId)
     }
@@ -75,7 +75,7 @@ class CanvasLocalDataSourceImplTest {
     @Test
     fun clear_emptiesEveryGroup() = runTest {
         val dataSource = CanvasLocalDataSourceImpl()
-        dataSource.saveTodayCanvas(GROUP_A, canvas(100L))
+        dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = null)
 
         dataSource.todayCanvas(GROUP_A).test {
             assertEquals(ParfaitId(100L), awaitItem()?.parfaitId)
@@ -84,5 +84,36 @@ class CanvasLocalDataSourceImplTest {
 
             assertNull(awaitItem())
         }
+    }
+
+    @Test
+    fun cachedTodayEtag_returnsTheEtagSavedWithThatGroupsCanvas() {
+        val dataSource = CanvasLocalDataSourceImpl()
+
+        dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = "W/\"a\"")
+        dataSource.saveTodayCanvas(GROUP_B, canvas(200L), etag = "W/\"b\"")
+
+        assertEquals("W/\"a\"", dataSource.cachedTodayEtag(GROUP_A))
+        assertEquals("W/\"b\"", dataSource.cachedTodayEtag(GROUP_B))
+    }
+
+    @Test
+    fun saveTodayCanvas_withoutAnEtag_dropsTheOldOne() {
+        val dataSource = CanvasLocalDataSourceImpl()
+        dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = "W/\"old\"")
+
+        dataSource.saveTodayCanvas(GROUP_A, canvas(101L), etag = null)
+
+        assertNull(dataSource.cachedTodayEtag(GROUP_A))
+    }
+
+    @Test
+    fun clear_dropsTheEtagsWithTheCache() {
+        val dataSource = CanvasLocalDataSourceImpl()
+        dataSource.saveTodayCanvas(GROUP_A, canvas(100L), etag = "W/\"a\"")
+
+        dataSource.clear()
+
+        assertNull(dataSource.cachedTodayEtag(GROUP_A))
     }
 }
