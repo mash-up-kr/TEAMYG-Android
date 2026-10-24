@@ -1,7 +1,20 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import com.teamyg.parfait.core.designsystem.theme.typography.YGFontFamily
+import com.teamyg.parfait.feature.groups.canvas.impl.R
+
+/** 일본어 **/
+private val lineSeedJpFontFamily: FontFamily = FontFamily(
+    Font(R.font.line_seed_jp_regular, FontWeight.Normal),
+)
+
+/** 중국어 */
+private val lineSeedTwFontFamily: FontFamily = FontFamily(
+    Font(R.font.line_seed_tw_regular, FontWeight.Normal),
+)
 
 /**
  * 텍스트 토핑의 글꼴·자간을 입력 언어로 가른다(스펙 「텍스트 스타일」). Compose 편집 필드는 전체에
@@ -19,24 +32,24 @@ enum class TextToppingScript(
     val letterSpacingEm: Float,
 ) {
     DEFAULT(YGFontFamily.suitFontFamily, -0.011f),
-    JAPANESE(YGFontFamily.lineSeedJpFontFamily, -0.011f),
-    CHINESE(YGFontFamily.lineSeedTwFontFamily, 0f),
+    JAPANESE(lineSeedJpFontFamily, -0.011f),
+    CHINESE(lineSeedTwFontFamily, 0f),
 }
 
 private val KANA_RANGE = 0x3040..0x30FF
 
 /** 한자: CJK 통합 한자 + 확장 A + 호환 한자 (대부분의 일/중 상용 한자를 덮는다) */
-private fun isHan(codePoint: Int): Boolean =
+private fun isChinese(codePoint: Int): Boolean =
     codePoint in 0x4E00..0x9FFF || codePoint in 0x3400..0x4DBF || codePoint in 0xF900..0xFAFF
 
 fun detectTextToppingScript(text: String): TextToppingScript {
-    var hasHan = false
+    var hasChinese = false
     var offset = 0
     while (offset < text.length) {
         val codePoint = text.codePointAt(offset)
         if (codePoint in KANA_RANGE) return TextToppingScript.JAPANESE
-        if (isHan(codePoint)) hasHan = true
+        if (isChinese(codePoint)) hasChinese = true
         offset += Character.charCount(codePoint)
     }
-    return if (hasHan) TextToppingScript.CHINESE else TextToppingScript.DEFAULT
+    return if (hasChinese) TextToppingScript.CHINESE else TextToppingScript.DEFAULT
 }

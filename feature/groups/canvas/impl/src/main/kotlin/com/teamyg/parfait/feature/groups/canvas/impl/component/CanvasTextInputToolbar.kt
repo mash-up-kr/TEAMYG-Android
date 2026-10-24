@@ -36,9 +36,6 @@ private val TOOLBAR_BUTTON_PADDING = 6.dp
 private val TYPE_PREVIEW_PADDING_HORIZONTAL = 6.dp
 private val TYPE_PREVIEW_STROKE_WIDTH = 1.dp
 
-/**
- * C-106의 입력 상태 상태바. 자판이 뜬 동안만 보인다.
- */
 @Composable
 internal fun CanvasTextInputToolbar(
     selectedColor: TextToppingColor,
@@ -65,7 +62,7 @@ internal fun CanvasTextInputToolbar(
             modifier = Modifier
                 .size(TOOLBAR_BUTTON_SIZE)
                 .clip(CircleShape)
-                .background(selectedColor.stroke)
+                .background(selectedColor.contentColor)
                 .border(width = 1.dp, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
                 .clickableYGNoRipple(onClick = onClickColor),
         )

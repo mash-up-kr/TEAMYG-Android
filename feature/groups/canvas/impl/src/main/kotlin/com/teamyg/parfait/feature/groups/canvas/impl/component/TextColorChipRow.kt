@@ -32,11 +32,6 @@ private val CHIP_SIZE = 36.dp
 private val CHIP_BORDER_WIDTH = 1.dp
 private val CHECK_ICON_SIZE = 24.dp
 
-/**
- * 텍스트 글자색을 고르는 가로 목록. 칩은 각 색의 Stroke 톤을 보여 준다 — 흰색부터 검정까지 섞여
- * 있어 선택 체크가 어느 색 위에서나 읽히도록 반투명 검정을 섞어 깐다. 좌우 여백은 [modifier] 가
- * 아니라 [contentPadding] 으로 준다.
- */
 @Composable
 internal fun TextColorChipRow(
     selectedColor: TextToppingColor,
@@ -67,9 +62,9 @@ private fun TextColorChip(
     modifier: Modifier = Modifier,
 ) {
     val chipColor = if (isSelected) {
-        YGAtomicColors.Transparency.Black25.compositeOver(color.stroke)
+        YGAtomicColors.Transparency.Black25.compositeOver(color.contentColor)
     } else {
-        color.stroke
+        color.contentColor
     }
 
     Box(

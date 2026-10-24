@@ -48,7 +48,7 @@ internal fun TextToppingBackground(
             .then(
                 if (type.hasBorder) {
                     Modifier
-                        .border(width = borderWidth, color = color.stroke, shape = RectangleShape)
+                        .border(width = borderWidth, color = color.contentColor, shape = RectangleShape)
                         .padding(borderWidth)
                 } else {
                     Modifier
@@ -56,7 +56,7 @@ internal fun TextToppingBackground(
             ).then(
                 if (type.hasFill) {
                     Modifier
-                        .background(color = color.fill, shape = RectangleShape)
+                        .background(color = color.backgroundColor, shape = RectangleShape)
                         .padding(horizontal = marginHorizontal, vertical = marginVertical)
                 } else {
                     Modifier
@@ -81,7 +81,7 @@ private fun TextToppingBackgroundPreview() = PreviewBox {
                 Text(
                     text = "가나다 Abc",
                     style = YGTheme.typography.body.b01R.copy(
-                        color = TextToppingColor.Pink.stroke,
+                        color = TextToppingColor.Pink.contentColor,
                         fontSize = 24.sp,
                     ),
                 )

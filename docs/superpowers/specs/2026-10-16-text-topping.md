@@ -17,14 +17,11 @@ related_code:
   - TextToppingBackground.kt
   - TextToppingType.kt
   - TextToppingAlign.kt#nextTextToppingAlign
-  - TextToppingColors.kt#fillColorArgbForStrokeColorArgb
+  - TextToppingColor.kt
   - TextToppingInput.kt
   - GraphemeClusterExtension.kt#graphemeClusterCount
   - GraphemeClusterExtension.kt#truncateToGraphemeClusters
   - TextToppingScript.kt#detectTextToppingScript
-  - YGAtomicColors.kt
-  - YGFontFamily.kt#lineSeedJpFontFamily
-  - YGFontFamily.kt#lineSeedTwFontFamily
   - CanvasMainScreen.kt#addAction
   # 그대로 재사용한 사진 토핑 제스처·배경·포커스
   - ToppingTransformInput.kt#toppingTransformInput
@@ -389,10 +386,9 @@ data class EditableTextTopping(
 | `feature/groups/canvas/impl/.../component/TextColorChipRow.kt` (신규) | 8색 가로 팝오버 |
 | `feature/groups/canvas/impl/.../component/TextToppingBackground.kt` (신규) | 네모배경·테두리(글자 크기 비율, 단일 Box) |
 | `feature/groups/canvas/impl/.../component/TextEditDragInput.kt` (신규) | 키보드 ↑ 3분기 제스처(`PointerEventPass.Initial` 선점, 슬롭 vs 롱프레스 레이스) — 끌기면 키보드 내리며 이동 |
-| `feature/groups/canvas/impl/.../util/TextToppingType.kt`·`TextToppingAlign.kt`·`TextToppingColors.kt`·`TextToppingInput.kt`·`TextToppingScript.kt` (신규) | 타입/정렬 순환, 색 팔레트·Fill 매핑, 상수(max 100자·min scale·max font size), 언어별 글꼴·자간 분기 |
+| `feature/groups/canvas/impl/.../util/TextToppingType.kt`·`TextToppingAlign.kt`·`TextToppingColor.kt`·`TextToppingInput.kt`·`TextToppingScript.kt` (신규) | 타입/정렬 순환, 8색 팔레트(`contentColor`/`backgroundColor`, 텍스트 토핑 전용이라 디자인시스템이 아니라 여기 둔다), 상수(max 100자·min scale·max font size), 언어별 글꼴·자간 분기(JP/TW `FontFamily` 도 여기 로컬 — 캔버스 밖에서 안 써 디자인시스템에 안 둔다) |
+| `feature/groups/canvas/impl/src/main/res/font/line_seed_{jp,tw}_regular.ttf` + `licenses/LINESeed*` (신규) | Line Seed JP/TW Regular 번들(공식 배포본·라이선스 포함) |
 | `core/util/jvm/.../extension/GraphemeClusterExtension.kt` (신규) | 그래핌 클러스터 카운터(ZWJ·스킨톤 직접 접합), 경계 자르기 |
-| `core/designsystem/.../theme/colors/YGAtomicColors.kt` | Pink/Orange/Yellow/Green/Blue/Violet 패밀리(`Stroke`/`Fill`) 신규 추가 |
-| `core/designsystem/.../theme/typography/YGFontFamily.kt` + `res/font/line_seed_{jp,tw}_regular.ttf` + `licenses/LINESeed*` | Line Seed JP/TW Regular 번들(공식 배포본·라이선스 포함), JP/TW `FontFamily` 공개 |
 | `core/designsystem/.../component/ygfloatingbar/YGFloatingBar.kt` | `YGFloatingBarTitleConfirm` 가운데 정렬 보정(편집 헤더는 Title-Confirm, 배치 헤더는 Title 사용) |
 | `core/designsystem/src/main/res/drawable/ic_align_{left,center,right}.xml` | 정렬 아이콘 |
 | `core/analytics/.../AnalyticsScreenType.kt`, `app/.../NavKeyAnalyticsScreen.kt` | `CANVAS_TEXT_INPUT`(C-106) enum·매핑 |
