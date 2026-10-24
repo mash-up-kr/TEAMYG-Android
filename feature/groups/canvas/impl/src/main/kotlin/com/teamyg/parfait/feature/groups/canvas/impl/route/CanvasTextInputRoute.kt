@@ -10,7 +10,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasTextInputScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputIntent
@@ -28,7 +27,6 @@ internal fun CanvasTextInputRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 CanvasTextInputEffect.NavigateBack -> navigator.onBack()
-                CanvasTextInputEffect.NavigateToCanvas -> navigator.popUpTo<NavKeyCanvasMain>()
             }
         }
     }

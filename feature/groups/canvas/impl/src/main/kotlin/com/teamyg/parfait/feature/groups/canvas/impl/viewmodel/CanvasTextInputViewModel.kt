@@ -105,19 +105,9 @@ sealed interface CanvasTextInputIntent : UiIntent {
 }
 
 sealed interface CanvasTextInputEffect : UiSideEffect {
-    /** 내용 없이 완료해 생성을 취소한 경우 — C-001로 복귀 */
     data object NavigateBack : CanvasTextInputEffect
-
-    /** 그만두기 또는 캔버스에 쌓기 — C-001로 복귀(쌓기는 아직 스텁, 아래 ViewModel KDoc 참고) */
-    data object NavigateToCanvas : CanvasTextInputEffect
 }
 
-/**
- * C-106 텍스트 입력 ↔ 배치. 인스타그램 스토리 텍스트처럼 화면 전환 없이 한 화면·한
- * ViewModel 안에서 처리한다. 입력/배치 모드 구분은 Screen 쪽의 로컬 `isEditing` 플래그가
- * 들고(키보드 노출 여부로 가르지 않는 이유는 [com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasTextInputScreen]
- * KDoc 참고), ViewModel 은 그와 무관하게 내용·색·타입·정렬·배치 좌표만 들고 있는다 —]]
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CanvasTextInputViewModel
@@ -204,15 +194,15 @@ constructor(
 
             CanvasTextInputIntent.OnClickConfirm -> handleOnClickConfirm()
 
-            CanvasTextInputIntent.OnClickClose -> handleDiscardAndNavigateToCanvas()
+            CanvasTextInputIntent.OnClickClose -> handleDiscardAndNavigateBack()
 
-            CanvasTextInputIntent.OnClickStack -> handleDiscardAndNavigateToCanvas()
+            CanvasTextInputIntent.OnClickStack -> handleDiscardAndNavigateBack()
         }
     }
 
     private fun handleOnClickConfirm() {
         if (state.value.content.isBlank()) {
-            postSideEffect(CanvasTextInputEffect.NavigateBack)
+            handleDiscardAndNavigateBack()
         }
     }
 
@@ -230,11 +220,7 @@ constructor(
 
     /**
      * 사용자가 아직 손대지 않았다면, 키보드가 처음 내려갈 때 텍스트가 타이핑 중이던 자리
-     * (캔버스 정중앙)에 그대로 남도록 저장 좌표를 맞춘다 — 안 맞추면 기본값(0,0) 쪽으로
-     * 튀어 보인다.
-     *
-     * 캔버스 실측 크기와 텍스트 박스 크기를 둘 다 알아야 계산되고, 이 둘은 서로 다른 시점에
-     * 들어오므로 어느 쪽이 먼저 도착하든 매번 다시 시도한다.
+     * (캔버스 정중앙)에 그대로 남도록 저장 좌표를 맞춘다
      */
     private fun CanvasTextInputUiState.applyInitialPlacementIfNeeded(): CanvasTextInputUiState {
         if (hasUserAdjustedPlacement) return this
@@ -247,10 +233,10 @@ constructor(
         )
     }
 
-    private fun handleDiscardAndNavigateToCanvas() {
+    private fun handleDiscardAndNavigateBack() {
         launch {
             clearToppingDraft()
-            postSideEffect(CanvasTextInputEffect.NavigateToCanvas)
+            postSideEffect(CanvasTextInputEffect.NavigateBack)
         }
     }
 }

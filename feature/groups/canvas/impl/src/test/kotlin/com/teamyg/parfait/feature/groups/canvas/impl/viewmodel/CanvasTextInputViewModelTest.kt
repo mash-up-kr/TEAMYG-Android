@@ -105,7 +105,7 @@ class CanvasTextInputViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(CanvasTextInputIntent.OnClickClose)
 
-            assertEquals(CanvasTextInputEffect.NavigateToCanvas, awaitItem())
+            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
         coVerify { clearToppingDraft() }
     }
@@ -117,7 +117,7 @@ class CanvasTextInputViewModelTest {
         viewModel.effect.test {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
 
-            assertEquals(CanvasTextInputEffect.NavigateToCanvas, awaitItem())
+            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
         coVerify { clearToppingDraft() }
     }
