@@ -145,7 +145,7 @@ private fun TypePreviewButton(
                     TextToppingType.FILL_STROKE ->
                         Modifier
                             .border(width = TYPE_PREVIEW_STROKE_WIDTH, color = YGAtomicColors.Gray.White, shape = small)
-                            .background(color = YGAtomicColors.Transparency.White75, shape = small)
+                            .background(color = YGAtomicColors.Transparency.Black75, shape = small)
                             .padding(
                                 horizontal = TYPE_PREVIEW_PADDING_HORIZONTAL,
                                 vertical = YGTheme.layout.padding.padding1,
