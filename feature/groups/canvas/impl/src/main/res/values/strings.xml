@@ -8,6 +8,7 @@
     <string name="canvas_main_go_to_today">오늘의 파르페 가기</string>
     <string name="canvas_main_camera_capture">카메라로 촬영</string>
     <string name="canvas_main_gallery_select">갤러리에서 선택</string>
+    <string name="canvas_main_text_input">텍스트 입력</string>
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
     <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요, 나중에 다시 시도해 주세요</string>
@@ -67,6 +68,10 @@
     <string name="canvas_spotlight_time_hours">%1$d시간 전</string>
     <string name="canvas_spotlight_time_days">%1$d일 전</string>
     <string name="canvas_spotlight_time_long_ago">오래전</string>
+
+    <!-- C-106-Text: 텍스트 토핑 입력 -->
+    <string name="canvas_text_input_title">배치</string>
+    <string name="canvas_text_input_placeholder">텍스트를 입력해 주세요</string>
 
     <!-- 캘린더 요일 머리글. 순서가 곧 일요일 시작 주차 배열이므로 바꾸지 않는다 -->
     <string-array name="canvas_calendar_day_of_week">

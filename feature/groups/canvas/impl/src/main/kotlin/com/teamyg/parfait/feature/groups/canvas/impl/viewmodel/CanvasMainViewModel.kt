@@ -186,6 +186,8 @@ sealed interface CanvasMainEffect : UiSideEffect {
 
     class NavigateToCanvas : CanvasMainEffect
 
+    data object NavigateToTextInput : CanvasMainEffect
+
     data class NavigateToCanvasBGEdit(
         val groupId: GroupId,
         val parfaitId: ParfaitId,
@@ -252,6 +254,8 @@ sealed interface CanvasMainIntent : UiIntent {
     class OnClickCamera : CanvasMainIntent
 
     class OnClickCanvas : CanvasMainIntent
+
+    data object OnClickTextInput : CanvasMainIntent
 
     class OnClickCanvasEdit : CanvasMainIntent
 
@@ -588,6 +592,8 @@ constructor(
             is CanvasMainIntent.OnClickCamera -> handleOnClickCamera()
 
             is CanvasMainIntent.OnClickCanvas -> handleOnClickCanvas()
+
+            CanvasMainIntent.OnClickTextInput -> handleOnClickTextInput()
 
             is CanvasMainIntent.OnClickCanvasEdit -> handleOnClickCanvasEdit()
 
@@ -929,6 +935,10 @@ constructor(
 
     private fun handleOnClickCanvas() {
         startToppingFlow(effect = CanvasMainEffect.NavigateToCanvas())
+    }
+
+    private fun handleOnClickTextInput() {
+        startToppingFlow(effect = CanvasMainEffect.NavigateToTextInput)
     }
 
     /**

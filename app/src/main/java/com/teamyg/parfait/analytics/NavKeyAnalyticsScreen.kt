@@ -13,6 +13,7 @@ import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
@@ -88,6 +89,8 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeyToppingEdit -> AnalyticsScreen(AnalyticsScreenType.TOPPING_EDIT)
 
     is NavKeyCanvasToppingPlace -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TOPPING_PLACE)
+
+    is NavKeyCanvasTextInput -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TEXT_INPUT)
 
     is NavKeyCanvasBGEdit -> AnalyticsScreen(AnalyticsScreenType.CANVAS_BG_EDIT)
 
