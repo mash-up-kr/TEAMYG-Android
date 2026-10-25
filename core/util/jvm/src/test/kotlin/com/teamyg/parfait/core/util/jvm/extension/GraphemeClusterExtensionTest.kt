@@ -25,6 +25,26 @@ class GraphemeClusterExtensionTest {
     }
 
     @Test
+    fun graphemeClusterCount_flagEmoji_countsAsOne() {
+        assertEquals(1, "🇰🇷".graphemeClusterCount())
+    }
+
+    @Test
+    fun graphemeClusterCount_consecutiveFlags_pairsRegionalIndicators() {
+        assertEquals(2, "🇰🇷🇯🇵".graphemeClusterCount())
+    }
+
+    @Test
+    fun graphemeClusterCount_tagSequenceFlag_countsAsOne() {
+        assertEquals(1, "🏴󠁧󠁢󠁥󠁮󠁧󠁿".graphemeClusterCount())
+    }
+
+    @Test
+    fun graphemeClusterCount_crlf_countsAsOneChar() {
+        assertEquals(3, "a\r\nb".graphemeClusterCount())
+    }
+
+    @Test
     fun graphemeClusterCount_lineBreak_countsAsOneChar() {
         assertEquals(3, "a\nb".graphemeClusterCount())
     }
