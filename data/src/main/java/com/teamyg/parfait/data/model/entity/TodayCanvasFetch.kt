@@ -1,4 +1,4 @@
-package com.teamyg.parfait.data.source.parfait.remote
+package com.teamyg.parfait.data.model.entity
 
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 

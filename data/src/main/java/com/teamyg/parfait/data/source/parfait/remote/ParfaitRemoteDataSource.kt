@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -25,7 +26,7 @@ interface ParfaitRemoteDataSource {
     suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
 
     /**
-     * [getTodayCanvas] 와 같되 [etag] 가 서버의 현재 값과 같으면 본문 없이 [TodayCanvasFetch.NotModified] 다.
+     * [getTodayCanvas] 와 같되 [etag] 가 서버의 현재 값과 같으면 본문 없이 [com.teamyg.parfait.data.model.entity.TodayCanvasFetch.NotModified] 다.
      * 없으면 서버가 만드는 부작용도 같다.
      *
      * @param etag 직전 응답에서 받은 값. `null` 이면 항상 본문이 온다.

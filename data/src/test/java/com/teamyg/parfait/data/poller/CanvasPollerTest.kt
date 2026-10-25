@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.poller
 
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
-import com.teamyg.parfait.data.source.parfait.remote.TodayCanvasFetch
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus

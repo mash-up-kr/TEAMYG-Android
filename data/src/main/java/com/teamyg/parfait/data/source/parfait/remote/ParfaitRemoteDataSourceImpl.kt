@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.network.NetworkConstValue.ETAG_HEADER
 import com.teamyg.parfait.data.service.ParfaitService
