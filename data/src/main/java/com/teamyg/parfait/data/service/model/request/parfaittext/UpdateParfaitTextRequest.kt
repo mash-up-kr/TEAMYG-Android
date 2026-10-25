@@ -3,7 +3,7 @@ package com.teamyg.parfait.data.service.model.request.parfaittext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** text 는 서버가 받지 않는다 — 넣어도 400 없이 무시된다. */
+/** 배치 뒤 내용은 바꿀 수 없어 text 가 없다(`docs/api/parfait-text.md`). */
 @Serializable
 data class UpdateParfaitTextRequest(
     @SerialName("positionX")

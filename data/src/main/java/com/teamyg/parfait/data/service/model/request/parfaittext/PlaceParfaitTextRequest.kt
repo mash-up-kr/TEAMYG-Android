@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * @param text 서버는 2000자 상한을 UTF-16 코드 유닛으로 센다 — 이모지 하나가 2다.
+ * @param text 2000자 상한을 UTF-16 코드 유닛으로 센다 — 이모지 하나가 2다(`docs/api/parfait-text.md`).
  */
 @Serializable
 data class PlaceParfaitTextRequest(

@@ -3,11 +3,7 @@ package com.teamyg.parfait.data.service.model.response.parfait
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * 텍스트 배치 POST 응답도 이 타입이다(서버가 같은 DTO 를 쓴다).
- *
- * @param positionZ 이미지 토핑과 한 축이다. 겹침 순서는 images 와 합쳐서 정한다.
- */
+/** 캔버스 texts 원소와 텍스트 배치 POST 응답이 공유하는 타입이다(`docs/api/parfait-text.md`). */
 @Serializable
 data class TodayParfaitTextResponse(
     @SerialName("parfaitTextId")
