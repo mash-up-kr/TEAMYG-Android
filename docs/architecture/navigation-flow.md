@@ -266,7 +266,8 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   `path="/link"`와 `path="/link/"`(끝 슬래시) 정확 일치 둘만 두어 `/linkage`·`/link/ABC123`·루트를 시스템
   단계에서 거른다(루트는 랜딩 페이지라 앱으로 열면 안 된다). `toAppLinkDeepLinkOrNull`이 같은 두 경로로
   한 번 더 거르는 것은 필터와 코드가 어긋나도 엉뚱한 경로가 초대코드 화면을 열지 않게 하는 이중 장치다.
-  서버의 iOS 설정(AASA)은 `/link/*`까지 열어 두어 iOS는 하위 경로도 앱으로 열 수 있다 — 범위가 다르다.
+  서버의 iOS 설정(AASA)은 `paths: ["/link"]` 하나만 연다([api/deeplink.md](../api/deeplink.md)). 끝 슬래시 `/link/`는
+  서버(Caddy)가 404를 주므로 매니페스트의 둘째 경로는 앱 쪽 방어일 뿐이다.
 - ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 위키의 푸시 규칙(미로그인이면 폐기)은 푸시
   경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다. 초대
   링크는 계정이 없는 신규 유저가 가장 먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
