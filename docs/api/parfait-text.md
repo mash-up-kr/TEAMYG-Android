@@ -277,8 +277,8 @@ Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는�
 서버 저장소의 팀 문서 `docs/parfait-text-api.md`와 코드가 대체로 일치한다. 어긋나거나 문서에만 있는 것:
 
 - 문서는 DDL이 "파르페·배치자 ID"를 포함한다고만 적는다. 코드상 **FK는 없다**(위 [저장소 제약](#저장소-제약)).
-- 문서의 "텍스트가 없으면 `texts: null`"은 이 라운드에서 응답 쪽 코드로 확인하지 않았다. [parfait.md](parfait.md)
-  담당 범위다.
+- 문서의 "텍스트가 없으면 `texts: null`"은 코드와 같다(`GetTodayParfaitService.buildTexts`가 0건이면 `null`)
+  → [parfait.md](parfait.md).
 
 ## Android 매핑
 
