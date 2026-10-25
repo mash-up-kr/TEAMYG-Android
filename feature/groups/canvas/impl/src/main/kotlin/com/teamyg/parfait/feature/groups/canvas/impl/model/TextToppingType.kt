@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 /**
  * 타입 3종. 각 타입이 "네모배경 있음([hasFill])·바깥 테두리 있음([hasBorder])"을 스스로 안다 —

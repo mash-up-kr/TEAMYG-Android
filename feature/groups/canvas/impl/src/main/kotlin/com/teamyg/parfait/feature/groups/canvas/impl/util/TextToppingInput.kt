@@ -5,24 +5,18 @@ import androidx.compose.foundation.text.input.delete
 import androidx.compose.foundation.text.input.placeCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import com.teamyg.parfait.core.util.jvm.extension.graphemeClusterCount
 import com.teamyg.parfait.core.util.jvm.extension.lastGraphemeCluster
+import com.teamyg.parfait.core.util.jvm.extension.truncateToGraphemeClusters
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 
-/** 그래핌 클러스터 기준(`String#graphemeClusterCount`) 글자 수 상한 */
-const val TEXT_TOPPING_MAX_LENGTH = 100
-
-/** 자동 크기의 최댓값(상한). Text-Area 에 안 들어가면 이 값부터 연속 축소한다 */
-internal const val TEXT_TOPPING_FONT_SIZE_SP = 24f
-
-/** 배치 모드 핀치 축소 하한. 사진 토핑의 `TOPPING_MIN_SCALE`(0.05, 상한 없음)과 같은 값으로 맞춘다. */
-const val TEXT_TOPPING_MIN_SCALE = 0.05f
-
-/** 그래핌 수가 [TEXT_TOPPING_MAX_LENGTH] 를 넘는 변경을 되돌린다 */
 @Composable
 internal fun rememberMaxLengthInputTransformation(): InputTransformation = remember {
     InputTransformation {
-        if (asCharSequence().toString().graphemeClusterCount() > TEXT_TOPPING_MAX_LENGTH) {
-            revertAllChanges()
+        val text = asCharSequence().toString()
+        val truncated = text.truncateToGraphemeClusters(TEXT_TOPPING_MAX_LENGTH)
+        if (truncated.length < text.length) {
+            delete(truncated.length, text.length)
+            placeCursorAtEnd()
         }
     }
 }

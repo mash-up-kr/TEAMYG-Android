@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -37,6 +37,7 @@ enum class TextToppingScript(
 }
 
 private val KANA_RANGE = 0x3040..0x30FF
+private val HANGUL_RANGE = 0xAC00..0xD7A3
 
 /** 한자: CJK 통합 한자 + 확장 A + 호환 한자 (대부분의 일/중 상용 한자를 덮는다) */
 private fun isChinese(codePoint: Int): Boolean =
@@ -44,12 +45,15 @@ private fun isChinese(codePoint: Int): Boolean =
 
 fun detectTextToppingScript(text: String): TextToppingScript {
     var hasChinese = false
+    var hasHangul = false
     var offset = 0
     while (offset < text.length) {
         val codePoint = text.codePointAt(offset)
         if (codePoint in KANA_RANGE) return TextToppingScript.JAPANESE
+        if (codePoint in HANGUL_RANGE) hasHangul = true
         if (isChinese(codePoint)) hasChinese = true
         offset += Character.charCount(codePoint)
     }
-    return if (hasChinese) TextToppingScript.CHINESE else TextToppingScript.DEFAULT
+    // 한글이 섞여 있으면 한자는 한글 표기(한자어)로 보고 무시한다 — "한자만 있으면" 이라는 의도대로
+    return if (hasChinese && !hasHangul) TextToppingScript.CHINESE else TextToppingScript.DEFAULT
 }

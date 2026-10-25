@@ -15,8 +15,8 @@ import androidx.compose.ui.unit.sp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 
 private const val HORIZONTAL_MARGIN_RATIO = 1f / 3f
 private const val VERTICAL_MARGIN_RATIO = 1f / 6f

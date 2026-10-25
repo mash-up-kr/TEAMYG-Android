@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.WindowInsets

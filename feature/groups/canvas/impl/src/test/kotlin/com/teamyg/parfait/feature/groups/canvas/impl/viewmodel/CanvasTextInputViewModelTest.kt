@@ -13,10 +13,10 @@ import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TEXT_TOPPING_MAX_LENGTH
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TEXT_TOPPING_MIN_SCALE
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -99,15 +99,44 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
-    fun onClickClose_clearsDraftAndNavigatesToCanvas() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickClose_opensQuitDialogWithoutNavigating() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasTextInputIntent.OnClickClose)
 
+            expectNoEvents()
+        }
+        assertTrue(viewModel.state.value.showQuitDialog)
+        coVerify(exactly = 0) { clearToppingDraft() }
+    }
+
+    @Test
+    fun onQuitDialogConfirm_clearsDraftAndNavigatesToCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnClickClose)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnQuitDialogConfirm)
+
             assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
+        assertFalse(viewModel.state.value.showQuitDialog)
         coVerify { clearToppingDraft() }
+    }
+
+    @Test
+    fun onQuitDialogCancel_closesDialogWithoutNavigating() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnClickClose)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnQuitDialogCancel)
+
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.showQuitDialog)
+        coVerify(exactly = 0) { clearToppingDraft() }
     }
 
     @Test

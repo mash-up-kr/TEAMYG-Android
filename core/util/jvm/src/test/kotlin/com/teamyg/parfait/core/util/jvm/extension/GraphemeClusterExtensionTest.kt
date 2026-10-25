@@ -20,6 +20,11 @@ class GraphemeClusterExtensionTest {
     }
 
     @Test
+    fun graphemeClusterCount_keycapEmoji_countsAsOne() {
+        assertEquals(1, "1️⃣".graphemeClusterCount())
+    }
+
+    @Test
     fun graphemeClusterCount_lineBreak_countsAsOneChar() {
         assertEquals(3, "a\nb".graphemeClusterCount())
     }

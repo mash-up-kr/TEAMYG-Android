@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 import androidx.compose.ui.graphics.Color
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors

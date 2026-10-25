@@ -25,7 +25,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private val CHIP_SIZE = 36.dp

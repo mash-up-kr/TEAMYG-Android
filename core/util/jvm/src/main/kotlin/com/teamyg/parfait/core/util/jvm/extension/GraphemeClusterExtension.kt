@@ -9,7 +9,10 @@ private val EMOJI_MODIFIER_RANGE = 0x1F3FB..0x1F3FF
 // 클러스터 하나로 묶지 못한다(실측 확인). 플랫폼 구현에 기대지 않고 필요한 접합 규칙만 직접 둔다.
 private fun isCombiningMark(codePoint: Int): Boolean {
     val type = Character.getType(codePoint)
-    return type == Character.NON_SPACING_MARK.toInt() || type == Character.COMBINING_SPACING_MARK.toInt()
+    return type == Character.NON_SPACING_MARK.toInt() ||
+        type == Character.COMBINING_SPACING_MARK.toInt() ||
+        // 키캡 이모지(1️⃣ 등)의 U+20E3 COMBINING ENCLOSING KEYCAP — 유니코드 Me 카테고리
+        type == Character.ENCLOSING_MARK.toInt()
 }
 
 private fun attachesToPreviousCluster(

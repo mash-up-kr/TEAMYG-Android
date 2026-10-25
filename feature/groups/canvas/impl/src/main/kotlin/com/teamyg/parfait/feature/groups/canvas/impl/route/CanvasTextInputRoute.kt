@@ -10,6 +10,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.ui.component.modal.YGModalQuitAddText
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasTextInputScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputIntent
@@ -56,6 +57,13 @@ internal fun CanvasTextInputRoute(
             onClickClose = { viewModel.processIntent(CanvasTextInputIntent.OnClickClose) },
             onClickStack = { viewModel.processIntent(CanvasTextInputIntent.OnClickStack) },
             modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    if (uiState.showQuitDialog) {
+        YGModalQuitAddText(
+            onConfirmQuit = { viewModel.processIntent(CanvasTextInputIntent.OnQuitDialogConfirm) },
+            onDismiss = { viewModel.processIntent(CanvasTextInputIntent.OnQuitDialogCancel) },
         )
     }
 }

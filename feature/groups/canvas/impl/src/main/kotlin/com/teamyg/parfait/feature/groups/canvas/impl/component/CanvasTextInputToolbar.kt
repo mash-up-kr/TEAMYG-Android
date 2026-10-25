@@ -24,17 +24,16 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TEXT_TOPPING_MAX_LENGTH
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 private val TOOLBAR_BUTTON_SIZE = 36.dp
-private val TOOLBAR_BUTTON_PADDING = 6.dp
 
-/** 타입 버튼 "A" 프리뷰 치수 — "A" 글자를 감싸는 칩의 여백·테두리 */
+private val COLOR_CHIP_SIZE = 24.dp
+
 private val TYPE_PREVIEW_PADDING_HORIZONTAL = 6.dp
-private val TYPE_PREVIEW_STROKE_WIDTH = 1.dp
 
 @Composable
 internal fun CanvasTextInputToolbar(
@@ -57,15 +56,21 @@ internal fun CanvasTextInputToolbar(
             bottom = YGTheme.layout.padding.padding3,
         ),
     ) {
-        // 현재 선택한 색의 대표 칩 — 탭하면 8색 팝오버를 연다
+
         Box(
             modifier = Modifier
                 .size(TOOLBAR_BUTTON_SIZE)
-                .clip(CircleShape)
-                .background(selectedColor.contentColor)
-                .border(width = 1.dp, color = YGAtomicColors.Transparency.Black5, shape = CircleShape)
                 .clickableYGNoRipple(onClick = onClickColor),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(COLOR_CHIP_SIZE)
+                    .clip(CircleShape)
+                    .background(selectedColor.contentColor)
+                    .border(width = 1.dp, color = YGAtomicColors.Transparency.White75, shape = CircleShape),
+            )
+        }
 
         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
 
@@ -82,8 +87,7 @@ internal fun CanvasTextInputToolbar(
             modifier = Modifier
                 .size(TOOLBAR_BUTTON_SIZE)
                 .clip(CircleShape)
-                .clickableYGNoRipple(onClick = onClickAlign)
-                .padding(TOOLBAR_BUTTON_PADDING),
+                .clickableYGNoRipple(onClick = onClickAlign),
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -97,6 +101,7 @@ internal fun CanvasTextInputToolbar(
 
         Text(
             text = "$characterCount/$TEXT_TOPPING_MAX_LENGTH",
+            style = YGTheme.typography.caption.c01M,
             color = if (isAtLimit) YGAtomicColors.Cherry.Cherry500 else YGAtomicColors.Gray.Gray500,
         )
     }
@@ -141,7 +146,7 @@ private fun TypePreviewButton(
                     // 배경O 테두리O
                     TextToppingType.FILL_STROKE ->
                         Modifier
-                            .border(width = TYPE_PREVIEW_STROKE_WIDTH, color = YGAtomicColors.Gray.White, shape = small)
+                            .border(width = 1.dp, color = YGAtomicColors.Gray.White, shape = small)
                             .background(color = YGAtomicColors.Transparency.Black75, shape = small)
                             .padding(
                                 horizontal = TYPE_PREVIEW_PADDING_HORIZONTAL,
