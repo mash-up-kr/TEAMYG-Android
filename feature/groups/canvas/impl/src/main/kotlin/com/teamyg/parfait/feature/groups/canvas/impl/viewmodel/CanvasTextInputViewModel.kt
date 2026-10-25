@@ -24,12 +24,12 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TEXT_TOPPING_DEFAULT_ALIGN
-import com.teamyg.parfait.feature.groups.canvas.impl.util.nextTextToppingAlign
+import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
