@@ -33,19 +33,8 @@ internal fun ToppingTransform.toPlaceTextRequest(
 internal fun TodayParfaitTextResponse.toPlacedTextToppingVO(): PlacedTextToppingVO = PlacedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
-    transform = ToppingTransform(
-        positionX = positionX,
-        positionY = positionY,
-        positionZ = positionZ,
-        scale = scale,
-        rotation = rotation,
-    ),
-    style = TextToppingStyle(
-        color = color,
-        fontSize = fontSize,
-        isFill = isFill,
-        isStroke = isStroke,
-    ),
+    transform = toTransform(positionX, positionY, positionZ, scale, rotation),
+    style = toStyle(color, fontSize, isFill, isStroke),
     placedBy = ToppingPlacerVO(
         groupMemberId = GroupMemberId(placedBy.groupMemberId),
         nickname = GroupNickname(placedBy.nickname),
@@ -67,17 +56,32 @@ internal fun TextToppingUpdate.toUpdateTextRequest(): UpdateParfaitTextRequest =
 internal fun UpdateParfaitTextResponse.toUpdatedTextToppingVO(): UpdatedTextToppingVO = UpdatedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
-    transform = ToppingTransform(
-        positionX = positionX,
-        positionY = positionY,
-        positionZ = positionZ,
-        scale = scale,
-        rotation = rotation,
-    ),
-    style = TextToppingStyle(
-        color = color,
-        fontSize = fontSize,
-        isFill = isFill,
-        isStroke = isStroke,
-    ),
+    transform = toTransform(positionX, positionY, positionZ, scale, rotation),
+    style = toStyle(color, fontSize, isFill, isStroke),
+)
+
+private fun toTransform(
+    positionX: Double,
+    positionY: Double,
+    positionZ: Int,
+    scale: Double,
+    rotation: Double,
+): ToppingTransform = ToppingTransform(
+    positionX = positionX,
+    positionY = positionY,
+    positionZ = positionZ,
+    scale = scale,
+    rotation = rotation,
+)
+
+private fun toStyle(
+    color: String,
+    fontSize: Double,
+    isFill: Boolean,
+    isStroke: Boolean,
+): TextToppingStyle = TextToppingStyle(
+    color = color,
+    fontSize = fontSize,
+    isFill = isFill,
+    isStroke = isStroke,
 )
