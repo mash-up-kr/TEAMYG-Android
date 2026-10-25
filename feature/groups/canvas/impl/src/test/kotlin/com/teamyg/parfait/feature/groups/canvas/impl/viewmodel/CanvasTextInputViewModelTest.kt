@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
@@ -43,6 +44,8 @@ class CanvasTextInputViewModelTest {
 
     private val clearToppingDraft: ClearToppingDraftUseCase = mockk(relaxed = true)
 
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
+
     private fun draft() = ToppingDraft(groupId = GroupId(1L), parfaitId = ParfaitId(2L), nextPositionZ = 1)
 
     private fun viewModel(): CanvasTextInputViewModel {
@@ -52,6 +55,7 @@ class CanvasTextInputViewModelTest {
             getToppingDraftFlow = getToppingDraftFlow,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             clearToppingDraft = clearToppingDraft,
+            analyticsLogger = analyticsLogger,
         )
     }
 

@@ -6,6 +6,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
@@ -124,6 +127,7 @@ constructor(
     private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val clearToppingDraft: ClearToppingDraftUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasTextInputUiState, CanvasTextInputIntent, CanvasTextInputEffect>(
     CanvasTextInputUiState(),
 ) {
@@ -204,7 +208,7 @@ constructor(
 
             CanvasTextInputIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
 
-            CanvasTextInputIntent.OnClickStack -> handleDiscardAndNavigateBack()
+            CanvasTextInputIntent.OnClickStack -> handleOnClickStack()
 
             CanvasTextInputIntent.OnQuitDialogConfirm -> {
                 updateState { copy(showQuitDialog = false) }
@@ -246,6 +250,17 @@ constructor(
             offsetX = (canvas.width - box.width) / 2,
             offsetY = (canvas.height - box.height) / 2,
         )
+    }
+
+    private fun handleOnClickStack() {
+        val groupId = observedGroupId.value?.value?.toString() ?: ""
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_TEXT_STACK_TAPPED,
+                params = mapOf("group_id" to groupId),
+            ),
+        )
+        handleDiscardAndNavigateBack()
     }
 
     private fun handleDiscardAndNavigateBack() {

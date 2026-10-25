@@ -930,15 +930,28 @@ constructor(
     }
 
     private fun handleOnClickCamera() {
+        logToppingAddTapped(type = "camera")
         startToppingFlow(effect = CanvasMainEffect.NavigateToCamera())
     }
 
     private fun handleOnClickCanvas() {
+        logToppingAddTapped(type = "gallery")
         startToppingFlow(effect = CanvasMainEffect.NavigateToCanvas())
     }
 
     private fun handleOnClickTextInput() {
+        logToppingAddTapped(type = "text")
         startToppingFlow(effect = CanvasMainEffect.NavigateToTextInput)
+    }
+
+    /** "사진 추가" 메뉴에서 카메라/갤러리/텍스트 중 하나를 탭했다 */
+    private fun logToppingAddTapped(type: String) {
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_MAIN_TOPPING_ADD_TAPPED,
+                params = mapOf("type" to type),
+            ),
+        )
     }
 
     /**

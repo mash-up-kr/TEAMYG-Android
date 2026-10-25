@@ -48,7 +48,9 @@ tags: [spec, parfait, analytics]
 | `app` | `push` | 푸시 알림 |
 | `app` | `account` | 앱 사이드메뉴 > 계정정보 |
 | `canvas` | `camera` | 촬영·사진 선택·대상 감지 (C101 · C102 · C104) |
-| `canvas` | `edit` | 캔버스 편집 — `C-106`(최초 배치) / `C-305`(재편집)[^oq430] |
+| `canvas` | `main` | 캔버스 메인(`C-001`) — 토핑 추가 메뉴 등 화면 자체의 조작 |
+| `canvas` | `edit` | 캔버스 편집 — `C-106`(최초 배치, 사진 토핑) / `C-305`(재편집)[^oq430] |
+| `canvas` | `text` | 텍스트 토핑 편집 — `C-106`(최초 배치, 텍스트 토핑 전용) |
 | `canvas` | `topping` | 토핑 편집 |
 | `canvas` | `calendar` | 달력 (SY001) |
 | `canvas` | `save` | 저장 미리보기 |
@@ -91,7 +93,9 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 | `canvas_camera_photo_selected` | `source`: `"recent"` / `"today"` | C102 최근 사진 / 오늘 사진 탭 |
 | `canvas_camera_detection_completed` | `success`: `"true"` / `"false"` | C104 대상 감지 끝남 |
 | `canvas_edit_border_tapped` | — | C-305 테두리 패널이 닫힌 상태에서 열릴 때만(닫는 토글은 세지 않음) |
-| `canvas_edit_stack_tapped` | `group_id`: 그룹 ID, `is_border_on`: `"true"` / `"false"` | `C-106`(최초 배치)[^oq430] 캔버스 쌓기 탭 |
+| `canvas_edit_stack_tapped` | `group_id`: 그룹 ID, `is_border_on`: `"true"` / `"false"` | `C-106`(최초 배치, 사진 토핑)[^oq430] 캔버스 쌓기 탭 |
+| `canvas_text_stack_tapped` | `group_id`: 그룹 ID | `C-106`(최초 배치, 텍스트 토핑) 캔버스 쌓기(✓) 탭. 같은 핸들러를 공유하는 빈 내용 확정·그만두기는 찍지 않는다 |
+| `canvas_main_topping_add_tapped` | `type`: `"camera"` / `"gallery"` / `"text"` | `C-001` "사진 추가" 메뉴에서 카메라/갤러리/텍스트 중 하나를 탭 |
 | `canvas_topping_closed_unchanged` | `action`: `"done"` / `"close"` | `C-305`(재편집)[^oq430] 토핑 편집에서 수정 없이 완료 / X. ⚠️ Android는 `CanvasToppingArrangeViewModel`의 무변경 닫기(`close`)와 `handleOnClickConfirm` 무변경 확정(`done`) 두 곳에서만 찍는다 — 그만두기 팝업 확인·시스템 뒤로가기는 찍지 않는다 |
 | `canvas_topping_editor_checked` | `group_id`: 그룹 ID, `is_mine`: `"true"` / `"false"` | 토핑 편집자 확인 (내 토핑 / 다른 사람 토핑) |
 | `canvas_calendar_date_tapped` | `group_id`: 그룹 ID | 달력 날짜 탭 |
