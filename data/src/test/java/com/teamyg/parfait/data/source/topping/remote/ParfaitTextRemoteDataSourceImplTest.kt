@@ -198,11 +198,65 @@ class ParfaitTextRemoteDataSourceImplTest {
                 update = TextToppingUpdate(parfaitTextId = ParfaitTextId(301L), positionX = 200.0, color = "#000000"),
             ).getOrThrow()
 
-        // Then 응답의 전체 값이 VO 로 들어간다
+        // Then 요청과 무관하게 응답의 전체 값이 VO 로 들어간다
         assertEquals(ParfaitTextId(301L), vo.parfaitTextId)
-        assertEquals(200.0, vo.transform.positionX)
-        assertEquals("#000000", vo.style.color)
         assertEquals("오늘도 화이팅", vo.text)
+        assertEquals(
+            ToppingTransform(positionX = 200.0, positionY = 340.2, positionZ = 3, scale = 1.5, rotation = 15.0),
+            vo.transform,
+        )
+        assertEquals(
+            TextToppingStyle(color = "#000000", fontSize = 16.0, isFill = true, isStroke = false),
+            vo.style,
+        )
+    }
+
+    @Test
+    fun updateText_allFieldsSet_buildsRequestBodyFieldByField() = runTest {
+        // Given 요청 바디를 잡아둔다
+        val request = slot<UpdateParfaitTextRequest>()
+        coEvery {
+            parfaitTextService.patchGroupsByGroupIdParfaitsByParfaitIdTextsByParfaitTextId(
+                any(),
+                any(),
+                any(),
+                capture(request),
+            )
+        } returns updateSuccess()
+
+        // When 아홉 필드를 모두 서로 다른 값으로 바꾼다
+        dataSource.updateText(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            update = TextToppingUpdate(
+                parfaitTextId = ParfaitTextId(301L),
+                positionX = 1.0,
+                positionY = 2.0,
+                positionZ = 3,
+                scale = 4.0,
+                rotation = 5.0,
+                color = "#123456",
+                fontSize = 6.0,
+                isFill = true,
+                isStroke = false,
+            ),
+        )
+
+        // Then 각 값이 같은 이름의 필드로 간다
+        assertEquals(
+            UpdateParfaitTextRequest(
+                positionX = 1.0,
+                positionY = 2.0,
+                positionZ = 3,
+                scale = 4.0,
+                rotation = 5.0,
+                color = "#123456",
+                fontSize = 6.0,
+                isFill = true,
+                isStroke = false,
+            ),
+            request.captured,
+        )
     }
 
     @Test
