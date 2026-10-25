@@ -2,8 +2,8 @@
 id: parfait-group
 title: 파르페 그룹
 server_module: http/parfaitgroup
-server_commit: 82e6edc
-verified: 2026-09-11
+server_commit: 8b4a94b
+verified: 2026-10-25
 android_status: done
 related_spec: s101-group-setting-api
 related_adr: ADR-0017
@@ -73,7 +73,7 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
 | `recentImageUrl` | String? | 예 | **오늘 캔버스**(`ParfaitDay.current()` — 03시 경계)에 토핑이 없으면 `null`. 어제 이전 토핑은 이 필드에 안 잡힌다(2026-08-31 변경) |
 | `recentImageBorderType` | String(enum)? | 예 | **2026-09-11 신설.** `recentImageUrl`과 같은 토핑의 테두리 종류(`NONE`·`SOLID`). `recentImageUrl`이 `null`이면 `null`, 값이 있으면 널이 아니다 → 아래 |
 | `recentImageBorderColor` | String? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 색. `borderType=SOLID`일 때만 값이 보장된다 |
-| `recentImageBorderWidth` | Double? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 두께. `borderType=SOLID`일 때만 값이 보장되고, 범위는 서버가 검사하지 않는다 |
+| `recentImageBorderWidth` | Double? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 두께. ⚠️ **저장값이 아니라 고정값 `2.0`이다** — 저장된 두께가 있으면 `2.0`, 없으면 `null`(`ParfaitGroupService`의 `recentImageBorderWidth?.let { 2.0 }`). `NONE`인데 두께가 남은 행도 `2.0`이 나간다 |
 | `recentImageUploadedAt` | LocalDateTime | **아니오**(2026-08-19 변경) | 아래 직렬화 포맷 참고. **날짜와 무관하게 마지막 토핑 시각**이고, 토핑이 한 건도 없을 때만 **그룹 생성 시각**으로 대체된다(2026-08-31 변경) |
 | `lastPlacedByNameTagChip` | String(enum) | **아니오**(2026-08-19 변경) | 마지막 토핑을 올린 사람의 Nametag-Chip 타입. 토핑이 없으면 **그룹 생성자의 칩** → 아래 [Nametag-Chip 배정 규칙](#nametag-chip-배정-규칙) |
 
@@ -120,8 +120,10 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     (`updateBorder`)이 모두 `validateBorder`를 거쳐 `SOLID`면 둘 다 있음을 보장한다. `NONE`이면 검사하지 않고
     보낸 값을 그대로 저장하므로 두 필드에 값이 남아 있을 수 있다([parfait-image.md](parfait-image.md) 배치 절).
     **소비 측은 `recentImageBorderType`을 먼저 봐야 한다.**
-  - **두께 범위는 여전히 서버가 검사하지 않는다** — 캔버스 조회 응답의 `borderWidth`와 같은 사정이다
-    ([conventions.md](conventions.md) "Android 불일치"의 `borderWidth` 행).
+  - **목록의 두께는 저장값과 무관하게 `2.0`이다.** 서비스가 결과를 만들 때 널이 아닌 두께를 `2.0`으로
+    바꾼다. 같은 토핑이라도 캔버스 조회 응답의 `borderWidth`(저장값 그대로, 범위 미검사 —
+    [conventions.md](conventions.md) "Android 불일치"의 `borderWidth` 행)와 값이 다를 수 있다.
+    앱이 가두는 범위(2.0..30.0) 안이라 목록 카드에서는 클램프가 일어나지 않는다.
 
   근거: `ParfaitGroupControllerTest`가 테두리 있는 케이스(`"SOLID"`·`"#FFD54F"`·`6.0`)와 오늘 토핑이 없는
   케이스(세 필드 모두 `null`)를 `jsonPath`로 단언하고, `ParfaitGroupAdapterTest`가 프로젝션 문자열 →
@@ -465,6 +467,29 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
   `GROUP_NOT_JOINED`) → 신고 저장 → **같은 트랜잭션에서 신고자 멤버십을 탈퇴 처리**한다(`leave()`). 즉 신고
   성공은 항상 탈퇴를 동반한다. 근거: `ParfaitGroupServiceTest`("그룹 신고는 신고를 저장한 뒤 같은 트랜잭션에서
   탈퇴 이력을 남긴다"·"비어 있는 신고 사유는 신고나 탈퇴 없이 거부한다").
+
+## 그룹 version — 오늘 캔버스 ETag의 그룹 쪽 요소
+
+`parfait_group.version`(마이그레이션 V19, 기본 1)은 오늘 캔버스 조건부 조회 ETag의 `g` 요소다
+(`CanvasEtag.of` — ETag 형식과 304 규칙은 [parfait.md](parfait.md)). 이 도메인의 쓰기 가운데 오늘 캔버스
+응답의 그룹 쪽 값(멤버 목록·그룹 닉네임)을 바꾸는 것이 같은 트랜잭션 안에서 version을 올린다
+(`ParfaitGroupVersionService`).
+
+| 쓰기 | version | 커밋 뒤 Redis 무효화 |
+|---|---|---|
+| 참여(`POST /join`, 재참여 포함) | +1 | version 키 |
+| 그룹 닉네임 변경 | 값이 실제로 바뀔 때만 +1 | version 키 |
+| 나가기(`DELETE .../members/me`) | +1 | version 키 · 그 회원의 멤버십 키 |
+| 신고(나가기를 동반) | +1 | version 키 · 그 회원의 멤버십 키 |
+| 회원 탈퇴(`DELETE /api/v1/users/me`, 그룹마다) | +1 | version 키 · 그 회원의 멤버십 키 → [member.md](member.md) |
+| 그룹 생성 | 올리지 않는다(새 행은 1) | — |
+
+  ⚠️ **전역 닉네임 변경(`PATCH /api/v1/users/me/nickname`)은 그룹 version을 올리지 않는다.** 오늘 캔버스
+  응답의 이름은 그룹 닉네임이라 지금은 영향이 없지만, 그 응답이 전역 닉네임을 싣게 되면 304가 옛 값을 붙든다.
+
+  ⚠️ **나간 회원의 v2 오늘 조회 차단은 Redis 멤버십 키를 지운 뒤에야 확실하다.** v2 조회는 멤버십을 캐시에서
+  먼저 확인하고(`CanvasStateReader.requireMember`), 키 삭제는 커밋 뒤에 돈다. 커밋과 삭제 사이의 짧은 틈에는
+  나간 회원의 요청이 멤버로 통과할 수 있다.
 
 ## Nametag-Chip 배정 규칙
 

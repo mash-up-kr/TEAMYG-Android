@@ -2,8 +2,8 @@
 id: conventions
 title: 서버 API 전역 계약
 server_module: common/response, common/error, http/global
-server_commit: aa9cc9b
-verified: 2026-09-04
+server_commit: 8b4a94b
+verified: 2026-10-25
 tags: [api, parfait, server-contract, conventions]
 ---
 
@@ -51,6 +51,12 @@ tags: [api, parfait, server-contract, conventions]
 `HttpRequestMethodNotSupportedException`·`Exception`)가 모두 `errorDetail` 인자 없이
 `ApiResponse.error(errorCode)`를 호출한다. 검증 실패
 (`MethodArgumentNotValidException`)도 필드별 상세 없이 `CommonErrorCode.INVALID_REQUEST` 하나로 뭉개진다.
+
+### `/api` 밖 웹 표면은 envelope를 쓰지 않는다
+
+`/link`·`/`(HTML)와 `/.well-known/assetlinks.json`·`/.well-known/apple-app-site-association`(스펙이 정한
+JSON)는 `ApiResponse`로 감싸지 않는다. 앱이 Retrofit으로 부르는 경로가 아니라 브라우저·OS가 읽는 경로이고,
+호스트도 API 호스트가 아니라 루트 도메인이다 → [deeplink.md](deeplink.md).
 
 ## 에러 코드 체계
 
@@ -119,6 +125,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 
 `SecurityConfig`는 세션을 쓰지 않고(STATELESS), 아래 화이트리스트 외 **전 요청 인증 필수**다.
 
+- `/` · `/assets/**` — 루트 랜딩 페이지와 정적 리소스([deeplink.md](deeplink.md))
+- `/health`
 - `/actuator/health`
 - `/swagger-ui.html` · `/swagger-ui/**`
 - `/favicon.ico`
@@ -129,6 +137,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 - `/api/v1/auth/reissue`
 - `/api/v1/policies`
 - `/api/v1/test/parfait-canvas/rotate` ⚠️ **테스트 전용**
+- `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` — App Links·Universal Links
+  검증 파일과 초대 링크 웹 폴백([deeplink.md](deeplink.md))
 
 인증 실패는 `AuthErrorCode.UNAUTHORIZED`(401)로 나간다.
 
@@ -162,8 +172,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 **토큰에서** 정한다 — 남의 계정을 지목할 경로가 없다. 다만 토핑 배치(POST)는 배치자 대조가 없어
 **같은 그룹의 다른 멤버가 남의 배치를 덮어쓸 수 있다** → [parfait-image.md](parfait-image.md).
 
-**관측 사실**: `HealthController`가 매핑한 `GET /health`(`http/global/health`, #63이 `http/api/health`에서
-옮겼다)는 화이트리스트의 `/actuator/health`와 경로가 달라 **인증 대상**이다.
+`HealthController`가 매핑한 `GET /health`(`http/global/health`)는 화이트리스트에 있어 **인증 없이 열린다**.
+`/actuator/health`와는 별개 경로다.
 
 ## URL 규약
 
@@ -177,6 +187,7 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 | `/api/v1/groups/{groupId}/<하위>` | `/api/v1/groups/{groupId}/parfaits` · `.../parfaits/year` · `.../parfaits/today` · `.../parfaits/{parfaitId}` · `.../parfaits/{parfaitId}/background` · `.../parfaits/{parfaitId}/images/{parfaitImageId}/border` |
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
 | `/api/<도메인>` (버전 없음) | `/api/parfait-groups` |
+| `/api` 밖(루트 도메인 웹 표면) | `/` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.
 서버에 URL 규약 문서가 없어 관측 사실로만 적는다 → [open-questions](../synthesis/open-questions.md).

@@ -2,8 +2,8 @@
 id: image
 title: 이미지(업로드 URL 발급·업로드 확인)
 server_module: http/image
-server_commit: aa9cc9b
-verified: 2026-09-04
+server_commit: 8b4a94b
+verified: 2026-10-25
 android_status: done
 related_spec:
 related_adr: ADR-0017
@@ -74,8 +74,23 @@ S3에 직접 PUT한 뒤 ③ 서버에 업로드 완료를 알린다. 이미지 �
 |---|---|---|---|
 | `imageId` | Long | 아니오 | 저장된 `image_meta` 행의 id. confirm 호출과 이후 토핑·캔버스 참조에 쓰는 키 |
 | `uploadUrl` | String | 아니오 | **S3 presigned PUT URL.** 여기로 앱이 직접 PUT한다 |
-| `imageUrl` | String | 아니오 | 업로드 후 접근할 공개 URL. `https://<bucket>.s3.<region>.amazonaws.com/<key>` 형태로 어댑터가 문자열 조립한다 |
+| `imageUrl` | String | 아니오 | 업로드 후 접근할 공개 URL. `<aws.s3.public-base-url>/<key>` 형태로 어댑터가 문자열 조립한다 — 아래 "공개 URL 베이스" |
 | `expiresIn` | Long | 아니오 | `uploadUrl` 유효 시간(초). 설정 `aws.s3.presigned-url-expiration-seconds` 값이 그대로 내려온다 |
+
+  **공개 URL 베이스**: `ImageUploadUrlIssueAdapter`가 설정 `aws.s3.public-base-url`(끝 `/`는 뗀다) 뒤에 S3 키를
+  붙인다. 운영(`application-prod.yaml`)은 환경변수 `IMAGE_PUBLIC_BASE_URL`(CloudFront)이고 기본값이 없어 없으면
+  기동이 실패한다. dev·local은 기본값이 S3 원본 주소 `https://<bucket>.s3.<region>.amazonaws.com`이다.
+  **그래서 운영의 `imageUrl` 호스트는 S3가 아니라 CDN이고, 환경마다 호스트가 다르다.** `uploadUrl`(presigned
+  PUT)은 여전히 S3 원본 호스트다 — 업로드와 조회의 호스트가 갈린다.
+
+  ⚠️ **이미 저장된 URL도 같은 베이스로 옮겨졌다**(마이그레이션 `V20__move_image_urls_to_public_base_url`).
+  `image_meta.url`·`parfait_image.image_url`·배경 이미지(`parfait.background_value`) 가운데
+  `https://<무엇>.amazonaws.com/`으로 시작하는 값의 접두사를 베이스로 바꿨고, 그 캔버스들의 version을 올려
+  오늘 캔버스 조건부 조회가 304 대신 새 URL을 주게 했다([parfait.md](parfait.md)). 이 마이그레이션은 한 번만
+  돈다 — 적용 뒤 `IMAGE_PUBLIC_BASE_URL`을 바꾸면 **새 업로드만 새 호스트이고 기존 행은 옛 호스트로 남는다.**
+  즉 응답의 이미지 URL 호스트가 한 화면 안에서 섞일 수 있고, 호스트를 가정하는 코드는 깨진다. 앱은 호스트를
+  가정하지 않는다(`amazonaws`·CDN 호스트 문자열 0건). 이미지 캐시가 URL을 키로 쓰므로, 호스트가 바뀐 이미지는
+  한 번 다시 받는다.
 
   **S3 키 규칙**은 `ImageKeyGenerator.generate`가 정한다 — `<imageType 소문자>/user<memberId>/<UUID>.<확장자>`.
   확장자는 `contentType` 분기(`image/png`→`png`, `image/jpeg`→`jpg`)에서 나오고, 그 외 값은
@@ -134,6 +149,9 @@ S3에 직접 PUT한 뒤 ③ 서버에 업로드 완료를 알린다. 이미지 �
   응답에도 내보내지 않지만, [parfait-image.md](parfait-image.md)의 **토핑 배치(POST)가 +1**,
   **토핑 삭제(DELETE)가 -1**을 한다. 그리고 **0이 되는 순간 S3 객체가 지워진다**(`ImageDeleteAdapter`).
   이전 판본의 "쓰일 자리로 보인다"는 이 라운드로 채워졌다.
+  `ImageDeleteAdapter`는 URL에서 S3 키를 되돌릴 때 공개 베이스와 S3 원본 주소 두 접두사만 안다. 둘 다 아니면
+  경고 로그만 남기고 **S3 삭제를 건너뛴다** — 위 "베이스를 바꾼 뒤 옛 호스트로 남은 행"이 그 경우라,
+  그 이미지는 참조가 0이 돼도 객체가 남는다.
 
   ⚠️ **`image_meta` 행은 그때도 남는다** — 카운트가 0이어도 상태는 `COMPLETED` 그대로이고 행은 삭제되지
   않는다. 즉 **S3 객체 없이 `COMPLETED`인 메타**가 생길 수 있고, 그 `imageId`는 배치 API의 상태 검사를

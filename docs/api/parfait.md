@@ -2,8 +2,8 @@
 id: parfait
 title: 파르페(캔버스) 조회·배경·회전
 server_module: http/parfait
-server_commit: d76b27a
-verified: 2026-09-10
+server_commit: 8b4a94b
+verified: 2026-10-25
 android_status: partial
 related_spec: 2026-08-15-parfait-canvas-topping-member-api-service-layer, 2026-08-16-canvas-detail-background-api-service-layer, c201-canvas-calendar, c201-canvas-calendar-server
 related_adr: ADR-0017
@@ -173,11 +173,30 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
 | `groupMembers` | List<객체> | 아니오 | 원소: `id`(Long, **groupMemberId**) · `nickname`(String) · `nameTagChip`(String(enum), **2026-08-19 신설**) |
 | `background` | 객체? | 예 | `type`(`COLOR`·`IMAGE`) · `value`(String) |
 | `images` | List<객체>? | **예** | 배치된 토핑. **0건이면 빈 배열이 아니라 `null`** |
+| `texts` | List<객체>? | **예** | 배치된 텍스트. **0건이면 `null`**(`images`와 같은 규칙) — 아래 참고 |
 
   토핑 원소(`TodayParfaitImageResponse`) 필드: `parfaitImageId` · `imageId` · `imageUrl` ·
   `positionX`/`positionY`(Double) · `positionZ`(Int) · `scale`/`rotation`(Double) ·
   `borderType`(`NONE`·`SOLID`) · `borderColor`(String?) · `borderWidth`(Double?) ·
   `placedBy`(`groupMemberId`·`nickname`·`nameTagChip`·`ownerType`) · `createdAt`(LocalDateTime).
+
+  텍스트 원소(`TodayParfaitTextResponse`) 필드: `parfaitTextId`(Long) · `text`(String) ·
+  `positionX`/`positionY`(Double) · `positionZ`(Int) · `scale`/`rotation`(Double) · `color`(String) ·
+  `fontSize`(Double) · `isFill`/`isStroke`(Boolean) · `placedBy`(토핑과 같은 `PlacedByResponse`) ·
+  `createdAt`(LocalDateTime). 전부 비널이다. 텍스트를 쓰는 엔드포인트(배치·수정·삭제·일괄 수정)는
+  [parfait-image.md](parfait-image.md)(일괄 수정)·[parfait-text.md](parfait-text.md)가 다룬다 — 여기는 조회 응답에 실리는 모양만 적는다.
+
+  ⚠️ **JSON 키는 `isFill`·`isStroke` 그대로다.** Jackson은 Kotlin `is` 접두 Boolean을 `fill`·`stroke`로
+  내보내는데, `@get:JsonProperty("isFill")`·`@get:JsonProperty("isStroke")`가 그것을 막는다. 소비 측
+  `@SerialName`도 `is`를 붙인 키로 맞춰야 한다.
+
+  **텍스트 순서는 `positionZ` 오름차순, 같으면 id 오름차순**(`findAllByParfaitIdOrderByPositionZAscIdAsc`)이다.
+  토핑과 텍스트는 **서로 다른 배열로 오지만 `positionZ`는 한 축이다** — 서버 `docs/parfait-text-api.md`가
+  "`positionZ`는 이미지와 텍스트 사이의 겹침 순서"라고 적는다. 소비 측은 두 배열을 합쳐 `positionZ`로
+  쌓아야 하고, 배열 순서만 따라 그리면 텍스트가 늘 토핑 위(또는 아래)에 깔린다. 같은 `positionZ`의
+  토핑·텍스트 사이 순서는 정해져 있지 않다. 서버는 이 값의 중복·연속성을 검증하지 않는다(클라이언트가 보낸 값을 저장한다).
+  `placedBy` 규칙은 토핑과 같다 — 탈퇴 필터가 없고(`findAllByIds`), `ownerType`은 요청자 계정 id 기준이다.
+  `images`가 `null`이어도 `texts`는 있을 수 있다 — **텍스트만 있는 캔버스**가 정상 상태다.
 
   ✅ **`groupName`이 응답에 들어왔다**(2026-09-07 신설). `GetTodayParfaitResult`·`GetTodayParfaitResponse`
   양쪽에 **비널 문자열**로 붙었고, 두 서비스(`GetTodayParfaitService`·`GetParfaitDetailService`)가
@@ -215,7 +234,8 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
 
   ⚠️ **`lastClosedDate`는 `EMPTY`를 세지 않는다.** `ParfaitAdapter.findLastClosedDateByGroupId`가
   `status = CLOSED` 행만 최신순으로 하나 집는다. 토핑 0건으로 마감된 날은 `EMPTY`라 여기 잡히지 않으므로,
-  이 값은 "마지막으로 마감된 날"이 아니라 **"마지막으로 토핑이 있던 날"**이다.
+  이 값은 "마지막으로 마감된 날"이 아니라 **"마지막으로 토핑이나 텍스트가 있던 날"**이다(회전이 둘 중
+  하나라도 있으면 `CLOSED`로 마감한다 — [캔버스 회전 규칙](#캔버스-회전마감재생성-규칙)).
 
   ⚠️ **0건 표현이 `null`이다.** `buildImages`가 빈 목록에서 `null`을 반환한다. `background`도 `type`·`value`
   둘 중 하나라도 없으면 통째로 `null`이다. envelope는 `default-property-inclusion: always`라 키 자체는
@@ -260,16 +280,72 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
 
 ### GET /api/v2/groups/{groupId}/parfaits/today
 
-서버 PR #164(`[Feat/#158]`)가 더한 **조건부 오늘 조회**다. v1 `today`와 본문 구조·부작용(없으면 생성)이 같고,
-`ETag`/`If-None-Match`로 변경 없는 폴링의 비용을 줄인다. v1은 그대로 남아 있다.
+**조건부 오늘 조회**다(`ParfaitV2Controller`). 200 본문은 v1 `today`와 같은 `GetTodayParfaitResponse`이고
+(본문은 v1 유스케이스 `GetTodayParfaitUseCase`가 그대로 만든다 — `texts` 포함), `ETag`/`If-None-Match`로
+변경 없는 폴링을 304로 줄인다. **v1 `today`는 서버에서 제거·`@Deprecated` 되지 않았다** — 두 경로가 함께 산다.
 
-- **응답 헤더**: 200·304 모두 `ETag`(약한 검증자 `W/"p{캔버스}-v{버전}-g{그룹버전}-m{멤버}"`)와
-  `Cache-Control: private, no-cache`. 앱은 값을 **해석하지 않고 불투명 문자열로** 되돌려 보낸다.
-- **304**: `If-None-Match`가 현재 ETag와 같을 때. 본문도 공통 응답 래퍼도 없다. 권한 확인이 먼저라
-  비멤버는 304가 아니라 에러를 받는다.
-- **ETag에 든 것**: 캔버스 id·캔버스 version(이미지 배치·수정·삭제·테두리·배경), 그룹 version(가입·닉네임
-  변경·탈퇴 등), **요청 멤버 id**. 그래서 하루 경계를 넘기면(캔버스 id가 바뀌어) 저절로 200이고, 계정이
-  바뀌면 같은 ETag가 일치하지 않는다.
+- **인증**: 필요
+- **요청**: path `groupId` Long, 헤더 `If-None-Match`(선택)
+- **응답 헤더**: 200·304 모두 `ETag`와 `Cache-Control: private, no-cache`. 에러 응답에는 둘 다 없다
+  (일반 envelope 에러다).
+- **ETag 형식**: 약한 검증자 `W/"p{parfaitId}-v{parfait.version}-g{parfait_group.version}-m{memberId}"`
+  (`CanvasEtag.of`). 서버 KDoc이 "클라이언트는 불투명한 문자열로만 다룬다"를 전제로 형식을 바꿀 수
+  있다고 적는다 — 소비 측은 **해석하지 말고 받은 그대로** 되돌려 보낸다.
+- **304 조건**(`CanvasEtag.matches`): `If-None-Match`를 `,`로 쪼개 하나라도 현재 ETag와 같으면 304다.
+  비교는 `W/` 접두와 따옴표를 떼고 하므로 약/강 표기 차이는 무시된다. **`*`도 일치로 본다** — `*`를 보내면
+  멤버인 한 늘 304다. 헤더가 없거나 비었으면 항상 200이다. 304에는 본문도 `ApiResponse` 래퍼도 없다.
+- **처리 순서**(`GetTodayParfaitIfChangedService`): 멤버십 → 오늘 캔버스 id·version → 그룹 version →
+  ETag 비교 → (불일치 시) v1 유스케이스로 본문. version을 **본문보다 먼저** 읽으므로 ETag가 본문보다 낡을
+  수는 있어도(다음 폴링이 같은 내용으로 200을 한 번 더 받을 뿐) **새 ETag에 옛 본문이 붙지는 않는다.**
+
+- **에러 코드**
+
+| HTTP | code | 의미 |
+|---|---|---|
+| 403 | `GROUP_NOT_JOINED` | 그 그룹의 활동 중 멤버가 아님(`ParfaitGroupApiErrorCode`) — ETag 비교보다 먼저 |
+| 404 | `GROUP_NOT_FOUND` | 그룹 행이 없음 — 그룹 version 조회(`ParfaitGroupVersionAdapter.getVersion`) 또는 200 본문 생성에서 |
+| 401 | `UNAUTHORIZED` 외 | 전역 인증(`AuthErrorCode`) |
+
+  권한 확인이 첫 단계라 **비멤버·탈퇴자는 304가 아니라 403**을 받는다. 404는 v1과 마찬가지로 멤버십 행은
+  남았는데 그룹 행만 없을 때만 닿는다.
+
+- **ETag를 바꾸는 쓰기**(`ParfaitVersionService.bump`·`ParfaitGroupVersionService.bump`, 같은 트랜잭션 강제
+  `Propagation.MANDATORY`)
+
+| version | 올리는 쓰기 |
+|---|---|
+| `parfait.version` | 토핑 배치·위치 수정·테두리 수정·삭제·**일괄 수정**(이미지·텍스트 항목이 둘 다 비면 안 올린다), 텍스트 배치·수정·삭제, 배경 변경 |
+| `parfait_group.version` | 그룹 참여(재참여 포함), 그룹 닉네임 변경(**값이 실제로 바뀔 때만**), 그룹 나가기, 신고(나가기를 겸한다), 회원 탈퇴(속한 그룹 전부) |
+| 캔버스 id(`p`) | 하루 경계(03시)로 "오늘" 날짜가 바뀌면 다른 캔버스가 잡힌다 |
+| 멤버 id(`m`) | 요청 계정마다 다르다 — `ownerType`이 요청자마다 달라서다 |
+
+  ⚠️ **회전(마감)은 version을 올리지 않는다**(`ParfaitCanvasRotator`에 `bump` 호출이 없다). 정식 03시
+  배치는 날짜가 넘어가 캔버스 id가 바뀌므로 문제가 드러나지 않는다. 그러나 **테스트 전용 회전**은 오늘
+  캔버스를 그 자리에서 `CLOSED`로 바꾸므로, 그 뒤 v2는 다른 쓰기가 version을 올릴 때까지 **`ACTIVE`였던
+  옛 본문을 304로 유지시킨다**(v1·상세 조회는 바로 `CLOSED`를 준다) → [미결](#미결) OQ-P-440.
+
+- **캐시(Redis)가 신선도에 주는 영향**: 304 판단에 쓰는 네 값을 `CanvasStateReader`가 **캐시 우선, 미스·장애
+  시 DB**로 읽는다(`CanvasCachePort` → `RedisCanvasCacheAdapter`). 200 본문은 캐시를 거치지 않는다.
+
+| 키 | TTL | 무효화 |
+|---|---|---|
+| `parfait:version:{parfaitId}` | 5분 | `ParfaitVersionBumpedEvent` 커밋 후 삭제 |
+| `group:version:{groupId}` | 5분 | `GroupVersionBumpedEvent` 커밋 후 삭제 |
+| `parfait:today:{groupId}:{date}` | 25시간 | DB에 없는 id를 가리키면 그 자리에서 삭제하고 한 번 재확보 |
+| `group:member:{groupId}:{memberId}` | 5분 | `GroupMemberLeftEvent` 커밋 후 삭제(긍정 결과만 저장) |
+
+  무효화는 `CanvasCacheEvictionListener`가 `AFTER_COMMIT`에 **삭제로만** 한다. 정상 경로에서는 쓰기 커밋
+  직후 다음 폴링이 200을 받는다(`CanvasEtagIntegrationTest`가 배경·텍스트 수정/삭제·닉네임·나가기·탈퇴·
+  이미지 배치를 단언). ⚠️ **삭제가 실패하면(Redis 오류는 삼킨다) 최대 5분간 낡은 304가 나갈 수 있다** —
+  나간 멤버도 그동안 304를 받을 수 있다(200 경로는 DB로 다시 확인하므로 본문은 못 받는다).
+  ⚠️ **DB를 직접 고치는 경로는 캐시를 지우지 않는다** — 예: `V20__move_image_urls_to_public_base_url.sql`은
+  URL이 바뀌는 캔버스의 `version`을 DB에서 올리지만 Redis 키는 TTL(5분)이 끝날 때까지 남는다.
+  Redis 명령 타임아웃은 `spring.data.redis.timeout`·`connect-timeout` **500ms**이고(`application.yaml`),
+  초과·장애는 DB 폴백이라 **응답이 틀리지는 않고 느려질 뿐**이다. `parfait.canvas-cache.enabled=false`면
+  `NoOpCanvasCacheAdapter`가 늘 미스를 돌려준다.
+
+- **부작용**: 304 경로도 행을 만들 수 있다 — 오늘 캔버스 id 캐시가 비면 `EnsureActiveCanvasUseCase.ensure`를
+  부른다. 캐시가 차 있으면 304 경로는 쓰기 없이 끝난다. 200 경로는 v1 유스케이스를 타므로 v1과 같다.
 
 ### GET /api/v1/groups/{groupId}/parfaits
 
@@ -307,9 +383,12 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
   근거: `ParfaitControllerTest`가 `$.data.parfaits[0].status`를 `"CLOSED"`로 단언하고,
   `ParfaitAdapterTest`가 프로젝션이 상태를 채우는 것을 잠근다.
 
-  ⚠️ **`imageCount == 0`과 `status == EMPTY`는 같은 뜻이 아니다.** `EMPTY`는 **토핑 0건으로 마감된
-  날**이고, 진행 중인 `ACTIVE` 캔버스도 아직 아무도 안 올렸으면 `imageCount`가 0이다. 두 값을
+  ⚠️ **`imageCount == 0`과 `status == EMPTY`는 같은 뜻이 아니다.** `EMPTY`는 **토핑·텍스트 0건으로
+  마감된 날**이고, 진행 중인 `ACTIVE` 캔버스도 아직 아무도 안 올렸으면 `imageCount`가 0이다. 두 값을
   한 조건으로 접으면 오늘 캔버스가 마감된 날로 보인다 → [Android 매핑](#android-매핑).
+  ⚠️ **`imageCount`는 이미지만 센다**(서버 `docs/parfait-text-api.md`가 "기존 의미대로"라고 못 박는다).
+  그래서 **텍스트만 있는 날은 `status = CLOSED`인데 `imageCount = 0`**이다 — 개수로 "뭔가 올라온 날"을
+  가르는 소비 측(달력 점)은 그날을 빈 날로 본다 → [미결](#미결) OQ-P-439.
 
   ⚠️ **`thumbnailUrl`은 항상 `null`이다.** `GetPastParfaitsService`가 `thumbnailUrl = null`을 리터럴로 넣는다 —
   필드만 있고 채우는 코드가 없다. 앱이 목록 썸네일을 그리려면 다른 값을 써야 한다 → [미결](#미결).
@@ -342,7 +421,8 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
 - **응답 필드**: `today`와 동일 → [위 표](#get-apiv1groupsgroupidparfaitstoday) 참고.
   **2026-09-07에 붙은 `groupName`도 같다** — 이 경로도 `ParfaitGroupQueryPort.findById`로 그룹을 다시
   조회해 채우고, 그 조회가 널이면 404 `GROUP_NOT_FOUND`다.
-  `lastClosedDate`·`groupMembers`·`background`·`images`의 널 규칙(0건이 빈 배열이 아니라 `null`)도 같다.
+  `lastClosedDate`·`groupMembers`·`background`·`images`·`texts`의 널 규칙(0건이 빈 배열이 아니라 `null`)도 같다.
+  `texts`도 `GetParfaitDetailService.buildTexts`가 오늘 조회와 같은 방식으로 채운다.
   `placedBy.ownerType`(2026-08-26 신설)도 같은 규칙으로 채워진다 — **요청자 기준**이라 과거 캔버스를
   봐도 보는 사람에 따라 값이 갈린다.
 
@@ -437,6 +517,11 @@ C-301 배경 편집이 고른 값을 **서버에 저장**하는 경로다. 단�
   **검사 순서**: 그룹 멤버십 → 파르페 존재 → **파르페 상태** → 배경 값 해석(`resolveValue`).
   앞이 걸리면 뒤는 실행되지 않는다.
 
+  **성공하면 두 가지가 더 일어난다.** ① 같은 트랜잭션에서 `parfait.version`을 올린다(`ParfaitVersionService.bump`)
+  — 다른 멤버의 v2 `today`가 다음 폴링에서 200을 받는다. ② `BackgroundChangedNotifier`가 요청자를 뺀 활동 중
+  멤버마다 배경 변경 푸시를 outbox에 적재한다(`BackgroundChangedPayload` — 문구·`data` 키·발송 시점 규칙은
+  [notification.md](notification.md)). 같은 값으로 다시 바꿔도 둘 다 일어난다(값 비교가 없다).
+
   ✅ **마감된 캔버스의 배경은 이제 바꿀 수 없다**(2026-08-20). `ChangeParfaitBackgroundService`가 파르페를
   찾은 **직후** `status != ACTIVE`를 검사해 409로 끊는다 — 값 해석보다 앞이라 `CLOSED` 캔버스에 잘못된
   HEX를 함께 보내도 `INVALID_BACKGROUND`가 아니라 `PARFAIT_ALREADY_CLOSED`가 온다. 토핑 네 엔드포인트도
@@ -504,8 +589,10 @@ C-301 배경 편집이 고른 값을 **서버에 저장**하는 경로다. 단�
   Spring Batch job(`ParfaitCanvasRotationJobConfig`·`ParfaitCanvasRotationTasklet`)으로 돈다
   (`V12__add_spring_batch_schema.sql`가 배치 메타 테이블을 깐다). 위키 [[캔버스-마감-스케줄]]의 03시와 같다.
 - **그룹당 1회전**: `findActiveByGroupId`로 `ACTIVE` 캔버스를 찾고, 없으면 아무것도 하지 않는다.
-- **마감 분기**: 토핑이 하나라도 있으면 `close()` → `CLOSED`, 0건이면 `markEmpty()` → `EMPTY`.
+- **마감 분기**: 토핑 **또는 텍스트**가 하나라도 있으면 `close()` → `CLOSED`, 둘 다 0건이면
+  `markEmpty()` → `EMPTY`(`parfaitImageQueryPort.existsByParfaitId || parfaitTextQueryPort.existsByParfaitId`).
   **`EMPTY`도 마감 상태다** — "비어 있음"이 아니라 "빈 채로 끝남"이다.
+- **version을 올리지 않는다** — 마감은 v2 `today`의 ETag를 바꾸지 않는다(위 [v2 절](#get-apiv2groupsgroupidparfaitstoday)).
 - **다음 캔버스**: 마감한 날 **+1일** 날짜로 새 `ACTIVE`를 만든다. 그 날짜 캔버스가 이미 있으면 생략한다.
 - **불변식**: "마감 후 생성" 순서가 **그룹당 `ACTIVE` 최대 1개**를 지키는 유일한 근거다(DB 제약이 없다).
   `findActiveByGroupId`가 이 전제에 기대고 있고 서버 코드 주석이 순서 변경을 금지한다.
@@ -845,6 +932,11 @@ DataSource 테스트는 29 케이스이고, 배경 변경 요청 바디의 **조
 - 상세 조회가 상태를 거르지 않아 "이전 파르페 상세"라는 이름과 달리 오늘의 `ACTIVE` 캔버스도 조회된다.
   같은 캔버스를 `today`와 상세 두 경로로 얻을 수 있고 **한쪽만 부작용이 있다**
   → [open-questions](../synthesis/open-questions.md)
+- **텍스트만 있는 날이 `CLOSED`인데 과거 목록 `imageCount`는 0이다**, 그리고 앱 `GetTodayParfaitResponse.texts`는
+  DTO까지만 있고 캔버스 VO로 매핑되지 않아 텍스트를 그리지 못한다 → [open-questions](../synthesis/open-questions.md) OQ-P-439
+- **회전이 `parfait.version`을 올리지 않아** 테스트 전용 회전 뒤 v2 `today`가 `ACTIVE`였던 옛 본문을 304로
+  유지시킨다. Redis 무효화 실패·DB 직접 수정 시 최대 5분(`VERSION_TTL`)간 낡은 304가 나갈 수 있다
+  → [open-questions](../synthesis/open-questions.md) OQ-P-440
 - **테스트 전용 회전이 오늘 캔버스를 강제로 마감한다**(2026-08-18) — 호출 뒤 `today`가 `CLOSED` 캔버스를
   돌려주는 상태를 아무나 만들 수 있다 → [open-questions](../synthesis/open-questions.md)
 
