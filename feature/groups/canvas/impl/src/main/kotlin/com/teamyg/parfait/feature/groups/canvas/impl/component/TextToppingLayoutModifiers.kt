@@ -3,8 +3,11 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -16,6 +19,56 @@ internal fun TextStyle.withTextToppingSizing(fontSizeSp: Float): TextStyle = cop
     fontSize = fontSizeSp.sp,
     lineHeight = (fontSizeSp * TEXT_TOPPING_LINE_HEIGHT_RATIO).sp,
 )
+
+/** [fitTextToppingToHeight] 의 결과 — 글자 크기와 그에 맞춰 같은 비율로 줄인 래핑 폭. */
+internal class TextToppingAutoFit(
+    val fontSizeSp: Float,
+    val fieldMaxWidthDp: Dp,
+    val isOverflowing: Boolean,
+)
+
+/**
+ * 세로 예산([maxHeightPx])을 넘으면, 글자 크기와 래핑 폭을 **같은 비율**로 줄인다. 줄바꿈
+ */
+internal fun fitTextToppingToHeight(
+    textMeasurer: TextMeasurer,
+    text: String,
+    baseStyle: TextStyle,
+    maxWidthPx: Int,
+    maxWidthDp: Dp,
+    maxHeightPx: Int,
+    maxFontSizeSp: Float,
+    density: Density,
+): TextToppingAutoFit {
+    val naturalHeightPx = textMeasurer
+        .measure(
+            text = text,
+            style = baseStyle.withTextToppingSizing(maxFontSizeSp),
+            constraints = Constraints(maxWidth = maxWidthPx),
+        ).size.height
+
+    var scale = (maxHeightPx.toFloat() / naturalHeightPx).coerceAtMost(1f)
+    var fontSizeSp = maxFontSizeSp * scale
+    var fieldMaxWidthDp = maxWidthDp * scale
+
+    val measuredHeightPx = textMeasurer
+        .measure(
+            text = text,
+            style = baseStyle.withTextToppingSizing(fontSizeSp),
+            constraints = Constraints(maxWidth = with(density) { fieldMaxWidthDp.roundToPx() }),
+        ).size.height
+    if (measuredHeightPx > maxHeightPx) {
+        scale *= maxHeightPx.toFloat() / measuredHeightPx
+        fontSizeSp = maxFontSizeSp * scale
+        fieldMaxWidthDp = maxWidthDp * scale
+    }
+
+    return TextToppingAutoFit(
+        fontSizeSp = fontSizeSp,
+        fieldMaxWidthDp = fieldMaxWidthDp,
+        isOverflowing = naturalHeightPx > maxHeightPx,
+    )
+}
 
 /** 편집↔배치 전환용 세로 배치. */
 internal fun Modifier.editingTopAnchored(

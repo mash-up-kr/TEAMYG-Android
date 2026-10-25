@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -67,6 +68,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.TextToppingBackgr
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
 import com.teamyg.parfait.feature.groups.canvas.impl.component.editingTopAnchored
+import com.teamyg.parfait.feature.groups.canvas.impl.component.fitTextToppingToHeight
 import com.teamyg.parfait.feature.groups.canvas.impl.component.scaleBoxToFit
 import com.teamyg.parfait.feature.groups.canvas.impl.component.textEditDragInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
@@ -77,6 +79,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENG
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.detectTextToppingScript
+import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditBudget
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditModeState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditVerticalAnchor
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
@@ -86,7 +89,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberMaxLengthInput
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputUiState
 
 private val TEXT_TOPPING_MAX_TEXT_WIDTH = 335.dp
-private val TEXT_TOPPING_MAX_TEXT_HEIGHT = 331.dp
 private val TEXT_TOPPING_MIN_TOUCH = 44.dp
 
 @Composable
@@ -144,21 +146,19 @@ internal fun CanvasTextInputScreen(
         var canvasTopPx by remember { mutableFloatStateOf(0f) }
         // 키보드 위에 얹히는 툴바 실측 높이 — Text-Area 하단 경계가 이 위까지만 내려가도록 쓴다
         var toolbarHeightPx by remember { mutableIntStateOf(0) }
+        // 텍스트 박스 실측 높이
+        var textBoxHeightPx by remember { mutableFloatStateOf(0f) }
 
         val editAreaHeightPx = with(density) { (uiState.canvasSize?.height ?: 0.dp).roundToPx() }
-        val textEditAnchor = rememberTextEditVerticalAnchor(
+
+        val editBudget = rememberTextEditBudget(
             density = density,
-            isEditing = textEditMode.isEditing,
             canvasTopPx = canvasTopPx,
             rootHeightPx = rootHeightPx,
             editAreaHeightPx = editAreaHeightPx,
-            textBoxHeightDp = uiState.textBoxSize?.height,
             toolbarHeightPx = toolbarHeightPx,
-            maxBudgetPx = with(density) { TEXT_TOPPING_MAX_TEXT_HEIGHT.roundToPx() },
         )
 
-        // 박스가 세로 예산을 넘으면 graphicsLayer 로 비율 축소
-        val fontSizeSp = TEXT_TOPPING_FONT_SIZE_SP
         val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
 
         // 입력 언어로 글꼴·자간을 통째 고른다(일→Line Seed JP, 중→TW/자간0%, 그 외→SUIT/자간-1.1%).
@@ -172,14 +172,45 @@ internal fun CanvasTextInputScreen(
         val textMaxWidthDp = uiState.canvasSize
             ?.let { (it.width - editSideMargin * 2).coerceAtMost(TEXT_TOPPING_MAX_TEXT_WIDTH) }
             ?: TEXT_TOPPING_MAX_TEXT_WIDTH
+        val textMaxWidthPx = with(density) { textMaxWidthDp.roundToPx() }
+
+        val textMeasurer = rememberTextMeasurer()
+        val hugMeasureText = textFieldState.text.toString().ifEmpty { placeholderText }
+
+        // 편집 중 세로 예산을 넘으면 글자 크기와 래핑 폭을 같은 비율로 줄인다
+        val textToppingFit = if (textEditMode.isEditing) {
+            remember(hugMeasureText, autoSizeBaseStyle, textMaxWidthPx, textMaxWidthDp, editBudget.budgetPx) {
+                fitTextToppingToHeight(
+                    textMeasurer = textMeasurer,
+                    text = hugMeasureText,
+                    baseStyle = autoSizeBaseStyle,
+                    maxWidthPx = textMaxWidthPx,
+                    maxWidthDp = textMaxWidthDp,
+                    maxHeightPx = editBudget.budgetPx,
+                    maxFontSizeSp = TEXT_TOPPING_FONT_SIZE_SP,
+                    density = density,
+                )
+            }
+        } else {
+            null
+        }
+        val fontSizeSp = textToppingFit?.fontSizeSp ?: TEXT_TOPPING_FONT_SIZE_SP
+        val fieldMaxWidthDp = textToppingFit?.fieldMaxWidthDp ?: textMaxWidthDp
+
+        // 상단고정
+        val isTextOverflowing = textToppingFit?.isOverflowing == true
+        val textEditAnchor = rememberTextEditVerticalAnchor(
+            isEditing = textEditMode.isEditing,
+            budget = editBudget,
+            textBoxHeightPx = textBoxHeightPx,
+            isAtMaxHeight = isTextOverflowing,
+        )
 
         // 직접 재서 폭을 명시적으로 고정한다.
-        val textMeasurer = rememberTextMeasurer()
         val hugRenderStyle = autoSizeBaseStyle.withTextToppingSizing(fontSizeSp)
-        val hugMeasureText = textFieldState.text.toString().ifEmpty { placeholderText }
-        val hugWidthDp = remember(hugMeasureText, hugRenderStyle, textMaxWidthDp, density) {
+        val hugWidthDp = remember(hugMeasureText, hugRenderStyle, fieldMaxWidthDp, density) {
             val naturalWidthPx = textMeasurer.measure(text = hugMeasureText, style = hugRenderStyle).size.width
-            with(density) { naturalWidthPx.toDp() }.coerceAtMost(textMaxWidthDp)
+            with(density) { naturalWidthPx.toDp() }.coerceAtMost(fieldMaxWidthDp)
         }
 
         val focusFraction by animatePanelFocusFraction(textEditMode.isEditing)
@@ -306,12 +337,9 @@ internal fun CanvasTextInputScreen(
                                     focusFraction = focusFraction,
                                 ).scaleBoxToFit(
                                     maxWidthPx = if (textEditMode.isEditing) 0 else canvasWidthPx,
-                                    maxHeightPx = if (textEditMode.isEditing) {
-                                        textEditAnchor.budgetPx
-                                    } else {
-                                        editAreaHeightPx
-                                    },
+                                    maxHeightPx = if (textEditMode.isEditing) 0 else editAreaHeightPx,
                                 ).onSizeChanged { naturalSize ->
+                                    textBoxHeightPx = naturalSize.height.toFloat()
                                     with(density) {
                                         onTextBoxMeasured(DpSize(naturalSize.width.toDp(), naturalSize.height.toDp()))
                                     }
@@ -341,12 +369,15 @@ internal fun CanvasTextInputScreen(
                                 },
                         ) {
                             TextToppingBackground(
-                                // placeholder 상태(내용 없음)에선 타입을 바꿔도 배경·테두리가 바로
-                                // 안 보여야 한다 — 실제로 타이핑해서 placeholder가 사라지면 그때
-                                // uiState.textType 이 그대로 반영된다
                                 type = if (uiState.content.isBlank()) TextToppingType.DEFAULT else uiState.textType,
                                 color = uiState.selectedColor,
                                 fontSizeSp = fontSizeSp,
+
+                                modifier = if (textEditMode.isEditing && isTextOverflowing) {
+                                    Modifier.height(with(density) { editBudget.budgetPx.toDp() })
+                                } else {
+                                    Modifier
+                                },
                             ) {
                                 // 포커스 유무가 곧 편집/배치다(클래스 KDoc 참고)
                                 BasicTextField(
