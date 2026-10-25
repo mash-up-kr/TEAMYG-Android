@@ -3,6 +3,7 @@ package com.teamyg.parfait.data.poller
 import com.teamyg.parfait.data.model.qualifier.ApplicationScope
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
+import com.teamyg.parfait.data.source.parfait.remote.TodayCanvasFetch
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.coroutines.CoroutineScope
@@ -148,9 +149,9 @@ class CanvasPoller @Inject constructor(
     }
 
     /**
-     * 오늘 조회는 캔버스가 없으면 서버가 만들어 저장한다(`docs/api/parfait.md`) — 그래서 캔버스를
-     * 만들 필요가 있을 때만 쓴다. 캐시가 비었거나 실린 날짜가 오늘이 아니면(하루 경계를 넘겼다)
-     * 그 경우다. 나머지는 부작용 없는 상세 조회를 쓴다.
+     * ETag 는 캐시가 있고 그 날짜가 오늘일 때만 보낸다. 캐시 없이 304 를 받으면 그릴 값이 없고,
+     * 어제 날짜 캐시를 304 로 굳히면 하루 경계를 넘겨도 새 캔버스로 바뀌지 못한다
+     * (`docs/adr/0029-canvas-today-ssot-polling.md`).
      */
     private suspend fun refresh(groupId: GroupId): Result<Unit> {
         val startedGeneration = synchronized(lock) {
@@ -161,25 +162,25 @@ class CanvasPoller @Inject constructor(
 
         try {
             val cached = local.cachedTodayCanvas(groupId)
-            val cachedParfaitId = cached?.parfaitId
-            val needsToday = cachedParfaitId == null || cached.date != parfaitToday(clock)
+            val etag = cached
+                ?.takeIf { it.date == parfaitToday(clock) }
+                ?.let { local.cachedTodayEtag(groupId) }
 
-            val result = if (needsToday) {
-                remote.getTodayCanvas(groupId)
-            } else {
-                remote.getCanvasDetail(groupId = groupId, parfaitId = cachedParfaitId)
-            }
-
-            return result
-                .onSuccess { canvas ->
+            return remote
+                .getTodayCanvasIfChanged(groupId = groupId, etag = etag)
+                .onSuccess { fetch ->
                     synchronized(lock) {
                         if (generation == startedGeneration) {
                             // 구독자 없이 나간 갱신(화면 밖 푸시)이 단계를 올려 두면 다음
                             // 진입이 가장 촘촘한 단계에서 시작하지 못한다
-                            if (subscriberCounts.containsKey(groupId)) {
-                                if (cached != canvas) interval.onChanged(groupId) else interval.onUnchanged(groupId)
+                            val subscribed = subscriberCounts.containsKey(groupId)
+                            val changed = fetch is TodayCanvasFetch.Modified && fetch.canvas != cached
+                            if (subscribed) {
+                                if (changed) interval.onChanged(groupId) else interval.onUnchanged(groupId)
                             }
-                            local.saveTodayCanvas(groupId, canvas)
+                            if (fetch is TodayCanvasFetch.Modified) {
+                                local.saveTodayCanvas(groupId, fetch.canvas, fetch.etag)
+                            }
                         }
                     }
                 }.onFailure {

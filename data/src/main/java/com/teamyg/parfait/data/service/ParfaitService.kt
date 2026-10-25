@@ -1,13 +1,16 @@
 package com.teamyg.parfait.data.service
 
+import com.teamyg.parfait.data.network.NetworkConstValue.IF_NONE_MATCH_HEADER
 import com.teamyg.parfait.data.service.model.request.parfait.ChangeParfaitBackgroundRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.parfait.ChangeParfaitBackgroundResponse
 import com.teamyg.parfait.data.service.model.response.parfait.GetTodayParfaitResponse
 import com.teamyg.parfait.data.service.model.response.parfait.ParfaitYearsResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsResponse
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -19,6 +22,18 @@ interface ParfaitService {
     /** 조회인데 오늘 날짜 파르페가 없으면 서버가 만들어 저장한다 */
     @GET("api/v1/groups/{groupId}/parfaits/today")
     suspend fun getGroupsByGroupIdParfaitsToday(@Path("groupId") groupId: Long): ApiResponse<GetTodayParfaitResponse>
+
+    /**
+     * [getGroupsByGroupIdParfaitsToday] 의 조건부 판이다. 오늘 캔버스가 없으면 서버가 만들어 저장하는 것도 같다.
+     *
+     * [ifNoneMatch] 는 직전 응답의 `ETag` 를 해석 없이 그대로 돌려보낸다. 304 는 예외가 아니라
+     * [Response] 의 code 로 온다.
+     */
+    @GET("api/v2/groups/{groupId}/parfaits/today")
+    suspend fun getGroupsByGroupIdParfaitsTodayIfChanged(
+        @Path("groupId") groupId: Long,
+        @Header(IF_NONE_MATCH_HEADER) ifNoneMatch: String?,
+    ): Response<ApiResponse<GetTodayParfaitResponse>>
 
     /**
      * from·to 가 null 이면 서버 기본값이 쓰인다 — `to` 는 서버 기준 오늘(03시에 넘어간다), `from` 은
