@@ -133,7 +133,7 @@ class ParfaitTextRemoteDataSourceImplTest {
 
     @Test
     fun placeText_parfaitClosed_returnsBusinessException() = runTest {
-        // Given 마감된 캔버스 (HTTP status 축은 여기서 잡지 않는다)
+        // Given 마감된 캔버스
         coEvery {
             parfaitTextService.postGroupsByGroupIdParfaitsByParfaitIdTexts(any(), any(), any())
         } returns ApiResponse(

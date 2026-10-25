@@ -3,9 +3,6 @@ package com.teamyg.parfait.data.service.model.response.parfaittext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * 병합 후 전체 값이다. 토핑 일괄 수정 응답의 texts 원소도 이 타입이다.
- */
 @Serializable
 data class UpdateParfaitTextResponse(
     @SerialName("parfaitTextId")

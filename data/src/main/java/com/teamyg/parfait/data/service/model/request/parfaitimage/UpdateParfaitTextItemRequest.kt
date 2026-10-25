@@ -3,9 +3,6 @@ package com.teamyg.parfait.data.service.model.request.parfaitimage
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * 토핑 일괄 수정의 텍스트 항목. 단건 텍스트 PATCH 와 달리 위치·크기·각도만 바꾼다.
- */
 @Serializable
 data class UpdateParfaitTextItemRequest(
     @SerialName("parfaitTextId")

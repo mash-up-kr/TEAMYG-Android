@@ -27,7 +27,6 @@ interface ParfaitTextService {
         @Body request: UpdateParfaitTextRequest,
     ): ApiResponse<UpdateParfaitTextResponse>
 
-    /** 이미지 토핑 삭제와 같이 204 가 아니라 200 + data: null 이다. */
     @DELETE("api/v1/groups/{groupId}/parfaits/{parfaitId}/texts/{parfaitTextId}")
     suspend fun deleteGroupsByGroupIdParfaitsByParfaitIdTextsByParfaitTextId(
         @Path("groupId") groupId: Long,

@@ -3,9 +3,7 @@ package com.teamyg.parfait.domain.model.topping
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 
 /**
- * 배치된 텍스트 하나의 부분 수정. null 인 필드는 그대로 두라는 뜻이다.
- *
- * 내용(text)은 배치 뒤 바꿀 수 없어 필드가 없다 — 고치려면 지우고 다시 배치한다.
+ * null 인 필드는 그대로 둔다. 서버가 내용 수정을 받지 않아 text 가 없다 — 고치려면 지우고 다시 배치한다.
  */
 data class TextToppingUpdate(
     val parfaitTextId: ParfaitTextId,

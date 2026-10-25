@@ -4,8 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * @param text 공백만이거나 2000자를 넘으면 400 INVALID_TEXT. 서버는 UTF-16 코드 유닛으로 센다.
- * @param scale fontSize 에 곱하는 배율이다. scale·fontSize 가 0 이하면 400 INVALID_TEXT_STYLE.
+ * @param text 서버는 2000자 상한을 UTF-16 코드 유닛으로 센다 — 이모지 하나가 2다.
  */
 @Serializable
 data class PlaceParfaitTextRequest(
