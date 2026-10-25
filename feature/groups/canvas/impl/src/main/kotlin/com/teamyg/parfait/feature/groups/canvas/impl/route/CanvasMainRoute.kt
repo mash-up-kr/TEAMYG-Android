@@ -304,6 +304,7 @@ internal fun CanvasMainRoute(
                     sub = closedCanvasAlertSubFormat.format(effect.contributorCount),
                     buttonText = closedCanvasAlertButtonText,
                     onButtonClick = {
+                        alertPolicy.dismiss()
                         viewModel.processIntent(CanvasMainIntent.ClickPastCanvasAlertDate(effect.date))
                     },
                 )
