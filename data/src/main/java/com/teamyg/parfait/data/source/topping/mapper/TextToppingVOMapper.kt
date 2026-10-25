@@ -2,6 +2,7 @@ package com.teamyg.parfait.data.source.topping.mapper
 
 import com.teamyg.parfait.data.service.model.request.parfaittext.PlaceParfaitTextRequest
 import com.teamyg.parfait.data.service.model.request.parfaittext.UpdateParfaitTextRequest
+import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.data.service.model.response.parfaittext.UpdateParfaitTextResponse
 import com.teamyg.parfait.domain.model.group.GroupNickname
@@ -33,12 +34,14 @@ internal fun ToppingTransform.toPlaceTextRequest(
 internal fun TodayParfaitTextResponse.toPlacedTextToppingVO(): PlacedTextToppingVO = PlacedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
-    transform = toTransform(positionX, positionY, positionZ, scale, rotation),
-    style = toStyle(color, fontSize, isFill, isStroke),
-    placedBy = ToppingPlacerVO(
-        groupMemberId = GroupMemberId(placedBy.groupMemberId),
-        nickname = GroupNickname(placedBy.nickname),
-    ),
+    transform = transformOf(positionX, positionY, positionZ, scale, rotation),
+    style = styleOf(color, fontSize, isFill, isStroke),
+    placedBy = placedBy.toToppingPlacerVO(),
+)
+
+private fun PlacedByResponse.toToppingPlacerVO(): ToppingPlacerVO = ToppingPlacerVO(
+    groupMemberId = GroupMemberId(groupMemberId),
+    nickname = GroupNickname(nickname),
 )
 
 internal fun TextToppingUpdate.toUpdateTextRequest(): UpdateParfaitTextRequest = UpdateParfaitTextRequest(
@@ -56,11 +59,11 @@ internal fun TextToppingUpdate.toUpdateTextRequest(): UpdateParfaitTextRequest =
 internal fun UpdateParfaitTextResponse.toUpdatedTextToppingVO(): UpdatedTextToppingVO = UpdatedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
-    transform = toTransform(positionX, positionY, positionZ, scale, rotation),
-    style = toStyle(color, fontSize, isFill, isStroke),
+    transform = transformOf(positionX, positionY, positionZ, scale, rotation),
+    style = styleOf(color, fontSize, isFill, isStroke),
 )
 
-private fun toTransform(
+private fun transformOf(
     positionX: Double,
     positionY: Double,
     positionZ: Int,
@@ -74,7 +77,7 @@ private fun toTransform(
     rotation = rotation,
 )
 
-private fun toStyle(
+private fun styleOf(
     color: String,
     fontSize: Double,
     isFill: Boolean,
