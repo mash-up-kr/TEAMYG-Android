@@ -33,8 +33,6 @@ private val TOOLBAR_BUTTON_SIZE = 36.dp
 
 private val COLOR_CHIP_SIZE = 24.dp
 
-private val TYPE_PREVIEW_PADDING_HORIZONTAL = 6.dp
-
 @Composable
 internal fun CanvasTextInputToolbar(
     selectedColor: TextToppingColor,
@@ -73,7 +71,6 @@ internal fun CanvasTextInputToolbar(
 
         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
 
-        // 타입(기본/배경/배경+테두리) 순환.
         TypePreviewButton(
             textType = textType,
             onClick = onClickType,
@@ -81,7 +78,6 @@ internal fun CanvasTextInputToolbar(
 
         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
 
-        // 정렬(가운데/왼쪽/오른쪽) 순환.
         Box(
             modifier = Modifier
                 .size(TOOLBAR_BUTTON_SIZE)
@@ -106,9 +102,7 @@ internal fun CanvasTextInputToolbar(
     }
 }
 
-/**
- * 현재 타입을 미리 보여 주는 버튼. fill/stroke/radius 세 타입
- */
+/** 피그마 `Button-Text-Type` — 고른 글자색과 무관한 고정색이다 */
 @Composable
 private fun TypePreviewButton(
     textType: TextToppingType,
@@ -125,42 +119,26 @@ private fun TypePreviewButton(
     Box(
         modifier = modifier
             .size(TOOLBAR_BUTTON_SIZE)
-            .clickableYGNoRipple(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier.then(
+            .clip(small)
+            .then(
                 when (textType) {
                     TextToppingType.DEFAULT -> Modifier
 
-                    // 배경O 테두리X
-                    TextToppingType.FILL ->
-                        Modifier
-                            .background(color = YGAtomicColors.Gray.White, shape = small)
-                            .padding(
-                                horizontal = TYPE_PREVIEW_PADDING_HORIZONTAL,
-                                vertical = YGTheme.layout.padding.padding1,
-                            )
+                    TextToppingType.FILL -> Modifier.background(color = YGAtomicColors.Gray.White)
 
-                    // 배경O 테두리O
                     TextToppingType.FILL_STROKE ->
                         Modifier
+                            .background(color = YGAtomicColors.Transparency.Black75)
                             .border(width = 1.dp, color = YGAtomicColors.Gray.White, shape = small)
-                            .background(color = YGAtomicColors.Transparency.Black75, shape = small)
-                            .padding(
-                                horizontal = TYPE_PREVIEW_PADDING_HORIZONTAL,
-                                vertical = YGTheme.layout.padding.padding1,
-                            )
                 },
-            ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "A",
-                style = YGTheme.typography.body.b01B,
-                color = letterColor,
-            )
-        }
+            ).clickableYGNoRipple(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "A",
+            style = YGTheme.typography.body.b01B,
+            color = letterColor,
+        )
     }
 }
 
@@ -186,7 +164,6 @@ private fun CanvasTextInputToolbarPreview() = PreviewBox {
     )
 }
 
-/** 100자 도달 시 카운터가 빨간색이 되는지 확인용. */
 @YGPreview
 @Composable
 private fun CanvasTextInputToolbarAtLimitPreview() = PreviewBox {
