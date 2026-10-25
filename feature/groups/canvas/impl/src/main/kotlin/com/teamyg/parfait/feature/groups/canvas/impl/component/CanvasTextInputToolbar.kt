@@ -56,7 +56,6 @@ internal fun CanvasTextInputToolbar(
             bottom = YGTheme.layout.padding.padding3,
         ),
     ) {
-
         Box(
             modifier = Modifier
                 .size(TOOLBAR_BUTTON_SIZE)

@@ -372,7 +372,6 @@ internal fun CanvasTextInputScreen(
                                 type = if (uiState.content.isBlank()) TextToppingType.DEFAULT else uiState.textType,
                                 color = uiState.selectedColor,
                                 fontSizeSp = fontSizeSp,
-
                                 modifier = if (textEditMode.isEditing && isTextOverflowing) {
                                     Modifier.height(with(density) { editBudget.budgetPx.toDp() })
                                 } else {
