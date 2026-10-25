@@ -1,10 +1,10 @@
 ---
 id: text-topping
 title: 텍스트 토핑 — 캔버스 텍스트 업로드·수정·삭제 (Text Topping)
-status: draft
+status: in-progress
 category: behavior-spec
 platforms: android
-verified: 2026-10-16
+verified: 2026-10-25
 related_code:
   # as-built — 신규 생성 플로우(단일 화면)
   - AnalyticsScreenType.kt#CANVAS_TEXT_INPUT
@@ -19,6 +19,9 @@ related_code:
   - TextToppingAlign.kt#nextTextToppingAlign
   - TextToppingColor.kt
   - TextToppingInput.kt
+  - TextToppingLimits.kt#TEXT_TOPPING_DESIGN_CANVAS_WIDTH
+  - TextToppingLayoutModifiers.kt#fitTextToppingToHeight
+  - TextEditDragInput.kt#textEditTapInput
   - GraphemeClusterExtension.kt#graphemeClusterCount
   - GraphemeClusterExtension.kt#truncateToGraphemeClusters
   - TextToppingScript.kt#detectTextToppingScript
@@ -99,24 +102,30 @@ tags: [spec, parfait, canvas, topping, c-106, text]
   - 캔버스 중앙 생성 + 키보드 ↑, 빈 상태 플레이스홀더("텍스트를 입력해 주세요")
   - 그래핌 클러스터 기준 100자 제한·초과 자르기·카운터 빨간색, 빈 내용 판정
   - 타입 3종(기본/배경/배경+테두리) · 정렬 3종 순환 · 8색 팔레트 + Black/White 교차 · 색 팝오버
-  - **자동 크기**(24sp부터 Text-Area 높이에 맞게 연속 축소, 이진 탐색, 하한 없음, 전환 애니메이션,
-    키보드 높이 변화 시 재계산, 배치 모드선 값 고정)
+  - **자동 크기**(디자인 24부터 Text-Area 높이에 맞게 글자 크기·래핑 폭을 같은 비율로 연속 축소, 하한
+    없음, 키보드 높이 변화 시 재계산). 키보드를 내린 순간의 값을 `designFontSize`(디자인 단위)로 들고
+    배치에선 다시 계산하지 않는다
+  - **캔버스 너비 기준 크기**: 글자 크기·래핑 폭·여백을 디자인 너비 335 기준 값 × (실제 캔버스 너비 / 335)
+    로 그린다. 래핑 폭은 캔버스 너비(글자만 기준). 시스템 글꼴 배율은 무시한다(`fontScale = 1`)
   - 네모배경 여백·테두리 비율(1/3·1/6·1/24, 0.5dp clamp, 직각) — 자동 크기에 연동
   - **글꼴·자간 언어 분기**: 한/영 SUIT·자간 -1.1%, 일 Line Seed JP·-1.1%, 중 Line Seed TW·0%
     (내용의 주된 스크립트로 통째 적용), 행간 140%
   - 배치 상태 이동·핀치(크기·회전), 텍스트 재탭 편집 복귀
   - **키보드 ↑ 3분기 제스처**: 탭=커서 / 롱프레스=시스템 선택 / 슬롭(touchSlop×2.5) 이상 끌기=키보드
-    내리며 그 자리에서 이어 이동(`PointerEventPass.Initial` 선점 + 롱프레스 레이스). 빈 내용은 끌기 불가
+    내리며 그 자리에서 이어 이동(`PointerEventPass.Initial` 선점 + 롱프레스 레이스). 두 번째 손가락이
+    닿으면 키보드를 내리며 크기·회전까지 이어 간다. 빈 내용은 끌기·핀치 불가
   - **키보드 내리기 4경로 모두**(✓·빈 곳 탭·텍스트 끌기·Android 뒤로) — 끌기 외 경로는 **빈 내용이면
     생성 취소·C-001 복귀**(플레이스홀더만 있는 채로 배치에 남지 않음), 내용 있으면 배치 모드로
-  - 배치 모드 재탭·드래그 판정 영역 **최소 44×44**(글자가 작아도, 시각 크기는 그대로)
-  - 박스 밖 탭 순차 닫힘(팝오버 → 키보드), 닫는 탭이 아래 요소로 전파되지 않음
+  - 편집·배치 모드 판정 영역 **최소 44×44**(글자가 작아도, 시각 크기는 그대로). 편집 중 박스 둘레
+    44×44 안의 탭은 박스 탭으로 보고 편집을 유지한다
+  - 박스 밖 탭 순차 닫힘(팝오버 → 키보드), 닫는 탭이 아래 요소로 전파되지 않음. ✓ 는 팝오버가 열려
+    있어도 한 번에 편집을 끝내고, 어느 경로로 편집이 끝나도 팝오버를 닫는다
+  - 헤더 X 확인 팝업(`YGModalQuitAddText` — 그만두기 / 계속 추가)
 - **미구현 (설계만, 후속 PR/선행 조건 대기)**
   - [캔버스에 쌓기]의 실제 서버 저장 — **스텁**(draft만 비우고 C-001 복귀). `AddToppingUseCase`가
     사진 전용이라 텍스트를 못 실음 + 서버 API 계약 미정(아래 "열린 질문")
   - 재편집(C-305 확장) · 삭제 · 동시편집 병합 · 03:00 마감 — 저장이 스텁이라 아직 해당 없음.
     붙을 때 **사진 토핑의 기존 체계를 그대로 재사용**한다
-  - 헤더 X "변경 있으면 확인 팝업" — 지금은 팝업 없이 바로 나감
   - Android 뒤로가기의 "팝오버 먼저, 그다음 키보드" 순차 — 소프트 키보드가 떠 있으면 시스템이
     백을 먼저 먹어 키보드부터 내려가는 플랫폼 제약. 팝오버는 편집 모드에만 보이므로 키보드와 함께
     닫힌다(탭-아웃은 스펙대로 순차 동작). 자세한 근거는 "주의" 참고
@@ -140,8 +149,7 @@ C-001 하단 [추가 +] 탭
         → [캔버스에 쌓기] → C-001 반영 (※ 서버 저장은 아직 스텁 — "범위" 참고)
 ```
 
-(초안의 "텍스트 끌기로 바로 배치 전환" 제스처와 2화면 전환은 as-built에서 빠졌다 — 위 "화면
-식별자" 설계 변경·아래 "범위" 참고.)
+편집·배치는 C-106 한 화면에서 처리한다 — 위 "화면 식별자" 참고.
 
 수정 플로우:
 
@@ -192,14 +200,14 @@ nextPositionZ)만 쓰고, 텍스트 화면은 그 중 groupId 만 읽어 오늘 
 규칙: 같은 색 안에서 **진한 톤 = 테두리(Fill+Stroke 타입)·텍스트(Default 타입) 색**, **옅은 톤 = 배경(Fill·Fill+Stroke 타입의 네모배경) 색**. Black/White 둘만 예외로, 자기 색의 옅은 버전을 쓰지 않고
 서로 **교차**한다 — White 텍스트의 Fill 배경은 Black, Black 텍스트의 Fill 배경은 White
 (이전에 본 목업 스크린샷의 "White-Fill = 검정 배경 + 흰 텍스트"와 일치).
-**Pink·Orange·Yellow·Green·Blue·Violet 패밀리(각 `Stroke`/`Fill`)는 `YGAtomicColors`에 신규 추가했다**
-(Black/White 는 기존 `Gray` 교차 사용).
+Pink·Orange·Yellow·Green·Blue·Violet 값은 `TextToppingColor`(canvas impl `model/`)에 둔다 — 텍스트
+토핑 전용이라 디자인시스템에 두지 않는다(Black/White 는 `YGAtomicColors.Gray` 교차 사용).
 
 ## 네모배경 (배경 · 배경+테두리 타입)
 
 | 항목 | 규칙 |
 |---|---|
-| 글자 가로 최대 | 335px (글자만의 기준, 배경 여백 불포함) |
+| 글자 가로 최대 | 캔버스 너비(디자인 335 기준, 글자만, 배경 여백 불포함) |
 | 좌우 여백 | 글자 크기 × 1/3 (24px → 8px, 20px → 약 6.7px) |
 | 상하 여백 | 글자 크기 × 1/6 (24px → 4px, 20px → 약 3.3px) |
 | 모서리 반경 | 0 (직각) |
@@ -221,8 +229,8 @@ nextPositionZ)만 쓰고, 텍스트 화면은 그 중 groupId 만 읽어 오늘 
 - 100자 도달 시 추가 입력 무시 + 카운터 빨간색. 붙여넣기로 100자 초과 시 앞 100자만 남김(그래핌
   클러스터 경계에서 자름 — 조합 이모지가 중간에서 깨지지 않게)
 - 글자 수는 **화면에 보이는 글자 단위**(그래핌 클러스터)로 센다 — 🙌🏽, 👨‍👩‍👧 같은 조합 이모지도
-  1자, 줄바꿈도 1자. `GraphemeClusterExtension`(직접 구현 — `BreakIterator`/ICU 미사용, ZWJ·스킨톤
-  접합을 코드포인트 규칙으로 직접 처리)으로 센다
+  1자, 줄바꿈도 1자. `GraphemeClusterExtension`(직접 구현 — `BreakIterator`/ICU 미사용, ZWJ·스킨톤·
+  키캡(Me)·국기(지역 표시자 쌍)·태그 시퀀스·CRLF 접합을 코드포인트 규칙으로 직접 처리)으로 센다
 - 빈 내용 판정: 앞뒤 공백 제거 후 공백·줄바꿈만 남으면 빈 내용
 - 지원 언어: 한/영/일/중/숫자/이모지. 비속어 필터·신고·접근성은 범위 밖
 
@@ -258,9 +266,9 @@ Compose `BasicTextField` 기준으로 **`PointerEventPass.Initial`에서 먼저 
 2. `withTimeoutOrNull(longPressTimeoutMillis)`로 "슬롭(`touchSlop × 2.5` 정도) 초과"와 "롱프레스 시간
    초과"를 레이스. 슬롭을 먼저 넘으면 그 이벤트만 `consume()`하고 드래그 확정, 타임아웃이 먼저
    끝나면 아무것도 소비하지 않고 반환 → 필드의 Main pass 제스처(롱프레스 선택)에 그대로 양도
-3. 드래그 확정 후 `keyboardController?.hide()` + `focusManager.clearFocus()` + `onDragStart()`,
-   이후 이벤트를 계속 `consume()`하며 `onDrag()` 호출. 포인터 소실 시 `onDragCancel()`, 정상 해제 시
-   `onDragEnd()`
+3. 두 번째 손가락이 닿으면 슬롭과 무관하게 바로 확정한다. 확정 후 `onDragStart()`(배치 좌표를 심고
+   `focusManager.clearFocus()` + `keyboardController?.hide()`), 이후 이벤트를 계속 `consume()`하며
+   `onDrag(pan, zoom, rotation)` 호출 — 한 손가락이면 이동만, 두 손가락이면 이동·확대·회전을 함께 넘긴다
 
 끌기 판정 거리는 `ViewConfiguration.touchSlop × 2.5` 정도를 기본값으로 하되 실기기 튜닝 대상.
 
@@ -288,14 +296,12 @@ Compose `BasicTextField` 기준으로 **`PointerEventPass.Initial`에서 먼저 
 
 ## 자동 크기 계산 (연속 축소, 하한 없음)
 
-- 최대 24px에서 시작, 실제 렌더링된 텍스트 높이가 Text-Area 높이 안에 들어오는 **가장 큰 크기**를
-  찾는다(인스타 스토리 방식 — 이진 탐색 또는 1px 단위 하향 탐색)
-- 측정은 Compose `TextMeasurer`(또는 `StaticLayout`)로 각 후보 크기에서 줄 수·높이를 계산
-- 입력마다 재계산 — 텍스트 길이가 짧은 캔버스 텍스트 기준이라 성능 문제는 거의 없음. 빠른 타이핑
-  구간은 디바운스
-- 크기 전환은 `animateFloatAsState` 등으로 애니메이션
-- 키보드 높이·추천어 줄 변화로 Text-Area 높이가 바뀌면 재계산 필요(`WindowInsets.ime` 변화를 키로
-  다시 측정)
+- `fitTextToppingToHeight`: 최대 크기(디자인 24 × 캔버스 비율)·래핑 폭(캔버스 너비)으로 한 번 재고,
+  Text-Area 예산을 넘으면 넘친 비율만큼 글자 크기와 래핑 폭을 **같은 비율**로 줄인 뒤 한 번 더 재서
+  보정한다. 래핑 폭을 같이 줄이므로 줄바꿈 위치는 그대로다. 측정은 Compose `TextMeasurer`
+- 입력·Text-Area 예산(`WindowInsets.ime`로 구한 키보드 높이 포함)·캔버스 크기가 바뀔 때마다 다시 잰다
+- 편집 중 결과를 디자인 단위(`designFontSize`)로 ViewModel 에 올린다. 배치는 이 값으로 그리고 다시
+  재지 않는다 — 키보드를 내리는 순간 크기·줄바꿈이 바뀌지 않는다
 - 줄바꿈 100번 같은 극단 케이스는 폰트 크기가 한없이 작아지는 문제가 생길 수 있어, 실기기에서
   SUIT로 렌더링 한계를 확인하는 QA 항목으로 남긴다(아래 열린 질문)
 
@@ -380,13 +386,16 @@ data class EditableTextTopping(
 | `feature/groups/canvas/impl/.../screen/CanvasMainScreen.kt` | `addAction` 펼침 목록에 "텍스트 입력" `YGCanvasMenuItem` 추가(별도 `YGCanvasMenuAction` 안 만듦) |
 | `feature/groups/canvas/api/.../NavKeyCanvasTextInput.kt` (신규) | 파라미터 없는 `data object` NavKey. 내용은 초안이 아니라 화면 로컬 상태 |
 | `feature/groups/canvas/impl/.../route/CanvasTextInputRoute.kt` (신규) | 인셋을 Scaffold가 미리 안 먹게 `contentWindowInsets = 0`, effect→네비게이션 배선 |
-| `feature/groups/canvas/impl/.../screen/CanvasTextInputScreen.kt` (신규, **C-106**) | 편집/배치 모드를 `isEditing`(필드 포커스로 구동) 로 가르는 단일 화면. 정적 캔버스 9:16 프레임·딤·툴바·헤더, 자동 크기(이진 탐색)·키보드 위 중심 계산·빈 내용 취소 판정 |
+| `feature/groups/canvas/impl/.../screen/CanvasTextInputScreen.kt` (신규, **C-106**) | 편집/배치 모드를 `isEditing`(필드 포커스로 구동) 로 가르는 단일 화면. 정적 캔버스 9:16 프레임·딤·툴바·헤더, 캔버스 너비 기준 크기·자동 크기 적용·키보드 위 중심 계산·빈 내용 취소 판정 |
 | `feature/groups/canvas/impl/.../viewmodel/CanvasTextInputViewModel.kt` (신규) | 그래핌 카운팅·타입/정렬/색 순환·배치 transform·초기 중앙 배치. 캔버스 구독(배경·기존 토핑) |
 | `feature/groups/canvas/impl/.../component/CanvasTextInputToolbar.kt` (신규) | 색 칩·타입 프리뷰 버튼(`TypePreviewButton`)·정렬·글자수 상태바(52dp hug) |
 | `feature/groups/canvas/impl/.../component/TextColorChipRow.kt` (신규) | 8색 가로 팝오버 |
 | `feature/groups/canvas/impl/.../component/TextToppingBackground.kt` (신규) | 네모배경·테두리(글자 크기 비율, 단일 Box) |
-| `feature/groups/canvas/impl/.../component/TextEditDragInput.kt` (신규) | 키보드 ↑ 3분기 제스처(`PointerEventPass.Initial` 선점, 슬롭 vs 롱프레스 레이스) — 끌기면 키보드 내리며 이동 |
-| `feature/groups/canvas/impl/.../util/TextToppingType.kt`·`TextToppingAlign.kt`·`TextToppingColor.kt`·`TextToppingInput.kt`·`TextToppingScript.kt` (신규) | 타입/정렬 순환, 8색 팔레트(`contentColor`/`backgroundColor`, 텍스트 토핑 전용이라 디자인시스템이 아니라 여기 둔다), 상수(max 100자·min scale·max font size), 언어별 글꼴·자간 분기(JP/TW `FontFamily` 도 여기 로컬 — 캔버스 밖에서 안 써 디자인시스템에 안 둔다) |
+| `feature/groups/canvas/impl/.../component/TextEditDragInput.kt` (신규) | 키보드 ↑ 제스처(`PointerEventPass.Initial` 선점, 슬롭 vs 롱프레스 레이스) — 끌기·핀치면 키보드 내리며 이동·확대·회전. `textEditTapInput` 은 박스 둘레 최소 터치 탭과 바깥 탭을 가른다 |
+| `feature/groups/canvas/impl/.../component/TextToppingLayoutModifiers.kt` (신규) | 행간, 자동 크기(`fitTextToppingToHeight`), 편집↔배치 세로 배치, 캔버스 제약 없는 박스 측정 |
+| `feature/groups/canvas/impl/.../model/TextToppingType.kt`·`TextToppingAlign.kt`·`TextToppingColor.kt`·`TextToppingLimits.kt`·`TextToppingScript.kt`·`TextEditModeState.kt`·`TextEditVerticalAnchor.kt` (신규) | 타입/정렬 순환, 8색 팔레트(`contentColor`/`backgroundColor`, 텍스트 토핑 전용이라 디자인시스템이 아니라 여기 둔다), 상수(max 100자·min scale·max font size·디자인 캔버스 너비), 언어별 글꼴·자간 분기(JP/TW `FontFamily` 도 여기 로컬 — 캔버스 밖에서 안 써 디자인시스템에 안 둔다), 편집 모드·세로 예산 상태 |
+| `feature/groups/canvas/impl/.../util/TextToppingInput.kt` (신규) | 입력 변환(100자 초과분 자르기, 한글 줄바꿈 중복 보정) |
+| `core/ui/.../component/modal/YGModalQuit.kt` | `YGModalQuitAddText`(텍스트 추가 그만두기 모달) |
 | `feature/groups/canvas/impl/src/main/res/font/line_seed_{jp,tw}_regular.ttf` + `licenses/LINESeed*` (신규) | Line Seed JP/TW Regular 번들(공식 배포본·라이선스 포함) |
 | `core/util/jvm/.../extension/GraphemeClusterExtension.kt` (신규) | 그래핌 클러스터 카운터(ZWJ·스킨톤 직접 접합), 경계 자르기 |
 | `core/designsystem/.../component/ygfloatingbar/YGFloatingBar.kt` | `YGFloatingBarTitleConfirm` 가운데 정렬 보정(편집 헤더는 Title-Confirm, 배치 헤더는 Title 사용) |
@@ -402,8 +411,8 @@ data class EditableTextTopping(
 
 ## 주의 / 열린 질문
 
-- **[캔버스에 쌓기]가 스텁이라 서버 저장이 아직 안 된다.** 현재 쌓기/닫기는 draft만 비우고
-  C-001로 되감는다. 실제 저장은 서버 API 계약(아래)과 `AddToppingUseCase` 류의 텍스트 지원이
+- **[캔버스에 쌓기]가 스텁이라 서버 저장이 아직 안 된다.** 쌓기는 `canvas_text_stack_tapped` 로그만 남기고
+  draft를 비운 채 C-001로 되감는다(미결 [OQ-P-439](../../synthesis/open-questions.md)). 실제 저장은 서버 API 계약(아래)과 `AddToppingUseCase` 류의 텍스트 지원이
   선행돼야 한다 — 이번 기능에서 남은 가장 큰 작업이다.
 - **Android 뒤로가기의 "팝오버 먼저" 순차는 플랫폼상 불가.** 소프트 키보드가 떠 있으면 시스템이
   백을 먼저 소비해 키보드를 내리므로(앱 `BackHandler` 로도 못 가로챔), 백 1회로 "팝오버만 닫고
@@ -414,11 +423,11 @@ data class EditableTextTopping(
   스펙만으로 확정할 수 없고 서버 스키마 협의가 선행돼야 한다. [c106-topping-place-api](archive/2026-08-20-c106-topping-place-api.md)가
   사진 토핑 때 겪은 좌표 변환·테두리 계약 전환 패턴을 그대로 참고할 수 있다.
 - **Line Seed JP/TW 폰트를 번들했다(공식 배포본).** `res/font/line_seed_{jp,tw}_regular.ttf`, 라이선스는
-  `core/designsystem/licenses/`. 남는 고려: ⓐ APK 가 ~10.5MB 커짐(특히 TW 번체 전체 글리프 6.9MB) —
+  `feature/groups/canvas/impl/licenses/`. 남는 고려: ⓐ APK 가 ~10.5MB 커짐(특히 TW 번체 전체 글리프 6.9MB) —
   필요하면 서브셋팅으로 축소, ⓑ 언어 판별은 **글자별이 아니라 내용의 주된 스크립트**로 통째 적용이라
   한 토핑에 일+중이 섞이면 하나로만 그려짐(Compose 편집 필드 제약), ⓒ 중국어는 **번체(TW)** 폰트.
 - **그래핌 클러스터 카운팅은 `BreakIterator` 가 아니라 직접 구현**(`GraphemeClusterExtension`, ZWJ·
-  스킨톤 접합을 직접 처리)이라 ICU 버전 편차에 덜 민감하다. 그래도 최신 이모지 시퀀스는 실기기
+  스킨톤·키캡·국기·태그 시퀀스·CRLF 접합을 직접 처리)이라 ICU 버전 편차에 덜 민감하다. 그래도 최신 이모지 시퀀스는 실기기
   매트릭스로 확인 권장.
 - **크로스플랫폼 줄바꿈 완전 동기화는 이 스펙만으로 닫히지 않는다.** 저장값 재사용 원칙은 정했지만
   `lineBreakPositions` 필드 자체가 서버 계약에 들어갈지는 미정이라 위 서버 API 열린 질문과 묶인다.
