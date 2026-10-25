@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UpdateParfaitImagesResponse(
     @SerialName("images")
-    val images: List<UpdateParfaitImageResponse>,
+    val images: List<UpdateParfaitImageResponse> = emptyList(),
     @SerialName("texts")
     val texts: List<UpdateParfaitTextResponse> = emptyList(),
 )
