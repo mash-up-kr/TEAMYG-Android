@@ -1,6 +1,6 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
-import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.network.NetworkConstValue.ETAG_HEADER
 import com.teamyg.parfait.data.service.ParfaitService
@@ -36,15 +36,15 @@ class ParfaitRemoteDataSourceImpl @Inject constructor(
     override suspend fun getTodayCanvasIfChanged(
         groupId: GroupId,
         etag: String?,
-    ): Result<TodayCanvasFetch> = apiCaller.safeConditionalApiCall(
+    ): Result<TodayCanvasFetchEntity> = apiCaller.safeConditionalApiCall(
         block = {
             parfaitService.getGroupsByGroupIdParfaitsTodayIfChanged(
                 groupId = groupId.value,
                 ifNoneMatch = etag,
             )
         },
-        notModified = TodayCanvasFetch.NotModified,
-        transform = { data, headers -> TodayCanvasFetch.Modified(data.toCanvasVO(), headers[ETAG_HEADER]) },
+        notModified = TodayCanvasFetchEntity.NotModified,
+        transform = { data, headers -> TodayCanvasFetchEntity.Modified(data.toCanvasVO(), headers[ETAG_HEADER]) },
     )
 
     override suspend fun getPastCanvases(

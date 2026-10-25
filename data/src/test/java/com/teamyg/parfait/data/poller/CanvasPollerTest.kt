@@ -2,7 +2,7 @@ package com.teamyg.parfait.data.poller
 
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSourceImpl
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
-import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -77,15 +77,15 @@ class CanvasPollerTest {
         override suspend fun getTodayCanvasIfChanged(
             groupId: GroupId,
             etag: String?,
-        ): Result<TodayCanvasFetch> {
+        ): Result<TodayCanvasFetchEntity> {
             callCount++
             receivedEtags += etag
             gate?.await()
             failure?.let { return Result.failure(it) }
             return Result.success(
                 when (etag != null && etag == this.etag) {
-                    true -> TodayCanvasFetch.NotModified
-                    false -> TodayCanvasFetch.Modified(response, this.etag)
+                    true -> TodayCanvasFetchEntity.NotModified
+                    false -> TodayCanvasFetchEntity.Modified(response, this.etag)
                 },
             )
         }
@@ -436,11 +436,11 @@ class CanvasPollerTest {
         override suspend fun getTodayCanvasIfChanged(
             groupId: GroupId,
             etag: String?,
-        ): Result<TodayCanvasFetch> {
+        ): Result<TodayCanvasFetchEntity> {
             val gate = gates[callCount]
             callCount++
             gate.await()
-            return Result.success(TodayCanvasFetch.Modified(response, null))
+            return Result.success(TodayCanvasFetchEntity.Modified(response, null))
         }
 
         override suspend fun getPastCanvases(

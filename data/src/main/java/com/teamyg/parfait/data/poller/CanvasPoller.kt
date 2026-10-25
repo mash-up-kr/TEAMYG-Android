@@ -3,7 +3,7 @@ package com.teamyg.parfait.data.poller
 import com.teamyg.parfait.data.model.qualifier.ApplicationScope
 import com.teamyg.parfait.data.source.parfait.local.CanvasLocalDataSource
 import com.teamyg.parfait.data.source.parfait.remote.ParfaitRemoteDataSource
-import com.teamyg.parfait.data.model.entity.TodayCanvasFetch
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.parfaitToday
 import kotlinx.coroutines.CoroutineScope
@@ -174,11 +174,11 @@ class CanvasPoller @Inject constructor(
                             // 구독자 없이 나간 갱신(화면 밖 푸시)이 단계를 올려 두면 다음
                             // 진입이 가장 촘촘한 단계에서 시작하지 못한다
                             val subscribed = subscriberCounts.containsKey(groupId)
-                            val changed = fetch is TodayCanvasFetch.Modified && fetch.canvas != cached
+                            val changed = fetch is TodayCanvasFetchEntity.Modified && fetch.canvas != cached
                             if (subscribed) {
                                 if (changed) interval.onChanged(groupId) else interval.onUnchanged(groupId)
                             }
-                            if (fetch is TodayCanvasFetch.Modified) {
+                            if (fetch is TodayCanvasFetchEntity.Modified) {
                                 local.saveTodayCanvas(groupId, fetch.canvas, fetch.etag)
                             }
                         }
