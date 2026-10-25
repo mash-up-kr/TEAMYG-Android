@@ -3784,7 +3784,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   아니면 "표시용 부가 필드는 널 허용"이라는 예외를 명시할지. ③ 키 이름 변경을 **계약 문서 대조 말고
   다른 수단으로 잡을 방법**이 있는지 — 이번에도 잡은 것은 서버 delta 감사이고, 앱 테스트는 자기 DTO를
   자기가 만들어 넣으므로 절대 못 잡는다(와이어 계약 테스트가 있는 곳은 `isNewUser` 하나뿐이다).
-- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / **③ 미해결**
+- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / ③ 결정(2026-10-26 — DTO 직렬화 테스트를 두지 않는다)
 - **해소 메모**: 고치면 [api/parfait-group.md](../api/parfait-group.md)·[api/parfait.md](../api/parfait.md)
   Android 매핑의 경고를 걷고 OQ-P-224를 닫는다. ②는 [api/conventions.md](../api/conventions.md)
   직렬화 규약과 [data-layer](../architecture/data-layer.md)에 적는다(OQ-P-227과 한 자리).
@@ -3800,6 +3800,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > develop은 필드를 안 읽어 무해했다. 지금은 **develop이 네 자리에서 이 키로 색을 정한다**(S-101 멤버
   > 칩 · G-001 그룹 칩 · C-001 상단 칩 · 목록 시각). 다음 키 변경은 브랜치가 아니라 **출시 가능한
   > develop을 조용히 폴백 색으로 만든다.**
+  > 🔒 **③ 결정(2026-10-26)** — DTO 직렬화 테스트는 만들지 않는다. 테스트가 단언하는 키는 `@SerialName`을 쓴
+  > 사람이 같은 가정으로 적은 것이라 서버와 어긋나도 함께 초록이다. 유일한 선례 `KakaoLoginResponseSerializationTest`도
+  > 지웠다. 키 어긋남은 서버 delta 감사(`sync-server-api-baseline`)가 잡는다
+  > (`.claude/rules/no-dto-serialization-test.md`).
 
 ### [2026-08-19] `recentImageUploadedAt`이 비널이 되면서 두 가지를 뜻하게 됐다
 

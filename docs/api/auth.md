@@ -25,9 +25,8 @@ tags: [api, parfait, server-contract, auth]
 | POST | `/api/v1/auth/reissue` | 불필요(화이트리스트) | `ReissueRequest` | `ReissueResponse` | **결선됨**[^reissue] |
 | POST | `/api/v1/auth/logout` | **필요**(화이트리스트 밖) | `LogoutRequest` | 없음(204, envelope 없음) | **결선됨**[^logout] |
 
-[^newuser]: **2026-08-14 해소** — `@SerialName("isNewUser")`로 정정하고 실제 JSON 본문을 디코딩하는
-와이어 계약 테스트(`KakaoLoginResponseSerializationTest`)를 붙였다. 되돌리면 그 테스트가
-`MissingFieldException`으로 깨진다. 같은 라운드가 Repository·UseCase·화면까지 결선했다
+[^newuser]: **2026-08-14 해소** — `@SerialName("isNewUser")`로 정정했다. `isNewUser`는 기본값이 없어
+키가 틀리면 디코딩이 `MissingFieldException`으로 바로 실패한다. 같은 라운드가 Repository·UseCase·화면까지 결선했다
 (PR #241 `80895eb1`, 2026-08-15 develop 머지)
 → [a002-kakao-login-api 스펙](../superpowers/specs/archive/2026-08-13-a002-kakao-login-api.md).
 **단 실서버 응답으로는 아직 확인하지 못했다** — 아래 [판별자 키](#판별자-키는-isnewuser다).
@@ -76,8 +75,9 @@ MockMvc 본문 단언은 실제 직렬화 결과다.
 **로그인이 통째로 실패**하는 상태였다. `@SerialName("isNewUser")`로 고쳤다.
 
 이 결함은 컴파일·ktlint·Hilt 그래프 어디에도 걸리지 않는 종류였고, **DataSource 테스트로도 못
-잡는다** — 서비스를 MockK로 대체해 JSON을 지나지 않기 때문이다. 실제 본문을 디코딩하는
-`KakaoLoginResponseSerializationTest`가 유일한 그물이라 그 형태로 붙였다.
+잡는다** — 서비스를 MockK로 대체해 JSON을 지나지 않기 때문이다. DTO 직렬화 테스트는 두지 않는다
+(`.claude/rules/no-dto-serialization-test.md`) — 같은 사람이 같은 가정으로 쓴 키를 단언할 뿐이라
+서버와의 어긋남은 못 잡는다. 키 대조는 서버 delta 감사(`sync-server-api-baseline`)가 맡는다.
 
 ## access token이 세션을 싣는다(2026-09-02)
 
@@ -469,8 +469,8 @@ Service·DataSource·DTO·VO가 이번에 그 위에 올라갔다.
 
 ## 미결
 
-- ✅ **해소(2026-08-14)** — Android `KakaoLoginResponse`의 `@SerialName`을 `isNewUser`로 정정하고
-  와이어 계약 테스트로 잠갔다(위 [Android 매핑](#android-매핑) 참고)
+- ✅ **해소(2026-08-14)** — Android `KakaoLoginResponse`의 `@SerialName`을 `isNewUser`로 정정했다
+  (위 [Android 매핑](#android-매핑) 참고)
 - 위 판별자 키를 **실서버 응답으로는 여전히 확인하지 못했다.** 근거는 서버 코드·컨트롤러 테스트·팀 명세
   3축이고 OpenAPI 스키마만 반대다. A-002 로그인이 결선됐으므로 **실기기 검증에서 로그로 실물 응답을
   찍어 확정한다** — `MissingFieldException`이 나면 서버가 `newUser`를 쓰는 것이고 이 문서가 틀린 것이다
