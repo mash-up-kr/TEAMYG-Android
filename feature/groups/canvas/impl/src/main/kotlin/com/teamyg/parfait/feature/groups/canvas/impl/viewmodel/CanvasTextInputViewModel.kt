@@ -24,11 +24,12 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZE_SP
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -52,13 +53,13 @@ data class CanvasTextInputUiState(
     val offsetY: Dp = 0.dp,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
-    /** 실측한 텍스트 박스 크기. hit-target·포커스 중심 계산에 쓴다 */
     val textBoxSize: DpSize? = null,
     val canvasSize: DpSize? = null,
     /** 사용자가 아직 손대지 않은 동안에만 캔버스 정중앙에 자동으로 놓는다 */
     val hasUserAdjustedPlacement: Boolean = false,
-    /** 헤더 X — 그만두기 확인 모달(Modal-Quit-Add-Text) 노출 여부 */
     val showQuitDialog: Boolean = false,
+    /** 자동 크기(디자인 단위). 키보드를 내린 순간의 값을 배치에서 그대로 쓴다 */
+    val designFontSize: Float = TEXT_TOPPING_FONT_SIZE_SP,
 ) : UiState {
     val characterCount: Int get() = content.graphemeClusterCount()
     val isAtLimit: Boolean get() = characterCount >= TEXT_TOPPING_MAX_LENGTH
@@ -74,6 +75,12 @@ sealed interface CanvasTextInputIntent : UiIntent {
     ) : CanvasTextInputIntent
 
     data object OnToggleColorPopover : CanvasTextInputIntent
+
+    data object OnDismissColorPopover : CanvasTextInputIntent
+
+    data class OnAutoFontSizeChange(
+        val designFontSize: Float,
+    ) : CanvasTextInputIntent
 
     data object OnClickType : CanvasTextInputIntent
 
@@ -102,16 +109,12 @@ sealed interface CanvasTextInputIntent : UiIntent {
     /** 빈 내용으로 완료 — 생성 취소 */
     data object OnClickConfirm : CanvasTextInputIntent
 
-    /** 배치 상태 헤더의 X — 그만두기 */
     data object OnClickClose : CanvasTextInputIntent
 
-    /** 배치 상태 헤더의 ✓ — 캔버스에 쌓기 */
     data object OnClickStack : CanvasTextInputIntent
 
-    /** 그만두기 확인 모달의 "그만두기" — 추가 미반영 상태로 나간다 */
     data object OnQuitDialogConfirm : CanvasTextInputIntent
 
-    /** 그만두기 확인 모달의 "계속 추가" — 모달만 닫는다 */
     data object OnQuitDialogCancel : CanvasTextInputIntent
 }
 
@@ -186,6 +189,12 @@ constructor(
                 copy(isColorPopoverOpen = !isColorPopoverOpen)
             }
 
+            CanvasTextInputIntent.OnDismissColorPopover -> updateState { copy(isColorPopoverOpen = false) }
+
+            is CanvasTextInputIntent.OnAutoFontSizeChange -> updateState {
+                copy(designFontSize = intent.designFontSize)
+            }
+
             CanvasTextInputIntent.OnClickType -> updateState { copy(textType = textType.next()) }
 
             CanvasTextInputIntent.OnClickAlign -> updateState { copy(align = align.nextTextToppingAlign()) }
@@ -252,6 +261,7 @@ constructor(
         )
     }
 
+    // 서버 API 가 없어 저장하지 않는 스텁이다 — OQ-P-439
     private fun handleOnClickStack() {
         val groupId = observedGroupId.value?.value?.toString() ?: ""
         analyticsLogger.logEvent(

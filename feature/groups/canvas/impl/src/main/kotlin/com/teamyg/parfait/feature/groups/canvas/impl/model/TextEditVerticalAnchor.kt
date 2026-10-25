@@ -89,7 +89,6 @@ internal fun rememberTextEditVerticalAnchor(
         animationSpec = if (skipEditTopAnimationThisFrame) snap() else tween(durationMillis = 90),
         label = "editTopPx",
     )
-    // 윗변과 같은 타이밍으로 높이도 같이 애니메이션한다
     val editBoxHeightPx by animateFloatAsState(
         targetValue = editBoxHeightTargetPx,
         animationSpec = if (skipEditTopAnimationThisFrame) snap() else tween(durationMillis = 90),

@@ -24,11 +24,8 @@ private const val BORDER_WIDTH_RATIO = 1f / 24f
 private val BORDER_WIDTH_MIN = 0.5.dp
 
 /**
- * [TextToppingType.FILL]·[TextToppingType.FILL_STROKE] 의 네모배경 · 테두리. 여백·테두리 두께는
- * 글자 크기 비율 그대로 그리고 반올림하지 않는다(`docs/superpowers/specs/2026-10-16-text-topping.md`
- * 「네모배경」). 모서리 반경은 0(직각), 배경 테두리는 박스 **바깥쪽**으로 그린다.
-
- * [fontSizeSp] 는 호출부의 자동 크기(연속 축소) 결과를 받는다 — 여백·테두리가 글자 크기에 따라 같이 줄고 는다.
+ * 네모배경·테두리. 여백·테두리는 글자 크기 비율 그대로 반올림하지 않는다(스펙 「네모배경」).
+ * 호출부가 `fontScale = 1` 로 고정해 두므로 [fontSizeSp] 수치를 그대로 dp 로 쓴다.
  */
 @Composable
 internal fun TextToppingBackground(
@@ -42,7 +39,7 @@ internal fun TextToppingBackground(
     val marginVertical = (fontSizeSp * VERTICAL_MARGIN_RATIO).dp
     val borderWidth = (fontSizeSp * BORDER_WIDTH_RATIO).dp.coerceAtLeast(BORDER_WIDTH_MIN)
 
-    // 타입 이름이 아니라 타입이 스스로 아는 플래그로 분기한다. 바깥쪽 테두리 → 배경 → 여백 순서로 한 Box 에 쌓는다
+    // 바깥쪽 테두리 → 배경 → 여백 순서로 쌓아야 테두리가 박스 바깥에 그려진다
     Box(
         modifier = modifier
             .then(

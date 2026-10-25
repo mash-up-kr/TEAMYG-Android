@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -157,4 +158,22 @@ internal fun Modifier.textEditDragInput(
     }
 
     return this.pointerInput(Unit, handler)
+}
+
+/** 필드 밖 탭을 박스 둘레 최소 터치 영역 안·밖으로 가른다. 필드 자체 탭은 필드가 먼저 소비한다 */
+@Composable
+internal fun Modifier.textEditTapInput(
+    isInsideTextBox: (x: Float, y: Float) -> Boolean,
+    onTapTextBox: () -> Unit,
+    onTapOutside: () -> Unit,
+): Modifier {
+    val latestIsInsideTextBox by rememberUpdatedState(isInsideTextBox)
+    val latestOnTapTextBox by rememberUpdatedState(onTapTextBox)
+    val latestOnTapOutside by rememberUpdatedState(onTapOutside)
+
+    return this.pointerInput(Unit) {
+        detectTapGestures { position ->
+            if (latestIsInsideTextBox(position.x, position.y)) latestOnTapTextBox() else latestOnTapOutside()
+        }
+    }
 }

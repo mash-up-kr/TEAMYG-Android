@@ -41,6 +41,10 @@ internal fun CanvasTextInputRoute(
             onContentChange = { value -> viewModel.processIntent(CanvasTextInputIntent.OnContentChange(value)) },
             onSelectColor = { color -> viewModel.processIntent(CanvasTextInputIntent.OnSelectColor(color)) },
             onToggleColorPopover = { viewModel.processIntent(CanvasTextInputIntent.OnToggleColorPopover) },
+            onDismissColorPopover = { viewModel.processIntent(CanvasTextInputIntent.OnDismissColorPopover) },
+            onAutoFontSizeChange = { designFontSize ->
+                viewModel.processIntent(CanvasTextInputIntent.OnAutoFontSizeChange(designFontSize))
+            },
             onClickType = { viewModel.processIntent(CanvasTextInputIntent.OnClickType) },
             onClickAlign = { viewModel.processIntent(CanvasTextInputIntent.OnClickAlign) },
             onCanvasMeasured = { size -> viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(size)) },

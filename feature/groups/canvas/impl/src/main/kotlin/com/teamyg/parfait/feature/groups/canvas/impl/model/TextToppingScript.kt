@@ -6,12 +6,10 @@ import androidx.compose.ui.text.font.FontWeight
 import com.teamyg.parfait.core.designsystem.theme.typography.YGFontFamily
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 
-/** 일본어 **/
 private val lineSeedJpFontFamily: FontFamily = FontFamily(
     Font(R.font.line_seed_jp_regular, FontWeight.Normal),
 )
 
-/** 중국어 */
 private val lineSeedTwFontFamily: FontFamily = FontFamily(
     Font(R.font.line_seed_tw_regular, FontWeight.Normal),
 )
@@ -54,6 +52,6 @@ fun detectTextToppingScript(text: String): TextToppingScript {
         if (isChinese(codePoint)) hasChinese = true
         offset += Character.charCount(codePoint)
     }
-    // 한글이 섞여 있으면 한자는 한글 표기(한자어)로 보고 무시한다 — "한자만 있으면" 이라는 의도대로
+    // 한글이 섞이면 한자는 한자어로 보고 무시한다
     return if (hasChinese && !hasHangul) TextToppingScript.CHINESE else TextToppingScript.DEFAULT
 }

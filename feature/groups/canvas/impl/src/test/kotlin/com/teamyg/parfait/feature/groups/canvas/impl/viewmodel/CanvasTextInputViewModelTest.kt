@@ -194,6 +194,27 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
+    fun onDismissColorPopover_closesOpenPopover_andStaysClosed() {
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnToggleColorPopover)
+
+        viewModel.processIntent(CanvasTextInputIntent.OnDismissColorPopover)
+        assertEquals(false, viewModel.state.value.isColorPopoverOpen)
+
+        viewModel.processIntent(CanvasTextInputIntent.OnDismissColorPopover)
+        assertEquals(false, viewModel.state.value.isColorPopoverOpen)
+    }
+
+    @Test
+    fun onAutoFontSizeChange_keepsLastReportedDesignFontSize() {
+        val viewModel = viewModel()
+
+        viewModel.processIntent(CanvasTextInputIntent.OnAutoFontSizeChange(18.5f))
+
+        assertEquals(18.5f, viewModel.state.value.designFontSize)
+    }
+
+    @Test
     fun onClickType_cyclesDefaultToFillToFillStrokeToDefault() {
         val viewModel = viewModel()
 
