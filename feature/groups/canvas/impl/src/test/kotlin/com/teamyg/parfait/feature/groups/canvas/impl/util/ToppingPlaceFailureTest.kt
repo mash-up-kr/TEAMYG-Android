@@ -70,7 +70,6 @@ class ToppingPlaceFailureTest {
 
     @Test
     fun toPlaceFailure_network_isUncertain() {
-        // 응답만 유실됐다면 이미 쌓였을 수 있다
         assertEquals(PlaceFailure.Uncertain, AppError.Network(IOException("connection reset")).toPlaceFailure())
     }
 

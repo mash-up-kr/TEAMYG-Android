@@ -1,8 +1,6 @@
 package com.teamyg.parfait.domain.model.topping
 
-/**
- * 텍스트 다시 만들기의 결과. 갈래는 다음 시도가 무엇을 다시 보내야 하는가로 나눈다.
- */
+/** 갈래는 다음 시도가 무엇을 다시 보내야 하는가로 나눈다 */
 sealed interface TextToppingRecreateResult {
     data class Recreated(
         val placed: PlacedTextToppingVO,

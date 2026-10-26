@@ -14,10 +14,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 internal fun AppError.isPermanentPlaceFailure(): Boolean = this is AppError.Server &&
     code in PERMANENT_PLACE_FAILURE_CODES
 
-/**
- * 텍스트 쌓기 전용 분류다 — 응답만 유실됐을 수 있는 [AppError.Network] 를 [PlaceFailure.Uncertain] 으로
- * 가르는데, 사진 배치는 이 갈래를 쓰지 않고 [isPermanentPlaceFailure] 만 쓴다.
- */
+/** 텍스트 쌓기 전용 분류다 */
 internal fun AppError.toPlaceFailure(): PlaceFailure = when {
     isPermanentPlaceFailure() -> PlaceFailure.Permanent
     this is AppError.Network -> PlaceFailure.Uncertain
