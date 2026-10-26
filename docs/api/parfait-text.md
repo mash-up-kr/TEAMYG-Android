@@ -4,7 +4,7 @@ title: 텍스트 토핑 배치(배치 확정·수정·삭제)
 server_module: http/parfaittext
 server_commit: 8b4a94b
 verified: 2026-10-25
-android_status: done
+android_status: partial
 related_spec:
 related_adr:
 tags: [api, parfait, server-contract, parfait-text]
