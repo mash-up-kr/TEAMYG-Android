@@ -1,10 +1,5 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
-import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -55,7 +50,20 @@ class TextEditSessionHolderTest {
 
         holder.finish(TextEditResult.Deleted)
         holder.clear(earlier)
-        assertEquals(2L to TextEditResult.Deleted, holder.result.value)
+        assertEquals(TextEditOutcome(later, TextEditResult.Deleted), holder.result.value)
+    }
+
+    @Test
+    fun clear_leavesTheResultOfAnotherSession() {
+        val finished = session(textId = 1L)
+        val other = session(textId = 2L)
+        holder.start(finished)
+        holder.finish(TextEditResult.Deleted)
+
+        holder.clear(other)
+
+        assertEquals(TextEditOutcome(finished, TextEditResult.Deleted), holder.result.value)
+        assertEquals(1L, holder.result.value?.parfaitTextId)
     }
 
     private fun session(textId: Long) = TextEditSession(

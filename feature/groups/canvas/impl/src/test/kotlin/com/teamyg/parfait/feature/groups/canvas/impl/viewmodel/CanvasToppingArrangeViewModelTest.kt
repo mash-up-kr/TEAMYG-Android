@@ -47,7 +47,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toWireColor
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -1628,7 +1628,7 @@ class CanvasToppingArrangeViewModelTest {
         advanceUntilIdle()
         textEditSessionHolder.finish(edited(text = "새 글"))
         advanceUntilIdle()
-        assertEquals(SHARED_ID, textEditSessionHolder.result.value?.first)
+        assertEquals(SHARED_ID, textEditSessionHolder.result.value?.parfaitTextId)
 
         store.clear()
 
