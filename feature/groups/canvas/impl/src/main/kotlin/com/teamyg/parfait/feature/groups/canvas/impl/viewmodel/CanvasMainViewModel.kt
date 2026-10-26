@@ -299,7 +299,7 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
 
-    /** 캔버스 위의 텍스트 하나를 탭했다. 규칙은 [OnClickTopping] 과 같다 */
+    /** 규칙은 [OnClickTopping] 과 같다 */
     data class OnClickText(val text: CanvasTextToppingVO) : CanvasMainIntent
 
     /** Spotlight 상태에서 강조된 토핑 밖(Dim 영역)을 탭했다 */
