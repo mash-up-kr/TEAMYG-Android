@@ -15,6 +15,7 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitAddText
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.screen.CanvasTextInputScreen
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputEffect
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputIntent
@@ -33,8 +34,9 @@ internal fun CanvasTextInputRoute(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
-    val placeFailedMessage = stringResource(R.string.canvas_topping_place_failed)
-    val placeFailedPermanentlyMessage = stringResource(R.string.canvas_topping_place_failed_permanently)
+    val placeFailedMessage = stringResource(R.string.canvas_text_place_failed)
+    val placeFailedPermanentlyMessage = stringResource(R.string.canvas_text_place_failed_permanently)
+    val placeUncertainMessage = stringResource(R.string.canvas_text_place_uncertain)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -43,7 +45,11 @@ internal fun CanvasTextInputRoute(
 
                 // 되감지 않고 알린다 — 입력한 글을 잃지 않고 다시 시도하거나 직접 닫을 수 있다
                 is CanvasTextInputEffect.ShowPlaceFailed -> toastPolicy.showError(
-                    if (effect.permanent) placeFailedPermanentlyMessage else placeFailedMessage,
+                    when (effect.failure) {
+                        PlaceFailure.Retryable -> placeFailedMessage
+                        PlaceFailure.Permanent -> placeFailedPermanentlyMessage
+                        PlaceFailure.Uncertain -> placeUncertainMessage
+                    },
                 )
             }
         }

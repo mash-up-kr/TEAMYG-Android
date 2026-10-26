@@ -31,6 +31,7 @@ import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCas
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZE_SP
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
@@ -138,9 +139,8 @@ sealed interface CanvasTextInputIntent : UiIntent {
 sealed interface CanvasTextInputEffect : UiSideEffect {
     data object NavigateBack : CanvasTextInputEffect
 
-    /** [permanent] 면 다시 눌러도 같은 실패라 안내 문구가 재시도를 권하지 않는다 */
     data class ShowPlaceFailed(
-        val permanent: Boolean,
+        val failure: PlaceFailure,
     ) : CanvasTextInputEffect
 }
 
@@ -377,7 +377,7 @@ constructor(
             key = STACK_JOB_KEY,
             onError = { throwable ->
                 viewModelLogger.e(throwable) { "텍스트 토핑을 쌓지 못했다" }
-                postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(permanent = false))
+                postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Retryable))
             },
         ) {
             updateState { copy(isLoading = true) }
@@ -400,7 +400,20 @@ constructor(
                     postSideEffect(CanvasTextInputEffect.NavigateBack)
                 }.onFailure { throwable ->
                     val error = throwable as? AppError ?: AppError.Unexpected(throwable)
-                    postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(permanent = error.isPermanentPlaceFailure()))
+                    val failure = when {
+                        error.isPermanentPlaceFailure() -> PlaceFailure.Permanent
+                        error is AppError.Network -> PlaceFailure.Uncertain
+                        else -> PlaceFailure.Retryable
+                    }
+                    if (failure == PlaceFailure.Uncertain) {
+                        // 응답만 유실됐다면 이미 쌓였다 — 뒤 캔버스에 보이도록 갱신해 둔다
+                        runSuspendCatching {
+                            refreshTodayParfaitDetail(groupId = draft.groupId, parfaitId = draft.parfaitId)
+                        }.onFailure { refreshError ->
+                            viewModelLogger.e(refreshError) { "오늘 캔버스를 다시 받지 못했다" }
+                        }
+                    }
+                    postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(failure))
                 }
             } finally {
                 updateState { copy(isLoading = false) }
