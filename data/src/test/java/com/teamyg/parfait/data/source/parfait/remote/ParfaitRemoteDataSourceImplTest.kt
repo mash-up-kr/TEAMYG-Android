@@ -15,6 +15,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitRespons
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
@@ -26,7 +27,10 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -76,12 +80,33 @@ class ParfaitRemoteDataSourceImplTest {
         createdAt = "2026-08-15T09:30:00",
     )
 
+    private fun textResponse(ownerType: String? = "ME") = TodayParfaitTextResponse(
+        parfaitTextId = 7L,
+        text = "안녕",
+        positionX = 10.5,
+        positionY = 20.5,
+        positionZ = 3,
+        scale = 1.5,
+        rotation = 30.0,
+        color = "#FA91A2",
+        fontSize = 18.0,
+        isFill = true,
+        isStroke = false,
+        placedBy = PlacedByResponse(
+            groupMemberId = 5L,
+            nickname = "행복한 판다",
+            ownerType = ownerType,
+        ),
+        createdAt = "2026-10-26T10:00:00.123",
+    )
+
     private fun todaySuccess(
         status: String = "ACTIVE",
         lastClosedDate: String? = "2026-08-14",
         background: BackgroundResponse? = BackgroundResponse(type = "COLOR", value = "#FFEEDD"),
         images: List<TodayParfaitImageResponse>? = listOf(toppingResponse()),
         memberChip: String? = "TYPE6",
+        texts: List<TodayParfaitTextResponse>? = null,
     ) = ApiResponse(
         success = true,
         code = "SUCCESS",
@@ -97,6 +122,7 @@ class ParfaitRemoteDataSourceImplTest {
             ),
             background = background,
             images = images,
+            texts = texts,
         ),
     )
 
@@ -220,6 +246,56 @@ class ParfaitRemoteDataSourceImplTest {
 
         // Then 둘 다 남의 것으로 접는다
         assertTrue(canvas.toppings.none { topping -> topping.isMine })
+    }
+
+    @Test
+    fun getTodayCanvas_texts_mapsEveryField() = runTest {
+        // Given 서버가 텍스트 토핑 한 건을 준다
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsToday(1L)
+        } returns todaySuccess(texts = listOf(textResponse(ownerType = "ME")))
+
+        // When 오늘의 캔버스 조회
+        val text = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow().texts.single()
+
+        // Then 필드가 그대로 올라오고 본인 것으로 판정된다
+        assertEquals(ParfaitTextId(7L), text.parfaitTextId)
+        assertEquals("안녕", text.text)
+        assertEquals(10.5, text.transform.positionX)
+        assertEquals(20.5, text.transform.positionY)
+        assertEquals(3, text.transform.positionZ)
+        assertEquals(1.5, text.transform.scale)
+        assertEquals(30.0, text.transform.rotation)
+        assertEquals(TextToppingStyle(color = "#FA91A2", fontSize = 18.0, isFill = true, isStroke = false), text.style)
+        assertEquals(ToppingPlacerVO(GroupMemberId(5L), GroupNickname("행복한 판다")), text.placedBy)
+        assertEquals(LocalDateTime.parse("2026-10-26T10:00:00.123"), text.createdAt)
+        assertTrue(text.isMine)
+    }
+
+    @Test
+    fun getTodayCanvas_textOwnerTypeOther_foldsToNotMine() = runTest {
+        // Given 남이 둔 텍스트 토핑
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsToday(1L)
+        } returns todaySuccess(texts = listOf(textResponse(ownerType = "OTHER")))
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 남의 것이다
+        assertFalse(canvas.texts.single().isMine)
+    }
+
+    @Test
+    fun getTodayCanvas_textsNull_foldsToEmptyList() = runTest {
+        // Given 텍스트 배치가 0건이라 서버가 texts 를 null 로 준다
+        coEvery { parfaitService.getGroupsByGroupIdParfaitsToday(1L) } returns todaySuccess(texts = null)
+
+        // When 오늘의 캔버스 조회
+        val canvas = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow()
+
+        // Then 널이 아니라 빈 목록으로 접힌다
+        assertEquals(emptyList(), canvas.texts)
     }
 
     @Test

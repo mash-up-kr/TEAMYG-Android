@@ -405,6 +405,7 @@ class CanvasBGEditViewModelTest {
         members = emptyList(),
         background = background,
         toppings = toppings,
+        texts = emptyList(),
     )
 
     private fun topping(

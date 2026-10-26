@@ -8,12 +8,14 @@ import com.teamyg.parfait.data.service.model.response.parfait.GroupMemberRespons
 import com.teamyg.parfait.data.service.model.response.parfait.PastParfaitsResponse
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageResponse
+import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.data.source.common.mapper.toNametagChipType
 import com.teamyg.parfait.data.source.common.mapper.toToppingBorder
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
@@ -23,6 +25,8 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import kotlinx.datetime.LocalDate
@@ -41,6 +45,7 @@ internal fun GetTodayParfaitResponse.toCanvasVO(): CanvasVO = CanvasVO(
     members = groupMembers.map { it.toCanvasMemberVO() },
     background = background?.toCanvasBackground(),
     toppings = images.orEmpty().map { it.toCanvasToppingVO() },
+    texts = texts.orEmpty().map { it.toCanvasTextToppingVO() },
 )
 
 /**
@@ -113,6 +118,27 @@ private fun TodayParfaitImageResponse.toCanvasToppingVO(): CanvasToppingVO = Can
         borderType = borderType,
         borderColor = borderColor,
         borderWidth = borderWidth,
+    ),
+    placedBy = placedBy.toToppingPlacerVO(),
+    isMine = placedBy.ownerType == OWNER_TYPE_ME,
+    createdAt = LocalDateTime.parse(createdAt),
+)
+
+private fun TodayParfaitTextResponse.toCanvasTextToppingVO(): CanvasTextToppingVO = CanvasTextToppingVO(
+    parfaitTextId = ParfaitTextId(parfaitTextId),
+    text = text,
+    transform = ToppingTransform(
+        positionX = positionX,
+        positionY = positionY,
+        positionZ = positionZ,
+        scale = scale,
+        rotation = rotation,
+    ),
+    style = TextToppingStyle(
+        color = color,
+        fontSize = fontSize,
+        isFill = isFill,
+        isStroke = isStroke,
     ),
     placedBy = placedBy.toToppingPlacerVO(),
     isMine = placedBy.ownerType == OWNER_TYPE_ME,
