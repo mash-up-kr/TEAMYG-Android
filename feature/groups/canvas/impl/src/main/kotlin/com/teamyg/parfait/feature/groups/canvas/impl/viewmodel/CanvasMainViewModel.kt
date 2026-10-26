@@ -445,6 +445,8 @@ constructor(
     /**
      * [date] 캔버스에 토핑을 올린 사람 수. 탈퇴한 사람도 센다.
      *
+     * 사진 토핑과 텍스트 토핑을 모두 센다. 둘 다 올린 사람은 한 명이다.
+     *
      * members 는 토핑을 안 올린 그룹원까지 들어 쓰지 않는다 —
      * docs/superpowers/specs/archive/2026-09-09-past-canvas-alert.md "인원 수".
      */
@@ -453,9 +455,11 @@ constructor(
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.toppings
-            ?.distinctBy { it.placedBy.groupMemberId }
-            ?.size
+            ?.let { canvas ->
+                (canvas.toppings.map { it.placedBy.groupMemberId } + canvas.texts.map { it.placedBy.groupMemberId })
+                    .distinct()
+                    .size
+            }
     }
 
     /**
