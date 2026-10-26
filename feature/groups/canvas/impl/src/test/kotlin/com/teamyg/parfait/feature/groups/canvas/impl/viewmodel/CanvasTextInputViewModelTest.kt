@@ -540,7 +540,7 @@ class CanvasTextInputViewModelTest {
         assertEquals(18f, state.designFontSize)
         assertEquals(1.5f, state.scale)
         assertEquals(20f, state.rotationDegrees)
-        assertTrue(state.hasUserAdjustedPlacement)
+        assertFalse(state.hasUserAdjustedPlacement)
     }
 
     @Test
@@ -553,10 +553,22 @@ class CanvasTextInputViewModelTest {
         val state = viewModel.state.value
         assertEquals(10f, state.offsetX.value, 1e-4f)
         assertEquals(220f, state.offsetY.value, 1e-4f)
+    }
 
-        // 글을 고치며 박스가 다시 재져도 자리를 다시 잡지 않는다
-        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(120.dp, 40.dp)))
-        assertEquals(10f, viewModel.state.value.offsetX.value, 1e-4f)
+    @Test
+    fun editMode_boxRemeasuredWithNewSize_keepsTheOriginalCenter() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = editingViewModel()
+        // 첫 레이아웃은 키보드 높이가 0 이라 박스가 거의 0 으로 재진다
+        viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(200.dp, 400.dp)))
+        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(1.dp, 1.dp)))
+        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(120.dp, 50.dp)))
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        val edited = textEditSessionHolder.result.value!!.second as TextEditResult.Edited
+        assertEquals(0.3f, edited.positionX, 1e-5f)
+        assertEquals(0.6f, edited.positionY, 1e-5f)
     }
 
     @Test
