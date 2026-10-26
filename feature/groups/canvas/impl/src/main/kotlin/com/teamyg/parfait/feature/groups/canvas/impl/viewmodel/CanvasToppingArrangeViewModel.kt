@@ -80,14 +80,13 @@ data class CanvasToppingArrangeUiState(
     val pendingDeleteToppingIds: Set<Long> = emptySet(),
     /** 서버에서 지운 토핑의 툼스톤 — 그 전에 출발한 갱신 응답이 뒤늦게 도착하면 지운 토핑이 되살아난다 */
     val deletedToppingIds: Set<Long> = emptySet(),
-    /** 이미지 쪽 세 집합과 같은 규칙이다. 이미지 id 와 겹칠 수 있어 따로 둔다 */
+    /** 이미지 쪽 세 집합과 같은 규칙이다 */
     val dirtyTextIds: Set<Long> = emptySet(),
     val pendingDeleteTextIds: Set<Long> = emptySet(),
     val deletedTextIds: Set<Long> = emptySet(),
     /**
-     * 내용이 바뀐 텍스트. 서버 PATCH 가 text 를 받지 않아 새로 쌓고 옛 것을 지우는 수밖에 없다 —
-     * 일괄 PATCH 에서 빼고 확인 때 따로 다시 만든다. [dirtyTextIds] 에도 함께 들어 있어야 갱신이
-     * 고친 내용을 덮지 않는다.
+     * 내용이 바뀐 텍스트. 일괄 PATCH 에서 빼고 확인 때 [RecreateTextToppingUseCase] 로 다시 만든다.
+     * [dirtyTextIds] 에도 함께 들어 있어야 갱신이 고친 내용을 덮지 않는다.
      */
     val recreateTextIds: Set<Long> = emptySet(),
     /**
@@ -740,8 +739,6 @@ constructor(
      * 목록 전체를 스냅샷과 견주면 갱신이 들여온 남의 새 토핑이 "스냅샷에 없음 = 바뀜"으로 잡힌다.
      *
      * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
-     *
-     * 텍스트 변형도 이미지와 같은 일괄 요청에 실린다.
      */
     private suspend fun updateDirtyToppings(): ToppingSaveFailures = coroutineScope {
         val current = state.value

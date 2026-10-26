@@ -129,7 +129,7 @@ internal fun CanvasToppingArrangeScreen(
 
             // 저장된 자리로 만든다. 터치 판정은 패널이 열린 동안의 임시 자리가 아니라 이것으로 한다
             val imageEntries = rememberEditableToppingHitEntries(drawEntries, outlines)
-            // scale 을 곱하기 전 크기다. 텍스트 판정은 렌더에서 잰 이 값에 기댄다
+            // scale 을 곱하기 전 크기다
             val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
             val textEntries = rememberEditableTextEntries(
                 texts = uiState.texts,

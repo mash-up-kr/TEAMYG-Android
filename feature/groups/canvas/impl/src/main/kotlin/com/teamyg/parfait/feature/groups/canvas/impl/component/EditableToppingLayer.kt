@@ -135,8 +135,7 @@ internal fun rememberEditableToppingHitEntries(
 }
 
 /**
- * @param target 박스를 아직 한 번도 재지 못했으면 null 이다. 판정에서 빼야 한다 — 크기를 지어내면
- *   안 보이는 자리가 눌린다.
+ * @param target 박스를 아직 재지 못했으면 null 이고 판정에서 빠진다.
  */
 internal data class EditableTextEntry(
     val text: EditableText,
@@ -144,9 +143,7 @@ internal data class EditableTextEntry(
     val target: ToppingHitTarget?,
 )
 
-/**
- * @param boxSizes [EditableTextTopping] 이 잰, scale 을 곱하기 전 박스 크기. [EditableText.parfaitTextId] 로 찾는다
- */
+/** @param boxSizes scale 을 곱하기 전 박스 크기 */
 @Composable
 internal fun rememberEditableTextEntries(
     texts: List<EditableText>,
@@ -182,7 +179,7 @@ internal fun rememberEditableTextEntries(
     }
 }
 
-/** 이미지와 텍스트를 한 줄로 세운 층. 두 종류의 id 가 겹칠 수 있어 [key] 로 가른다 */
+/** 이미지와 텍스트를 한 줄로 세운 층 */
 internal sealed interface EditableLayerEntry {
     val key: CanvasToppingKey
     val isMine: Boolean
@@ -226,10 +223,6 @@ internal fun editableLayerOrder(
     )
 }
 
-/**
- * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
- * @param onClick null 이면 접근성 클릭도 붙지 않는다
- */
 @Composable
 internal fun EditableTextTopping(
     entry: EditableTextEntry,

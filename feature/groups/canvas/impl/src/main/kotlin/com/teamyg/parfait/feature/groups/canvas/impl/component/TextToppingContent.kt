@@ -81,7 +81,6 @@ internal fun TextToppingContent(
     }
 }
 
-/** 타입 3종 × 짧은/두 줄 텍스트. 디자인 너비에 최대 크기의 절반 */
 @YGPreview
 @Composable
 private fun TextToppingContentPreview() = PreviewBox {

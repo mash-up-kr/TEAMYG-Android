@@ -115,7 +115,7 @@ internal fun CanvasToppingLayer(
         val layers = remember(toppings, texts) { canvasLayerOrder(images = toppings, texts = texts) }
         val spotlighted = layers.firstOrNull { it.key == spotlightedKey }
 
-        // scale 을 곱하기 전 크기다. 텍스트 판정은 렌더에서 잰 이 값에 기댄다
+        // scale 을 곱하기 전 크기다
         val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
@@ -265,7 +265,6 @@ private fun CanvasTextToppingVO.hitTarget(
     }
 }
 
-/** @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다 */
 @Composable
 private fun CanvasText(
     text: CanvasTextToppingVO,

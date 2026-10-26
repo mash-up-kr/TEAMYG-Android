@@ -29,7 +29,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
  *
  * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 누를 수 없는 자리에서 버튼으로 읽히면 안 된다
- * @param popProgress 타임랩스 팝인 진행도(0~1). 1 이면 효과가 없다
  * @param alpha 회전·배율과 같은 레이어에 건다 — 바깥 modifier 로 걸면 [centeredAt] 으로 옮겨진
  *   글자가 레이어 밖에 놓여 잘린다
  */

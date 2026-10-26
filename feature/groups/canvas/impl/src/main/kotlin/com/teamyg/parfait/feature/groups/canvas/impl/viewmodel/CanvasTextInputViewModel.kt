@@ -459,7 +459,6 @@ constructor(
         )
     }
 
-    /** 서버에 보내지 않는다 — 저장은 결과를 받은 토핑 정리 화면의 확인이 맡는다 */
     private fun finishEditing(result: TextEditResult) {
         textEditSessionHolder.finish(result)
         postSideEffect(CanvasTextInputEffect.NavigateBack)
