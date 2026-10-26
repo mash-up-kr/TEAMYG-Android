@@ -42,8 +42,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
-import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -401,11 +401,7 @@ constructor(
                     postSideEffect(CanvasTextInputEffect.NavigateBack)
                 }.onFailure { throwable ->
                     val error = throwable as? AppError ?: AppError.Unexpected(throwable)
-                    val failure = when {
-                        error.isPermanentPlaceFailure() -> PlaceFailure.Permanent
-                        error is AppError.Network -> PlaceFailure.Uncertain
-                        else -> PlaceFailure.Retryable
-                    }
+                    val failure = error.toPlaceFailure()
                     if (failure == PlaceFailure.Uncertain) {
                         // 응답만 유실됐다면 이미 쌓였다 — 뒤 캔버스에 보이도록 갱신해 둔다
                         runSuspendCatching {
