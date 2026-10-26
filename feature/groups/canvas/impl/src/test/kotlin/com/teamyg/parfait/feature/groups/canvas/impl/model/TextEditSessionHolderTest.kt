@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
+import androidx.compose.ui.text.style.TextAlign
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -75,6 +76,7 @@ class TextEditSessionHolderTest {
             text = "안녕",
             color = TextToppingColor.Black,
             type = TextToppingType.DEFAULT,
+            align = TextAlign.Center,
             designFontSize = 18f,
             positionX = 0.5f,
             positionY = 0.5f,

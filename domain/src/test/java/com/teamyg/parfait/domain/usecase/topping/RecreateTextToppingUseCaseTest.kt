@@ -8,6 +8,7 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -35,7 +36,14 @@ class RecreateTextToppingUseCaseTest {
         rotation = 30.0,
     )
 
-    private val style = TextToppingStyle(color = "#000000", fontSize = 18.0, isFill = false, isStroke = false)
+    private val style =
+        TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        )
 
     private val placed = PlacedTextToppingVO(
         parfaitTextId = NEW_TEXT_ID,

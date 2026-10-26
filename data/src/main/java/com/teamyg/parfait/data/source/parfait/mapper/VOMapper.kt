@@ -11,6 +11,7 @@ import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitImageR
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.data.source.common.mapper.toNametagChipType
 import com.teamyg.parfait.data.source.common.mapper.toToppingBorder
+import com.teamyg.parfait.data.source.topping.mapper.textToppingAlignOf
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
@@ -139,6 +140,7 @@ private fun TodayParfaitTextResponse.toCanvasTextToppingVO(): CanvasTextToppingV
         fontSize = fontSize,
         isFill = isFill,
         isStroke = isStroke,
+        textAlign = textToppingAlignOf(textAlign),
     ),
     placedBy = placedBy.toToppingPlacerVO(),
     isMine = placedBy.ownerType == OWNER_TYPE_ME,

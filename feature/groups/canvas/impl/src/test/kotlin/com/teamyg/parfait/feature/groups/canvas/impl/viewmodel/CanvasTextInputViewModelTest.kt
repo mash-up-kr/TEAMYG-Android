@@ -14,6 +14,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -178,7 +179,13 @@ class CanvasTextInputViewModelTest {
         parfaitTextId = ParfaitTextId(9L),
         text = "hi",
         transform = ToppingTransform(0.5, 0.5, 1, 1.0, 0.0),
-        style = TextToppingStyle(color = "#FFFFFF", fontSize = 24.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            color = "#FFFFFF",
+            fontSize = 24.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = mockk(),
     )
 
@@ -219,7 +226,7 @@ class CanvasTextInputViewModelTest {
                     rotationDegrees = state.rotationDegrees,
                     positionZ = 1,
                 ),
-                style = textToppingStyleOf(state.selectedColor, state.textType, state.designFontSize),
+                style = textToppingStyleOf(state.selectedColor, state.textType, state.align, state.designFontSize),
             )
             refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L))
             clearToppingDraft()
@@ -547,6 +554,7 @@ class CanvasTextInputViewModelTest {
         text = "원래 글",
         color = TextToppingColor.Black,
         type = TextToppingType.FILL,
+        align = TextAlign.Left,
         designFontSize = 18f,
         positionX = 0.3f,
         positionY = 0.6f,
@@ -575,6 +583,7 @@ class CanvasTextInputViewModelTest {
         assertEquals("원래 글", state.content)
         assertEquals(TextToppingColor.Black, state.selectedColor)
         assertEquals(TextToppingType.FILL, state.textType)
+        assertEquals(TextAlign.Left, state.align)
         assertEquals(18f, state.designFontSize)
         assertEquals(1.5f, state.scale)
         assertEquals(20f, state.rotationDegrees)
@@ -639,6 +648,7 @@ class CanvasTextInputViewModelTest {
             assertEquals("원래 글", edited.text)
             assertEquals(TextToppingColor.Black, edited.color)
             assertEquals(TextToppingType.FILL, edited.type)
+            assertEquals(TextAlign.Left, edited.align)
             assertEquals(18f, edited.designFontSize)
             assertEquals(0.3f, edited.positionX, 1e-5f)
             assertEquals(0.6f, edited.positionY, 1e-5f)

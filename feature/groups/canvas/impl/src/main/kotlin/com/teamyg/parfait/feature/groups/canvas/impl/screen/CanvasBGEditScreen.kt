@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitBackground
@@ -152,6 +153,7 @@ internal fun CanvasBGEditScreen(
                                         text = text.text,
                                         color = text.color,
                                         type = text.type,
+                                        align = text.align,
                                         designFontSize = text.designFontSize,
                                         center = layer.entry.center,
                                         scale = text.scale,
@@ -338,6 +340,7 @@ private val previewTexts = listOf(
         text = "오늘의 파르페",
         color = TextToppingColor.Black,
         type = TextToppingType.FILL,
+        align = TextAlign.Center,
         designFontSize = 18f,
         positionX = 0.5f,
         positionY = 0.2f,

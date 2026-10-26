@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -34,7 +35,14 @@ class TextToppingRepositoryImplTest {
         rotation = 15.0,
     )
 
-    private val style = TextToppingStyle(color = "#FFFF6B6B", fontSize = 24.0, isFill = true, isStroke = false)
+    private val style =
+        TextToppingStyle(
+            color = "#FFFF6B6B",
+            fontSize = 24.0,
+            isFill = true,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        )
 
     private val placed = PlacedTextToppingVO(
         parfaitTextId = PARFAIT_TEXT_ID,

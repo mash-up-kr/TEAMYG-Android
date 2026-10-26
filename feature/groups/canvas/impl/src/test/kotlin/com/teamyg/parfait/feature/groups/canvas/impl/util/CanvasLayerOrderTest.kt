@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -67,7 +68,13 @@ class CanvasLayerOrderTest {
         parfaitTextId = ParfaitTextId(id),
         text = "안녕",
         transform = transform(z),
-        style = TextToppingStyle("#000000", 24.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            "#000000",
+            24.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = placer,
         isMine = false,
         createdAt = LocalDateTime(2026, 8, 20, 12, 0),

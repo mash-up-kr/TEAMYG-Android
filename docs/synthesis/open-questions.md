@@ -7830,7 +7830,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
 - **항목**: 화면은 정렬 3종(`TextToppingAlign`)을 순환하고 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 배치 요청은 `text`·좌표·`scale`·`rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이라 둘 다 실을 필드가 없다(타입 3종은 `isFill`·`isStroke` 조합으로 실린다). 저장이 붙으면 왼쪽·오른쪽 정렬이 다른 기기에서 가운데로 그려지고, 줄바꿈은 기기마다 다시 계산된다. ① 서버에 정렬 필드를 더할지 ② 정렬을 고정해 UI에서 뺄지 ③ 줄바꿈 위치를 계약에 넣을지.
 - **상태**: 미해결 (서버·iOS 협의)
-- **해소 메모**: 저장 배선은 정렬 없이 붙었다 — 앱은 다시 읽은 텍스트를 가운데 정렬로 그린다. 서버 `ed65131`(2026-10-27 기준선)이 ①을 택했다. 배치·수정 요청과 모든 텍스트 응답에 `textAlign`(`LEFT`·`CENTER`·`RIGHT`, 생략 시 `CENTER`)이 생겼다([api/parfait-text.md](../api/parfait-text.md)). 남은 것은 앱이 `TextToppingWireMapper`·DTO에 정렬을 싣는 일과 ③ 줄바꿈 위치다.
+- **해소 메모**: 저장 배선은 정렬 없이 붙었다 — 앱은 다시 읽은 텍스트를 가운데 정렬로 그린다. 서버 `ed65131`(2026-10-27 기준선)이 ①을 택했다. 배치·수정 요청과 모든 텍스트 응답에 `textAlign`(`LEFT`·`CENTER`·`RIGHT`, 생략 시 `CENTER`)이 생겼다([api/parfait-text.md](../api/parfait-text.md)). 앱도 같은 날 배치·스타일 PATCH·캔버스 렌더에 정렬을 실었다(`TextToppingAlign`). 남은 것은 ③ 줄바꿈 위치다.
 
 ### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
 

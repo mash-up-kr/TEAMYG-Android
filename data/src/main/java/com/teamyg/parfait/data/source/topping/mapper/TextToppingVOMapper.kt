@@ -9,6 +9,7 @@ import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -29,13 +30,14 @@ internal fun ToppingTransform.toPlaceTextRequest(
     fontSize = style.fontSize,
     isFill = style.isFill,
     isStroke = style.isStroke,
+    textAlign = style.textAlign.name,
 )
 
 internal fun TodayParfaitTextResponse.toPlacedTextToppingVO(): PlacedTextToppingVO = PlacedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
     transform = transformOf(positionX, positionY, positionZ, scale, rotation),
-    style = styleOf(color, fontSize, isFill, isStroke),
+    style = styleOf(color, fontSize, isFill, isStroke, textAlign),
     placedBy = placedBy.toToppingPlacerVO(),
 )
 
@@ -54,13 +56,14 @@ internal fun TextToppingUpdate.toUpdateTextRequest(): UpdateParfaitTextRequest =
     fontSize = fontSize,
     isFill = isFill,
     isStroke = isStroke,
+    textAlign = textAlign?.name,
 )
 
 internal fun UpdateParfaitTextResponse.toUpdatedTextToppingVO(): UpdatedTextToppingVO = UpdatedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
     transform = transformOf(positionX, positionY, positionZ, scale, rotation),
-    style = styleOf(color, fontSize, isFill, isStroke),
+    style = styleOf(color, fontSize, isFill, isStroke, textAlign),
 )
 
 private fun transformOf(
@@ -82,9 +85,15 @@ private fun styleOf(
     fontSize: Double,
     isFill: Boolean,
     isStroke: Boolean,
+    textAlign: String,
 ): TextToppingStyle = TextToppingStyle(
     color = color,
     fontSize = fontSize,
     isFill = isFill,
     isStroke = isStroke,
+    textAlign = textToppingAlignOf(textAlign),
 )
+
+/** 모르는 값은 서버 기본값인 가운데로 읽는다 — 정렬이 늘어도 캔버스 전체가 깨지지 않게 */
+internal fun textToppingAlignOf(wire: String): TextToppingAlign =
+    TextToppingAlign.entries.firstOrNull { it.name == wire } ?: TextToppingAlign.CENTER

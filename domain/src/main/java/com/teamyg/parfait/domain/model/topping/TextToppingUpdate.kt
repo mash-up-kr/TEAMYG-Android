@@ -14,4 +14,5 @@ data class TextToppingUpdate(
     val fontSize: Double? = null,
     val isFill: Boolean? = null,
     val isStroke: Boolean? = null,
+    val textAlign: TextToppingAlign? = null,
 )

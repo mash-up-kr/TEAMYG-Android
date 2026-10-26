@@ -294,15 +294,15 @@ Boolean 컬럼을, `V23__add_text_align_to_parfait_text.sql`이 정렬 컬럼을
 | 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase`·`RecreateTextToppingUseCase`(내용 변경 = POST 뒤 DELETE) |
 | `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다. 캔버스 쪽은 `CanvasTextToppingVO`로 올라간다 |
 | 일괄 PATCH `textItems` | `TextToppingTransformUpdate` → `ToppingRepository#updateAll` (C-305 변형·이동) |
-| 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` |
+| 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` · `TextToppingAlign` |
 
 - 단위 변환은 `TextToppingWireMapper`가 맡는다 — 위치는 박스 중심의 캔버스 비율, `fontSize`는 디자인 너비
   335 기준 값, `scale`은 핀치 배율, `color`는 `#RRGGBB`(White는 `#FAFAFA`, 모르는 값은 Black),
-  `isFill`·`isStroke`는 `TextToppingType`이다. Android가 정한 값이고 iOS와 합의하지 않았다
+  `isFill`·`isStroke`는 `TextToppingType`, `textAlign`은 화면의 `TextAlign`이다. Android가 정한 값이고 iOS와 합의하지 않았다
   → [open-questions](../synthesis/open-questions.md) OQ-P-452
-- **정렬은 아직 싣지 않는다.** 서버는 `textAlign`을 받고 돌려주지만(`ed65131`) 앱 DTO·`TextToppingStyle`에
-  필드가 없다. 앱이 놓은 텍스트는 `CENTER`로 저장되고, 응답의 값은 `ignoreUnknownKeys`로 버려진다.
-  다시 읽은 텍스트는 가운데 정렬로 그린다 → OQ-P-451
+- **정렬**: 배치 POST와 스타일 PATCH가 `textAlign`을 싣고, 캔버스·재편집이 저장된 정렬로 그린다. DTO는
+  문자열로 받고 data 매퍼가 `TextToppingAlign`으로 바꾼다 — 모르는 값과 필드가 없는 응답은 `CENTER`로 읽는다.
+  줄바꿈 위치는 여전히 기기마다 다시 계산된다 → OQ-P-451
 - `PlacedTextToppingVO.placedBy`는 이미지 배치와 같은 `ToppingPlacerVO`로 접는다 — `ownerType`·`nameTagChip`·
   `createdAt`은 DTO에만 있고 VO로 올리지 않았다(읽는 화면이 생길 때 올린다).
 - `TextToppingUpdate`에 `text`가 없다. 서버가 내용 수정을 받지 않기 때문이다. 앱은 내용이 바뀐 재편집을

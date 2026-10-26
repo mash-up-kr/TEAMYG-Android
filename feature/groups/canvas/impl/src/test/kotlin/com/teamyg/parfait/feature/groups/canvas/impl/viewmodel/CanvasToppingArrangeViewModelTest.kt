@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
@@ -19,6 +20,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
@@ -1564,10 +1566,12 @@ class CanvasToppingArrangeViewModelTest {
     private fun edited(
         text: String = "안녕",
         color: TextToppingColor = TextToppingColor.Black,
+        align: TextAlign = TextAlign.Center,
     ) = TextEditResult.Edited(
         text = text,
         color = color,
         type = TextToppingType.DEFAULT,
+        align = align,
         designFontSize = 18f,
         positionX = 0.4f,
         positionY = 0.6f,
@@ -1734,6 +1738,25 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun confirm_alignOnlyEdit_sendsTheAlignInTheStylePatch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(align = TextAlign.Right), viewModel)
+        val styleUpdate = slot<TextToppingUpdate>()
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { updateTextTopping(any(), any(), capture(styleUpdate)) } returns
+            Result.success(mockk<UpdatedTextToppingVO>())
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(TextToppingAlign.RIGHT, styleUpdate.captured.textAlign)
+        coVerify(exactly = 0) { recreateTextTopping(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun deletedResult_marksTextForDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
 
@@ -1751,7 +1774,13 @@ class CanvasToppingArrangeViewModelTest {
         parfaitTextId = ParfaitTextId(id),
         text = "새 글",
         transform = ToppingTransform(positionX = 0.4, positionY = 0.6, positionZ = 2, scale = 1.2, rotation = 30.0),
-        style = TextToppingStyle(color = "#000000", fontSize = 18.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = ToppingPlacerVO(groupMemberId = GroupMemberId(MY_MEMBER_ID), nickname = GroupNickname("나")),
     )
 
@@ -1795,6 +1824,7 @@ class CanvasToppingArrangeViewModelTest {
                 fontSize = 18.0,
                 isFill = false,
                 isStroke = false,
+                textAlign = TextToppingAlign.CENTER,
             ),
             styleUpdate.captured,
         )
@@ -1914,7 +1944,13 @@ class CanvasToppingArrangeViewModelTest {
             scale = 1.2,
             rotation = 30.0,
         ),
-        style = TextToppingStyle(color = "#000000", fontSize = 18.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(if (isMine) MY_MEMBER_ID else OTHER_MEMBER_ID),
             nickname = GroupNickname("올린이"),

@@ -21,6 +21,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -278,6 +279,7 @@ constructor(
                                 text = result.text,
                                 color = result.color,
                                 type = result.type,
+                                align = result.align,
                                 designFontSize = result.designFontSize,
                                 positionX = text.positionX.orIfMoved(result.positionX),
                                 positionY = text.positionY.orIfMoved(result.positionY),
@@ -298,6 +300,7 @@ constructor(
     private fun TextEditResult.Edited.isSameAs(local: EditableText): Boolean = text == local.text &&
         color == local.color &&
         type == local.type &&
+        align == local.align &&
         designFontSize == local.designFontSize &&
         positionX.isNear(local.positionX) &&
         positionY.isNear(local.positionY) &&
@@ -778,7 +781,7 @@ constructor(
     }
 
     private suspend fun saveTextStyle(text: EditableText): Boolean {
-        val style = textToppingStyleOf(color = text.color, type = text.type, designFontSize = text.designFontSize)
+        val style = text.toTextToppingStyle()
 
         return updateTextToppingUseCase(
             groupId = groupId,
@@ -789,6 +792,7 @@ constructor(
                 fontSize = style.fontSize,
                 isFill = style.isFill,
                 isStroke = style.isStroke,
+                textAlign = style.textAlign,
             ),
         ).onFailure { throwable ->
             viewModelLogger.e(throwable) { "텍스트 스타일을 저장하지 못했다 - parfaitTextId: ${text.parfaitTextId}" }
@@ -817,8 +821,11 @@ constructor(
             scale = text.scale.toDouble(),
             rotation = text.rotationDegrees.toDouble(),
         ),
-        style = textToppingStyleOf(color = text.color, type = text.type, designFontSize = text.designFontSize),
+        style = text.toTextToppingStyle(),
     )
+
+    private fun EditableText.toTextToppingStyle(): TextToppingStyle =
+        textToppingStyleOf(color = color, type = type, align = align, designFontSize = designFontSize)
 
     private fun CanvasToppingArrangeUiState.applyRecreateResult(
         textId: Long,
@@ -942,6 +949,7 @@ constructor(
         val original = serverTexts.find { it.parfaitTextId == parfaitTextId } ?: return true
         return color != original.color ||
             type != original.type ||
+            align != original.align ||
             designFontSize != original.designFontSize
     }
 

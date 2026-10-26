@@ -192,6 +192,7 @@ constructor(
                 content = original.text,
                 selectedColor = original.color,
                 textType = original.type,
+                align = original.align,
                 designFontSize = original.designFontSize,
                 scale = original.scale,
                 rotationDegrees = original.rotationDegrees,
@@ -371,6 +372,7 @@ constructor(
         val style = textToppingStyleOf(
             color = current.selectedColor,
             type = current.textType,
+            align = current.align,
             designFontSize = current.designFontSize,
         )
 
@@ -451,6 +453,7 @@ constructor(
                 text = current.content,
                 color = current.selectedColor,
                 type = current.textType,
+                align = current.align,
                 designFontSize = current.designFontSize,
                 positionX = transform.positionX.toFloat(),
                 positionY = transform.positionY.toFloat(),
