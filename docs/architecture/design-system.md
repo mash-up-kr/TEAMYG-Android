@@ -190,7 +190,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 > 📌 **한 라운드가 세 모듈의 엔트리를 한꺼번에 옮겼다(2026-08-20, PR #309 develop 머지)** — 어차피
 > 세 모듈(`camera`·`gallery`·`segmentation`) 파일을 다 여는 라운드라 스캐폴드 이관을 같이 태웠다.
 > `camera`(`NavKeyCameraCustom`·`NavKeyCameraSystem`·`NavKeyPictureConfirm`) · `gallery`
-> (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 #604에서 삭제 · `segmentation`
+> (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 PR #626에서 삭제 · `segmentation`
 > (`NavKeySegmentation`·`NavKeyToppingEdit`) 엔트리가 이번에 V2로
 > 옮겨 **이관 화면이 크게 늘었다.** `CustomCameraScreen`·
 > `CustomGalleryPickerScreen`이 직접 꽂고 있던 `YGToastHost`·`toastPolicy` 파라미터를 걷어 스캐폴드로

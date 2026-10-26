@@ -2987,7 +2987,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md).
   > 📌 **①의 다른 답이 한 라운드에 8엔트리를 옮겼다(2026-08-20, PR #309)** — `camera` 3
   > (`NavKeyCameraCustom`·`NavKeyCameraSystem`·`NavKeyPictureConfirm`) · `gallery` 2
-  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 #604에서 삭제 · `segmentation` 3
+  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 PR #626에서 삭제 · `segmentation` 3
   > (`NavKeySegmentation`·`NavKeySegmentationConfirm`·`NavKeyToppingEdit`)이 한꺼번에 갔다. 계기는
   > 로딩·실패가 아니라 **세 모듈 파일을 어차피 다 여는 라운드**였다는 것이고(위 #296·#305와 같은
   > 갈래), 실제로 여덟 엔트리 중 `isLoading`을 넘기는 곳이 하나도 없다 — 세 모듈의 로딩이 전부 화면
@@ -3940,7 +3940,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   이유로 되돌렸는데**, 그 이유가 #290 머지로 사라졌다.
 - **항목**: ① 셋을 지울지 — 지우면 도달 불가 화면 목록에서 하나가 빠진다. ② 같은 부류
   (`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)와 묶어 한 번에 정리할지.
-- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ② 같은 부류 둘도 #604에서 지웠다)
+- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ② 같은 부류 둘도 PR #626(이슈 #604)에서 지웠다)
   > 📌 **2026-08-20 — `refactor/segmentation-develop`이 되살리지 않기로 했다.** 그 브랜치가 두 번째
   > 리베이스에서 같이 처리할 후보였으나(아래 해소 메모의 옛 권고), **이 잔해는 그 라운드가 만든 것이
   > 아니라 #290이 남긴 것**이라 리뷰 대상 diff를 넓힐 값이 없다고 판단했다
@@ -3964,7 +3964,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 딸려 걷힌 것 셋: ① `NavTransition.Fade.metadata` 예외(OQ-P-260 ③), ② `LocalSharedTransitionScope`와
   > 두 루트의 `SharedTransitionLayout` 껍질, ③ `NavKeyAnalyticsScreen`의 화면 ID 셋
   > (`C-001-edit`·`C-001-image-select`·`C-001-move`)과 그 테스트 기대값.
-  > ✅ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)도 지웠다(#604)** — #514가 캔버스 셋만
+  > ✅ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)도 지웠다(PR #626)** — #514가 캔버스 셋만
   > 보고 그 둘은 건드리지 않았는데, 이쪽도 `goTo` 호출부가 0건인 채 엔트리 등록과 분석 화면 ID
   > (`C-101-system`·`C-102-system`)만 남아 있었다. 둘의 Route·Screen·ViewModel·엔트리·분석 매핑을 걷었다.
 - **해소 메모**: [navigation-flow](../architecture/navigation-flow.md) "인자 있는 목적지" 목록과 토핑
@@ -7821,8 +7821,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-450
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
-- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. `AddToppingUseCase`가 사진 전용이고 텍스트 객체 저장 API(필드·디자인 단위 글자 크기·중심 좌표·줄바꿈 고정 여부)가 서버와 합의되지 않았다. iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
-- **상태**: 미해결 (서버 계약 대기)
-- **해소 메모**: 서버 스키마가 정해지면 `handleOnClickStack`에서 저장을 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
+- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
+- **상태**: 미해결 (앱 배선 대기 — 원격 DataSource까지 있음)
+- **해소 메모**: 저장소·유스케이스를 붙여 `handleOnClickStack`에서 `placeText`를 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
 
-<!-- oq-next: 451 -->
+### [2026-10-26] 텍스트 토핑의 정렬·줄바꿈 위치를 서버 계약에 실을 자리가 없다
+
+- **ID**: OQ-P-451
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
+- **항목**: 화면은 정렬 3종(`TextToppingAlign`)을 순환하고 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 배치 요청은 `text`·좌표·`scale`·`rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이라 둘 다 실을 필드가 없다(타입 3종은 `isFill`·`isStroke` 조합으로 실린다). 저장이 붙으면 왼쪽·오른쪽 정렬이 다른 기기에서 가운데로 그려지고, 줄바꿈은 기기마다 다시 계산된다. ① 서버에 정렬 필드를 더할지 ② 정렬을 고정해 UI에서 뺄지 ③ 줄바꿈 위치를 계약에 넣을지.
+- **상태**: 미해결 (서버·iOS 협의)
+- **해소 메모**: OQ-P-450의 저장 배선보다 먼저 정해야 한다 — 필드가 없는 채 저장을 붙이면 정렬이 조용히 사라진다.
+
+<!-- oq-next: 452 -->

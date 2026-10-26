@@ -58,13 +58,13 @@
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
-- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`
+- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`
 - ⚠️ 토핑 한 장만 실패해도 첫 페인트 전이면 캔버스 전체가 다시 시도 덮개로 막히는데 그 규칙의 근거가 코드에만 있고, 첫 페인트 판정 상태가 Route 컴포지션에 있어 덮개 회귀를 잡는 테스트가 없다 (OQ-P-355, OQ-P-395)
 - ⚠️ 배경을 고른 빈 캔버스에는 빈 안내판이 뜨지 않는다 — 안내판 조건이 `isEmpty && background == null`이다 (OQ-P-304)
 - ⚠️ 그룹 생성·참여 직후 환영 배너는 문구·갈래에 정책 소스가 없고, 초대코드를 한 번 복사하면 재발행된 배너에 버튼 동작이 없어 다시 복사할 수 없다 (OQ-P-339)
 - ⚠️ Spotlight 작성자 이름 색은 서버 값이 아니라 `memberChips` 조인이라 탈퇴·이탈 멤버는 기본색이 되고, 토핑 탭 판정의 알파 문턱·해상도는 실측 전 값이다 (OQ-P-251, OQ-P-313)
 - ⚠️ 캔버스 두 조회의 404 `GROUP_NOT_FOUND`를 다른 실패와 가르지 않고, 목록에서 사라진 그룹이면 상단 바가 옛 이름을 그대로 든다 (OQ-P-383, OQ-P-407)
-- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이고, 하루 경계 직후 같은 그룹의 오늘 조회가 동시에 나가 서버가 캔버스를 중복 생성하는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
+- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이다. 폴링은 조건부 오늘 조회(v2 `today`, ETag/304) 하나라 304 경로까지 매 주기 서버의 오늘 캔버스 확보를 태우는데, 그 확보가 동시 요청에서 캔버스를 중복 생성하지 않는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
 - 설계: [c001-canvas-main](superpowers/specs/archive/2026-08-12-c001-canvas-main.md), [c001-canvas-today-detail](superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md), [c202-canvas-spotlight](superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [canvas-feedback-fixes](superpowers/specs/archive/2026-09-10-canvas-feedback-fixes.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0023](adr/0023-group-in-memory-ssot.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md), [ADR-0030](adr/0030-topping-outline-distance-field.md)
 
 ## 토핑 생성·배치·배치 수정 (C-101·C-102·C-105·C-106·C-305)
@@ -86,6 +86,16 @@
 - ⚠️ 지난 캔버스에서 본인 토핑 탭은 무반응이다 — 캔버스 메인의 `isViewingToday` 가드다. 분석 화면 id는 `C-305`(위키 v7의 토핑 편집)인데 피그마는 이 화면을 `C-105-Arrange`라 부르고 위키에는 그 id가 없다 (OQ-P-326, OQ-P-415)
 - ⚠️ 배치 수정 화면의 확정 버튼 문구("캔버스에 쌓기")는 추가 플로우와 같은 문자열이고, 그만두기 팝업의 제목(「사진 편집을 그만둘까요?」)과 본문이 스펙이 적은 문구가 아니라 `core:ui` `YGModalQuitEdit`의 것이다 — 둘 다 기획·디자인 확인 전이다 (OQ-P-413, OQ-P-414)
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md), [ADR-0034](adr/0034-topping-border-set-at-placement.md)
+
+## 텍스트 토핑 (C-106 텍스트 입력)
+- 상태: 캔버스 메인의 추가 메뉴 「텍스트 입력」이 `NavKeyCanvasTextInput` 한 화면을 연다. 화면은 키보드 노출(`isEditing`)로 편집 모드와 배치 모드를 가르고, 편집 모드에서 그래핌 기준 100자·타입 3종·정렬 3종·8색과 자동 크기를, 배치 모드에서 사진 토핑의 이동·핀치 제스처를 그대로 쓴다. 글자 크기는 디자인 너비 335 기준값에 캔버스 너비 비율을 곱해 그리고 시스템 글꼴 배율은 무시한다. [캔버스에 쌓기]는 이벤트만 남기고 C-001로 돌아가는 스텁이다 — 서버 계약과 `:data`의 `ParfaitTextRemoteDataSource`는 있으나 저장소·유스케이스가 없다. 캔버스 응답의 `texts`도 DTO까지만 있어 C-001은 텍스트를 그리지 않는다. 재편집·삭제는 아직 없다.
+- 앵커: `CanvasTextInputViewModel`, `CanvasTextInputScreen`, `TextEditDragInput.kt`, `fitTextToppingToHeight`, `TextToppingScript.kt`, `GraphemeClusterExtension.kt`, `ParfaitTextRemoteDataSource`, `TodayParfaitTextResponse`
+- ⚠️ [캔버스에 쌓기]가 저장하지 않는다 (OQ-P-450)
+- ⚠️ 캔버스 응답의 `texts`를 VO로 매핑하지 않아, 다른 클라이언트가 놓은 텍스트도 C-001에 보이지 않는다 (OQ-P-439)
+- ⚠️ 정렬 3종과 줄바꿈 위치를 서버 계약에 실을 필드가 없어, 저장을 붙이면 정렬이 사라진다 (OQ-P-451)
+- ⚠️ 서버는 `text`를 UTF-16 2000자로 세고 앱은 그래핌 100자로 세며, `color` 형식과 이미지와 공유하는 `positionZ` 배정 규칙이 계약에 없다 (OQ-P-442, OQ-P-441, OQ-P-443)
+- ⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌고, 언어 분기는 내용의 주된 스크립트로 통째 적용돼 한 토핑에 일·중이 섞이면 한 글꼴로만 그려진다
+- 설계: [text-topping](superpowers/specs/2026-10-16-text-topping.md), [api/parfait-text](api/parfait-text.md)
 
 ## 누끼 추출 (C-103·C-104)
 - 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 긴 변 상한(`DecodeSize.LONG_SIDE_LIMIT`)으로 디코드한 원본으로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고(선택 UI는 「직접 선택」 얼럿으로 후보 없이 원본 전체를 마스크로 편집 화면에 갈 수 있다), 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
