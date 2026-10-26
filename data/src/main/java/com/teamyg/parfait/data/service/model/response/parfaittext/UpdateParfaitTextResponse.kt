@@ -3,7 +3,6 @@ package com.teamyg.parfait.data.service.model.response.parfaittext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** @param textAlign 정렬 필드가 없던 서버도 읽도록 서버 기본값과 같은 `CENTER` 를 둔다 */
 @Serializable
 data class UpdateParfaitTextResponse(
     @SerialName("parfaitTextId")
@@ -29,5 +28,5 @@ data class UpdateParfaitTextResponse(
     @SerialName("isStroke")
     val isStroke: Boolean,
     @SerialName("textAlign")
-    val textAlign: String = "CENTER",
+    val textAlign: String = DEFAULT_TEXT_ALIGN,
 )

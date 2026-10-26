@@ -5,11 +5,11 @@ import com.teamyg.parfait.data.service.model.request.parfaittext.UpdateParfaitTe
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.data.service.model.response.parfaittext.UpdateParfaitTextResponse
+import com.teamyg.parfait.data.source.common.mapper.toTextToppingAlign
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
-import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -91,9 +91,5 @@ private fun styleOf(
     fontSize = fontSize,
     isFill = isFill,
     isStroke = isStroke,
-    textAlign = textToppingAlignOf(textAlign),
+    textAlign = textAlign.toTextToppingAlign(),
 )
-
-/** 모르는 값은 서버 기본값인 가운데로 읽는다 — 정렬이 늘어도 캔버스 전체가 깨지지 않게 */
-internal fun textToppingAlignOf(wire: String): TextToppingAlign =
-    TextToppingAlign.entries.firstOrNull { it.name == wire } ?: TextToppingAlign.CENTER

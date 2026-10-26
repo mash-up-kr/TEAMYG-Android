@@ -1,13 +1,10 @@
 package com.teamyg.parfait.data.service.model.response.parfait
 
+import com.teamyg.parfait.data.service.model.response.parfaittext.DEFAULT_TEXT_ALIGN
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/**
- * 캔버스 texts 원소와 텍스트 배치 POST 응답이 공유하는 타입이다(`docs/api/parfait-text.md`).
- *
- * @param textAlign 정렬 필드가 없던 서버도 읽도록 서버 기본값과 같은 `CENTER` 를 둔다
- */
+/** 캔버스 texts 원소와 텍스트 배치 POST 응답이 공유하는 타입이다(`docs/api/parfait-text.md`). */
 @Serializable
 data class TodayParfaitTextResponse(
     @SerialName("parfaitTextId")
@@ -33,7 +30,7 @@ data class TodayParfaitTextResponse(
     @SerialName("isStroke")
     val isStroke: Boolean,
     @SerialName("textAlign")
-    val textAlign: String = "CENTER",
+    val textAlign: String = DEFAULT_TEXT_ALIGN,
     @SerialName("placedBy")
     val placedBy: PlacedByResponse,
     @SerialName("createdAt")
