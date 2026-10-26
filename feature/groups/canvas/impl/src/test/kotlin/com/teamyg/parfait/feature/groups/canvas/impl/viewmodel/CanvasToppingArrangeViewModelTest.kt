@@ -19,6 +19,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
@@ -33,7 +34,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
-import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecreateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
@@ -95,7 +96,7 @@ class CanvasToppingArrangeViewModelTest {
     private val deleteTextTopping: DeleteTextToppingUseCase = mockk()
     private val updateToppings: UpdateToppingsUseCase = mockk()
     private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
-    private val placeTextTopping: PlaceTextToppingUseCase = mockk()
+    private val recreateTextTopping: RecreateTextToppingUseCase = mockk()
     private val updateTextTopping: UpdateTextToppingUseCase = mockk()
     private val textEditSessionHolder = TextEditSessionHolder()
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
@@ -131,7 +132,7 @@ class CanvasToppingArrangeViewModelTest {
             deleteTextToppingUseCase = deleteTextTopping,
             updateToppingsUseCase = updateToppings,
             updateToppingBorderUseCase = updateToppingBorder,
-            placeTextToppingUseCase = placeTextTopping,
+            recreateTextToppingUseCase = recreateTextTopping,
             updateTextToppingUseCase = updateTextTopping,
             textEditSessionHolder = textEditSessionHolder,
             analyticsLogger = analyticsLogger,
@@ -1744,9 +1745,8 @@ class CanvasToppingArrangeViewModelTest {
         )
         val placedTransform = slot<ToppingTransform>()
         coEvery {
-            placeTextTopping(any(), any(), any(), capture(placedTransform), any())
-        } returns Result.success(placedText(99L))
-        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.success(Unit)
+            recreateTextTopping(any(), any(), any(), any(), capture(placedTransform), any())
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1757,8 +1757,7 @@ class CanvasToppingArrangeViewModelTest {
         coVerifyOrder {
             updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
             updateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
-            placeTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), "새 글", any(), any())
-            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID))
+            recreateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID), "새 글", any(), any())
             refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
         }
         // 다시 만들 텍스트는 일괄 PATCH 에 싣지 않는다
@@ -1779,6 +1778,12 @@ class CanvasToppingArrangeViewModelTest {
         assertEquals(0.4, placedTransform.captured.positionX, 1e-6)
         assertEquals(1.2, placedTransform.captured.scale, 1e-6)
         coVerify(exactly = 1) { updateTextTopping(any(), any(), any()) }
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.deletedTextIds)
+        coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
     }
 
     @Test
@@ -1786,9 +1791,8 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = textViewModel()
         returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
         coEvery {
-            placeTextTopping(any(), any(), any(), any(), any())
-        } returns Result.success(placedText(99L))
-        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.OldNotDeleted(placed = placedText(99L), cause = RuntimeException("실패"))
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1812,10 +1816,37 @@ class CanvasToppingArrangeViewModelTest {
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
 
-        coVerify(exactly = 1) { placeTextTopping(any(), any(), any(), any(), any()) }
-        coVerify(exactly = 2) {
+        coVerify(exactly = 1) { recreateTextTopping(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
             deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID))
         }
+    }
+
+    @Test
+    fun confirm_recreateNotPlaced_keepsTheOldTextForAnotherTry() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.NotPlaced(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+
+        // 서버에 바뀐 것이 없으니 고친 글을 화면에 둔 채 다음 확인이 통째로 다시 만든다
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.recreateTextIds)
+        assertEquals("새 글", viewModel.text(SHARED_ID).text)
+        assertTrue(
+            viewModel.state.value.pendingDeleteTextIds
+                .isEmpty(),
+        )
+        coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
     }
 
     private fun textVO(
