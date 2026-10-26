@@ -285,6 +285,17 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
+    fun onClickStack_blankContent_doesNotPost() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnContentChange("   "))
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { placeTextTopping(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun onClickStack_logsAnalyticsOnEveryTapRegardlessOfResult() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = stackReadyViewModel()
         coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(

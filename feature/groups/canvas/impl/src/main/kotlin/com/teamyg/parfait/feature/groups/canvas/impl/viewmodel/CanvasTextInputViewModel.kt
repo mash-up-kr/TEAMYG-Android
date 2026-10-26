@@ -294,8 +294,9 @@ constructor(
 
         val boxSize = current.textBoxSize
         val canvasSize = current.canvasSize
-        if (draft == null || boxSize == null || canvasSize == null) {
-            viewModelLogger.d { "쌓기를 건너뛴다 - 초안 또는 측정값이 아직 없다" }
+        // 화면이 빈 내용의 버튼을 막지만, POST 가 멱등이 아니라 여기서도 막는다
+        if (current.content.isBlank() || draft == null || boxSize == null || canvasSize == null) {
+            viewModelLogger.d { "쌓기를 건너뛴다 - 빈 내용이거나 초안·측정값이 아직 없다" }
             return
         }
 
