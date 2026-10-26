@@ -7,10 +7,20 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TextEditSessionHolderTest {
     private val holder = TextEditSessionHolder()
+
+    @Test
+    fun finish_secondCallWithoutSession_isIgnored() {
+        holder.start(session(textId = 1L))
+
+        assertTrue(holder.finish(TextEditResult.Deleted))
+        assertFalse(holder.finish(TextEditResult.Deleted))
+    }
 
     @Test
     fun clear_dropsTheResultOfThatSession() {

@@ -37,11 +37,13 @@ class TextEditSessionHolder @Inject constructor() {
 
     fun session(): TextEditSession? = session
 
-    fun finish(result: TextEditResult) {
-        val current = session ?: return
+    /** @return 진행 중인 편집이 없어 무시했으면 false. 연타한 두 번째 완료가 여기에 걸린다 */
+    fun finish(result: TextEditResult): Boolean {
+        val current = session ?: return false
         session = null
         resultSession = current
         _result.value = current.original.parfaitTextId to result
+        return true
     }
 
     fun consume() {

@@ -451,9 +451,9 @@ constructor(
         )
     }
 
+    /** 두 번 나가면 아래 토핑 정리 화면까지 닫힌다 — 결과를 처음 넘긴 탭만 되감는다 */
     private fun finishEditing(result: TextEditResult) {
-        textEditSessionHolder.finish(result)
-        postSideEffect(CanvasTextInputEffect.NavigateBack)
+        if (textEditSessionHolder.finish(result)) postSideEffect(CanvasTextInputEffect.NavigateBack)
     }
 
     private fun handleDiscardAndNavigateBack() {

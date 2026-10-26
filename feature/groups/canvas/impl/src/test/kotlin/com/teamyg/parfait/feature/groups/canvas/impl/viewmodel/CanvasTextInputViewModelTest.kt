@@ -631,6 +631,21 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
+    fun editMode_stackTappedTwice_navigatesBackOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = editingViewModel()
+        viewModel.measure()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
     fun editMode_confirmWithBlankContent_finishesAsDeleted() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = editingViewModel()
         viewModel.processIntent(CanvasTextInputIntent.OnContentChange(""))
