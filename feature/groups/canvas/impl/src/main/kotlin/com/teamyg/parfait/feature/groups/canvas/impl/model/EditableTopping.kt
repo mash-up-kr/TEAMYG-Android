@@ -8,6 +8,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.model
  * 다른 자리에 놓이고 캔버스 메인(`CanvasToppingLayer`)과도 어긋난다 — 같은 캔버스가 두
  * 화면에서 다르게 보이면 안 된다.
  *
+ * @param positionZ 텍스트와 섞어 그리는 순서에만 쓴다 — 앱에 z 를 바꾸는 경로는 없다.
  * @param imageUrl 서버에 저장된 토핑 이미지 주소. 테두리는 픽셀에 굽지 않고 [border] 로 따로
  *   나른다(`adr/0025-topping-border-as-server-field.md`).
  */
@@ -17,6 +18,7 @@ data class EditableTopping(
     val imageUrl: String,
     val positionX: Float,
     val positionY: Float,
+    val positionZ: Int = 0,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
     val border: ToppingBorderStyle? = null,

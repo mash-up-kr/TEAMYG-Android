@@ -27,4 +27,6 @@ data class UpdateParfaitTextResponse(
     val isFill: Boolean,
     @SerialName("isStroke")
     val isStroke: Boolean,
+    @SerialName("textAlign")
+    val textAlign: String = DEFAULT_TEXT_ALIGN,
 )

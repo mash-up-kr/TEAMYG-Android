@@ -256,4 +256,30 @@ class PickToppingHitTest {
         // Then
         assertNull(pickToppingHit(entries, 110f, 100f))
     }
+
+    /** 측정 박스 100x20 을 2배로 키운 텍스트 — 200x40 사각형이 된다 */
+    private fun textTarget(rotationDegrees: Float) = textToppingHitTarget(
+        centerXPx = 100f,
+        centerYPx = 100f,
+        boxWidthPx = 100f,
+        boxHeightPx = 20f,
+        scale = 2f,
+        rotationDegrees = rotationDegrees,
+    )
+
+    @Test
+    fun textToppingHitTarget_unrotated_hitsTheScaledBox() {
+        // Given·When 회전 없는 텍스트
+        // Then 배율을 곱한 가로 끝 안쪽은 맞고, 세로로 박스를 벗어나면 빗나간다
+        assertTrue(textTarget(rotationDegrees = 0f).containsPoint(190f, 100f))
+        assertFalse(textTarget(rotationDegrees = 0f).containsPoint(100f, 125f))
+    }
+
+    @Test
+    fun textToppingHitTarget_rotated90_swapsTheAxes() {
+        // Given·When 90도 돌린 텍스트
+        // Then 긴 변이 세로로 눕는다
+        assertTrue(textTarget(rotationDegrees = 90f).containsPoint(100f, 190f))
+        assertFalse(textTarget(rotationDegrees = 90f).containsPoint(190f, 100f))
+    }
 }

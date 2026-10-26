@@ -69,6 +69,7 @@ class GetTodayParfaitFlowUseCaseTest {
         members = emptyList(),
         background = null,
         toppings = emptyList(),
+        texts = emptyList(),
     )
 
     private fun useCaseWith(canvas: CanvasVO?) = GetTodayParfaitFlowUseCase(FakeParfaitRepository(flowOf(canvas)))

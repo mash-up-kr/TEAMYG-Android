@@ -26,6 +26,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.theme.YGCustomTheme
 import com.teamyg.parfait.feature.groups.canvas.impl.hasTestTagPrefix
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingArrangeUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.writeTestToppingPng
@@ -236,7 +237,7 @@ class CanvasToppingArrangeScreenTest {
             topping(id = MY_FOCUSED_ID, isMine = true, at = MY_FOCUSED_AT),
             topping(id = MY_OTHER_ID, isMine = true, at = myOtherAt),
         ),
-        focusedToppingId = focusedToppingId,
+        focusedKey = focusedToppingId?.let(CanvasToppingKey::Image),
         isBorderPanelOpen = isBorderPanelOpen,
     )
 
@@ -265,6 +266,7 @@ class CanvasToppingArrangeScreenTest {
                         onClickClose = {},
                         onClickConfirm = { confirmCount++ },
                         onClickTopping = { topping -> clicked += topping },
+                        onClickText = {},
                         onClickEmptyCanvas = { emptyCount++ },
                         onToggleBorderPanel = { toggleCount++ },
                         onDismissBorderPanel = { dismissCount++ },

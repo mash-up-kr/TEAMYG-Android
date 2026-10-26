@@ -4,6 +4,7 @@ import com.teamyg.parfait.data.service.model.request.parfaitimage.PlaceParfaitIm
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageBorderRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImageItemRequest
 import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitImagesRequest
+import com.teamyg.parfait.data.service.model.request.parfaitimage.UpdateParfaitTextItemRequest
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImagePlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.PlaceParfaitImageResponse
 import com.teamyg.parfait.data.service.model.response.parfaitimage.UpdateParfaitImageBorderResponse
@@ -15,6 +16,7 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -81,10 +83,23 @@ internal fun UpdateParfaitImageResponse.toUpdatedToppingVO(): UpdatedToppingVO =
     ),
 )
 
-internal fun List<ToppingTransformUpdate>.toUpdateRequest(): UpdateParfaitImagesRequest = UpdateParfaitImagesRequest(
-    items = map {
+internal fun toUpdateRequest(
+    updates: List<ToppingTransformUpdate>,
+    textUpdates: List<TextToppingTransformUpdate>,
+): UpdateParfaitImagesRequest = UpdateParfaitImagesRequest(
+    items = updates.map {
         UpdateParfaitImageItemRequest(
             parfaitImageId = it.parfaitImageId.value,
+            positionX = it.positionX,
+            positionY = it.positionY,
+            positionZ = it.positionZ,
+            scale = it.scale,
+            rotation = it.rotation,
+        )
+    },
+    textItems = textUpdates.map {
+        UpdateParfaitTextItemRequest(
+            parfaitTextId = it.parfaitTextId.value,
             positionX = it.positionX,
             positionY = it.positionY,
             positionZ = it.positionZ,

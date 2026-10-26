@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
@@ -45,12 +46,13 @@ class ParfaitImageRemoteDataSourceImpl @Inject constructor(
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
+        textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>> = apiCaller.safeApiCall(
         block = {
             parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(
                 groupId = groupId.value,
                 parfaitId = parfaitId.value,
-                request = updates.toUpdateRequest(),
+                request = toUpdateRequest(updates, textUpdates),
             )
         },
         transform = { it.toUpdatedToppingVOList() },

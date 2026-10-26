@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,7 +50,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.lerp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
@@ -73,6 +73,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.fitTextToppingToH
 import com.teamyg.parfait.feature.groups.canvas.impl.component.measureTextBoxUnbounded
 import com.teamyg.parfait.feature.groups.canvas.impl.component.textEditDragInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.textEditTapInput
+import com.teamyg.parfait.feature.groups.canvas.impl.component.textToppingBaseStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTapInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingTransformInput
 import com.teamyg.parfait.feature.groups.canvas.impl.component.withTextToppingSizing
@@ -89,6 +90,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberDedupeHangulEnterTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberMaxLengthInputTransformation
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingFontSizeSp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputUiState
 
 private val TEXT_TOPPING_MIN_TOUCH = 44.dp
@@ -136,6 +139,10 @@ internal fun CanvasTextInputScreen(
             onConfirmEmpty = onClickConfirm,
         )
 
+        // 쌓기 요청 중에는 백을 먹는다. POST 는 멱등이 아니라, 보낸 뒤 나가 버리면 서버에는 쌓였는데
+        // 갱신·초안 정리가 끊겨 다시 쌓다가 중복이 생긴다. 편집 모드의 백보다 나중에 등록해야 그보다 앞선다
+        BackHandler(enabled = uiState.isLoading) {}
+
         // 바깥 탭은 팝오버 → 키보드 순으로 하나씩 닫는다
         val onDismissPopoverOrEndEditing: () -> Unit = {
             if (uiState.isColorPopoverOpen) {
@@ -168,15 +175,13 @@ internal fun CanvasTextInputScreen(
         val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
 
         val textScript = remember(uiState.content) { detectTextToppingScript(uiState.content) }
-        val autoSizeBaseStyle = YGTheme.typography.body.b01R.copy(
-            fontFamily = textScript.fontFamily,
-            letterSpacing = textScript.letterSpacingEm.em,
-        )
+        val autoSizeBaseStyle = textToppingBaseStyle(textScript)
+        val canvasWidth = uiState.canvasSize?.width ?: TEXT_TOPPING_DESIGN_CANVAS_WIDTH
         // 기기 폭과 무관하게 캔버스 대비 같은 크기·줄바꿈으로 보이도록 디자인 값에 곱한다
-        val canvasScale = uiState.canvasSize?.let { it.width / TEXT_TOPPING_DESIGN_CANVAS_WIDTH } ?: 1f
-        val maxFontSizeSp = TEXT_TOPPING_FONT_SIZE_SP * canvasScale
+        val canvasScale = canvasWidth / TEXT_TOPPING_DESIGN_CANVAS_WIDTH
+        val maxFontSizeSp = textToppingFontSizeSp(designFontSize = TEXT_TOPPING_FONT_SIZE_SP, canvasWidth = canvasWidth)
         // 글자 래핑 폭 = 캔버스 너비(글자만 기준, 배경 여백 제외). 넘친 배경은 캔버스가 잘라 낸다
-        val textMaxWidthDp = uiState.canvasSize?.width ?: TEXT_TOPPING_DESIGN_CANVAS_WIDTH
+        val textMaxWidthDp = textToppingWrapWidth(designFontSize = TEXT_TOPPING_FONT_SIZE_SP, canvasWidth = canvasWidth)
         val textMaxWidthPx = with(density) { textMaxWidthDp.roundToPx() }
 
         val textMeasurer = rememberTextMeasurer()
@@ -211,9 +216,11 @@ internal fun CanvasTextInputScreen(
         LaunchedEffect(editingDesignFontSize) {
             editingDesignFontSize?.let(onAutoFontSizeChange)
         }
-        val frozenFontRatio = uiState.designFontSize / TEXT_TOPPING_FONT_SIZE_SP
-        val fontSizeSp = textToppingFit?.fontSizeSp ?: (uiState.designFontSize * canvasScale)
-        val fieldMaxWidthDp = textToppingFit?.fieldMaxWidthDp ?: (textMaxWidthDp * frozenFontRatio)
+        // 배치 모드 크기는 TextToppingContent 와 같은 공식이어야 다른 화면에서도 같은 모습으로 보인다
+        val fontSizeSp = textToppingFit?.fontSizeSp
+            ?: textToppingFontSizeSp(designFontSize = uiState.designFontSize, canvasWidth = canvasWidth)
+        val fieldMaxWidthDp = textToppingFit?.fieldMaxWidthDp
+            ?: textToppingWrapWidth(designFontSize = uiState.designFontSize, canvasWidth = canvasWidth)
 
         val isTextOverflowing = textToppingFit?.isOverflowing == true
         val textEditAnchor = rememberTextEditVerticalAnchor(
@@ -318,8 +325,10 @@ internal fun CanvasTextInputScreen(
                         // 이미 캔버스에 놓인 토핑들. 터치 판정은 안 받는다 — 판정은 아래 입력 레이어가 혼자 한다
                         CanvasToppingLayer(
                             toppings = uiState.existingToppings,
-                            spotlightedToppingId = null,
+                            texts = uiState.existingTexts,
+                            spotlightedKey = null,
                             onClickTopping = {},
+                            onClickText = {},
                             onClickSpotlightDim = {},
                             hitTestEnabled = false,
                             revealTogether = false,

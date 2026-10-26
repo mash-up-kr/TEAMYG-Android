@@ -5,6 +5,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
@@ -37,7 +38,8 @@ interface ParfaitImageRemoteDataSource {
     suspend fun updateToppings(
         groupId: GroupId,
         parfaitId: ParfaitId,
-        updates: List<ToppingTransformUpdate>,
+        updates: List<ToppingTransformUpdate> = emptyList(),
+        textUpdates: List<TextToppingTransformUpdate> = emptyList(),
     ): Result<List<UpdatedToppingVO>>
 
     /**

@@ -19,13 +19,13 @@ import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
-import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.PARFAIT_TIME_ZONE
 import com.teamyg.parfait.domain.model.parfaitToday
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
@@ -39,7 +39,9 @@ import com.teamyg.parfait.domain.usecase.parfait.GetParfaitYearsUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
+import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toColorChipType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toSpotlightToastNameColor
 import dagger.assisted.Assisted
@@ -57,6 +59,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.format
 import kotlinx.datetime.monthsUntil
 import kotlinx.datetime.plus
@@ -112,7 +115,7 @@ data class CanvasMainUiState(
      */
     val parfaitHistoriesByYear: Map<Int, List<PastCanvasVO>> = emptyMap(),
     /** Spotlight 로 강조된 토핑. Default 상태면 null */
-    val spotlightedToppingId: ParfaitImageId? = null,
+    val spotlightedKey: CanvasToppingKey? = null,
     /** 아직 오늘 캔버스를 한 번도 받지 못한 채 도는 조회. 화면을 덮는다 */
     val isInitialLoading: Boolean = false,
 ) : UiState {
@@ -127,6 +130,10 @@ data class CanvasMainUiState(
     /** 그리는 순서대로 들고 있다 — positionZ 오름차순이라 뒤쪽이 위에 덮인다 */
     val toppings: List<CanvasToppingVO>
         get() = displayedCanvas?.toppings.orEmpty().sortedBy { it.transform.positionZ }
+
+    /** 이미지와 겹침 순서를 합치는 일은 그리는 쪽이 한다 */
+    val texts: List<CanvasTextToppingVO>
+        get() = displayedCanvas?.texts.orEmpty()
 
     /** 지난 날에는 편집 대신 저장·오늘로 가기를 준다 */
     val isViewingToday: Boolean
@@ -167,7 +174,7 @@ data class CanvasMainUiState(
         .sorted()
 
     val isCanvasEmpty: Boolean
-        get() = toppings.isEmpty()
+        get() = toppings.isEmpty() && texts.isEmpty()
 
     /**
      * [YGCanvas] 의 빈 캔버스 안내판과 정확히 반대 조건이다 — 안내판이 덮고 있을 때는
@@ -175,10 +182,6 @@ data class CanvasMainUiState(
      */
     val isCanvasSaveVisible: Boolean
         get() = (isCanvasEmpty && canvasBackground == null).not()
-
-    /** Default 상태(또는 스포트라이트된 토핑이 그 사이 지워졌을 때)면 null */
-    val spotlightedTopping: CanvasToppingVO?
-        get() = spotlightedToppingId?.let { id -> toppings.firstOrNull { it.parfaitImageId == id } }
 }
 
 sealed interface CanvasMainEffect : UiSideEffect {
@@ -193,10 +196,12 @@ sealed interface CanvasMainEffect : UiSideEffect {
         val parfaitId: ParfaitId,
     ) : CanvasMainEffect
 
+    /** @param toppingId [isText] 에 따라 이미지 id 이거나 텍스트 id 다 */
     data class NavigateToToppingArrange(
         val groupId: GroupId,
         val parfaitId: ParfaitId,
-        val toppingId: ParfaitImageId,
+        val toppingId: Long,
+        val isText: Boolean,
     ) : CanvasMainEffect
 
     data class NavigateToGroupSetting(val groupId: GroupId) : CanvasMainEffect
@@ -294,6 +299,9 @@ sealed interface CanvasMainIntent : UiIntent {
     /** 캔버스 위의 토핑 하나를 탭했다. Default 상태에서만 Spotlight 로 전환된다 */
     data class OnClickTopping(val topping: CanvasToppingVO) : CanvasMainIntent
 
+    /** 규칙은 [OnClickTopping] 과 같다 */
+    data class OnClickText(val text: CanvasTextToppingVO) : CanvasMainIntent
+
     /** Spotlight 상태에서 강조된 토핑 밖(Dim 영역)을 탭했다 */
     data object OnClickSpotlightDim : CanvasMainIntent
 
@@ -388,10 +396,8 @@ constructor(
                     // observeTodayCanvasRefreshFailure 가 맡는다
                     isInitialLoading = if (canvas == null) isInitialLoading else false,
                     // 강조 중이던 토핑이 사라지면 딤도 사라져 Dim 탭이라는 해제 계기가 없어진다.
-                    // 상태값을 그대로 두면 handleOnClickTopping 가드에 걸려 탭이 전부 먹지 않는다
-                    spotlightedToppingId = spotlightedToppingId?.takeIf { id ->
-                        canvas?.toppings.orEmpty().any { it.parfaitImageId == id }
-                    },
+                    // 상태값을 그대로 두면 handleOnClickLayer 가드에 걸려 탭이 전부 먹지 않는다
+                    spotlightedKey = spotlightedKey?.takeIf { key -> canvas?.containsTopping(key) == true },
                 )
             }
             canvas?.let(::checkShowPastCanvasAlert)
@@ -447,9 +453,11 @@ constructor(
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.toppings
-            ?.distinctBy { it.placedBy.groupMemberId }
-            ?.size
+            ?.let { canvas ->
+                (canvas.toppings.map { it.placedBy.groupMemberId } + canvas.texts.map { it.placedBy.groupMemberId })
+                    .distinct()
+                    .size
+            }
     }
 
     /**
@@ -630,6 +638,8 @@ constructor(
 
             is CanvasMainIntent.OnClickTopping -> handleOnClickTopping(intent.topping)
 
+            is CanvasMainIntent.OnClickText -> handleOnClickText(intent.text)
+
             is CanvasMainIntent.OnClickSpotlightDim -> resetSpotlight()
 
             is CanvasMainIntent.OnAppReturnedFromBackground -> resetSpotlight()
@@ -640,41 +650,60 @@ constructor(
      * 본인 토핑은 Spotlight 대상이 아니라 C-305 토핑 편집으로 이어진다. 나머지는
      * Default → Spotlighted 로만 전환한다.
      */
-    private fun handleOnClickTopping(topping: CanvasToppingVO) {
-        if (state.value.spotlightedToppingId != null) return
+    private fun handleOnClickTopping(topping: CanvasToppingVO) = handleOnClickLayer(
+        key = CanvasToppingKey.Image(topping.parfaitImageId.value),
+        isMine = topping.isMine,
+        placedBy = topping.placedBy,
+        createdAt = topping.createdAt,
+    )
+
+    private fun handleOnClickText(text: CanvasTextToppingVO) = handleOnClickLayer(
+        key = CanvasToppingKey.Text(text.parfaitTextId.value),
+        isMine = text.isMine,
+        placedBy = text.placedBy,
+        createdAt = text.createdAt,
+    )
+
+    private fun handleOnClickLayer(
+        key: CanvasToppingKey,
+        isMine: Boolean,
+        placedBy: ToppingPlacerVO,
+        createdAt: LocalDateTime,
+    ) {
+        if (state.value.spotlightedKey != null) return
 
         analyticsLogger.logEvent(
             AnalyticsEvent(
                 type = AnalyticsEventType.CANVAS_TOPPING_EDITOR_CHECKED,
                 params = mapOf(
                     "group_id" to groupId.value.toString(),
-                    "is_mine" to topping.isMine.toString(),
+                    "is_mine" to isMine.toString(),
                 ),
             ),
         )
 
-        if (topping.isMine) {
-            handleOnClickMyTopping(topping)
+        if (isMine) {
+            handleOnClickMyLayer(key)
             return
         }
 
-        updateState { copy(spotlightedToppingId = topping.parfaitImageId) }
+        updateState { copy(spotlightedKey = key) }
 
         // TODO(임시): 서버 nameTagChp 필드가 도메인까지 반영되면(데이터 계층 담당) 그 값을
         // 바로 쓰도록 바꾼다. 그 전까지는 화면이 이미 들고 있는 memberChips 에서 같은
         // groupMemberId 를 찾아 대신 쓴다 — 탈퇴·이탈한 멤버는 이 목록에 없어 Default 로 빠진다.
         val chipType = state.value.memberChips
-            .firstOrNull { chip -> chip.groupMemberId == topping.placedBy.groupMemberId }
+            .firstOrNull { chip -> chip.groupMemberId == placedBy.groupMemberId }
             ?.colorChipType
             ?: YGColorChipType.Default
 
         postSideEffect(
             effect = CanvasMainEffect.ShowSpotlightToast(
-                nickname = topping.placedBy.nickname.value,
+                nickname = placedBy.nickname.value,
                 nicknameColor = chipType.toSpotlightToastNameColor(),
                 // createdAt 은 타임존이 없는 KST 벽시계 시각이다(PARFAIT_TIME_ZONE 참고) — 기기
                 // 시간대로 재면 해외에 있는 기기에서 서버와 어긋난다
-                elapsed = topping.createdAt
+                elapsed = createdAt
                     .toInstant(PARFAIT_TIME_ZONE)
                     .toElapsedTimeBucket(Clock.System.now()),
             ),
@@ -685,7 +714,7 @@ constructor(
      * 오늘 캔버스를 보고 있을 때만 C-305 로 보낸다. 탭한 토핑 id 를 실어 보내
      * 편집 화면이 그 토핑을 고른 채로 열리게 한다.
      */
-    private fun handleOnClickMyTopping(topping: CanvasToppingVO) {
+    private fun handleOnClickMyLayer(key: CanvasToppingKey) {
         if (!state.value.isViewingToday) return
         val todayCanvas = state.value.todayCanvas ?: return
 
@@ -693,7 +722,11 @@ constructor(
             effect = CanvasMainEffect.NavigateToToppingArrange(
                 groupId = groupId,
                 parfaitId = todayCanvas.parfaitId,
-                toppingId = topping.parfaitImageId,
+                toppingId = when (key) {
+                    is CanvasToppingKey.Image -> key.id
+                    is CanvasToppingKey.Text -> key.id
+                },
+                isText = key is CanvasToppingKey.Text,
             ),
         )
     }
@@ -704,7 +737,7 @@ constructor(
      * 에서만 부른다.
      */
     private fun resetSpotlight() {
-        updateState { copy(spotlightedToppingId = null) }
+        updateState { copy(spotlightedKey = null) }
     }
 
     /**
@@ -977,8 +1010,19 @@ constructor(
         }
     }
 
-    /** 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다 */
-    private fun CanvasVO.nextPositionZ(): Int = (toppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
+    private fun CanvasVO.containsTopping(key: CanvasToppingKey): Boolean = when (key) {
+        is CanvasToppingKey.Image -> toppings.any { it.parfaitImageId.value == key.id }
+        is CanvasToppingKey.Text -> texts.any { it.parfaitTextId.value == key.id }
+    }
+
+    /**
+     * 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다.
+     * 이미지와 텍스트가 한 z 축을 쓰므로 둘을 합쳐 센다.
+     */
+    private fun CanvasVO.nextPositionZ(): Int {
+        val maxZ = (toppings.map { it.transform.positionZ } + texts.map { it.transform.positionZ }).maxOrNull()
+        return (maxZ ?: 0) + 1
+    }
 
     /**
      * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만
