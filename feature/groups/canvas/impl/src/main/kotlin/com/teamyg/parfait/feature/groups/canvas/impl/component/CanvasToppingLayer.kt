@@ -11,9 +11,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -22,7 +25,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -35,14 +41,20 @@ import com.teamyg.parfait.core.ui.reveal.revealed
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
-import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasLayerItem
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLayerOrder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingColorOf
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingTypeOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -53,9 +65,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
  * 위치·크기가 모두 그 폭에 대한 비율이라 다른 크기 위에 얹으면 배치가 어긋난다.
  *
- * [toppings] 는 그리는 순서대로 받는다(positionZ 오름차순). 뒤에 오는 것이 위에 덮인다.
+ * 이미지 [toppings] 와 [texts] 는 [canvasLayerOrder] 로 한 줄에 세워 그린다. 뒤에 오는 것이 위에 덮인다.
  *
- * Spotlight(C-106): [spotlightedToppingId] 가 있으면 그 토핑만 목록 순서를 벗어나 맨 위로
+ * Spotlight(C-106): [spotlightedKey] 가 있으면 그 토핑만 목록 순서를 벗어나 맨 위로
  * 옮기고, 그 바로 아래에 나머지 전체를 덮는 Dim 레이어를 끼워 넣는다. "Spotlight 토핑 →
  * Dim 레이어 → 나머지 토핑" 은 **그리는 순서일 뿐 클릭 경로가 아니다** — 딤은 클릭을 받지
  * 않고, 판정은 전면에 깔린 입력 레이어가 혼자 한다.
@@ -70,8 +82,10 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
 @Composable
 internal fun CanvasToppingLayer(
     toppings: List<CanvasToppingVO>,
-    spotlightedToppingId: ParfaitImageId?,
+    texts: List<CanvasTextToppingVO>,
+    spotlightedKey: CanvasToppingKey?,
     onClickTopping: (CanvasToppingVO) -> Unit,
+    onClickText: (CanvasTextToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
     modifier: Modifier = Modifier,
     hitTestEnabled: Boolean = true,
@@ -79,7 +93,7 @@ internal fun CanvasToppingLayer(
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
     /**
-     * 토핑별 팝인 진행도(0~1). [toppings] 와 같은 순서다. `null` 이면 전부 다 보인다.
+     * 토핑별 팝인 진행도(0~1). 이미지와 텍스트를 [canvasLayerOrder] 로 합친 순서다. `null` 이면 전부 다 보인다.
      *
      * 타임랩스 녹화가 프레임마다 이 값을 갈아 토핑이 차례로 튀어나오게 만든다.
      */
@@ -90,6 +104,7 @@ internal fun CanvasToppingLayer(
         // 안쪽 Box 의 BoxScope 가 BoxWithConstraintsScope 를 가려 maxWidth 를 못 읽는다
         val areaWidth = maxWidth
         val areaHeight = maxHeight
+        val density = LocalDensity.current
 
         val entries = rememberToppingHitEntries(
             toppings = toppings,
@@ -97,12 +112,17 @@ internal fun CanvasToppingLayer(
             canvasHeight = maxHeight,
             retryKey = retryKey,
         )
-        val spotlighted = entries.firstOrNull { it.topping.parfaitImageId == spotlightedToppingId }
+        val entriesById = entries.associateBy { it.topping.parfaitImageId.value }
+        val layers = remember(toppings, texts) { canvasLayerOrder(images = toppings, texts = texts) }
+        val spotlighted = layers.firstOrNull { it.key == spotlightedKey }
+
+        // scale 을 곱하기 전 크기다. 텍스트 판정은 렌더에서 잰 이 값에 기댄다
+        val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
-        // 다시 시도할 때도 처음부터 모아야 한다
+        // 다시 시도할 때도 처음부터 모아야 한다. 텍스트는 받아 올 것이 없어 처음부터 결말난 셈이다
         val reveal = rememberBatchRevealState(
-            settled = entries.map { it.imageState != CanvasLoadState.Loading },
+            settled = entries.map { it.imageState != CanvasLoadState.Loading } + texts.map { true },
             resetKey = revealResetKey to retryKey,
         )
         val toppingsVisible = !revealTogether || reveal.shown
@@ -114,17 +134,13 @@ internal fun CanvasToppingLayer(
             currentOnLoadStateChange(loadState)
         }
 
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .revealed(toppingsVisible),
+        @Composable
+        fun Layer(
+            layer: CanvasLayerItem,
+            popProgress: Float,
         ) {
-            entries.forEachIndexed { index, entry ->
-                if (entry.topping.parfaitImageId != spotlightedToppingId) {
-                    // 목록이 이미 positionZ 오름차순, 즉 배치 순서라 인덱스가 곧 등장 순서다.
-                    // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
-                    val popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f
-
+            when (layer) {
+                is CanvasLayerItem.Image -> entriesById[layer.topping.parfaitImageId.value]?.let { entry ->
                     CanvasTopping(
                         entry = entry,
                         canvasWidth = areaWidth,
@@ -133,6 +149,32 @@ internal fun CanvasToppingLayer(
                         clickable = hitTestEnabled,
                         popProgress = popProgress,
                     )
+                }
+
+                is CanvasLayerItem.Text -> CanvasText(
+                    text = layer.text,
+                    canvasWidth = areaWidth,
+                    canvasHeight = areaHeight,
+                    onClick = { onClickText(layer.text) },
+                    clickable = hitTestEnabled,
+                    onBoxSizeChange = { size -> textBoxSizes[layer.text.parfaitTextId.value] = size },
+                    popProgress = popProgress,
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .revealed(toppingsVisible),
+        ) {
+            layers.forEachIndexed { index, layer ->
+                if (layer.key != spotlightedKey) {
+                    key(layer.key) {
+                        // 목록이 이미 겹침 순서, 즉 배치 순서라 인덱스가 곧 등장 순서다.
+                        // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
+                        Layer(layer = layer, popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f)
+                    }
                 }
             }
 
@@ -155,13 +197,9 @@ internal fun CanvasToppingLayer(
                         },
                 )
 
-                CanvasTopping(
-                    entry = spotlighted,
-                    canvasWidth = areaWidth,
-                    canvasHeight = areaHeight,
-                    onClick = { onClickTopping(spotlighted.topping) },
-                    clickable = hitTestEnabled,
-                )
+                key(spotlighted.key) {
+                    Layer(layer = spotlighted, popProgress = 1f)
+                }
             }
         }
 
@@ -173,15 +211,117 @@ internal fun CanvasToppingLayer(
                     .toppingTapInput(
                         // 강조된 토핑이 있으면 그것만 본다. 딤이 전면을 덮어 나머지는 닿지 않는다
                         entries = {
-                            (spotlighted?.let(::listOf) ?: entries).map { it.topping to it.target }
+                            (spotlighted?.let(::listOf) ?: layers).mapNotNull { layer ->
+                                val target = when (layer) {
+                                    is CanvasLayerItem.Image -> entriesById[layer.topping.parfaitImageId.value]?.target
+
+                                    is CanvasLayerItem.Text -> layer.text.hitTarget(
+                                        boxSize = textBoxSizes[layer.text.parfaitTextId.value],
+                                        canvasWidth = areaWidth,
+                                        canvasHeight = areaHeight,
+                                        density = density,
+                                    )
+                                }
+                                target?.let { layer to it }
+                            }
                         },
-                        keyOf = { it.parfaitImageId },
-                        onHit = onClickTopping,
+                        keyOf = { it.key },
+                        onHit = { layer ->
+                            when (layer) {
+                                is CanvasLayerItem.Image -> onClickTopping(layer.topping)
+                                is CanvasLayerItem.Text -> onClickText(layer.text)
+                            }
+                        },
                         onMiss = { if (spotlighted != null) onClickSpotlightDim() },
                     ),
             )
         }
     }
+}
+
+/** 아직 한 번도 재지 못했으면 판정에서 뺀다 — 크기를 지어내면 안 보이는 자리가 눌린다 */
+private fun CanvasTextToppingVO.hitTarget(
+    boxSize: IntSize?,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    density: Density,
+): ToppingHitTarget? {
+    if (boxSize == null) return null
+    val center = toppingCenter(
+        canvasWidth = canvasWidth,
+        canvasHeight = canvasHeight,
+        positionX = transform.positionX.toFloat(),
+        positionY = transform.positionY.toFloat(),
+    )
+
+    return with(density) {
+        textToppingHitTarget(
+            centerXPx = center.x.toPx(),
+            centerYPx = center.y.toPx(),
+            boxWidthPx = boxSize.width.toFloat(),
+            boxHeightPx = boxSize.height.toFloat(),
+            scale = transform.scale.toFloat(),
+            rotationDegrees = transform.rotation.toFloat(),
+        )
+    }
+}
+
+/**
+ * 위치는 이미지와 같이 박스 **중심**의 비율이다. 정렬은 저장되지 않아 가운데로 그린다.
+ *
+ * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
+ */
+@Composable
+private fun CanvasText(
+    text: CanvasTextToppingVO,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    onClick: () -> Unit,
+    clickable: Boolean,
+    onBoxSizeChange: (IntSize) -> Unit,
+    popProgress: Float = 1f,
+) {
+    val transform = text.transform
+
+    TextToppingContent(
+        text = text.text,
+        color = textToppingColorOf(text.style.color),
+        type = textToppingTypeOf(isFill = text.style.isFill, isStroke = text.style.isStroke),
+        align = TextAlign.Center,
+        designFontSize = text.style.fontSize.toFloat(),
+        canvasWidth = canvasWidth,
+        modifier = Modifier
+            .centeredAt(
+                toppingCenter(
+                    canvasWidth = canvasWidth,
+                    canvasHeight = canvasHeight,
+                    positionX = transform.positionX.toFloat(),
+                    positionY = transform.positionY.toFloat(),
+                ),
+            )
+            // graphicsLayer 의 배율은 잰 크기에 들어가지 않는다 — 그 앞에서 재야 scale 전 크기다
+            .onSizeChanged(onBoxSizeChange)
+            .graphicsLayer {
+                val pop = if (popProgress < 1f) toppingPopScale(popProgress) else 1f
+                scaleX = transform.scale.toFloat() * pop
+                scaleY = transform.scale.toFloat() * pop
+                rotationZ = transform.rotation.toFloat()
+                if (popProgress < 1f) alpha = toppingPopAlpha(popProgress)
+            }.then(
+                // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
+                if (clickable) {
+                    Modifier.semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        onClick {
+                            onClick()
+                            true
+                        }
+                    }
+                } else {
+                    Modifier
+                },
+            ),
+    )
 }
 
 /**

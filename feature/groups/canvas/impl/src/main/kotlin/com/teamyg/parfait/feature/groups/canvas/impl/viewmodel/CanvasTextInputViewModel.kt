@@ -20,6 +20,7 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.extension.graphemeClusterCount
 import com.teamyg.parfait.core.util.jvm.extension.truncateToGraphemeClusters
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -57,6 +58,7 @@ data class CanvasTextInputUiState(
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val backgroundImageUrl: String? = null,
     val existingToppings: List<CanvasToppingVO> = emptyList(),
+    val existingTexts: List<CanvasTextToppingVO> = emptyList(),
     /** 키보드가 내려가 있는 동안(배치 상태)의 자리·크기·회전. 저장이 아니라 화면 전용 상태다 */
     val offsetX: Dp = 0.dp,
     val offsetY: Dp = 0.dp,
@@ -194,6 +196,7 @@ constructor(
             ?: backgroundColor,
         backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
         existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
+        existingTexts = canvas.texts,
     )
 
     override fun processIntent(intent: CanvasTextInputIntent) {

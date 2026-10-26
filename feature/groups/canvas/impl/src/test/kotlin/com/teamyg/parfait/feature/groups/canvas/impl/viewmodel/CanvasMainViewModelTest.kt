@@ -38,6 +38,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveParfaitDayBoundaryUseCase
 import com.teamyg.parfait.domain.usecase.parfait.ObserveTodayParfaitRefreshFailureUseCase
 import com.teamyg.parfait.domain.usecase.topping.StartToppingDraftUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -257,14 +258,17 @@ class CanvasMainViewModelTest {
 
             viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
             advanceUntilIdle()
-            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+            assertEquals(
+                CanvasToppingKey.Image(othersTopping.parfaitImageId.value),
+                viewModel.state.value.spotlightedKey,
+            )
 
             // When 강조하던 토핑이 캔버스에서 사라진다
             todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
             advanceUntilIdle()
 
             // Then 딤을 지울 계기가 없어지므로 여기서 함께 해제한다
-            assertNull(viewModel.state.value.spotlightedToppingId)
+            assertNull(viewModel.state.value.spotlightedKey)
         }
 
     @Test
@@ -285,7 +289,10 @@ class CanvasMainViewModelTest {
                 .copy(toppings = listOf(othersTopping, topping(positionZ = 2, isMine = false)))
             advanceUntilIdle()
 
-            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+            assertEquals(
+                CanvasToppingKey.Image(othersTopping.parfaitImageId.value),
+                viewModel.state.value.spotlightedKey,
+            )
         }
 
     @Test
@@ -727,13 +734,16 @@ class CanvasMainViewModelTest {
             val viewModel = enteredViewModel()
             viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
             advanceUntilIdle()
-            assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+            assertEquals(
+                CanvasToppingKey.Image(othersTopping.parfaitImageId.value),
+                viewModel.state.value.spotlightedKey,
+            )
 
             // When 저장 버튼을 누른다
             viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery)
 
             // Then Dim 이 캡처에 구워지지 않도록 캡처를 요청하기 전에 Spotlight 부터 해제한다
-            assertNull(viewModel.state.value.spotlightedToppingId)
+            assertNull(viewModel.state.value.spotlightedKey)
         }
 
     @Test
@@ -854,7 +864,10 @@ class CanvasMainViewModelTest {
             // Then 강조와 함께 작성자를 알린다
             assertIs<CanvasMainEffect.ShowSpotlightToast>(awaitItem())
         }
-        assertEquals(othersTopping.parfaitImageId, viewModel.state.value.spotlightedToppingId)
+        assertEquals(
+            CanvasToppingKey.Image(othersTopping.parfaitImageId.value),
+            viewModel.state.value.spotlightedKey,
+        )
     }
 
     @Test
@@ -875,12 +888,13 @@ class CanvasMainViewModelTest {
                     CanvasMainEffect.NavigateToToppingArrange(
                         groupId = GroupId(GROUP_ID),
                         parfaitId = ParfaitId(TODAY_PARFAIT_ID),
-                        toppingId = myTopping.parfaitImageId,
+                        toppingId = myTopping.parfaitImageId.value,
+                        isText = false,
                     ),
                     awaitItem(),
                 )
             }
-            assertNull(viewModel.state.value.spotlightedToppingId)
+            assertNull(viewModel.state.value.spotlightedKey)
         }
 
     @Test
@@ -903,8 +917,137 @@ class CanvasMainViewModelTest {
             // Then 아무 반응도 없다 — Spotlight 도, 편집 화면 이동도 아니다
             expectNoEvents()
         }
-        assertNull(viewModel.state.value.spotlightedToppingId)
+        assertNull(viewModel.state.value.spotlightedKey)
     }
+
+    @Test
+    fun textOnlyCanvas_isNotEmpty() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 텍스트만 놓인 오늘 캔버스
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(texts = listOf(textTopping(1)))
+
+        // When 화면이 그 캔버스를 받는다
+        val viewModel = enteredViewModel()
+
+        // Then 빈 캔버스 안내판이 텍스트를 덮지 않는다
+        assertFalse(viewModel.state.value.isCanvasEmpty)
+    }
+
+    @Test
+    fun clickText_placedByMe_navigatesToToppingArrangeFocusedOnThatText() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 내가 쓴 텍스트가 놓인 오늘 캔버스
+        val myText = textTopping(positionZ = 5, isMine = true)
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(texts = listOf(myText))
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그 텍스트를 탭한다
+            viewModel.processIntent(CanvasMainIntent.OnClickText(myText))
+            advanceUntilIdle()
+
+            // Then 텍스트임을 실어 C-305 로 보낸다 — 같은 숫자의 이미지 id 와 섞이면 안 된다
+            assertEquals(
+                CanvasMainEffect.NavigateToToppingArrange(
+                    groupId = GroupId(GROUP_ID),
+                    parfaitId = ParfaitId(TODAY_PARFAIT_ID),
+                    toppingId = myText.parfaitTextId.value,
+                    isText = true,
+                ),
+                awaitItem(),
+            )
+        }
+        assertNull(viewModel.state.value.spotlightedKey)
+    }
+
+    @Test
+    fun clickText_placedByMe_whileViewingAPastDate_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 지난 날의 내 텍스트를 보고 있다
+        val myText = textTopping(positionZ = 1, isMine = true)
+        coEvery { getParfaitDetail(any(), any()) } returns Result.success(
+            canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(texts = listOf(myText)),
+        )
+        val viewModel = enteredViewModel()
+        viewModel.processIntent(CanvasMainIntent.ClickDate(yesterday))
+        advanceUntilIdle()
+
+        // When 그 텍스트를 탭한다
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickText(myText))
+            advanceUntilIdle()
+
+            // Then 이미지와 같다 — 강조도 이동도 없다
+            expectNoEvents()
+        }
+        assertNull(viewModel.state.value.spotlightedKey)
+    }
+
+    @Test
+    fun clickText_placedBySomeoneElse_opensSpotlightWithTheAuthorToast() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 남이 쓴 텍스트가 놓여 있다
+        val othersText = textTopping(positionZ = 3)
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(texts = listOf(othersText))
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When 그 텍스트를 탭한다
+            viewModel.processIntent(CanvasMainIntent.OnClickText(othersText))
+            advanceUntilIdle()
+
+            // Then 이미지와 같은 토스트로 작성자를 알린다
+            val toast = assertIs<CanvasMainEffect.ShowSpotlightToast>(awaitItem())
+            assertEquals(othersText.placedBy.nickname.value, toast.nickname)
+        }
+        assertEquals(
+            CanvasToppingKey.Text(othersText.parfaitTextId.value),
+            viewModel.state.value.spotlightedKey,
+        )
+    }
+
+    @Test
+    fun clickText_whileSpotlighted_isIgnored() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 남의 이미지가 강조돼 있다
+        val othersTopping = topping(positionZ = 1, isMine = false)
+        val othersText = textTopping(positionZ = 2)
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+            .copy(toppings = listOf(othersTopping), texts = listOf(othersText))
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+            assertIs<CanvasMainEffect.ShowSpotlightToast>(awaitItem())
+
+            // When 텍스트를 탭한다
+            viewModel.processIntent(CanvasMainIntent.OnClickText(othersText))
+            advanceUntilIdle()
+
+            // Then 이미지 탭과 같이 무시된다
+            expectNoEvents()
+        }
+        assertEquals(
+            CanvasToppingKey.Image(othersTopping.parfaitImageId.value),
+            viewModel.state.value.spotlightedKey,
+        )
+    }
+
+    @Test
+    fun observeTodayCanvas_whenOnlyATextWithTheSameIdRemains_resetsTheSpotlight() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 이미지 5 가 강조돼 있고, 텍스트 5 도 함께 놓여 있다
+            val othersTopping = topping(positionZ = 5, isMine = false)
+            val sameIdText = textTopping(positionZ = 5)
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+                .copy(toppings = listOf(othersTopping), texts = listOf(sameIdText))
+            val viewModel = enteredViewModel()
+            viewModel.processIntent(CanvasMainIntent.OnClickTopping(othersTopping))
+            advanceUntilIdle()
+
+            // When 이미지 5 만 사라진다
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(texts = listOf(sameIdText))
+            advanceUntilIdle()
+
+            // Then 숫자가 같은 텍스트가 남아도 종류가 달라 강조는 풀린다
+            assertNull(viewModel.state.value.spotlightedKey)
+        }
 
     @Test
     fun clickCamera_draftWriteFails_staysOnTheCanvasAndTellsTheUser() = runTest(mainDispatcherRule.dispatcher) {
@@ -1211,7 +1354,10 @@ class CanvasMainViewModelTest {
             createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )
 
-        fun textTopping(positionZ: Int) = CanvasTextToppingVO(
+        fun textTopping(
+            positionZ: Int,
+            isMine: Boolean = false,
+        ) = CanvasTextToppingVO(
             parfaitTextId = ParfaitTextId(positionZ.toLong()),
             text = "안녕",
             transform = ToppingTransform(
@@ -1226,7 +1372,7 @@ class CanvasMainViewModelTest {
                 groupMemberId = GroupMemberId(1L),
                 nickname = GroupNickname("연경이"),
             ),
-            isMine = false,
+            isMine = isMine,
             createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )
     }

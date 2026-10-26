@@ -66,6 +66,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
             groupId = navKey.groupId,
             parfaitId = navKey.parfaitId,
             initialToppingId = navKey.initialToppingId,
+            initialIsText = navKey.initialIsText,
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

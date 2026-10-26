@@ -206,7 +206,8 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCanvasToppingArrange(
                         groupId = effect.groupId.value,
                         parfaitId = effect.parfaitId.value,
-                        initialToppingId = effect.toppingId.value,
+                        initialToppingId = effect.toppingId,
+                        initialIsText = effect.isText,
                     ),
                 )
 
@@ -221,9 +222,10 @@ internal fun CanvasMainRoute(
                     // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
                     // 그림과 어긋난다
                     val capturedState = viewModel.state.value
-                    val toppingCount = capturedState.toppings.size
+                    val toppingCount = capturedState.toppings.size + capturedState.texts.size
                     val videoSource = CanvasVideoSource(
                         toppings = capturedState.toppings,
+                        texts = capturedState.texts,
                         background = capturedState.canvasBackground.toYGCanvasBackground(),
                         canvasWidth = canvasAreaWidth,
                         canvasHeight = canvasAreaHeight,
@@ -379,6 +381,7 @@ internal fun CanvasMainRoute(
             onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
             onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
+            onClickText = { viewModel.processIntent(CanvasMainIntent.OnClickText(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
             onLoadStateChange = { loadState = it },
             retryKey = retryKey,
