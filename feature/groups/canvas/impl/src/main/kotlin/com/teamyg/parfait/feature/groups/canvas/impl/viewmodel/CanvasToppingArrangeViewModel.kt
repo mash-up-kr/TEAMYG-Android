@@ -85,9 +85,8 @@ data class CanvasToppingArrangeUiState(
     val pendingDeleteTextIds: Set<Long> = emptySet(),
     val deletedTextIds: Set<Long> = emptySet(),
     /**
-     * 내용이 바뀐 텍스트. 서버 PATCH 가 text 를 받지 않아 새로 쌓고 옛 것을 지우는 수밖에 없다 —
-     * 일괄 PATCH 에서 빼고 확인 때 따로 다시 만든다. [dirtyTextIds] 에도 함께 들어 있어야 갱신이
-     * 고친 내용을 덮지 않는다.
+     * 내용이 바뀐 텍스트. 일괄 PATCH 에서 빼고 확인 때 [RecreateTextToppingUseCase] 로 다시 만든다.
+     * [dirtyTextIds] 에도 함께 들어 있어야 갱신이 고친 내용을 덮지 않는다.
      */
     val recreateTextIds: Set<Long> = emptySet(),
     /**
