@@ -1808,6 +1808,8 @@ class CanvasToppingArrangeViewModelTest {
         )
         assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
         assertFalse(viewModel.state.value.isLoading)
+        // 새 텍스트가 서버에만 있어 실패로 끝나도 곧바로 다시 읽는다
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
 
         coEvery { deleteTextTopping(any(), any(), any()) } returns Result.success(Unit)
         viewModel.effect.test {
@@ -1847,6 +1849,30 @@ class CanvasToppingArrangeViewModelTest {
                 .isEmpty(),
         )
         coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
+        coVerify(exactly = 0) { refreshTodayParfaitDetail(any(), any()) }
+    }
+
+    @Test
+    fun confirm_recreatedButAnotherDeleteFails_stillRefreshes() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)))
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
     }
 
     private fun textVO(
