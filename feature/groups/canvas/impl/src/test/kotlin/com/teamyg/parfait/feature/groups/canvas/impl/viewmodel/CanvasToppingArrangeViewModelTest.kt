@@ -1693,6 +1693,31 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun confirm_styleEditWithRoundTripDrift_sendsOnlyTheStylePatch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        // 색만 바꿨고 위치는 float 왕복 오차만큼만 다르다
+        returnFromTextEdit(SHARED_ID, edited(color = TextToppingColor.Pink).copy(positionX = 0.4f + 1e-6f), viewModel)
+        // 일괄 PATCH 가 나가도록 이미지도 하나 옮긴다
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(viewModel.topping(SHARED_ID)))
+        viewModel.drag()
+        val textUpdates = slot<List<TextToppingTransformUpdate>>()
+        coEvery { updateToppings(any(), any(), any(), capture(textUpdates)) } returns Result.success(emptyList())
+        coEvery { updateTextTopping(any(), any(), any()) } returns Result.success(mockk<UpdatedTextToppingVO>())
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(0.4f, viewModel.text(SHARED_ID).positionX)
+        assertTrue(textUpdates.captured.isEmpty())
+        coVerify(exactly = 1) {
+            updateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+        }
+    }
+
+    @Test
     fun deletedResult_marksTextForDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
 
