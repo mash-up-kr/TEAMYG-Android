@@ -1552,6 +1552,31 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun unchangedEditedResult_isNotDirty() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        // 위치는 float 왕복 오차만큼만 다르다
+        returnFromTextEdit(SHARED_ID, edited().copy(positionX = 0.40001f), viewModel)
+
+        assertTrue(
+            viewModel.state.value.dirtyTextIds
+                .isEmpty(),
+        )
+        assertFalse(viewModel.state.value.hasUnsavedChanges)
+        assertNull(textEditSessionHolder.result.value)
+    }
+
+    @Test
+    fun editedResultWithNewColor_isDirty() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        returnFromTextEdit(SHARED_ID, edited(color = TextToppingColor.Pink), viewModel)
+
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+        assertTrue(viewModel.state.value.hasUnsavedChanges)
+    }
+
+    @Test
     fun deletedResult_marksTextForDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
 

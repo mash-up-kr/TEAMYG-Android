@@ -61,6 +61,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filterNotNull
+import kotlin.math.abs
 
 data class CanvasToppingArrangeUiState(
     /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
@@ -255,6 +256,11 @@ constructor(
     ) {
         when (result) {
             is TextEditResult.Edited -> updateState {
+                val local = texts.firstOrNull { it.parfaitTextId == textId } ?: return@updateState this
+                // 손대지 않고 돌아온 결과는 위치가 float 왕복 오차만큼만 다르다 — dirty 로 잡으면
+                // 그만두기 팝업이 뜨고 의미 없는 PATCH 가 나간다
+                if (result.isSameAs(local)) return@updateState this
+
                 val needsRecreate = serverTexts.find { it.parfaitTextId == textId }?.text != result.text
                 copy(
                     texts = texts.map { text ->
@@ -281,6 +287,22 @@ constructor(
 
             TextEditResult.Deleted -> updateState { markTextDeleted(textId) }
         }
+    }
+
+    private fun TextEditResult.Edited.isSameAs(local: EditableText): Boolean {
+        fun near(
+            a: Float,
+            b: Float,
+        ): Boolean = abs(a - b) <= TEXT_EDIT_POSITION_TOLERANCE
+
+        return text == local.text &&
+            color == local.color &&
+            type == local.type &&
+            designFontSize == local.designFontSize &&
+            near(positionX, local.positionX) &&
+            near(positionY, local.positionY) &&
+            near(scale, local.scale) &&
+            near(rotationDegrees, local.rotationDegrees)
     }
 
     /** 화면에서 지우고 확인 때 DELETE 로 보낸다 */
@@ -985,5 +1007,8 @@ constructor(
 
     private companion object {
         const val CONFIRM_KEY = "confirm"
+
+        /** 입력 화면의 Dp ↔ 비율 왕복 오차를 흡수할 만큼만 둔다 */
+        const val TEXT_EDIT_POSITION_TOLERANCE = 1e-4f
     }
 }
