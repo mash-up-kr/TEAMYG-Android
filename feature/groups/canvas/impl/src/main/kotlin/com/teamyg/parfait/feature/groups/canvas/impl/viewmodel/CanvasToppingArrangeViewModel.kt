@@ -229,10 +229,18 @@ constructor(
     /** [serverToppings] 의 텍스트 쪽 */
     private var serverTexts: List<EditableText> = emptyList()
 
+    /** 이 화면이 마지막으로 연 재편집. 나갈 때 받지 못한 결과가 다음 화면에 남지 않게 치운다 */
+    private var startedTextEditSession: TextEditSession? = null
+
     init {
         viewModelLogger.i { "CanvasToppingArrangeViewModel::init" }
         observeCanvas()
         observeTextEditResult()
+    }
+
+    override fun onCleared() {
+        startedTextEditSession?.let(textEditSessionHolder::clear)
+        super.onCleared()
     }
 
     /**
@@ -486,9 +494,9 @@ constructor(
     /** 이 화면에서 이미 옮긴 값까지 넘긴다 — 입력 화면은 받은 그대로에서 시작한다 */
     private fun startTextEdit(text: EditableText) {
         val latest = state.value.texts.firstOrNull { it.parfaitTextId == text.parfaitTextId } ?: return
-        textEditSessionHolder.start(
-            TextEditSession(groupId = groupId.value, parfaitId = parfaitId.value, original = latest),
-        )
+        val session = TextEditSession(groupId = groupId.value, parfaitId = parfaitId.value, original = latest)
+        textEditSessionHolder.start(session)
+        startedTextEditSession = session
         postSideEffect(effect = CanvasToppingArrangeEffect.NavigateToTextEdit)
     }
 
