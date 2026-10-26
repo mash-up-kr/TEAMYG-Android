@@ -7,6 +7,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasMemberVO
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.canvas.PastCanvasVO
@@ -18,8 +19,10 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -811,6 +814,32 @@ class CanvasMainViewModelTest {
     }
 
     @Test
+    fun clickCamera_stacksAboveTextToppingsToo() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 이미지 최대 z 3, 텍스트 최대 z 7 인 오늘 캔버스
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today)
+            .copy(toppings = listOf(topping(3)), texts = listOf(textTopping(2), textTopping(7)))
+        val viewModel = enteredViewModel()
+
+        // When 카메라로 떠난다
+        viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+        advanceUntilIdle()
+
+        // Then 둘을 합친 최댓값보다 하나 크다
+        coVerify(exactly = 1) { startToppingDraft(any(), any(), nextPositionZ = 8) }
+    }
+
+    @Test
+    fun clickCamera_textOnlyCanvas_stacksAboveTheText() = runTest(mainDispatcherRule.dispatcher) {
+        todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(texts = listOf(textTopping(2)))
+        val viewModel = enteredViewModel()
+
+        viewModel.processIntent(CanvasMainIntent.OnClickCamera())
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { startToppingDraft(any(), any(), nextPositionZ = 3) }
+    }
+
+    @Test
     fun clickTopping_placedBySomeoneElse_opensSpotlightWithTheAuthorToast() = runTest(mainDispatcherRule.dispatcher) {
         // Given 남이 올린 토핑 하나가 놓여 있다
         val othersTopping = topping(positionZ = 1, isMine = false)
@@ -1179,6 +1208,25 @@ class CanvasMainViewModelTest {
                 nickname = GroupNickname("연경이"),
             ),
             isMine = isMine,
+            createdAt = LocalDateTime(2026, 8, 20, 12, 0),
+        )
+
+        fun textTopping(positionZ: Int) = CanvasTextToppingVO(
+            parfaitTextId = ParfaitTextId(positionZ.toLong()),
+            text = "안녕",
+            transform = ToppingTransform(
+                positionX = 0.5,
+                positionY = 0.5,
+                positionZ = positionZ,
+                scale = 1.0,
+                rotation = 0.0,
+            ),
+            style = TextToppingStyle(color = "#000000", fontSize = 24.0, isFill = false, isStroke = false),
+            placedBy = ToppingPlacerVO(
+                groupMemberId = GroupMemberId(1L),
+                nickname = GroupNickname("연경이"),
+            ),
+            isMine = false,
             createdAt = LocalDateTime(2026, 8, 20, 12, 0),
         )
     }
