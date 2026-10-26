@@ -179,7 +179,7 @@ class AppSettingViewModelTest {
             // When 오픈소스 라이선스를 누른다
             viewModel.processIntent(AppSettingIntent.ClickOssLicense)
 
-            // Then 오픈소스 라이선스로 이동한다 — 주소는 빌드 설정이라 Route 가 채운다
+            // Then 오픈소스 라이선스로 이동한다
             assertEquals(AppSettingSideEffect.NavigateToOssLicense, awaitItem())
         }
     }

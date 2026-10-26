@@ -34,7 +34,6 @@ internal fun AppSettingScreen(
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
-    isOssLicenseVisible: Boolean,
     onClickOssLicense: () -> Unit,
     onClickLogout: () -> Unit,
     onClickWithdraw: () -> Unit,
@@ -80,14 +79,11 @@ internal fun AppSettingScreen(
                             onClick = { onClickPolicy(policy.termsId) },
                         )
                     }
-                    // 주소가 빌드에 주입되지 않았으면 열 곳이 없으므로 항목을 숨긴다
-                    if (isOssLicenseVisible) {
-                        YGListItem(
-                            text = stringResource(R.string.setting_item_oss_license),
-                            trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                            onClickTrailingIcon = onClickOssLicense,
-                        )
-                    }
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_oss_license),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickOssLicense,
+                    )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
@@ -181,7 +177,6 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickBack = {},
         onClickAccount = {},
         onClickPolicy = {},
-        isOssLicenseVisible = true,
         onClickOssLicense = {},
         onClickLogout = {},
         onClickWithdraw = {},

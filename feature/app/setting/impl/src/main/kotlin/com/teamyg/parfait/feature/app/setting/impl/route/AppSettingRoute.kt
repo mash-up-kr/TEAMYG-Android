@@ -12,8 +12,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
-import com.teamyg.parfait.feature.app.setting.impl.BuildConfig
 import com.teamyg.parfait.feature.app.setting.impl.R
+import com.teamyg.parfait.feature.app.setting.impl.model.OSS_LICENSE_URL
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
@@ -46,7 +46,7 @@ internal fun AppSettingRoute(
                 )
 
                 AppSettingSideEffect.NavigateToOssLicense -> navigator.goTo(
-                    NavKeyWebView(title = ossLicenseTitle, url = BuildConfig.OSS_LICENSE_URL),
+                    NavKeyWebView(title = ossLicenseTitle, url = OSS_LICENSE_URL),
                 )
 
                 AppSettingSideEffect.NavigateToLogin -> {
@@ -74,7 +74,6 @@ internal fun AppSettingRoute(
             onClickPolicy = { termsId ->
                 viewModel.processIntent(AppSettingIntent.ClickPolicy(termsId))
             },
-            isOssLicenseVisible = BuildConfig.OSS_LICENSE_URL.isNotBlank(),
             onClickOssLicense = { viewModel.processIntent(AppSettingIntent.ClickOssLicense) },
             onClickLogout = { viewModel.processIntent(AppSettingIntent.ClickLogout) },
             onClickWithdraw = { viewModel.processIntent(AppSettingIntent.ClickWithdraw) },

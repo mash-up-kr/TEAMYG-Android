@@ -72,7 +72,6 @@ sealed interface AppSettingSideEffect : UiSideEffect {
         val url: String,
     ) : AppSettingSideEffect
 
-    /** 주소는 빌드 설정에 있어 Route 가 채운다 — ViewModel 은 이동 의도만 알린다 */
     data object NavigateToOssLicense : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
