@@ -21,25 +21,33 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
+import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
+import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingSaveFailures
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
@@ -52,6 +60,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.filterNotNull
 
 data class CanvasToppingArrangeUiState(
     /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
@@ -73,6 +82,12 @@ data class CanvasToppingArrangeUiState(
     val dirtyTextIds: Set<Long> = emptySet(),
     val pendingDeleteTextIds: Set<Long> = emptySet(),
     val deletedTextIds: Set<Long> = emptySet(),
+    /**
+     * 내용이 바뀐 텍스트. 서버 PATCH 가 text 를 받지 않아 새로 쌓고 옛 것을 지우는 수밖에 없다 —
+     * 일괄 PATCH 에서 빼고 확인 때 따로 다시 만든다. [dirtyTextIds] 에도 함께 들어 있어야 갱신이
+     * 고친 내용을 덮지 않는다.
+     */
+    val recreateTextIds: Set<Long> = emptySet(),
     /**
      * 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템 뒤로가기는 덮개를 거치지 않아, 그쪽은
      * ViewModel 이 이 값을 보고 직접 막는다.
@@ -101,7 +116,8 @@ data class CanvasToppingArrangeUiState(
         get() = dirtyToppingIds.isNotEmpty() ||
             pendingDeleteToppingIds.isNotEmpty() ||
             dirtyTextIds.isNotEmpty() ||
-            pendingDeleteTextIds.isNotEmpty()
+            pendingDeleteTextIds.isNotEmpty() ||
+            recreateTextIds.isNotEmpty()
 }
 
 sealed interface CanvasToppingArrangeIntent : UiIntent {
@@ -154,6 +170,9 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
 
     data object ShowOthersToppingNotEditable : CanvasToppingArrangeEffect
 
+    /** 편집 대상은 [TextEditSessionHolder] 에 실어 두었다 */
+    data object NavigateToTextEdit : CanvasToppingArrangeEffect
+
     data class ShowError(
         val error: CanvasToppingArrangeError,
     ) : CanvasToppingArrangeEffect
@@ -173,6 +192,9 @@ constructor(
     private val deleteTextToppingUseCase: DeleteTextToppingUseCase,
     private val updateToppingsUseCase: UpdateToppingsUseCase,
     private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
+    private val placeTextToppingUseCase: PlaceTextToppingUseCase,
+    private val updateTextToppingUseCase: UpdateTextToppingUseCase,
+    private val textEditSessionHolder: TextEditSessionHolder,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<CanvasToppingArrangeUiState, CanvasToppingArrangeIntent, CanvasToppingArrangeEffect>(
     initialState = CanvasToppingArrangeUiState(),
@@ -207,7 +229,66 @@ constructor(
     init {
         viewModelLogger.i { "CanvasToppingArrangeViewModel::init" }
         observeCanvas()
+        observeTextEditResult()
     }
+
+    /**
+     * 화면이 안 보이는 동안(입력 화면이 위에 있는 동안) 결과가 오므로 [launchWhileSubscribed] 가
+     * 아니라 ViewModel 수명으로 받는다. 목록에 없는 텍스트의 결과는 받지 않고 둔다.
+     */
+    private fun observeTextEditResult() {
+        launch {
+            textEditSessionHolder.result.filterNotNull().collect { (textId, result) ->
+                if (state.value.texts.none { it.parfaitTextId == textId }) return@collect
+
+                applyTextEditResult(textId, result)
+                textEditSessionHolder.consume()
+            }
+        }
+    }
+
+    private fun applyTextEditResult(
+        textId: Long,
+        result: TextEditResult,
+    ) {
+        when (result) {
+            is TextEditResult.Edited -> updateState {
+                val needsRecreate = serverTexts.find { it.parfaitTextId == textId }?.text != result.text
+                copy(
+                    texts = texts.map { text ->
+                        if (text.parfaitTextId != textId) {
+                            text
+                        } else {
+                            text.copy(
+                                text = result.text,
+                                color = result.color,
+                                type = result.type,
+                                designFontSize = result.designFontSize,
+                                positionX = result.positionX,
+                                positionY = result.positionY,
+                                scale = result.scale,
+                                rotationDegrees = result.rotationDegrees,
+                            )
+                        }
+                    },
+                    dirtyTextIds = dirtyTextIds + textId,
+                    // 원래 내용으로 되돌린 경우 다시 만들 필요가 없어진다
+                    recreateTextIds = if (needsRecreate) recreateTextIds + textId else recreateTextIds - textId,
+                )
+            }
+
+            TextEditResult.Deleted -> updateState { markTextDeleted(textId) }
+        }
+    }
+
+    /** 화면에서 지우고 확인 때 DELETE 로 보낸다 */
+    private fun CanvasToppingArrangeUiState.markTextDeleted(textId: Long): CanvasToppingArrangeUiState = copy(
+        texts = texts.filterNot { it.parfaitTextId == textId },
+        pendingDeleteTextIds = pendingDeleteTextIds + textId,
+        dirtyTextIds = dirtyTextIds - textId,
+        recreateTextIds = recreateTextIds - textId,
+        focusedKey = if (focusedKey == CanvasToppingKey.Text(textId)) null else focusedKey,
+    )
 
     /**
      * 화면이 보이는 동안만 오늘 캔버스를 구독한다. 갱신은 구독 시작 즉시, 이후 주기마다
@@ -305,6 +386,7 @@ constructor(
             dirtyTextIds = dirtyTextIds intersect incomingIds,
             pendingDeleteTextIds = pendingDeleteTextIds intersect incomingIds,
             deletedTextIds = deletedTextIds intersect incomingIds,
+            recreateTextIds = recreateTextIds intersect incomingIds,
             focusedKey = if (loseFocus) null else focusedKey,
         )
     }
@@ -364,7 +446,7 @@ constructor(
         }
     }
 
-    /** 패널 규칙은 [handleOnClickTopping] 과 같다. 포커스된 텍스트를 다시 탭해도 지금은 아무 일이 없다 */
+    /** 패널 규칙은 [handleOnClickTopping] 과 같다. 포커스된 텍스트를 다시 탭하면 텍스트 입력 화면에서 고친다 */
     private fun handleOnClickText(intent: CanvasToppingArrangeIntent.OnClickText) {
         val current = state.value
         val text = intent.text
@@ -372,8 +454,18 @@ constructor(
         when {
             current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
             !text.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
+            current.focusedKey == CanvasToppingKey.Text(text.parfaitTextId) -> startTextEdit(text)
             else -> updateState { copy(focusedKey = CanvasToppingKey.Text(text.parfaitTextId)) }
         }
+    }
+
+    /** 이 화면에서 이미 옮긴 값까지 넘긴다 — 입력 화면은 받은 그대로에서 시작한다 */
+    private fun startTextEdit(text: EditableText) {
+        val latest = state.value.texts.firstOrNull { it.parfaitTextId == text.parfaitTextId } ?: return
+        textEditSessionHolder.start(
+            TextEditSession(groupId = groupId.value, parfaitId = parfaitId.value, original = latest),
+        )
+        postSideEffect(effect = CanvasToppingArrangeEffect.NavigateToTextEdit)
     }
 
     private fun handleOnClickEmptyCanvas() {
@@ -398,12 +490,7 @@ constructor(
                     focusedKey = null,
                 )
 
-                focused is CanvasToppingKey.Text -> copy(
-                    texts = texts.filterNot { it.parfaitTextId == focused.id },
-                    pendingDeleteTextIds = pendingDeleteTextIds + focused.id,
-                    dirtyTextIds = dirtyTextIds - focused.id,
-                    focusedKey = null,
-                )
+                focused is CanvasToppingKey.Text -> markTextDeleted(focused.id)
 
                 else -> this
             }
@@ -568,11 +655,21 @@ constructor(
             updateState { copy(isLoading = true) }
 
             val failed = updateDirtyToppings()
-            // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다
-            updateState { copy(dirtyToppingIds = failed.toppingIds, dirtyTextIds = failed.textIds) }
+            val styleFailedTextIds = saveTextStyles()
+            // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다.
+            // 다시 만들 텍스트는 아직 보내지 않았다
+            updateState {
+                copy(
+                    dirtyToppingIds = failed.toppingIds,
+                    dirtyTextIds = failed.textIds + styleFailedTextIds + recreateTextIds,
+                )
+            }
 
-            // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다
-            val isSaved = failed.isEmpty() && deletePendingToppings()
+            // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다. 다시 만들기도 옛 텍스트를 지우므로 같다
+            val isSaved = failed.isEmpty() &&
+                styleFailedTextIds.isEmpty() &&
+                recreateTexts() &&
+                deletePendingToppings()
 
             if (!isSaved) {
                 // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
@@ -612,7 +709,9 @@ constructor(
     private suspend fun updateDirtyToppings(): ToppingSaveFailures = coroutineScope {
         val current = state.value
         val dirty = current.toppings.filter { it.parfaitImageId in current.dirtyToppingIds }
-        val dirtyTexts = current.texts.filter { it.parfaitTextId in current.dirtyTextIds }
+        val dirtyTexts = current.texts.filter {
+            it.parfaitTextId in current.dirtyTextIds && it.parfaitTextId !in current.recreateTextIds
+        }
 
         val transformChanged = dirty.filter { it.hasTransformChange() }
         val textUpdates = dirtyTexts.mapNotNull { it.toTransformUpdateOrNull() }
@@ -629,6 +728,91 @@ constructor(
             textIds = transformFailures.textIds,
         )
     }
+
+    /**
+     * 스타일은 일괄 PATCH 가 받지 않아 텍스트마다 따로 보낸다.
+     *
+     * @return 저장하지 못한 텍스트 id.
+     */
+    private suspend fun saveTextStyles(): Set<Long> = coroutineScope {
+        val current = state.value
+
+        current.texts
+            .filter { text ->
+                text.parfaitTextId in current.dirtyTextIds &&
+                    text.parfaitTextId !in current.recreateTextIds &&
+                    text.hasStyleChange()
+            }.map { text -> async { text.parfaitTextId.takeIf { saveTextStyle(text).not() } } }
+            .awaitAll()
+            .filterNotNull()
+            .toSet()
+    }
+
+    private suspend fun saveTextStyle(text: EditableText): Boolean {
+        val style = textToppingStyleOf(color = text.color, type = text.type, designFontSize = text.designFontSize)
+
+        return updateTextToppingUseCase(
+            groupId = groupId,
+            parfaitId = parfaitId,
+            update = TextToppingUpdate(
+                parfaitTextId = ParfaitTextId(text.parfaitTextId),
+                color = style.color,
+                fontSize = style.fontSize,
+                isFill = style.isFill,
+                isStroke = style.isStroke,
+            ),
+        ).onFailure { throwable ->
+            viewModelLogger.e(throwable) { "텍스트 스타일을 저장하지 못했다 - parfaitTextId: ${text.parfaitTextId}" }
+        }.isSuccess
+    }
+
+    /**
+     * 새로 쌓은 뒤 옛 텍스트를 지운다. 새로 쌓이면 곧바로 옛 것을 삭제 대기로 옮긴다 — 그 뒤 지우기가
+     * 실패해도 다시 누른 확인은 지우기만 다시 보내고, 같은 글을 두 번 쌓지 않는다.
+     *
+     * @return 모두 새로 쌓이고 옛 것이 지워졌는가.
+     */
+    private suspend fun recreateTexts(): Boolean {
+        var isAllDone = true
+
+        for (textId in state.value.recreateTextIds) {
+            val text = state.value.texts.firstOrNull { it.parfaitTextId == textId } ?: continue
+            if (placeRecreatedText(text).not()) {
+                isAllDone = false
+                continue
+            }
+
+            updateState { markTextDeleted(textId) }
+            if (deleteText(textId)) {
+                updateState {
+                    copy(
+                        pendingDeleteTextIds = pendingDeleteTextIds - textId,
+                        deletedTextIds = deletedTextIds + textId,
+                    )
+                }
+            } else {
+                isAllDone = false
+            }
+        }
+        return isAllDone
+    }
+
+    /** 겹침 순서는 옛 텍스트의 것을 이어받는다. POST 는 멱등이 아니라 재시도하지 않는다 */
+    private suspend fun placeRecreatedText(text: EditableText): Boolean = placeTextToppingUseCase(
+        groupId = groupId,
+        parfaitId = parfaitId,
+        text = text.text,
+        transform = ToppingTransform(
+            positionX = text.positionX.toDouble(),
+            positionY = text.positionY.toDouble(),
+            positionZ = text.positionZ,
+            scale = text.scale.toDouble(),
+            rotation = text.rotationDegrees.toDouble(),
+        ),
+        style = textToppingStyleOf(color = text.color, type = text.type, designFontSize = text.designFontSize),
+    ).onFailure { throwable ->
+        viewModelLogger.e(throwable) { "고친 텍스트를 새로 쌓지 못했다 - parfaitTextId: ${text.parfaitTextId}" }
+    }.isSuccess
 
     /** @return 대기 중인 삭제가 모두 서버에 반영됐는가. */
     private suspend fun deletePendingToppings(): Boolean = coroutineScope {
@@ -729,6 +913,13 @@ constructor(
             positionY != original.positionY ||
             scale != original.scale ||
             rotationDegrees != original.rotationDegrees
+    }
+
+    private fun EditableText.hasStyleChange(): Boolean {
+        val original = serverTexts.find { it.parfaitTextId == parfaitTextId } ?: return true
+        return color != original.color ||
+            type != original.type ||
+            designFontSize != original.designFontSize
     }
 
     private fun EditableTopping.hasBorderChange(): Boolean {
