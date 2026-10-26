@@ -20,6 +20,10 @@ class TextEditSessionHolder @Inject constructor() {
     @Volatile
     private var session: TextEditSession? = null
 
+    /** [result] 를 남긴 왕복. [clear] 가 남의 결과를 지우지 않게 가른다 */
+    @Volatile
+    private var resultSession: TextEditSession? = null
+
     private val _result = MutableStateFlow<Pair<Long, TextEditResult>?>(null)
 
     /** 편집한 텍스트의 parfaitTextId 와 결과. 받은 쪽이 [consume] 할 때까지 남는다 */
@@ -28,6 +32,7 @@ class TextEditSessionHolder @Inject constructor() {
     /** 지난 왕복에서 받지 않은 결과가 새 편집에 섞이지 않게 함께 비운다 */
     fun start(session: TextEditSession) {
         _result.value = null
+        resultSession = null
         this.session = session
     }
 
@@ -36,15 +41,26 @@ class TextEditSessionHolder @Inject constructor() {
     fun finish(result: TextEditResult) {
         val current = session ?: return
         session = null
+        resultSession = current
         _result.value = current.original.parfaitTextId to result
     }
 
     fun consume() {
         _result.value = null
+        resultSession = null
+    }
+
+    /**
+     * [session] 으로 시작한 왕복이 남긴 것만 비운다. 그새 다른 화면이 새 편집을 시작했으면 그
+     * 편집은 건드리지 않는다.
+     */
+    fun clear(session: TextEditSession) {
+        if (this.session === session) this.session = null
+        if (resultSession === session) consume()
     }
 
     fun clear() {
         session = null
-        _result.value = null
+        consume()
     }
 }

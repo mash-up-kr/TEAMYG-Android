@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
@@ -1454,6 +1455,47 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun deletedTexts_vanishedFromServer_areDroppedFromDeleteSets() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)))
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery {
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID))
+        } returns Result.success(Unit)
+        coEvery {
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(MY_SECOND_TEXT_ID))
+        } returns Result.failure(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.deletedTextIds)
+        assertEquals(setOf(MY_SECOND_TEXT_ID), viewModel.state.value.pendingDeleteTextIds)
+
+        // 둘 다 서버 목록에서 빠진다
+        todayCanvases.value = textCanvas().copy(
+            texts = listOf(textVO(OTHERS_TEXT_ID, isMine = false, positionZ = 3)),
+        )
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.state.value.deletedTextIds
+                .isEmpty(),
+        )
+        assertTrue(
+            viewModel.state.value.pendingDeleteTextIds
+                .isEmpty(),
+        )
+    }
+
+    @Test
     fun confirm_sendsImageAndTextTransformsInOneBatchThenDeletesText() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
         viewModel.drag(panX = 0.1f)
@@ -1572,6 +1614,41 @@ class CanvasToppingArrangeViewModelTest {
         }
         assertEquals(CanvasToppingKey.Text(MY_SECOND_TEXT_ID), viewModel.state.value.focusedKey)
         assertNull(textEditSessionHolder.session())
+    }
+
+    @Test
+    fun cleared_dropsTheResultItLeftUnconsumed() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val store = ViewModelStore().apply { put("arrange", viewModel) }
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(SHARED_ID)))
+        // 편집하는 사이 텍스트가 서버에서 사라져 결과를 받을 곳이 없다
+        todayCanvases.value = textCanvas().copy(
+            texts = textCanvas().texts.filterNot { it.parfaitTextId == ParfaitTextId(SHARED_ID) },
+        )
+        advanceUntilIdle()
+        textEditSessionHolder.finish(edited(text = "새 글"))
+        advanceUntilIdle()
+        assertEquals(SHARED_ID, textEditSessionHolder.result.value?.first)
+
+        store.clear()
+
+        assertNull(textEditSessionHolder.result.value)
+    }
+
+    @Test
+    fun cleared_leavesAnEditItDidNotStart() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val store = ViewModelStore().apply { put("arrange", viewModel) }
+        val othersSession = TextEditSession(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            original = viewModel.text(SHARED_ID),
+        )
+        textEditSessionHolder.start(othersSession)
+
+        store.clear()
+
+        assertEquals(othersSession, textEditSessionHolder.session())
     }
 
     @Test
