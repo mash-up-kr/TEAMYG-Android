@@ -284,7 +284,7 @@ Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는�
 
 | 서버 | Android |
 |---|---|
-| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase` |
+| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase`·`RecreateTextToppingUseCase`(내용 변경 = POST 뒤 DELETE) |
 | `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다. 캔버스 쪽은 `CanvasTextToppingVO`로 올라간다 |
 | 일괄 PATCH `textItems` | `TextToppingTransformUpdate` → `ToppingRepository#updateAll` (C-305 변형·이동) |
 | 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` |
