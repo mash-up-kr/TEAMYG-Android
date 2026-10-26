@@ -7820,21 +7820,21 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
 
 - **ID**: OQ-P-450
-- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
 - **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
 - **상태**: 해소됨 (2026-10-26, `feature/text-topping-api`) — `PlaceTextToppingUseCase`가 POST를 한 번 보내고 성공하면 오늘 캔버스를 다시 읽어 C-001로 돌아간다. 저장 단위는 OQ-P-452
 
 ### [2026-10-26] 텍스트 토핑의 줄바꿈 위치를 서버 계약에 실을 자리가 없다
 
 - **ID**: OQ-P-451
-- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
 - **항목**: 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 텍스트 계약에는 줄바꿈 위치를 실을 필드가 없어, 같은 텍스트라도 기기마다 글꼴·폭에 따라 줄이 다시 나뉜다. 정렬은 서버 `textAlign`으로 저장된다([api/parfait-text.md](../api/parfait-text.md)). 줄바꿈 위치를 계약에 넣을지, 기기별 재계산을 받아들일지.
 - **상태**: 미해결 (서버·iOS 협의)
 
 ### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
 
 - **ID**: OQ-P-452
-- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
 - **항목**: 앱은 위치를 박스 중심의 캔버스 비율, `fontSize`를 디자인 너비 335 기준 `designFontSize`, `scale`을 핀치 배율로 저장한다. 이 단위는 Android가 정했고 iOS와 맞추지 않았다. iOS가 다른 단위(좌상단 기준 좌표, 다른 기준 너비 등)로 저장하면 서로의 텍스트가 어긋나 보인다.
 - **상태**: 미해결 (iOS 협의)
 - **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
@@ -7842,7 +7842,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-26] 텍스트 재편집의 잔여 갭 — dirty 오판·편집 결과 잔류·부분 실패 소실
 
 - **ID**: OQ-P-453
-- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextEditSessionHolder`·`CanvasToppingArrangeViewModel`
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `TextEditSessionHolder`·`CanvasToppingArrangeViewModel`
 - **항목**: ① 다시 열 때 `designFontSize`를 다시 맞춰 바뀐 게 없는 재편집도 다른 기기 값 기준으로 dirty가 될 수 있고, 재편집은 서버가 푸시를 다시 보낸다(계약 한계). ② C-106에서 편집하는 사이 대상 텍스트가 서버 목록에서 사라지면 돌아온 결과는 버려진다 — C-305는 목록에 없는 id의 결과를 적용하지 않고, 화면을 떠날 때(`onCleared`) 자기가 연 왕복의 결과를 `TextEditSessionHolder.clear(session)`으로 비운다. 사용자에게는 고친 내용이 말없이 사라진다. ③ POST 성공 뒤 옛 텍스트 DELETE 가 끝나지 못하면 서버에 옛 텍스트와 새 텍스트가 둘 다 남는다 — DELETE 실패 뒤 그만두기 팝업으로 C-305를 나갈 때, 그리고 POST 와 DELETE 사이에 프로세스가 죽거나 작업이 취소될 때다(POST 비멱등이라 복구할 키가 없다).
 - **상태**: 미해결
 - **해소 메모**: ①은 재맞춤 값을 저장값과 비교하는 기준을 정한다. ②는 사라진 텍스트의 결과를 알릴지(토스트) 정한다. ③은 남은 삭제 보류를 나가기 전에 알릴지 정한다(새로 쌓은 것이 있으면 실패 알림 전에 캔버스를 다시 읽어 소실처럼 보이지는 않는다).

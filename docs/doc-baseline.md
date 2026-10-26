@@ -10,9 +10,9 @@
 
 ## 현재 기준선
 - **repo**: `mash-up-kr/TEAMYG-Android` `develop`
-- **커밋**: `cdf14d579` (`Merge pull request #636 from mash-up-kr/feature/text-topping`)
-- **검증일**: 2026-10-26 (88회차)
-- **테스트 수**: 유닛 1442 · 계측 101
+- **커밋**: `ed88a1547` (`Merge pull request #645 from mash-up-kr/feature/text-topping-api-spec-plan`)
+- **검증일**: 2026-10-27 (89회차)
+- **테스트 수**: 유닛 1556 · 계측 101
 - **미머지 추적 항목**: 둘(`feature/debug-mode`, OQ-P-311 계보 · `chore/rename-tjyg-android-in-docs` — 문서 표기 일괄 교체)
 - **실기기 미확인 이월**: [status.md 「실기기 미확인」](status.md#실기기-미확인)
 
