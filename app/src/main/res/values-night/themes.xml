@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        targetSdk 33+ WebView 는 시스템 설정이 아니라 이 테마의 isLightTheme 로
+        prefers-color-scheme 을 정한다. 다크 모드에서 light 부모를 그대로 두면
+        웹뷰 페이지가 항상 라이트로 그려진다.
+    -->
+    <style name="Theme.TeamYg" parent="android:Theme.Material.NoActionBar" />
+</resources>
