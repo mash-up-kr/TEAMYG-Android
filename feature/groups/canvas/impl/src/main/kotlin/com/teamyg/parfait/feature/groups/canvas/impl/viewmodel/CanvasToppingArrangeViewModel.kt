@@ -41,7 +41,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingSaveFailures
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
@@ -247,10 +247,11 @@ constructor(
      */
     private fun observeTextEditResult() {
         launch {
-            textEditSessionHolder.result.filterNotNull().collect { (textId, result) ->
+            textEditSessionHolder.result.filterNotNull().collect { outcome ->
+                val textId = outcome.parfaitTextId
                 if (state.value.texts.none { it.parfaitTextId == textId }) return@collect
 
-                applyTextEditResult(textId, result)
+                applyTextEditResult(textId, outcome.result)
                 textEditSessionHolder.consume()
             }
         }

@@ -41,7 +41,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform

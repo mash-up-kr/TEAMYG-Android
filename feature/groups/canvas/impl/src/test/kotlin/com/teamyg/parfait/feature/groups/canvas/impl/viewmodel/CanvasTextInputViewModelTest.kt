@@ -30,7 +30,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
 import java.io.IOException
@@ -593,7 +593,7 @@ class CanvasTextInputViewModelTest {
         viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
         advanceUntilIdle()
 
-        val edited = textEditSessionHolder.result.value!!.second as TextEditResult.Edited
+        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
         assertEquals(0.3f, edited.positionX, 1e-5f)
         assertEquals(0.6f, edited.positionY, 1e-5f)
     }
@@ -622,9 +622,9 @@ class CanvasTextInputViewModelTest {
                 assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
             }
 
-            val (id, result) = textEditSessionHolder.result.value!!
-            assertEquals(42L, id)
-            val edited = result as TextEditResult.Edited
+            val outcome = textEditSessionHolder.result.value!!
+            assertEquals(42L, outcome.parfaitTextId)
+            val edited = outcome.result as TextEditResult.Edited
             assertEquals("원래 글", edited.text)
             assertEquals(TextToppingColor.Black, edited.color)
             assertEquals(TextToppingType.FILL, edited.type)
@@ -651,7 +651,7 @@ class CanvasTextInputViewModelTest {
         viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
         advanceUntilIdle()
 
-        val edited = textEditSessionHolder.result.value!!.second as TextEditResult.Edited
+        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
         assertEquals("새 글", edited.text)
         assertEquals(TextToppingColor.White, edited.color)
         assertEquals(0.4f, edited.positionX, 1e-5f)
@@ -668,7 +668,8 @@ class CanvasTextInputViewModelTest {
 
             assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
-        assertEquals(42L to TextEditResult.Deleted, textEditSessionHolder.result.value)
+        assertEquals(TextEditResult.Deleted, textEditSessionHolder.result.value?.result)
+        assertEquals(42L, textEditSessionHolder.result.value?.parfaitTextId)
         coVerify(exactly = 0) { clearToppingDraft() }
     }
 
