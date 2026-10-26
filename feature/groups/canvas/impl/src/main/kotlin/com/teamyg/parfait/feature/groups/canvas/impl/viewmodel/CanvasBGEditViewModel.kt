@@ -23,7 +23,9 @@ import com.teamyg.parfait.domain.usecase.parfait.ChangeCanvasBackgroundUseCase
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -47,6 +49,7 @@ val CanvasBackgroundPaletteColors = listOf(
  * @param selectedImageSource 이미지를 어디서 가져왔는지. **null 이면 서버에 이미 있는 배경**이라
  *   확인을 눌러도 다시 올리지 않는다 — https 주소는 기기에서 읽을 수 없어 올릴 수도 없다.
  * @param toppings 캔버스에 놓인 토핑. 이 화면에서는 고칠 수 없고 배경 위에 보이기만 한다.
+ * @param texts 캔버스에 놓인 텍스트. [toppings] 와 같이 보이기만 한다.
  */
 data class CanvasBGEditUiState(
     val selectedColor: Color = CanvasBackgroundPaletteColors.first(),
@@ -54,6 +57,7 @@ data class CanvasBGEditUiState(
     val selectedImageSource: PictureConfirmSource? = null,
     val showQuitDialog: Boolean = false,
     val toppings: List<EditableTopping> = emptyList(),
+    val texts: List<EditableText> = emptyList(),
     val isLoading: Boolean = false,
 ) : UiState
 
@@ -153,14 +157,15 @@ constructor(
             val incoming = canvas.toppings
                 .sortedBy { topping -> topping.transform.positionZ }
                 .map { topping -> topping.toEditableTopping() }
+            val incomingTexts = canvas.texts.map { text -> text.toEditableText() }
 
-            updateState { withCanvas(canvas).copy(toppings = incoming) }
+            updateState { withCanvas(canvas).copy(toppings = incoming, texts = incomingTexts) }
             hasSeededFromCanvas = true
         }
     }
 
     /**
-     * 토핑 목록만 매번 갈아 끼우고 나머지는 **최초 방출에만** 시딩한다 — 이후 방출까지 대입하면
+     * 토핑·텍스트 목록만 매번 갈아 끼우고 나머지는 **최초 방출에만** 시딩한다 — 이후 방출까지 대입하면
      * 사용자가 방금 고른 배경이 되돌아간다.
      *
      * 저장된 배경 색을 못 읽으면 기본 색으로 두는데, 그때 확인을 누르면 배경이 팔레트 첫 색으로
