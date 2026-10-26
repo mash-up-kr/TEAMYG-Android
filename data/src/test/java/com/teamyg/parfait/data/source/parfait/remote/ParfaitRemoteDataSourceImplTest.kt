@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.network.notModifiedResponse
@@ -161,7 +162,7 @@ class ParfaitRemoteDataSourceImplTest {
 
         val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = "W/\"old\"").getOrThrow()
 
-        val modified = assertIs<TodayCanvasFetch.Modified>(fetch)
+        val modified = assertIs<TodayCanvasFetchEntity.Modified>(fetch)
         assertEquals(ParfaitId(100L), modified.canvas.parfaitId)
         assertEquals("W/\"new\"", modified.etag)
     }
@@ -174,7 +175,7 @@ class ParfaitRemoteDataSourceImplTest {
 
         val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = null).getOrThrow()
 
-        assertNull(assertIs<TodayCanvasFetch.Modified>(fetch).etag)
+        assertNull(assertIs<TodayCanvasFetchEntity.Modified>(fetch).etag)
     }
 
     @Test
@@ -185,7 +186,7 @@ class ParfaitRemoteDataSourceImplTest {
 
         val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = "W/\"v1\"").getOrThrow()
 
-        assertEquals(TodayCanvasFetch.NotModified, fetch)
+        assertEquals(TodayCanvasFetchEntity.NotModified, fetch)
     }
 
     @Test

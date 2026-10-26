@@ -797,15 +797,15 @@ ViewModel 안에서 **캔버스 조회는 계약을 타고 달력 조회는 안 
 됐다), `groupId`는 NavKey 인자를 타고 두 UseCase 시그니처에 들어왔다
 → [c201-canvas-calendar-server 스펙](../superpowers/specs/archive/2026-08-17-c201-canvas-calendar-server.md).
 
-| 엔드포인트 | Service 함수 | DataSource 함수 |
-|---|---|---|
-| GET `/api/v1/groups/{groupId}/parfaits/year` | `ParfaitService#getGroupsByGroupIdParfaitsYear` | `ParfaitRemoteDataSource#getYears` |
+| 엔드포인트 | Service 함수 | DataSource 함수                                                                                            |
+|---|---|----------------------------------------------------------------------------------------------------------|
+| GET `/api/v1/groups/{groupId}/parfaits/year` | `ParfaitService#getGroupsByGroupIdParfaitsYear` | `ParfaitRemoteDataSource#getYears`                                                                       |
 | GET `.../parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsToday` | `ParfaitRemoteDataSource#getTodayCanvas(groupId)` (`@Deprecated` — 호출처 없음, 안정화 후 삭제 예정. 폴러는 아래 v2 행을 쓴다) |
-| GET `/api/v2/groups/{groupId}/parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsTodayIfChanged` | `ParfaitRemoteDataSource#getTodayCanvasIfChanged(groupId, etag)` → `TodayCanvasFetch` |
-| GET `.../parfaits` | `ParfaitService#getGroupsByGroupIdParfaits` | `ParfaitRemoteDataSource#getPastCanvases(groupId, from, to)` |
-| GET `.../parfaits/{parfaitId}` | `ParfaitService#getGroupsByGroupIdParfaitsByParfaitId` | `ParfaitRemoteDataSource#getCanvasDetail(groupId, parfaitId)` |
-| PATCH `.../parfaits/{parfaitId}/background` | `ParfaitService#patchGroupsByGroupIdParfaitsByParfaitIdBackground` | `ParfaitRemoteDataSource#changeCanvasBackground(groupId, parfaitId, background)` |
-| POST `/api/v1/test/parfait-canvas/rotate` | — (해당 없음) | — (해당 없음) |
+| GET `/api/v2/groups/{groupId}/parfaits/today` | `ParfaitService#getGroupsByGroupIdParfaitsTodayIfChanged` | `ParfaitRemoteDataSource#getTodayCanvasIfChanged(groupId, etag)` → `TodayCanvasFetchEntity`              |
+| GET `.../parfaits` | `ParfaitService#getGroupsByGroupIdParfaits` | `ParfaitRemoteDataSource#getPastCanvases(groupId, from, to)`                                             |
+| GET `.../parfaits/{parfaitId}` | `ParfaitService#getGroupsByGroupIdParfaitsByParfaitId` | `ParfaitRemoteDataSource#getCanvasDetail(groupId, parfaitId)`                                            |
+| PATCH `.../parfaits/{parfaitId}/background` | `ParfaitService#patchGroupsByGroupIdParfaitsByParfaitIdBackground` | `ParfaitRemoteDataSource#changeCanvasBackground(groupId, parfaitId, background)`                         |
+| POST `/api/v1/test/parfait-canvas/rotate` | — (해당 없음) | — (해당 없음)                                                                                                |
 
 **신규 둘의 앱 쪽 비용은 비대칭이었다.** 상세 조회는 응답이 `GetTodayParfaitResponse` 재사용이라
 DTO·VO·매퍼를 그대로 썼다 — Service 함수 하나와 DataSource 함수 하나로 끝났다. 배경 변경은 요청·응답
