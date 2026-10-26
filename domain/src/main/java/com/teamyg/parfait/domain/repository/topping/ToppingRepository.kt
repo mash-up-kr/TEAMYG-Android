@@ -44,13 +44,15 @@ interface ToppingRepository {
      *
      * 부분 성공이 없다 — 하나라도 걸리면 전부 롤백되고 실패한 항목이 무엇인지는 알 수 없다.
      * [updates]·[textUpdates] 가 둘 다 비면 요청 자체를 만들지 않는다.
+     * 이미지 저장소가 텍스트 변형까지 받는 것은 서버의 일괄 PATCH `/images` 하나가 `items`·`textItems` 를
+     * 함께 받기 때문이다. 텍스트 배치·스타일·삭제는 `TextToppingRepository` 가 맡는다.
      * 반환은 이미지 결과만이다 — 텍스트 결과는 캔버스를 다시 읽어 얻는다.
      */
     suspend fun updateAll(
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
-        textUpdates: List<TextToppingTransformUpdate> = emptyList(),
+        textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>>
 
     /**
