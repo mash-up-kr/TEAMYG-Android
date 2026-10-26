@@ -12,8 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * 토핑 정리 화면 ↔ 텍스트 입력 화면 사이의 텍스트 재편집 왕복을 잇는다. 편집 대상과 결과가
  * NavKey 로 오가기엔 크고, 결과는 되돌아간 화면이 받아야 해서 둘 다 여기에 둔다.
  *
- * ⚠️ 메모리에만 있다 — 프로세스가 죽었다 살아나면 비어 있고, 그때 입력 화면은 편집을 시작하지
- * 못하고 바로 나간다.
+ * ⚠️ 메모리에만 있다 — 프로세스가 죽었다 살아나면 비어 있다.
  */
 @Singleton
 class TextEditSessionHolder @Inject constructor() {
@@ -50,10 +49,7 @@ class TextEditSessionHolder @Inject constructor() {
         resultSession = null
     }
 
-    /**
-     * [session] 으로 시작한 왕복이 남긴 것만 비운다. 그새 다른 화면이 새 편집을 시작했으면 그
-     * 편집은 건드리지 않는다.
-     */
+    /** [session] 으로 시작한 왕복이 남긴 것만 비운다 — 그새 시작된 다른 편집은 건드리지 않는다 */
     fun clear(session: TextEditSession) {
         if (this.session === session) this.session = null
         if (resultSession === session) consume()

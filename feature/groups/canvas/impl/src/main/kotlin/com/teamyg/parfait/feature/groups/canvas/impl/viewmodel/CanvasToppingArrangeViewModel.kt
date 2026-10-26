@@ -311,7 +311,6 @@ constructor(
             near(rotationDegrees, local.rotationDegrees)
     }
 
-    /** 화면에서 지우고 확인 때 DELETE 로 보낸다 */
     private fun CanvasToppingArrangeUiState.markTextDeleted(textId: Long): CanvasToppingArrangeUiState = copy(
         texts = texts.filterNot { it.parfaitTextId == textId },
         pendingDeleteTextIds = pendingDeleteTextIds + textId,
