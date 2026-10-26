@@ -932,8 +932,9 @@ DataSource 테스트는 29 케이스이고, 배경 변경 요청 바디의 **조
 - 상세 조회가 상태를 거르지 않아 "이전 파르페 상세"라는 이름과 달리 오늘의 `ACTIVE` 캔버스도 조회된다.
   같은 캔버스를 `today`와 상세 두 경로로 얻을 수 있고 **한쪽만 부작용이 있다**
   → [open-questions](../synthesis/open-questions.md)
-- **텍스트만 있는 날이 `CLOSED`인데 과거 목록 `imageCount`는 0이다**, 그리고 앱 `GetTodayParfaitResponse.texts`는
-  DTO까지만 있고 캔버스 VO로 매핑되지 않아 텍스트를 그리지 못한다 → [open-questions](../synthesis/open-questions.md) OQ-P-439
+- **텍스트만 있는 날이 `CLOSED`인데 과거 목록 `imageCount`는 0이다.** 앱은 `GetTodayParfaitResponse.texts`를
+  `CanvasVO.texts`로 매핑해 C-001에 그리지만, 달력 빈 날 판정(`PastCanvasVO.isEmpty`)은 텍스트를 세지 않는다
+  → [open-questions](../synthesis/open-questions.md) OQ-P-439
 - **회전이 `parfait.version`을 올리지 않아** 테스트 전용 회전 뒤 v2 `today`가 `ACTIVE`였던 옛 본문을 304로
   유지시킨다. Redis 무효화 실패·DB 직접 수정 시 최대 5분(`VERSION_TTL`)간 낡은 304가 나갈 수 있다
   → [open-questions](../synthesis/open-questions.md) OQ-P-440

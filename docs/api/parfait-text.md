@@ -4,7 +4,7 @@ title: 텍스트 토핑 배치(배치 확정·수정·삭제)
 server_module: http/parfaittext
 server_commit: 8b4a94b
 verified: 2026-10-25
-android_status: partial
+android_status: done
 related_spec:
 related_adr:
 tags: [api, parfait, server-contract, parfait-text]
@@ -282,21 +282,24 @@ Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는�
 
 ## Android 매핑
 
-표면만 있고 소비처가 없다(Repository·UseCase·화면 0건).
-
 | 서버 | Android |
 |---|---|
-| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`) |
-| `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다 |
+| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase` |
+| `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다. 캔버스 쪽은 `CanvasTextToppingVO`로 올라간다 |
+| 일괄 PATCH `textItems` | `TextToppingTransformUpdate` → `ToppingRepository#updateAll` (C-305 변형·이동) |
 | 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` |
 
+- 단위 변환은 `TextToppingWireMapper`가 맡는다 — 위치는 박스 중심의 캔버스 비율, `fontSize`는 디자인 너비
+  335 기준 값, `scale`은 핀치 배율, `color`는 `#RRGGBB`(White는 `#FAFAFA`, 모르는 값은 Black),
+  `isFill`·`isStroke`는 `TextToppingType`이다. Android가 정한 값이고 iOS와 합의하지 않았다
+  → [open-questions](../synthesis/open-questions.md) OQ-P-452
+- **정렬은 저장하지 않는다.** 요청에 정렬 필드가 없어 다시 읽은 텍스트는 가운데 정렬로 그린다 → OQ-P-451
 - `PlacedTextToppingVO.placedBy`는 이미지 배치와 같은 `ToppingPlacerVO`로 접는다 — `ownerType`·`nameTagChip`·
   `createdAt`은 DTO에만 있고 VO로 올리지 않았다(읽는 화면이 생길 때 올린다).
-- `TextToppingUpdate`에 `text`가 없다. 서버가 내용 수정을 받지 않기 때문이다.
-- **일괄 PATCH의 `textItems`·`texts`는 DTO만 있다**(`UpdateParfaitImagesRequest.textItems` 기본 `[]`,
-  `UpdateParfaitImagesResponse.texts` 기본 `[]`). `ParfaitImageRemoteDataSource.updateToppings`는 아직
-  이미지 항목만 보낸다. `encodeDefaults = true`라 매 요청에 `"textItems": []`가 실린다 — 서버 기본값과 같은 뜻이다.
-- **캔버스 `GetTodayParfaitResponse.texts`도 DTO만 있다.** 캔버스 VO 매핑은 아직 없다(OQ-P-439).
+- `TextToppingUpdate`에 `text`가 없다. 서버가 내용 수정을 받지 않기 때문이다. 앱은 내용이 바뀐 재편집을
+  새 텍스트 POST 뒤 옛 것 DELETE로 처리하고, DELETE가 실패하면 옛 id를 삭제 보류로 옮겨 POST를 반복하지 않는다.
+- 텍스트 DELETE의 404 `PARFAIT_TEXT_NOT_FOUND`는 이미 지워진 것으로 보고 성공 처리한다. 배치 409(마감)는 영구 실패다.
+- 재편집(PATCH·POST)도 서버가 푸시를 다시 보낸다 — 계약 한계다.
 
 ## 미결
 
