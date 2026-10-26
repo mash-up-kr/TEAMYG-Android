@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -18,9 +19,11 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -642,6 +645,35 @@ class CanvasToppingPlaceViewModelTest {
     }
 
     @Test
+    fun confirm_sameCanvas_stacksAboveTextsToo() = runTest(mainDispatcherRule.dispatcher) {
+        // 이미지 z 1, 텍스트 z 5 — 둘을 합친 최댓값 위로 올라가야 텍스트 밑에 깔리지 않는다
+        todayCanvases.value = canvas(
+            parfaitId = PARFAIT_ID,
+            toppings = listOf(topping(positionZ = 1)),
+            texts = listOf(textTopping(positionZ = 5)),
+        )
+        val viewModel = readyViewModel(draft(nextPositionZ = 3, parfaitId = PARFAIT_ID))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 6 }, any(), any()) }
+    }
+
+    @Test
+    fun confirm_sameTextOnlyCanvas_stacksAboveTheText() = runTest(mainDispatcherRule.dispatcher) {
+        todayCanvases.value = canvas(parfaitId = PARFAIT_ID, texts = listOf(textTopping(positionZ = 2)))
+        val viewModel = readyViewModel(draft(nextPositionZ = 1, parfaitId = PARFAIT_ID))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CanvasToppingPlaceIntent.OnClickConfirm)
+        advanceUntilIdle()
+
+        coVerify { addToppingUseCase(any(), any(), any(), match { it.positionZ == 3 }, any(), any()) }
+    }
+
+    @Test
     fun confirm_differentCanvas_fallsBackToTheDraft() = runTest(mainDispatcherRule.dispatcher) {
         // 구독 캔버스가 초안과 다른 parfaitId 다 — 하루 경계를 넘겨 오늘이 바뀐 상황
         todayCanvases.value =
@@ -978,6 +1010,7 @@ class CanvasToppingPlaceViewModelTest {
         background: CanvasBackground? = null,
         parfaitId: ParfaitId = PARFAIT_ID,
         toppings: List<CanvasToppingVO> = emptyList(),
+        texts: List<CanvasTextToppingVO> = emptyList(),
     ) = CanvasVO(
         parfaitId = parfaitId,
         groupName = GroupName("아메리카노"),
@@ -987,7 +1020,26 @@ class CanvasToppingPlaceViewModelTest {
         members = emptyList(),
         background = background,
         toppings = toppings,
-        texts = emptyList(),
+        texts = texts,
+    )
+
+    private fun textTopping(positionZ: Int) = CanvasTextToppingVO(
+        parfaitTextId = ParfaitTextId(positionZ.toLong()),
+        text = "안녕",
+        transform = ToppingTransform(
+            positionX = 0.5,
+            positionY = 0.5,
+            positionZ = positionZ,
+            scale = 1.0,
+            rotation = 0.0,
+        ),
+        style = TextToppingStyle(color = "#000000", fontSize = 24.0, isFill = false, isStroke = false),
+        placedBy = ToppingPlacerVO(
+            groupMemberId = GroupMemberId(1L),
+            nickname = GroupNickname("연경이"),
+        ),
+        isMine = false,
+        createdAt = LocalDateTime(2026, 8, 20, 12, 0),
     )
 
     private fun topping(positionZ: Int) = CanvasToppingVO(

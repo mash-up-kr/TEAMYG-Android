@@ -253,7 +253,10 @@ class CanvasToppingPlaceViewModel
      */
     private fun CanvasToppingPlaceUiState.resolvedPositionZ(): Int? {
         if (observedParfaitId == null || observedParfaitId != parfaitId) return nextPositionZ
-        return (existingToppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
+        // 이미지와 텍스트가 한 z 축을 쓴다 — 이미지만 세면 텍스트와 같은 z 가 돼 그 밑에 깔린다
+        val maxZ = (existingToppings.map { it.transform.positionZ } + existingTexts.map { it.transform.positionZ })
+            .maxOrNull()
+        return (maxZ ?: 0) + 1
     }
 
     override fun processIntent(intent: CanvasToppingPlaceIntent) {
