@@ -168,9 +168,9 @@ internal fun Modifier.toppingTransformInput(
 }
 
 /** 화면 좌표(y 아래)에서 시계 방향이 양수가 되는 각도 */
-private fun Offset.angleDegrees(): Float = Math.toDegrees(-atan2(x, y).toDouble()).toFloat()
+internal fun Offset.angleDegrees(): Float = Math.toDegrees(-atan2(x, y).toDouble()).toFloat()
 
-private fun normalizeDegrees(degrees: Float): Float {
+internal fun normalizeDegrees(degrees: Float): Float {
     var result = degrees
     while (result > 180f) result -= 360f
     while (result < -180f) result += 360f

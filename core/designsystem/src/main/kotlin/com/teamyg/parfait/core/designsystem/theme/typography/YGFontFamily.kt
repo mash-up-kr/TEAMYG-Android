@@ -5,7 +5,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.teamyg.parfait.core.designsystem.R
 
-internal object YGFontFamily {
+/**
+ * 앱 기본 글꼴(한/영/숫자). 라이선스는 `core/designsystem/OFL.txt`.
+ */
+object YGFontFamily {
     val suitFontFamily: FontFamily = FontFamily(
         Font(R.font.suit_regular, FontWeight.Normal),
         Font(R.font.suit_medium, FontWeight.Medium),

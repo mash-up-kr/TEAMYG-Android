@@ -30,6 +30,7 @@ enum class AnalyticsScreenType(
     SEGMENTATION(screenId = "C-103", screenClass = "NavKeySegmentation"),
     TOPPING_EDIT(screenId = "C-104", screenClass = "NavKeyToppingEdit"),
     CANVAS_TOPPING_PLACE(screenId = "C-106", screenClass = "NavKeyCanvasToppingPlace"),
+    CANVAS_TEXT_INPUT(screenId = "C-106", screenClass = "NavKeyCanvasTextInput"),
     CANVAS_BG_EDIT(screenId = "C-301", screenClass = "NavKeyCanvasBGEdit"),
     CANVAS_TOPPING_ARRANGE(screenId = "C-305", screenClass = "NavKeyCanvasToppingArrange"),
     CANVAS_IMAGE_SAVE(screenId = "C-001-image-save", screenClass = "NavKeyCanvasImageSave"),

@@ -7817,4 +7817,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다.
 
-<!-- oq-next: 450 -->
+### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
+
+- **ID**: OQ-P-450
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
+- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. `AddToppingUseCase`가 사진 전용이고 텍스트 객체 저장 API(필드·디자인 단위 글자 크기·중심 좌표·줄바꿈 고정 여부)가 서버와 합의되지 않았다. iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
+- **상태**: 미해결 (서버 계약 대기)
+- **해소 메모**: 서버 스키마가 정해지면 `handleOnClickStack`에서 저장을 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
+
+<!-- oq-next: 451 -->
