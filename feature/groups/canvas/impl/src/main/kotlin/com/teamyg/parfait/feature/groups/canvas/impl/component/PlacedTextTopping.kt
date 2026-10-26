@@ -29,6 +29,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
  *
  * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 누를 수 없는 자리에서 버튼으로 읽히면 안 된다
+ * @param alpha 회전·배율과 같은 레이어에 건다 — 바깥 modifier 로 걸면 [centeredAt] 으로 옮겨진
+ *   글자가 레이어 밖에 놓여 잘린다
  */
 @Composable
 internal fun PlacedTextTopping(
@@ -44,6 +46,7 @@ internal fun PlacedTextTopping(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     popProgress: Float = 1f,
+    alpha: Float = 1f,
 ) {
     TextToppingContent(
         text = text,
@@ -61,7 +64,7 @@ internal fun PlacedTextTopping(
                 scaleX = scale * pop
                 scaleY = scale * pop
                 rotationZ = rotationDegrees
-                if (popProgress < 1f) alpha = toppingPopAlpha(popProgress)
+                this.alpha = if (popProgress < 1f) alpha * toppingPopAlpha(popProgress) else alpha
             }.then(
                 // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
                 if (onClick != null) {
