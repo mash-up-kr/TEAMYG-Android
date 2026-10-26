@@ -52,6 +52,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLayerOrder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasRevealSettled
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingColorOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingTypeOf
@@ -120,9 +121,9 @@ internal fun CanvasToppingLayer(
         val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
 
         // 날짜를 바꿔도 이 레이어는 컴포지션에 남으므로 resetKey 없이는 빗장이 풀린 채다.
-        // 다시 시도할 때도 처음부터 모아야 한다. 텍스트는 받아 올 것이 없어 처음부터 결말난 셈이다
+        // 다시 시도할 때도 처음부터 모아야 한다
         val reveal = rememberBatchRevealState(
-            settled = entries.map { it.imageState != CanvasLoadState.Loading } + texts.map { true },
+            settled = canvasRevealSettled(imageStates = entries.map { it.imageState }, textCount = texts.size),
             resetKey = revealResetKey to retryKey,
         )
         val toppingsVisible = !revealTogether || reveal.shown
