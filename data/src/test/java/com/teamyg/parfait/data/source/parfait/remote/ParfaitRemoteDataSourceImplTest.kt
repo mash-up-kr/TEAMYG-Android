@@ -28,6 +28,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -92,6 +93,7 @@ class ParfaitRemoteDataSourceImplTest {
         fontSize = 18.0,
         isFill = true,
         isStroke = false,
+        textAlign = "RIGHT",
         placedBy = PlacedByResponse(
             groupMemberId = 5L,
             nickname = "행복한 판다",
@@ -270,7 +272,16 @@ class ParfaitRemoteDataSourceImplTest {
         assertEquals(3, text.transform.positionZ)
         assertEquals(1.5, text.transform.scale)
         assertEquals(30.0, text.transform.rotation)
-        assertEquals(TextToppingStyle(color = "#FA91A2", fontSize = 18.0, isFill = true, isStroke = false), text.style)
+        assertEquals(
+            TextToppingStyle(
+                color = "#FA91A2",
+                fontSize = 18.0,
+                isFill = true,
+                isStroke = false,
+                textAlign = TextToppingAlign.RIGHT,
+            ),
+            text.style,
+        )
         assertEquals(ToppingPlacerVO(GroupMemberId(5L), GroupNickname("행복한 판다")), text.placedBy)
         assertEquals(LocalDateTime.parse("2026-10-26T10:00:00.123"), text.createdAt)
         assertTrue(text.isMine)

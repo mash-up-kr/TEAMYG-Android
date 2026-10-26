@@ -2,8 +2,8 @@
 id: deeplink
 title: 딥링크 웹 표면(App Links 검증 파일·초대 링크 폴백·루트 랜딩)
 server_module: http/api/deeplink, http/api/page/root, core/deeplink
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: ed65131
+verified: 2026-10-27
 android_status: done
 related_spec:
 related_adr:
@@ -114,8 +114,14 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 - **인증**: 불필요
 - **성공**: 요청 호스트(`serverName`)가 `landing.domain`과 같을 때만 HTTP 200 · `text/html`(`web/landing` 빌드
   산출물, 기동 때 한 번 읽는다). 다른 호스트로 들어오면 **본문 없는 404**다 — API 호스트의 `/`는 404다.
-- 랜딩 페이지는 Android 일반 브라우저면 렌더 전에 `intent://details?id=com.teamyg.parfait#Intent;scheme=market;…`로
-  Play 스토어를 연다. 이 경로에는 referrer가 없다 — 초대코드를 실어 나르는 것은 `/link`뿐이다.
+- 랜딩 페이지는 Android 일반 브라우저면 렌더 전에 `intent://details?id=com.teamyg.parfait…#Intent;scheme=market;…`로
+  Play 스토어를 연다. 인앱 브라우저·데스크톱은 자동 이동 없이 버튼만 보인다(`landingView`).
+- **캠페인 referrer**: 랜딩 쿼리에 `utm_source`가 있으면 `utm_source`·`utm_medium`·`utm_campaign`·`utm_content`·
+  `utm_term`·`utm_id`만 골라 Play 주소의 `referrer`에 싣는다(Android·데스크톱, iOS는 싣지 않는다). 값은
+  `[A-Za-z0-9._~-]{1,100}`만 통과하고 디코딩하지 않는다 — 한글·퍼센트 인코딩 값은 버려진다(`campaignReferrer`).
+  `inviteCode`는 싣지 않는다. 초대코드를 실어 나르는 것은 여전히 `/link`뿐이다. 앱 파서는 `inviteCode`가 없는
+  referrer를 초대 없음으로 읽는다.
+- 랜딩 방문은 GA4 웹 스트림으로 집계된다. Google에는 UTM 쿼리만 보낸다(`analyticsLocation`). 앱 계약과는 무관하다.
 
 ## Android 매핑
 

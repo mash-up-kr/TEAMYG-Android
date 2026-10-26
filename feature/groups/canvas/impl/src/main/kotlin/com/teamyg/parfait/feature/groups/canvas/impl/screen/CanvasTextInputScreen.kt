@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -137,6 +138,10 @@ internal fun CanvasTextInputScreen(
             isContentBlank = uiState.content.isBlank(),
             onConfirmEmpty = onClickConfirm,
         )
+
+        // 쌓기 요청 중에는 백을 먹는다. POST 는 멱등이 아니라, 보낸 뒤 나가 버리면 서버에는 쌓였는데
+        // 갱신·초안 정리가 끊겨 다시 쌓다가 중복이 생긴다. 편집 모드의 백보다 나중에 등록해야 그보다 앞선다
+        BackHandler(enabled = uiState.isLoading) {}
 
         // 바깥 탭은 팝오버 → 키보드 순으로 하나씩 닫는다
         val onDismissPopoverOrEndEditing: () -> Unit = {
@@ -320,8 +325,10 @@ internal fun CanvasTextInputScreen(
                         // 이미 캔버스에 놓인 토핑들. 터치 판정은 안 받는다 — 판정은 아래 입력 레이어가 혼자 한다
                         CanvasToppingLayer(
                             toppings = uiState.existingToppings,
-                            spotlightedToppingId = null,
+                            texts = uiState.existingTexts,
+                            spotlightedKey = null,
                             onClickTopping = {},
+                            onClickText = {},
                             onClickSpotlightDim = {},
                             hitTestEnabled = false,
                             revealTogether = false,

@@ -2,8 +2,8 @@
 id: parfait-image
 title: 토핑 배치(배치 확정·위치/크기/각도 수정·일괄 수정·테두리 수정·삭제)
 server_module: http/parfaitimage
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: ed65131
+verified: 2026-10-27
 android_status: done
 related_spec: 2026-08-15-parfait-canvas-topping-member-api-service-layer
 related_adr: ADR-0017
@@ -268,7 +268,7 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 
 이미지와 **텍스트**의 위치·크기·각도를 요청 하나, 트랜잭션 하나로 고친다. 텍스트까지 받는 이유는
 서버 커밋 본문이 밝힌다. 요청이 나뉘면 일부만 성공해 캔버스가 어긋나고, 다른 구성원이 그 중간 상태를
-폴링할 수 있어서다. 텍스트 **스타일**(`color`·`fontSize`·`isFill`·`isStroke`)은 여기서 못 바꾸고 텍스트
+폴링할 수 있어서다. 텍스트 **스타일**(`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`)은 여기서 못 바꾸고 텍스트
 단건 PATCH만 바꾼다([parfait-text.md](parfait-text.md)).
 
 - **인증**: 필요.
@@ -334,7 +334,7 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
   단건과 마찬가지로 `imageId`·`imageUrl`·`placedBy`·테두리 3필드가 없다.
 
   `texts` 원소는 **텍스트 단건 PATCH 응답 DTO**(`UpdateParfaitTextResponse`)다. 위치 다섯 필드에 더해
-  `text`·`color`·`fontSize`·`isFill`·`isStroke`까지 저장된 값을 돌려준다. `placedBy`·`createdAt`은 없다.
+  `text`·`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`까지 저장된 값을 돌려준다. `placedBy`·`createdAt`은 없다.
   필드 표는 [parfait-text.md](parfait-text.md) PATCH 절.
 
   **순서는 `saveAll` 반환 순서**이고 요청 항목 순서와 같다고 계약이 보장하지 않는다 — 소비 측은

@@ -15,7 +15,7 @@ class UpdateToppingsUseCase @Inject constructor(
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
-        textUpdates: List<TextToppingTransformUpdate> = emptyList(),
+        textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>> = toppingRepository.updateAll(
         groupId = groupId,
         parfaitId = parfaitId,

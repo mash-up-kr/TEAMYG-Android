@@ -24,4 +24,6 @@ data class UpdateParfaitTextRequest(
     val isFill: Boolean? = null,
     @SerialName("isStroke")
     val isStroke: Boolean? = null,
+    @SerialName("textAlign")
+    val textAlign: String? = null,
 )

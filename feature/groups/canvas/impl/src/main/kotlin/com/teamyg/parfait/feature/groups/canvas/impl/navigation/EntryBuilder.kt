@@ -53,8 +53,9 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
         )
     }
 
-    entry<NavKeyCanvasTextInput> {
+    entry<NavKeyCanvasTextInput> { navKey ->
         CanvasTextInputRoute(
+            isEditingExisting = navKey.isEditingExisting,
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )
@@ -66,6 +67,7 @@ fun EntryProviderScope<NavKey>.featureCanvasEntryBuilder(navigator: Navigator) {
             groupId = navKey.groupId,
             parfaitId = navKey.parfaitId,
             initialToppingId = navKey.initialToppingId,
+            initialIsText = navKey.initialIsText,
             navigator = navigator,
             modifier = Modifier.fillMaxSize(),
         )

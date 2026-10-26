@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.model
 
 import androidx.compose.ui.unit.Dp
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 
 /**
@@ -10,6 +11,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
  */
 internal data class CanvasVideoSource(
     val toppings: List<CanvasToppingVO>,
+    val texts: List<CanvasTextToppingVO>,
     val background: YGCanvasBackground?,
     val canvasWidth: Dp,
     val canvasHeight: Dp,
