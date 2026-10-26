@@ -111,7 +111,6 @@ data class CanvasToppingArrangeUiState(
 
     val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(focusedTopping?.border, pendingBorderWidthDp)
 
-    /** 테두리는 사진에만 있다 */
     val canOpenBorderPanel: Boolean get() = focusedKey is CanvasToppingKey.Image
 
     val hasUnsavedChanges: Boolean
@@ -172,7 +171,6 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
 
     data object ShowOthersToppingNotEditable : CanvasToppingArrangeEffect
 
-    /** 편집 대상은 [TextEditSessionHolder] 에 실어 두었다 */
     data object NavigateToTextEdit : CanvasToppingArrangeEffect
 
     data class ShowError(
@@ -226,7 +224,6 @@ constructor(
      */
     private var serverToppings: List<EditableTopping> = emptyList()
 
-    /** [serverToppings] 의 텍스트 쪽 */
     private var serverTexts: List<EditableText> = emptyList()
 
     /** 이 화면이 마지막으로 연 재편집. 나갈 때 받지 못한 결과가 다음 화면에 남지 않게 치운다 */
@@ -290,7 +287,6 @@ constructor(
                         }
                     },
                     dirtyTextIds = dirtyTextIds + textId,
-                    // 원래 내용으로 되돌린 경우 다시 만들 필요가 없어진다
                     recreateTextIds = if (needsRecreate) recreateTextIds + textId else recreateTextIds - textId,
                 )
             }
@@ -312,7 +308,6 @@ constructor(
 
     private fun Float.orIfMoved(edited: Float): Float = if (isNear(edited)) this else edited
 
-    /** 화면에서 지우고 확인 때 DELETE 로 보낸다 */
     private fun CanvasToppingArrangeUiState.markTextDeleted(textId: Long): CanvasToppingArrangeUiState = copy(
         texts = texts.filterNot { it.parfaitTextId == textId },
         pendingDeleteTextIds = pendingDeleteTextIds + textId,
@@ -810,7 +805,6 @@ constructor(
             recreateText(text).also { result -> updateState { applyRecreateResult(textId, result) } }
         }
 
-    /** 겹침 순서는 옛 텍스트의 것을 이어받는다 */
     private suspend fun recreateText(text: EditableText): TextToppingRecreateResult = recreateTextToppingUseCase(
         groupId = groupId,
         parfaitId = parfaitId,
@@ -866,7 +860,6 @@ constructor(
         deletedIds.size == pendingIds.size && deletedTextIds.size == pendingTextIds.size
     }
 
-    /** 서버에서 지운 텍스트를 삭제 대기에서 툼스톤으로 옮긴다 */
     private fun CanvasToppingArrangeUiState.markTextsGone(textIds: Set<Long>): CanvasToppingArrangeUiState = copy(
         pendingDeleteTextIds = pendingDeleteTextIds - textIds,
         deletedTextIds = deletedTextIds + textIds,
