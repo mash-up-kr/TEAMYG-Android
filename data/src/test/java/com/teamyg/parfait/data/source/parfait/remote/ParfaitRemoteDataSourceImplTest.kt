@@ -93,6 +93,7 @@ class ParfaitRemoteDataSourceImplTest {
         fontSize = 18.0,
         isFill = true,
         isStroke = false,
+        textAlign = "RIGHT",
         placedBy = PlacedByResponse(
             groupMemberId = 5L,
             nickname = "행복한 판다",
@@ -277,7 +278,7 @@ class ParfaitRemoteDataSourceImplTest {
                 fontSize = 18.0,
                 isFill = true,
                 isStroke = false,
-                textAlign = TextToppingAlign.CENTER,
+                textAlign = TextToppingAlign.RIGHT,
             ),
             text.style,
         )

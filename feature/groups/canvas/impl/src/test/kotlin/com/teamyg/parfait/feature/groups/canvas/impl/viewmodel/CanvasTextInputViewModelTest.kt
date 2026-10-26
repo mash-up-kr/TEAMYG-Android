@@ -34,6 +34,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
+import io.mockk.slot
 import java.io.IOException
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -232,6 +233,20 @@ class CanvasTextInputViewModelTest {
             clearToppingDraft()
         }
         assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun onClickStack_afterChangingAlign_sendsThatAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        val style = slot<TextToppingStyle>()
+        coEvery { placeTextTopping(any(), any(), any(), any(), capture(style)) } returns Result.success(placed())
+        // 가운데에서 시작해 한 번 누르면 왼쪽이다
+        viewModel.processIntent(CanvasTextInputIntent.OnClickAlign)
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        assertEquals(TextToppingAlign.LEFT, style.captured.textAlign)
     }
 
     @Test

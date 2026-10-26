@@ -1318,6 +1318,20 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun init_keepsTheSavedAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel(
+            initialToppingId = SHARED_ID,
+            initialCanvas = canvas(
+                toppings = listOf(toppingVO(SHARED_ID, positionZ = 1)),
+                texts = listOf(textVO(SHARED_ID, positionZ = 2, align = TextToppingAlign.LEFT)),
+            ),
+            initialIsText = true,
+        )
+
+        assertEquals(TextAlign.Left, viewModel.text(SHARED_ID).align)
+    }
+
+    @Test
     fun transform_onFocusedText_movesOnlyTheText() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
         val imageBefore = viewModel.topping(SHARED_ID)
@@ -1757,6 +1771,25 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun confirm_contentAndAlignEdit_recreatesWithTheNewAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글", align = TextAlign.Right), viewModel)
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        val placedStyle = slot<TextToppingStyle>()
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), capture(placedStyle))
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(TextToppingAlign.RIGHT, placedStyle.captured.textAlign)
+    }
+
+    @Test
     fun deletedResult_marksTextForDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
 
@@ -1934,6 +1967,7 @@ class CanvasToppingArrangeViewModelTest {
         parfaitTextId: Long,
         isMine: Boolean = true,
         positionZ: Int,
+        align: TextToppingAlign = TextToppingAlign.CENTER,
     ) = CanvasTextToppingVO(
         parfaitTextId = ParfaitTextId(parfaitTextId),
         text = "안녕",
@@ -1949,7 +1983,7 @@ class CanvasToppingArrangeViewModelTest {
             fontSize = 18.0,
             isFill = false,
             isStroke = false,
-            textAlign = TextToppingAlign.CENTER,
+            textAlign = align,
         ),
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(if (isMine) MY_MEMBER_ID else OTHER_MEMBER_ID),
