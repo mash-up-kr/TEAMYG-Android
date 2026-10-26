@@ -46,7 +46,10 @@ class CanvasLayerOrderTest {
 
     private val placer = ToppingPlacerVO(GroupMemberId(1L), GroupNickname("연경이"))
 
-    private fun image(id: Long, z: Int) = CanvasToppingVO(
+    private fun image(
+        id: Long,
+        z: Int,
+    ) = CanvasToppingVO(
         parfaitImageId = ParfaitImageId(id),
         imageId = ImageId(id),
         imageUrl = "https://cdn.example.com/.png",
@@ -57,7 +60,10 @@ class CanvasLayerOrderTest {
         createdAt = LocalDateTime(2026, 8, 20, 12, 0),
     )
 
-    private fun text(id: Long, z: Int) = CanvasTextToppingVO(
+    private fun text(
+        id: Long,
+        z: Int,
+    ) = CanvasTextToppingVO(
         parfaitTextId = ParfaitTextId(id),
         text = "안녕",
         transform = transform(z),

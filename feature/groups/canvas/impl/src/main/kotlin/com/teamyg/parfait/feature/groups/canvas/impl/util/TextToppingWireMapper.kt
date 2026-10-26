@@ -22,7 +22,10 @@ internal fun textToppingColorOf(wire: String): TextToppingColor =
 internal fun TextToppingType.toFillStroke(): Pair<Boolean, Boolean> = hasFill to hasBorder
 
 /** 서버에 `isFill=false, isStroke=true` 도 저장될 수 있어, 배경이 없으면 테두리와 무관하게 [TextToppingType.DEFAULT] 다 */
-internal fun textToppingTypeOf(isFill: Boolean, isStroke: Boolean): TextToppingType = when {
+internal fun textToppingTypeOf(
+    isFill: Boolean,
+    isStroke: Boolean,
+): TextToppingType = when {
     !isFill -> TextToppingType.DEFAULT
     isStroke -> TextToppingType.FILL_STROKE
     else -> TextToppingType.FILL
