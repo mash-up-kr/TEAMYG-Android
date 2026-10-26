@@ -48,7 +48,6 @@ class ToppingRepositoryImpl @Inject constructor(
         updates: List<ToppingTransformUpdate>,
         textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>> {
-        // 서버가 빈 items·textItems 를 200 으로 받아 주지만 보낼 이유가 없다(`docs/api/parfait-image.md`)
         if (updates.isEmpty() && textUpdates.isEmpty()) return Result.success(emptyList())
 
         return parfaitImageRemoteDataSource

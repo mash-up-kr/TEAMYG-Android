@@ -29,7 +29,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.detectTextToppingScri
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingFontSizeSp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 
-/** 글자 크기·줄높이를 얹기 전의 텍스트 토핑 스타일. 편집 필드와 읽기 전용 렌더러가 같은 값을 써야 줄바꿈이 맞는다 */
+/** 편집 필드와 읽기 전용 렌더러가 같은 값을 써야 줄바꿈이 맞는다 */
 @Composable
 @ReadOnlyComposable
 internal fun textToppingBaseStyle(script: TextToppingScript): TextStyle = YGTheme.typography.body.b01R.copy(
@@ -38,7 +38,7 @@ internal fun textToppingBaseStyle(script: TextToppingScript): TextStyle = YGThem
 )
 
 /**
- * 저장값으로 텍스트 하나를 그린다. C-106 배치 모드가 키보드를 내린 뒤 보여 주는 크기·줄바꿈·박스와 같아야 한다.
+ * C-106 배치 모드가 키보드를 내린 뒤 보여 주는 크기·줄바꿈·박스와 같아야 한다.
  * 위치·scale·rotation 은 호출부 몫이다.
  */
 @Composable
@@ -81,7 +81,6 @@ internal fun TextToppingContent(
     }
 }
 
-/** 타입 3종 × 짧은/두 줄 텍스트. 디자인 너비에 최대 크기의 절반 */
 @YGPreview
 @Composable
 private fun TextToppingContentPreview() = PreviewBox {
