@@ -23,6 +23,7 @@ import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCas
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
@@ -256,7 +257,7 @@ class CanvasTextInputViewModelTest {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
             advanceUntilIdle()
 
-            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = true), awaitItem())
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Permanent), awaitItem())
         }
         assertFalse(viewModel.state.value.isLoading)
         assertEquals("hi", viewModel.state.value.content)
@@ -265,7 +266,7 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
-    fun onClickStack_networkFailure_showsTransientFailure() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickStack_networkFailure_showsUncertainAndRefreshesCanvas() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = stackReadyViewModel()
         coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
             AppError.Network(IOException("connection reset")),
@@ -275,8 +276,45 @@ class CanvasTextInputViewModelTest {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
             advanceUntilIdle()
 
-            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = false), awaitItem())
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Uncertain), awaitItem())
         }
+        assertEquals("hi", viewModel.state.value.content)
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L)) }
+        coVerify(exactly = 0) { clearToppingDraft() }
+    }
+
+    @Test
+    fun onClickStack_networkFailure_stillNotifiesWhenRefreshFails() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+        coEvery { refreshTodayParfaitDetail(any(), any()) } returns Result.failure(
+            AppError.Network(IOException("still down")),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Uncertain), awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickStack_serverFailure_showsRetryableWithoutRefresh() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "INTERNAL_ERROR", statusCode = 500, serverMessage = "오류"),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Retryable), awaitItem())
+        }
+        coVerify(exactly = 0) { refreshTodayParfaitDetail(any(), any()) }
         coVerify(exactly = 0) { clearToppingDraft() }
     }
 
