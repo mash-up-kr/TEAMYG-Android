@@ -169,7 +169,7 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     private fun stubTransformSaveSucceeds() {
-        coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
     }
 
     private fun stubBorderSave(
@@ -249,12 +249,12 @@ class CanvasToppingArrangeViewModelTest {
         // Given 연 parfaitId 는 100 인데 최초 방출은 9 다
         val viewModel = viewModel(initialCanvas = canvas(parfaitId = 9L))
         viewModel.drag()
-        coEvery { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) } returns Result.success(emptyList())
+        coEvery { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any(), any()) } returns Result.success(emptyList())
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) }
+        coVerify(exactly = 1) { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any(), any()) }
     }
 
     // 탭 네 갈래 (패널이 닫힌 상태에서)
@@ -506,7 +506,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), ParfaitImageId(FIRST_ID), any()) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
     }
 
     // 변형
@@ -584,7 +584,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
@@ -626,7 +626,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
@@ -680,7 +680,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(SECOND_ID)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSelectBorderColor(ORANGE_ARGB))
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), capture(updates), any()) } returns Result.success(emptyList())
         stubBorderSave(SECOND_ID, ToppingBorder.Solid(color = "#FF6B00", width = 10.0))
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -720,7 +720,7 @@ class CanvasToppingArrangeViewModelTest {
 
         // Then dirty 로 남아 있어도 서버 값과 같으니 보낼 것이 없다
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
     }
 
     @Test
@@ -757,7 +757,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(FIRST_ID)
         assertTrue(viewModel.state.value.isBorderPanelOpen)
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), capture(updates), any()) } returns Result.success(emptyList())
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
@@ -770,7 +770,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
@@ -803,7 +803,7 @@ class CanvasToppingArrangeViewModelTest {
 
         // 되감기 전에 갱신을 마쳐야 캔버스가 저장된 값을 본다
         coVerifyOrder {
-            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
             refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
         }
         assertTrue(
@@ -823,7 +823,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
     }
 
@@ -881,7 +881,7 @@ class CanvasToppingArrangeViewModelTest {
     fun confirm_unexpectedException_showsSaveError() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } throws IllegalStateException("예상 밖")
+        coEvery { updateToppings(any(), any(), any(), any()) } throws IllegalStateException("예상 밖")
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -1007,7 +1007,7 @@ class CanvasToppingArrangeViewModelTest {
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
 
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
     }
 
@@ -1027,7 +1027,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerifyOrder {
-            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
             deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(SECOND_ID))
         }
     }
@@ -1035,7 +1035,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun confirm_saveFails_doesNotDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
         viewModel.drag()
         viewModel.click(SECOND_ID)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
