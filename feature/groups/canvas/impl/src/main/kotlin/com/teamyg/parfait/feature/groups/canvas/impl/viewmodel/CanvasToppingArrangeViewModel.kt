@@ -697,12 +697,15 @@ constructor(
             }
 
             // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다. 다시 만들기도 옛 텍스트를 지우므로 같다
-            val isSaved = failed.isEmpty() &&
-                styleFailedTextIds.isEmpty() &&
-                recreateTexts().all { it is TextToppingRecreateResult.Recreated } &&
+            val recreated = if (failed.isEmpty() && styleFailedTextIds.isEmpty()) recreateTexts() else null
+            val isSaved = recreated != null &&
+                recreated.all { it is TextToppingRecreateResult.Recreated } &&
                 deletePendingToppings()
 
             if (!isSaved) {
+                // 새로 쌓은 텍스트는 아직 화면에 없는데 옛 것은 이미 뺐다 — 다음 폴링까지 글이 사라져 보인다
+                if (recreated.orEmpty().any { it !is TextToppingRecreateResult.NotPlaced }) refreshTodayCanvas()
+
                 // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
                 updateState { copy(isLoading = false) }
                 postSideEffect(
