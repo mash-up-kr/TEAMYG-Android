@@ -20,6 +20,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
 import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -28,7 +29,7 @@ import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
-import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecreateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
@@ -194,7 +195,7 @@ constructor(
     private val deleteTextToppingUseCase: DeleteTextToppingUseCase,
     private val updateToppingsUseCase: UpdateToppingsUseCase,
     private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
-    private val placeTextToppingUseCase: PlaceTextToppingUseCase,
+    private val recreateTextToppingUseCase: RecreateTextToppingUseCase,
     private val updateTextToppingUseCase: UpdateTextToppingUseCase,
     private val textEditSessionHolder: TextEditSessionHolder,
     private val analyticsLogger: AnalyticsLogger,
@@ -701,7 +702,7 @@ constructor(
             // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다. 다시 만들기도 옛 텍스트를 지우므로 같다
             val isSaved = failed.isEmpty() &&
                 styleFailedTextIds.isEmpty() &&
-                recreateTexts() &&
+                recreateTexts().all { it is TextToppingRecreateResult.Recreated } &&
                 deletePendingToppings()
 
             if (!isSaved) {
@@ -802,40 +803,20 @@ constructor(
     }
 
     /**
-     * 새로 쌓은 뒤 옛 텍스트를 지운다. 새로 쌓이면 곧바로 옛 것을 삭제 대기로 옮긴다 — 그 뒤 지우기가
-     * 실패해도 다시 누른 확인은 지우기만 다시 보내고, 같은 글을 두 번 쌓지 않는다.
-     *
-     * @return 모두 새로 쌓이고 옛 것이 지워졌는가.
+     * 결과마다 다음 확인이 무엇을 다시 보낼지 정한다 — 옛 것만 남았으면 삭제 대기로 옮겨 지우기만
+     * 다시 보내고, 쌓지 못했으면 다시 만들 대상에 그대로 둔다.
      */
-    private suspend fun recreateTexts(): Boolean {
-        var isAllDone = true
-
-        for (textId in state.value.recreateTextIds) {
-            val text = state.value.texts.firstOrNull { it.parfaitTextId == textId } ?: continue
-            if (placeRecreatedText(text).not()) {
-                isAllDone = false
-                continue
-            }
-
-            updateState { markTextDeleted(textId) }
-            if (deleteText(textId)) {
-                updateState {
-                    copy(
-                        pendingDeleteTextIds = pendingDeleteTextIds - textId,
-                        deletedTextIds = deletedTextIds + textId,
-                    )
-                }
-            } else {
-                isAllDone = false
-            }
+    private suspend fun recreateTexts(): List<TextToppingRecreateResult> =
+        state.value.recreateTextIds.mapNotNull { textId ->
+            val text = state.value.texts.firstOrNull { it.parfaitTextId == textId } ?: return@mapNotNull null
+            recreateText(text).also { result -> updateState { applyRecreateResult(textId, result) } }
         }
-        return isAllDone
-    }
 
-    /** 겹침 순서는 옛 텍스트의 것을 이어받는다. POST 는 멱등이 아니라 재시도하지 않는다 */
-    private suspend fun placeRecreatedText(text: EditableText): Boolean = placeTextToppingUseCase(
+    /** 겹침 순서는 옛 텍스트의 것을 이어받는다 */
+    private suspend fun recreateText(text: EditableText): TextToppingRecreateResult = recreateTextToppingUseCase(
         groupId = groupId,
         parfaitId = parfaitId,
+        oldParfaitTextId = ParfaitTextId(text.parfaitTextId),
         text = text.text,
         transform = ToppingTransform(
             positionX = text.positionX.toDouble(),
@@ -845,9 +826,27 @@ constructor(
             rotation = text.rotationDegrees.toDouble(),
         ),
         style = textToppingStyleOf(color = text.color, type = text.type, designFontSize = text.designFontSize),
-    ).onFailure { throwable ->
-        viewModelLogger.e(throwable) { "고친 텍스트를 새로 쌓지 못했다 - parfaitTextId: ${text.parfaitTextId}" }
-    }.isSuccess
+    )
+
+    private fun CanvasToppingArrangeUiState.applyRecreateResult(
+        textId: Long,
+        result: TextToppingRecreateResult,
+    ): CanvasToppingArrangeUiState = when (result) {
+        is TextToppingRecreateResult.Recreated -> markTextDeleted(textId).markTextsGone(setOf(textId))
+
+        is TextToppingRecreateResult.OldNotDeleted -> {
+            viewModelLogger.e(result.cause) {
+                "고친 텍스트를 쌓았지만 옛 것을 지우지 못했다 - parfaitTextId: $textId" +
+                    ", 새 것: ${result.placed.parfaitTextId.value}"
+            }
+            markTextDeleted(textId)
+        }
+
+        is TextToppingRecreateResult.NotPlaced -> {
+            viewModelLogger.e(result.cause) { "고친 텍스트를 새로 쌓지 못했다 - parfaitTextId: $textId" }
+            this
+        }
+    }
 
     /** @return 대기 중인 삭제가 모두 서버에 반영됐는가. */
     private suspend fun deletePendingToppings(): Boolean = coroutineScope {
@@ -863,43 +862,41 @@ constructor(
             copy(
                 pendingDeleteToppingIds = pendingDeleteToppingIds - deletedIds,
                 deletedToppingIds = deletedToppingIds + deletedIds,
-                pendingDeleteTextIds = pendingDeleteTextIds - deletedTextIds,
-                deletedTextIds = this.deletedTextIds + deletedTextIds,
-            )
+            ).markTextsGone(deletedTextIds)
         }
 
         deletedIds.size == pendingIds.size && deletedTextIds.size == pendingTextIds.size
     }
 
-    /** 이미지 삭제와 같이, 응답만 잃은 재시도의 404 는 지워진 것으로 친다 */
-    private suspend fun deleteText(textId: Long): Boolean =
-        deleteTextToppingUseCase(groupId, parfaitId, ParfaitTextId(textId)).fold(
-            onSuccess = { true },
-            onFailure = { throwable ->
-                val isAlreadyGone = throwable is AppError.Server &&
-                    throwable.code == ServerErrorCode.ParfaitText.PARFAIT_TEXT_NOT_FOUND
+    /** 서버에서 지운 텍스트를 삭제 대기에서 툼스톤으로 옮긴다 */
+    private fun CanvasToppingArrangeUiState.markTextsGone(textIds: Set<Long>): CanvasToppingArrangeUiState = copy(
+        pendingDeleteTextIds = pendingDeleteTextIds - textIds,
+        deletedTextIds = deletedTextIds + textIds,
+    )
 
-                if (!isAlreadyGone) {
-                    viewModelLogger.e(throwable) { "텍스트를 지우지 못했다 - parfaitTextId: $textId" }
-                }
-                isAlreadyGone
-            },
-        )
+    private suspend fun deleteText(textId: Long): Boolean =
+        deleteTextToppingUseCase(groupId, parfaitId, ParfaitTextId(textId)).isDeletedOrGone(
+            notFoundCode = ServerErrorCode.ParfaitText.PARFAIT_TEXT_NOT_FOUND,
+        ) { "텍스트를 지우지 못했다 - parfaitTextId: $textId" }
+
+    private suspend fun deleteTopping(toppingId: Long): Boolean =
+        deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(toppingId)).isDeletedOrGone(
+            notFoundCode = ServerErrorCode.ParfaitImage.PARFAIT_IMAGE_NOT_FOUND,
+        ) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
 
     /** DELETE 가 서버에 닿고 응답만 잃었다면 다시 보낸 요청은 404 다 — 그것은 지워진 것으로 친다 */
-    private suspend fun deleteTopping(toppingId: Long): Boolean =
-        deleteToppingUseCase(groupId, parfaitId, ParfaitImageId(toppingId)).fold(
-            onSuccess = { true },
-            onFailure = { throwable ->
-                val isAlreadyGone = throwable is AppError.Server &&
-                    throwable.code == ServerErrorCode.ParfaitImage.PARFAIT_IMAGE_NOT_FOUND
+    private fun Result<Unit>.isDeletedOrGone(
+        notFoundCode: String,
+        failureMessage: () -> String,
+    ): Boolean = fold(
+        onSuccess = { true },
+        onFailure = { throwable ->
+            val isAlreadyGone = throwable is AppError.Server && throwable.code == notFoundCode
 
-                if (!isAlreadyGone) {
-                    viewModelLogger.e(throwable) { "토핑을 지우지 못했다 - parfaitImageId: $toppingId" }
-                }
-                isAlreadyGone
-            },
-        )
+            if (!isAlreadyGone) viewModelLogger.e(throwable, message = failureMessage)
+            isAlreadyGone
+        },
+    )
 
     /**
      * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
