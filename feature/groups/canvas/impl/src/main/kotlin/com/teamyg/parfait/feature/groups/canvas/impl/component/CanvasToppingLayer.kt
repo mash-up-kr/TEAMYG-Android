@@ -133,35 +133,6 @@ internal fun CanvasToppingLayer(
             currentOnLoadStateChange(loadState)
         }
 
-        @Composable
-        fun Layer(
-            layer: CanvasLayerItem,
-            popProgress: Float,
-        ) {
-            when (layer) {
-                is CanvasLayerItem.Image -> entriesById[layer.topping.parfaitImageId.value]?.let { entry ->
-                    CanvasTopping(
-                        entry = entry,
-                        canvasWidth = areaWidth,
-                        canvasHeight = areaHeight,
-                        onClick = { onClickTopping(entry.topping) },
-                        clickable = hitTestEnabled,
-                        popProgress = popProgress,
-                    )
-                }
-
-                is CanvasLayerItem.Text -> CanvasText(
-                    text = layer.text,
-                    canvasWidth = areaWidth,
-                    canvasHeight = areaHeight,
-                    onClick = { onClickText(layer.text) },
-                    clickable = hitTestEnabled,
-                    onBoxSizeChange = { size -> textBoxSizes[layer.text.parfaitTextId.value] = size },
-                    popProgress = popProgress,
-                )
-            }
-        }
-
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -172,7 +143,17 @@ internal fun CanvasToppingLayer(
                     key(layer.key) {
                         // 목록이 이미 겹침 순서, 즉 배치 순서라 인덱스가 곧 등장 순서다.
                         // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
-                        Layer(layer = layer, popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f)
+                        CanvasLayer(
+                            layer = layer,
+                            entriesById = entriesById,
+                            canvasWidth = areaWidth,
+                            canvasHeight = areaHeight,
+                            clickable = hitTestEnabled,
+                            onClickTopping = onClickTopping,
+                            onClickText = onClickText,
+                            onTextBoxSizeChange = { id, size -> textBoxSizes[id] = size },
+                            popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f,
+                        )
                     }
                 }
             }
@@ -197,7 +178,17 @@ internal fun CanvasToppingLayer(
                 )
 
                 key(spotlighted.key) {
-                    Layer(layer = spotlighted, popProgress = 1f)
+                    CanvasLayer(
+                        layer = spotlighted,
+                        entriesById = entriesById,
+                        canvasWidth = areaWidth,
+                        canvasHeight = areaHeight,
+                        clickable = hitTestEnabled,
+                        onClickTopping = onClickTopping,
+                        onClickText = onClickText,
+                        onTextBoxSizeChange = { id, size -> textBoxSizes[id] = size },
+                        popProgress = 1f,
+                    )
                 }
             }
         }
@@ -235,6 +226,42 @@ internal fun CanvasToppingLayer(
                     ),
             )
         }
+    }
+}
+
+@Composable
+private fun CanvasLayer(
+    layer: CanvasLayerItem,
+    entriesById: Map<Long, ToppingHitEntry>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    clickable: Boolean,
+    onClickTopping: (CanvasToppingVO) -> Unit,
+    onClickText: (CanvasTextToppingVO) -> Unit,
+    onTextBoxSizeChange: (parfaitTextId: Long, size: IntSize) -> Unit,
+    popProgress: Float,
+) {
+    when (layer) {
+        is CanvasLayerItem.Image -> entriesById[layer.topping.parfaitImageId.value]?.let { entry ->
+            CanvasTopping(
+                entry = entry,
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                onClick = { onClickTopping(entry.topping) },
+                clickable = clickable,
+                popProgress = popProgress,
+            )
+        }
+
+        is CanvasLayerItem.Text -> CanvasText(
+            text = layer.text,
+            canvasWidth = canvasWidth,
+            canvasHeight = canvasHeight,
+            onClick = { onClickText(layer.text) },
+            clickable = clickable,
+            onBoxSizeChange = { size -> onTextBoxSizeChange(layer.text.parfaitTextId.value, size) },
+            popProgress = popProgress,
+        )
     }
 }
 
