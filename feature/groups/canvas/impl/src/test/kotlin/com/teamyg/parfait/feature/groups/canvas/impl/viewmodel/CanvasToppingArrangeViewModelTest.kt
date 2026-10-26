@@ -1383,6 +1383,60 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
+    fun dirtyText_keepsLocalValuesAcrossEmissions() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.drag(panX = 0.1f)
+        val moved = viewModel.text(SHARED_ID)
+
+        // 폴링이 서버 값(positionX 0.4)을 다시 준다
+        todayCanvases.value = textCanvas().copy(lastClosedDate = parfaitToday())
+        advanceUntilIdle()
+
+        assertEquals(moved, viewModel.text(SHARED_ID))
+        assertEquals(0.5f, viewModel.text(SHARED_ID).positionX, 1e-6f)
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+    }
+
+    @Test
+    fun dirtyFocusedText_vanishedFromServer_isDroppedAndLosesFocus() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.drag()
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+
+        // 다른 기기에서 지워져 서버 목록에서 빠진다
+        todayCanvases.value = textCanvas().copy(
+            texts = textCanvas().texts.filterNot { it.parfaitTextId == ParfaitTextId(SHARED_ID) },
+        )
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertTrue(
+            viewModel.state.value.dirtyTextIds
+                .isEmpty(),
+        )
+        assertNull(viewModel.state.value.focusedKey)
+    }
+
+    @Test
+    fun confirm_deleteOfAnAlreadyGoneText_countsAsDeleted() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "PARFAIT_TEXT_NOT_FOUND", statusCode = 404, serverMessage = "없음"),
+        )
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+    }
+
+    @Test
     fun confirm_sendsImageAndTextTransformsInOneBatchThenDeletesText() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
         viewModel.drag(panX = 0.1f)
