@@ -5,26 +5,41 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
+import java.io.IOException
+import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -44,6 +59,10 @@ class CanvasTextInputViewModelTest {
 
     private val clearToppingDraft: ClearToppingDraftUseCase = mockk(relaxed = true)
 
+    private val placeTextTopping: PlaceTextToppingUseCase = mockk()
+
+    private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
+
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun draft() = ToppingDraft(groupId = GroupId(1L), parfaitId = ParfaitId(2L), nextPositionZ = 1)
@@ -55,6 +74,8 @@ class CanvasTextInputViewModelTest {
             getToppingDraftFlow = getToppingDraftFlow,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             clearToppingDraft = clearToppingDraft,
+            placeTextTopping = placeTextTopping,
+            refreshTodayParfaitDetail = refreshTodayParfaitDetail,
             analyticsLogger = analyticsLogger,
         )
     }
@@ -143,16 +164,141 @@ class CanvasTextInputViewModelTest {
         coVerify(exactly = 0) { clearToppingDraft() }
     }
 
-    @Test
-    fun onClickStack_clearsDraftAndNavigatesToCanvas() = runTest(mainDispatcherRule.dispatcher) {
+    private fun placed() = PlacedTextToppingVO(
+        parfaitTextId = ParfaitTextId(9L),
+        text = "hi",
+        transform = ToppingTransform(0.5, 0.5, 1, 1.0, 0.0),
+        style = TextToppingStyle(color = "#FFFFFF", fontSize = 24.0, isFill = false, isStroke = false),
+        placedBy = mockk(),
+    )
+
+    private fun TestScope.stackReadyViewModel(): CanvasTextInputViewModel {
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.success(placed())
+        coEvery { refreshTodayParfaitDetail(any(), any()) } returns Result.success(Unit)
         val viewModel = viewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnContentChange("hi"))
+        viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(200.dp, 400.dp)))
+        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(100.dp, 40.dp)))
+        // 초안 구독이 돌아야 쌓기가 식별값을 읽는다
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    @Test
+    fun onClickStack_success_placesRefreshesClearsAndNavigatesBack() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        val state = viewModel.state.value
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
 
             assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
-        coVerify { clearToppingDraft() }
+        coVerifyOrder {
+            placeTextTopping(
+                groupId = GroupId(1L),
+                parfaitId = ParfaitId(2L),
+                text = "hi",
+                transform = toTextToppingTransform(
+                    offsetX = state.offsetX,
+                    offsetY = state.offsetY,
+                    boxSize = DpSize(100.dp, 40.dp),
+                    canvasSize = DpSize(200.dp, 400.dp),
+                    scale = state.scale,
+                    rotationDegrees = state.rotationDegrees,
+                    positionZ = 1,
+                ),
+                style = textToppingStyleOf(state.selectedColor, state.textType, state.designFontSize),
+            )
+            refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L))
+            clearToppingDraft()
+        }
+        assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun onClickStack_whileInFlight_placesOnlyOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        val gate = CompletableDeferred<Unit>()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } coAnswers {
+            gate.await()
+            Result.success(placed())
+        }
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.isLoading)
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { placeTextTopping(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickStack_permanentFailure_keepsContentAndDraftWithoutRetry() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "PARFAIT_ALREADY_CLOSED", statusCode = null, serverMessage = "닫힘"),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = true), awaitItem())
+        }
+        assertFalse(viewModel.state.value.isLoading)
+        assertEquals("hi", viewModel.state.value.content)
+        coVerify(exactly = 0) { clearToppingDraft() }
+        coVerify(exactly = 1) { placeTextTopping(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun onClickStack_networkFailure_showsTransientFailure() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = false), awaitItem())
+        }
+        coVerify(exactly = 0) { clearToppingDraft() }
+    }
+
+    @Test
+    fun onClickStack_withoutMeasurements_doesNotPostButStillLogsAnalytics() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(CanvasTextInputIntent.OnContentChange("hi"))
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { placeTextTopping(any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { analyticsLogger.logEvent(any()) }
+    }
+
+    @Test
+    fun onClickStack_logsAnalyticsOnEveryTapRegardlessOfResult() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        verify(exactly = 2) {
+            analyticsLogger.logEvent(match { it.type == AnalyticsEventType.CANVAS_TEXT_STACK_TAPPED })
+        }
     }
 
     @Test
