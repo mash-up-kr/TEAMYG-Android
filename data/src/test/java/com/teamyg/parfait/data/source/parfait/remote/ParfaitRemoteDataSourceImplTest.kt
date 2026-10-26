@@ -256,7 +256,11 @@ class ParfaitRemoteDataSourceImplTest {
         } returns todaySuccess(texts = listOf(textResponse(ownerType = "ME")))
 
         // When 오늘의 캔버스 조회
-        val text = dataSource.getTodayCanvas(GroupId(1L)).getOrThrow().texts.single()
+        val text = dataSource
+            .getTodayCanvas(GroupId(1L))
+            .getOrThrow()
+            .texts
+            .single()
 
         // Then 필드가 그대로 올라오고 본인 것으로 판정된다
         assertEquals(ParfaitTextId(7L), text.parfaitTextId)
