@@ -1,8 +1,10 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import java.io.IOException
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -59,5 +61,22 @@ class ToppingPlaceFailureTest {
         // 연결 실패는 재시도가 의미 있는 유일한 갈래다
         assertFalse(AppError.Network(IOException("connection reset")).isPermanentPlaceFailure())
         assertFalse(AppError.Unexpected(IllegalStateException("매핑 실패")).isPermanentPlaceFailure())
+    }
+
+    @Test
+    fun toPlaceFailure_permanentServerCode_isPermanent() {
+        assertEquals(PlaceFailure.Permanent, server(code = "PARFAIT_ALREADY_CLOSED", statusCode = 409).toPlaceFailure())
+    }
+
+    @Test
+    fun toPlaceFailure_network_isUncertain() {
+        // 응답만 유실됐다면 이미 쌓였을 수 있다
+        assertEquals(PlaceFailure.Uncertain, AppError.Network(IOException("connection reset")).toPlaceFailure())
+    }
+
+    @Test
+    fun toPlaceFailure_otherServerCodeAndUnexpected_areRetryable() {
+        assertEquals(PlaceFailure.Retryable, server(code = "IMAGE_NOT_FOUND", statusCode = 404).toPlaceFailure())
+        assertEquals(PlaceFailure.Retryable, AppError.Unexpected(IllegalStateException("매핑 실패")).toPlaceFailure())
     }
 }
