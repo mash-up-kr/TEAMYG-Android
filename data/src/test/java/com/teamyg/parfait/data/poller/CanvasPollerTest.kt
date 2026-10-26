@@ -43,6 +43,7 @@ class CanvasPollerTest {
         members = emptyList(),
         background = null,
         toppings = emptyList(),
+        texts = emptyList(),
     )
 
     /**

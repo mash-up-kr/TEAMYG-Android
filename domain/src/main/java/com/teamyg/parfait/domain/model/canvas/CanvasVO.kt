@@ -15,7 +15,7 @@ import kotlinx.datetime.LocalDate
  * lastClosedDate 는 CLOSED 만 센다(EMPTY 제외) — "마지막 마감일"이 아니라
  * "마지막으로 토핑이 있던 날"이다.
  *
- * toppings 는 서버가 0건일 때 null 을 주지만 여기서는 빈 목록으로 접는다 — 0건과 빈 목록은
+ * toppings·texts 는 서버가 0건일 때 null 을 주지만 여기서는 빈 목록으로 접는다 — 0건과 빈 목록은
  * 같은 뜻이라 소비처가 널 분기를 반복할 이유가 없다. background·lastClosedDate 의 null 은
  * "미설정"·"이력 없음"이라는 의미가 있어 그대로 둔다.
  */
@@ -28,4 +28,5 @@ data class CanvasVO(
     val members: List<CanvasMemberVO>,
     val background: CanvasBackground?,
     val toppings: List<CanvasToppingVO>,
+    val texts: List<CanvasTextToppingVO>,
 )

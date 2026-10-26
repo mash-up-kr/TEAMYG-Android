@@ -7130,7 +7130,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `feature/groups/canvas/impl` 의 `canvas_main_closed_canvas_alert_*` 문자열.
 - **항목**: 위키에 이 알럿을 정한 기획 문서가 없다. 코드가 확정한 것이 넷이다 — ① 노출 조건("그
   마감을 처음 확인하는 순간", 며칠 전 마감도 포함) ② 이 기기·이 그룹이 처음이면 조용히 기준선만
-  세운다 ③ 인원 수를 **그날 토핑을 올린 사람 수**로 센다(그룹원 수가 아니다, 탈퇴자 포함) ④ 문구 3종.
+  세운다 ③ 인원 수를 **그날 토핑(사진·텍스트)을 올린 사람 수**로 센다(그룹원 수가 아니다, 탈퇴자 포함) ④ 문구 3종.
 - **상태**: 미해결 (동작함, 근거가 코드뿐)
 - **해소 메모**: 기획이 이 알럿을 문서로 확정하면 위키에 소스를 넣고 사후 스펙을 그 근거로 다시
   묶는다. 특히 ②는 배포 시점 방어라 정책이 다르게 정해지면 첫 사용자 경험이 달라진다.
@@ -7734,8 +7734,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-439
 - **출처**: [parfait.md](../api/parfait.md) GET today 응답·과거 목록 · 서버 `GetTodayParfaitResponse.texts`·`ParfaitCanvasRotator`·`docs/parfait-text-api.md`
 - **항목**: ① 앱 `GetTodayParfaitResponse.texts`(DTO)는 받지만 캔버스 VO(`CanvasVO`)로 매핑하지 않는다. 텍스트만 있는 캔버스가 빈 캔버스로 그려진다. ② 회전은 텍스트만 있어도 `CLOSED`로 마감하지만 과거 목록 `imageCount`는 이미지만 센다. `PastCanvasVO.isEmpty` 기준인 달력 점이 그날을 빈 날로 그린다. 위키 C-201 "토핑 1개 이상"에 텍스트가 드는지 기획 판단이 필요하다. ③ 텍스트를 그릴 때 `positionZ`가 이미지와 한 축이라 두 배열을 합쳐 정렬해야 한다(OQ-P-443).
-- **상태**: 미해결
-- **해소 메모**: 텍스트 토핑 앱 구현 때 캔버스 VO·매퍼에 `texts`를 붙이고, 달력 빈 날 판정 기준을 함께 정한다.
+- **상태**: 부분 해소 (①·③ 해소, ② 잔존)
+- **해소 메모**: ① 캔버스 VO·매퍼에 `texts`가 붙어 C-001이 텍스트를 그리고 `isCanvasEmpty`도 센다. ③ `canvasLayerOrder`가 두 배열을 `positionZ`로 합치고 동률이면 이미지가 아래, 그다음 id 순이다. ② 달력 빈 날 판정(`PastCanvasVO.isEmpty`)은 아직 텍스트를 세지 않는다 — 기획 판단 뒤에 정한다.
 
 ### [2026-10-25] v2 today ETag가 변경을 놓치는 경로
 
@@ -7751,7 +7751,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`
 - **항목**: 서버는 `color`를 공백 아님·20자 이하만 검사하고 형식을 보지 않는다. Android·iOS·서버가 어떤 색 문자열(`#RRGGBB`, 알파 포함 여부, 대소문자)을 쓸지 합의가 없어 다른 클라이언트가 넣은 값을 앱이 파싱하지 못할 수 있다.
 - **상태**: 미해결
-- **해소 메모**: 앱이 텍스트 토핑을 붙이기 전에 형식과 파싱 실패 폴백을 정한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 쓸 때 `TextToppingColor.contentColor`를 `#RRGGBB`(대문자, 알파 없음, White는 `#FAFAFA`)로 보내고, 읽을 때 8색에 없는 값은 Black으로 그린다(`TextToppingWireMapper`). 다른 클라이언트와 형식을 합의하면 갱신한다.
 
 ### [2026-10-25] 텍스트 2000자 상한의 계수 기준과 DB 문자셋
 
@@ -7767,7 +7767,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) 「저장소 제약」
 - **항목**: 이미지와 텍스트가 겹침 순서 축 `positionZ` 하나를 공유한다. 서버는 값을 검증·배정하지 않고 텍스트를 `positionZ`→`id` 순으로만 내려준다. 두 배열을 합친 전체 순서, 같은 `positionZ`일 때 어느 쪽이 위인지, 새 토핑의 z를 누가 정하는지가 계약에 없다.
 - **상태**: 미해결
-- **해소 메모**: 서버팀·iOS와 동률 규칙과 z 배정 주체를 합의한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 새 토핑의 z는 이미지·텍스트 전체의 최댓값 + 1을 앱이 정하고(`CanvasMainViewModel` 초안, `CanvasToppingPlaceViewModel.resolvedPositionZ`), 합쳐 그릴 때 동률은 이미지가 아래, 그다음 id 순이다(`canvasLayerOrder`). 서버팀·iOS와 합의하면 갱신한다.
 
 ### [2026-10-25] 텍스트 배치 POST가 멱등이 아니다 — 재시도 시 중복 배치·중복 알림
 
@@ -7775,7 +7775,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) POST 절 · 서버 `PlaceParfaitTextService`
 - **항목**: 이미지 배치의 `(parfaitId, imageId)` upsert와 달리 텍스트 POST는 항상 새 행을 만들고 그때마다 푸시를 보낸다. 앱이 응답을 잃고 재시도하면 같은 텍스트가 두 번 놓이고 다른 구성원은 알림을 두 번 받는다.
 - **상태**: 미해결
-- **해소 메모**: 앱 재시도 정책(재시도 금지, 또는 캔버스 재조회로 중복 확인)이나 서버 멱등 키 중 하나를 정한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 내용 변경 재편집에서 POST는 성공했는데 옛 텍스트 DELETE가 실패하면 옛 id만 삭제 보류로 옮겨 POST를 반복하지 않는다. 서버 멱등 키가 생기면 재검토한다.
 
 ### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
 
@@ -7822,15 +7822,45 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-450
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
 - **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
-- **상태**: 미해결 (앱 배선 대기 — 원격 DataSource까지 있음)
-- **해소 메모**: 저장소·유스케이스를 붙여 `handleOnClickStack`에서 `placeText`를 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
+- **상태**: 해소됨 (2026-10-26, `feature/text-topping-api`) — `PlaceTextToppingUseCase`가 POST를 한 번 보내고 성공하면 오늘 캔버스를 다시 읽어 C-001로 돌아간다. 저장 단위는 OQ-P-452
 
-### [2026-10-26] 텍스트 토핑의 정렬·줄바꿈 위치를 서버 계약에 실을 자리가 없다
+### [2026-10-26] 텍스트 토핑의 줄바꿈 위치를 서버 계약에 실을 자리가 없다
 
 - **ID**: OQ-P-451
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
-- **항목**: 화면은 정렬 3종(`TextToppingAlign`)을 순환하고 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 배치 요청은 `text`·좌표·`scale`·`rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이라 둘 다 실을 필드가 없다(타입 3종은 `isFill`·`isStroke` 조합으로 실린다). 저장이 붙으면 왼쪽·오른쪽 정렬이 다른 기기에서 가운데로 그려지고, 줄바꿈은 기기마다 다시 계산된다. ① 서버에 정렬 필드를 더할지 ② 정렬을 고정해 UI에서 뺄지 ③ 줄바꿈 위치를 계약에 넣을지.
+- **항목**: 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 텍스트 계약에는 줄바꿈 위치를 실을 필드가 없어, 같은 텍스트라도 기기마다 글꼴·폭에 따라 줄이 다시 나뉜다. 정렬은 서버 `textAlign`으로 저장된다([api/parfait-text.md](../api/parfait-text.md)). 줄바꿈 위치를 계약에 넣을지, 기기별 재계산을 받아들일지.
 - **상태**: 미해결 (서버·iOS 협의)
-- **해소 메모**: OQ-P-450의 저장 배선보다 먼저 정해야 한다 — 필드가 없는 채 저장을 붙이면 정렬이 조용히 사라진다.
 
-<!-- oq-next: 452 -->
+### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
+
+- **ID**: OQ-P-452
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
+- **항목**: 앱은 위치를 박스 중심의 캔버스 비율, `fontSize`를 디자인 너비 335 기준 `designFontSize`, `scale`을 핀치 배율로 저장한다. 이 단위는 Android가 정했고 iOS와 맞추지 않았다. iOS가 다른 단위(좌상단 기준 좌표, 다른 기준 너비 등)로 저장하면 서로의 텍스트가 어긋나 보인다.
+- **상태**: 미해결 (iOS 협의)
+- **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
+
+### [2026-10-26] 텍스트 재편집의 잔여 갭 — dirty 오판·편집 결과 잔류·부분 실패 소실
+
+- **ID**: OQ-P-453
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextEditSessionHolder`·`CanvasToppingArrangeViewModel`
+- **항목**: ① 다시 열 때 `designFontSize`를 다시 맞춰 바뀐 게 없는 재편집도 다른 기기 값 기준으로 dirty가 될 수 있고, 재편집은 서버가 푸시를 다시 보낸다(계약 한계). ② C-106에서 편집하는 사이 대상 텍스트가 서버 목록에서 사라지면 돌아온 결과는 버려진다 — C-305는 목록에 없는 id의 결과를 적용하지 않고, 화면을 떠날 때(`onCleared`) 자기가 연 왕복의 결과를 `TextEditSessionHolder.clear(session)`으로 비운다. 사용자에게는 고친 내용이 말없이 사라진다. ③ POST 성공 뒤 옛 텍스트 DELETE 가 끝나지 못하면 서버에 옛 텍스트와 새 텍스트가 둘 다 남는다 — DELETE 실패 뒤 그만두기 팝업으로 C-305를 나갈 때, 그리고 POST 와 DELETE 사이에 프로세스가 죽거나 작업이 취소될 때다(POST 비멱등이라 복구할 키가 없다).
+- **상태**: 미해결
+- **해소 메모**: ①은 재맞춤 값을 저장값과 비교하는 기준을 정한다. ②는 사라진 텍스트의 결과를 알릴지(토스트) 정한다. ③은 남은 삭제 보류를 나가기 전에 알릴지 정한다(새로 쌓은 것이 있으면 실패 알림 전에 캔버스를 다시 읽어 소실처럼 보이지는 않는다).
+
+### [2026-10-26] C-305 에서 텍스트를 캔버스 밖으로 옮겨도 막지 않는다
+
+- **ID**: OQ-P-454
+- **출처**: `CanvasToppingArrangeViewModel` 텍스트 변형(위치 clamp 없음, `TEXT_TOPPING_MIN_SCALE` 하한만) × 위키 `wiki/open-questions.md` 「캔버스 이탈을 자동 보정하는지 허용하는지」
+- **항목**: C-305 는 텍스트 위치를 캔버스 비율 밖으로도 저장한다. C-106 정책(기능정의서 v7 "이탈 허용, 넘어간 픽셀만 Clipping Mask")과 방향은 같지만, C-305 이탈 정책 문장은 v7 에서 대체 없이 사라져 위키에서 미결이다. 사진 토핑의 C-305 동작과도 같은 축이라 한 번에 정해야 한다(OQ-P-122).
+- **상태**: 미해결 (기획 확인)
+- **해소 메모**: 기획이 C-305 이탈 정책을 정하면 사진·텍스트 변형에 같은 보정(또는 허용)을 붙인다.
+
+### [2026-10-26] 토핑 정리 화면의 저장 단계를 분리할지
+
+- **ID**: OQ-P-455
+- **출처**: `CanvasToppingArrangeViewModel` — `mergeToppings`/`mergeTexts`, 이미지·텍스트 짝 집합(`dirty*Ids`·`pendingDelete*Ids`·`deleted*Ids`), `handleOnClickConfirm` 저장 순서 · 텍스트 토핑 서버 연동 스택 2/4·3/4 리뷰
+- **항목**: 이 ViewModel이 약 1,000줄이고, 병합 규칙과 변경 집합이 이미지·텍스트로 거의 줄 단위로 복제돼 있다. 병합 규칙을 바꿀 때 한쪽만 고치면 어긋난다. 텍스트 재생성 순서는 `RecreateTextToppingUseCase`로 옮겼고 삭제 보류→툼스톤 이동(`markTextsGone`)·404 처리(`isDeletedOrGone`)는 합쳤지만, 변경 집합과 저장 단계(일괄 PATCH → 테두리 → 스타일 PATCH → 재생성 → 삭제)는 그대로다.
+- **상태**: 미해결 (후속 리팩터링)
+- **해소 메모**: 다음 토핑 종류가 붙기 전에 변경 집합을 종류별 값 객체 하나로 묶고, 저장 단계를 별도 클래스(또는 UseCase)로 뺀다. 동작이 바뀌지 않는 리팩터링이라 텍스트 토핑 스택이 `develop`에 머지된 뒤 별도 PR로 한다.
+
+<!-- oq-next: 456 -->

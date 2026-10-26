@@ -1,9 +1,12 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.ViewModelStore
 import app.cash.turbine.test
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -14,22 +17,41 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
+import com.teamyg.parfait.domain.model.topping.TextToppingRecreateResult
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
+import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
+import com.teamyg.parfait.domain.model.topping.UpdatedTextToppingVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingBorderVO
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.RecreateTextToppingUseCase
+import com.teamyg.parfait.domain.usecase.topping.UpdateTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toWireColor
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -56,6 +78,9 @@ private const val PARFAIT_ID = 100L
 private const val FIRST_ID = 1L
 private const val SECOND_ID = 2L
 private const val OTHERS_ID = 3L
+private const val SHARED_ID = 5L
+private const val OTHERS_TEXT_ID = 6L
+private const val MY_SECOND_TEXT_ID = 7L
 
 private const val MY_MEMBER_ID = 11L
 private const val OTHER_MEMBER_ID = 22L
@@ -70,8 +95,12 @@ class CanvasToppingArrangeViewModelTest {
     private val getTodayParfaitFlow: GetTodayParfaitFlowUseCase = mockk()
     private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase = mockk()
     private val deleteTopping: DeleteToppingUseCase = mockk()
+    private val deleteTextTopping: DeleteTextToppingUseCase = mockk()
     private val updateToppings: UpdateToppingsUseCase = mockk()
     private val updateToppingBorder: UpdateToppingBorderUseCase = mockk()
+    private val recreateTextTopping: RecreateTextToppingUseCase = mockk()
+    private val updateTextTopping: UpdateTextToppingUseCase = mockk()
+    private val textEditSessionHolder = TextEditSessionHolder()
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     /** 저장소의 오늘 캔버스 캐시. 갱신이 성공했다는 것은 여기에 값이 실린다는 뜻이다 */
@@ -91,17 +120,23 @@ class CanvasToppingArrangeViewModelTest {
     private fun TestScope.viewModel(
         initialToppingId: Long = FIRST_ID,
         initialCanvas: CanvasVO = canvas(),
+        initialIsText: Boolean = false,
     ): CanvasToppingArrangeViewModel {
         stubTheHappyPath(initialCanvas)
         return CanvasToppingArrangeViewModel(
             groupIdValue = GROUP_ID,
             parfaitIdValue = PARFAIT_ID,
             initialToppingId = initialToppingId,
+            initialIsText = initialIsText,
             getTodayParfaitFlowUseCase = getTodayParfaitFlow,
             refreshTodayParfaitDetailUseCase = refreshTodayParfaitDetail,
             deleteToppingUseCase = deleteTopping,
+            deleteTextToppingUseCase = deleteTextTopping,
             updateToppingsUseCase = updateToppings,
             updateToppingBorderUseCase = updateToppingBorder,
+            recreateTextToppingUseCase = recreateTextTopping,
+            updateTextToppingUseCase = updateTextTopping,
+            textEditSessionHolder = textEditSessionHolder,
             analyticsLogger = analyticsLogger,
         ).also { viewModel ->
             backgroundScope.launch { viewModel.state.collect { } }
@@ -137,7 +172,7 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     private fun stubTransformSaveSucceeds() {
-        coEvery { updateToppings(any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
     }
 
     private fun stubBorderSave(
@@ -156,7 +191,7 @@ class CanvasToppingArrangeViewModelTest {
     fun firstEmission_focusesInitialTopping() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel(initialToppingId = FIRST_ID)
 
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -217,12 +252,12 @@ class CanvasToppingArrangeViewModelTest {
         // Given 연 parfaitId 는 100 인데 최초 방출은 9 다
         val viewModel = viewModel(initialCanvas = canvas(parfaitId = 9L))
         viewModel.drag()
-        coEvery { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) } returns Result.success(emptyList())
+        coEvery { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any(), any()) } returns Result.success(emptyList())
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any()) }
+        coVerify(exactly = 1) { updateToppings(GroupId(GROUP_ID), ParfaitId(9L), any(), any()) }
     }
 
     // 탭 네 갈래 (패널이 닫힌 상태에서)
@@ -242,7 +277,7 @@ class CanvasToppingArrangeViewModelTest {
 
         viewModel.click(SECOND_ID)
 
-        assertEquals(SECOND_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(SECOND_ID), viewModel.state.value.focusedKey)
         assertFalse(viewModel.state.value.isBorderPanelOpen)
     }
 
@@ -255,7 +290,7 @@ class CanvasToppingArrangeViewModelTest {
 
             assertEquals(CanvasToppingArrangeEffect.ShowOthersToppingNotEditable, awaitItem())
         }
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -264,7 +299,7 @@ class CanvasToppingArrangeViewModelTest {
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickEmptyCanvas)
 
-        assertNull(viewModel.state.value.focusedToppingId)
+        assertNull(viewModel.state.value.focusedKey)
     }
 
     // 패널
@@ -300,7 +335,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.processIntent(CanvasToppingArrangeIntent.OnDismissBorderPanel)
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -412,7 +447,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(SECOND_ID)
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -426,7 +461,7 @@ class CanvasToppingArrangeViewModelTest {
             expectNoEvents()
         }
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -437,7 +472,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickEmptyCanvas)
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
     }
 
     @Test
@@ -448,7 +483,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertEquals(FIRST_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(FIRST_ID), viewModel.state.value.focusedKey)
         assertTrue(
             viewModel.state.value.pendingDeleteToppingIds
                 .isEmpty(),
@@ -464,7 +499,7 @@ class CanvasToppingArrangeViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.isBorderPanelOpen)
-        assertNull(viewModel.state.value.focusedToppingId)
+        assertNull(viewModel.state.value.focusedKey)
         assertFalse(FIRST_ID in viewModel.state.value.dirtyToppingIds)
 
         viewModel.effect.test {
@@ -474,7 +509,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), ParfaitImageId(FIRST_ID), any()) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
     }
 
     // 변형
@@ -552,7 +587,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
@@ -594,7 +629,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
         assertTrue(viewModel.state.value.isLoading)
@@ -648,7 +683,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(SECOND_ID)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnSelectBorderColor(ORANGE_ARGB))
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), capture(updates), any()) } returns Result.success(emptyList())
         stubBorderSave(SECOND_ID, ToppingBorder.Solid(color = "#FF6B00", width = 10.0))
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -688,7 +723,7 @@ class CanvasToppingArrangeViewModelTest {
 
         // Then dirty 로 남아 있어도 서버 값과 같으니 보낼 것이 없다
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
     }
 
     @Test
@@ -725,7 +760,7 @@ class CanvasToppingArrangeViewModelTest {
         viewModel.click(FIRST_ID)
         assertTrue(viewModel.state.value.isBorderPanelOpen)
         val updates = slot<List<ToppingTransformUpdate>>()
-        coEvery { updateToppings(any(), any(), capture(updates)) } returns Result.success(emptyList())
+        coEvery { updateToppings(any(), any(), capture(updates), any()) } returns Result.success(emptyList())
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
@@ -738,7 +773,7 @@ class CanvasToppingArrangeViewModelTest {
         val pending = CompletableDeferred<Result<List<UpdatedToppingVO>>>()
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } coAnswers { pending.await() }
+        coEvery { updateToppings(any(), any(), any(), any()) } coAnswers { pending.await() }
 
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
         advanceUntilIdle()
@@ -771,7 +806,7 @@ class CanvasToppingArrangeViewModelTest {
 
         // 되감기 전에 갱신을 마쳐야 캔버스가 저장된 값을 본다
         coVerifyOrder {
-            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
             refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
         }
         assertTrue(
@@ -791,7 +826,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
     }
 
@@ -849,7 +884,7 @@ class CanvasToppingArrangeViewModelTest {
     fun confirm_unexpectedException_showsSaveError() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         viewModel.drag()
-        coEvery { updateToppings(any(), any(), any()) } throws IllegalStateException("예상 밖")
+        coEvery { updateToppings(any(), any(), any(), any()) } throws IllegalStateException("예상 밖")
 
         viewModel.effect.test {
             viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
@@ -879,7 +914,7 @@ class CanvasToppingArrangeViewModelTest {
             viewModel.state.value.toppings
                 .map(EditableTopping::parfaitImageId),
         )
-        assertNull(viewModel.state.value.focusedToppingId)
+        assertNull(viewModel.state.value.focusedKey)
         assertFalse(viewModel.state.value.canOpenBorderPanel)
         coVerify(exactly = 0) { deleteTopping(any(), any(), any()) }
     }
@@ -904,7 +939,7 @@ class CanvasToppingArrangeViewModelTest {
 
         viewModel.click(SECOND_ID)
 
-        assertEquals(SECOND_ID, viewModel.state.value.focusedToppingId)
+        assertEquals(CanvasToppingKey.Image(SECOND_ID), viewModel.state.value.focusedKey)
         assertTrue(viewModel.state.value.canOpenBorderPanel)
     }
 
@@ -975,7 +1010,7 @@ class CanvasToppingArrangeViewModelTest {
             assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
         }
 
-        coVerify(exactly = 0) { updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { updateToppings(any(), any(), any(), any()) }
         coVerify(exactly = 0) { updateToppingBorder(any(), any(), any(), any()) }
     }
 
@@ -995,7 +1030,7 @@ class CanvasToppingArrangeViewModelTest {
         }
 
         coVerifyOrder {
-            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
             deleteTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitImageId(SECOND_ID))
         }
     }
@@ -1003,7 +1038,7 @@ class CanvasToppingArrangeViewModelTest {
     @Test
     fun confirm_saveFails_doesNotDelete() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
-        coEvery { updateToppings(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
         viewModel.drag()
         viewModel.click(SECOND_ID)
         viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
@@ -1243,6 +1278,721 @@ class CanvasToppingArrangeViewModelTest {
         )
     }
 
+    // 텍스트
+
+    /** 이미지와 텍스트가 같은 id 5 를 갖는다 */
+    private fun textCanvas() = canvas(
+        toppings = listOf(toppingVO(SHARED_ID, positionZ = 1)),
+        texts = listOf(
+            textVO(SHARED_ID, positionZ = 2),
+            textVO(OTHERS_TEXT_ID, isMine = false, positionZ = 3),
+            textVO(MY_SECOND_TEXT_ID, positionZ = 4),
+        ),
+    )
+
+    private fun TestScope.textViewModel(): CanvasToppingArrangeViewModel =
+        viewModel(initialToppingId = SHARED_ID, initialCanvas = textCanvas(), initialIsText = true)
+
+    private fun CanvasToppingArrangeViewModel.text(id: Long): EditableText =
+        state.value.texts.first { it.parfaitTextId == id }
+
+    @Test
+    fun initialIsText_focusesTheTextNotTheImageWithTheSameId() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        assertEquals(CanvasToppingKey.Text(SHARED_ID), viewModel.state.value.focusedKey)
+        assertNull(viewModel.state.value.focusedTopping)
+    }
+
+    @Test
+    fun init_mapsTextsFromTheCanvas() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        val text = viewModel.text(SHARED_ID)
+        assertEquals("안녕", text.text)
+        assertEquals(18f, text.designFontSize)
+        assertEquals(0.4f, text.positionX)
+        assertEquals(0.6f, text.positionY)
+        assertEquals(2, text.positionZ)
+        assertEquals(30f, text.rotationDegrees)
+    }
+
+    @Test
+    fun init_keepsTheSavedAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel(
+            initialToppingId = SHARED_ID,
+            initialCanvas = canvas(
+                toppings = listOf(toppingVO(SHARED_ID, positionZ = 1)),
+                texts = listOf(textVO(SHARED_ID, positionZ = 2, align = TextToppingAlign.LEFT)),
+            ),
+            initialIsText = true,
+        )
+
+        assertEquals(TextAlign.Left, viewModel.text(SHARED_ID).align)
+    }
+
+    @Test
+    fun transform_onFocusedText_movesOnlyTheText() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val imageBefore = viewModel.topping(SHARED_ID)
+
+        viewModel.processIntent(
+            CanvasToppingArrangeIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 10f),
+        )
+
+        val text = viewModel.text(SHARED_ID)
+        assertEquals(0.5f, text.positionX, 1e-6f)
+        assertEquals(0.65f, text.positionY, 1e-6f)
+        assertEquals(2.4f, text.scale, 1e-6f)
+        assertEquals(40f, text.rotationDegrees, 1e-6f)
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+        assertEquals(imageBefore, viewModel.topping(SHARED_ID))
+        assertTrue(
+            viewModel.state.value.dirtyToppingIds
+                .isEmpty(),
+        )
+        assertTrue(viewModel.state.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun clickMyText_movesFocusToIt() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel(initialToppingId = SHARED_ID, initialCanvas = textCanvas())
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(SHARED_ID)))
+
+        assertEquals(CanvasToppingKey.Text(SHARED_ID), viewModel.state.value.focusedKey)
+    }
+
+    @Test
+    fun clickOthersText_showsToastAndKeepsFocus() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(OTHERS_TEXT_ID)))
+
+            assertEquals(CanvasToppingArrangeEffect.ShowOthersToppingNotEditable, awaitItem())
+        }
+        assertEquals(CanvasToppingKey.Text(SHARED_ID), viewModel.state.value.focusedKey)
+    }
+
+    @Test
+    fun togglePanel_whileTextFocused_staysClosed() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnToggleBorderPanel)
+
+        assertFalse(viewModel.state.value.isBorderPanelOpen)
+        assertFalse(viewModel.state.value.canOpenBorderPanel)
+    }
+
+    @Test
+    fun deleteText_hidesItAndKeepsItHiddenAcrossEmissions() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
+        assertTrue(
+            viewModel.state.value.pendingDeleteToppingIds
+                .isEmpty(),
+        )
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertEquals(
+            listOf(SHARED_ID),
+            viewModel.state.value.toppings
+                .map(EditableTopping::parfaitImageId),
+        )
+        assertNull(viewModel.state.value.focusedKey)
+
+        todayCanvases.value = textCanvas().copy(lastClosedDate = parfaitToday())
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
+    }
+
+    @Test
+    fun dirtyText_keepsLocalValuesAcrossEmissions() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.drag(panX = 0.1f)
+        val moved = viewModel.text(SHARED_ID)
+
+        // 폴링이 서버 값(positionX 0.4)을 다시 준다
+        todayCanvases.value = textCanvas().copy(lastClosedDate = parfaitToday())
+        advanceUntilIdle()
+
+        assertEquals(moved, viewModel.text(SHARED_ID))
+        assertEquals(0.5f, viewModel.text(SHARED_ID).positionX, 1e-6f)
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+    }
+
+    @Test
+    fun dirtyFocusedText_vanishedFromServer_isDroppedAndLosesFocus() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.drag()
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+
+        // 다른 기기에서 지워져 서버 목록에서 빠진다
+        todayCanvases.value = textCanvas().copy(
+            texts = textCanvas().texts.filterNot { it.parfaitTextId == ParfaitTextId(SHARED_ID) },
+        )
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertTrue(
+            viewModel.state.value.dirtyTextIds
+                .isEmpty(),
+        )
+        assertNull(viewModel.state.value.focusedKey)
+    }
+
+    @Test
+    fun confirm_deleteOfAnAlreadyGoneText_countsAsDeleted() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "PARFAIT_TEXT_NOT_FOUND", statusCode = 404, serverMessage = "없음"),
+        )
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+    }
+
+    @Test
+    fun deletedTexts_vanishedFromServer_areDroppedFromDeleteSets() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)))
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery {
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID))
+        } returns Result.success(Unit)
+        coEvery {
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(MY_SECOND_TEXT_ID))
+        } returns Result.failure(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.deletedTextIds)
+        assertEquals(setOf(MY_SECOND_TEXT_ID), viewModel.state.value.pendingDeleteTextIds)
+
+        // 둘 다 서버 목록에서 빠진다
+        todayCanvases.value = textCanvas().copy(
+            texts = listOf(textVO(OTHERS_TEXT_ID, isMine = false, positionZ = 3)),
+        )
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.state.value.deletedTextIds
+                .isEmpty(),
+        )
+        assertTrue(
+            viewModel.state.value.pendingDeleteTextIds
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun confirm_sendsImageAndTextTransformsInOneBatchThenDeletesText() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.drag(panX = 0.1f)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(viewModel.topping(SHARED_ID)))
+        viewModel.drag(panX = 0.2f)
+        viewModel.processIntent(
+            CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)),
+        )
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        val updates = slot<List<ToppingTransformUpdate>>()
+        val textUpdates = slot<List<TextToppingTransformUpdate>>()
+        coEvery {
+            updateToppings(any(), any(), capture(updates), capture(textUpdates))
+        } returns Result.success(emptyList())
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.success(Unit)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        coVerify(exactly = 1) { updateToppings(any(), any(), any(), any()) }
+        assertEquals(listOf(ParfaitImageId(SHARED_ID)), updates.captured.map { it.parfaitImageId })
+        // 텍스트는 바뀐 축만 싣는다 — 나머지 축은 null 이라 서버가 유지한다
+        val textUpdate = textUpdates.captured.single()
+        assertEquals(ParfaitTextId(SHARED_ID), textUpdate.parfaitTextId)
+        assertEquals(0.5, textUpdate.positionX!!, 1e-6)
+        assertNull(textUpdate.positionY)
+        assertNull(textUpdate.positionZ)
+        assertNull(textUpdate.scale)
+        assertNull(textUpdate.rotation)
+        coVerifyOrder {
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(MY_SECOND_TEXT_ID))
+            refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
+        }
+        coVerify(exactly = 0) { deleteTopping(any(), any(), any()) }
+    }
+
+    @Test
+    fun confirm_batchFails_sendsNoTextDelete() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(viewModel.topping(SHARED_ID)))
+        viewModel.drag()
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+            expectNoEvents()
+        }
+
+        coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
+    }
+
+    // 텍스트 다시 편집
+
+    private fun edited(
+        text: String = "안녕",
+        color: TextToppingColor = TextToppingColor.Black,
+        align: TextAlign = TextAlign.Center,
+    ) = TextEditResult.Edited(
+        text = text,
+        color = color,
+        type = TextToppingType.DEFAULT,
+        align = align,
+        designFontSize = 18f,
+        positionX = 0.4f,
+        positionY = 0.6f,
+        scale = 1.2f,
+        rotationDegrees = 30f,
+    )
+
+    /** C-106 이 결과를 남기고 돌아온 상황을 흉내 낸다 */
+    private fun TestScope.returnFromTextEdit(
+        textId: Long,
+        result: TextEditResult,
+        viewModel: CanvasToppingArrangeViewModel,
+    ) {
+        textEditSessionHolder.start(
+            TextEditSession(groupId = GROUP_ID, parfaitId = PARFAIT_ID, original = viewModel.text(textId)),
+        )
+        textEditSessionHolder.finish(result)
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun tapFocusedMyText_startsEditSessionAndNavigates() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val original = viewModel.text(SHARED_ID)
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(original))
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateToTextEdit, awaitItem())
+        }
+        assertEquals(
+            TextEditSession(groupId = GROUP_ID, parfaitId = PARFAIT_ID, original = original),
+            textEditSessionHolder.session(),
+        )
+    }
+
+    @Test
+    fun tapUnfocusedText_onlyMovesFocus() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)))
+
+            expectNoEvents()
+        }
+        assertEquals(CanvasToppingKey.Text(MY_SECOND_TEXT_ID), viewModel.state.value.focusedKey)
+        assertNull(textEditSessionHolder.session())
+    }
+
+    @Test
+    fun cleared_dropsTheResultItLeftUnconsumed() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val store = ViewModelStore().apply { put("arrange", viewModel) }
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(SHARED_ID)))
+        // 편집하는 사이 텍스트가 서버에서 사라져 결과를 받을 곳이 없다
+        todayCanvases.value = textCanvas().copy(
+            texts = textCanvas().texts.filterNot { it.parfaitTextId == ParfaitTextId(SHARED_ID) },
+        )
+        advanceUntilIdle()
+        textEditSessionHolder.finish(edited(text = "새 글"))
+        advanceUntilIdle()
+        assertEquals(SHARED_ID, textEditSessionHolder.result.value?.parfaitTextId)
+
+        store.clear()
+
+        assertNull(textEditSessionHolder.result.value)
+    }
+
+    @Test
+    fun cleared_leavesAnEditItDidNotStart() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        val store = ViewModelStore().apply { put("arrange", viewModel) }
+        val othersSession = TextEditSession(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            original = viewModel.text(SHARED_ID),
+        )
+        textEditSessionHolder.start(othersSession)
+
+        store.clear()
+
+        assertEquals(othersSession, textEditSessionHolder.session())
+    }
+
+    @Test
+    fun editedWithNewContent_updatesLocallyAndMarksForRecreate() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+
+        assertEquals("새 글", viewModel.text(SHARED_ID).text)
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.recreateTextIds)
+        assertTrue(viewModel.state.value.hasUnsavedChanges)
+        assertNull(textEditSessionHolder.result.value)
+
+        // 폴링이 서버 값을 다시 줘도 고친 글을 덮지 않는다
+        todayCanvases.value = textCanvas().copy(lastClosedDate = parfaitToday())
+        advanceUntilIdle()
+        assertEquals("새 글", viewModel.text(SHARED_ID).text)
+    }
+
+    @Test
+    fun editedWithSameContentButNewColor_isDirtyNotRecreate() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        returnFromTextEdit(SHARED_ID, edited(color = TextToppingColor.Pink), viewModel)
+
+        assertEquals(TextToppingColor.Pink, viewModel.text(SHARED_ID).color)
+        assertTrue(
+            viewModel.state.value.recreateTextIds
+                .isEmpty(),
+        )
+        assertTrue(SHARED_ID in viewModel.state.value.dirtyTextIds)
+    }
+
+    @Test
+    fun unchangedEditedResult_isNotDirty() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        // 위치는 float 왕복 오차만큼만 다르다
+        returnFromTextEdit(SHARED_ID, edited().copy(positionX = 0.40001f), viewModel)
+
+        assertTrue(
+            viewModel.state.value.dirtyTextIds
+                .isEmpty(),
+        )
+        assertFalse(viewModel.state.value.hasUnsavedChanges)
+        assertNull(textEditSessionHolder.result.value)
+    }
+
+    @Test
+    fun editedResultWithNewColor_isDirty() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        returnFromTextEdit(SHARED_ID, edited(color = TextToppingColor.Pink), viewModel)
+
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.dirtyTextIds)
+        assertTrue(viewModel.state.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun confirm_styleEditWithRoundTripDrift_sendsOnlyTheStylePatch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        // 색만 바꿨고 위치는 float 왕복 오차만큼만 다르다
+        returnFromTextEdit(SHARED_ID, edited(color = TextToppingColor.Pink).copy(positionX = 0.4f + 1e-6f), viewModel)
+        // 일괄 PATCH 가 나가도록 이미지도 하나 옮긴다
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(viewModel.topping(SHARED_ID)))
+        viewModel.drag()
+        val textUpdates = slot<List<TextToppingTransformUpdate>>()
+        coEvery { updateToppings(any(), any(), any(), capture(textUpdates)) } returns Result.success(emptyList())
+        coEvery { updateTextTopping(any(), any(), any()) } returns Result.success(mockk<UpdatedTextToppingVO>())
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(0.4f, viewModel.text(SHARED_ID).positionX)
+        assertTrue(textUpdates.captured.isEmpty())
+        coVerify(exactly = 1) {
+            updateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+        }
+    }
+
+    @Test
+    fun confirm_alignOnlyEdit_sendsTheAlignInTheStylePatch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(align = TextAlign.Right), viewModel)
+        val styleUpdate = slot<TextToppingUpdate>()
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        coEvery { updateTextTopping(any(), any(), capture(styleUpdate)) } returns
+            Result.success(mockk<UpdatedTextToppingVO>())
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(TextToppingAlign.RIGHT, styleUpdate.captured.textAlign)
+        coVerify(exactly = 0) { recreateTextTopping(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun confirm_contentAndAlignEdit_recreatesWithTheNewAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글", align = TextAlign.Right), viewModel)
+        coEvery { updateToppings(any(), any(), any(), any()) } returns Result.success(emptyList())
+        val placedStyle = slot<TextToppingStyle>()
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), capture(placedStyle))
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        assertEquals(TextToppingAlign.RIGHT, placedStyle.captured.textAlign)
+    }
+
+    @Test
+    fun deletedResult_marksTextForDelete() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+
+        returnFromTextEdit(SHARED_ID, TextEditResult.Deleted, viewModel)
+
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertNull(viewModel.state.value.focusedKey)
+    }
+
+    private fun placedText(id: Long) = PlacedTextToppingVO(
+        parfaitTextId = ParfaitTextId(id),
+        text = "새 글",
+        transform = ToppingTransform(positionX = 0.4, positionY = 0.6, positionZ = 2, scale = 1.2, rotation = 30.0),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
+        placedBy = ToppingPlacerVO(groupMemberId = GroupMemberId(MY_MEMBER_ID), nickname = GroupNickname("나")),
+    )
+
+    @Test
+    fun confirm_savesBatchThenStylesThenRecreatesThenDeletes() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        returnFromTextEdit(MY_SECOND_TEXT_ID, edited(color = TextToppingColor.Pink), viewModel)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(viewModel.topping(SHARED_ID)))
+        viewModel.drag()
+        val textUpdates = slot<List<TextToppingTransformUpdate>>()
+        coEvery { updateToppings(any(), any(), any(), capture(textUpdates)) } returns Result.success(emptyList())
+        val styleUpdate = slot<TextToppingUpdate>()
+        coEvery { updateTextTopping(any(), any(), capture(styleUpdate)) } returns Result.success(
+            mockk<UpdatedTextToppingVO>(),
+        )
+        val placedTransform = slot<ToppingTransform>()
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), capture(placedTransform), any())
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        coVerifyOrder {
+            updateToppings(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any(), any())
+            updateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), any())
+            recreateTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID), "새 글", any(), any())
+            refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID))
+        }
+        // 다시 만들 텍스트는 일괄 PATCH 에 싣지 않는다
+        assertTrue(textUpdates.captured.none { it.parfaitTextId == ParfaitTextId(SHARED_ID) })
+        // 스타일 PATCH 는 스타일 축만 싣는다
+        assertEquals(
+            TextToppingUpdate(
+                parfaitTextId = ParfaitTextId(MY_SECOND_TEXT_ID),
+                color = TextToppingColor.Pink.toWireColor(),
+                fontSize = 18.0,
+                isFill = false,
+                isStroke = false,
+                textAlign = TextToppingAlign.CENTER,
+            ),
+            styleUpdate.captured,
+        )
+        // 새 텍스트는 원래 겹침 순서를 이어받는다
+        assertEquals(2, placedTransform.captured.positionZ)
+        assertEquals(0.4, placedTransform.captured.positionX, 1e-6)
+        assertEquals(1.2, placedTransform.captured.scale, 1e-6)
+        coVerify(exactly = 1) { updateTextTopping(any(), any(), any()) }
+        assertTrue(
+            viewModel.state.value.texts
+                .none { it.parfaitTextId == SHARED_ID },
+        )
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.deletedTextIds)
+        coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
+    }
+
+    @Test
+    fun confirm_recreateDeleteFails_retriesOnlyTheDelete() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.OldNotDeleted(placed = placedText(99L), cause = RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+        assertTrue(
+            viewModel.state.value.recreateTextIds
+                .isEmpty(),
+        )
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.pendingDeleteTextIds)
+        assertFalse(viewModel.state.value.isLoading)
+        // 새 텍스트가 서버에만 있어 실패로 끝나도 곧바로 다시 읽는다
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
+
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.success(Unit)
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(CanvasToppingArrangeEffect.NavigateBack, awaitItem())
+        }
+
+        coVerify(exactly = 1) { recreateTextTopping(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
+            deleteTextTopping(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID), ParfaitTextId(SHARED_ID))
+        }
+    }
+
+    @Test
+    fun confirm_recreateNotPlaced_keepsTheOldTextForAnotherTry() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.NotPlaced(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+
+        // 서버에 바뀐 것이 없으니 고친 글을 화면에 둔 채 다음 확인이 통째로 다시 만든다
+        assertEquals(setOf(SHARED_ID), viewModel.state.value.recreateTextIds)
+        assertEquals("새 글", viewModel.text(SHARED_ID).text)
+        assertTrue(
+            viewModel.state.value.pendingDeleteTextIds
+                .isEmpty(),
+        )
+        coVerify(exactly = 0) { deleteTextTopping(any(), any(), any()) }
+        coVerify(exactly = 0) { refreshTodayParfaitDetail(any(), any()) }
+    }
+
+    @Test
+    fun confirm_recreatedButAnotherDeleteFails_stillRefreshes() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = textViewModel()
+        returnFromTextEdit(SHARED_ID, edited(text = "새 글"), viewModel)
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(MY_SECOND_TEXT_ID)))
+        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)
+        coEvery {
+            recreateTextTopping(any(), any(), any(), any(), any(), any())
+        } returns TextToppingRecreateResult.Recreated(placedText(99L))
+        coEvery { deleteTextTopping(any(), any(), any()) } returns Result.failure(RuntimeException("실패"))
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm)
+
+            assertEquals(
+                CanvasToppingArrangeEffect.ShowError(CanvasToppingArrangeError.TOPPING_SAVE_UNKNOWN),
+                awaitItem(),
+            )
+        }
+
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(GROUP_ID), ParfaitId(PARFAIT_ID)) }
+    }
+
+    private fun textVO(
+        parfaitTextId: Long,
+        isMine: Boolean = true,
+        positionZ: Int,
+        align: TextToppingAlign = TextToppingAlign.CENTER,
+    ) = CanvasTextToppingVO(
+        parfaitTextId = ParfaitTextId(parfaitTextId),
+        text = "안녕",
+        transform = ToppingTransform(
+            positionX = 0.4,
+            positionY = 0.6,
+            positionZ = positionZ,
+            scale = 1.2,
+            rotation = 30.0,
+        ),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = align,
+        ),
+        placedBy = ToppingPlacerVO(
+            groupMemberId = GroupMemberId(if (isMine) MY_MEMBER_ID else OTHER_MEMBER_ID),
+            nickname = GroupNickname("올린이"),
+        ),
+        isMine = isMine,
+        createdAt = LocalDateTime(2026, 10, 26, 9, 0),
+    )
+
     private fun canvas(
         parfaitId: Long = PARFAIT_ID,
         toppings: List<CanvasToppingVO> = listOf(
@@ -1250,6 +2000,7 @@ class CanvasToppingArrangeViewModelTest {
             toppingVO(SECOND_ID, positionZ = 2),
             toppingVO(OTHERS_ID, isMine = false, positionZ = 3),
         ),
+        texts: List<CanvasTextToppingVO> = emptyList(),
     ) = CanvasVO(
         parfaitId = ParfaitId(parfaitId),
         groupName = GroupName("아메리카노"),
@@ -1259,6 +2010,7 @@ class CanvasToppingArrangeViewModelTest {
         members = emptyList(),
         background = null,
         toppings = toppings,
+        texts = texts,
     )
 
     private fun toppingVO(

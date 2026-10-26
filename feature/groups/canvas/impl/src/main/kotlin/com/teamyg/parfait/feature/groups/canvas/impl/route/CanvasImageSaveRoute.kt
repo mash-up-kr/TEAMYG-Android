@@ -97,7 +97,7 @@ internal fun CanvasImageSaveRoute(
                     captureLayer = recordLayer,
                 ) { frameIndex ->
                     recordPopProgresses = toppingPopProgresses(
-                        toppingCount = videoSource.toppings.size,
+                        toppingCount = videoSource.toppings.size + videoSource.texts.size,
                         frameIndex = frameIndex,
                     )
                     // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
@@ -147,6 +147,7 @@ internal fun CanvasImageSaveRoute(
         if (isRecordingVideo && videoSource != null && videoSource.canvasWidth > 0.dp) {
             CanvasVideoRecordLayer(
                 toppings = videoSource.toppings,
+                texts = videoSource.texts,
                 background = videoSource.background,
                 toppingPopProgresses = recordPopProgresses,
                 canvasWidth = videoSource.canvasWidth,

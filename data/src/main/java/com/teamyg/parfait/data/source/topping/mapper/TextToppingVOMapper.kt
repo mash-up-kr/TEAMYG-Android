@@ -5,6 +5,7 @@ import com.teamyg.parfait.data.service.model.request.parfaittext.UpdateParfaitTe
 import com.teamyg.parfait.data.service.model.response.parfait.PlacedByResponse
 import com.teamyg.parfait.data.service.model.response.parfait.TodayParfaitTextResponse
 import com.teamyg.parfait.data.service.model.response.parfaittext.UpdateParfaitTextResponse
+import com.teamyg.parfait.data.source.common.mapper.toTextToppingAlign
 import com.teamyg.parfait.domain.model.group.GroupNickname
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
@@ -29,13 +30,14 @@ internal fun ToppingTransform.toPlaceTextRequest(
     fontSize = style.fontSize,
     isFill = style.isFill,
     isStroke = style.isStroke,
+    textAlign = style.textAlign.name,
 )
 
 internal fun TodayParfaitTextResponse.toPlacedTextToppingVO(): PlacedTextToppingVO = PlacedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
     transform = transformOf(positionX, positionY, positionZ, scale, rotation),
-    style = styleOf(color, fontSize, isFill, isStroke),
+    style = styleOf(color, fontSize, isFill, isStroke, textAlign),
     placedBy = placedBy.toToppingPlacerVO(),
 )
 
@@ -54,13 +56,14 @@ internal fun TextToppingUpdate.toUpdateTextRequest(): UpdateParfaitTextRequest =
     fontSize = fontSize,
     isFill = isFill,
     isStroke = isStroke,
+    textAlign = textAlign?.name,
 )
 
 internal fun UpdateParfaitTextResponse.toUpdatedTextToppingVO(): UpdatedTextToppingVO = UpdatedTextToppingVO(
     parfaitTextId = ParfaitTextId(parfaitTextId),
     text = text,
     transform = transformOf(positionX, positionY, positionZ, scale, rotation),
-    style = styleOf(color, fontSize, isFill, isStroke),
+    style = styleOf(color, fontSize, isFill, isStroke, textAlign),
 )
 
 private fun transformOf(
@@ -82,9 +85,11 @@ private fun styleOf(
     fontSize: Double,
     isFill: Boolean,
     isStroke: Boolean,
+    textAlign: String,
 ): TextToppingStyle = TextToppingStyle(
     color = color,
     fontSize = fontSize,
     isFill = isFill,
     isStroke = isStroke,
+    textAlign = textAlign.toTextToppingAlign(),
 )

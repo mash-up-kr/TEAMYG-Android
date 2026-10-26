@@ -15,4 +15,16 @@ enum class TextToppingType(
     ;
 
     fun next(): TextToppingType = entries[(ordinal + 1) % entries.size]
+
+    companion object {
+        /** 서버에 `isFill=false, isStroke=true` 도 저장될 수 있어, 배경이 없으면 테두리와 무관하게 [DEFAULT] 다 */
+        fun of(
+            isFill: Boolean,
+            isStroke: Boolean,
+        ): TextToppingType = when {
+            !isFill -> DEFAULT
+            isStroke -> FILL_STROKE
+            else -> FILL
+        }
+    }
 }

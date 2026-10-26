@@ -25,6 +25,7 @@ class CanvasLocalDataSourceImplTest {
         members = emptyList(),
         background = null,
         toppings = emptyList(),
+        texts = emptyList(),
     )
 
     @Test
