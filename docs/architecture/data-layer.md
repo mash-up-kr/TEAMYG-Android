@@ -789,7 +789,7 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   [unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md) "테스트 규약" 11번.
   **DTO 직렬화 테스트도 두지 않는다(2026-10-26 규약).** `service/model` DTO를 `Json`으로 돌려 키·기본값을
   단언하는 테스트는 같은 가정을 두 번 적을 뿐이다 → `.claude/rules/no-dto-serialization-test.md`.
-  develop의 `XxxRemoteDataSourceImplTest`는 **image·member·parfait·parfaitgroup·parfaitimage·policy 여섯**이다
+  develop의 `XxxRemoteDataSourceImplTest`는 **image·presignedupload·member·notification·parfait·parfaitgroup·parfaitimage·parfaittext·policy 아홉**이다
   (PR #250이 parfait를 신설하고 member·parfaitimage를 보강, PR #266이 parfait를 15 → 25 케이스로 보강,
   PR #376이 소유 판정 몫 둘을 더해 **29 케이스**).
 
