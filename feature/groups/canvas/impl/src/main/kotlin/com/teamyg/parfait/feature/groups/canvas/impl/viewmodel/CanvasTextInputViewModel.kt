@@ -171,9 +171,6 @@ constructor(
 
     private val editingTextId: Long? = editSession?.original?.parfaitTextId
 
-    /** 편집 대상의 원래 자리는 캔버스·박스가 처음 다 재졌을 때 한 번만 복원한다 — 고치는 중 박스가 커져도 다시 잡지 않는다 */
-    private var hasRestoredEditPlacement = false
-
     init {
         if (isEditingExisting) startEditing() else observeDraft()
         observeCanvas()
@@ -198,8 +195,6 @@ constructor(
                 designFontSize = original.designFontSize,
                 scale = original.scale,
                 rotationDegrees = original.rotationDegrees,
-                // 원래 자리를 지켜야 하므로 정중앙 자동 배치를 끈다
-                hasUserAdjustedPlacement = true,
             )
         }
     }
@@ -266,12 +261,10 @@ constructor(
 
             is CanvasTextInputIntent.OnTextBoxMeasured -> {
                 updateState { copy(textBoxSize = intent.size).applyInitialPlacementIfNeeded() }
-                restoreEditPlacementIfReady()
             }
 
             is CanvasTextInputIntent.OnCanvasMeasured -> {
                 updateState { copy(canvasSize = intent.size).applyInitialPlacementIfNeeded() }
-                restoreEditPlacementIfReady()
             }
 
             is CanvasTextInputIntent.OnToppingTransform -> handleOnToppingTransform(intent)
@@ -325,32 +318,22 @@ constructor(
 
     /**
      * 사용자가 아직 손대지 않았다면, 키보드가 처음 내려갈 때 텍스트가 타이핑 중이던 자리
-     * (캔버스 정중앙)에 그대로 남도록 저장 좌표를 맞춘다
+     * (새 텍스트는 캔버스 정중앙, 편집은 원래 중심)에 그대로 남도록 저장 좌표를 맞춘다.
+     *
+     * 측정될 때마다 다시 맞춘다 — 첫 레이아웃에서는 키보드·툴바 높이가 아직 0 이라 글자 크기가
+     * 거의 0 으로 재지고, 그 박스로 좌상단을 고정하면 박스가 제 크기로 커진 만큼 중심이 밀린다.
      */
     private fun CanvasTextInputUiState.applyInitialPlacementIfNeeded(): CanvasTextInputUiState {
         if (hasUserAdjustedPlacement) return this
         val canvas = canvasSize ?: return this
         val box = textBoxSize ?: return this
+        val centerX = editSession?.original?.positionX ?: CANVAS_CENTER_RATIO
+        val centerY = editSession?.original?.positionY ?: CANVAS_CENTER_RATIO
 
         return copy(
-            offsetX = (canvas.width - box.width) / 2,
-            offsetY = (canvas.height - box.height) / 2,
+            offsetX = canvas.width * centerX - box.width / 2,
+            offsetY = canvas.height * centerY - box.height / 2,
         )
-    }
-
-    private fun restoreEditPlacementIfReady() {
-        if (hasRestoredEditPlacement) return
-        val original = editSession?.original ?: return
-        val canvas = state.value.canvasSize ?: return
-        val box = state.value.textBoxSize ?: return
-
-        hasRestoredEditPlacement = true
-        updateState {
-            copy(
-                offsetX = canvas.width * original.positionX - box.width / 2,
-                offsetY = canvas.height * original.positionY - box.height / 2,
-            )
-        }
     }
 
     private fun handleOnClickStack() {
@@ -485,6 +468,8 @@ constructor(
         fun create(isEditingExisting: Boolean): CanvasTextInputViewModel
     }
 }
+
+private const val CANVAS_CENTER_RATIO = 0.5f
 
 /** 쌓기 중복 실행 키. 연타로 두 번 보내면 같은 글이 두 개 쌓인다 */
 private const val STACK_JOB_KEY = "canvas-text-input-stack"
