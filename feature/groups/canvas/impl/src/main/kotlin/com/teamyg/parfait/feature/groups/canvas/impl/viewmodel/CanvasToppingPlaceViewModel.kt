@@ -17,6 +17,7 @@ import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -78,6 +79,7 @@ data class CanvasToppingPlaceUiState(
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val backgroundImageUrl: String? = null,
     val existingToppings: List<CanvasToppingVO> = emptyList(),
+    val existingTexts: List<CanvasTextToppingVO> = emptyList(),
     val offsetX: Dp = 0.dp,
     val offsetY: Dp = 0.dp,
     val scale: Float = 1f,
@@ -234,6 +236,7 @@ class CanvasToppingPlaceViewModel
             ?: backgroundColor,
         backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
         existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
+        existingTexts = canvas.texts,
         observedParfaitId = canvas.parfaitId,
     )
 

@@ -30,6 +30,7 @@ internal fun CanvasToppingArrangeRoute(
     groupId: Long,
     parfaitId: Long,
     initialToppingId: Long,
+    initialIsText: Boolean,
     navigator: Navigator,
     modifier: Modifier = Modifier,
     viewModel: CanvasToppingArrangeViewModel = hiltViewModel(
