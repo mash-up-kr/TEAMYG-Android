@@ -176,7 +176,7 @@ C-106이 결과를 써 두면 C-305가 화면 복귀 때 읽는다(Hilt 싱글�
 | data | `ParfaitImageRemoteDataSource.updateToppings` | `textItems` 채움 |
 | feature | `component/TextToppingContent.kt` | 세 화면 공용 렌더러 |
 | feature | `util/TextToppingWireMapper.kt` | 색·타입·크기 ↔ 서버 값 |
-| feature | `util/TextEditSessionHolder.kt` | C-305 ↔ C-106 편집 왕복 |
+| feature | `model/TextEditSessionHolder.kt` | C-305 ↔ C-106 편집 왕복 |
 | feature | `CanvasToppingLayer`·`CanvasMainViewModel`·`CanvasToppingArrangeViewModel`·`CanvasTextInputViewModel` | 연동 |
 | api | `NavKeyCanvasTextInput`(편집 여부), `NavKeyCanvasToppingArrange`(초기 포커스 종류) | 진입 인자 |
 
