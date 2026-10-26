@@ -7840,4 +7840,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (iOS 협의)
 - **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
 
-<!-- oq-next: 453 -->
+### [2026-10-26] 텍스트 재편집의 잔여 갭 — dirty 오판·편집 결과 잔류·부분 실패 소실
+
+- **ID**: OQ-P-453
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextEditSessionHolder`·`CanvasToppingArrangeViewModel`
+- **항목**: ① 다시 열 때 `designFontSize`를 다시 맞춰 바뀐 게 없는 재편집도 다른 기기 값 기준으로 dirty가 될 수 있고, 재편집은 서버가 푸시를 다시 보낸다(계약 한계). ② 싱글턴 `TextEditSessionHolder`에 소비되지 않은 편집 결과가 남으면 이후 C-305 인스턴스에 적용될 수 있다. ③ 내용 변경 재편집에서 POST 성공 뒤 일부가 실패하면 다음 폴링까지 그 텍스트가 사라져 보인다.
+- **상태**: 미해결
+- **해소 메모**: ①은 재맞춤 값을 저장값과 비교하는 기준을 정한다. ②는 C-305 진입 시 holder를 비우거나 결과에 세션 키를 싣는다. ③은 실패 시 캔버스를 즉시 다시 읽는다.
+
+<!-- oq-next: 454 -->
