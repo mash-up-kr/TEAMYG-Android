@@ -39,6 +39,7 @@ internal fun CanvasToppingArrangeRoute(
                 groupId = groupId,
                 parfaitId = parfaitId,
                 initialToppingId = initialToppingId,
+                initialIsText = initialIsText,
             )
         },
     ),
@@ -80,6 +81,9 @@ internal fun CanvasToppingArrangeRoute(
             onClickConfirm = { viewModel.processIntent(CanvasToppingArrangeIntent.OnClickConfirm) },
             onClickTopping = { topping ->
                 viewModel.processIntent(CanvasToppingArrangeIntent.OnClickTopping(topping))
+            },
+            onClickText = { text ->
+                viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(text))
             },
             onClickEmptyCanvas = { viewModel.processIntent(CanvasToppingArrangeIntent.OnClickEmptyCanvas) },
             onToggleBorderPanel = { viewModel.processIntent(CanvasToppingArrangeIntent.OnToggleBorderPanel) },

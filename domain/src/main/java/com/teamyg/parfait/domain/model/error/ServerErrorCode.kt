@@ -129,6 +129,12 @@ object ServerErrorCode {
         const val PARFAIT_IMAGE_NOT_FOUND = "PARFAIT_IMAGE_NOT_FOUND"
     }
 
+    /** 서버 `ParfaitTextErrorCode` 에 대응한다 */
+    object ParfaitText {
+        /** 404 — 그 텍스트 배치가 없다. 텍스트 삭제에서는 이미 지워졌다는 뜻이다(`api/parfait-text.md`) */
+        const val PARFAIT_TEXT_NOT_FOUND = "PARFAIT_TEXT_NOT_FOUND"
+    }
+
     /** 도메인을 가리지 않는 공통 코드 — 서버 `CommonErrorCode` 에 대응한다 */
     object Common {
         /** 400 — 바디 파싱 실패·필드 누락·타입 불일치. 정상 동선에서는 나오지 않는다(= 앱 버그) */

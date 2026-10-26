@@ -19,13 +19,20 @@ import com.teamyg.parfait.domain.model.error.ServerErrorCode
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.topping.DeleteTextToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingSaveFailures
 import com.teamyg.parfait.feature.groups.canvas.impl.util.DEFAULT_TOPPING_BORDER_WIDTH_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
@@ -33,6 +40,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthD
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPanelBackAction
@@ -50,7 +58,8 @@ data class CanvasToppingArrangeUiState(
     val backgroundColor: Color = YGAtomicColors.Gray.White,
     val backgroundImageUrl: String? = null,
     val toppings: List<EditableTopping> = emptyList(),
-    val focusedToppingId: Long? = null,
+    val texts: List<EditableText> = emptyList(),
+    val focusedKey: CanvasToppingKey? = null,
     /** 테두리가 없는 토핑에 두를 굵기. 색을 고르는 순간 이 굵기로 테두리가 생긴다 */
     val pendingBorderWidthDp: Float = DEFAULT_TOPPING_BORDER_WIDTH_DP,
     val isBorderPanelOpen: Boolean = false,
@@ -60,6 +69,10 @@ data class CanvasToppingArrangeUiState(
     val pendingDeleteToppingIds: Set<Long> = emptySet(),
     /** 서버에서 지운 토핑의 툼스톤 — 그 전에 출발한 갱신 응답이 뒤늦게 도착하면 지운 토핑이 되살아난다 */
     val deletedToppingIds: Set<Long> = emptySet(),
+    /** 이미지 쪽 세 집합과 같은 규칙이다. 이미지 id 와 겹칠 수 있어 따로 둔다 */
+    val dirtyTextIds: Set<Long> = emptySet(),
+    val pendingDeleteTextIds: Set<Long> = emptySet(),
+    val deletedTextIds: Set<Long> = emptySet(),
     /**
      * 화면의 덮개가 막는 것은 포인터 입력뿐이고 시스템 뒤로가기는 덮개를 거치지 않아, 그쪽은
      * ViewModel 이 이 값을 보고 직접 막는다.
@@ -67,20 +80,38 @@ data class CanvasToppingArrangeUiState(
     val isLoading: Boolean = false,
 ) : UiState {
     val focusedTopping: EditableTopping?
-        get() = toppings.firstOrNull { it.parfaitImageId == focusedToppingId }
+        get() {
+            val key = focusedKey as? CanvasToppingKey.Image ?: return null
+            return toppings.firstOrNull { it.parfaitImageId == key.id }
+        }
+
+    val focusedText: EditableText?
+        get() {
+            val key = focusedKey as? CanvasToppingKey.Text ?: return null
+            return texts.firstOrNull { it.parfaitTextId == key.id }
+        }
 
     val panelBorderColorArgb: Int? get() = focusedTopping?.border?.colorArgb
 
     val panelBorderWidthDp: Float get() = resolvePanelBorderWidthDp(focusedTopping?.border, pendingBorderWidthDp)
 
-    val canOpenBorderPanel: Boolean get() = focusedToppingId != null
+    /** 테두리는 사진에만 있다 */
+    val canOpenBorderPanel: Boolean get() = focusedKey is CanvasToppingKey.Image
 
-    val hasUnsavedChanges: Boolean get() = dirtyToppingIds.isNotEmpty() || pendingDeleteToppingIds.isNotEmpty()
+    val hasUnsavedChanges: Boolean
+        get() = dirtyToppingIds.isNotEmpty() ||
+            pendingDeleteToppingIds.isNotEmpty() ||
+            dirtyTextIds.isNotEmpty() ||
+            pendingDeleteTextIds.isNotEmpty()
 }
 
 sealed interface CanvasToppingArrangeIntent : UiIntent {
     data class OnClickTopping(
         val topping: EditableTopping,
+    ) : CanvasToppingArrangeIntent
+
+    data class OnClickText(
+        val text: EditableText,
     ) : CanvasToppingArrangeIntent
 
     data object OnClickEmptyCanvas : CanvasToppingArrangeIntent
@@ -136,9 +167,11 @@ constructor(
     @Assisted("groupId") groupIdValue: Long,
     @Assisted("parfaitId") parfaitIdValue: Long,
     @Assisted("initialToppingId") private val initialToppingId: Long,
+    @Assisted("initialIsText") private val initialIsText: Boolean,
     private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
     private val refreshTodayParfaitDetailUseCase: RefreshTodayParfaitDetailUseCase,
     private val deleteToppingUseCase: DeleteToppingUseCase,
+    private val deleteTextToppingUseCase: DeleteTextToppingUseCase,
     private val updateToppingsUseCase: UpdateToppingsUseCase,
     private val updateToppingBorderUseCase: UpdateToppingBorderUseCase,
     private val analyticsLogger: AnalyticsLogger,
@@ -170,6 +203,9 @@ constructor(
      */
     private var serverToppings: List<EditableTopping> = emptyList()
 
+    /** [serverToppings] 의 텍스트 쪽 */
+    private var serverTexts: List<EditableText> = emptyList()
+
     init {
         viewModelLogger.i { "CanvasToppingArrangeViewModel::init" }
         observeCanvas()
@@ -195,8 +231,11 @@ constructor(
                 .sortedBy { topping -> topping.transform.positionZ }
                 .map { topping -> topping.toEditableTopping() }
 
+            val incomingTexts = canvas.texts.map { text -> text.toEditableText() }
+
             serverToppings = incoming
-            updateState { withCanvas(canvas).mergeToppings(incoming) }
+            serverTexts = incomingTexts
+            updateState { withCanvas(canvas).mergeToppings(incoming).mergeTexts(incomingTexts) }
             hasSeededFromCanvas = true
         }
     }
@@ -208,7 +247,11 @@ constructor(
             ?.toColorOrNull()
             ?: backgroundColor,
         backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
-        focusedToppingId = if (hasSeededFromCanvas) focusedToppingId else initialToppingId,
+        focusedKey = when {
+            hasSeededFromCanvas -> focusedKey
+            initialIsText -> CanvasToppingKey.Text(initialToppingId)
+            else -> CanvasToppingKey.Image(initialToppingId)
+        },
     )
 
     /**
@@ -228,7 +271,8 @@ constructor(
             .map { server ->
                 if (server.parfaitImageId in dirtyToppingIds) localById[server.parfaitImageId] ?: server else server
             }
-        val remainingFocusId = focusedToppingId?.takeIf { it in incomingIds && it !in removedIds }
+        val focusedId = (focusedKey as? CanvasToppingKey.Image)?.id
+        val loseFocus = focusedId != null && (focusedId !in incomingIds || focusedId in removedIds)
 
         return copy(
             toppings = merged,
@@ -237,15 +281,41 @@ constructor(
             dirtyToppingIds = dirtyToppingIds intersect incomingIds,
             pendingDeleteToppingIds = pendingDeleteToppingIds intersect incomingIds,
             deletedToppingIds = deletedToppingIds intersect incomingIds,
-            focusedToppingId = remainingFocusId,
+            focusedKey = if (loseFocus) null else focusedKey,
             // 패널은 포커스된 토핑의 것이라 포커스와 함께 닫힌다
-            isBorderPanelOpen = isBorderPanelOpen && remainingFocusId != null,
+            isBorderPanelOpen = isBorderPanelOpen && !loseFocus,
+        )
+    }
+
+    /** [mergeToppings] 와 같은 규칙을 텍스트 쪽 집합에 쓴다 */
+    private fun CanvasToppingArrangeUiState.mergeTexts(incoming: List<EditableText>): CanvasToppingArrangeUiState {
+        val incomingIds = incoming.mapTo(mutableSetOf()) { it.parfaitTextId }
+        val localById = texts.associateBy { it.parfaitTextId }
+
+        val removedIds = pendingDeleteTextIds + deletedTextIds
+
+        val merged = incoming
+            .filterNot { it.parfaitTextId in removedIds }
+            .map { server ->
+                if (server.parfaitTextId in dirtyTextIds) localById[server.parfaitTextId] ?: server else server
+            }
+        val focusedId = (focusedKey as? CanvasToppingKey.Text)?.id
+        val loseFocus = focusedId != null && (focusedId !in incomingIds || focusedId in removedIds)
+
+        return copy(
+            texts = merged,
+            dirtyTextIds = dirtyTextIds intersect incomingIds,
+            pendingDeleteTextIds = pendingDeleteTextIds intersect incomingIds,
+            deletedTextIds = deletedTextIds intersect incomingIds,
+            focusedKey = if (loseFocus) null else focusedKey,
         )
     }
 
     override fun processIntent(intent: CanvasToppingArrangeIntent) {
         when (intent) {
             is CanvasToppingArrangeIntent.OnClickTopping -> handleOnClickTopping(intent)
+
+            is CanvasToppingArrangeIntent.OnClickText -> handleOnClickText(intent)
 
             CanvasToppingArrangeIntent.OnClickEmptyCanvas -> handleOnClickEmptyCanvas()
 
@@ -286,42 +356,67 @@ constructor(
 
         when {
             current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
+
             !topping.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
-            current.focusedToppingId == topping.parfaitImageId -> updateState { copy(isBorderPanelOpen = true) }
-            else -> updateState { copy(focusedToppingId = topping.parfaitImageId) }
+
+            current.focusedKey == CanvasToppingKey.Image(topping.parfaitImageId) ->
+                updateState { copy(isBorderPanelOpen = true) }
+
+            else -> updateState { copy(focusedKey = CanvasToppingKey.Image(topping.parfaitImageId)) }
+        }
+    }
+
+    /** 패널 규칙은 [handleOnClickTopping] 과 같다. 포커스된 텍스트를 다시 탭해도 지금은 아무 일이 없다 */
+    private fun handleOnClickText(intent: CanvasToppingArrangeIntent.OnClickText) {
+        val current = state.value
+        val text = intent.text
+
+        when {
+            current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
+            !text.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
+            else -> updateState { copy(focusedKey = CanvasToppingKey.Text(text.parfaitTextId)) }
         }
     }
 
     private fun handleOnClickEmptyCanvas() {
         updateState {
-            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(focusedToppingId = null)
+            if (isBorderPanelOpen) copy(isBorderPanelOpen = false) else copy(focusedKey = null)
         }
     }
 
     private fun handleOnClickDeleteToppingButton() {
         updateState {
-            val focusedId = focusedToppingId
+            val focused = focusedKey
 
             when {
                 isBorderPanelOpen -> copy(isBorderPanelOpen = false)
 
-                focusedId == null -> this
+                focused == null -> this
 
-                else -> copy(
-                    toppings = toppings.filterNot { it.parfaitImageId == focusedId },
-                    pendingDeleteToppingIds = pendingDeleteToppingIds + focusedId,
-                    dirtyToppingIds = dirtyToppingIds - focusedId,
-                    focusedToppingId = null,
+                focused is CanvasToppingKey.Image -> copy(
+                    toppings = toppings.filterNot { it.parfaitImageId == focused.id },
+                    pendingDeleteToppingIds = pendingDeleteToppingIds + focused.id,
+                    dirtyToppingIds = dirtyToppingIds - focused.id,
+                    focusedKey = null,
                 )
+
+                focused is CanvasToppingKey.Text -> copy(
+                    texts = texts.filterNot { it.parfaitTextId == focused.id },
+                    pendingDeleteTextIds = pendingDeleteTextIds + focused.id,
+                    dirtyTextIds = dirtyTextIds - focused.id,
+                    focusedKey = null,
+                )
+
+                else -> this
             }
         }
     }
 
     /** 닫혀 있다가 열릴 때만 "탭"으로 센다 — 토글이라 닫는 쪽까지 세면 과다 집계된다 */
     private fun handleOnToggleBorderPanel() {
-        val isOpening = state.value.focusedToppingId != null && !state.value.isBorderPanelOpen
+        val isOpening = state.value.canOpenBorderPanel && !state.value.isBorderPanelOpen
         updateState {
-            if (focusedToppingId == null) this else copy(isBorderPanelOpen = !isBorderPanelOpen)
+            if (canOpenBorderPanel) copy(isBorderPanelOpen = !isBorderPanelOpen) else this
         }
         if (isOpening) {
             analyticsLogger.logEvent(
@@ -366,7 +461,7 @@ constructor(
 
     private fun handleOnSelectBorderColor(intent: CanvasToppingArrangeIntent.OnSelectBorderColor) {
         updateState {
-            val focusedId = focusedToppingId ?: return@updateState this
+            val focusedId = focusedTopping?.parfaitImageId ?: return@updateState this
             val border = panelBorderForColor(intent.colorArgb, panelBorderWidthDp)
 
             copy(
@@ -383,7 +478,7 @@ constructor(
      */
     private fun handleOnChangeBorderWidth(intent: CanvasToppingArrangeIntent.OnChangeBorderWidth) {
         updateState {
-            val focusedId = focusedToppingId ?: return@updateState this
+            val focusedId = focusedTopping?.parfaitImageId ?: return@updateState this
             val widthDp = clampPanelBorderWidthDp(intent.widthDp)
 
             if (focusedTopping?.border == null) {
@@ -417,14 +512,33 @@ constructor(
     private fun handleOnToppingTransform(intent: CanvasToppingArrangeIntent.OnToppingTransform) {
         updateState {
             if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
-            val focusedId = focusedToppingId ?: return@updateState this
 
-            applyToppingTransform(focusedId) { topping ->
-                topping.copy(
-                    positionX = topping.positionX + intent.panX,
-                    positionY = topping.positionY + intent.panY,
-                    scale = (topping.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
-                    rotationDegrees = topping.rotationDegrees + intent.rotationDelta,
+            when (val focused = focusedKey) {
+                null -> this
+
+                is CanvasToppingKey.Image -> applyToppingTransform(focused.id) { topping ->
+                    topping.copy(
+                        positionX = topping.positionX + intent.panX,
+                        positionY = topping.positionY + intent.panY,
+                        scale = (topping.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
+                        rotationDegrees = topping.rotationDegrees + intent.rotationDelta,
+                    )
+                }
+
+                is CanvasToppingKey.Text -> copy(
+                    texts = texts.map { text ->
+                        if (text.parfaitTextId != focused.id) {
+                            text
+                        } else {
+                            text.copy(
+                                positionX = text.positionX + intent.panX,
+                                positionY = text.positionY + intent.panY,
+                                scale = (text.scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
+                                rotationDegrees = text.rotationDegrees + intent.rotationDelta,
+                            )
+                        }
+                    },
+                    dirtyTextIds = dirtyTextIds + focused.id,
                 )
             }
         }
@@ -455,12 +569,12 @@ constructor(
         launch(key = CONFIRM_KEY, onError = ::failToSaveUnexpectedly) {
             updateState { copy(isLoading = true) }
 
-            val failedToppingIds = updateDirtyToppings()
+            val failed = updateDirtyToppings()
             // 보낸 것만 대상에서 뺀다 — 여기서 통째 비우면 다시 누른 확인이 못 보낸 토핑을 건너뛴다
-            updateState { copy(dirtyToppingIds = failedToppingIds) }
+            updateState { copy(dirtyToppingIds = failed.toppingIds, dirtyTextIds = failed.textIds) }
 
             // 삭제는 되돌릴 수 없어 저장이 전부 끝난 뒤에만 보낸다
-            val isSaved = failedToppingIds.isEmpty() && deletePendingToppings()
+            val isSaved = failed.isEmpty() && deletePendingToppings()
 
             if (!isSaved) {
                 // 닫으면 사용자는 방금 옮긴 토핑이 되돌아간 캔버스를 보게 된다
@@ -497,43 +611,65 @@ constructor(
      *
      * 축으로 가르는 것은 서버 API 가 갈라져 있어서다 — 변형만 한 요청에 접힌다.
      *
-     * @return 저장하지 못한 토핑의 id.
+     * 텍스트 변형도 이미지와 같은 일괄 요청에 실린다.
      */
-    private suspend fun updateDirtyToppings(): Set<Long> = coroutineScope {
+    private suspend fun updateDirtyToppings(): ToppingSaveFailures = coroutineScope {
         val current = state.value
         val dirty = current.toppings.filter { it.parfaitImageId in current.dirtyToppingIds }
+        val dirtyTexts = current.texts.filter { it.parfaitTextId in current.dirtyTextIds }
 
         val transformChanged = dirty.filter { it.hasTransformChange() }
+        val textUpdates = dirtyTexts.mapNotNull { it.toTransformUpdateOrNull() }
         val borderChanged = dirty.filter { it.hasBorderChange() }
 
-        val transformFailures = saveTransforms(transformChanged)
+        val transformFailures = saveTransforms(transformChanged, textUpdates)
         val borderFailures = borderChanged
             .map { topping -> async { topping.parfaitImageId.takeIf { saveBorder(topping).not() } } }
             .awaitAll()
             .filterNotNull()
 
-        transformFailures + borderFailures
+        ToppingSaveFailures(
+            toppingIds = transformFailures.toppingIds + borderFailures,
+            textIds = transformFailures.textIds,
+        )
     }
 
     /** @return 대기 중인 삭제가 모두 서버에 반영됐는가. */
     private suspend fun deletePendingToppings(): Boolean = coroutineScope {
         val pendingIds = state.value.pendingDeleteToppingIds
-        val deletedIds = pendingIds
-            .map { toppingId -> async { toppingId.takeIf { deleteTopping(it) } } }
-            .awaitAll()
-            .filterNotNull()
-            .toSet()
+        val pendingTextIds = state.value.pendingDeleteTextIds
+        val deletedIdsAsync = pendingIds.map { toppingId -> async { toppingId.takeIf { deleteTopping(it) } } }
+        val deletedTextIdsAsync = pendingTextIds.map { textId -> async { textId.takeIf { deleteText(it) } } }
+        val deletedIds = deletedIdsAsync.awaitAll().filterNotNull().toSet()
+        val deletedTextIds = deletedTextIdsAsync.awaitAll().filterNotNull().toSet()
 
         // 지운 것만 옮긴다 — 다시 누른 확인이 못 지운 토핑만 보낸다
         updateState {
             copy(
                 pendingDeleteToppingIds = pendingDeleteToppingIds - deletedIds,
                 deletedToppingIds = deletedToppingIds + deletedIds,
+                pendingDeleteTextIds = pendingDeleteTextIds - deletedTextIds,
+                deletedTextIds = this.deletedTextIds + deletedTextIds,
             )
         }
 
-        deletedIds.size == pendingIds.size
+        deletedIds.size == pendingIds.size && deletedTextIds.size == pendingTextIds.size
     }
+
+    /** 이미지 삭제와 같이, 응답만 잃은 재시도의 404 는 지워진 것으로 친다 */
+    private suspend fun deleteText(textId: Long): Boolean =
+        deleteTextToppingUseCase(groupId, parfaitId, ParfaitTextId(textId)).fold(
+            onSuccess = { true },
+            onFailure = { throwable ->
+                val isAlreadyGone = throwable is AppError.Server &&
+                    throwable.code == ServerErrorCode.ParfaitText.PARFAIT_TEXT_NOT_FOUND
+
+                if (!isAlreadyGone) {
+                    viewModelLogger.e(throwable) { "텍스트를 지우지 못했다 - parfaitTextId: $textId" }
+                }
+                isAlreadyGone
+            },
+        )
 
     /** DELETE 가 서버에 닿고 응답만 잃었다면 다시 보낸 요청은 404 다 — 그것은 지워진 것으로 친다 */
     private suspend fun deleteTopping(toppingId: Long): Boolean =
@@ -554,21 +690,29 @@ constructor(
      * 일괄이라 부분 성공이 없어서, 실패하면 보낸 토핑 전부를 대상으로 남긴다. 되풀이되는 실패가
      * 섞이면 나머지까지 계속 막히는 것을 감수한 설계다 —
      * `specs/2026-08-31-topping-batch-update-and-past-canvas-status.md` 「주의 / 열린 질문」 절.
-     *
-     * @return 저장하지 못한 토핑의 id.
      */
-    private suspend fun saveTransforms(toppings: List<EditableTopping>): Set<Long> {
-        if (toppings.isEmpty()) return emptySet()
+    private suspend fun saveTransforms(
+        toppings: List<EditableTopping>,
+        textUpdates: List<TextToppingTransformUpdate>,
+    ): ToppingSaveFailures {
+        if (toppings.isEmpty() && textUpdates.isEmpty()) return ToppingSaveFailures()
 
         return updateToppingsUseCase(
             groupId = groupId,
             parfaitId = parfaitId,
             updates = toppings.map { it.toTransformUpdate() },
+            textUpdates = textUpdates,
         ).fold(
-            onSuccess = { emptySet() },
+            onSuccess = { ToppingSaveFailures() },
             onFailure = { throwable ->
-                viewModelLogger.e(throwable) { "토핑 변형을 저장하지 못했다 - ${toppings.map { it.parfaitImageId }}" }
-                toppings.mapTo(mutableSetOf()) { it.parfaitImageId }
+                viewModelLogger.e(throwable) {
+                    "토핑 변형을 저장하지 못했다 - 이미지 ${toppings.map { it.parfaitImageId }}" +
+                        ", 텍스트 ${textUpdates.map { it.parfaitTextId.value }}"
+                }
+                ToppingSaveFailures(
+                    toppingIds = toppings.mapTo(mutableSetOf()) { it.parfaitImageId },
+                    textIds = textUpdates.mapTo(mutableSetOf()) { it.parfaitTextId.value },
+                )
             },
         )
     }
@@ -606,6 +750,30 @@ constructor(
     )
 
     /**
+     * 바뀐 축만 싣는다 — null 인 축은 서버가 유지한다. 스냅샷에 없으면 네 축을 모두 싣는다.
+     *
+     * @return 바뀐 축이 없으면 null.
+     */
+    private fun EditableText.toTransformUpdateOrNull(): TextToppingTransformUpdate? {
+        val original = serverTexts.find { it.parfaitTextId == parfaitTextId }
+
+        fun changed(
+            value: Float,
+            originalValue: Float?,
+        ): Double? = value.takeIf { originalValue == null || it != originalValue }?.toDouble()
+
+        val update = TextToppingTransformUpdate(
+            parfaitTextId = ParfaitTextId(parfaitTextId),
+            positionX = changed(positionX, original?.positionX),
+            positionY = changed(positionY, original?.positionY),
+            scale = changed(scale, original?.scale),
+            rotation = changed(rotationDegrees, original?.rotationDegrees),
+        )
+        val hasChange = listOf(update.positionX, update.positionY, update.scale, update.rotation).any { it != null }
+        return update.takeIf { hasChange }
+    }
+
+    /**
      * @param unknown 갈래를 가리지 못했을 때 쓸 값. 무엇을 하다 실패했는지는 부르는 쪽만 안다.
      */
     private fun Throwable.toCanvasToppingArrangeError(unknown: CanvasToppingArrangeError): CanvasToppingArrangeError =
@@ -620,6 +788,7 @@ constructor(
             @Assisted("groupId") groupId: Long,
             @Assisted("parfaitId") parfaitId: Long,
             @Assisted("initialToppingId") initialToppingId: Long,
+            @Assisted("initialIsText") initialIsText: Boolean,
         ): CanvasToppingArrangeViewModel
     }
 
