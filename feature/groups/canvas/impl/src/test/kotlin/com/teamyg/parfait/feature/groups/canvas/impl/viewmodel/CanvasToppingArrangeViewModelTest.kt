@@ -1259,7 +1259,7 @@ class CanvasToppingArrangeViewModelTest {
 
     // 텍스트
 
-    /** 이미지와 텍스트가 같은 id 5 를 갖는다 — 다른 테이블이라 서버에서 실제로 겹칠 수 있다 */
+    /** 이미지와 텍스트가 같은 id 5 를 갖는다 */
     private fun textCanvas() = canvas(
         toppings = listOf(toppingVO(SHARED_ID, positionZ = 1)),
         texts = listOf(
