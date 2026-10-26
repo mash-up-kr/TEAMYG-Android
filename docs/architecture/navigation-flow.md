@@ -533,7 +533,7 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
   오늘 조회를 부르면 캔버스가 없는 날에는 서버가 캔버스를 새로 만들기 때문에, "화면 상태가 그대로
   다음 목적지의 인자"(그룹 설정과 같은 형태)를 여기서도 택했다.
 - **본인 토핑 탭은 다른 목적지다** — C-001에서 본인 토핑을 탭하면 `NavKeyCanvasBGEdit`가 아니라
-  `NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)`가 열린다. 아래
+  `NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId, initialIsText)`가 열린다. 아래
   [배치 수정 화면](#배치-수정-화면-navkeycanvastoppingarrange) 절.
 - **entry에서 `YGScaffold` 껍질이 걷혔다**(2026-08-22, PR #329) — 이 화면은 저장 실패를 토스트로
   알려야 해서 Route가 `YGScaffoldV2`를 직접 든다. 두 겹으로 씌우면 **인셋 패딩이 두 번 먹으므로**
@@ -546,16 +546,23 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
 [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
 
 ```
-NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)
+NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId, initialIsText)
         ▲                                                          │ 확정·삭제 성공 / 그만두기 → popUpTo<NavKeyCanvasMain>
         └──────────────────────────────────────────────────────────┘
+                                                                   │ 포커스된 내 텍스트 재탭
+                                                                   ▼
+                              NavKeyCanvasTextInput(isEditingExisting = true) ─(쌓기·X)─▶ 뒤로
+                              (편집 대상·결과는 TextEditSessionHolder가 나른다)
 ```
 
-- **인자 셋의 성격이 다르다** — `groupId`·`parfaitId`는 `NavKeyCanvasBGEdit`와 같은 이유로 C-001이 이미
+- **인자의 성격이 다르다** — `groupId`·`parfaitId`는 `NavKeyCanvasBGEdit`와 같은 이유로 C-001이 이미
   받아 둔 오늘 캔버스에서 온다. `initialToppingId`는 그릴 값도 동작 플래그도 아닌 **초기 포커스**이고,
   `CanvasToppingArrangeViewModel`의 `withCanvas`가 최초 방출에만 얹는다. 탭한 토핑 없이는 열 수 없어
-  null이 아니다.
-- **결과 왕복이 없다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
+  null이 아니다. 이미지 id와 텍스트 id는 다른 테이블이라 값이 겹칠 수 있어 `initialIsText`가 종류를 가른다.
+- **결과 왕복은 텍스트 재편집 하나다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
+  포커스된 내 텍스트를 다시 탭하면 C-106이 편집 모드(`NavKeyCanvasTextInput(isEditingExisting = true)`)로 열린다.
+  NavKey는 결과를 돌려주지 않으므로 편집 대상과 결과는 피처 내부 싱글턴 `TextEditSessionHolder`가 나르고,
+  C-106은 서버를 부르지 않는다. 저장은 이 화면의 확정이 한다.
   저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤
   `popUpTo<NavKeyCanvasMain>()`으로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
 - **`NavKeyToppingEdit`의 호출자는 `SegmentationRoute` 하나다**(후보 선택·「직접 선택」 `goTo`, 분석 0건·실패 `goToAndPopCurrent`). 캔버스 쪽은 그 목적지를 열지 않는다.
@@ -773,7 +780,7 @@ C-001 캔버스 메인
 `NavKeyCameraCustom`·`NavKeyCustomGalleryPicker`(뒤 둘은 #231에서 `data object` → `data class` 승격)·
 `NavKeyCanvasMain`(#268 승격 — `groupId`, **#411에서 `welcomeGroupName`·`welcomeInviteCode` 추가**)·`NavKeyGroupSetting`(#285 승격 — `groupId`)·
 `NavKeyWebView`(#296 신설 — `title`·`url`)·`NavKeyCanvasToppingPlace`(#290 신설 — `imageUri`, **#334에서 인자를 잃고 `data object`로 되돌아갔다**)·
-`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`)·`NavKeyCanvasToppingArrange`(`groupId`·`parfaitId`·`initialToppingId`)·
+`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`)·`NavKeyCanvasToppingArrange`(`groupId`·`parfaitId`·`initialToppingId`·`initialIsText`)·`NavKeyCanvasTextInput`(`isEditingExisting`)·
 `NavKeyCanvasImageSave`(#445 신설 — `imagePath`·`date`)).
 **#514에서 이 목록이 둘 줄었다** — `NavKeyCanvasEdit(imageUri)`·`NavKeyCanvasMove(imageUri)`가
 도달 불가 잔해로 삭제됐다(OQ-P-239 해소).
