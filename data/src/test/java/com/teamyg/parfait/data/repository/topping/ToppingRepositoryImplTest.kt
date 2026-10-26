@@ -199,7 +199,12 @@ class ToppingRepositoryImplTest {
         } returns Result.success(updated)
 
         // When 둘을 한 번에 수정한다
-        val result = repository.updateAll(groupId = GROUP_ID, parfaitId = PARFAIT_ID, updates = updates)
+        val result = repository.updateAll(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            updates = updates,
+            textUpdates = emptyList(),
+        )
 
         // Then 값을 가공 없이 그대로 전달한다
         assertEquals(updated, result.getOrThrow())
@@ -210,7 +215,12 @@ class ToppingRepositoryImplTest {
         // Given 보낼 것이 없다
 
         // When 빈 목록으로 부른다
-        val result = repository.updateAll(groupId = GROUP_ID, parfaitId = PARFAIT_ID, updates = emptyList())
+        val result = repository.updateAll(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            updates = emptyList(),
+            textUpdates = emptyList(),
+        )
 
         // Then 서버가 빈 items 를 200 으로 받아 주더라도 요청 자체를 안 만든다
         assertEquals(emptyList(), result.getOrThrow())
@@ -259,6 +269,7 @@ class ToppingRepositoryImplTest {
             groupId = GROUP_ID,
             parfaitId = PARFAIT_ID,
             updates = listOf(ToppingTransformUpdate(parfaitImageId = PARFAIT_IMAGE_ID, positionX = 100.0)),
+            textUpdates = emptyList(),
         )
 
         // Then 코드와 상태 코드가 함께 살아 있다

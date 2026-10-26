@@ -453,9 +453,11 @@ constructor(
 
         return getParfaitDetailUseCase(groupId = groupId, parfaitId = parfaitId)
             .getOrNull()
-            ?.toppings
-            ?.distinctBy { it.placedBy.groupMemberId }
-            ?.size
+            ?.let { canvas ->
+                (canvas.toppings.map { it.placedBy.groupMemberId } + canvas.texts.map { it.placedBy.groupMemberId })
+                    .distinct()
+                    .size
+            }
     }
 
     /**

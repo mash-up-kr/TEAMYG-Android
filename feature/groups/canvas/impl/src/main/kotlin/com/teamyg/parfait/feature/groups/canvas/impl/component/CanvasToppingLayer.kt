@@ -54,6 +54,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasRevealSettled
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingColorOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -308,6 +309,7 @@ private fun CanvasText(
         text = text.text,
         color = textToppingColorOf(text.style.color),
         type = TextToppingType.of(isFill = text.style.isFill, isStroke = text.style.isStroke),
+        align = text.style.textAlign.toTextAlign(),
         designFontSize = text.style.fontSize.toFloat(),
         center = toppingCenter(
             canvasWidth = canvasWidth,

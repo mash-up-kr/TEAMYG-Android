@@ -1,7 +1,9 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import kotlin.test.Test
@@ -42,13 +44,26 @@ class TextToppingWireMapperTest {
     }
 
     @Test
+    fun align_roundTripsTheThreeToolbarAligns() {
+        listOf(TextAlign.Left, TextAlign.Center, TextAlign.Right).forEach {
+            assertEquals(it, it.toTextToppingAlign().toTextAlign())
+        }
+    }
+
+    @Test
+    fun align_otherComposeAlignIsSentAsCenter() {
+        assertEquals(TextToppingAlign.CENTER, TextAlign.Justify.toTextToppingAlign())
+    }
+
+    @Test
     fun style_carriesDesignFontSizeAndFlags() {
-        val style = textToppingStyleOf(TextToppingColor.Blue, TextToppingType.FILL_STROKE, 18f)
+        val style = textToppingStyleOf(TextToppingColor.Blue, TextToppingType.FILL_STROKE, TextAlign.Left, 18f)
 
         assertEquals("#6DBBF2", style.color)
         assertEquals(18.0, style.fontSize)
         assertEquals(true, style.isFill)
         assertEquals(true, style.isStroke)
+        assertEquals(TextToppingAlign.LEFT, style.textAlign)
     }
 
     @Test

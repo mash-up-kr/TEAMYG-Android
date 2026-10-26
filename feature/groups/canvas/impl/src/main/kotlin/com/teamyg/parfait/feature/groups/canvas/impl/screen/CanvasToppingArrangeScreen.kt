@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpSize
@@ -292,6 +293,7 @@ private fun PreviewCanvasToppingArrangeScreen(
                     text = "오늘의 파르페",
                     color = TextToppingColor.Black,
                     type = TextToppingType.FILL,
+                    align = TextAlign.Center,
                     designFontSize = 18f,
                     positionX = 0.5f,
                     positionY = 0.8f,

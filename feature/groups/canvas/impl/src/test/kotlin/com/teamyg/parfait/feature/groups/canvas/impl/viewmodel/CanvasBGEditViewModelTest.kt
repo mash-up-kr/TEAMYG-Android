@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.util.android.extension.toRgbHex
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasStatus
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
 import com.teamyg.parfait.domain.model.error.AppError
@@ -18,8 +19,11 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.image.ImageType
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
+import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -130,6 +134,22 @@ class CanvasBGEditViewModelTest {
             viewModel.state.value.toppings
                 .map(EditableTopping::parfaitImageId),
         )
+    }
+
+    @Test
+    fun init_carriesCanvasTextsIntoState() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 캔버스에 텍스트가 놓여 있다
+        todayCanvases.value = canvas(texts = listOf(textTopping(parfaitTextId = 7L, positionZ = 3)))
+
+        // When 화면이 열린다
+        val viewModel = viewModel()
+
+        // Then 배경 위에 함께 그리도록 상태에 실린다
+        val text = viewModel.state.value.texts
+            .single()
+        assertEquals(7L, text.parfaitTextId)
+        assertEquals("안녕", text.text)
+        assertEquals(3, text.positionZ)
     }
 
     @Test
@@ -396,6 +416,7 @@ class CanvasBGEditViewModelTest {
                 positionZ = 2,
             ),
         ),
+        texts: List<CanvasTextToppingVO> = emptyList(),
     ) = CanvasVO(
         parfaitId = ParfaitId(parfaitId),
         groupName = GroupName("아메리카노"),
@@ -405,7 +426,35 @@ class CanvasBGEditViewModelTest {
         members = emptyList(),
         background = background,
         toppings = toppings,
-        texts = emptyList(),
+        texts = texts,
+    )
+
+    private fun textTopping(
+        parfaitTextId: Long,
+        positionZ: Int,
+    ) = CanvasTextToppingVO(
+        parfaitTextId = ParfaitTextId(parfaitTextId),
+        text = "안녕",
+        transform = ToppingTransform(
+            positionX = 0.4,
+            positionY = 0.6,
+            positionZ = positionZ,
+            scale = 1.0,
+            rotation = 0.0,
+        ),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 18.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
+        placedBy = ToppingPlacerVO(
+            groupMemberId = GroupMemberId(PLACER_GROUP_MEMBER_ID),
+            nickname = GroupNickname("올린이"),
+        ),
+        isMine = true,
+        createdAt = LocalDateTime(2026, 10, 26, 9, 0),
     )
 
     private fun topping(

@@ -22,6 +22,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -449,6 +450,55 @@ class CanvasMainViewModelTest {
                 )
             }
         }
+
+    @Test
+    fun todayCanvas_closedCanvasHasTextOnlyContributor_countsTextContributor() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 어제 사진은 한 명만 올렸고, 다른 한 명은 텍스트만 올렸다
+            coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+            coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
+                canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
+                    toppings = listOf(topping(positionZ = 1, placedByGroupMemberId = 1L)),
+                    texts = listOf(textTopping(positionZ = 2, placedByGroupMemberId = 2L)),
+                ),
+            )
+            val viewModel = enteredViewModel()
+
+            viewModel.effect.test {
+                // When
+                todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
+
+                // Then 텍스트만 올린 사람도 센다
+                assertEquals(
+                    CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 2),
+                    awaitItem(),
+                )
+            }
+        }
+
+    @Test
+    fun todayCanvas_closedCanvasHasPhotoAndTextFromSameMember_countsOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 한 명이 사진과 텍스트를 모두 올렸다
+        coEvery { pastCanvasAlertRepository.lastSeenClosedDate(GroupId(GROUP_ID)) } returns dayBeforeYesterday
+        coEvery { getParfaitDetail(any(), ParfaitId(YESTERDAY_PARFAIT_ID)) } returns Result.success(
+            canvas(YESTERDAY_PARFAIT_ID, yesterday).copy(
+                toppings = listOf(topping(positionZ = 1, placedByGroupMemberId = 1L)),
+                texts = listOf(textTopping(positionZ = 2, placedByGroupMemberId = 1L)),
+            ),
+        )
+        val viewModel = enteredViewModel()
+
+        viewModel.effect.test {
+            // When
+            todayCanvases.value = canvas(TODAY_PARFAIT_ID, today).copy(lastClosedDate = yesterday)
+
+            // Then 한 명으로 센다
+            assertEquals(
+                CanvasMainEffect.ShowPastCanvasAlert(date = yesterday, contributorCount = 1),
+                awaitItem(),
+            )
+        }
+    }
 
     @Test
     fun todayCanvas_closedCanvasDetailFetchFails_doesNotShowPastCanvasAlertAndDoesNotMarkSeen() =
@@ -1357,6 +1407,7 @@ class CanvasMainViewModelTest {
         fun textTopping(
             positionZ: Int,
             isMine: Boolean = false,
+            placedByGroupMemberId: Long = 1L,
         ) = CanvasTextToppingVO(
             parfaitTextId = ParfaitTextId(positionZ.toLong()),
             text = "안녕",
@@ -1367,9 +1418,15 @@ class CanvasMainViewModelTest {
                 scale = 1.0,
                 rotation = 0.0,
             ),
-            style = TextToppingStyle(color = "#000000", fontSize = 24.0, isFill = false, isStroke = false),
+            style = TextToppingStyle(
+                color = "#000000",
+                fontSize = 24.0,
+                isFill = false,
+                isStroke = false,
+                textAlign = TextToppingAlign.CENTER,
+            ),
             placedBy = ToppingPlacerVO(
-                groupMemberId = GroupMemberId(1L),
+                groupMemberId = GroupMemberId(placedByGroupMemberId),
                 nickname = GroupNickname("연경이"),
             ),
             isMine = isMine,

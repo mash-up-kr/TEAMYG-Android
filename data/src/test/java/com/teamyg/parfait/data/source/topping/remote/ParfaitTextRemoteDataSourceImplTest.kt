@@ -14,6 +14,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.TextToppingUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -51,9 +52,10 @@ class ParfaitTextRemoteDataSourceImplTest {
         fontSize = 16.0,
         isFill = true,
         isStroke = false,
+        textAlign = TextToppingAlign.LEFT,
     )
 
-    private fun placeSuccess() = ApiResponse(
+    private fun placeSuccess(textAlign: String = "LEFT") = ApiResponse(
         success = true,
         code = "CREATED",
         message = "성공",
@@ -69,6 +71,7 @@ class ParfaitTextRemoteDataSourceImplTest {
             fontSize = 16.0,
             isFill = true,
             isStroke = false,
+            textAlign = textAlign,
             placedBy = PlacedByResponse(groupMemberId = 10L, nickname = "연경이", ownerType = "ME"),
             createdAt = "2026-10-25T10:00:00.123",
         ),
@@ -126,9 +129,24 @@ class ParfaitTextRemoteDataSourceImplTest {
                 fontSize = 16.0,
                 isFill = true,
                 isStroke = false,
+                textAlign = "LEFT",
             ),
             request.captured,
         )
+    }
+
+    @Test
+    fun placeText_unknownAlignInResponse_readsAsCenter() = runTest {
+        // Given 앱이 모르는 정렬 값이 내려온다
+        coEvery {
+            parfaitTextService.postGroupsByGroupIdParfaitsByParfaitIdTexts(any(), any(), any())
+        } returns placeSuccess(textAlign = "JUSTIFY")
+
+        // When 텍스트 배치
+        val vo = place().getOrThrow()
+
+        // Then 실패하지 않고 가운데로 읽는다
+        assertEquals(TextToppingAlign.CENTER, vo.style.textAlign)
     }
 
     @Test
@@ -206,7 +224,13 @@ class ParfaitTextRemoteDataSourceImplTest {
             vo.transform,
         )
         assertEquals(
-            TextToppingStyle(color = "#000000", fontSize = 16.0, isFill = true, isStroke = false),
+            TextToppingStyle(
+                color = "#000000",
+                fontSize = 16.0,
+                isFill = true,
+                isStroke = false,
+                textAlign = TextToppingAlign.CENTER,
+            ),
             vo.style,
         )
     }
@@ -224,7 +248,7 @@ class ParfaitTextRemoteDataSourceImplTest {
             )
         } returns updateSuccess()
 
-        // When 아홉 필드를 모두 서로 다른 값으로 바꾼다
+        // When 열 필드를 모두 서로 다른 값으로 바꾼다
         dataSource.updateText(
             groupId = GroupId(1L),
             parfaitId = ParfaitId(5L),
@@ -239,6 +263,7 @@ class ParfaitTextRemoteDataSourceImplTest {
                 fontSize = 6.0,
                 isFill = true,
                 isStroke = false,
+                textAlign = TextToppingAlign.RIGHT,
             ),
         )
 
@@ -254,6 +279,7 @@ class ParfaitTextRemoteDataSourceImplTest {
                 fontSize = 6.0,
                 isFill = true,
                 isStroke = false,
+                textAlign = "RIGHT",
             ),
             request.captured,
         )

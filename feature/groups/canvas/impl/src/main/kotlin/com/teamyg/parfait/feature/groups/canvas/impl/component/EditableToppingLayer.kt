@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
@@ -236,6 +237,7 @@ internal fun EditableTextTopping(
         text = text.text,
         color = text.color,
         type = text.type,
+        align = text.align,
         designFontSize = text.designFontSize,
         center = entry.center,
         scale = text.scale,
@@ -369,6 +371,7 @@ private fun PreviewEditableTextTopping() = PreviewBox {
                 text = "오늘의 파르페",
                 color = TextToppingColor.Black,
                 type = TextToppingType.FILL,
+                align = TextAlign.Center,
                 designFontSize = 18f,
                 positionX = 0.5f,
                 positionY = 0.5f,

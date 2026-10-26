@@ -25,16 +25,19 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
  * 저장된 배치대로 캔버스에 놓인 텍스트 하나. 캔버스 메인과 토핑 정리 화면이 함께 쓴다 — 둘의 박스와
  * 판정이 같아야 정리한 그대로 돌아간다.
  *
- * 위치는 이미지와 같이 박스 **중심**이다. 정렬은 저장되지 않아 가운데로 그린다.
+ * 위치는 이미지와 같이 박스 **중심**이다.
  *
  * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 누를 수 없는 자리에서 버튼으로 읽히면 안 된다
+ * @param alpha 회전·배율과 같은 레이어에 건다 — 바깥 modifier 로 걸면 [centeredAt] 으로 옮겨진
+ *   글자가 레이어 밖에 놓여 잘린다
  */
 @Composable
 internal fun PlacedTextTopping(
     text: String,
     color: TextToppingColor,
     type: TextToppingType,
+    align: TextAlign,
     designFontSize: Float,
     center: DpOffset,
     scale: Float,
@@ -44,12 +47,13 @@ internal fun PlacedTextTopping(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     popProgress: Float = 1f,
+    alpha: Float = 1f,
 ) {
     TextToppingContent(
         text = text,
         color = color,
         type = type,
-        align = TextAlign.Center,
+        align = align,
         designFontSize = designFontSize,
         canvasWidth = canvasWidth,
         modifier = modifier
@@ -61,7 +65,7 @@ internal fun PlacedTextTopping(
                 scaleX = scale * pop
                 scaleY = scale * pop
                 rotationZ = rotationDegrees
-                if (popProgress < 1f) alpha = toppingPopAlpha(popProgress)
+                this.alpha = if (popProgress < 1f) alpha * toppingPopAlpha(popProgress) else alpha
             }.then(
                 // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
                 if (onClick != null) {
@@ -86,6 +90,7 @@ private fun PreviewPlacedTextTopping() = PreviewBox {
         text = "오늘의 파르페",
         color = TextToppingColor.Black,
         type = TextToppingType.FILL,
+        align = TextAlign.Center,
         designFontSize = 18f,
         center = DpOffset(160.dp, 80.dp),
         scale = 1.2f,
