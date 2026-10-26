@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.feature.app.setting.impl.BuildConfig
 import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
@@ -31,6 +32,7 @@ internal fun AppSettingRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
     val withdrawErrorMessage = stringResource(R.string.setting_withdraw_error)
+    val ossLicenseTitle = stringResource(R.string.setting_item_oss_license)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -41,6 +43,10 @@ internal fun AppSettingRoute(
 
                 is AppSettingSideEffect.NavigateToPolicyDetail -> navigator.goTo(
                     NavKeyWebView(title = effect.title, url = effect.url),
+                )
+
+                AppSettingSideEffect.NavigateToOssLicense -> navigator.goTo(
+                    NavKeyWebView(title = ossLicenseTitle, url = BuildConfig.OSS_LICENSE_URL),
                 )
 
                 AppSettingSideEffect.NavigateToLogin -> {
@@ -68,6 +74,8 @@ internal fun AppSettingRoute(
             onClickPolicy = { termsId ->
                 viewModel.processIntent(AppSettingIntent.ClickPolicy(termsId))
             },
+            isOssLicenseVisible = BuildConfig.OSS_LICENSE_URL.isNotBlank(),
+            onClickOssLicense = { viewModel.processIntent(AppSettingIntent.ClickOssLicense) },
             onClickLogout = { viewModel.processIntent(AppSettingIntent.ClickLogout) },
             onClickWithdraw = { viewModel.processIntent(AppSettingIntent.ClickWithdraw) },
             onConfirmWithdraw = { viewModel.processIntent(AppSettingIntent.ConfirmWithdraw) },

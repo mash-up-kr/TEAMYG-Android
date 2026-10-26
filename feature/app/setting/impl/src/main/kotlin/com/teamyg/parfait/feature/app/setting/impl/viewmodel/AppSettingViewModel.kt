@@ -51,6 +51,8 @@ sealed interface AppSettingIntent : UiIntent {
 
     data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
+    data object ClickOssLicense : AppSettingIntent
+
     data object ClickLogout : AppSettingIntent
 
     data object ClickWithdraw : AppSettingIntent
@@ -69,6 +71,9 @@ sealed interface AppSettingSideEffect : UiSideEffect {
         val title: String,
         val url: String,
     ) : AppSettingSideEffect
+
+    /** 주소는 빌드 설정에 있어 Route 가 채운다 — ViewModel 은 이동 의도만 알린다 */
+    data object NavigateToOssLicense : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
 
@@ -111,6 +116,7 @@ constructor(
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
             is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
+            AppSettingIntent.ClickOssLicense -> handleClickOssLicense()
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
             AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
@@ -155,6 +161,10 @@ constructor(
         postSideEffect(
             AppSettingSideEffect.NavigateToPolicyDetail(title = policy.title, url = policy.url),
         )
+    }
+
+    private fun handleClickOssLicense() {
+        postSideEffect(AppSettingSideEffect.NavigateToOssLicense)
     }
 
     private fun handleClickLogout() {
