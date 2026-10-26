@@ -275,15 +275,16 @@ constructor(
                         if (text.parfaitTextId != textId) {
                             text
                         } else {
+                            // 오차 안의 축은 왕복값으로 덮지 않는다 — 덮으면 확인이 그 축을 바뀐 것으로 보낸다
                             text.copy(
                                 text = result.text,
                                 color = result.color,
                                 type = result.type,
                                 designFontSize = result.designFontSize,
-                                positionX = result.positionX,
-                                positionY = result.positionY,
-                                scale = result.scale,
-                                rotationDegrees = result.rotationDegrees,
+                                positionX = text.positionX.orIfMoved(result.positionX),
+                                positionY = text.positionY.orIfMoved(result.positionY),
+                                scale = text.scale.orIfMoved(result.scale),
+                                rotationDegrees = text.rotationDegrees.orIfMoved(result.rotationDegrees),
                             )
                         }
                     },
@@ -297,21 +298,18 @@ constructor(
         }
     }
 
-    private fun TextEditResult.Edited.isSameAs(local: EditableText): Boolean {
-        fun near(
-            a: Float,
-            b: Float,
-        ): Boolean = abs(a - b) <= TEXT_EDIT_POSITION_TOLERANCE
+    private fun TextEditResult.Edited.isSameAs(local: EditableText): Boolean = text == local.text &&
+        color == local.color &&
+        type == local.type &&
+        designFontSize == local.designFontSize &&
+        positionX.isNear(local.positionX) &&
+        positionY.isNear(local.positionY) &&
+        scale.isNear(local.scale) &&
+        rotationDegrees.isNear(local.rotationDegrees)
 
-        return text == local.text &&
-            color == local.color &&
-            type == local.type &&
-            designFontSize == local.designFontSize &&
-            near(positionX, local.positionX) &&
-            near(positionY, local.positionY) &&
-            near(scale, local.scale) &&
-            near(rotationDegrees, local.rotationDegrees)
-    }
+    private fun Float.isNear(other: Float): Boolean = abs(this - other) <= TEXT_TRANSFORM_TOLERANCE
+
+    private fun Float.orIfMoved(edited: Float): Float = if (isNear(edited)) this else edited
 
     private fun CanvasToppingArrangeUiState.markTextDeleted(textId: Long): CanvasToppingArrangeUiState = copy(
         texts = texts.filterNot { it.parfaitTextId == textId },
@@ -968,6 +966,7 @@ constructor(
 
     /**
      * 바뀐 축만 싣는다 — null 인 축은 서버가 유지한다. 스냅샷에 없으면 네 축을 모두 싣는다.
+     * 바뀜은 재편집 결과를 거르는 [isSameAs] 와 같은 오차로 가린다.
      *
      * @return 바뀐 축이 없으면 null.
      */
@@ -977,7 +976,7 @@ constructor(
         fun changed(
             value: Float,
             originalValue: Float?,
-        ): Double? = value.takeIf { originalValue == null || it != originalValue }?.toDouble()
+        ): Double? = value.takeIf { originalValue == null || !it.isNear(originalValue) }?.toDouble()
 
         val update = TextToppingTransformUpdate(
             parfaitTextId = ParfaitTextId(parfaitTextId),
@@ -1013,6 +1012,6 @@ constructor(
         const val CONFIRM_KEY = "confirm"
 
         /** 입력 화면의 Dp ↔ 비율 왕복 오차를 흡수할 만큼만 둔다 */
-        const val TEXT_EDIT_POSITION_TOLERANCE = 1e-4f
+        const val TEXT_TRANSFORM_TOLERANCE = 1e-4f
     }
 }
