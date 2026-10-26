@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,15 +43,23 @@ import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableLayerEntry
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableToppingImage
+import com.teamyg.parfait.feature.groups.canvas.impl.component.PlacedTextTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.component.editableLayerOrder
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableTextEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingDrawEntries
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingHitEntries
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBGEditUiState
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasBackgroundPaletteColors
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
-/** 토핑은 배경을 고르는 참고로만 보인다 — 고를 수 없다는 것을 불투명도로 알린다 */
+/** 토핑·텍스트는 배경을 고르는 참고로만 보인다 — 고를 수 없다는 것을 불투명도로 알린다 */
 private const val BACKGROUND_TOPPING_ALPHA = 0.5f
 
 @Composable
@@ -116,13 +125,45 @@ internal fun CanvasBGEditScreen(
                         retryKey = 0,
                     )
 
-                    drawEntries.forEach { entry ->
-                        EditableToppingImage(
-                            entry = entry,
-                            outline = outlines[entry.topping.imageUrl],
-                            alpha = BACKGROUND_TOPPING_ALPHA,
-                            onClick = null,
-                        )
+                    // 판정이 없어 박스 크기를 재 둘 필요가 없다 — 층 순서만 다른 화면과 맞춘다
+                    val layers = editableLayerOrder(
+                        images = rememberEditableToppingHitEntries(drawEntries, outlines),
+                        texts = rememberEditableTextEntries(
+                            texts = uiState.texts,
+                            canvasWidth = canvasWidth,
+                            canvasHeight = canvasHeight,
+                            boxSizes = emptyMap(),
+                        ),
+                    )
+
+                    layers.forEach { layer ->
+                        key(layer.key) {
+                            when (layer) {
+                                is EditableLayerEntry.Image -> EditableToppingImage(
+                                    entry = layer.entry.draw,
+                                    outline = outlines[layer.entry.topping.imageUrl],
+                                    alpha = BACKGROUND_TOPPING_ALPHA,
+                                    onClick = null,
+                                )
+
+                                is EditableLayerEntry.Text -> {
+                                    val text = layer.entry.text
+                                    PlacedTextTopping(
+                                        text = text.text,
+                                        color = text.color,
+                                        type = text.type,
+                                        designFontSize = text.designFontSize,
+                                        center = layer.entry.center,
+                                        scale = text.scale,
+                                        rotationDegrees = text.rotationDegrees,
+                                        canvasWidth = canvasWidth,
+                                        onBoxSizeChange = {},
+                                        onClick = null,
+                                        alpha = BACKGROUND_TOPPING_ALPHA,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -290,11 +331,26 @@ private val previewToppings = listOf(
     ),
 )
 
+private val previewTexts = listOf(
+    EditableText(
+        parfaitTextId = 1L,
+        isMine = true,
+        text = "오늘의 파르페",
+        color = TextToppingColor.Black,
+        type = TextToppingType.FILL,
+        designFontSize = 18f,
+        positionX = 0.5f,
+        positionY = 0.2f,
+        positionZ = 3,
+        rotationDegrees = -10f,
+    ),
+)
+
 @YGPreview
 @Composable
 private fun PreviewCanvasBGEditScreen() = PreviewBox {
     CanvasBGEditScreen(
-        uiState = CanvasBGEditUiState(toppings = previewToppings),
+        uiState = CanvasBGEditUiState(toppings = previewToppings, texts = previewTexts),
         onSelectColor = {},
         onClickCamera = {},
         onClickGallery = {},
