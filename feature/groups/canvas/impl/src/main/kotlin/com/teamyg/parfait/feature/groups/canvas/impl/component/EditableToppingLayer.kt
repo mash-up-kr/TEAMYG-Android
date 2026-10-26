@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -21,7 +20,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
@@ -229,8 +227,6 @@ internal fun editableLayerOrder(
 }
 
 /**
- * 캔버스 메인의 텍스트와 같은 규칙으로 그린다 — 위치는 박스 중심 비율, 정렬은 가운데.
- *
  * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
  * @param onClick null 이면 접근성 클릭도 붙지 않는다
  */
@@ -244,36 +240,18 @@ internal fun EditableTextTopping(
 ) {
     val text = entry.text
 
-    TextToppingContent(
+    PlacedTextTopping(
         text = text.text,
         color = text.color,
         type = text.type,
-        align = TextAlign.Center,
         designFontSize = text.designFontSize,
+        center = entry.center,
+        scale = text.scale,
+        rotationDegrees = text.rotationDegrees,
         canvasWidth = canvasWidth,
-        modifier = modifier
-            .testTag("editable_text_${text.parfaitTextId}")
-            .centeredAt(entry.center)
-            // graphicsLayer 의 배율은 잰 크기에 들어가지 않는다 — 그 앞에서 재야 scale 전 크기다
-            .onSizeChanged(onBoxSizeChange)
-            .graphicsLayer {
-                scaleX = text.scale
-                scaleY = text.scale
-                rotationZ = text.rotationDegrees
-            }.let { base ->
-                if (onClick == null) {
-                    base
-                } else {
-                    // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
-                    base.semantics(mergeDescendants = true) {
-                        role = Role.Button
-                        onClick {
-                            onClick()
-                            true
-                        }
-                    }
-                }
-            },
+        onBoxSizeChange = onBoxSizeChange,
+        onClick = onClick,
+        modifier = modifier.testTag("editable_text_${text.parfaitTextId}"),
     )
 }
 
