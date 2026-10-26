@@ -38,7 +38,7 @@ interface ParfaitImageRemoteDataSource {
     suspend fun updateToppings(
         groupId: GroupId,
         parfaitId: ParfaitId,
-        updates: List<ToppingTransformUpdate>,
+        updates: List<ToppingTransformUpdate> = emptyList(),
         textUpdates: List<TextToppingTransformUpdate> = emptyList(),
     ): Result<List<UpdatedToppingVO>>
 
