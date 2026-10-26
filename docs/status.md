@@ -58,13 +58,13 @@
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
-- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`
+- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`
 - ⚠️ 토핑 한 장만 실패해도 첫 페인트 전이면 캔버스 전체가 다시 시도 덮개로 막히는데 그 규칙의 근거가 코드에만 있고, 첫 페인트 판정 상태가 Route 컴포지션에 있어 덮개 회귀를 잡는 테스트가 없다 (OQ-P-355, OQ-P-395)
 - ⚠️ 배경을 고른 빈 캔버스에는 빈 안내판이 뜨지 않는다 — 안내판 조건이 `isEmpty && background == null`이다 (OQ-P-304)
 - ⚠️ 그룹 생성·참여 직후 환영 배너는 문구·갈래에 정책 소스가 없고, 초대코드를 한 번 복사하면 재발행된 배너에 버튼 동작이 없어 다시 복사할 수 없다 (OQ-P-339)
 - ⚠️ Spotlight 작성자 이름 색은 서버 값이 아니라 `memberChips` 조인이라 탈퇴·이탈 멤버는 기본색이 되고, 토핑 탭 판정의 알파 문턱·해상도는 실측 전 값이다 (OQ-P-251, OQ-P-313)
 - ⚠️ 캔버스 두 조회의 404 `GROUP_NOT_FOUND`를 다른 실패와 가르지 않고, 목록에서 사라진 그룹이면 상단 바가 옛 이름을 그대로 든다 (OQ-P-383, OQ-P-407)
-- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이고, 하루 경계 직후 같은 그룹의 오늘 조회가 동시에 나가 서버가 캔버스를 중복 생성하는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
+- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이다. 폴링은 조건부 오늘 조회(v2 `today`, ETag/304) 하나라 304 경로까지 매 주기 서버의 오늘 캔버스 확보를 태우는데, 그 확보가 동시 요청에서 캔버스를 중복 생성하지 않는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
 - 설계: [c001-canvas-main](superpowers/specs/archive/2026-08-12-c001-canvas-main.md), [c001-canvas-today-detail](superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md), [c202-canvas-spotlight](superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [canvas-feedback-fixes](superpowers/specs/archive/2026-09-10-canvas-feedback-fixes.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0023](adr/0023-group-in-memory-ssot.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md), [ADR-0030](adr/0030-topping-outline-distance-field.md)
 
 ## 토핑 생성·배치·배치 수정 (C-101·C-102·C-105·C-106·C-305)

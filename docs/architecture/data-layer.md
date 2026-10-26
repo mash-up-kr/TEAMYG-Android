@@ -57,7 +57,8 @@ tags: [architecture, parfait]
   `MutableStateFlow<Map<GroupId, CanvasVO>>`, [ADR-0029](../adr/0029-canvas-today-ssot-polling.md),
   PR #404로 develop 머지). 그룹 저장소와 같은 형태이되 **키가 그룹별로 나뉜 지도**이고, 지난 날
   캔버스는 담지 않는다(마감돼 바뀌지 않으므로 공유해 얻을 것이 없다). `null`이 "아직 못 받음"인 것도
-  같다. 값을 얻는 길은 `todayCanvas(groupId)` 하나이고 **서버 재조회는 이 저장소가 아니라
+  같다. 화면이 값을 얻는 길은 `todayCanvas(groupId)` 하나이고(`cachedTodayCanvas`·`cachedTodayEtag`는
+  폴러가 ETag 전송 여부를 정하려고 읽는 스냅샷이다) **서버 재조회는 이 저장소가 아니라
   `CanvasPoller`가 소유한다** — 그룹 저장소에는 없던 갈래다. 폴러는 그룹별 참조 계수로 주기 루프를
   켜고 끄며, 계수는 `ParfaitRepositoryImpl`이 구독의 `onStart`/`onCompletion`에 걸어 올리고 내린다.
   📌 **이 캐시가 그룹의 값을 하나 들고 온다**(2026-09-08, PR #469) — 서버 응답에 `groupName`이 붙어
