@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -20,21 +21,31 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLayerComparator
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -126,6 +137,147 @@ internal fun rememberEditableToppingHitEntries(
 }
 
 /**
+ * @param target 박스를 아직 한 번도 재지 못했으면 null 이다. 판정에서 빼야 한다 — 크기를 지어내면
+ *   안 보이는 자리가 눌린다.
+ */
+internal data class EditableTextEntry(
+    val text: EditableText,
+    val center: DpOffset,
+    val target: ToppingHitTarget?,
+)
+
+/**
+ * @param boxSizes [EditableTextTopping] 이 잰, scale 을 곱하기 전 박스 크기. [EditableText.parfaitTextId] 로 찾는다
+ */
+@Composable
+internal fun rememberEditableTextEntries(
+    texts: List<EditableText>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    boxSizes: Map<Long, IntSize>,
+): List<EditableTextEntry> {
+    val density = LocalDensity.current
+
+    return texts.map { text ->
+        val center = toppingCenter(
+            canvasWidth = canvasWidth,
+            canvasHeight = canvasHeight,
+            positionX = text.positionX,
+            positionY = text.positionY,
+        )
+        EditableTextEntry(
+            text = text,
+            center = center,
+            target = boxSizes[text.parfaitTextId]?.let { boxSize ->
+                with(density) {
+                    textToppingHitTarget(
+                        centerXPx = center.x.toPx(),
+                        centerYPx = center.y.toPx(),
+                        boxWidthPx = boxSize.width.toFloat(),
+                        boxHeightPx = boxSize.height.toFloat(),
+                        scale = text.scale,
+                        rotationDegrees = text.rotationDegrees,
+                    )
+                }
+            },
+        )
+    }
+}
+
+/** 이미지와 텍스트를 한 줄로 세운 층. 두 종류의 id 가 겹칠 수 있어 [key] 로 가른다 */
+internal sealed interface EditableLayerEntry {
+    val key: CanvasToppingKey
+    val isMine: Boolean
+    val target: ToppingHitTarget?
+
+    data class Image(val entry: EditableToppingHitEntry) : EditableLayerEntry {
+        override val key get() = CanvasToppingKey.Image(entry.topping.parfaitImageId)
+        override val isMine get() = entry.topping.isMine
+        override val target get() = entry.target
+    }
+
+    data class Text(val entry: EditableTextEntry) : EditableLayerEntry {
+        override val key get() = CanvasToppingKey.Text(entry.text.parfaitTextId)
+        override val isMine get() = entry.text.isMine
+        override val target get() = entry.target
+    }
+}
+
+/** 아래에서 위로. 캔버스 메인과 같은 겹침 규칙([canvasLayerComparator])이다 */
+internal fun editableLayerOrder(
+    images: List<EditableToppingHitEntry>,
+    texts: List<EditableTextEntry>,
+): List<EditableLayerEntry> {
+    val layers = images.map { EditableLayerEntry.Image(it) } + texts.map { EditableLayerEntry.Text(it) }
+    return layers.sortedWith(
+        canvasLayerComparator(
+            positionZ = { layer ->
+                when (layer) {
+                    is EditableLayerEntry.Image -> layer.entry.topping.positionZ
+                    is EditableLayerEntry.Text -> layer.entry.text.positionZ
+                }
+            },
+            isText = { it is EditableLayerEntry.Text },
+            id = { layer ->
+                when (layer) {
+                    is EditableLayerEntry.Image -> layer.entry.topping.parfaitImageId
+                    is EditableLayerEntry.Text -> layer.entry.text.parfaitTextId
+                }
+            },
+        ),
+    )
+}
+
+/**
+ * 캔버스 메인의 텍스트와 같은 규칙으로 그린다 — 위치는 박스 중심 비율, 정렬은 가운데.
+ *
+ * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
+ * @param onClick null 이면 접근성 클릭도 붙지 않는다
+ */
+@Composable
+internal fun EditableTextTopping(
+    entry: EditableTextEntry,
+    canvasWidth: Dp,
+    onBoxSizeChange: (IntSize) -> Unit,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val text = entry.text
+
+    TextToppingContent(
+        text = text.text,
+        color = text.color,
+        type = text.type,
+        align = TextAlign.Center,
+        designFontSize = text.designFontSize,
+        canvasWidth = canvasWidth,
+        modifier = modifier
+            .testTag("editable_text_${text.parfaitTextId}")
+            .centeredAt(entry.center)
+            // graphicsLayer 의 배율은 잰 크기에 들어가지 않는다 — 그 앞에서 재야 scale 전 크기다
+            .onSizeChanged(onBoxSizeChange)
+            .graphicsLayer {
+                scaleX = text.scale
+                scaleY = text.scale
+                rotationZ = text.rotationDegrees
+            }.let { base ->
+                if (onClick == null) {
+                    base
+                } else {
+                    // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
+                    base.semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        onClick {
+                            onClick()
+                            true
+                        }
+                    }
+                }
+            },
+    )
+}
+
+/**
  * 캔버스 미리보기 박스 안, 저장된 배치([EditableTopping.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
@@ -194,7 +346,7 @@ internal fun EditableToppingImage(
 }
 
 /**
- * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼.
+ * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼. 이미지·텍스트 모두 판정 박스([target])를 감싼다.
  *
  * @param center 선택 박스를 두는 자리. 이미지를 그린 자리와 같아야 한다
  * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
@@ -202,7 +354,7 @@ internal fun EditableToppingImage(
  */
 @Composable
 internal fun ToppingFocusDecoration(
-    entry: EditableToppingHitEntry,
+    target: ToppingHitTarget,
     center: DpOffset,
     onClickDelete: () -> Unit,
     showActionButtons: Boolean,
@@ -210,19 +362,19 @@ internal fun ToppingFocusDecoration(
 ) {
     val density = LocalDensity.current
     val sizeAfterScale = with(density) {
-        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
+        DpSize(target.imageWidthPx.toDp(), target.imageHeightPx.toDp())
     }
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
-        rotationDegrees = entry.topping.rotationDegrees,
+        rotationDegrees = target.rotationDegrees,
     )
 
     Box(modifier = modifier) {
         ToppingSelectionStroke(
             center = center,
             sizeAfterScale = sizeAfterScale,
-            rotationDegrees = entry.topping.rotationDegrees,
+            rotationDegrees = target.rotationDegrees,
         )
         if (showActionButtons) {
             YGCircleButton(
@@ -234,4 +386,30 @@ internal fun ToppingFocusDecoration(
             )
         }
     }
+}
+
+@YGPreview
+@Composable
+private fun PreviewEditableTextTopping() = PreviewBox {
+    EditableTextTopping(
+        entry = EditableTextEntry(
+            text = EditableText(
+                parfaitTextId = 1L,
+                isMine = true,
+                text = "오늘의 파르페",
+                color = TextToppingColor.Black,
+                type = TextToppingType.FILL,
+                designFontSize = 18f,
+                positionX = 0.5f,
+                positionY = 0.5f,
+                positionZ = 0,
+                rotationDegrees = -10f,
+            ),
+            center = DpOffset(160.dp, 80.dp),
+            target = null,
+        ),
+        canvasWidth = 320.dp,
+        onBoxSizeChange = {},
+        onClick = null,
+    )
 }
