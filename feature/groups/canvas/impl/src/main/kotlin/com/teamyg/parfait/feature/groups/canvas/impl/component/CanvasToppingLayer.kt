@@ -45,6 +45,7 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasLayerItem
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BASE_LONG_SIDE_RATIO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
@@ -53,7 +54,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasRevealSettled
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingColorOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
-import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingTypeOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -280,7 +280,7 @@ private fun CanvasText(
     PlacedTextTopping(
         text = text.text,
         color = textToppingColorOf(text.style.color),
-        type = textToppingTypeOf(isFill = text.style.isFill, isStroke = text.style.isStroke),
+        type = TextToppingType.of(isFill = text.style.isFill, isStroke = text.style.isStroke),
         designFontSize = text.style.fontSize.toFloat(),
         center = toppingCenter(
             canvasWidth = canvasWidth,

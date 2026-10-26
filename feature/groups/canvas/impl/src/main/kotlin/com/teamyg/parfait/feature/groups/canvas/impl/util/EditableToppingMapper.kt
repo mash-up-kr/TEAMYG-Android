@@ -4,6 +4,7 @@ import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 
 internal fun CanvasToppingVO.toEditableTopping(): EditableTopping = EditableTopping(
     parfaitImageId = parfaitImageId.value,
@@ -22,7 +23,7 @@ internal fun CanvasTextToppingVO.toEditableText(): EditableText = EditableText(
     isMine = isMine,
     text = text,
     color = textToppingColorOf(style.color),
-    type = textToppingTypeOf(isFill = style.isFill, isStroke = style.isStroke),
+    type = TextToppingType.of(isFill = style.isFill, isStroke = style.isStroke),
     designFontSize = style.fontSize.toFloat(),
     positionX = transform.positionX.toFloat(),
     positionY = transform.positionY.toFloat(),
