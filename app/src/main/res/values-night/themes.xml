@@ -5,6 +5,12 @@
         targetSdk 33+ WebView 는 시스템 설정이 아니라 이 테마의 isLightTheme 로
         prefers-color-scheme 을 정한다. 다크 모드에서 light 부모를 그대로 두면
         웹뷰 페이지가 항상 라이트로 그려진다.
+
+        앱 자체에는 다크 모드가 없다. 창 배경은 라이트 값으로 고정해 Android 12+ 시스템
+        스플래시(windowSplashScreenBackground 미지정 시 windowBackground 를 쓴다)와
+        화면 전환 중 비치는 배경이 어두워지지 않게 한다.
     -->
-    <style name="Theme.TeamYg" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.TeamYg" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>
