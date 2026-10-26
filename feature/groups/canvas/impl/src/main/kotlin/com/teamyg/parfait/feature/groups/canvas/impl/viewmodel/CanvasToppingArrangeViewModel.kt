@@ -171,7 +171,6 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
 
     data object ShowOthersToppingNotEditable : CanvasToppingArrangeEffect
 
-    /** 편집 대상은 [TextEditSessionHolder] 에 실어 두었다 */
     data object NavigateToTextEdit : CanvasToppingArrangeEffect
 
     data class ShowError(
@@ -288,7 +287,6 @@ constructor(
                         }
                     },
                     dirtyTextIds = dirtyTextIds + textId,
-                    // 원래 내용으로 되돌린 경우 다시 만들 필요가 없어진다
                     recreateTextIds = if (needsRecreate) recreateTextIds + textId else recreateTextIds - textId,
                 )
             }
@@ -807,7 +805,6 @@ constructor(
             recreateText(text).also { result -> updateState { applyRecreateResult(textId, result) } }
         }
 
-    /** 겹침 순서는 옛 텍스트의 것을 이어받는다 */
     private suspend fun recreateText(text: EditableText): TextToppingRecreateResult = recreateTextToppingUseCase(
         groupId = groupId,
         parfaitId = parfaitId,
@@ -863,7 +860,6 @@ constructor(
         deletedIds.size == pendingIds.size && deletedTextIds.size == pendingTextIds.size
     }
 
-    /** 서버에서 지운 텍스트를 삭제 대기에서 툼스톤으로 옮긴다 */
     private fun CanvasToppingArrangeUiState.markTextsGone(textIds: Set<Long>): CanvasToppingArrangeUiState = copy(
         pendingDeleteTextIds = pendingDeleteTextIds - textIds,
         deletedTextIds = deletedTextIds + textIds,
