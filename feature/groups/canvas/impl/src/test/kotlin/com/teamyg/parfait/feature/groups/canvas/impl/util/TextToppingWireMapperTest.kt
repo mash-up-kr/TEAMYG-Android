@@ -32,19 +32,18 @@ class TextToppingWireMapperTest {
     @Test
     fun type_roundTrips() {
         TextToppingType.entries.forEach {
-            val (isFill, isStroke) = it.toFillStroke()
-            assertEquals(it, textToppingTypeOf(isFill, isStroke))
+            assertEquals(it, TextToppingType.of(isFill = it.hasFill, isStroke = it.hasBorder))
         }
     }
 
     @Test
     fun type_strokeWithoutFill_isDefault() {
-        assertEquals(TextToppingType.DEFAULT, textToppingTypeOf(isFill = false, isStroke = true))
+        assertEquals(TextToppingType.DEFAULT, TextToppingType.of(isFill = false, isStroke = true))
     }
 
     @Test
     fun style_carriesDesignFontSizeAndFlags() {
-        val style = textToppingStyleOf(TextToppingColor.Blue, TextToppingType.FILL_STROKE, 18f)
+        val style = TextToppingStyle(TextToppingColor.Blue, TextToppingType.FILL_STROKE, 18f)
 
         assertEquals("#6DBBF2", style.color)
         assertEquals(18.0, style.fontSize)

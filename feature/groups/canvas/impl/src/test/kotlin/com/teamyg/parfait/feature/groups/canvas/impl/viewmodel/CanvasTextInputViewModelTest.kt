@@ -26,7 +26,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENG
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
+import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
 import java.io.IOException
 import io.mockk.coEvery
@@ -209,7 +209,7 @@ class CanvasTextInputViewModelTest {
                     rotationDegrees = state.rotationDegrees,
                     positionZ = 1,
                 ),
-                style = textToppingStyleOf(state.selectedColor, state.textType, state.designFontSize),
+                style = TextToppingStyle(state.selectedColor, state.textType, state.designFontSize),
             )
             refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L))
             clearToppingDraft()
