@@ -1,7 +1,7 @@
 ---
 id: text-topping-api
 title: 텍스트 토핑 서버 연동 — 배치·C-001 렌더링·C-305 재편집 (Text Topping API Wiring)
-status: draft
+status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-10-26

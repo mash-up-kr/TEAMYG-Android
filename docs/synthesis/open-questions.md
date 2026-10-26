@@ -7734,8 +7734,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-439
 - **출처**: [parfait.md](../api/parfait.md) GET today 응답·과거 목록 · 서버 `GetTodayParfaitResponse.texts`·`ParfaitCanvasRotator`·`docs/parfait-text-api.md`
 - **항목**: ① 앱 `GetTodayParfaitResponse.texts`(DTO)는 받지만 캔버스 VO(`CanvasVO`)로 매핑하지 않는다. 텍스트만 있는 캔버스가 빈 캔버스로 그려진다. ② 회전은 텍스트만 있어도 `CLOSED`로 마감하지만 과거 목록 `imageCount`는 이미지만 센다. `PastCanvasVO.isEmpty` 기준인 달력 점이 그날을 빈 날로 그린다. 위키 C-201 "토핑 1개 이상"에 텍스트가 드는지 기획 판단이 필요하다. ③ 텍스트를 그릴 때 `positionZ`가 이미지와 한 축이라 두 배열을 합쳐 정렬해야 한다(OQ-P-443).
-- **상태**: 미해결
-- **해소 메모**: 텍스트 토핑 앱 구현 때 캔버스 VO·매퍼에 `texts`를 붙이고, 달력 빈 날 판정 기준을 함께 정한다.
+- **상태**: 부분 해소 (①·③ 해소, ② 잔존)
+- **해소 메모**: ① 캔버스 VO·매퍼에 `texts`가 붙어 C-001이 텍스트를 그리고 `isCanvasEmpty`도 센다. ③ `canvasLayerOrder`가 두 배열을 `positionZ`로 합치고 동률이면 이미지가 아래, 그다음 id 순이다. ② 달력 빈 날 판정(`PastCanvasVO.isEmpty`)은 아직 텍스트를 세지 않는다 — 기획 판단 뒤에 정한다.
 
 ### [2026-10-25] v2 today ETag가 변경을 놓치는 경로
 
@@ -7751,7 +7751,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`
 - **항목**: 서버는 `color`를 공백 아님·20자 이하만 검사하고 형식을 보지 않는다. Android·iOS·서버가 어떤 색 문자열(`#RRGGBB`, 알파 포함 여부, 대소문자)을 쓸지 합의가 없어 다른 클라이언트가 넣은 값을 앱이 파싱하지 못할 수 있다.
 - **상태**: 미해결
-- **해소 메모**: 앱이 텍스트 토핑을 붙이기 전에 형식과 파싱 실패 폴백을 정한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 쓸 때 `TextToppingColor.contentColor`를 `#RRGGBB`(대문자, 알파 없음, White는 `#FAFAFA`)로 보내고, 읽을 때 8색에 없는 값은 Black으로 그린다(`TextToppingWireMapper`). 다른 클라이언트와 형식을 합의하면 갱신한다.
 
 ### [2026-10-25] 텍스트 2000자 상한의 계수 기준과 DB 문자셋
 
@@ -7767,7 +7767,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) 「저장소 제약」
 - **항목**: 이미지와 텍스트가 겹침 순서 축 `positionZ` 하나를 공유한다. 서버는 값을 검증·배정하지 않고 텍스트를 `positionZ`→`id` 순으로만 내려준다. 두 배열을 합친 전체 순서, 같은 `positionZ`일 때 어느 쪽이 위인지, 새 토핑의 z를 누가 정하는지가 계약에 없다.
 - **상태**: 미해결
-- **해소 메모**: 서버팀·iOS와 동률 규칙과 z 배정 주체를 합의한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 새 토핑의 z는 이미지·텍스트 전체의 최댓값 + 1을 앱이 정하고(`CanvasMainViewModel` 초안, `CanvasToppingPlaceViewModel.resolvedPositionZ`), 합쳐 그릴 때 동률은 이미지가 아래, 그다음 id 순이다(`canvasLayerOrder`). 서버팀·iOS와 합의하면 갱신한다.
 
 ### [2026-10-25] 텍스트 배치 POST가 멱등이 아니다 — 재시도 시 중복 배치·중복 알림
 
@@ -7775,7 +7775,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) POST 절 · 서버 `PlaceParfaitTextService`
 - **항목**: 이미지 배치의 `(parfaitId, imageId)` upsert와 달리 텍스트 POST는 항상 새 행을 만들고 그때마다 푸시를 보낸다. 앱이 응답을 잃고 재시도하면 같은 텍스트가 두 번 놓이고 다른 구성원은 알림을 두 번 받는다.
 - **상태**: 미해결
-- **해소 메모**: 앱 재시도 정책(재시도 금지, 또는 캔버스 재조회로 중복 확인)이나 서버 멱등 키 중 하나를 정한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 내용 변경 재편집에서 POST는 성공했는데 옛 텍스트 DELETE가 실패하면 옛 id만 삭제 보류로 옮겨 POST를 반복하지 않는다. 서버 멱등 키가 생기면 재검토한다.
 
 ### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
 
@@ -7822,8 +7822,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-450
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
 - **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
-- **상태**: 미해결 (앱 배선 대기 — 원격 DataSource까지 있음)
-- **해소 메모**: 저장소·유스케이스를 붙여 `handleOnClickStack`에서 `placeText`를 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
+- **상태**: 해소됨 (2026-10-26, `feature/text-topping-api`) — `PlaceTextToppingUseCase`가 POST를 한 번 보내고 성공하면 오늘 캔버스를 다시 읽어 C-001로 돌아간다. 저장 단위는 OQ-P-452
 
 ### [2026-10-26] 텍스트 토핑의 정렬·줄바꿈 위치를 서버 계약에 실을 자리가 없다
 
@@ -7831,6 +7830,14 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
 - **항목**: 화면은 정렬 3종(`TextToppingAlign`)을 순환하고 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 배치 요청은 `text`·좌표·`scale`·`rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이라 둘 다 실을 필드가 없다(타입 3종은 `isFill`·`isStroke` 조합으로 실린다). 저장이 붙으면 왼쪽·오른쪽 정렬이 다른 기기에서 가운데로 그려지고, 줄바꿈은 기기마다 다시 계산된다. ① 서버에 정렬 필드를 더할지 ② 정렬을 고정해 UI에서 뺄지 ③ 줄바꿈 위치를 계약에 넣을지.
 - **상태**: 미해결 (서버·iOS 협의)
-- **해소 메모**: OQ-P-450의 저장 배선보다 먼저 정해야 한다 — 필드가 없는 채 저장을 붙이면 정렬이 조용히 사라진다.
+- **해소 메모**: 저장 배선은 정렬 없이 붙었다 — 앱은 다시 읽은 텍스트를 가운데 정렬로 그린다. 서버팀에 정렬 필드 추가를 제보하는 중이다. 필드가 생기면 `TextToppingWireMapper`에 정렬을 싣는다.
 
-<!-- oq-next: 452 -->
+### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
+
+- **ID**: OQ-P-452
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
+- **항목**: 앱은 위치를 박스 중심의 캔버스 비율, `fontSize`를 디자인 너비 335 기준 `designFontSize`, `scale`을 핀치 배율로 저장한다. 이 단위는 Android가 정했고 iOS와 맞추지 않았다. iOS가 다른 단위(좌상단 기준 좌표, 다른 기준 너비 등)로 저장하면 서로의 텍스트가 어긋나 보인다.
+- **상태**: 미해결 (iOS 협의)
+- **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
+
+<!-- oq-next: 453 -->
