@@ -16,7 +16,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -25,7 +24,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -267,11 +265,7 @@ private fun CanvasTextToppingVO.hitTarget(
     }
 }
 
-/**
- * 위치는 이미지와 같이 박스 **중심**의 비율이다. 정렬은 저장되지 않아 가운데로 그린다.
- *
- * @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다
- */
+/** @param onBoxSizeChange scale 을 곱하기 전 박스 크기. 판정이 이 값에 scale 을 곱해 쓴다 */
 @Composable
 private fun CanvasText(
     text: CanvasTextToppingVO,
@@ -284,44 +278,23 @@ private fun CanvasText(
 ) {
     val transform = text.transform
 
-    TextToppingContent(
+    PlacedTextTopping(
         text = text.text,
         color = textToppingColorOf(text.style.color),
         type = textToppingTypeOf(isFill = text.style.isFill, isStroke = text.style.isStroke),
-        align = TextAlign.Center,
         designFontSize = text.style.fontSize.toFloat(),
+        center = toppingCenter(
+            canvasWidth = canvasWidth,
+            canvasHeight = canvasHeight,
+            positionX = transform.positionX.toFloat(),
+            positionY = transform.positionY.toFloat(),
+        ),
+        scale = transform.scale.toFloat(),
+        rotationDegrees = transform.rotation.toFloat(),
         canvasWidth = canvasWidth,
-        modifier = Modifier
-            .centeredAt(
-                toppingCenter(
-                    canvasWidth = canvasWidth,
-                    canvasHeight = canvasHeight,
-                    positionX = transform.positionX.toFloat(),
-                    positionY = transform.positionY.toFloat(),
-                ),
-            )
-            // graphicsLayer 의 배율은 잰 크기에 들어가지 않는다 — 그 앞에서 재야 scale 전 크기다
-            .onSizeChanged(onBoxSizeChange)
-            .graphicsLayer {
-                val pop = if (popProgress < 1f) toppingPopScale(popProgress) else 1f
-                scaleX = transform.scale.toFloat() * pop
-                scaleY = transform.scale.toFloat() * pop
-                rotationZ = transform.rotation.toFloat()
-                if (popProgress < 1f) alpha = toppingPopAlpha(popProgress)
-            }.then(
-                // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
-                if (clickable) {
-                    Modifier.semantics(mergeDescendants = true) {
-                        role = Role.Button
-                        onClick {
-                            onClick()
-                            true
-                        }
-                    }
-                } else {
-                    Modifier
-                },
-            ),
+        onBoxSizeChange = onBoxSizeChange,
+        onClick = onClick.takeIf { clickable },
+        popProgress = popProgress,
     )
 }
 
