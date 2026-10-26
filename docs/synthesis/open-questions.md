@@ -3784,7 +3784,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   아니면 "표시용 부가 필드는 널 허용"이라는 예외를 명시할지. ③ 키 이름 변경을 **계약 문서 대조 말고
   다른 수단으로 잡을 방법**이 있는지 — 이번에도 잡은 것은 서버 delta 감사이고, 앱 테스트는 자기 DTO를
   자기가 만들어 넣으므로 절대 못 잡는다(와이어 계약 테스트가 있는 곳은 `isNewUser` 하나뿐이다).
-- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / **③ 미해결**
+- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / ③ 결정(2026-10-26 — DTO 직렬화 테스트를 두지 않는다)
 - **해소 메모**: 고치면 [api/parfait-group.md](../api/parfait-group.md)·[api/parfait.md](../api/parfait.md)
   Android 매핑의 경고를 걷고 OQ-P-224를 닫는다. ②는 [api/conventions.md](../api/conventions.md)
   직렬화 규약과 [data-layer](../architecture/data-layer.md)에 적는다(OQ-P-227과 한 자리).
@@ -3800,6 +3800,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > develop은 필드를 안 읽어 무해했다. 지금은 **develop이 네 자리에서 이 키로 색을 정한다**(S-101 멤버
   > 칩 · G-001 그룹 칩 · C-001 상단 칩 · 목록 시각). 다음 키 변경은 브랜치가 아니라 **출시 가능한
   > develop을 조용히 폴백 색으로 만든다.**
+  > 🔒 **③ 결정(2026-10-26)** — DTO 직렬화 테스트는 만들지 않는다. 테스트가 단언하는 키는 `@SerialName`을 쓴
+  > 사람이 같은 가정으로 적은 것이라 서버와 어긋나도 함께 초록이다. 유일한 선례 `KakaoLoginResponseSerializationTest`도
+  > 지웠다. 키 어긋남은 서버 delta 감사(`sync-server-api-baseline`)가 잡는다
+  > (`.claude/rules/no-dto-serialization-test.md`).
 
 ### [2026-08-19] `recentImageUploadedAt`이 비널이 되면서 두 가지를 뜻하게 됐다
 
@@ -5735,8 +5739,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (**구현됨** — 2026-08-31 PR #404 develop 머지로 경계 티커
   (`ObserveParfaitDayBoundaryUseCase`)가 들어왔다. 서버 확인은 여전히 선행 과제다)
 - **해소 메모**: 서버 구현을 확인해 ①을 먼저 닫는다. 막고 있으면 앱은 그 오류를 조용히 넘기고
-  다음 주기 상세 조회로 회복하면 된다. 앱 쪽 방어는 `CanvasPoller` 가 캐시의 날짜를 보고
-  **오늘 조회와 상세 조회를 가르는 것** 하나뿐이라, 경계 직후 첫 요청이 오늘 조회인 것은 그대로다.
+  다음 주기 조회로 회복하면 된다. **2026-10-15 — 폴링이 v2 `today`(ETag/304) 하나가 되면서** 앱의 방어였던
+  오늘/상세 가르기가 사라졌다. 이제 매 주기가 서버의 오늘 캔버스 확보를 태우므로 ①(그룹·날짜 유니크
+  제약, 확보의 멱등성) 확인이 더 급하다.
 
 ### [2026-08-28] 토핑 배율 하한이 두 화면에서 갈렸고 편집 쪽 근거가 없다
 
@@ -6466,6 +6471,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   ② 이 파일을 계약 서술 없이 "쏘는 방법"으로만 깎고 값은 `api/notification.md`를 보게 할지.
   ③ 대조군 요청(3~6번)은 **일부러 계약과 다르게** 쏘는 것이라, 나중에 읽는 사람이 정본과 구분할 수
   있는 표식이 파일 주석뿐인 것이 충분한지.
+- **2026-10-25 갈라짐 실측**: 서버 `8b4a94b` 기준 토핑 본문이 "새 사진을"로 바뀌고 `BACKGROUND`·`TEXT` 두 종이 늘었는데, `http/fcm-test.http`는 "새 토핑을"이고 두 종의 요청이 없다([api/notification.md](../api/notification.md)).
 - **상태**: 미해결, **복제면이 넷이 됐다** (2026-09-05 PR #446·#447로 **앱 프로덕션 코드**가
   같은 값들을 갖게 됐다 — 채널 id `parfait_default`(`PUSH_NOTIFICATION_CHANNEL_ID`)와
   `data` 키·값 문자열(`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). 이제 어긋나면 무해하지 않다 —
@@ -7723,12 +7729,100 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 1회로 정해지면 표시 여부를 화면 상태나 저장되는 값으로 들고, 뒤로 돌아온 경우를 실기기에서 확인한다.
 
-### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
+### [2026-10-25] 텍스트가 캔버스 응답에 들어왔는데 앱이 읽지 않는다
 
 - **ID**: OQ-P-439
+- **출처**: [parfait.md](../api/parfait.md) GET today 응답·과거 목록 · 서버 `GetTodayParfaitResponse.texts`·`ParfaitCanvasRotator`·`docs/parfait-text-api.md`
+- **항목**: ① 앱 `GetTodayParfaitResponse.texts`(DTO)는 받지만 캔버스 VO(`CanvasVO`)로 매핑하지 않는다. 텍스트만 있는 캔버스가 빈 캔버스로 그려진다. ② 회전은 텍스트만 있어도 `CLOSED`로 마감하지만 과거 목록 `imageCount`는 이미지만 센다. `PastCanvasVO.isEmpty` 기준인 달력 점이 그날을 빈 날로 그린다. 위키 C-201 "토핑 1개 이상"에 텍스트가 드는지 기획 판단이 필요하다. ③ 텍스트를 그릴 때 `positionZ`가 이미지와 한 축이라 두 배열을 합쳐 정렬해야 한다(OQ-P-443).
+- **상태**: 미해결
+- **해소 메모**: 텍스트 토핑 앱 구현 때 캔버스 VO·매퍼에 `texts`를 붙이고, 달력 빈 날 판정 기준을 함께 정한다.
+
+### [2026-10-25] v2 today ETag가 변경을 놓치는 경로
+
+- **ID**: OQ-P-440
+- **출처**: [parfait.md](../api/parfait.md) v2 today 절 · 서버 `ParfaitCanvasRotator`·`CanvasCacheEvictionListener`·`RedisCanvasCacheAdapter`·`V20__move_image_urls_to_public_base_url.sql`
+- **항목**: ① 회전(`close`·`markEmpty`)은 `parfait.version`을 올리지 않는다. 테스트 전용 회전(`/api/v1/test/parfait-canvas/rotate`)으로 오늘 캔버스를 마감하면 폴러는 다른 쓰기가 생길 때까지 `ACTIVE`였던 옛 본문을 304로 유지한다. QA가 이 엔드포인트로 마감을 재현하면 앱에는 마감이 보이지 않는다. ② Redis 키 삭제 실패(예외를 삼킨다)나 DB 직접 수정이 있으면 TTL 5분 동안 낡은 304가 나갈 수 있다. 나간 멤버도 그동안 304를 받을 수 있다(200 경로는 DB로 재확인한다).
+- **상태**: 미해결
+- **해소 메모**: ①은 서버팀에 의도를 확인한다. 의도라면 QA 절차에 "회전 뒤 앱 재진입"을 넣는다.
+
+### [2026-10-25] 텍스트 토핑 `color` 형식 계약이 없다
+
+- **ID**: OQ-P-441
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`
+- **항목**: 서버는 `color`를 공백 아님·20자 이하만 검사하고 형식을 보지 않는다. Android·iOS·서버가 어떤 색 문자열(`#RRGGBB`, 알파 포함 여부, 대소문자)을 쓸지 합의가 없어 다른 클라이언트가 넣은 값을 앱이 파싱하지 못할 수 있다.
+- **상태**: 미해결
+- **해소 메모**: 앱이 텍스트 토핑을 붙이기 전에 형식과 파싱 실패 폴백을 정한다.
+
+### [2026-10-25] 텍스트 2000자 상한의 계수 기준과 DB 문자셋
+
+- **ID**: OQ-P-442
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`·`V21__create_parfait_text.sql`
+- **항목**: 서버는 Kotlin `String.length`(UTF-16 코드 유닛)로 2000을 센다. 이모지는 2로 셀 수 있어 앱 글자 수 표시와 어긋날 수 있다. V21이 문자셋을 지정하지 않아 운영 DB 기본값을 따르는데 확인하지 못했다. `utf8mb4`가 아니면 이모지 INSERT가 500일 수 있다.
+- **상태**: 미해결
+- **해소 메모**: 서버팀에 운영 DB 문자셋을 확인하고, 앱 입력 상한을 같은 계수 기준으로 맞춘다.
+
+### [2026-10-25] 이미지·텍스트가 공유하는 `positionZ`의 배정·동률 규칙이 없다
+
+- **ID**: OQ-P-443
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「저장소 제약」
+- **항목**: 이미지와 텍스트가 겹침 순서 축 `positionZ` 하나를 공유한다. 서버는 값을 검증·배정하지 않고 텍스트를 `positionZ`→`id` 순으로만 내려준다. 두 배열을 합친 전체 순서, 같은 `positionZ`일 때 어느 쪽이 위인지, 새 토핑의 z를 누가 정하는지가 계약에 없다.
+- **상태**: 미해결
+- **해소 메모**: 서버팀·iOS와 동률 규칙과 z 배정 주체를 합의한다.
+
+### [2026-10-25] 텍스트 배치 POST가 멱등이 아니다 — 재시도 시 중복 배치·중복 알림
+
+- **ID**: OQ-P-444
+- **출처**: [parfait-text.md](../api/parfait-text.md) POST 절 · 서버 `PlaceParfaitTextService`
+- **항목**: 이미지 배치의 `(parfaitId, imageId)` upsert와 달리 텍스트 POST는 항상 새 행을 만들고 그때마다 푸시를 보낸다. 앱이 응답을 잃고 재시도하면 같은 텍스트가 두 번 놓이고 다른 구성원은 알림을 두 번 받는다.
+- **상태**: 미해결
+- **해소 메모**: 앱 재시도 정책(재시도 금지, 또는 캔버스 재조회로 중복 확인)이나 서버 멱등 키 중 하나를 정한다.
+
+### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
+
+- **ID**: OQ-P-445
+- **출처**: [notification.md](../api/notification.md) 「이 계약이 앱에 요구하는 것」 · 서버 `NotificationMessageFactory.backgroundChanged`·`textPlaced`
+- **항목**: 서버는 `data.type`을 5종(`TOPPING`·`BACKGROUND`·`TEXT`·`REMIND_AM`·`REMIND_PM`) 보낸다. 앱 `PushNotificationType`에는 `BACKGROUND`·`TEXT`가 없다. 라우팅은 `route=canvas`로 맞게 되지만 `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로 고정해 `APP_PUSH_OPENED` 분석에서 배경·텍스트 알림 탭이 토핑으로 집계된다.
+- **상태**: 미해결
+- **해소 메모**: enum에 두 값을 더하고 `AddTopping`이 받은 type을 들게 할지 정한다.
+
+### [2026-10-25] `TEXT` 알림이 텍스트 원문 스냅숏을 보낸다
+
+- **ID**: OQ-P-446
+- **출처**: [notification.md](../api/notification.md) 「어떤 페이로드가 가는가」 · 서버 `TextPlacedPayload`·`NotificationOutboxDispatcher`
+- **항목**: `TextPlacedPayload`가 원문 `text`를 `notification_outbox.payload`에 저장한다. 디스패처는 발송 전에 텍스트가 아직 있는지·바뀌었는지 보지 않는다. 배치 직후 삭제·수정한 텍스트도 원문 그대로 알림으로 나갈 수 있다(재시도 시 최대 수 시간 뒤). 원문은 보관 기간 2일 동안 아웃박스에 남는다.
+- **상태**: 미해결
+- **해소 메모**: 삭제 시 발송을 취소할지, 원문 보관이 허용되는지 정책 판단이 필요하다.
+
+### [2026-10-25] `TEXT` 알림만 닉네임을 자르지 않는다
+
+- **ID**: OQ-P-447
+- **출처**: [notification.md](../api/notification.md) 「어떤 페이로드가 가는가」 · 서버 `NotificationMessageFactory.textPlaced`
+- **항목**: `TOPPING`·`BACKGROUND`는 닉네임을 `NICKNAME_DISPLAY_MAX = 8`로 자른다(`...`). `textPlaced`는 그대로 넣는다. 닉네임 상한이 15자라 텍스트 알림만 길게 나온다. 미리보기는 `…`(U+2026)를 써서 말줄임 기호도 다르다.
+- **상태**: 미해결
+- **해소 메모**: 의도인지 누락인지 서버팀에 확인한다.
+
+### [2026-10-25] 배경 변경 푸시에 스로틀이 없고, 배경·텍스트 알림의 정책 근거가 없다
+
+- **ID**: OQ-P-448
+- **출처**: [notification.md](../api/notification.md) 「몇 번, 얼마나 늦게 오는가」 · 서버 `NotificationOutbox.backgroundChanged`·`ChangeParfaitBackgroundService`
+- **항목**: `BACKGROUND`의 dedup 키에 변경 시각(밀리초)이 들어가 같은 값으로 바꿔도, 연달아 바꿔도 변경마다 그룹 전원에게 푸시가 나간다. `wiki/pages/`에 P-04(텍스트)와 배경 변경 알림 정책이 없다(OQ-P-351과 같은 축).
+- **상태**: 미해결
+- **해소 메모**: 스로틀·합치기 정책이 필요한지 기획에 확인한다.
+
+### [2026-10-25] App Links — assetlinks.json 지문이 실제 서명 키와 같은지 확인되지 않았다
+
+- **ID**: OQ-P-449
+- **출처**: [deeplink.md](../api/deeplink.md) `GET /.well-known/assetlinks.json` · 서버 설정 `deeplink.android.sha256-cert-fingerprints`(debug + Play 앱 서명 키)
+- **항목**: 서버는 설정 문자열을 그대로 내보내고 지문이 틀리거나 비어도 200을 준다. release 지문이 Play Console 앱 서명 키와 같은지, debug 지문이 어느 키스토어 것인지 코드로 확인할 수 없다. 틀리면 `autoVerify`가 조용히 실패해 초대 링크가 브라우저로 떨어진다. 개발자마다 debug 키스토어가 다르면 그 기기의 debug 빌드는 검증되지 않는다.
+- **상태**: 미해결
+- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다.
+
+### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
+
+- **ID**: OQ-P-450
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
 - **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. `AddToppingUseCase`가 사진 전용이고 텍스트 객체 저장 API(필드·디자인 단위 글자 크기·중심 좌표·줄바꿈 고정 여부)가 서버와 합의되지 않았다. iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
 - **상태**: 미해결 (서버 계약 대기)
 - **해소 메모**: 서버 스키마가 정해지면 `handleOnClickStack`에서 저장을 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
 
-<!-- oq-next: 440 -->
+<!-- oq-next: 451 -->

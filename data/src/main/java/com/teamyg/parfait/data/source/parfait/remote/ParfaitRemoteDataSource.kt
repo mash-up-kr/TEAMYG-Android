@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
 import com.teamyg.parfait.domain.model.canvas.CanvasBackgroundEdit
 import com.teamyg.parfait.domain.model.canvas.CanvasVO
@@ -18,7 +19,22 @@ interface ParfaitRemoteDataSource {
      * 오늘 날짜가 이미 마감돼 있으면 그대로 돌려준다(status 가 ACTIVE 가 아닐 수 있다). 그 캔버스에 쓰면
      * 409 PARFAIT_ALREADY_CLOSED 다.
      */
+    @Deprecated(
+        message = "조건부 조회로 대체됐다. 안정화 이후 삭제 예정",
+        replaceWith = ReplaceWith("getTodayCanvasIfChanged(groupId, null)"),
+    )
     suspend fun getTodayCanvas(groupId: GroupId): Result<CanvasVO>
+
+    /**
+     * [getTodayCanvas] 와 같되 [etag] 가 서버의 현재 값과 같으면 본문 없이 [com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity.NotModified] 다.
+     * 없으면 서버가 만드는 부작용도 같다.
+     *
+     * @param etag 직전 응답에서 받은 값. `null` 이면 항상 본문이 온다.
+     */
+    suspend fun getTodayCanvasIfChanged(
+        groupId: GroupId,
+        etag: String?,
+    ): Result<TodayCanvasFetchEntity>
 
     /**
      * 과거 캔버스 목록. 범위를 생략하면 서버 기본값(오늘 - 30일 ~ 오늘)이다.

@@ -1,7 +1,9 @@
 package com.teamyg.parfait.data.source.parfait.remote
 
+import com.teamyg.parfait.data.model.entity.TodayCanvasFetchEntity
 import com.teamyg.parfait.data.model.exception.ApiException
 import com.teamyg.parfait.data.network.ApiCaller
+import com.teamyg.parfait.data.network.notModifiedResponse
 import com.teamyg.parfait.data.service.ParfaitService
 import com.teamyg.parfait.data.service.model.request.parfait.ChangeParfaitBackgroundRequest
 import com.teamyg.parfait.data.service.model.response.ApiResponse
@@ -32,6 +34,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.json.Json
+import okhttp3.Headers
+import retrofit2.Response
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -148,6 +152,41 @@ class ParfaitRemoteDataSourceImplTest {
         assertEquals(GroupMemberId(5L), topping.placedBy.groupMemberId)
         assertFalse(topping.isMine)
         assertEquals(LocalDateTime.parse("2026-08-15T09:30:00"), topping.createdAt)
+    }
+
+    @Test
+    fun getTodayCanvasIfChanged_200_sendsTheEtagAndReturnsTheCanvasWithTheNewOne() = runTest {
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsTodayIfChanged(groupId = 1L, ifNoneMatch = "W/\"old\"")
+        } returns Response.success(todaySuccess(), Headers.headersOf("ETag", "W/\"new\""))
+
+        val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = "W/\"old\"").getOrThrow()
+
+        val modified = assertIs<TodayCanvasFetchEntity.Modified>(fetch)
+        assertEquals(ParfaitId(100L), modified.canvas.parfaitId)
+        assertEquals("W/\"new\"", modified.etag)
+    }
+
+    @Test
+    fun getTodayCanvasIfChanged_200WithoutEtagHeader_hasNullEtag() = runTest {
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsTodayIfChanged(groupId = 1L, ifNoneMatch = null)
+        } returns Response.success(todaySuccess())
+
+        val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = null).getOrThrow()
+
+        assertNull(assertIs<TodayCanvasFetchEntity.Modified>(fetch).etag)
+    }
+
+    @Test
+    fun getTodayCanvasIfChanged_304_returnsNotModified() = runTest {
+        coEvery {
+            parfaitService.getGroupsByGroupIdParfaitsTodayIfChanged(groupId = 1L, ifNoneMatch = "W/\"v1\"")
+        } returns notModifiedResponse()
+
+        val fetch = dataSource.getTodayCanvasIfChanged(GroupId(1L), etag = "W/\"v1\"").getOrThrow()
+
+        assertEquals(TodayCanvasFetchEntity.NotModified, fetch)
     }
 
     @Test

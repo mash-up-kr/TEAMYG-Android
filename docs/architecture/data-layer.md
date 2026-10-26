@@ -67,8 +67,8 @@ tags: [architecture, parfait]
   **캐시에 쓰는 곳은 폴러 하나뿐이라** 갱신 함수는 `Result<Unit>`만 돌려준다.
   📌 **주기가 상수에서 클래스가 됐다**(2026-09-10, PR #482) — `CanvasPollInterval`(`:data`, 순수)이
   그룹별 단계를 들고 폴러가 **대기 직전마다** `current` 로 다시 묻는다. 변화 판정에 새 재료를 쓰지
-  않는다 — `refresh` 가 오늘 조회와 상세 조회를 가르려고 이미 읽어 둔 캐시 값과 새 응답을 `CanvasVO`
-  구조적 동등성으로 비교한다. 램프를 폴러 안에 인라인하지 않은 이유는 폴러가 이미 참조 계수·세대·
+  않는다 — `refresh` 가 ETag 전송 여부를 정하려고 이미 읽어 둔 캐시 값과 새 200 응답을
+  `CanvasVO` 구조적 동등성으로 비교한다(304 는 비교 없이 변화 없음으로 센다). 램프를 폴러 안에 인라인하지 않은 이유는 폴러가 이미 참조 계수·세대·
   진행 중 표시 셋을 한 락 위에서 굴리고 있어서다(넷째 규칙이 되고 램프만 따로 테스트할 수 없게 된다).
   ⚠️ **갱신 실패는 단계를 건드리지 않는다** —
   [canvas-adaptive-polling 스펙](../superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md).
@@ -786,6 +786,8 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   검증한다. 판단이 든 변환(문자열→enum 매핑과 미지 값 폴백, nullable 처리, 기본값, 단위 변환, 같은
   타입 필드의 배선)은 **DataSource 테스트의 케이스로** 잠근다. 규약 본문과 개정 경위는
   [unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md) "테스트 규약" 11번.
+  **DTO 직렬화 테스트도 두지 않는다(2026-10-26 규약).** `service/model` DTO를 `Json`으로 돌려 키·기본값을
+  단언하는 테스트는 같은 가정을 두 번 적을 뿐이다 → `.claude/rules/no-dto-serialization-test.md`.
   develop의 `XxxRemoteDataSourceImplTest`는 **image·member·parfait·parfaitgroup·parfaitimage·policy 여섯**이다
   (PR #250이 parfait를 신설하고 member·parfaitimage를 보강, PR #266이 parfait를 15 → 25 케이스로 보강,
   PR #376이 소유 판정 몫 둘을 더해 **29 케이스**).

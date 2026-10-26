@@ -261,7 +261,7 @@ constructor(
         )
     }
 
-    // 서버 API 가 없어 저장하지 않는 스텁이다 — OQ-P-439
+    // 서버 API 가 없어 저장하지 않는 스텁이다 — OQ-P-450
     private fun handleOnClickStack() {
         val groupId = observedGroupId.value?.value?.toString() ?: ""
         analyticsLogger.logEvent(
