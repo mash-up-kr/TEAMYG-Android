@@ -320,8 +320,10 @@ internal fun CanvasTextInputScreen(
                         // 이미 캔버스에 놓인 토핑들. 터치 판정은 안 받는다 — 판정은 아래 입력 레이어가 혼자 한다
                         CanvasToppingLayer(
                             toppings = uiState.existingToppings,
-                            spotlightedToppingId = null,
+                            texts = uiState.existingTexts,
+                            spotlightedKey = null,
                             onClickTopping = {},
+                            onClickText = {},
                             onClickSpotlightDim = {},
                             hitTestEnabled = false,
                             revealTogether = false,
