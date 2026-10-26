@@ -166,7 +166,7 @@ constructor(
     /** 저장에 필요한 식별값·z 순서. 쌓기 시점의 값을 읽는다 */
     private val observedDraft = MutableStateFlow<ToppingDraft?>(null)
 
-    /** 편집 모드에서 진입 때 한 번 읽는다. 없으면(프로세스 재생성) 편집을 시작하지 않고 나간다 */
+    /** 진입 때 한 번만 읽는다. 프로세스 재생성 뒤에는 비어 있어 편집을 시작하지 않고 나간다 */
     private val editSession: TextEditSession? = if (isEditingExisting) textEditSessionHolder.session() else null
 
     private val editingTextId: Long? = editSession?.original?.parfaitTextId
@@ -451,7 +451,6 @@ constructor(
         )
     }
 
-    /** 서버에 보내지 않는다 — 저장은 결과를 받은 토핑 정리 화면의 확인이 맡는다 */
     private fun finishEditing(result: TextEditResult) {
         textEditSessionHolder.finish(result)
         postSideEffect(CanvasTextInputEffect.NavigateBack)

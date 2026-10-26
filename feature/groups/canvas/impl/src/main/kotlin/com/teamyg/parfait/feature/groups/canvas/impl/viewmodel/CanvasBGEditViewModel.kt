@@ -49,7 +49,6 @@ val CanvasBackgroundPaletteColors = listOf(
  * @param selectedImageSource 이미지를 어디서 가져왔는지. **null 이면 서버에 이미 있는 배경**이라
  *   확인을 눌러도 다시 올리지 않는다 — https 주소는 기기에서 읽을 수 없어 올릴 수도 없다.
  * @param toppings 캔버스에 놓인 토핑. 이 화면에서는 고칠 수 없고 배경 위에 보이기만 한다.
- * @param texts 캔버스에 놓인 텍스트. [toppings] 와 같이 보이기만 한다.
  */
 data class CanvasBGEditUiState(
     val selectedColor: Color = CanvasBackgroundPaletteColors.first(),
