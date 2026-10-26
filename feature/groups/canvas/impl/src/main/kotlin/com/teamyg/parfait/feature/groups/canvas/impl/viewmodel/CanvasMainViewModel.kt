@@ -977,8 +977,13 @@ constructor(
         }
     }
 
-    /** 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다 */
-    private fun CanvasVO.nextPositionZ(): Int = (toppings.maxOfOrNull { it.transform.positionZ } ?: 0) + 1
+    /**
+     * 새 토핑은 언제나 맨 위다. 목록 크기로 세면 지워진 토핑이 있는 캔버스에서 z 가 겹친다.
+     * 이미지와 텍스트가 한 z 축을 쓰므로 둘을 합쳐 센다.
+     */
+    private fun CanvasVO.nextPositionZ(): Int =
+        (toppings.map { it.transform.positionZ } + texts.map { it.transform.positionZ }).maxOrNull()
+            ?.plus(1) ?: 1
 
     /**
      * 오늘 캔버스를 아직 못 받았으면 열지 않는다 — 편집 화면은 대상 캔버스의 id 위에서만
