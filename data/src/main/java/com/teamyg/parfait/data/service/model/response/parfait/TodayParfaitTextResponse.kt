@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.service.model.response.parfait
 
+import com.teamyg.parfait.data.service.model.response.parfaittext.DEFAULT_TEXT_ALIGN
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -28,6 +29,8 @@ data class TodayParfaitTextResponse(
     val isFill: Boolean,
     @SerialName("isStroke")
     val isStroke: Boolean,
+    @SerialName("textAlign")
+    val textAlign: String = DEFAULT_TEXT_ALIGN,
     @SerialName("placedBy")
     val placedBy: PlacedByResponse,
     @SerialName("createdAt")

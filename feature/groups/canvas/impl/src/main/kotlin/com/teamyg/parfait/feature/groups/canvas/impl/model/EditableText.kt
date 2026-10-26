@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
+import androidx.compose.ui.text.style.TextAlign
+
 /**
  * 토핑 정리 화면에 놓인 텍스트 하나. 위치 단위는 [EditableTopping] 과 같이 Canvas-Area 대비
  * 박스 **중심**의 비율이다.
@@ -12,6 +14,7 @@ data class EditableText(
     val text: String,
     val color: TextToppingColor,
     val type: TextToppingType,
+    val align: TextAlign,
     val designFontSize: Float,
     val positionX: Float,
     val positionY: Float,

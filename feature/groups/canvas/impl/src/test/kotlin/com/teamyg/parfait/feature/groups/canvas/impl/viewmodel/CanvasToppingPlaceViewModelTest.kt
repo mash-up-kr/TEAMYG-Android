@@ -23,6 +23,7 @@ import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.image.RecentImageKind
 import com.teamyg.parfait.domain.model.image.SourceLongSide
 import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
@@ -1033,7 +1034,13 @@ class CanvasToppingPlaceViewModelTest {
             scale = 1.0,
             rotation = 0.0,
         ),
-        style = TextToppingStyle(color = "#000000", fontSize = 24.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            color = "#000000",
+            fontSize = 24.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = ToppingPlacerVO(
             groupMemberId = GroupMemberId(1L),
             nickname = GroupNickname("연경이"),

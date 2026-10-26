@@ -24,6 +24,7 @@ internal fun CanvasTextToppingVO.toEditableText(): EditableText = EditableText(
     text = text,
     color = textToppingColorOf(style.color),
     type = TextToppingType.of(isFill = style.isFill, isStroke = style.isStroke),
+    align = style.textAlign.toTextAlign(),
     designFontSize = style.fontSize.toFloat(),
     positionX = transform.positionX.toFloat(),
     positionY = transform.positionY.toFloat(),

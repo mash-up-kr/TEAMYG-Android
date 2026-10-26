@@ -34,7 +34,7 @@
 | [parfait-text.md](parfait-text.md) | `http/parfaittext` | 3 (텍스트 배치 확정 · 수정 · 삭제) | 구현됨(표면만, 소비처 0) |
 | [deeplink.md](deeplink.md) | `http/api/deeplink` · `http/api/page/root` | 웹 표면 4 (`/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` 폴백 · `/` 랜딩) — `/api` 밖, envelope 없음 | assetlinks·`/link` 구현됨, 나머지 해당 없음 |
 
-**총 API 34 엔드포인트 + 웹 표면 4 + 테스트 전용 1**(2026-10-25, 서버 `8b4a94b`). 웹 표면은 `/api` 밖 HTML·정적 JSON이라
+**총 API 34 엔드포인트 + 웹 표면 4 + 테스트 전용 1**(2026-10-27, 서버 `ed65131`). 웹 표면은 `/api` 밖 HTML·정적 JSON이라
 API 총계와 따로 센다.
 
 ⚠️ **2026-10-25 현재 앱이 못 따라간 서버 계약** — ① **텍스트 토핑**: 새 도메인 3 엔드포인트·캔버스 응답 `texts`·일괄 수정 `textItems`는

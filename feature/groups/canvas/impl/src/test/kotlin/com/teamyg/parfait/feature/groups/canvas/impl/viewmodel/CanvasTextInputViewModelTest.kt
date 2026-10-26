@@ -14,6 +14,7 @@ import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitTextId
 import com.teamyg.parfait.domain.model.topping.PlacedTextToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingAlign
 import com.teamyg.parfait.domain.model.topping.TextToppingStyle
 import com.teamyg.parfait.domain.model.topping.ToppingDraft
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
@@ -23,15 +24,17 @@ import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCas
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextEditSessionHolder
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
+import io.mockk.slot
 import java.io.IOException
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -177,7 +180,13 @@ class CanvasTextInputViewModelTest {
         parfaitTextId = ParfaitTextId(9L),
         text = "hi",
         transform = ToppingTransform(0.5, 0.5, 1, 1.0, 0.0),
-        style = TextToppingStyle(color = "#FFFFFF", fontSize = 24.0, isFill = false, isStroke = false),
+        style = TextToppingStyle(
+            color = "#FFFFFF",
+            fontSize = 24.0,
+            isFill = false,
+            isStroke = false,
+            textAlign = TextToppingAlign.CENTER,
+        ),
         placedBy = mockk(),
     )
 
@@ -218,12 +227,26 @@ class CanvasTextInputViewModelTest {
                     rotationDegrees = state.rotationDegrees,
                     positionZ = 1,
                 ),
-                style = textToppingStyleOf(state.selectedColor, state.textType, state.designFontSize),
+                style = textToppingStyleOf(state.selectedColor, state.textType, state.align, state.designFontSize),
             )
             refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L))
             clearToppingDraft()
         }
         assertFalse(viewModel.state.value.isLoading)
+    }
+
+    @Test
+    fun onClickStack_afterChangingAlign_sendsThatAlign() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        val style = slot<TextToppingStyle>()
+        coEvery { placeTextTopping(any(), any(), any(), any(), capture(style)) } returns Result.success(placed())
+        // 가운데에서 시작해 한 번 누르면 왼쪽이다
+        viewModel.processIntent(CanvasTextInputIntent.OnClickAlign)
+
+        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+        advanceUntilIdle()
+
+        assertEquals(TextToppingAlign.LEFT, style.captured.textAlign)
     }
 
     @Test
@@ -256,7 +279,7 @@ class CanvasTextInputViewModelTest {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
             advanceUntilIdle()
 
-            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = true), awaitItem())
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Permanent), awaitItem())
         }
         assertFalse(viewModel.state.value.isLoading)
         assertEquals("hi", viewModel.state.value.content)
@@ -265,7 +288,7 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
-    fun onClickStack_networkFailure_showsTransientFailure() = runTest(mainDispatcherRule.dispatcher) {
+    fun onClickStack_networkFailure_showsUncertainAndRefreshesCanvas() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = stackReadyViewModel()
         coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
             AppError.Network(IOException("connection reset")),
@@ -275,8 +298,45 @@ class CanvasTextInputViewModelTest {
             viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
             advanceUntilIdle()
 
-            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(permanent = false), awaitItem())
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Uncertain), awaitItem())
         }
+        assertEquals("hi", viewModel.state.value.content)
+        coVerify(exactly = 1) { refreshTodayParfaitDetail(GroupId(1L), ParfaitId(2L)) }
+        coVerify(exactly = 0) { clearToppingDraft() }
+    }
+
+    @Test
+    fun onClickStack_networkFailure_stillNotifiesWhenRefreshFails() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Network(IOException("connection reset")),
+        )
+        coEvery { refreshTodayParfaitDetail(any(), any()) } returns Result.failure(
+            AppError.Network(IOException("still down")),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Uncertain), awaitItem())
+        }
+    }
+
+    @Test
+    fun onClickStack_serverFailure_showsRetryableWithoutRefresh() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = stackReadyViewModel()
+        coEvery { placeTextTopping(any(), any(), any(), any(), any()) } returns Result.failure(
+            AppError.Server(code = "INTERNAL_ERROR", statusCode = 500, serverMessage = "오류"),
+        )
+
+        viewModel.effect.test {
+            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
+            advanceUntilIdle()
+
+            assertEquals(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Retryable), awaitItem())
+        }
+        coVerify(exactly = 0) { refreshTodayParfaitDetail(any(), any()) }
         coVerify(exactly = 0) { clearToppingDraft() }
     }
 
@@ -509,6 +569,7 @@ class CanvasTextInputViewModelTest {
         text = "원래 글",
         color = TextToppingColor.Black,
         type = TextToppingType.FILL,
+        align = TextAlign.Left,
         designFontSize = 18f,
         positionX = 0.3f,
         positionY = 0.6f,
@@ -537,6 +598,7 @@ class CanvasTextInputViewModelTest {
         assertEquals("원래 글", state.content)
         assertEquals(TextToppingColor.Black, state.selectedColor)
         assertEquals(TextToppingType.FILL, state.textType)
+        assertEquals(TextAlign.Left, state.align)
         assertEquals(18f, state.designFontSize)
         assertEquals(1.5f, state.scale)
         assertEquals(20f, state.rotationDegrees)
@@ -566,7 +628,7 @@ class CanvasTextInputViewModelTest {
         viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
         advanceUntilIdle()
 
-        val edited = textEditSessionHolder.result.value!!.second as TextEditResult.Edited
+        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
         assertEquals(0.3f, edited.positionX, 1e-5f)
         assertEquals(0.6f, edited.positionY, 1e-5f)
     }
@@ -595,12 +657,13 @@ class CanvasTextInputViewModelTest {
                 assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
             }
 
-            val (id, result) = textEditSessionHolder.result.value!!
-            assertEquals(42L, id)
-            val edited = result as TextEditResult.Edited
+            val outcome = textEditSessionHolder.result.value!!
+            assertEquals(42L, outcome.parfaitTextId)
+            val edited = outcome.result as TextEditResult.Edited
             assertEquals("원래 글", edited.text)
             assertEquals(TextToppingColor.Black, edited.color)
             assertEquals(TextToppingType.FILL, edited.type)
+            assertEquals(TextAlign.Left, edited.align)
             assertEquals(18f, edited.designFontSize)
             assertEquals(0.3f, edited.positionX, 1e-5f)
             assertEquals(0.6f, edited.positionY, 1e-5f)
@@ -624,7 +687,7 @@ class CanvasTextInputViewModelTest {
         viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
         advanceUntilIdle()
 
-        val edited = textEditSessionHolder.result.value!!.second as TextEditResult.Edited
+        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
         assertEquals("새 글", edited.text)
         assertEquals(TextToppingColor.White, edited.color)
         assertEquals(0.4f, edited.positionX, 1e-5f)
@@ -656,7 +719,8 @@ class CanvasTextInputViewModelTest {
 
             assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
         }
-        assertEquals(42L to TextEditResult.Deleted, textEditSessionHolder.result.value)
+        assertEquals(TextEditResult.Deleted, textEditSessionHolder.result.value?.result)
+        assertEquals(42L, textEditSessionHolder.result.value?.parfaitTextId)
         coVerify(exactly = 0) { clearToppingDraft() }
     }
 

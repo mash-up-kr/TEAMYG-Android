@@ -1,7 +1,5 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.util
+package com.teamyg.parfait.feature.groups.canvas.impl.model
 
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,19 +18,14 @@ class TextEditSessionHolder @Inject constructor() {
     @Volatile
     private var session: TextEditSession? = null
 
-    /** [result] 를 남긴 왕복. [clear] 가 남의 결과를 지우지 않게 가른다 */
-    @Volatile
-    private var resultSession: TextEditSession? = null
+    private val _result = MutableStateFlow<TextEditOutcome?>(null)
 
-    private val _result = MutableStateFlow<Pair<Long, TextEditResult>?>(null)
-
-    /** 편집한 텍스트의 parfaitTextId 와 결과. 받은 쪽이 [consume] 할 때까지 남는다 */
-    val result: StateFlow<Pair<Long, TextEditResult>?> = _result.asStateFlow()
+    /** 받은 쪽이 [consume] 할 때까지 남는다 */
+    val result: StateFlow<TextEditOutcome?> = _result.asStateFlow()
 
     /** 지난 왕복에서 받지 않은 결과가 새 편집에 섞이지 않게 함께 비운다 */
     fun start(session: TextEditSession) {
         _result.value = null
-        resultSession = null
         this.session = session
     }
 
@@ -42,20 +35,18 @@ class TextEditSessionHolder @Inject constructor() {
     fun finish(result: TextEditResult): Boolean {
         val current = session ?: return false
         session = null
-        resultSession = current
-        _result.value = current.original.parfaitTextId to result
+        _result.value = TextEditOutcome(current, result)
         return true
     }
 
     fun consume() {
         _result.value = null
-        resultSession = null
     }
 
     /** [session] 으로 시작한 왕복이 남긴 것만 비운다 — 그새 시작된 다른 편집은 건드리지 않는다 */
     fun clear(session: TextEditSession) {
         if (this.session === session) this.session = null
-        if (resultSession === session) consume()
+        if (_result.value?.session === session) consume()
     }
 
     fun clear() {

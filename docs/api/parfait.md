@@ -2,8 +2,8 @@
 id: parfait
 title: 파르페(캔버스) 조회·배경·회전
 server_module: http/parfait
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: ed65131
+verified: 2026-10-27
 android_status: partial
 related_spec: 2026-08-15-parfait-canvas-topping-member-api-service-layer, 2026-08-16-canvas-detail-background-api-service-layer, c201-canvas-calendar, c201-canvas-calendar-server
 related_adr: ADR-0017
@@ -182,7 +182,8 @@ C-001 캔버스 메인이 그릴 **오늘의 캔버스 전체**를 한 번에 �
 
   텍스트 원소(`TodayParfaitTextResponse`) 필드: `parfaitTextId`(Long) · `text`(String) ·
   `positionX`/`positionY`(Double) · `positionZ`(Int) · `scale`/`rotation`(Double) · `color`(String) ·
-  `fontSize`(Double) · `isFill`/`isStroke`(Boolean) · `placedBy`(토핑과 같은 `PlacedByResponse`) ·
+  `fontSize`(Double) · `isFill`/`isStroke`(Boolean) · `textAlign`(`LEFT`·`CENTER`·`RIGHT`) ·
+  `placedBy`(토핑과 같은 `PlacedByResponse`) ·
   `createdAt`(LocalDateTime). 전부 비널이다. 텍스트를 쓰는 엔드포인트(배치·수정·삭제·일괄 수정)는
   [parfait-image.md](parfait-image.md)(일괄 수정)·[parfait-text.md](parfait-text.md)가 다룬다 — 여기는 조회 응답에 실리는 모양만 적는다.
 

@@ -2,8 +2,8 @@
 id: parfait-text
 title: 텍스트 토핑 배치(배치 확정·수정·삭제)
 server_module: http/parfaittext
-server_commit: 8b4a94b
-verified: 2026-10-25
+server_commit: ed65131
+verified: 2026-10-27
 android_status: partial
 related_spec:
 related_adr:
@@ -52,6 +52,7 @@ Swagger 태그는 `ParfaitText`다.
 | `positionX` · `positionY` · `rotation` | 유한한 값(NaN·무한대 아님) | 400 `INVALID_TEXT_STYLE` |
 | `scale` · `fontSize` | 유한하고 0보다 큼 | 400 `INVALID_TEXT_STYLE` |
 | `positionZ` | **검증 없음** | — |
+| `textAlign` | 도메인 검증 없음 — Jackson이 enum으로 읽을 때 거른다 | 400 `INVALID_REQUEST` |
 
 - ⚠️ **`color`는 형식을 보지 않는다.** `#RRGGBB`가 아니어도 20자 이하면 저장된다. 다른 클라이언트가
   넣은 임의 문자열이 캔버스 조회로 내려올 수 있으니, 읽는 쪽이 파싱 실패를 처리해야 한다 → [미결](#미결).
@@ -84,6 +85,7 @@ Swagger 태그는 `ParfaitText`다.
 | `fontSize` | Double | 필수(non-null 타입) | 확대 전 기준 폰트 크기. 양수 |
 | `isFill` | Boolean | 선택(기본값 `false`) | 텍스트 내부 채움 여부 |
 | `isStroke` | Boolean | 선택(기본값 `false`) | 외곽선 표시 여부 |
+| `textAlign` | String(enum) | 선택(기본값 `CENTER`) | `LEFT` · `CENTER` · `RIGHT`. 대소문자를 구분하고 그 밖의 값은 400 `INVALID_REQUEST` |
 
   **표시 크기는 `fontSize × scale`이다.** 서버는 두 값을 따로 저장하고 따로 돌려주며 합치지 않는다.
   예: `fontSize` 16, `scale` 1.5면 표시 크기 24.
@@ -108,6 +110,7 @@ Swagger 태그는 `ParfaitText`다.
 | `color` | String | 아니오 | |
 | `fontSize` | Double | 아니오 | |
 | `isFill` · `isStroke` | Boolean | 아니오 | |
+| `textAlign` | String(enum) | 아니오 | `LEFT` · `CENTER` · `RIGHT` |
 | `placedBy` | 객체 | 아니오 | `groupMemberId`(Long) · `nickname`(String) · `nameTagChip`(String(enum)) · `ownerType`(String(enum)) |
 | `createdAt` | String(LocalDateTime) | 아니오 | 오프셋 없는 서버 로컬 시각. 배치 응답은 `LocalDateTime.now()` 값이라 소수 초가 붙을 수 있다 |
 
@@ -123,7 +126,7 @@ Swagger 태그는 `ParfaitText`다.
 
 | HTTP | code | 의미 |
 |---|---|---|
-| 400 | `INVALID_REQUEST` | 바디 형식 오류 · 비널 필드 누락 · 타입 불일치(`CommonErrorCode`) |
+| 400 | `INVALID_REQUEST` | 바디 형식 오류 · 비널 필드 누락 · 타입 불일치 · 허용하지 않는 `textAlign`(`CommonErrorCode`) |
 | 403 | `GROUP_NOT_JOINED` | 그 그룹의 멤버가 아님(`ParfaitGroupApiErrorCode`) |
 | 404 | `PARFAIT_NOT_FOUND` | `parfaitId`가 그 그룹의 파르페가 아님(**`ParfaitErrorCode`**) |
 | 409 | `PARFAIT_ALREADY_CLOSED` | 파르페 `status`가 `ACTIVE`가 아님(`ParfaitErrorCode`) |
@@ -151,6 +154,7 @@ Swagger 태그는 `ParfaitText`다.
 | `color` | String? | 선택 | |
 | `fontSize` | Double? | 선택 | |
 | `isFill` · `isStroke` | Boolean? | 선택 | `false`를 보내면 실제로 `false`가 된다 |
+| `textAlign` | String(enum)? | 선택 | `LEFT` · `CENTER` · `RIGHT`. 그 밖의 값은 400 `INVALID_REQUEST` |
 
   ⚠️ **`text`는 요청에 없다.** 내용은 배치 뒤 바꿀 수 없다. 바디에 `text`를 넣어도 400이 아니라
   **조용히 무시**된다(`ParfaitTextMutationControllerTest` "수정 요청의 text 필드는 무시되어…").
@@ -171,6 +175,7 @@ Swagger 태그는 `ParfaitText`다.
 | `color` | String | 아니오 | |
 | `fontSize` | Double | 아니오 | |
 | `isFill` · `isStroke` | Boolean | 아니오 | |
+| `textAlign` | String(enum) | 아니오 | 병합 후 값 |
 
   POST 응답에 있던 `placedBy`·`createdAt`이 없다. 이미지 일괄 PATCH 응답의 `texts[]` 원소도 이 DTO다.
 
@@ -178,7 +183,7 @@ Swagger 태그는 `ParfaitText`다.
 
 | HTTP | code | 의미 |
 |---|---|---|
-| 400 | `INVALID_REQUEST` | 바디 형식 오류 · 필드 타입 불일치 · 경로 변수가 Long이 아님(`CommonErrorCode`) |
+| 400 | `INVALID_REQUEST` | 바디 형식 오류 · 필드 타입 불일치 · 허용하지 않는 `textAlign` · 경로 변수가 Long이 아님(`CommonErrorCode`) |
 | 404 | `PARFAIT_TEXT_NOT_FOUND` | `parfaitTextId` 부재이거나 그 배치의 `parfaitId`가 경로와 다름(`ParfaitTextErrorCode`) |
 | 403 | `PARFAIT_TEXT_NOT_OWNED` | 본인이 배치한 텍스트가 아님 · **그룹 미참여도 같은 코드**(`ParfaitTextErrorCode`) |
 | 404 | `PARFAIT_NOT_FOUND` | `parfaitId`가 그 그룹의 파르페가 아님(`ParfaitErrorCode`) |
@@ -229,10 +234,12 @@ Swagger 태그는 `ParfaitText`다.
 ## 저장소 제약
 
 `V21__create_parfait_text.sql`이 테이블을 만들고 `V22__add_fill_and_stroke_to_parfait_text.sql`이 두
-Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는다.
+Boolean 컬럼을, `V23__add_text_align_to_parfait_text.sql`이 정렬 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는다.
 
 - `text VARCHAR(2000)` · `color VARCHAR(20)` · 나머지 전부 `NOT NULL`. 도메인 검증 상한과 같다.
 - `is_fill`·`is_stroke`는 `NOT NULL DEFAULT b'0'`. 기존 행은 `false`로 채워졌다.
+- `text_align`은 `VARCHAR(20) NOT NULL DEFAULT 'CENTER'`. 기존 행은 `CENTER`로 채워졌다. enum 이름을
+  문자열로 저장하고 읽을 때 `TextAlign.valueOf`로 되돌린다.
 - 인덱스는 `idx_parfait_text_parfait_id` 하나다.
 - ⚠️ **FK가 없다.** `parfait_id`·`placed_by_group_member_id`가 `parfait`·`parfait_group_member`를
   참조하지 않는다. `parfait_image`는 같은 두 컬럼에 FK가 있다(`fk_parfait_image_parfait`·`fk_parfait_image_placed_by_group_member`). 계약상 차이는 지금 없다. 쓰기 경로가
@@ -284,16 +291,18 @@ Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는�
 
 | 서버 | Android |
 |---|---|
-| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase` |
+| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase`·`RecreateTextToppingUseCase`(내용 변경 = POST 뒤 DELETE) |
 | `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다. 캔버스 쪽은 `CanvasTextToppingVO`로 올라간다 |
 | 일괄 PATCH `textItems` | `TextToppingTransformUpdate` → `ToppingRepository#updateAll` (C-305 변형·이동) |
-| 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` |
+| 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` · `TextToppingAlign` |
 
 - 단위 변환은 `TextToppingWireMapper`가 맡는다 — 위치는 박스 중심의 캔버스 비율, `fontSize`는 디자인 너비
   335 기준 값, `scale`은 핀치 배율, `color`는 `#RRGGBB`(White는 `#FAFAFA`, 모르는 값은 Black),
-  `isFill`·`isStroke`는 `TextToppingType`이다. Android가 정한 값이고 iOS와 합의하지 않았다
+  `isFill`·`isStroke`는 `TextToppingType`, `textAlign`은 화면의 `TextAlign`이다. Android가 정한 값이고 iOS와 합의하지 않았다
   → [open-questions](../synthesis/open-questions.md) OQ-P-452
-- **정렬은 저장하지 않는다.** 요청에 정렬 필드가 없어 다시 읽은 텍스트는 가운데 정렬로 그린다 → OQ-P-451
+- **정렬**: 배치 POST와 스타일 PATCH가 `textAlign`을 싣고, 캔버스·재편집이 저장된 정렬로 그린다. DTO는
+  문자열로 받고 data 매퍼가 `TextToppingAlign`으로 바꾼다 — 모르는 값과 필드가 없는 응답은 `CENTER`로 읽는다.
+  줄바꿈 위치는 여전히 기기마다 다시 계산된다 → OQ-P-451
 - `PlacedTextToppingVO.placedBy`는 이미지 배치와 같은 `ToppingPlacerVO`로 접는다 — `ownerType`·`nameTagChip`·
   `createdAt`은 DTO에만 있고 VO로 올리지 않았다(읽는 화면이 생길 때 올린다).
 - `TextToppingUpdate`에 `text`가 없다. 서버가 내용 수정을 받지 않기 때문이다. 앱은 내용이 바뀐 재편집을
@@ -312,5 +321,6 @@ Boolean 컬럼을 붙였다. 앞서 적은 계약과 맞물리는 것만 적는�
   (누가 다음 z를 정하는지)이 계약에 없다 → [open-questions](../synthesis/open-questions.md) OQ-P-443
 - POST가 멱등이 아니다. 응답을 잃은 재시도가 같은 텍스트를 두 번 놓고 알림도 두 번 보낸다. 앱이
   재시도를 어떻게 다룰지 정해야 한다 → [open-questions](../synthesis/open-questions.md) OQ-P-444
-- POST에 `isFill`·`isStroke`를 `null`로 **명시**해 보낼 때의 동작(기본값 적용인지 400인지)을 이 라운드에서
-  확인하지 못했다. 컨트롤러 테스트는 키 생략만 잠근다.
+- POST에 `isFill`·`isStroke`·`textAlign`을 `null`로 **명시**해 보낼 때의 동작(기본값 적용인지 400인지)을
+  확인하지 못했다. 컨트롤러 테스트는 키 생략만 잠근다. PATCH의 명시적 `null`은 기존 값 유지로 잠겨 있다
+  (`ParfaitTextMutationControllerTest`).

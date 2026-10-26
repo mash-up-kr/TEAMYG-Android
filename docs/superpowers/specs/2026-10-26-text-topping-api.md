@@ -57,8 +57,6 @@ C-001이 그리며(OQ-P-439 ①·③), 내 텍스트를 C-305에서 이동·크�
   - C-305: 텍스트 포커스·이동·핀치·삭제, 재탭 → C-106 편집 모드, [캔버스에 쌓기]로 일괄 반영
   - 새 토핑의 `positionZ`를 이미지·텍스트 합친 최댓값 + 1로
 - **제외**
-  - 정렬 저장 — 서버 필드가 없다(OQ-P-451). 사용자가 서버팀에 제보한다. 그때까지 정렬 UI는 그대로 두고
-    저장·렌더링은 가운데 정렬이다
   - `lineBreakPositions`(줄바꿈 고정), iOS와 저장 단위 합의 — 이 문서의 단위를 Android 안으로 기록하고
     OQ로 넘긴다
   - 달력 빈 날 판정에 텍스트 포함 여부(OQ-P-439 ②) — 기획 판단 대기
@@ -176,13 +174,13 @@ C-106이 결과를 써 두면 C-305가 화면 복귀 때 읽는다(Hilt 싱글�
 | data | `ParfaitImageRemoteDataSource.updateToppings` | `textItems` 채움 |
 | feature | `component/TextToppingContent.kt` | 세 화면 공용 렌더러 |
 | feature | `util/TextToppingWireMapper.kt`, `model/TextToppingType.of` | 색·크기 ↔ 서버 값. 서버 `isFill`·`isStroke` → 타입은 `TextToppingType.of` |
-| feature | `util/TextEditSessionHolder.kt` | C-305 ↔ C-106 편집 왕복 |
+| feature | `model/TextEditSessionHolder.kt` | C-305 ↔ C-106 편집 왕복 |
 | feature | `CanvasToppingLayer`·`CanvasMainViewModel`·`CanvasToppingArrangeViewModel`·`CanvasTextInputViewModel` | 연동 |
 | api | `NavKeyCanvasTextInput`(편집 여부), `NavKeyCanvasToppingArrange`(초기 포커스 종류) | 진입 인자 |
 
 ## 주의 / 열린 질문
 
-- 정렬은 저장되지 않는다. 쌓은 뒤 C-001·다른 기기는 가운데 정렬로 그린다(OQ-P-451, 서버 제보 중).
+- 정렬은 서버 `textAlign`으로 저장된다. 줄바꿈 위치는 저장되지 않아 다른 기기에서 줄이 다르게 나뉠 수 있다(OQ-P-451).
 - 저장 단위(`fontSize` = 335 기준 디자인 크기, 중심 비율 좌표)는 iOS와 합의되지 않았다 — 새 OQ로 올린다.
 - 내용 수정은 재배치라 다른 구성원에게 알림이 다시 간다(서버 계약 한계).
 - 줄바꿈은 기기마다 다시 계산된다(텍스트 토핑 스펙 「플랫폼 간 렌더링 차이」).

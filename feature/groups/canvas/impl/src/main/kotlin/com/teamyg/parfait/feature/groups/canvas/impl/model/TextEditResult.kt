@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
+import androidx.compose.ui.text.style.TextAlign
+
 /**
  * 텍스트 입력 화면이 편집을 마치고 남기는 결과. 서버에는 아직 아무것도 보내지 않은 상태다 —
  * 저장은 토핑 정리 화면의 확인이 맡는다.
@@ -12,6 +14,7 @@ sealed interface TextEditResult {
         val text: String,
         val color: TextToppingColor,
         val type: TextToppingType,
+        val align: TextAlign,
         val designFontSize: Float,
         val positionX: Float,
         val positionY: Float,

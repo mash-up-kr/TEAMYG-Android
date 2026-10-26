@@ -126,7 +126,6 @@ tags: [spec, parfait, canvas, topping, c-106, text]
   - 헤더 X 확인 팝업(`YGModalQuitAddText` — 그만두기 / 계속 추가)
 - **미구현 (설계만, 후속 PR/선행 조건 대기)**
   - 동시편집 병합 · 03:00 마감 — 사진 토핑의 기존 체계를 그대로 재사용한다
-  - 정렬 저장 — 서버 계약에 필드가 없어 저장하지 않고 가운데로 그린다(OQ-P-451)
   - Android 뒤로가기의 "팝오버 먼저, 그다음 키보드" 순차 — 소프트 키보드가 떠 있으면 시스템이
     백을 먼저 먹어 키보드부터 내려가는 플랫폼 제약. 팝오버는 편집 모드에만 보이므로 키보드와 함께
     닫힌다(탭-아웃은 스펙대로 순차 동작). 자세한 근거는 "주의" 참고
@@ -355,7 +354,7 @@ Compose `BasicTextField` 기준으로 **`PointerEventPass.Initial`에서 먼저 
 ## 데이터 모델 (Android 로컬 모델 초안)
 
 ```kotlin
-// 화면이 들고 있어야 하는 필드의 초안. 서버 요청(`PlaceParfaitTextRequest`)에는 정렬·줄바꿈 위치가 없다(OQ-P-451)
+// 화면이 들고 있어야 하는 필드의 초안. 서버 요청(`PlaceParfaitTextRequest`)에는 줄바꿈 위치가 없다(OQ-P-451)
 data class EditableTextTopping(
     val id: ToppingId,
     val content: String,              // 그래핌 클러스터 기준 최대 100자
@@ -417,8 +416,8 @@ data class EditableTextTopping(
   닫힘이 필요한 **박스 밖 탭**은 스펙대로 팝오버→키보드로 동작한다. (현재 구현: 키보드 ↑ 백은
   `WindowInsets.ime` 관측으로 '포커스 살아있는 dismiss'를 집어 종료 처리.)
 - **서버 계약이 화면 상태를 다 담지 못한다.** 배치 요청(`PlaceParfaitTextRequest`)은 `text`·좌표·`scale`·
-  `rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이다. 타입 3종은 `isFill`·`isStroke` 조합으로 실을 수
-  있지만 **정렬 3종과 `lineBreakPositions`를 실을 필드가 없다**(OQ-P-451). 그 밖의 계약 미결 — `color` 형식
+  `rotation`·`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`이다. 타입 3종은 `isFill`·`isStroke` 조합으로,
+  정렬 3종은 `textAlign`으로 실리지만 **`lineBreakPositions`를 실을 필드가 없다**(OQ-P-451). 그 밖의 계약 미결 — `color` 형식
   (OQ-P-441), 글자 수 계수 기준(서버 2000자 UTF-16 vs 앱 100 그래핌, OQ-P-442), 이미지와 공유하는
   `positionZ` 배정(OQ-P-443), 멱등이 아닌 POST의 재시도(OQ-P-444)는 [api/parfait-text.md](../../api/parfait-text.md) 「미결」.
 - **Line Seed JP/TW 폰트를 번들했다(공식 배포본).** `res/font/line_seed_{jp,tw}_regular.ttf`, 라이선스는
