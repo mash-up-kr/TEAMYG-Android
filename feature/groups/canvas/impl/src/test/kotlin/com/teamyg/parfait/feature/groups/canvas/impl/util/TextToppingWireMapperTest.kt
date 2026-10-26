@@ -43,7 +43,7 @@ class TextToppingWireMapperTest {
 
     @Test
     fun style_carriesDesignFontSizeAndFlags() {
-        val style = TextToppingStyle(TextToppingColor.Blue, TextToppingType.FILL_STROKE, 18f)
+        val style = textToppingStyleOf(TextToppingColor.Blue, TextToppingType.FILL_STROKE, 18f)
 
         assertEquals("#6DBBF2", style.color)
         assertEquals(18.0, style.fontSize)

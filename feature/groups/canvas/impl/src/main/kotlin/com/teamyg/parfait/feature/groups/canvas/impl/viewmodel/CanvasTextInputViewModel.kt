@@ -38,7 +38,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
-import com.teamyg.parfait.feature.groups.canvas.impl.util.TextToppingStyle
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -309,7 +309,7 @@ constructor(
             rotationDegrees = current.rotationDegrees,
             positionZ = draft.nextPositionZ,
         )
-        val style = TextToppingStyle(
+        val style = textToppingStyleOf(
             color = current.selectedColor,
             type = current.textType,
             designFontSize = current.designFontSize,

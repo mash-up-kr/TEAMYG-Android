@@ -16,9 +16,7 @@ internal fun textToppingColorOf(wire: String): TextToppingColor =
     TextToppingColor.entries.firstOrNull { it.toWireColor().equals(wire, ignoreCase = true) }
         ?: TextToppingColor.Black
 
-/** 도메인 [TextToppingStyle] 은 화면 모델을 모르므로, 화면 값으로 만드는 생성자는 여기 둔다 */
-@Suppress("FunctionName")
-internal fun TextToppingStyle(
+internal fun textToppingStyleOf(
     color: TextToppingColor,
     type: TextToppingType,
     designFontSize: Float,
