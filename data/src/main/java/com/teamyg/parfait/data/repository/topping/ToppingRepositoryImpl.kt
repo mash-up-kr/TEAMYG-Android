@@ -7,6 +7,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
@@ -45,12 +46,13 @@ class ToppingRepositoryImpl @Inject constructor(
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
+        textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>> {
-        // 서버가 빈 items 를 200 으로 받아 주지만 보낼 이유가 없다(`docs/api/parfait-image.md`)
-        if (updates.isEmpty()) return Result.success(emptyList())
+        // 서버가 빈 items·textItems 를 200 으로 받아 주지만 보낼 이유가 없다(`docs/api/parfait-image.md`)
+        if (updates.isEmpty() && textUpdates.isEmpty()) return Result.success(emptyList())
 
         return parfaitImageRemoteDataSource
-            .updateToppings(groupId = groupId, parfaitId = parfaitId, updates = updates)
+            .updateToppings(groupId = groupId, parfaitId = parfaitId, updates = updates, textUpdates = textUpdates)
             .mapErrorToAppError()
     }
 

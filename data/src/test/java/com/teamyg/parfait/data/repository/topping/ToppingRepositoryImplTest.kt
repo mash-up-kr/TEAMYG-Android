@@ -9,6 +9,8 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingPlacerVO
@@ -193,7 +195,7 @@ class ToppingRepositoryImplTest {
             ToppingTransformUpdate(parfaitImageId = ParfaitImageId(43L), scale = 2.0),
         )
         coEvery {
-            parfaitImageRemoteDataSource.updateToppings(GROUP_ID, PARFAIT_ID, updates)
+            parfaitImageRemoteDataSource.updateToppings(GROUP_ID, PARFAIT_ID, updates, emptyList())
         } returns Result.success(updated)
 
         // When 둘을 한 번에 수정한다
@@ -212,14 +214,37 @@ class ToppingRepositoryImplTest {
 
         // Then 서버가 빈 items 를 200 으로 받아 주더라도 요청 자체를 안 만든다
         assertEquals(emptyList(), result.getOrThrow())
-        coVerify(exactly = 0) { parfaitImageRemoteDataSource.updateToppings(any(), any(), any()) }
+        coVerify(exactly = 0) { parfaitImageRemoteDataSource.updateToppings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun updateAll_onlyTextUpdates_callsDataSource() = runTest {
+        // Given 이미지는 없고 텍스트 변형만 있다
+        val textUpdates = listOf(TextToppingTransformUpdate(parfaitTextId = ParfaitTextId(7L), positionX = 0.4))
+        coEvery {
+            parfaitImageRemoteDataSource.updateToppings(GROUP_ID, PARFAIT_ID, emptyList(), textUpdates)
+        } returns Result.success(emptyList())
+
+        // When 수정한다
+        val result = repository.updateAll(
+            groupId = GROUP_ID,
+            parfaitId = PARFAIT_ID,
+            updates = emptyList(),
+            textUpdates = textUpdates,
+        )
+
+        // Then 요청이 나간다
+        assertEquals(emptyList(), result.getOrThrow())
+        coVerify(exactly = 1) {
+            parfaitImageRemoteDataSource.updateToppings(GROUP_ID, PARFAIT_ID, emptyList(), textUpdates)
+        }
     }
 
     @Test
     fun updateAll_dataSourceFailsWithBusiness_convertsToAppErrorServer() = runTest {
         // Given 항목 중 하나가 본인이 배치한 토핑이 아니다 — 서버가 전부 롤백한다
         coEvery {
-            parfaitImageRemoteDataSource.updateToppings(any(), any(), any())
+            parfaitImageRemoteDataSource.updateToppings(any(), any(), any(), any())
         } returns Result.failure(
             ApiException.Business(
                 code = "PARFAIT_IMAGE_NOT_OWNED",
