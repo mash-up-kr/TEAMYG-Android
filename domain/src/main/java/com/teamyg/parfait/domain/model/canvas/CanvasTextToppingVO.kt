@@ -7,8 +7,6 @@ import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import kotlinx.datetime.LocalDateTime
 
 /**
- * 캔버스 조회가 돌려주는 배치 텍스트 토핑.
- *
  * @param isMine 서버가 판정해 준 값. 판정 축이 계정 id 라 [placedBy] 의 groupMemberId 로는
  *   재현할 수 없다.
  */
