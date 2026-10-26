@@ -4,7 +4,7 @@ title: 텍스트 토핑 — 캔버스 텍스트 업로드·수정·삭제 (Text 
 status: in-progress
 category: behavior-spec
 platforms: android
-verified: 2026-10-25
+verified: 2026-10-26
 related_code:
   # as-built — 신규 생성 플로우(단일 화면)
   - AnalyticsScreenType.kt#CANVAS_TEXT_INPUT
@@ -42,6 +42,8 @@ related_code:
   - ServerErrorCode.kt#Parfait
   - ToppingPlaceFailure.kt#isPermanentPlaceFailure
   - DeleteToppingUseCase.kt
+  - ParfaitTextRemoteDataSource.kt
+  - TextToppingStyle.kt
 related_adr: ADR-0025, ADR-0026
 related_spec: c106-topping-place-api, c106-topping-place, ygtextfield, user-events-design
 related_architecture: state-management, module-structure, data-layer
@@ -122,8 +124,9 @@ tags: [spec, parfait, canvas, topping, c-106, text]
     있어도 한 번에 편집을 끝내고, 어느 경로로 편집이 끝나도 팝오버를 닫는다
   - 헤더 X 확인 팝업(`YGModalQuitAddText` — 그만두기 / 계속 추가)
 - **미구현 (설계만, 후속 PR/선행 조건 대기)**
-  - [캔버스에 쌓기]의 실제 서버 저장 — **스텁**(draft만 비우고 C-001 복귀). `AddToppingUseCase`가
-    사진 전용이라 텍스트를 못 실음 + 서버 API 계약 미정(아래 "열린 질문")
+  - [캔버스에 쌓기]의 실제 서버 저장 — **스텁**(draft만 비우고 C-001 복귀). 서버 계약
+    ([api/parfait-text.md](../../api/parfait-text.md))과 `:data`의 `ParfaitTextRemoteDataSource`는 있으나
+    저장소·유스케이스가 없어 화면이 부를 길이 없다(아래 "열린 질문")
   - 재편집(C-305 확장) · 삭제 · 동시편집 병합 · 03:00 마감 — 저장이 스텁이라 아직 해당 없음.
     붙을 때 **사진 토핑의 기존 체계를 그대로 재사용**한다
   - Android 뒤로가기의 "팝오버 먼저, 그다음 키보드" 순차 — 소프트 키보드가 떠 있으면 시스템이
@@ -133,7 +136,7 @@ tags: [spec, parfait, canvas, topping, c-106, text]
   - 색 세트·색 매핑 값 정의 자체(별도 문서) — 이 스펙은 "색 ID를 저장한다"까지만 다룬다
   - 비속어 필터, 개별 텍스트 신고, 접근성 기준
   - iOS 구현, 크로스플랫폼 줄바꿈 엔진 통일(아래 열린 질문에 완화책만 기록)
-  - 서버 API 계약 자체(텍스트 객체 저장 필드의 스키마는 서버와 별도 합의 필요 — 아래 "열린 질문" 참고)
+  - 서버 API 계약 자체 — 정본은 서버이고 미러는 [api/parfait-text.md](../../api/parfait-text.md)다
 
 ## 진입 · 플로우
 
@@ -354,7 +357,7 @@ Compose `BasicTextField` 기준으로 **`PointerEventPass.Initial`에서 먼저 
 ## 데이터 모델 (Android 로컬 모델 초안)
 
 ```kotlin
-// 서버 스키마는 미정 — 아래는 화면이 들고 있어야 하는 필드의 초안
+// 화면이 들고 있어야 하는 필드의 초안. 서버 요청(`PlaceParfaitTextRequest`)에는 정렬·줄바꿈 위치가 없다(OQ-P-451)
 data class EditableTextTopping(
     val id: ToppingId,
     val content: String,              // 그래핌 클러스터 기준 최대 100자
@@ -407,21 +410,23 @@ data class EditableTextTopping(
 | 자리 | 역할 |
 |---|---|
 | `feature/groups/canvas/impl/.../viewmodel/CanvasToppingArrangeViewModel.kt` (**C-305 확장**) | 재편집(이미 쌓인 텍스트를 탭) — 같은 dirty-set/삭제/권한 분기에 텍스트 편입 |
-| `domain/`·서버 계약 | 텍스트 객체 저장 모델·`AddToppingUseCase` 류 텍스트 지원 — 서버 스키마 확정 후 |
+| `domain/` 저장소·유스케이스 | `ParfaitTextRemoteDataSource`(배치·수정·삭제)를 감쌀 저장소와 유스케이스, 캔버스 응답 `texts`의 VO 매핑(OQ-P-439) |
 
 ## 주의 / 열린 질문
 
 - **[캔버스에 쌓기]가 스텁이라 서버 저장이 아직 안 된다.** 쌓기는 `canvas_text_stack_tapped` 로그만 남기고
-  draft를 비운 채 C-001로 되감는다(미결 [OQ-P-439](../../synthesis/open-questions.md)). 실제 저장은 서버 API 계약(아래)과 `AddToppingUseCase` 류의 텍스트 지원이
-  선행돼야 한다 — 이번 기능에서 남은 가장 큰 작업이다.
+  draft를 비운 채 C-001로 되감는다(미결 [OQ-P-450](../../synthesis/open-questions.md)). 원격 DataSource는 있으므로 남은 것은
+  저장소·유스케이스 배선과 아래 계약 간극이다 — 이번 기능에서 남은 가장 큰 작업이다.
 - **Android 뒤로가기의 "팝오버 먼저" 순차는 플랫폼상 불가.** 소프트 키보드가 떠 있으면 시스템이
   백을 먼저 소비해 키보드를 내리므로(앱 `BackHandler` 로도 못 가로챔), 백 1회로 "팝오버만 닫고
   키보드 유지"가 안 된다. 팝오버는 편집 모드에서만 보여서 키보드가 내려가면 함께 사라진다. 순차
   닫힘이 필요한 **박스 밖 탭**은 스펙대로 팝오버→키보드로 동작한다. (현재 구현: 키보드 ↑ 백은
   `WindowInsets.ime` 관측으로 '포커스 살아있는 dismiss'를 집어 종료 처리.)
-- **서버 API 계약이 아직 없다.** 텍스트 객체 저장 필드(`lineBreakPositions` 포함 여부 등)는 이
-  스펙만으로 확정할 수 없고 서버 스키마 협의가 선행돼야 한다. [c106-topping-place-api](archive/2026-08-20-c106-topping-place-api.md)가
-  사진 토핑 때 겪은 좌표 변환·테두리 계약 전환 패턴을 그대로 참고할 수 있다.
+- **서버 계약이 화면 상태를 다 담지 못한다.** 배치 요청(`PlaceParfaitTextRequest`)은 `text`·좌표·`scale`·
+  `rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이다. 타입 3종은 `isFill`·`isStroke` 조합으로 실을 수
+  있지만 **정렬 3종과 `lineBreakPositions`를 실을 필드가 없다**(OQ-P-451). 그 밖의 계약 미결 — `color` 형식
+  (OQ-P-441), 글자 수 계수 기준(서버 2000자 UTF-16 vs 앱 100 그래핌, OQ-P-442), 이미지와 공유하는
+  `positionZ` 배정(OQ-P-443), 멱등이 아닌 POST의 재시도(OQ-P-444)는 [api/parfait-text.md](../../api/parfait-text.md) 「미결」.
 - **Line Seed JP/TW 폰트를 번들했다(공식 배포본).** `res/font/line_seed_{jp,tw}_regular.ttf`, 라이선스는
   `feature/groups/canvas/impl/licenses/`. 남는 고려: ⓐ APK 가 ~10.5MB 커짐(특히 TW 번체 전체 글리프 6.9MB) —
   필요하면 서브셋팅으로 축소, ⓑ 언어 판별은 **글자별이 아니라 내용의 주된 스크립트**로 통째 적용이라
@@ -430,7 +435,7 @@ data class EditableTextTopping(
   스킨톤·키캡·국기·태그 시퀀스·CRLF 접합을 직접 처리)이라 ICU 버전 편차에 덜 민감하다. 그래도 최신 이모지 시퀀스는 실기기
   매트릭스로 확인 권장.
 - **크로스플랫폼 줄바꿈 완전 동기화는 이 스펙만으로 닫히지 않는다.** 저장값 재사용 원칙은 정했지만
-  `lineBreakPositions` 필드 자체가 서버 계약에 들어갈지는 미정이라 위 서버 API 열린 질문과 묶인다.
+  서버 계약에 `lineBreakPositions` 필드가 없어 위 계약 간극(OQ-P-451)과 묶인다.
 - 화면 식별자 C-305 통일 건은 사진 토핑 쪽 [OQ-P-430](../../synthesis/open-questions.md#2026-10-07-canvas_edit-화면-분류가-정본-문서와-코드에서-다르고-canvas_edit_border_tapped는-아직-못-심었다)에
   이미 올라가 있다 — 이 스펙에서 새 미결 항목을 만들지 않고 거기 묶는다.
 - 줄바꿈 100번 같은 극단 입력에서의 렌더링·성능 한계는 구현 후 실기기 QA 항목으로 남긴다(수치

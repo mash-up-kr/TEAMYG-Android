@@ -7821,8 +7821,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-450
 - **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
-- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. `AddToppingUseCase`가 사진 전용이고 텍스트 객체 저장 API(필드·디자인 단위 글자 크기·중심 좌표·줄바꿈 고정 여부)가 서버와 합의되지 않았다. iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
-- **상태**: 미해결 (서버 계약 대기)
-- **해소 메모**: 서버 스키마가 정해지면 `handleOnClickStack`에서 저장을 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
+- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
+- **상태**: 미해결 (앱 배선 대기 — 원격 DataSource까지 있음)
+- **해소 메모**: 저장소·유스케이스를 붙여 `handleOnClickStack`에서 `placeText`를 호출하고, 저장값(디자인 단위 `designFontSize`, 비율 좌표)을 iOS와 같은 단위로 맞춘다.
 
-<!-- oq-next: 451 -->
+### [2026-10-26] 텍스트 토핑의 정렬·줄바꿈 위치를 서버 계약에 실을 자리가 없다
+
+- **ID**: OQ-P-451
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
+- **항목**: 화면은 정렬 3종(`TextToppingAlign`)을 순환하고 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 배치 요청은 `text`·좌표·`scale`·`rotation`·`color`·`fontSize`·`isFill`·`isStroke`뿐이라 둘 다 실을 필드가 없다(타입 3종은 `isFill`·`isStroke` 조합으로 실린다). 저장이 붙으면 왼쪽·오른쪽 정렬이 다른 기기에서 가운데로 그려지고, 줄바꿈은 기기마다 다시 계산된다. ① 서버에 정렬 필드를 더할지 ② 정렬을 고정해 UI에서 뺄지 ③ 줄바꿈 위치를 계약에 넣을지.
+- **상태**: 미해결 (서버·iOS 협의)
+- **해소 메모**: OQ-P-450의 저장 배선보다 먼저 정해야 한다 — 필드가 없는 채 저장을 붙이면 정렬이 조용히 사라진다.
+
+<!-- oq-next: 452 -->
