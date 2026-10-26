@@ -5,6 +5,7 @@ import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
 import com.teamyg.parfait.domain.model.topping.PlacedToppingVO
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
@@ -28,7 +29,7 @@ interface ParfaitImageRemoteDataSource {
     ): Result<PlacedToppingVO>
 
     /**
-     * 배치된 토핑 여럿의 위치·크기·각도를 한 요청으로 부분 수정한다. 넘기지 않은 축은 서버가 유지한다.
+     * 배치된 토핑 여럿의 위치·크기·각도를 한 요청으로 부분 수정한다. 텍스트 토핑은 [textUpdates]로 같은 요청에 실린다. 넘기지 않은 축은 서버가 유지한다.
      *
      * 부분 성공이 없다 — 항목 하나가 걸리면 전부 롤백되고 어느 항목이었는지는 응답에 없다.
      * 테두리는 이 API 로 바꿀 수 없다(요청에 필드가 없다) — [updateToppingBorder] 가 맡는다.
@@ -38,6 +39,7 @@ interface ParfaitImageRemoteDataSource {
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
+        textUpdates: List<TextToppingTransformUpdate> = emptyList(),
     ): Result<List<UpdatedToppingVO>>
 
     /**
