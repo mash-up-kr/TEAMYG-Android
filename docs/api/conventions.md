@@ -2,8 +2,8 @@
 id: conventions
 title: 서버 API 전역 계약
 server_module: common/response, common/error, http/global
-server_commit: aa9cc9b
-verified: 2026-09-04
+server_commit: 8b4a94b
+verified: 2026-10-25
 tags: [api, parfait, server-contract, conventions]
 ---
 
@@ -51,6 +51,12 @@ tags: [api, parfait, server-contract, conventions]
 `HttpRequestMethodNotSupportedException`·`Exception`)가 모두 `errorDetail` 인자 없이
 `ApiResponse.error(errorCode)`를 호출한다. 검증 실패
 (`MethodArgumentNotValidException`)도 필드별 상세 없이 `CommonErrorCode.INVALID_REQUEST` 하나로 뭉개진다.
+
+### `/api` 밖 웹 표면은 envelope를 쓰지 않는다
+
+`/link`·`/`(HTML)와 `/.well-known/assetlinks.json`·`/.well-known/apple-app-site-association`(스펙이 정한
+JSON)는 `ApiResponse`로 감싸지 않는다. 앱이 Retrofit으로 부르는 경로가 아니라 브라우저·OS가 읽는 경로이고,
+호스트도 API 호스트가 아니라 루트 도메인이다 → [deeplink.md](deeplink.md).
 
 ## 에러 코드 체계
 
@@ -119,6 +125,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 
 `SecurityConfig`는 세션을 쓰지 않고(STATELESS), 아래 화이트리스트 외 **전 요청 인증 필수**다.
 
+- `/` · `/assets/**` — 루트 랜딩 페이지와 정적 리소스([deeplink.md](deeplink.md))
+- `/health`
 - `/actuator/health`
 - `/swagger-ui.html` · `/swagger-ui/**`
 - `/favicon.ico`
@@ -129,6 +137,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 - `/api/v1/auth/reissue`
 - `/api/v1/policies`
 - `/api/v1/test/parfait-canvas/rotate` ⚠️ **테스트 전용**
+- `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` — App Links·Universal Links
+  검증 파일과 초대 링크 웹 폴백([deeplink.md](deeplink.md))
 
 인증 실패는 `AuthErrorCode.UNAUTHORIZED`(401)로 나간다.
 
@@ -162,8 +172,8 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 **토큰에서** 정한다 — 남의 계정을 지목할 경로가 없다. 다만 토핑 배치(POST)는 배치자 대조가 없어
 **같은 그룹의 다른 멤버가 남의 배치를 덮어쓸 수 있다** → [parfait-image.md](parfait-image.md).
 
-**관측 사실**: `HealthController`가 매핑한 `GET /health`(`http/global/health`, #63이 `http/api/health`에서
-옮겼다)는 화이트리스트의 `/actuator/health`와 경로가 달라 **인증 대상**이다.
+`HealthController`가 매핑한 `GET /health`(`http/global/health`)는 화이트리스트에 있어 **인증 없이 열린다**.
+`/actuator/health`와는 별개 경로다.
 
 ## URL 규약
 
@@ -177,6 +187,7 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 | `/api/v1/groups/{groupId}/<하위>` | `/api/v1/groups/{groupId}/parfaits` · `.../parfaits/year` · `.../parfaits/today` · `.../parfaits/{parfaitId}` · `.../parfaits/{parfaitId}/background` · `.../parfaits/{parfaitId}/images/{parfaitImageId}/border` |
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
 | `/api/<도메인>` (버전 없음) | `/api/parfait-groups` |
+| `/api` 밖(루트 도메인 웹 표면) | `/` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.
 서버에 URL 규약 문서가 없어 관측 사실로만 적는다 → [open-questions](../synthesis/open-questions.md).
@@ -431,8 +442,8 @@ TEAMYG-Android `:data`의 원격 네트워크 구조([ADR-0017](../adr/0017-remo
 | "오늘"의 경계 | 서버는 `ParfaitDay.current()` — **03:00** 기준(위키 [[캔버스-마감-스케줄]]의 마감 시각), 앱 `parfaitToday()`는 **KST 자정** 기준이라 00:00~03:00 KST에 부작용 있는 오늘 조회가 두 번 돌고 화면이 D 아래 D−1 캔버스를 그렸다 | PR #308이 앱 경계를 03시로 옮겼다. 방향이 분명했던 쪽(**서버가 정책에 맞고 앱이 자정에 머물러 있었다**)이라 앱만 고쳤다 → [parfait.md](parfait.md) "하루 경계" |
 
 ⚠️ **재발 방지 수단은 둘 다 안 생겼다.** 첫 항목을 잡은 것은 계약 문서 감사이고, 앱 테스트는 자기
-DTO를 자기가 만들어 넣어 `@SerialName` 문자열도 날짜 포맷도 서버 원본과 대조하지 않는다. 와이어 계약
-테스트 선례(`KakaoLoginResponseSerializationTest`)는 있으나 이 부류에 아직 안 붙었다 → OQ-P-234 ③.
+DTO를 자기가 만들어 넣어 `@SerialName` 문자열도 날짜 포맷도 서버 원본과 대조하지 않는다. DTO 직렬화
+테스트는 두지 않기로 했다 — 키 대조는 서버 delta 감사가 맡는다 → OQ-P-234 ③.
 둘째 항목은 앱이 서버 상수를 **복제**해 맞춘 것이라(계약이 경계 시각을 내려주지 않는다) 서버가 배치
 시각을 바꾸면 다시 갈린다 — 그 조건은 `DayWindow.DAY_BOUNDARY_HOUR` KDoc에 적혀 있다.
 
@@ -462,7 +473,7 @@ DTO를 자기가 만들어 넣어 `@SerialName` 문자열도 날짜 포맷도 �
 > 두 번 다 계약 문서 감사였다 → OQ-P-234 ③.
 
 ✅ 오래 걸려 있던 로그인 판별자 키 불일치(응답 키가 `isNewUser`인데 Android가
-`@SerialName("newUser")`를 붙였던 건)는 **PR #241로 정정됐고 와이어 계약 테스트가 잠갔다**
+`@SerialName("newUser")`를 붙였던 건)는 **PR #241로 정정됐다**
 ([auth.md](auth.md) 각주). 계약 해석의 근거는 위 [직렬화 규약](#직렬화-규약)이다.
 
 > ⚠️ **다만 `http/auth.http`는 아직 `newUser`를 가르친다** — 정정이 앱 DTO와 `http/README.md`에는

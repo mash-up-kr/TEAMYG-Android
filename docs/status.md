@@ -173,7 +173,7 @@
 ## 서버 계약
 - 상태: 서버가 정본인 계약은 [api/README.md](api/README.md)에서, 앱과의 간극은 [api/conventions.md 「Android 불일치」](api/conventions.md#android-불일치)에서 본다.
 - 앵커: `ServerErrorCode`, `JsonModule`, `data/src/main/java/com/teamyg/parfait/data/service`, `http/README.md`
-- ⚠️ 응답 JSON 키를 단언하는 와이어 테스트는 `KakaoLoginResponseSerializationTest` 하나뿐이다. 원격 DataSource 테스트는 DTO를 직접 만들어 넣어 `@SerialName`을 안 보므로, 서버가 칩 키를 다시 바꾸면 널 기본값 때문에 멤버·그룹·캔버스 칩이 조용히 폴백 색으로 그려진다 (OQ-P-234)
+- ⚠️ 응답 JSON 키를 단언하는 테스트는 두지 않는다(`.claude/rules/no-dto-serialization-test.md`). 원격 DataSource 테스트는 DTO를 직접 만들어 넣어 `@SerialName`을 안 보므로, 서버가 칩 키를 다시 바꾸면 널 기본값 때문에 멤버·그룹·캔버스 칩이 조용히 폴백 색으로 그려진다. 잡는 수단은 서버 delta 감사다 (OQ-P-234)
 - ⚠️ 서버는 그룹 재참여 때 멤버십 id를 유지해 탈퇴 전 토핑이 새 닉네임·칩으로 되살아나고 `ACTIVE` 캔버스면 편집·삭제 소유권까지 돌아오는데, 정책 근거가 없다 (OQ-P-398)
 - 설계: [ADR-0017](adr/0017-remote-network-datasource.md)
 
