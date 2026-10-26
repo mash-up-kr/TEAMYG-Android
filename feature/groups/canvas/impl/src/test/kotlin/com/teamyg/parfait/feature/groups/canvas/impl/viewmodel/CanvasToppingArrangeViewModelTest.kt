@@ -1259,6 +1259,7 @@ class CanvasToppingArrangeViewModelTest {
         members = emptyList(),
         background = null,
         toppings = toppings,
+        texts = emptyList(),
     )
 
     private fun toppingVO(

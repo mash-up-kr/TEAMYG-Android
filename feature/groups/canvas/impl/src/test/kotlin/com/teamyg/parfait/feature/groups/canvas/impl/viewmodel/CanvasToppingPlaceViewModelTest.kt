@@ -987,6 +987,7 @@ class CanvasToppingPlaceViewModelTest {
         members = emptyList(),
         background = background,
         toppings = toppings,
+        texts = emptyList(),
     )
 
     private fun topping(positionZ: Int) = CanvasToppingVO(

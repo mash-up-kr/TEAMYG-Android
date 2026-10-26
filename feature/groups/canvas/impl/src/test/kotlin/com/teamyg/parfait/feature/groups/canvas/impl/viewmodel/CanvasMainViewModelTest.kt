@@ -1155,6 +1155,7 @@ class CanvasMainViewModelTest {
             members = members,
             background = null,
             toppings = emptyList(),
+            texts = emptyList(),
         )
 
         fun topping(
