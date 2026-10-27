@@ -1,6 +1,15 @@
 // 생성물 — 직접 고치지 않는다. python3 tools/text-topping-han-coverage/generate.py
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
+internal val TEXT_TOPPING_HAN_RANGES: List<IntRange> = listOf(
+    0x3005..0x3007,
+    0x303B..0x303B,
+    0x3400..0x4DBF,
+    0x4E00..0x9FFF,
+    0xF900..0xFAFF,
+    0x20000..0x3FFFF,
+)
+
 private const val LINE_SEED_TW_BMP =
     "\u3005\u3007\u4E00\u4E01\u4E03\u4E03\u4E07\u4E11\u4E14\u4E16\u4E18\u4E19\u4E1E\u4E1F\u4E26\u4E26" +
         "\u4E2B\u4E2B\u4E2D\u4E2E\u4E30\u4E33\u4E36\u4E36\u4E38\u4E39\u4E3B\u4E3C\u4E3F\u4E3F\u4E42\u4E43" +

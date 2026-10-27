@@ -7,7 +7,7 @@ platforms: android
 verified: 2026-10-27
 related_code:
   - TextToppingScript.kt#TextToppingScript
-  - TextToppingScript.kt#textToppingScriptRuns
+  - TextToppingScriptRuns.kt#textToppingScriptRuns
   - TextToppingHanCoverage.kt#TextToppingHanCoverage
   - TextToppingScriptSpans.kt#textToppingAnnotatedString
   - TextToppingContent.kt#textToppingBaseStyle
@@ -100,12 +100,13 @@ placeholder(빈 입력 안내 문구)는 고정 한국어라 지금처럼 베이
 
 ## 파일 구성
 
-- `model/TextToppingScript.kt` — enum 유지, 구간 분할 함수와 구간 타입을 여기 둔다
-  (구간 타입은 `model/` 한 파일 한 타입 규칙에 따라 따로 둔다)
-- `model/TextToppingHanCoverage.kt` (생성물) — TW·JP 한자 커버리지와 생성 근거 폰트의 SHA-256.
-  `intArrayOf`로 넣으면 JVM 64KB 메서드 한도를 넘어 BMP 범위는 문자 쌍 문자열, 보조 평면은 정수 배열로 인코딩하고
-  이진 탐색한다
-- 생성 스크립트 — Python + fonttools. 위치는 빌더 몫
+- `model/TextToppingScript.kt` — enum(글꼴·자간·`spanStyle`)만 둔다. 구간 타입은 `model/TextToppingScriptRun.kt`
+- `util/TextToppingScriptRuns.kt` — 구간 분할 `textToppingScriptRuns`
+- `model/TextToppingHanCoverage.kt` — 커버리지 이진 탐색. `intArrayOf`로 넣으면 JVM 64KB 메서드 한도를 넘어
+  BMP 범위는 문자 쌍 문자열, 보조 평면은 정수 배열로 인코딩한다
+- `model/TextToppingHanCoverageData.kt` (생성물) — TW·JP 한자 커버리지, 한자 판정 범위 `TEXT_TOPPING_HAN_RANGES`,
+  생성 근거 폰트의 SHA-256. 한자 범위의 정본은 생성 스크립트 하나다
+- `tools/text-topping-han-coverage/generate.py` — Python + fonttools 생성 스크립트
 - 단위 테스트
   - 구간 분할: 기획 예시 두 개, 한글+한자, 숫자, 앞·뒤 중립 문자, 보조 평면 한자, 빈 문자열
   - 커버리지 동기화: `res/font/line_seed_{tw,jp}_regular.ttf` 의 해시가 생성물의 해시와 같다

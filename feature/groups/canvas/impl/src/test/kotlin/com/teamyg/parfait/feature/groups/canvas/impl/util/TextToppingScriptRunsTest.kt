@@ -1,8 +1,9 @@
-package com.teamyg.parfait.feature.groups.canvas.impl.model
+package com.teamyg.parfait.feature.groups.canvas.impl.util
 
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScript.CHINESE as C
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScript.DEFAULT as D
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScript.JAPANESE as J
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScriptRun
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

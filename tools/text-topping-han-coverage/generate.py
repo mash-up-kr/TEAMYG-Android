@@ -25,7 +25,7 @@ OUTPUT = (
     MODULE / "kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/"
     "TextToppingHanCoverageData.kt"
 )
-# 반복 부호 々〆〇와 〻 을 한자로 본다 — TextToppingScript.kt 의 isHan 과 같아야 한다
+# 반복 부호 々〆〇와 〻 을 한자로 본다. 구간 분할도 이 범위를 생성물의 TEXT_TOPPING_HAN_RANGES 로 받는다
 HAN_RANGES = [
     (0x3005, 0x3007), (0x303B, 0x303B), (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x3FFFF),
 ]
@@ -70,11 +70,17 @@ def supplementary_array(ranges):
     return "intArrayOf(\n" + "\n".join(lines) + "\n    )"
 
 
+def han_ranges_const():
+    items = "\n".join(f"    0x{lo:X}..0x{hi:X}," for lo, hi in HAN_RANGES)
+    return f"internal val TEXT_TOPPING_HAN_RANGES: List<IntRange> = listOf(\n{items}\n)\n"
+
+
 def main():
     out = [
         "// 생성물 — 직접 고치지 않는다. python3 tools/text-topping-han-coverage/generate.py",
         "package com.teamyg.parfait.feature.groups.canvas.impl.model",
         "",
+        han_ranges_const(),
     ]
     for tag, file_name in FONTS:
         path = FONT_DIR / file_name
