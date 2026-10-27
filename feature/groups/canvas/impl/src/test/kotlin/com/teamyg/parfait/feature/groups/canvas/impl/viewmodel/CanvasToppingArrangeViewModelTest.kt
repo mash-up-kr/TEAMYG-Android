@@ -1607,19 +1607,16 @@ class CanvasToppingArrangeViewModelTest {
     }
 
     @Test
-    fun tapFocusedMyText_startsEditSessionAndNavigates() = runTest(mainDispatcherRule.dispatcher) {
+    fun tapFocusedMyText_doesNothing() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = textViewModel()
-        val original = viewModel.text(SHARED_ID)
 
         viewModel.effect.test {
-            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(original))
+            viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(SHARED_ID)))
 
-            assertEquals(CanvasToppingArrangeEffect.NavigateToTextEdit, awaitItem())
+            expectNoEvents()
         }
-        assertEquals(
-            TextEditSession(groupId = GROUP_ID, parfaitId = PARFAIT_ID, original = original),
-            textEditSessionHolder.session(),
-        )
+        assertEquals(CanvasToppingKey.Text(SHARED_ID), viewModel.state.value.focusedKey)
+        assertNull(textEditSessionHolder.session())
     }
 
     @Test
@@ -1633,25 +1630,6 @@ class CanvasToppingArrangeViewModelTest {
         }
         assertEquals(CanvasToppingKey.Text(MY_SECOND_TEXT_ID), viewModel.state.value.focusedKey)
         assertNull(textEditSessionHolder.session())
-    }
-
-    @Test
-    fun cleared_dropsTheResultItLeftUnconsumed() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = textViewModel()
-        val store = ViewModelStore().apply { put("arrange", viewModel) }
-        viewModel.processIntent(CanvasToppingArrangeIntent.OnClickText(viewModel.text(SHARED_ID)))
-        // 편집하는 사이 텍스트가 서버에서 사라져 결과를 받을 곳이 없다
-        todayCanvases.value = textCanvas().copy(
-            texts = textCanvas().texts.filterNot { it.parfaitTextId == ParfaitTextId(SHARED_ID) },
-        )
-        advanceUntilIdle()
-        textEditSessionHolder.finish(edited(text = "새 글"))
-        advanceUntilIdle()
-        assertEquals(SHARED_ID, textEditSessionHolder.result.value?.parfaitTextId)
-
-        store.clear()
-
-        assertNull(textEditSessionHolder.result.value)
     }
 
     @Test

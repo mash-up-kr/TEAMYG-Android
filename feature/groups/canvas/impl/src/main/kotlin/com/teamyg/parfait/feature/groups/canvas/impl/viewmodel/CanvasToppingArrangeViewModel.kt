@@ -475,7 +475,10 @@ constructor(
         }
     }
 
-    /** 패널 규칙은 [handleOnClickTopping] 과 같다. 포커스된 텍스트를 다시 탭하면 텍스트 입력 화면에서 고친다 */
+    /**
+     * 패널 규칙은 [handleOnClickTopping] 과 같다. 재탭 진입은 막았지만 재편집 왕복([startTextEdit])은
+     * 다른 진입점을 붙일 수 있게 남겨 두었다.
+     */
     private fun handleOnClickText(intent: CanvasToppingArrangeIntent.OnClickText) {
         val current = state.value
         val text = intent.text
@@ -483,7 +486,7 @@ constructor(
         when {
             current.isBorderPanelOpen -> updateState { copy(isBorderPanelOpen = false) }
             !text.isMine -> postSideEffect(effect = CanvasToppingArrangeEffect.ShowOthersToppingNotEditable)
-            current.focusedKey == CanvasToppingKey.Text(text.parfaitTextId) -> startTextEdit(text)
+            current.focusedKey == CanvasToppingKey.Text(text.parfaitTextId) -> Unit
             else -> updateState { copy(focusedKey = CanvasToppingKey.Text(text.parfaitTextId)) }
         }
     }
