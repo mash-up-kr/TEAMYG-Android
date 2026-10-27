@@ -1,29 +1,34 @@
 """번들 Line Seed TW/JP 폰트의 한자 커버리지 테이블을 Kotlin 소스로 생성한다.
 
-저장소 루트에서 실행:
+어느 디렉터리에서 실행해도 된다:
     python3 tools/text-topping-han-coverage/generate.py
 """
 import hashlib
 import sys
+from pathlib import Path
 
 try:
     from fontTools.ttLib import TTFont
 except ImportError:
     print(
         "fonttools 가 필요하다:\n"
-        "  python3 -m venv .venv && .venv/bin/pip install fonttools\n"
-        "  .venv/bin/python tools/text-topping-han-coverage/generate.py",
+        '  python3 -m venv "${TMPDIR:-/tmp}/han-venv" && "${TMPDIR:-/tmp}/han-venv/bin/pip" install fonttools\n'
+        '  "${TMPDIR:-/tmp}/han-venv/bin/python" tools/text-topping-han-coverage/generate.py',
         file=sys.stderr,
     )
     sys.exit(1)
 
-MODULE = "feature/groups/canvas/impl/src/main"
-FONT_DIR = f"{MODULE}/res/font"
+ROOT = Path(__file__).resolve().parents[2]
+MODULE = ROOT / "feature/groups/canvas/impl/src/main"
+FONT_DIR = MODULE / "res/font"
 OUTPUT = (
-    f"{MODULE}/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/"
+    MODULE / "kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/"
     "TextToppingHanCoverageData.kt"
 )
-HAN_RANGES = [(0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x3FFFF)]
+# 반복 부호 々〆〇와 〻 을 한자로 본다 — TextToppingScript.kt 의 isHan 과 같아야 한다
+HAN_RANGES = [
+    (0x3005, 0x3007), (0x303B, 0x303B), (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF), (0x20000, 0x3FFFF),
+]
 LINE_WIDTH = 120
 
 FONTS = [("TW", "line_seed_tw_regular.ttf"), ("JP", "line_seed_jp_regular.ttf")]
@@ -47,7 +52,7 @@ def bmp_const(name, ranges):
     escapes = "".join(f"\\u{v:04X}" for pair in ranges for v in pair)
     per_line = (LINE_WIDTH - 16) // 6 // 2 * 2 * 6
     chunks = [escapes[i:i + per_line] for i in range(0, len(escapes), per_line)]
-    body = " +\n    ".join(f'"{c}"' for c in chunks)
+    body = " +\n        ".join(f'"{c}"' for c in chunks)
     return f"private const val {name}_BMP =\n    {body}\n"
 
 
@@ -72,7 +77,7 @@ def main():
         "",
     ]
     for tag, file_name in FONTS:
-        path = f"{FONT_DIR}/{file_name}"
+        path = FONT_DIR / file_name
         with open(path, "rb") as f:
             digest = hashlib.sha256(f.read()).hexdigest()
         cmap = TTFont(path).getBestCmap()
@@ -91,4 +96,5 @@ def main():
         f.write("\n".join(out))
 
 
-main()
+if __name__ == "__main__":
+    main()
