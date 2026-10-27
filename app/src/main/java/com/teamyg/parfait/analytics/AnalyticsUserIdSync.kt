@@ -14,10 +14,7 @@ import javax.inject.Singleton
 
 private val logger = Loggers.create("AnalyticsUserIdSync")
 
-/**
- * GA4 사용자 ID 를 계정 정보 SSoT 의 memberId 에 맞춘다(iOS 와 같은 값).
- * 세션 진입점마다 부르지 않고 SSoT 하나만 구독하는 근거는 `parfait/adr/0031-analytics-central-screen-mapping.md`.
- */
+/** GA4 사용자 ID 를 memberId 에 맞춘다(iOS 와 같은 값) — 근거는 `parfait/adr/0031-analytics-central-screen-mapping.md`. */
 @Singleton
 class AnalyticsUserIdSync @Inject constructor(
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
@@ -29,7 +26,7 @@ class AnalyticsUserIdSync @Inject constructor(
             getMyAccountFlow()
                 .map { account -> account?.memberId?.value?.toString() }
                 .distinctUntilChanged()
-                // 앱 스코프에 핸들러가 없어, 저장소 읽기 실패가 여기서 새면 분석 부가 기능이 앱을 죽인다
+                // 앱 스코프에 예외 핸들러가 없어 여기서 새면 앱이 죽는다
                 .catch { logger.e(it) { "계정 정보 구독 실패 — 사용자 ID 동기화를 멈춘다" } }
                 .collect(analyticsLogger::setUserId)
         }

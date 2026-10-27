@@ -9,7 +9,7 @@ interface AnalyticsLogger {
         value: String,
     )
 
-    /** `null` 이면 지운다 — 로그아웃 뒤의 이벤트가 이전 회원에 붙지 않게. */
+    /** `null` 이면 지운다. */
     fun setUserId(id: String?)
 
     fun logScreenView(screen: AnalyticsScreen)
