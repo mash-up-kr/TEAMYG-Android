@@ -170,6 +170,21 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickOssLicense_navigatesToOssLicense() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 오픈소스 라이선스를 누른다
+            viewModel.processIntent(AppSettingIntent.ClickOssLicense)
+
+            // Then 오픈소스 라이선스로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToOssLicense, awaitItem())
+        }
+    }
+
+    @Test
     fun clickWithdraw_showsWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
         // Given 팝업이 떠 있지 않은 초기 화면
         val viewModel = viewModel()

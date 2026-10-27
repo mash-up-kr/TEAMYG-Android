@@ -51,6 +51,8 @@ sealed interface AppSettingIntent : UiIntent {
 
     data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
+    data object ClickOssLicense : AppSettingIntent
+
     data object ClickLogout : AppSettingIntent
 
     data object ClickWithdraw : AppSettingIntent
@@ -69,6 +71,8 @@ sealed interface AppSettingSideEffect : UiSideEffect {
         val title: String,
         val url: String,
     ) : AppSettingSideEffect
+
+    data object NavigateToOssLicense : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
 
@@ -111,6 +115,7 @@ constructor(
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
             is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
+            AppSettingIntent.ClickOssLicense -> handleClickOssLicense()
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
             AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
@@ -155,6 +160,10 @@ constructor(
         postSideEffect(
             AppSettingSideEffect.NavigateToPolicyDetail(title = policy.title, url = policy.url),
         )
+    }
+
+    private fun handleClickOssLicense() {
+        postSideEffect(AppSettingSideEffect.NavigateToOssLicense)
     }
 
     private fun handleClickLogout() {

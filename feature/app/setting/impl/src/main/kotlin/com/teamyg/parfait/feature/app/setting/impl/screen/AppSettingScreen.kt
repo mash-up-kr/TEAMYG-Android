@@ -34,6 +34,7 @@ internal fun AppSettingScreen(
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
+    onClickOssLicense: () -> Unit,
     onClickLogout: () -> Unit,
     onClickWithdraw: () -> Unit,
     onConfirmWithdraw: () -> Unit,
@@ -78,6 +79,11 @@ internal fun AppSettingScreen(
                             onClick = { onClickPolicy(policy.termsId) },
                         )
                     }
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_oss_license),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickOssLicense,
+                    )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
@@ -171,6 +177,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickBack = {},
         onClickAccount = {},
         onClickPolicy = {},
+        onClickOssLicense = {},
         onClickLogout = {},
         onClickWithdraw = {},
         onConfirmWithdraw = {},
