@@ -68,6 +68,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.TextColorChipRow
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TextToppingBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.editingTopAnchored
 import com.teamyg.parfait.feature.groups.canvas.impl.component.fitTextToppingToHeight
 import com.teamyg.parfait.feature.groups.canvas.impl.component.measureTextBoxUnbounded
@@ -307,11 +308,8 @@ internal fun CanvasTextInputScreen(
                     .fillMaxSize()
                     .padding(horizontal = YGTheme.layout.padding.padding7),
             ) {
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
-                        .let { if (textEditMode.isEditing) it else it.clipToBounds() },
-                ) {
+                // 점선은 캔버스 밖으로 나가도 잘리면 안 돼서 이 박스가 아니라 텍스트 쪽을 자른다
+                Box(modifier = Modifier.aspectRatio(CANVAS_AREA_ASPECT_RATIO)) {
                     ToppingArrangeCanvasSurface(
                         backgroundColor = uiState.backgroundColor,
                         backgroundImageUrl = uiState.backgroundImageUrl,
@@ -346,6 +344,7 @@ internal fun CanvasTextInputScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .let { if (textEditMode.isEditing) it else it.clipToBounds() }
                             // 글자가 작아도 박스 둘레 최소 44dp 안의 탭은 편집을 유지한다
                             .textEditTapInput(
                                 isInsideTextBox = { x, y -> hitTarget()?.containsPoint(x, y) == true },
@@ -443,6 +442,19 @@ internal fun CanvasTextInputScreen(
                                 )
                             }
                         }
+                    }
+
+                    // 제자리로 돌아오는 애니메이션 동안에도 글자를 따라가도록 저장값이 아니라 그리는 값을 본다
+                    val textBoxSize = uiState.textBoxSize
+                    if (!textEditMode.isEditing && textBoxSize != null) {
+                        ToppingSelectionStroke(
+                            center = drawnCenter,
+                            sizeAfterScale = DpSize(
+                                width = maxOf(textBoxSize.width * drawnScale, TEXT_TOPPING_MIN_TOUCH),
+                                height = maxOf(textBoxSize.height * drawnScale, TEXT_TOPPING_MIN_TOUCH),
+                            ),
+                            rotationDegrees = drawnRotationDegrees,
+                        )
                     }
 
                     // 배치 모드의 탭·팬·핀치는 텍스트 **위** 전면 오버레이가 독점한다. 텍스트와 같은 이유로
