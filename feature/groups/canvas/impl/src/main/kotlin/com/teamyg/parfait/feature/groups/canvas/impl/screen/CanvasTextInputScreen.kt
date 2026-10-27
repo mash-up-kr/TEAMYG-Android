@@ -82,7 +82,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZ
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.model.detectTextToppingScript
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditBudget
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditModeState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditVerticalAnchor
@@ -90,7 +89,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberDedupeHangulEnterTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberMaxLengthInputTransformation
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingAnnotatedString
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingFontSizeSp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingScriptOutputTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputUiState
 
@@ -174,8 +175,7 @@ internal fun CanvasTextInputScreen(
 
         val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
 
-        val textScript = remember(uiState.content) { detectTextToppingScript(uiState.content) }
-        val autoSizeBaseStyle = textToppingBaseStyle(textScript)
+        val autoSizeBaseStyle = textToppingBaseStyle()
         val canvasWidth = uiState.canvasSize?.width ?: TEXT_TOPPING_DESIGN_CANVAS_WIDTH
         // 기기 폭과 무관하게 캔버스 대비 같은 크기·줄바꿈으로 보이도록 디자인 값에 곱한다
         val canvasScale = canvasWidth / TEXT_TOPPING_DESIGN_CANVAS_WIDTH
@@ -185,7 +185,10 @@ internal fun CanvasTextInputScreen(
         val textMaxWidthPx = with(density) { textMaxWidthDp.roundToPx() }
 
         val textMeasurer = rememberTextMeasurer()
-        val hugMeasureText = textFieldState.text.toString().ifEmpty { placeholderText }
+        val currentText = textFieldState.text.toString()
+        val hugMeasureText = remember(currentText, placeholderText) {
+            textToppingAnnotatedString(currentText.ifEmpty { placeholderText })
+        }
 
         val textToppingFit = if (textEditMode.isEditing) {
             remember(
@@ -407,6 +410,7 @@ internal fun CanvasTextInputScreen(
                                 BasicTextField(
                                     state = textFieldState,
                                     inputTransformation = dedupeHangulEnterTransformation.then(maxLengthTransformation),
+                                    outputTransformation = textToppingScriptOutputTransformation,
                                     // 자동 수정·추천어 치환이 글자를 바꿔 줄바꿈·글자 수가 흔들리지 않게 끈다
                                     keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                                     textStyle = autoSizeBaseStyle
