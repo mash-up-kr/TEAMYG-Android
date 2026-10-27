@@ -57,7 +57,6 @@ private val LABEL_SLIDER_GAP = 4.dp
  * 빈 곳 터치를 받으면 패널이 닫히거나 토핑이 움직인다.
  *
  * @param selectedColorArgb `null` 은 테두리 없음
- * @param isEnabled 닫힌 바의 토글만 막는다
  */
 @Composable
 internal fun ToppingBorderPanel(
@@ -69,7 +68,6 @@ internal fun ToppingBorderPanel(
     onSelectColor: (Int?) -> Unit,
     onChangeWidth: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    isEnabled: Boolean = true,
 ) {
     Box(
         modifier = modifier
@@ -89,31 +87,20 @@ internal fun ToppingBorderPanel(
                 onChangeWidth = onChangeWidth,
             )
         } else {
-            CollapsedPanelBar(
-                onClickToggle = onClickToggle,
-                isEnabled = isEnabled,
-            )
+            CollapsedPanelBar(onClickToggle = onClickToggle)
         }
     }
 }
 
 @Composable
-private fun CollapsedPanelBar(
-    onClickToggle: () -> Unit,
-    isEnabled: Boolean,
-) {
+private fun CollapsedPanelBar(onClickToggle: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .testTag(TOGGLE_TAG)
-            .then(
-                if (isEnabled) {
-                    Modifier.clickableYGNoRipple(role = Role.Button, onClick = onClickToggle)
-                } else {
-                    Modifier
-                },
-            ).padding(YGTheme.layout.padding.padding6),
+            .clickableYGNoRipple(role = Role.Button, onClick = onClickToggle)
+            .padding(YGTheme.layout.padding.padding6),
     ) {
         PanelLabel(
             text = stringResource(R.string.canvas_topping_border_panel_collapsed),

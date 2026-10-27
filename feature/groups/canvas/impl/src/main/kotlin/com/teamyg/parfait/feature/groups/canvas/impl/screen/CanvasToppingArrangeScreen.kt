@@ -94,19 +94,20 @@ internal fun CanvasToppingArrangeScreen(
         },
         onClickConfirm = onClickConfirm,
         panel = {
-            ToppingBorderPanel(
-                isOpen = uiState.isBorderPanelOpen,
-                selectedColorArgb = uiState.panelBorderColorArgb,
-                widthDp = uiState.panelBorderWidthDp,
-                widthRange = TOPPING_BORDER_WIDTH_RANGE_DP,
-                onClickToggle = onToggleBorderPanel,
-                onSelectColor = onSelectBorderColor,
-                onChangeWidth = onChangeBorderWidth,
-                isEnabled = uiState.canOpenBorderPanel,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-            )
+            if (uiState.canOpenBorderPanel) {
+                ToppingBorderPanel(
+                    isOpen = uiState.isBorderPanelOpen,
+                    selectedColorArgb = uiState.panelBorderColorArgb,
+                    widthDp = uiState.panelBorderWidthDp,
+                    widthRange = TOPPING_BORDER_WIDTH_RANGE_DP,
+                    onClickToggle = onToggleBorderPanel,
+                    onSelectColor = onSelectBorderColor,
+                    onChangeWidth = onChangeBorderWidth,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                )
+            }
         },
         modifier = modifier,
     ) {
