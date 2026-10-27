@@ -16,7 +16,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -32,15 +31,12 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 /**
  * 편집 필드와 읽기 전용 렌더러가 같은 값을 써야 줄바꿈이 맞는다.
  *
- * 글자는 구간 스타일이 전부 덮으니 글꼴·자간은 placeholder 처럼 구간이 없는 텍스트에만 쓰인다 —
- * 그래도 [TextToppingScript.DEFAULT] 와 같은 값이어야 빈 입력과 첫 글자의 크기가 튀지 않는다.
+ * 글꼴·자간은 placeholder 처럼 구간이 없는 텍스트를 위해 [TextToppingScript.DEFAULT] 구간 스타일을 깐다.
  */
 @Composable
 @ReadOnlyComposable
-internal fun textToppingBaseStyle(): TextStyle = YGTheme.typography.body.b01R.copy(
-    fontFamily = TextToppingScript.DEFAULT.fontFamily,
-    letterSpacing = TextToppingScript.DEFAULT.letterSpacingEm.em,
-)
+internal fun textToppingBaseStyle(): TextStyle = YGTheme.typography.body.b01R
+    .merge(TextToppingScript.DEFAULT.spanStyle)
 
 /**
  * C-106 배치 모드가 키보드를 내린 뒤 보여 주는 크기·줄바꿈·박스와 같아야 한다.

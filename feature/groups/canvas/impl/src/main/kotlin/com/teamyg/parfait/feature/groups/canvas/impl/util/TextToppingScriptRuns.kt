@@ -7,12 +7,14 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingHanCoverag
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScript
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScriptRun
 
-private val JAPANESE_FIRST: List<Pair<TextToppingScript, TextToppingHanCoverage>> = listOf(
-    TextToppingScript.JAPANESE to LINE_SEED_JP_HAN,
-    TextToppingScript.CHINESE to LINE_SEED_TW_HAN,
+private class HanFont(val script: TextToppingScript, val coverage: TextToppingHanCoverage)
+
+private val JAPANESE_FIRST: List<HanFont> = listOf(
+    HanFont(TextToppingScript.JAPANESE, LINE_SEED_JP_HAN),
+    HanFont(TextToppingScript.CHINESE, LINE_SEED_TW_HAN),
 )
 
-private val CHINESE_FIRST: List<Pair<TextToppingScript, TextToppingHanCoverage>> = JAPANESE_FIRST.reversed()
+private val CHINESE_FIRST: List<HanFont> = JAPANESE_FIRST.reversed()
 
 private fun isKana(codePoint: Int): Boolean =
     codePoint in 0x3040..0x30FF || codePoint in 0x31F0..0x31FF || codePoint in 0xFF66..0xFF9F
@@ -44,7 +46,7 @@ internal fun textToppingScriptRuns(text: CharSequence): List<TextToppingScriptRu
         val codePoint = Character.codePointAt(text, offset)
         val script = when {
             isKana(codePoint) -> TextToppingScript.JAPANESE
-            isHan(codePoint) -> (hanOrder.firstOrNull { codePoint in it.second } ?: hanOrder.first()).first
+            isHan(codePoint) -> (hanOrder.firstOrNull { codePoint in it.coverage } ?: hanOrder.first()).script
             isFullwidthAlphanumeric(codePoint) -> null
             Character.isLetter(codePoint) || Character.isDigit(codePoint) -> TextToppingScript.DEFAULT
             else -> null
