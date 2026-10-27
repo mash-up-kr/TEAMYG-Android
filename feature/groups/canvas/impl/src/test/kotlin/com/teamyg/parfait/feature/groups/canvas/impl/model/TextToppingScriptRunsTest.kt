@@ -8,8 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TextToppingScriptRunsTest {
-    private fun runsOf(text: String) =
-        textToppingScriptRuns(text).map { it.script to text.substring(it.start, it.end) }
+    private fun runsOf(text: String) = textToppingScriptRuns(text).map { it.script to text.substring(it.start, it.end) }
 
     @Test
     fun japaneseSpecExample_allJapanese() {
@@ -84,10 +83,38 @@ class TextToppingScriptRunsTest {
 
     @Test
     fun supplementaryHan_indicesAreUtf16() {
-        assertEquals(
-            listOf(TextToppingScriptRun(J, 0, 3)),
-            textToppingScriptRuns("𩸚パ"),
-        )
+        assertEquals(listOf(TextToppingScriptRun(J, 0, 3)), textToppingScriptRuns("𡨚パ"))
+        assertEquals(listOf(TextToppingScriptRun(J, 0, 2)), textToppingScriptRuns("𡨚"))
+    }
+
+    @Test
+    fun kanaPresent_hanInBothFonts_isJapanese() {
+        val text = "學パ"
+        assertEquals(listOf(J to text), runsOf(text))
+    }
+
+    @Test
+    fun kanaPresent_hanOnlyInTw_isChinese() {
+        assertEquals(listOf(C to "丟", J to "パ"), runsOf("丟パ"))
+    }
+
+    @Test
+    fun iterationMarks_followHanOrder() {
+        assertEquals(listOf(J to "人々は"), runsOf("人々は"))
+        assertEquals(listOf(C to "人々"), runsOf("人々"))
+    }
+
+    @Test
+    fun kanaExtensions_areJapanese() {
+        assertEquals(listOf(J to "ｶﾀｶﾅ"), runsOf("ｶﾀｶﾅ"))
+        assertEquals(listOf(J to "ㇰ"), runsOf("ㇰ"))
+    }
+
+    @Test
+    fun fullwidthDigitsAndLatin_areNeutral() {
+        assertEquals(listOf(J to "パフェ２個"), runsOf("パフェ２個"))
+        assertEquals(listOf(C to "２個"), runsOf("２個"))
+        assertEquals(listOf(D to "Ａ"), runsOf("Ａ"))
     }
 
     @Test
@@ -100,7 +127,7 @@ class TextToppingScriptRunsTest {
         val inputs = listOf(
             "最高デザイナー ソフィ", "頂級設計師徐輝", "파르페 Parfait 2026", "学校へ行く", "學校 学校",
             "오늘 漢字 공부", "这", "这は", "パフェ 파르페", "パフェ2個", "「最高」", "  パフェ", "!? 🎉",
-            "パフェ👨‍👩‍👧", "𩸚パ",
+            "パフェ👨‍👩‍👧", "𡨚パ", "人々は", "ｶﾀｶﾅ", "パフェ２個",
         )
         for (text in inputs) {
             val runs = textToppingScriptRuns(text)

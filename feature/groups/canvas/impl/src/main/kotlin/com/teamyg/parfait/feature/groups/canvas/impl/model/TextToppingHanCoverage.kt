@@ -12,14 +12,17 @@ internal class TextToppingHanCoverage(
     private val bmpPairs: String,
     private val supplementaryPairs: IntArray,
 ) {
-    operator fun contains(codePoint: Int): Boolean =
-        if (codePoint <= 0xFFFF) {
-            containsIn(bmpPairs.length / 2, { bmpPairs[it].code }, codePoint)
-        } else {
-            containsIn(supplementaryPairs.size / 2, { supplementaryPairs[it] }, codePoint)
-        }
+    operator fun contains(codePoint: Int): Boolean = if (codePoint <= 0xFFFF) {
+        containsIn(bmpPairs.length / 2, { bmpPairs[it].code }, codePoint)
+    } else {
+        containsIn(supplementaryPairs.size / 2, { supplementaryPairs[it] }, codePoint)
+    }
 
-    private inline fun containsIn(pairCount: Int, at: (Int) -> Int, codePoint: Int): Boolean {
+    private inline fun containsIn(
+        pairCount: Int,
+        at: (Int) -> Int,
+        codePoint: Int,
+    ): Boolean {
         var low = 0
         var high = pairCount - 1
         while (low <= high) {

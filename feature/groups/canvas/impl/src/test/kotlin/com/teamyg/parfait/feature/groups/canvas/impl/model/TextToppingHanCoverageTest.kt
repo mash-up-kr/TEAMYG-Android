@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class TextToppingHanCoverageTest {
-
     @Test
     fun tw_containsCommonTraditionalHan() {
         assertTrue('們'.code in LINE_SEED_TW_HAN)
@@ -46,15 +45,45 @@ class TextToppingHanCoverageTest {
     }
 
     @Test
+    fun syntheticTable_bmpEdges() {
+        val table = TextToppingHanCoverage("\u4E00\u4E05\u4E10\u4E10\u4E20\u4E22", intArrayOf())
+        listOf(0x4E00, 0x4E05, 0x4E10, 0x4E20, 0x4E22).forEach { assertTrue(it in table, it.toString(16)) }
+        listOf(0x4DFF, 0x4E06, 0x4E0F, 0x4E11, 0x4E1F, 0x4E23).forEach { assertFalse(it in table, it.toString(16)) }
+    }
+
+    @Test
+    fun syntheticTable_supplementaryEdges() {
+        val table = TextToppingHanCoverage("", intArrayOf(0x20000, 0x20005, 0x30000, 0x30000))
+        listOf(0x20000, 0x20005, 0x30000).forEach { assertTrue(it in table, it.toString(16)) }
+        listOf(0x1FFFF, 0x20006, 0x2FFFF, 0x30001).forEach { assertFalse(it in table, it.toString(16)) }
+    }
+
+    @Test
+    fun syntheticTable_empty() {
+        val table = TextToppingHanCoverage("", intArrayOf())
+        assertFalse(0x4E00 in table)
+        assertFalse(0x20000 in table)
+    }
+
+    @Test
+    fun tw_containsIterationMarks() {
+        listOf(0x3005, 0x3006, 0x3007).forEach {
+            assertTrue(it in LINE_SEED_TW_HAN)
+            assertTrue(it in LINE_SEED_JP_HAN)
+        }
+    }
+
+    @Test
     fun coverageData_matchesBundledFontHashes() {
         // 단위 테스트 작업 디렉터리는 모듈 루트다
         assertEquals(LINE_SEED_TW_SHA256, sha256("src/main/res/font/line_seed_tw_regular.ttf"), REGENERATE_MESSAGE)
         assertEquals(LINE_SEED_JP_SHA256, sha256("src/main/res/font/line_seed_jp_regular.ttf"), REGENERATE_MESSAGE)
     }
 
-    private fun sha256(path: String): String =
-        MessageDigest.getInstance("SHA-256").digest(File(path).readBytes())
-            .joinToString("") { "%02x".format(it) }
+    private fun sha256(path: String): String = MessageDigest
+        .getInstance("SHA-256")
+        .digest(File(path).readBytes())
+        .joinToString("") { "%02x".format(it) }
 
     private companion object {
         const val REGENERATE_MESSAGE =
