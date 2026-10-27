@@ -99,7 +99,9 @@
 - ⚠️ 달력의 빈 날 판정이 텍스트를 세지 않는다 (OQ-P-439 ②)
 - ⚠️ 서버는 `text`를 UTF-16 2000자로 세고 앱은 그래핌 100자로 세며, `color` 형식과 이미지와 공유하는 `positionZ` 배정 규칙은 계약에 없다 (OQ-P-442, OQ-P-441, OQ-P-443)
 - ⚠️ 에뮬레이터·실기기에서 확인하지 않았다 — 단위 테스트만 돈다
-- ⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌다. 글꼴·자간은 글자 구간마다 고르고, 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트를 쓴다 — 두 폰트에 다 없는 한자(간체 일부)는 시스템 폰트로 그려지고, 한 단어 안에서 JP·TW 가 섞일 수 있다(`学校`)
+- ⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌다
+- 글꼴·자간은 글자 구간마다 고른다. 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트를 쓰고, 두 폰트에 다 없는 한자(간체 일부)는 시스템 폰트로 그려지며 한 단어 안에서 JP·TW 가 섞일 수 있다(`学校`). `々〆〇〻`는 한자로, 가나 확장·반각 가타카나는 JP로 보고 전각 숫자·라틴은 주변 구간을 따른다 (OQ-P-456, OQ-P-457, OQ-P-458)
+- ⚠️ 구간 분기 이전에 저장한 텍스트는 다시 그리면 글꼴이 달라져(한글+가나 → 한글 SUIT, 한글+한자 → 한자 TW) 줄 수가 바뀔 수 있고, C-305에서 다시 열면 `designFontSize`를 다시 맞춰 dirty가 될 수 있다 (OQ-P-453)
 - 설계: [text-topping](superpowers/specs/archive/2026-10-16-text-topping.md), [text-topping-api](superpowers/specs/archive/2026-10-26-text-topping-api.md), [api/parfait-text](api/parfait-text.md), [text-topping-script-span](superpowers/specs/2026-10-27-text-topping-script-span-design.md)
 
 ## 누끼 추출 (C-103·C-104)

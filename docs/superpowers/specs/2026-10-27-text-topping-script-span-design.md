@@ -7,7 +7,9 @@ platforms: android
 verified: 2026-10-27
 related_code:
   - TextToppingScript.kt#TextToppingScript
-  - TextToppingScript.kt#detectTextToppingScript
+  - TextToppingScript.kt#textToppingScriptRuns
+  - TextToppingHanCoverage.kt#TextToppingHanCoverage
+  - TextToppingScriptSpans.kt#textToppingAnnotatedString
   - TextToppingContent.kt#textToppingBaseStyle
   - TextToppingContent.kt#TextToppingContent
   - TextToppingLayoutModifiers.kt#fitTextToppingToHeight
@@ -63,10 +65,10 @@ A 를 골랐다. 결정적이고 JVM 단위 테스트가 되며 API 26 에서 �
 
 | 글자 | 스크립트 |
 |---|---|
-| 가나 (U+3040–30FF) | `JAPANESE` — TW 에도 가나 글리프가 있으므로 명시적으로 JP 로 보낸다 |
-| 한자 (통합·확장 A·호환·보조 평면) | 아래 순서에서 글리프가 있는 첫 폰트. 둘 다 없으면 1순위 |
+| 가나 (U+3040–30FF 히라가나·가타카나, U+31F0–31FF 가타카나 확장, U+FF66–FF9F 반각 가타카나) | `JAPANESE` — TW 에도 가나 글리프가 있으므로 명시적으로 JP 로 보낸다 |
+| 한자 (U+3005–3007 `々〆〇`, U+303B `〻`, 통합·확장 A·호환·보조 평면) | 아래 순서에서 글리프가 있는 첫 폰트. 둘 다 없으면 1순위 |
 | 한글·라틴 등 그 밖의 글자, 숫자 | `DEFAULT` (SUIT) |
-| 공백·문장부호·이모지 등 중립 문자 | 앞 구간을 따른다. 맨 앞의 중립 문자는 뒤에 오는 첫 구간을 따른다 (내 판단 — `「` 같은 여는 괄호가 뒤 글자와 같은 폰트로 그려지게) |
+| 공백·문장부호·이모지, 전각 숫자·라틴(U+FF10–FF19, U+FF21–FF3A, U+FF41–FF5A) 등 중립 문자 | 앞 구간을 따른다. 맨 앞의 중립 문자는 뒤에 오는 첫 구간을 따른다 (내 판단 — `「` 같은 여는 괄호가 뒤 글자와 같은 폰트로 그려지게) |
 
 한자 순서는 **문장(텍스트 전체)에 가나가 있으면 JP → TW, 없으면 TW → JP** 다. 상용 한자는 두 폰트에 다 있어서
 커버리지만으로는 일·중을 가를 수 없고, 먼저 오는 폰트가 상대 언어 한자를 가져가기 때문이다(번체 예문 32자가
@@ -118,5 +120,5 @@ placeholder(빈 입력 안내 문구)는 고정 한국어라 지금처럼 베이
 
 - 한글 IME 조합 중 연타(조합 밑줄·커서)는 `adb input text`가 ASCII 만 보내 스파이크에서 못 쟀다. 실기기에서
   손으로 확인한다
-- iOS 가 같은 규칙을 따를지는 정하지 않았다. 따르지 않으면 같은 토핑이 플랫폼마다 글꼴·줄바꿈이 다르게 보인다
-- 구간마다 자간이 다른 경계(예: JP -1.1% 와 TW 0% 가 맞닿는 곳)의 간격은 실기기에서 눈으로 확인한다
+- iOS 규칙 일치는 OQ-P-456, CJK 문장부호의 시스템 폰트 폴백은 OQ-P-457, 구간 경계 자간 확인은 OQ-P-458 에서
+  추적한다
