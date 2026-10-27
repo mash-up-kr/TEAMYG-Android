@@ -52,6 +52,15 @@ Firebase 도입은 ADR-0013 이 FCM·Crashlytics 와 함께 Analytics 까지 묶
 > `NavKeyAnalyticsScreen`(매핑)·`ScreenViewTracker`(전송 판정)은 feature `:api` 26개 전부를
 > 봐야 해서 여전히 `:app`에 있다. 이 ADR의 나머지 결정은 그대로 유효하다.
 
+> 📌 **GA4 사용자 ID 는 계정 정보 SSoT 하나를 구독해 맞춘다(2026-10-27)** —
+> 값은 서버 memberId 로 iOS 와 같다. `:app` 의 `AnalyticsUserIdSync` 가 `GetMyAccountFlowUseCase` 를
+> `@ApplicationScope` 에서 구독해, 계정이 채워지면 넣고 지워지면 지운다.
+> 세션 시작(자동로그인·로그인·가입)과 종료(로그아웃·탈퇴·재발급 거절)가 모두 이 SSoT 를 쓰거나 지우기 때문이다.
+> **진입점마다 `setUserId` 를 부르는 대안은 기각했다.** 종료 경로 중 재발급 거절은 data 계층의 `TokenAuthenticator` 안에 있어
+> 분석 호출을 거기까지 내려야 하고, 경로가 하나 늘 때마다 빠뜨릴 자리가 생긴다.
+> 한계: 로그인·가입 직후 계정 조회가 실패하면 SSoT 가 비어 다음 앱 진입까지 사용자 ID 없이 이벤트가 쌓인다
+> (로그인·가입 응답에 memberId 가 없다 — iOS 도 같다). 계정 정보 정리(`clearMyAccount`)가 IO 로 실패하면 이전 회원 ID 가 남는다.
+
 ## 대안
 
 - **대안 A — `NavKey` 가 자기 화면 ID 를 든다.** `core:navigation` 에 인터페이스를 두고
