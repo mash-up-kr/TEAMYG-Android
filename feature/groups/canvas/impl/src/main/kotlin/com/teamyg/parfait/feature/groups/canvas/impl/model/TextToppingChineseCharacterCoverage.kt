@@ -8,7 +8,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.model
  * @param bmpPairs 정렬된 `[start, end]` 문자 쌍을 이어 붙인 문자열
  * @param supplementaryPairs 같은 구조의 정수 배열(U+10000 이상)
  */
-internal class TextToppingHanCoverage(
+internal class TextToppingChineseCharacterCoverage(
     private val bmpPairs: String,
     private val supplementaryPairs: IntArray,
 ) {

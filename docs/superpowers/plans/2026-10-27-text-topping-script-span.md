@@ -16,7 +16,7 @@
 - minSdk 26. API 29+ 전용 API(`Typeface.CustomFallbackBuilder` 등)를 쓰지 않는다
 - 자간 값은 지금 그대로: `DEFAULT`(SUIT) -0.011f, `JAPANESE` -0.011f, `CHINESE` 0f
 - Gradle 의존성을 추가하지 않는다. fonttools 는 생성 스크립트만 쓴다
-- 생성물 `TextToppingHanCoverageData.kt`는 손으로 고치지 않는다
+- 생성물 `TextToppingChineseCharacterCoverageData.kt`는 손으로 고치지 않는다
 - feature impl 의 비 UI 타입은 `impl/model/`, 한 파일 한 타입
 - Kotlin 주석·KDoc 은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다
 - 커밋 메시지는 `type: 한국어 설명`, `Co-Authored-By` 줄을 넣지 않는다. 푸시하지 않는다
@@ -27,7 +27,7 @@
 1. 한글 IME 조합 중 연타 — `OutputTransformation`이 붙어도 조합 밑줄·커서가 어긋나지 않아야 한다. 자동화할 수 없어(adb 는 ASCII 만 보낸다) Task 3 Step 9 사람 확인
 2. 같은 텍스트의 편집 중(C-106)과 배치 후(C-001) 줄바꿈이 같아야 한다 — 세 경로가 `textToppingAnnotatedString`/`textToppingScriptOutputTransformation` 둘만 쓰는지 Task 3 리뷰에서 본다. 눈 확인은 Task 3 Step 9
 3. 이모지 ZWJ 시퀀스·변형 선택자 같은 다중 코드포인트 그래핌이 구간 경계에서 쪼개지지 않아야 한다 — Task 2 `emojiZwjSequence_staysInOneRun`
-4. 보조 평면 한자(서로게이트 쌍)의 구간 인덱스가 UTF-16 기준이어야 `addStyle` 범위가 맞는다 — Task 2 `supplementaryHan_indicesAreUtf16`
+4. 보조 평면 한자(서로게이트 쌍)의 구간 인덱스가 UTF-16 기준이어야 `addStyle` 범위가 맞는다 — Task 2 `supplementaryChineseCharacter_indicesAreUtf16`
 5. 폰트 교체 후 테이블을 재생성하지 않으면 판정이 조용히 틀어진다 — Task 1 `coverageData_matchesBundledFontHashes`
 
 ---
@@ -35,30 +35,30 @@
 ### Task 1: 한자 커버리지 테이블과 생성 스크립트
 
 **Files:**
-- Create: `tools/text-topping-han-coverage/generate.py`
-- Create: `tools/text-topping-han-coverage/README.md`
-- Create: `impl/model/TextToppingHanCoverage.kt`
-- Create (생성물): `impl/model/TextToppingHanCoverageData.kt`
-- Test: `impl-test/model/TextToppingHanCoverageTest.kt`
+- Create: `tools/text-topping-chinese-character-coverage/generate.py`
+- Create: `tools/text-topping-chinese-character-coverage/README.md`
+- Create: `impl/model/TextToppingChineseCharacterCoverage.kt`
+- Create (생성물): `impl/model/TextToppingChineseCharacterCoverageData.kt`
+- Test: `impl-test/model/TextToppingChineseCharacterCoverageTest.kt`
 
 **Interfaces:**
 - Produces:
-  - `internal class TextToppingHanCoverage(bmpPairs: String, supplementaryPairs: IntArray)` — `operator fun contains(codePoint: Int): Boolean`
-  - `internal val LINE_SEED_TW_HAN: TextToppingHanCoverage`, `internal val LINE_SEED_JP_HAN: TextToppingHanCoverage`
+  - `internal class TextToppingChineseCharacterCoverage(bmpPairs: String, supplementaryPairs: IntArray)` — `operator fun contains(codePoint: Int): Boolean`
+  - `internal val LINE_SEED_TW_CHINESE_CHARACTERS: TextToppingChineseCharacterCoverage`, `internal val LINE_SEED_JP_CHINESE_CHARACTERS: TextToppingChineseCharacterCoverage`
   - `internal const val LINE_SEED_TW_SHA256: String`, `internal const val LINE_SEED_JP_SHA256: String` (소문자 hex)
 
-- [ ] **Step 1: 실패하는 테스트 작성** — `TextToppingHanCoverageTest`
+- [ ] **Step 1: 실패하는 테스트 작성** — `TextToppingChineseCharacterCoverageTest`
 
 ```kotlin
-@Test fun tw_containsCommonTraditionalHan() { assertTrue('們'.code in LINE_SEED_TW_HAN); assertTrue('這'.code in LINE_SEED_TW_HAN) }
+@Test fun tw_containsCommonTraditionalChineseCharacter() { assertTrue('們'.code in LINE_SEED_TW_CHINESE_CHARACTERS); assertTrue('這'.code in LINE_SEED_TW_CHINESE_CHARACTERS) }
 @Test fun jpOnlyShinjitai_absentFromTw() {
-    listOf('学', '会').forEach { assertFalse(it.code in LINE_SEED_TW_HAN); assertTrue(it.code in LINE_SEED_JP_HAN) }
+    listOf('学', '会').forEach { assertFalse(it.code in LINE_SEED_TW_CHINESE_CHARACTERS); assertTrue(it.code in LINE_SEED_JP_CHINESE_CHARACTERS) }
 }
-@Test fun simplifiedHan_absentFromBoth() {
-    listOf('们', '这').forEach { assertFalse(it.code in LINE_SEED_TW_HAN); assertFalse(it.code in LINE_SEED_JP_HAN) }
+@Test fun simplifiedChineseCharacter_absentFromBoth() {
+    listOf('们', '这').forEach { assertFalse(it.code in LINE_SEED_TW_CHINESE_CHARACTERS); assertFalse(it.code in LINE_SEED_JP_CHINESE_CHARACTERS) }
 }
-@Test fun supplementaryPlane_jpHasExtB() { assertTrue(0x21A1A in LINE_SEED_JP_HAN); assertFalse(0x21A1A in LINE_SEED_TW_HAN) }
-@Test fun nonHan_absentFromBoth() { listOf('A', '가', 'ア').forEach { assertFalse(it.code in LINE_SEED_TW_HAN); assertFalse(it.code in LINE_SEED_JP_HAN) } }
+@Test fun supplementaryPlane_jpHasExtB() { assertTrue(0x21A1A in LINE_SEED_JP_CHINESE_CHARACTERS); assertFalse(0x21A1A in LINE_SEED_TW_CHINESE_CHARACTERS) }
+@Test fun nonChineseCharacter_absentFromBoth() { listOf('A', '가', 'ア').forEach { assertFalse(it.code in LINE_SEED_TW_CHINESE_CHARACTERS); assertFalse(it.code in LINE_SEED_JP_CHINESE_CHARACTERS) } }
 @Test fun coverageData_matchesBundledFontHashes() {
     // 단위 테스트 작업 디렉터리는 모듈 루트다
     assertEquals(LINE_SEED_TW_SHA256, sha256("src/main/res/font/line_seed_tw_regular.ttf"), REGENERATE_MESSAGE)
@@ -66,23 +66,23 @@
 }
 ```
 
-`REGENERATE_MESSAGE` = `"폰트가 바뀌었다 — python3 tools/text-topping-han-coverage/generate.py 로 테이블을 다시 만든다"`. `sha256(path)`는 `MessageDigest`로 소문자 hex 를 내는 테스트 전용 private 함수.
+`REGENERATE_MESSAGE` = `"폰트가 바뀌었다 — python3 tools/text-topping-chinese-character-coverage/generate.py 로 테이블을 다시 만든다"`. `sha256(path)`는 `MessageDigest`로 소문자 hex 를 내는 테스트 전용 private 함수.
 
 - [ ] **Step 2: 실패 확인**
 
-Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*TextToppingHanCoverageTest'`
-Expected: 컴파일 실패 (`LINE_SEED_TW_HAN` 미정의)
+Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*TextToppingChineseCharacterCoverageTest'`
+Expected: 컴파일 실패 (`LINE_SEED_TW_CHINESE_CHARACTERS` 미정의)
 
-- [ ] **Step 3: `TextToppingHanCoverage` 구현** (`impl/model/TextToppingHanCoverage.kt`)
+- [ ] **Step 3: `TextToppingChineseCharacterCoverage` 구현** (`impl/model/TextToppingChineseCharacterCoverage.kt`)
 
 `bmpPairs`는 정렬된 `[start, end]` 문자 쌍을 이어 붙인 문자열(`bmpPairs[2i].code..bmpPairs[2i+1].code`), `supplementaryPairs`는 같은 구조의 정수 배열이다. `contains`는 `codePoint <= 0xFFFF`로 둘 중 하나를 골라 쌍 단위 이진 탐색. KDoc 에 문자열 인코딩 이유 한 줄 — `intArrayOf`로는 JVM 메서드 64KB 한도를 넘는다.
 
-- [ ] **Step 4: 생성 스크립트 작성** (`tools/text-topping-han-coverage/generate.py`)
+- [ ] **Step 4: 생성 스크립트 작성** (`tools/text-topping-chinese-character-coverage/generate.py`)
 
-- 저장소 루트에서 실행. 입력 `feature/groups/canvas/impl/src/main/res/font/line_seed_{tw,jp}_regular.ttf`, 출력 `impl/model/TextToppingHanCoverageData.kt`
+- 저장소 루트에서 실행. 입력 `feature/groups/canvas/impl/src/main/res/font/line_seed_{tw,jp}_regular.ttf`, 출력 `impl/model/TextToppingChineseCharacterCoverageData.kt`
 - 한자 범위: U+3400–4DBF, U+4E00–9FFF, U+F900–FAFF, U+20000–3FFFF. `TTFont(path).getBestCmap()` 키 중 이 범위를 연속 구간으로 묶는다
 - BMP 구간은 `"\uXXXX\uXXXX..."` 문자열 상수(`private const val ..._BMP`, 120자 줄 단위 `+` 연결), 보조 평면은 `intArrayOf(0x..., ...)`
-- 파일 머리 주석: `// 생성물 — 직접 고치지 않는다. python3 tools/text-topping-han-coverage/generate.py`
+- 파일 머리 주석: `// 생성물 — 직접 고치지 않는다. python3 tools/text-topping-chinese-character-coverage/generate.py`
 - 각 폰트 SHA-256 을 `LINE_SEED_{TW,JP}_SHA256` 으로 함께 쓴다
 - fonttools 가 없으면 설치 방법(`python3 -m venv .venv && .venv/bin/pip install fonttools`)을 출력하고 exit 1
 
@@ -90,18 +90,18 @@ README.md 는 위 실행 방법과 "폰트를 바꾸면 다시 돌린다, 해시
 
 - [ ] **Step 5: 생성물 만들기**
 
-Run: `python3 -m venv "${TMPDIR:-/tmp}/han-venv" && "${TMPDIR:-/tmp}/han-venv/bin/pip" install -q fonttools && "${TMPDIR:-/tmp}/han-venv/bin/python" tools/text-topping-han-coverage/generate.py`
-Expected: `TextToppingHanCoverageData.kt` 생성. 구간 수 TW 3706, JP 4167 (스크립트가 출력)
+Run: `python3 -m venv "${TMPDIR:-/tmp}/chinese-character-venv" && "${TMPDIR:-/tmp}/chinese-character-venv/bin/pip" install -q fonttools && "${TMPDIR:-/tmp}/chinese-character-venv/bin/python" tools/text-topping-chinese-character-coverage/generate.py`
+Expected: `TextToppingChineseCharacterCoverageData.kt` 생성. 구간 수 TW 3706, JP 4167 (스크립트가 출력)
 
 - [ ] **Step 6: 통과 확인**
 
-Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*TextToppingHanCoverageTest'`
+Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*TextToppingChineseCharacterCoverageTest'`
 Expected: PASS 6건
 
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add tools/text-topping-han-coverage feature/groups/canvas/impl/src
+git add tools/text-topping-chinese-character-coverage feature/groups/canvas/impl/src
 git commit -m "feat: Line Seed TW·JP 한자 커버리지 테이블과 생성 스크립트를 추가한다"
 ```
 
@@ -115,7 +115,7 @@ git commit -m "feat: Line Seed TW·JP 한자 커버리지 테이블과 생성 �
 - Test: `impl-test/model/TextToppingScriptRunsTest.kt`
 
 **Interfaces:**
-- Consumes: `LINE_SEED_TW_HAN`, `LINE_SEED_JP_HAN`, `TextToppingHanCoverage.contains` (Task 1)
+- Consumes: `LINE_SEED_TW_CHINESE_CHARACTERS`, `LINE_SEED_JP_CHINESE_CHARACTERS`, `TextToppingChineseCharacterCoverage.contains` (Task 1)
 - Produces:
   - `data class TextToppingScriptRun(val script: TextToppingScript, val start: Int, val end: Int)` — UTF-16 인덱스, `end` 제외
   - `fun textToppingScriptRuns(text: CharSequence): List<TextToppingScriptRun>` (`TextToppingScript.kt`)
@@ -132,16 +132,16 @@ git commit -m "feat: Line Seed TW·JP 한자 커버리지 테이블과 생성 �
 | `japaneseSpecExample_allJapanese` | `最高デザイナー ソフィ` | `[J 전체]` |
 | `chineseSpecExample_allChinese` | `頂級設計師徐輝` | `[C 전체]` |
 | `koreanEnglishDigits_allDefault` | `파르페 Parfait 2026` | `[D 전체]` |
-| `kanaPresent_hanTriesJapaneseFirst` | `学校へ行く` | `[J 전체]` |
-| `noKana_hanTriesChineseFirst` | `學校 学校` | `[C "學校 ", J "学", C "校"]` |
-| `hangulWithHan_hanTriesChineseFirst` | `오늘 漢字 공부` | `[D "오늘 ", C "漢字 ", D "공부"]` |
+| `kanaPresent_chineseCharacterTriesJapaneseFirst` | `学校へ行く` | `[J 전체]` |
+| `noKana_chineseCharacterTriesChineseFirst` | `學校 学校` | `[C "學校 ", J "学", C "校"]` |
+| `hangulWithChineseCharacter_chineseCharacterTriesChineseFirst` | `오늘 漢字 공부` | `[D "오늘 ", C "漢字 ", D "공부"]` |
 | `hanMissingFromBoth_keepsFirstPriority` | `这` / `这は` | `[C "这"]` / `[J "这は"]` |
 | `kanaWithHangul_hangulIsDefault` | `パフェ 파르페` | `[J "パフェ ", D "파르페"]` |
 | `digitsInsideJapanese_areDefault` | `パフェ2個` | `[J "パフェ", D "2", J "個"]` |
 | `leadingNeutral_followsFirstStrongRun` | `「最高」` / `  パフェ` | `[C 전체]` / `[J 전체]` |
 | `allNeutral_isDefault` | `!? 🎉` | `[D 전체]` |
 | `emojiZwjSequence_staysInOneRun` | `パフェ👨‍👩‍👧` | `[J 전체]` |
-| `supplementaryHan_indicesAreUtf16` | `"𡨚パ"` (U+21A1A + パ) | `textToppingScriptRuns` 결과가 `[TextToppingScriptRun(J, 0, 3)]` |
+| `supplementaryChineseCharacter_indicesAreUtf16` | `"𡨚パ"` (U+21A1A + パ) | `textToppingScriptRuns` 결과가 `[TextToppingScriptRun(J, 0, 3)]` |
 | `empty_noRuns` | `""` | `[]` |
 
 추가로 `runs_areContiguousAndMerged`: 위 입력 전부에 대해 첫 `start == 0`, 마지막 `end == length`, 각 `start == 앞 end`, 이웃 구간의 `script`가 다르다.
@@ -157,7 +157,7 @@ Expected: 컴파일 실패 (`textToppingScriptRuns` 미정의)
 
 코드포인트 단위로 판정하고 같은 스크립트가 이어지면 합친다.
 
-1. 먼저 텍스트 전체에 가나(U+3040–30FF)가 있는지 본다 → 한자 순서 = 있으면 `[JAPANESE to LINE_SEED_JP_HAN, CHINESE to LINE_SEED_TW_HAN]`, 없으면 반대
+1. 먼저 텍스트 전체에 가나(U+3040–30FF)가 있는지 본다 → 한자 순서 = 있으면 `[JAPANESE to LINE_SEED_JP_CHINESE_CHARACTERS, CHINESE to LINE_SEED_TW_CHINESE_CHARACTERS]`, 없으면 반대
 2. 글자별 판정
    - 가나 → `JAPANESE`
    - 한자(Task 1 과 같은 네 범위) → 순서대로 `codePoint in coverage`인 첫 스크립트, 없으면 순서의 첫 스크립트
@@ -253,7 +253,7 @@ Expected: BUILD SUCCESSFUL, 실패 0. `grep -rn detectTextToppingScript feature/
 
 「텍스트 토핑」 절에서
 - "⚠️ Line Seed JP·TW 전체 글리프를 … 한 글꼴로만 그려진다" 줄을 "⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌다. 글꼴·자간은 글자 구간마다 고르고, 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트를 쓴다 — 두 폰트에 다 없는 한자(간체 일부)는 시스템 폰트로 그려지고, 한 단어 안에서 JP·TW 가 섞일 수 있다(`学校`)"로 바꾼다
-- 앵커에 `textToppingScriptRuns`, `TextToppingHanCoverage`, `tools/text-topping-han-coverage/` 추가
+- 앵커에 `textToppingScriptRuns`, `TextToppingChineseCharacterCoverage`, `tools/text-topping-chinese-character-coverage/` 추가
 - 설계 줄에 이 스펙 링크 추가
 
 Run: `python3 docs/script/check_links.py docs`

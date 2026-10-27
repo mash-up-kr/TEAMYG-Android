@@ -30,18 +30,18 @@ class TextToppingScriptRunsTest {
     }
 
     @Test
-    fun kanaPresent_hanTriesJapaneseFirst() {
+    fun kanaPresent_chineseCharacterTriesJapaneseFirst() {
         val text = "学校へ行く"
         assertEquals(listOf(J to text), runsOf(text))
     }
 
     @Test
-    fun noKana_hanTriesChineseFirst() {
+    fun noKana_chineseCharacterTriesChineseFirst() {
         assertEquals(listOf(C to "學校 ", J to "学", C to "校"), runsOf("學校 学校"))
     }
 
     @Test
-    fun hangulWithHan_hanTriesChineseFirst() {
+    fun hangulWithChineseCharacter_chineseCharacterTriesChineseFirst() {
         assertEquals(
             listOf(D to "오늘 ", C to "漢字 ", D to "공부"),
             runsOf("오늘 漢字 공부"),
@@ -83,24 +83,24 @@ class TextToppingScriptRunsTest {
     }
 
     @Test
-    fun supplementaryHan_indicesAreUtf16() {
+    fun supplementaryChineseCharacter_indicesAreUtf16() {
         assertEquals(listOf(TextToppingScriptRun(J, 0, 3)), textToppingScriptRuns("𡨚パ"))
         assertEquals(listOf(TextToppingScriptRun(J, 0, 2)), textToppingScriptRuns("𡨚"))
     }
 
     @Test
-    fun kanaPresent_hanInBothFonts_isJapanese() {
+    fun kanaPresent_chineseCharacterInBothFonts_isJapanese() {
         val text = "學パ"
         assertEquals(listOf(J to text), runsOf(text))
     }
 
     @Test
-    fun kanaPresent_hanOnlyInTw_isChinese() {
+    fun kanaPresent_chineseCharacterOnlyInTw_isChinese() {
         assertEquals(listOf(C to "丟", J to "パ"), runsOf("丟パ"))
     }
 
     @Test
-    fun iterationMarks_followHanOrder() {
+    fun iterationMarks_followChineseCharacterOrder() {
         assertEquals(listOf(J to "人々は"), runsOf("人々は"))
         assertEquals(listOf(C to "人々"), runsOf("人々"))
     }

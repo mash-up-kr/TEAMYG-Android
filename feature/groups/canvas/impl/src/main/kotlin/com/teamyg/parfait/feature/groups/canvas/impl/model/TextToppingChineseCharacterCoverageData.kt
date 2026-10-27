@@ -1,7 +1,7 @@
-// 생성물 — 직접 고치지 않는다. python3 tools/text-topping-han-coverage/generate.py
+// 생성물 — 직접 고치지 않는다. python3 tools/text-topping-chinese-character-coverage/generate.py
 package com.teamyg.parfait.feature.groups.canvas.impl.model
 
-internal val TEXT_TOPPING_HAN_RANGES: List<IntRange> = listOf(
+internal val TEXT_TOPPING_CHINESE_CHARACTER_RANGES: List<IntRange> = listOf(
     0x3005..0x3007,
     0x303B..0x303B,
     0x3400..0x4DBF,
@@ -478,7 +478,7 @@ private const val LINE_SEED_TW_BMP =
 
 internal const val LINE_SEED_TW_SHA256 = "cb906a1aff3ac0307ddcc4a2a76f73bc1d4f75d1ba7fc3361798ef9b05733c8c"
 
-internal val LINE_SEED_TW_HAN = TextToppingHanCoverage(
+internal val LINE_SEED_TW_CHINESE_CHARACTERS = TextToppingChineseCharacterCoverage(
     LINE_SEED_TW_BMP,
     intArrayOf(),
 )
@@ -1007,7 +1007,7 @@ private const val LINE_SEED_JP_BMP =
 
 internal const val LINE_SEED_JP_SHA256 = "6839a7f29e24114bc338f11c546fe60f2ce16b9159da6aa638fcd9f035039e32"
 
-internal val LINE_SEED_JP_HAN = TextToppingHanCoverage(
+internal val LINE_SEED_JP_CHINESE_CHARACTERS = TextToppingChineseCharacterCoverage(
     LINE_SEED_JP_BMP,
     intArrayOf(
         0x21A1A, 0x21A1A, 0x243D0, 0x243D0, 0x25874, 0x25874, 0x28CDD, 0x28CDD, 0x28EF6, 0x28EF6, 0x2F80F, 0x2F80F,
