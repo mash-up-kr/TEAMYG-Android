@@ -23,8 +23,8 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
 
 | 메서드 | 경로 | 인증 | 요청 | 응답 | Android |
 |---|---|---|---|---|---|
-| GET | `/api/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupResponse>` | ⚠️불일치[^uploadedat][^todayurl] |
-| GET | `/api/v2/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupV2Response>` | 미구현[^v2list] |
+| GET | `/api/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupResponse>` | 구현됨·호출 안 함(`@Deprecated`)[^v2list] |
+| GET | `/api/v2/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupV2Response>` | ⚠️불일치[^uploadedat][^todayurl][^v2list] |
 | GET | `/api/parfait-groups/{groupId}` | 필요 | path `groupId` Long | `MyParfaitGroupDetailResponse` | 구현됨·결선됨 |
 | GET | `/api/parfait-groups/join-preview` | 필요 | query `inviteCode` String | `PreviewParfaitGroupJoinResponse` | 구현됨·결선됨 |
 | POST | `/api/parfait-groups/join` | 필요 | `JoinParfaitGroupRequest` | `JoinParfaitGroupResponse` | 구현됨·결선됨 |
@@ -53,8 +53,10 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     초록으로 지나간다 → [conventions.md](conventions.md) "Android 불일치" ·
     [open-questions](../synthesis/open-questions.md) OQ-P-336.
 
-[^v2list]: 앱은 v1 목록만 부른다. v1은 텍스트 토핑을 토핑으로 세지 않아, 오늘 텍스트만 올린 그룹이 G-001에서
-    빈 오늘 캔버스로 그려지고 경과 시간·칩·정렬도 텍스트를 건너뛴다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
+[^v2list]: 앱의 목록 갱신은 v2를 부르고(`getParfaitGroupsV2`), v1 Service 메서드와 DTO는 `@Deprecated`로 남겼다.
+    VO에 `recentToppingType`이 실렸지만 G-001은 아직 읽지 않는다. 그래서 오늘 마지막 토핑이 텍스트인 그룹은 오늘 이미지가
+    있어도 `recentImageUrl`이 `null`이라 템플릿으로 그려진다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
+    위 두 각주(`recentImageUploadedAt` 파싱, `recentImageUrl`의 뜻)는 v2에도 그대로 해당한다.
 
 요청 DTO(`ParfaitGroupRequest.kt`)에는 Bean Validation 애노테이션이 없다 — auth 도메인과 달리 `@NotBlank`/`@Valid`가
 없다. 필드는 Kotlin non-null 타입이라 요청 바디에 없거나 `null`이면 Jackson이 파싱 단계에서 거부한다(결과적으로
@@ -637,7 +639,7 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
 
 | Repository 함수 | 반환 | 대응 엔드포인트 | UseCase → 화면 |
 |---|---|---|---|
-| `myGroups` / `refreshMyGroups()`(#307) | `Flow<List<MyParfaitGroupVO>?>` / `Result<Unit>` | GET `/api/parfait-groups` | `GetMyGroupsFlowUseCase`(구독) · `RefreshMyGroupsUseCase`(갱신) → G-001(**재진입마다**·당김 재조회, #297) · C-001이 그룹명을 같은 캐시에서 읽는다 |
+| `myGroups` / `refreshMyGroups()`(#307) | `Flow<List<MyParfaitGroupVO>?>` / `Result<Unit>` | GET `/api/v2/parfait-groups` | `GetMyGroupsFlowUseCase`(구독) · `RefreshMyGroupsUseCase`(갱신) → G-001(**재진입마다**·당김 재조회, #297) · C-001이 그룹명을 같은 캐시에서 읽는다 |
 | `previewJoin(inviteCode)` | `Result<GroupName>` | GET `/api/parfait-groups/join-preview` | `GetGroupJoinPreviewUseCase` → A-004(확인 버튼, 통과하면 S-102로 이동) |
 | `joinGroup(inviteCode)` | `Result<JoinedGroupVO>` | POST `/api/parfait-groups/join` | `JoinGroupUseCase` → **S-102(모달 확인)** — #261에서 A-004에서 이관 |
 | `createGroup(groupName, groupNickname, memberLimit)` | `Result<CreatedGroupVO>` | POST `/api/parfait-groups` | `CreateGroupUseCase` → A-005(모달 확인) |
@@ -741,7 +743,8 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
 
 | 엔드포인트 | Service 함수 | DataSource 함수 |
 |---|---|---|
-| GET `/api/parfait-groups` | `ParfaitGroupService#getParfaitGroups` | `ParfaitGroupRemoteDataSource#getMyGroups` |
+| GET `/api/v2/parfait-groups` | `ParfaitGroupService#getParfaitGroupsV2` | `ParfaitGroupRemoteDataSource#getMyGroups` |
+| GET `/api/parfait-groups` | `ParfaitGroupService#getParfaitGroups`(`@Deprecated`) | 호출부 없음 |
 | GET `/api/parfait-groups/{groupId}` | `ParfaitGroupService#getParfaitGroupsByGroupId` | `ParfaitGroupRemoteDataSource#getGroupDetail` |
 | GET `/api/parfait-groups/join-preview` | `ParfaitGroupService#getParfaitGroupsJoinPreview` | `ParfaitGroupRemoteDataSource#previewJoin` |
 | POST `/api/parfait-groups/join` | `ParfaitGroupService#postParfaitGroupsJoin` | `ParfaitGroupRemoteDataSource#joinGroup` |
@@ -776,8 +779,8 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
 
 ## 미결
 
-- **v2 목록으로 옮길지(앱)** — 앱은 텍스트 토핑을 배치하면서 목록은 v1을 부른다. v1이 텍스트를 세지 않아 G-001 카드가 텍스트를
-  건너뛴다. v2로 옮기면 `recentToppingType == TEXT`일 때 카드에 무엇을 그릴지도 함께 정해야 한다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
+- **G-001이 `recentToppingType`을 읽을지(앱)** — 목록은 v2로 옮겼지만 화면은 `recentImageUrl`만 본다. `recentToppingType == TEXT`인
+  카드에 무엇을 그릴지 정해야 한다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
 
 ✅ **회원 전역 닉네임과 그룹 닉네임 규칙 대조 — 2026-08-11 해소.** 두 값 객체가 **문자 그대로 같은
 규칙**이다: `core/member/domain/GlobalNickname`과 `core/parfaitgroup/domain/GroupNickname` 모두

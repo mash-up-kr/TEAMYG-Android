@@ -7890,9 +7890,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
 
 - **ID**: OQ-P-459
-- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/parfait-groups`·GET `/api/v2/parfait-groups` × `ParfaitGroupRemoteDataSource#getMyGroups`
-- **항목**: 앱은 텍스트 토핑을 배치하는데 그룹 목록은 v1을 부른다. v1은 `parfait_image`만 보므로 오늘 텍스트만 올린 그룹은 `recentImageUrl`이 `null`이라 템플릿 그래픽으로 그려지고, 경과 시간·칩·목록 순서도 텍스트를 건너뛴다. 서버 v2(`1a1abee`)는 텍스트를 포함한 최근 토핑과 `recentToppingType`을 준다. 다만 오늘 가장 최근 토핑이 텍스트면 오늘 이미지가 있어도 이미지 필드가 `null`이다.
-- **상태**: 미해결
-- **해소 메모**: v2로 옮길지, 옮기면 `recentToppingType == TEXT`인 카드에 무엇을 그릴지(기획) 정한다. 옮기면 `[^v2list]`와 README 경고를 걷는다.
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/parfait-groups`·GET `/api/v2/parfait-groups` × `ParfaitGroupRemoteDataSource#getMyGroups` · `feature/groups/list/impl/util/ToppingImage.kt`
+- **항목**: ① 그룹 목록이 v1이라 텍스트 토핑을 세지 않았다. ② 목록이 v2로 바뀐 뒤에는 오늘 가장 최근 토핑이 텍스트면 오늘 이미지가 있어도 `recentImageUrl`이 `null`이다. G-001(`toToppingImage`)은 `MyParfaitGroupVO.recentToppingType`을 읽지 않아 그 그룹을 템플릿 그래픽으로 그린다. 경과 시간·칩·순서는 텍스트를 포함한 값이다.
+- **상태**: 부분 해소 (① 해소, ② 잔존)
+- **해소 메모**: ①은 data 계층이 v2(`getParfaitGroupsV2`)로 옮기고 v1을 `@Deprecated`로 남겨 닫았다. ②는 `recentToppingType == TEXT`인 카드에 무엇을 그릴지(기획) 정한 뒤 G-001에 반영하고, `[^v2list]`와 README 경고를 걷는다.
 
 <!-- oq-next: 460 -->
