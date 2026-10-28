@@ -426,3 +426,6 @@ P1 0 · 반영 P2 1·P3 3·P4 4 · 텍스트 실패 문구 사진 재사용 수�
 
 ## [2026-10-28] review | 텍스트 배치 수정 리뷰 반영 — C-106 재편집 경로 제거
 쌓인 텍스트 내용·스타일 수정 없음 확정 · `TextEditSessionHolder`·`RecreateTextToppingUseCase`·`UpdateTextToppingUseCase`·`NavKeyCanvasTextInput.isEditingExisting` 제거 · OQ-P-453 ①②③ 소멸(④만 남김) · C-106 배치 점선을 실제 글자 크기로
+
+## [2026-10-28] audit | 87a684155 — #655 텍스트 글꼴 구간 분기 · #657 텍스트 재편집 제거 · #656 GA4 사용자 ID · #654 오픈소스 라이선스 · #653
+64파일 +2452/-1586 · 유닛 1560 · 계측 100 · OQ 신설 없음 · 해소 OQ-P-306 ①(부분 해소)
