@@ -5282,7 +5282,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   고르면 **번들 폰트는 Gradle 의존이 아니라 리소스 파일이라 그 목록에 안 잡힌다** — 폰트 몫은
   따로 실어야 한다. ③ 사본을 `assets/`나 `res/raw/`로 옮겨 APK에 넣을지, 화면 문구로만 담을지.
 - **상태**: 부분 해소 (① 해소, ③ 잔존)
-- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 남는다 — 그 페이지가 수정본 SUIT와 번들 Line Seed JP·TW의 OFL 사본·수정 고지를 담는지는 저장소 밖이라 코드로 확인할 수 없고, `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
+- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 서버 delta(`1a1abee`)로 반쯤 풀렸다 — `/oss` 페이지 `Font` 절에 SUIT·LINE Seed JP·TW가 OFL 1.1 전문과 함께 실렸다([deeplink.md](../api/deeplink.md) `GET /oss`). 그러나 SUIT 전문은 원본 저작권 문구(Reserved Font Name SUIT 포함) 그대로이고, 앱 번들이 cmap을 손본 수정본이라는 고지는 없다. 수정본 고지를 어디에 둘지, 수정본이 원래 이름을 계속 써도 되는지는 남는다. `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
   [s004 스펙](../superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md)·
   [s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md) 항목 목록을 함께 고친다.
   `.gitignore`에 올라간 릴리즈 keystore(OQ-P-305)와 같이 **배포가 가까워지며 드러나는 자리**다.
@@ -7887,4 +7887,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 일·중이 섞인 텍스트를 실기기에서 눈으로 확인한다.
 
-<!-- oq-next: 459 -->
+### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
+
+- **ID**: OQ-P-459
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/parfait-groups`·GET `/api/v2/parfait-groups` × `ParfaitGroupRemoteDataSource#getMyGroups`
+- **항목**: 앱은 텍스트 토핑을 배치하는데 그룹 목록은 v1을 부른다. v1은 `parfait_image`만 보므로 오늘 텍스트만 올린 그룹은 `recentImageUrl`이 `null`이라 템플릿 그래픽으로 그려지고, 경과 시간·칩·목록 순서도 텍스트를 건너뛴다. 서버 v2(`1a1abee`)는 텍스트를 포함한 최근 토핑과 `recentToppingType`을 준다. 다만 오늘 가장 최근 토핑이 텍스트면 오늘 이미지가 있어도 이미지 필드가 `null`이다.
+- **상태**: 미해결
+- **해소 메모**: v2로 옮길지, 옮기면 `recentToppingType == TEXT`인 카드에 무엇을 그릴지(기획) 정한다. 옮기면 `[^v2list]`와 README 경고를 걷는다.
+
+<!-- oq-next: 460 -->

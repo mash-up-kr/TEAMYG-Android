@@ -186,8 +186,9 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 | `/api/v1/<도메인>/me/<하위>` | `/api/v1/users/me` · `/api/v1/users/me/nickname` |
 | `/api/v1/groups/{groupId}/<하위>` | `/api/v1/groups/{groupId}/parfaits` · `.../parfaits/year` · `.../parfaits/today` · `.../parfaits/{parfaitId}` · `.../parfaits/{parfaitId}/background` · `.../parfaits/{parfaitId}/images/{parfaitImageId}/border` |
 | `/api/v1/test/<도메인>/<동작>` | `/api/v1/test/parfait-canvas/rotate` (테스트 전용) |
-| `/api/<도메인>` (버전 없음) | `/api/parfait-groups` |
-| `/api` 밖(루트 도메인 웹 표면) | `/` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
+| `/api/v2/<…>` (같은 자원의 v1과 나란히 있다) | `/api/v2/groups/{groupId}/parfaits/today` · `/api/v2/parfait-groups` |
+| `/api/<도메인>` (버전 없음) | `/api/parfait-groups` — v2는 `/api/v2/parfait-groups`라 v1에만 버전이 없다 |
+| `/api` 밖(루트 도메인 웹 표면) | `/` · `/oss` · `/link` · `/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` → [deeplink.md](deeplink.md) |
 
 버전 프리픽스 유무가 갈리고, **그룹을 가리키는 경로가 `groups`와 `parfait-groups` 둘**이다.
 서버에 URL 규약 문서가 없어 관측 사실로만 적는다 → [open-questions](../synthesis/open-questions.md).
