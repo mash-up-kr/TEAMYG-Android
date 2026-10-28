@@ -18,8 +18,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopAlpha
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
 
 /**
  * 저장된 배치대로 캔버스에 놓인 텍스트 하나. 캔버스 메인과 토핑 정리 화면이 함께 쓴다 — 둘의 박스와
@@ -46,7 +44,6 @@ internal fun PlacedTextTopping(
     onBoxSizeChange: (IntSize) -> Unit,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    popProgress: Float = 1f,
     alpha: Float = 1f,
 ) {
     TextToppingContent(
@@ -61,11 +58,10 @@ internal fun PlacedTextTopping(
             // graphicsLayer 의 배율은 잰 크기에 들어가지 않는다 — 그 앞에서 재야 scale 전 크기다
             .onSizeChanged(onBoxSizeChange)
             .graphicsLayer {
-                val pop = if (popProgress < 1f) toppingPopScale(popProgress) else 1f
-                scaleX = scale * pop
-                scaleY = scale * pop
+                scaleX = scale
+                scaleY = scale
                 rotationZ = rotationDegrees
-                this.alpha = if (popProgress < 1f) alpha * toppingPopAlpha(popProgress) else alpha
+                this.alpha = alpha
             }.then(
                 // 글자는 BasicText 가 읽어 주므로 설명을 따로 달지 않는다
                 if (onClick != null) {

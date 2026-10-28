@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,7 +34,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopProgresses
+import com.teamyg.parfait.feature.groups.canvas.impl.util.visibleToppingCount
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
@@ -58,7 +59,7 @@ internal fun CanvasImageSaveRoute(
 
     var isRecordingVideo by remember { mutableStateOf(false) }
     val recordLayer = rememberGraphicsLayer()
-    var recordPopProgresses by remember { mutableStateOf(emptyList<Float>()) }
+    var recordVisibleToppingCount by remember { mutableIntStateOf(0) }
     // 배경과 토핑을 접은 신호다. 접는 일은 녹화 레이어가 한다
     var recordLoadState by remember { mutableStateOf(CanvasLoadState.Loading) }
 
@@ -96,7 +97,7 @@ internal fun CanvasImageSaveRoute(
                     frameCount = VideoTimelineOptions.FRAME_COUNT,
                     captureLayer = recordLayer,
                 ) { frameIndex ->
-                    recordPopProgresses = toppingPopProgresses(
+                    recordVisibleToppingCount = visibleToppingCount(
                         toppingCount = videoSource.toppings.size + videoSource.texts.size,
                         frameIndex = frameIndex,
                     )
@@ -149,7 +150,7 @@ internal fun CanvasImageSaveRoute(
                 toppings = videoSource.toppings,
                 texts = videoSource.texts,
                 background = videoSource.background,
-                toppingPopProgresses = recordPopProgresses,
+                visibleToppingCount = recordVisibleToppingCount,
                 canvasWidth = videoSource.canvasWidth,
                 canvasHeight = videoSource.canvasHeight,
                 targetWidthPx = VideoRecordOptions.WIDTH_PX,
