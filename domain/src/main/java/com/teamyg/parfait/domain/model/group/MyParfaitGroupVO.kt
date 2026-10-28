@@ -10,7 +10,6 @@ data class MyParfaitGroupVO(
     val groupName: GroupName,
     /** 오늘 캔버스의 마지막 토핑 종류. `null` 은 오늘 토핑 없음이다(api/parfait-group.md GET /api/v2/parfait-groups). */
     val recentToppingType: ToppingType?,
-    /** `null` 이어도 오늘 토핑이 없다는 뜻이 아닐 수 있다 — 먼저 [recentToppingType] 을 본다. */
     val recentImageUrl: String?,
     val recentImageBorder: ToppingBorder,
     /**
