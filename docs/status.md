@@ -16,7 +16,9 @@
 
 ## 그룹 목록 (G-001)
 - 상태: `GroupListViewModel`이 그룹 인메모리 캐시(`GetMyGroupsFlowUseCase`)와 계정 SSoT(`GetMyAccountFlowUseCase`)를 구독해 그리고, 화면에 설 때마다 `RefreshMyGroupsUseCase`로 다시 조회한다. 첫 조회만 공통 로딩 덮개를 씌우고, 재진입 조회가 실패하면 보던 목록을 남기며, 당겨서 새로고침이 실패할 때만 에러 화면으로 간다. 토핑은 `ToppingLayout` 지그재그 위에 400ms 간격으로 쌓이고, 오늘 캔버스 토핑이 있으면 테두리까지 그린다. 없으면 `groupId`로 고른 템플릿을 그린다. 토핑을 누르면 C-001로, 그룹 추가 오버레이를 누르면 A-005·A-004로 간다. 상단 바는 "내 그룹 N"을 보이고 미조회(`null`)에서는 개수를 그리지 않는다. 0건이 확정되면(`isEmptyConfirmed`) 화면에 설 때마다 컴포지션이 든 `GroupListEmptyIntroState`가 더미 그룹 3개(`GROUP_LIST_EMPTY_DUMMY_GROUPS`)를 500ms 간격으로 내려 보이고 2.5초에 안내 툴팁을 띄운다. 3초 이후 버튼이 아닌 곳을 누르면 더미와 툴팁이 함께 사라지고, 이후 재진입 전까지 다시 뜨지 않는다. 등장 중 터치는 무시하되 그룹 추가 칩을 누르면 전부 드러난 상태로 건너뛰며, 앱이 멈추면 진행 중 애니메이션을 끝 상태로 건너뛴다. 더미는 접근성 트리에서 제외되고, 툴팁은 보이지 않는 동안 컴포지션에서 빠진다. 툴팁은 Material 팝업이 아니라 일반 컴포저블이다 (OQ-P-426)
-- 앵커: `GroupListViewModel`, `GetMyGroupsFlowUseCase`, `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`, `ToppingLayout`, `GroupListParfaitLayout`, `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl/util/ToppingImage.kt`
+- 앵커: `GroupListViewModel`, `GetMyGroupsFlowUseCase`, `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`, `YGToppingTextTemplate`, `ToppingLayout`, `GroupListParfaitLayout`, `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl/util/ToppingImage.kt`
+- 목록은 v2(`getParfaitGroupsV2`)라 텍스트도 토핑으로 센다. 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종(`YGToppingTextTemplate`, groupId로 고정) 중 하나를 회전 없이 그린다. 일반 템플릿·이미지는 카드 배치의 회전을 그대로 받는다
+- ⚠️ 텍스트 템플릿·회전 제외·경과 시간의 텍스트 포함은 위키에 정책이 없어 앱이 잠정으로 정한 값이다 (OQ-P-459)
 - ⚠️ 서버 `recentImageUrl`은 오늘 캔버스 토핑만 준다. 그래서 어제까지 활동한 그룹도 템플릿으로 그려지는데, 같은 카드의 경과 시간은 어제 토핑 시각이라 두 표시가 서로 맞지 않는다 (OQ-P-336)
 - ⚠️ 토핑이 한 건도 없는 그룹은 서버 폴백 때문에 그룹 생성 시각과 생성자 칩을 마지막 활동처럼 보여 준다 (OQ-P-235)
 - ⚠️ 계정 스트림이 첫 값을 내기 전에 「그룹 만들기」를 누르면 로그만 남고 아무 반응이 없다. 같은 오버레이의 「초대 코드로 참여」는 빈 닉네임으로 그냥 진행해 두 버튼의 반응이 반대다 (OQ-P-253, OQ-P-377)
@@ -48,8 +50,8 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
-- 앵커: `AppSettingViewModel`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 약관 아래 「오픈소스 라이선스」는 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 앵커: `AppSettingViewModel`, `OSS_LICENSE_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
 - ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
@@ -99,7 +101,7 @@
 - ⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌다
 - 글꼴·자간은 글자 구간마다 고른다. 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트를 쓰고, 두 폰트에 다 없는 한자(간체 일부)는 시스템 폰트로 그려지며 한 단어 안에서 JP·TW 가 섞일 수 있다(`学校`). `々〆〇〻`는 한자로, 가나 확장·반각 가타카나는 JP로 보고 전각 숫자·라틴은 주변 구간을 따른다 (OQ-P-456, OQ-P-457, OQ-P-458)
 - ⚠️ 구간 분기 이전에 저장한 텍스트는 다시 그리면 글꼴이 달라져(한글+가나 → 한글 SUIT, 한글+한자 → 한자 TW) 줄 수가 바뀔 수 있다 (OQ-P-453)
-- 설계: [text-topping](superpowers/specs/archive/2026-10-16-text-topping.md), [text-topping-api](superpowers/specs/archive/2026-10-26-text-topping-api.md), [api/parfait-text](api/parfait-text.md), [text-topping-script-span](superpowers/specs/2026-10-27-text-topping-script-span-design.md)
+- 설계: [text-topping](superpowers/specs/archive/2026-10-16-text-topping.md), [text-topping-api](superpowers/specs/archive/2026-10-26-text-topping-api.md), [api/parfait-text](api/parfait-text.md), [text-topping-script-span](superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md)
 
 ## 누끼 추출 (C-103·C-104)
 - 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 긴 변 상한(`DecodeSize.LONG_SIDE_LIMIT`)으로 디코드한 원본으로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고(선택 UI는 「직접 선택」 얼럿으로 후보 없이 원본 전체를 마스크로 편집 화면에 갈 수 있다), 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
@@ -178,7 +180,8 @@
 - ⚠️ 릴리즈 빌드는 minify와 리소스 축소를 켜지만 축소된 산출물을 설치·실행한 기록이 없고 `keep.xml`도 없다. R8 산출물에서 `@NoAuth` keep 규칙이 살아 화이트리스트 요청이 인증 헤더 없이 나가는지도 확인되지 않았다 (OQ-P-308, OQ-P-074)
 - ⚠️ 경량 태그 `1.0.0`에는 develop에 없는 커밋(`feature/debug-mode` 포함)이 들어 있고, 릴리즈 계보를 develop 하나로 둔다는 규칙은 글로 없다. 태그 `1.1.3`은 버전 코드 11만 가리켜 같은 이름의 코드 10 산출물과 이름으로 구별되지 않는다 (OQ-P-311, OQ-P-310)
 - ⚠️ `WithdrawUseCase`가 `LogoutUseCase`를 재사용해 탈퇴가 끝난 계정으로 서버 로그아웃을 한 번 더 보내고, 그 401이 `TokenAuthenticator` 재발급까지 깨워 강제 로그아웃과 화면 이펙트가 같은 목적지로 겹친다 (OQ-P-242)
-- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실리고 앱에 오픈소스 고지 화면이 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실린다. 고지는 S-001이 여는 외부 페이지가 맡고, 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 앱에는 다크 모드가 없지만 `app/src/main/res/values-night/themes.xml`이 있다 — targetSdk 33+ 웹뷰가 테마의 `isLightTheme`로 `prefers-color-scheme`을 정해서, 시스템 다크 모드에서는 공용 웹뷰 페이지만 다크로 그려지게 둔 것이다. 창 배경은 라이트 값으로 고정했다(스플래시·전환 배경)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
 - ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)
@@ -213,6 +216,7 @@
 - OQ-P-357 — 파르페 쌓임 연출의 간격을 실기기에서 본 적이 없다
 - OQ-P-412 — 배치 화면의 테두리 패널이 열렸을 때 화면 높이가 다른 기기에서 토핑이 패널에 가리는지, 화살표와 슬라이더의 터치 영역 겹침이 손에 걸리는지 본 적이 없다
 - OQ-P-419 — 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
+- OQ-P-458 — 텍스트 토핑 글꼴 구간 분기(가나·한자 글꼴, 한글 IME 연타, JP·TW 경계 자간)를 실기기로 본 적이 없다
 - OQ-P-425 — 누끼 편집(C-104) 개편을 피그마·실기기와 나란히 본 적이 없다
 - OQ-P-426 — G-001-Empty 안내 애니메이션의 타이밍과 TalkBack 동작을 에뮬레이터·실기기로 확인한 기록이 없다
 - OQ-P-429 — 캔버스 타임랩스 영상을 실기기에서 뽑아 본 적이 없다(재생·생성 시간·마지막 프레임 테두리 비율·팝인 중 띠 잘림). 테두리 판 캐시 미스(OQ-P-433)도 같이 본다

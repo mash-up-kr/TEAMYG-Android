@@ -1,9 +1,9 @@
 ---
 id: deeplink
-title: 딥링크 웹 표면(App Links 검증 파일·초대 링크 폴백·루트 랜딩)
+title: 딥링크 웹 표면(App Links 검증 파일·초대 링크 폴백·루트 랜딩·오픈소스 라이선스)
 server_module: http/api/deeplink, http/api/page/root, core/deeplink
-server_commit: ed65131
-verified: 2026-10-27
+server_commit: 1a1abee
+verified: 2026-10-28
 android_status: done
 related_spec:
 related_adr:
@@ -21,7 +21,7 @@ tags: [api, parfait, server-contract, deeplink]
 앱 쪽 흐름은 [navigation-flow](../architecture/navigation-flow.md) 「App Links 이동」.
 
 **호스트는 루트 도메인 `parfait-app.store`다**(`landing.domain`). API 호스트와 다르다. 앞단 Caddy가 이
-호스트에서 `/` `/link` `/.well-known/*` `/assets/*` `/icon-512.png`만 애플리케이션으로 넘기고 나머지는
+호스트에서 `/` `/oss` `/oss/` `/link` `/.well-known/*` `/assets/*` `/icon-512.png`만 애플리케이션으로 넘기고 나머지는
 Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 
 ## 엔드포인트
@@ -32,6 +32,7 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 | GET | `/.well-known/apple-app-site-association` | 불필요 | 없음 | JSON 객체(AASA) | 해당 없음[^ios] |
 | GET | `/link` | 불필요 | 쿼리스트링 임의 · `User-Agent` 헤더 | `text/html` 폴백 페이지 | 구현됨[^link] |
 | GET | `/` | 불필요 | 없음 | `text/html` 랜딩 페이지 | 해당 없음[^root] |
+| GET | `/oss` · `/oss/` | 불필요 | 없음 | `text/html` 오픈소스 라이선스 페이지 | 구현됨[^oss] |
 
 정적 리소스 `/assets/**`(OG 이미지·SUIT 폰트·랜딩 번들)도 인증 없이 열린다. 다섯 경로 모두
 `SecurityConfig.WHITELIST_PATHS`에 있다.
@@ -43,6 +44,8 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
     (`Intent.toAppLinkDeepLinkOrNull`), 미설치면 이 페이지가 Play 스토어로 보내며 실은 referrer를 첫 실행 때
     `AppLinkReferrerRepositoryImpl`이 읽는다. 둘 다 아래 계약과 맞다.
 [^root]: 랜딩 페이지다. 앱 매니페스트가 루트를 일부러 받지 않는다(navigation-flow 「App Links 이동」).
+
+[^oss]: 앱은 App Links로 받지 않고 S-001 「오픈소스 라이선스」가 공용 웹뷰로 연다(`OSS_LICENSE_URL`).
 
 ## 엔드포인트 상세
 
@@ -123,6 +126,17 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
   referrer를 초대 없음으로 읽는다.
 - 랜딩 방문은 GA4 웹 스트림으로 집계된다. Google에는 UTM 쿼리만 보낸다(`analyticsLocation`). 앱 계약과는 무관하다.
 
+### GET /oss
+
+- **인증**: 불필요(`SecurityConfig` 화이트리스트에 `/oss`·`/oss/`)
+- **성공**: `/`와 같은 규칙이다 — 요청 호스트가 `landing.domain`일 때만 HTTP 200 · `text/html`이고, 다른 호스트는 본문 없는
+  404다. 본문은 `web/landing`의 두 번째 진입점(`oss/index.html`) 빌드 산출물이고 기동 때 한 번 읽는다(`RootLandingController`).
+- 페이지는 `Font`·`Android`·`iOS` 세 절로 라이브러리 목록을 그리고, 플랫폼(UA)에 따라 보일 절을 고른다(`visibleSections`).
+  라이선스 전문은 항목을 펼칠 때 불러온다. 목록은 `web/landing/src/oss/licenses.ts`에 손으로 적혀 있다 — 앱 의존성에서
+  생성하지 않아 앱이 라이브러리를 더하거나 올려도 이 페이지는 따라오지 않는다.
+- `Font` 절에 SUIT 2.040·LINE Seed JP·LINE Seed TW가 OFL 1.1 전문과 함께 있다. SUIT 전문은 원본 저작권 문구 그대로이고
+  앱 번들이 수정본이라는 고지는 없다 → [open-questions](../synthesis/open-questions.md) OQ-P-306.
+
 ## Android 매핑
 
 | 계약 | Android 심볼 |
@@ -131,6 +145,7 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 | `/link` 경로·`inviteCode` 쿼리 | `AppLinkDeepLinkIntent.kt` `APP_LINK_PATHS` · `Intent.toAppLinkDeepLinkOrNull` · `AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY` |
 | Play referrer `inviteCode%3D…` | `AppLinkReferrerRepositoryImpl#consumeDeepLinkOnce`(`referrerQueryParameter`) |
 | 초대 링크 문자열 | `core/ui` `strings.xml` `group_invite_message` |
+| `/oss` 주소 | `feature/app/setting/impl` `OSS_LICENSE_URL`(`https://parfait-app.store/oss`) → `NavKeyWebView` |
 
 호스트·경로가 세 곳에 따로 적혀 있는 사정은 [open-questions](../synthesis/open-questions.md) OQ-P-436.
 

@@ -55,7 +55,7 @@ fun YGToppingGroup(
             .offset(
                 x = type.imageOffset.x,
                 y = type.imageOffset.y,
-            ).rotate(type.rotation)
+            ).rotate(if (image.followsCardRotation) type.rotation else 0f)
             .clip(RectangleShape)
 
         when (image) {
@@ -65,6 +65,13 @@ fun YGToppingGroup(
             )
 
             is YGToppingImage.Template -> Image(
+                painter = painterResource(image.type.drawableRes),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = imageModifier,
+            )
+
+            is YGToppingImage.TextTemplate -> Image(
                 painter = painterResource(image.type.drawableRes),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
@@ -153,6 +160,13 @@ private fun YGToppingGroupPreview() = PreviewBox {
             timestamp = "3분전",
             chipType = YGGrouptagChipType.TYPE_1_2,
             type = YGToppingGroupType.TYPE_1_LEFT,
+        )
+        YGToppingGroup(
+            image = YGToppingImage.TextTemplate(YGToppingTextTemplate.TEMPLATE_02),
+            name = "모카의파르페",
+            timestamp = "1분전",
+            chipType = YGGrouptagChipType.TYPE_3_4,
+            type = YGToppingGroupType.TYPE_1_RIGHT,
         )
         YGToppingGroup(
             image = YGToppingImage.Error,

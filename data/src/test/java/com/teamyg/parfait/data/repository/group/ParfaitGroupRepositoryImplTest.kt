@@ -438,6 +438,7 @@ class ParfaitGroupRepositoryImplTest {
         val GROUP_A = MyParfaitGroupVO(
             groupId = GROUP_ID_A,
             groupName = GroupName("아메리카노"),
+            recentToppingType = null,
             recentImageUrl = null,
             recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,
@@ -446,6 +447,7 @@ class ParfaitGroupRepositoryImplTest {
         val GROUP_B = MyParfaitGroupVO(
             groupId = GROUP_ID_B,
             groupName = GroupName("라떼"),
+            recentToppingType = null,
             recentImageUrl = null,
             recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,

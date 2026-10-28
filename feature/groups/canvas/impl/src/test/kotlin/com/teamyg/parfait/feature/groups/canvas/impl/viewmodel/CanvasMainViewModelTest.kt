@@ -1349,6 +1349,7 @@ class CanvasMainViewModelTest {
         val GROUP = MyParfaitGroupVO(
             groupId = GroupId(GROUP_ID),
             groupName = GroupName("아메리카노"),
+            recentToppingType = null,
             recentImageUrl = null,
             recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = null,

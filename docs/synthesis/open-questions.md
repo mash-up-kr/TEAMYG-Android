@@ -5281,8 +5281,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   재사용할 수 있다), 아니면 라이선스 수집 플러그인을 붙여 목록을 자동 생성할지. ② 자동 생성을
   고르면 **번들 폰트는 Gradle 의존이 아니라 리소스 파일이라 그 목록에 안 잡힌다** — 폰트 몫은
   따로 실어야 한다. ③ 사본을 `assets/`나 `res/raw/`로 옮겨 APK에 넣을지, 화면 문구로만 담을지.
-- **상태**: 미해결 (배포 전에 답이 필요한 자리다 — 스토어 배포가 조건을 실제로 발동시킨다)
-- **해소 메모**: 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
+- **상태**: 부분 해소 (① 해소, ③ 잔존)
+- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 서버 delta(`1a1abee`)로 반쯤 풀렸다 — `/oss` 페이지 `Font` 절에 SUIT·LINE Seed JP·TW가 OFL 1.1 전문과 함께 실렸다([deeplink.md](../api/deeplink.md) `GET /oss`). 그러나 SUIT 전문은 원본 저작권 문구(Reserved Font Name SUIT 포함) 그대로이고, 앱 번들이 cmap을 손본 수정본이라는 고지는 없다. 수정본 고지를 어디에 둘지, 수정본이 원래 이름을 계속 써도 되는지는 남는다. `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
   [s004 스펙](../superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md)·
   [s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md) 항목 목록을 함께 고친다.
   `.gitignore`에 올라간 릴리즈 keystore(OQ-P-305)와 같이 **배포가 가까워지며 드러나는 자리**다.
@@ -7866,7 +7866,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-27] iOS가 텍스트 토핑의 글꼴 구간 규칙을 따를지
 
 - **ID**: OQ-P-456
-- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
+- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
 - **항목**: Android는 글자 구간마다 글꼴·자간을 고르고 한자는 가나 유무로 JP·TW 순서를 정한다. iOS가 같은 규칙을 따를지 정하지 않았다. 다르면 같은 토핑의 글꼴과 줄바꿈이 플랫폼마다 달라진다.
 - **상태**: 미해결
 - **해소 메모**: iOS와 구간 규칙(가나 판정 범위, 한자 우선순위, 중립 문자 처리)을 맞춘다.
@@ -7887,4 +7887,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 일·중이 섞인 텍스트를 실기기에서 눈으로 확인한다.
 
-<!-- oq-next: 459 -->
+### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
+
+- **ID**: OQ-P-459
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/v2/parfait-groups` × `feature/groups/list/impl/util/ToppingImage.kt#toToppingImage` · `YGToppingImage.TextTemplate` · 위키 `concepts/infinite-parfait.md`(빈 토핑 템플릿·토핑 회전·상대 시간 절)
+- **항목**: G-001이 텍스트 토핑을 다루는 방식이 기획 근거 없이 앱이 정한 값이다. 위키에는 텍스트 토핑 정책이 없다. ① 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종 중 하나를 띄운다. 위키는 템플릿을 "아직 아무도 토핑을 올리지 않은 그룹"에만 쓴다. ② 텍스트 템플릿만 카드 회전을 받지 않는다. 위키는 템플릿도 일반 토핑과 같은 지그재그·회전 규칙을 따른다고 적는다. ③ 텍스트 템플릿을 groupId로 고정해 고른다. 일반 템플릿의 "무작위 최초 부여·고정" 규칙이 여기도 적용되는지 정해지지 않았다. ④ 경과 시간·마지막 토퍼 칩·정렬이 텍스트를 포함한 마지막 토핑 기준이다(서버 v2). 위키의 "활동" 목록에 텍스트 토핑이 없다.
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
+
+<!-- oq-next: 460 -->
