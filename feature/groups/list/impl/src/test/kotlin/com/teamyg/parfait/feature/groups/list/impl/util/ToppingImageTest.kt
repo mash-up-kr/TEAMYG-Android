@@ -13,8 +13,10 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ToppingImageTest {
     private fun group(
@@ -202,6 +204,38 @@ class ToppingImageTest {
         // Then 같은 그룹은 같은 템플릿이고, 두 템플릿이 모두 쓰인다
         assertEquals(templates.first(), again)
         assertEquals(2, templates.toSet().size)
+    }
+
+    @Test
+    fun textTemplate_doesNotFollowCardRotation() {
+        // Given 텍스트가 마지막인 그룹과 오늘 토핑이 없는 그룹
+        val text = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+        val empty = group(groupId = 1L, recentImageUrl = null)
+
+        // When 띄울 이미지를 고른다
+        val textImage = text.toToppingImage(emptyMap())
+        val emptyImage = empty.toToppingImage(emptyMap())
+
+        // Then 텍스트 템플릿만 카드 기울기를 따르지 않는다
+        assertFalse(textImage.followsCardRotation)
+        assertTrue(emptyImage.followsCardRotation)
+    }
+
+    @Test
+    fun borderedImageUrls_skipsTextRecentTopping() {
+        // Given 종류는 텍스트인데 테두리 있는 이미지 URL 도 실려 온 그룹
+        val group = group(
+            groupId = 1L,
+            recentImageUrl = "https://cdn.example.com/a.png",
+            recentImageBorder = ToppingBorder.Solid(color = "#FF0000", width = 6.0),
+            recentToppingType = ToppingType.TEXT,
+        )
+
+        // When 테두리를 그릴 URL 을 모은다
+        val urls = listOf(group).borderedImageUrls()
+
+        // Then 텍스트 템플릿이 걸리므로 거리판을 뜨지 않는다
+        assertTrue(urls.isEmpty())
     }
 
     @Test

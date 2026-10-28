@@ -244,6 +244,34 @@ class ParfaitGroupRemoteDataSourceImplTest {
     }
 
     @Test
+    fun getMyGroups_imageRecentTopping_becomesImage() = runTest {
+        // Given 오늘 마지막 토핑이 이미지다
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(
+            listOf(groupResponse(null, recentImageUrl = "https://cdn.example.com/a.png", recentToppingType = "IMAGE")),
+        )
+
+        // When 목록을 받는다
+        val group = dataSource.getMyGroups().getOrNull()?.single()
+
+        // Then 종류는 이미지이고 URL 이 그대로 실린다
+        assertEquals(ToppingType.IMAGE, group?.recentToppingType)
+        assertEquals("https://cdn.example.com/a.png", group?.recentImageUrl)
+    }
+
+    @Test
+    fun getMyGroups_lowercaseRecentToppingType_foldsToUnknown() = runTest {
+        // Given 서버가 종류를 소문자로 준다
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
+            success(listOf(groupResponse(null, recentToppingType = "text")))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 대소문자를 맞춰 주지 않고 UNKNOWN 으로 접는다
+        assertEquals(ToppingType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
+    }
+
+    @Test
     fun getMyGroups_textRecentTopping_becomesTextWithoutImage() = runTest {
         // Given 오늘 마지막 토핑이 텍스트라 이미지 필드가 비어 온다
         coEvery { parfaitGroupService.getParfaitGroupsV2() } returns

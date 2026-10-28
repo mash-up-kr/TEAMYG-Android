@@ -22,7 +22,7 @@ private val TEXT_TOPPING_TEMPLATES = YGToppingTextTemplate.entries
  * 오늘 캔버스에 토핑이 없는 그룹은 조회 실패([YGToppingImage.Error])와 다른 상태라 템플릿을 띄운다.
  * ⚠️ 어제까지 토핑이 있던 그룹도 여기 걸린다 — 서버가 오늘 것만 내려주기 때문이고, 그것을 템플릿으로
  * 그리는 것이 맞는지는 아직 결정 전이다(OQ-P-336, api/parfait-group.md).
- * 오늘 마지막 토핑이 텍스트면 서버가 이미지를 비워 보내므로, 오늘 이미지가 있어도 텍스트 템플릿을 띄운다.
+ * 텍스트인지는 이미지 필드 유무가 아니라 종류로 가른다(api/parfait-group.md GET /api/v2/parfait-groups).
  * 목록 순서가 바뀌어도 같은 그림이 걸리도록 index 가 아니라 groupId 로 고른다.
  */
 internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutline>): YGToppingImage {
@@ -42,7 +42,7 @@ internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutlin
 
 /** 거리판은 비싸서 테두리를 실제로 그릴 토핑만 뜬다 */
 internal fun List<MyParfaitGroupVO>.borderedImageUrls(): List<String> = mapNotNull { group ->
-    group.recentImageUrl?.takeIf { group.drawableBorder() != null }
+    group.recentImageUrl?.takeIf { group.recentToppingType != ToppingType.TEXT && group.drawableBorder() != null }
 }
 
 private fun MyParfaitGroupVO.drawableBorder(): Pair<Color, Double>? {

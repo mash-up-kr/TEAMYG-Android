@@ -55,7 +55,7 @@ fun YGToppingGroup(
             .offset(
                 x = type.imageOffset.x,
                 y = type.imageOffset.y,
-            ).rotate(if (image is YGToppingImage.TextTemplate) 0f else type.rotation)
+            ).rotate(if (image.followsCardRotation) type.rotation else 0f)
             .clip(RectangleShape)
 
         when (image) {

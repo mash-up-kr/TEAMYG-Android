@@ -4,15 +4,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * [MyParfaitGroupResponse] 와 키가 같고 [recentToppingType] 이 더해진다. 이미지와 텍스트를 한 토핑 축으로 세서
- * 필드 뜻이 v1 과 갈린다(`docs/api/parfait-group.md` GET /api/v2/parfait-groups).
+ * 필드마다 뜻은 `docs/api/parfait-group.md` GET /api/v2/parfait-groups 가 정본이다.
  *
- * @param recentToppingType 오늘 캔버스(03시 경계)의 마지막 토핑 종류 `IMAGE`·`TEXT`. 오늘 토핑이 없으면 `null`.
- * @param recentImageUrl 오늘 마지막 토핑이 이미지일 때만 값이 있다. 텍스트면 오늘 이미지가 있어도 `null` 이라
- *   [recentToppingType] 으로 갈라 읽는다. 테두리 세 필드도 같은 토핑을 가리킨다.
- * @param recentImageUploadedAt 오프셋 없는 로컬 날짜시각이고 벽시계는 KST다. 이름과 달리 텍스트를 포함한 마지막
- *   토핑 시각이고, 토핑이 한 건도 없으면 그룹 생성 시각으로 대체된다.
- * @param lastPlacedByNameTagChip recentImageUploadedAt 과 같은 토핑을 올린 사람의 칩이다.
+ * @param recentImageUrl `null` 만으로 "오늘 토핑 없음"을 판정하지 않는다 — 이미지·텍스트는 [recentToppingType] 으로 가른다.
+ * @param recentImageUploadedAt 오프셋 없는 로컬 날짜시각(벽시계 KST)이고, 이름과 달리 텍스트 토핑 시각도 담는다.
  */
 @Serializable
 data class MyParfaitGroupV2Response(
