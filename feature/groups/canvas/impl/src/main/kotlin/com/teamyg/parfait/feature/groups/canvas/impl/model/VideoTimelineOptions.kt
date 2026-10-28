@@ -11,7 +11,6 @@ internal object VideoTimelineOptions {
     /** 모든 토핑이 이 구간 안에서 나타난다. 남는 시간은 완성본을 보여 준다 */
     const val TOPPING_APPEAR_WINDOW_SECONDS: Float = 1.5f
 
-    /** 등장 구간을 프레임 수로 센 값. 토핑 등장 여부를 정수로 비교할 때 쓴다 */
     const val TOPPING_APPEAR_WINDOW_FRAMES: Int = (TOPPING_APPEAR_WINDOW_SECONDS * FRAMES_PER_SECOND).toInt()
 
     const val FRAME_COUNT: Int = (DURATION_SECONDS * FRAMES_PER_SECOND).toInt()

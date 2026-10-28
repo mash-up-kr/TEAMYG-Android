@@ -94,7 +94,6 @@ internal fun CanvasToppingLayer(
      * 앞에서부터 보이는 토핑 수. 이미지와 텍스트를 [canvasLayerOrder] 로 합친 순서다. `null` 이면 전부 보인다.
      *
      * 이 레이어에 넘긴 [toppings]·[texts] 의 합으로 세야 한다.
-     * 타임랩스 녹화가 프레임마다 이 값을 갈아 토핑이 차례로 나타나게 만든다.
      */
     visibleToppingCount: Int? = null,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
@@ -141,7 +140,7 @@ internal fun CanvasToppingLayer(
             layers.forEachIndexed { index, layer ->
                 if (layer.key != spotlightedKey) {
                     key(layer.key) {
-                        // 목록이 이미 겹침 순서, 즉 배치 순서라 인덱스가 곧 등장 순서다
+                        // 목록이 겹침 순서라 인덱스가 곧 등장 순서다
                         CanvasLayer(
                             layer = layer,
                             entriesById = entriesById,
@@ -362,7 +361,7 @@ private fun CanvasTopping(
             .requiredSize(side)
             .graphicsLayer {
                 rotationZ = transform.rotation.toFloat()
-                // 테두리 띠가 상자 밖으로 나가는데 alpha < 1 이면 그만큼 잘린다 — 숨길 때만 건다
+                // alpha 를 걸면 상자 밖 테두리 띠가 잘린다 — 숨길 때만 건다
                 if (!visible) alpha = 0f
             }.then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
