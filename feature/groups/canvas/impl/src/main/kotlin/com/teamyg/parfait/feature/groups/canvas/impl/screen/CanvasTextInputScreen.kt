@@ -449,10 +449,8 @@ internal fun CanvasTextInputScreen(
                     if (!textEditMode.isEditing && textBoxSize != null) {
                         ToppingSelectionStroke(
                             center = drawnCenter,
-                            sizeAfterScale = DpSize(
-                                width = maxOf(textBoxSize.width * drawnScale, TEXT_TOPPING_MIN_TOUCH),
-                                height = maxOf(textBoxSize.height * drawnScale, TEXT_TOPPING_MIN_TOUCH),
-                            ),
+                            // 44dp 최소값은 터치 판정 몫이다 — 점선까지 키우면 작은 글자에서 비율이 틀어진다
+                            sizeAfterScale = textBoxSize * drawnScale,
                             rotationDegrees = drawnRotationDegrees,
                         )
                     }
