@@ -54,8 +54,8 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     [open-questions](../synthesis/open-questions.md) OQ-P-336.
 
 [^v2list]: 앱의 목록 갱신은 v2를 부르고(`getParfaitGroupsV2`), v1 Service 메서드와 DTO는 `@Deprecated`로 남겼다.
-    VO에 `recentToppingType`이 실렸지만 G-001은 아직 읽지 않는다. 그래서 오늘 마지막 토핑이 텍스트인 그룹은 오늘 이미지가
-    있어도 `recentImageUrl`이 `null`이라 템플릿으로 그려진다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
+    G-001은 `recentToppingType == TEXT`면 `recentImageUrl`과 무관하게 텍스트 템플릿을 그린다(`toToppingImage`).
+    모르는 종류(`UNKNOWN`)는 이미지가 없으면 일반 템플릿으로 접힌다.
     위 두 각주(`recentImageUploadedAt` 파싱, `recentImageUrl`의 뜻)는 v2에도 그대로 해당한다.
 
 요청 DTO(`ParfaitGroupRequest.kt`)에는 Bean Validation 애노테이션이 없다 — auth 도메인과 달리 `@NotBlank`/`@Valid`가
@@ -778,9 +778,6 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
   못한다** → [open-questions](../synthesis/open-questions.md) [2026-08-15].
 
 ## 미결
-
-- **G-001이 `recentToppingType`을 읽을지(앱)** — 목록은 v2로 옮겼지만 화면은 `recentImageUrl`만 본다. `recentToppingType == TEXT`인
-  카드에 무엇을 그릴지 정해야 한다 → [open-questions](../synthesis/open-questions.md) OQ-P-459.
 
 ✅ **회원 전역 닉네임과 그룹 닉네임 규칙 대조 — 2026-08-11 해소.** 두 값 객체가 **문자 그대로 같은
 규칙**이다: `core/member/domain/GlobalNickname`과 `core/parfaitgroup/domain/GroupNickname` 모두

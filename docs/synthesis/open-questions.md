@@ -7892,7 +7892,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-459
 - **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/parfait-groups`·GET `/api/v2/parfait-groups` × `ParfaitGroupRemoteDataSource#getMyGroups` · `feature/groups/list/impl/util/ToppingImage.kt`
 - **항목**: ① 그룹 목록이 v1이라 텍스트 토핑을 세지 않았다. ② 목록이 v2로 바뀐 뒤에는 오늘 가장 최근 토핑이 텍스트면 오늘 이미지가 있어도 `recentImageUrl`이 `null`이다. G-001(`toToppingImage`)은 `MyParfaitGroupVO.recentToppingType`을 읽지 않아 그 그룹을 템플릿 그래픽으로 그린다. 경과 시간·칩·순서는 텍스트를 포함한 값이다.
-- **상태**: 부분 해소 (① 해소, ② 잔존)
-- **해소 메모**: ①은 data 계층이 v2(`getParfaitGroupsV2`)로 옮기고 v1을 `@Deprecated`로 남겨 닫았다. ②는 `recentToppingType == TEXT`인 카드에 무엇을 그릴지(기획) 정한 뒤 G-001에 반영하고, `[^v2list]`와 README 경고를 걷는다.
+- **상태**: 해소됨
+- **해소 메모**: ①은 data 계층이 v2(`getParfaitGroupsV2`)로 옮기고 v1을 `@Deprecated`로 남겨 닫았다. ②는 G-001이 `recentToppingType == TEXT`면 텍스트 템플릿 2종(`YGToppingTextTemplate`) 중 groupId로 고른 하나를 회전 없이 그리는 것으로 닫았다.
 
 <!-- oq-next: 460 -->
