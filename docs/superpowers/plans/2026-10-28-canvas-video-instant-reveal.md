@@ -1,7 +1,7 @@
 ---
 id: canvas-video-instant-reveal
 title: 캔버스 타임랩스 영상 — 토핑 즉시 등장
-status: draft
+status: in-progress
 type: work-order
 created: 2026-10-28
 updated: 2026-10-28

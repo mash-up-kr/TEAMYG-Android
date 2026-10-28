@@ -434,4 +434,4 @@ P1 0 · 반영 P2 1·P3 3·P4 4 · 텍스트 실패 문구 사진 재사용 수�
 conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인터로 · `YGToppingImage.followsCardRotation` · `borderedImageUrls` 텍스트 제외 · 매퍼·회전 테스트 · OQ-P-459 기획 미확인으로 재개
 
 ## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
-팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 ③ 소멸
+팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 옛 ③(팝인 중 띠 잘림) 소멸
