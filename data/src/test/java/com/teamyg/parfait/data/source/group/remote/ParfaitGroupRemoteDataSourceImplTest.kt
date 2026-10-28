@@ -4,11 +4,12 @@ import com.teamyg.parfait.data.network.ApiCaller
 import com.teamyg.parfait.data.service.ParfaitGroupService
 import com.teamyg.parfait.data.service.model.response.ApiResponse
 import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupDetailResponse
-import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupResponse
+import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupV2Response
 import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberResponse
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingType
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -40,9 +41,11 @@ class ParfaitGroupRemoteDataSourceImplTest {
         recentImageBorderType: String? = null,
         recentImageBorderColor: String? = null,
         recentImageBorderWidth: Double? = null,
-    ) = MyParfaitGroupResponse(
+        recentToppingType: String? = null,
+    ) = MyParfaitGroupV2Response(
         groupId = 1L,
         groupName = "모카의 파르페",
+        recentToppingType = recentToppingType,
         recentImageUrl = recentImageUrl,
         recentImageBorderType = recentImageBorderType,
         recentImageBorderColor = recentImageBorderColor,
@@ -69,7 +72,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_knownChipString_becomesThatType() = runTest {
         // Given 서버가 마지막 토퍼의 칩을 enum 이름 문자열로 준다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("TYPE7")))
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse("TYPE7")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
@@ -81,7 +84,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_defaultChipString_becomesDefault() = runTest {
         // Given 마지막 토퍼가 그룹을 나가 서버가 반납 표식을 준다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("DEFAULT")))
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse("DEFAULT")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
@@ -93,7 +96,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_unknownChipString_foldsToDefault() = runTest {
         // Given 서버가 앱이 모르는 값을 준다 — 열린 입력이다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse("TYPE99")))
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse("TYPE99")))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
@@ -105,7 +108,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_missingChipField_foldsToDefault() = runTest {
         // Given 구버전 서버라 칩 필드가 아예 없다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse(null)))
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse(null)))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
@@ -117,7 +120,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_offsetlessUploadedAt_isReadAsSeoulWallClock() = runTest {
         // Given 서버가 오프셋 없는 로컬 날짜시각을 준다 — 그 벽시계는 Asia/Seoul 기준이다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
             success(listOf(groupResponse(null, recentImageUploadedAt = "2026-08-01T12:00:00")))
 
         // When 목록을 받는다
@@ -133,7 +136,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_uploadedAtAcrossMidnight_staysOnItsOwnSeoulDay() = runTest {
         // Given 자정 직후 값이다 — UTC 로 읽으면 전날로 밀린다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
             success(listOf(groupResponse(null, recentImageUploadedAt = "2026-08-02T00:30:00")))
 
         // When 목록을 받는다
@@ -149,7 +152,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_missingUploadedAt_isNull() = runTest {
         // Given 서버가 시각을 주지 않는다(구버전 서버·롤백)
-        coEvery { parfaitGroupService.getParfaitGroups() } returns
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
             success(listOf(groupResponse(null, recentImageUploadedAt = null)))
 
         // When 목록을 받는다
@@ -162,7 +165,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_solidRecentImageBorder_becomesSolid() = runTest {
         // Given 최신 토핑에 실선 테두리가 있다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(
             listOf(
                 groupResponse(
                     lastPlacedByNametagChip = null,
@@ -187,7 +190,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_noneRecentImageBorder_becomesNoneIgnoringColor() = runTest {
         // Given 종류는 NONE 인데 색·두께 값이 남아 있다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(
             listOf(
                 groupResponse(
                     lastPlacedByNametagChip = null,
@@ -209,7 +212,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_solidRecentImageBorderMissingWidth_fallsBackToNone() = runTest {
         // Given SOLID 인데 두께가 비어 있다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(
             listOf(
                 groupResponse(
                     lastPlacedByNametagChip = null,
@@ -231,13 +234,52 @@ class ParfaitGroupRemoteDataSourceImplTest {
     @Test
     fun getMyGroups_noRecentImage_hasNoBorder() = runTest {
         // Given 이미지와 테두리 필드가 null 이다
-        coEvery { parfaitGroupService.getParfaitGroups() } returns success(listOf(groupResponse(null)))
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse(null)))
 
         // When 목록을 받는다
         val result = dataSource.getMyGroups()
 
         // Then 테두리는 None 이다
         assertEquals(ToppingBorder.None, result.getOrNull()?.single()?.recentImageBorder)
+    }
+
+    @Test
+    fun getMyGroups_textRecentTopping_becomesTextWithoutImage() = runTest {
+        // Given 오늘 마지막 토핑이 텍스트라 이미지 필드가 비어 온다
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
+            success(listOf(groupResponse(null, recentToppingType = "TEXT")))
+
+        // When 목록을 받는다
+        val group = dataSource.getMyGroups().getOrNull()?.single()
+
+        // Then 종류는 텍스트이고 이미지는 없다
+        assertEquals(ToppingType.TEXT, group?.recentToppingType)
+        assertNull(group?.recentImageUrl)
+    }
+
+    @Test
+    fun getMyGroups_unknownRecentToppingType_foldsToUnknown() = runTest {
+        // Given 서버가 앱이 모르는 토핑 종류를 준다
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns
+            success(listOf(groupResponse(null, recentToppingType = "STICKER")))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 조회는 성공하고 종류는 UNKNOWN 으로 접힌다
+        assertEquals(ToppingType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
+    }
+
+    @Test
+    fun getMyGroups_missingRecentToppingType_isNull() = runTest {
+        // Given 오늘 토핑이 없어 종류가 null 로 온다
+        coEvery { parfaitGroupService.getParfaitGroupsV2() } returns success(listOf(groupResponse(null)))
+
+        // When 목록을 받는다
+        val result = dataSource.getMyGroups()
+
+        // Then 종류는 null 이다(UNKNOWN 과 구분된다)
+        assertNull(result.getOrNull()?.single()?.recentToppingType)
     }
 
     @Test

@@ -32,7 +32,7 @@ class ParfaitGroupRemoteDataSourceImpl @Inject constructor(
 ) : ParfaitGroupRemoteDataSource {
     override suspend fun getMyGroups(): Result<List<MyParfaitGroupVO>> = apiCaller
         .safeApiCall(
-            block = { parfaitGroupService.getParfaitGroups() },
+            block = { parfaitGroupService.getParfaitGroupsV2() },
             transform = { responses -> responses.map { it.toMyParfaitGroupVO() } },
         )
 

@@ -10,6 +10,7 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -23,6 +24,7 @@ class ToppingImageTest {
     ) = MyParfaitGroupVO(
         groupId = GroupId(groupId),
         groupName = GroupName("모카의 파르페"),
+        recentToppingType = recentImageUrl?.let { ToppingType.IMAGE },
         recentImageUrl = recentImageUrl,
         recentImageBorder = recentImageBorder,
         recentImageUploadedAt = null,
