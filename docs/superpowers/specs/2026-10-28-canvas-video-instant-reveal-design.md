@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 related_code:
   - feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/util/ToppingVideoTimeline.kt
   - feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/VideoTimelineOptions.kt
