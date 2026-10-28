@@ -48,8 +48,8 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
-- 앵커: `AppSettingViewModel`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 약관 아래 「오픈소스 라이선스」는 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 앵커: `AppSettingViewModel`, `OSS_LICENSE_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
 - ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
@@ -178,7 +178,8 @@
 - ⚠️ 릴리즈 빌드는 minify와 리소스 축소를 켜지만 축소된 산출물을 설치·실행한 기록이 없고 `keep.xml`도 없다. R8 산출물에서 `@NoAuth` keep 규칙이 살아 화이트리스트 요청이 인증 헤더 없이 나가는지도 확인되지 않았다 (OQ-P-308, OQ-P-074)
 - ⚠️ 경량 태그 `1.0.0`에는 develop에 없는 커밋(`feature/debug-mode` 포함)이 들어 있고, 릴리즈 계보를 develop 하나로 둔다는 규칙은 글로 없다. 태그 `1.1.3`은 버전 코드 11만 가리켜 같은 이름의 코드 10 산출물과 이름으로 구별되지 않는다 (OQ-P-311, OQ-P-310)
 - ⚠️ `WithdrawUseCase`가 `LogoutUseCase`를 재사용해 탈퇴가 끝난 계정으로 서버 로그아웃을 한 번 더 보내고, 그 401이 `TokenAuthenticator` 재발급까지 깨워 강제 로그아웃과 화면 이펙트가 같은 목적지로 겹친다 (OQ-P-242)
-- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실리고 앱에 오픈소스 고지 화면이 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실린다. 고지는 S-001이 여는 외부 페이지가 맡고, 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 앱에는 다크 모드가 없지만 `app/src/main/res/values-night/themes.xml`이 있다 — targetSdk 33+ 웹뷰가 테마의 `isLightTheme`로 `prefers-color-scheme`을 정해서, 시스템 다크 모드에서는 공용 웹뷰 페이지만 다크로 그려지게 둔 것이다. 창 배경은 라이트 값으로 고정했다(스플래시·전환 배경)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
 - ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)

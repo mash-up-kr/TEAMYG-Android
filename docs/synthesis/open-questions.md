@@ -5281,8 +5281,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   재사용할 수 있다), 아니면 라이선스 수집 플러그인을 붙여 목록을 자동 생성할지. ② 자동 생성을
   고르면 **번들 폰트는 Gradle 의존이 아니라 리소스 파일이라 그 목록에 안 잡힌다** — 폰트 몫은
   따로 실어야 한다. ③ 사본을 `assets/`나 `res/raw/`로 옮겨 APK에 넣을지, 화면 문구로만 담을지.
-- **상태**: 미해결 (배포 전에 답이 필요한 자리다 — 스토어 배포가 조건을 실제로 발동시킨다)
-- **해소 메모**: 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
+- **상태**: 부분 해소 (① 해소, ③ 잔존)
+- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 남는다 — 그 페이지가 수정본 SUIT와 번들 Line Seed JP·TW의 OFL 사본·수정 고지를 담는지는 저장소 밖이라 코드로 확인할 수 없고, `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
   [s004 스펙](../superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md)·
   [s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md) 항목 목록을 함께 고친다.
   `.gitignore`에 올라간 릴리즈 keystore(OQ-P-305)와 같이 **배포가 가까워지며 드러나는 자리**다.
