@@ -20,6 +20,10 @@ sealed interface YGToppingImage {
     @Immutable
     data class Template(val type: YGToppingTemplate) : YGToppingImage
 
+    /** 마지막 토핑이 텍스트일 때. 다른 이미지와 달리 [YGToppingGroupType.rotation] 을 받지 않는다 */
+    @Immutable
+    data class TextTemplate(val type: YGToppingTextTemplate) : YGToppingImage
+
     @Immutable
     data class Local(@DrawableRes val drawableRes: Int) : YGToppingImage
 
