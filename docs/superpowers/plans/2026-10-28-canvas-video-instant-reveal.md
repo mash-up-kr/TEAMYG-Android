@@ -60,14 +60,14 @@ tags: [plan, parfait, canvas, video]
 **Interfaces:**
 - Produces: `internal fun visibleToppingCount(toppingCount: Int, frameIndex: Int): Int` (`ToppingVideoTimeline.kt`), `VideoTimelineOptions.TOPPING_APPEAR_WINDOW_FRAMES: Int = 45`
 
-- [ ] **Step 0: 스파이크 변경을 되돌린다**
+- [x] **Step 0: 스파이크 변경을 되돌린다**
 
 작업 트리에 커밋되지 않은 스파이크 수정(`POP_OVERSHOOT = 0f`, `POP_START_SCALE = 1f`, 단계식 `toppingPopAlpha`)이 있으면 버린다. 이 Task가 같은 자리를 새로 쓴다.
 
 Run: `git checkout -- feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/VideoTimelineOptions.kt feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/util/ToppingVideoTimeline.kt && git status --short`
 Expected: 출력 없음
 
-- [ ] **Step 1: 테스트를 새 계약으로 바꾼다**
+- [x] **Step 1: 테스트를 새 계약으로 바꾼다**
 
 `ToppingVideoTimelineTest` 에서 `toppingPopProgresses_*`, `toppingPopScale_*`, `toppingPopAlpha_*` 를 지우고 `canvasVideoFrameCount_always_isTwoSeconds` 는 남긴다. 아래를 추가한다.
 
@@ -123,12 +123,12 @@ fun visibleToppingCount_everyFrame_matchesIosBoundary() {
 
 `assertTrue` 를 더 쓰지 않으면 import를 지운다.
 
-- [ ] **Step 2: 실패를 확인한다**
+- [x] **Step 2: 실패를 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*ToppingVideoTimelineTest'`
 Expected: 컴파일 실패 — `Unresolved reference: visibleToppingCount`
 
-- [ ] **Step 3: 구현한다**
+- [x] **Step 3: 구현한다**
 
 `VideoTimelineOptions`:
 - 지운다: `TOPPING_POP_DURATION_SECONDS`, `POP_START_SCALE`, `POP_OVERSHOOT`.
@@ -160,12 +160,12 @@ KDoc에는 float 대신 정수로 비교하는 이유(경계 프레임에서 반
 
 `PlacedTextTopping`: `popProgress` 인자를 지운다. `graphicsLayer` 는 `scaleX = scale`, `scaleY = scale`, `this.alpha = alpha` 로 돌아간다. `toppingPopScale`·`toppingPopAlpha` import를 지운다.
 
-- [ ] **Step 4: 테스트 통과를 확인한다**
+- [x] **Step 4: 테스트 통과를 확인한다**
 
 Run: `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests '*ToppingVideoTimelineTest'`
 Expected: BUILD SUCCESSFUL, 7 tests passed
 
-- [ ] **Step 5: 남은 참조·린트를 확인한다**
+- [x] **Step 5: 남은 참조·린트를 확인한다**
 
 Run: `grep -rn "toppingPop\|popProgress\|POP_START_SCALE\|POP_OVERSHOOT\|TOPPING_POP_DURATION" feature/ ; ./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:ktlintCheck`
 Expected: grep 출력 없음, BUILD SUCCESSFUL
@@ -174,7 +174,7 @@ Expected: grep 출력 없음, BUILD SUCCESSFUL
 
 에뮬레이터·기기가 있으면 앱을 띄워 캔버스 메인에서 토핑·텍스트가 그대로 보이는지, 저장 미리보기에서 「영상으로 저장」을 눌러 갤러리 mp4에서 토핑이 연출 없이 하나씩 나타나는지 본다. 기기가 없으면 수행하지 않았다고 보고한다(OQ-P-429 ①에 이미 남아 있다).
 
-- [ ] **Step 7: 커밋한다**
+- [x] **Step 7: 커밋한다**
 
 ```bash
 git add feature/groups/canvas/impl
@@ -196,31 +196,31 @@ git commit -m "feat: 캔버스 영상에서 토핑이 연출 없이 바로 나�
 **Interfaces:**
 - Consumes: Task 1의 `visibleToppingCount`(앵커 이름)
 
-- [ ] **Step 1: `docs/status.md`**
+- [x] **Step 1: `docs/status.md`**
 
 「캔버스 이미지 저장」의 영상 줄: "차례로 팝인하는" → 연출 없이 차례로 나타난다는 서술, 앵커 `toppingPopProgresses` → `visibleToppingCount`. OQ-P-429 요약 줄의 "·팝인 중 띠 잘림"을 지운다.
 
-- [ ] **Step 2: `docs/synthesis/open-questions.md` OQ-P-429**
+- [x] **Step 2: `docs/synthesis/open-questions.md` OQ-P-429**
 
 ③(팝인 중 알파 < 1로 테두리 띠 잘림)을 지우고 ④⑤⑥을 ③④⑤로 당긴다. 해소 메모의 "①~③" → "①②", "③이 거슬리면 …" 문장을 지운다. 해소 메모의 "④⑤는" → "③④는". 다른 문서가 OQ-P-429 ①만 가리키는 것을 `grep -rn "OQ-P-429" docs` 로 확인한다(①은 번호가 그대로라 고칠 곳이 없어야 한다).
 
-- [ ] **Step 3: `docs/log.md` 에 한 줄 덧붙인다**
+- [x] **Step 3: `docs/log.md` 에 한 줄 덧붙인다**
 
 ```markdown
 ## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
 팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 ③ 소멸
 ```
 
-- [ ] **Step 4: 스펙·계획 README와 스펙 상태**
+- [x] **Step 4: 스펙·계획 README와 스펙 상태**
 
 `docs/superpowers/specs/README.md` 활성 표 맨 위, `docs/superpowers/plans/README.md` 활성 목록에 이 스펙·계획을 한 줄씩 추가한다(형식은 각 표의 기존 행을 따른다). 스펙 frontmatter `status` 를 `in-progress` 로 바꾼다. archive 이동은 develop 머지 뒤라 하지 않는다.
 
-- [ ] **Step 5: 링크를 확인한다**
+- [x] **Step 5: 링크를 확인한다**
 
 Run: `python3 docs/script/check_links.py docs`
 Expected: exit 0
 
-- [ ] **Step 6: 커밋한다**
+- [x] **Step 6: 커밋한다**
 
 ```bash
 git add docs

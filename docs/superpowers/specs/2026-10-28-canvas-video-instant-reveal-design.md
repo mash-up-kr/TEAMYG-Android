@@ -44,11 +44,11 @@ related_code:
   토핑 `order` 는 `order * 등장구간프레임 <= frameIndex * toppingCount` 일 때 보인다(등장 구간 1.5초 × 30fps
   = 45프레임). **정수 비교**라 float 경계 오차가 없고, 시작 프레임에 바로 보인다 — 스파이크의 1프레임
   지연이 사라진다.
-- 경로의 `toppingPopProgresses: List<Float>?` / `popProgress: Float` 를 `visibleToppingCount: Int?` /
+- 경로의 `toppingPopProgresses: List<Float>?` / `popProgress: Float` 를 녹화 프레임 `videoFrameIndex: Int?` /
   `visible: Boolean` 으로 바꾼다. `null` 이면 전부 보인다(녹화가 아닌 모든 자리).
 - 숨김은 `graphicsLayer` 의 `alpha = 0f` 로 한다. 컴포지션은 유지한다(반목표 참고).
-- **fallback**: 레이어 수가 `toppingCount` 와 어긋나도 마지막 프레임에는 전부 보여야 한다. 지금의
-  `getOrNull(index) ?: 1f` 와 같은 성질을 지킨다 — 개수를 넘는 인덱스가 끝까지 숨지 않게 한다.
+- **마지막 프레임 전부 보임**: `CanvasToppingLayer` 가 프레임을 받아 개수를 자기 레이어 목록 길이로
+  센다. 호출부가 개수를 따로 세지 않으므로 길이가 어긋날 수 없다.
 - 지운다: `TOPPING_POP_DURATION_SECONDS` · `POP_START_SCALE` · `POP_OVERSHOOT` · `toppingPopScale` ·
   `toppingPopAlpha`, 그리고 그것들을 검사하던 테스트.
 - 문서: `docs/status.md` 영상 서술의 "팝인", OQ-P-429 ③(팝인 중 알파 < 1로 테두리 띠 잘림 — 원인이 사라짐)
@@ -56,5 +56,4 @@ related_code:
 
 ## 빌더에게 남긴 것
 
-- fallback을 구현하는 방식(레이어 목록 길이 기준 보정이든, 인덱스 클램프든).
-- `CanvasTopping` 의 `graphicsLayer` 에서 테두리 띠 잘림을 피하려 진행 중에만 걸던 분기 정리.
+없음.
