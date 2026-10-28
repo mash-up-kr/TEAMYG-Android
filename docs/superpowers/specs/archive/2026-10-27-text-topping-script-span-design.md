@@ -1,10 +1,10 @@
 ---
 id: text-topping-script-span
 title: 텍스트 토핑 글꼴·자간 구간 분기 (Per-run script SpanStyle)
-status: draft
+status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-10-27
+verified: 2026-10-28
 related_code:
   - TextToppingScript.kt#TextToppingScript
   - TextToppingScriptRuns.kt#textToppingScriptRuns

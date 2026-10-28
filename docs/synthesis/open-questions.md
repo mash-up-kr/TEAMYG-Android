@@ -7866,7 +7866,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-27] iOS가 텍스트 토핑의 글꼴 구간 규칙을 따를지
 
 - **ID**: OQ-P-456
-- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
+- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
 - **항목**: Android는 글자 구간마다 글꼴·자간을 고르고 한자는 가나 유무로 JP·TW 순서를 정한다. iOS가 같은 규칙을 따를지 정하지 않았다. 다르면 같은 토핑의 글꼴과 줄바꿈이 플랫폼마다 달라진다.
 - **상태**: 미해결
 - **해소 메모**: iOS와 구간 규칙(가나 판정 범위, 한자 우선순위, 중립 문자 처리)을 맞춘다.
