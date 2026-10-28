@@ -54,7 +54,7 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     [open-questions](../synthesis/open-questions.md) OQ-P-336.
 
 [^v2list]: 앱의 목록 갱신은 v2를 부르고(`getParfaitGroupsV2`), v1 Service 메서드와 DTO는 `@Deprecated`로 남겼다.
-    G-001은 `recentToppingType == TEXT`면 `recentImageUrl`과 무관하게 텍스트 템플릿을 그린다(`toToppingImage`).
+    G-001은 `recentToppingType == TEXT`면 `recentImageUrl`과 무관하게 텍스트 템플릿을 그린다(`toToppingImage`, 기획 미확인 OQ-P-459).
     모르는 종류(`UNKNOWN`)는 이미지가 없으면 일반 템플릿으로 접힌다.
     위 두 각주(`recentImageUploadedAt` 파싱, `recentImageUrl`의 뜻)는 v2에도 그대로 해당한다.
 

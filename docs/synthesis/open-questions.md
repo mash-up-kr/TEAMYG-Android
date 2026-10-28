@@ -7890,9 +7890,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
 
 - **ID**: OQ-P-459
-- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/parfait-groups`·GET `/api/v2/parfait-groups` × `ParfaitGroupRemoteDataSource#getMyGroups` · `feature/groups/list/impl/util/ToppingImage.kt`
-- **항목**: ① 그룹 목록이 v1이라 텍스트 토핑을 세지 않았다. ② 목록이 v2로 바뀐 뒤에는 오늘 가장 최근 토핑이 텍스트면 오늘 이미지가 있어도 `recentImageUrl`이 `null`이다. G-001(`toToppingImage`)은 `MyParfaitGroupVO.recentToppingType`을 읽지 않아 그 그룹을 템플릿 그래픽으로 그린다. 경과 시간·칩·순서는 텍스트를 포함한 값이다.
-- **상태**: 해소됨
-- **해소 메모**: ①은 data 계층이 v2(`getParfaitGroupsV2`)로 옮기고 v1을 `@Deprecated`로 남겨 닫았다. ②는 G-001이 `recentToppingType == TEXT`면 텍스트 템플릿 2종(`YGToppingTextTemplate`) 중 groupId로 고른 하나를 회전 없이 그리는 것으로 닫았다.
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/v2/parfait-groups` × `feature/groups/list/impl/util/ToppingImage.kt#toToppingImage` · `YGToppingImage.TextTemplate` · 위키 `concepts/infinite-parfait.md`(빈 토핑 템플릿·토핑 회전·상대 시간 절)
+- **항목**: G-001이 텍스트 토핑을 다루는 방식이 기획 근거 없이 앱이 정한 값이다. 위키에는 텍스트 토핑 정책이 없다. ① 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종 중 하나를 띄운다. 위키는 템플릿을 "아직 아무도 토핑을 올리지 않은 그룹"에만 쓴다. ② 텍스트 템플릿만 카드 회전을 받지 않는다. 위키는 템플릿도 일반 토핑과 같은 지그재그·회전 규칙을 따른다고 적는다. ③ 텍스트 템플릿을 groupId로 고정해 고른다. 일반 템플릿의 "무작위 최초 부여·고정" 규칙이 여기도 적용되는지 정해지지 않았다. ④ 경과 시간·마지막 토퍼 칩·정렬이 텍스트를 포함한 마지막 토핑 기준이다(서버 v2). 위키의 "활동" 목록에 텍스트 토핑이 없다.
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
 <!-- oq-next: 460 -->

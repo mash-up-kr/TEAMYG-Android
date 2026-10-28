@@ -355,7 +355,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 | `canvasCutCornerShape()` | `shape/` | [designsystem-canvas-components](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md) |
 | `ygBackgroundDotGrid()`(Modifier) | `component/ygbackgrounddotgrid/` | [c001-canvas-main](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md) |
 | `YGGrouptagChip`(+`YGGrouptagChipType`) | `component/yggrouptagchip/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
-| `YGToppingGroup`(+`YGToppingGroupType`·`YGToppingImage`·`YGToppingTemplate`) | `component/ygtoppinggroup/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
+| `YGToppingGroup`(+`YGToppingGroupType`·`YGToppingImage`·`YGToppingTemplate`·`YGToppingTextTemplate`) | `component/ygtoppinggroup/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
 | `YGToppingCutoutImage` — 위 `YGToppingImage`와 **다른 물건**(아래 항목), #334 develop 머지 | `component/ygtoppingcutout/` | [ADR-0025](../adr/0025-topping-border-as-server-field.md) · [c106-topping-place-api](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md) |
 | `YGScreen` / `YGScaffold`(+`YGScreenScope`·`OnBack`) | `screen/` | [designsystem-ygscreen-scaffold](../superpowers/specs/archive/2026-07-20-designsystem-ygscreen-scaffold.md) (위 "화면 컨테이너") |
 
