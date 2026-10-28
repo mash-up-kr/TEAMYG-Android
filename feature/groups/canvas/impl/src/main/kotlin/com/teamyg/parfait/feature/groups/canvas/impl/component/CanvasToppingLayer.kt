@@ -58,6 +58,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
+import com.teamyg.parfait.feature.groups.canvas.impl.util.visibleToppingCount
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -90,12 +91,8 @@ internal fun CanvasToppingLayer(
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
-    /**
-     * 앞에서부터 보이는 토핑 수. 이미지와 텍스트를 [canvasLayerOrder] 로 합친 순서다. `null` 이면 전부 보인다.
-     *
-     * 이 레이어에 넘긴 [toppings]·[texts] 의 합으로 세야 한다.
-     */
-    visibleToppingCount: Int? = null,
+    /** 타임랩스 녹화 프레임. 이 프레임까지 등장한 토핑만 보인다. `null` 이면 전부 보인다 */
+    videoFrameIndex: Int? = null,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -113,6 +110,8 @@ internal fun CanvasToppingLayer(
         val entriesById = entries.associateBy { it.topping.parfaitImageId.value }
         val layers = remember(toppings, texts) { canvasLayerOrder(images = toppings, texts = texts) }
         val spotlighted = layers.firstOrNull { it.key == spotlightedKey }
+        // 개수를 레이어 목록 길이로 세야 마지막 프레임에 전부 보인다
+        val visibleCount = videoFrameIndex?.let { visibleToppingCount(toppingCount = layers.size, frameIndex = it) }
 
         // scale 을 곱하기 전 크기다
         val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
@@ -150,7 +149,7 @@ internal fun CanvasToppingLayer(
                             onClickTopping = onClickTopping,
                             onClickText = onClickText,
                             onTextBoxSizeChange = { id, size -> textBoxSizes[id] = size },
-                            visible = visibleToppingCount == null || index < visibleToppingCount,
+                            visible = visibleCount == null || index < visibleCount,
                         )
                     }
                 }
@@ -319,6 +318,7 @@ private fun CanvasText(
         canvasWidth = canvasWidth,
         onBoxSizeChange = onBoxSizeChange,
         onClick = onClick.takeIf { clickable },
+        // 텍스트는 테두리 띠가 없어 보일 때도 alpha 를 걸어도 잘리지 않는다
         alpha = if (visible) 1f else 0f,
     )
 }
