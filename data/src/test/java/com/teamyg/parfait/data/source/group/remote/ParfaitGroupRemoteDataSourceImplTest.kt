@@ -9,7 +9,7 @@ import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberRe
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.model.topping.ToppingType
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -254,7 +254,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
         val group = dataSource.getMyGroups().getOrNull()?.single()
 
         // Then 종류는 이미지이고 URL 이 그대로 실린다
-        assertEquals(ToppingType.IMAGE, group?.recentToppingType)
+        assertEquals(ToppingContentType.IMAGE, group?.recentToppingType)
         assertEquals("https://cdn.example.com/a.png", group?.recentImageUrl)
     }
 
@@ -268,7 +268,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
         val result = dataSource.getMyGroups()
 
         // Then 대소문자를 맞춰 주지 않고 UNKNOWN 으로 접는다
-        assertEquals(ToppingType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
+        assertEquals(ToppingContentType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
     }
 
     @Test
@@ -281,7 +281,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
         val group = dataSource.getMyGroups().getOrNull()?.single()
 
         // Then 종류는 텍스트이고 이미지는 없다
-        assertEquals(ToppingType.TEXT, group?.recentToppingType)
+        assertEquals(ToppingContentType.TEXT, group?.recentToppingType)
         assertNull(group?.recentImageUrl)
     }
 
@@ -295,7 +295,7 @@ class ParfaitGroupRemoteDataSourceImplTest {
         val result = dataSource.getMyGroups()
 
         // Then 조회는 성공하고 종류는 UNKNOWN 으로 접힌다
-        assertEquals(ToppingType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
+        assertEquals(ToppingContentType.UNKNOWN, result.getOrNull()?.single()?.recentToppingType)
     }
 
     @Test

@@ -25,7 +25,7 @@ import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
-import com.teamyg.parfait.domain.model.topping.ToppingType
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toInstant
 
@@ -47,8 +47,8 @@ internal fun MyParfaitGroupV2Response.toMyParfaitGroupVO(): MyParfaitGroupVO = M
     lastPlacedByNametagChip = lastPlacedByNameTagChip.toNametagChipType(),
 )
 
-private fun String.toToppingType(): ToppingType =
-    ToppingType.entries.firstOrNull { it.name == this } ?: ToppingType.UNKNOWN
+private fun String.toToppingType(): ToppingContentType =
+    ToppingContentType.entries.firstOrNull { it.name == this } ?: ToppingContentType.UNKNOWN
 
 internal fun MyParfaitGroupDetailResponse.toParfaitGroupDetailVO(): ParfaitGroupDetailVO = ParfaitGroupDetailVO(
     groupId = GroupId(groupId),

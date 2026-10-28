@@ -10,7 +10,7 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.model.topping.ToppingType
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -23,7 +23,7 @@ class ToppingImageTest {
         groupId: Long,
         recentImageUrl: String?,
         recentImageBorder: ToppingBorder = ToppingBorder.None,
-        recentToppingType: ToppingType? = recentImageUrl?.let { ToppingType.IMAGE },
+        recentToppingType: ToppingContentType? = recentImageUrl?.let { ToppingContentType.IMAGE },
     ) = MyParfaitGroupVO(
         groupId = GroupId(groupId),
         groupName = GroupName("모카의 파르페"),
@@ -165,7 +165,7 @@ class ToppingImageTest {
     @Test
     fun textRecentTopping_isTextTemplate() {
         // Given 오늘 마지막 토핑이 텍스트라 이미지가 비어 온 그룹
-        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingContentType.TEXT)
 
         // When 띄울 이미지를 고른다
         val image = group.toToppingImage(emptyMap())
@@ -180,7 +180,7 @@ class ToppingImageTest {
         val group = group(
             groupId = 1L,
             recentImageUrl = "https://cdn.example.com/a.png",
-            recentToppingType = ToppingType.TEXT,
+            recentToppingType = ToppingContentType.TEXT,
         )
 
         // When 띄울 이미지를 고른다
@@ -194,11 +194,15 @@ class ToppingImageTest {
     fun textRecentTopping_sameGroupKeepsSameTemplateAndGroupsSplitAcrossBoth() {
         // Given 텍스트가 마지막인 그룹들
         val templates = (1L..4L).map { id ->
-            group(groupId = id, recentImageUrl = null, recentToppingType = ToppingType.TEXT).toToppingImage(emptyMap())
+            group(
+                groupId = id,
+                recentImageUrl = null,
+                recentToppingType = ToppingContentType.TEXT,
+            ).toToppingImage(emptyMap())
         }
 
         // When 같은 그룹을 다시 그린다
-        val again = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+        val again = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingContentType.TEXT)
             .toToppingImage(emptyMap())
 
         // Then 같은 그룹은 같은 템플릿이고, 두 템플릿이 모두 쓰인다
@@ -209,7 +213,7 @@ class ToppingImageTest {
     @Test
     fun textTemplate_doesNotFollowCardRotation() {
         // Given 텍스트가 마지막인 그룹과 오늘 토핑이 없는 그룹
-        val text = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+        val text = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingContentType.TEXT)
         val empty = group(groupId = 1L, recentImageUrl = null)
 
         // When 띄울 이미지를 고른다
@@ -228,7 +232,7 @@ class ToppingImageTest {
             groupId = 1L,
             recentImageUrl = "https://cdn.example.com/a.png",
             recentImageBorder = ToppingBorder.Solid(color = "#FF0000", width = 6.0),
-            recentToppingType = ToppingType.TEXT,
+            recentToppingType = ToppingContentType.TEXT,
         )
 
         // When 테두리를 그릴 URL 을 모은다
@@ -241,7 +245,7 @@ class ToppingImageTest {
     @Test
     fun unknownRecentTopping_withoutImage_isTemplate() {
         // Given 앱이 모르는 종류가 마지막이라 이미지가 없는 그룹
-        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.UNKNOWN)
+        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingContentType.UNKNOWN)
 
         // When 띄울 이미지를 고른다
         val image = group.toToppingImage(emptyMap())

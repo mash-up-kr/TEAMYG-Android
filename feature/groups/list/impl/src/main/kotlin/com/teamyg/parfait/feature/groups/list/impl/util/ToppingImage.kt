@@ -10,7 +10,6 @@ import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.model.topping.ToppingType
 
 // TODO(토핑 템플릿): 정책은 그룹 생성 시 6종 중 하나를 무작위로 골라 고정하는 것이다.
 //  서버가 그 값을 내려주면 groupId 파생을 걷어낸다
@@ -25,7 +24,7 @@ private val TEXT_TOPPING_TEMPLATES = YGToppingTextTemplate.entries
  * 목록 순서가 바뀌어도 같은 그림이 걸리도록 index 가 아니라 groupId 로 고른다.
  */
 internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutline>): YGToppingImage {
-    if (recentToppingType == ToppingType.TEXT) {
+    if (isTextTopping()) {
         return YGToppingImage.TextTemplate(TEXT_TOPPING_TEMPLATES[groupId.value.mod(TEXT_TOPPING_TEMPLATES.size)])
     }
 
@@ -41,8 +40,10 @@ internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutlin
 
 /** 거리판은 비싸서 테두리를 실제로 그릴 토핑만 뜬다 */
 internal fun List<MyParfaitGroupVO>.borderedImageUrls(): List<String> = mapNotNull { group ->
-    group.recentImageUrl?.takeIf { group.recentToppingType != ToppingType.TEXT && group.drawableBorder() != null }
+    group.recentImageUrl?.takeIf { !group.isTextTopping() && group.drawableBorder() != null }
 }
+
+private fun MyParfaitGroupVO.isTextTopping(): Boolean = recentToppingType?.isText() == true
 
 private fun MyParfaitGroupVO.drawableBorder(): Pair<Color, Double>? {
     val solid = recentImageBorder as? ToppingBorder.Solid ?: return null

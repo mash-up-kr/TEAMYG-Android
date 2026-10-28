@@ -2,14 +2,14 @@ package com.teamyg.parfait.domain.model.group
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.model.topping.ToppingType
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import kotlin.time.Instant
 
 data class MyParfaitGroupVO(
     val groupId: GroupId,
     val groupName: GroupName,
     /** 오늘 캔버스의 마지막 토핑 종류. `null` 은 오늘 토핑 없음이다(api/parfait-group.md GET /api/v2/parfait-groups). */
-    val recentToppingType: ToppingType?,
+    val recentToppingType: ToppingContentType?,
     val recentImageUrl: String?,
     val recentImageBorder: ToppingBorder,
     /**

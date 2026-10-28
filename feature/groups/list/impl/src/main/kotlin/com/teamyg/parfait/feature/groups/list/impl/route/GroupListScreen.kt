@@ -40,7 +40,7 @@ import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
 import com.teamyg.parfait.domain.model.group.NametagChipType
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
-import com.teamyg.parfait.domain.model.topping.ToppingType
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import com.teamyg.parfait.feature.groups.list.impl.R
 import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroPhase
 import com.teamyg.parfait.feature.groups.list.impl.model.GroupListEmptyIntroState
@@ -267,7 +267,7 @@ private class GroupListScreenPreviewParameterProvider :
         MyParfaitGroupVO(
             groupId = GroupId(1L),
             groupName = GroupName("매시업"),
-            recentToppingType = ToppingType.IMAGE,
+            recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1025/200",
             recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = Instant.parse("2026-08-15T09:57:00Z"),
@@ -276,7 +276,7 @@ private class GroupListScreenPreviewParameterProvider :
         MyParfaitGroupVO(
             groupId = GroupId(2L),
             groupName = GroupName("매시업매시업매시업"),
-            recentToppingType = ToppingType.IMAGE,
+            recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1062/200",
             recentImageBorder = ToppingBorder.None,
             recentImageUploadedAt = Instant.parse("2026-08-15T08:00:00Z"),
