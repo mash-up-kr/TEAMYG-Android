@@ -16,7 +16,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -25,17 +24,19 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZ
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingScript
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.model.detectTextToppingScript
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingAnnotatedString
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingFontSizeSp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 
-/** 편집 필드와 읽기 전용 렌더러가 같은 값을 써야 줄바꿈이 맞는다 */
+/**
+ * 편집 필드와 읽기 전용 렌더러가 같은 값을 써야 줄바꿈이 맞는다.
+ *
+ * 글꼴·자간은 placeholder 처럼 구간이 없는 텍스트를 위해 [TextToppingScript.DEFAULT] 구간 스타일을 깐다.
+ */
 @Composable
 @ReadOnlyComposable
-internal fun textToppingBaseStyle(script: TextToppingScript): TextStyle = YGTheme.typography.body.b01R.copy(
-    fontFamily = script.fontFamily,
-    letterSpacing = script.letterSpacingEm.em,
-)
+internal fun textToppingBaseStyle(): TextStyle = YGTheme.typography.body.b01R
+    .merge(TextToppingScript.DEFAULT.spanStyle)
 
 /**
  * C-106 배치 모드가 키보드를 내린 뒤 보여 주는 크기·줄바꿈·박스와 같아야 한다.
@@ -58,7 +59,6 @@ internal fun TextToppingContent(
     }
 
     CompositionLocalProvider(LocalDensity provides fixedFontScaleDensity) {
-        val script = remember(text) { detectTextToppingScript(text) }
         val fontSizeSp = textToppingFontSizeSp(designFontSize = designFontSize, canvasWidth = canvasWidth)
 
         TextToppingBackground(
@@ -69,8 +69,8 @@ internal fun TextToppingContent(
         ) {
             // 너비 상한만 주면 Text 는 한 줄 자연 폭과 상한 중 작은 쪽으로 감싼다 — C-106 의 hug 폭과 같다
             BasicText(
-                text = text,
-                style = textToppingBaseStyle(script)
+                text = remember(text) { textToppingAnnotatedString(text) },
+                style = textToppingBaseStyle()
                     .withTextToppingSizing(fontSizeSp)
                     .copy(color = color.contentColor, textAlign = align),
                 modifier = Modifier.widthIn(

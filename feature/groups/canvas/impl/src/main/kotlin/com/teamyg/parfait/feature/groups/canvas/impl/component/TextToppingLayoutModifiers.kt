@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
@@ -27,7 +28,7 @@ internal class TextToppingAutoFit(
 /** 세로 예산을 넘으면 글자 크기와 래핑 폭을 같은 비율로 줄인다 — 줄바꿈 위치는 그대로다 */
 internal fun fitTextToppingToHeight(
     textMeasurer: TextMeasurer,
-    text: String,
+    text: AnnotatedString,
     baseStyle: TextStyle,
     maxWidthPx: Int,
     maxWidthDp: Dp,
