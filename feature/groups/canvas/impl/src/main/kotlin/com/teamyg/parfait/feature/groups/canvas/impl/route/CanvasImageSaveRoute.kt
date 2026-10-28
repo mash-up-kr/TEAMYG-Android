@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -33,7 +34,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasCaptureHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasVideoSourceHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.recordCanvasVideo
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopProgresses
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
@@ -58,7 +58,7 @@ internal fun CanvasImageSaveRoute(
 
     var isRecordingVideo by remember { mutableStateOf(false) }
     val recordLayer = rememberGraphicsLayer()
-    var recordPopProgresses by remember { mutableStateOf(emptyList<Float>()) }
+    var recordFrameIndex by remember { mutableIntStateOf(0) }
     // 배경과 토핑을 접은 신호다. 접는 일은 녹화 레이어가 한다
     var recordLoadState by remember { mutableStateOf(CanvasLoadState.Loading) }
 
@@ -96,10 +96,7 @@ internal fun CanvasImageSaveRoute(
                     frameCount = VideoTimelineOptions.FRAME_COUNT,
                     captureLayer = recordLayer,
                 ) { frameIndex ->
-                    recordPopProgresses = toppingPopProgresses(
-                        toppingCount = videoSource.toppings.size + videoSource.texts.size,
-                        frameIndex = frameIndex,
-                    )
+                    recordFrameIndex = frameIndex
                     // 상태를 세운 뒤 그려질 때까지 기다린다. **두 번**인 이유: awaiter 는
                     // Choreographer 의 ANIMATION 콜백에서 깨는데 draw 는 그 뒤 TRAVERSAL 에서
                     // 돈다 — 한 번이면 매 프레임이 한 칸씩 밀린다
@@ -149,7 +146,7 @@ internal fun CanvasImageSaveRoute(
                 toppings = videoSource.toppings,
                 texts = videoSource.texts,
                 background = videoSource.background,
-                toppingPopProgresses = recordPopProgresses,
+                frameIndex = recordFrameIndex,
                 canvasWidth = videoSource.canvasWidth,
                 canvasHeight = videoSource.canvasHeight,
                 targetWidthPx = VideoRecordOptions.WIDTH_PX,

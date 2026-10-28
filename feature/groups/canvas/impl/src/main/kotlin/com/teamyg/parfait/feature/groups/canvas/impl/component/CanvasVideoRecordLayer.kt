@@ -47,7 +47,7 @@ internal fun CanvasVideoRecordLayer(
     toppings: List<CanvasToppingVO>,
     texts: List<CanvasTextToppingVO>,
     background: YGCanvasBackground?,
-    toppingPopProgresses: List<Float>,
+    frameIndex: Int,
     canvasWidth: Dp,
     canvasHeight: Dp,
     targetWidthPx: Int,
@@ -121,7 +121,7 @@ internal fun CanvasVideoRecordLayer(
                 // 차례로 등장하는 것이 이 영상의 전부다. 한꺼번에 드러내는 빗장을 걸면 안 된다
                 revealTogether = false,
                 retryKey = retryKey,
-                toppingPopProgresses = toppingPopProgresses,
+                videoFrameIndex = frameIndex,
                 onLoadStateChange = { toppingState = it },
                 modifier = Modifier.requiredSize(width = canvasWidth, height = canvasHeight),
             )

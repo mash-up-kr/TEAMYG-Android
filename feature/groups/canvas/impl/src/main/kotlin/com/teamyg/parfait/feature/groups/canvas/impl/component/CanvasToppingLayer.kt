@@ -58,8 +58,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextAlign
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopAlpha
-import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingPopScale
+import com.teamyg.parfait.feature.groups.canvas.impl.util.visibleToppingCount
 
 /**
  * 저장된 배치대로 토핑을 얹는다. [modifier] 로 Canvas-Area 와 같은 크기를 잡아 줘야 한다 —
@@ -92,12 +91,8 @@ internal fun CanvasToppingLayer(
     revealTogether: Boolean = true,
     revealResetKey: Any? = Unit,
     retryKey: Int = 0,
-    /**
-     * 토핑별 팝인 진행도(0~1). 이미지와 텍스트를 [canvasLayerOrder] 로 합친 순서다. `null` 이면 전부 다 보인다.
-     *
-     * 타임랩스 녹화가 프레임마다 이 값을 갈아 토핑이 차례로 튀어나오게 만든다.
-     */
-    toppingPopProgresses: List<Float>? = null,
+    /** 타임랩스 녹화 프레임. 이 프레임까지 등장한 토핑만 보인다. `null` 이면 전부 보인다 */
+    videoFrameIndex: Int? = null,
     onLoadStateChange: (CanvasLoadState) -> Unit = {},
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -115,6 +110,8 @@ internal fun CanvasToppingLayer(
         val entriesById = entries.associateBy { it.topping.parfaitImageId.value }
         val layers = remember(toppings, texts) { canvasLayerOrder(images = toppings, texts = texts) }
         val spotlighted = layers.firstOrNull { it.key == spotlightedKey }
+        // 개수를 레이어 목록 길이로 세야 마지막 프레임에 전부 보인다
+        val visibleCount = videoFrameIndex?.let { visibleToppingCount(toppingCount = layers.size, frameIndex = it) }
 
         // scale 을 곱하기 전 크기다
         val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
@@ -142,8 +139,7 @@ internal fun CanvasToppingLayer(
             layers.forEachIndexed { index, layer ->
                 if (layer.key != spotlightedKey) {
                     key(layer.key) {
-                        // 목록이 이미 겹침 순서, 즉 배치 순서라 인덱스가 곧 등장 순서다.
-                        // 이미지가 덜 모여 길이가 어긋난 프레임에서는 다 보이는 쪽으로 접는다
+                        // 목록이 겹침 순서라 인덱스가 곧 등장 순서다
                         CanvasLayer(
                             layer = layer,
                             entriesById = entriesById,
@@ -153,7 +149,7 @@ internal fun CanvasToppingLayer(
                             onClickTopping = onClickTopping,
                             onClickText = onClickText,
                             onTextBoxSizeChange = { id, size -> textBoxSizes[id] = size },
-                            popProgress = toppingPopProgresses?.getOrNull(index) ?: 1f,
+                            visible = visibleCount == null || index < visibleCount,
                         )
                     }
                 }
@@ -188,7 +184,7 @@ internal fun CanvasToppingLayer(
                         onClickTopping = onClickTopping,
                         onClickText = onClickText,
                         onTextBoxSizeChange = { id, size -> textBoxSizes[id] = size },
-                        popProgress = 1f,
+                        visible = true,
                     )
                 }
             }
@@ -240,7 +236,7 @@ private fun CanvasLayer(
     onClickTopping: (CanvasToppingVO) -> Unit,
     onClickText: (CanvasTextToppingVO) -> Unit,
     onTextBoxSizeChange: (parfaitTextId: Long, size: IntSize) -> Unit,
-    popProgress: Float,
+    visible: Boolean,
 ) {
     when (layer) {
         is CanvasLayerItem.Image -> entriesById[layer.topping.parfaitImageId.value]?.let { entry ->
@@ -250,7 +246,7 @@ private fun CanvasLayer(
                 canvasHeight = canvasHeight,
                 onClick = { onClickTopping(entry.topping) },
                 clickable = clickable,
-                popProgress = popProgress,
+                visible = visible,
             )
         }
 
@@ -261,7 +257,7 @@ private fun CanvasLayer(
             onClick = { onClickText(layer.text) },
             clickable = clickable,
             onBoxSizeChange = { size -> onTextBoxSizeChange(layer.text.parfaitTextId.value, size) },
-            popProgress = popProgress,
+            visible = visible,
         )
     }
 }
@@ -301,7 +297,7 @@ private fun CanvasText(
     onClick: () -> Unit,
     clickable: Boolean,
     onBoxSizeChange: (IntSize) -> Unit,
-    popProgress: Float = 1f,
+    visible: Boolean = true,
 ) {
     val transform = text.transform
 
@@ -322,7 +318,8 @@ private fun CanvasText(
         canvasWidth = canvasWidth,
         onBoxSizeChange = onBoxSizeChange,
         onClick = onClick.takeIf { clickable },
-        popProgress = popProgress,
+        // 텍스트는 테두리 띠가 없어 보일 때도 alpha 를 걸어도 잘리지 않는다
+        alpha = if (visible) 1f else 0f,
     )
 }
 
@@ -344,7 +341,7 @@ private fun CanvasTopping(
     canvasHeight: Dp,
     onClick: () -> Unit,
     clickable: Boolean,
-    popProgress: Float = 1f,
+    visible: Boolean = true,
 ) {
     val transform = entry.topping.transform
     val side = toppingLongSide(canvasWidth = canvasWidth, scale = transform.scale.toFloat())
@@ -364,13 +361,8 @@ private fun CanvasTopping(
             .requiredSize(side)
             .graphicsLayer {
                 rotationZ = transform.rotation.toFloat()
-                // 테두리 띠가 상자 밖으로 나가는데 alpha < 1 이면 그만큼 잘린다 — 진행 중에만 건다
-                if (popProgress < 1f) {
-                    val pop = toppingPopScale(popProgress)
-                    scaleX = pop
-                    scaleY = pop
-                    alpha = toppingPopAlpha(popProgress)
-                }
+                // alpha 를 걸면 상자 밖 테두리 띠가 잘린다 — 숨길 때만 건다
+                if (!visible) alpha = 0f
             }.then(
                 // 판정은 레이어가 하지만, 접근성 서비스에는 토핑이 개별 버튼으로 보여야 한다
                 if (clickable) {

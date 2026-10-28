@@ -139,7 +139,7 @@
 ## 캔버스 이미지 저장
 - 상태: 날짜바의 저장 아이콘(오늘·지난 캔버스 모두, 빈 안내판이 없을 때만)을 누르면 `CanvasMainRoute`가 `YGCanvas` 프레임의 GraphicsLayer를 캡처해 고정 이름 캐시 PNG로 굽고 비트맵은 `CanvasCaptureHolder`에 실어 ViewModel 없는 미리보기로 보낸다. 미리보기에서 확정하면 결과 버스로 경로만 돌려주고, 캔버스 메인이 그 파일을 다시 읽어(API 28 이하는 쓰기 권한을 물은 뒤) `SaveCanvasToGalleryUseCase` → `GalleryMediaProvider`로 MediaStore에 PNG를 쓰고 결과를 캔버스 프레임 토스트로 알린다.
 - 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`
-- 영상: 같은 미리보기의 「영상으로 저장」이 토핑이 `positionZ` 순서로 차례로 팝인하는 2초 mp4(1080×1920)를 만든다. 캔버스 메인이 미리보기를 열 때 `CanvasVideoSourceHolder`에 토핑·배경·Canvas-Area dp를 넣고, 미리보기 Route가 `CanvasVideoRecordLayer`를 화면에 그리지 않고 띄워 프레임마다 읽어 `Mp4VideoEncoder`로 캐시에 쓴 뒤 경로를 결과로 돌려준다. 갤러리 저장(`SaveCanvasVideoToGalleryUseCase`)과 토스트는 이미지와 같은 길을 탄다. 앵커: `toppingPopProgresses`, `recordCanvasVideo`, `CanvasSaveResult`
+- 영상: 같은 미리보기의 「영상으로 저장」이 토핑이 `positionZ` 순서로 연출 없이 차례로 나타나는 2초 mp4(1080×1920)를 만든다. 캔버스 메인이 미리보기를 열 때 `CanvasVideoSourceHolder`에 토핑·배경·Canvas-Area dp를 넣고, 미리보기 Route가 `CanvasVideoRecordLayer`를 화면에 그리지 않고 띄워 프레임마다 읽어 `Mp4VideoEncoder`로 캐시에 쓴 뒤 경로를 결과로 돌려준다. 갤러리 저장(`SaveCanvasVideoToGalleryUseCase`)과 토스트는 이미지와 같은 길을 탄다. 앵커: `visibleToppingCount`, `recordCanvasVideo`, `CanvasSaveResult`
 - ⚠️ 영상 저장은 실기기에서 뽑아 본 적이 없고, 타임라인·해상도·문구는 정책 원본 없이 iOS 구현 값을 따랐다 (OQ-P-429). 녹화 밀도에서 테두리 판 캐시가 미스된다 (OQ-P-433)
 - ⚠️ 캡처는 지금 그려진 것을 그대로 복사해 배경 이미지가 아직 안 왔으면 배경 없이 담기고, 해상도도 기기 화면 크기에 종속된다 (OQ-P-272)
 - ⚠️ 캡처 파일 이름이 고정이고 지우는 호출이 없으며, 홀더도 한 장만 들어 연달아 캡처하면(푸시로 다른 그룹 캔버스에 갔다 오는 경우 포함) 미리보기가 다른 그림을 원래 날짜 라벨과 함께 보여 준다. 읽기·결과 왕복·미리보기 화면에 테스트가 없다 (OQ-P-365)
@@ -219,7 +219,7 @@
 - OQ-P-458 — 텍스트 토핑 글꼴 구간 분기(가나·한자 글꼴, 한글 IME 연타, JP·TW 경계 자간)를 실기기로 본 적이 없다
 - OQ-P-425 — 누끼 편집(C-104) 개편을 피그마·실기기와 나란히 본 적이 없다
 - OQ-P-426 — G-001-Empty 안내 애니메이션의 타이밍과 TalkBack 동작을 에뮬레이터·실기기로 확인한 기록이 없다
-- OQ-P-429 — 캔버스 타임랩스 영상을 실기기에서 뽑아 본 적이 없다(재생·생성 시간·마지막 프레임 테두리 비율·팝인 중 띠 잘림). 테두리 판 캐시 미스(OQ-P-433)도 같이 본다
+- OQ-P-429 — 캔버스 타임랩스 영상을 실기기에서 뽑아 본 적이 없다(재생·생성 시간·마지막 프레임 테두리 비율). 테두리 판 캐시 미스(OQ-P-433)도 같이 본다
 - OQ-P-438 — C-103 「직접 선택」 얼럿이 편집 화면에서 돌아올 때 다시 뜨는 동작을 실기기로 본 적이 없다
 - OQ-P-400·OQ-P-410 — 긴 변 4096px(`DecodeSize.LONG_SIDE_LIMIT`)을 넘는 사진으로 C-103·C-104의 그리기 크래시가 사라졌는지 실기기로 확인하지 않았다(세그멘테이션 실기기 항목에 함께 묶인다)
 - ADR-0031 — 액션 이벤트는 일부만 실기기 DebugView로 도착을 확인했고(`canvas_calendar_date_tapped`·`canvas_topping_editor_checked`·`canvas_save_gallery_saved`), 나머지와 뒤로 가기 복귀·Activity 재생성의 `screen_view`·사용자 속성은 보지 않았다

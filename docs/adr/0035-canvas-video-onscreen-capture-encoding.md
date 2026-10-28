@@ -66,6 +66,7 @@ EGL 입력 표면 + `MediaMuxer`로 직접 mp4를 쓴다. 외부 의존성은 �
   흡수한다. 그러나 이미지 입력 단위가 "정지 이미지 N초"라, 팝인 보간 프레임을 넣으려면 프레임마다
   파일을 굽고 `EditedMediaItem`을 수십 개 이어 붙여야 한다. 2초 영상이면 60장이다.
   **→ 기각:** 팝인 연출과 궁합이 나쁘고, 그 대가로 의존성 세 개가 늘어난다.
+  (팝인은 뒤에 걷혔다 — [canvas-video-instant-reveal](../superpowers/specs/2026-10-28-canvas-video-instant-reveal-design.md). 기각은 의존성과 렌더 일치 근거로 유지된다.)
 - **`MediaCodec` ByteBuffer 모드 + 직접 YUV 변환** — EGL 보일러플레이트가 사라지고 색변환을
   순수 함수로 테스트할 수 있다. 그러나 지원 컬러 포맷이 기기마다 갈려
   (`COLOR_FormatYUV420Planar`·`SemiPlanar`·`Flexible`) 조회·분기 코드가 필요하고, `minSdk` 26
