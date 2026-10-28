@@ -21,10 +21,11 @@ class ToppingImageTest {
         groupId: Long,
         recentImageUrl: String?,
         recentImageBorder: ToppingBorder = ToppingBorder.None,
+        recentToppingType: ToppingType? = recentImageUrl?.let { ToppingType.IMAGE },
     ) = MyParfaitGroupVO(
         groupId = GroupId(groupId),
         groupName = GroupName("모카의 파르페"),
-        recentToppingType = recentImageUrl?.let { ToppingType.IMAGE },
+        recentToppingType = recentToppingType,
         recentImageUrl = recentImageUrl,
         recentImageBorder = recentImageBorder,
         recentImageUploadedAt = null,
@@ -156,6 +157,62 @@ class ToppingImageTest {
         val image = group.toToppingImage(emptyMap())
 
         // Then 템플릿이 걸리고 테두리는 보지 않는다
+        assertIs<YGToppingImage.Template>(image)
+    }
+
+    @Test
+    fun textRecentTopping_isTextTemplate() {
+        // Given 오늘 마지막 토핑이 텍스트라 이미지가 비어 온 그룹
+        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+
+        // When 띄울 이미지를 고른다
+        val image = group.toToppingImage(emptyMap())
+
+        // Then 일반 템플릿이 아니라 텍스트 템플릿이 걸린다
+        assertIs<YGToppingImage.TextTemplate>(image)
+    }
+
+    @Test
+    fun textRecentTopping_winsOverImageUrl() {
+        // Given 종류는 텍스트인데 이미지 URL 도 실려 온 그룹
+        val group = group(
+            groupId = 1L,
+            recentImageUrl = "https://cdn.example.com/a.png",
+            recentToppingType = ToppingType.TEXT,
+        )
+
+        // When 띄울 이미지를 고른다
+        val image = group.toToppingImage(emptyMap())
+
+        // Then 종류를 따라 텍스트 템플릿이 걸린다
+        assertIs<YGToppingImage.TextTemplate>(image)
+    }
+
+    @Test
+    fun textRecentTopping_sameGroupKeepsSameTemplateAndGroupsSplitAcrossBoth() {
+        // Given 텍스트가 마지막인 그룹들
+        val templates = (1L..4L).map { id ->
+            group(groupId = id, recentImageUrl = null, recentToppingType = ToppingType.TEXT).toToppingImage(emptyMap())
+        }
+
+        // When 같은 그룹을 다시 그린다
+        val again = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.TEXT)
+            .toToppingImage(emptyMap())
+
+        // Then 같은 그룹은 같은 템플릿이고, 두 템플릿이 모두 쓰인다
+        assertEquals(templates.first(), again)
+        assertEquals(2, templates.toSet().size)
+    }
+
+    @Test
+    fun unknownRecentTopping_withoutImage_isTemplate() {
+        // Given 앱이 모르는 종류가 마지막이라 이미지가 없는 그룹
+        val group = group(groupId = 1L, recentImageUrl = null, recentToppingType = ToppingType.UNKNOWN)
+
+        // When 띄울 이미지를 고른다
+        val image = group.toToppingImage(emptyMap())
+
+        // Then 일반 템플릿으로 접힌다
         assertIs<YGToppingImage.Template>(image)
     }
 
