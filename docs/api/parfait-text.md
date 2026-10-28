@@ -291,7 +291,7 @@ Boolean 컬럼을, `V23__add_text_align_to_parfait_text.sql`이 정렬 컬럼을
 
 | 서버 | Android |
 |---|---|
-| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`UpdateTextToppingUseCase`·`DeleteTextToppingUseCase`·`RecreateTextToppingUseCase`(내용 변경 = POST 뒤 DELETE) |
+| 3 엔드포인트 | `ParfaitTextService` → `ParfaitTextRemoteDataSource` → `TextToppingRepository` → `PlaceTextToppingUseCase`·`DeleteTextToppingUseCase`. 단건 PATCH는 `TextToppingRepository#update`까지만 있고 부르는 UseCase가 없다 |
 | `TodayParfaitTextResponse` | 같은 이름 DTO(`response/parfait`). 배치 POST 응답과 캔버스 `texts` 원소가 공유한다. 캔버스 쪽은 `CanvasTextToppingVO`로 올라간다 |
 | 일괄 PATCH `textItems` | `TextToppingTransformUpdate` → `ToppingRepository#updateAll` (C-305 변형·이동) |
 | 도메인 모델 | `ParfaitTextId` · `PlacedTextToppingVO` · `UpdatedTextToppingVO` · `TextToppingStyle` · `TextToppingUpdate` · `TextToppingAlign` |
@@ -300,15 +300,14 @@ Boolean 컬럼을, `V23__add_text_align_to_parfait_text.sql`이 정렬 컬럼을
   335 기준 값, `scale`은 핀치 배율, `color`는 `#RRGGBB`(White는 `#FAFAFA`, 모르는 값은 Black),
   `isFill`·`isStroke`는 `TextToppingType`, `textAlign`은 화면의 `TextAlign`이다. Android가 정한 값이고 iOS와 합의하지 않았다
   → [open-questions](../synthesis/open-questions.md) OQ-P-452
-- **정렬**: 배치 POST와 스타일 PATCH가 `textAlign`을 싣고, 캔버스·재편집이 저장된 정렬로 그린다. DTO는
+- **정렬**: 배치 POST가 `textAlign`을 싣고, 캔버스·C-305가 저장된 정렬로 그린다. DTO는
   문자열로 받고 data 매퍼가 `TextToppingAlign`으로 바꾼다 — 모르는 값과 필드가 없는 응답은 `CENTER`로 읽는다.
   줄바꿈 위치는 여전히 기기마다 다시 계산된다 → OQ-P-451
 - `PlacedTextToppingVO.placedBy`는 이미지 배치와 같은 `ToppingPlacerVO`로 접는다 — `ownerType`·`nameTagChip`·
   `createdAt`은 DTO에만 있고 VO로 올리지 않았다(읽는 화면이 생길 때 올린다).
-- `TextToppingUpdate`에 `text`가 없다. 서버가 내용 수정을 받지 않기 때문이다. 앱은 내용이 바뀐 재편집을
-  새 텍스트 POST 뒤 옛 것 DELETE로 처리하고, DELETE가 실패하면 옛 id를 삭제 보류로 옮겨 POST를 반복하지 않는다.
+- 앱은 쌓인 텍스트의 내용·스타일을 고치지 않는다(기획 확정) — 변형은 일괄 PATCH `textItems`로만 보낸다.
+  `TextToppingUpdate`에 `text`가 없는 것(서버가 내용 수정을 받지 않는다)과도 맞는다.
 - 텍스트 DELETE의 404 `PARFAIT_TEXT_NOT_FOUND`는 이미 지워진 것으로 보고 성공 처리한다. 배치 409(마감)는 영구 실패다.
-- 재편집(PATCH·POST)도 서버가 푸시를 다시 보낸다 — 계약 한계다.
 
 ## 미결
 

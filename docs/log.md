@@ -423,3 +423,6 @@ P1 0 · 반영 P2 1·P3 3·P4 4 · 텍스트 실패 문구 사진 재사용 수�
 
 ## [2026-10-27] audit | ed88a1547 — #645 텍스트 토핑 서버 연동(스택 #647·#649·#650·#652가 한 머지로) · #644
 115파일 +5556/-363 · 유닛 1556 · 계측 101 · OQ 신설 OQ-P-452, OQ-P-453, OQ-P-454, OQ-P-455 · 해소 OQ-P-450
+
+## [2026-10-28] review | 텍스트 배치 수정 리뷰 반영 — C-106 재편집 경로 제거
+쌓인 텍스트 내용·스타일 수정 없음 확정 · `TextEditSessionHolder`·`RecreateTextToppingUseCase`·`UpdateTextToppingUseCase`·`NavKeyCanvasTextInput.isEditingExisting` 제거 · OQ-P-453 ①②③ 소멸(④만 남김) · C-106 배치 점선을 실제 글자 크기로
