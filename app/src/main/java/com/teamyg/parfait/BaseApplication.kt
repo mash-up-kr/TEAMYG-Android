@@ -7,6 +7,7 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import com.kakao.sdk.common.KakaoSdk
+import com.teamyg.parfait.analytics.AnalyticsUserIdSync
 import com.teamyg.parfait.analytics.AnalyticsUserProperty
 import com.teamyg.parfait.analytics.currentDeviceInfo
 import com.teamyg.parfait.core.ui.image.newParfaitImageLoader
@@ -22,6 +23,9 @@ class BaseApplication :
     SingletonImageLoader.Factory {
     @Inject
     lateinit var analyticsLogger: AnalyticsLogger
+
+    @Inject
+    lateinit var analyticsUserIdSync: AnalyticsUserIdSync
 
     override fun onCreate() {
         super.onCreate()
@@ -63,6 +67,7 @@ class BaseApplication :
             setUserProperty(AnalyticsUserProperty.DEVICE, deviceInfo.device)
             setUserProperty(AnalyticsUserProperty.APP_ID, deviceInfo.appId)
         }
+        analyticsUserIdSync.start()
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader = newParfaitImageLoader(context)

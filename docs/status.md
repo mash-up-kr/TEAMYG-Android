@@ -167,8 +167,9 @@
 - 설계: [navigation-flow 「App Links 이동」](architecture/navigation-flow.md#app-links-이동-초대-링크)
 
 ## 분석 계측
-- 상태: 화면 진입은 `:app`의 `ScreenViewTracker`가 `NavKeyAnalyticsScreen` 매핑으로 `NavKey`를 화면 id로 바꿔 `screen_view`로 보내고, 매핑에 대응이 없으면 보내지 않고 경고 로그만 남긴다. 액션 이벤트는 feature `impl`의 ViewModel(푸시·App Links 열기는 `MainActivity`)이 `core:analytics`의 `AnalyticsLogger`에 `AnalyticsEventType` 상수로 직접 찍고, 구현은 `FirebaseAnalyticsLogger` 하나다. 이벤트 이름·파라미터의 정본은 사용자 이벤트 설계 문서다.
-- 앵커: `AnalyticsEventType`, `AnalyticsLogger`, `FirebaseAnalyticsLogger`, `core:analytics`, `NavKeyAnalyticsScreen`, `ScreenViewTracker`
+- 상태: 화면 진입은 `:app`의 `ScreenViewTracker`가 `NavKeyAnalyticsScreen` 매핑으로 `NavKey`를 화면 id로 바꿔 `screen_view`로 보내고, 매핑에 대응이 없으면 보내지 않고 경고 로그만 남긴다. 액션 이벤트는 feature `impl`의 ViewModel(푸시·App Links 열기는 `MainActivity`)이 `core:analytics`의 `AnalyticsLogger`에 `AnalyticsEventType` 상수로 직접 찍고, 구현은 `FirebaseAnalyticsLogger` 하나다. 이벤트 이름·파라미터의 정본은 사용자 이벤트 설계 문서다. GA4 사용자 ID는 `AnalyticsUserIdSync`가 계정 정보 SSoT(`MemberRepository.myAccount`)를 구독해 memberId로 맞추고, 계정 정보가 지워지면(로그아웃·탈퇴·재발급 거절) 함께 지운다 — iOS와 같은 값이다.
+- 앵커: `AnalyticsEventType`, `AnalyticsLogger`, `AnalyticsUserIdSync`, `FirebaseAnalyticsLogger`, `core:analytics`, `NavKeyAnalyticsScreen`, `ScreenViewTracker`
+- ⚠️ 사용자 ID는 실기기 DebugView로 아직 안 봤다
 - ⚠️ 영상 저장은 `canvas_save_gallery_saved`를 남기지 않는다 — 이미지 저장만 `format: "image"`로 찍고 `"video"`는 배선이 없다 (OQ-P-437)
 - ⚠️ `canvas_edit_*` 화면 분류가 정본 문서(C105 하나)와 코드(최초 배치 `C-106`·재편집 `C-305`)에서 달라, `canvas_edit_stack_tapped`가 최초 배치에서만 찍힌다 (OQ-P-430)
 - ⚠️ `canvas_camera_photo_selected`의 `source: "today"`가 가리키던 「오늘 사진」 구분이 갤러리에서 없어져, 지금은 날짜 구분 없는 일반 선택 전체를 뜻한다 (OQ-P-431)
