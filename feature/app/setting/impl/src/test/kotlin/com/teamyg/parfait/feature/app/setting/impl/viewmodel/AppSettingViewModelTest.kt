@@ -170,6 +170,21 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickCsaePolicy_navigatesToCsaePolicy() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 목록과 무관하게 항상 떠 있는 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When CSAE 방지 정책을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickCsaePolicy)
+
+            // Then 서버 약관 목록을 거치지 않고 고정 목적지로 바로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToCsaePolicy, awaitItem())
+        }
+    }
+
+    @Test
     fun clickOssLicense_navigatesToOssLicense() = runTest(mainDispatcherRule.dispatcher) {
         // Given 설정 화면
         val viewModel = viewModel()
