@@ -170,6 +170,27 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickCsaePolicy_navigatesToTheFixedCsaeUrl() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 목록과 무관하게 항상 떠 있는 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When CSAE 방지 정책을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickCsaePolicy)
+
+            // Then 서버 약관 목록을 거치지 않고 고정 제목·URL로 바로 이동한다
+            assertEquals(
+                AppSettingSideEffect.NavigateToPolicyDetail(
+                    title = "아동 안전 정책",
+                    url = "https://sites.google.com/view/teamyg-parfait/policy_csae",
+                ),
+                awaitItem(),
+            )
+        }
+    }
+
+    @Test
     fun clickWithdraw_showsWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
         // Given 팝업이 떠 있지 않은 초기 화면
         val viewModel = viewModel()

@@ -68,6 +68,7 @@ internal fun AppSettingRoute(
             onClickPolicy = { termsId ->
                 viewModel.processIntent(AppSettingIntent.ClickPolicy(termsId))
             },
+            onClickCsaePolicy = { viewModel.processIntent(AppSettingIntent.ClickCsaePolicy) },
             onClickLogout = { viewModel.processIntent(AppSettingIntent.ClickLogout) },
             onClickWithdraw = { viewModel.processIntent(AppSettingIntent.ClickWithdraw) },
             onConfirmWithdraw = { viewModel.processIntent(AppSettingIntent.ConfirmWithdraw) },
