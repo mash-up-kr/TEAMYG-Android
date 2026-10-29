@@ -54,6 +54,8 @@ sealed interface AppSettingIntent : UiIntent {
     /** CSAE 방지 정책은 서버 약관 목록이 아니라 고정 URL로 연다 — [handleClickCsaePolicy] 참고 */
     data object ClickCsaePolicy : AppSettingIntent
 
+    data object ClickOssLicense : AppSettingIntent
+
     data object ClickLogout : AppSettingIntent
 
     data object ClickWithdraw : AppSettingIntent
@@ -72,6 +74,8 @@ sealed interface AppSettingSideEffect : UiSideEffect {
         val title: String,
         val url: String,
     ) : AppSettingSideEffect
+
+    data object NavigateToOssLicense : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
 
@@ -115,6 +119,7 @@ constructor(
             AppSettingIntent.ClickAccount -> handleClickAccount()
             is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
             AppSettingIntent.ClickCsaePolicy -> handleClickCsaePolicy()
+            AppSettingIntent.ClickOssLicense -> handleClickOssLicense()
             AppSettingIntent.ClickLogout -> handleClickLogout()
             AppSettingIntent.ClickWithdraw -> handleClickWithdraw()
             AppSettingIntent.ConfirmWithdraw -> handleConfirmWithdraw()
@@ -165,6 +170,10 @@ constructor(
         postSideEffect(
             AppSettingSideEffect.NavigateToPolicyDetail(title = CSAE_POLICY_TITLE, url = CSAE_POLICY_URL),
         )
+    }
+
+    private fun handleClickOssLicense() {
+        postSideEffect(AppSettingSideEffect.NavigateToOssLicense)
     }
 
     private fun handleClickLogout() {

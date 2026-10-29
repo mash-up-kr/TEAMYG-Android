@@ -5281,8 +5281,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   재사용할 수 있다), 아니면 라이선스 수집 플러그인을 붙여 목록을 자동 생성할지. ② 자동 생성을
   고르면 **번들 폰트는 Gradle 의존이 아니라 리소스 파일이라 그 목록에 안 잡힌다** — 폰트 몫은
   따로 실어야 한다. ③ 사본을 `assets/`나 `res/raw/`로 옮겨 APK에 넣을지, 화면 문구로만 담을지.
-- **상태**: 미해결 (배포 전에 답이 필요한 자리다 — 스토어 배포가 조건을 실제로 발동시킨다)
-- **해소 메모**: 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
+- **상태**: 부분 해소 (① 해소, ③ 잔존)
+- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 서버 delta(`1a1abee`)로 반쯤 풀렸다 — `/oss` 페이지 `Font` 절에 SUIT·LINE Seed JP·TW가 OFL 1.1 전문과 함께 실렸다([deeplink.md](../api/deeplink.md) `GET /oss`). 그러나 SUIT 전문은 원본 저작권 문구(Reserved Font Name SUIT 포함) 그대로이고, 앱 번들이 cmap을 손본 수정본이라는 고지는 없다. 수정본 고지를 어디에 둘지, 수정본이 원래 이름을 계속 써도 되는지는 남는다. `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
   [s004 스펙](../superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md)·
   [s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md) 항목 목록을 함께 고친다.
   `.gitignore`에 올라간 릴리즈 keystore(OQ-P-305)와 같이 **배포가 가까워지며 드러나는 자리**다.
@@ -7680,14 +7680,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-429
 - **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md)
 - **항목**:
-  ① 실기기에서 영상을 뽑아 본 적이 없다 — 재생 여부, 1080 × 1920 생성 시간, 생성 중 진행 표시 없이 버튼만 잠긴 화면이 견딜 만한지.
+  ① 실기기에서 영상을 뽑아 본 적이 없다 — 재생 여부, 1080 × 1920 생성 시간, 생성 중 진행 표시 없이 버튼만 잠긴 화면이 견딜 만한지, 토핑이 한 장씩 즉시 나타나는지.
   ② 영상 마지막 프레임과 이미지 저장물의 테두리 비율을 대조한 적이 없다.
-  ③ 팝인 중(0.25초) 알파가 1 미만이라 토핑 테두리 띠가 상자 경계에서 잘린다. 눈에 띄는지 미확인.
-  ④ 기능 자체가 기획 원본(`wiki/raw/`)에 없다. 타임라인·해상도·문구는 iOS 구현 값을 따랐고 정책 근거는 없다.
-  ⑤ 토핑 0건에서 영상 버튼을 막는 것은 iOS와 다르다.
-  ⑥ 저장 미리보기 Route의 녹화 흐름에 테스트가 없다.
+  ③ 기능 자체가 기획 원본(`wiki/raw/`)에 없다. 타임라인·해상도·문구는 iOS 구현 값을 따랐고 정책 근거는 없다.
+  ④ 토핑 0건에서 영상 버튼을 막는 것은 iOS와 다르다.
+  ⑤ 저장 미리보기 Route의 녹화 흐름에 테스트가 없다.
 - **상태**: 미해결
-- **해소 메모**: ①~③은 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③이 거슬리면 `CanvasTopping`의 `graphicsLayer` 합성 방식을 본다. ④⑤는 기획·디자인 확정을 받아 `VideoTimelineOptions`와 `CanvasImageSaveScreen`에 반영한다.
+- **해소 메모**: ①②는 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③④는 기획·디자인 확정을 받아 `VideoTimelineOptions`와 `CanvasImageSaveScreen`에 반영한다.
 
 ### [2026-09-27] 녹화 밀도에서 토핑 테두리 판 캐시가 미스된다
 
@@ -7775,7 +7774,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [parfait-text.md](../api/parfait-text.md) POST 절 · 서버 `PlaceParfaitTextService`
 - **항목**: 이미지 배치의 `(parfaitId, imageId)` upsert와 달리 텍스트 POST는 항상 새 행을 만들고 그때마다 푸시를 보낸다. 앱이 응답을 잃고 재시도하면 같은 텍스트가 두 번 놓이고 다른 구성원은 알림을 두 번 받는다.
 - **상태**: 미해결
-- **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 내용 변경 재편집에서 POST는 성공했는데 옛 텍스트 DELETE가 실패하면 옛 id만 삭제 보류로 옮겨 POST를 반복하지 않는다. 서버 멱등 키가 생기면 재검토한다.
+- **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 서버 멱등 키가 생기면 재검토한다.
 
 ### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
 
@@ -7820,32 +7819,32 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
 
 - **ID**: OQ-P-450
-- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
 - **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
 - **상태**: 해소됨 (2026-10-26, `feature/text-topping-api`) — `PlaceTextToppingUseCase`가 POST를 한 번 보내고 성공하면 오늘 캔버스를 다시 읽어 C-001로 돌아간다. 저장 단위는 OQ-P-452
 
 ### [2026-10-26] 텍스트 토핑의 줄바꿈 위치를 서버 계약에 실을 자리가 없다
 
 - **ID**: OQ-P-451
-- **출처**: [텍스트 토핑 스펙](../superpowers/specs/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
 - **항목**: 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 텍스트 계약에는 줄바꿈 위치를 실을 필드가 없어, 같은 텍스트라도 기기마다 글꼴·폭에 따라 줄이 다시 나뉜다. 정렬은 서버 `textAlign`으로 저장된다([api/parfait-text.md](../api/parfait-text.md)). 줄바꿈 위치를 계약에 넣을지, 기기별 재계산을 받아들일지.
 - **상태**: 미해결 (서버·iOS 협의)
 
 ### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
 
 - **ID**: OQ-P-452
-- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
 - **항목**: 앱은 위치를 박스 중심의 캔버스 비율, `fontSize`를 디자인 너비 335 기준 `designFontSize`, `scale`을 핀치 배율로 저장한다. 이 단위는 Android가 정했고 iOS와 맞추지 않았다. iOS가 다른 단위(좌상단 기준 좌표, 다른 기준 너비 등)로 저장하면 서로의 텍스트가 어긋나 보인다.
 - **상태**: 미해결 (iOS 협의)
 - **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
 
-### [2026-10-26] 텍스트 재편집의 잔여 갭 — dirty 오판·편집 결과 잔류·부분 실패 소실
+### [2026-10-26] 글꼴 구간 분기 이전에 저장한 텍스트가 다르게 그려진다
 
 - **ID**: OQ-P-453
-- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/2026-10-26-text-topping-api.md) × `TextEditSessionHolder`·`CanvasToppingArrangeViewModel`
-- **항목**: ① 다시 열 때 `designFontSize`를 다시 맞춰 바뀐 게 없는 재편집도 다른 기기 값 기준으로 dirty가 될 수 있고, 재편집은 서버가 푸시를 다시 보낸다(계약 한계). ② C-106에서 편집하는 사이 대상 텍스트가 서버 목록에서 사라지면 돌아온 결과는 버려진다 — C-305는 목록에 없는 id의 결과를 적용하지 않고, 화면을 떠날 때(`onCleared`) 자기가 연 왕복의 결과를 `TextEditSessionHolder.clear(session)`으로 비운다. 사용자에게는 고친 내용이 말없이 사라진다. ③ POST 성공 뒤 옛 텍스트 DELETE 가 끝나지 못하면 서버에 옛 텍스트와 새 텍스트가 둘 다 남는다 — DELETE 실패 뒤 그만두기 팝업으로 C-305를 나갈 때, 그리고 POST 와 DELETE 사이에 프로세스가 죽거나 작업이 취소될 때다(POST 비멱등이라 복구할 키가 없다).
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `textToppingScriptRuns`
+- **항목**: 글꼴 구간 분기 이전에 저장한 텍스트는 다시 그리면 달라진다(한글+가나는 한글이 SUIT, 한글+한자는 한자가 TW) — 줄 수가 바뀔 수 있다. 재편집 왕복에 딸렸던 갭(dirty 오판·편집 결과 소실·POST 뒤 DELETE 미완)은 쌓인 텍스트의 내용을 고치지 않기로 확정돼 C-106 재편집 경로를 걷어 내면서 없어졌다.
 - **상태**: 미해결
-- **해소 메모**: ①은 재맞춤 값을 저장값과 비교하는 기준을 정한다. ②는 사라진 텍스트의 결과를 알릴지(토스트) 정한다. ③은 남은 삭제 보류를 나가기 전에 알릴지 정한다(새로 쌓은 것이 있으면 실패 알림 전에 캔버스를 다시 읽어 소실처럼 보이지는 않는다).
+- **해소 메모**: 이전 저장분이 남아 있는 동안 달라진 줄 수를 감수할지, 저장 시점 글꼴 규칙을 따로 기록할지 정한다.
 
 ### [2026-10-26] C-305 에서 텍스트를 캔버스 밖으로 옮겨도 막지 않는다
 
@@ -7859,8 +7858,40 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-455
 - **출처**: `CanvasToppingArrangeViewModel` — `mergeToppings`/`mergeTexts`, 이미지·텍스트 짝 집합(`dirty*Ids`·`pendingDelete*Ids`·`deleted*Ids`), `handleOnClickConfirm` 저장 순서 · 텍스트 토핑 서버 연동 스택 2/4·3/4 리뷰
-- **항목**: 이 ViewModel이 약 1,000줄이고, 병합 규칙과 변경 집합이 이미지·텍스트로 거의 줄 단위로 복제돼 있다. 병합 규칙을 바꿀 때 한쪽만 고치면 어긋난다. 텍스트 재생성 순서는 `RecreateTextToppingUseCase`로 옮겼고 삭제 보류→툼스톤 이동(`markTextsGone`)·404 처리(`isDeletedOrGone`)는 합쳤지만, 변경 집합과 저장 단계(일괄 PATCH → 테두리 → 스타일 PATCH → 재생성 → 삭제)는 그대로다.
+- **항목**: 이 ViewModel이 약 1,000줄이고, 병합 규칙과 변경 집합이 이미지·텍스트로 거의 줄 단위로 복제돼 있다. 병합 규칙을 바꿀 때 한쪽만 고치면 어긋난다. 삭제 보류→툼스톤 이동(`markTextsGone`)·404 처리(`isDeletedOrGone`)는 합쳤지만, 변경 집합과 저장 단계(일괄 PATCH → 테두리 → 삭제)는 그대로다.
 - **상태**: 미해결 (후속 리팩터링)
 - **해소 메모**: 다음 토핑 종류가 붙기 전에 변경 집합을 종류별 값 객체 하나로 묶고, 저장 단계를 별도 클래스(또는 UseCase)로 뺀다. 동작이 바뀌지 않는 리팩터링이라 텍스트 토핑 스택이 `develop`에 머지된 뒤 별도 PR로 한다.
 
-<!-- oq-next: 456 -->
+### [2026-10-27] iOS가 텍스트 토핑의 글꼴 구간 규칙을 따를지
+
+- **ID**: OQ-P-456
+- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
+- **항목**: Android는 글자 구간마다 글꼴·자간을 고르고 한자는 가나 유무로 JP·TW 순서를 정한다. iOS가 같은 규칙을 따를지 정하지 않았다. 다르면 같은 토핑의 글꼴과 줄바꿈이 플랫폼마다 달라진다.
+- **상태**: 미해결
+- **해소 메모**: iOS와 구간 규칙(가나 판정 범위, 한자 우선순위, 중립 문자 처리)을 맞춘다.
+
+### [2026-10-27] CJK 문장부호가 앞의 SUIT 구간을 따라 시스템 폰트로 그려진다
+
+- **ID**: OQ-P-457
+- **출처**: `textToppingScriptRuns` 중립 문자 규칙
+- **항목**: `、。` 같은 CJK 문장부호는 중립 문자라 앞 구간을 따른다. 앞이 `DEFAULT`(SUIT)면 SUIT에 이 글리프가 없어 시스템 폰트로 그려진다(예: `Parfait、パフェ`의 `、`).
+- **상태**: 미해결
+- **해소 메모**: CJK 문장부호를 뒤 구간이나 Line Seed 쪽으로 보낼지 정한다. 실기기에서 어색한지 먼저 본다.
+
+### [2026-10-27] 구간 경계의 자간 간격을 실기기에서 확인하지 않았다
+
+- **ID**: OQ-P-458
+- **출처**: `TextToppingScript`의 `letterSpacingEm` (JP·SUIT -1.1%, TW 0%)
+- **항목**: 자간이 다른 구간(JP -1.1%와 TW 0%)이 맞닿는 경계의 간격이 어색한지 실기기에서 보지 않았다.
+- **상태**: 미해결
+- **해소 메모**: 일·중이 섞인 텍스트를 실기기에서 눈으로 확인한다.
+
+### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
+
+- **ID**: OQ-P-459
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/v2/parfait-groups` × `feature/groups/list/impl/util/ToppingImage.kt#toToppingImage` · `YGToppingImage.TextTemplate` · 위키 `concepts/infinite-parfait.md`(빈 토핑 템플릿·토핑 회전·상대 시간 절)
+- **항목**: G-001이 텍스트 토핑을 다루는 방식이 기획 근거 없이 앱이 정한 값이다. 위키에는 텍스트 토핑 정책이 없다. ① 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종 중 하나를 띄운다. 위키는 템플릿을 "아직 아무도 토핑을 올리지 않은 그룹"에만 쓴다. ② 텍스트 템플릿만 카드 회전을 받지 않는다. 위키는 템플릿도 일반 토핑과 같은 지그재그·회전 규칙을 따른다고 적는다. ③ 텍스트 템플릿을 groupId로 고정해 고른다. 일반 템플릿의 "무작위 최초 부여·고정" 규칙이 여기도 적용되는지 정해지지 않았다. ④ 경과 시간·마지막 토퍼 칩·정렬이 텍스트를 포함한 마지막 토핑 기준이다(서버 v2). 위키의 "활동" 목록에 텍스트 토핑이 없다.
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
+
+<!-- oq-next: 460 -->

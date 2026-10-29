@@ -72,7 +72,8 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 > 두 가지가 이 교체에 딸려 온다. ① fallback 문자는 **기기 시스템 폰트로 그려지므로 기기마다
 > 글자체가 섞인다**(투명보다 낫다는 판단이지 같은 그림이라는 뜻이 아니다). ② OFL 1.1이 수정본
 > 배포 시 라이선스 사본 동봉을 요구해 모듈 루트에 `OFL.txt`가 생겼는데, **그 파일은 APK에 실리지
-> 않고 앱 안에 오픈소스 고지 화면도 없다** → [open-questions](../synthesis/open-questions.md)
+> 않는다**. 고지는 S-001 「오픈소스 라이선스」가 웹뷰로 여는 외부 페이지(`OSS_LICENSE_URL`)가 맡고,
+> 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다 → [open-questions](../synthesis/open-questions.md)
 > OQ-P-306·OQ-P-307.
 
 > **에셋 소유가 갈린다** — 화면 전용 이미지가 여기 들어오는 경우(A-002 온보딩 일러스트)와 해당 feature
@@ -354,7 +355,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 | `canvasCutCornerShape()` | `shape/` | [designsystem-canvas-components](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md) |
 | `ygBackgroundDotGrid()`(Modifier) | `component/ygbackgrounddotgrid/` | [c001-canvas-main](../superpowers/specs/archive/2026-08-12-c001-canvas-main.md) |
 | `YGGrouptagChip`(+`YGGrouptagChipType`) | `component/yggrouptagchip/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
-| `YGToppingGroup`(+`YGToppingGroupType`·`YGToppingImage`·`YGToppingTemplate`) | `component/ygtoppinggroup/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
+| `YGToppingGroup`(+`YGToppingGroupType`·`YGToppingImage`·`YGToppingTemplate`·`YGToppingTextTemplate`) | `component/ygtoppinggroup/` | [designsystem-grouptag-topping-components](../superpowers/specs/archive/2026-07-31-designsystem-grouptag-topping-components.md) |
 | `YGToppingCutoutImage` — 위 `YGToppingImage`와 **다른 물건**(아래 항목), #334 develop 머지 | `component/ygtoppingcutout/` | [ADR-0025](../adr/0025-topping-border-as-server-field.md) · [c106-topping-place-api](../superpowers/specs/archive/2026-08-20-c106-topping-place-api.md) |
 | `YGScreen` / `YGScaffold`(+`YGScreenScope`·`OnBack`) | `screen/` | [designsystem-ygscreen-scaffold](../superpowers/specs/archive/2026-07-20-designsystem-ygscreen-scaffold.md) (위 "화면 컨테이너") |
 

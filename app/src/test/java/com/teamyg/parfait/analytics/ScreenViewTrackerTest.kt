@@ -19,6 +19,8 @@ private class FakeAnalyticsLogger : AnalyticsLogger {
         value: String,
     ) = Unit
 
+    override fun setUserId(id: String?) = Unit
+
     override fun logScreenView(screen: AnalyticsScreen) {
         screenViews += screen
     }

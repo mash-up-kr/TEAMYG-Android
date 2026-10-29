@@ -23,14 +23,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputVi
 
 @Composable
 internal fun CanvasTextInputRoute(
-    isEditingExisting: Boolean,
     navigator: Navigator,
     modifier: Modifier = Modifier,
-    viewModel: CanvasTextInputViewModel = hiltViewModel(
-        creationCallback = { factory: CanvasTextInputViewModel.Factory ->
-            factory.create(isEditingExisting = isEditingExisting)
-        },
-    ),
+    viewModel: CanvasTextInputViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()

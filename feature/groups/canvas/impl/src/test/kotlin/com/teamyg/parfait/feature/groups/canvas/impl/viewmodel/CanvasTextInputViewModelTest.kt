@@ -23,15 +23,11 @@ import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
 import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
 import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
 import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
-import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditResult
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSession
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.model.TextEditSessionHolder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
 import io.mockk.slot
@@ -53,7 +49,6 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -73,16 +68,12 @@ class CanvasTextInputViewModelTest {
 
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
-    private val textEditSessionHolder = TextEditSessionHolder()
-
     private fun draft() = ToppingDraft(groupId = GroupId(1L), parfaitId = ParfaitId(2L), nextPositionZ = 1)
 
-    private fun viewModel(isEditingExisting: Boolean = false): CanvasTextInputViewModel {
+    private fun viewModel(): CanvasTextInputViewModel {
         every { getToppingDraftFlow() } returns flowOf(draft())
         every { getTodayParfaitFlowUseCase(any(), any()) } returns flowOf<CanvasVO?>(null)
         return CanvasTextInputViewModel(
-            isEditingExisting = isEditingExisting,
-            textEditSessionHolder = textEditSessionHolder,
             getToppingDraftFlow = getToppingDraftFlow,
             getTodayParfaitFlowUseCase = getTodayParfaitFlowUseCase,
             clearToppingDraft = clearToppingDraft,
@@ -559,194 +550,5 @@ class CanvasTextInputViewModelTest {
         advanceUntilIdle()
 
         verify { getTodayParfaitFlowUseCase(GroupId(1L), any()) }
-    }
-
-    // 쌓인 텍스트 다시 편집
-
-    private fun original() = EditableText(
-        parfaitTextId = 42L,
-        isMine = true,
-        text = "원래 글",
-        color = TextToppingColor.Black,
-        type = TextToppingType.FILL,
-        align = TextAlign.Left,
-        designFontSize = 18f,
-        positionX = 0.3f,
-        positionY = 0.6f,
-        positionZ = 7,
-        scale = 1.5f,
-        rotationDegrees = 20f,
-    )
-
-    private fun TestScope.editingViewModel(): CanvasTextInputViewModel {
-        textEditSessionHolder.start(TextEditSession(groupId = 5L, parfaitId = 6L, original = original()))
-        val viewModel = viewModel(isEditingExisting = true)
-        advanceUntilIdle()
-        return viewModel
-    }
-
-    private fun CanvasTextInputViewModel.measure() {
-        processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(200.dp, 400.dp)))
-        processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(100.dp, 40.dp)))
-    }
-
-    @Test
-    fun editMode_seedsContentAndStyleFromTheSession() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-
-        val state = viewModel.state.value
-        assertEquals("원래 글", state.content)
-        assertEquals(TextToppingColor.Black, state.selectedColor)
-        assertEquals(TextToppingType.FILL, state.textType)
-        assertEquals(TextAlign.Left, state.align)
-        assertEquals(18f, state.designFontSize)
-        assertEquals(1.5f, state.scale)
-        assertEquals(20f, state.rotationDegrees)
-        assertFalse(state.hasUserAdjustedPlacement)
-    }
-
-    @Test
-    fun editMode_restoresOffsetFromTheCenterRatioOnceMeasured() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-
-        viewModel.measure()
-
-        // 중심 (60, 240) 에서 박스 절반을 뺀 좌상단
-        val state = viewModel.state.value
-        assertEquals(10f, state.offsetX.value, 1e-4f)
-        assertEquals(220f, state.offsetY.value, 1e-4f)
-    }
-
-    @Test
-    fun editMode_boxRemeasuredWithNewSize_keepsTheOriginalCenter() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-        // 첫 레이아웃은 키보드 높이가 0 이라 박스가 거의 0 으로 재진다
-        viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(200.dp, 400.dp)))
-        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(1.dp, 1.dp)))
-        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(120.dp, 50.dp)))
-
-        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
-        advanceUntilIdle()
-
-        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
-        assertEquals(0.3f, edited.positionX, 1e-5f)
-        assertEquals(0.6f, edited.positionY, 1e-5f)
-    }
-
-    @Test
-    fun editMode_observesTheSessionCanvasNotTheDraft() = runTest(mainDispatcherRule.dispatcher) {
-        textEditSessionHolder.start(TextEditSession(groupId = 5L, parfaitId = 6L, original = original()))
-        val viewModel = viewModel(isEditingExisting = true)
-        backgroundScope.launch { viewModel.state.collect {} }
-        advanceUntilIdle()
-
-        verify { getTodayParfaitFlowUseCase(GroupId(5L), any()) }
-        verify(exactly = 0) { getToppingDraftFlow() }
-    }
-
-    @Test
-    fun editMode_stackWithoutChanges_roundTripsTheSameValuesWithoutServerCall() =
-        runTest(mainDispatcherRule.dispatcher) {
-            val viewModel = editingViewModel()
-            viewModel.measure()
-
-            viewModel.effect.test {
-                viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
-                advanceUntilIdle()
-
-                assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
-            }
-
-            val outcome = textEditSessionHolder.result.value!!
-            assertEquals(42L, outcome.parfaitTextId)
-            val edited = outcome.result as TextEditResult.Edited
-            assertEquals("원래 글", edited.text)
-            assertEquals(TextToppingColor.Black, edited.color)
-            assertEquals(TextToppingType.FILL, edited.type)
-            assertEquals(TextAlign.Left, edited.align)
-            assertEquals(18f, edited.designFontSize)
-            assertEquals(0.3f, edited.positionX, 1e-5f)
-            assertEquals(0.6f, edited.positionY, 1e-5f)
-            assertEquals(1.5f, edited.scale)
-            assertEquals(20f, edited.rotationDegrees)
-            coVerify(exactly = 0) { placeTextTopping(any(), any(), any(), any(), any()) }
-            coVerify(exactly = 0) { clearToppingDraft() }
-            verify(exactly = 0) { analyticsLogger.logEvent(any()) }
-        }
-
-    @Test
-    fun editMode_stackAfterEditing_returnsTheEditedValues() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-        viewModel.measure()
-        viewModel.processIntent(CanvasTextInputIntent.OnContentChange("새 글"))
-        viewModel.processIntent(CanvasTextInputIntent.OnSelectColor(TextToppingColor.White))
-        viewModel.processIntent(
-            CanvasTextInputIntent.OnToppingTransform(pan = DpOffset(20.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
-        )
-
-        viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
-        advanceUntilIdle()
-
-        val edited = textEditSessionHolder.result.value!!.result as TextEditResult.Edited
-        assertEquals("새 글", edited.text)
-        assertEquals(TextToppingColor.White, edited.color)
-        assertEquals(0.4f, edited.positionX, 1e-5f)
-    }
-
-    @Test
-    fun editMode_stackTappedTwice_navigatesBackOnce() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-        viewModel.measure()
-
-        viewModel.effect.test {
-            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
-            viewModel.processIntent(CanvasTextInputIntent.OnClickStack)
-            advanceUntilIdle()
-
-            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun editMode_confirmWithBlankContent_finishesAsDeleted() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-        viewModel.processIntent(CanvasTextInputIntent.OnContentChange(""))
-
-        viewModel.effect.test {
-            viewModel.processIntent(CanvasTextInputIntent.OnClickConfirm)
-            advanceUntilIdle()
-
-            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
-        }
-        assertEquals(TextEditResult.Deleted, textEditSessionHolder.result.value?.result)
-        assertEquals(42L, textEditSessionHolder.result.value?.parfaitTextId)
-        coVerify(exactly = 0) { clearToppingDraft() }
-    }
-
-    @Test
-    fun editMode_quitFromHeader_leavesWithoutResult() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = editingViewModel()
-        viewModel.processIntent(CanvasTextInputIntent.OnClickClose)
-
-        viewModel.effect.test {
-            viewModel.processIntent(CanvasTextInputIntent.OnQuitDialogConfirm)
-            advanceUntilIdle()
-
-            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
-        }
-        assertNull(textEditSessionHolder.result.value)
-        coVerify(exactly = 0) { clearToppingDraft() }
-    }
-
-    @Test
-    fun editMode_withoutSession_navigatesBackImmediately() = runTest(mainDispatcherRule.dispatcher) {
-        val viewModel = viewModel(isEditingExisting = true)
-
-        viewModel.effect.test {
-            advanceUntilIdle()
-
-            assertEquals(CanvasTextInputEffect.NavigateBack, awaitItem())
-        }
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingBorder
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingImage
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTemplate
+import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingTextTemplate
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.domain.model.group.MyParfaitGroupVO
@@ -14,6 +15,8 @@ import com.teamyg.parfait.domain.model.topping.ToppingBorder
 //  서버가 그 값을 내려주면 groupId 파생을 걷어낸다
 private val TOPPING_TEMPLATES = YGToppingTemplate.entries
 
+private val TEXT_TOPPING_TEMPLATES = YGToppingTextTemplate.entries
+
 /**
  * 오늘 캔버스에 토핑이 없는 그룹은 조회 실패([YGToppingImage.Error])와 다른 상태라 템플릿을 띄운다.
  * ⚠️ 어제까지 토핑이 있던 그룹도 여기 걸린다 — 서버가 오늘 것만 내려주기 때문이고, 그것을 템플릿으로
@@ -21,6 +24,10 @@ private val TOPPING_TEMPLATES = YGToppingTemplate.entries
  * 목록 순서가 바뀌어도 같은 그림이 걸리도록 index 가 아니라 groupId 로 고른다.
  */
 internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutline>): YGToppingImage {
+    if (isTextTopping()) {
+        return YGToppingImage.TextTemplate(TEXT_TOPPING_TEMPLATES[groupId.value.mod(TEXT_TOPPING_TEMPLATES.size)])
+    }
+
     val url = recentImageUrl
         ?: return YGToppingImage.Template(TOPPING_TEMPLATES[groupId.value.mod(TOPPING_TEMPLATES.size)])
 
@@ -33,8 +40,10 @@ internal fun MyParfaitGroupVO.toToppingImage(outlines: Map<String, ToppingOutlin
 
 /** 거리판은 비싸서 테두리를 실제로 그릴 토핑만 뜬다 */
 internal fun List<MyParfaitGroupVO>.borderedImageUrls(): List<String> = mapNotNull { group ->
-    group.recentImageUrl?.takeIf { group.drawableBorder() != null }
+    group.recentImageUrl?.takeIf { !group.isTextTopping() && group.drawableBorder() != null }
 }
+
+private fun MyParfaitGroupVO.isTextTopping(): Boolean = recentToppingType?.isText() == true
 
 private fun MyParfaitGroupVO.drawableBorder(): Pair<Color, Double>? {
     val solid = recentImageBorder as? ToppingBorder.Solid ?: return null

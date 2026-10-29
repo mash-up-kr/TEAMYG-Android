@@ -11,6 +11,7 @@ import com.teamyg.parfait.data.service.model.response.group.JoinParfaitGroupResp
 import com.teamyg.parfait.data.service.model.response.group.LeaveParfaitGroupResponse
 import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupDetailResponse
 import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupResponse
+import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupV2Response
 import com.teamyg.parfait.data.service.model.response.group.PreviewParfaitGroupJoinResponse
 import com.teamyg.parfait.data.service.model.response.group.ReportParfaitGroupResponse
 import retrofit2.http.Body
@@ -22,8 +23,15 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ParfaitGroupService {
+    @Deprecated(
+        message = "텍스트 토핑을 세지 않는다. 텍스트를 포함하는 v2 로 대체됐다",
+        replaceWith = ReplaceWith("getParfaitGroupsV2()"),
+    )
     @GET("api/parfait-groups")
     suspend fun getParfaitGroups(): ApiResponse<List<MyParfaitGroupResponse>>
+
+    @GET("api/v2/parfait-groups")
+    suspend fun getParfaitGroupsV2(): ApiResponse<List<MyParfaitGroupV2Response>>
 
     @GET("api/parfait-groups/{groupId}")
     suspend fun getParfaitGroupsByGroupId(@Path("groupId") groupId: Long): ApiResponse<MyParfaitGroupDetailResponse>

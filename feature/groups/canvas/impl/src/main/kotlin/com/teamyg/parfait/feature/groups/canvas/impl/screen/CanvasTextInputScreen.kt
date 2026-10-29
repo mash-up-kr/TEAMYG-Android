@@ -68,6 +68,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.TextColorChipRow
 import com.teamyg.parfait.feature.groups.canvas.impl.component.TextToppingBackground
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
+import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionStroke
 import com.teamyg.parfait.feature.groups.canvas.impl.component.editingTopAnchored
 import com.teamyg.parfait.feature.groups.canvas.impl.component.fitTextToppingToHeight
 import com.teamyg.parfait.feature.groups.canvas.impl.component.measureTextBoxUnbounded
@@ -82,7 +83,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZ
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
-import com.teamyg.parfait.feature.groups.canvas.impl.model.detectTextToppingScript
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditBudget
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditModeState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditVerticalAnchor
@@ -90,7 +90,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberDedupeHangulEnterTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.rememberMaxLengthInputTransformation
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingAnnotatedString
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingFontSizeSp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingScriptOutputTransformation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingWrapWidth
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasTextInputUiState
 
@@ -174,8 +176,7 @@ internal fun CanvasTextInputScreen(
 
         val placeholderText = stringResource(R.string.canvas_text_input_placeholder)
 
-        val textScript = remember(uiState.content) { detectTextToppingScript(uiState.content) }
-        val autoSizeBaseStyle = textToppingBaseStyle(textScript)
+        val autoSizeBaseStyle = textToppingBaseStyle()
         val canvasWidth = uiState.canvasSize?.width ?: TEXT_TOPPING_DESIGN_CANVAS_WIDTH
         // 기기 폭과 무관하게 캔버스 대비 같은 크기·줄바꿈으로 보이도록 디자인 값에 곱한다
         val canvasScale = canvasWidth / TEXT_TOPPING_DESIGN_CANVAS_WIDTH
@@ -185,7 +186,10 @@ internal fun CanvasTextInputScreen(
         val textMaxWidthPx = with(density) { textMaxWidthDp.roundToPx() }
 
         val textMeasurer = rememberTextMeasurer()
-        val hugMeasureText = textFieldState.text.toString().ifEmpty { placeholderText }
+        val currentText = textFieldState.text.toString()
+        val hugMeasureText = remember(currentText, placeholderText) {
+            textToppingAnnotatedString(currentText.ifEmpty { placeholderText })
+        }
 
         val textToppingFit = if (textEditMode.isEditing) {
             remember(
@@ -304,11 +308,8 @@ internal fun CanvasTextInputScreen(
                     .fillMaxSize()
                     .padding(horizontal = YGTheme.layout.padding.padding7),
             ) {
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(CANVAS_AREA_ASPECT_RATIO)
-                        .let { if (textEditMode.isEditing) it else it.clipToBounds() },
-                ) {
+                // 점선은 캔버스 밖으로 나가도 잘리면 안 돼서 이 박스가 아니라 텍스트 쪽을 자른다
+                Box(modifier = Modifier.aspectRatio(CANVAS_AREA_ASPECT_RATIO)) {
                     ToppingArrangeCanvasSurface(
                         backgroundColor = uiState.backgroundColor,
                         backgroundImageUrl = uiState.backgroundImageUrl,
@@ -343,6 +344,7 @@ internal fun CanvasTextInputScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .let { if (textEditMode.isEditing) it else it.clipToBounds() }
                             // 글자가 작아도 박스 둘레 최소 44dp 안의 탭은 편집을 유지한다
                             .textEditTapInput(
                                 isInsideTextBox = { x, y -> hitTarget()?.containsPoint(x, y) == true },
@@ -407,6 +409,7 @@ internal fun CanvasTextInputScreen(
                                 BasicTextField(
                                     state = textFieldState,
                                     inputTransformation = dedupeHangulEnterTransformation.then(maxLengthTransformation),
+                                    outputTransformation = textToppingScriptOutputTransformation,
                                     // 자동 수정·추천어 치환이 글자를 바꿔 줄바꿈·글자 수가 흔들리지 않게 끈다
                                     keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                                     textStyle = autoSizeBaseStyle
@@ -439,6 +442,17 @@ internal fun CanvasTextInputScreen(
                                 )
                             }
                         }
+                    }
+
+                    // 제자리로 돌아오는 애니메이션 동안에도 글자를 따라가도록 저장값이 아니라 그리는 값을 본다
+                    val textBoxSize = uiState.textBoxSize
+                    if (!textEditMode.isEditing && textBoxSize != null) {
+                        ToppingSelectionStroke(
+                            center = drawnCenter,
+                            // 44dp 최소값은 터치 판정 몫이다 — 점선까지 키우면 작은 글자에서 비율이 틀어진다
+                            sizeAfterScale = textBoxSize * drawnScale,
+                            rotationDegrees = drawnRotationDegrees,
+                        )
                     }
 
                     // 배치 모드의 탭·팬·핀치는 텍스트 **위** 전면 오버레이가 독점한다. 텍스트와 같은 이유로

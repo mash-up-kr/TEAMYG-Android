@@ -9,6 +9,9 @@ interface AnalyticsLogger {
         value: String,
     )
 
+    /** `null` 이면 지운다. */
+    fun setUserId(id: String?)
+
     fun logScreenView(screen: AnalyticsScreen)
 
     fun logEvent(event: AnalyticsEvent)

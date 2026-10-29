@@ -1,7 +1,7 @@
 ---
 id: text-topping
 title: 텍스트 토핑 — 캔버스 텍스트 업로드·수정·삭제 (Text Topping)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
 verified: 2026-10-26
@@ -33,7 +33,7 @@ related_code:
   - ToppingPanelFocus.kt#animatePanelFocusFraction
   - ToppingArrangeCanvasSurface.kt
   - ToppingHitTarget.kt
-  # 후속 작업이 붙을 자리(아직 미구현 — 아래 본문 참고)
+  # 사진 토핑 체계를 재사용한 저장·병합·마감 (서버 연동은 text-topping-api)
   - CanvasToppingArrangeViewModel.kt#mergeToppings
   - CanvasToppingVO.kt
   - ToppingTransform.kt
@@ -82,7 +82,7 @@ tags: [spec, parfait, canvas, topping, c-106, text]
 |---|---|---|
 | 캔버스 메인 | C-001 | `CANVAS_MAIN` — 있음 |
 | **텍스트 입력 ↔ 배치**(한 화면, 키보드 ↑ = 편집 / 키보드 ↓ = 배치) | **C-106** | `CANVAS_TEXT_INPUT`(`NavKeyCanvasTextInput`) — **신규, 있음**. `CanvasTextInputScreen`/`ViewModel`/`Route`. 편집 모드(가운데 포커스·전체 딤·입력 툴바)와 배치 모드(저장 자리·딤 해제·팬/핀치·쌓기 바)를 `isEditing` 로 가른다 |
-| 이미 쌓인 토핑의 재편집 배치 상태 | C-305 | `CANVAS_TOPPING_ARRANGE` — 있음(사진 전용으로 이미 동작). 텍스트 재편집(E-2)도 이 화면을 **확장**해서 타는 안이 합리적이나 **아직 미구현** — 아래 "파일 구성"·"범위" 참고 |
+| 이미 쌓인 토핑의 재편집 배치 상태 | C-305 | `CANVAS_TOPPING_ARRANGE` — 있음. 텍스트 재편집(E-2)도 이 화면을 확장해 탄다([text-topping-api](2026-10-26-text-topping-api.md)) |
 
 `CANVAS_TEXT_INPUT` 은 사진 C-106(`CANVAS_TOPPING_PLACE`)과 같은 `screenId = "C-106"` 을 공유하되
 `screenClass` 로 갈린다(`AnalyticsScreenType.kt`). 제스처 처리(이동 pan, 핀치 zoom/rotation)와
@@ -91,12 +91,12 @@ tags: [spec, parfait, canvas, topping, c-106, text]
 `ToppingPanelFocus.kt#panelFocusCenter`·`#animatePanelFocusFraction` **컴포넌트를 그대로 재사용**한다.
 
 사진 토핑 쪽 화면 분류 자체의 기존 혼선(정본 문서의 "C105" 하나 vs 코드의 C-106/C-305 분리)은
-별개 미결 [OQ-P-430](../../synthesis/open-questions.md#2026-10-07-canvas_edit-화면-분류가-정본-문서와-코드에서-다르고-canvas_edit_border_tapped는-아직-못-심었다)로
+별개 미결 [OQ-P-430](../../../synthesis/open-questions.md#2026-10-07-canvas_edit-화면-분류가-정본-문서와-코드에서-다르고-canvas_edit_border_tapped는-아직-못-심었다)로
 이미 올라가 있다 — 참고만 하고 이 스펙이 새로 다루는 문제와는 구분한다.
 
 ## 범위
 
-이 스펙은 기능 전체의 설계를 담는다. 서버 연동·재편집은 [text-topping-api](2026-10-26-text-topping-api.md)가 정본이다. 아래 "구현됨 / 미구현"으로 현재 상태를 명시한다.
+이 스펙은 기능 전체의 설계를 담는다. 서버 연동·재편집은 [text-topping-api](2026-10-26-text-topping-api.md)가 정본이다. 아래 "구현됨 / 하지 않음"으로 현재 상태를 명시한다.
 
 - **구현됨 (as-built)**
   - "텍스트 입력" 메뉴 진입 → C-106 단일 화면(편집 모드 ↔ 배치 모드, `isEditing`)
@@ -124,8 +124,8 @@ tags: [spec, parfait, canvas, topping, c-106, text]
   - 박스 밖 탭 순차 닫힘(팝오버 → 키보드), 닫는 탭이 아래 요소로 전파되지 않음. ✓ 는 팝오버가 열려
     있어도 한 번에 편집을 끝내고, 어느 경로로 편집이 끝나도 팝오버를 닫는다
   - 헤더 X 확인 팝업(`YGModalQuitAddText` — 그만두기 / 계속 추가)
-- **미구현 (설계만, 후속 PR/선행 조건 대기)**
-  - 동시편집 병합 · 03:00 마감 — 사진 토핑의 기존 체계를 그대로 재사용한다
+  - 동시편집 병합 · 03:00 마감 — 사진 토핑의 dirty-set 병합과 409 영구 실패 처리를 텍스트 id에도 쓴다
+- **하지 않음 (플랫폼 제약)**
   - Android 뒤로가기의 "팝오버 먼저, 그다음 키보드" 순차 — 소프트 키보드가 떠 있으면 시스템이
     백을 먼저 먹어 키보드부터 내려가는 플랫폼 제약. 팝오버는 편집 모드에만 보이므로 키보드와 함께
     닫힌다(탭-아웃은 스펙대로 순차 동작). 자세한 근거는 "주의" 참고
@@ -133,7 +133,7 @@ tags: [spec, parfait, canvas, topping, c-106, text]
   - 색 세트·색 매핑 값 정의 자체(별도 문서) — 이 스펙은 "색 ID를 저장한다"까지만 다룬다
   - 비속어 필터, 개별 텍스트 신고, 접근성 기준
   - iOS 구현, 크로스플랫폼 줄바꿈 엔진 통일(아래 열린 질문에 완화책만 기록)
-  - 서버 API 계약 자체 — 정본은 서버이고 미러는 [api/parfait-text.md](../../api/parfait-text.md)다
+  - 서버 API 계약 자체 — 정본은 서버이고 미러는 [api/parfait-text.md](../../../api/parfait-text.md)다
 
 ## 진입 · 플로우
 
@@ -285,7 +285,7 @@ Compose `BasicTextField` 기준으로 **`PointerEventPass.Initial`에서 먼저 
 - 포커스 + 한 손가락 이동·두 손가락 핀치(크기·회전). **제스처 컴포넌트는** 사진 토핑의
   `ToppingTransformInput.kt#toppingTransformInput` / `ToppingHitTestInput.kt#toppingTapInput`을
   그대로 재사용한다. 신규 생성은 **C-106 한 화면 안의 배치 모드**(`isEditing = false`)로 처리하고,
-  이미 쌓인 토핑 재편집은 C-305(`CanvasToppingArrangeViewModel` 확장, **미구현**)로 간다
+  이미 쌓인 토핑 재편집은 C-305(`CanvasToppingArrangeViewModel` 확장)로 간다
 - 텍스트를 다시 탭하면 편집 모드로 돌아가며 키보드 ↑. 편집 중엔 키보드가 떠 있는 동안 텍스트가
   Text-Area 가운데로 임시 이동, 배치로 돌아가면 원래 자리로 복귀(저장은 원래 자리 기준) —
   `ToppingPanelFocus.kt#panelFocusCenter`/`#animatePanelFocusFraction` 패턴과 동일한 축을 `isEditing`
@@ -374,7 +374,7 @@ data class EditableTextTopping(
 ```
 
 `positionX/Y/Z` 좌표계는 `ToppingTransform.kt`·`EditableTopping.kt`와 **동일한 비율 좌표계**를
-공유해야 한다 — 사진과 텍스트가 같은 z-순서 공간에서 겹칠 수 있어야 하므로([c106-topping-place-api](archive/2026-08-20-c106-topping-place-api.md)의
+공유해야 한다 — 사진과 텍스트가 같은 z-순서 공간에서 겹칠 수 있어야 하므로([c106-topping-place-api](2026-08-20-c106-topping-place-api.md)의
 좌표 변환 공식 참고).
 
 ## 파일 구성 (as-built)
@@ -384,7 +384,7 @@ data class EditableTextTopping(
 | 자리 | 역할 |
 |---|---|
 | `feature/groups/canvas/impl/.../screen/CanvasMainScreen.kt` | `addAction` 펼침 목록에 "텍스트 입력" `YGCanvasMenuItem` 추가(별도 `YGCanvasMenuAction` 안 만듦) |
-| `feature/groups/canvas/api/.../NavKeyCanvasTextInput.kt` (신규) | 파라미터 없는 `data object` NavKey. 내용은 초안이 아니라 화면 로컬 상태 |
+| `feature/groups/canvas/api/.../NavKeyCanvasTextInput.kt` (신규) | `data class`(`isEditingExisting`) NavKey. 신규 생성의 내용은 초안이 아니라 화면 로컬 상태이고, 재편집 대상은 `TextEditSessionHolder`가 나른다 |
 | `feature/groups/canvas/impl/.../route/CanvasTextInputRoute.kt` (신규) | 인셋을 Scaffold가 미리 안 먹게 `contentWindowInsets = 0`, effect→네비게이션 배선 |
 | `feature/groups/canvas/impl/.../screen/CanvasTextInputScreen.kt` (신규, **C-106**) | 편집/배치 모드를 `isEditing`(필드 포커스로 구동) 로 가르는 단일 화면. 정적 캔버스 9:16 프레임·딤·툴바·헤더, 캔버스 너비 기준 크기·자동 크기 적용·키보드 위 중심 계산·빈 내용 취소 판정 |
 | `feature/groups/canvas/impl/.../viewmodel/CanvasTextInputViewModel.kt` (신규) | 그래핌 카운팅·타입/정렬/색 순환·배치 transform·초기 중앙 배치. 캔버스 구독(배경·기존 토핑) |
@@ -402,11 +402,7 @@ data class EditableTextTopping(
 | `core/designsystem/src/main/res/drawable/ic_align_{left,center,right}.xml` | 정렬 아이콘 |
 | `core/analytics/.../AnalyticsScreenType.kt`, `app/.../NavKeyAnalyticsScreen.kt` | `CANVAS_TEXT_INPUT`(C-106) enum·매핑 |
 
-**미구현 (후속 작업이 붙을 자리)**
-
-| 자리 | 역할 |
-|---|---|
-| (없음) | C-305 재편집·저장소·유스케이스·`texts` VO 매핑은 [text-topping-api](2026-10-26-text-topping-api.md)에서 구현됐다 |
+C-305 재편집·저장소·유스케이스·`texts` VO 매핑의 파일 구성은 [text-topping-api](2026-10-26-text-topping-api.md)에 있다.
 
 ## 주의 / 열린 질문
 
@@ -419,7 +415,7 @@ data class EditableTextTopping(
   `rotation`·`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`이다. 타입 3종은 `isFill`·`isStroke` 조합으로,
   정렬 3종은 `textAlign`으로 실리지만 **`lineBreakPositions`를 실을 필드가 없다**(OQ-P-451). 그 밖의 계약 미결 — `color` 형식
   (OQ-P-441), 글자 수 계수 기준(서버 2000자 UTF-16 vs 앱 100 그래핌, OQ-P-442), 이미지와 공유하는
-  `positionZ` 배정(OQ-P-443), 멱등이 아닌 POST의 재시도(OQ-P-444)는 [api/parfait-text.md](../../api/parfait-text.md) 「미결」.
+  `positionZ` 배정(OQ-P-443), 멱등이 아닌 POST의 재시도(OQ-P-444)는 [api/parfait-text.md](../../../api/parfait-text.md) 「미결」.
 - **Line Seed JP/TW 폰트를 번들했다(공식 배포본).** `res/font/line_seed_{jp,tw}_regular.ttf`, 라이선스는
   `feature/groups/canvas/impl/licenses/`. 남는 고려: ⓐ APK 가 ~10.5MB 커짐(특히 TW 번체 전체 글리프 6.9MB) —
   필요하면 서브셋팅으로 축소, ⓑ 언어 판별은 **글자별이 아니라 내용의 주된 스크립트**로 통째 적용이라
@@ -429,7 +425,7 @@ data class EditableTextTopping(
   매트릭스로 확인 권장.
 - **크로스플랫폼 줄바꿈 완전 동기화는 이 스펙만으로 닫히지 않는다.** 저장값 재사용 원칙은 정했지만
   서버 계약에 `lineBreakPositions` 필드가 없어 위 계약 간극(OQ-P-451)과 묶인다.
-- 화면 식별자 C-305 통일 건은 사진 토핑 쪽 [OQ-P-430](../../synthesis/open-questions.md#2026-10-07-canvas_edit-화면-분류가-정본-문서와-코드에서-다르고-canvas_edit_border_tapped는-아직-못-심었다)에
+- 화면 식별자 C-305 통일 건은 사진 토핑 쪽 [OQ-P-430](../../../synthesis/open-questions.md#2026-10-07-canvas_edit-화면-분류가-정본-문서와-코드에서-다르고-canvas_edit_border_tapped는-아직-못-심었다)에
   이미 올라가 있다 — 이 스펙에서 새 미결 항목을 만들지 않고 거기 묶는다.
 - 줄바꿈 100번 같은 극단 입력에서의 렌더링·성능 한계는 구현 후 실기기 QA 항목으로 남긴다(수치
   기준 없음).

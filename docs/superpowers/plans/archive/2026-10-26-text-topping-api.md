@@ -1,3 +1,23 @@
+---
+id: text-topping-api
+title: 텍스트 토핑 서버 연동 — 배치·C-001 렌더링·C-305 재편집
+status: done
+type: work-order
+created: 2026-10-26
+updated: 2026-10-27
+platforms: android
+owner:
+related_adr: ADR-0029
+related_spec: text-topping-api, text-topping
+related_code:
+  - CanvasTextInputViewModel.kt#handleOnClickStack
+  - CanvasToppingArrangeViewModel.kt#handleOnClickConfirm
+  - RecreateTextToppingUseCase.kt
+  - TextEditSessionHolder.kt
+archived_reason: 구현 완료(10 Task 수행, develop 머지 PR #645 `ed88a1547`). Task 7·9의 에뮬레이터 수동 확인은 미수행.
+tags: [plan, parfait]
+---
+
 # 텍스트 토핑 서버 연동 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -8,11 +28,11 @@
 
 **Tech Stack:** Kotlin, Jetpack Compose, Hilt, kotlinx.serialization, Retrofit, JUnit + MockK + Turbine.
 
-**Spec:** [`docs/superpowers/specs/2026-10-26-text-topping-api.md`](../specs/2026-10-26-text-topping-api.md) — 화면 동작 정본은 [`2026-10-16-text-topping.md`](../specs/2026-10-16-text-topping.md).
+**Spec:** [`docs/superpowers/specs/2026-10-26-text-topping-api.md`](../../specs/archive/2026-10-26-text-topping-api.md) — 화면 동작 정본은 [`2026-10-16-text-topping.md`](../../specs/archive/2026-10-16-text-topping.md).
 
 ## Global Constraints
 
-- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다 — 코드가 말하는 것은 쓰지 않고, 다른 컴포넌트의 현재 상태를 단정하지 않는다.
+- 코드 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다 — 코드가 말하는 것은 쓰지 않고, 다른 컴포넌트의 현재 상태를 단정하지 않는다.
 - 커밋 메시지: `type: 한국어 설명` 형식. **Co-Authored-By 줄을 넣지 않는다.**
 - 피처의 비-UI 타입(data class·enum·홀더·상수)은 `impl/model` 또는 `impl/util`에 파일당 하나. 새 컴포넌트에는 `@YGPreview` 프리뷰를 둔다.
 - 저장 단위: `positionX`·`positionY` = 텍스트 박스 **중심**의 Canvas-Area 대비 비율, `fontSize` = `designFontSize`(디자인 너비 335 기준, ≤24), `scale` = 배치 핀치 배율, `rotation` = 도, `color` = `TextToppingColor.contentColor`의 `#RRGGBB` 대문자, `isFill`·`isStroke` = `TextToppingType.hasFill`·`hasBorder`.
@@ -56,11 +76,11 @@
   val texts: List<CanvasTextToppingVO>
   ```
 
-- [ ] **Step 1: 실패하는 테스트** — `ParfaitRemoteDataSourceImplTest`에 오늘 조회 응답 JSON에 `texts` 한 건(`parfaitTextId` 7, `color` `"#FA91A2"`, `fontSize` 18.0, `scale` 1.5, `isFill` true, `isStroke` false, `placedBy.ownerType` `"ME"`, `createdAt` `"2026-10-26T10:00:00.123"`)을 넣고 `texts.single()`의 필드가 그대로이며 `isMine == true`인지, `texts`가 `null`이면 `emptyList()`인지 단언한다. `ownerType` `"OTHER"`면 `isMine == false`.
-- [ ] **Step 2: 실행해 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*ParfaitRemoteDataSourceImplTest*"` → 컴파일 실패(`texts` 없음).
-- [ ] **Step 3: 구현** — `CanvasTextToppingVO` 생성, `CanvasVO.texts` 추가(KDoc의 "null 을 빈 목록으로 접는다" 문장에 texts 포함), `toCanvasVO`에서 `texts.orEmpty().map { it.toCanvasTextToppingVO() }`. `isMine`은 이미지와 같은 `OWNER_TYPE_ME` 비교. `CanvasVO(...)`를 만드는 모든 곳(테스트 픽스처 포함, `grep -rn "CanvasVO(" --include='*.kt'`)에 `texts = emptyList()`를 넣는다.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS. 이어 `./gradlew :domain:test :data:testDebugUnitTest :feature:groups:canvas:impl:testDebugUnitTest` 컴파일·통과.
-- [ ] **Step 5: 커밋** — `feat: 캔버스 응답의 텍스트 토핑을 도메인으로 올린다`
+- [x] **Step 1: 실패하는 테스트** — `ParfaitRemoteDataSourceImplTest`에 오늘 조회 응답 JSON에 `texts` 한 건(`parfaitTextId` 7, `color` `"#FA91A2"`, `fontSize` 18.0, `scale` 1.5, `isFill` true, `isStroke` false, `placedBy.ownerType` `"ME"`, `createdAt` `"2026-10-26T10:00:00.123"`)을 넣고 `texts.single()`의 필드가 그대로이며 `isMine == true`인지, `texts`가 `null`이면 `emptyList()`인지 단언한다. `ownerType` `"OTHER"`면 `isMine == false`.
+- [x] **Step 2: 실행해 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*ParfaitRemoteDataSourceImplTest*"` → 컴파일 실패(`texts` 없음).
+- [x] **Step 3: 구현** — `CanvasTextToppingVO` 생성, `CanvasVO.texts` 추가(KDoc의 "null 을 빈 목록으로 접는다" 문장에 texts 포함), `toCanvasVO`에서 `texts.orEmpty().map { it.toCanvasTextToppingVO() }`. `isMine`은 이미지와 같은 `OWNER_TYPE_ME` 비교. `CanvasVO(...)`를 만드는 모든 곳(테스트 픽스처 포함, `grep -rn "CanvasVO(" --include='*.kt'`)에 `texts = emptyList()`를 넣는다.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS. 이어 `./gradlew :domain:test :data:testDebugUnitTest :feature:groups:canvas:impl:testDebugUnitTest` 컴파일·통과.
+- [x] **Step 5: 커밋** — `feat: 캔버스 응답의 텍스트 토핑을 도메인으로 올린다`
 
 ### Task 2: 텍스트 저장소·유스케이스
 
@@ -87,11 +107,11 @@
   class DeleteTextToppingUseCase { suspend operator fun invoke(groupId, parfaitId, parfaitTextId: ParfaitTextId): Result<Unit> }
   ```
 
-- [ ] **Step 1: 실패하는 테스트** — `ToppingRepositoryImplTest` 모양을 따라 세 메서드 각각: 성공은 데이터소스 결과를 그대로, `ApiException`·`IOException` 실패는 `AppError`로 매핑(`mapErrorToAppError`)되는지 단언.
-- [ ] **Step 2: 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*TextToppingRepositoryImplTest*"` → 컴파일 실패.
-- [ ] **Step 3: 구현** — 위임 + `mapErrorToAppError()`. `place` KDoc에 "멱등이 아니다 — 부를 때마다 새 행과 푸시"(근거 `api/parfait-text.md`). `RepositoryModule`에 `@Binds`. 유스케이스 셋은 위임만.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS. 바인딩 테스트가 있으면(`ToppingRepositoryBindingTest`) 같은 모양으로 텍스트 바인딩도 하나 추가.
-- [ ] **Step 5: 커밋** — `feat: 텍스트 토핑 저장소와 유스케이스를 추가한다`
+- [x] **Step 1: 실패하는 테스트** — `ToppingRepositoryImplTest` 모양을 따라 세 메서드 각각: 성공은 데이터소스 결과를 그대로, `ApiException`·`IOException` 실패는 `AppError`로 매핑(`mapErrorToAppError`)되는지 단언.
+- [x] **Step 2: 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*TextToppingRepositoryImplTest*"` → 컴파일 실패.
+- [x] **Step 3: 구현** — 위임 + `mapErrorToAppError()`. `place` KDoc에 "멱등이 아니다 — 부를 때마다 새 행과 푸시"(근거 `api/parfait-text.md`). `RepositoryModule`에 `@Binds`. 유스케이스 셋은 위임만.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS. 바인딩 테스트가 있으면(`ToppingRepositoryBindingTest`) 같은 모양으로 텍스트 바인딩도 하나 추가.
+- [x] **Step 5: 커밋** — `feat: 텍스트 토핑 저장소와 유스케이스를 추가한다`
 
 ### Task 3: 일괄 PATCH에 텍스트 변형 싣기
 
@@ -114,11 +134,11 @@
   ```
   반환은 이미지 결과만이다 — 호출처는 저장 뒤 캔버스를 다시 읽는다.
 
-- [ ] **Step 1: 실패하는 테스트** — (a) 데이터소스: 텍스트 업데이트 하나를 넘기면 요청 `textItems`에 `parfaitTextId`·축 값이 실리고 `items`는 빈 목록. (b) 저장소: `updates`·`textUpdates`가 **둘 다** 비었을 때만 요청 없이 `success(emptyList())`, 텍스트만 있으면 요청이 나간다.
-- [ ] **Step 2: 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*ToppingRepositoryImplTest*" --tests "*ParfaitImageRemoteDataSourceImplTest*"` → 컴파일 실패.
-- [ ] **Step 3: 구현** — `toUpdateRequest`가 두 목록을 받아 `UpdateParfaitImagesRequest(items, textItems)`를 만든다. 빈 요청 가드 주석의 조건을 "둘 다 비면"으로.
-- [ ] **Step 4: 통과 확인** — 같은 명령 + `./gradlew :feature:groups:canvas:impl:testDebugUnitTest` PASS(기존 호출처는 기본값으로 컴파일된다).
-- [ ] **Step 5: 커밋** — `feat: 토핑 일괄 수정에 텍스트 변형을 싣는다`
+- [x] **Step 1: 실패하는 테스트** — (a) 데이터소스: 텍스트 업데이트 하나를 넘기면 요청 `textItems`에 `parfaitTextId`·축 값이 실리고 `items`는 빈 목록. (b) 저장소: `updates`·`textUpdates`가 **둘 다** 비었을 때만 요청 없이 `success(emptyList())`, 텍스트만 있으면 요청이 나간다.
+- [x] **Step 2: 실패 확인** — `./gradlew :data:testDebugUnitTest --tests "*ToppingRepositoryImplTest*" --tests "*ParfaitImageRemoteDataSourceImplTest*"` → 컴파일 실패.
+- [x] **Step 3: 구현** — `toUpdateRequest`가 두 목록을 받아 `UpdateParfaitImagesRequest(items, textItems)`를 만든다. 빈 요청 가드 주석의 조건을 "둘 다 비면"으로.
+- [x] **Step 4: 통과 확인** — 같은 명령 + `./gradlew :feature:groups:canvas:impl:testDebugUnitTest` PASS(기존 호출처는 기본값으로 컴파일된다).
+- [x] **Step 5: 커밋** — `feat: 토핑 일괄 수정에 텍스트 변형을 싣는다`
 
 ### Task 4: 텍스트 서버 값 변환과 겹침 순서
 
@@ -151,16 +171,16 @@
   internal fun canvasLayerOrder(images: List<CanvasToppingVO>, texts: List<CanvasTextToppingVO>): List<CanvasLayerItem>
   ```
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - `TextToppingColor.entries.forEach { assertEquals(it, textToppingColorOf(it.toWireColor())) }`; `textToppingColorOf("#fa91a2") == Pink`; `textToppingColorOf("rgb(1,2,3)") == Black`; `TextToppingColor.White.toWireColor() == "#FFFFFF"`.
   - 타입 왕복 3종 + `textToppingTypeOf(false, true) == DEFAULT`.
   - `toTextToppingTransform(offsetX=100.dp, offsetY=50.dp, boxSize=DpSize(40.dp,20.dp), canvasSize=DpSize(200.dp,400.dp), scale=1.5f, rotationDegrees=30f, positionZ=4)` → `positionX 0.6`, `positionY 0.15`, `scale 1.5`, `rotation 30.0`, `positionZ 4`.
   - `canvasLayerOrder`: 이미지 z=2(id 5)·텍스트 z=1(id 9)·텍스트 z=2(id 5) → 순서 `Text(9), Image(5), Text(5)`.
   - `CanvasMainViewModelTest`: 이미지 최대 z 3, 텍스트 최대 z 7인 캔버스에서 토핑 흐름 시작 시 초안 `nextPositionZ == 8`. 텍스트만 z 2면 3.
-- [ ] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*TextToppingWireMapperTest*" --tests "*CanvasLayerOrderTest*" --tests "*CanvasMainViewModelTest*"` → 컴파일 실패.
-- [ ] **Step 3: 구현** — 색 hex는 `Color.toArgb()`에서 RGB 6자리를 대문자로. `nextPositionZ`는 `toppings`와 `texts`의 z를 합친 최댓값.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS.
-- [ ] **Step 5: 커밋** — `feat: 텍스트 토핑 서버 값 변환과 겹침 순서를 정한다`
+- [x] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*TextToppingWireMapperTest*" --tests "*CanvasLayerOrderTest*" --tests "*CanvasMainViewModelTest*"` → 컴파일 실패.
+- [x] **Step 3: 구현** — 색 hex는 `Color.toArgb()`에서 RGB 6자리를 대문자로. `nextPositionZ`는 `toppings`와 `texts`의 z를 합친 최댓값.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS.
+- [x] **Step 5: 커밋** — `feat: 텍스트 토핑 서버 값 변환과 겹침 순서를 정한다`
 
 ### Task 5: 공용 텍스트 렌더러 추출
 
@@ -179,9 +199,9 @@
   ```
   `fontScale = 1`, `detectTextToppingScript`로 글꼴·자간, `TextToppingBackground`로 배경·테두리, 래핑 폭 = `canvasWidth × designFontSize / TEXT_TOPPING_FONT_SIZE_SP`, `measureTextBoxUnbounded` 유지.
 
-- [ ] **Step 1: 추출** — C-106 배치 모드가 지금 그리는 텍스트(편집 모드의 `BasicTextField`가 아닌 쪽)를 `TextToppingContent`로 옮긴다. C-106 동작은 바뀌지 않아야 한다. 같은 파일에 `@YGPreview` 프리뷰(타입 3종 × 짧은/두 줄 텍스트).
-- [ ] **Step 2: 빌드·회귀 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:compileDebugKotlin` PASS. 래핑 폭 공식이 C-106의 `fitTextToppingToHeight` 결과(`fieldMaxWidthDp`)와 같은 값이 되는지 `CanvasTextInputScreen`의 계산과 대조해 리뷰어가 확인할 수 있게 커밋 메시지 본문에 근거 한 줄.
-- [ ] **Step 3: 커밋** — `refactor: 텍스트 토핑 렌더러를 공용 컴포저블로 뽑는다`
+- [x] **Step 1: 추출** — C-106 배치 모드가 지금 그리는 텍스트(편집 모드의 `BasicTextField`가 아닌 쪽)를 `TextToppingContent`로 옮긴다. C-106 동작은 바뀌지 않아야 한다. 같은 파일에 `@YGPreview` 프리뷰(타입 3종 × 짧은/두 줄 텍스트).
+- [x] **Step 2: 빌드·회귀 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest :feature:groups:canvas:impl:compileDebugKotlin` PASS. 래핑 폭 공식이 C-106의 `fitTextToppingToHeight` 결과(`fieldMaxWidthDp`)와 같은 값이 되는지 `CanvasTextInputScreen`의 계산과 대조해 리뷰어가 확인할 수 있게 커밋 메시지 본문에 근거 한 줄.
+- [x] **Step 3: 커밋** — `refactor: 텍스트 토핑 렌더러를 공용 컴포저블로 뽑는다`
 
 ### Task 6: C-106 [캔버스에 쌓기] 저장
 
@@ -194,16 +214,16 @@
 - Consumes: `PlaceTextToppingUseCase`(Task 2), `toTextToppingTransform`·`textToppingStyleOf`(Task 4), 초안 `ToppingDraft.parfaitId`·`nextPositionZ`, `RefreshTodayParfaitDetailUseCase`, `AppError.isPermanentPlaceFailure()`
 - Produces: `CanvasTextInputUiState.isLoading: Boolean`; `CanvasTextInputEffect.ShowPlaceFailed(permanent: Boolean)`
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - 내용 "hi", 캔버스·박스 측정 뒤 `OnClickStack` → `placeTextTopping(GroupId(1), ParfaitId(2), "hi", transform(positionZ = 1), style)` 한 번, 그 뒤 `refreshTodayParfaitDetail`·`clearToppingDraft`·`NavigateBack`.
   - `OnClickStack` 두 번 연속(첫 호출이 suspend 중) → place 호출 1회.
   - place가 `AppError.Server(code = PARFAIT_ALREADY_CLOSED)` 실패 → `ShowPlaceFailed(permanent = true)`, `isLoading == false`, 내용 유지, `clearToppingDraft` 미호출, 재시도 없음(place 1회).
   - 네트워크 실패 → `ShowPlaceFailed(permanent = false)`.
   - 분석 이벤트 `CANVAS_TEXT_STACK_TAPPED`는 결과와 무관하게 탭마다 1회.
-- [ ] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasTextInputViewModelTest*"` → FAIL.
-- [ ] **Step 3: 구현** — 초안 구독에서 `parfaitId`·`nextPositionZ`도 들고 있는다. `launch(key = …)` 로 중복 실행 차단(사진 배치의 `CONFIRM_KEY` 패턴). 성공 시 갱신을 기다린 뒤 나간다(라우트가 나가며 scope가 취소되는 문제는 `CanvasToppingArrangeViewModel#handleOnClickConfirm` 주석과 같다). 토스트 문구는 `canvas_topping_place_failed`·`canvas_topping_place_failed_permanently` 재사용. 로딩 중엔 쌓기·제스처를 막는다. 스텁 주석(OQ-P-450) 제거.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS.
-- [ ] **Step 5: 커밋** — `feat: 텍스트 토핑 쌓기를 서버에 저장한다`
+- [x] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasTextInputViewModelTest*"` → FAIL.
+- [x] **Step 3: 구현** — 초안 구독에서 `parfaitId`·`nextPositionZ`도 들고 있는다. `launch(key = …)` 로 중복 실행 차단(사진 배치의 `CONFIRM_KEY` 패턴). 성공 시 갱신을 기다린 뒤 나간다(라우트가 나가며 scope가 취소되는 문제는 `CanvasToppingArrangeViewModel#handleOnClickConfirm` 주석과 같다). 토스트 문구는 `canvas_topping_place_failed`·`canvas_topping_place_failed_permanently` 재사용. 로딩 중엔 쌓기·제스처를 막는다. 스텁 주석(OQ-P-450) 제거.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS.
+- [x] **Step 5: 커밋** — `feat: 텍스트 토핑 쌓기를 서버에 저장한다`
 
 ### Task 7: C-001에 텍스트 그리기·탭
 
@@ -226,17 +246,17 @@
   ```
   텍스트 판정은 `ToppingHitTarget`을 외곽선 없이(`outline = null`) 회전된 박스 크기로 만든다 — 박스 크기는 렌더 때 측정한 값 × `scale`.
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - 내 텍스트 `OnClickText` (오늘 캔버스) → `NavigateToToppingArrange(isText = true, toppingId = text id)`; 과거 캔버스면 효과 없음.
   - 남의 텍스트 → `spotlightedKey == CanvasToppingKey.Text(id)` + `ShowSpotlightToast(nickname, …, elapsed)`.
   - 같은 숫자 id 5의 이미지가 Spotlight인 상태에서 다음 캔버스 방출에 이미지 5가 사라지고 텍스트 5만 남으면 Spotlight가 풀린다(키 종류로 생존 판정).
   - Spotlight 중 텍스트 탭은 무시(이미지 가드와 같다).
   - `ToppingHitTestTest`: 회전 0·90도 텍스트 사각형 안/밖 판정.
-- [ ] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasMainViewModelTest*" --tests "*ToppingHitTestTest*"` → FAIL.
-- [ ] **Step 3: 구현** — 레이어는 `canvasLayerOrder` 순으로 이미지/텍스트를 그린다. 텍스트는 이미지 로딩과 무관하게 `settled`(일괄 등장 빗장에 `true`로 참여). 텍스트만 있으면 바로 보인다. 타임랩스 `toppingPopProgresses`는 합친 순서 기준 인덱스로 바꾼다. 판정 오버레이는 이미지·텍스트 대상을 합친 목록으로 `toppingTapInput`에 넣되 `keyOf`는 `CanvasToppingKey`. Spotlight 딤 위로 올리는 대상도 키로 고른다.
-- [ ] **Step 4: 통과 확인** — 같은 명령 + 모듈 전체 `testDebugUnitTest` PASS.
-- [ ] **Step 5: 수동 확인** — 에뮬레이터에서 C-106으로 텍스트를 쌓고 C-001에 같은 자리·크기로 보이는지, 남의 텍스트 탭 토스트, 이미지 저장 결과물에 텍스트가 찍히는지. 못 하면 PR 본문에 미수행으로 적는다.
-- [ ] **Step 6: 커밋** — `feat: 캔버스 메인에 텍스트 토핑을 그리고 탭을 받는다`
+- [x] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasMainViewModelTest*" --tests "*ToppingHitTestTest*"` → FAIL.
+- [x] **Step 3: 구현** — 레이어는 `canvasLayerOrder` 순으로 이미지/텍스트를 그린다. 텍스트는 이미지 로딩과 무관하게 `settled`(일괄 등장 빗장에 `true`로 참여). 텍스트만 있으면 바로 보인다. 타임랩스 `toppingPopProgresses`는 합친 순서 기준 인덱스로 바꾼다. 판정 오버레이는 이미지·텍스트 대상을 합친 목록으로 `toppingTapInput`에 넣되 `keyOf`는 `CanvasToppingKey`. Spotlight 딤 위로 올리는 대상도 키로 고른다.
+- [x] **Step 4: 통과 확인** — 같은 명령 + 모듈 전체 `testDebugUnitTest` PASS.
+- [ ] **Step 5: 수동 확인** — 에뮬레이터에서 C-106으로 텍스트를 쌓고 C-001에 같은 자리·크기로 보이는지, 남의 텍스트 탭 토스트, 이미지 저장 결과물에 텍스트가 찍히는지. 못 하면 PR 본문에 미수행으로 적는다. [^manual]
+- [x] **Step 6: 커밋** — `feat: 캔버스 메인에 텍스트 토핑을 그리고 탭을 받는다`
 
 ### Task 8: C-305에 텍스트 편입(이동·핀치·삭제·저장)
 
@@ -263,17 +283,17 @@
   ```
   이미지 쪽 세 집합은 그대로 두고 텍스트 쪽을 따로 둔다(id 충돌). `hasUnsavedChanges`는 양쪽을 본다.
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - `initialIsText = true, initialToppingId = 5`로 열면 `focusedKey == Text(5)`; 같은 id 5의 이미지가 있어도 이미지는 포커스 아님.
   - 포커스된 내 텍스트에 `OnToppingTransform` → 텍스트만 이동·dirty, 이미지 5는 그대로.
   - 남의 텍스트 탭 → `ShowOthersToppingNotEditable`.
   - 텍스트 포커스 중 `OnToggleBorderPanel` → 패널 열리지 않음.
   - 삭제 버튼 → `pendingDeleteTextIds`에 들어가고 목록에서 숨는다. 다음 캔버스 방출에도 되살아나지 않는다(병합).
   - 확인 → 이미지·텍스트 변형이 `updateToppings(…, updates, textUpdates)` **한 번**에 실리고, 그 뒤 `deleteTextTopping` 호출, 성공 시 갱신·`NavigateBack`. 일괄 PATCH 실패 시 삭제를 보내지 않고 `ShowError(TOPPING_SAVE_UNKNOWN)`.
-- [ ] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasToppingArrangeViewModelTest*"` → FAIL.
-- [ ] **Step 3: 구현** — `CanvasTextToppingVO`→`EditableText` 매퍼는 `util/EditableToppingMapper.kt`에. 그리기·판정은 이미지·텍스트를 z 순서로 섞는다(Task 4 순서 규칙과 같게). 텍스트 판정은 Task 7과 같은 사각형 방식.
-- [ ] **Step 4: 통과 확인** — 같은 명령 PASS(기존 테스트의 `focusedToppingId` 단언은 `focusedKey`로 고친다).
-- [ ] **Step 5: 커밋** — `feat: 토핑 정리 화면에서 텍스트를 옮기고 지운다`
+- [x] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasToppingArrangeViewModelTest*"` → FAIL.
+- [x] **Step 3: 구현** — `CanvasTextToppingVO`→`EditableText` 매퍼는 `util/EditableToppingMapper.kt`에. 그리기·판정은 이미지·텍스트를 z 순서로 섞는다(Task 4 순서 규칙과 같게). 텍스트 판정은 Task 7과 같은 사각형 방식.
+- [x] **Step 4: 통과 확인** — 같은 명령 PASS(기존 테스트의 `focusedToppingId` 단언은 `focusedKey`로 고친다).
+- [x] **Step 5: 커밋** — `feat: 토핑 정리 화면에서 텍스트를 옮기고 지운다`
 
 ### Task 9: C-305 → C-106 재편집 왕복
 
@@ -304,25 +324,27 @@
   val recreateTextIds: Set<Long>
   ```
 
-- [ ] **Step 1: 실패하는 테스트**
+- [x] **Step 1: 실패하는 테스트**
   - C-305: 포커스된 내 텍스트를 다시 탭 → 홀더 `start(original)` + `NavigateToTextEdit`. 포커스 안 된 텍스트 첫 탭은 포커스만.
   - C-305: 홀더에 `Edited(text="new", …)` 결과 → 로컬 텍스트 갱신, `recreateTextIds`에 id, `consume()` 호출. `text`가 같고 색만 다르면 `recreateTextIds`엔 없고 dirty.
   - C-305: `Deleted` 결과 → `pendingDeleteTextIds`.
   - C-305 확인 순서: 일괄 PATCH → 스타일만 바뀐 텍스트 `updateTextTopping(TextToppingUpdate(color, fontSize, isFill, isStroke))` → 재배치 텍스트 `placeTextTopping(new text, 현재 transform(positionZ 유지), style)` 성공 후 옛 id `deleteTextTopping` → 삭제 대기 DELETE. 재배치 텍스트는 일괄 PATCH의 `textUpdates`에서 뺀다.
   - **POST 성공·옛 DELETE 실패** → `ShowError`, `recreateTextIds`에서 빠지고 옛 id가 `pendingDeleteTextIds`로 이동. 다시 확인 → `placeTextTopping` 추가 호출 없음, `deleteTextTopping(옛 id)`만 다시.
   - C-106 편집 모드(`isEditingExisting = true`): 홀더 세션 값으로 `content`·`selectedColor`·`textType`·`designFontSize`·`scale`·`rotationDegrees`가 채워지고, 캔버스·박스 측정 뒤 오프셋이 중심 비율에서 복원된다. `OnClickStack` → 서버 호출 없이 `finish(Edited(…))` + `NavigateBack`. 빈 내용으로 확인 → `finish(Deleted)`. 헤더 X 확인 → `finish` 없이 나간다. 초안을 비우지 않는다.
-- [ ] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasTextInputViewModelTest*" --tests "*CanvasToppingArrangeViewModelTest*"` → FAIL.
-- [ ] **Step 3: 구현** — `NavKeyCanvasTextInput`이 object에서 data class로 바뀌므로 `CanvasMainRoute`는 `NavKeyCanvasTextInput()`, 앱 매핑은 `is` 그대로. 엔트리는 `isEditingExisting`을 라우트로 넘기고, 뷰모델은 `SavedStateHandle`이나 assisted 인자로 받는다(기존 `CanvasToppingArrangeViewModel`의 assisted 패턴). 편집 모드는 C-106 오늘 캔버스 배경 구독에 `groupId`가 필요하다 — 세션에 `groupId`·`parfaitId`를 함께 싣는다(`TextEditSession`에 필드 추가 허용). C-305는 `holder.result`를 `init`에서 구독한다.
-- [ ] **Step 4: 통과 확인** — 같은 명령 + `./gradlew :app:compileDebugKotlin` PASS.
-- [ ] **Step 5: 수동 확인** — 에뮬레이터: C-001 내 텍스트 탭 → C-305 → 재탭 → C-106에서 글자 수정 → 쌓기 → C-305 → 쌓기 → C-001에 새 내용. 못 하면 PR 본문에 미수행으로.
-- [ ] **Step 6: 커밋** — `feat: 쌓인 텍스트를 다시 편집해 저장한다`
+- [x] **Step 2: 실패 확인** — `./gradlew :feature:groups:canvas:impl:testDebugUnitTest --tests "*CanvasTextInputViewModelTest*" --tests "*CanvasToppingArrangeViewModelTest*"` → FAIL.
+- [x] **Step 3: 구현** — `NavKeyCanvasTextInput`이 object에서 data class로 바뀌므로 `CanvasMainRoute`는 `NavKeyCanvasTextInput()`, 앱 매핑은 `is` 그대로. 엔트리는 `isEditingExisting`을 라우트로 넘기고, 뷰모델은 `SavedStateHandle`이나 assisted 인자로 받는다(기존 `CanvasToppingArrangeViewModel`의 assisted 패턴). 편집 모드는 C-106 오늘 캔버스 배경 구독에 `groupId`가 필요하다 — 세션에 `groupId`·`parfaitId`를 함께 싣는다(`TextEditSession`에 필드 추가 허용). C-305는 `holder.result`를 `init`에서 구독한다.
+- [x] **Step 4: 통과 확인** — 같은 명령 + `./gradlew :app:compileDebugKotlin` PASS.
+- [ ] **Step 5: 수동 확인** — 에뮬레이터: C-001 내 텍스트 탭 → C-305 → 재탭 → C-106에서 글자 수정 → 쌓기 → C-305 → 쌓기 → C-001에 새 내용. 못 하면 PR 본문에 미수행으로. [^manual]
+- [x] **Step 6: 커밋** — `feat: 쌓인 텍스트를 다시 편집해 저장한다`
 
 ### Task 10: 문서 갱신
 
 **Files:**
 - Modify: `docs/status.md`(텍스트 토핑 절 — 덮어쓰기), `docs/synthesis/open-questions.md`, `docs/api/parfait-text.md`(「Android 매핑」·frontmatter `android_status`), `docs/api/parfait.md`(Android 매핑의 `texts` 줄), `docs/superpowers/specs/2026-10-16-text-topping.md`(범위의 "미구현" → 구현됨, 정렬은 미저장), `docs/superpowers/specs/2026-10-26-text-topping-api.md`(`status: implemented`는 머지 뒤라 `in-progress`), `docs/log.md`(한 줄)
 
-- [ ] **Step 1: open-questions** — OQ-P-450 해소. OQ-P-439 ①·③ 해소 메모, ②는 미해결 유지. OQ-P-441·443·444에 "앱 측 잠정 규칙"(스펙의 값) 메모. 새 OQ: "텍스트 저장 단위(335 기준 `fontSize`, 중심 비율 좌표)를 iOS와 합의하지 않았다" — `<!-- oq-next -->` 번호를 쓰고 증가시킨다.
-- [ ] **Step 2: 나머지 문서** — 코드로 복원 가능한 사실은 적지 않는다(`CLAUDE.md` 「무엇을 적나」). `status.md`는 현재 상태만.
-- [ ] **Step 3: 확인** — `python3 docs/script/check_links.py docs` exit 0.
-- [ ] **Step 4: 커밋** — `docs: 텍스트 토핑 서버 연동 상태를 반영한다`
+- [x] **Step 1: open-questions** — OQ-P-450 해소. OQ-P-439 ①·③ 해소 메모, ②는 미해결 유지. OQ-P-441·443·444에 "앱 측 잠정 규칙"(스펙의 값) 메모. 새 OQ: "텍스트 저장 단위(335 기준 `fontSize`, 중심 비율 좌표)를 iOS와 합의하지 않았다" — `<!-- oq-next -->` 번호를 쓰고 증가시킨다.
+- [x] **Step 2: 나머지 문서** — 코드로 복원 가능한 사실은 적지 않는다(`CLAUDE.md` 「무엇을 적나」). `status.md`는 현재 상태만.
+- [x] **Step 3: 확인** — `python3 docs/script/check_links.py docs` exit 0.
+- [x] **Step 4: 커밋** — `docs: 텍스트 토핑 서버 연동 상태를 반영한다`
+
+[^manual]: 에뮬레이터·실기기 확인은 수행하지 않았다 — [status.md 「텍스트 토핑」](../../../status.md#텍스트-토핑-c-106-텍스트-입력--c-001-렌더--c-305-재편집)의 미확인 항목으로 이월한다.

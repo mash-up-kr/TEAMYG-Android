@@ -192,7 +192,7 @@ internal fun CanvasMainRoute(
                 )
 
                 CanvasMainEffect.NavigateToTextInput -> navigator.goTo(
-                    destination = NavKeyCanvasTextInput(),
+                    destination = NavKeyCanvasTextInput,
                 )
 
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(

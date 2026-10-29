@@ -420,3 +420,18 @@ P1 0 · 반영 P2 1·P3 3·P4 4 · 텍스트 실패 문구 사진 재사용 수�
 
 ## [2026-10-26] review | 텍스트 토핑 스택 3/4 리뷰 반영
 재편집 완료 연타 가드 · OQ 신설 OQ-P-455(토핑 정리 저장 단계 분리) · OQ-P-453 ③ 중단·취소 경로 추가
+
+## [2026-10-27] audit | ed88a1547 — #645 텍스트 토핑 서버 연동(스택 #647·#649·#650·#652가 한 머지로) · #644
+115파일 +5556/-363 · 유닛 1556 · 계측 101 · OQ 신설 OQ-P-452, OQ-P-453, OQ-P-454, OQ-P-455 · 해소 OQ-P-450
+
+## [2026-10-28] review | 텍스트 배치 수정 리뷰 반영 — C-106 재편집 경로 제거
+쌓인 텍스트 내용·스타일 수정 없음 확정 · `TextEditSessionHolder`·`RecreateTextToppingUseCase`·`UpdateTextToppingUseCase`·`NavKeyCanvasTextInput.isEditingExisting` 제거 · OQ-P-453 ①②③ 소멸(④만 남김) · C-106 배치 점선을 실제 글자 크기로
+
+## [2026-10-28] audit | 87a684155 — #655 텍스트 글꼴 구간 분기 · #657 텍스트 재편집 제거 · #656 GA4 사용자 ID · #654 오픈소스 라이선스 · #653
+64파일 +2452/-1586 · 유닛 1560 · 계측 100 · OQ 신설 없음 · 해소 OQ-P-306 ①(부분 해소)
+
+## [2026-10-28] review | 그룹 목록 v2·텍스트 템플릿 분야별 리뷰 반영
+conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인터로 · `YGToppingImage.followsCardRotation` · `borderedImageUrls` 텍스트 제외 · 매퍼·회전 테스트 · OQ-P-459 기획 미확인으로 재개
+
+## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
+팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 옛 ③(팝인 중 띠 잘림) 소멸

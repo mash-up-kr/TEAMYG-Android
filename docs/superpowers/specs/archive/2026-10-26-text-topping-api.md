@@ -1,7 +1,7 @@
 ---
 id: text-topping-api
 title: 텍스트 토핑 서버 연동 — 배치·C-001 렌더링·C-305 재편집 (Text Topping API Wiring)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
 verified: 2026-10-26
@@ -14,6 +14,7 @@ related_code:
   - CanvasVO.kt
   - CanvasToppingVO.kt
   - ToppingRepository.kt#updateAll
+  - RecreateTextToppingUseCase.kt
   - CanvasTextInputViewModel.kt#handleOnClickStack
   - CanvasMainViewModel.kt#handleOnClickTopping
   - CanvasMainViewModel.kt#nextPositionZ
@@ -37,7 +38,7 @@ tags: [spec, parfait, canvas, topping, text, api]
 
 > 상태·날짜·대상·관련은 위 frontmatter가 단일 출처(source of truth). 본문은 설계 내용에 집중.
 > 화면 동작의 정본은 [텍스트 토핑 스펙](2026-10-16-text-topping.md)이다. 이 문서는 그 스펙의
-> "미구현" 절(저장·C-001 렌더링·C-305 재편집·삭제)을 서버 계약([api/parfait-text.md](../../api/parfait-text.md))에
+> "미구현" 절(저장·C-001 렌더링·C-305 재편집·삭제)을 서버 계약([api/parfait-text.md](../../../api/parfait-text.md))에
 > 붙이는 방법만 다룬다.
 
 ## 목표
@@ -161,13 +162,14 @@ C-106이 결과를 써 두면 C-305가 화면 복귀 때 읽는다(Hilt 싱글�
 - 병합: 기존 `mergeToppings`의 세 집합(dirty·삭제 대기·툼스톤)을 텍스트 id에도 같은 규칙으로 쓴다.
   이미지 id와 텍스트 id는 다른 테이블이라 겹칠 수 있다 — 집합 키는 종류를 포함해야 한다.
 
-## 파일 구성 (예정)
+## 파일 구성 (as-built)
 
 | 층 | 파일 | 역할 |
 |---|---|---|
 | domain | `model/canvas/CanvasTextToppingVO.kt`, `CanvasVO.texts` | 캔버스 위 텍스트 |
 | domain | `repository/topping/TextToppingRepository.kt` | 배치·수정·삭제 |
 | domain | `usecase/topping/{Place,Update,Delete}TextToppingUseCase.kt` | 화면 진입점 |
+| domain | `usecase/topping/RecreateTextToppingUseCase.kt`, `model/topping/TextToppingRecreateResult.kt` | C-305 내용 변경 — 새 POST 뒤 옛 DELETE, 옛 DELETE 실패를 결과로 갈라 POST 반복을 막는다 |
 | domain | `ToppingRepository.updateAll`·`UpdateToppingsUseCase` | 텍스트 변형 동승 |
 | data | `repository/topping/TextToppingRepositoryImpl.kt`, `RepositoryModule` 바인딩 | 위임 |
 | data | `source/parfait/mapper/VOMapper.kt` | `texts` → VO |

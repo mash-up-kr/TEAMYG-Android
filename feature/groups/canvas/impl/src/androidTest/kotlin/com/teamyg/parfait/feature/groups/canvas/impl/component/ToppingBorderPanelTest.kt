@@ -64,15 +64,6 @@ class ToppingBorderPanelTest {
     }
 
     @Test
-    fun collapsed_disabled_doesNotToggle() {
-        setPanel(isOpen = false, isEnabled = false)
-
-        composeTestRule.onNodeWithTag(TOGGLE_TAG).performClick()
-
-        composeTestRule.runOnIdle { assertEquals(0, toggleCount) }
-    }
-
-    @Test
     fun open_showsSliderAndNineChips_andTogglesOnArrow() {
         setPanel(isOpen = true)
 
@@ -107,7 +98,6 @@ class ToppingBorderPanelTest {
 
     private fun setPanel(
         isOpen: Boolean,
-        isEnabled: Boolean = true,
         selectedColorArgb: Int? = null,
     ) {
         composeTestRule.setContent {
@@ -138,7 +128,6 @@ class ToppingBorderPanelTest {
                                 onClickToggle = { toggleCount++ },
                                 onSelectColor = { selected += it },
                                 onChangeWidth = {},
-                                isEnabled = isEnabled,
                                 modifier = Modifier
                                     .width(PANEL_WIDTH)
                                     .align(Alignment.BottomCenter),
