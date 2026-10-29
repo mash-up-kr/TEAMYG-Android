@@ -51,7 +51,6 @@ sealed interface AppSettingIntent : UiIntent {
 
     data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
-    /** CSAE 방지 정책은 서버 약관 목록이 아니라 고정 URL로 연다 — [handleClickCsaePolicy] 참고 */
     data object ClickCsaePolicy : AppSettingIntent
 
     data object ClickOssLicense : AppSettingIntent
@@ -76,6 +75,8 @@ sealed interface AppSettingSideEffect : UiSideEffect {
     ) : AppSettingSideEffect
 
     data object NavigateToOssLicense : AppSettingSideEffect
+
+    data object NavigateToCsaePolicy : AppSettingSideEffect
 
     data object NavigateToLogin : AppSettingSideEffect
 
@@ -167,9 +168,7 @@ constructor(
     }
 
     private fun handleClickCsaePolicy() {
-        postSideEffect(
-            AppSettingSideEffect.NavigateToPolicyDetail(title = CSAE_POLICY_TITLE, url = CSAE_POLICY_URL),
-        )
+        postSideEffect(AppSettingSideEffect.NavigateToCsaePolicy)
     }
 
     private fun handleClickOssLicense() {
@@ -230,12 +229,5 @@ constructor(
 
         /** [launch] 중복 실행 가드 키 — 탈퇴 job 하나를 가리킨다 */
         const val KEY_WITHDRAW = "withdraw"
-
-        /**
-         * Google Play 정책상 고정 URL — 서버 약관 목록과 달리 앱에서 직접 들고 있는다.
-         * 바뀌면 이 상수만 고치면 된다
-         */
-        const val CSAE_POLICY_TITLE = "아동 안전 정책"
-        const val CSAE_POLICY_URL = "https://sites.google.com/view/teamyg-parfait/policy_csae"
     }
 }
