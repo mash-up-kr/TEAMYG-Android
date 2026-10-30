@@ -881,13 +881,13 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 ### [2026-08-04] 갤러리 死코드 2건 — 부분 접근 배너·전체 조회 UseCase
 - **ID**: OQ-P-089
-- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 `LoadGalleryImageGroupsUseCase`(당시 이름 `LoadFilterYGGalleryImageGroupsUseCase`)만 쓴다). 둘 다 PR #191 이후 상태.
+- **출처**: `feature/gallery/impl/.../component/GalleryPartialAccessBanner.kt`(참조 0건 — 하단 "사진 재선택" `YGButton`으로 대체됐으나 파일이 남았고, 배경·문구가 `Color` 리터럴 + 코틀린 리터럴이라 문자열 리소스 규약에도 어긋난다) · `domain/.../usecase/gallery/LoadAllGalleryImageGroupsUseCase.kt`(참조 0건 — 화면이 당시 `LoadFilterYGGalleryImageGroupsUseCase`만 썼다(지금은 `LoadGalleryImageGroupsUseCase`. 옛 것은 호출부 0건으로 남았다 → OQ-P-428)). 둘 다 PR #191 이후 상태.
 - **항목**: ① 배너를 지울지(대체 완료) 다른 접근 수준 안내로 되살릴지, ② 전체 조회 UseCase가 앞으로 쓰일 화면이 있는지(있으면 유지, 없으면 Repository의 `loadAllGalleryImages`까지 함께 정리).
 - **상태**: 부분 해소 (② 해소 — 정리 쪽으로 닫힘, 2026-09-20 PR #514 / ① 잔존)
   > ✅ **②가 "없다"로 닫혔다(2026-09-20, PR #514)** — `LoadAllGalleryImageGroupsUseCase`가 삭제되고
   > `GalleryRepository.loadAllGalleryImages`와 `GalleryRepositoryImpl`의 구현까지 함께 걷혔다.
   > 해소 메모가 "없으면 Repository까지 함께 정리"라고 적어 둔 그대로다. 갤러리 화면은
-  > `loadGalleryImages` 하나만 쓴다(#599에서 03시 창 제한을 걷고 이름의 `Filter`도 뗐다).
+  > `loadGalleryImages` 하나만 쓴다(03시 창 없는 조회를 새로 두었고, 03시 창 경로 `loadFilterYGGalleryImages`는 호출부 0건으로 남았다 → OQ-P-428).
   > ⚠️ **①은 그대로다** — `GalleryPartialAccessBanner.kt`가 참조 0건으로 남아 있다. 같은 청소
   > 라운드가 바로 옆 死코드는 지우면서 이 파일은 건드리지 않았다.
 - **해소 메모**: ①만 남았다. 정리 시 [c102 스펙](../superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md) 파일 구성·주의 절과 [data-layer](../architecture/data-layer.md) 레이어 배치의 `GalleryRepository` 서술을 맞춘다.
@@ -2987,7 +2987,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > [c106-topping-place 스펙](../superpowers/specs/archive/2026-08-19-c106-topping-place.md).
   > 📌 **①의 다른 답이 한 라운드에 8엔트리를 옮겼다(2026-08-20, PR #309)** — `camera` 3
   > (`NavKeyCameraCustom`·`NavKeyCameraSystem`·`NavKeyPictureConfirm`) · `gallery` 2
-  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) · `segmentation` 3
+  > (`NavKeyCustomGalleryPicker`·`NavKeySystemGalleryPicker`) — 두 `System` 키는 이후 PR #626에서 삭제 · `segmentation` 3
   > (`NavKeySegmentation`·`NavKeySegmentationConfirm`·`NavKeyToppingEdit`)이 한꺼번에 갔다. 계기는
   > 로딩·실패가 아니라 **세 모듈 파일을 어차피 다 여는 라운드**였다는 것이고(위 #296·#305와 같은
   > 갈래), 실제로 여덟 엔트리 중 `isLoading`을 넘기는 곳이 하나도 없다 — 세 모듈의 로딩이 전부 화면
@@ -3607,7 +3607,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   [api/conventions.md](../api/conventions.md) 직렬화 규약 절과
   [data-layer](../architecture/data-layer.md)에 반영한다.
 
-### [2026-08-18] 원본 다운샘플 미적용 — 세그멘테이션 실측 메모리 피크가 largeHeap 없이 위험 구간
+### [2026-08-18] 12MP 급 원본 다운샘플 미적용 — 세그멘테이션 실측 메모리 피크가 largeHeap 없이 위험 구간
 - **ID**: OQ-P-228
 - **출처**: `ImageSegmentationRepositoryImpl.kt#segmentImage`(긴 변 4096px 이하는 원본 해상도 그대로
   처리) × 독립 코드 리뷰(2026-08-18, `refactor/segmentation-logic` 최종 리뷰) — ~~12MP 사진 기준
@@ -3784,7 +3784,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   아니면 "표시용 부가 필드는 널 허용"이라는 예외를 명시할지. ③ 키 이름 변경을 **계약 문서 대조 말고
   다른 수단으로 잡을 방법**이 있는지 — 이번에도 잡은 것은 서버 delta 감사이고, 앱 테스트는 자기 DTO를
   자기가 만들어 넣으므로 절대 못 잡는다(와이어 계약 테스트가 있는 곳은 `isNewUser` 하나뿐이다).
-- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / **③ 미해결**
+- **상태**: ①② 해소(PR #310 develop 머지 2026-08-20) / ③ 결정(2026-10-26 — DTO 직렬화 테스트를 두지 않는다)
 - **해소 메모**: 고치면 [api/parfait-group.md](../api/parfait-group.md)·[api/parfait.md](../api/parfait.md)
   Android 매핑의 경고를 걷고 OQ-P-224를 닫는다. ②는 [api/conventions.md](../api/conventions.md)
   직렬화 규약과 [data-layer](../architecture/data-layer.md)에 적는다(OQ-P-227과 한 자리).
@@ -3800,6 +3800,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > develop은 필드를 안 읽어 무해했다. 지금은 **develop이 네 자리에서 이 키로 색을 정한다**(S-101 멤버
   > 칩 · G-001 그룹 칩 · C-001 상단 칩 · 목록 시각). 다음 키 변경은 브랜치가 아니라 **출시 가능한
   > develop을 조용히 폴백 색으로 만든다.**
+  > 🔒 **③ 결정(2026-10-26)** — DTO 직렬화 테스트는 만들지 않는다. 테스트가 단언하는 키는 `@SerialName`을 쓴
+  > 사람이 같은 가정으로 적은 것이라 서버와 어긋나도 함께 초록이다. 유일한 선례 `KakaoLoginResponseSerializationTest`도
+  > 지웠다. 키 어긋남은 서버 delta 감사(`sync-server-api-baseline`)가 잡는다
+  > (`.claude/rules/no-dto-serialization-test.md`).
 
 ### [2026-08-19] `recentImageUploadedAt`이 비널이 되면서 두 가지를 뜻하게 됐다
 
@@ -3936,7 +3940,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   이유로 되돌렸는데**, 그 이유가 #290 머지로 사라졌다.
 - **항목**: ① 셋을 지울지 — 지우면 도달 불가 화면 목록에서 하나가 빠진다. ② 같은 부류
   (`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)와 묶어 한 번에 정리할지.
-- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ②는 별개로 남는다)
+- **상태**: 해소됨 (① 지우는 쪽으로 실행, 2026-09-20 PR #514. ② 같은 부류 둘도 PR #626(이슈 #604)에서 지웠다)
   > 📌 **2026-08-20 — `refactor/segmentation-develop`이 되살리지 않기로 했다.** 그 브랜치가 두 번째
   > 리베이스에서 같이 처리할 후보였으나(아래 해소 메모의 옛 권고), **이 잔해는 그 라운드가 만든 것이
   > 아니라 #290이 남긴 것**이라 리뷰 대상 diff를 넓힐 값이 없다고 판단했다
@@ -3960,11 +3964,11 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > 딸려 걷힌 것 셋: ① `NavTransition.Fade.metadata` 예외(OQ-P-260 ③), ② `LocalSharedTransitionScope`와
   > 두 루트의 `SharedTransitionLayout` 껍질, ③ `NavKeyAnalyticsScreen`의 화면 ID 셋
   > (`C-001-edit`·`C-001-image-select`·`C-001-move`)과 그 테스트 기대값.
-  > ⚠️ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)는 그대로다** — 이 라운드가 캔버스 셋만
-  > 보고 그 둘은 건드리지 않았다. 도달 불가 화면이 0이 된 것은 **캔버스 쪽만**이다.
+  > ✅ **②(`NavKeyCameraSystem`·`NavKeySystemGalleryPicker`)도 지웠다(PR #626)** — #514가 캔버스 셋만
+  > 보고 그 둘은 건드리지 않았는데, 이쪽도 `goTo` 호출부가 0건인 채 엔트리 등록과 분석 화면 ID
+  > (`C-101-system`·`C-102-system`)만 남아 있었다. 둘의 Route·Screen·ViewModel·엔트리·분석 매핑을 걷었다.
 - **해소 메모**: [navigation-flow](../architecture/navigation-flow.md) "인자 있는 목적지" 목록과 토핑
-  생성 플로우 절의 도달 불가 표기는 이 회차(2026-09-21) 점검에서 걷었다. ②는 별개 항목으로 남는다 —
-  같은 부류 둘의 존폐는 아직 아무도 결정하지 않았다.
+  생성 플로우 절의 도달 불가 표기는 이 회차(2026-09-21) 점검에서 걷었다.
 
 ### [2026-08-19] 배치 화면이 보여 주는 캔버스가 실제 캔버스가 아니다
 
@@ -5277,8 +5281,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   재사용할 수 있다), 아니면 라이선스 수집 플러그인을 붙여 목록을 자동 생성할지. ② 자동 생성을
   고르면 **번들 폰트는 Gradle 의존이 아니라 리소스 파일이라 그 목록에 안 잡힌다** — 폰트 몫은
   따로 실어야 한다. ③ 사본을 `assets/`나 `res/raw/`로 옮겨 APK에 넣을지, 화면 문구로만 담을지.
-- **상태**: 미해결 (배포 전에 답이 필요한 자리다 — 스토어 배포가 조건을 실제로 발동시킨다)
-- **해소 메모**: 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
+- **상태**: 부분 해소 (① 해소, ③ 잔존)
+- **해소 메모**: ①은 S-001 「오픈소스 라이선스」 항목이 공용 웹뷰로 외부 정적 페이지(`OSS_LICENSE_URL`)를 여는 쪽으로 정해졌다(PR #654 `654b9f5be`). 라이선스 수집 플러그인은 붙이지 않아 ②는 걸리지 않는다. ③은 서버 delta(`1a1abee`)로 반쯤 풀렸다 — `/oss` 페이지 `Font` 절에 SUIT·LINE Seed JP·TW가 OFL 1.1 전문과 함께 실렸다([deeplink.md](../api/deeplink.md) `GET /oss`). 그러나 SUIT 전문은 원본 저작권 문구(Reserved Font Name SUIT 포함) 그대로이고, 앱 번들이 cmap을 손본 수정본이라는 고지는 없다. 수정본 고지를 어디에 둘지, 수정본이 원래 이름을 계속 써도 되는지는 남는다. `OFL.txt`는 여전히 APK에 실리지 않는다. 정하면 [design-system](../architecture/design-system.md) 폰트 절의 ②와
   [s004 스펙](../superpowers/specs/archive/2026-07-20-s004-terms-privacy-webview.md)·
   [s001 스펙](../superpowers/specs/archive/2026-07-19-app-setting-s001.md) 항목 목록을 함께 고친다.
   `.gitignore`에 올라간 릴리즈 keystore(OQ-P-305)와 같이 **배포가 가까워지며 드러나는 자리**다.
@@ -5524,16 +5528,16 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-314
 - **출처**: PR #389 develop 머지 — `feature/groups/canvas/impl` `strings.xml`의
-  `canvas_topping_content_description`("토핑", `TODO(접근성)` 주석 동반)·`canvas_spotlight_dismiss`
-  ("토핑 강조 닫기"). 판정이 레이어로 올라가면서 토핑별 `clickable`이 사라져, 그것이 붙여 주던
+  `canvas_topping_content_description`("사진", `TODO(접근성)` 주석 없음)·`canvas_spotlight_dismiss`
+  ("사진 강조 닫기"). 판정이 레이어로 올라가면서 토핑별 `clickable`이 사라져, 그것이 붙여 주던
   클릭 시맨틱스를 `semantics(mergeDescendants = true)`로 다시 만들어야 했고 그때 읽을 문구가
   필요해졌다.
-- **항목**: ① 토핑을 무엇으로 읽어 줄지 — 지금은 열두 개가 전부 "토핑"이라 스크린리더 사용자가
+- **항목**: ① 토핑을 무엇으로 읽어 줄지 — 지금은 열두 개가 전부 "사진"이라 스크린리더 사용자가
   서로를 구분할 수 없다. 작성자 닉네임이 후보이지만 캔버스 메인은 이미 `placedBy` 조인이 임시다
   (OQ-P-224 잔여). ② 딤 해제 액션 문구. ③ 배경 편집의 토핑도 같은 문자열을 공유하는데 그 화면의
   탭은 선택이지 강조가 아니라, 같은 문구가 맞는지 확인되지 않았다.
 - **상태**: 미해결 (임시 문자열로 머지됨 — 시맨틱스 자체는 있으므로 포커스는 잡힌다)
-- **해소 메모**: 문구가 정해지면 `strings.xml` 두 항목과 `TODO(접근성)` 주석을 함께 지운다.
+- **해소 메모**: 문구가 정해지면 `strings.xml` 두 항목을 고친다(`TODO(접근성)` 주석은 이미 지워졌다).
 
 ### [2026-08-27] 배경 편집에 테두리가 생겼는데 코너 스트로크·버튼과의 관계를 확인하지 않았다
 
@@ -5735,8 +5739,9 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (**구현됨** — 2026-08-31 PR #404 develop 머지로 경계 티커
   (`ObserveParfaitDayBoundaryUseCase`)가 들어왔다. 서버 확인은 여전히 선행 과제다)
 - **해소 메모**: 서버 구현을 확인해 ①을 먼저 닫는다. 막고 있으면 앱은 그 오류를 조용히 넘기고
-  다음 주기 상세 조회로 회복하면 된다. 앱 쪽 방어는 `CanvasPoller` 가 캐시의 날짜를 보고
-  **오늘 조회와 상세 조회를 가르는 것** 하나뿐이라, 경계 직후 첫 요청이 오늘 조회인 것은 그대로다.
+  다음 주기 조회로 회복하면 된다. **2026-10-15 — 폴링이 v2 `today`(ETag/304) 하나가 되면서** 앱의 방어였던
+  오늘/상세 가르기가 사라졌다. 이제 매 주기가 서버의 오늘 캔버스 확보를 태우므로 ①(그룹·날짜 유니크
+  제약, 확보의 멱등성) 확인이 더 급하다.
 
 ### [2026-08-28] 토핑 배율 하한이 두 화면에서 갈렸고 편집 쪽 근거가 없다
 
@@ -5990,8 +5995,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   갈래 둘(참여/생성)을 코드가 확정했다. ② **1회 보장의 근거가 상태가 아니라 ViewModel 수명**이다 —
   "백스택 재진입에서는 새로 만들어지지 않는다"는 주석이 방어의 전부라, 프로세스 사망 후 복원처럼
   키가 다시 살아나는 경로에서는 배너가 다시 뜬다(인자는 `NavKey`에 그대로 남는다). ③ **복사 완료
-  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르므로 자동 소멸
-  타이머가 처음부터 다시 돌고, 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
+  표시가 같은 배너의 재발행**이다 — `복사완료`로 문구만 바꿔 `show`를 다시 부르고(얼럿에는 자동 소멸이 없어
+  스와이프할 때까지 남는다), 두 번째 배너에는 `onButtonClick`이 없어 **한 번 복사하면 그 배너에서
   다시 복사할 수 없다**. ④ 복사 성공·실패를 사용자에게 알리는 것도 그 문구 교체뿐이다
   (`clipboard.setClipEntry`가 실패해도 문구는 바뀐다).
 - **항목**: ① 배너 문구·노출 갈래를 기획·디자인 소스로 확정받을지. ② 1회를 무엇으로 보장할지 —
@@ -6430,7 +6435,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > **정본은 서버라는 뜻이지만 그 사실을 적어 둔 곳이 양쪽 코드의 상수뿐**이라 ③(무엇이 어긋남을
   > 잡는가)은 그대로다 — 오히려 같은 문자열을 가진 자리가 셋(서버·`fcm-test.http`·앱)이 됐다.
   > 📌 **②도 앱이 정했다** — 중요도 `IMPORTANCE_HIGH`, 표시 이름 `파르페 알림`, 설명
-  > `새 토핑, 캔버스 마감 안내 알림`(`strings.xml`). ⚠️ **설명이 서버가 안 보내는 알림을 약속한다** —
+  > `신규 사진, 캔버스 마감 안내 알림`(`strings.xml`). ⚠️ **설명이 서버가 안 보내는 알림을 약속한다** —
   > 캔버스 마감 알림은 발송 코드가 없다(OQ-P-343 ①). 이 문구를 승인한 정책 문서도 없다(OQ-P-351 ①).
   > ⚠️ **채널이 있어도 표시되지 않는 구간이 새로 드러났다** — 권한을 묻는 코드가 없어 Android 13+
   > 에서는 채널과 무관하게 막힌다(OQ-P-358).
@@ -6466,6 +6471,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   ② 이 파일을 계약 서술 없이 "쏘는 방법"으로만 깎고 값은 `api/notification.md`를 보게 할지.
   ③ 대조군 요청(3~6번)은 **일부러 계약과 다르게** 쏘는 것이라, 나중에 읽는 사람이 정본과 구분할 수
   있는 표식이 파일 주석뿐인 것이 충분한지.
+- **2026-10-25 갈라짐 실측**: 서버 `8b4a94b` 기준 토핑 본문이 "새 사진을"로 바뀌고 `BACKGROUND`·`TEXT` 두 종이 늘었는데, `http/fcm-test.http`는 "새 토핑을"이고 두 종의 요청이 없다([api/notification.md](../api/notification.md)).
 - **상태**: 미해결, **복제면이 넷이 됐다** (2026-09-05 PR #446·#447로 **앱 프로덕션 코드**가
   같은 값들을 갖게 됐다 — 채널 id `parfait_default`(`PUSH_NOTIFICATION_CHANNEL_ID`)와
   `data` 키·값 문자열(`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). 이제 어긋나면 무해하지 않다 —
@@ -6638,7 +6644,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > "페이로드 스펙 v1 §3.1"을 인용하는데 **그 문서는 여전히 어느 저장소에도 없다.**
 - **항목**: ① 그 스펙이 실재하는지 — 노션 등 저장소 밖에 있다면 어디인지 적어야 하고, 구두 합의였다면
   근거가 코드 주석뿐이다. ② P-02/P-03의 트리거·문구·발송 시각을 누가 정하는지 — 채널 설명 문구
-  (`새 토핑, 캔버스 마감 안내 알림`)는 이미 마감 알림을 약속하고 있다. ③ 앱이 서버보다 앞서 구현한
+  (`신규 사진, 캔버스 마감 안내 알림`)는 이미 마감 알림을 약속하고 있다. ③ 앱이 서버보다 앞서 구현한
   경로를 무엇이 지키는지 — `route=group`은 **아무도 안 보내므로 테스트도 실기기도 지나가지 않는다.**
   ④ 이 저장소의 `parfait/api/notification.md`가 그 스펙의 자리를 대신할지.
 - **상태**: **부분 해소** (2026-09-08 — 서버가 두 알림을 실제로 보내기 시작해 ③은 닫혔다.
@@ -7124,7 +7130,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `feature/groups/canvas/impl` 의 `canvas_main_closed_canvas_alert_*` 문자열.
 - **항목**: 위키에 이 알럿을 정한 기획 문서가 없다. 코드가 확정한 것이 넷이다 — ① 노출 조건("그
   마감을 처음 확인하는 순간", 며칠 전 마감도 포함) ② 이 기기·이 그룹이 처음이면 조용히 기준선만
-  세운다 ③ 인원 수를 **그날 토핑을 올린 사람 수**로 센다(그룹원 수가 아니다, 탈퇴자 포함) ④ 문구 3종.
+  세운다 ③ 인원 수를 **그날 토핑(사진·텍스트)을 올린 사람 수**로 센다(그룹원 수가 아니다, 탈퇴자 포함) ④ 문구 3종.
 - **상태**: 미해결 (동작함, 근거가 코드뿐)
 - **해소 메모**: 기획이 이 알럿을 문서로 확정하면 위키에 소스를 넣고 사후 스펙을 그 근거로 다시
   묶는다. 특히 ②는 배포 시점 방어라 정책이 다르게 정해지면 첫 사용자 경험이 달라진다.
@@ -7132,7 +7138,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-09-10] 알럿 판정이 폴링 회차마다 돌아 실패가 반복 조회를 부른다
 
 - **ID**: OQ-P-393
-- **출처**: `CanvasMainViewModel#checkShowPastCanvasAlert`·`#closedCanvasMemberCount`.
+- **출처**: `CanvasMainViewModel#checkShowPastCanvasAlert`·`#closedCanvasContributorCount`.
 - **항목**: 판정은 오늘 캔버스를 받을 때마다 돌고, 인원 수를 얻는 지난 캔버스 상세 조회가 실패하면
   `markSeen` 을 부르지 않는다(그 마감을 영영 못 보는 것을 막는 의도적 설계다). 그래서 그 조회가
   계속 실패하는 상황에서는 **폴링 회차마다 상세 조회가 한 번씩 더 나간다.**
@@ -7615,7 +7621,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (의도된 미사용 — 死코드 정리 대상이 아니다)
 - **해소 메모**: 정해지면 [data-layer](../architecture/data-layer.md)의 날짜 그룹 키 서술과 OQ-P-243의 `DayWindow.current()` 소비처를 맞춘다.
 
-### [2026-10-07] `canvas_edit_*` 화면 분류가 정본 문서와 코드에서 다르고, `canvas_edit_border_tapped`는 아직 못 심었다
+### [2026-10-07] canvas_edit_* 화면 분류가 정본 문서와 코드에서 다르다
 
 - **ID**: OQ-P-430
 - **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본)는 `canvas_edit`를 "캔버스 편집(C105)" 하나로 묶는데, 2026-10-02 PR #572
@@ -7624,6 +7630,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `C-305`(`CanvasToppingArrangeViewModel`).
 - **항목**: ① `canvas_edit_stack_tapped`는 최초 배치(`C-106`)에서만 찍도록 확인받아 그렇게
   심었는데, 정본 문서의 "C105"가 재편집(`C-305`)까지 포함할 의도였다면 어긋난다.
+  ② ✅ 재편집 화면(`C-305`)의 테두리 조작을 잡을 이벤트가 없었다 — 해소, 「상태」 참고.
 - **상태**: 부분 해소 (② 해소, ① 잔존 — 정본 문서 작성자 확인 필요)
   > ✅ **②가 닫혔다(2026-10-09)** — "테두리 편집 탭"(`canvas_edit_border_tapped`)을
   > `CanvasToppingArrangeViewModel.OnToggleBorderPanel`에 심었다. `canvas_edit_stack_tapped`의
@@ -7650,54 +7657,41 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **해소 메모**: 확인 후 `source` 값 이름을 바꿀지(`general`/`recent` 등), 그대로 둘지 정해서
   `CustomGalleryPickerViewModel`에 반영한다.
 
-### [2026-10-09] `canvas_edit_stack_tapped`/`canvas_topping_closed_unchanged`를 2026-10-06 이후 화면 변경(PR #601)에 맞춰 다시 배선했다
+### [2026-10-09] `canvas_edit_stack_tapped`/`canvas_topping_closed_unchanged`를 2026-10-06 이후 화면 변경에 맞춰 다시 배선했다
 
 - **ID**: OQ-P-432
-- **출처**: `origin/develop`이 80d06e6d → 239d4b59로 40커밋 더 나간 사이, 커밋 `b9cd8182`
-  ("토핑 배치·수정 화면의 시스템 뒤로가기가 이전 화면으로 가고 수정 화면의 닫기는 변경이 있을
-  때만 묻게 한다")가 `CanvasToppingArrangeViewModel`의 닫기·뒤로가기 흐름을 바꿨다 —
-  `requestQuit()`이 새로 생겨 **변경사항이 없으면 그만두기 팝업 없이 바로 `NavigateBack`**으로
-  나간다. 또 삭제 흐름이 "버튼 → 즉시 DELETE"에서 "버튼 → 로컬 보류(`pendingDeleteToppingIds`)
-  → 확인 시점에 함께 반영"으로 바뀌었다.
-- **항목**: 이 변경 전 기준으로 짠 분석 로깅이 두 군데 어긋났었다 — ① `OnQuitDialogConfirm`에서만
-  `close`를 찍어서, 팝업 없이 바로 나가는(변경 없음) 경로가 안 잡혔다. ② "수정 없음" 판정이
-  `dirtyToppingIds`만 보고 `pendingDeleteToppingIds`(삭제 보류)는 안 봐서, 삭제만 하고 확인을
-  누르면 `done`(무변경)으로 잘못 찍혔다.
-- **상태**: 해소됨(2026-10-09) — `requestQuit()`의 "변경 없음 → 바로 나감" 분기에도
-  `logClosed("close")`를 추가했고, `handleOnClickConfirm`의 무변경 판정을 팀이 이미 만들어 둔
-  `state.hasUnsavedChanges`(dirty + pendingDelete를 함께 본다) 기준으로 바꿨다.
-  > 🔧 **정정(2026-10-09)** — 서버가 404로 거절하는 "이미 지워진 토핑" 특수 케이스
-  > (`PARFAIT_IMAGE_NOT_FOUND`)를 한때 "분석 로깅 범위 밖"이라며 실패로 통일하게 걷어냈는데,
-  > PR 리뷰봇이 `docs/api/parfait-image.md`("삭제가 멱등이 아닌 것을 앱이 흡수한다")를
-  > 근거로 지적해 되돌렸다. 범위 밖 부수 코드가 아니라 **DELETE가 서버에 닿고 응답만 잃었을
-  > 때의 재시도 안전성**을 보장하는 문서화된 계약이었다 — 지웠으면 네트워크가 끊긴 뒤
-  > 재시도한 사용자가 이미 성공한 삭제를 영구 실패로 보게 될 뻔했다.
-  > 🔧 **정정(2026-10-09, 2번째)** — PR 리뷰봇이 `canvas_topping_closed_unchanged`가 이름과
-  > 달리 `OnQuitDialogConfirm`(변경사항을 버리고 나가는 경로)에서도 `action="close"`로
-  > 찍히는 걸 지적했다. 그 경로는 로컬 편집을 서버에 한 번도 안 보내고 버리므로, 건드렸든
-  > 안 건드렸든 캔버스엔 실제로 아무 변화가 없다 — 그래서 action을 더 쪼개는 대신
-  > `OnQuitDialogConfirm`의 로깅 자체를 뺐다. 이제 이 이벤트는 `requestQuit()`의 무변경
-  > 분기(`close`)와 `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍혀, 이름
-  > 그대로 "진짜 변경 없이 닫힘"만 잡는다.
+- **출처**: `CanvasToppingArrangeViewModel#requestQuit`·`#handleOnClickConfirm`·`#logClosed` — 수정 화면의
+  닫기는 변경사항이 없으면 그만두기 팝업 없이 바로 `NavigateBack`으로 나가고, 삭제는 로컬 보류
+  (`pendingDeleteToppingIds`) 뒤 확인 시점에 함께 반영된다.
+- **항목**: 이 흐름 이전 기준으로 짠 분석 로깅이 두 군데 어긋났었다 — ① 팝업 없이 바로 나가는
+  (변경 없음) 경로가 `close`로 안 잡혔다. ② "수정 없음" 판정이 삭제 보류를 안 봐서, 삭제만 하고
+  확인을 누르면 `done`(무변경)으로 잘못 찍혔다.
+- **상태**: 해소됨(2026-10-09) — 무변경 판정은 `state.hasUnsavedChanges`(dirty + 삭제 보류를 함께 본다)
+  기준이다.
+  > ⚠️ `canvas_topping_closed_unchanged`는 `requestQuit()`의 무변경 분기(`close`)와
+  > `handleOnClickConfirm`의 무변경 확정(`done`) 두 곳에서만 찍힌다. `OnQuitDialogConfirm`(변경을
+  > 버리고 나감)은 서버에 아무것도 보내지 않아 캔버스에 변화가 없어도 일부러 찍지 않는다.
+  > 시스템 뒤로가기(`handleOnSystemBack`)로 나가는 경로도 찍지 않는다.
+  > ⚠️ 삭제의 `PARFAIT_IMAGE_NOT_FOUND`(이미 지워진 토핑) 흡수는 분석 로깅과 무관하게 남겨야 한다 —
+  > DELETE가 서버에 닿고 응답만 잃었을 때의 재시도 안전성 계약이다([parfait-image](../api/parfait-image.md)).
 
 ### [2026-09-27] 캔버스 타임랩스 동영상 저장 — 실기기 미확인과 정책 원본 부재
 
 - **ID**: OQ-P-429
-- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md)
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md) 「구현 상태」·「주의 / 열린 질문」, [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md)
 - **항목**:
-  ① 실기기에서 영상을 뽑아 본 적이 없다 — 재생 여부, 1080 × 1920 생성 시간, 생성 중 진행 표시 없이 버튼만 잠긴 화면이 견딜 만한지.
+  ① 실기기에서 영상을 뽑아 본 적이 없다 — 재생 여부, 1080 × 1920 생성 시간, 생성 중 진행 표시 없이 버튼만 잠긴 화면이 견딜 만한지, 토핑이 한 장씩 즉시 나타나는지.
   ② 영상 마지막 프레임과 이미지 저장물의 테두리 비율을 대조한 적이 없다.
-  ③ 팝인 중(0.25초) 알파가 1 미만이라 토핑 테두리 띠가 상자 경계에서 잘린다. 눈에 띄는지 미확인.
-  ④ 기능 자체가 기획 원본(`wiki/raw/`)에 없다. 타임라인·해상도·문구는 iOS 구현 값을 따랐고 정책 근거는 없다.
-  ⑤ 토핑 0건에서 영상 버튼을 막는 것은 iOS와 다르다.
-  ⑥ 저장 미리보기 Route의 녹화 흐름에 테스트가 없다.
+  ③ 기능 자체가 기획 원본(`wiki/raw/`)에 없다. 타임라인·해상도·문구는 iOS 구현 값을 따랐고 정책 근거는 없다.
+  ④ 토핑 0건에서 영상 버튼을 막는 것은 iOS와 다르다.
+  ⑤ 저장 미리보기 Route의 녹화 흐름에 테스트가 없다.
 - **상태**: 미해결
-- **해소 메모**: ①~③은 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③이 거슬리면 `CanvasTopping`의 `graphicsLayer` 합성 방식을 본다. ④⑤는 기획·디자인 확정을 받아 `VideoTimelineOptions`와 `CanvasImageSaveScreen`에 반영한다.
+- **해소 메모**: ①②는 실기기에서 같은 캔버스를 이미지와 영상으로 뽑아 본 뒤 닫는다. ③④는 기획·디자인 확정을 받아 `VideoTimelineOptions`와 `CanvasImageSaveScreen`에 반영한다.
 
 ### [2026-09-27] 녹화 밀도에서 토핑 테두리 판 캐시가 미스된다
 
 - **ID**: OQ-P-433
-- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
+- **출처**: [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md) 「주의 / 열린 질문」
 - **항목**: `ToppingBorderPlateCache` 판 열쇠가 밀도 의존 `outsetPx`를 포함해 녹화 레이어의 판은 새로 만들어진다. 녹화 게이트가 판 생성을 기다리지 않아 이른 프레임의 토핑이 테두리 없이 등장할 수 있고, 캐시 용량을 넘기면 화면용 판을 축출해 녹화 뒤 화면 테두리가 다시 만들어진다.
 - **상태**: 보류 (실기기 관찰 후 처방)
 - **해소 메모**: 처방이 공용 캐시를 건드려야 하고 기기 없이 측정할 수 없다. OQ-P-429 ①과 함께 본다.
@@ -7713,9 +7707,191 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-10-14] App Links — 링크 호스트·경로가 세 곳에 따로 적혀 있다
 
 - **ID**: OQ-P-436
-- **출처**: `AndroidManifest.xml`(`host`·`pathPrefix`), `AppLinkDeepLinkIntent.kt`(`APP_LINK_PATH`), `core/ui` `strings.xml`(`group_invite_message`의 URL).
+- **출처**: `AndroidManifest.xml`(`host`·`path`), `AppLinkDeepLinkIntent.kt`(`APP_LINK_PATHS`), `core/ui` `strings.xml`(`group_invite_message`의 URL).
 - **항목**: 호스트 `parfait-app.store`와 경로 `/link`가 매니페스트(XML)·파서 상수·문자열 리소스에 같은 값으로 따로 있다. 한 곳만 바뀌면 복사한 링크가 앱으로 열리지 않거나 앱이 링크를 거절한다. 매니페스트와 리소스는 코드 상수를 참조할 수 없다(쿼리 키 `inviteCode`는 `AppLinkDeepLink.OpenGroupInvite.INVITE_CODE_QUERY_KEY`로 한 곳이다).
 - **상태**: 보류 (2026-10-18 현재 상태 유지로 결정. 필요해지면 `manifestPlaceholders`·`resValue`로 빌드 설정 한 곳에서 주입)
 - **해소 메모**: 호스트가 환경별로 갈라지거나 바뀔 일이 생기면 그때 한 곳으로 모은다. 그 전에는 값을 바꿀 때 세 곳을 함께 본다.
 
-<!-- oq-next: 437 -->
+### [2026-10-20] 캔버스 영상 저장이 canvas_save_gallery_saved를 남기지 않는다
+
+- **ID**: OQ-P-437
+- **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본) × `CanvasMainViewModel#handleSaveRecordedVideo`·`#handleSaveCapturedCanvas`
+- **항목**: 정본은 `canvas_save_gallery_saved`의 `format`을 `"image"`/`"video"` 둘로 정하지만, 이미지 저장 경로(`handleSaveCapturedCanvas`)만 성공 시 `format=image`로 찍고 영상 저장 경로(`handleSaveRecordedVideo`)에는 로깅이 없다. 영상 저장은 집계에 잡히지 않는다.
+- **상태**: 미해결
+- **해소 메모**: 영상 저장 성공 시 `format=video`로 찍고, 두 경로의 로깅을 `CanvasMainViewModel` 테스트로 고정한다.
+
+### [2026-10-20] C-103 「직접 선택」 얼럿이 편집 화면에서 돌아오면 다시 뜬다
+
+- **ID**: OQ-P-438
+- **출처**: `SegmentationRoute`의 `rememberYGAlertPolicy()`(`remember { YGAlertPolicy() }`)와 `LaunchedEffect(alertPolicy)` 안의 `alertPolicy.show(…)`
+- **항목**: 「직접 선택」 얼럿은 정책 객체가 새로 생길 때마다 뜬다. 정책이 `rememberSaveable`이 아닌 일반 `remember`라 C-103에서 편집 화면(C-104)으로 갔다가 뒤로 돌아오면 정책이 다시 만들어지고 얼럿도 다시 뜰 것으로 보인다(실기기 미확인). 재진입마다 띄우는 것이 의도인지 진입 1회만 띄울지 기획 확인이 필요하다.
+- **상태**: 미해결
+- **해소 메모**: 1회로 정해지면 표시 여부를 화면 상태나 저장되는 값으로 들고, 뒤로 돌아온 경우를 실기기에서 확인한다.
+
+### [2026-10-25] 텍스트가 캔버스 응답에 들어왔는데 앱이 읽지 않는다
+
+- **ID**: OQ-P-439
+- **출처**: [parfait.md](../api/parfait.md) GET today 응답·과거 목록 · 서버 `GetTodayParfaitResponse.texts`·`ParfaitCanvasRotator`·`docs/parfait-text-api.md`
+- **항목**: ① 앱 `GetTodayParfaitResponse.texts`(DTO)는 받지만 캔버스 VO(`CanvasVO`)로 매핑하지 않는다. 텍스트만 있는 캔버스가 빈 캔버스로 그려진다. ② 회전은 텍스트만 있어도 `CLOSED`로 마감하지만 과거 목록 `imageCount`는 이미지만 센다. `PastCanvasVO.isEmpty` 기준인 달력 점이 그날을 빈 날로 그린다. 위키 C-201 "토핑 1개 이상"에 텍스트가 드는지 기획 판단이 필요하다. ③ 텍스트를 그릴 때 `positionZ`가 이미지와 한 축이라 두 배열을 합쳐 정렬해야 한다(OQ-P-443).
+- **상태**: 부분 해소 (①·③ 해소, ② 잔존)
+- **해소 메모**: ① 캔버스 VO·매퍼에 `texts`가 붙어 C-001이 텍스트를 그리고 `isCanvasEmpty`도 센다. ③ `canvasLayerOrder`가 두 배열을 `positionZ`로 합치고 동률이면 이미지가 아래, 그다음 id 순이다. ② 달력 빈 날 판정(`PastCanvasVO.isEmpty`)은 아직 텍스트를 세지 않는다 — 기획 판단 뒤에 정한다.
+
+### [2026-10-25] v2 today ETag가 변경을 놓치는 경로
+
+- **ID**: OQ-P-440
+- **출처**: [parfait.md](../api/parfait.md) v2 today 절 · 서버 `ParfaitCanvasRotator`·`CanvasCacheEvictionListener`·`RedisCanvasCacheAdapter`·`V20__move_image_urls_to_public_base_url.sql`
+- **항목**: ① 회전(`close`·`markEmpty`)은 `parfait.version`을 올리지 않는다. 테스트 전용 회전(`/api/v1/test/parfait-canvas/rotate`)으로 오늘 캔버스를 마감하면 폴러는 다른 쓰기가 생길 때까지 `ACTIVE`였던 옛 본문을 304로 유지한다. QA가 이 엔드포인트로 마감을 재현하면 앱에는 마감이 보이지 않는다. ② Redis 키 삭제 실패(예외를 삼킨다)나 DB 직접 수정이 있으면 TTL 5분 동안 낡은 304가 나갈 수 있다. 나간 멤버도 그동안 304를 받을 수 있다(200 경로는 DB로 재확인한다).
+- **상태**: 미해결
+- **해소 메모**: ①은 서버팀에 의도를 확인한다. 의도라면 QA 절차에 "회전 뒤 앱 재진입"을 넣는다.
+
+### [2026-10-25] 텍스트 토핑 `color` 형식 계약이 없다
+
+- **ID**: OQ-P-441
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`
+- **항목**: 서버는 `color`를 공백 아님·20자 이하만 검사하고 형식을 보지 않는다. Android·iOS·서버가 어떤 색 문자열(`#RRGGBB`, 알파 포함 여부, 대소문자)을 쓸지 합의가 없어 다른 클라이언트가 넣은 값을 앱이 파싱하지 못할 수 있다.
+- **상태**: 미해결
+- **해소 메모**: 앱 측 잠정 규칙 — 쓸 때 `TextToppingColor.contentColor`를 `#RRGGBB`(대문자, 알파 없음, White는 `#FAFAFA`)로 보내고, 읽을 때 8색에 없는 값은 Black으로 그린다(`TextToppingWireMapper`). 다른 클라이언트와 형식을 합의하면 갱신한다.
+
+### [2026-10-25] 텍스트 2000자 상한의 계수 기준과 DB 문자셋
+
+- **ID**: OQ-P-442
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「검증 규칙」 · 서버 `ParfaitText.validate`·`V21__create_parfait_text.sql`
+- **항목**: 서버는 Kotlin `String.length`(UTF-16 코드 유닛)로 2000을 센다. 이모지는 2로 셀 수 있어 앱 글자 수 표시와 어긋날 수 있다. V21이 문자셋을 지정하지 않아 운영 DB 기본값을 따르는데 확인하지 못했다. `utf8mb4`가 아니면 이모지 INSERT가 500일 수 있다.
+- **상태**: 미해결
+- **해소 메모**: 서버팀에 운영 DB 문자셋을 확인하고, 앱 입력 상한을 같은 계수 기준으로 맞춘다.
+
+### [2026-10-25] 이미지·텍스트가 공유하는 `positionZ`의 배정·동률 규칙이 없다
+
+- **ID**: OQ-P-443
+- **출처**: [parfait-text.md](../api/parfait-text.md) 「저장소 제약」
+- **항목**: 이미지와 텍스트가 겹침 순서 축 `positionZ` 하나를 공유한다. 서버는 값을 검증·배정하지 않고 텍스트를 `positionZ`→`id` 순으로만 내려준다. 두 배열을 합친 전체 순서, 같은 `positionZ`일 때 어느 쪽이 위인지, 새 토핑의 z를 누가 정하는지가 계약에 없다.
+- **상태**: 미해결
+- **해소 메모**: 앱 측 잠정 규칙 — 새 토핑의 z는 이미지·텍스트 전체의 최댓값 + 1을 앱이 정하고(`CanvasMainViewModel` 초안, `CanvasToppingPlaceViewModel.resolvedPositionZ`), 합쳐 그릴 때 동률은 이미지가 아래, 그다음 id 순이다(`canvasLayerOrder`). 서버팀·iOS와 합의하면 갱신한다.
+
+### [2026-10-25] 텍스트 배치 POST가 멱등이 아니다 — 재시도 시 중복 배치·중복 알림
+
+- **ID**: OQ-P-444
+- **출처**: [parfait-text.md](../api/parfait-text.md) POST 절 · 서버 `PlaceParfaitTextService`
+- **항목**: 이미지 배치의 `(parfaitId, imageId)` upsert와 달리 텍스트 POST는 항상 새 행을 만들고 그때마다 푸시를 보낸다. 앱이 응답을 잃고 재시도하면 같은 텍스트가 두 번 놓이고 다른 구성원은 알림을 두 번 받는다.
+- **상태**: 미해결
+- **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 서버 멱등 키가 생기면 재검토한다.
+
+### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
+
+- **ID**: OQ-P-445
+- **출처**: [notification.md](../api/notification.md) 「이 계약이 앱에 요구하는 것」 · 서버 `NotificationMessageFactory.backgroundChanged`·`textPlaced`
+- **항목**: 서버는 `data.type`을 5종(`TOPPING`·`BACKGROUND`·`TEXT`·`REMIND_AM`·`REMIND_PM`) 보낸다. 앱 `PushNotificationType`에는 `BACKGROUND`·`TEXT`가 없다. 라우팅은 `route=canvas`로 맞게 되지만 `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로 고정해 `APP_PUSH_OPENED` 분석에서 배경·텍스트 알림 탭이 토핑으로 집계된다.
+- **상태**: 미해결
+- **해소 메모**: enum에 두 값을 더하고 `AddTopping`이 받은 type을 들게 할지 정한다.
+
+### [2026-10-25] `TEXT` 알림이 텍스트 원문 스냅숏을 보낸다
+
+- **ID**: OQ-P-446
+- **출처**: [notification.md](../api/notification.md) 「어떤 페이로드가 가는가」 · 서버 `TextPlacedPayload`·`NotificationOutboxDispatcher`
+- **항목**: `TextPlacedPayload`가 원문 `text`를 `notification_outbox.payload`에 저장한다. 디스패처는 발송 전에 텍스트가 아직 있는지·바뀌었는지 보지 않는다. 배치 직후 삭제·수정한 텍스트도 원문 그대로 알림으로 나갈 수 있다(재시도 시 최대 수 시간 뒤). 원문은 보관 기간 2일 동안 아웃박스에 남는다.
+- **상태**: 미해결
+- **해소 메모**: 삭제 시 발송을 취소할지, 원문 보관이 허용되는지 정책 판단이 필요하다.
+
+### [2026-10-25] `TEXT` 알림만 닉네임을 자르지 않는다
+
+- **ID**: OQ-P-447
+- **출처**: [notification.md](../api/notification.md) 「어떤 페이로드가 가는가」 · 서버 `NotificationMessageFactory.textPlaced`
+- **항목**: `TOPPING`·`BACKGROUND`는 닉네임을 `NICKNAME_DISPLAY_MAX = 8`로 자른다(`...`). `textPlaced`는 그대로 넣는다. 닉네임 상한이 15자라 텍스트 알림만 길게 나온다. 미리보기는 `…`(U+2026)를 써서 말줄임 기호도 다르다.
+- **상태**: 미해결
+- **해소 메모**: 의도인지 누락인지 서버팀에 확인한다.
+
+### [2026-10-25] 배경 변경 푸시에 스로틀이 없고, 배경·텍스트 알림의 정책 근거가 없다
+
+- **ID**: OQ-P-448
+- **출처**: [notification.md](../api/notification.md) 「몇 번, 얼마나 늦게 오는가」 · 서버 `NotificationOutbox.backgroundChanged`·`ChangeParfaitBackgroundService`
+- **항목**: `BACKGROUND`의 dedup 키에 변경 시각(밀리초)이 들어가 같은 값으로 바꿔도, 연달아 바꿔도 변경마다 그룹 전원에게 푸시가 나간다. `wiki/pages/`에 P-04(텍스트)와 배경 변경 알림 정책이 없다(OQ-P-351과 같은 축).
+- **상태**: 미해결
+- **해소 메모**: 스로틀·합치기 정책이 필요한지 기획에 확인한다.
+
+### [2026-10-25] App Links — assetlinks.json 지문이 실제 서명 키와 같은지 확인되지 않았다
+
+- **ID**: OQ-P-449
+- **출처**: [deeplink.md](../api/deeplink.md) `GET /.well-known/assetlinks.json` · 서버 설정 `deeplink.android.sha256-cert-fingerprints`(debug + Play 앱 서명 키)
+- **항목**: 서버는 설정 문자열을 그대로 내보내고 지문이 틀리거나 비어도 200을 준다. release 지문이 Play Console 앱 서명 키와 같은지, debug 지문이 어느 키스토어 것인지 코드로 확인할 수 없다. 틀리면 `autoVerify`가 조용히 실패해 초대 링크가 브라우저로 떨어진다. 개발자마다 debug 키스토어가 다르면 그 기기의 debug 빌드는 검증되지 않는다.
+- **상태**: 미해결
+- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다.
+
+### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
+
+- **ID**: OQ-P-450
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `CanvasTextInputViewModel#handleOnClickStack`
+- **항목**: C-106 배치 모드의 [캔버스에 쌓기]는 `canvas_text_stack_tapped`를 남긴 뒤 초안만 비우고 C-001로 돌아간다. 텍스트는 서버에 저장되지 않는다. 서버 배치 API와 `:data`의 `ParfaitTextRemoteDataSource`(`placeText`·`updateText`·`deleteText`)는 있으나 그것을 감쌀 저장소·유스케이스가 없어 화면이 부를 길이 없다([api/parfait-text.md](../api/parfait-text.md)). 화면 상태 중 정렬·줄바꿈 위치는 계약에 실을 자리가 없다(OQ-P-451). iOS(`feature/create_text-#144`)도 같은 지점이 스텁이다.
+- **상태**: 해소됨 (2026-10-26, `feature/text-topping-api`) — `PlaceTextToppingUseCase`가 POST를 한 번 보내고 성공하면 오늘 캔버스를 다시 읽어 C-001로 돌아간다. 저장 단위는 OQ-P-452
+
+### [2026-10-26] 텍스트 토핑의 줄바꿈 위치를 서버 계약에 실을 자리가 없다
+
+- **ID**: OQ-P-451
+- **출처**: [텍스트 토핑 스펙](../superpowers/specs/archive/2026-10-16-text-topping.md) 「주의 / 열린 질문」 × `PlaceParfaitTextRequest`·`TextToppingStyle`([api/parfait-text.md](../api/parfait-text.md))
+- **항목**: 스펙은 크로스플랫폼 줄바꿈 고정용 `lineBreakPositions`를 저장값 후보로 둔다. 서버 텍스트 계약에는 줄바꿈 위치를 실을 필드가 없어, 같은 텍스트라도 기기마다 글꼴·폭에 따라 줄이 다시 나뉜다. 정렬은 서버 `textAlign`으로 저장된다([api/parfait-text.md](../api/parfait-text.md)). 줄바꿈 위치를 계약에 넣을지, 기기별 재계산을 받아들일지.
+- **상태**: 미해결 (서버·iOS 협의)
+
+### [2026-10-26] 텍스트 저장 단위를 iOS와 합의하지 않았다
+
+- **ID**: OQ-P-452
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `TextToppingWireMapper`
+- **항목**: 앱은 위치를 박스 중심의 캔버스 비율, `fontSize`를 디자인 너비 335 기준 `designFontSize`, `scale`을 핀치 배율로 저장한다. 이 단위는 Android가 정했고 iOS와 맞추지 않았다. iOS가 다른 단위(좌상단 기준 좌표, 다른 기준 너비 등)로 저장하면 서로의 텍스트가 어긋나 보인다.
+- **상태**: 미해결 (iOS 협의)
+- **해소 메모**: iOS와 단위를 맞춘 뒤 [parfait-text.md](../api/parfait-text.md) 「Android 매핑」을 갱신한다.
+
+### [2026-10-26] 글꼴 구간 분기 이전에 저장한 텍스트가 다르게 그려진다
+
+- **ID**: OQ-P-453
+- **출처**: [텍스트 토핑 서버 연동 스펙](../superpowers/specs/archive/2026-10-26-text-topping-api.md) × `textToppingScriptRuns`
+- **항목**: 글꼴 구간 분기 이전에 저장한 텍스트는 다시 그리면 달라진다(한글+가나는 한글이 SUIT, 한글+한자는 한자가 TW) — 줄 수가 바뀔 수 있다. 재편집 왕복에 딸렸던 갭(dirty 오판·편집 결과 소실·POST 뒤 DELETE 미완)은 쌓인 텍스트의 내용을 고치지 않기로 확정돼 C-106 재편집 경로를 걷어 내면서 없어졌다.
+- **상태**: 미해결
+- **해소 메모**: 이전 저장분이 남아 있는 동안 달라진 줄 수를 감수할지, 저장 시점 글꼴 규칙을 따로 기록할지 정한다.
+
+### [2026-10-26] C-305 에서 텍스트를 캔버스 밖으로 옮겨도 막지 않는다
+
+- **ID**: OQ-P-454
+- **출처**: `CanvasToppingArrangeViewModel` 텍스트 변형(위치 clamp 없음, `TEXT_TOPPING_MIN_SCALE` 하한만) × 위키 `wiki/open-questions.md` 「캔버스 이탈을 자동 보정하는지 허용하는지」
+- **항목**: C-305 는 텍스트 위치를 캔버스 비율 밖으로도 저장한다. C-106 정책(기능정의서 v7 "이탈 허용, 넘어간 픽셀만 Clipping Mask")과 방향은 같지만, C-305 이탈 정책 문장은 v7 에서 대체 없이 사라져 위키에서 미결이다. 사진 토핑의 C-305 동작과도 같은 축이라 한 번에 정해야 한다(OQ-P-122).
+- **상태**: 미해결 (기획 확인)
+- **해소 메모**: 기획이 C-305 이탈 정책을 정하면 사진·텍스트 변형에 같은 보정(또는 허용)을 붙인다.
+
+### [2026-10-26] 토핑 정리 화면의 저장 단계를 분리할지
+
+- **ID**: OQ-P-455
+- **출처**: `CanvasToppingArrangeViewModel` — `mergeToppings`/`mergeTexts`, 이미지·텍스트 짝 집합(`dirty*Ids`·`pendingDelete*Ids`·`deleted*Ids`), `handleOnClickConfirm` 저장 순서 · 텍스트 토핑 서버 연동 스택 2/4·3/4 리뷰
+- **항목**: 이 ViewModel이 약 1,000줄이고, 병합 규칙과 변경 집합이 이미지·텍스트로 거의 줄 단위로 복제돼 있다. 병합 규칙을 바꿀 때 한쪽만 고치면 어긋난다. 삭제 보류→툼스톤 이동(`markTextsGone`)·404 처리(`isDeletedOrGone`)는 합쳤지만, 변경 집합과 저장 단계(일괄 PATCH → 테두리 → 삭제)는 그대로다.
+- **상태**: 미해결 (후속 리팩터링)
+- **해소 메모**: 다음 토핑 종류가 붙기 전에 변경 집합을 종류별 값 객체 하나로 묶고, 저장 단계를 별도 클래스(또는 UseCase)로 뺀다. 동작이 바뀌지 않는 리팩터링이라 텍스트 토핑 스택이 `develop`에 머지된 뒤 별도 PR로 한다.
+
+### [2026-10-27] iOS가 텍스트 토핑의 글꼴 구간 규칙을 따를지
+
+- **ID**: OQ-P-456
+- **출처**: [텍스트 토핑 글꼴·자간 구간 분기 스펙](../superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md) × `textToppingScriptRuns`
+- **항목**: Android는 글자 구간마다 글꼴·자간을 고르고 한자는 가나 유무로 JP·TW 순서를 정한다. iOS가 같은 규칙을 따를지 정하지 않았다. 다르면 같은 토핑의 글꼴과 줄바꿈이 플랫폼마다 달라진다.
+- **상태**: 미해결
+- **해소 메모**: iOS와 구간 규칙(가나 판정 범위, 한자 우선순위, 중립 문자 처리)을 맞춘다.
+
+### [2026-10-27] CJK 문장부호가 앞의 SUIT 구간을 따라 시스템 폰트로 그려진다
+
+- **ID**: OQ-P-457
+- **출처**: `textToppingScriptRuns` 중립 문자 규칙
+- **항목**: `、。` 같은 CJK 문장부호는 중립 문자라 앞 구간을 따른다. 앞이 `DEFAULT`(SUIT)면 SUIT에 이 글리프가 없어 시스템 폰트로 그려진다(예: `Parfait、パフェ`의 `、`).
+- **상태**: 미해결
+- **해소 메모**: CJK 문장부호를 뒤 구간이나 Line Seed 쪽으로 보낼지 정한다. 실기기에서 어색한지 먼저 본다.
+
+### [2026-10-27] 구간 경계의 자간 간격을 실기기에서 확인하지 않았다
+
+- **ID**: OQ-P-458
+- **출처**: `TextToppingScript`의 `letterSpacingEm` (JP·SUIT -1.1%, TW 0%)
+- **항목**: 자간이 다른 구간(JP -1.1%와 TW 0%)이 맞닿는 경계의 간격이 어색한지 실기기에서 보지 않았다.
+- **상태**: 미해결
+- **해소 메모**: 일·중이 섞인 텍스트를 실기기에서 눈으로 확인한다.
+
+### [2026-10-28] G-001 그룹 목록이 텍스트 토핑을 세지 않는다
+
+- **ID**: OQ-P-459
+- **출처**: [parfait-group.md](../api/parfait-group.md) GET `/api/v2/parfait-groups` × `feature/groups/list/impl/util/ToppingImage.kt#toToppingImage` · `YGToppingImage.TextTemplate` · 위키 `concepts/infinite-parfait.md`(빈 토핑 템플릿·토핑 회전·상대 시간 절)
+- **항목**: G-001이 텍스트 토핑을 다루는 방식이 기획 근거 없이 앱이 정한 값이다. 위키에는 텍스트 토핑 정책이 없다. ① 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종 중 하나를 띄운다. 위키는 템플릿을 "아직 아무도 토핑을 올리지 않은 그룹"에만 쓴다. ② 텍스트 템플릿만 카드 회전을 받지 않는다. 위키는 템플릿도 일반 토핑과 같은 지그재그·회전 규칙을 따른다고 적는다. ③ 텍스트 템플릿을 groupId로 고정해 고른다. 일반 템플릿의 "무작위 최초 부여·고정" 규칙이 여기도 적용되는지 정해지지 않았다. ④ 경과 시간·마지막 토퍼 칩·정렬이 텍스트를 포함한 마지막 토핑 기준이다(서버 v2). 위키의 "활동" 목록에 텍스트 토핑이 없다.
+- **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
+- **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
+
+<!-- oq-next: 460 -->

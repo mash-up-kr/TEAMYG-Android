@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,6 +36,8 @@ internal fun AppSettingScreen(
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
+    onClickCsaePolicy: () -> Unit,
+    onClickOssLicense: () -> Unit,
     onClickLogout: () -> Unit,
     onClickWithdraw: () -> Unit,
     onConfirmWithdraw: () -> Unit,
@@ -51,6 +55,7 @@ internal fun AppSettingScreen(
                 verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(
                         paddingValues = PaddingValues(
                             top = YGTheme.layout.padding.padding8,
@@ -78,6 +83,16 @@ internal fun AppSettingScreen(
                             onClick = { onClickPolicy(policy.termsId) },
                         )
                     }
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_csae_policy),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickCsaePolicy,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_oss_license),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickOssLicense,
+                    )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
@@ -171,6 +186,8 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickBack = {},
         onClickAccount = {},
         onClickPolicy = {},
+        onClickCsaePolicy = {},
+        onClickOssLicense = {},
         onClickLogout = {},
         onClickWithdraw = {},
         onConfirmWithdraw = {},

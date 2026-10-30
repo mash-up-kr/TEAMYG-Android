@@ -6,15 +6,14 @@ import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
-import com.teamyg.parfait.feature.camera.api.NavKeyCameraSystem
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
-import com.teamyg.parfait.feature.gallery.api.NavKeySystemGalleryPicker
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasImageSave
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingPlace
 import com.teamyg.parfait.feature.groups.enter.api.NavKeyGroupCreate
@@ -59,8 +58,6 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
         },
     )
 
-    is NavKeyCameraSystem -> AnalyticsScreen(AnalyticsScreenType.CAMERA_SYSTEM)
-
     is NavKeyPictureConfirm -> AnalyticsScreen(
         when (source) {
             PictureConfirmSource.CAMERA ->
@@ -87,13 +84,13 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
         },
     )
 
-    is NavKeySystemGalleryPicker -> AnalyticsScreen(AnalyticsScreenType.GALLERY_SYSTEM)
-
     is NavKeySegmentation -> AnalyticsScreen(AnalyticsScreenType.SEGMENTATION)
 
     is NavKeyToppingEdit -> AnalyticsScreen(AnalyticsScreenType.TOPPING_EDIT)
 
     is NavKeyCanvasToppingPlace -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TOPPING_PLACE)
+
+    is NavKeyCanvasTextInput -> AnalyticsScreen(AnalyticsScreenType.CANVAS_TEXT_INPUT)
 
     is NavKeyCanvasBGEdit -> AnalyticsScreen(AnalyticsScreenType.CANVAS_BG_EDIT)
 

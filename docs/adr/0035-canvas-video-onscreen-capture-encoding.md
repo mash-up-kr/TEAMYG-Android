@@ -20,7 +20,7 @@ tags: [adr, parfait, canvas, video]
 ## 맥락
 
 캔버스에 토핑이 쌓인 순서대로 등장하는 동영상을 만들어 갤러리에 저장해야 한다
-([스펙 `canvas-topping-timelapse-video`](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md)). 두 가지를 정해야 한다. **프레임을 무엇으로 그리는가**와
+([스펙 `canvas-topping-timelapse-video`](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md)). 두 가지를 정해야 한다. **프레임을 무엇으로 그리는가**와
 **무엇으로 인코딩하는가**다.
 
 토핑 렌더는 옮겨 심기 어렵다. 테두리가 사각형이 아니라 실루엣 거리장에서 만든 띠이고
@@ -66,6 +66,7 @@ EGL 입력 표면 + `MediaMuxer`로 직접 mp4를 쓴다. 외부 의존성은 �
   흡수한다. 그러나 이미지 입력 단위가 "정지 이미지 N초"라, 팝인 보간 프레임을 넣으려면 프레임마다
   파일을 굽고 `EditedMediaItem`을 수십 개 이어 붙여야 한다. 2초 영상이면 60장이다.
   **→ 기각:** 팝인 연출과 궁합이 나쁘고, 그 대가로 의존성 세 개가 늘어난다.
+  (팝인은 뒤에 걷혔다 — [canvas-video-instant-reveal](../superpowers/specs/2026-10-28-canvas-video-instant-reveal-design.md). 기각은 의존성과 렌더 일치 근거로 유지된다.)
 - **`MediaCodec` ByteBuffer 모드 + 직접 YUV 변환** — EGL 보일러플레이트가 사라지고 색변환을
   순수 함수로 테스트할 수 있다. 그러나 지원 컬러 포맷이 기기마다 갈려
   (`COLOR_FormatYUV420Planar`·`SemiPlanar`·`Flexible`) 조회·분기 코드가 필요하고, `minSdk` 26
@@ -81,7 +82,7 @@ EGL 입력 표면 + `MediaMuxer`로 직접 mp4를 쓴다. 외부 의존성은 �
 - 외부 의존성이 늘지 않는다. APK 크기와 빌드 시간에 영향이 없다.
 - 하드웨어 인코더를 쓰고, 컬러 포맷 변환을 GPU가 처리한다.
 - 출력 해상도가 기기에 무관하게 같다. 밀도 덮어쓰기로 dp 기하와 픽셀 크기를 분리했다.
-- 순서·타이밍 계산이 순수 Kotlin으로 떨어져 JVM에서 검증된다. 기기 테스트 대상은 인코더 하나다.
+- 순서·타이밍 계산이 순수 Kotlin으로 떨어져 JVM에서 검증된다. 기기 테스트 대상은 `core/util/android/video/`의 두 조각이다.
 
 **트레이드오프**
 

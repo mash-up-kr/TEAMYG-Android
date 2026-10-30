@@ -23,6 +23,7 @@ import coil3.compose.AsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackground
 import com.teamyg.parfait.core.designsystem.image.rememberReloadableImageRequest
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CanvasLoadState
 import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
@@ -44,8 +45,9 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLoadState
 @Composable
 internal fun CanvasVideoRecordLayer(
     toppings: List<CanvasToppingVO>,
+    texts: List<CanvasTextToppingVO>,
     background: YGCanvasBackground?,
-    toppingPopProgresses: List<Float>,
+    frameIndex: Int,
     canvasWidth: Dp,
     canvasHeight: Dp,
     targetWidthPx: Int,
@@ -110,14 +112,16 @@ internal fun CanvasVideoRecordLayer(
 
             CanvasToppingLayer(
                 toppings = toppings,
-                spotlightedToppingId = null,
+                texts = texts,
+                spotlightedKey = null,
                 onClickTopping = {},
+                onClickText = {},
                 onClickSpotlightDim = {},
                 hitTestEnabled = false,
                 // 차례로 등장하는 것이 이 영상의 전부다. 한꺼번에 드러내는 빗장을 걸면 안 된다
                 revealTogether = false,
                 retryKey = retryKey,
-                toppingPopProgresses = toppingPopProgresses,
+                videoFrameIndex = frameIndex,
                 onLoadStateChange = { toppingState = it },
                 modifier = Modifier.requiredSize(width = canvasWidth, height = canvasHeight),
             )

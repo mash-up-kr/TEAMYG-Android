@@ -2,8 +2,8 @@
 id: member
 title: 회원(내 계정 조회·전역 닉네임 변경·탈퇴)
 server_module: http/member
-server_commit: aa9cc9b
-verified: 2026-09-04
+server_commit: 8b4a94b
+verified: 2026-10-25
 android_status: done
 related_spec: 2026-08-15-parfait-canvas-topping-member-api-service-layer, 2026-08-15-user-info-ssot
 related_adr: ADR-0017, ADR-0022
@@ -142,7 +142,12 @@ tags: [api, parfait, server-contract, member]
 
   **처리 순서**(`MemberService.withdraw`, `@Transactional`):
   ① 회원이 없으면 **아무것도 하지 않고 그대로 성공**(`existsById`가 false면 조기 반환) —
-  즉 **멱등이고 404를 내지 않는다**. ② 회원 행 삭제. ③ 참여 중인 그룹 멤버십 전부를 `leave()` 처리.
+  즉 **멱등이고 404를 내지 않는다**. ② 회원 행 삭제. ③ 참여 중인 그룹 멤버십 전부를 **그룹 id 오름차순으로** 돌며 그룹마다
+  `ParfaitGroupVersionService.bumpOnMemberLeft`(그룹 version +1, 커밋 뒤 Redis 멤버십·version 캐시 무효화) →
+  `leave()` 순서로 처리한다. 그룹 나가기와 같은 처리라, **남은 멤버의 오늘 캔버스 조건부 조회 ETag가 바뀌어**
+  탈퇴자가 빠진 멤버 목록을 200으로 다시 받는다([parfait-group.md](parfait-group.md) "그룹 version" ·
+  [parfait.md](parfait.md)). 오름차순은 겹치는 그룹에서 두 사람이 동시에 탈퇴할 때 `parfait_group` 행 락 순서를
+  맞춰 데드락을 막으려는 것이다.
   ④ **커밋 이후**(`TransactionSynchronization.afterCommit`) refresh token 전량 삭제
   (`TokenDeletePort.deleteAllByMemberId` — Redis). ④가 실패하면 로그 경고만 남기고 탈퇴는 유지된다.
   ⑤ **같은 `afterCommit` 블록에서 기기(FCM) 토큰 전량 삭제**(`DeviceTokenDeletePort.deleteAllByMemberId`

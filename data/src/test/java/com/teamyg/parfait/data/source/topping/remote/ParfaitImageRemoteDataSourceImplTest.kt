@@ -18,6 +18,8 @@ import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.domain.model.id.ImageId
 import com.teamyg.parfait.domain.model.id.ParfaitId
 import com.teamyg.parfait.domain.model.id.ParfaitImageId
+import com.teamyg.parfait.domain.model.id.ParfaitTextId
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
 import com.teamyg.parfait.domain.model.topping.ToppingTransform
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
@@ -318,6 +320,42 @@ class ParfaitImageRemoteDataSourceImplTest {
             ToppingTransform(positionX = 200.0, positionY = 400.0, positionZ = 1, scale = 1.5, rotation = 45.0),
             vos.first().transform,
         )
+    }
+
+    @Test
+    fun updateToppings_textUpdate_isSentAsTextItems() = runTest {
+        // Given 요청 바디를 잡아둔다
+        val request = slot<UpdateParfaitImagesRequest>()
+        coEvery {
+            parfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages(any(), any(), capture(request))
+        } returns updateSuccess()
+
+        // When 텍스트 업데이트 하나만 넘긴다
+        dataSource.updateToppings(
+            groupId = GroupId(1L),
+            parfaitId = ParfaitId(5L),
+            updates = emptyList(),
+            textUpdates = listOf(
+                TextToppingTransformUpdate(
+                    parfaitTextId = ParfaitTextId(77L),
+                    positionX = 0.4,
+                    positionY = 0.6,
+                    positionZ = 5,
+                    scale = 1.5,
+                    rotation = 30.0,
+                ),
+            ),
+        )
+
+        // Then items 는 비고 textItems 에 id 와 축 값이 실린다
+        assertEquals(emptyList(), request.captured.items)
+        val item = request.captured.textItems.single()
+        assertEquals(77L, item.parfaitTextId)
+        assertEquals(0.4, item.positionX)
+        assertEquals(0.6, item.positionY)
+        assertEquals(5, item.positionZ)
+        assertEquals(1.5, item.scale)
+        assertEquals(30.0, item.rotation)
     }
 
     @Test

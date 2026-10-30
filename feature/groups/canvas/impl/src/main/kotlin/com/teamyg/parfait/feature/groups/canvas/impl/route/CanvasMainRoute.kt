@@ -59,6 +59,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasWelcome
 import com.teamyg.parfait.feature.gallery.api.NavKeyCustomGalleryPicker
 import com.teamyg.parfait.feature.gallery.api.RecentImagePick
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
+import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
@@ -190,6 +191,10 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCustomGalleryPicker(recentImagePick = RecentImagePick.CUTOUT),
                 )
 
+                CanvasMainEffect.NavigateToTextInput -> navigator.goTo(
+                    destination = NavKeyCanvasTextInput,
+                )
+
                 is CanvasMainEffect.NavigateToCanvasBGEdit -> navigator.goTo(
                     destination = NavKeyCanvasBGEdit(
                         groupId = effect.groupId.value,
@@ -201,7 +206,8 @@ internal fun CanvasMainRoute(
                     destination = NavKeyCanvasToppingArrange(
                         groupId = effect.groupId.value,
                         parfaitId = effect.parfaitId.value,
-                        initialToppingId = effect.toppingId.value,
+                        initialToppingId = effect.toppingId,
+                        initialIsText = effect.isText,
                     ),
                 )
 
@@ -216,9 +222,10 @@ internal fun CanvasMainRoute(
                     // 다른 그룹원이 토핑을 올리거나 지우면, 나중에 읽은 토핑이 이미 캡처된
                     // 그림과 어긋난다
                     val capturedState = viewModel.state.value
-                    val toppingCount = capturedState.toppings.size
+                    val toppingCount = capturedState.toppings.size + capturedState.texts.size
                     val videoSource = CanvasVideoSource(
                         toppings = capturedState.toppings,
+                        texts = capturedState.texts,
                         background = capturedState.canvasBackground.toYGCanvasBackground(),
                         canvasWidth = canvasAreaWidth,
                         canvasHeight = canvasAreaHeight,
@@ -299,6 +306,7 @@ internal fun CanvasMainRoute(
                     sub = closedCanvasAlertSubFormat.format(effect.contributorCount),
                     buttonText = closedCanvasAlertButtonText,
                     onButtonClick = {
+                        alertPolicy.dismiss()
                         viewModel.processIntent(CanvasMainIntent.ClickPastCanvasAlertDate(effect.date))
                     },
                 )
@@ -364,6 +372,7 @@ internal fun CanvasMainRoute(
             onClickMenu = { viewModel.processIntent(CanvasMainIntent.OnClickGroupSetting) },
             onClickCamera = { viewModel.processIntent(CanvasMainIntent.OnClickCamera()) },
             onClickGallery = { viewModel.processIntent(CanvasMainIntent.OnClickCanvas()) },
+            onClickTextInput = { viewModel.processIntent(CanvasMainIntent.OnClickTextInput) },
             onClickEditCanvasBG = { viewModel.processIntent(CanvasMainIntent.OnClickCanvasEdit()) },
             onClickSaveToGallery = { viewModel.processIntent(CanvasMainIntent.OnClickSaveToGallery) },
             onClickGoToToday = { viewModel.processIntent(CanvasMainIntent.OnClickGoToToday) },
@@ -372,6 +381,7 @@ internal fun CanvasMainRoute(
             onSelectMonth = { viewModel.processIntent(CanvasMainIntent.SelectMonth(it)) },
             onClickDate = { viewModel.processIntent(CanvasMainIntent.ClickDate(it)) },
             onClickTopping = { viewModel.processIntent(CanvasMainIntent.OnClickTopping(it)) },
+            onClickText = { viewModel.processIntent(CanvasMainIntent.OnClickText(it)) },
             onClickSpotlightDim = { viewModel.processIntent(CanvasMainIntent.OnClickSpotlightDim) },
             onLoadStateChange = { loadState = it },
             retryKey = retryKey,

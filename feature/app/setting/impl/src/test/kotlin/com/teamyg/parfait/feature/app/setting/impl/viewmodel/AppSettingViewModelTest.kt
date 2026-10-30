@@ -170,6 +170,36 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickCsaePolicy_navigatesToCsaePolicy() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 약관 목록과 무관하게 항상 떠 있는 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When CSAE 방지 정책을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickCsaePolicy)
+
+            // Then 서버 약관 목록을 거치지 않고 고정 목적지로 바로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToCsaePolicy, awaitItem())
+        }
+    }
+
+    @Test
+    fun clickOssLicense_navigatesToOssLicense() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 오픈소스 라이선스를 누른다
+            viewModel.processIntent(AppSettingIntent.ClickOssLicense)
+
+            // Then 오픈소스 라이선스로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToOssLicense, awaitItem())
+        }
+    }
+
+    @Test
     fun clickWithdraw_showsWithdrawDialog() = runTest(mainDispatcherRule.dispatcher) {
         // Given 팝업이 떠 있지 않은 초기 화면
         val viewModel = viewModel()

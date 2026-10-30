@@ -2,4 +2,7 @@
 <resources>
     <!-- 런처 아이콘 바탕. 모눈 이미지가 선만 있고 바탕은 투명해 이 색을 깔아야 한다 -->
     <color name="ic_launcher_background">#FFFAFAFA</color>
+
+    <!-- 라이트 테마(Theme.Material.Light)의 기본 창 배경과 같은 값이다. 다크 모드 테마도 이 색을 써서 스플래시·창 배경을 라이트로 고정한다 -->
+    <color name="window_background">#FFFAFAFA</color>
 </resources>

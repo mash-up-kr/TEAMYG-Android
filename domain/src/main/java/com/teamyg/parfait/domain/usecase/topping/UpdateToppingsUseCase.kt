@@ -2,6 +2,7 @@ package com.teamyg.parfait.domain.usecase.topping
 
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.ParfaitId
+import com.teamyg.parfait.domain.model.topping.TextToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.ToppingTransformUpdate
 import com.teamyg.parfait.domain.model.topping.UpdatedToppingVO
 import com.teamyg.parfait.domain.repository.topping.ToppingRepository
@@ -14,9 +15,11 @@ class UpdateToppingsUseCase @Inject constructor(
         groupId: GroupId,
         parfaitId: ParfaitId,
         updates: List<ToppingTransformUpdate>,
+        textUpdates: List<TextToppingTransformUpdate>,
     ): Result<List<UpdatedToppingVO>> = toppingRepository.updateAll(
         groupId = groupId,
         parfaitId = parfaitId,
         updates = updates,
+        textUpdates = textUpdates,
     )
 }

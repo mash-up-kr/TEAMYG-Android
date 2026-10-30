@@ -1,0 +1,380 @@
+package com.teamyg.parfait.feature.groups.canvas.impl.viewmodel
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.ui.BaseViewModel
+import com.teamyg.parfait.core.ui.UiIntent
+import com.teamyg.parfait.core.ui.UiSideEffect
+import com.teamyg.parfait.core.ui.UiState
+import com.teamyg.parfait.core.ui.viewModelLogger
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.core.util.android.extension.toColorOrNull
+import com.teamyg.parfait.core.util.jvm.extension.graphemeClusterCount
+import com.teamyg.parfait.core.util.jvm.extension.truncateToGraphemeClusters
+import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
+import com.teamyg.parfait.domain.model.canvas.CanvasVO
+import com.teamyg.parfait.domain.model.error.AppError
+import com.teamyg.parfait.domain.model.id.GroupId
+import com.teamyg.parfait.domain.model.topping.ToppingDraft
+import com.teamyg.parfait.domain.usecase.parfait.GetTodayParfaitFlowUseCase
+import com.teamyg.parfait.domain.usecase.parfait.RefreshTodayParfaitDetailUseCase
+import com.teamyg.parfait.domain.usecase.topping.ClearToppingDraftUseCase
+import com.teamyg.parfait.domain.usecase.topping.GetToppingDraftFlowUseCase
+import com.teamyg.parfait.domain.usecase.topping.PlaceTextToppingUseCase
+import com.teamyg.parfait.feature.groups.canvas.impl.model.PlaceFailure
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_FONT_SIZE_SP
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MAX_LENGTH
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
+import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toPlaceFailure
+import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import javax.inject.Inject
+
+data class CanvasTextInputUiState(
+    val content: String = "",
+    val selectedColor: TextToppingColor = TextToppingColor.White,
+    val textType: TextToppingType = TextToppingType.DEFAULT,
+    val align: TextAlign = TEXT_TOPPING_DEFAULT_ALIGN,
+    val isColorPopoverOpen: Boolean = false,
+    /** [backgroundImageUrl] 이 있으면 그쪽이 우선이고, 이 색은 이미지가 없을 때만 그려진다 */
+    val backgroundColor: Color = YGAtomicColors.Gray.White,
+    val backgroundImageUrl: String? = null,
+    val existingToppings: List<CanvasToppingVO> = emptyList(),
+    val existingTexts: List<CanvasTextToppingVO> = emptyList(),
+    /** 키보드가 내려가 있는 동안(배치 상태)의 자리·크기·회전. 저장이 아니라 화면 전용 상태다 */
+    val offsetX: Dp = 0.dp,
+    val offsetY: Dp = 0.dp,
+    val scale: Float = 1f,
+    val rotationDegrees: Float = 0f,
+    val textBoxSize: DpSize? = null,
+    val canvasSize: DpSize? = null,
+    /** 사용자가 아직 손대지 않은 동안에만 캔버스 정중앙에 자동으로 놓는다 */
+    val hasUserAdjustedPlacement: Boolean = false,
+    val showQuitDialog: Boolean = false,
+    /** 자동 크기(디자인 단위). 키보드를 내린 순간의 값을 배치에서 그대로 쓴다 */
+    val designFontSize: Float = TEXT_TOPPING_FONT_SIZE_SP,
+    val isLoading: Boolean = false,
+) : UiState {
+    val characterCount: Int get() = content.graphemeClusterCount()
+    val isAtLimit: Boolean get() = characterCount >= TEXT_TOPPING_MAX_LENGTH
+}
+
+sealed interface CanvasTextInputIntent : UiIntent {
+    data class OnContentChange(
+        val value: String,
+    ) : CanvasTextInputIntent
+
+    data class OnSelectColor(
+        val color: TextToppingColor,
+    ) : CanvasTextInputIntent
+
+    data object OnToggleColorPopover : CanvasTextInputIntent
+
+    data object OnDismissColorPopover : CanvasTextInputIntent
+
+    data class OnAutoFontSizeChange(
+        val designFontSize: Float,
+    ) : CanvasTextInputIntent
+
+    data object OnClickType : CanvasTextInputIntent
+
+    data object OnClickAlign : CanvasTextInputIntent
+
+    data class OnTextBoxMeasured(
+        val size: DpSize,
+    ) : CanvasTextInputIntent
+
+    data class OnCanvasMeasured(
+        val size: DpSize,
+    ) : CanvasTextInputIntent
+
+    data class OnToppingTransform(
+        val pan: DpOffset,
+        val zoom: Float,
+        val rotationDelta: Float,
+    ) : CanvasTextInputIntent
+
+    /** 키보드 ↑ 상태에서 끌기로 배치에 진입할 때, 점프 없이 현재 보이는 자리에서 이어지도록 배치 좌표를 심는다 */
+    data class OnDragPlacementSeed(
+        val offsetX: Dp,
+        val offsetY: Dp,
+    ) : CanvasTextInputIntent
+
+    /** 빈 내용으로 완료 — 생성 취소 */
+    data object OnClickConfirm : CanvasTextInputIntent
+
+    data object OnClickClose : CanvasTextInputIntent
+
+    data object OnClickStack : CanvasTextInputIntent
+
+    data object OnQuitDialogConfirm : CanvasTextInputIntent
+
+    data object OnQuitDialogCancel : CanvasTextInputIntent
+}
+
+sealed interface CanvasTextInputEffect : UiSideEffect {
+    data object NavigateBack : CanvasTextInputEffect
+
+    data class ShowPlaceFailed(
+        val failure: PlaceFailure,
+    ) : CanvasTextInputEffect
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class CanvasTextInputViewModel
+@Inject
+constructor(
+    private val getToppingDraftFlow: GetToppingDraftFlowUseCase,
+    private val getTodayParfaitFlowUseCase: GetTodayParfaitFlowUseCase,
+    private val clearToppingDraft: ClearToppingDraftUseCase,
+    private val placeTextTopping: PlaceTextToppingUseCase,
+    private val refreshTodayParfaitDetail: RefreshTodayParfaitDetailUseCase,
+    private val analyticsLogger: AnalyticsLogger,
+) : BaseViewModel<CanvasTextInputUiState, CanvasTextInputIntent, CanvasTextInputEffect>(
+    CanvasTextInputUiState(),
+) {
+    /** 초안이 그룹을 알려 주기 전엔 비어 있다. [CanvasToppingPlaceViewModel] 과 같은 이유로 [state] 를 게이트로 쓰지 않는다 */
+    private val observedGroupId = MutableStateFlow<GroupId?>(null)
+
+    /** 저장에 필요한 식별값·z 순서. 쌓기 시점의 값을 읽는다 */
+    private val observedDraft = MutableStateFlow<ToppingDraft?>(null)
+
+    init {
+        observeDraft()
+        observeCanvas()
+    }
+
+    /** 이 화면이 쓰는 건 캔버스 식별값뿐이다 — 내용·색·타입·정렬은 화면 수명 동안 로컬 상태로만 있는다 */
+    private fun observeDraft() {
+        launch {
+            getToppingDraftFlow().collect { draft ->
+                observedDraft.value = draft
+                observedGroupId.value = draft?.groupId
+            }
+        }
+    }
+
+    /** 화면이 보이는 동안만 오늘 캔버스를 구독한다(`adr/0029-canvas-today-ssot-polling.md`) */
+    private fun observeCanvas() {
+        launchWhileSubscribed(
+            source = {
+                observedGroupId
+                    .filterNotNull()
+                    .flatMapLatest { groupId -> getTodayParfaitFlowUseCase(groupId) }
+            },
+        ) { canvas ->
+            // null 은 무시한다 — 비우면 배경이 흰색으로 튄다
+            if (canvas == null) return@launchWhileSubscribed
+            updateState { withCanvas(canvas) }
+        }
+    }
+
+    private fun CanvasTextInputUiState.withCanvas(canvas: CanvasVO): CanvasTextInputUiState = copy(
+        backgroundColor = (canvas.background as? CanvasBackground.Color)
+            ?.value
+            ?.toColorOrNull()
+            ?: backgroundColor,
+        backgroundImageUrl = (canvas.background as? CanvasBackground.Image)?.url,
+        existingToppings = canvas.toppings.sortedBy { topping -> topping.transform.positionZ },
+        existingTexts = canvas.texts,
+    )
+
+    override fun processIntent(intent: CanvasTextInputIntent) {
+        when (intent) {
+            is CanvasTextInputIntent.OnContentChange -> updateState {
+                copy(content = intent.value.truncateToGraphemeClusters(TEXT_TOPPING_MAX_LENGTH))
+            }
+
+            is CanvasTextInputIntent.OnSelectColor -> updateState {
+                copy(selectedColor = intent.color)
+            }
+
+            CanvasTextInputIntent.OnToggleColorPopover -> updateState {
+                copy(isColorPopoverOpen = !isColorPopoverOpen)
+            }
+
+            CanvasTextInputIntent.OnDismissColorPopover -> updateState { copy(isColorPopoverOpen = false) }
+
+            is CanvasTextInputIntent.OnAutoFontSizeChange -> updateState {
+                copy(designFontSize = intent.designFontSize)
+            }
+
+            CanvasTextInputIntent.OnClickType -> updateState { copy(textType = textType.next()) }
+
+            CanvasTextInputIntent.OnClickAlign -> updateState { copy(align = align.nextTextToppingAlign()) }
+
+            is CanvasTextInputIntent.OnTextBoxMeasured -> {
+                updateState { copy(textBoxSize = intent.size).applyInitialPlacementIfNeeded() }
+            }
+
+            is CanvasTextInputIntent.OnCanvasMeasured -> {
+                updateState { copy(canvasSize = intent.size).applyInitialPlacementIfNeeded() }
+            }
+
+            is CanvasTextInputIntent.OnToppingTransform -> handleOnToppingTransform(intent)
+
+            is CanvasTextInputIntent.OnDragPlacementSeed -> updateState {
+                copy(offsetX = intent.offsetX, offsetY = intent.offsetY, hasUserAdjustedPlacement = true)
+            }
+
+            CanvasTextInputIntent.OnClickConfirm -> handleOnClickConfirm()
+
+            CanvasTextInputIntent.OnClickClose -> updateState { copy(showQuitDialog = true) }
+
+            CanvasTextInputIntent.OnClickStack -> handleOnClickStack()
+
+            CanvasTextInputIntent.OnQuitDialogConfirm -> {
+                updateState { copy(showQuitDialog = false) }
+                handleDiscardAndNavigateBack()
+            }
+
+            CanvasTextInputIntent.OnQuitDialogCancel -> updateState { copy(showQuitDialog = false) }
+        }
+    }
+
+    private fun handleOnClickConfirm() {
+        if (state.value.content.isNotBlank()) return
+
+        handleDiscardAndNavigateBack()
+    }
+
+    private fun handleOnToppingTransform(intent: CanvasTextInputIntent.OnToppingTransform) {
+        updateState {
+            copy(
+                offsetX = offsetX + intent.pan.x,
+                offsetY = offsetY + intent.pan.y,
+                scale = (scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
+                rotationDegrees = rotationDegrees + intent.rotationDelta,
+                hasUserAdjustedPlacement = true,
+            )
+        }
+    }
+
+    /**
+     * 사용자가 아직 손대지 않았다면, 키보드가 처음 내려갈 때 텍스트가 타이핑 중이던 자리
+     * (캔버스 정중앙)에 그대로 남도록 저장 좌표를 맞춘다.
+     *
+     * 측정될 때마다 다시 맞춘다 — 첫 레이아웃에서는 키보드·툴바 높이가 아직 0 이라 글자 크기가
+     * 거의 0 으로 재지고, 그 박스로 좌상단을 고정하면 박스가 제 크기로 커진 만큼 중심이 밀린다.
+     */
+    private fun CanvasTextInputUiState.applyInitialPlacementIfNeeded(): CanvasTextInputUiState {
+        if (hasUserAdjustedPlacement) return this
+        val canvas = canvasSize ?: return this
+        val box = textBoxSize ?: return this
+
+        return copy(
+            offsetX = canvas.width * CANVAS_CENTER_RATIO - box.width / 2,
+            offsetY = canvas.height * CANVAS_CENTER_RATIO - box.height / 2,
+        )
+    }
+
+    private fun handleOnClickStack() {
+        val current = state.value
+        val draft = observedDraft.value
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.CANVAS_TEXT_STACK_TAPPED,
+                params = mapOf("group_id" to (draft?.groupId?.value?.toString() ?: "")),
+            ),
+        )
+
+        val boxSize = current.textBoxSize
+        val canvasSize = current.canvasSize
+        // 화면이 빈 내용의 버튼을 막지만, POST 가 멱등이 아니라 여기서도 막는다
+        if (current.content.isBlank() || draft == null || boxSize == null || canvasSize == null) {
+            viewModelLogger.d { "쌓기를 건너뛴다 - 빈 내용이거나 초안·측정값이 아직 없다" }
+            return
+        }
+
+        val transform = toTextToppingTransform(
+            offsetX = current.offsetX,
+            offsetY = current.offsetY,
+            boxSize = boxSize,
+            canvasSize = canvasSize,
+            scale = current.scale,
+            rotationDegrees = current.rotationDegrees,
+            positionZ = draft.nextPositionZ,
+        )
+        val style = textToppingStyleOf(
+            color = current.selectedColor,
+            type = current.textType,
+            align = current.align,
+            designFontSize = current.designFontSize,
+        )
+
+        launch(
+            key = STACK_JOB_KEY,
+            onError = { throwable ->
+                viewModelLogger.e(throwable) { "텍스트 토핑을 쌓지 못했다" }
+                postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(PlaceFailure.Retryable))
+            },
+        ) {
+            updateState { copy(isLoading = true) }
+            try {
+                // POST 는 멱등이 아니라 재시도하지 않는다
+                placeTextTopping(
+                    groupId = draft.groupId,
+                    parfaitId = draft.parfaitId,
+                    text = current.content,
+                    transform = transform,
+                    style = style,
+                ).onSuccess {
+                    // 나가기 전에 기다린다 — 라우트가 되감으며 viewModelScope 가 취소되면 갱신이 끊긴다
+                    runSuspendCatching {
+                        refreshTodayParfaitDetail(groupId = draft.groupId, parfaitId = draft.parfaitId)
+                    }.onFailure { throwable ->
+                        viewModelLogger.e(throwable) { "오늘 캔버스를 다시 받지 못했다" }
+                    }
+                    clearToppingDraft()
+                    postSideEffect(CanvasTextInputEffect.NavigateBack)
+                }.onFailure { throwable ->
+                    val error = throwable as? AppError ?: AppError.Unexpected(throwable)
+                    val failure = error.toPlaceFailure()
+                    if (failure == PlaceFailure.Uncertain) {
+                        // 응답만 유실됐다면 이미 쌓였다 — 뒤 캔버스에 보이도록 갱신해 둔다
+                        runSuspendCatching {
+                            refreshTodayParfaitDetail(groupId = draft.groupId, parfaitId = draft.parfaitId)
+                        }.onFailure { refreshError ->
+                            viewModelLogger.e(refreshError) { "오늘 캔버스를 다시 받지 못했다" }
+                        }
+                    }
+                    postSideEffect(CanvasTextInputEffect.ShowPlaceFailed(failure))
+                }
+            } finally {
+                updateState { copy(isLoading = false) }
+            }
+        }
+    }
+
+    private fun handleDiscardAndNavigateBack() {
+        launch {
+            clearToppingDraft()
+            postSideEffect(CanvasTextInputEffect.NavigateBack)
+        }
+    }
+}
+
+private const val CANVAS_CENTER_RATIO = 0.5f
+
+/** 쌓기 중복 실행 키. 연타로 두 번 보내면 같은 글이 두 개 쌓인다 */
+private const val STACK_JOB_KEY = "canvas-text-input-stack"

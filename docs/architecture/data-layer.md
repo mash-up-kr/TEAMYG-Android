@@ -4,11 +4,11 @@ title: 데이터 레이어 (Repository · DataSource · DI)
 category: architecture
 status: living
 platforms: android
-verified: 2026-09-27
+verified: 2026-10-20
 related_spec: c103-multi-subject-selection, c001-canvas-gallery-save, c301-topping-edit-tab, segmentation-pipeline-hardening, data-network-setup, network-envelope-token-storage, data-api-service-layer, image-api-service-layer, member-parfait-image-api-service-layer, session-token-refresh-infra, user-info-ssot, c001-canvas-today-detail, c201-canvas-calendar-server, group-ssot
 related_adr: ADR-0001, ADR-0004, ADR-0008, ADR-0009, ADR-0011, ADR-0012, ADR-0013, ADR-0017, ADR-0019, ADR-0020, ADR-0021, ADR-0022, ADR-0023, ADR-0029, ADR-0033
 related_architecture: state-management
-related_code: RecentImageRepository, ImageSegmentationRepository, SegmentationCacheDir, SegmentationMask, SegmentationCandidate, SegmentationCandidateFilter, AlphaPostProcessor, AlphaComponents, AlphaRefine, AlphaComposite, ArgbExtension, PersistSubjectUseCase, SegmentImageUseCase, ClearSegmentationCacheUseCase, DecodeImageUseCase, JsonModule, NetworkModule, PolicyRemoteDataSource, ApiCaller, TokenLocalDataSourceImpl, AuthService, ParfaitGroupService, AuthRemoteDataSource, ImageService, MemberService, ParfaitImageService, ParfaitImageRemoteDataSource, AuthRepository, AuthRepositoryImpl, AppError, AppErrorMapper, runSuspendCatching, TokenAuthenticator, SessionEventBus, UnauthenticatedClient, EncryptedPreferences, UserInfoLocalDataSource, MemberRepository, MemberRepositoryImpl, UserInfoEntity, ParfaitRepository, ParfaitRepositoryImpl, ParfaitRemoteDataSource, ParfaitGroupRepository, ParfaitGroupRepositoryImpl, GetGroupDetailUseCase, GroupDetailVO, GroupLocalDataSource, GroupLocalDataSourceImpl, CanvasLocalDataSource, CanvasLocalDataSourceImpl, CanvasPoller, ApplicationScope, GetTodayParfaitFlowUseCase, RefreshTodayParfaitDetailUseCase, RequestTodayParfaitRefreshUseCase, ObserveTodayParfaitRefreshFailureUseCase, ObserveParfaitDayBoundaryUseCase, GetMyGroupsFlowUseCase, RefreshMyGroupsUseCase, RefreshGroupDetailUseCase, LogoutUseCase, WithdrawUseCase, ToppingDraftLocalDataSource, ToppingDraftLocalDataSourceImpl, ToppingDraftEntity, ToppingDraftRepository, ToppingDraftRepositoryImpl, ToppingDraft, ToppingRepository, ToppingRepositoryImpl, UpdateToppingBorderUseCase, UpdatedToppingBorderVO, ImageDownloadRemoteDataSource, ImageDownloadRemoteDataSourceImpl, DownloadClient, SegmentationModuleInstaller, ModuleInstallGateway, PlayServicesModuleInstallGateway, ModuleInstallModule, PrepareSegmentationModuleUseCase, NotificationService, NotificationRemoteDataSource, NotificationRemoteDataSourceImpl, DeviceToken, PushDeepLink, PushNotificationType, PushDeepLinkEventBus, PushDeepLinkEventBusImpl, SessionEventBusImpl, NotificationRepository, NotificationRepositoryImpl, DeviceTokenProvider, FirebaseDeviceTokenProvider, RegisterCurrentDeviceTokenUseCase, DataStorePreferences, UploadImagePreprocessor, UploadImagePreprocessorImpl, UploadImagePlan, PreparedUploadImage, UploadImageSize, UtilsModule, SubjectCoverage, SourceLongSide, CanvasPollInterval, PastCanvasAlertRepository, PastCanvasAlertRepositoryImpl, PastCanvasAlertLocalDataSource, PastCanvasAlertLocalDataSourceImpl, GetToppingDraftFlowUseCase, StartToppingDraftUseCase, ClearToppingDraftUseCase, RecordToppingDraftUseCase, EnsureDraftSubjectRecordedUseCase, TokenProviderImpl
+related_code: RecentImageRepository, ImageSegmentationRepository, SegmentationCacheDir, SegmentationMask, SegmentationCandidate, SegmentationCandidateFilter, AlphaPostProcessor, AlphaComponents, AlphaRefine, AlphaComposite, ArgbExtension, PersistSubjectUseCase, SegmentImageUseCase, ClearSegmentationCacheUseCase, DecodeImageUseCase, JsonModule, NetworkModule, PolicyRemoteDataSource, ApiCaller, TokenLocalDataSourceImpl, AuthService, ParfaitGroupService, AuthRemoteDataSource, ImageService, MemberService, ParfaitImageService, ParfaitImageRemoteDataSource, AuthRepository, AuthRepositoryImpl, AppError, AppErrorMapper, runSuspendCatching, TokenAuthenticator, SessionEventBus, UnauthenticatedClient, EncryptedPreferences, UserInfoLocalDataSource, MemberRepository, MemberRepositoryImpl, UserInfoEntity, ParfaitRepository, ParfaitRepositoryImpl, ParfaitRemoteDataSource, ParfaitGroupRepository, ParfaitGroupRepositoryImpl, GetGroupDetailUseCase, GroupDetailVO, GroupLocalDataSource, GroupLocalDataSourceImpl, CanvasLocalDataSource, CanvasLocalDataSourceImpl, CanvasPoller, ApplicationScope, GetTodayParfaitFlowUseCase, RefreshTodayParfaitDetailUseCase, RequestTodayParfaitRefreshUseCase, ObserveTodayParfaitRefreshFailureUseCase, ObserveParfaitDayBoundaryUseCase, GetMyGroupsFlowUseCase, RefreshMyGroupsUseCase, RefreshGroupDetailUseCase, LogoutUseCase, WithdrawUseCase, ToppingDraftLocalDataSource, ToppingDraftLocalDataSourceImpl, ToppingDraftEntity, ToppingDraftRepository, ToppingDraftRepositoryImpl, ToppingDraft, ToppingRepository, ToppingRepositoryImpl, TextToppingRepository, TextToppingRepositoryImpl, UpdateToppingBorderUseCase, UpdatedToppingBorderVO, ImageDownloadRemoteDataSource, ImageDownloadRemoteDataSourceImpl, DownloadClient, SegmentationModuleInstaller, ModuleInstallGateway, PlayServicesModuleInstallGateway, ModuleInstallModule, PrepareSegmentationModuleUseCase, NotificationService, NotificationRemoteDataSource, NotificationRemoteDataSourceImpl, DeviceToken, PushDeepLink, PushNotificationType, PushDeepLinkEventBus, PushDeepLinkEventBusImpl, SessionEventBusImpl, NotificationRepository, NotificationRepositoryImpl, DeviceTokenProvider, FirebaseDeviceTokenProvider, RegisterCurrentDeviceTokenUseCase, DataStorePreferences, UploadImagePreprocessor, UploadImagePreprocessorImpl, UploadImagePlan, PreparedUploadImage, UploadImageSize, UtilsModule, SubjectCoverage, SourceLongSide, CanvasPollInterval, PastCanvasAlertRepository, PastCanvasAlertRepositoryImpl, PastCanvasAlertLocalDataSource, PastCanvasAlertLocalDataSourceImpl, GetToppingDraftFlowUseCase, StartToppingDraftUseCase, ClearToppingDraftUseCase, RecordToppingDraftUseCase, EnsureDraftSubjectRecordedUseCase, TokenProviderImpl
 tags: [architecture, parfait]
 ---
 # 데이터 레이어 (Repository · DataSource · DI)
@@ -57,7 +57,8 @@ tags: [architecture, parfait]
   `MutableStateFlow<Map<GroupId, CanvasVO>>`, [ADR-0029](../adr/0029-canvas-today-ssot-polling.md),
   PR #404로 develop 머지). 그룹 저장소와 같은 형태이되 **키가 그룹별로 나뉜 지도**이고, 지난 날
   캔버스는 담지 않는다(마감돼 바뀌지 않으므로 공유해 얻을 것이 없다). `null`이 "아직 못 받음"인 것도
-  같다. 값을 얻는 길은 `todayCanvas(groupId)` 하나이고 **서버 재조회는 이 저장소가 아니라
+  같다. 화면이 값을 얻는 길은 `todayCanvas(groupId)` 하나이고(`cachedTodayCanvas`·`cachedTodayEtag`는
+  폴러가 ETag 전송 여부를 정하려고 읽는 스냅샷이다) **서버 재조회는 이 저장소가 아니라
   `CanvasPoller`가 소유한다** — 그룹 저장소에는 없던 갈래다. 폴러는 그룹별 참조 계수로 주기 루프를
   켜고 끄며, 계수는 `ParfaitRepositoryImpl`이 구독의 `onStart`/`onCompletion`에 걸어 올리고 내린다.
   📌 **이 캐시가 그룹의 값을 하나 들고 온다**(2026-09-08, PR #469) — 서버 응답에 `groupName`이 붙어
@@ -67,8 +68,8 @@ tags: [architecture, parfait]
   **캐시에 쓰는 곳은 폴러 하나뿐이라** 갱신 함수는 `Result<Unit>`만 돌려준다.
   📌 **주기가 상수에서 클래스가 됐다**(2026-09-10, PR #482) — `CanvasPollInterval`(`:data`, 순수)이
   그룹별 단계를 들고 폴러가 **대기 직전마다** `current` 로 다시 묻는다. 변화 판정에 새 재료를 쓰지
-  않는다 — `refresh` 가 오늘 조회와 상세 조회를 가르려고 이미 읽어 둔 캐시 값과 새 응답을 `CanvasVO`
-  구조적 동등성으로 비교한다. 램프를 폴러 안에 인라인하지 않은 이유는 폴러가 이미 참조 계수·세대·
+  않는다 — `refresh` 가 ETag 전송 여부를 정하려고 이미 읽어 둔 캐시 값과 새 200 응답을
+  `CanvasVO` 구조적 동등성으로 비교한다(304 는 비교 없이 변화 없음으로 센다). 램프를 폴러 안에 인라인하지 않은 이유는 폴러가 이미 참조 계수·세대·
   진행 중 표시 셋을 한 락 위에서 굴리고 있어서다(넷째 규칙이 되고 램프만 따로 테스트할 수 없게 된다).
   ⚠️ **갱신 실패는 단계를 건드리지 않는다** —
   [canvas-adaptive-polling 스펙](../superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md).
@@ -86,7 +87,7 @@ tags: [architecture, parfait]
   (`GalleryRepository.saveVideoToGallery` → `SaveCanvasVideoToGalleryUseCase`), 압축 없이 캐시의 mp4를
   스트림으로 복사한다. 등록 규칙은 `insertPendingMedia` 한 벌이 이미지와 영상을 함께 맡는다.
   **캐시 mp4는 읽기만 한다** — 지우는 것은 만든 쪽(feature)의 몫이다
-  → [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md).
+  → [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md).
 - **원격(raw HTTP)** — **`PresignedUploadRemoteDataSource`**(#322)와 **`ImageDownloadRemoteDataSource`**(#369).
   저장소에서 **Retrofit을 거치지 않고 raw OkHttp `Request`를 만드는 두 자리**다(발급받은 presigned
   URL로 PUT · 서버가 준 공개 이미지 URL에서 GET). 그래서 `@NoAuth` 판정이 안 걸리고, 그 때문에
@@ -127,6 +128,8 @@ tags: [architecture, parfait]
 | `SessionModule` | `SessionEventBusImpl` → `SessionEventBus` 바인딩(#260 신설, **#450에서 양쪽 이름이 함께 바뀌었다** — 아래 「이벤트 버스 개명」) |
 | **`DeviceTokenModule`**(`:app`) | `DeviceTokenProvider` 바인딩. `:data` DI 모듈이 아니지만 `NotificationRepositoryImpl`(`RepositoryModule`)이 이것을 받는다 — 구현이 Firebase 의존이라 `:data`로 못 내린다 — 구현이 Firebase 의존이라 `:data`로 못 내린다([ADR-0013](../adr/0013-firebase-fcm-crashlytics.md) 경계, [ADR-0004](../adr/0004-hilt-ksp-di.md) 평면 배치 규칙의 첫 예외) |
 | **`PushDeepLinkModule`**(#446) | `PushDeepLinkEventBusImpl` → `PushDeepLinkEventBus` `@Provides @Singleton`. `SessionModule`과 **형태까지 같다**(`object` + `@Provides`) |
+| **`AppLinkDeepLinkModule`** | `AppLinkDeepLinkEventBusImpl` → `AppLinkDeepLinkEventBus` `@Provides @Singleton`. `PushDeepLinkModule`과 같은 형태(`object` + `@Provides`) |
+| **`AppLinkReferrerModule`** | `interface` + `@Binds @Singleton`. Install Referrer 경계(`AppLinkReferrerGateway` ↔ `PlayInstallReferrerGateway`)·`AppLinkReferrerLocalDataSource` ↔ `AppLinkReferrerLocalDataSourceImpl`·`AppLinkReferrerRepository` ↔ `AppLinkReferrerRepositoryImpl`을 `RepositoryModule`·`LocalDataSourceModule`에 나누지 않고 역할 모듈 하나에 모은다 |
 | `DataStoreModule` | `DataStore<Preferences>` 싱글톤 |
 | `JsonModule` | `@LocalJson`·`@RemoteJson` `Json` 2종(현재 설정 동일: `ignoreUnknownKeys`·`coerceInputValues`·`encodeDefaults`) |
 | **`ApplicationScopeModule`**(#404) | `@ApplicationScope CoroutineScope` — 프로세스 수명 스코프. `CanvasPoller`의 주기 루프가 화면 수명(`viewModelScope`)에 걸리면 안 되고, 되감기 직전의 강제 갱신도 호출자 취소에 끊기면 안 된다 |
@@ -315,7 +318,8 @@ impl 컨벤션 플러그인이 주는 것은 `:domain`뿐이다). 그래서 **Re
 | `ImageUploadRepository`(#322, **#480**) | `upload(filePath, imageType, sourceLongSide): Result<ImageId>` — 발급·S3 PUT·확인 3단계를 하나로 닫고 **이미 `COMPLETED`인 `imageId`**를 준다. `sourceLongSide`(#480)는 **누끼를 오려낸 사진 전체의 긴 변**이고 배경은 보지 않는다 — 기본값을 두지 않아 새 호출부가 빠뜨리면 컴파일이 잡는다 | `AddToppingUseCase`(C-106 배치, 초안이 나른 값) · `UploadImageUseCase`(#329, C-301 배경 — `null` 명시) |
 | **`ImageFileRepository`**(#329) | `copyToCache(uri): Result<String>` — `content://`를 캐시 파일로 떨구고 **절대경로**를 준다 | `UploadImageUseCase` |
 | **`NotificationRepository`**(#450) | `registerCurrentDeviceToken()` — `suspend`도 `Result`도 아니다. 걸어만 두고 돌아오며 실패는 로그로만 남는다(아래 「기기 토큰 등록」) | `LoginWithKakaoUseCase`·`SignUpUseCase`·`BootstrapSessionUseCase`(직접) · `RegisterCurrentDeviceTokenUseCase`(`:app` `ParfaitFirebaseMessagingService.onNewToken`) → 세션 트리거 넷 |
-| `ToppingRepository`(#322, #335, #336→2026-08-31, #369) | `place(groupId, parfaitId, imageId, transform, border): Result<PlacedToppingVO>` · **`delete(groupId, parfaitId, parfaitImageId): Result<Unit>`**(#335) · **`updateAll(groupId, parfaitId, updates): Result<List<UpdatedToppingVO>>`**(#428→2026-09-01 develop 머지 — #336의 단건 `update`를 대체) · **`updateBorder(groupId, parfaitId, parfaitImageId, border): Result<UpdatedToppingBorderVO>`**(#369) | `AddToppingUseCase`(C-106 배치) · `DeleteToppingUseCase`(배치 수정 화면 삭제) · `UpdateToppingsUseCase`·`UpdateToppingBorderUseCase`(배치 수정 화면 확정) |
+| `ToppingRepository`(#322, #335, #336→2026-08-31, #369) | `place(groupId, parfaitId, imageId, transform, border): Result<PlacedToppingVO>` · **`delete(groupId, parfaitId, parfaitImageId): Result<Unit>`**(#335) · **`updateAll(groupId, parfaitId, updates, textUpdates): Result<List<UpdatedToppingVO>>`**(#428→2026-09-01 develop 머지 — #336의 단건 `update`를 대체. `textUpdates`는 일괄 PATCH의 `textItems`로 함께 실리고, 반환은 이미지 결과만이다) · **`updateBorder(groupId, parfaitId, parfaitImageId, border): Result<UpdatedToppingBorderVO>`**(#369) | `AddToppingUseCase`(C-106 배치) · `DeleteToppingUseCase`(배치 수정 화면 삭제) · `UpdateToppingsUseCase`·`UpdateToppingBorderUseCase`(배치 수정 화면 확정) |
+| **`TextToppingRepository`** | `place(groupId, parfaitId, text, transform, style): Result<PlacedTextToppingVO>` — 멱등이 아니라 부를 때마다 새 행과 푸시가 생긴다 · `update(groupId, parfaitId, update): Result<UpdatedTextToppingVO>`(스타일·변형 단건 — 앱이 내용·스타일을 고치지 않아 부르는 곳이 없다) · `delete(groupId, parfaitId, parfaitTextId): Result<Unit>`. 변형 일괄 수정은 이 저장소가 아니라 `ToppingRepository.updateAll`이 맡는다 | `PlaceTextToppingUseCase`(C-106 쌓기) · `DeleteTextToppingUseCase`(C-305 확정) |
 
 > ✅ **오늘 캔버스가 그룹 SSoT와 같은 형태로 갈렸다(2026-08-31, PR #404)** — `getTodayCanvas` 하나가 구독·갱신 둘·정리·실패 축 다섯으로 나뉘고 `GetTodayParfaitUseCase`가 사라졌다. 갱신이 `Result<Unit>`만 주는 것도 ADR-0023과 같은 이유다.
 
@@ -672,9 +676,11 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   [spec](../superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md)). `NetworkModuleTest`가 두
   클라이언트가 `Dispatcher`·인증기·`AuthInterceptor`를 공유하지 않는다는 **배선의 구조적 성질**을
   잠근다 — 데드락 자체는 재현하지 않는다(회귀가 실패가 아니라 무한 대기로 나타난다).
-  > 📌 **같은 통로가 둘이 됐다(2026-09-05, PR #446)** — 푸시 딥링크가 `PushDeepLinkEventBus`
+  > 📌 **같은 통로가 셋이다** — App Links 초대 링크도 `AppLinkDeepLinkEventBus`/`AppLinkDeepLinkEventBusImpl`
+  > (`post`·`deepLinks`를 겸하는 도메인 인터페이스, `Channel(CONFLATED)`)로 아래 푸시와 같은 모양이다.
+  > 푸시 딥링크가 `PushDeepLinkEventBus`
   > (`:domain` `event/`)와 `PushDeepLinkEventBusImpl`(`:data` `event/`, 역시
-  > `Channel(CONFLATED)` + `receiveAsFlow()`)로 **같은 모양을 복제했다.** 두 통로가 공유하는 성질은
+  > `Channel(CONFLATED)` + `receiveAsFlow()`)로 **같은 모양을 복제했다.** 세 통로가 공유하는 성질은
   > 셋이다 — 구독자가 없는 순간 발행해도 잃지 않는다 · 단일 소비자다 · **수집은 앱 루트 `MainRoute`
   > 한 곳**이다. 접히는 규칙의 뜻만 다르다: 세션 쪽은 401이 여러 건 터져도 로그아웃 이동이 한 번이면
   > 되고, 푸시 쪽은 알림을 연달아 탭해도 **마지막으로 탭한 곳 하나에만 도착하면 된다.**
@@ -772,6 +778,8 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   수명을 가진 협력자와 GMS 경계 셋은 `installer/image/`로 갔다. 후자를 `source/`에 넣지 않은
   것은 이 문서가 정의하는 `source`가 로컬·원격 데이터 접근과 매퍼 쌍이기 때문이다
   → [segmentation-module-install 스펙](../superpowers/specs/archive/2026-09-02-segmentation-module-install.md).
+  `installer/deeplink/`도 같은 기준이다 — Play Install Referrer SDK 경계(`AppLinkReferrerGateway` ↔
+  `PlayInstallReferrerGateway`)와 그 조회 결과 `ReferrerLookup`이 있다.
   같은 라운드가 **`data/util`을 `data/utils`로 합쳤다** — 같은 뜻의 패키지가 둘이었고 파일이
   더 많은 쪽으로 모았다. 이제 `data/` 아래 헬퍼는 `utils/` 하나다.
 
@@ -780,7 +788,9 @@ suspend 호출이 있으면 **취소가 실패로 둔갑한다** — 화면을 �
   검증한다. 판단이 든 변환(문자열→enum 매핑과 미지 값 폴백, nullable 처리, 기본값, 단위 변환, 같은
   타입 필드의 배선)은 **DataSource 테스트의 케이스로** 잠근다. 규약 본문과 개정 경위는
   [unit-test-infrastructure 스펙](../superpowers/specs/archive/2026-08-06-unit-test-infrastructure.md) "테스트 규약" 11번.
-  develop의 `XxxRemoteDataSourceImplTest`는 **image·member·parfait·parfaitgroup·parfaitimage·policy 여섯**이다
+  **DTO 직렬화 테스트도 두지 않는다(2026-10-26 규약).** `service/model` DTO를 `Json`으로 돌려 키·기본값을
+  단언하는 테스트는 같은 가정을 두 번 적을 뿐이다 → `.claude/rules/no-dto-serialization-test.md`.
+  develop의 `XxxRemoteDataSourceImplTest`는 **image·presignedupload·member·notification·parfait·parfaitgroup·parfaitimage·parfaittext·policy 아홉**이다
   (PR #250이 parfait를 신설하고 member·parfaitimage를 보강, PR #266이 parfait를 15 → 25 케이스로 보강,
   PR #376이 소유 판정 몫 둘을 더해 **29 케이스**).
 

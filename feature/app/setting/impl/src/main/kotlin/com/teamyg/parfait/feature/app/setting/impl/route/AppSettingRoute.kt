@@ -13,6 +13,8 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.feature.app.setting.impl.R
+import com.teamyg.parfait.feature.app.setting.impl.model.CSAE_POLICY_URL
+import com.teamyg.parfait.feature.app.setting.impl.model.OSS_LICENSE_URL
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
@@ -31,6 +33,8 @@ internal fun AppSettingRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
     val withdrawErrorMessage = stringResource(R.string.setting_withdraw_error)
+    val ossLicenseTitle = stringResource(R.string.setting_item_oss_license)
+    val csaePolicyTitle = stringResource(R.string.setting_item_csae_policy)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -41,6 +45,14 @@ internal fun AppSettingRoute(
 
                 is AppSettingSideEffect.NavigateToPolicyDetail -> navigator.goTo(
                     NavKeyWebView(title = effect.title, url = effect.url),
+                )
+
+                AppSettingSideEffect.NavigateToOssLicense -> navigator.goTo(
+                    NavKeyWebView(title = ossLicenseTitle, url = OSS_LICENSE_URL),
+                )
+
+                AppSettingSideEffect.NavigateToCsaePolicy -> navigator.goTo(
+                    NavKeyWebView(title = csaePolicyTitle, url = CSAE_POLICY_URL),
                 )
 
                 AppSettingSideEffect.NavigateToLogin -> {
@@ -68,6 +80,8 @@ internal fun AppSettingRoute(
             onClickPolicy = { termsId ->
                 viewModel.processIntent(AppSettingIntent.ClickPolicy(termsId))
             },
+            onClickCsaePolicy = { viewModel.processIntent(AppSettingIntent.ClickCsaePolicy) },
+            onClickOssLicense = { viewModel.processIntent(AppSettingIntent.ClickOssLicense) },
             onClickLogout = { viewModel.processIntent(AppSettingIntent.ClickLogout) },
             onClickWithdraw = { viewModel.processIntent(AppSettingIntent.ClickWithdraw) },
             onConfirmWithdraw = { viewModel.processIntent(AppSettingIntent.ConfirmWithdraw) },

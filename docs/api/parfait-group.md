@@ -2,8 +2,8 @@
 id: parfait-group
 title: 파르페 그룹
 server_module: http/parfaitgroup
-server_commit: 82e6edc
-verified: 2026-09-11
+server_commit: 1a1abee
+verified: 2026-10-28
 android_status: done
 related_spec: s101-group-setting-api
 related_adr: ADR-0017
@@ -16,13 +16,15 @@ tags: [api, parfait, server-contract, group]
 > 전역 계약(envelope·에러 체계·인증)은 [conventions.md](conventions.md).
 
 base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](conventions.md)의 URL 규약 관측 참고).
-**8개 엔드포인트 전부 인증 필요.** 미인증 401 `UNAUTHORIZED`는 전역 공통이라 아래 표·상세에서 반복하지 않는다.
+목록만 v2(`/api/v2/parfait-groups`, `ParfaitGroupV2Controller`)가 따로 있다.
+**9개 엔드포인트 전부 인증 필요.** 미인증 401 `UNAUTHORIZED`는 전역 공통이라 아래 표·상세에서 반복하지 않는다.
 
 ## 엔드포인트
 
 | 메서드 | 경로 | 인증 | 요청 | 응답 | Android |
 |---|---|---|---|---|---|
-| GET | `/api/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupResponse>` | ⚠️불일치[^uploadedat][^todayurl] |
+| GET | `/api/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupResponse>` | 구현됨·호출 안 함(`@Deprecated`)[^v2list] |
+| GET | `/api/v2/parfait-groups` | 필요 | 없음 | `List<MyParfaitGroupV2Response>` | ⚠️불일치[^uploadedat][^todayurl][^v2list] |
 | GET | `/api/parfait-groups/{groupId}` | 필요 | path `groupId` Long | `MyParfaitGroupDetailResponse` | 구현됨·결선됨 |
 | GET | `/api/parfait-groups/join-preview` | 필요 | query `inviteCode` String | `PreviewParfaitGroupJoinResponse` | 구현됨·결선됨 |
 | POST | `/api/parfait-groups/join` | 필요 | `JoinParfaitGroupRequest` | `JoinParfaitGroupResponse` | 구현됨·결선됨 |
@@ -51,6 +53,11 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     초록으로 지나간다 → [conventions.md](conventions.md) "Android 불일치" ·
     [open-questions](../synthesis/open-questions.md) OQ-P-336.
 
+[^v2list]: 앱의 목록 갱신은 v2를 부르고(`getParfaitGroupsV2`), v1 Service 메서드와 DTO는 `@Deprecated`로 남겼다.
+    G-001은 `recentToppingType == TEXT`면 `recentImageUrl`과 무관하게 텍스트 템플릿을 그린다(`toToppingImage`, 기획 미확인 OQ-P-459).
+    모르는 종류(`UNKNOWN`)는 이미지가 없으면 일반 템플릿으로 접힌다.
+    위 두 각주(`recentImageUploadedAt` 파싱, `recentImageUrl`의 뜻)는 v2에도 그대로 해당한다.
+
 요청 DTO(`ParfaitGroupRequest.kt`)에는 Bean Validation 애노테이션이 없다 — auth 도메인과 달리 `@NotBlank`/`@Valid`가
 없다. 필드는 Kotlin non-null 타입이라 요청 바디에 없거나 `null`이면 Jackson이 파싱 단계에서 거부한다(결과적으로
 `CommonErrorCode.INVALID_REQUEST` 400). 실제 값 검증(길이·패턴·범위)은 컨트롤러 도달 후 도메인 값 객체
@@ -73,7 +80,7 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
 | `recentImageUrl` | String? | 예 | **오늘 캔버스**(`ParfaitDay.current()` — 03시 경계)에 토핑이 없으면 `null`. 어제 이전 토핑은 이 필드에 안 잡힌다(2026-08-31 변경) |
 | `recentImageBorderType` | String(enum)? | 예 | **2026-09-11 신설.** `recentImageUrl`과 같은 토핑의 테두리 종류(`NONE`·`SOLID`). `recentImageUrl`이 `null`이면 `null`, 값이 있으면 널이 아니다 → 아래 |
 | `recentImageBorderColor` | String? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 색. `borderType=SOLID`일 때만 값이 보장된다 |
-| `recentImageBorderWidth` | Double? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 두께. `borderType=SOLID`일 때만 값이 보장되고, 범위는 서버가 검사하지 않는다 |
+| `recentImageBorderWidth` | Double? | 예 | **2026-09-11 신설.** 같은 토핑의 테두리 두께. ⚠️ **저장값이 아니라 고정값 `2.0`이다** — 저장된 두께가 있으면 `2.0`, 없으면 `null`(`ParfaitGroupService`의 `recentImageBorderWidth?.let { 2.0 }`). `NONE`인데 두께가 남은 행도 `2.0`이 나간다 |
 | `recentImageUploadedAt` | LocalDateTime | **아니오**(2026-08-19 변경) | 아래 직렬화 포맷 참고. **날짜와 무관하게 마지막 토핑 시각**이고, 토핑이 한 건도 없을 때만 **그룹 생성 시각**으로 대체된다(2026-08-31 변경) |
 | `lastPlacedByNameTagChip` | String(enum) | **아니오**(2026-08-19 변경) | 마지막 토핑을 올린 사람의 Nametag-Chip 타입. 토핑이 없으면 **그룹 생성자의 칩** → 아래 [Nametag-Chip 배정 규칙](#nametag-chip-배정-규칙) |
 
@@ -120,8 +127,10 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
     (`updateBorder`)이 모두 `validateBorder`를 거쳐 `SOLID`면 둘 다 있음을 보장한다. `NONE`이면 검사하지 않고
     보낸 값을 그대로 저장하므로 두 필드에 값이 남아 있을 수 있다([parfait-image.md](parfait-image.md) 배치 절).
     **소비 측은 `recentImageBorderType`을 먼저 봐야 한다.**
-  - **두께 범위는 여전히 서버가 검사하지 않는다** — 캔버스 조회 응답의 `borderWidth`와 같은 사정이다
-    ([conventions.md](conventions.md) "Android 불일치"의 `borderWidth` 행).
+  - **목록의 두께는 저장값과 무관하게 `2.0`이다.** 서비스가 결과를 만들 때 널이 아닌 두께를 `2.0`으로
+    바꾼다. 같은 토핑이라도 캔버스 조회 응답의 `borderWidth`(저장값 그대로, 범위 미검사 —
+    [conventions.md](conventions.md) "Android 불일치"의 `borderWidth` 행)와 값이 다를 수 있다.
+    앱이 가두는 범위(2.0..30.0) 안이라 목록 카드에서는 클램프가 일어나지 않는다.
 
   근거: `ParfaitGroupControllerTest`가 테두리 있는 케이스(`"SOLID"`·`"#FFD54F"`·`6.0`)와 오늘 토핑이 없는
   케이스(세 필드 모두 `null`)를 `jsonPath`로 단언하고, `ParfaitGroupAdapterTest`가 프로젝션 문자열 →
@@ -167,6 +176,31 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
   어긋난다.
 
 - **에러 코드**: 없음(도메인 고유 에러 없음)
+
+  ⚠️ **v1은 텍스트 토핑을 모른다.** `findMyGroupSummaries`의 서브쿼리가 전부 `parfait_image`만 본다. 텍스트까지 세는
+  목록은 아래 v2다.
+
+### GET /api/v2/parfait-groups
+
+- **인증**: 필요
+- **성공**: HTTP 200 · envelope `code` = `"OK"`
+- **요청 필드**: 없음
+- **응답 필드**: v1 필드 전부 + `recentToppingType`. 키 이름·타입·널 허용은 v1과 같다(`lastPlacedByNameTagChip` 포함).
+
+| 필드 | 타입 | 널 허용 | 비고 |
+|---|---|---|---|
+| `recentToppingType` | String(enum)? | 예 | 오늘 캔버스(`ParfaitDay.current()`)에서 가장 최근 토핑의 종류 `IMAGE`·`TEXT`(`core/parfait/domain/ToppingType`). 오늘 토핑이 없으면 `null` |
+
+- **v1과 뜻이 갈리는 필드** — 네이티브 쿼리 `findMyGroupToppingSummaries`가 `parfait_image`와 `parfait_text`를 `UNION ALL`로
+  합쳐 한 토핑 축으로 본다.
+  - `recentImageUrl`·테두리 세 필드는 **오늘 가장 최근 토핑**의 것이다. 그 토핑이 텍스트면 오늘 이미지가 있어도 넷 다
+    `null`이다 — 이 응답에서 `recentImageUrl == null`은 "오늘 토핑 없음"이 아니라 `recentToppingType`으로 갈라 읽는다.
+  - `recentImageUploadedAt`·`lastPlacedByNameTagChip`·목록 정렬은 날짜와 무관하게 **텍스트를 포함한** 마지막 토핑 기준이다.
+    토핑이 하나도 없으면 v1과 같이 그룹 생성 시각·생성자 칩이다. 동률은 `created_at` → 토핑 id 내림차순인데, 이미지와 텍스트는
+    id 공간이 달라 같은 시각의 두 종류 사이 순서에는 뜻이 없다.
+  - 테두리 두께는 v1처럼 서비스가 `2.0`으로 바꾼다(같은 `toResult`).
+- 근거: `ParfaitGroupV2ControllerTest`(`jsonPath`), `ParfaitGroupMemberRepositoryQueryTest`(쿼리), `ParfaitGroupServiceTest`.
+- **에러 코드**: 없음
 
 ### GET /api/parfait-groups/{groupId}
 
@@ -466,6 +500,29 @@ base path `/api/parfait-groups`(버전 프리픽스 없음 — [conventions.md](
   성공은 항상 탈퇴를 동반한다. 근거: `ParfaitGroupServiceTest`("그룹 신고는 신고를 저장한 뒤 같은 트랜잭션에서
   탈퇴 이력을 남긴다"·"비어 있는 신고 사유는 신고나 탈퇴 없이 거부한다").
 
+## 그룹 version — 오늘 캔버스 ETag의 그룹 쪽 요소
+
+`parfait_group.version`(마이그레이션 V19, 기본 1)은 오늘 캔버스 조건부 조회 ETag의 `g` 요소다
+(`CanvasEtag.of` — ETag 형식과 304 규칙은 [parfait.md](parfait.md)). 이 도메인의 쓰기 가운데 오늘 캔버스
+응답의 그룹 쪽 값(멤버 목록·그룹 닉네임)을 바꾸는 것이 같은 트랜잭션 안에서 version을 올린다
+(`ParfaitGroupVersionService`).
+
+| 쓰기 | version | 커밋 뒤 Redis 무효화 |
+|---|---|---|
+| 참여(`POST /join`, 재참여 포함) | +1 | version 키 |
+| 그룹 닉네임 변경 | 값이 실제로 바뀔 때만 +1 | version 키 |
+| 나가기(`DELETE .../members/me`) | +1 | version 키 · 그 회원의 멤버십 키 |
+| 신고(나가기를 동반) | +1 | version 키 · 그 회원의 멤버십 키 |
+| 회원 탈퇴(`DELETE /api/v1/users/me`, 그룹마다) | +1 | version 키 · 그 회원의 멤버십 키 → [member.md](member.md) |
+| 그룹 생성 | 올리지 않는다(새 행은 1) | — |
+
+  ⚠️ **전역 닉네임 변경(`PATCH /api/v1/users/me/nickname`)은 그룹 version을 올리지 않는다.** 오늘 캔버스
+  응답의 이름은 그룹 닉네임이라 지금은 영향이 없지만, 그 응답이 전역 닉네임을 싣게 되면 304가 옛 값을 붙든다.
+
+  ⚠️ **나간 회원의 v2 오늘 조회 차단은 Redis 멤버십 키를 지운 뒤에야 확실하다.** v2 조회는 멤버십을 캐시에서
+  먼저 확인하고(`CanvasStateReader.requireMember`), 키 삭제는 커밋 뒤에 돈다. 커밋과 삭제 사이의 짧은 틈에는
+  나간 회원의 요청이 멤버로 통과할 수 있다.
+
 ## Nametag-Chip 배정 규칙
 
 2026-08-18 delta(`[Fix] 그룹/캔버스 API에 Nametag-Chip 노출&배치 작업 시간 수정`)로 **칩 타입의 부여
@@ -582,7 +639,7 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
 
 | Repository 함수 | 반환 | 대응 엔드포인트 | UseCase → 화면 |
 |---|---|---|---|
-| `myGroups` / `refreshMyGroups()`(#307) | `Flow<List<MyParfaitGroupVO>?>` / `Result<Unit>` | GET `/api/parfait-groups` | `GetMyGroupsFlowUseCase`(구독) · `RefreshMyGroupsUseCase`(갱신) → G-001(**재진입마다**·당김 재조회, #297) · C-001이 그룹명을 같은 캐시에서 읽는다 |
+| `myGroups` / `refreshMyGroups()`(#307) | `Flow<List<MyParfaitGroupVO>?>` / `Result<Unit>` | GET `/api/v2/parfait-groups` | `GetMyGroupsFlowUseCase`(구독) · `RefreshMyGroupsUseCase`(갱신) → G-001(**재진입마다**·당김 재조회, #297) · C-001이 그룹명을 같은 캐시에서 읽는다 |
 | `previewJoin(inviteCode)` | `Result<GroupName>` | GET `/api/parfait-groups/join-preview` | `GetGroupJoinPreviewUseCase` → A-004(확인 버튼, 통과하면 S-102로 이동) |
 | `joinGroup(inviteCode)` | `Result<JoinedGroupVO>` | POST `/api/parfait-groups/join` | `JoinGroupUseCase` → **S-102(모달 확인)** — #261에서 A-004에서 이관 |
 | `createGroup(groupName, groupNickname, memberLimit)` | `Result<CreatedGroupVO>` | POST `/api/parfait-groups` | `CreateGroupUseCase` → A-005(모달 확인) |
@@ -686,7 +743,8 @@ S-101 그룹 설정이 화면에서 요구하자 `getGroupDetail`·`leaveGroup`�
 
 | 엔드포인트 | Service 함수 | DataSource 함수 |
 |---|---|---|
-| GET `/api/parfait-groups` | `ParfaitGroupService#getParfaitGroups` | `ParfaitGroupRemoteDataSource#getMyGroups` |
+| GET `/api/v2/parfait-groups` | `ParfaitGroupService#getParfaitGroupsV2` | `ParfaitGroupRemoteDataSource#getMyGroups` |
+| GET `/api/parfait-groups` | `ParfaitGroupService#getParfaitGroups`(`@Deprecated`) | 호출부 없음 |
 | GET `/api/parfait-groups/{groupId}` | `ParfaitGroupService#getParfaitGroupsByGroupId` | `ParfaitGroupRemoteDataSource#getGroupDetail` |
 | GET `/api/parfait-groups/join-preview` | `ParfaitGroupService#getParfaitGroupsJoinPreview` | `ParfaitGroupRemoteDataSource#previewJoin` |
 | POST `/api/parfait-groups/join` | `ParfaitGroupService#postParfaitGroupsJoin` | `ParfaitGroupRemoteDataSource#joinGroup` |

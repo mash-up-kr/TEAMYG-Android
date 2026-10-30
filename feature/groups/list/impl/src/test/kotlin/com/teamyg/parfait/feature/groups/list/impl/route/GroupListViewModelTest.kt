@@ -13,6 +13,7 @@ import com.teamyg.parfait.domain.model.member.GlobalNickname
 import com.teamyg.parfait.domain.model.member.LoginProvider
 import com.teamyg.parfait.domain.model.member.MyAccountVO
 import com.teamyg.parfait.domain.model.topping.ToppingBorder
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import com.teamyg.parfait.domain.usecase.group.GetMyGroupsFlowUseCase
 import com.teamyg.parfait.domain.usecase.group.RefreshMyGroupsUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
@@ -628,6 +629,7 @@ class GroupListViewModelTest {
             MyParfaitGroupVO(
                 groupId = GroupId(1L),
                 groupName = GroupName("모카의 파르페"),
+                recentToppingType = ToppingContentType.IMAGE,
                 recentImageUrl = "https://cdn.example.com/a.png",
                 recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = Instant.parse("2026-08-15T10:00:00Z"),
@@ -636,6 +638,7 @@ class GroupListViewModelTest {
             MyParfaitGroupVO(
                 groupId = GroupId(2L),
                 groupName = GroupName("우리집"),
+                recentToppingType = null,
                 recentImageUrl = null,
                 recentImageBorder = ToppingBorder.None,
                 recentImageUploadedAt = null,

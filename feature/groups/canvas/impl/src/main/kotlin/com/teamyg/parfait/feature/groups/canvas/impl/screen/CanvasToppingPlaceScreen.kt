@@ -195,8 +195,10 @@ internal fun CanvasToppingPlaceScreen(
             // 이미 캔버스에 놓인 토핑들. 지금 배치 중인 새 토핑과 같은 좌표계(Canvas-Area 대비 비율)다
             CanvasToppingLayer(
                 toppings = uiState.existingToppings,
-                spotlightedToppingId = null,
+                texts = uiState.existingTexts,
+                spotlightedKey = null,
                 onClickTopping = {},
+                onClickText = {},
                 onClickSpotlightDim = {},
                 hitTestEnabled = false,
                 // 배경으로만 까는 자리다. 게이트를 켜면 배치 중인 토핑 옆에서 로딩이 돈다

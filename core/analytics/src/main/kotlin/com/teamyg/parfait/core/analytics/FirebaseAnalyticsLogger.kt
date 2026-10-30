@@ -20,6 +20,10 @@ class FirebaseAnalyticsLogger @Inject constructor(
         firebaseAnalytics.setUserProperty(name, value)
     }
 
+    override fun setUserId(id: String?) {
+        firebaseAnalytics.setUserId(id)
+    }
+
     // 파라미터 이름을 문자열로 쓰지 않는다. firebase_ 는 GA4 예약 접두사라 그 이름으로 실어
     // 보낸 값은 버려질 수 있다.
     override fun logScreenView(screen: AnalyticsScreen) {

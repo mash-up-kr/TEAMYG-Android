@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
+import com.teamyg.parfait.domain.model.canvas.CanvasTextToppingVO
 import com.teamyg.parfait.domain.model.canvas.CanvasToppingVO
 import com.teamyg.parfait.domain.model.id.GroupMemberId
 import com.teamyg.parfait.core.designsystem.component.ygcanvas.YGCanvasBackgroundState
@@ -66,6 +67,7 @@ internal fun CanvasMainScreen(
     onClickMenu: () -> Unit,
     onClickCamera: () -> Unit,
     onClickGallery: () -> Unit,
+    onClickTextInput: () -> Unit,
     onClickEditCanvasBG: () -> Unit,
     onClickSaveToGallery: () -> Unit,
     onClickGoToToday: () -> Unit,
@@ -74,6 +76,7 @@ internal fun CanvasMainScreen(
     onSelectMonth: (LocalDate) -> Unit,
     onClickDate: (LocalDate) -> Unit,
     onClickTopping: (CanvasToppingVO) -> Unit,
+    onClickText: (CanvasTextToppingVO) -> Unit,
     onClickSpotlightDim: () -> Unit,
     onLoadStateChange: (CanvasLoadState) -> Unit,
     retryKey: Int,
@@ -212,6 +215,13 @@ internal fun CanvasMainScreen(
                         onClickGallery()
                     },
                 ),
+                YGCanvasMenuItem(
+                    text = stringResource(R.string.canvas_main_text_input),
+                    onClick = {
+                        isMenuExpanded = false
+                        onClickTextInput()
+                    },
+                ),
             ),
             modifier = Modifier
                 .weight(1f)
@@ -221,8 +231,10 @@ internal fun CanvasMainScreen(
 
             CanvasToppingLayer(
                 toppings = canvasState.toppings,
-                spotlightedToppingId = canvasState.spotlightedToppingId,
+                texts = canvasState.texts,
+                spotlightedKey = canvasState.spotlightedKey,
                 onClickTopping = onClickTopping,
+                onClickText = onClickText,
                 onClickSpotlightDim = onClickSpotlightDim,
                 // 고른 날짜가 아니라 실제로 그리는 캔버스를 기준으로 삼는다 — 지난 날을
                 // 기다리는 동안에는 직전 캔버스가 그대로 걸려 있다
@@ -297,6 +309,7 @@ private fun PreviewCanvasMainScreen(
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
@@ -305,6 +318,7 @@ private fun PreviewCanvasMainScreen(
         onSelectMonth = {},
         onClickDate = {},
         onClickTopping = {},
+        onClickText = {},
         onClickSpotlightDim = {},
         onLoadStateChange = {},
         retryKey = 0,
@@ -333,6 +347,7 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
@@ -341,6 +356,7 @@ private fun PreviewCanvasMainScreenWithGallerySaveToast() = PreviewBox {
         onSelectMonth = {},
         onClickDate = {},
         onClickTopping = {},
+        onClickText = {},
         onClickSpotlightDim = {},
         onLoadStateChange = {},
         retryKey = 0,
@@ -373,6 +389,7 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onClickMenu = {},
         onClickCamera = {},
         onClickGallery = {},
+        onClickTextInput = {},
         onClickEditCanvasBG = {},
         onClickSaveToGallery = {},
         onClickGoToToday = {},
@@ -381,6 +398,7 @@ private fun PreviewCanvasMainScreenWithClosedCanvasAlert() = PreviewBox {
         onSelectMonth = {},
         onClickDate = {},
         onClickTopping = {},
+        onClickText = {},
         onClickSpotlightDim = {},
         onLoadStateChange = {},
         retryKey = 0,

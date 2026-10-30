@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -15,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.lerp
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
@@ -27,16 +30,24 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableLayerEntry
+import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableTextTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.component.EditableToppingImage
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeLayout
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingBorderPanel
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingFocusDecoration
+import com.teamyg.parfait.feature.groups.canvas.impl.component.editableLayerOrder
+import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableTextEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingDrawEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberEditableToppingHitEntries
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingPanelInputs
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingBorderStyle
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
@@ -61,6 +72,7 @@ internal fun CanvasToppingArrangeScreen(
     onClickClose: () -> Unit,
     onClickConfirm: () -> Unit,
     onClickTopping: (EditableTopping) -> Unit,
+    onClickText: (EditableText) -> Unit,
     onClickEmptyCanvas: () -> Unit,
     onToggleBorderPanel: () -> Unit,
     onDismissBorderPanel: () -> Unit,
@@ -82,19 +94,20 @@ internal fun CanvasToppingArrangeScreen(
         },
         onClickConfirm = onClickConfirm,
         panel = {
-            ToppingBorderPanel(
-                isOpen = uiState.isBorderPanelOpen,
-                selectedColorArgb = uiState.panelBorderColorArgb,
-                widthDp = uiState.panelBorderWidthDp,
-                widthRange = TOPPING_BORDER_WIDTH_RANGE_DP,
-                onClickToggle = onToggleBorderPanel,
-                onSelectColor = onSelectBorderColor,
-                onChangeWidth = onChangeBorderWidth,
-                isEnabled = uiState.canOpenBorderPanel,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-            )
+            if (uiState.canOpenBorderPanel) {
+                ToppingBorderPanel(
+                    isOpen = uiState.isBorderPanelOpen,
+                    selectedColorArgb = uiState.panelBorderColorArgb,
+                    widthDp = uiState.panelBorderWidthDp,
+                    widthRange = TOPPING_BORDER_WIDTH_RANGE_DP,
+                    onClickToggle = onToggleBorderPanel,
+                    onSelectColor = onSelectBorderColor,
+                    onChangeWidth = onChangeBorderWidth,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                )
+            }
         },
         modifier = modifier,
     ) {
@@ -117,24 +130,71 @@ internal fun CanvasToppingArrangeScreen(
             )
 
             // 저장된 자리로 만든다. 터치 판정은 패널이 열린 동안의 임시 자리가 아니라 이것으로 한다
-            val entries = rememberEditableToppingHitEntries(drawEntries, outlines)
-            val othersEntries = entries.filterNot { it.topping.isMine }
-            val myEntries = entries.filter { it.topping.isMine }
-            val focusedEntry = myEntries.firstOrNull { it.topping.parfaitImageId == uiState.focusedToppingId }
+            val imageEntries = rememberEditableToppingHitEntries(drawEntries, outlines)
+            // scale 을 곱하기 전 크기다
+            val textBoxSizes = remember { mutableStateMapOf<Long, IntSize>() }
+            val textEntries = rememberEditableTextEntries(
+                texts = uiState.texts,
+                canvasWidth = canvasWidth,
+                canvasHeight = canvasHeight,
+                boxSizes = textBoxSizes,
+            )
+            val layers = editableLayerOrder(images = imageEntries, texts = textEntries)
+            val othersLayers = layers.filterNot { it.isMine }
+            val myLayers = layers.filter { it.isMine }
+            val focusedLayer = myLayers.firstOrNull { it.key == uiState.focusedKey }
             var isToppingGestureActive by remember { mutableStateOf(false) }
 
-            // 그리는 자리. 이미지와 선택 박스가 같은 자리에 오려면 같은 값을 봐야 한다
+            // 그리는 자리. 이미지와 선택 박스가 같은 자리에 오려면 같은 값을 봐야 한다.
+            // 패널은 사진에만 열리므로 텍스트는 늘 제자리다
             val focusFraction by animatePanelFocusFraction(uiState.isBorderPanelOpen)
-            val focusedDrawnCenter = focusedEntry?.let { entry ->
-                lerp(entry.draw.center, panelFocusCenter(DpSize(canvasWidth, canvasHeight)), focusFraction)
+            val focusedDrawnCenter = when (focusedLayer) {
+                is EditableLayerEntry.Image ->
+                    lerp(
+                        focusedLayer.entry.draw.center,
+                        panelFocusCenter(DpSize(canvasWidth, canvasHeight)),
+                        focusFraction,
+                    )
+
+                is EditableLayerEntry.Text -> focusedLayer.entry.center
+
+                null -> null
             }
 
             // zIndex 가 아니라 컴포지션 순서로 올린다 — 겹침 순서가 노드 순서와 갈리지 않는다.
             // 패널 상태가 아니라 애니메이션을 본다 — 제자리로 돌아오는 동안에도 위에 있어야 한다
-            val myEntriesInDrawOrder = if (focusFraction > 0f && focusedEntry != null) {
-                myEntries.filterNot { it === focusedEntry } + focusedEntry
+            val myLayersInDrawOrder = if (focusFraction > 0f && focusedLayer is EditableLayerEntry.Image) {
+                myLayers.filterNot { it === focusedLayer } + focusedLayer
             } else {
-                myEntries
+                myLayers
+            }
+
+            @Composable
+            fun Layer(
+                layer: EditableLayerEntry,
+                onClick: (() -> Unit)?,
+            ) {
+                when (layer) {
+                    is EditableLayerEntry.Image -> EditableToppingImage(
+                        entry = layer.entry.draw,
+                        outline = outlines[layer.entry.topping.imageUrl],
+                        alpha = 1f,
+                        onClick = onClick,
+                        centerOverride = focusedDrawnCenter.takeIf { layer === focusedLayer },
+                    )
+
+                    is EditableLayerEntry.Text -> EditableTextTopping(
+                        entry = layer.entry,
+                        canvasWidth = canvasWidth,
+                        onBoxSizeChange = { size -> textBoxSizes[layer.entry.text.parfaitTextId] = size },
+                        onClick = onClick,
+                    )
+                }
+            }
+
+            fun onHit(layer: EditableLayerEntry) = when (layer) {
+                is EditableLayerEntry.Image -> onClickTopping(layer.entry.topping)
+                is EditableLayerEntry.Text -> onClickText(layer.entry.text)
             }
 
             ToppingArrangeCanvasSurface(
@@ -142,29 +202,14 @@ internal fun CanvasToppingArrangeScreen(
                 backgroundImageUrl = uiState.backgroundImageUrl,
                 modifier = Modifier.matchParentSize(),
             ) {
-                othersEntries.forEach { entry ->
-                    key(entry.topping.parfaitImageId) {
-                        EditableToppingImage(
-                            entry = entry.draw,
-                            outline = outlines[entry.topping.imageUrl],
-                            alpha = 1f,
-                            onClick = null,
-                        )
-                    }
+                othersLayers.forEach { layer ->
+                    key(layer.key) { Layer(layer = layer, onClick = null) }
                 }
 
                 ToppingArrangeCanvasDim()
 
-                myEntriesInDrawOrder.forEach { entry ->
-                    key(entry.topping.parfaitImageId) {
-                        EditableToppingImage(
-                            entry = entry.draw,
-                            outline = outlines[entry.topping.imageUrl],
-                            alpha = 1f,
-                            onClick = { onClickTopping(entry.topping) },
-                            centerOverride = focusedDrawnCenter.takeIf { entry === focusedEntry },
-                        )
-                    }
+                myLayersInDrawOrder.forEach { layer ->
+                    key(layer.key) { Layer(layer = layer, onClick = { onHit(layer) }) }
                 }
 
                 Box(
@@ -175,11 +220,13 @@ internal fun CanvasToppingArrangeScreen(
                             isPanelOpen = { uiState.isBorderPanelOpen },
                             onDismissPanel = onDismissBorderPanel,
                             // 아래에서 위 순서 — 본인 토핑이 남의 토핑 위에 그려진다
-                            tapEntries = { (othersEntries + myEntries).map { it.topping to it.target } },
-                            tapKeyOf = { it.parfaitImageId },
-                            onTapHit = onClickTopping,
+                            tapEntries = {
+                                (othersLayers + myLayers).mapNotNull { layer -> layer.target?.let { layer to it } }
+                            },
+                            tapKeyOf = { it.key },
+                            onTapHit = ::onHit,
                             onTapMiss = onClickEmptyCanvas,
-                            transformTargetAt = { focusedEntry?.target },
+                            transformTargetAt = { focusedLayer?.target },
                             onTransform = { pan, zoom, rotationDelta ->
                                 onToppingTransform(
                                     pan.x / canvasWidthPx,
@@ -194,9 +241,10 @@ internal fun CanvasToppingArrangeScreen(
             }
 
             // 선택 박스와 삭제 버튼은 토핑 이미지와 달리 캔버스를 넘어가도 잘리면 안 된다
-            if (focusedEntry != null && focusedDrawnCenter != null) {
+            val focusedTarget = focusedLayer?.target
+            if (focusedTarget != null && focusedDrawnCenter != null) {
                 ToppingFocusDecoration(
-                    entry = focusedEntry,
+                    target = focusedTarget,
                     center = focusedDrawnCenter,
                     onClickDelete = onClickDeleteTopping,
                     showActionButtons = !isToppingGestureActive,
@@ -239,12 +287,27 @@ private fun PreviewCanvasToppingArrangeScreen(
                     rotationDegrees = 15f,
                 ),
             ),
-            focusedToppingId = 1L,
+            texts = listOf(
+                EditableText(
+                    parfaitTextId = 1L,
+                    isMine = true,
+                    text = "오늘의 파르페",
+                    color = TextToppingColor.Black,
+                    type = TextToppingType.FILL,
+                    align = TextAlign.Center,
+                    designFontSize = 18f,
+                    positionX = 0.5f,
+                    positionY = 0.8f,
+                    positionZ = 3,
+                ),
+            ),
+            focusedKey = CanvasToppingKey.Image(1L),
             isBorderPanelOpen = isBorderPanelOpen,
         ),
         onClickClose = {},
         onClickConfirm = {},
         onClickTopping = {},
+        onClickText = {},
         onClickEmptyCanvas = {},
         onToggleBorderPanel = {},
         onDismissBorderPanel = {},

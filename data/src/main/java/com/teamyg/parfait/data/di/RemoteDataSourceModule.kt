@@ -20,6 +20,8 @@ import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSource
 import com.teamyg.parfait.data.source.policy.remote.PolicyRemoteDataSourceImpl
 import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSource
 import com.teamyg.parfait.data.source.topping.remote.ParfaitImageRemoteDataSourceImpl
+import com.teamyg.parfait.data.source.topping.remote.ParfaitTextRemoteDataSource
+import com.teamyg.parfait.data.source.topping.remote.ParfaitTextRemoteDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -60,6 +62,12 @@ interface RemoteDataSourceModule {
     fun bindParfaitImageRemoteDataSource(
         parfaitImageRemoteDataSourceImpl: ParfaitImageRemoteDataSourceImpl,
     ): ParfaitImageRemoteDataSource
+
+    @Binds
+    @Singleton
+    fun bindParfaitTextRemoteDataSource(
+        parfaitTextRemoteDataSourceImpl: ParfaitTextRemoteDataSourceImpl,
+    ): ParfaitTextRemoteDataSource
 
     @Binds
     @Singleton

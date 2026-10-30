@@ -8,17 +8,10 @@ internal object VideoTimelineOptions {
     /** 영상 길이는 토핑 수와 무관하다 */
     const val DURATION_SECONDS: Float = 2f
 
-    /** 모든 토핑이 이 구간 안에서 등장을 **시작**한다. 남는 시간은 완성본을 보여 준다 */
+    /** 모든 토핑이 이 구간 안에서 나타난다. 남는 시간은 완성본을 보여 준다 */
     const val TOPPING_APPEAR_WINDOW_SECONDS: Float = 1.5f
 
-    /** 토핑이 많으면 앞뒤 토핑의 팝인이 겹친다 */
-    const val TOPPING_POP_DURATION_SECONDS: Float = 0.25f
-
-    /** 등장을 시작할 때의 배율. 0 이 아니라 여기서부터 커진다 */
-    const val POP_START_SCALE: Float = 0.6f
-
-    /** 표준 easeOutBack 계수 */
-    const val POP_OVERSHOOT: Float = 1.70158f
+    const val TOPPING_APPEAR_WINDOW_FRAMES: Int = (TOPPING_APPEAR_WINDOW_SECONDS * FRAMES_PER_SECOND).toInt()
 
     const val FRAME_COUNT: Int = (DURATION_SECONDS * FRAMES_PER_SECOND).toInt()
 }

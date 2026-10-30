@@ -2,7 +2,7 @@
 
 > 현재형으로 쓰고, 바뀌면 덮어쓴다. 이력은 [`log.md`](log.md), 결정 이유는 `adr/`, 설계는 스펙.
 > 영역 형식과 규칙: [기록 구조 설계](superpowers/specs/2026-09-26-docs-record-structure-design.md) §3.1.
-> 코드 대조 기준: 작업 브랜치 HEAD `119ff16d0`.
+> 코드 대조 기준: 작업 브랜치 HEAD `10a394ab7`.
 
 ## 앱 진입·인증 — 스플래시·로그인·약관 (A-001·A-002)
 - 상태: 앱은 스플래시에서 시작해 `BootstrapSessionUseCase`의 세션 검증 결과(저장 토큰 + `users/me` 조회)와 로띠 재생 종료가 둘 다 모여야 그룹 목록 또는 로그인으로 `replaceAll`하며, 세션은 401·`MEMBER_NOT_FOUND`일 때만 지우고 나머지 실패는 토큰을 남긴 채 로그인으로 보낸다. 로그인은 카카오 SDK ID 토큰을 서버에 보내 기존 회원은 그룹 목록으로, 신규 회원은 등록 토큰을 들고 약관 동의로 가고, 약관 동의는 서버 약관 목록으로 필수 동의를 가려 가입·세션 저장 뒤 그룹 목록으로 가며 약관 전문은 서버가 준 `url`을 공용 웹뷰로 연다.
@@ -16,7 +16,9 @@
 
 ## 그룹 목록 (G-001)
 - 상태: `GroupListViewModel`이 그룹 인메모리 캐시(`GetMyGroupsFlowUseCase`)와 계정 SSoT(`GetMyAccountFlowUseCase`)를 구독해 그리고, 화면에 설 때마다 `RefreshMyGroupsUseCase`로 다시 조회한다. 첫 조회만 공통 로딩 덮개를 씌우고, 재진입 조회가 실패하면 보던 목록을 남기며, 당겨서 새로고침이 실패할 때만 에러 화면으로 간다. 토핑은 `ToppingLayout` 지그재그 위에 400ms 간격으로 쌓이고, 오늘 캔버스 토핑이 있으면 테두리까지 그린다. 없으면 `groupId`로 고른 템플릿을 그린다. 토핑을 누르면 C-001로, 그룹 추가 오버레이를 누르면 A-005·A-004로 간다. 상단 바는 "내 그룹 N"을 보이고 미조회(`null`)에서는 개수를 그리지 않는다. 0건이 확정되면(`isEmptyConfirmed`) 화면에 설 때마다 컴포지션이 든 `GroupListEmptyIntroState`가 더미 그룹 3개(`GROUP_LIST_EMPTY_DUMMY_GROUPS`)를 500ms 간격으로 내려 보이고 2.5초에 안내 툴팁을 띄운다. 3초 이후 버튼이 아닌 곳을 누르면 더미와 툴팁이 함께 사라지고, 이후 재진입 전까지 다시 뜨지 않는다. 등장 중 터치는 무시하되 그룹 추가 칩을 누르면 전부 드러난 상태로 건너뛰며, 앱이 멈추면 진행 중 애니메이션을 끝 상태로 건너뛴다. 더미는 접근성 트리에서 제외되고, 툴팁은 보이지 않는 동안 컴포지션에서 빠진다. 툴팁은 Material 팝업이 아니라 일반 컴포저블이다 (OQ-P-426)
-- 앵커: `GroupListViewModel`, `GetMyGroupsFlowUseCase`, `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`, `ToppingLayout`, `GroupListParfaitLayout`, `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl/util/ToppingImage.kt`
+- 앵커: `GroupListViewModel`, `GetMyGroupsFlowUseCase`, `GroupListEmptyIntroState`, `GROUP_LIST_EMPTY_DUMMY_GROUPS`, `YGToppingTextTemplate`, `ToppingLayout`, `GroupListParfaitLayout`, `feature/groups/list/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/list/impl/util/ToppingImage.kt`
+- 목록은 v2(`getParfaitGroupsV2`)라 텍스트도 토핑으로 센다. 오늘 마지막 토핑이 텍스트면 오늘 이미지가 있어도 텍스트 템플릿 2종(`YGToppingTextTemplate`, groupId로 고정) 중 하나를 회전 없이 그린다. 일반 템플릿·이미지는 카드 배치의 회전을 그대로 받는다
+- ⚠️ 텍스트 템플릿·회전 제외·경과 시간의 텍스트 포함은 위키에 정책이 없어 앱이 잠정으로 정한 값이다 (OQ-P-459)
 - ⚠️ 서버 `recentImageUrl`은 오늘 캔버스 토핑만 준다. 그래서 어제까지 활동한 그룹도 템플릿으로 그려지는데, 같은 카드의 경과 시간은 어제 토핑 시각이라 두 표시가 서로 맞지 않는다 (OQ-P-336)
 - ⚠️ 토핑이 한 건도 없는 그룹은 서버 폴백 때문에 그룹 생성 시각과 생성자 칩을 마지막 활동처럼 보여 준다 (OQ-P-235)
 - ⚠️ 계정 스트림이 첫 값을 내기 전에 「그룹 만들기」를 누르면 로그만 남고 아무 반응이 없다. 같은 오버레이의 「초대 코드로 참여」는 빈 닉네임으로 그냥 진행해 두 버튼의 반응이 반대다 (OQ-P-253, OQ-P-377)
@@ -48,8 +50,8 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
-- 앵커: `AppSettingViewModel`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 약관 아래 「오픈소스 라이선스」는 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 앵커: `AppSettingViewModel`, `OSS_LICENSE_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
 - ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
@@ -58,13 +60,13 @@
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
-- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`
+- 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`
 - ⚠️ 토핑 한 장만 실패해도 첫 페인트 전이면 캔버스 전체가 다시 시도 덮개로 막히는데 그 규칙의 근거가 코드에만 있고, 첫 페인트 판정 상태가 Route 컴포지션에 있어 덮개 회귀를 잡는 테스트가 없다 (OQ-P-355, OQ-P-395)
 - ⚠️ 배경을 고른 빈 캔버스에는 빈 안내판이 뜨지 않는다 — 안내판 조건이 `isEmpty && background == null`이다 (OQ-P-304)
 - ⚠️ 그룹 생성·참여 직후 환영 배너는 문구·갈래에 정책 소스가 없고, 초대코드를 한 번 복사하면 재발행된 배너에 버튼 동작이 없어 다시 복사할 수 없다 (OQ-P-339)
 - ⚠️ Spotlight 작성자 이름 색은 서버 값이 아니라 `memberChips` 조인이라 탈퇴·이탈 멤버는 기본색이 되고, 토핑 탭 판정의 알파 문턱·해상도는 실측 전 값이다 (OQ-P-251, OQ-P-313)
 - ⚠️ 캔버스 두 조회의 404 `GROUP_NOT_FOUND`를 다른 실패와 가르지 않고, 목록에서 사라진 그룹이면 상단 바가 옛 이름을 그대로 든다 (OQ-P-383, OQ-P-407)
-- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이고, 하루 경계 직후 같은 그룹의 오늘 조회가 동시에 나가 서버가 캔버스를 중복 생성하는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
+- ⚠️ 적응형 폴링의 단계·상한과 구독 정지 유예는 실측 없이 정한 값이다. 폴링은 조건부 오늘 조회(v2 `today`, ETag/304) 하나라 304 경로까지 매 주기 서버의 오늘 캔버스 확보를 태우는데, 그 확보가 동시 요청에서 캔버스를 중복 생성하지 않는지 확인되지 않았다 (OQ-P-320, OQ-P-323)
 - 설계: [c001-canvas-main](superpowers/specs/archive/2026-08-12-c001-canvas-main.md), [c001-canvas-today-detail](superpowers/specs/archive/2026-08-17-c001-canvas-today-detail.md), [c202-canvas-spotlight](superpowers/specs/archive/2026-08-20-c202-canvas-spotlight.md), [canvas-today-ssot-polling](superpowers/specs/archive/2026-08-27-canvas-today-ssot-polling.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [canvas-feedback-fixes](superpowers/specs/archive/2026-09-10-canvas-feedback-fixes.md), [past-canvas-alert](superpowers/specs/archive/2026-09-09-past-canvas-alert.md), [ADR-0023](adr/0023-group-in-memory-ssot.md), [ADR-0029](adr/0029-canvas-today-ssot-polling.md), [ADR-0030](adr/0030-topping-outline-distance-field.md)
 
 ## 토핑 생성·배치·배치 수정 (C-101·C-102·C-105·C-106·C-305)
@@ -87,8 +89,22 @@
 - ⚠️ 배치 수정 화면의 확정 버튼 문구("캔버스에 쌓기")는 추가 플로우와 같은 문자열이고, 그만두기 팝업의 제목(「사진 편집을 그만둘까요?」)과 본문이 스펙이 적은 문구가 아니라 `core:ui` `YGModalQuitEdit`의 것이다 — 둘 다 기획·디자인 확인 전이다 (OQ-P-413, OQ-P-414)
 - 설계: [c101-camera-picture-confirm](superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md), [c102-custom-gallery-picker](superpowers/specs/archive/2026-08-04-c102-custom-gallery-picker.md), [c106-topping-place](superpowers/specs/archive/2026-08-19-c106-topping-place.md), [c106-topping-place-api](superpowers/specs/archive/2026-08-20-c106-topping-place-api.md), [topping-border-distance-field](superpowers/specs/archive/2026-09-07-topping-border-distance-field.md), [topping-upload-source-scaled](superpowers/specs/archive/2026-09-09-topping-upload-source-scaled.md), [topping-draft-usecase-extraction](superpowers/specs/archive/2026-09-09-topping-draft-usecase-extraction.md), [c105-arrange-border-merge](superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md), [ADR-0025](adr/0025-topping-border-as-server-field.md), [ADR-0026](adr/0026-topping-draft-datastore-ssot.md), [ADR-0030](adr/0030-topping-outline-distance-field.md), [ADR-0032](adr/0032-android-own-topping-upload-scale.md), [ADR-0034](adr/0034-topping-border-set-at-placement.md)
 
+## 텍스트 토핑 (C-106 텍스트 입력 · C-001 렌더 · C-305 배치 수정)
+- 상태: 캔버스 메인의 추가 메뉴 「텍스트 입력」이 `NavKeyCanvasTextInput` 한 화면을 연다. 화면은 키보드 노출(`isEditing`)로 편집 모드와 배치 모드를 가르고, 글자 크기는 디자인 너비 335 기준값에 캔버스 너비 비율을 곱해 그리며 시스템 글꼴 배율은 무시한다. [캔버스에 쌓기]는 `PlaceTextToppingUseCase`로 POST를 한 번 보내고(자동 재시도 없음, 연타 가드, 요청 중 시스템 백 무시), 성공하면 오늘 캔버스를 다시 읽고 초안을 비운 뒤 C-001로 돌아간다. 실패 토스트는 텍스트 전용 문구(`PlaceFailure`)이고, 409(마감)는 영구 실패, 네트워크 실패는 요청이 닿았는지 알 수 없어 재시도 대신 확인을 권하며 오늘 캔버스를 한 번 다시 읽는다. C-001은 `CanvasVO.texts`를 이미지와 `positionZ`로 합쳐(`canvasLayerOrder`, 동률은 이미지가 아래 → id 순) 그린다. 일괄 등장 판정·이미지 저장·타임랩스에도 텍스트가 든다. 내 텍스트를 탭하면 그 텍스트에 포커스된 C-305(`NavKeyCanvasToppingArrange.initialIsText`)가, 남의 것은 Spotlight 토스트가 뜬다. C-305는 텍스트의 포커스·이동·핀치·삭제를 받고 변형은 이미지와 같은 일괄 PATCH(`textItems`)에 실리고 텍스트 DELETE의 404 `PARFAIT_TEXT_NOT_FOUND`는 성공으로 본다. 테두리 패널은 텍스트에서 꺼진다. 쌓인 텍스트는 이미지처럼 이동·크기·회전·삭제만 고치고 내용·스타일은 고치지 않는다 — 포커스된 텍스트를 다시 탭해도 아무 일이 없고, C-106은 새 텍스트를 쌓을 때만 열린다. 새 토핑의 z는 이미지·텍스트 전체의 최댓값 + 1이다(`CanvasMainViewModel` 초안, `CanvasToppingPlaceViewModel.resolvedPositionZ`).
+- 앵커: `PlaceTextToppingUseCase`, `DeleteTextToppingUseCase`, `TextToppingWireMapper`, `TextToppingAlign`, `canvasLayerOrder`, `CanvasLayerItem`, `TextToppingContent`, `PlacedTextTopping`, `textToppingFontSizeSp`, `textToppingWrapWidth`, `PlaceFailure`, `EditableText`, `CanvasTextInputViewModel`, `CanvasToppingArrangeViewModel`, `TextToppingScript.kt`, `textToppingScriptRuns`, `TextToppingChineseCharacterCoverage`, `tools/text-topping-chinese-character-coverage/`, `GraphemeClusterExtension.kt`
+- 저장 단위(앱이 정한 값, iOS와 합의 전): 위치는 박스 중심의 캔버스 비율, `fontSize`는 335 기준 `designFontSize`, `scale`은 핀치 배율, `color`는 `TextToppingColor.contentColor`의 `#RRGGBB`(White는 `#FAFAFA`, 모르는 값은 Black), `isFill`·`isStroke`는 `TextToppingType`이다 (OQ-P-452)
+- 정렬 3종은 서버 `textAlign`으로 저장된다. ⚠️ 줄바꿈 위치는 저장되지 않아 기기마다 다시 계산된다 (OQ-P-451)
+- ⚠️ 토핑 정리 화면의 병합 규칙·변경 집합이 이미지·텍스트로 복제돼 있다 — 저장 단계 분리는 후속 (OQ-P-455)
+- ⚠️ 달력의 빈 날 판정이 텍스트를 세지 않는다 (OQ-P-439 ②)
+- ⚠️ 서버는 `text`를 UTF-16 2000자로 세고 앱은 그래핌 100자로 세며, `color` 형식과 이미지와 공유하는 `positionZ` 배정 규칙은 계약에 없다 (OQ-P-442, OQ-P-441, OQ-P-443)
+- ⚠️ 에뮬레이터·실기기에서 확인하지 않았다 — 단위 테스트만 돈다
+- ⚠️ Line Seed JP·TW 전체 글리프를 서브셋 없이 번들해 APK가 커졌다
+- 글꼴·자간은 글자 구간마다 고른다. 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트를 쓰고, 두 폰트에 다 없는 한자(간체 일부)는 시스템 폰트로 그려지며 한 단어 안에서 JP·TW 가 섞일 수 있다(`学校`). `々〆〇〻`는 한자로, 가나 확장·반각 가타카나는 JP로 보고 전각 숫자·라틴은 주변 구간을 따른다 (OQ-P-456, OQ-P-457, OQ-P-458)
+- ⚠️ 구간 분기 이전에 저장한 텍스트는 다시 그리면 글꼴이 달라져(한글+가나 → 한글 SUIT, 한글+한자 → 한자 TW) 줄 수가 바뀔 수 있다 (OQ-P-453)
+- 설계: [text-topping](superpowers/specs/archive/2026-10-16-text-topping.md), [text-topping-api](superpowers/specs/archive/2026-10-26-text-topping-api.md), [api/parfait-text](api/parfait-text.md), [text-topping-script-span](superpowers/specs/archive/2026-10-27-text-topping-script-span-design.md)
+
 ## 누끼 추출 (C-103·C-104)
-- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 원본 해상도 그대로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고, 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
+- 상태: 사진 확인 화면 진입에서 ML Kit optional module 설치를 미리 요청하고, 「다음」은 확인 화면을 백스택에 남긴 채 분석(`NavKeySegmentation`)을 연다. 분석은 C-101-Loading 한 화면이 받아 진입마다 전용 캐시 디렉토리를 비운 뒤 긴 변 상한(`DecodeSize.LONG_SIDE_LIMIT`)으로 디코드한 원본으로 다중 피사체 추론 → 마스크 후처리·가이드 필터 알파 정련 → 후보가 0건이면 전경 마스크 2차 요청 순으로 후보를 만든다. 결과는 두 갈래다 — 후보 1개 이상이면 같은 목적지가 C-103 선택 UI로 바뀌고(선택 UI는 「직접 선택」 얼럿으로 후보 없이 원본 전체를 마스크로 편집 화면에 갈 수 있다), 0건·실패·던진 예외·디코드 실패는 전부 분석 화면을 편집 화면(C-104, 원본 uri를 원본·마스크 자리 둘 다에 싣고 `isDetectionFailed`를 켠다)으로 치환한다. 후보를 고르면 알맹이를 파일로만 저장하고(초안은 건드리지 않는다) 선택 UI를 백스택에 남긴 채 C-104로 간다. 편집 화면의 「다음」이 편집 결과를 초안에 기록하는 유일한 자리이고, 기록한 뒤 편집 화면을 백스택에 남긴 채 토핑 배치(C-106)로 간다. 초안 흐름이 닫혀 있어 기록이 거절되면 저장 실패와 구분해 캔버스에서 다시 시작하라고 안내한다. 감지 실패로 들어온 편집 화면은 불러오기에 성공했을 때 한 번만 안내 토스트를 띄우고, 편집 화면의 뒤로는 팝업 없이 선택 UI(감지 실패면 사진 확인)로 돌아간다. 로딩·선택 UI·편집 화면의 X는 「사진 편집을 그만둘까요?」, `PictureConfirm`(토핑 경로)의 X는 「사진 추가를 그만둘까요?」 팝업을 띄우고, 확정하면 `popUpTo<NavKeyCanvasMain>()`으로 캔버스까지 되감는다. 시스템 뒤로가기는 이 화면들 어디서도 팝업 없이 한 단계 돌아간다(로딩 중에는 사진 확인으로). 로딩 중 팝업이 떠 있는 동안 도착한 결과는 보류한다. C-104 편집 화면은 붓 획으로 마스크를 고친 결과가 빈 알맹이 하한을 넘겨야 초안에 적는다. 오류·안내 토스트는 사진 영역 윗변의 `toast` 슬롯(화면 내 호스트)에 화면 폭으로 뜨며 — 사진 영역은 헤더에서 간격 하나를 두고 시작한다 — 불러오기와 저장 중에는 `YGScaffoldV2`의 공통 로딩 덮개(`isLoading`)가 헤더까지 덮고, 토스트는 그 아래 층이다 — 저장·빈 알맹이·초안 거절은 오류 토스트, 감지 실패 안내는 `YGToastType.Edit`이다. 불러오기 실패(`LoadFailed`)만 화면을 바로 닫아 `android.widget.Toast`로 남는다. 갤러리 최근 줄의 누끼를 고르면 편집 화면 없이 `EnsureDraftSubjectRecordedUseCase`로 초안을 맞춘 뒤 곧바로 C-106으로 가고, 맞추지 못하면 갤러리에 남아 토스트를 띄운다.
 - 앵커: `SegmentationViewModel`, `ImageSegmentationRepositoryImpl`, `SegmentationModuleInstaller`, `harvestSubjects`, `refineAlpha`, `ToppingEditViewModel`, `ToppingEditScreen`, `ToppingEditRoute`, `EnsureDraftSubjectRecordedUseCase`, `RecordToppingDraftUseCase`
 - ⚠️ 디코드 상한이 긴 변 4096px(`DecodeSize.LONG_SIDE_LIMIT`)이라 12MP 급 사진은 줄지 않고 원본 해상도로 돌며, 다중 후보 비트맵도 선택 전까지 전부 들고 있어 메모리 피크가 `largeHeap` 없이 위험 구간이다 — 현재 트리 기준 피크는 미측정 (OQ-P-228, OQ-P-266)
 - ⚠️ 전경 마스크 옵션과 다중 후보 옵션을 한 요청에 함께 켜면 ML Kit 모듈이 네이티브 `SIGSEGV`로 죽는다. `try/catch`도 Crashlytics도 못 잡으므로 두 옵션은 반드시 별도 요청으로 둔다 (OQ-P-409)
@@ -103,7 +119,7 @@
 - 설계: [c103-segmentation-topping-edit](superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md), [c103-multi-subject-selection](superpowers/specs/archive/2026-08-23-c103-multi-subject-selection.md), [segmentation-alpha-refinement](superpowers/specs/archive/2026-08-25-segmentation-alpha-refinement.md), [segmentation-module-install](superpowers/specs/archive/2026-09-02-segmentation-module-install.md), [c101-loading](superpowers/specs/archive/2026-09-30-c101-loading-design.md), [topping-edit-entry-flow](superpowers/specs/archive/2026-10-03-topping-edit-entry-flow-design.md), [segmentation-preprocessing](superpowers/specs/2026-08-23-segmentation-preprocessing.md), [ADR-0012](adr/0012-mlkit-subject-segmentation.md)
 
 ## 캔버스 배경 편집 (C-301)
-- 상태: 배경 편집 화면은 캔버스 메인의 편집 버튼이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독한다. 배경(색 또는 이미지)은 최초 방출에만 시딩하고, 토핑 목록은 방출마다 갈아 끼워 배경 위에 반투명으로 보여 주기만 한다 — 이 화면에서 토핑은 고칠 수 없다. 팔레트 색이나 카메라·갤러리에서 받아 온 사진을 고른 뒤 하단 「저장하기」를 누르면 사진은 업로드부터 하고 배경을 저장한 다음 오늘 캔버스를 다시 받고 닫으며, 서버에 이미 있던 배경 이미지를 그대로 둔 채 저장하면 요청 없이 닫는다. 실패는 `CanvasBGEditError` 토스트 + 화면 잔류이고, 상단 바(`YGFloatingBarTitle`)의 닫기는 「배경 변경을 그만둘까요?」 팝업(`YGModalQuitBackground`)을 거친다 — 피그마 `5461:9337`은 "모달 없이 C-001 이동"이라 적는데 구현은 팝업을 남겼다. 이 화면에서 연 카메라·갤러리의 닫기와 시스템 뒤로가기는 배경 편집을 건너뛰어 캔버스로 되감고, 고르던 배경은 묻지 않고 버린다. 그 경로의 사진 확인 화면 닫기는 같은 팝업(`YGModalQuitBackground`)을 거쳐 캔버스로 가고, 「다음」만 배경 편집으로 돌아온다.
+- 상태: 배경 편집 화면은 캔버스 메인의 편집 버튼이 넘긴 오늘 `parfaitId`로 열려 오늘 캔버스를 구독한다. 배경(색 또는 이미지)은 최초 방출에만 시딩하고, 토핑·텍스트 목록은 방출마다 갈아 끼워 배경 위에 반투명으로 보여 주기만 한다(겹침은 `editableLayerOrder`) — 이 화면에서 토핑은 고칠 수 없다. 팔레트 색이나 카메라·갤러리에서 받아 온 사진을 고른 뒤 하단 「저장하기」를 누르면 사진은 업로드부터 하고 배경을 저장한 다음 오늘 캔버스를 다시 받고 닫으며, 서버에 이미 있던 배경 이미지를 그대로 둔 채 저장하면 요청 없이 닫는다. 실패는 `CanvasBGEditError` 토스트 + 화면 잔류이고, 상단 바(`YGFloatingBarTitle`)의 닫기는 「배경 변경을 그만둘까요?」 팝업(`YGModalQuitBackground`)을 거친다 — 피그마 `5461:9337`은 "모달 없이 C-001 이동"이라 적는데 구현은 팝업을 남겼다. 이 화면에서 연 카메라·갤러리의 닫기와 시스템 뒤로가기는 배경 편집을 건너뛰어 캔버스로 되감고, 고르던 배경은 묻지 않고 버린다. 그 경로의 사진 확인 화면 닫기는 같은 팝업(`YGModalQuitBackground`)을 거쳐 캔버스로 가고, 「다음」만 배경 편집으로 돌아온다.
 - 앵커: `CanvasBGEditViewModel`, `CanvasBGEditUiState`, `CanvasBGEditError`, `NavKeyCanvasBGEdit`, `ChangeCanvasBackgroundUseCase`, `EditableToppingImage`
 - ⚠️ 마감된 캔버스의 409를 배경 저장이 일반 오류 토스트로 접어 다시 눌러도 영원히 실패한다 (OQ-P-261)
 - ⚠️ 위키 v7은 `C-301`을 삭제하고 `C-304`(캔버스 수정)를 배경 탭 + 토핑 탭을 가진 편집 허브로 두는데, 구현은 탭 없는 배경 전용 화면이고 분석 화면 id로 `C-301`을 보낸다 (OQ-P-175, OQ-P-415)
@@ -123,14 +139,14 @@
 ## 캔버스 이미지 저장
 - 상태: 날짜바의 저장 아이콘(오늘·지난 캔버스 모두, 빈 안내판이 없을 때만)을 누르면 `CanvasMainRoute`가 `YGCanvas` 프레임의 GraphicsLayer를 캡처해 고정 이름 캐시 PNG로 굽고 비트맵은 `CanvasCaptureHolder`에 실어 ViewModel 없는 미리보기로 보낸다. 미리보기에서 확정하면 결과 버스로 경로만 돌려주고, 캔버스 메인이 그 파일을 다시 읽어(API 28 이하는 쓰기 권한을 물은 뒤) `SaveCanvasToGalleryUseCase` → `GalleryMediaProvider`로 MediaStore에 PNG를 쓰고 결과를 캔버스 프레임 토스트로 알린다.
 - 앵커: `CanvasCaptureHolder`, `writeToCanvasCaptureCache`, `NavKeyCanvasImageSave`, `SaveCanvasToGalleryUseCase`, `GalleryMediaProvider`, `GalleryWritePermissionManager`
-- 영상: 같은 미리보기의 「영상으로 저장」이 토핑이 `positionZ` 순서로 차례로 팝인하는 2초 mp4(1080×1920)를 만든다. 캔버스 메인이 미리보기를 열 때 `CanvasVideoSourceHolder`에 토핑·배경·Canvas-Area dp를 넣고, 미리보기 Route가 `CanvasVideoRecordLayer`를 화면에 그리지 않고 띄워 프레임마다 읽어 `Mp4VideoEncoder`로 캐시에 쓴 뒤 경로를 결과로 돌려준다. 갤러리 저장(`SaveCanvasVideoToGalleryUseCase`)과 토스트는 이미지와 같은 길을 탄다. 앵커: `toppingPopProgresses`, `recordCanvasVideo`, `CanvasSaveResult`
+- 영상: 같은 미리보기의 「영상으로 저장」이 토핑이 `positionZ` 순서로 연출 없이 차례로 나타나는 2초 mp4(1080×1920)를 만든다. 캔버스 메인이 미리보기를 열 때 `CanvasVideoSourceHolder`에 토핑·배경·Canvas-Area dp를 넣고, 미리보기 Route가 `CanvasVideoRecordLayer`를 화면에 그리지 않고 띄워 프레임마다 읽어 `Mp4VideoEncoder`로 캐시에 쓴 뒤 경로를 결과로 돌려준다. 갤러리 저장(`SaveCanvasVideoToGalleryUseCase`)과 토스트는 이미지와 같은 길을 탄다. 앵커: `visibleToppingCount`, `recordCanvasVideo`, `CanvasSaveResult`
 - ⚠️ 영상 저장은 실기기에서 뽑아 본 적이 없고, 타임라인·해상도·문구는 정책 원본 없이 iOS 구현 값을 따랐다 (OQ-P-429). 녹화 밀도에서 테두리 판 캐시가 미스된다 (OQ-P-433)
 - ⚠️ 캡처는 지금 그려진 것을 그대로 복사해 배경 이미지가 아직 안 왔으면 배경 없이 담기고, 해상도도 기기 화면 크기에 종속된다 (OQ-P-272)
 - ⚠️ 캡처 파일 이름이 고정이고 지우는 호출이 없으며, 홀더도 한 장만 들어 연달아 캡처하면(푸시로 다른 그룹 캔버스에 갔다 오는 경우 포함) 미리보기가 다른 그림을 원래 날짜 라벨과 함께 보여 준다. 읽기·결과 왕복·미리보기 화면에 테스트가 없다 (OQ-P-365)
 - ⚠️ 미리보기 키가 캐시 파일 절대경로와 날짜 문자열을 나른다 — OS가 캐시를 정리하면 확정 시 읽기 실패 토스트로 끝나고, `LocalDate.parse` 실패는 아무도 잡지 않는다 (OQ-P-364)
 - ⚠️ API 29 미만에서는 `Pictures/Parfait` 하위 폴더도 `IS_PENDING` 보호도 없이 기본 위치에 쓰고 쓰기 권한 다이얼로그가 추가로 뜬다 (OQ-P-274)
 - ⚠️ 오늘 캔버스에서도 저장되는 것에 기획 근거가 없고, 저장 아이콘 노출이 빈 안내판 조건의 부정으로 따로 적혀 있어 안내판 조건이 바뀌면 말없이 따라 바뀐다 (OQ-P-340)
-- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0035](adr/0035-canvas-video-onscreen-capture-encoding.md)
+- 설계: [c001-canvas-gallery-save](superpowers/specs/archive/2026-08-23-c001-canvas-gallery-save.md), [canvas-save-preview-capture-holder](superpowers/specs/archive/2026-09-07-canvas-save-preview-capture-holder.md), [canvas-topping-timelapse-video](superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md), [ADR-0011](adr/0011-cross-module-bitmap-abstraction.md), [ADR-0035](adr/0035-canvas-video-onscreen-capture-encoding.md)
 
 ## 푸시·딥링크
 - 상태: FCM 수신은 `ParfaitFirebaseMessagingService`가 포그라운드 알림을 직접 띄우고 토핑 알림이면 오늘 캔버스 재조회를 요청하며, 탭한 알림의 `route`·`groupId`는 `PushDeepLinkEventBus`를 거쳐 `MainRoute`가 스플래시 이탈과 세션 확인을 기다린 뒤 캔버스(`canvas`)나 그룹 목록(`group`)으로 보낸다. 기기 토큰 등록은 알림 권한과 별개 축으로 부트스트랩·카카오 로그인·가입·`onNewToken` 네 자리가 부르고, 알림 권한은 그룹 생성·참여 완료 직후 `NotificationPermissionGate`가 묻는다(API 33 미만은 허용으로 본다).
@@ -144,10 +160,19 @@
 - 설계: [push-notification-permission-and-device-token](superpowers/specs/archive/2026-09-05-push-notification-permission-and-device-token.md), [canvas-adaptive-polling](superpowers/specs/archive/2026-09-10-canvas-adaptive-polling.md), [ADR-0013](adr/0013-firebase-fcm-crashlytics.md), [navigation-flow](architecture/navigation-flow.md)
 
 ## App Links — 초대 링크
-- 상태: `https://parfait-app.store/link?inviteCode={code}`만 앱으로 열리고(`autoVerify`), `MainRoute`가 `awaitAppLinkReady`로 스플래시 이탈과 `NavKeyGroupList` 안착(세션이 없을 때)을 기다린 뒤 초대코드 입력 화면에 코드를 채워 보낸다. 앱 미설치 유저는 Play Install Referrer를 첫 실행에 한 번만 읽어 같은 화면으로 보낸다. 초대 메시지 복사본에도 같은 링크가 들어간다. iOS는 미구현이다.
+- 상태: `https://parfait-app.store/link?inviteCode={code}`만 앱으로 열리고(`autoVerify`), `MainRoute`가 `awaitAppLinkReady`로 스플래시 이탈과 `NavKeyGroupList` 안착(세션이 없을 때)을 기다린 뒤 초대코드 입력 화면에 코드를 채워 보낸다. 앱 미설치 유저는 Play Install Referrer를 첫 실행에 한 번만 읽어 같은 화면으로 보낸다. 초대 메시지 복사본에도 같은 링크가 들어간다.
 - 앵커: `AppLinkDeepLink`, `toAppLinkDeepLinkOrNull`, `awaitAppLinkReady`, `AppLinkDeepLinkEventBusImpl`, `AppLinkReferrerRepositoryImpl`, `PlayInstallReferrerGateway`, `group_invite_message`
 - ⚠️ 링크 호스트·경로가 매니페스트·파서 상수·`strings.xml` 세 곳에 따로 적혀 있다 (OQ-P-436)
 - 설계: [navigation-flow 「App Links 이동」](architecture/navigation-flow.md#app-links-이동-초대-링크)
+
+## 분석 계측
+- 상태: 화면 진입은 `:app`의 `ScreenViewTracker`가 `NavKeyAnalyticsScreen` 매핑으로 `NavKey`를 화면 id로 바꿔 `screen_view`로 보내고, 매핑에 대응이 없으면 보내지 않고 경고 로그만 남긴다. 액션 이벤트는 feature `impl`의 ViewModel(푸시·App Links 열기는 `MainActivity`)이 `core:analytics`의 `AnalyticsLogger`에 `AnalyticsEventType` 상수로 직접 찍고, 구현은 `FirebaseAnalyticsLogger` 하나다. 이벤트 이름·파라미터의 정본은 사용자 이벤트 설계 문서다. GA4 사용자 ID는 `AnalyticsUserIdSync`가 계정 정보 SSoT(`MemberRepository.myAccount`)를 구독해 memberId로 맞추고, 계정 정보가 지워지면(로그아웃·탈퇴·재발급 거절) 함께 지운다 — iOS와 같은 값이다.
+- 앵커: `AnalyticsEventType`, `AnalyticsLogger`, `AnalyticsUserIdSync`, `FirebaseAnalyticsLogger`, `core:analytics`, `NavKeyAnalyticsScreen`, `ScreenViewTracker`
+- ⚠️ 사용자 ID는 실기기 DebugView로 아직 안 봤다
+- ⚠️ 영상 저장은 `canvas_save_gallery_saved`를 남기지 않는다 — 이미지 저장만 `format: "image"`로 찍고 `"video"`는 배선이 없다 (OQ-P-437)
+- ⚠️ `canvas_edit_*` 화면 분류가 정본 문서(C105 하나)와 코드(최초 배치 `C-106`·재편집 `C-305`)에서 달라, `canvas_edit_stack_tapped`가 최초 배치에서만 찍힌다 (OQ-P-430)
+- ⚠️ `canvas_camera_photo_selected`의 `source: "today"`가 가리키던 「오늘 사진」 구분이 갤러리에서 없어져, 지금은 날짜 구분 없는 일반 선택 전체를 뜻한다 (OQ-P-431)
+- 설계: [user-events-design](superpowers/specs/2026-10-06-user-events-design.md), [ADR-0031](adr/0031-analytics-central-screen-mapping.md)
 
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.
@@ -155,7 +180,8 @@
 - ⚠️ 릴리즈 빌드는 minify와 리소스 축소를 켜지만 축소된 산출물을 설치·실행한 기록이 없고 `keep.xml`도 없다. R8 산출물에서 `@NoAuth` keep 규칙이 살아 화이트리스트 요청이 인증 헤더 없이 나가는지도 확인되지 않았다 (OQ-P-308, OQ-P-074)
 - ⚠️ 경량 태그 `1.0.0`에는 develop에 없는 커밋(`feature/debug-mode` 포함)이 들어 있고, 릴리즈 계보를 develop 하나로 둔다는 규칙은 글로 없다. 태그 `1.1.3`은 버전 코드 11만 가리켜 같은 이름의 코드 10 산출물과 이름으로 구별되지 않는다 (OQ-P-311, OQ-P-310)
 - ⚠️ `WithdrawUseCase`가 `LogoutUseCase`를 재사용해 탈퇴가 끝난 계정으로 서버 로그아웃을 한 번 더 보내고, 그 401이 `TokenAuthenticator` 재발급까지 깨워 강제 로그아웃과 화면 이펙트가 같은 목적지로 겹친다 (OQ-P-242)
-- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실리고 앱에 오픈소스 고지 화면이 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실린다. 고지는 S-001이 여는 외부 페이지가 맡고, 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
+- ⚠️ 앱에는 다크 모드가 없지만 `app/src/main/res/values-night/themes.xml`이 있다 — targetSdk 33+ 웹뷰가 테마의 `isLightTheme`로 `prefers-color-scheme`을 정해서, 시스템 다크 모드에서는 공용 웹뷰 페이지만 다크로 그려지게 둔 것이다. 창 배경은 라이트 값으로 고정했다(스플래시·전환 배경)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
 - ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)
@@ -165,7 +191,7 @@
 ## 서버 계약
 - 상태: 서버가 정본인 계약은 [api/README.md](api/README.md)에서, 앱과의 간극은 [api/conventions.md 「Android 불일치」](api/conventions.md#android-불일치)에서 본다.
 - 앵커: `ServerErrorCode`, `JsonModule`, `data/src/main/java/com/teamyg/parfait/data/service`, `http/README.md`
-- ⚠️ 응답 JSON 키를 단언하는 와이어 테스트는 `KakaoLoginResponseSerializationTest` 하나뿐이다. 원격 DataSource 테스트는 DTO를 직접 만들어 넣어 `@SerialName`을 안 보므로, 서버가 칩 키를 다시 바꾸면 널 기본값 때문에 멤버·그룹·캔버스 칩이 조용히 폴백 색으로 그려진다 (OQ-P-234)
+- ⚠️ 응답 JSON 키를 단언하는 테스트는 두지 않는다(`.claude/rules/no-dto-serialization-test.md`). 원격 DataSource 테스트는 DTO를 직접 만들어 넣어 `@SerialName`을 안 보므로, 서버가 칩 키를 다시 바꾸면 널 기본값 때문에 멤버·그룹·캔버스 칩이 조용히 폴백 색으로 그려진다. 잡는 수단은 서버 delta 감사다 (OQ-P-234)
 - ⚠️ 서버는 그룹 재참여 때 멤버십 id를 유지해 탈퇴 전 토핑이 새 닉네임·칩으로 되살아나고 `ACTIVE` 캔버스면 편집·삭제 소유권까지 돌아오는데, 정책 근거가 없다 (OQ-P-398)
 - 설계: [ADR-0017](adr/0017-remote-network-datasource.md)
 
@@ -186,11 +212,16 @@
 - OQ-P-215 — 리플을 걷어 피드백이 사라진 클릭 자리를 실기기 촉감으로 판정하지 않았다
 - OQ-P-325 — 토핑 배율 하한이 두 화면에서 갈렸고, 편집 쪽 값이 손에 맞는지 본 적이 없다
 - OQ-P-382 — 띠 한 장을 만드는 비용 증가와 리사이즈 중 재생성을 실기기 성능으로 잰 적이 없다
-- OQ-P-038 — 토핑 그룹 두 변형이 코드상 같아 실제 화면에서 구분되는지 확인하지 않았다
 - OQ-P-050 — 날짜 칩 배경이 테두리를 덮는지 실기기 렌더로 확인하지 않았다
 - OQ-P-357 — 파르페 쌓임 연출의 간격을 실기기에서 본 적이 없다
 - OQ-P-412 — 배치 화면의 테두리 패널이 열렸을 때 화면 높이가 다른 기기에서 토핑이 패널에 가리는지, 화살표와 슬라이더의 터치 영역 겹침이 손에 걸리는지 본 적이 없다
 - OQ-P-419 — 배치 수정 화면을 피그마·실기기·TalkBack으로 대조한 적이 없다
+- OQ-P-458 — 텍스트 토핑 글꼴 구간 분기(가나·한자 글꼴, 한글 IME 연타, JP·TW 경계 자간)를 실기기로 본 적이 없다
 - OQ-P-425 — 누끼 편집(C-104) 개편을 피그마·실기기와 나란히 본 적이 없다
 - OQ-P-426 — G-001-Empty 안내 애니메이션의 타이밍과 TalkBack 동작을 에뮬레이터·실기기로 확인한 기록이 없다
+- OQ-P-429 — 캔버스 타임랩스 영상을 실기기에서 뽑아 본 적이 없다(재생·생성 시간·마지막 프레임 테두리 비율). 테두리 판 캐시 미스(OQ-P-433)도 같이 본다
+- OQ-P-438 — C-103 「직접 선택」 얼럿이 편집 화면에서 돌아올 때 다시 뜨는 동작을 실기기로 본 적이 없다
+- OQ-P-400·OQ-P-410 — 긴 변 4096px(`DecodeSize.LONG_SIDE_LIMIT`)을 넘는 사진으로 C-103·C-104의 그리기 크래시가 사라졌는지 실기기로 확인하지 않았다(세그멘테이션 실기기 항목에 함께 묶인다)
+- ADR-0031 — 액션 이벤트는 일부만 실기기 DebugView로 도착을 확인했고(`canvas_calendar_date_tapped`·`canvas_topping_editor_checked`·`canvas_save_gallery_saved`), 나머지와 뒤로 가기 복귀·Activity 재생성의 `screen_view`·사용자 속성은 보지 않았다
+- 텍스트 토핑 — C-106 쌓기 저장, C-001 렌더(자리·크기·기기 간 줄바꿈), C-305 텍스트 이동·삭제를 에뮬레이터·실기기·실서버로 본 적이 없다([텍스트 토핑](#텍스트-토핑-c-106-텍스트-입력--c-001-렌더--c-305-배치-수정))
 - OQ-P-410 — 세션·푸시·캔버스·업로드·카메라·세그멘테이션 영역에서 이월된 나머지 실기기·실서버 항목

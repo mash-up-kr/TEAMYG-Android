@@ -1362,7 +1362,7 @@ git commit -m "docs: 세그멘테이션 전처리 as-built 를 기록한다"
 | 배치까지 끝내는 확인 | Task 6 Step 4 |
 
 **스펙이 범위 밖으로 둔 것은 태스크가 없다** — 다운샘플, 뷰파인더 크롭, 색공간·`Bitmap.Config`·HEIC,
-대비 정규화, 후처리, EXIF 미러링, 갤러리 원본 손실, `SystemCameraRoute` 저장 포맷.
+대비 정규화, 후처리, EXIF 미러링, 갤러리 원본 손실.
 
 **타입 일관성**
 

@@ -4,11 +4,11 @@ title: 내비게이션 흐름 (Navigation3 + Navigator)
 category: architecture
 status: living
 platforms: android
-verified: 2026-09-21
+verified: 2026-10-20
 related_spec: c103-multi-subject-selection, segmentation-pipeline-hardening, designsystem-ygscreen-scaffold, a005-group-create, a004-group-invite-code, s102-group-nickname, g001-group-list, c101-camera-picture-confirm, c102-custom-gallery-picker, intro-term-agree, a002-login-onboarding, c001-canvas-main, a002-kakao-login-api, c301-canvas-background-edit, session-token-refresh-infra, c201-canvas-calendar, user-info-ssot, c301-topping-edit-tab, ygscaffold-v2-common-loading-error, s101-group-setting-api, canvas-save-preview-capture-holder
 related_adr: ADR-0002, ADR-0006, ADR-0013, ADR-0021, ADR-0022
 related_architecture:
-related_code: core:navigation, Navigator, Navigator.kt#popUpTo, NavTransition
+related_code: core:navigation, Navigator, Navigator.kt#popUpTo, NavTransition, AppLinkDeepLinkIntent.kt#toAppLinkDeepLinkOrNull, AwaitAppLinkReady.kt#awaitAppLinkReady
 tags: [architecture, parfait]
 ---
 # 내비게이션 흐름 (Navigation3 + Navigator)
@@ -43,8 +43,8 @@ Navigation3 위에 자체 Navigator·엔트리 빌더를 얹는다. 결정 근�
     `popUpTo<NavKeyCanvasMain>()`, `PictureConfirmRoute`(`returnResultOnly = true`)의 확인 →
     `popUpTo<NavKeyCanvasBGEdit>()`
     ([segmentation-pipeline-hardening 스펙](../superpowers/specs/archive/2026-08-18-segmentation-pipeline-hardening.md)).
-- **NavKey**(각 feature `:api`, `@Serializable`) — 목적지 식별. 예: `NavKeyLogin`, `NavKeySegmentation`, `NavKeyCameraCustom`. groups·app 계열은 목적지가 많다: `NavKeyGroupList`·`NavKeyGroupSetting`·`NavKeyGroupInviteCode`, canvas의 `NavKeyCanvasMain`·`NavKeyCanvasBGEdit`(#231)·`NavKeyCanvasToppingPlace`(#290)·`NavKeyCanvasImageSave`(#445), `NavKeyAppSetting` 등(`NavKeyCanvasEdit`·`NavKeyCanvasImageSelect`·`NavKeyCanvasMove` 셋은 도달 불가로 남아 있다가 #514에서 삭제됐다). 전체 목록은 `feature/*/api`에서 확인(모듈 목록은 [module-structure](module-structure.md)).
-- **엔트리 빌더**(각 feature `:impl`) — `entry<NavKeyXxx> { ... }`를 등록하는 함수(예: `featureLoginEntryBuilder()`). Hilt 멀티바인딩 `Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>`로 주입. **빌더 하나가 여러 entry를 등록할 수 있다** — 예: `featureCanvasEntryBuilder()`는 canvas NavKey(`Main`·`BGEdit`·`ImageSave`(#445)·`ToppingPlace`) entry를 한 함수에서 등록(`Edit`·`ImageSelect`·`Move` 셋은 #514에서 삭제).
+- **NavKey**(각 feature `:api`, `@Serializable`) — 목적지 식별. 예: `NavKeyLogin`, `NavKeySegmentation`, `NavKeyCameraCustom`. groups·app 계열은 목적지가 많다: `NavKeyGroupList`·`NavKeyGroupSetting`·`NavKeyGroupInviteCode`, canvas의 `NavKeyCanvasMain`·`NavKeyCanvasBGEdit`(#231)·`NavKeyCanvasToppingPlace`(#290)·`NavKeyCanvasImageSave`(#445)·`NavKeyCanvasTextInput`(#636), `NavKeyAppSetting` 등(`NavKeyCanvasEdit`·`NavKeyCanvasImageSelect`·`NavKeyCanvasMove` 셋은 도달 불가로 남아 있다가 #514에서 삭제됐다). 전체 목록은 `feature/*/api`에서 확인(모듈 목록은 [module-structure](module-structure.md)).
+- **엔트리 빌더**(각 feature `:impl`) — `entry<NavKeyXxx> { ... }`를 등록하는 함수(예: `featureLoginEntryBuilder()`). Hilt 멀티바인딩 `Set<EntryProviderScope<NavKey>.(Navigator) -> Unit>`로 주입. **빌더 하나가 여러 entry를 등록할 수 있다** — 예: `featureCanvasEntryBuilder()`는 canvas NavKey(`Main`·`BGEdit`·`ImageSave`(#445)·`ToppingPlace`·`TextInput`(#636)·`ToppingArrange`) entry를 한 함수에서 등록(`Edit`·`ImageSelect`·`Move` 셋은 #514에서 삭제).
 - **NavTransition**(`core:navigation`, #326 신설) — 화면 전환 한 벌(`push`·`pop`·`predictivePop`)을
   묶은 값. `metadata`로 NavEntry에 실어 화면별로 앱 기본을 덮는다 → 아래 [화면 전환](#화면-전환-2026-08-22-pr-326).
 - **MainRoute**(`app`) — 주입된 빌더 집합을 `entryProvider { }` DSL로 순회 등록. NavEntry 데코레이터 적용:
@@ -266,9 +266,10 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
   `path="/link"`와 `path="/link/"`(끝 슬래시) 정확 일치 둘만 두어 `/linkage`·`/link/ABC123`·루트를 시스템
   단계에서 거른다(루트는 랜딩 페이지라 앱으로 열면 안 된다). `toAppLinkDeepLinkOrNull`이 같은 두 경로로
   한 번 더 거르는 것은 필터와 코드가 어긋나도 엉뚱한 경로가 초대코드 화면을 열지 않게 하는 이중 장치다.
-  서버의 iOS 설정(AASA)은 `/link/*`까지 열어 두어 iOS는 하위 경로도 앱으로 열 수 있다 — 범위가 다르다.
+  서버의 iOS 설정(AASA)은 `paths: ["/link"]` 하나만 연다([api/deeplink.md](../api/deeplink.md)). 끝 슬래시 `/link/`는
+  서버(Caddy)가 404를 주므로 매니페스트의 둘째 경로는 앱 쪽 방어일 뿐이다.
 - ⚠️ **푸시와 반대로 세션이 없어도 링크를 버리지 않는다.** 위키의 푸시 규칙(미로그인이면 폐기)은 푸시
-  경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다(#612 논의). 초대
+  경로 한정이고, 초대 링크는 로그인 전에 받아도 로그인 후 초대코드 화면을 쌓기로 했다. 초대
   링크는 계정이 없는 신규 유저가 가장 먼저 누르는 경로다. `awaitAppLinkReady`가 ① 스플래시 이탈을 기다리고(스플래시의 `replaceAll`이
   쌓은 화면을 지운다) ② 세션이 없으면 `NavKeyGroupList`가 맨 위가 될 때까지 더 기다린다. 로그인(기존
   유저)과 약관 동의(신규 유저)가 둘 다 `replaceAll(NavKeyGroupList)`로 끝나므로 그 뒤에 쌓아야
@@ -391,6 +392,7 @@ NavKeyCameraCustom ─┐
                     ├─▶ NavKeyPictureConfirm(uri, source) ══▶ NavKeySegmentation(sourceImageUri)
 NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스택에 남는다)  │
                                                                               ├─ 후보 선택 (goTo) ─────────▶ NavKeyToppingEdit(source, segmentation)
+                                                                              ├─ 「직접 선택」 얼럿 (goTo) ▶ NavKeyToppingEdit(source, source)
                                                                               └─ 후보 0개·실패 (goToAndPopCurrent) ▶ NavKeyToppingEdit(isDetectionFailed = true)
                                                                                                                 │ 「다음」 (초안 기록 후 goTo)
                                                                                                                 ▼
@@ -411,6 +413,10 @@ NavKeyGalleryPicker ┘        (goToSingleClearTop — 확인 화면은 백스�
   편집 화면을 두 번 쌓지 않도록 `SegmentationRoute`는 자신이 맨 위일 때만 이동한다.
   선택 시점에는 알맹이를 파일로만 저장하고 **초안은 건드리지 않는다.** 편집 화면의 시작 마스크는 그 저장본이라
   Route가 `file` 스킴 uri로 바꿔 싣는다(`File.toUri()`가 android `Uri`라 ViewModel이 아니라 Route가 한다).
+- **C-103 선택 UI는 진입 시 「대상을 직접 선택할 수 있어요」 얼럿을 띄운다.** 누르면(`ClickManualSelect` → `GoToEditManual`)
+  원본 uri를 원본·마스크 자리 둘 다 싣고 `isDetectionFailed` 없이 편집으로 `goTo`한다(안내 토스트 없음).
+  저장 중(`isSaving`)엔 무시하고, 후보 선택과 같이 `SegmentationRoute`가 맨 위일 때만 이동한다.
+  ⚠️ 편집에서 돌아오면 얼럿이 다시 뜬다 → [open-questions](../synthesis/open-questions.md) OQ-P-438.
 - **편집 화면의 「다음」이 초안을 기록하는 한 곳이다** — `ToppingEditViewModel`이 파일 저장에 이어
   `RecordToppingDraftUseCase`로 초안을 기록한 뒤 `GoToPlace`를 내고, Route가 `goTo(NavKeyCanvasToppingPlace)`를 한다.
   **편집 화면은 배치 화면 아래 백스택에 남아** 배치 화면 헤더의 뒤로가 편집 상태 그대로인 편집 화면으로 돌아온다.
@@ -527,7 +533,7 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
   오늘 조회를 부르면 캔버스가 없는 날에는 서버가 캔버스를 새로 만들기 때문에, "화면 상태가 그대로
   다음 목적지의 인자"(그룹 설정과 같은 형태)를 여기서도 택했다.
 - **본인 토핑 탭은 다른 목적지다** — C-001에서 본인 토핑을 탭하면 `NavKeyCanvasBGEdit`가 아니라
-  `NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)`가 열린다. 아래
+  `NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId, initialIsText)`가 열린다. 아래
   [배치 수정 화면](#배치-수정-화면-navkeycanvastoppingarrange) 절.
 - **entry에서 `YGScaffold` 껍질이 걷혔다**(2026-08-22, PR #329) — 이 화면은 저장 실패를 토스트로
   알려야 해서 Route가 `YGScaffoldV2`를 직접 든다. 두 겹으로 씌우면 **인셋 패딩이 두 번 먹으므로**
@@ -540,19 +546,19 @@ NavKeyCanvasMain ─▶ NavKeyCanvasBGEdit(groupId, parfaitId) ─┬─▶ NavK
 [c105-arrange-border-merge 스펙](../superpowers/specs/archive/2026-10-02-c105-arrange-border-merge-design.md).
 
 ```
-NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId)
+NavKeyCanvasMain ─(본인 토핑 탭, 오늘 캔버스에서만)─▶ NavKeyCanvasToppingArrange(groupId, parfaitId, initialToppingId, initialIsText)
         ▲                                                          │ 확정·삭제 성공 / 그만두기 → popUpTo<NavKeyCanvasMain>
         └──────────────────────────────────────────────────────────┘
 ```
 
-- **인자 셋의 성격이 다르다** — `groupId`·`parfaitId`는 `NavKeyCanvasBGEdit`와 같은 이유로 C-001이 이미
+- **인자의 성격이 다르다** — `groupId`·`parfaitId`는 `NavKeyCanvasBGEdit`와 같은 이유로 C-001이 이미
   받아 둔 오늘 캔버스에서 온다. `initialToppingId`는 그릴 값도 동작 플래그도 아닌 **초기 포커스**이고,
   `CanvasToppingArrangeViewModel`의 `withCanvas`가 최초 방출에만 얹는다. 탭한 토핑 없이는 열 수 없어
-  null이 아니다.
-- **결과 왕복이 없다** — 테두리는 다른 목적지로 나가지 않고 화면 안 `ToppingBorderPanel`이 고친다.
-  저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤
+  null이 아니다. 이미지 id와 텍스트 id는 다른 테이블이라 값이 겹칠 수 있어 `initialIsText`가 종류를 가른다.
+- **다른 목적지로 나가지 않는다** — 테두리는 화면 안 `ToppingBorderPanel`이 고치고, 텍스트는 내용을 고치지
+  않아 C-106을 다시 열지 않는다. 저장·삭제는 이 화면이 직접 서버에 보내고 `refreshTodayParfaitDetailUseCase`를 기다린 뒤
   `popUpTo<NavKeyCanvasMain>()`으로 돌아가므로, C-001은 결과를 받지 않고 오늘 캔버스 구독으로 바뀐 값을 그린다.
-- **`NavKeyToppingEdit`의 호출자는 `SegmentationRoute` 하나다**(후보 선택 `goTo`, 분석 0건·실패 `goToAndPopCurrent`). 캔버스 쪽은 그 목적지를 열지 않는다.
+- **`NavKeyToppingEdit`의 호출자는 `SegmentationRoute` 하나다**(후보 선택·「직접 선택」 `goTo`, 분석 0건·실패 `goToAndPopCurrent`). 캔버스 쪽은 그 목적지를 열지 않는다.
 - entry는 `NavKeyCanvasBGEdit`와 같이 `Modifier.fillMaxSize()`만 넘긴다 — Route가 `YGScaffoldV2`를 직접 든다.
 - 지난 캔버스에서 본인 토핑 탭이 무반응인 것은 → [open-questions](../synthesis/open-questions.md) OQ-P-326 ③.
 
@@ -594,7 +600,7 @@ C-001 캔버스 메인
                                      비트맵 있음 ─▶ Image(bitmap)
                                      비트맵 없음 ─▶ AsyncImage(fallbackImagePath)
                                    닫기 ─▶ onBack()
-                                   갤러리에 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
+                                   사진으로 저장 ─▶ sendResult(CANVAS_SAVE_RESULT_KEY,
                                               CanvasSaveResult.Image(imagePath)) + onBack()
                                    영상으로 저장 ─▶ 녹화 레이어를 붙여 캐시에 mp4 를 만든 뒤
                                               sendResult(CanvasSaveResult.Video(videoPath)
@@ -605,7 +611,8 @@ C-001 캔버스 메인
                                    성공 ─▶ 권한 있음: SaveCapturedCanvas(bitmap)
                                            권한 없음: 런처 → 승인 시 같은 자리로 합류
                                    실패 ─▶ 토스트(canvas_main_gallery_save_failure)
-            Video       ─▶ 같은 권한 흐름 ─▶ SaveRecordedVideo(videoFilePath)
+            Video       ─▶ 같은 권한 흐름 ─▶ 승인: SaveRecordedVideo(videoFilePath)
+                                       거부: DiscardRecordedVideo + 토스트(canvas_main_gallery_save_failure)
             VideoFailed ─▶ 토스트(canvas_main_gallery_save_failure)
                       ─▶ [VM] ShowGallerySaveResult(isSuccess, date) ─▶ [Route] 토스트
 ```
@@ -617,7 +624,7 @@ C-001 캔버스 메인
 - **영상은 미리보기가 만들기까지 한다.** 녹화는 컴포지션을 프레임마다 읽는 일인데, 미리보기가 떠 있는
   동안 캔버스 메인은 컴포지션에서 빠져 있다. 그릴 재료는 캔버스 메인이 `goTo` 직전에
   `CanvasVideoSourceHolder`에 넣어 둔다. 만드는 동안 두 버튼·닫기·시스템 백이 막힌다 →
-  [canvas-topping-timelapse-video 스펙](../superpowers/specs/2026-09-21-canvas-topping-timelapse-video.md),
+  [canvas-topping-timelapse-video 스펙](../superpowers/specs/archive/2026-09-21-canvas-topping-timelapse-video.md),
   [ADR-0035](../adr/0035-canvas-video-onscreen-capture-encoding.md).
 - **ViewModel이 없는 두 번째 화면이다**(`NavKeyWebView` 이후) — navKey 인자와 전역 CanvasCaptureHolder만 읽어 그리면 되고 부를 API가 없다.
   엔트리 빌더가 `navKey`를 Route에 그대로 넘기고 Route가 `LocalResultEventBus`만 잡는다.
@@ -766,7 +773,7 @@ C-001 캔버스 메인
 `NavKeyCameraCustom`·`NavKeyCustomGalleryPicker`(뒤 둘은 #231에서 `data object` → `data class` 승격)·
 `NavKeyCanvasMain`(#268 승격 — `groupId`, **#411에서 `welcomeGroupName`·`welcomeInviteCode` 추가**)·`NavKeyGroupSetting`(#285 승격 — `groupId`)·
 `NavKeyWebView`(#296 신설 — `title`·`url`)·`NavKeyCanvasToppingPlace`(#290 신설 — `imageUri`, **#334에서 인자를 잃고 `data object`로 되돌아갔다**)·
-`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`)·`NavKeyCanvasToppingArrange`(`groupId`·`parfaitId`·`initialToppingId`)·
+`NavKeyCanvasBGEdit`(#329 승격 — `groupId`·`parfaitId`)·`NavKeyCanvasToppingArrange`(`groupId`·`parfaitId`·`initialToppingId`·`initialIsText`)·`NavKeyCanvasTextInput`(인자 없음)·
 `NavKeyCanvasImageSave`(#445 신설 — `imagePath`·`date`)).
 **#514에서 이 목록이 둘 줄었다** — `NavKeyCanvasEdit(imageUri)`·`NavKeyCanvasMove(imageUri)`가
 도달 불가 잔해로 삭제됐다(OQ-P-239 해소).

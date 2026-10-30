@@ -2,12 +2,13 @@
 <resources>
     <string name="canvas_topping_content_description">사진</string>
     <string name="canvas_main_empty_message">아직 캔버스가 비어 있어요\n친구들과 함께 남기고 싶은 순간을 캔버스에 붙여 주세요</string>
-    <string name="canvas_main_topping_add">사진 추가</string>
+    <string name="canvas_main_topping_add">추가</string>
     <string name="canvas_main_canvas_edit">배경 변경</string>
     <string name="canvas_main_save_to_gallery">갤러리에 저장</string>
     <string name="canvas_main_go_to_today">오늘의 파르페 가기</string>
     <string name="canvas_main_camera_capture">카메라로 촬영</string>
     <string name="canvas_main_gallery_select">갤러리에서 선택</string>
+    <string name="canvas_main_text_input">텍스트 입력</string>
     <string name="canvas_main_member_overflow_count">+%1$d</string>
     <string name="canvas_main_gallery_save_success">%1$d월 %2$d일의 캔버스가 갤러리에 저장됐어요</string>
     <string name="canvas_main_gallery_save_failure">갤러리 저장에 실패했어요, 나중에 다시 시도해 주세요</string>
@@ -49,6 +50,9 @@
     <string name="canvas_topping_arrange_confirm">캔버스에 쌓기</string>
     <string name="canvas_topping_arrange_others_not_editable">다른 사람의 사진은 편집할 수 없어요</string>
     <string name="canvas_topping_place_draft_unavailable">사진을 찾지 못했어요. 캔버스에서 다시 시작해 주세요.</string>
+    <string name="canvas_text_place_failed">텍스트를 쌓지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="canvas_text_place_failed_permanently">이 캔버스에는 더 쌓을 수 없어요. 닫고 다시 시작해 주세요.</string>
+    <string name="canvas_text_place_uncertain">연결이 불안정해요. 캔버스에 쌓였는지 확인한 뒤 다시 시도해 주세요.</string>
     <string name="canvas_topping_place_failed">사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="canvas_topping_place_failed_permanently">이 캔버스에는 더 올릴 수 없어요. 닫고 다시 시작해 주세요.</string>
     <string name="canvas_topping_place_image_not_ready">사진을 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
@@ -67,6 +71,10 @@
     <string name="canvas_spotlight_time_hours">%1$d시간 전</string>
     <string name="canvas_spotlight_time_days">%1$d일 전</string>
     <string name="canvas_spotlight_time_long_ago">오래전</string>
+
+    <!-- C-106-Text: 텍스트 토핑 입력 -->
+    <string name="canvas_text_input_title">배치</string>
+    <string name="canvas_text_input_placeholder">텍스트를 입력해 주세요</string>
 
     <!-- 캘린더 요일 머리글. 순서가 곧 일요일 시작 주차 배열이므로 바꾸지 않는다 -->
     <string-array name="canvas_calendar_day_of_week">

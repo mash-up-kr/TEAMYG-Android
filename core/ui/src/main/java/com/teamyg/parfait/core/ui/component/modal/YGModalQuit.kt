@@ -21,6 +21,18 @@ fun YGModalQuitAdd(
     onDismiss = onDismiss,
 )
 
+/** 텍스트 토핑 추가를 그만둘지 묻는다 */
+@Composable
+fun YGModalQuitAddText(
+    onConfirmQuit: () -> Unit,
+    onDismiss: () -> Unit,
+) = YGModalQuit(
+    titleRes = CoreR.string.yg_modal_quit_add_text_title,
+    continueRes = CoreR.string.yg_modal_quit_continue_add,
+    onConfirmQuit = onConfirmQuit,
+    onDismiss = onDismiss,
+)
+
 /** 사진 편집을 그만둘지 묻는다 */
 @Composable
 fun YGModalQuitEdit(
@@ -69,6 +81,12 @@ private fun YGModalQuit(
 @Composable
 private fun YGModalQuitAddPreview() = PreviewBox {
     YGModalQuitAdd(onConfirmQuit = {}, onDismiss = {})
+}
+
+@YGPreview
+@Composable
+private fun YGModalQuitAddTextPreview() = PreviewBox {
+    YGModalQuitAddText(onConfirmQuit = {}, onDismiss = {})
 }
 
 @YGPreview

@@ -2,8 +2,8 @@
 id: parfait-image
 title: 토핑 배치(배치 확정·위치/크기/각도 수정·일괄 수정·테두리 수정·삭제)
 server_module: http/parfaitimage
-server_commit: d76b27a
-verified: 2026-09-10
+server_commit: ed65131
+verified: 2026-10-27
 android_status: done
 related_spec: 2026-08-15-parfait-canvas-topping-member-api-service-layer
 related_adr: ADR-0017
@@ -53,6 +53,30 @@ tags: [api, parfait, server-contract, parfait-image]
 ⚠️ **컬렉션 경로 하나에 POST와 PATCH가 서로 다른 컨트롤러로 걸려 있다** — `PlaceParfaitImageController`가
 `@PostMapping`, `UpdateParfaitImagesController`가 **경로 인자 없는 `@PatchMapping`**을 갖는다. 즉 같은
 URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
+
+**캔버스 위 토핑은 이미지와 텍스트 두 종류다.** 텍스트의 배치·수정·삭제는 형제 경로
+`.../parfaits/{parfaitId}/texts`가 맡고 [parfait-text.md](parfait-text.md)에 있다. 다만 **위치·크기·각도
+일괄 수정은 이 도메인의 일괄 PATCH 하나가 텍스트까지 받는다**(`textItems`, 아래). 경로와 컨트롤러
+(`UpdateParfaitImagesController`)는 `images` 쪽이다.
+
+### 캔버스 version 증가(다섯 엔드포인트 공통)
+
+다섯 서비스(`PlaceParfaitImageService`·`UpdateParfaitImageService`·`UpdateParfaitImagesService`·
+`UpdateParfaitImageBorderService`·`DeleteParfaitImageService`)가 전부 같은 트랜잭션 안에서
+`ParfaitVersionService.bump(parfaitId)`를 부른다. 이 값이 v2 오늘 조회의 `ETag`에 들어간다
+→ [parfait.md](parfait.md) "GET /api/v2/groups/{groupId}/parfaits/today".
+
+- **호출 위치는 모든 검증이 끝난 뒤, 행 쓰기 바로 앞이다.** 그래서 4xx로 끝난 요청은 version을 올리지
+  않는다. 일괄 PATCH는 항목 수와 상관없이 **요청당 한 번** 올린다. `items`·`textItems`가 둘 다 비면
+  검증 전에 끝나므로 version도 안 오른다.
+- ⚠️ **값이 실제로 안 바뀌어도 version은 오른다.** 빈 바디 `{}` 위치 PATCH나 같은 값으로 보낸 테두리
+  PATCH도 성공이면 version이 올라, 다른 구성원의 다음 폴링은 304가 아니라 200 전체 본문을 받는다.
+- **같은 캔버스에 대한 쓰기는 이 지점에서 직렬화된다.** `bump`가 부모 `parfait` 행을 UPDATE해 배타
+  락을 먼저 잡는다. 목적은 데드락 방지다. `parfait_image` INSERT는 FK 검사 때문에 부모 행에 공유 락을
+  걸고, 그 뒤에 같은 행을 UPDATE하면 락 승격이 필요하다. 그러면 동시 배치 둘이 서로를 기다린다
+  (MySQL 1213). 근거는 서비스 주석과 `ConcurrentPlaceDeadlockTest`(Testcontainers MySQL, 동시 새 배치
+  반복)다. 앱 쪽에서 보이는 효과는 **같은 캔버스에 동시에 보낸 쓰기가 서로를 기다려 지연될 수 있다**는
+  것뿐이다. 실패 코드는 늘지 않았다.
 
 ⚠️ **`images`라는 세그먼트가 두 도메인에 있다.** 최상위 `/api/v1/images`는 업로드([image.md](image.md)),
 그룹 하위 `.../parfaits/{parfaitId}/images`는 배치다. 두 경로의 `imageId`와 `parfaitImageId`는
@@ -242,9 +266,10 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 
 ### PATCH /api/v1/groups/{groupId}/parfaits/{parfaitId}/images (일괄 수정)
 
-`feat: 토핑 여러 개를 한 번에 수정하는 배치 API 추가`(PR #119)로 신설됐다. 단건 위치 PATCH를
-개수만큼 반복 호출하던 것을 **요청 하나로 접는다** — 커밋 본문이 밝힌 동기가 그것이고, 앱이 실제로
-`async` + `awaitAll`로 단건을 병렬 호출하고 있다([Android 매핑](#android-매핑)).
+이미지와 **텍스트**의 위치·크기·각도를 요청 하나, 트랜잭션 하나로 고친다. 텍스트까지 받는 이유는
+서버 커밋 본문이 밝힌다. 요청이 나뉘면 일부만 성공해 캔버스가 어긋나고, 다른 구성원이 그 중간 상태를
+폴링할 수 있어서다. 텍스트 **스타일**(`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`)은 여기서 못 바꾸고 텍스트
+단건 PATCH만 바꾼다([parfait-text.md](parfait-text.md)).
 
 - **인증**: 필요.
 - **성공**: HTTP 200 · envelope `code` = `"OK"`(`ApiResponse.ok`, `@ResponseStatus` 없음)
@@ -252,9 +277,13 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 
 | 필드 | 타입 | 필수 | 비고 |
 |---|---|---|---|
-| `items` | List<객체> | 필수(non-null 타입) | 수정할 배치 목록 |
+| `items` | List<객체> | 선택(기본값 `[]`) | 수정할 이미지 배치 목록 |
+| `textItems` | List<객체> | 선택(기본값 `[]`) | 수정할 텍스트 배치 목록 |
 
-  항목(`UpdateParfaitImageItemRequest`) 필드는 **`parfaitImageId`(Long, 비널) + 단건 PATCH의 다섯 필드**다.
+  두 필드 모두 Kotlin 기본값 `emptyList()`가 있어 **키를 빼도 400이 아니다.** 이미지만 고치는 기존
+  요청(`items`만)은 그대로 유효하다.
+
+  이미지 항목(`UpdateParfaitImageItemRequest`) 필드는 **`parfaitImageId`(Long, 비널) + 단건 PATCH의 다섯 필드**다.
 
 | 필드 | 타입 | 필수 | 비고 |
 |---|---|---|---|
@@ -268,9 +297,25 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
   **병합 규칙이 단건 PATCH와 같다** — 항목마다 `ParfaitImage.update`를 그대로 태우므로 `null` 필드는
   기존 값을 유지한다. 테두리는 여기서도 다루지 않는다.
 
-  ⚠️ **`items`가 빈 배열이면 검증을 하나도 돌지 않고 200 + `images: []`다.** `UpdateParfaitImagesService`가
-  `items.isEmpty()`면 즉시 `emptyList()`를 반환해 **그룹 소속·파르페 존재·마감 검사보다 앞에서 끊는다** —
-  그룹 밖 사람이 빈 요청을 보내도 403이 아니라 200이다.
+  텍스트 항목(`UpdateParfaitTextItemRequest`) 필드는 **`parfaitTextId`(Long, 비널) + 같은 다섯 필드**다.
+
+| 필드 | 타입 | 필수 | 비고 |
+|---|---|---|---|
+| `parfaitTextId` | Long | 필수(non-null 타입) | 수정 대상 텍스트 배치 행 |
+| `positionX` · `positionY` | Double? | 선택 | `null`이면 기존 값 유지 |
+| `positionZ` | Int? | 선택 | |
+| `scale` · `rotation` | Double? | 선택 | |
+
+  텍스트 항목은 `ParfaitText.update`를 탄다. 그래서 **병합 뒤 값을 도메인 검증에 다시 넣는다** —
+  `scale`이 0 이하이거나 좌표·각도·배율이 유한하지 않으면 400 `INVALID_TEXT_STYLE`이다
+  ([parfait-text.md](parfait-text.md) "검증 규칙").
+  ⚠️ **같은 요청 안에서 이미지와 텍스트의 검증이 비대칭이다.** 이미지 항목의 `scale: 0`은 그대로
+  저장되고, 텍스트 항목의 `scale: 0`은 요청 전체를 400으로 롤백시킨다.
+
+  ⚠️ **`items`와 `textItems`가 둘 다 비면 검증을 하나도 돌지 않고 200 + `images: []`·`texts: []`다.**
+  `UpdateParfaitImagesService`가 둘 다 비었을 때 즉시 빈 결과를 반환해 **그룹 소속·파르페 존재·마감
+  검사보다 앞에서 끊는다** — 그룹 밖 사람이 빈 요청을 보내도 403이 아니라 200이다. 한쪽만 비어 있으면
+  끊지 않고 아래 검사를 전부 돈다.
   근거: `UpdateParfaitImagesServiceTest` "항목이 비어있으면 조회·저장 없이 빈 목록을 반환한다".
 
   ⚠️ **검증 애노테이션도 `@Valid`도 없고 `items` 개수 상한도 없다.** 이 도메인의 다른 요청 DTO와 같은
@@ -281,26 +326,41 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 
 | JSON 키 | 타입 | 널 허용 | 비고 |
 |---|---|---|---|
-| `images` | List<객체> | 아니오 | 갱신된 배치 목록. 0건이면 **빈 배열** |
+| `images` | List<객체> | 아니오 | 갱신된 이미지 배치 목록. 0건이면 **빈 배열** |
+| `texts` | List<객체> | 아니오 | 갱신된 텍스트 배치 목록. 0건이면 **빈 배열**(`null` 아님) |
 
-  원소는 **단건 PATCH 응답 DTO를 그대로 재사용한다**(`UpdateParfaitImageResponse`) —
+  `images` 원소는 **단건 PATCH 응답 DTO를 그대로 재사용한다**(`UpdateParfaitImageResponse`) —
   `parfaitImageId` · `positionX`/`positionY`(Double) · `positionZ`(Int) · `scale`/`rotation`(Double).
   단건과 마찬가지로 `imageId`·`imageUrl`·`placedBy`·테두리 3필드가 없다.
+
+  `texts` 원소는 **텍스트 단건 PATCH 응답 DTO**(`UpdateParfaitTextResponse`)다. 위치 다섯 필드에 더해
+  `text`·`color`·`fontSize`·`isFill`·`isStroke`·`textAlign`까지 저장된 값을 돌려준다. `placedBy`·`createdAt`은 없다.
+  필드 표는 [parfait-text.md](parfait-text.md) PATCH 절.
+
   **순서는 `saveAll` 반환 순서**이고 요청 항목 순서와 같다고 계약이 보장하지 않는다 — 소비 측은
-  `parfaitImageId`로 맞춰야 한다.
+  `parfaitImageId`·`parfaitTextId`로 맞춰야 한다.
 
 - **에러 코드**
 
 | HTTP | code | 의미 |
 |---|---|---|
-| 400 | `INVALID_REQUEST` | 바디 형식 오류 · `items` 누락 · 항목의 `parfaitImageId` 누락(`CommonErrorCode`) |
-| 403 | `PARFAIT_IMAGE_NOT_OWNED` | **그룹 미참여** · 항목 중 하나라도 본인이 배치한 토핑이 아님(`ParfaitImageErrorCode`) |
+| 400 | `INVALID_REQUEST` | 바디 형식 오류 · 항목의 `parfaitImageId`·`parfaitTextId` 누락(`CommonErrorCode`) |
+| 403 | `PARFAIT_IMAGE_NOT_OWNED` | **그룹 미참여**(텍스트만 보낸 요청도 이 코드) · 이미지 항목 중 하나라도 본인이 배치한 토핑이 아님(`ParfaitImageErrorCode`) |
 | 404 | `PARFAIT_NOT_FOUND` | `parfaitId`가 그 그룹의 파르페가 아님(`ParfaitImageErrorCode`) |
 | 409 | `PARFAIT_ALREADY_CLOSED` | 파르페 `status`가 `ACTIVE`가 아님(**`ParfaitErrorCode`**) |
-| 404 | `PARFAIT_IMAGE_NOT_FOUND` | 항목 중 하나라도 부재이거나 그 배치의 `parfaitId`가 경로와 다름(`ParfaitImageErrorCode`) |
+| 404 | `PARFAIT_IMAGE_NOT_FOUND` | 이미지 항목 중 하나라도 부재이거나 그 배치의 `parfaitId`가 경로와 다름(`ParfaitImageErrorCode`) |
+| 404 | `PARFAIT_TEXT_NOT_FOUND` | 텍스트 항목 중 하나라도 부재이거나 그 배치의 `parfaitId`가 경로와 다름(**`ParfaitTextErrorCode`**) |
+| 403 | `PARFAIT_TEXT_NOT_OWNED` | 텍스트 항목 중 하나라도 본인이 배치한 텍스트가 아님(**`ParfaitTextErrorCode`**) |
+| 400 | `INVALID_TEXT_STYLE` | 텍스트 항목 병합 결과가 검증 실패(`scale` 0 이하 등, **`ParfaitTextErrorCode`**) |
 | 401 | `UNAUTHORIZED` 외 | 전역 인증(`AuthErrorCode`) |
 
-  **검사 순서**: 빈 항목 → **그룹 소속 → 파르페 존재 → 파르페 상태** → (항목마다) 배치 존재 → 소유권.
+  **검사 순서**: 빈 요청(둘 다 빔) → **그룹 소속 → 파르페 존재 → 파르페 상태** → (이미지 항목마다)
+  배치 존재 → 소유권 → (텍스트 항목마다) 배치 존재 → 소유권 → 병합 검증. 이미지 항목을 전부 본 뒤에
+  텍스트 항목을 본다. 그래서 이미지 쪽에 걸리는 항목이 있으면 텍스트 쪽 오류는 나오지 않는다.
+
+  ⚠️ **텍스트만 보낸 요청도 요청 단위 실패는 이미지 도메인 코드로 나간다.** 그룹 미참여는
+  `PARFAIT_IMAGE_NOT_OWNED`, 파르페 부재는 `ParfaitImageErrorCode.PARFAIT_NOT_FOUND`다. 텍스트 단건 경로가
+  미참여를 `PARFAIT_TEXT_NOT_OWNED`로 내는 것과 다르다.
 
   ⚠️ **단건 PATCH와 검사 순서가 뒤집혀 있다.** 단건은 배치 존재 → 소유권 → 파르페 존재 → 파르페 상태라
   소유권이 마감보다 **앞**이고, 일괄은 마감이 소유권보다 **앞**이다. 결과가 갈린다 — **마감된 캔버스에서
@@ -310,9 +370,10 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
   ⚠️ **그룹 미참여도 `PARFAIT_IMAGE_NOT_OWNED`(403)다** — 단건·테두리·삭제와 같은 처리이고 POST만
   `GROUP_NOT_JOINED`로 구분한다.
 
-  ⚠️ **부분 성공이 없다.** `@Transactional` 하나로 묶여 있어 항목 하나가 404·403을 내면 앞서 병합된
-  항목들도 **전부 롤백**된다. 어느 항목이 걸렸는지는 응답에 없다 — 코드만 오고 `parfaitImageId`는 안 온다
-  → [미결](#미결).
+  ⚠️ **부분 성공이 없다.** `@Transactional` 하나로 묶여 있어 항목 하나가 404·403·400을 내면 앞서 병합된
+  항목들도 **전부 롤백**된다. 이미지와 텍스트 사이도 마찬가지다 — 남의 텍스트가 하나 섞이면 이미지도
+  저장되지 않는다(`UpdateParfaitImagesServiceTest`가 잠근다). 어느 항목이 걸렸는지는 응답에 없다 —
+  코드만 오고 `parfaitImageId`·`parfaitTextId`는 안 온다 → [미결](#미결).
 
   ⚠️ **같은 `parfaitImageId`를 중복해 보내도 막지 않는다.** `findAllByIds` 결과를 id로 색인해 항목마다
   꺼내 쓰므로 중복 항목은 같은 행을 두 번 병합하고 `saveAll`에도 두 번 실려, 응답 `images`에 같은
@@ -429,6 +490,9 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 | 403 | `PARFAIT_IMAGE_NOT_OWNED` | 본인이 배치한 토핑이 아닙니다 | 위치 PATCH · **일괄 PATCH** · 테두리 PATCH · DELETE |
 | 409 | `IMAGE_NOT_CONFIRMED` | 업로드가 확인되지 않은 이미지입니다 | POST |
 
+**일괄 PATCH는 `ParfaitTextErrorCode` 셋도 던진다** — `PARFAIT_TEXT_NOT_FOUND`(404) ·
+`PARFAIT_TEXT_NOT_OWNED`(403) · `INVALID_TEXT_STYLE`(400). 전수는 [parfait-text.md](parfait-text.md).
+
 이 도메인은 자기 enum 밖의 코드도 던진다 — `ImageErrorCode.IMAGE_NOT_FOUND`(404),
 `ParfaitGroupApiErrorCode.GROUP_NOT_JOINED`(403), 그리고 **2026-08-20부터
 `ParfaitErrorCode.PARFAIT_ALREADY_CLOSED`(409)가 다섯 엔드포인트 전부에서** 나간다
@@ -491,9 +555,14 @@ URL이 메서드로 갈려 배치 확정과 일괄 수정을 나눠 맡는다.
 |---|---|
 | `POST .../parfaits/{parfaitId}/images` | `ParfaitImageService.postGroupsByGroupIdParfaitsByParfaitIdImages` → `ParfaitImageRemoteDataSource.placeTopping(groupId, parfaitId, imageId, transform, border)` |
 | `PATCH .../images/{parfaitImageId}` | **없음**(2026-08-31 걷어냄 — 소비처가 없어졌다) |
-| `PATCH .../parfaits/{parfaitId}/images`(일괄) | `ParfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages` → `ParfaitImageRemoteDataSource.updateToppings(groupId, parfaitId, updates)` |
+| `PATCH .../parfaits/{parfaitId}/images`(일괄) | `ParfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImages` → `ParfaitImageRemoteDataSource.updateToppings(groupId, parfaitId, updates)` · 이미지 쪽만(아래) |
 | `PATCH .../images/{parfaitImageId}/border` | `ParfaitImageService.patchGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageIdBorder` → `ParfaitImageRemoteDataSource.updateToppingBorder(groupId, parfaitId, parfaitImageId, border)` |
 | `DELETE .../images/{parfaitImageId}` | `ParfaitImageService.deleteGroupsByGroupIdParfaitsByParfaitIdImagesByParfaitImageId` → `ParfaitImageRemoteDataSource.deleteTopping(groupId, parfaitId, parfaitImageId)` |
+
+**일괄 PATCH의 텍스트 쪽은 DTO까지만 있다.** `UpdateParfaitImagesRequest.textItems`
+(`UpdateParfaitTextItemRequest`, 기본 `[]`)와 `UpdateParfaitImagesResponse.texts`(`UpdateParfaitTextResponse`,
+기본 `[]`)는 있지만 `ParfaitImageRemoteDataSource.updateToppings`는 이미지 항목만 받아 `textItems`를 늘 빈 배열로
+보낸다(`encodeDefaults = true`라 키는 실린다) → [parfait-text.md](parfait-text.md) Android 매핑.
 
 **테두리 수정은 nullable 파라미터가 아니라 `ToppingBorder` 하나를 받는다.** 서버가 세 필드를 통째로
 덮기 때문이다(위치 수정의 부분 병합과 다르다). sealed를 그대로 받으므로 `SOLID`인데 색·두께가 빠지는
@@ -640,6 +709,11 @@ id를 `dirtyToppingIds`에 남겨 다음 확인이 그것만 재시도하고, `C
   > 가 받은 값을 `WIDTH_RANGE_DP`(2.0..30.0)에 넣는다. 상한을 내리기 전에 50 으로 저장된 행이
   > 이미 있어 슬라이더만 좁히면 그 행이 계속 굵게 그려지기 때문이고, **서버나 정책이 범위를
   > 정하면 걷을 자리다** → 같은 문서 OQ-P-381.
+  > 📌 **서버의 "테두리 두께 2.0 고정"은 그룹 목록 응답에만 걸린다**(`ParfaitGroupService`의
+  > `recentImageBorderWidth`, 값이 있으면 2.0) → [parfait-group.md](parfait-group.md). 이 도메인의 배치·
+  > 테두리 PATCH는 `borderWidth`를 여전히 검증 없이 저장하고, 캔버스 조회도 저장값을 그대로 준다.
+  > 그래서 이 문서의 계약 서술은 바뀌지 않는다. 다만 같은 토핑이 그룹 목록에서는 2.0, 캔버스에서는
+  > 저장값으로 내려와 두 화면의 두께가 다를 수 있다.
   > ⚠️ **앱 쪽 상한도 하나 사라졌다**(2026-08-23, PR #335) — C-301 편집 탭의 `TOPPING_MAX_SCALE`이
   > 삭제돼 배율을 막는 자리가 양쪽 어디에도 없다 → 같은 문서 OQ-P-271.
   > ⚠️ **그 값이 하루 만에 요청 값이 됐다**(2026-08-23, PR #336) — 확인 버튼이 `scale`·`rotation`을
@@ -650,8 +724,8 @@ id를 `dirtyToppingIds`에 남겨 다음 확인이 그것만 재시도하고, `C
   이미지가 걸린다 → [open-questions](../synthesis/open-questions.md)
 - 삭제의 S3 호출이 트랜잭션 안에 있어 커밋 실패 시 DB와 S3가 갈린다
   → [open-questions](../synthesis/open-questions.md)
-- 일괄 PATCH에 `items` 개수 상한이 없고, 실패해도 **어느 항목이 걸렸는지 응답에 없다**(코드만 오고
-  `parfaitImageId`는 안 온다) → [open-questions](../synthesis/open-questions.md) OQ-P-334
+- 일괄 PATCH에 `items`·`textItems` 개수 상한이 없고, 실패해도 **어느 항목이 걸렸는지 응답에 없다**
+  (코드만 오고 `parfaitImageId`·`parfaitTextId`는 안 온다) → [open-questions](../synthesis/open-questions.md) OQ-P-334
 - 같은 수정을 단건과 일괄이 **다른 검사 순서**로 처리해 마감된 캔버스의 남의 토핑에 서로 다른 코드를
   낸다(403 vs 409) → [open-questions](../synthesis/open-questions.md) OQ-P-334
 

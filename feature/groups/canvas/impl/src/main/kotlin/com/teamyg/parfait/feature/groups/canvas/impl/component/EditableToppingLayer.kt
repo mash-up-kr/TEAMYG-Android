@@ -20,21 +20,31 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.core.util.jvm.outline.ToppingOutline
 import com.teamyg.parfait.feature.groups.canvas.impl.R
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
+import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.util.canvasLayerComparator
 import com.teamyg.parfait.feature.groups.canvas.impl.util.computeToppingButtonPoints
+import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingImageSize
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toppingLongSide
@@ -126,6 +136,120 @@ internal fun rememberEditableToppingHitEntries(
 }
 
 /**
+ * @param target 박스를 아직 재지 못했으면 null 이고 판정에서 빠진다.
+ */
+internal data class EditableTextEntry(
+    val text: EditableText,
+    val center: DpOffset,
+    val target: ToppingHitTarget?,
+)
+
+/** @param boxSizes scale 을 곱하기 전 박스 크기 */
+@Composable
+internal fun rememberEditableTextEntries(
+    texts: List<EditableText>,
+    canvasWidth: Dp,
+    canvasHeight: Dp,
+    boxSizes: Map<Long, IntSize>,
+): List<EditableTextEntry> {
+    val density = LocalDensity.current
+
+    return texts.map { text ->
+        val center = toppingCenter(
+            canvasWidth = canvasWidth,
+            canvasHeight = canvasHeight,
+            positionX = text.positionX,
+            positionY = text.positionY,
+        )
+        EditableTextEntry(
+            text = text,
+            center = center,
+            target = boxSizes[text.parfaitTextId]?.let { boxSize ->
+                with(density) {
+                    textToppingHitTarget(
+                        centerXPx = center.x.toPx(),
+                        centerYPx = center.y.toPx(),
+                        boxWidthPx = boxSize.width.toFloat(),
+                        boxHeightPx = boxSize.height.toFloat(),
+                        scale = text.scale,
+                        rotationDegrees = text.rotationDegrees,
+                    )
+                }
+            },
+        )
+    }
+}
+
+internal sealed interface EditableLayerEntry {
+    val key: CanvasToppingKey
+    val isMine: Boolean
+    val target: ToppingHitTarget?
+
+    data class Image(val entry: EditableToppingHitEntry) : EditableLayerEntry {
+        override val key get() = CanvasToppingKey.Image(entry.topping.parfaitImageId)
+        override val isMine get() = entry.topping.isMine
+        override val target get() = entry.target
+    }
+
+    data class Text(val entry: EditableTextEntry) : EditableLayerEntry {
+        override val key get() = CanvasToppingKey.Text(entry.text.parfaitTextId)
+        override val isMine get() = entry.text.isMine
+        override val target get() = entry.target
+    }
+}
+
+/** 아래에서 위로. 캔버스 메인과 같은 겹침 규칙([canvasLayerComparator])이다 */
+internal fun editableLayerOrder(
+    images: List<EditableToppingHitEntry>,
+    texts: List<EditableTextEntry>,
+): List<EditableLayerEntry> {
+    val layers = images.map { EditableLayerEntry.Image(it) } + texts.map { EditableLayerEntry.Text(it) }
+    return layers.sortedWith(
+        canvasLayerComparator(
+            positionZ = { layer ->
+                when (layer) {
+                    is EditableLayerEntry.Image -> layer.entry.topping.positionZ
+                    is EditableLayerEntry.Text -> layer.entry.text.positionZ
+                }
+            },
+            isText = { it is EditableLayerEntry.Text },
+            id = { layer ->
+                when (layer) {
+                    is EditableLayerEntry.Image -> layer.entry.topping.parfaitImageId
+                    is EditableLayerEntry.Text -> layer.entry.text.parfaitTextId
+                }
+            },
+        ),
+    )
+}
+
+@Composable
+internal fun EditableTextTopping(
+    entry: EditableTextEntry,
+    canvasWidth: Dp,
+    onBoxSizeChange: (IntSize) -> Unit,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val text = entry.text
+
+    PlacedTextTopping(
+        text = text.text,
+        color = text.color,
+        type = text.type,
+        align = text.align,
+        designFontSize = text.designFontSize,
+        center = entry.center,
+        scale = text.scale,
+        rotationDegrees = text.rotationDegrees,
+        canvasWidth = canvasWidth,
+        onBoxSizeChange = onBoxSizeChange,
+        onClick = onClick,
+        modifier = modifier.testTag("editable_text_${text.parfaitTextId}"),
+    )
+}
+
+/**
  * 캔버스 미리보기 박스 안, 저장된 배치([EditableTopping.positionX]/[positionY])대로 겹쳐 그리는
  * 이미지. 캔버스 메인([CanvasToppingLayer])과 같은 규칙을 써야 편집한 그대로 돌아간다.
  *
@@ -194,7 +318,7 @@ internal fun EditableToppingImage(
 }
 
 /**
- * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼.
+ * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼. 이미지·텍스트 모두 판정 박스([target])를 감싼다.
  *
  * @param center 선택 박스를 두는 자리. 이미지를 그린 자리와 같아야 한다
  * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
@@ -202,7 +326,7 @@ internal fun EditableToppingImage(
  */
 @Composable
 internal fun ToppingFocusDecoration(
-    entry: EditableToppingHitEntry,
+    target: ToppingHitTarget,
     center: DpOffset,
     onClickDelete: () -> Unit,
     showActionButtons: Boolean,
@@ -210,19 +334,19 @@ internal fun ToppingFocusDecoration(
 ) {
     val density = LocalDensity.current
     val sizeAfterScale = with(density) {
-        DpSize(entry.target.imageWidthPx.toDp(), entry.target.imageHeightPx.toDp())
+        DpSize(target.imageWidthPx.toDp(), target.imageHeightPx.toDp())
     }
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
-        rotationDegrees = entry.topping.rotationDegrees,
+        rotationDegrees = target.rotationDegrees,
     )
 
     Box(modifier = modifier) {
         ToppingSelectionStroke(
             center = center,
             sizeAfterScale = sizeAfterScale,
-            rotationDegrees = entry.topping.rotationDegrees,
+            rotationDegrees = target.rotationDegrees,
         )
         if (showActionButtons) {
             YGCircleButton(
@@ -234,4 +358,31 @@ internal fun ToppingFocusDecoration(
             )
         }
     }
+}
+
+@YGPreview
+@Composable
+private fun PreviewEditableTextTopping() = PreviewBox {
+    EditableTextTopping(
+        entry = EditableTextEntry(
+            text = EditableText(
+                parfaitTextId = 1L,
+                isMine = true,
+                text = "오늘의 파르페",
+                color = TextToppingColor.Black,
+                type = TextToppingType.FILL,
+                align = TextAlign.Center,
+                designFontSize = 18f,
+                positionX = 0.5f,
+                positionY = 0.5f,
+                positionZ = 0,
+                rotationDegrees = -10f,
+            ),
+            center = DpOffset(160.dp, 80.dp),
+            target = null,
+        ),
+        canvasWidth = 320.dp,
+        onBoxSizeChange = {},
+        onClick = null,
+    )
 }

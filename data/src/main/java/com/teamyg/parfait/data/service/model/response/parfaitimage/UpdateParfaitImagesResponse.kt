@@ -1,5 +1,6 @@
 package com.teamyg.parfait.data.service.model.response.parfaitimage
 
+import com.teamyg.parfait.data.service.model.response.parfaittext.UpdateParfaitTextResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,5 +13,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UpdateParfaitImagesResponse(
     @SerialName("images")
-    val images: List<UpdateParfaitImageResponse>,
+    val images: List<UpdateParfaitImageResponse> = emptyList(),
+    @SerialName("texts")
+    val texts: List<UpdateParfaitTextResponse> = emptyList(),
 )

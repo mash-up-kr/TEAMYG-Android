@@ -65,7 +65,7 @@ class YGAlertPolicy {
         )
     }
 
-    internal fun clearAlert() {
+    fun dismiss() {
         alert = null
     }
 }
@@ -104,7 +104,7 @@ fun YGAlertHost(
                                 if (dragOffsetY < SWIPE_DISMISS_THRESHOLD || velocity < FLING_DISMISS_VELOCITY) {
                                     dragOffsetY = 0f
                                     scope.launch {
-                                        policy.clearAlert()
+                                        policy.dismiss()
                                     }
                                 } else {
                                     dragOffsetY = 0f

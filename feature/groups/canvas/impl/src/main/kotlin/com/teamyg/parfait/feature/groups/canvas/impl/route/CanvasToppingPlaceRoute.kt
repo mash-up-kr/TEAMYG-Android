@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -29,8 +29,11 @@ internal fun CanvasToppingPlaceRoute(
     viewModel: CanvasToppingPlaceViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val toastPolicy = rememberYGToastPolicy()
+    val draftUnavailableMessage = stringResource(R.string.canvas_topping_place_draft_unavailable)
+    val placeFailedMessage = stringResource(R.string.canvas_topping_place_failed)
+    val placeFailedPermanentlyMessage = stringResource(R.string.canvas_topping_place_failed_permanently)
+    val toppingImageNotReadyMessage = stringResource(R.string.canvas_topping_place_image_not_ready)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -42,7 +45,7 @@ internal fun CanvasToppingPlaceRoute(
                 // 알리고 화면엔 남는다 — 여기서 되감으면 이 Route에 매달린 toastPolicy까지 같이
                 // 폐기돼 안내가 잔상으로 끝난다. 닫기 버튼이 이미 있어 막다른 곳도 아니다
                 CanvasToppingPlaceEffect.DraftMissing -> {
-                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_draft_unavailable))
+                    toastPolicy.showError(draftUnavailableMessage)
                 }
 
                 // 캔버스를 새로 쌓지 않고 원래 자리로 되감는다. 새로 쌓으면 방금 끝난 토핑 만들기
@@ -51,16 +54,16 @@ internal fun CanvasToppingPlaceRoute(
                 CanvasToppingPlaceEffect.PlaceSucceeded -> navigator.popUpTo<NavKeyCanvasMain>()
 
                 CanvasToppingPlaceEffect.PlaceFailed -> {
-                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed))
+                    toastPolicy.showError(placeFailedMessage)
                 }
 
                 // DraftMissing과 같은 이유로 되감지 않는다(위 주석 참고)
                 CanvasToppingPlaceEffect.PlaceFailedPermanently -> {
-                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_failed_permanently))
+                    toastPolicy.showError(placeFailedPermanentlyMessage)
                 }
 
                 CanvasToppingPlaceEffect.ToppingImageNotReady -> {
-                    toastPolicy.showError(context.getString(R.string.canvas_topping_place_image_not_ready))
+                    toastPolicy.showError(toppingImageNotReadyMessage)
                 }
             }
         }

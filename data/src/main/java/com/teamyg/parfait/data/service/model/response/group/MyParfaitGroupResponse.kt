@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
  *   recentImageUrl 과 다른 토핑을 가리킨다. 토핑이 없으면 그룹 생성자의 칩이고, 마지막 토퍼가 이미 그룹을
  *   나갔으면 `"DEFAULT"` 가 온다.
  */
+@Deprecated("텍스트 토핑을 세지 않는 v1 응답이다", ReplaceWith("MyParfaitGroupV2Response"))
 @Serializable
 data class MyParfaitGroupResponse(
     @SerialName("groupId")

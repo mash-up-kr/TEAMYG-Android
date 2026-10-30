@@ -8,6 +8,7 @@ import com.teamyg.parfait.data.service.NotificationService
 import com.teamyg.parfait.data.service.ParfaitGroupService
 import com.teamyg.parfait.data.service.ParfaitImageService
 import com.teamyg.parfait.data.service.ParfaitService
+import com.teamyg.parfait.data.service.ParfaitTextService
 import com.teamyg.parfait.data.service.PolicyService
 import dagger.Module
 import dagger.Provides
@@ -59,6 +60,11 @@ object ServiceModule {
     @Singleton
     fun provideParfaitImageService(retrofit: Retrofit): ParfaitImageService =
         retrofit.create(ParfaitImageService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideParfaitTextService(retrofit: Retrofit): ParfaitTextService =
+        retrofit.create(ParfaitTextService::class.java)
 
     @Provides
     @Singleton

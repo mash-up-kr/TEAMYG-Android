@@ -5,7 +5,7 @@ import com.teamyg.parfait.data.service.model.response.group.CreateParfaitGroupRe
 import com.teamyg.parfait.data.service.model.response.group.JoinParfaitGroupResponse
 import com.teamyg.parfait.data.service.model.response.group.LeaveParfaitGroupResponse
 import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupDetailResponse
-import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupResponse
+import com.teamyg.parfait.data.service.model.response.group.MyParfaitGroupV2Response
 import com.teamyg.parfait.data.service.model.response.group.ParfaitGroupMemberResponse
 import com.teamyg.parfait.data.service.model.response.group.PreviewParfaitGroupJoinResponse
 import com.teamyg.parfait.data.service.model.response.group.ReportParfaitGroupResponse
@@ -25,12 +25,14 @@ import com.teamyg.parfait.domain.model.group.ReportedGroupVO
 import com.teamyg.parfait.domain.model.id.GroupId
 import com.teamyg.parfait.domain.model.id.MemberId
 import com.teamyg.parfait.domain.model.id.ReportId
+import com.teamyg.parfait.domain.model.topping.ToppingContentType
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toInstant
 
-internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyParfaitGroupVO(
+internal fun MyParfaitGroupV2Response.toMyParfaitGroupVO(): MyParfaitGroupVO = MyParfaitGroupVO(
     groupId = GroupId(groupId),
     groupName = GroupName(groupName),
+    recentToppingType = recentToppingType?.toToppingType(),
     recentImageUrl = recentImageUrl,
     recentImageBorder = toToppingBorder(
         borderType = recentImageBorderType,
@@ -44,6 +46,9 @@ internal fun MyParfaitGroupResponse.toMyParfaitGroupVO(): MyParfaitGroupVO = MyP
         ?.toInstant(PARFAIT_TIME_ZONE),
     lastPlacedByNametagChip = lastPlacedByNameTagChip.toNametagChipType(),
 )
+
+private fun String.toToppingType(): ToppingContentType =
+    ToppingContentType.entries.firstOrNull { it.name == this } ?: ToppingContentType.UNKNOWN
 
 internal fun MyParfaitGroupDetailResponse.toParfaitGroupDetailVO(): ParfaitGroupDetailVO = ParfaitGroupDetailVO(
     groupId = GroupId(groupId),
