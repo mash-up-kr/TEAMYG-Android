@@ -1,7 +1,7 @@
 ---
 id: fixed-font-scale-text
 title: 시스템 글자 크기와 무관한 텍스트
-status: draft
+status: in-progress
 type: work-order
 created: 2026-11-03
 updated: 2026-11-03

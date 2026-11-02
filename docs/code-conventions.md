@@ -4,6 +4,19 @@
 [`docs/index.md`](index.md)가 적고, 작업 유형 라우팅은 저장소 루트
 [`CLAUDE.md`](../CLAUDE.md)가 정본이라 여기 중복하지 않는다.
 
+## Compose 텍스트
+
+앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 dp 크기로 그린다. 정책은 `core:designsystem`의
+`component/ygtext/FixedFontScale.kt`(`toFixedFontScale`) 한 곳에 있다.
+
+- 텍스트는 `YGText`·`YGBasicText`·`YGBasicTextField`를 기본으로 쓴다.
+- 원본(`material3.Text`·`BasicText`·`BasicTextField`)은 OS 글자 크기를 **의도적으로** 따라야 할 때만 쓰고, 그 자리에 이유를 주석 한 줄로 남긴다.
+- 컴포지션 밖에서 텍스트를 측정·그릴 때(`TextMeasurer`, `drawText`, `android.graphics.Paint`)는 스타일에 `toFixedFontScale(density)`를 적용한다.
+- ⚠️ 변환은 멱등이 아니다. 래퍼에는 원본(피그마 수치) 스타일을 넘긴다 — 변환한 스타일을 래퍼에 넘기면 두 번 줄어든다. 측정용과 렌더링용 스타일 변수를 나눈다.
+
+자동 강제(린트·CI)는 없다. 리뷰에서 이 절을 근거로 잡는다. 설계:
+[fixed-font-scale-text](superpowers/specs/2026-11-03-fixed-font-scale-text-design.md).
+
 ## 코드 주석·KDoc
 
 ### 기준 셋

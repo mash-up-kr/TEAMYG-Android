@@ -1,11 +1,12 @@
 ---
 id: fixed-font-scale-text
 title: 시스템 글자 크기와 무관한 텍스트 (Fixed font scale text)
-status: draft
+status: in-progress
 category: ui-spec
 platforms: android
 verified: 2026-11-03
 related_code:
+  - FixedFontScale.kt#toFixedFontScale
   - YGTypographyDefaults.kt#YGTypographyDefaults
   - YGTextFieldImpl.kt#YGTextFieldImpl
   - TextToppingContent.kt#TextToppingContent
