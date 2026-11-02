@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -87,7 +87,7 @@ fun YGButton(
             )
             Spacer(modifier = Modifier.width(buttonType.iconGapSize))
         }
-        Text(
+        YGText(
             text = text,
             style = buttonType.textStyle,
             color = buttonType.colors.foregroundColor(
@@ -123,7 +123,7 @@ private fun YGButtonPreview(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        Text(data.name)
+        YGText(data.name)
         YGButton(
             text = "Button Enabled",
             buttonType = data.buttonType,

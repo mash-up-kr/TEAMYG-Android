@@ -13,7 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
+import com.teamyg.parfait.core.designsystem.component.ygtext.toFixedFontScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -91,11 +92,11 @@ fun YGNametagChip(
                         fontStyle = textStyle.fontStyle ?: FontStyle.Normal,
                         fontSynthesis = textStyle.fontSynthesis ?: FontSynthesis.All,
                     ).value as Typeface
-                textSize = with(density) { textStyle.fontSize.toPx() }
+                textSize = with(density) { textStyle.toFixedFontScale(density).fontSize.toPx() }
             }
         }
         var inkOffsetY by remember { mutableFloatStateOf(0f) }
-        Text(
+        YGText(
             text = userFirstName,
             color = colorChipType.textColor,
             style = textStyle,
@@ -120,7 +121,7 @@ private fun YGNametagChipPreview(
     data: YGChipPreviewData,
 ) = PreviewBox {
     Column {
-        Text(data.name)
+        YGText(data.name)
         Spacer(modifier = Modifier.height(5.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

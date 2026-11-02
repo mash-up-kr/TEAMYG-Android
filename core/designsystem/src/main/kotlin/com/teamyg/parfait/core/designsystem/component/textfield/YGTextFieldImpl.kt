@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicTextField
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGBasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -72,7 +72,7 @@ internal fun YGTextFieldImpl(
                 bottom = if (showClear) YGTheme.layout.padding.padding1 else YGTheme.layout.padding.padding5,
             ),
     ) {
-        BasicTextField(
+        YGBasicTextField(
             value = value,
             onValueChange = { newValue ->
                 if (maxLength == null || newValue.length <= maxLength) {
@@ -91,7 +91,7 @@ internal fun YGTextFieldImpl(
             interactionSource = interactionSource,
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
-                    Text(
+                    YGText(
                         text = placeholder,
                         style = YGTheme.typography.body.b01R,
                         color = colors.placeholderColor,
@@ -104,7 +104,7 @@ internal fun YGTextFieldImpl(
         if (showCounter || showClear) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (showCounter) {
-                    Text(
+                    YGText(
                         text = "${value.length}/$maxLength",
                         style = if (isError) YGTheme.typography.body.b02SB else YGTheme.typography.body.b02R,
                         color = colors.counterColor(isError = isError),

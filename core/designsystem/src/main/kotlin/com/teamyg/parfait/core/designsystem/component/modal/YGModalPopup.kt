@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -115,7 +115,7 @@ private fun YGModalPopupContent(
                 verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
+                YGText(
                     text = title,
                     style = YGTheme.typography.title.t03SB,
                     color = YGAtomicColors.Gray.Gray900,
@@ -123,7 +123,7 @@ private fun YGModalPopupContent(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Text(
+                YGText(
                     text = body,
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray500,

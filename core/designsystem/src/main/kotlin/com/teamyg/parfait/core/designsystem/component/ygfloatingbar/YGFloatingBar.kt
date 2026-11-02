@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -135,7 +135,7 @@ fun YGFloatingBarTitleConfirm(
         ),
         contentAlignment = Alignment.CenterEnd,
     ) {
-        Text(
+        YGText(
             text = title,
             style = YGTheme.typography.body.b01R,
             color = YGAtomicColors.Gray.Gray800,
@@ -168,7 +168,7 @@ fun YGFloatingBarTitle(
         ),
         contentAlignment = Alignment.CenterEnd,
     ) {
-        Text(
+        YGText(
             text = title,
             style = YGTheme.typography.body.b01R,
             color = YGAtomicColors.Gray.Gray800,
@@ -205,7 +205,7 @@ private fun YGFloatingBarContent(
 
 @Composable
 private fun RowScope.YGFloatingBarEditTitle(title: String) {
-    Text(
+    YGText(
         text = title,
         style = YGTheme.typography.body.b01R,
         color = YGAtomicColors.Gray.Gray800,

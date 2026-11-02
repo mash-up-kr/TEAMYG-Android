@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -90,12 +90,12 @@ fun YGCanvasDateSelectButton(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(start = YGTheme.layout.padding.padding2),
             ) {
-                Text(
+                YGText(
                     text = date,
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray800,
                 )
-                Text(
+                YGText(
                     text = day,
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray300,

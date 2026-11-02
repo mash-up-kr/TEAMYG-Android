@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +53,7 @@ fun YGListItem(
     textColor = textColor,
     modifier = modifier,
 ) {
-    Text(
+    YGText(
         text = subText,
         style = YGTheme.typography.body.b02SB,
         color = subTextColor,
@@ -83,7 +83,7 @@ private fun YGListItemImpl(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
+        YGText(
             text = text,
             style = YGTheme.typography.body.b02R,
             color = textColor,
@@ -101,7 +101,7 @@ private fun YGListItemPreview() = PreviewBox {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        Text("trailingIcon")
+        YGText("trailingIcon")
 
         YGListItem(
             text = "서비스 이용약관",
@@ -109,7 +109,7 @@ private fun YGListItemPreview() = PreviewBox {
             onClickTrailingIcon = {},
         )
 
-        Text("sub")
+        YGText("sub")
 
         YGListItem(
             text = "서비스 이용약관",

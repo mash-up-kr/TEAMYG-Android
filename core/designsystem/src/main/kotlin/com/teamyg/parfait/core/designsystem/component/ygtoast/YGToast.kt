@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,19 +60,19 @@ fun YGToast(
             ),
     ) {
         when (type) {
-            is YGToastType.InviteCode -> Text(
+            is YGToastType.InviteCode -> YGText(
                 text = type.text,
                 style = YGTheme.typography.body.b02SB,
                 color = YGAtomicColors.Melon.Melon600,
             )
 
-            is YGToastType.Edit -> Text(
+            is YGToastType.Edit -> YGText(
                 text = type.text,
                 style = YGTheme.typography.body.b02SB,
                 color = YGAtomicColors.Pudding.Pudding600,
             )
 
-            is YGToastType.Fail -> Text(
+            is YGToastType.Fail -> YGText(
                 text = type.text,
                 style = YGTheme.typography.body.b02SB,
                 color = YGAtomicColors.Cherry.Cherry500,
@@ -81,7 +81,7 @@ fun YGToast(
             is YGToastType.Record -> {
                 val userStyle = YGTheme.typography.body.b02SB
                 val timeStyle = YGTheme.typography.body.b02R
-                Text(
+                YGText(
                     text = buildAnnotatedString {
                         withStyle(
                             userStyle.toSpanStyle().copy(color = type.userNameColor),

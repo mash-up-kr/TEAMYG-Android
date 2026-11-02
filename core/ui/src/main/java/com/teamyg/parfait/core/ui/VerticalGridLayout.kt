@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -82,7 +82,7 @@ fun VerticalGridLayoutPreview() {
                     .fillMaxWidth()
                     .background(color = Color(color)),
             ) {
-                Text(
+                YGText(
                     text = it,
                     modifier = Modifier
                         .fillMaxHeight(),

@@ -5,7 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +47,7 @@ fun YGInputNumber(
                 shape = YGTheme.shapes.radius.none,
             ).semantics { role = Role.Button },
     ) {
-        Text(
+        YGText(
             text = number.toString(),
             style = YGTheme.typography.body.b01R,
             color = if (isSelected) YGAtomicColors.Gray.White else YGAtomicColors.Gray.Gray900,

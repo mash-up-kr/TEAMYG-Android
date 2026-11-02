@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -50,7 +50,7 @@ fun YGEditTabButton(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
+        YGText(
             text = text,
             style = if (isSelected) YGTheme.typography.body.b01SB else YGTheme.typography.body.b01R,
             color = if (isSelected) YGAtomicColors.Gray.Gray900 else YGAtomicColors.Gray.Gray500,

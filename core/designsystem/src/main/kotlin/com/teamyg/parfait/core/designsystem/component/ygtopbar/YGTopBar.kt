@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +59,7 @@ fun YGTopBarDetail(
         onIconClick = onIconClick,
         modifier = modifier,
         titleContent = {
-            Text(
+            YGText(
                 text = title,
                 style = YGTheme.typography.body.b01R,
                 color = YGAtomicColors.Gray.Gray800,
@@ -92,7 +92,7 @@ fun YGTopBarEmpty(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(
+                YGText(
                     text = title,
                     style = YGTheme.typography.body.b01R,
                     color = YGAtomicColors.Gray.Gray800,
@@ -100,7 +100,7 @@ fun YGTopBarEmpty(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (count != null) {
-                    Text(
+                    YGText(
                         text = count,
                         style = YGTheme.typography.body.b01R,
                         color = YGAtomicColors.Gray.Gray300,
@@ -139,7 +139,7 @@ fun YGTopBarCanvas(
         modifier = modifier,
         contentPadding = PaddingValues(YGTheme.layout.padding.padding3),
         titleContent = {
-            Text(
+            YGText(
                 text = title,
                 style = YGTheme.typography.body.b01R,
                 color = YGAtomicColors.Gray.Gray800,

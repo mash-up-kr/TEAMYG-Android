@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +44,7 @@ fun YGGrouptagChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
     ) {
-        Text(
+        YGText(
             text = name,
             color = YGAtomicColors.Gray.White,
             style = YGTheme.typography.body.b02SB,
@@ -60,7 +60,7 @@ fun YGGrouptagChip(
                     shape = YGTheme.shapes.radius.round,
                 ),
         )
-        Text(
+        YGText(
             text = timestamp,
             color = type.timestampColor,
             style = YGTheme.typography.caption.c01R,

@@ -1,6 +1,5 @@
 package com.teamyg.parfait.core.designsystem.component.ygtext
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -13,7 +12,7 @@ fun YGLabel(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
+    YGText(
         text = text,
         style = YGTheme.typography.body.b02R,
         color = YGAtomicColors.Gray.Gray400,

@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -83,7 +83,7 @@ fun YGChipButton(
                 modifier = Modifier.size(SizeTokens.Size16.size.dp),
             )
         }
-        Text(
+        YGText(
             text = text,
             color = colors.foregroundColor(isPressed),
             style = YGTheme.typography.body.b02R,

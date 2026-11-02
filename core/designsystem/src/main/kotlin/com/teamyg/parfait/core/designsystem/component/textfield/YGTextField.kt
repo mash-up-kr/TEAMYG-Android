@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -41,7 +41,7 @@ private fun YGTextFieldPreview() = PreviewBox {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        Text("idle")
+        YGText("idle")
         YGTextField(
             value = "",
             onValueChange = {},
@@ -49,14 +49,14 @@ private fun YGTextFieldPreview() = PreviewBox {
             maxLength = 15,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("filled")
+        YGText("filled")
         YGTextField(
             value = "Text",
             onValueChange = {},
             maxLength = 15,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("error")
+        YGText("error")
         YGTextField(
             value = "Text",
             onValueChange = {},
@@ -64,7 +64,7 @@ private fun YGTextFieldPreview() = PreviewBox {
             maxLength = 15,
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("disabled")
+        YGText("disabled")
         YGTextField(
             value = "Text",
             onValueChange = {},

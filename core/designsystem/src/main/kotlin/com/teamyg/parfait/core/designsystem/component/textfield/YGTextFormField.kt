@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -45,7 +45,7 @@ fun YGTextFormField(
             keyboardActions = keyboardActions,
         )
         if (errorDescription != null) {
-            Text(
+            YGText(
                 text = errorDescription,
                 style = YGTheme.typography.caption.c01R,
                 color = colors.errorDescriptionColor,
@@ -61,7 +61,7 @@ private fun YGTextFormFieldPreview() = PreviewBox {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(16.dp),
     ) {
-        Text("with description")
+        YGText("with description")
         YGTextFormField(
             value = "Text",
             onValueChange = {},
@@ -69,7 +69,7 @@ private fun YGTextFormFieldPreview() = PreviewBox {
             errorDescription = "닉네임은 15자까지만 입력 가능해요",
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("error with description")
+        YGText("error with description")
         YGTextFormField(
             value = "Text",
             onValueChange = {},
@@ -78,7 +78,7 @@ private fun YGTextFormFieldPreview() = PreviewBox {
             errorDescription = "닉네임은 15자까지만 입력 가능해요",
             modifier = Modifier.fillMaxWidth(),
         )
-        Text("no description")
+        YGText("no description")
         YGTextFormField(
             value = "",
             onValueChange = {},

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -139,7 +139,7 @@ private fun rememberMinimumVisible(
 @Composable
 private fun YGScaffoldV2LoadingPreview() = PreviewBox {
     YGScaffoldV2(isLoading = true) { innerPadding ->
-        Text(
+        YGText(
             text = "컨텐츠",
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray900,

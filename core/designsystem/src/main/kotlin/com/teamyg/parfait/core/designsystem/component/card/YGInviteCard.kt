@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,13 +66,13 @@ fun YGInviteCard(
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            YGText(
                 text = label,
                 style = YGTheme.typography.body.b02R,
                 color = YGAtomicColors.Gray.Gray400,
             )
 
-            Text(
+            YGText(
                 text = subText,
                 style = YGTheme.typography.body.b02R,
                 color = subTextColor,
@@ -131,7 +131,7 @@ private fun InviteCodeBox(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        YGText(
             text = inviteCode,
             style = YGTheme.typography.body.b01SB,
             color = codeColor,

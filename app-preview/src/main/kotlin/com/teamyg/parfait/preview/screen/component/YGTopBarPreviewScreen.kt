@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,7 +96,7 @@ internal fun YGTopBarPreviewScreen(
                                 .hazeSource(state = hazeState),
                         ) {
                             repeat(6) { index ->
-                                Text(
+                                YGText(
                                     text = "배경 콘텐츠 줄 $index — 블러가 걸리면 흐려진다",
                                     style = YGTheme.typography.body.b02R,
                                     color = YGAtomicColors.Gray.Gray800,

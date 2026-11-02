@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -70,7 +70,7 @@ fun YGActionItem(
                 modifier = Modifier.size(SizeTokens.Size24.getDp()),
             )
         }
-        Text(
+        YGText(
             text = text,
             style = YGTheme.typography.body.b02R,
             color = contentColor,

@@ -2,7 +2,7 @@ package com.teamyg.parfait.core.designsystem.component.ygloading
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -33,7 +33,7 @@ fun YGLoadingOverlay(modifier: Modifier = Modifier) {
 @Composable
 private fun YGLoadingOverlayPreview() = PreviewBox {
     Box(modifier = Modifier.fillMaxSize()) {
-        Text(
+        YGText(
             text = "가려질 컨텐츠",
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray900,
