@@ -88,7 +88,7 @@ sealed interface GroupSettingIntent : UiIntent {
 
     data object ConfirmNickname : GroupSettingIntent
 
-    data object ClickCopyInviteCode : GroupSettingIntent
+    data object ClickShareInviteCode : GroupSettingIntent
 
     data object ClickLeaveGroup : GroupSettingIntent
 
@@ -104,7 +104,7 @@ sealed interface GroupSettingIntent : UiIntent {
 sealed interface GroupSettingSideEffect : UiSideEffect {
     data object NavigateBack : GroupSettingSideEffect
 
-    data class CopyInviteCode(val inviteCode: String) : GroupSettingSideEffect
+    data class ShareInviteCode(val inviteCode: String) : GroupSettingSideEffect
 
     /**
      * 서버가 되돌린 사유. 입력 형식 오류는 고칠 곳이 눈앞에 있어 입력칸 아래 남지만, 서버 실패는
@@ -210,7 +210,7 @@ constructor(
             is GroupSettingIntent.InputNickname -> handleInputNickname(intent.nickname)
             is GroupSettingIntent.ChangeNicknameFocus -> handleChangeNicknameFocus(intent.isFocused)
             GroupSettingIntent.ConfirmNickname -> handleConfirmNickname()
-            GroupSettingIntent.ClickCopyInviteCode -> handleClickCopyInviteCode()
+            GroupSettingIntent.ClickShareInviteCode -> handleClickShareInviteCode()
             GroupSettingIntent.ClickLeaveGroup -> handleClickLeaveGroup()
             GroupSettingIntent.ClickReportGroup -> handleClickReportGroup()
             GroupSettingIntent.ConfirmLeaveGroup -> handleConfirmLeaveGroup()
@@ -290,14 +290,14 @@ constructor(
         else -> GroupSettingError.UNKNOWN
     }
 
-    private fun handleClickCopyInviteCode() {
+    private fun handleClickShareInviteCode() {
         updateState { copy(isCodeCopied = true) }
         analyticsLogger.logEvent(
             AnalyticsEvent(
                 type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
             ),
         )
-        postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
+        postSideEffect(GroupSettingSideEffect.ShareInviteCode(state.value.inviteCode.value))
 
         copyResetJob?.cancel()
         copyResetJob = viewModelScope.launch {

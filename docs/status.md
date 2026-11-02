@@ -43,7 +43,7 @@
 - 상태: 그룹 설정은 인메모리 그룹 SSoT의 상세 캐시를 구독해 그룹명·내 닉네임·멤버(서버가 배정한 네임태그 칩 색)·초대 코드·남은 정원(`memberLimit` − 멤버 수)을 그리고, 진입 시 상세를 한 번 새로 받는다. 닉네임 변경은 성공하면 저장소가 상세를 다시 받아 캐시로 화면을 갱신하고, 나가기·신고는 팝업을 닫은 뒤 로딩 오버레이를 덮고 성공하면 캐시에서 그룹을 지우고 `replaceAll(NavKeyGroupList)`, 실패하면 공통 토스트를 띄운다.
 - 앵커: `GroupSettingViewModel`, `ParfaitGroupRepositoryImpl`, `GroupLocalDataSourceImpl`, `toGroupSettingError`, `GROUP_REPORT_REASON`, `feature/groups/setting/impl`
 - ⚠️ 닉네임 변경은 성공했는데 뒤이은 상세 재조회가 실패하면 캐시가 옛 이름에 머물러, 편집이 닫힌 채 확인 버튼이 다시 활성이 된다 — 상시 재현 가능하다 (OQ-P-220)
-- ⚠️ 캐시가 빈 채로 상세 조회가 실패하면 `remainingCount` 기본값 0 때문에 "정원이 찼어요"와 죽은 초대 코드 복사 버튼이 뜬다 (OQ-P-225)
+- ⚠️ 캐시가 빈 채로 상세 조회가 실패하면 `remainingCount` 기본값 0 때문에 "정원이 찼어요"와 죽은 초대 코드 공유 버튼이 뜬다 (OQ-P-225)
 - ⚠️ 403(이미 나간 그룹)·404가 전부 `UNKNOWN`으로 접혀 "잠시 후 다시 시도" 문구로 나간다 — 다시 해도 같은 실패가 일시 장애처럼 안내된다 (OQ-P-218)
 - ⚠️ 사유 선택 UI가 없어 모든 신고가 상수 `GROUP_REPORT_REASON` 하나로 저장된다 — 신고는 탈퇴를 동반해 되돌릴 수 없다 (OQ-P-217)
 - ⚠️ 상세 응답의 `groupName`·`memberLimit`이 기본값 없는 비널이라, 그 필드가 없는 구버전 서버를 만나면 상세 조회가 통째로 실패한다 (OQ-P-227)

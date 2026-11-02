@@ -329,28 +329,28 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun clickCopyInviteCode_marksCopiedAndEmitsCopyEffect() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickShareInviteCode_marksCopiedAndEmitsShareEffect() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
         val inviteCode = viewModel.state.value.inviteCode.value
 
-        // When 복사 버튼
+        // When 공유 버튼
         viewModel.effect.test {
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+            viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
 
-            // Then 클립보드 SideEffect가 코드와 함께 나가고 카드 문구가 복사됨으로 바뀐다
-            assertEquals(GroupSettingSideEffect.CopyInviteCode(inviteCode), awaitItem())
+            // Then 공유 SideEffect가 코드와 함께 나가고 카드 문구가 복사됨으로 바뀐다
+            assertEquals(GroupSettingSideEffect.ShareInviteCode(inviteCode), awaitItem())
         }
         assertTrue(viewModel.state.value.isCodeCopied)
     }
 
     @Test
-    fun clickCopyInviteCode_afterTwoSeconds_resetsIsCodeCopied() = runTest(mainDispatcherRule.dispatcher) {
+    fun clickShareInviteCode_afterTwoSeconds_resetsIsCodeCopied() = runTest(mainDispatcherRule.dispatcher) {
         // Given 초기 상태의 화면
         val viewModel = viewModel()
 
-        // When 복사 버튼을 누르고 2초 직전까지 시간이 흐름
-        viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+        // When 공유 버튼을 누르고 2초 직전까지 시간이 흐름
+        viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
         advanceTimeBy(1_999.milliseconds)
 
         // Then 아직 복사됨 상태가 유지된다
@@ -365,15 +365,15 @@ class GroupSettingViewModelTest {
     }
 
     @Test
-    fun clickCopyInviteCode_rapidReclickBeforeTimeout_resetsTimerToLatestClick() =
+    fun clickShareInviteCode_rapidReclickBeforeTimeout_resetsTimerToLatestClick() =
         runTest(mainDispatcherRule.dispatcher) {
-            // Given 복사 버튼을 누르고 1초가 지난 상태
+            // Given 공유 버튼을 누르고 1초가 지난 상태
             val viewModel = viewModel()
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+            viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
             advanceTimeBy(1_000.milliseconds)
 
             // When 1초 시점에 다시 눌러 타이머를 리셋한 뒤 1.5초가 더 지남
-            viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+            viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
             advanceTimeBy(1_500.milliseconds)
 
             // Then 첫 타이머가 취소되었으므로(첫 타이머 기준으로는 이미 지났을 시점) 여전히 복사됨 상태다
