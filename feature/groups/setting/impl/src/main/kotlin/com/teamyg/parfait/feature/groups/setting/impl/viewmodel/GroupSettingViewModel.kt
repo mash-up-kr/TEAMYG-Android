@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -32,11 +31,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 /** 그룹 설정 화면이 한 번에 하나만 띄울 수 있는 확인 팝업. */
 enum class GroupSettingDialog {
@@ -54,7 +49,6 @@ data class GroupSettingUiState(
     val members: List<GroupMemberUiModel> = emptyList(),
     val inviteCode: InviteCode = InviteCode(""),
     val remainingCount: Int = 0,
-    val isCodeCopied: Boolean = false,
     val visibleDialog: GroupSettingDialog? = null,
     /** 닉네임 변경이 서버에 오가는 중. 확인 버튼을 다시 누르지 못하게 막는다 */
     val isSubmittingNickname: Boolean = false,
@@ -133,8 +127,6 @@ constructor(
     initialState = GroupSettingUiState(),
 ) {
     private val groupId = GroupId(groupIdValue)
-
-    private var copyResetJob: Job? = null
 
     init {
         viewModelLogger.i { "GroupSettingViewModel::init" }
@@ -291,19 +283,12 @@ constructor(
     }
 
     private fun handleClickShareInviteCode() {
-        updateState { copy(isCodeCopied = true) }
         analyticsLogger.logEvent(
             AnalyticsEvent(
                 type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
             ),
         )
         postSideEffect(GroupSettingSideEffect.ShareInviteCode(state.value.inviteCode.value))
-
-        copyResetJob?.cancel()
-        copyResetJob = viewModelScope.launch {
-            delay(COPY_CODE_RESET_DELAY_MS.milliseconds)
-            updateState { copy(isCodeCopied = false) }
-        }
     }
 
     private fun handleClickLeaveGroup() {
@@ -410,9 +395,6 @@ constructor(
         }
     }
 }
-
-// 초대 코드 복사 후 "복사됨" 문구가 원래 문구로 되돌아가기까지의 지연(ms)
-private const val COPY_CODE_RESET_DELAY_MS = 2000L
 
 // TODO: 사유를 고르는 UI 가 아직 없다. 서버는 사유를 필수로 받으므로(빈 값이면
 //  400 INVALID_GROUP_REPORT_REASON) 화면이 대신 채운다 — 사유 선택이 생기면 이 상수는 사라진다.
