@@ -6,8 +6,8 @@
 
 ## Compose 텍스트
 
-앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 dp 크기로 그린다. 정책은 `core:designsystem`의
-`component/ygtext/FixedFontScale.kt`(`toFixedFontScale`) 한 곳에 있다.
+앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 dp 크기로 그린다. 정책은 `core:util:android`의
+`extension/FixedFontScale.kt`(`toFixedFontScale`) 한 곳에 있고, 래퍼는 `core:designsystem`의 `component/ygtext/`에 있다.
 
 - 텍스트는 `YGText`·`YGBasicText`·`YGBasicTextField`를 기본으로 쓴다.
 - 원본(`material3.Text`·`BasicText`·`BasicTextField`)은 OS 글자 크기를 **의도적으로** 따라야 할 때만 쓰고, 그 자리에 이유를 주석 한 줄로 남긴다.

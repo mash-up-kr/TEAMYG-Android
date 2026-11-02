@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
+import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `material3.Text`.

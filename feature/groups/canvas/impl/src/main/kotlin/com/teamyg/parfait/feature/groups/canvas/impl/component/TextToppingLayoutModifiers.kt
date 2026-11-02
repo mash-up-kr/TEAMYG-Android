@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
-import com.teamyg.parfait.core.designsystem.component.ygtext.toFixedFontScale
+import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 import kotlin.math.roundToInt
 
 private const val TEXT_TOPPING_LINE_HEIGHT_RATIO = 1.4f

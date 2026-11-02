@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
-import com.teamyg.parfait.core.designsystem.component.ygtext.toFixedFontScale
+import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf

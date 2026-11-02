@@ -12,6 +12,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `foundation.text.BasicText`.

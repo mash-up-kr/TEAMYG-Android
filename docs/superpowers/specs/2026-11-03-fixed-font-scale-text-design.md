@@ -89,7 +89,7 @@ fun TextUnit.toFixedFontScale(density: Density): TextUnit
   - `fontSize`가 `Unspecified`인 `TextStyle`은 렌더러·TextMeasurer 기본값인 `14.sp`로 먼저 채운 뒤 변환한다. 그대로 두면 `fontScale`을 따라 커진다.
 - `AnnotatedString`은 `SpanStyle`의 `fontSize`/`letterSpacing`도 변환한다. `ParagraphStyle`의 `lineHeight`도 마찬가지다.
   - 근거: `YGToast`가 `TextStyle.toSpanStyle()`로 sp `fontSize`를 span에 싣는다. `core/util/android`의 `BuildAnnotatedString.kt`도 같다.
-- 모듈: feature에서도 써야 하므로 public이다. `core:designsystem`의 `component/ygtext/` 패키지에 둔다(기존 `YGDate`·`YGLabel`과 같은 곳).
+- 모듈: feature에서도 써야 하므로 public이다. `core:util:android`의 `extension/` 패키지에 둔다. 테마·토큰을 읽지 않는 Compose 확장이라 `clickableYG`·`AnnotatedString.Builder.withStyle`과 같은 층위다. 래퍼만 `core:designsystem`의 `component/ygtext/`(기존 `YGDate`·`YGLabel`과 같은 곳)에 둔다.
 
 ### 래퍼 컴포저블
 
@@ -146,7 +146,8 @@ fun TextUnit.toFixedFontScale(density: Density): TextUnit
 
 ## 파일 구성
 
-- `core/designsystem/.../component/ygtext/` — 변환 함수 파일 1개, `YGText`·`YGBasicText`·`YGBasicTextField` 파일
+- `core/util/android/.../extension/FixedFontScale.kt` — 변환 함수
+- `core/designsystem/.../component/ygtext/` — `YGText`·`YGBasicText`·`YGBasicTextField` 파일
 - 교체 대상 — `import androidx.compose.material3.Text`, `foundation.text.BasicText`, `foundation.text.BasicTextField`를 쓰는 모든 파일
   - `app-preview`, `core:ui`, `core:designsystem`, `feature:*`
   - 디자인시스템 컴포넌트 내부(`YGButton`, `YGTextFieldImpl` 등)도 포함한다

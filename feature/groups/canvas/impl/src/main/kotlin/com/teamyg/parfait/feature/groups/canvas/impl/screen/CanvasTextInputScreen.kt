@@ -20,7 +20,7 @@ import androidx.compose.foundation.text.input.then
 import androidx.compose.runtime.Composable
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGBasicTextField
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
-import com.teamyg.parfait.core.designsystem.component.ygtext.toFixedFontScale
+import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
