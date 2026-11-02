@@ -644,9 +644,7 @@ class GroupSettingViewModelTest {
 
     @Test
     fun init_myAccountReadThrows_doesNotCrashAndShowsDetail() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 계정 정보 조회가 저장소 IO 실패로 예외를 던진다(회귀 방지 - 예전엔 이 구독이
-        // BaseViewModel.launch 가드 안에 있어 잡혔지만, viewModelScope.launch 직접 호출로
-        // 바뀌며 잡히지 않게 됐었다)
+        // Given 계정 정보 조회가 저장소 IO 실패로 예외를 던진다
         every { getMyAccountFlow() } returns flow { throw IllegalStateException("디스크 IO 실패") }
 
         // When 화면이 열린다 — 예외가 앱을 죽이지 않아야 한다

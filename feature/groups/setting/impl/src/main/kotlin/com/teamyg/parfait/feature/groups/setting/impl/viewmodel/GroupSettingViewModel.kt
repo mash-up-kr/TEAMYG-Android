@@ -160,7 +160,6 @@ constructor(
                     postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                 }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isLoadingDetail = false) }
             }
         }
@@ -264,13 +263,11 @@ constructor(
                         postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                     }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 버튼이 영구 비활성으로 남지 않게 한다
                 updateState { copy(isSubmittingNickname = false) }
             }
         }
     }
 
-    /** 실패 갈래를 전부 열거해 둔다 */
     private fun Throwable.toGroupSettingError(): GroupSettingError = when (this) {
         is AppError.Network -> GroupSettingError.NETWORK
 
@@ -352,7 +349,6 @@ constructor(
                         postSideEffect(GroupSettingSideEffect.NavigateToGroupList)
                     }.onFailure { onDialogActionFailed(it, action) }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isSubmittingDialogAction = false) }
             }
         }
