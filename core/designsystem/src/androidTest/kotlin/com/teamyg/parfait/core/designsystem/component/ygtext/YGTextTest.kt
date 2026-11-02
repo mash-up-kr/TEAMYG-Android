@@ -1,5 +1,6 @@
 package com.teamyg.parfait.core.designsystem.component.ygtext
 
+import android.content.res.Configuration
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.filters.MediumTest
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -62,6 +64,47 @@ class YGTextTest {
         }
 
         assertFixed(layout.layoutInput.style.fontSize)
+    }
+
+    @Test
+    fun ygText_styleLineHeight_rendersDesignDpPitch() {
+        val layout = nonLinearLayoutOf {
+            YGText("a\nb\nc", style = TextStyle(fontSize = 14.sp, lineHeight = 20.sp), onTextLayout = it)
+        }
+
+        assertLinePitch(layout)
+    }
+
+    @Test
+    fun ygText_lineHeightParam_rendersDesignDpPitch() {
+        val layout = nonLinearLayoutOf {
+            YGText("a\nb\nc", lineHeight = 20.sp, style = TextStyle(fontSize = 14.sp), onTextLayout = it)
+        }
+
+        assertLinePitch(layout)
+    }
+
+    // 렌더러는 fontScale > 1.05 에서 sp lineHeight를 글자 크기 비율로 그린다. 그 경로는 비선형 변환기가 있어야 드러난다
+    private fun nonLinearLayoutOf(
+        content: @androidx.compose.runtime.Composable ((TextLayoutResult) -> Unit) -> Unit,
+    ): TextLayoutResult {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val configuration = Configuration(context.resources.configuration).apply { fontScale = FONT_SCALE }
+        density = Density(context.createConfigurationContext(configuration))
+        var result: TextLayoutResult? = null
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalDensity provides density) {
+                content { result = it }
+            }
+        }
+        composeTestRule.waitForIdle()
+        return checkNotNull(result)
+    }
+
+    // 첫·끝 줄은 LineHeightStyle trim 영향을 받을 수 있어 가운데 줄 높이를 본다
+    private fun assertLinePitch(layout: TextLayoutResult) {
+        val expectedPx = with(density) { 20.dp.toPx() }
+        assertEquals(expectedPx, layout.getLineTop(2) - layout.getLineTop(1), 1f)
     }
 
     private fun layoutOf(

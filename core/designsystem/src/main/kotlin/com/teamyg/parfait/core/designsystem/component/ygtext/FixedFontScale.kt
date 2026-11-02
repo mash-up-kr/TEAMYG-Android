@@ -12,6 +12,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * sp를 시스템 글자 크기와 무관하게 디자인 dp 값으로 그려지는 sp로 바꾼다.
@@ -19,11 +20,23 @@ import androidx.compose.ui.unit.dp
  */
 fun TextUnit.toFixedFontScale(density: Density): TextUnit = if (isSp) with(density) { value.dp.toSp() } else this
 
-fun TextStyle.toFixedFontScale(density: Density): TextStyle = copy(
-    fontSize = fontSize.toFixedFontScale(density),
-    lineHeight = lineHeight.toFixedFontScale(density),
-    letterSpacing = letterSpacing.toFixedFontScale(density),
-)
+/**
+ * 렌더러가 sp lineHeight를 글자 크기 대비 비율로 그리므로(비선형 스케일링), lineHeight는 비율을 유지하도록 바꾼다.
+ * sp fontSize를 모르는 lineHeight(예: [AnnotatedString] 안의 [ParagraphStyle])는 절대값 변환으로 떨어져 비선형 구간에서 어긋난다.
+ */
+fun TextStyle.toFixedFontScale(density: Density): TextStyle {
+    val fixedFontSize = fontSize.toFixedFontScale(density)
+    val fixedLineHeight = if (lineHeight.isSp && fontSize.isSp) {
+        (lineHeight.value * fixedFontSize.value / fontSize.value).sp
+    } else {
+        lineHeight.toFixedFontScale(density)
+    }
+    return copy(
+        fontSize = fixedFontSize,
+        lineHeight = fixedLineHeight,
+        letterSpacing = letterSpacing.toFixedFontScale(density),
+    )
+}
 
 fun AnnotatedString.toFixedFontScale(density: Density): AnnotatedString = mapAnnotations { range ->
     val item: AnnotatedString.Annotation =

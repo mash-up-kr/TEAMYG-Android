@@ -65,9 +65,18 @@ class FixedFontScaleTest {
             ).toFixedFontScale(d)
 
         assertRendersDesignDp(d, style.fontSize, 14f)
-        assertRendersDesignDp(d, style.lineHeight, 20f)
+        // 렌더러는 sp lineHeight를 fontSize 대비 비율로 그리므로 절대값이 아니라 비율을 본다
+        assertEquals(20f / 14f, style.lineHeight.value / style.fontSize.value, absoluteTolerance = 0.0001f)
         assertRendersDesignDp(d, style.letterSpacing, 1f)
         assertEquals(FontWeight.Bold, style.fontWeight)
+    }
+
+    @Test
+    fun textStyle_toFixedFontScale_lineHeightWithoutSpFontSize_fallsBackToAbsolute() {
+        val d = density(1.15f)
+        val style = TextStyle(lineHeight = 20.sp).toFixedFontScale(d)
+
+        assertEquals(with(d) { 20.dp.toSp() }, style.lineHeight)
     }
 
     @Test

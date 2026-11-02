@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.TextUnit
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `material3.Text`.
- * 파라미터는 원본과 같고 `style`·`fontSize`·`letterSpacing`·`lineHeight`를 한 번만 변환한다.
+ * 파라미터는 원본과 같고 `fontSize`·`letterSpacing`·`lineHeight`를 `style`에 합쳐 한 번만 변환한다.
  * `autoSize`는 변환하지 않는다.
  */
 @Composable
@@ -47,21 +47,26 @@ fun YGText(
     style: TextStyle = LocalTextStyle.current,
 ) {
     val density = LocalDensity.current
-    val fixedStyle = remember(style, density) { style.toFixedFontScale(density) }
+    // lineHeight 비율 변환에 fontSize가 필요해 파라미터를 style에 먼저 합친 뒤 한 번만 변환한다
+    val fixedStyle = remember(style, fontSize, letterSpacing, lineHeight, density) {
+        style
+            .merge(
+                fontSize = fontSize,
+                letterSpacing = letterSpacing,
+                lineHeight = lineHeight,
+            ).toFixedFontScale(density)
+    }
 
     Text(
         text = text,
         modifier = modifier,
         color = color,
         autoSize = autoSize,
-        fontSize = fontSize.toFixedFontScale(density),
         fontStyle = fontStyle,
         fontWeight = fontWeight,
         fontFamily = fontFamily,
-        letterSpacing = letterSpacing.toFixedFontScale(density),
         textDecoration = textDecoration,
         textAlign = textAlign,
-        lineHeight = lineHeight.toFixedFontScale(density),
         overflow = overflow,
         softWrap = softWrap,
         maxLines = maxLines,
@@ -98,21 +103,26 @@ fun YGText(
 ) {
     val density = LocalDensity.current
     val fixedText = remember(text, density) { text.toFixedFontScale(density) }
-    val fixedStyle = remember(style, density) { style.toFixedFontScale(density) }
+    // lineHeight 비율 변환에 fontSize가 필요해 파라미터를 style에 먼저 합친 뒤 한 번만 변환한다
+    val fixedStyle = remember(style, fontSize, letterSpacing, lineHeight, density) {
+        style
+            .merge(
+                fontSize = fontSize,
+                letterSpacing = letterSpacing,
+                lineHeight = lineHeight,
+            ).toFixedFontScale(density)
+    }
 
     Text(
         text = fixedText,
         modifier = modifier,
         color = color,
         autoSize = autoSize,
-        fontSize = fontSize.toFixedFontScale(density),
         fontStyle = fontStyle,
         fontWeight = fontWeight,
         fontFamily = fontFamily,
-        letterSpacing = letterSpacing.toFixedFontScale(density),
         textDecoration = textDecoration,
         textAlign = textAlign,
-        lineHeight = lineHeight.toFixedFontScale(density),
         overflow = overflow,
         softWrap = softWrap,
         maxLines = maxLines,
