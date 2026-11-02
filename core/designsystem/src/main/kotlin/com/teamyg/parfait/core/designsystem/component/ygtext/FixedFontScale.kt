@@ -12,7 +12,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
+
+private val DEFAULT_FONT_SIZE = 14.sp
 
 /**
  * sp를 시스템 글자 크기와 무관하게 디자인 dp 값으로 그려지는 sp로 바꾼다.
@@ -23,11 +26,14 @@ fun TextUnit.toFixedFontScale(density: Density): TextUnit = if (isSp) with(densi
 /**
  * 렌더러가 sp lineHeight를 글자 크기 대비 비율로 그리므로(비선형 스케일링), lineHeight는 비율을 유지하도록 바꾼다.
  * sp fontSize를 모르는 lineHeight(예: [AnnotatedString] 안의 [ParagraphStyle])는 절대값 변환으로 떨어져 비선형 구간에서 어긋난다.
+ *
+ * fontSize가 Unspecified면 먼저 14.sp로 채운다. 렌더러와 TextMeasurer가 둘 다 14sp로 떨어지는데, 그대로 두면 fontScale을 따라 커진다.
  */
 fun TextStyle.toFixedFontScale(density: Density): TextStyle {
-    val fixedFontSize = fontSize.toFixedFontScale(density)
-    val fixedLineHeight = if (lineHeight.isSp && fontSize.isSp) {
-        (lineHeight.value * fixedFontSize.value / fontSize.value).sp
+    val sourceFontSize = if (fontSize.isUnspecified) DEFAULT_FONT_SIZE else fontSize
+    val fixedFontSize = sourceFontSize.toFixedFontScale(density)
+    val fixedLineHeight = if (lineHeight.isSp && sourceFontSize.isSp) {
+        (lineHeight.value * fixedFontSize.value / sourceFontSize.value).sp
     } else {
         lineHeight.toFixedFontScale(density)
     }

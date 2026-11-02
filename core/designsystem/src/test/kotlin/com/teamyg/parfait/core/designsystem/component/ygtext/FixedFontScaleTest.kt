@@ -42,8 +42,22 @@ class FixedFontScaleTest {
 
     @Test
     fun toFixedFontScale_nonLinearScale_rendersDesignDp() {
+        // Given 26dp는 2.0 변환표 안의 점이다 (14sp = 26dp)
         val d = density(2.0f)
-        assertRendersDesignDp(d, 14.sp.toFixedFontScale(d), 14f)
+        val converted = 26.sp.toFixedFontScale(d)
+        // Then 선형 변환(26 / 2.0 = 13)이었다면 여기서 어긋난다
+        assertEquals(14f, converted.value, absoluteTolerance = 0.01f)
+        assertRendersDesignDp(d, converted, 26f)
+    }
+
+    @Test
+    fun toFixedFontScale_nonLinearScale115_rendersDesignDp() {
+        // Given 26dp는 1.15 변환표 안의 점이다 (25sp = 26dp)
+        val d = density(1.15f)
+        val converted = 26.sp.toFixedFontScale(d)
+        // Then 선형 변환(26 / 1.15 = 22.6)이었다면 여기서 어긋난다
+        assertEquals(25f, converted.value, absoluteTolerance = 0.01f)
+        assertRendersDesignDp(d, converted, 26f)
     }
 
     @Test
@@ -72,9 +86,9 @@ class FixedFontScaleTest {
     }
 
     @Test
-    fun textStyle_toFixedFontScale_lineHeightWithoutSpFontSize_fallsBackToAbsolute() {
+    fun textStyle_toFixedFontScale_lineHeightWithEmFontSize_fallsBackToAbsolute() {
         val d = density(1.15f)
-        val style = TextStyle(lineHeight = 20.sp).toFixedFontScale(d)
+        val style = TextStyle(fontSize = 1.2.em, lineHeight = 20.sp).toFixedFontScale(d)
 
         assertEquals(with(d) { 20.dp.toSp() }, style.lineHeight)
     }
@@ -139,5 +153,17 @@ class FixedFontScaleTest {
         val url = link as LinkAnnotation.Url
         assertEquals("https://example.com", url.url)
         assertRendersDesignDp(d, url.styles!!.style!!.fontSize, 14f)
+    }
+
+    @Test
+    fun textStyle_toFixedFontScale_unspecifiedFontSize_fallsBackToRendererDefault() {
+        val d = density(1.15f)
+        val style = TextStyle().toFixedFontScale(d)
+        assertRendersDesignDp(d, style.fontSize, 14f)
+    }
+
+    @Test
+    fun textStyle_toFixedFontScale_unspecifiedFontSizeAtFontScaleOne_is14sp() {
+        assertEquals(14.sp, TextStyle().toFixedFontScale(density(1.0f)).fontSize)
     }
 }

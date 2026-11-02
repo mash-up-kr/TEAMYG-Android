@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Density
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `foundation.text.BasicTextField`(`TextFieldState` 오버로드).
  * 파라미터는 원본과 같고 `textStyle`만 한 번 변환한다. 사용자 입력은 변환하지 않는다.
+ * `outputTransformation`이 더하는 span은 변환하지 않는다.
  */
 @Suppress("ComposableLambdaParameterPosition")
 @Composable

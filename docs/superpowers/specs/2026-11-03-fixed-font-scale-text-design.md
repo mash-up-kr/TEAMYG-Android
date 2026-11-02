@@ -85,7 +85,8 @@ fun TextUnit.toFixedFontScale(density: Density): TextUnit
   - `em`이나 `Unspecified`면 그대로 둔다. `em`은 fontSize 기준 상대값이라 fontSize만 바꾸면 따라온다.
 - 변환식: `sp` 값을 피그마 dp로 보고 `with(density) { value.dp.toSp() }`
   - 예외는 `lineHeight`다. 렌더러(`resolveLineHeightInPx`)가 `fontScale` > 1.05에서 sp lineHeight를 글자 크기 대비 비율로 그린다. 그래서 `fontSize`·`lineHeight`가 둘 다 sp이면 비율을 유지해 `lineHeight × 변환된 fontSize / fontSize`로 바꾼다.
-  - sp `fontSize`를 모르는 lineHeight(`fontSize`가 `Unspecified`인 `TextStyle`, `AnnotatedString` 안의 `ParagraphStyle`)는 위 절대값 변환으로 떨어진다. 이 경우 비선형 구간에서 줄 간격이 어긋날 수 있다.
+  - sp `fontSize`를 모르는 lineHeight(`fontSize`가 `em`인 `TextStyle`, `AnnotatedString` 안의 `ParagraphStyle`)는 위 절대값 변환으로 떨어진다. 이 경우 비선형 구간에서 줄 간격이 어긋날 수 있다.
+  - `fontSize`가 `Unspecified`인 `TextStyle`은 렌더러·TextMeasurer 기본값인 `14.sp`로 먼저 채운 뒤 변환한다. 그대로 두면 `fontScale`을 따라 커진다.
 - `AnnotatedString`은 `SpanStyle`의 `fontSize`/`letterSpacing`도 변환한다. `ParagraphStyle`의 `lineHeight`도 마찬가지다.
   - 근거: `YGToast`가 `TextStyle.toSpanStyle()`로 sp `fontSize`를 span에 싣는다. `core/util/android`의 `BuildAnnotatedString.kt`도 같다.
 - 모듈: feature에서도 써야 하므로 public이다. `core:designsystem`의 `component/ygtext/` 패키지에 둔다(기존 `YGDate`·`YGLabel`과 같은 곳).

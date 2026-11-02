@@ -84,7 +84,7 @@ class YGTextTest {
         assertLinePitch(layout)
     }
 
-    // 렌더러는 fontScale > 1.05 에서 sp lineHeight를 글자 크기 비율로 그린다. 그 경로는 비선형 변환기가 있어야 드러난다
+    // 렌더러는 fontScale > 1.05 에서 sp lineHeight를 글자 크기 비율로 그린다
     private fun nonLinearLayoutOf(
         content: @androidx.compose.runtime.Composable ((TextLayoutResult) -> Unit) -> Unit,
     ): TextLayoutResult {
