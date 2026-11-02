@@ -23,7 +23,6 @@ import org.junit.Test
 
 /**
  * 시스템 글자 크기(`fontScale`)가 1.15여도 입력창 레이아웃의 글자 크기가 디자인 dp 값인지 확인한다.
- * 기기 설정에 기대지 않도록 테스트가 직접 `LocalDensity`를 만든다.
  */
 @MediumTest
 class YGBasicTextFieldTest {

@@ -16,7 +16,7 @@ import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `foundation.text.BasicText`.
- * 파라미터는 원본과 같고 `text`·`style`을 한 번만 변환한다. `autoSize`는 변환하지 않는다.
+ * `autoSize`는 변환하지 않는다.
  */
 @Composable
 fun YGBasicText(

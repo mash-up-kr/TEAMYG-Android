@@ -401,7 +401,6 @@ internal fun CanvasTextInputScreen(
                             },
                         ) {
                             // 포커스 유무가 곧 편집/배치다(TextEditModeState 참고)
-                            // 시스템 폰트 크기(접근성) 설정과 무관하게 모든 사용자에게 같은 크기·줄바꿈으로 보여야 한다
                             YGBasicTextField(
                                 state = textFieldState,
                                 inputTransformation = dedupeHangulEnterTransformation.then(maxLengthTransformation),

@@ -58,7 +58,6 @@ internal fun TextToppingContent(
         modifier = modifier.measureTextBoxUnbounded(),
     ) {
         // 너비 상한만 주면 Text 는 한 줄 자연 폭과 상한 중 작은 쪽으로 감싼다 — C-106 의 hug 폭과 같다
-        // 시스템 폰트 크기(접근성) 설정과 무관하게 모든 사용자에게 같은 크기·줄바꿈으로 보여야 한다
         YGBasicText(
             text = remember(text) { textToppingAnnotatedString(text) },
             style = textToppingBaseStyle()

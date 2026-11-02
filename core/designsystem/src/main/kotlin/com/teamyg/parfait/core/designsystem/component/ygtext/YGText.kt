@@ -23,7 +23,6 @@ import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `material3.Text`.
- * 파라미터는 원본과 같고 `fontSize`·`letterSpacing`·`lineHeight`를 `style`에 합쳐 한 번만 변환한다.
  * `autoSize`는 변환하지 않는다.
  */
 @Composable
@@ -104,7 +103,6 @@ fun YGText(
 ) {
     val density = LocalDensity.current
     val fixedText = remember(text, density) { text.toFixedFontScale(density) }
-    // lineHeight 비율 변환에 fontSize가 필요해 파라미터를 style에 먼저 합친 뒤 한 번만 변환한다
     val fixedStyle = remember(style, fontSize, letterSpacing, lineHeight, density) {
         style
             .merge(
