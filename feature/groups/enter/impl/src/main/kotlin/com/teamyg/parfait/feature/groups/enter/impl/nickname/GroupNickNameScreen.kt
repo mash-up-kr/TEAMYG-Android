@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -82,13 +82,13 @@ internal fun GroupNickNameScreen(
                 .weight(1f),
         ) {
             item {
-                Text(
+                YGText(
                     text = stringResource(R.string.group_nickname_title),
                     color = YGAtomicColors.Gray.Gray900,
                     style = YGTheme.typography.title.t02B,
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
-                Text(
+                YGText(
                     text = stringResource(R.string.group_nickname_description),
                     color = YGAtomicColors.Gray.Gray500,
                     style = YGTheme.typography.body.b02R,

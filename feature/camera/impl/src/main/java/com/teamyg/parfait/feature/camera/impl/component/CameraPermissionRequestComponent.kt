@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,13 +64,13 @@ internal fun CameraPermissionRequestComponent(
                     colorFilter = ColorFilter.tint(YGAtomicColors.Cherry.Cherry600),
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
-                Text(
+                YGText(
                     text = stringResource(R.string.camera_permission_denied_title),
                     style = YGTheme.typography.title.t03SB,
                     color = YGAtomicColors.Gray.Gray900,
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap1))
-                Text(
+                YGText(
                     text = stringResource(R.string.camera_permission_denied_description),
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray500,

@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.BasicTextField
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGBasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -64,7 +64,7 @@ internal fun InviteCodeInputField(
         }
     }
 
-    BasicTextField(
+    YGBasicTextField(
         value = TextFieldValue(text = text, selection = TextRange(cursor)),
         onValueChange = { value -> onTextChanged(value.text, value.selection.start) },
         keyboardOptions = KeyboardOptions(

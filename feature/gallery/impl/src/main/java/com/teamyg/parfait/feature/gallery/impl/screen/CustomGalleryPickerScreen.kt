@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -126,7 +126,7 @@ private fun GalleryContent(
                             painter = painterResource(DesignSystemR.drawable.image_gallery_empty),
                             contentDescription = null,
                         )
-                        Text(
+                        YGText(
                             text = stringResource(R.string.gallery_empty_today_description),
                             color = YGAtomicColors.Gray.Gray300,
                             style = YGTheme.typography.body.b02R,

@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -76,7 +76,7 @@ private fun OnboardingPageContent(
         )
         Spacer(modifier = Modifier.height(30.dp)) // 30.dp가 gap 없음
 
-        Text(
+        YGText(
             text = page.description,
             style = YGTheme.typography.caption.c01R,
             color = YGAtomicColors.Gray.Gray300,

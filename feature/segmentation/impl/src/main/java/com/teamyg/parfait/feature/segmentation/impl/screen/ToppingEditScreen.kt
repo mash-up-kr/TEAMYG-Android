@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -154,7 +154,7 @@ internal fun ToppingEditScreen(
                 .fillMaxWidth()
                 .padding(horizontal = YGTheme.layout.padding.padding7),
         ) {
-            Text(
+            YGText(
                 text = stringResource(R.string.topping_edit_brush_width),
                 style = YGTheme.typography.caption.c01M,
                 color = YGAtomicColors.Gray.Gray700,

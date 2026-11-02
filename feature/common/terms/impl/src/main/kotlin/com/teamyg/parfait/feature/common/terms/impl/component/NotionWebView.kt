@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -128,12 +128,12 @@ private fun NotionWebViewPreviewPlaceholder(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         ) {
-            Text(
+            YGText(
                 text = "Notion WebView",
                 style = YGTheme.typography.body.b01R,
                 color = YGAtomicColors.Gray.Gray500,
             )
-            Text(
+            YGText(
                 text = url,
                 style = YGTheme.typography.caption.c01R,
                 color = YGAtomicColors.Gray.Gray400,
@@ -152,12 +152,12 @@ private fun NotionWebViewError(
         verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap4),
         modifier = modifier,
     ) {
-        Text(
+        YGText(
             text = stringResource(R.string.terms_webview_error_message),
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray500,
         )
-        Text(
+        YGText(
             text = stringResource(R.string.terms_webview_retry),
             style = YGTheme.typography.body.b01R,
             color = YGAtomicColors.Cherry.Cherry600,

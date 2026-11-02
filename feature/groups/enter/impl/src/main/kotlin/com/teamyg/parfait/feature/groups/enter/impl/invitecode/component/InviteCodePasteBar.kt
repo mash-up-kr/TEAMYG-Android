@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,12 +42,12 @@ internal fun InviteCodePasteBar(
                 horizontal = YGTheme.layout.padding.padding7,
             ),
     ) {
-        Text(
+        YGText(
             text = stringResource(R.string.invite_code_paste_bar_label),
             color = YGAtomicColors.Gray.Black,
             style = YGTheme.typography.body.b02R,
         )
-        Text(
+        YGText(
             text = inviteCode,
             color = YGAtomicColors.Gray.Black,
             style = YGTheme.typography.body.b01SB,

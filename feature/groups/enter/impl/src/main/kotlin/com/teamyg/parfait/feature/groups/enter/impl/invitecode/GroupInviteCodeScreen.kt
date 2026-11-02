@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -59,13 +59,13 @@ internal fun GroupInviteCodeScreen(
                 .weight(1f),
         ) {
             item {
-                Text(
+                YGText(
                     text = stringResource(R.string.group_invite_title),
                     color = YGAtomicColors.Gray.Gray900,
                     style = YGTheme.typography.title.t02B,
                 )
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
-                Text(
+                YGText(
                     text = stringResource(R.string.group_invite_description),
                     color = YGAtomicColors.Gray.Gray500,
                     style = YGTheme.typography.body.b02R,
@@ -99,7 +99,7 @@ internal fun GroupInviteCodeScreen(
             if (uiState.inviteCodeError != null) {
                 item {
                     Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
-                    Text(
+                    YGText(
                         text = uiState.inviteCodeError.toStringResource(),
                         color = YGAtomicColors.Cherry.Cherry600,
                         style = YGTheme.typography.caption.c01R,

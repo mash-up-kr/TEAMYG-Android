@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +64,7 @@ private fun ZoomLevelChip(
             .clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        YGText(
             text = formatZoomLabel(level),
             color = if (isSelected) AccentZoomColor else Color.White,
             fontSize = if (isSelected) 14.sp else 13.sp,

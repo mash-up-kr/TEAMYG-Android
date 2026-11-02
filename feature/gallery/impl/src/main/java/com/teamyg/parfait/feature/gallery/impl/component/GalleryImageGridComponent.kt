@@ -13,7 +13,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -124,7 +124,7 @@ private fun GalleryDateHeader(
     date: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
+    YGText(
         text = date,
         color = YGAtomicColors.Gray.Gray900,
         style = YGTheme.typography.body.b02R,
@@ -149,12 +149,12 @@ private fun GalleryDateHeader(
             horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
             modifier = Modifier.padding(vertical = YGTheme.layout.padding.padding1),
         ) {
-            Text(
+            YGText(
                 text = date,
                 color = YGAtomicColors.Gray.Gray900,
                 style = YGTheme.typography.body.b02R,
             )
-            Text(
+            YGText(
                 text = "($dayOfWeek)",
                 color = YGAtomicColors.Gray.Gray300,
                 style = YGTheme.typography.body.b02R,

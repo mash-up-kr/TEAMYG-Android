@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
@@ -48,12 +48,12 @@ internal fun ProfileCard(
         Column(
             verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         ) {
-            Text(
+            YGText(
                 text = nickname ?: stringResource(R.string.setting_profile_loading),
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray900,
             )
-            Text(
+            YGText(
                 text = loginProviderText ?: stringResource(R.string.setting_profile_loading),
                 style = YGTheme.typography.caption.c01R,
                 color = YGAtomicColors.Gray.Gray500,

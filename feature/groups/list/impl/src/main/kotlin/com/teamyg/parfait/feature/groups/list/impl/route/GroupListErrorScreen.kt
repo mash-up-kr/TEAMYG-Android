@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +53,7 @@ internal fun GroupListErrorScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
-                    Text(
+                    YGText(
                         text = stringResource(R.string.group_list_error),
                         style = YGTheme.typography.title.t03SB,
                         color = YGAtomicColors.Gray.Gray500,

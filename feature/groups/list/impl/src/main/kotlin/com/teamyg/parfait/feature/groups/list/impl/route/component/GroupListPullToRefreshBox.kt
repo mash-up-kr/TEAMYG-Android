@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
@@ -130,7 +130,7 @@ private fun BoxScope.GroupListRefreshIndicator(
         if (isMessageVisible) {
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
 
-            Text(
+            YGText(
                 text = stringResource(R.string.group_list_refreshing),
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray500,

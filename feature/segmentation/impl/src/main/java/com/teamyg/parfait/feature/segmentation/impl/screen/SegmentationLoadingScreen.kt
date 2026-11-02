@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,14 +58,14 @@ internal fun SegmentationLoadingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
             ) {
-                Text(
+                YGText(
                     text = stringResource(R.string.segmentation_loading_title),
                     style = YGTheme.typography.title.t03SB,
                     color = YGAtomicColors.Gray.Gray900,
                     textAlign = TextAlign.Center,
                 )
 
-                Text(
+                YGText(
                     text = stringResource(R.string.segmentation_loading_description),
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray500,

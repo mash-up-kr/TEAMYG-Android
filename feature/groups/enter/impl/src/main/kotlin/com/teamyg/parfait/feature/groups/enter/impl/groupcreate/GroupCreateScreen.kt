@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -142,7 +142,7 @@ internal fun GroupCreateScreen(
 
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
-                Text(
+                YGText(
                     text = stringResource(R.string.group_count_description),
                     style = YGTheme.typography.caption.c01R,
                     color = YGAtomicColors.Gray.Gray300,

@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +34,7 @@ internal fun CameraZoomIndicatorComponent(
                 vertical = 6.dp,
             ),
     ) {
-        Text(
+        YGText(
             text = String.format(
                 localLocale,
                 "%.1f×",

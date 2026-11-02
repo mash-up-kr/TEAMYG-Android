@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,13 +31,13 @@ internal fun GalleryPartialAccessBanner(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
+        YGText(
             text = "일부 사진만 접근할 수 있어요.",
             color = Color.White,
         )
 
         TextButton(onClick = onClickManage) {
-            Text(
+            YGText(
                 text = "선택 관리",
                 color = Color.White,
             )

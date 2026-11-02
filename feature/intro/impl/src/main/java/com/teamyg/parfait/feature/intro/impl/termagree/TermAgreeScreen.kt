@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +66,7 @@ internal fun TermAgreeScreen(
                 .weight(1f),
         ) {
             item {
-                Text(
+                YGText(
                     text = stringResource(R.string.title_term_agree),
                     style = YGTheme.typography.title.t01B,
                     color = YGAtomicColors.Gray.Gray900,
@@ -96,7 +96,7 @@ internal fun TermAgreeScreen(
                         ),
                         modifier = Modifier.size(36.dp),
                     )
-                    Text(
+                    YGText(
                         text = stringResource(R.string.agree_all),
                         style = YGTheme.typography.body.b01B,
                         color = YGAtomicColors.Gray.Gray900,
@@ -113,12 +113,12 @@ internal fun TermAgreeScreen(
                         verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(
+                        YGText(
                             text = stringResource(R.string.term_agree_load_failed),
                             style = YGTheme.typography.body.b02R,
                             color = YGAtomicColors.Gray.Gray500,
                         )
-                        Text(
+                        YGText(
                             text = stringResource(R.string.term_agree_retry),
                             style = YGTheme.typography.body.b02SB,
                             color = YGAtomicColors.Gray.Gray800,
@@ -158,14 +158,14 @@ internal fun TermAgreeScreen(
                         )
                         Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                         if (policy.required) {
-                            Text(
+                            YGText(
                                 text = stringResource(R.string.prefix_required),
                                 color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
                                 style = YGTheme.typography.body.b02R,
                             )
                             Spacer(modifier = Modifier.width(YGTheme.layout.gap.gap2))
                         }
-                        Text(
+                        YGText(
                             text = policy.title,
                             color = if (isSelected) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray500,
                             style = YGTheme.typography.body.b02R,
