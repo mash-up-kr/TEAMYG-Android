@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
@@ -25,7 +25,7 @@ private val BORDER_WIDTH_MIN = 0.5.dp
 
 /**
  * 네모배경·테두리. 여백·테두리는 글자 크기 비율 그대로 반올림하지 않는다(스펙 「네모배경」).
- * 호출부가 `fontScale = 1` 로 고정해 두므로 [fontSizeSp] 수치를 그대로 dp 로 쓴다.
+ * [fontSizeSp]는 피그마 수치라 그대로 dp로 쓴다.
  */
 @Composable
 internal fun TextToppingBackground(
@@ -75,7 +75,7 @@ private fun TextToppingBackgroundPreview() = PreviewBox {
                 color = TextToppingColor.Pink,
                 fontSizeSp = 24f,
             ) {
-                Text(
+                YGText(
                     text = "가나다 Abc",
                     style = YGTheme.typography.body.b01R.copy(
                         color = TextToppingColor.Pink.contentColor,

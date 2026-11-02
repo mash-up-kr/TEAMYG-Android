@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -233,7 +233,7 @@ private fun <T> CalendarPeriodSelector(
                 interactionSource = interactionSource,
             ),
         ) {
-            Text(
+            YGText(
                 text = text,
                 style = YGTheme.typography.title.t03SB,
                 color = YGAtomicColors.Gray.Gray900,
@@ -310,7 +310,7 @@ private fun BodyCalendar(
 private fun DayOfWeekHeader(modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth()) {
         stringArrayResource(R.array.canvas_calendar_day_of_week).forEach { dayOfWeek ->
-            Text(
+            YGText(
                 text = dayOfWeek,
                 style = YGTheme.typography.body.b02R,
                 color = YGAtomicColors.Gray.Gray400,

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,14 +94,14 @@ private fun OverlayMessage(
         // 아래 간격은 쓰는 쪽이 정한다 — 로딩은 여기서 끝나고 에러는 버튼이 뒤따른다
         modifier = Modifier.padding(top = YGTheme.layout.gap.gap3),
     ) {
-        Text(
+        YGText(
             text = title,
             style = YGTheme.typography.title.t03SB,
             color = YGAtomicColors.Gray.White,
             textAlign = TextAlign.Center,
         )
 
-        Text(
+        YGText(
             text = description,
             style = YGTheme.typography.body.b02R,
             color = YGAtomicColors.Gray.Gray300,

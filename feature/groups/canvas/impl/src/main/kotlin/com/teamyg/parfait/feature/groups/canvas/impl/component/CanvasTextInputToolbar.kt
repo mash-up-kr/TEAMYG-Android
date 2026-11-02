@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,7 +94,7 @@ internal fun CanvasTextInputToolbar(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
+        YGText(
             text = "$characterCount/$TEXT_TOPPING_MAX_LENGTH",
             style = YGTheme.typography.caption.c01M,
             color = if (isAtLimit) YGAtomicColors.Cherry.Cherry500 else YGAtomicColors.Gray.Gray500,
@@ -134,7 +134,7 @@ private fun TypePreviewButton(
             ).clickableYGNoRipple(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        YGText(
             text = "A",
             style = YGTheme.typography.body.b01B,
             color = letterColor,

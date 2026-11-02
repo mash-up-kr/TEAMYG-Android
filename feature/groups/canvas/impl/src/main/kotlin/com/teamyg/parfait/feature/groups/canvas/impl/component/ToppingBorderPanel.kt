@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -180,7 +180,7 @@ private fun PanelLabel(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
+    YGText(
         text = text,
         style = YGTheme.typography.caption.c01M,
         color = YGAtomicColors.Gray.Gray700,

@@ -4,16 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGBasicText
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -52,32 +49,25 @@ internal fun TextToppingContent(
     canvasWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
-    // 시스템 폰트 크기(접근성) 설정과 무관하게 모든 사용자에게 같은 크기·줄바꿈으로 보여야 한다
-    val systemDensity = LocalDensity.current
-    val fixedFontScaleDensity = remember(systemDensity) {
-        Density(density = systemDensity.density, fontScale = 1f)
-    }
+    val fontSizeSp = textToppingFontSizeSp(designFontSize = designFontSize, canvasWidth = canvasWidth)
 
-    CompositionLocalProvider(LocalDensity provides fixedFontScaleDensity) {
-        val fontSizeSp = textToppingFontSizeSp(designFontSize = designFontSize, canvasWidth = canvasWidth)
-
-        TextToppingBackground(
-            type = type,
-            color = color,
-            fontSizeSp = fontSizeSp,
-            modifier = modifier.measureTextBoxUnbounded(),
-        ) {
-            // 너비 상한만 주면 Text 는 한 줄 자연 폭과 상한 중 작은 쪽으로 감싼다 — C-106 의 hug 폭과 같다
-            BasicText(
-                text = remember(text) { textToppingAnnotatedString(text) },
-                style = textToppingBaseStyle()
-                    .withTextToppingSizing(fontSizeSp)
-                    .copy(color = color.contentColor, textAlign = align),
-                modifier = Modifier.widthIn(
-                    max = textToppingWrapWidth(designFontSize = designFontSize, canvasWidth = canvasWidth),
-                ),
-            )
-        }
+    TextToppingBackground(
+        type = type,
+        color = color,
+        fontSizeSp = fontSizeSp,
+        modifier = modifier.measureTextBoxUnbounded(),
+    ) {
+        // 너비 상한만 주면 Text 는 한 줄 자연 폭과 상한 중 작은 쪽으로 감싼다 — C-106 의 hug 폭과 같다
+        // 시스템 폰트 크기(접근성) 설정과 무관하게 모든 사용자에게 같은 크기·줄바꿈으로 보여야 한다
+        YGBasicText(
+            text = remember(text) { textToppingAnnotatedString(text) },
+            style = textToppingBaseStyle()
+                .withTextToppingSizing(fontSizeSp)
+                .copy(color = color.contentColor, textAlign = align),
+            modifier = Modifier.widthIn(
+                max = textToppingWrapWidth(designFontSize = designFontSize, canvasWidth = canvasWidth),
+            ),
+        )
     }
 }
 

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
+import com.teamyg.parfait.core.designsystem.component.ygtext.toFixedFontScale
 import kotlin.math.roundToInt
 
 private const val TEXT_TOPPING_LINE_HEIGHT_RATIO = 1.4f
@@ -39,7 +40,7 @@ internal fun fitTextToppingToHeight(
     val naturalHeightPx = textMeasurer
         .measure(
             text = text,
-            style = baseStyle.withTextToppingSizing(maxFontSizeSp),
+            style = baseStyle.withTextToppingSizing(maxFontSizeSp).toFixedFontScale(density),
             constraints = Constraints(maxWidth = maxWidthPx),
         ).size.height
 
@@ -50,7 +51,7 @@ internal fun fitTextToppingToHeight(
     val measuredHeightPx = textMeasurer
         .measure(
             text = text,
-            style = baseStyle.withTextToppingSizing(fontSizeSp),
+            style = baseStyle.withTextToppingSizing(fontSizeSp).toFixedFontScale(density),
             constraints = Constraints(maxWidth = with(density) { fieldMaxWidthDp.roundToPx() }),
         ).size.height
     if (measuredHeightPx > maxHeightPx) {

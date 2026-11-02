@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
+import com.teamyg.parfait.core.designsystem.component.ygtext.YGText
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,19 +121,19 @@ internal fun CanvasImageSaveScreen(
                 horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap1),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
+                YGText(
                     text = date.format(DateTextFormat.monthDayFormat),
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray900,
                 )
 
-                Text(
+                YGText(
                     text = "(${date.format(DateTextFormat.weekdayFormat)})",
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray300,
                 )
 
-                Text(
+                YGText(
                     text = stringResource(R.string.canvas_image_save_question_suffix),
                     style = YGTheme.typography.body.b02R,
                     color = YGAtomicColors.Gray.Gray900,
@@ -142,7 +142,7 @@ internal fun CanvasImageSaveScreen(
 
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
 
-            Text(
+            YGText(
                 text = stringResource(R.string.canvas_image_save_description),
                 style = YGTheme.typography.caption.c01M,
                 color = YGAtomicColors.Gray.Gray500,
