@@ -1,7 +1,9 @@
 package com.teamyg.parfait.core.designsystem.component.ygtext
 
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -104,5 +106,29 @@ class FixedFontScaleTest {
         assertEquals("value", annotation.item)
         assertEquals(1, annotation.start)
         assertEquals(3, annotation.end)
+    }
+
+    @Test
+    fun annotatedString_toFixedFontScale_convertsLinkStyles() {
+        val d = density(1.15f)
+        val source =
+            buildAnnotatedString {
+                append("abc")
+                addLink(
+                    LinkAnnotation.Url("https://example.com", TextLinkStyles(style = SpanStyle(fontSize = 14.sp))),
+                    0,
+                    3,
+                )
+            }
+
+        val link = source
+            .toFixedFontScale(d)
+            .getLinkAnnotations(0, 3)
+            .single()
+            .item
+
+        val url = link as LinkAnnotation.Url
+        assertEquals("https://example.com", url.url)
+        assertRendersDesignDp(d, url.styles!!.style!!.fontSize, 14f)
     }
 }

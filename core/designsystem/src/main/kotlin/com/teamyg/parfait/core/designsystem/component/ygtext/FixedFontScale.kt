@@ -5,6 +5,9 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
@@ -22,39 +25,36 @@ fun TextStyle.toFixedFontScale(density: Density): TextStyle = copy(
     letterSpacing = letterSpacing.toFixedFontScale(density),
 )
 
-fun AnnotatedString.toFixedFontScale(density: Density): AnnotatedString {
-    val builder = AnnotatedString.Builder(text)
-    spanStyles.forEach { range ->
-        val style = range.item
-        builder.addStyle(
-            style.copy(
-                fontSize = style.fontSize.toFixedFontScale(density),
-                letterSpacing = style.letterSpacing.toFixedFontScale(density),
-            ),
-            range.start,
-            range.end,
-        )
-    }
-    paragraphStyles.forEach { range ->
-        builder.addStyle(
-            range.item.copy(lineHeight = range.item.lineHeight.toFixedFontScale(density)),
-            range.start,
-            range.end,
-        )
-    }
-    // 스타일이 아닌 annotation은 공개 API로 하나씩 옮긴다
-    getStringAnnotations(0, length).forEach {
-        builder.addStringAnnotation(it.tag, it.item, it.start, it.end)
-    }
-    getTtsAnnotations(0, length).forEach { builder.addTtsAnnotation(it.item, it.start, it.end) }
-    getLinkAnnotations(0, length).forEach {
-        when (val link = it.item) {
-            is LinkAnnotation.Url -> builder.addLink(link, it.start, it.end)
-            is LinkAnnotation.Clickable -> builder.addLink(link, it.start, it.end)
+fun AnnotatedString.toFixedFontScale(density: Density): AnnotatedString = mapAnnotations { range ->
+    val item: AnnotatedString.Annotation =
+        when (val annotation = range.item) {
+            is SpanStyle -> annotation.toFixedFontScale(density)
+
+            is ParagraphStyle ->
+                annotation.copy(lineHeight = annotation.lineHeight.toFixedFontScale(density))
+
+            is LinkAnnotation.Url ->
+                annotation.copy(styles = annotation.styles?.toFixedFontScale(density))
+
+            is LinkAnnotation.Clickable ->
+                annotation.copy(styles = annotation.styles?.toFixedFontScale(density))
+
+            else -> annotation
         }
-    }
-    return builder.toAnnotatedString()
+    AnnotatedString.Range(item, range.start, range.end, range.tag)
 }
+
+private fun SpanStyle.toFixedFontScale(density: Density): SpanStyle = copy(
+    fontSize = fontSize.toFixedFontScale(density),
+    letterSpacing = letterSpacing.toFixedFontScale(density),
+)
+
+private fun TextLinkStyles.toFixedFontScale(density: Density): TextLinkStyles = TextLinkStyles(
+    style = style?.toFixedFontScale(density),
+    focusedStyle = focusedStyle?.toFixedFontScale(density),
+    hoveredStyle = hoveredStyle?.toFixedFontScale(density),
+    pressedStyle = pressedStyle?.toFixedFontScale(density),
+)
 
 @Composable
 @ReadOnlyComposable
