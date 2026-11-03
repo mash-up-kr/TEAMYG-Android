@@ -32,6 +32,8 @@ import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.component.ListItemToggle
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.NotificationSettingState
 
+private val ToastTopOffset = 13.dp
+
 @Composable
 internal fun NotificationSettingScreen(
     state: NotificationSettingState,
@@ -94,7 +96,7 @@ internal fun NotificationSettingScreen(
                     policy = toastPolicy,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 13.dp)
+                        .padding(top = ToastTopOffset)
                         .fillMaxWidth(),
                 )
             }
