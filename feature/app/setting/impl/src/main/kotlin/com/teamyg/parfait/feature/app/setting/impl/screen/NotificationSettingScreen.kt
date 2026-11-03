@@ -37,7 +37,6 @@ private val ToastTopOffset = 13.dp
 @Composable
 internal fun NotificationSettingScreen(
     state: NotificationSettingState,
-    isNotificationEnabled: Boolean,
     toastPolicy: YGToastPolicy,
     onClickBack: () -> Unit,
     onClickOpenDeviceSettings: () -> Unit,
@@ -66,7 +65,7 @@ internal fun NotificationSettingScreen(
                         .fillMaxWidth()
                         .padding(horizontal = YGTheme.layout.padding.padding7),
                 ) {
-                    if (!isNotificationEnabled) {
+                    if (state.isDeviceNotificationOff) {
                         NotificationInfoCard(
                             onClickOpenDeviceSettings = onClickOpenDeviceSettings,
                             modifier = Modifier.fillMaxWidth(),
@@ -79,14 +78,14 @@ internal fun NotificationSettingScreen(
                             title = stringResource(R.string.notification_setting_canvas_title),
                             subText = stringResource(R.string.notification_setting_canvas_sub),
                             checked = state.isCanvasNotificationChecked,
-                            enabled = isNotificationEnabled,
+                            enabled = state.isToggleEnabled,
                             onCheckedChange = onChangeCanvasNotification,
                         )
                         ListItemToggle(
                             title = stringResource(R.string.notification_setting_activity_title),
                             subText = stringResource(R.string.notification_setting_activity_sub),
                             checked = state.isActivityNotificationChecked,
-                            enabled = isNotificationEnabled,
+                            enabled = state.isToggleEnabled,
                             onCheckedChange = onChangeActivityNotification,
                         )
                     }
@@ -143,8 +142,7 @@ private fun NotificationInfoCard(
 private fun NotificationSettingScreenPreview() = PreviewBox {
     Column {
         NotificationSettingScreen(
-            state = NotificationSettingState(),
-            isNotificationEnabled = false,
+            state = NotificationSettingState(isDeviceNotificationEnabled = false),
             toastPolicy = rememberYGToastPolicy(),
             onClickBack = {},
             onClickOpenDeviceSettings = {},
@@ -152,8 +150,10 @@ private fun NotificationSettingScreenPreview() = PreviewBox {
             onChangeActivityNotification = {},
         )
         NotificationSettingScreen(
-            state = NotificationSettingState(),
-            isNotificationEnabled = true,
+            state = NotificationSettingState(
+                isCanvasNotificationChecked = true,
+                isDeviceNotificationEnabled = true,
+            ),
             toastPolicy = rememberYGToastPolicy(),
             onClickBack = {},
             onClickOpenDeviceSettings = {},

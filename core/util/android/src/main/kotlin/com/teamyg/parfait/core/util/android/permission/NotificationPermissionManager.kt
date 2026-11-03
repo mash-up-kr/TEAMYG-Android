@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 
@@ -26,6 +27,13 @@ object NotificationPermissionManager {
     } else {
         true
     }
+
+    /**
+     * 앱 알림 자체가 켜져 있는지. [hasPermission] 은 API 33 미만에서 항상 `true` 라 사용자가 설정에서
+     * 알림을 꺼도 알 수 없다 — 푸시 표시 게이트와 달리 "기기 알림 꺼짐" 안내는 앱 알림 토글을 그대로 봐야 한다.
+     */
+    fun areNotificationsEnabled(context: Context): Boolean =
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     /**
      * 한 번 읽은 값만으로는 영구 거부를 판정할 수 없다 — 첫 요청 전에도, 두 번 거부된 뒤에도

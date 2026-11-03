@@ -11,15 +11,25 @@ import com.teamyg.parfait.domain.usecase.notification.UpdateCanvasNotificationUs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
+/**
+ * @property isDeviceNotificationEnabled 기기에서 앱 알림이 켜져 있는지. `null` 은 아직 읽기 전이다
+ */
 data class NotificationSettingState(
     val isCanvasNotificationChecked: Boolean = false,
     val isActivityNotificationChecked: Boolean = false,
-) : UiState
+    val isDeviceNotificationEnabled: Boolean? = null,
+) : UiState {
+    val isDeviceNotificationOff: Boolean get() = isDeviceNotificationEnabled == false
+
+    val isToggleEnabled: Boolean get() = isDeviceNotificationEnabled == true
+}
 
 sealed interface NotificationSettingIntent : UiIntent {
     data object ClickBack : NotificationSettingIntent
 
     data object ClickOpenDeviceSettings : NotificationSettingIntent
+
+    data class UpdateDeviceNotificationEnabled(val enabled: Boolean) : NotificationSettingIntent
 
     data class ChangeCanvasNotification(val checked: Boolean) : NotificationSettingIntent
 
@@ -58,6 +68,9 @@ constructor(
 
             NotificationSettingIntent.ClickOpenDeviceSettings ->
                 postSideEffect(NotificationSettingSideEffect.OpenDeviceNotificationSettings)
+
+            is NotificationSettingIntent.UpdateDeviceNotificationEnabled ->
+                updateState { copy(isDeviceNotificationEnabled = intent.enabled) }
 
             is NotificationSettingIntent.ChangeCanvasNotification -> handleChangeCanvasNotification(intent.checked)
 
