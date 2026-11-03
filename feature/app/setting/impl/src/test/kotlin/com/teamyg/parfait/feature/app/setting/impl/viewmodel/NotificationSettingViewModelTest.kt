@@ -9,7 +9,9 @@ import com.teamyg.parfait.domain.usecase.notification.UpdateCanvasNotificationUs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
@@ -224,4 +226,46 @@ class NotificationSettingViewModelTest {
         assertTrue(viewModel.state.value.isDeviceNotificationOff)
         assertFalse(viewModel.state.value.isToggleEnabled)
     }
+
+    @Test
+    fun changeNotification_updateFails_revertsToLastConfirmedValue() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 한 번 저장에 성공해 켜짐이 확정된 상태
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = true))
+        advanceUntilIdle()
+
+        // When 끄는 저장이 실패한다
+        coEvery { updateCanvasNotification(false) } returns Result.failure(IllegalStateException())
+        viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = false))
+        advanceUntilIdle()
+
+        // Then 마지막으로 확정된 값(켜짐)으로 돌아간다
+        assertTrue(viewModel.state.value.isCanvasNotificationChecked)
+    }
+
+    @Test
+    fun changeNotification_olderRequestFailsWhileNewerPending_doesNotOverwriteLatestValue() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 첫 저장 요청이 늦게 실패하도록 붙잡아 둔 상태
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            val firstResult = CompletableDeferred<Result<Unit>>()
+            coEvery { updateCanvasNotification(true) } coAnswers { firstResult.await() } andThen Result.success(Unit)
+            coEvery { updateCanvasNotification(false) } returns Result.success(Unit)
+
+            viewModel.effect.test {
+                // When 켬 → 끔 → 켬 으로 연달아 누르고 첫 요청이 그제서야 실패한다
+                viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = true))
+                viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = false))
+                viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = true))
+                runCurrent()
+                firstResult.complete(Result.failure(IllegalStateException()))
+                advanceUntilIdle()
+
+                // Then 사용자가 마지막에 누른 값(켜짐)이 유지되고 실패 안내는 나가지 않는다
+                assertTrue(viewModel.state.value.isCanvasNotificationChecked)
+                expectNoEvents()
+            }
+        }
 }

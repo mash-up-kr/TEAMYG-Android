@@ -9,6 +9,8 @@ import com.teamyg.parfait.domain.usecase.notification.GetNotificationSettingUseC
 import com.teamyg.parfait.domain.usecase.notification.UpdateActivityNotificationUseCase
 import com.teamyg.parfait.domain.usecase.notification.UpdateCanvasNotificationUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 /**
@@ -77,9 +79,21 @@ constructor(
             is NotificationSettingIntent.UpdateDeviceNotificationEnabled ->
                 updateState { copy(isDeviceNotificationEnabled = intent.enabled) }
 
-            is NotificationSettingIntent.ChangeCanvasNotification -> handleChangeCanvasNotification(intent.checked)
+            is NotificationSettingIntent.ChangeCanvasNotification -> changeNotification(
+                sync = canvasSync,
+                checked = intent.checked,
+                reflect = { checked -> copy(isCanvasNotificationChecked = checked) },
+                save = updateCanvasNotification::invoke,
+                failureMessage = "캔버스 알림 설정 변경에 실패했다",
+            )
 
-            is NotificationSettingIntent.ChangeActivityNotification -> handleChangeActivityNotification(intent.checked)
+            is NotificationSettingIntent.ChangeActivityNotification -> changeNotification(
+                sync = activitySync,
+                checked = intent.checked,
+                reflect = { checked -> copy(isActivityNotificationChecked = checked) },
+                save = updateActivityNotification::invoke,
+                failureMessage = "활동 알림 설정 변경에 실패했다",
+            )
         }
     }
 
@@ -87,6 +101,8 @@ constructor(
         launch(key = KEY_LOAD) {
             getNotificationSetting()
                 .onSuccess { setting ->
+                    canvasSync.confirmed = setting.isCanvasNotificationEnabled
+                    activitySync.confirmed = setting.isActivityNotificationEnabled
                     updateState {
                         copy(
                             isCanvasNotificationChecked = setting.isCanvasNotificationEnabled,
@@ -101,32 +117,51 @@ constructor(
         }
     }
 
-    // 스위치가 손가락을 따라 바로 움직이도록 먼저 반영하고, 저장에 실패하면 이전 값으로 되돌린다
-    private fun handleChangeCanvasNotification(checked: Boolean) {
-        val previous = state.value.isCanvasNotificationChecked
-        updateState { copy(isCanvasNotificationChecked = checked) }
+    /**
+     * 스위치가 손가락을 따라 바로 움직이도록 먼저 반영하고, 저장은 스위치별로 한 줄로 세운다.
+     * 실패하면 마지막으로 저장에 성공한 값으로 되돌린다.
+     *
+     * 뒤에 대기 중인 요청이 있을 때는 되돌리지 않는다 — 그 요청의 결과가 최종 값을 정하는데,
+     * 지금 되돌리면 사용자가 방금 누른 값을 덮어쓴다.
+     */
+    private fun changeNotification(
+        sync: ToggleSync,
+        checked: Boolean,
+        reflect: NotificationSettingState.(Boolean) -> NotificationSettingState,
+        save: suspend (Boolean) -> Result<Unit>,
+        failureMessage: String,
+    ) {
+        updateState { reflect(checked) }
+        sync.pending++
 
         launch {
-            updateCanvasNotification(checked).onFailure {
-                viewModelLogger.e(it) { "캔버스 알림 설정 변경에 실패했다" }
-                updateState { copy(isCanvasNotificationChecked = previous) }
-                postSideEffect(NotificationSettingSideEffect.ShowSaveError)
+            try {
+                sync.mutex.withLock {
+                    save(checked)
+                        .onSuccess { sync.confirmed = checked }
+                        .onFailure {
+                            viewModelLogger.e(it) { failureMessage }
+                            if (sync.pending == 1) {
+                                updateState { reflect(sync.confirmed) }
+                                postSideEffect(NotificationSettingSideEffect.ShowSaveError)
+                            }
+                        }
+                }
+            } finally {
+                sync.pending--
             }
         }
     }
 
-    private fun handleChangeActivityNotification(checked: Boolean) {
-        val previous = state.value.isActivityNotificationChecked
-        updateState { copy(isActivityNotificationChecked = checked) }
-
-        launch {
-            updateActivityNotification(checked).onFailure {
-                viewModelLogger.e(it) { "활동 알림 설정 변경에 실패했다" }
-                updateState { copy(isActivityNotificationChecked = previous) }
-                postSideEffect(NotificationSettingSideEffect.ShowSaveError)
-            }
-        }
+    /** 스위치 하나의 저장 요청 상태. 메인 스레드에서만 건드린다 */
+    private class ToggleSync {
+        val mutex = Mutex()
+        var confirmed = false
+        var pending = 0
     }
+
+    private val canvasSync = ToggleSync()
+    private val activitySync = ToggleSync()
 
     private companion object {
         const val KEY_LOAD = "loadNotificationSetting"
