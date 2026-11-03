@@ -58,7 +58,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 - **[`superpowers/plans/`](superpowers/plans/README.md)** — 작업 계획(`YYYY-MM-DD-kebab-topic.md`). 완료분은 `plans/archive/`
 - **[`synthesis/`](synthesis)** — 미결 추적(open-questions). wiki `synthesis/`와 동형.
   - **[`synthesis/open-questions.md`](synthesis/open-questions.md)** — 구현 미결·열린 결정·코드/문서 정합 이슈 추적. 정책·기획 미결은 위키 [[open-questions]].
-- **[`code-conventions.md`](code-conventions.md)** — 코드 주석·KDoc 규약. 루트 `CLAUDE.md`가 이 파일을 링크한다.
+- **[`code-conventions.md`](code-conventions.md)** — Compose 텍스트(`YGText` 래퍼·글자 크기 고정)와 코드 주석·KDoc 규약. 루트 `CLAUDE.md`가 이 파일을 링크한다.
 - **[`doc-baseline.md`](doc-baseline.md)** — 문서를 마지막으로 검증한 `develop` 커밋과 점검 절차.
 - **[`status.md`](status.md)** — 기능별 현재 상태. 덮어쓰기만 한다.
 - **[`log.md`](log.md)** — 점검·lint·구조 변경의 시간순 기록. append-only.
@@ -74,6 +74,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 ## 규율 (상세는 각 문서)
 - **SoT 우선순위**(모순 시): 코드 > wiki > CLAUDE.md
 - **라인번호·변동수치 금지** — 근거·규칙은 [adr/README.md](adr/README.md)
+- **Compose 텍스트** — [code-conventions.md](code-conventions.md#compose-텍스트). 원본 `Text`·`BasicText`·`BasicTextField` 대신 `YGText` 래퍼를 쓰고, 컴포지션 밖 측정은 `toFixedFontScale(density)`로 맞춘다.
 - **코드 주석·KDoc** — [code-conventions.md](code-conventions.md). 코드가 이미 말하는 것은 안 쓰고, 고정 틀을 쓰지 않으며, **다른 곳의 현재 상태는 낡으니 단정하지 않는다**. 아키텍처 결정은 코드가 아니라 `architecture/`·`adr/`에.
 - 새 아키텍처 결정 = 새 ADR([adr/template.md](adr/template.md)), 코드와 같은 커밋. 구조 변경 시 같은 PR에서 wiki 갱신(drift 금지).
 - 새 기능·컴포넌트 = 구현 전 [specs/](superpowers/specs/README.md)에 설계 스펙 확정([specs/template.md](superpowers/specs/template.md)) 후 코드 작성.

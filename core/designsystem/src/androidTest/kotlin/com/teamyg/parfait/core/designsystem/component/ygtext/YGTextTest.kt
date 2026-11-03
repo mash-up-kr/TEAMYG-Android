@@ -1,6 +1,7 @@
 package com.teamyg.parfait.core.designsystem.component.ygtext
 
 import android.content.res.Configuration
+import android.os.Build
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -83,10 +85,12 @@ class YGTextTest {
         assertLinePitch(layout)
     }
 
-    // 렌더러는 fontScale > 1.05 에서 sp lineHeight를 글자 크기 비율로 그린다
+    // 렌더러는 fontScale > 1.05 에서 sp lineHeight를 글자 크기 비율로 그린다.
+    // 비선형 변환은 API 34부터라 그 아래에선 절대값 변환으로 되돌려도 통과하므로 건너뛴다
     private fun nonLinearLayoutOf(
         content: @androidx.compose.runtime.Composable ((TextLayoutResult) -> Unit) -> Unit,
     ): TextLayoutResult {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val configuration = Configuration(context.resources.configuration).apply { fontScale = FONT_SCALE }
         density = Density(context.createConfigurationContext(configuration))

@@ -75,9 +75,6 @@ C를 고른 이유:
 fun TextStyle.toFixedFontScale(density: Density): TextStyle
 fun AnnotatedString.toFixedFontScale(density: Density): AnnotatedString
 fun TextUnit.toFixedFontScale(density: Density): TextUnit
-
-// 컴포저블 편의 함수 — LocalDensity.current를 쓴다
-@Composable fun TextStyle.toFixedFontScale(): TextStyle
 ```
 
 - 이름·시그니처 세부는 빌더 재량. 단 **정책은 이 함수들 안에만** 있어야 한다.

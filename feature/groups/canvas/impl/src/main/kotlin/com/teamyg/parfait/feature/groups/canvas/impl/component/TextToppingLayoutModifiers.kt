@@ -37,9 +37,10 @@ internal fun fitTextToppingToHeight(
     maxFontSizeSp: Float,
     density: Density,
 ): TextToppingAutoFit {
+    val fixedText = text.toFixedFontScale(density)
     val naturalHeightPx = textMeasurer
         .measure(
-            text = text,
+            text = fixedText,
             style = baseStyle.withTextToppingSizing(maxFontSizeSp).toFixedFontScale(density),
             constraints = Constraints(maxWidth = maxWidthPx),
         ).size.height
@@ -50,7 +51,7 @@ internal fun fitTextToppingToHeight(
 
     val measuredHeightPx = textMeasurer
         .measure(
-            text = text,
+            text = fixedText,
             style = baseStyle.withTextToppingSizing(fontSizeSp).toFixedFontScale(density),
             constraints = Constraints(maxWidth = with(density) { fieldMaxWidthDp.roundToPx() }),
         ).size.height

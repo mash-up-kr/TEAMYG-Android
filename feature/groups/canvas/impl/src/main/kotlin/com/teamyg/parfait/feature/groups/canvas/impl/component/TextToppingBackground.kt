@@ -25,7 +25,7 @@ private val BORDER_WIDTH_MIN = 0.5.dp
 
 /**
  * 네모배경·테두리. 여백·테두리는 글자 크기 비율 그대로 반올림하지 않는다(스펙 「네모배경」).
- * [fontSizeSp]는 피그마 수치라 그대로 dp로 쓴다.
+ * [fontSizeSp]는 캔버스 배율을 적용한 디자인 값이고 시스템 글자 크기와 무관하므로 그대로 dp로 쓴다.
  */
 @Composable
 internal fun TextToppingBackground(

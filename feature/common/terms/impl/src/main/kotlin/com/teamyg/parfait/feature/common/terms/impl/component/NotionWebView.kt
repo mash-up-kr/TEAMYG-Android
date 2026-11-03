@@ -55,6 +55,8 @@ internal fun NotionWebView(
                     )
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // 앱 텍스트처럼 OS 글자 크기와 무관하게 보이도록 기본값(fontScale 연동)을 끈다
+                    settings.textZoom = 100
                     webViewClient = object : WebViewClient() {
                         override fun onPageStarted(
                             view: WebView?,

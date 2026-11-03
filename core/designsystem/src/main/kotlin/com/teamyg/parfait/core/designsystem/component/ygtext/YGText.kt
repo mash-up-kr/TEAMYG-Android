@@ -22,8 +22,9 @@ import androidx.compose.ui.unit.TextUnit
 import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
- * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `material3.Text`.
- * `autoSize`는 변환하지 않는다.
+ * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `material3.Text`([toFixedFontScale]).
+ * 원본(피그마 수치) 스타일을 넘긴다 — 변환한 스타일을 넘기면 두 번 줄어든다.
+ * `autoSize`와 `inlineContent`의 `Placeholder` 크기는 변환하지 않는다.
  */
 @Composable
 fun YGText(

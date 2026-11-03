@@ -1,6 +1,6 @@
-# 코드 주석·KDoc 규약
+# 코드 규약 — Compose 텍스트·주석·KDoc
 
-이 저장소의 Kotlin 코드에 적용되는 규약이다. 문서 트리의 범위 지도는
+이 저장소의 Kotlin 코드에 적용되는 규약이다. Compose 텍스트(글자 크기 고정)와 주석·KDoc 두 절이 있다. 문서 트리의 범위 지도는
 [`docs/index.md`](index.md)가 적고, 작업 유형 라우팅은 저장소 루트
 [`CLAUDE.md`](../CLAUDE.md)가 정본이라 여기 중복하지 않는다.
 
@@ -9,7 +9,7 @@
 앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 dp 크기로 그린다. 정책은 `core:util:android`의
 `extension/FixedFontScale.kt`(`toFixedFontScale`) 한 곳에 있고, 래퍼는 `core:designsystem`의 `component/ygtext/`에 있다.
 
-- 텍스트는 `YGText`·`YGBasicText`·`YGBasicTextField`를 기본으로 쓴다.
+- 텍스트는 `YGText`·`YGBasicText`·`YGBasicTextField`를 기본으로 쓴다. `YGBasicText`는 `AnnotatedString` 판만 있다.
 - 원본(`material3.Text`·`BasicText`·`BasicTextField`)은 OS 글자 크기를 **의도적으로** 따라야 할 때만 쓰고, 그 자리에 이유를 주석 한 줄로 남긴다.
 - 컴포지션 밖에서 텍스트를 측정·그릴 때(`TextMeasurer`, `drawText`, `android.graphics.Paint`)는 스타일에 `toFixedFontScale(density)`를 적용한다.
 - ⚠️ 변환은 멱등이 아니다. 래퍼에는 원본(피그마 수치) 스타일을 넘긴다 — 변환한 스타일을 래퍼에 넘기면 두 번 줄어든다. 측정용과 렌더링용 스타일 변수를 나눈다.

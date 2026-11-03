@@ -230,8 +230,10 @@ internal fun CanvasTextInputScreen(
     val hugRenderStyle = autoSizeBaseStyle.withTextToppingSizing(fontSizeSp)
     val hugWidthDp = remember(hugMeasureText, hugRenderStyle, fieldMaxWidthDp, density) {
         val naturalWidthPx = textMeasurer
-            .measure(text = hugMeasureText, style = hugRenderStyle.toFixedFontScale(density))
-            .size.width
+            .measure(
+                text = hugMeasureText.toFixedFontScale(density),
+                style = hugRenderStyle.toFixedFontScale(density),
+            ).size.width
         with(density) { naturalWidthPx.toDp() }.coerceAtMost(fieldMaxWidthDp)
     }
 

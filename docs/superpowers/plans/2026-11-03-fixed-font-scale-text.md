@@ -26,7 +26,7 @@ tags: [plan, parfait]
 
 > ⚠️ 변환 함수 `FixedFontScale.kt`와 그 테스트는 구현 후 `core:util:android`의 `extension/`으로 옮겼다. 이 계획의 `core:designsystem` `ygtext/` 경로·`:core:designsystem:testDebugUnitTest` 명령은 실행 당시 기록이다. 현재 위치는 스펙 「파일 구성」이 정본이다.
 
-**Architecture:** `core:designsystem`의 `component/ygtext/`에 공유 변환 함수(`toFixedFontScale`)와 원본 오버로드별 래퍼를 둔다. 래퍼는 원본 파라미터를 그대로 미러링하고, 안에서 스타일을 변환한 뒤 원본을 호출한다. 그다음 저장소 전체 호출부를 래퍼로 교체하고, 캔버스의 로컬 `LocalDensity` 덮어쓰기를 걷어낸다.
+**Architecture:** 공유 변환 함수(`toFixedFontScale`)는 `core:util:android`의 `extension/`에, 원본 오버로드별 래퍼는 `core:designsystem`의 `component/ygtext/`에 둔다. 래퍼는 원본 파라미터를 그대로 미러링하고, 안에서 스타일을 변환한 뒤 원본을 호출한다. 그다음 저장소 전체 호출부를 래퍼로 교체하고, 캔버스의 로컬 `LocalDensity` 덮어쓰기를 걷어낸다.
 
 **Tech Stack:** Kotlin, Jetpack Compose. 실측 해석 버전은 `material3` 1.4.0, `foundation`·`ui-text` 1.12.0(BOM `2026.08.00`). 테스트는 JUnit4 + `kotlin.test`(JVM), Compose UI test(계측).
 

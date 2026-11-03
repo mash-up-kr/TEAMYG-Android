@@ -16,7 +16,8 @@ import com.teamyg.parfait.core.util.android.extension.toFixedFontScale
 
 /**
  * 시스템 글자 크기와 무관하게 피그마 dp 값 그대로 그리는 `foundation.text.BasicText`.
- * `autoSize`는 변환하지 않는다.
+ * `AnnotatedString` 판만 있다 — `String`은 `AnnotatedString(...)`으로 감싼다.
+ * `autoSize`와 `inlineContent`의 `Placeholder` 크기는 변환하지 않는다.
  */
 @Composable
 fun YGBasicText(

@@ -435,3 +435,6 @@ conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인
 
 ## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
 팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 옛 ③(팝인 중 띠 잘림) 소멸
+
+## [2026-11-03] review | 글자 크기 고정 텍스트 분야별 리뷰 반영
+`toFixedFontScale` `core:designsystem` → `core:util:android` 이동 · 컴포저블 판 삭제 · 캔버스 측정 텍스트 변환·오토핏 fontScale 계측 테스트 · 비선형 줄 간격 테스트 API 34 가드 · 약관 웹뷰 `textZoom` 고정 · design-system·index 규약 진입점
