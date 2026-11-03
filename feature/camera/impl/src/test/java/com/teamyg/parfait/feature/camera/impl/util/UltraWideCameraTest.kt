@@ -35,4 +35,16 @@ class UltraWideCameraTest {
     fun ultraWide_onlyMain_isNull() {
         assertNull(findUltraWideCamera(main = main, backCameras = listOf(main)))
     }
+
+    @Test
+    fun ultraWide_exactlyAtThreshold_isFound() {
+        // 메인 지표 6.4/4.69의 1/0.7배가 되도록 초점거리를 맞춘다
+        val edge = LensOptics(
+            cameraId = "2",
+            sensorWidthMm = 6.4f,
+            minFocalLengthMm = 4.69f * 0.7f,
+        )
+
+        assertEquals(edge, findUltraWideCamera(main = main, backCameras = listOf(main, edge)))
+    }
 }

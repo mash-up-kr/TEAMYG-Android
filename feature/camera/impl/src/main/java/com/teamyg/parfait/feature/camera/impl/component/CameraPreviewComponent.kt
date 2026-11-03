@@ -97,7 +97,7 @@ internal fun CameraPreviewViewComponent(
 
             camera = newCamera
             onImageCaptureReady(imageCapture)
-            // 범위는 메인 카메라 것만 보고한다. 초광각 범위가 들어가면 VM이 1x로 초기화해 0.5x가 풀린다
+            // 범위는 메인 카메라 것만 보고한다. 초광각 범위로 단계 목록을 만들면 2x·0.5x 판정이 틀어진다
             if (!bindsUltraWide) {
                 newCamera.cameraInfo.zoomState.value?.let { state ->
                     onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio, ultraWide != null)

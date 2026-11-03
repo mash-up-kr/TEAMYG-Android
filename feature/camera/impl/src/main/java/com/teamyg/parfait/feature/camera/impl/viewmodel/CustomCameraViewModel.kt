@@ -51,10 +51,10 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnOpenAppSettings : CustomCameraIntent
 
-    /** 메인 카메라에 바인딩됐을 때만 온다. 초광각에 붙었을 때 오면 1x로 초기화돼 0.5x가 풀린다 */
+    /** 메인 카메라에 바인딩됐을 때만 온다. 단계 목록은 메인 카메라 범위로만 만든다 */
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
-        val hasUltraWideCamera: Boolean = false,
+        val hasUltraWideCamera: Boolean,
     ) : CustomCameraIntent
 
     data object OnClickZoom : CustomCameraIntent
@@ -162,12 +162,14 @@ constructor(
 
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
         val halfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
+        val zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource)
 
         updateState {
             copy(
                 halfZoomSource = halfZoomSource,
-                zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource),
-                zoomLevel = CameraZoomLevel.ONE,
+                zoomLevels = zoomLevels,
+                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다. 렌즈 전환은 OnClickFlip이 따로 초기화한다
+                zoomLevel = zoomLevel.takeIf { it in zoomLevels } ?: CameraZoomLevel.ONE,
             )
         }
     }
