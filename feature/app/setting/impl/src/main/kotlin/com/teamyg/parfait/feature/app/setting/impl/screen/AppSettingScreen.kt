@@ -27,6 +27,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.toStringResource
@@ -38,6 +39,9 @@ import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.component.ProfileCard
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingState
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+
+/** 피그마 고정값 — 토큰 체계에 없는 화면 전용 여백이라 상수로 뺀다 */
+private val FOOTER_LINK_HORIZONTAL_PADDING = 64.dp
 
 @Composable
 internal fun AppSettingScreen(
@@ -130,46 +134,24 @@ internal fun AppSettingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 64.dp, end = 64.dp, top = YGTheme.layout.padding.padding6),
+                        .padding(
+                            start = FOOTER_LINK_HORIZONTAL_PADDING,
+                            end = FOOTER_LINK_HORIZONTAL_PADDING,
+                            top = YGTheme.layout.padding.padding6,
+                        ),
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        YGTextButton(
-                            text = stringResource(R.string.setting_item_terms_of_service),
-                            onClick = { termsOfServicePolicy?.termsId?.let(onClickPolicy) },
-                        )
-                        Spacer(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(8.dp)
-                                .background(color = YGAtomicColors.Gray.Gray200),
-                        )
-                        YGTextButton(
-                            text = stringResource(R.string.setting_item_privacy_policy),
-                            onClick = { privacyPolicy?.termsId?.let(onClickPolicy) },
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        YGTextButton(
-                            text = stringResource(R.string.setting_item_oss_license),
-                            onClick = onClickOssLicense,
-                        )
-                        Spacer(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(8.dp)
-                                .background(color = YGAtomicColors.Gray.Gray200),
-                        )
-                        YGTextButton(
-                            text = stringResource(R.string.setting_item_csae_policy),
-                            onClick = onClickCsaePolicy,
-                        )
-                    }
+                    PolicyLinkRow(
+                        firstText = stringResource(R.string.setting_item_terms_of_service),
+                        secondText = stringResource(R.string.setting_item_privacy_policy),
+                        onClickFirst = { termsOfServicePolicy?.termsId?.let(onClickPolicy) },
+                        onClickSecond = { privacyPolicy?.termsId?.let(onClickPolicy) },
+                    )
+                    PolicyLinkRow(
+                        firstText = stringResource(R.string.setting_item_oss_license),
+                        secondText = stringResource(R.string.setting_item_csae_policy),
+                        onClickFirst = onClickOssLicense,
+                        onClickSecond = onClickCsaePolicy,
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap9))
@@ -190,6 +172,29 @@ internal fun AppSettingScreen(
         }
 
         OnBack { onClickBack() }
+    }
+}
+
+/** 약관 footer 한 줄 — 텍스트 버튼 둘을 구분선으로 가른다 */
+@Composable
+private fun PolicyLinkRow(
+    firstText: String,
+    secondText: String,
+    onClickFirst: () -> Unit,
+    onClickSecond: () -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        YGTextButton(text = firstText, onClick = onClickFirst)
+        Spacer(
+            modifier = Modifier
+                .width(SizeTokens.Size1.getDp())
+                .height(YGTheme.layout.gap.gap3)
+                .background(color = YGAtomicColors.Gray.Gray200),
+        )
+        YGTextButton(text = secondText, onClick = onClickSecond)
     }
 }
 
