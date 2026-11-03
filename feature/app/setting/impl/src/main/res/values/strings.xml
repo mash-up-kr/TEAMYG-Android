@@ -8,6 +8,7 @@
     <string name="notification_setting_device_off_body">알림을 받으려면 기기 설정에서 파르페 알림을 허용해 주세요</string>
     <string name="notification_setting_open_device_settings">설정으로 이동</string>
     <string name="notification_setting_save_error">설정 저장에 실패했어요, 나중에 다시 시도해 주세요</string>
+    <string name="notification_setting_load_error">설정을 불러오지 못했어요, 나중에 다시 시도해 주세요</string>
     <string name="notification_setting_canvas_title">캔버스 알림 받기</string>
     <string name="notification_setting_canvas_sub">아침 10시 오픈, 오후 8시 마감 알림을 보내드려요</string>
     <string name="notification_setting_activity_title">활동 알림 모아 받기</string>
