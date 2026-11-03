@@ -1,7 +1,7 @@
 ---
 id: camera-zoom-button
 title: 커스텀 카메라 줌 버튼
-status: done
+status: in-progress
 type: work-order
 created: 2026-11-03
 updated: 2026-11-03
@@ -14,7 +14,7 @@ related_code:
   - CameraZoomLevel.kt#CameraZoomLevel
   - CustomCameraViewModel.kt#CustomCameraViewModel
   - CustomCameraScreen.kt#CustomCameraScreen
-archived_reason: 구현 완료 (feature/camera-zoom-button, 2026-11-03)
+archived_reason:
 tags: [plan, parfait]
 ---
 
@@ -30,7 +30,7 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose, CameraX, kotlin.test + Turbine
 
-**Spec:** `docs/superpowers/specs/archive/2026-11-03-camera-zoom-button-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-03-camera-zoom-button-design.md`
 
 ## Global Constraints
 
@@ -297,4 +297,68 @@ git commit -m "feat: 커스텀 카메라에 줌 버튼 연결"
   0.5x에서 전면 전환 시 1x·버튼 1x↔2x, 크래시 로그 없음.
 - [ ] **Step 6: 문서** — `status.md` 줌 줄에 0.5x 두 경로와 재적용 반영, 스펙 `implemented`·계획 `done` 후 다시 `archive/`, README 행 갱신, `check_links` exit 0.
 - [ ] **Step 7: 커밋** — 코드 `feat: 초광각 바인딩과 줌 재적용 연결`, 문서 `docs: 카메라 줌 버튼 초광각 경로 반영`
+
+---
+
+### Task 7: 범위 재보고 시 단계 유지와 테스트 보강
+
+**Files:**
+- Modify: `.../viewmodel/CustomCameraViewModel.kt`, `.../model/CameraZoomLevel.kt`(필요 시)
+- Test: `.../viewmodel/CustomCameraViewModelTest.kt`, `.../util/UltraWideCameraTest.kt`
+
+**Interfaces:**
+- Produces: `CustomCameraIntent.OnZoomRangeReady(range, hasUltraWideCamera: Boolean)` — 기본 인자 제거. 호출부·테스트 전부 명시.
+
+- [ ] **Step 1: 실패하는 테스트**
+
+```kotlin
+@Test fun zoom_rangeReportedAgain_keepsLevelIfStillAvailable() // 0.5f..8f, 클릭 1회(TWO) → 같은 범위 재보고 → TWO 유지
+@Test fun zoom_rangeReportedAgain_fallsBackToOneIfUnavailable() // 1f..8f,true, 클릭 2회(HALF) → (1f..8f,false) → ONE
+@Test fun zoom_ultraWideWithoutTwo_cyclesOneHalf()              // (1f..1f,true): 클릭 1·2회 → HALF, ONE
+@Test fun zoom_flipFromUltraWide_unbindsUltraWide()             // (1f..8f,true), 클릭 2회 → OnClickFlip → useUltraWideCamera false
+// UltraWideCameraTest
+@Test fun ultraWide_exactlyAtThreshold_isFound()                // 지표가 정확히 main/0.7 → 선택
+```
+  `zoom_onNewRange_resetsToOneAndRebuildsLevels`는 (1f..1f) 재보고라 ONE이 그대로 맞다 — 유지.
+
+- [ ] **Step 2: 실패 확인** — `./gradlew :feature:camera:impl:testDebugUnitTest`, Expected: 앞 2건 FAIL(나머지는 PASS여도 된다 — 공백 보강용)
+- [ ] **Step 3: 구현** — `handleOnZoomRangeReady`: `zoomLevel = zoomLevel.takeIf { it in levels } ?: ONE`.
+- [ ] **Step 4: 통과 확인** — Expected: 전부 PASS
+- [ ] **Step 5: 커밋** — `fix: 재바인딩 뒤에도 줌 단계를 유지`
+
+---
+
+### Task 8: 바인딩 견고성과 부드러운 줌
+
+**Files:**
+- Modify: `.../component/CameraPreviewComponent.kt`, `.../util/UltraWideCamera.kt`
+
+- [ ] **Step 1: 견고성** — 리스너 앞에서 `disposed` 플래그 확인(`onDispose`가 세운다). 초광각 `bindToLifecycle` 실패 시 메인 셀렉터로 재시도하고
+  `onZoomRangeReady(range, false)`. `findBackUltraWideCamera`·`toLensOptics`를 `runCatching`으로 감싸 실패는 null.
+- [ ] **Step 2: 부드러운 줌** — `LaunchedEffect(zoomRatio, camera)`: 같은 `camera`에서 배율만 바뀌면 `Animatable`로 현재 배율→목표를 약 200ms 동안
+  프레임마다 `setZoomRatio`. `camera`가 바뀐 직후(첫 바인딩·재바인딩)는 바로 건다. 상태 갱신 없이 로컬에서만 돈다.
+- [ ] **Step 3: 빌드·lint** — Task 3 Step 4 명령, Expected: BUILD SUCCESSFUL
+- [ ] **Step 4: 커밋** — `feat: 같은 카메라 줌을 부드럽게 바꾸고 재바인딩 실패 대비`
+
+---
+
+### Task 9: 전환 덮개·실기기·문서
+
+**Files:**
+- Create: `.../model/CameraTransition.kt` (덮개 한 장: `frame: ImageBitmap`, `isFlip: Boolean`)
+- Modify: `.../component/CameraPreviewHandle.kt`, `.../component/CameraPreviewComponent.kt`, `.../component/CameraFeedLayer.kt`, route
+
+**Interfaces:**
+- Produces: `CameraPreviewHandle.transition: State<CameraTransition?>`; `CameraFeedLayer(..., transition: CameraTransition?)`
+
+- [ ] **Step 1: 캡처** — 바인딩 `DisposableEffect`의 `onDispose`에서 `previewView.bitmap`을 잡아 `CameraTransition`으로 둔다. `isFlip`은 `lensFacing`이 바뀐 재바인딩.
+  권한 해제·화면 이탈로 인한 dispose는 덮개를 만들지 않는다.
+- [ ] **Step 2: 해제** — 새 바인딩 뒤 `previewView.previewStreamState`가 `STREAMING`이 되면 덮개를 지운다.
+- [ ] **Step 3: 그리기** — `CameraFeedLayer`의 `AndroidView` 위에 덮개 `Image`(`ContentScale.Crop`, 블러 — API 31+ `Modifier.blur`, 미만은 블러 없이 스크림),
+  `isFlip`이면 `graphicsLayer { rotationY; cameraDistance }`로 0→180° 약 300ms. 해제는 `AnimatedVisibility` 페이드아웃 약 150ms.
+- [ ] **Step 4: 빌드·테스트·lint** — Task 3 Step 4 명령
+- [ ] **Step 5: 실기기(SM-A356N)** — 1x↔2x 부드러운 줌·검정 없음, 2x→0.5x·0.5x→1x 블러 덮개·검정 없음, 전면/후면 뒤집기, 「다시 찍기」 후 2x 유지,
+  화면 녹화(`screenrecord`)로 프레임 확인, 크래시 없음.
+- [ ] **Step 6: 문서·재아카이브** — `status.md` 줌 줄에 전환 연출 반영, 스펙 `implemented`·계획 `done`, README, `check_links` exit 0.
+- [ ] **Step 7: 커밋** — 코드 `feat: 카메라 전환에 블러 덮개와 뒤집기 연출 추가`, 문서 `docs: 카메라 전환 연출 반영`
 
