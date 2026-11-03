@@ -9,6 +9,7 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -50,8 +51,10 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnOpenAppSettings : CustomCameraIntent
 
+    /** 메인 카메라에 바인딩됐을 때만 온다. 초광각에 붙었을 때 오면 1x로 초기화돼 0.5x가 풀린다 */
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
+        val hasUltraWideCamera: Boolean = false,
     ) : CustomCameraIntent
 
     data object OnClickZoom : CustomCameraIntent
@@ -78,10 +81,18 @@ data class CustomCameraState(
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
+    val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
     val flashMode: FlashMode = FlashMode.OFF,
 ) : UiState {
     val isZoomButtonVisible: Boolean
         get() = zoomLevels.size > 1
+
+    val useUltraWideCamera: Boolean
+        get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
+
+    /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
+    val cameraZoomRatio: Float
+        get() = if (useUltraWideCamera) 1f else zoomLevel.ratio
 }
 
 @HiltViewModel
@@ -150,9 +161,12 @@ constructor(
     }
 
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
+        val halfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
+
         updateState {
             copy(
-                zoomLevels = CameraZoomLevel.availableIn(intent.range),
+                halfZoomSource = halfZoomSource,
+                zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource),
                 zoomLevel = CameraZoomLevel.ONE,
             )
         }
@@ -166,6 +180,9 @@ constructor(
         updateState {
             copy(
                 zoomLevel = CameraZoomLevel.ONE,
+                // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
+                zoomLevels = listOf(CameraZoomLevel.ONE),
+                halfZoomSource = HalfZoomSource.NONE,
                 lensFacing = when (lensFacing) {
                     CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
                     else -> CameraSelector.LENS_FACING_BACK

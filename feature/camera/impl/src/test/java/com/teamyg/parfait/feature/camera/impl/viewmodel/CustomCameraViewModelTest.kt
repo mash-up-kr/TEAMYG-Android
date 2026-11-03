@@ -2,11 +2,13 @@ package com.teamyg.parfait.feature.camera.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class CustomCameraViewModelTest {
     private fun createViewModel() = CustomCameraViewModel(
@@ -119,6 +121,48 @@ class CustomCameraViewModelTest {
 
         assertEquals(CameraZoomLevel.ONE, viewModel.state.value.zoomLevel)
         assertFalse(viewModel.state.value.isZoomButtonVisible)
+    }
+
+    @Test
+    fun zoom_ultraWideOnly_cyclesToHalfOnUltraWide() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+
+        viewModel.clickZoom(times = 2)
+
+        assertEquals(CameraZoomLevel.HALF, viewModel.state.value.zoomLevel)
+        assertTrue(viewModel.state.value.useUltraWideCamera)
+        assertEquals(1f, viewModel.state.value.cameraZoomRatio)
+
+        viewModel.clickZoom(times = 1)
+
+        assertEquals(CameraZoomLevel.ONE, viewModel.state.value.zoomLevel)
+        assertFalse(viewModel.state.value.useUltraWideCamera)
+    }
+
+    @Test
+    fun zoom_rangeCoversHalf_prefersZoomRatio() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.5f..8f, hasUltraWideCamera = true))
+
+        viewModel.clickZoom(times = 2)
+
+        assertEquals(CameraZoomLevel.HALF, viewModel.state.value.zoomLevel)
+        assertFalse(viewModel.state.value.useUltraWideCamera)
+        assertEquals(0.5f, viewModel.state.value.cameraZoomRatio)
+    }
+
+    @Test
+    fun zoom_onFlip_hidesButtonUntilNewRange() {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(0.5f..8f))
+        viewModel.clickZoom(times = 1)
+
+        viewModel.processIntent(CustomCameraIntent.OnClickFlip)
+
+        assertFalse(viewModel.state.value.isZoomButtonVisible)
+        assertEquals(HalfZoomSource.NONE, viewModel.state.value.halfZoomSource)
+        assertEquals(listOf(CameraZoomLevel.ONE), viewModel.clickZoom(times = 1))
     }
 
     private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel> = List(times) {

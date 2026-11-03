@@ -20,7 +20,14 @@ enum class CameraZoomLevel(
     }
 
     companion object {
-        fun availableIn(range: ClosedFloatingPointRange<Float>): List<CameraZoomLevel> =
-            entries.filter { it.ratio in range }
+        fun available(
+            range: ClosedFloatingPointRange<Float>,
+            halfZoomSource: HalfZoomSource,
+        ): List<CameraZoomLevel> = entries.filter { level ->
+            when (level) {
+                HALF -> halfZoomSource != HalfZoomSource.NONE
+                else -> level.ratio in range
+            }
+        }
     }
 }
