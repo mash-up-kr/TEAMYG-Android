@@ -1,0 +1,14 @@
+package com.teamyg.parfait.feature.camera.impl.model
+
+/**
+ * 카메라 하나의 화각을 비교하기 위한 광학값.
+ */
+data class LensOptics(
+    val cameraId: String,
+    val sensorWidthMm: Float,
+    val minFocalLengthMm: Float,
+) {
+    /** 클수록 화각이 넓다. 같은 기기 안의 카메라끼리만 비교한다 */
+    val fieldOfViewIndex: Float
+        get() = sensorWidthMm / minFocalLengthMm
+}
