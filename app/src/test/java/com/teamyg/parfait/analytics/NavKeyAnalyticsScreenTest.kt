@@ -3,6 +3,7 @@ package com.teamyg.parfait.analytics
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
@@ -46,6 +47,7 @@ class NavKeyAnalyticsScreenTest {
             NavKeyCanvasImageSave(imagePath = "path", date = "2026-09-09", toppingCount = 1) to "C-001-image-save",
             NavKeyAppSetting to "S-001",
             NavKeyAccountInfo to "S-002",
+            NavKeyNotificationSetting to "S-105",
             NavKeyGroupSetting(groupId = 1L) to "S-101",
             NavKeyWebView(title = "약관", url = "https://example.com") to "S-004",
         )

@@ -13,6 +13,13 @@ enum class AnalyticsEventType(
      */
     APP_LINK_OPENED(eventId = "AppLink", eventName = "AppLink"),
     APP_ACCOUNT_NICKNAME_CHANGED(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
+    APP_SETTING_NOTIFICATION_TAPPED(eventId = "S-001-01", eventName = "app_setting_notification_tapped"),
+    APP_NOTIFICATION_SETTING_CHANGED(eventId = "S-105-01", eventName = "app_notification_setting_changed"),
+    APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED(
+        eventId = "S-105-02",
+        eventName = "app_notification_device_settings_tapped",
+    ),
+    APP_NOTIFICATION_BACK_TAPPED(eventId = "S-105-03", eventName = "app_notification_back_tapped"),
 
     CANVAS_CAMERA_RETAKE_TAPPED(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
     CANVAS_CAMERA_PHOTO_SELECTED(eventId = "C-102-01", eventName = "canvas_camera_photo_selected"),
