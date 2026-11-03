@@ -1,13 +1,16 @@
 ---
 id: camera-zoom-button
 title: 커스텀 카메라 줌 버튼 (Camera zoom toggle)
-status: implemented
+status: in-progress
 category: ui-spec
 platforms: android
 verified: 2026-11-03
 related_code:
   - YGCameraZoomButton.kt#YGCameraZoomButton
   - CameraZoomLevel.kt#CameraZoomLevel
+  - HalfZoomSource.kt#HalfZoomSource
+  - UltraWideCamera.kt#findUltraWideCamera
+  - CameraPreviewComponent.kt#CameraPreviewViewComponent
   - CustomCameraViewModel.kt#CustomCameraViewModel
   - CustomCameraScreen.kt#CustomCameraScreen
 related_adr:
@@ -33,7 +36,8 @@ Camera-Zoom 버튼 클릭 시 1x > 2x > 0.5x 순서로 반복".
 
 ## 순환 규칙 (사용자 결정)
 
-Figma 순서 `1x → 2x → 0.5x`에서 현재 렌즈 `zoomRange`(CameraX `ZoomState` min..max)에 들어가는 단계만 남긴다.
+Figma 순서 `1x → 2x → 0.5x`에서 현재 렌즈가 낼 수 있는 단계만 남긴다.
+2x는 `zoomRange`(CameraX `ZoomState` min..max)에 들어갈 때, 0.5x는 아래 「0.5x를 내는 방법」 중 하나가 있을 때 낼 수 있다.
 
 | 지원 | 순환 |
 |---|---|
@@ -44,7 +48,29 @@ Figma 순서 `1x → 2x → 0.5x`에서 현재 렌즈 `zoomRange`(CameraX `ZoomS
 
 - 1x는 CameraX에서 항상 범위 안이라 별도 처리하지 않는다.
 - 전면 카메라도 같은 규칙이다 — 둘 다 미지원이면 숨김.
-- **렌즈 전환 시 항상 1x로 초기화** (사용자 결정). 새 렌즈 범위가 들어오면 목록을 다시 만든다.
+- **렌즈 전환 시 항상 1x로 초기화** (사용자 결정). 전환 직후 목록도 1x 하나로 비워 새 렌즈 범위가 올 때까지 버튼을 숨긴다 —
+  비우지 않으면 그 사이 이전 렌즈 단계로 순환한다.
+
+## 0.5x를 내는 방법 (사용자 결정: 초광각 전환 포함)
+
+후면에서만 따진다. 우선순위 순서:
+
+1. **줌 배율** — 메인 카메라 `zoomRange`에 0.5가 들면 `setZoomRatio(0.5f)`. 메인·초광각을 묶은 논리 카메라를 앱에 노출하는 기기(Pixel 등).
+2. **초광각 카메라 전환** — 1이 안 되고, 다른 후면 카메라 중 초광각이 있으면 0.5x에서 그 카메라로 다시 바인딩하고 배율은 1f.
+   초광각을 별도 카메라 ID로만 노출하는 기기(Galaxy A35: 메인 ID 0, 초광각 ID 2, 둘 다 범위 1.0–8.0, 논리 카메라는 비공개).
+   이런 기기는 이 방법으로만 0.5x가 나온다. 촬영도 초광각으로 한다.
+3. 둘 다 없으면 0.5x를 뺀다.
+
+초광각 판정 (내 판단): 화각 지표 `센서 폭 / 최소 초점거리`(`SENSOR_INFO_PHYSICAL_SIZE`, `LENS_INFO_AVAILABLE_FOCAL_LENGTHS`)가
+메인의 `1 / 0.7`배 이상인 후면 카메라 중 가장 넓은 것. 초점거리만 보면 매크로·심도 센서를 잘못 고른다.
+라벨은 실제 화각과 무관하게 Figma대로 `0.5x` (내 판단). 전환 때 프리뷰가 잠깐 끊기는 것은 감수한다 (내 판단).
+
+- 범위 보고(`OnZoomRangeReady`)는 메인 카메라에 바인딩됐을 때만 보낸다. 초광각에 붙었을 때 보내면 1x 초기화가 돌아 0.5x가 바로 풀린다.
+
+## 재적용 (리뷰 Important, 실기기 재현)
+
+CameraX는 카메라가 비활성화되면(ON_STOP) 줌을 1.0으로 되돌린다. 복귀 때는 재바인딩도 범위 보고도 없어,
+상태는 2x인데 프리뷰·촬영은 1x가 된다. 카메라 상태가 `OPEN`이 될 때마다 현재 배율을 다시 건다.
 
 ## Approaches
 
@@ -67,4 +93,4 @@ Figma 순서 `1x → 2x → 0.5x`에서 현재 렌즈 `zoomRange`(CameraX `ZoomS
 ## 빌더에게 남긴 것
 
 - DS 컴포넌트는 라벨 문자열을 받는다(`label: String`) — DS가 feature 모델을 알면 안 된다. 라벨 문자열은 `CameraZoomLevel`이 가진다.
-- `contentDescription` 문구.
+- `contentDescription` 문구 — 미정. 라벨 텍스트 + Button 역할로 읽힌다.
