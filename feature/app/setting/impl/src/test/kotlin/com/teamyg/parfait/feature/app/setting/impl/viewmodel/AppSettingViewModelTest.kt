@@ -56,6 +56,21 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickNotification_navigatesToNotificationSetting() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 알림 설정을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickNotification)
+
+            // Then 알림 설정 화면으로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToNotificationSetting, awaitItem())
+        }
+    }
+
+    @Test
     fun clickPolicy_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 목록을 이미 받아 둔 화면
         val viewModel = viewModel()
