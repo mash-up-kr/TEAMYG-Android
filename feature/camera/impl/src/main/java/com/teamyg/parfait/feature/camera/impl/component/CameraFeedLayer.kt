@@ -4,28 +4,48 @@ import android.os.Build
 import androidx.camera.core.Camera
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 
 private val BLUR_RADIUS = 4.dp
+private val TRANSITION_BLUR_RADIUS = 24.dp
+private const val TRANSITION_FLIP_MILLIS = 300
+private const val TRANSITION_FADE_MILLIS = 150
+private const val TRANSITION_CAMERA_DISTANCE = 12f
 private val VIEWFINDER_BORDER_WIDTH = 1.dp
 private val VIEWFINDER_CORNER_LENGTH = 18.dp
 private val VIEWFINDER_CORNER_WIDTH = 2.dp
@@ -41,6 +61,7 @@ internal fun CameraFeedLayer(
     previewView: PreviewView,
     camera: Camera?,
     viewfinderRect: () -> Rect?,
+    transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     isBlurSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
@@ -126,6 +147,51 @@ internal fun CameraFeedLayer(
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize(),
+        )
+        CameraTransitionCover(
+            transition = transition,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
+
+/**
+ * 카메라를 다시 여는 동안 검정 화면 대신 직전 프레임을 흐리게 덮는다. 전면/후면 전환이면 뒤집는다.
+ * 블러는 API 31 미만에서 빠지고 피드 레이어의 딤만 남는다.
+ */
+@Composable
+private fun CameraTransitionCover(
+    transition: CameraTransition?,
+    modifier: Modifier = Modifier,
+) {
+    // 걷히는 동안(페이드아웃) 그릴 덮개를 붙들어 둔다
+    var shown by remember { mutableStateOf(transition) }
+    if (transition != null) shown = transition
+
+    AnimatedVisibility(
+        visible = transition != null,
+        modifier = modifier,
+        enter = EnterTransition.None,
+        exit = fadeOut(animationSpec = tween(durationMillis = TRANSITION_FADE_MILLIS)),
+    ) {
+        val cover = shown ?: return@AnimatedVisibility
+        val rotation = remember(cover) { Animatable(0f) }
+        LaunchedEffect(cover) {
+            if (cover.isFlip) {
+                rotation.animateTo(targetValue = 180f, animationSpec = tween(durationMillis = TRANSITION_FLIP_MILLIS))
+            }
+        }
+
+        Image(
+            bitmap = cover.frame,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    rotationY = rotation.value
+                    cameraDistance = TRANSITION_CAMERA_DISTANCE * density
+                }.blur(radius = TRANSITION_BLUR_RADIUS, edgeTreatment = BlurredEdgeTreatment.Rectangle),
         )
     }
 }

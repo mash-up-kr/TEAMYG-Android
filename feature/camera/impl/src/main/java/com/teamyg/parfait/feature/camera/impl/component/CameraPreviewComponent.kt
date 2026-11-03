@@ -17,11 +17,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
+import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
+import com.teamyg.parfait.feature.camera.impl.model.CapturedFrame
 import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
 import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
 
@@ -44,12 +47,22 @@ internal fun CameraPreviewViewComponent(
     }
     val cameraState = remember { mutableStateOf<Camera?>(null) }
     var camera by cameraState
+    val transitionState = remember { mutableStateOf<CameraTransition?>(null) }
+    // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 꺼내 쓴다. 효과 안에서만 읽어 recomposition을 부르지 않는다
+    val lastFrame = remember { mutableStateOf<CapturedFrame?>(null) }
 
     DisposableEffect(lensFacing, useUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
         if (!hasPermission) {
+            lastFrame.value = null
+            transitionState.value = null
             return@DisposableEffect onDispose { }
         }
+
+        transitionState.value = lastFrame.value?.let { captured ->
+            CameraTransition(frame = captured.bitmap.asImageBitmap(), isFlip = captured.lensFacing != lensFacing)
+        }
+        lastFrame.value = null
 
         var boundProvider: ProcessCameraProvider? = null
         // 리스너는 비동기로 돈다. 폐기된 바인딩이 뒤늦게 돌아 새 바인딩을 덮지 않게 한다
@@ -117,6 +130,8 @@ internal fun CameraPreviewViewComponent(
 
         onDispose {
             disposed = true
+            // 화면을 떠나는 dispose에서도 잡히지만, 그때는 다음 바인딩이 없어 쓰이지 않는다
+            lastFrame.value = previewView.bitmap?.let { CapturedFrame(bitmap = it, lensFacing = lensFacing) }
             boundProvider?.unbindAll()
             camera = null
         }
@@ -157,9 +172,28 @@ internal fun CameraPreviewViewComponent(
         onDispose { target.cameraInfo.cameraState.removeObserver(observer) }
     }
 
+    // 새 카메라가 프레임을 보내기 시작하면 덮개를 걷는다. 덮개를 건 직후엔 이전 스트림의 STREAMING이 남아 있을 수 있어 IDLE을 한 번 본 뒤부터 센다
+    val hasTransition = transitionState.value != null
+    DisposableEffect(hasTransition) {
+        if (!hasTransition) return@DisposableEffect onDispose { }
+
+        var sawIdle = false
+        val observer = Observer<PreviewView.StreamState> { streamState ->
+            when (streamState) {
+                PreviewView.StreamState.IDLE -> sawIdle = true
+                PreviewView.StreamState.STREAMING -> if (sawIdle) transitionState.value = null
+                else -> Unit
+            }
+        }
+        previewView.previewStreamState.observeForever(observer)
+
+        onDispose { previewView.previewStreamState.removeObserver(observer) }
+    }
+
     return CameraPreviewHandle(
         previewView = previewView,
         camera = cameraState,
+        transition = transitionState,
     )
 }
 

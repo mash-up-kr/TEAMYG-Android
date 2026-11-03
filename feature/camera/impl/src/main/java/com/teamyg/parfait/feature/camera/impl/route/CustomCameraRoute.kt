@@ -222,6 +222,7 @@ internal fun CustomCameraRoute(
                     previewView = cameraPreviewHandle.previewView,
                     camera = cameraPreviewHandle.camera.value,
                     viewfinderRect = { viewfinderRect },
+                    transition = cameraPreviewHandle.transition.value,
                     onFeedRectChange = { feedRect = it },
                     modifier = Modifier.fillMaxSize(),
                 )
