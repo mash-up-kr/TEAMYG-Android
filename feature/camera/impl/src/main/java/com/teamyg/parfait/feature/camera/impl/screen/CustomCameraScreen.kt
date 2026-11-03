@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
+import com.teamyg.parfait.core.designsystem.component.ygcamerazoombutton.YGCameraZoomButton
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
@@ -34,6 +35,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterP
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
+import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
@@ -48,6 +50,7 @@ internal fun CustomCameraScreen(
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
+    onClickZoom: () -> Unit,
     onClickCancel: () -> Unit,
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
@@ -59,11 +62,14 @@ internal fun CustomCameraScreen(
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
+            onClickZoom = onClickZoom,
             onClickCancel = onClickCancel,
             onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
             cameraFeed = cameraFeed,
             flashMode = state.flashMode,
+            zoomLevel = state.zoomLevel,
+            isZoomButtonVisible = state.isZoomButtonVisible,
         )
 
         false -> CameraPermissionRequestComponent(
@@ -81,11 +87,14 @@ private fun CameraContent(
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
+    onClickZoom: () -> Unit,
     onClickCancel: () -> Unit,
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
     flashMode: FlashMode,
+    zoomLevel: CameraZoomLevel,
+    isZoomButtonVisible: Boolean,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         cameraFeed()
@@ -133,6 +142,15 @@ private fun CameraContent(
                         .align(Alignment.TopCenter)
                         .fillMaxWidth(),
                 )
+                if (isZoomButtonVisible) {
+                    YGCameraZoomButton(
+                        label = zoomLevel.label,
+                        onClick = onClickZoom,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = YGTheme.layout.padding.padding4),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap3))
@@ -152,6 +170,11 @@ private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameter
     override val entries = listOf(
         "permissionDenied" to CustomCameraState(isInit = true, hasPermission = false),
         "permissionGranted" to CustomCameraState(isInit = true, hasPermission = true),
+        "zoomLevels" to CustomCameraState(
+            isInit = true,
+            hasPermission = true,
+            zoomLevels = listOf(CameraZoomLevel.ONE, CameraZoomLevel.TWO, CameraZoomLevel.HALF),
+        ),
     )
 }
 
@@ -167,6 +190,7 @@ private fun PreviewCustomCameraScreen(
         onClickShutter = {},
         onClickFlip = {},
         onClickFlash = {},
+        onClickZoom = {},
         onClickCancel = {},
         onViewfinderRectChange = {},
         modifier = Modifier.fillMaxSize(),

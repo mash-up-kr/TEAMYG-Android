@@ -211,6 +211,7 @@ internal fun CustomCameraRoute(
             onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
             onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
             onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
+            onClickZoom = { viewModel.processIntent(CustomCameraIntent.OnClickZoom) },
             modifier = modifier,
             onViewfinderRectChange = { viewfinderRect = it },
             cameraFeed = {
