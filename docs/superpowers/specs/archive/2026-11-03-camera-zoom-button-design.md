@@ -1,7 +1,7 @@
 ---
 id: camera-zoom-button
 title: 커스텀 카메라 줌 버튼 (Camera zoom toggle)
-status: in-progress
+status: implemented
 category: ui-spec
 platforms: android
 verified: 2026-11-03
@@ -11,6 +11,8 @@ related_code:
   - HalfZoomSource.kt#HalfZoomSource
   - UltraWideCamera.kt#findUltraWideCamera
   - CameraPreviewComponent.kt#CameraPreviewViewComponent
+  - CameraFeedLayer.kt#CameraFeedLayer
+  - CameraTransition.kt#CameraTransition
   - CustomCameraViewModel.kt#CustomCameraViewModel
   - CustomCameraScreen.kt#CustomCameraScreen
 related_adr:
