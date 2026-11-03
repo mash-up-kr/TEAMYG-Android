@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -37,9 +34,6 @@ internal fun NotificationSettingRoute(
     val context = LocalContext.current
     val toastPolicy = rememberYGToastPolicy()
     val saveErrorMessage = stringResource(R.string.notification_setting_save_error)
-    var isNotificationEnabled by remember {
-        mutableStateOf(NotificationPermissionManager.hasPermission(context))
-    }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -59,14 +53,17 @@ internal fun NotificationSettingRoute(
 
     // 기기 설정에서 허용하고 돌아오는 경로가 이 화면의 유일한 상태 변경 경로라 복귀 때마다 다시 읽는다
     LifecycleResumeEffect(Unit) {
-        isNotificationEnabled = NotificationPermissionManager.hasPermission(context)
+        viewModel.processIntent(
+            NotificationSettingIntent.UpdateDeviceNotificationEnabled(
+                enabled = NotificationPermissionManager.areNotificationsEnabled(context),
+            ),
+        )
         onPauseOrDispose {}
     }
 
     YGScaffoldV2(modifier = modifier) { innerPadding ->
         NotificationSettingScreen(
             state = state,
-            isNotificationEnabled = isNotificationEnabled,
             toastPolicy = toastPolicy,
             onClickBack = { viewModel.processIntent(NotificationSettingIntent.ClickBack) },
             onClickOpenDeviceSettings = {

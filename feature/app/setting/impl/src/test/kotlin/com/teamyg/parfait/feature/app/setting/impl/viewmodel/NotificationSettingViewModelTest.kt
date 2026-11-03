@@ -173,4 +173,26 @@ class NotificationSettingViewModelTest {
             assertEquals(NotificationSettingSideEffect.OpenDeviceNotificationSettings, awaitItem())
         }
     }
+
+    @Test
+    fun toggles_areEnabledOnlyWhenDeviceNotificationOn() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 기기 알림 상태를 아직 읽기 전인 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.isToggleEnabled)
+        assertFalse(viewModel.state.value.isDeviceNotificationOff)
+
+        // When 기기 알림이 켜져 있다고 읽힌다
+        viewModel.processIntent(NotificationSettingIntent.UpdateDeviceNotificationEnabled(enabled = true))
+
+        // Then 스위치를 조작할 수 있다
+        assertTrue(viewModel.state.value.isToggleEnabled)
+
+        // When 기기 알림이 꺼졌다고 읽힌다
+        viewModel.processIntent(NotificationSettingIntent.UpdateDeviceNotificationEnabled(enabled = false))
+
+        // Then 안내 카드를 보이고 스위치를 막는다
+        assertTrue(viewModel.state.value.isDeviceNotificationOff)
+        assertFalse(viewModel.state.value.isToggleEnabled)
+    }
 }
