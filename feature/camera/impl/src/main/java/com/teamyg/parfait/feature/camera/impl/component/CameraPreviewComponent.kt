@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.camera.impl.component
 
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.CameraState
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -11,19 +12,24 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
+import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
 
 @Composable
 internal fun CameraPreviewViewComponent(
     lensFacing: Int,
+    useUltraWideCamera: Boolean,
     zoomRatio: Float,
     hasPermission: Boolean,
     onImageCaptureReady: (ImageCapture) -> Unit,
-    onZoomRangeReady: (ClosedFloatingPointRange<Float>) -> Unit,
+    onZoomRangeReady: (range: ClosedFloatingPointRange<Float>, hasUltraWideCamera: Boolean) -> Unit,
 ): CameraPreviewHandle {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -36,7 +42,7 @@ internal fun CameraPreviewViewComponent(
     val cameraState = remember { mutableStateOf<Camera?>(null) }
     var camera by cameraState
 
-    DisposableEffect(lensFacing, hasPermission) {
+    DisposableEffect(lensFacing, useUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
         if (!hasPermission) {
             return@DisposableEffect onDispose { }
@@ -62,10 +68,21 @@ internal fun CameraPreviewViewComponent(
                 .setJpegQuality(MAX_JPEG_QUALITY)
                 .build()
 
-            val selector: CameraSelector = CameraSelector
-                .Builder()
-                .requireLensFacing(lensFacing)
-                .build()
+            val ultraWide = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                cameraProvider.findBackUltraWideCamera()
+            } else {
+                null
+            }
+            val bindsUltraWide = useUltraWideCamera && ultraWide != null
+
+            val selector: CameraSelector = if (bindsUltraWide) {
+                cameraSelectorOf(cameraId = ultraWide.cameraId)
+            } else {
+                CameraSelector
+                    .Builder()
+                    .requireLensFacing(lensFacing)
+                    .build()
+            }
 
             cameraProvider.unbindAll()
 
@@ -80,8 +97,11 @@ internal fun CameraPreviewViewComponent(
 
             camera = newCamera
             onImageCaptureReady(imageCapture)
-            newCamera.cameraInfo.zoomState.value?.let { state ->
-                onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio)
+            // 범위는 메인 카메라 것만 보고한다. 초광각 범위가 들어가면 VM이 1x로 초기화해 0.5x가 풀린다
+            if (!bindsUltraWide) {
+                newCamera.cameraInfo.zoomState.value?.let { state ->
+                    onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio, ultraWide != null)
+                }
             }
         }
 
@@ -95,6 +115,20 @@ internal fun CameraPreviewViewComponent(
 
     LaunchedEffect(zoomRatio, camera) {
         camera?.cameraControl?.setZoomRatio(zoomRatio)
+    }
+
+    // CameraX는 카메라가 닫히면(ON_STOP) 줌을 1.0으로 되돌리고, 복귀 때는 위 키가 그대로라 다시 걸지 않는다
+    val currentZoomRatio by rememberUpdatedState(zoomRatio)
+    DisposableEffect(camera) {
+        val target = camera ?: return@DisposableEffect onDispose { }
+        val observer = Observer<CameraState> { state ->
+            if (state.type == CameraState.Type.OPEN) {
+                target.cameraControl.setZoomRatio(currentZoomRatio)
+            }
+        }
+        target.cameraInfo.cameraState.observeForever(observer)
+
+        onDispose { target.cameraInfo.cameraState.removeObserver(observer) }
     }
 
     return CameraPreviewHandle(

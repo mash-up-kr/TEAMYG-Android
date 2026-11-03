@@ -193,10 +193,13 @@ internal fun CustomCameraRoute(
 
     val cameraPreviewHandle = CameraPreviewViewComponent(
         lensFacing = state.lensFacing,
+        useUltraWideCamera = state.useUltraWideCamera,
         zoomRatio = state.cameraZoomRatio,
         hasPermission = state.hasPermission,
         onImageCaptureReady = { imageCapture = it },
-        onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
+        onZoomRangeReady = { range, hasUltraWideCamera ->
+            viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(range, hasUltraWideCamera))
+        },
     )
 
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
