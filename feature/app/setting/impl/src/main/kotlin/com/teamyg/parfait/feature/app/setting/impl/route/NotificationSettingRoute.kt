@@ -64,13 +64,11 @@ internal fun NotificationSettingRoute(
         onPauseOrDispose {}
     }
 
-    YGScaffoldV2(
-        modifier = modifier,
-        toastPolicy = toastPolicy,
-    ) { innerPadding ->
+    YGScaffoldV2(modifier = modifier) { innerPadding ->
         NotificationSettingScreen(
             state = state,
             isNotificationEnabled = isNotificationEnabled,
+            toastPolicy = toastPolicy,
             onClickBack = { viewModel.processIntent(NotificationSettingIntent.ClickBack) },
             onClickOpenDeviceSettings = {
                 viewModel.processIntent(NotificationSettingIntent.ClickOpenDeviceSettings)
