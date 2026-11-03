@@ -5,6 +5,7 @@ import com.teamyg.parfait.core.analytics.AnalyticsScreen
 import com.teamyg.parfait.core.analytics.AnalyticsScreenType
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
+import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.camera.api.NavKeyCameraCustom
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
@@ -101,6 +102,8 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeyAppSetting -> AnalyticsScreen(AnalyticsScreenType.APP_SETTING)
 
     is NavKeyAccountInfo -> AnalyticsScreen(AnalyticsScreenType.ACCOUNT_INFO)
+
+    is NavKeyNotificationSetting -> AnalyticsScreen(AnalyticsScreenType.NOTIFICATION_SETTING)
 
     is NavKeyGroupSetting -> AnalyticsScreen(AnalyticsScreenType.GROUP_SETTING)
 

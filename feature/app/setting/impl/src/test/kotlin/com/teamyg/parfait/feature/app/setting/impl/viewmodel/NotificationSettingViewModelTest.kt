@@ -1,6 +1,9 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.notification.NotificationSettingVO
 import com.teamyg.parfait.domain.usecase.notification.GetNotificationSettingUseCase
@@ -9,6 +12,7 @@ import com.teamyg.parfait.domain.usecase.notification.UpdateCanvasNotificationUs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -26,6 +30,7 @@ class NotificationSettingViewModelTest {
     private val getNotificationSetting: GetNotificationSettingUseCase = mockk()
     private val updateCanvasNotification: UpdateCanvasNotificationUseCase = mockk()
     private val updateActivityNotification: UpdateActivityNotificationUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(
         setting: Result<NotificationSettingVO> = Result.success(
@@ -44,6 +49,7 @@ class NotificationSettingViewModelTest {
             getNotificationSetting = getNotificationSetting,
             updateCanvasNotification = updateCanvasNotification,
             updateActivityNotification = updateActivityNotification,
+            analyticsLogger = analyticsLogger,
         )
     }
 
@@ -268,6 +274,95 @@ class NotificationSettingViewModelTest {
                 expectNoEvents()
             }
         }
+
+    @Test
+    fun changeCanvasNotification_success_logsChangedEventWithTypeAndEnabled() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 저장이 성공하는 상태
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 캔버스 알림을 켠다
+        viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = true))
+        advanceUntilIdle()
+
+        // Then type=canvas, enabled=true 로 변경 이벤트가 한 번 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.APP_NOTIFICATION_SETTING_CHANGED,
+                    params = mapOf("type" to "canvas", "enabled" to "true"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun changeActivityNotification_success_logsChangedEventWithTypeAndEnabled() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 저장이 성공하는 상태
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            // When 활동 알림을 켠다
+            viewModel.processIntent(NotificationSettingIntent.ChangeActivityNotification(checked = true))
+            advanceUntilIdle()
+
+            // Then type=activity, enabled=true 로 변경 이벤트가 한 번 나간다
+            verify(exactly = 1) {
+                analyticsLogger.logEvent(
+                    AnalyticsEvent(
+                        type = AnalyticsEventType.APP_NOTIFICATION_SETTING_CHANGED,
+                        params = mapOf("type" to "activity", "enabled" to "true"),
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun changeNotification_updateFails_doesNotLogChangedEvent() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 저장이 실패하는 상태
+        val viewModel = viewModel(
+            updateCanvasResult = Result.failure(IllegalStateException()),
+            updateActivityResult = Result.failure(IllegalStateException()),
+        )
+        advanceUntilIdle()
+
+        // When 두 알림을 각각 켠다
+        viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(checked = true))
+        viewModel.processIntent(NotificationSettingIntent.ChangeActivityNotification(checked = true))
+        advanceUntilIdle()
+
+        // Then 되돌아간 변경은 이벤트로 남기지 않는다
+        verify(exactly = 0) { analyticsLogger.logEvent(any()) }
+    }
+
+    @Test
+    fun clickOpenDeviceSettings_logsDeviceSettingsTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 알림 설정 화면
+        val viewModel = viewModel()
+
+        // When 설정으로 이동을 누른다
+        viewModel.processIntent(NotificationSettingIntent.ClickOpenDeviceSettings)
+
+        // Then 기기 설정 이동 이벤트가 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED))
+        }
+    }
+
+    @Test
+    fun clickBack_logsBackTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 알림 설정 화면
+        val viewModel = viewModel()
+
+        // When 뒤로가기를 누른다
+        viewModel.processIntent(NotificationSettingIntent.ClickBack)
+
+        // Then 뒤로가기 이벤트가 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_BACK_TAPPED))
+        }
+    }
 
     @Test
     fun refresh_reloadsSettingAndEndsRefreshing() = runTest(mainDispatcherRule.dispatcher) {

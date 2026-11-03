@@ -1,5 +1,8 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -62,6 +65,7 @@ constructor(
     private val getNotificationSetting: GetNotificationSettingUseCase,
     private val updateCanvasNotification: UpdateCanvasNotificationUseCase,
     private val updateActivityNotification: UpdateActivityNotificationUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<
     NotificationSettingState,
     NotificationSettingIntent,
@@ -79,10 +83,9 @@ constructor(
 
     override fun processIntent(intent: NotificationSettingIntent) {
         when (intent) {
-            NotificationSettingIntent.ClickBack -> postSideEffect(NotificationSettingSideEffect.NavigateBack)
+            NotificationSettingIntent.ClickBack -> handleClickBack()
 
-            NotificationSettingIntent.ClickOpenDeviceSettings ->
-                postSideEffect(NotificationSettingSideEffect.OpenDeviceNotificationSettings)
+            NotificationSettingIntent.ClickOpenDeviceSettings -> handleClickOpenDeviceSettings()
 
             NotificationSettingIntent.Refresh -> loadNotificationSetting(isRefresh = true)
 
@@ -91,6 +94,7 @@ constructor(
 
             is NotificationSettingIntent.ChangeCanvasNotification -> changeNotification(
                 sync = canvasSync,
+                type = TYPE_CANVAS,
                 checked = intent.checked,
                 reflect = { checked -> copy(isCanvasNotificationChecked = checked) },
                 save = updateCanvasNotification::invoke,
@@ -99,12 +103,35 @@ constructor(
 
             is NotificationSettingIntent.ChangeActivityNotification -> changeNotification(
                 sync = activitySync,
+                type = TYPE_ACTIVITY,
                 checked = intent.checked,
                 reflect = { checked -> copy(isActivityNotificationChecked = checked) },
                 save = updateActivityNotification::invoke,
                 failureMessage = "활동 알림 설정 변경에 실패했다",
             )
         }
+    }
+
+    private fun handleClickBack() {
+        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_BACK_TAPPED))
+        postSideEffect(NotificationSettingSideEffect.NavigateBack)
+    }
+
+    private fun handleClickOpenDeviceSettings() {
+        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED))
+        postSideEffect(NotificationSettingSideEffect.OpenDeviceNotificationSettings)
+    }
+
+    private fun logSettingChanged(
+        type: String,
+        enabled: Boolean,
+    ) {
+        analyticsLogger.logEvent(
+            AnalyticsEvent(
+                type = AnalyticsEventType.APP_NOTIFICATION_SETTING_CHANGED,
+                params = mapOf(PARAM_TYPE to type, PARAM_ENABLED to enabled.toString()),
+            ),
+        )
     }
 
     private fun loadNotificationSetting(isRefresh: Boolean = false) {
@@ -144,6 +171,7 @@ constructor(
      */
     private fun changeNotification(
         sync: ToggleSync,
+        type: String,
         checked: Boolean,
         reflect: NotificationSettingState.(Boolean) -> NotificationSettingState,
         save: suspend (Boolean) -> Result<Unit>,
@@ -156,8 +184,10 @@ constructor(
             try {
                 sync.mutex.withLock {
                     save(checked)
-                        .onSuccess { sync.confirmed = checked }
-                        .onFailure {
+                        .onSuccess {
+                            sync.confirmed = checked
+                            logSettingChanged(type = type, enabled = checked)
+                        }.onFailure {
                             viewModelLogger.e(it) { failureMessage }
                             if (sync.pending == 1) {
                                 updateState { reflect(sync.confirmed) }
@@ -180,5 +210,10 @@ constructor(
 
     private companion object {
         const val KEY_LOAD = "loadNotificationSetting"
+
+        const val PARAM_TYPE = "type"
+        const val PARAM_ENABLED = "enabled"
+        const val TYPE_CANVAS = "canvas"
+        const val TYPE_ACTIVITY = "activity"
     }
 }

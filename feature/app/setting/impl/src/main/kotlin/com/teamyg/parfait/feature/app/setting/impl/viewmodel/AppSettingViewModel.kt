@@ -1,5 +1,8 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -96,6 +99,7 @@ constructor(
     private val withdraw: WithdrawUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val getPolicies: GetPoliciesUseCase,
+    private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
 ) {
@@ -142,6 +146,7 @@ constructor(
     }
 
     private fun handleClickNotification() {
+        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTIFICATION_TAPPED))
         postSideEffect(AppSettingSideEffect.NavigateToNotificationSetting)
     }
 
