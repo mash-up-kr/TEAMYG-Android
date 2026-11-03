@@ -13,7 +13,7 @@ import com.teamyg.parfait.feature.camera.impl.model.LensOptics
 private const val ULTRA_WIDE_MAX_FOV_RATIO = 0.7f
 
 /**
- * 메인 후면 카메라보다 화각이 확실히 넓은 후면 카메라 중 가장 넓은 것. 없으면 null.
+ * 메인 후면 카메라보다 화각이 확실히 넓은 후면 카메라 중 가장 넓은 것.
  */
 internal fun findUltraWideCamera(
     main: LensOptics,
@@ -43,7 +43,6 @@ internal fun ProcessCameraProvider.findBackUltraWideCamera(): LensOptics? = runC
     )
 }.getOrNull()
 
-/** [cameraId] 하나만 고르는 셀렉터 */
 @OptIn(ExperimentalCamera2Interop::class)
 internal fun cameraSelectorOf(cameraId: String): CameraSelector = CameraSelector
     .Builder()

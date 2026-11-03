@@ -168,7 +168,7 @@ constructor(
             copy(
                 halfZoomSource = halfZoomSource,
                 zoomLevels = zoomLevels,
-                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다. 렌즈 전환은 OnClickFlip이 따로 초기화한다
+                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다
                 zoomLevel = zoomLevel.takeIf { it in zoomLevels } ?: CameraZoomLevel.ONE,
             )
         }

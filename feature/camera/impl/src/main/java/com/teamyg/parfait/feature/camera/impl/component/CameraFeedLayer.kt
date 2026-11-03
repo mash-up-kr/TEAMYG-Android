@@ -178,7 +178,7 @@ private fun CameraTransitionCover(
         exit = fadeOut(animationSpec = tween(durationMillis = TRANSITION_FADE_MILLIS)),
     ) {
         val cover = shown ?: return@AnimatedVisibility
-        // 0→1 진행도. 앞 절반은 0→90°로 넘기고 뒤 절반은 -90→0°로 돌려 세워, 다 넘어간 뒤 프레임이 거꾸로 남지 않는다
+        // 앞 절반은 0→90°, 뒤 절반은 -90→0°. 180°까지 돌리면 넘긴 뒤 프레임이 거꾸로 남는다
         val flipProgress = remember(cover) { Animatable(0f) }
         LaunchedEffect(cover) {
             if (cover.isFlip) {
@@ -195,7 +195,6 @@ private fun CameraTransitionCover(
                 .graphicsLayer {
                     val progress = flipProgress.value
                     rotationX = if (progress < 0.5f) progress * 180f else progress * 180f - 180f
-                    // 넘어가는 동안 카드처럼 작아졌다 돌아와야 원근이 산다(기본 카메라)
                     val scale = 1f - (1f - TRANSITION_FLIP_MIN_SCALE) * sin(progress * PI.toFloat())
                     scaleX = scale
                     scaleY = scale

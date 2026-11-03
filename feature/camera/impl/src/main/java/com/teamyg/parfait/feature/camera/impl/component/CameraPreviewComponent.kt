@@ -49,9 +49,9 @@ internal fun CameraPreviewViewComponent(
     val cameraState = remember { mutableStateOf<Camera?>(null) }
     var camera by cameraState
     val transitionState = remember { mutableStateOf<CameraTransition?>(null) }
-    // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 꺼내 쓴다. 효과 안에서만 읽어 recomposition을 부르지 않는다
+    // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 쓴다
     val lastFrame = remember { mutableStateOf<CapturedFrame?>(null) }
-    // 한 번 안 열린 초광각은 이 화면에서 다시 쓰지 않는다. 안 막으면 메인으로 돌아간 뒤 재바인딩에서 0.5x가 되살아난다
+    // 한 번 안 열린 초광각은 다시 쓰지 않는다. 안 막으면 메인 재바인딩에서 0.5x가 되살아난다
     val failedUltraWideIds = remember { mutableSetOf<String>() }
 
     DisposableEffect(lensFacing, useUltraWideCamera, hasPermission) {
@@ -115,12 +115,11 @@ internal fun CameraPreviewViewComponent(
             }
 
             val ultraWideCamera = if (bindsUltraWide) bind(cameraSelectorOf(cameraId = ultraWide.cameraId)) else null
-            // 초광각이 안 열리면 메인으로 돌아가고 초광각이 없다고 보고해 0.5x를 뺀다
             val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
             if (ultraWideFailed) failedUltraWideIds += ultraWide.cameraId
             val newCamera = ultraWideCamera ?: bind(lensSelector)
             if (newCamera == null) {
-                // 새 스트림이 오지 않으니 덮개를 바로 걷는다. 두면 멈춘 블러 화면이 로딩처럼 남는다
+                // 새 스트림이 오지 않으니 덮개를 바로 걷는다
                 transitionState.value = null
                 return@Runnable
             }
@@ -139,7 +138,6 @@ internal fun CameraPreviewViewComponent(
 
         onDispose {
             disposed = true
-            // 화면을 떠나는 dispose에서도 잡히지만, 그때는 다음 바인딩이 없어 쓰이지 않는다
             lastFrame.value = previewView.bitmap?.let { CapturedFrame(bitmap = it, lensFacing = lensFacing) }
             boundProvider?.unbindAll()
             camera = null
@@ -149,7 +147,6 @@ internal fun CameraPreviewViewComponent(
     val appliedZoom = remember { AppliedZoom() }
     LaunchedEffect(zoomRatio, camera) {
         val target = camera ?: return@LaunchedEffect
-        // 새로 열린 카메라는 바로 건다. 같은 카메라에서 배율만 바뀌면 기본 카메라처럼 부드럽게 옮긴다
         if (target !== appliedZoom.camera) {
             appliedZoom.camera = target
             appliedZoom.ratio = zoomRatio
@@ -181,7 +178,7 @@ internal fun CameraPreviewViewComponent(
         onDispose { target.cameraInfo.cameraState.removeObserver(observer) }
     }
 
-    // 새 카메라가 프레임을 보내기 시작하면 덮개를 걷는다. 덮개를 건 직후엔 이전 스트림의 STREAMING이 남아 있을 수 있어 IDLE을 한 번 본 뒤부터 센다
+    // 덮개를 건 직후엔 이전 스트림의 STREAMING이 남아 있을 수 있어 IDLE을 본 뒤의 STREAMING만 센다
     val hasTransition = transitionState.value != null
     DisposableEffect(hasTransition) {
         if (!hasTransition) return@DisposableEffect onDispose { }
@@ -199,7 +196,7 @@ internal fun CameraPreviewViewComponent(
         onDispose { previewView.previewStreamState.removeObserver(observer) }
     }
 
-    // 기기·버전에 따라 IDLE을 건너뛰면 위 관찰이 덮개를 못 걷는다. 그래도 일정 시간 뒤에는 걷는다
+    // IDLE을 건너뛰는 기기에서도 덮개가 남지 않게 한다
     val transition = transitionState.value
     LaunchedEffect(transition) {
         if (transition == null) return@LaunchedEffect
