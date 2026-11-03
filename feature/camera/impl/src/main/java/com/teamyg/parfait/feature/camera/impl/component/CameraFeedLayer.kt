@@ -40,12 +40,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
+import kotlin.math.PI
+import kotlin.math.sin
 
 private val BLUR_RADIUS = 4.dp
 private val TRANSITION_BLUR_RADIUS = 24.dp
 private const val TRANSITION_FLIP_MILLIS = 300
 private const val TRANSITION_FADE_MILLIS = 150
-private const val TRANSITION_CAMERA_DISTANCE = 12f
+private const val TRANSITION_CAMERA_DISTANCE = 10f
+private const val TRANSITION_FLIP_MIN_SCALE = 0.6f
 private val VIEWFINDER_BORDER_WIDTH = 1.dp
 private val VIEWFINDER_CORNER_LENGTH = 18.dp
 private val VIEWFINDER_CORNER_WIDTH = 2.dp
@@ -156,7 +159,7 @@ internal fun CameraFeedLayer(
 }
 
 /**
- * 카메라를 다시 여는 동안 검정 화면 대신 직전 프레임을 흐리게 덮는다. 전면/후면 전환이면 뒤집는다.
+ * 카메라를 다시 여는 동안 검정 화면 대신 직전 프레임을 흐리게 덮는다. 전면/후면 전환이면 위아래로 넘긴다.
  * 블러는 API 31 미만에서 빠지고 피드 레이어의 딤만 남는다.
  */
 @Composable
@@ -175,10 +178,11 @@ private fun CameraTransitionCover(
         exit = fadeOut(animationSpec = tween(durationMillis = TRANSITION_FADE_MILLIS)),
     ) {
         val cover = shown ?: return@AnimatedVisibility
-        val rotation = remember(cover) { Animatable(0f) }
+        // 0→1 진행도. 앞 절반은 0→90°로 넘기고 뒤 절반은 -90→0°로 돌려 세워, 다 넘어간 뒤 프레임이 거꾸로 남지 않는다
+        val flipProgress = remember(cover) { Animatable(0f) }
         LaunchedEffect(cover) {
             if (cover.isFlip) {
-                rotation.animateTo(targetValue = 180f, animationSpec = tween(durationMillis = TRANSITION_FLIP_MILLIS))
+                flipProgress.animateTo(targetValue = 1f, animationSpec = tween(durationMillis = TRANSITION_FLIP_MILLIS))
             }
         }
 
@@ -189,7 +193,12 @@ private fun CameraTransitionCover(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    rotationY = rotation.value
+                    val progress = flipProgress.value
+                    rotationX = if (progress < 0.5f) progress * 180f else progress * 180f - 180f
+                    // 넘어가는 동안 카드처럼 작아졌다 돌아와야 원근이 산다(기본 카메라)
+                    val scale = 1f - (1f - TRANSITION_FLIP_MIN_SCALE) * sin(progress * PI.toFloat())
+                    scaleX = scale
+                    scaleY = scale
                     cameraDistance = TRANSITION_CAMERA_DISTANCE * density
                 }.blur(radius = TRANSITION_BLUR_RADIUS, edgeTreatment = BlurredEdgeTreatment.Rectangle),
         )
