@@ -27,7 +27,7 @@ Parfait 구현 기능·컴포넌트의 **구현 전 설계 스펙**을 모읍니
 
 | 스펙 | 내용 |
 |------|------|
-| [2026-11-03-camera-zoom-button-design.md](archive/2026-11-03-camera-zoom-button-design.md) | **C-101 줌 버튼** — `YGCameraZoomButton`(DS)이 뷰파인더 하단 중앙에서 지원 배율만 `1x → 2x → 0.5x` 순으로 순환한다. 단계는 `CameraZoomLevel`, 렌즈 전환 시 1x, 1x만 지원하면 숨김. |
+| [2026-11-03-camera-zoom-button-design.md](archive/2026-11-03-camera-zoom-button-design.md) | **C-101 줌 버튼** — `YGCameraZoomButton`(DS)이 뷰파인더 하단 중앙에서 지원 배율만 `1x → 2x → 0.5x` 순으로 순환한다. 단계는 `CameraZoomLevel`, 0.5x는 줌 배율 또는 초광각 카메라 재바인딩(`HalfZoomSource`), 렌즈 전환 시 1x, 1x만 지원하면 숨김. |
 | [2026-10-27-text-topping-script-span-design.md](archive/2026-10-27-text-topping-script-span-design.md) | **✅ 구현 완료(develop 머지 PR #655 `51d34ac96`, 실기기 확인 미수행)** — **텍스트 토핑 글꼴·자간 구간 분기** — 글꼴·자간을 텍스트 전체가 아니라 글자 구간마다 `SpanStyle`로 고른다. 한자는 가나가 있으면 JP → TW, 없으면 TW → JP 순으로 글리프가 있는 첫 폰트. 커버리지는 폰트 cmap 에서 생성한 테이블 + 해시 동기화 테스트 |
 | [2026-10-26-text-topping-api.md](archive/2026-10-26-text-topping-api.md) | **✅ 구현 완료(develop 머지 PR #645 `ed88a1547`, 에뮬레이터 확인 미수행)** — **텍스트 토핑 서버 연동** — C-106 [캔버스에 쌓기] POST, 캔버스 `texts`를 C-001·이미지 저장·타임랩스에 렌더링, C-305에서 내 텍스트 이동·핀치·삭제·재편집(내용 수정은 `RecreateTextToppingUseCase`가 새로 배치 후 옛 것 삭제). 저장 단위(중심 비율 좌표·335 기준 `fontSize`·`#RRGGBB`)는 Android 판단이고(OQ-P-452) 정렬은 서버 `textAlign`으로 저장한다. |
 | [2026-10-16-text-topping.md](archive/2026-10-16-text-topping.md) | **✅ 구현 완료** — **텍스트 토핑** — 캔버스에 텍스트를 올리고 수정·삭제하는 기능의 화면 동작 정본. 신규 생성은 C-106 한 화면에서 `isEditing`으로 편집↔배치 모드를 가르고, 재편집은 C-305를 확장해 탄다. 사진 토핑 체계(dirty-set 병합, 409 마감 처리, 작성자 전용 수정)를 재사용한다. 백의 "팝오버 먼저" 순차는 소프트 키보드 플랫폼 제약으로 하지 않는다. 서버 연동은 위 text-topping-api. |
