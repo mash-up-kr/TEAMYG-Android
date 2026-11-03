@@ -175,8 +175,37 @@ class NotificationSettingViewModelTest {
     }
 
     @Test
-    fun toggles_areEnabledOnlyWhenDeviceNotificationOn() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 기기 알림 상태를 아직 읽기 전인 화면
+    fun init_loadSucceeds_marksSettingLoaded() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 조회가 성공하는 설정
+        val viewModel = viewModel()
+
+        // When 조회가 끝난다
+        advanceUntilIdle()
+
+        // Then 불러온 것으로 표시된다
+        assertTrue(viewModel.state.value.isSettingLoaded)
+    }
+
+    @Test
+    fun init_loadFails_keepsTogglesDisabledAndShowsLoadError() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 조회가 실패하는 설정
+        val viewModel = viewModel(setting = Result.failure(IllegalStateException()))
+        viewModel.processIntent(NotificationSettingIntent.UpdateDeviceNotificationEnabled(enabled = true))
+
+        viewModel.effect.test {
+            // When 조회가 끝난다
+            advanceUntilIdle()
+
+            // Then 기본값이 실제 설정처럼 조작되지 않도록 스위치를 막고 실패를 알린다
+            assertFalse(viewModel.state.value.isSettingLoaded)
+            assertFalse(viewModel.state.value.isToggleEnabled)
+            assertEquals(NotificationSettingSideEffect.ShowLoadError, awaitItem())
+        }
+    }
+
+    @Test
+    fun toggles_areEnabledOnlyWhenSettingLoadedAndDeviceNotificationOn() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정을 불러온 화면 — 기기 알림 상태는 아직 읽기 전이다
         val viewModel = viewModel()
         advanceUntilIdle()
         assertFalse(viewModel.state.value.isToggleEnabled)

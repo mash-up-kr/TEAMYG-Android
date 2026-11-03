@@ -12,16 +12,19 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 /**
+ * @property isSettingLoaded 서버 설정을 한 번이라도 받아왔는지. 받기 전의 두 스위치 값(꺼짐)은 실제 설정이
+ *   아니라서 이때는 스위치를 조작할 수 없다
  * @property isDeviceNotificationEnabled 기기에서 앱 알림이 켜져 있는지. `null` 은 아직 읽기 전이다
  */
 data class NotificationSettingState(
     val isCanvasNotificationChecked: Boolean = false,
     val isActivityNotificationChecked: Boolean = false,
+    val isSettingLoaded: Boolean = false,
     val isDeviceNotificationEnabled: Boolean? = null,
 ) : UiState {
     val isDeviceNotificationOff: Boolean get() = isDeviceNotificationEnabled == false
 
-    val isToggleEnabled: Boolean get() = isDeviceNotificationEnabled == true
+    val isToggleEnabled: Boolean get() = isSettingLoaded && isDeviceNotificationEnabled == true
 }
 
 sealed interface NotificationSettingIntent : UiIntent {
@@ -42,6 +45,8 @@ sealed interface NotificationSettingSideEffect : UiSideEffect {
     data object OpenDeviceNotificationSettings : NotificationSettingSideEffect
 
     data object ShowSaveError : NotificationSettingSideEffect
+
+    data object ShowLoadError : NotificationSettingSideEffect
 }
 
 @HiltViewModel
@@ -86,9 +91,13 @@ constructor(
                         copy(
                             isCanvasNotificationChecked = setting.isCanvasNotificationEnabled,
                             isActivityNotificationChecked = setting.isActivityNotificationEnabled,
+                            isSettingLoaded = true,
                         )
                     }
-                }.onFailure { viewModelLogger.e(it) { "알림 설정 조회에 실패했다" } }
+                }.onFailure {
+                    viewModelLogger.e(it) { "알림 설정 조회에 실패했다" }
+                    postSideEffect(NotificationSettingSideEffect.ShowLoadError)
+                }
         }
     }
 

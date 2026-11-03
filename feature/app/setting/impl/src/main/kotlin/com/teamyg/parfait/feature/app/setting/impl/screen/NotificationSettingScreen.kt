@@ -142,7 +142,7 @@ private fun NotificationInfoCard(
 private fun NotificationSettingScreenPreview() = PreviewBox {
     Column {
         NotificationSettingScreen(
-            state = NotificationSettingState(isDeviceNotificationEnabled = false),
+            state = NotificationSettingState(isSettingLoaded = true, isDeviceNotificationEnabled = false),
             toastPolicy = rememberYGToastPolicy(),
             onClickBack = {},
             onClickOpenDeviceSettings = {},
@@ -152,6 +152,7 @@ private fun NotificationSettingScreenPreview() = PreviewBox {
         NotificationSettingScreen(
             state = NotificationSettingState(
                 isCanvasNotificationChecked = true,
+                isSettingLoaded = true,
                 isDeviceNotificationEnabled = true,
             ),
             toastPolicy = rememberYGToastPolicy(),

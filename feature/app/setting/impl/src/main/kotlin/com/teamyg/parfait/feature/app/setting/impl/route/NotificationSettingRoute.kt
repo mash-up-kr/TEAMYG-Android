@@ -34,6 +34,7 @@ internal fun NotificationSettingRoute(
     val context = LocalContext.current
     val toastPolicy = rememberYGToastPolicy()
     val saveErrorMessage = stringResource(R.string.notification_setting_save_error)
+    val loadErrorMessage = stringResource(R.string.notification_setting_load_error)
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -47,6 +48,8 @@ internal fun NotificationSettingRoute(
                 }
 
                 NotificationSettingSideEffect.ShowSaveError -> toastPolicy.showError(saveErrorMessage)
+
+                NotificationSettingSideEffect.ShowLoadError -> toastPolicy.showError(loadErrorMessage)
             }
         }
     }
