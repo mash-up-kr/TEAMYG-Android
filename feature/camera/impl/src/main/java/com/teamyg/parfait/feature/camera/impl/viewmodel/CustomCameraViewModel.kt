@@ -8,6 +8,7 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
+import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -53,6 +54,8 @@ sealed interface CustomCameraIntent : UiIntent {
         val range: ClosedFloatingPointRange<Float>,
     ) : CustomCameraIntent
 
+    data object OnClickZoom : CustomCameraIntent
+
     data object OnClickFlip : CustomCameraIntent
 
     data object OnClickShutter : CustomCameraIntent
@@ -73,10 +76,13 @@ data class CustomCameraState(
     val hasPermission: Boolean = false,
     val permanentlyDenied: Boolean = false,
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
-    val zoomRatio: Float = 1f,
-    val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
+    val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
+    val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val flashMode: FlashMode = FlashMode.OFF,
-) : UiState
+) : UiState {
+    val isZoomButtonVisible: Boolean
+        get() = zoomLevels.size > 1
+}
 
 @HiltViewModel
 class CustomCameraViewModel
@@ -99,6 +105,7 @@ constructor(
             is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
             is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
+            is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -145,15 +152,20 @@ constructor(
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
         updateState {
             copy(
-                zoomRange = intent.range,
-                zoomRatio = zoomRatio.coerceIn(intent.range),
+                zoomLevels = CameraZoomLevel.availableIn(intent.range),
+                zoomLevel = CameraZoomLevel.ONE,
             )
         }
+    }
+
+    private fun handleOnClickZoom() {
+        updateState { copy(zoomLevel = zoomLevel.next(zoomLevels)) }
     }
 
     private fun handleOnClickFlip() {
         updateState {
             copy(
+                zoomLevel = CameraZoomLevel.ONE,
                 lensFacing = when (lensFacing) {
                     CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
                     else -> CameraSelector.LENS_FACING_BACK

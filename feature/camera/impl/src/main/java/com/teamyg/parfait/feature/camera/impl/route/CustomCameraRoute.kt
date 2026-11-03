@@ -193,7 +193,7 @@ internal fun CustomCameraRoute(
 
     val cameraPreviewHandle = CameraPreviewViewComponent(
         lensFacing = state.lensFacing,
-        zoomRatio = state.zoomRatio,
+        zoomRatio = state.zoomLevel.ratio,
         hasPermission = state.hasPermission,
         onImageCaptureReady = { imageCapture = it },
         onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
