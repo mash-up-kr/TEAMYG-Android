@@ -1,7 +1,7 @@
 ---
 id: camera-zoom-button
 title: 커스텀 카메라 줌 버튼 (Camera zoom toggle)
-status: draft
+status: implemented
 category: ui-spec
 platforms: android
 verified: 2026-11-03

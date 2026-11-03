@@ -509,16 +509,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-052
 - **출처**: `feature/camera/impl`의 `component/CameraZoomIndicatorComponent.kt`·`component/controls/ZoomLevelRow.kt`(참조 0건) + `CameraControlComponent`(`zoomRatio`·`zoomRange`·`onClickZoomLevel`을 받기만 하고 렌더에 안 씀) + `CustomCameraViewModel`(`OnZoomRangeReady`·`OnClickZoomLevel` 인텐트의 발신처 없음, `zoomRatio`는 `LaunchedEffect`로 카메라에 계속 반영). PR #182가 컨트롤 행을 셔터·플래시·전환 3종으로 재구성하면서 줌 UI만 빠졌다.
 - **항목**: ① 줌을 다시 노출할지(Figma 대응 확인 필요 — [2026-07-30 카메라 항목](#2026-07-30-카메라-컨트롤-임시-구현체-잔존--셔터-구현이-두-곳에-공존) ③에서 넘어온 질문), ② 안 쓸 거면 컴포넌트 2개와 상태·인텐트를 걷어낼지.
-- **상태**: 부분 해소 (②의 절반 — 파라미터·인텐트는 걷혔고 컴포넌트 2개는 잔존, 2026-09-20 PR #514 / ① 잔존)
-  > 📌 **파라미터와 인텐트만 걷혔다(2026-09-20, PR #514)** — `CameraControlComponent`가 받기만 하던
-  > `zoomRatio`·`zoomRange`·`onClickZoomLevel`이 시그니처에서 빠지고, `CustomCameraIntent.OnClickZoomLevel`과
-  > 그 핸들러도 사라졌다. **남은 것 셋**: `CameraZoomIndicatorComponent`·`ZoomLevelRow` 두 컴포넌트가
-  > 여전히 참조 0건이고, `CustomCameraState.zoomRatio`·`zoomRange`와 `OnZoomRangeReady` 인텐트는
-  > **살아 있다** — 死코드가 아니다. `CustomCameraRoute`가 `state.zoomRatio`를
-  > `CameraPreviewComponent`에 넘겨 `cameraControl.setZoomRatio`로 계속 반영하기 때문이고, 값이
-  > 초기값 1f에서 움직일 경로만 없다. 즉 ②는 **사용자가 줌을 바꿀 수단이 없다**는 쪽만 남았고,
-  > 그 결정은 ①에 달렸다.
-- **해소 메모**: 정하면 [c101 스펙](../superpowers/specs/archive/2026-08-01-c101-camera-picture-confirm.md) 범위 표를 갱신한다.
+- **상태**: 해소됨 (2026-11-03) — Figma `BL_06`이 줌 버튼을 정의해 ①은 노출로 정해졌고, `YGCameraZoomButton`·`CameraZoomLevel`로 구현하면서 미사용 두 컴포넌트는 삭제했다([camera-zoom-button 스펙](../superpowers/specs/archive/2026-11-03-camera-zoom-button-design.md)).
 
 ### [2026-08-01] 카메라·갤러리 권한 요청 경로가 UI에 없음
 - **ID**: OQ-P-053

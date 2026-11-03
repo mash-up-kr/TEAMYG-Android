@@ -1,7 +1,7 @@
 ---
 id: camera-zoom-button
 title: 커스텀 카메라 줌 버튼
-status: draft
+status: done
 type: work-order
 created: 2026-11-03
 updated: 2026-11-03
@@ -14,7 +14,7 @@ related_code:
   - CameraZoomLevel.kt#CameraZoomLevel
   - CustomCameraViewModel.kt#CustomCameraViewModel
   - CustomCameraScreen.kt#CustomCameraScreen
-archived_reason:
+archived_reason: 구현 완료 (feature/camera-zoom-button, 2026-11-03)
 tags: [plan, parfait]
 ---
 
@@ -30,7 +30,7 @@ tags: [plan, parfait]
 
 **Tech Stack:** Kotlin, Jetpack Compose, CameraX, kotlin.test + Turbine
 
-**Spec:** `docs/superpowers/specs/2026-11-03-camera-zoom-button-design.md`
+**Spec:** `docs/superpowers/specs/archive/2026-11-03-camera-zoom-button-design.md`
 
 ## Global Constraints
 
