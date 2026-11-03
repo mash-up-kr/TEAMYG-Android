@@ -43,6 +43,7 @@
 | [0033](0033-data-package-file-conventions.md) | data·domain 패키지는 역할별로 가르고 파일당 타입 하나를 둔다 | accepted | 2026-09-27 | 중첩 응답 DTO도 제 파일을 갖는다. `repository/`는 Repository만, `source/`는 `~LocalDataSource`·`~RemoteDataSource` 접미사, Entity↔VO 매핑은 `data/model/mapper/`. 자동 검사는 파일명(ktlint)뿐 |
 | [0034](0034-topping-border-set-at-placement.md) | 토핑 테두리는 배치 단계에서 정하고 초안에 싣지 않는다 | proposed | 2026-10-02 | 새 토핑의 테두리는 `CanvasToppingPlaceUiState.border`(`ToppingBorderStyle?`)에만 있다가 확정 때 `AddToppingUseCase`로 간다. `ToppingDraft`에는 테두리 필드가 없어 **ADR-0026의 프로세스 사망 복원 보장에서 테두리가 빠진다** — 고르는 데 몇 초 걸리는 값이고 헤더의 뒤로로 이전 화면에 돌아갈 때도 버린다. 이미 놓인 토핑의 테두리도 배치 수정 화면이 같은 `ToppingBorderPanel`로 고치고(`EditableTopping.border`) `NavKeyToppingEdit`에는 테두리 인자가 없다. 서버 필드로 보낸다는 ADR-0025는 그대로다 |
 | [0035](0035-canvas-video-onscreen-capture-encoding.md) | 캔버스 동영상은 컴포지션을 프레임마다 캡처해 MediaCodec으로 인코딩한다 | proposed | 2026-09-27 | 외부 의존성 없음. 인코더는 `core/util/android/video/`. 녹화 레이어는 저장 미리보기에 붙고 재료는 `CanvasVideoSourceHolder`로 건넨다. 실기기 미확인(OQ-P-429) |
+| [0036](0036-ignore-system-font-scale.md) | 앱 텍스트는 시스템 글자 크기를 무시하고 피그마 수치로 그린다 | proposed | 2026-11-03 | 정책은 `core:util:android` `toFixedFontScale` 한 곳, 텍스트는 `YGText` 래퍼. 상한 없음 — 접근성 대가 확정. 기각: 테마 `LocalDensity` 덮어쓰기(새 window·선택 해제 불가) · 토큰별 변환 · 상한만 두기. 위키에 글자 크기 정책이 없어 이 ADR이 처음 정한다 |
 
 ## 작성 가이드
 

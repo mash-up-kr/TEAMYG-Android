@@ -14,8 +14,8 @@
 - 컴포지션 밖에서 텍스트를 측정·그릴 때(`TextMeasurer`, `drawText`, `android.graphics.Paint`)는 스타일에 `toFixedFontScale(density)`를 적용한다.
 - ⚠️ 변환은 멱등이 아니다. 래퍼에는 원본(피그마 수치) 스타일을 넘긴다 — 변환한 스타일을 래퍼에 넘기면 두 번 줄어든다. 측정용과 렌더링용 스타일 변수를 나눈다.
 
-자동 강제(린트·CI)는 없다. 리뷰에서 이 절을 근거로 잡는다. 설계:
-[fixed-font-scale-text](superpowers/specs/2026-11-03-fixed-font-scale-text-design.md).
+자동 강제(린트·CI)는 없다. 리뷰에서 이 절을 근거로 잡는다. 결정: [ADR-0036](adr/0036-ignore-system-font-scale.md),
+설계: [fixed-font-scale-text](superpowers/specs/2026-11-03-fixed-font-scale-text-design.md).
 
 ## 코드 주석·KDoc
 

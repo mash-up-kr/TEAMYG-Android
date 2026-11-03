@@ -13,7 +13,7 @@ related_code:
   - CanvasTextInputScreen.kt#CanvasTextInputScreen
   - TextToppingLayoutModifiers.kt#withTextToppingSizing
   - YGToast.kt#YGToast
-related_adr:
+related_adr: ADR-0036
 related_spec:
 related_architecture:
 supersedes:
@@ -48,7 +48,7 @@ OS 글자 크기 설정(`fontScale`)과 관계없이 앱의 모든 텍스트가 
   - 금지 규칙의 자동 강제(ktlint/Android Lint 커스텀 룰, CI 스크립트) — 문서 규약으로만 둔다(확정)
   - `fontScale` 상한(clamp) — "항상 피그마 크기"로 확정. 필요해지면 변환 함수만 바꾼다
   - 앱 전역 `LocalDensity` 덮어쓰기(테마 레벨) — 아래 접근 비교에서 기각
-  - View 기반 텍스트(`Toast`, WebView 내용, 시스템 UI)
+  - View 기반 텍스트(`Toast`, 시스템 UI). 약관 웹뷰만 `textZoom = 100`으로 맞춘다
   - 텍스트가 아닌 dp 레이아웃 값
 
 ## 접근 비교

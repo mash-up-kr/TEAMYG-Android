@@ -37,6 +37,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 | 토핑 만들기 흐름 상태(초안 SSOT) | [ADR-0026](adr/0026-topping-draft-datastore-ssot.md) |
 | 화면 방향(세로 고정)·대화면 예외 | [ADR-0027](adr/0027-portrait-orientation-lock.md) |
 | 시스템바 아이콘 색·다크모드 미지원 | [ADR-0028](adr/0028-system-bar-light-fixed.md) |
+| 시스템 글자 크기(fontScale) 무시·텍스트 래퍼(`YGText`) | [ADR-0036](adr/0036-ignore-system-font-scale.md) + [code-conventions](code-conventions.md#compose-텍스트) |
 | Crashlytics·Analytics·Firebase 설정·푸시(FCM) | [ADR-0013](adr/0013-firebase-fcm-crashlytics.md) + [ADR-0031](adr/0031-analytics-central-screen-mapping.md) |
 | 로깅·Logger 추상화(Kermit) | [ADR-0014](adr/0014-logging-abstraction-kermit.md) |
 | 유효성 결과·에러 문자열 다국어 매핑(domain 의미↔표시 분리) | [ADR-0016](adr/0016-domain-result-presentation-string-mapping.md) + [state-management](architecture/state-management.md) |
