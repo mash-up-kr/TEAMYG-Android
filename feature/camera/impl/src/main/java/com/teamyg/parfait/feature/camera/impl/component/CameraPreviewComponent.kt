@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
+import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
@@ -50,6 +51,8 @@ internal fun CameraPreviewViewComponent(
     val transitionState = remember { mutableStateOf<CameraTransition?>(null) }
     // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 꺼내 쓴다. 효과 안에서만 읽어 recomposition을 부르지 않는다
     val lastFrame = remember { mutableStateOf<CapturedFrame?>(null) }
+    // 한 번 안 열린 초광각은 이 화면에서 다시 쓰지 않는다. 안 막으면 메인으로 돌아간 뒤 재바인딩에서 0.5x가 되살아난다
+    val failedUltraWideIds = remember { mutableSetOf<String>() }
 
     DisposableEffect(lensFacing, useUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
@@ -88,7 +91,7 @@ internal fun CameraPreviewViewComponent(
                 .build()
 
             val ultraWide = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                cameraProvider.findBackUltraWideCamera()
+                cameraProvider.findBackUltraWideCamera()?.takeIf { it.cameraId !in failedUltraWideIds }
             } else {
                 null
             }
@@ -114,7 +117,13 @@ internal fun CameraPreviewViewComponent(
             val ultraWideCamera = if (bindsUltraWide) bind(cameraSelectorOf(cameraId = ultraWide.cameraId)) else null
             // 초광각이 안 열리면 메인으로 돌아가고 초광각이 없다고 보고해 0.5x를 뺀다
             val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
-            val newCamera = ultraWideCamera ?: bind(lensSelector) ?: return@Runnable
+            if (ultraWideFailed) failedUltraWideIds += ultraWide.cameraId
+            val newCamera = ultraWideCamera ?: bind(lensSelector)
+            if (newCamera == null) {
+                // 새 스트림이 오지 않으니 덮개를 바로 걷는다. 두면 멈춘 블러 화면이 로딩처럼 남는다
+                transitionState.value = null
+                return@Runnable
+            }
 
             camera = newCamera
             onImageCaptureReady(imageCapture)
@@ -190,6 +199,14 @@ internal fun CameraPreviewViewComponent(
         onDispose { previewView.previewStreamState.removeObserver(observer) }
     }
 
+    // 기기·버전에 따라 IDLE을 건너뛰면 위 관찰이 덮개를 못 걷는다. 그래도 일정 시간 뒤에는 걷는다
+    val transition = transitionState.value
+    LaunchedEffect(transition) {
+        if (transition == null) return@LaunchedEffect
+        delay(TRANSITION_TIMEOUT_MILLIS)
+        if (transitionState.value === transition) transitionState.value = null
+    }
+
     return CameraPreviewHandle(
         previewView = previewView,
         camera = cameraState,
@@ -199,3 +216,4 @@ internal fun CameraPreviewViewComponent(
 
 private const val MAX_JPEG_QUALITY = 100
 private const val ZOOM_ANIMATION_MILLIS = 200
+private const val TRANSITION_TIMEOUT_MILLIS = 2_000L
