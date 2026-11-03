@@ -10,15 +10,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppNotificationSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.permission.NotificationPermissionManager
+import com.teamyg.parfait.feature.app.setting.impl.R
 import com.teamyg.parfait.feature.app.setting.impl.screen.NotificationSettingScreen
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.NotificationSettingIntent
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.NotificationSettingSideEffect
@@ -32,6 +36,8 @@ internal fun NotificationSettingRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val toastPolicy = rememberYGToastPolicy()
+    val saveErrorMessage = stringResource(R.string.notification_setting_save_error)
     var isNotificationEnabled by remember {
         mutableStateOf(NotificationPermissionManager.hasPermission(context))
     }
@@ -46,6 +52,8 @@ internal fun NotificationSettingRoute(
                     runCatching { context.startActivity(context.buildAppNotificationSettingsIntent()) }
                         .recoverCatching { context.startActivity(context.buildAppSettingsIntent()) }
                 }
+
+                NotificationSettingSideEffect.ShowSaveError -> toastPolicy.showError(saveErrorMessage)
             }
         }
     }
@@ -56,7 +64,10 @@ internal fun NotificationSettingRoute(
         onPauseOrDispose {}
     }
 
-    YGScaffoldV2(modifier = modifier) { innerPadding ->
+    YGScaffoldV2(
+        modifier = modifier,
+        toastPolicy = toastPolicy,
+    ) { innerPadding ->
         NotificationSettingScreen(
             state = state,
             isNotificationEnabled = isNotificationEnabled,
