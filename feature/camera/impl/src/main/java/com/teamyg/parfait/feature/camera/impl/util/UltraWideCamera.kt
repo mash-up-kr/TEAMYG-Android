@@ -29,18 +29,19 @@ internal fun findUltraWideCamera(
 /**
  * 기본 후면 카메라 기준으로 [findUltraWideCamera]를 돌린다. 광학값을 못 읽는 카메라는 후보에서 뺀다.
  */
-internal fun ProcessCameraProvider.findBackUltraWideCamera(): LensOptics? {
+internal fun ProcessCameraProvider.findBackUltraWideCamera(): LensOptics? = runCatching {
+    // filter는 기기가 필요한 정보를 못 주면 IllegalArgumentException을 던진다. 그때는 초광각이 없다고 본다
     val backInfos = availableCameraInfos.filter { it.lensFacing == CameraSelector.LENS_FACING_BACK }
     val main = CameraSelector.DEFAULT_BACK_CAMERA
         .filter(backInfos)
         .firstOrNull()
-        ?.toLensOptics() ?: return null
+        ?.toLensOptics() ?: return@runCatching null
 
-    return findUltraWideCamera(
+    findUltraWideCamera(
         main = main,
         backCameras = backInfos.mapNotNull { it.toLensOptics() },
     )
-}
+}.getOrNull()
 
 /** [cameraId] 하나만 고르는 셀렉터 */
 @OptIn(ExperimentalCamera2Interop::class)

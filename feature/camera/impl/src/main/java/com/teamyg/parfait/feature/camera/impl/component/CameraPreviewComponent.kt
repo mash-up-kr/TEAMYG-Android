@@ -7,6 +7,8 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
 import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
 import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
 
@@ -49,8 +52,11 @@ internal fun CameraPreviewViewComponent(
         }
 
         var boundProvider: ProcessCameraProvider? = null
+        // 리스너는 비동기로 돈다. 폐기된 바인딩이 뒤늦게 돌아 새 바인딩을 덮지 않게 한다
+        var disposed = false
         val providerFuture = ProcessCameraProvider.getInstance(context)
         val listener = Runnable {
+            if (disposed) return@Runnable
             val cameraProvider = providerFuture.get()
             boundProvider = cameraProvider
 
@@ -75,32 +81,34 @@ internal fun CameraPreviewViewComponent(
             }
             val bindsUltraWide = useUltraWideCamera && ultraWide != null
 
-            val selector: CameraSelector = if (bindsUltraWide) {
-                cameraSelectorOf(cameraId = ultraWide.cameraId)
-            } else {
-                CameraSelector
-                    .Builder()
-                    .requireLensFacing(lensFacing)
-                    .build()
+            val lensSelector: CameraSelector = CameraSelector
+                .Builder()
+                .requireLensFacing(lensFacing)
+                .build()
+
+            fun bind(selector: CameraSelector): Camera? {
+                cameraProvider.unbindAll()
+                return runCatching {
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        selector,
+                        preview,
+                        imageCapture,
+                    )
+                }.getOrNull()
             }
 
-            cameraProvider.unbindAll()
-
-            val newCamera = runCatching {
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    selector,
-                    preview,
-                    imageCapture,
-                )
-            }.getOrNull() ?: return@Runnable
+            val ultraWideCamera = if (bindsUltraWide) bind(cameraSelectorOf(cameraId = ultraWide.cameraId)) else null
+            // 초광각이 안 열리면 메인으로 돌아가고 초광각이 없다고 보고해 0.5x를 뺀다
+            val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
+            val newCamera = ultraWideCamera ?: bind(lensSelector) ?: return@Runnable
 
             camera = newCamera
             onImageCaptureReady(imageCapture)
             // 범위는 메인 카메라 것만 보고한다. 초광각 범위로 단계 목록을 만들면 2x·0.5x 판정이 틀어진다
-            if (!bindsUltraWide) {
+            if (ultraWideCamera == null) {
                 newCamera.cameraInfo.zoomState.value?.let { state ->
-                    onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio, ultraWide != null)
+                    onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio, ultraWide != null && !ultraWideFailed)
                 }
             }
         }
@@ -108,13 +116,31 @@ internal fun CameraPreviewViewComponent(
         providerFuture.addListener(listener, ContextCompat.getMainExecutor(context))
 
         onDispose {
+            disposed = true
             boundProvider?.unbindAll()
             camera = null
         }
     }
 
+    val appliedZoom = remember { AppliedZoom() }
     LaunchedEffect(zoomRatio, camera) {
-        camera?.cameraControl?.setZoomRatio(zoomRatio)
+        val target = camera ?: return@LaunchedEffect
+        // 새로 열린 카메라는 바로 건다. 같은 카메라에서 배율만 바뀌면 기본 카메라처럼 부드럽게 옮긴다
+        if (target !== appliedZoom.camera) {
+            appliedZoom.camera = target
+            appliedZoom.ratio = zoomRatio
+            target.cameraControl.setZoomRatio(zoomRatio)
+            return@LaunchedEffect
+        }
+
+        animate(
+            initialValue = appliedZoom.ratio,
+            targetValue = zoomRatio,
+            animationSpec = tween(durationMillis = ZOOM_ANIMATION_MILLIS),
+        ) { value, _ ->
+            appliedZoom.ratio = value
+            target.cameraControl.setZoomRatio(value)
+        }
     }
 
     // CameraX는 카메라가 닫히면(ON_STOP) 줌을 1.0으로 되돌리고, 복귀 때는 위 키가 그대로라 다시 걸지 않는다
@@ -138,3 +164,4 @@ internal fun CameraPreviewViewComponent(
 }
 
 private const val MAX_JPEG_QUALITY = 100
+private const val ZOOM_ANIMATION_MILLIS = 200
