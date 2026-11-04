@@ -127,9 +127,11 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 
 - [ ] **Step 3a: `@YGPreview`를 `phone` 하나로 줄인다**
 
-  `name = "phone"`, `device = "spec:width=411dp,height=891dp,navigation=buttons"`, `uiMode = AndroidUiModes.UI_MODE_NIGHT_NO` 하나만 남기고
-  `phone-night` `foldable` `foldable-night` `foldable-fold` `foldable-fold-night`를 지운다. 이유(사용자 결정): 사용처 106곳 × 6변형을 PR마다
-  두 번 렌더하는 시간, 그리고 `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다. IDE 프리뷰에서도 폴더블 변형이 사라진다.
+  `name = "phone"`, `device = "spec:width=411dp,height=891dp,navigation=buttons"`, `uiMode = AndroidUiModes.UI_MODE_NIGHT_NO` 하나만 활성으로 두고
+  `phone-night` `foldable` `foldable-night` `foldable-fold` `foldable-fold-night`는 **지우지 않고 주석 처리**한다(사용자 결정 — 다크 모드·폴더블
+  대응 때 되살린다). 주석 블록 위에 한 줄: 스크린샷 비교 렌더 시간 때문에 끈 것이고 다크 모드가 생기면 night를 되살린다는 취지 + 스펙 포인터.
+  이유: 사용처 106곳 × 6변형을 PR마다 두 번 렌더하는 시간, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
+  IDE 프리뷰에서도 폴더블 변형이 사라진다.
 
 - [ ] **Step 4: 평소 테스트에 생성 테스트가 안 섞이는지 확인**
 
