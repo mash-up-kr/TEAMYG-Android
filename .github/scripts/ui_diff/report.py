@@ -20,6 +20,8 @@ RESULTS = ("build", "test-results", "roborazzi", "debug", "results")
 NAME_PREFIX = "com.teamyg.parfait."
 NAME_WRAP = 28
 MAX_JSON_BYTES = 1 << 20
+MAX_IMAGE_BYTES = 5 << 20
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 STATUSES = ("ok", "no-base-setup", "merge-conflict", "failed")
 STATUS_MESSAGES = {
     "no-base-setup": "base에 스크린샷 구성이 없어 비교하지 못했습니다.",
@@ -114,6 +116,17 @@ def is_safe_path(rel: PurePosixPath, root: Path | None = None) -> bool:
     return stat.S_ISREG(mode)
 
 
+def is_png_file(path: Path) -> bool:
+    """이미지 브랜치에 올라가는 파일이라 크기를 제한하고 PNG 시그니처로 시작하는지 본다."""
+    try:
+        if os.lstat(path).st_size > MAX_IMAGE_BYTES:
+            return False
+        with open(path, "rb") as f:
+            return f.read(len(PNG_SIGNATURE)) == PNG_SIGNATURE
+    except OSError:
+        return False
+
+
 def split_golden(rel: PurePosixPath) -> tuple[str, str] | None:
     if not is_safe_path(rel):
         return None
@@ -180,7 +193,7 @@ def load_capture(root: Path, module_dir: str, path: Path) -> tuple[CaptureResult
     image_field = {"changed": "compare_file_path", "added": "actual_file_path"}.get(data["type"])
     if image_field:
         rel = outputs_rel(image_field)
-        if rel is not None and is_safe_path(rel, root=root):
+        if rel is not None and is_safe_path(rel, root=root) and is_png_file(root / rel):
             image = rel.as_posix()
     timestamp = data.get("timestamp")
     order = timestamp if type(timestamp) is int else 0
@@ -289,7 +302,9 @@ def render_comment(report: Report, meta: Meta, repo: str, image_sha: str, max_ro
         lines.append("")
     shown_total = max_rows - budget + len(removed)
     if shown_total < report.total:
-        tree = f"https://github.com/{repo}/tree/ui-snapshots/pr-{meta.pr}"
+        # 이미지 링크와 같은 커밋을 가리켜야 브랜치가 다시 push 돼도 이 코멘트의 이미지와 어긋나지 않는다
+        ref = image_sha if SHA_RE.fullmatch(image_sha) else f"ui-snapshots/pr-{meta.pr}"
+        tree = f"https://github.com/{repo}/tree/{ref}"
         lines.append(f"{report.total}개 중 {shown_total}개만 보여 줍니다. 전체 이미지는 [ui-snapshots/pr-{meta.pr}]({tree})에 있습니다.")
     return "\n".join(lines).rstrip("\n") + "\n"
 

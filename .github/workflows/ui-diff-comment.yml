@@ -116,6 +116,15 @@ jobs:
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             -c commit.gpgsign=false commit -q -m "ui-snapshots: pr-$PR ${HEAD_SHA:0:7}"
           sha=$(git -C "$snap" rev-parse HEAD)
+          # 이미지 push 직전에 head 를 다시 본다. 그새 움직였으면 브랜치를 덮지 않는다
+          current=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .head.sha)
+          rc=0
+          python3 "$REPORT" check-head --meta "$WORK/meta/meta.json" --current-head "$current" || rc=$?
+          case "$rc" in
+            0) ;;
+            3) echo "head moved to $current; skipping"; echo "stale=true" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            *) exit 1 ;;
+          esac
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
           echo "::add-mask::$auth"
           GIT_CONFIG_COUNT=1 \
@@ -125,7 +134,7 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
       - name: Render
-        if: steps.verify.outputs.stale == 'false'
+        if: steps.verify.outputs.stale == 'false' && steps.push.outputs.stale != 'true'
         env:
           IMAGE_SHA: ${{ steps.push.outputs.sha }}
         run: >-
@@ -134,7 +143,7 @@ jobs:
 
       # 쓰기 직전에 head 를 다시 본다. 비교할 게 없고 기존 코멘트도 없으면 코멘트를 새로 달지 않는다
       - name: Write comment
-        if: steps.verify.outputs.stale == 'false'
+        if: steps.verify.outputs.stale == 'false' && steps.push.outputs.stale != 'true'
         env:
           PR: ${{ steps.meta.outputs.pr }}
           STATUS: ${{ steps.meta.outputs.status }}

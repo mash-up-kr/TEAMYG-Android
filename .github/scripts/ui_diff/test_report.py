@@ -16,6 +16,7 @@ HEAD = "1" * 40
 BASE = "a" * 40
 IMAGE_SHA = "b" * 40
 OUT = "build/outputs/roborazzi"
+PNG = report.PNG_SIGNATURE + b"data"
 
 
 def meta(**overrides):
@@ -132,6 +133,12 @@ class RenderTest(unittest.TestCase):
         rows = [line for line in body.splitlines() if line.startswith("| ") and "_compare.png" in line]
         self.assertEqual(len(rows), 40)
         self.assertIn("45개 중 40개", body)
+        self.assertIn(f"https://github.com/o/r/tree/{IMAGE_SHA}", body)
+        self.assertNotIn("tree/ui-snapshots/pr-7", body)
+
+    def test_render_row_cap_without_images_links_branch(self):
+        results = [CaptureResult("feature/x", f"P{i:02d}", "removed") for i in range(45)]
+        body = render_comment(classify([], {r.key for r in results}, set()), validate_meta(meta()), "o/r", "", max_rows=40)
         self.assertIn("https://github.com/o/r/tree/ui-snapshots/pr-7", body)
 
     def test_render_zero(self):
@@ -206,8 +213,8 @@ class CliTest(unittest.TestCase):
                     entry["actual_file_path"] = f"{runner}/{name}_actual.png"
                 (res_dir / f"1_{name}.json").write_text(json.dumps(entry))
             (res_dir / "2_broken.json").write_text("{not json")
-            (out_dir / "A_compare.png").write_bytes(b"x")
-            (out_dir / "B_actual.png").write_bytes(b"x")
+            (out_dir / "A_compare.png").write_bytes(PNG)
+            (out_dir / "B_actual.png").write_bytes(PNG)
             base_lines = [key(module, "A"), key(module, "C"), key(module, "D")]
             out = run_collect(root, meta(), base_lines)
             entries = json.loads(out["entries"])
@@ -219,6 +226,29 @@ class CliTest(unittest.TestCase):
                 out["files"].split(b"\0")[:-1],
                 [f"{module}/{OUT}/A_compare.png".encode(), f"{module}/{OUT}/B_actual.png".encode()],
             )
+
+    def test_collect_drops_non_png_and_oversized_images(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "results"
+            module = "feature/x"
+            out_dir = root / module / OUT
+            res_dir = root / module / "build/test-results/roborazzi/debug/results"
+            out_dir.mkdir(parents=True)
+            res_dir.mkdir(parents=True)
+            runner = "/home/runner/work/x/x/" + module + "/" + OUT
+            images = {
+                "Ok": PNG,
+                "NotPng": b"GIF89a" + b"\0" * 16,
+                "Big": report.PNG_SIGNATURE + b"\0" * report.MAX_IMAGE_BYTES,
+            }
+            for name, content in images.items():
+                entry = {"type": "added", "golden_file_path": f"{runner}/{name}.png", "actual_file_path": f"{runner}/{name}_actual.png"}
+                (res_dir / f"{name}.json").write_text(json.dumps(entry))
+                (out_dir / f"{name}_actual.png").write_bytes(content)
+            out = run_collect(root, meta(), [])
+            entries = json.loads(out["entries"])
+            self.assertEqual([e["name"] for e in entries["added"]], ["Ok"])
+            self.assertEqual(out["files"], f"{module}/{OUT}/Ok_actual.png".encode() + b"\0")
 
 
 def run_collect(root, raw_meta, base_lines):

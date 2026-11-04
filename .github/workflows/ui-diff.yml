@@ -8,10 +8,15 @@ on:
       - 'feature/**'
       - 'core/designsystem/**'
       - 'core/ui/**'
+      - 'core/testing/android/**'
       - 'gradle/libs.versions.toml'
       - 'build-logic/**'
       - 'gradle/wrapper/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
       - '.github/workflows/ui-diff.yml'
+      - '.github/scripts/ui_diff/**'
 
 permissions:
   contents: read
@@ -80,11 +85,22 @@ jobs:
         if: steps.merge.outputs.sha != ''
         run: printf 'KAKAO_NATIVE_APP_KEY=dummy\n' > local.properties
 
+      # 태스크가 없다는 실패만 no-base-setup 으로 본다. 구성 오류 같은 다른 실패는 failed 로 남긴다
       - name: Check base setup
         id: base_setup
         if: steps.merge.outputs.sha != ''
         continue-on-error: true
-        run: ./gradlew help --task recordRoborazziDebug
+        run: |
+          log="$RUNNER_TEMP/ui-diff/logs/base-setup.log"
+          if ./gradlew --console=plain help --task recordRoborazziDebug > "$log" 2>&1; then
+            cat "$log"
+            exit 0
+          fi
+          cat "$log"
+          if grep -q "not found in" "$log"; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+          exit 1
 
       # dry-run 목록은 렌더 대상 모듈을 알려 준다. 실패로 아예 돌지 못한 모듈을 가려내는 데 쓴다
       - name: Render base
@@ -138,6 +154,7 @@ jobs:
           MERGE_SHA: ${{ steps.merge.outputs.sha }}
           PARENTS_OUTCOME: ${{ steps.parents.outcome }}
           BASE_SETUP_OUTCOME: ${{ steps.base_setup.outcome }}
+          BASE_SETUP_MISSING: ${{ steps.base_setup.outputs.missing }}
           MERGE_BASE_SHA: ${{ steps.parents.outputs.base_sha }}
           MERGE_HEAD_SHA: ${{ steps.parents.outputs.head_sha }}
           EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -176,7 +193,13 @@ jobs:
                 --base-plan "$work/logs/base-plan.txt" --base-log "$work/logs/base.log" \
                 --head-plan "$work/logs/head-plan.txt" --head-log "$work/logs/head.log"
               ;;
-            failure) "$@" --status no-base-setup ;;
+            failure)
+              if [ "$BASE_SETUP_MISSING" = true ]; then
+                "$@" --status no-base-setup
+              else
+                "$@" --status failed
+              fi
+              ;;
             *) "$@" --status failed ;;
           esac
 
