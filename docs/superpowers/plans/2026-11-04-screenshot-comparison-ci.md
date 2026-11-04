@@ -26,7 +26,7 @@ related_code:
 `compareRoborazziDebug`를 돌리고 결과와 메타데이터를 아티팩트로 올린다. 쓰기 권한은 `workflow_run`으로 도는 코멘트 워크플로에만 있고, 이미지는
 orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한다. 일 1회 워크플로가 닫힌 지 30일 지난 PR의 이미지 브랜치를 지운다.
 
-**Tech Stack:** Roborazzi 1.77.0, Robolectric 4.17, ComposablePreviewScanner 0.10.0, GitHub Actions, Python 3 표준 라이브러리(`unittest`), `gh` CLI.
+**Tech Stack:** Roborazzi 1.77.0, Robolectric 4.17, ComposablePreviewScanner 0.9.3, GitHub Actions, Python 3 표준 라이브러리(`unittest`), `gh` CLI.
 
 **Spec:** [`docs/superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md`](../specs/2026-11-04-screenshot-comparison-ci-design.md)
 
@@ -93,7 +93,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 
 - [ ] **Step 1: 카탈로그·플러그인 등록**
 
-  `[versions]` `roborazzi = "1.77.0"` `robolectric = "4.17"` `composablePreviewScanner = "0.10.0"`.
+  `[versions]` `roborazzi = "1.77.0"` `robolectric = "4.17"` `composablePreviewScanner = "0.9.3"`(0.10.0은 `ComposablePreview.invoke(Composer, int)` 시그니처가 바뀌어 Roborazzi 1.77.0의 scanner-support가 `NoSuchMethodError`로 죽는다 — Roborazzi 1.77.0은 0.9.1 기준으로 빌드됐다).
   라이브러리: `roborazzi-gradle-plugin`(`io.github.takahirom.roborazzi:roborazzi-gradle-plugin`), `roborazzi-compose-preview-scanner-support`,
   `composable-preview-scanner-android`(`io.github.sergio-sastre.ComposablePreviewScanner:android`), `robolectric`.
   플러그인: `roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }`, `parfait-ui-snapshot`.
@@ -199,7 +199,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 
 ### Task 4: 리포트 스크립트
 
-결과 JSON 형식: _(Task 1 Step 6에서 채운다)_
+결과 JSON 형식: 모듈별 `build/test-results/roborazzi/debug/results/<timestamp>_<캡처 이름>.json` 캡처당 1개, 같은 디렉터리 위 `results-summary.json`에 `{"summary": {"total", "recorded", "added", "changed", "unchanged"}, "results": [...]}`(각 원소는 캡처별 JSON과 같은 객체). 캡처별 필드: `type` ∈ `unchanged`/`changed`/`added`(record 때는 `recorded`), `golden_file_path`(항상), `actual_file_path`·`compare_file_path`(`changed`·`added`일 때만), `diff_percentage`(`changed`일 때만, 0.0~1.0), `timestamp`, `context_data`. 경로는 전부 절대 경로이고 `build/outputs/roborazzi/<캡처 이름>{,_actual,_compare}.png`를 가리킨다. 기준 PNG 없이 compare하면 전부 `added`이고 `golden_file_path`는 존재하지 않는 파일을 가리킨다. compare는 `changed`가 있어도 태스크가 성공(exit 0)한다.
 
 **Files:**
 - Create: `.github/scripts/ui_diff/report.py`, `.github/scripts/ui_diff/test_report.py`
