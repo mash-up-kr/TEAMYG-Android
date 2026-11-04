@@ -107,8 +107,8 @@ internal fun GroupSettingScreen(
                     inviteCode = state.inviteCode.value,
                     subText = inviteCardSubText(state.remainingCount),
                     status = inviteCardStatus(state.remainingCount),
-                    copyButtonText = stringResource(R.string.group_setting_share),
-                    onCopyClick = onClickShareInviteCode,
+                    actionText = stringResource(R.string.group_setting_share),
+                    onActionClick = onClickShareInviteCode,
                     endIconResource = null,
                     modifier = Modifier.fillMaxWidth(),
                 )
