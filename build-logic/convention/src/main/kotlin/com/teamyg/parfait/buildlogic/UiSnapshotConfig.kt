@@ -41,7 +41,7 @@ internal fun Project.setConfigUiSnapshot() {
         isIncludeAndroidResources = true
         all { test ->
             test.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
-            // SDK 36 샌드박스가 FileDescriptor 내부를 jdk.internal.access 로 건드린다
+            // SDK 36 샌드박스의 ApplicationSharedMemory.create 가 jdk.internal.access.SharedSecrets 를 쓴다
             test.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
         }
     }
@@ -66,14 +66,17 @@ internal fun Project.setConfigUiSnapshot() {
         )
     }
 
-    // 생성된 프리뷰 테스트는 렌더가 느리고 기록 기준 없이는 의미가 없어, Roborazzi 태스크를 부를 때만 돌린다
+    // 생성된 프리뷰 테스트는 렌더가 느리고 기록 기준 없이는 의미가 없어, Roborazzi 태스크를 부를 때만 돌린다.
+    // 반대로 Roborazzi 실행에서는 일반 단위 테스트를 빼서, 그 실패가 모듈의 렌더 실패로 잡히지 않게 한다
     val isRoborazziRun = gradle.startParameter.taskNames.any { it.contains("Roborazzi") }
-    if (!isRoborazziRun) {
-        tasks.withType<Test>().configureEach {
-            filter {
+    tasks.withType<Test>().configureEach {
+        filter {
+            if (isRoborazziRun) {
+                includeTestsMatching("$GENERATED_TEST_CLASS*")
+            } else {
                 excludeTestsMatching("$GENERATED_TEST_CLASS*")
-                isFailOnNoMatchingTests = false
             }
+            isFailOnNoMatchingTests = false
         }
     }
 }

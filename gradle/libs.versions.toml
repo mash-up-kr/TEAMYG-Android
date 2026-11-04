@@ -93,6 +93,7 @@ mockk = "1.14.11"
 # Screenshot
 roborazzi = "1.77.0"
 robolectric = "4.17"
+# Roborazzi 빌드가 쓰는 버전에 맞춰 고정한다. 0.10.0 은 Roborazzi 1.77.0 에서 NoSuchMethodError 가 나므로 함께 올린다
 composablePreviewScanner = "0.9.3"
 
 [libraries]
