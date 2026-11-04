@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.UiSnapshotExcluded
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.outline.toBorderAlphaBitmap
 import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
@@ -226,6 +227,8 @@ private fun sizeForLongSide(
     IntSize((longSide * aspectRatio).roundToInt(), longSide)
 }
 
+// 테두리 띠를 Dispatchers.Default 에서 만들어 캡처 시점에 따라 테두리 유무가 흔들린다
+@UiSnapshotExcluded
 @YGPreview
 @Composable
 private fun YGToppingCutoutImagePreview() = PreviewBox {
@@ -240,26 +243,11 @@ private fun YGToppingCutoutImagePreview() = PreviewBox {
         }
     }
 
-    val painter = painterResource(R.drawable.ic_plus)
-    val borderWidth = 6.dp
-    val boxSide = 120.dp
-
-    // 띠는 Dispatchers.Default 에서 만들어져 캡처보다 늦을 때가 있다. 그러면 스크린샷이 테두리 유무로
-    // 흔들리므로, 같은 판을 미리 캐시에 넣어 첫 프레임부터 그리게 한다
-    val density = LocalDensity.current
-    remember(previewOutline) {
-        val outsetPx = with(density) { borderWidth.toPx() }
-        val boxPx = with(density) { boxSide.roundToPx() }
-        val aspectRatio = painter.intrinsicSize.width / painter.intrinsicSize.height
-        buildBorderPlate(previewOutline, aspectRatio, outsetPx, IntSize(boxPx, boxPx)) { true }
-            ?.let { plate -> ToppingBorderPlateCache.put(previewOutline, outsetPx, aspectRatio, plate) }
-    }
-
     YGToppingCutoutImage(
-        painter = painter,
+        painter = painterResource(R.drawable.ic_plus),
         borderColor = YGAtomicColors.Cherry.Cherry200,
-        borderWidth = borderWidth,
-        modifier = Modifier.size(boxSide),
+        borderWidth = 6.dp,
+        modifier = Modifier.size(120.dp),
         outline = previewOutline,
     )
 }

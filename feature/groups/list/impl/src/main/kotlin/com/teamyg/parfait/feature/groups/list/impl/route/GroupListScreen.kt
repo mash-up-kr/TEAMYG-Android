@@ -21,8 +21,6 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.teamyg.parfait.core.designsystem.component.ygtoppinggroup.YGToppingGroup
@@ -85,7 +83,6 @@ internal fun GroupListScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
     intro: GroupListEmptyIntroState = rememberGroupListEmptyIntroState(enabled = uiState.isEmptyConfirmed),
-    clock: Clock = Clock.System,
 ) {
     // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
     // 둘을 가르는 일은 isEmptyConfirmed 가 맡는다.
@@ -149,7 +146,6 @@ internal fun GroupListScreen(
                                 onClickTopping = onClickTopping,
                                 reveal = reveal,
                                 emptyIntro = intro.takeIf { uiState.isEmptyConfirmed },
-                                clock = clock,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -266,69 +262,49 @@ internal fun GroupListContent(
     }
 }
 
-private class GroupListScreenPreviewParameterProvider :
-    PreviewParameterProvider<GroupListUiState> {
-    private val groupList = listOf(
-        MyParfaitGroupVO(
-            groupId = GroupId(1L),
-            groupName = GroupName("매시업"),
-            recentToppingType = ToppingContentType.IMAGE,
-            recentImageUrl = "https://picsum.photos/id/1025/200",
-            recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = PREVIEW_NOW - 3.minutes,
-            lastPlacedByNametagChip = NametagChipType.TYPE1,
-        ),
-        MyParfaitGroupVO(
-            groupId = GroupId(2L),
-            groupName = GroupName("매시업매시업매시업"),
-            recentToppingType = ToppingContentType.IMAGE,
-            recentImageUrl = "https://picsum.photos/id/1062/200",
-            recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = PREVIEW_NOW - 2.hours,
-            lastPlacedByNametagChip = NametagChipType.TYPE9,
-        ),
-        MyParfaitGroupVO(
-            groupId = GroupId(3L),
-            groupName = GroupName("우리집"),
-            recentToppingType = null,
-            recentImageUrl = null,
-            recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = null,
-            lastPlacedByNametagChip = NametagChipType.DEFAULT,
-        ),
-    )
-
-    override val values: Sequence<GroupListUiState>
-        get() = sequenceOf(
-            GroupListUiState(
-                groupList = groupList,
-                groupAddButtonSelected = false,
-            ),
-            GroupListUiState(
-                groupList = groupList,
-                groupAddButtonSelected = true,
-            ),
-        )
-}
-
 // 업로드 시각과 화면의 기준 시각을 같은 고정값에 묶어야 렌더 시점과 무관하게 경과 문구가 같다
-private val PREVIEW_NOW = Instant.fromEpochMilliseconds(1_767_225_600_000L)
+private val PREVIEW_NOW = Instant.parse("2026-01-01T00:00:00Z")
 
 private val PreviewClock = object : Clock {
     override fun now(): Instant = PREVIEW_NOW
 }
 
+private val PreviewGroupList = listOf(
+    MyParfaitGroupVO(
+        groupId = GroupId(1L),
+        groupName = GroupName("매시업"),
+        recentToppingType = ToppingContentType.IMAGE,
+        recentImageUrl = "https://picsum.photos/id/1025/200",
+        recentImageBorder = ToppingBorder.None,
+        recentImageUploadedAt = PREVIEW_NOW - 3.minutes,
+        lastPlacedByNametagChip = NametagChipType.TYPE1,
+    ),
+    MyParfaitGroupVO(
+        groupId = GroupId(2L),
+        groupName = GroupName("매시업매시업매시업"),
+        recentToppingType = ToppingContentType.IMAGE,
+        recentImageUrl = "https://picsum.photos/id/1062/200",
+        recentImageBorder = ToppingBorder.None,
+        recentImageUploadedAt = PREVIEW_NOW - 2.hours,
+        lastPlacedByNametagChip = NametagChipType.TYPE9,
+    ),
+    MyParfaitGroupVO(
+        groupId = GroupId(3L),
+        groupName = GroupName("우리집"),
+        recentToppingType = null,
+        recentImageUrl = null,
+        recentImageBorder = ToppingBorder.None,
+        recentImageUploadedAt = null,
+        lastPlacedByNametagChip = NametagChipType.DEFAULT,
+    ),
+)
+
 @YGPreview
 @Composable
-private fun GroupListScreenPreview(
-    @PreviewParameter(GroupListScreenPreviewParameterProvider::class) uiState: GroupListUiState,
-) = PreviewBox {
-    GroupListScreen(
-        uiState = uiState,
-        onClickChip = {},
-        onClickSideMenu = {},
+private fun GroupListContentPreview() = PreviewBox {
+    GroupListContent(
+        groupList = PreviewGroupList,
         onClickTopping = {},
-        onRefresh = {},
         clock = PreviewClock,
     )
 }
