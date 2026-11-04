@@ -15,12 +15,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 
 MARKER = "<!-- parfait-ui-diff-report -->"
+# OUTPUTS·RESULTS·STATUSES 는 stage.py 와 같은 계약이다. 한쪽을 바꾸면 다른 쪽도 바꾼다(test_stage 가 확인한다)
 OUTPUTS = ("build", "outputs", "roborazzi")
 RESULTS = ("build", "test-results", "roborazzi", "debug", "results")
 NAME_PREFIX = "com.teamyg.parfait."
 NAME_WRAP = 28
 MAX_JSON_BYTES = 1 << 20
 MAX_IMAGE_BYTES = 5 << 20
+# 이미지 브랜치 한 번에 올리는 양의 상한. 넘는 행은 이미지 없이 남긴다
+MAX_PUSH_IMAGES = 200
+MAX_PUSH_BYTES = 100 << 20
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 STATUSES = ("ok", "no-base-setup", "merge-conflict", "failed")
 STATUS_MESSAGES = {
@@ -66,10 +70,16 @@ class Report:
     added: list
     removed: list
     failed_modules: list
+    # 상한에 걸려 이미지를 빼기 전의 이미지 수. 0 이면 빠진 이미지가 없다
+    images_before_cap: int = 0
 
     @property
     def total(self) -> int:
         return len(self.changed) + len(self.added) + len(self.removed)
+
+    @property
+    def images(self) -> list:
+        return [r.image for r in self.changed + self.added if r.image is not None]
 
 
 def golden_key(module_dir: str, name: str) -> str:
@@ -100,7 +110,8 @@ def is_safe_path(rel: PurePosixPath, root: Path | None = None) -> bool:
         return False
     if not parts[-1].endswith(".png"):
         return False
-    if any(p in (".", "..") or p.startswith("-") or not PART_RE.fullmatch(p) for p in parts):
+    # `.`으로 시작하는 조각을 막아 `.git`·`.gitattributes` 같은 이름과 빈 이름(`.png`)이 이미지 브랜치에 끼지 않게 한다
+    if any(p.startswith((".", "-")) or not PART_RE.fullmatch(p) for p in parts):
         return False
     if root is None:
         return True
@@ -137,7 +148,7 @@ def classify(results: list[CaptureResult], base_names: set[str], failed_modules:
     head_keys = {r.key for r in results}
     changed, added = [], []
     for r in results:
-        if r.module in failed_modules or r.image is None:
+        if r.module in failed_modules:
             continue
         if r.type == "changed":
             changed.append(r)
@@ -156,6 +167,27 @@ def classify(results: list[CaptureResult], base_names: set[str], failed_modules:
         return (r.module, r.name)
 
     return Report(sorted(changed, key=order), sorted(added, key=order), sorted(removed, key=order), sorted(failed_modules))
+
+
+def cap_images(rep: Report, root: Path, max_images: int = MAX_PUSH_IMAGES, max_bytes: int = MAX_PUSH_BYTES) -> Report:
+    """변경·신규 순서대로 상한까지만 이미지를 남긴다. 넘친 행은 이미지 없이 남는다."""
+    count = used = 0
+    before = len(rep.images)
+
+    def keep(r):
+        nonlocal count, used
+        if r.image is None:
+            return r
+        size = os.lstat(root / r.image).st_size
+        if count >= max_images or used + size > max_bytes:
+            return CaptureResult(r.module_dir, r.name, r.type)
+        count += 1
+        used += size
+        return r
+
+    changed = [keep(r) for r in rep.changed]
+    added = [keep(r) for r in rep.added]
+    return Report(changed, added, rep.removed, rep.failed_modules, before if count < before else 0)
 
 
 def find_result_files(root: Path):
@@ -228,6 +260,7 @@ def report_to_dict(rep: Report) -> dict:
         "added": [asdict(r) for r in rep.added],
         "removed": [asdict(r) for r in rep.removed],
         "failed_modules": rep.failed_modules,
+        "images_before_cap": rep.images_before_cap,
     }
 
 
@@ -246,7 +279,10 @@ def report_from_dict(raw: dict) -> Report:
     modules = raw.get("failed_modules", [])
     if not all(isinstance(m, str) and MODULE_RE.fullmatch(m) for m in modules):
         raise ValueError("invalid failed_modules")
-    return Report(rows("changed"), rows("added"), rows("removed"), list(modules))
+    before_cap = raw.get("images_before_cap", 0)
+    if type(before_cap) is not int or before_cap < 0:
+        raise ValueError("invalid images_before_cap")
+    return Report(rows("changed"), rows("added"), rows("removed"), list(modules), before_cap)
 
 
 def cell(text: str) -> str:
@@ -277,10 +313,12 @@ def render_comment(report: Report, meta: Meta, repo: str, image_sha: str, max_ro
     if report.total == 0:
         lines.append("바뀐 화면 없음")
         return "\n".join(lines) + "\n"
-    if (report.changed or report.added) and not SHA_RE.fullmatch(image_sha):
+    if report.images and not SHA_RE.fullmatch(image_sha):
         raise ValueError("invalid image sha")
 
     lines += [f"변경 {len(report.changed)} · 신규 {len(report.added)} · 삭제 {len(report.removed)}", ""]
+    if report.images_before_cap:
+        lines += [f"이미지가 많아 {report.images_before_cap}개 중 {len(report.images)}개만 올렸습니다.", ""]
     budget = max_rows
     for title, header, rows, width in (
         ("변경", "| 모듈 | 프리뷰 | Before / Diff / After |", report.changed, 600),
@@ -292,7 +330,7 @@ def render_comment(report: Report, meta: Meta, repo: str, image_sha: str, max_ro
             continue
         lines += [f"### {title}", "", header, "|---|---|---|"]
         for r in shown:
-            img = f'<img src="{image_url(repo, image_sha, r.image)}" width="{width}">'
+            img = "이미지 없음" if r.image is None else f'<img src="{image_url(repo, image_sha, r.image)}" width="{width}">'
             lines.append(f"| {cell(r.module)} | {preview_cell(r.name)} | {img} |")
         lines.append("")
     removed = report.removed[:budget]
@@ -303,7 +341,7 @@ def render_comment(report: Report, meta: Meta, repo: str, image_sha: str, max_ro
     shown_total = max_rows - budget + len(removed)
     if shown_total < report.total:
         # 이미지 링크와 같은 커밋을 가리켜야 브랜치가 다시 push 돼도 이 코멘트의 이미지와 어긋나지 않는다
-        ref = image_sha if SHA_RE.fullmatch(image_sha) else f"ui-snapshots/pr-{meta.pr}"
+        ref = image_sha if report.images and SHA_RE.fullmatch(image_sha) else f"ui-snapshots/pr-{meta.pr}"
         tree = f"https://github.com/{repo}/tree/{ref}"
         lines.append(f"{report.total}개 중 {shown_total}개만 보여 줍니다. 전체 이미지는 [ui-snapshots/pr-{meta.pr}]({tree})에 있습니다.")
     return "\n".join(lines).rstrip("\n") + "\n"
@@ -318,11 +356,11 @@ def cmd_collect(args) -> int:
     if meta.status == "ok":
         root = Path(args.results_root)
         rep = classify(collect_results(root), read_base_list(Path(args.base_list)), set(meta.failed_modules))
+        rep = cap_images(rep, root)
     else:
         rep = Report([], [], [], list(meta.failed_modules))
     Path(args.out_entries).write_text(json.dumps(report_to_dict(rep), ensure_ascii=False, indent=2), encoding="utf-8")
-    files = [r.image for r in rep.changed + rep.added]
-    Path(args.out_files).write_bytes(b"".join(f.encode("utf-8") + b"\0" for f in files))
+    Path(args.out_files).write_bytes(b"".join(f.encode("utf-8") + b"\0" for f in rep.images))
     with open(args.github_output, "a", encoding="utf-8") as out:
         out.write(f"total={rep.total}\n")
     return 0

@@ -12,6 +12,7 @@ import stat
 import sys
 from pathlib import Path
 
+# OUTPUTS·RESULTS·STATUSES 는 report.py 와 같은 계약이다. 한쪽을 바꾸면 다른 쪽도 바꾼다(test_stage 가 확인한다)
 OUTPUTS = ("build", "outputs", "roborazzi")
 RESULTS = ("build", "test-results", "roborazzi", "debug", "results")
 SKIP_DIRS = {".git", ".gradle", ".kotlin", ".idea", "node_modules"}

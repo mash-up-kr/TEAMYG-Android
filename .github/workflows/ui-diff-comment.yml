@@ -141,7 +141,8 @@ jobs:
           python3 "$REPORT" render --entries "$WORK/entries.json" --meta "$WORK/meta/meta.json"
           --repo "$GITHUB_REPOSITORY" --image-sha "$IMAGE_SHA" --out "$WORK/comment.md"
 
-      # 쓰기 직전에 head 를 다시 본다. 비교할 게 없고 기존 코멘트도 없으면 코멘트를 새로 달지 않는다
+      # 쓰기 직전에 head 를 다시 본다. 기존 코멘트가 없을 때는 비교할 게 없거나 no-base-setup 이면 새로 달지 않는다.
+      # no-base-setup 은 develop 에 스크린샷 구성이 없는 동안 모든 PR 에 붙을 안내라 기존 코멘트 갱신에만 쓴다
       - name: Write comment
         if: steps.verify.outputs.stale == 'false' && steps.push.outputs.stale != 'true'
         env:
@@ -161,9 +162,15 @@ jobs:
           ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
             --jq '.[] | select(.user.login == "github-actions[bot]" and ((.body // "") | contains("<!-- parfait-ui-diff-report -->"))) | .id')
           existing=${ids%%$'\n'*}
-          if [ "$TOTAL" = 0 ] && [ "$STATUS" = ok ] && [ "$FAILED_MODULES" = 0 ] && [ -z "$existing" ]; then
-            echo "nothing to report"
-            exit 0
+          if [ -z "$existing" ]; then
+            if [ "$STATUS" = no-base-setup ]; then
+              echo "no base setup and no existing comment"
+              exit 0
+            fi
+            if [ "$TOTAL" = 0 ] && [ "$STATUS" = ok ] && [ "$FAILED_MODULES" = 0 ]; then
+              echo "nothing to report"
+              exit 0
+            fi
           fi
           python3 -c 'import json, sys; json.dump({"body": open(sys.argv[1], encoding="utf-8").read()}, open(sys.argv[2], "w", encoding="utf-8"))' \
             "$WORK/comment.md" "$WORK/comment.json"

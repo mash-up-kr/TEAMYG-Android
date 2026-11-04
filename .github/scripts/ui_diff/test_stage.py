@@ -139,5 +139,13 @@ class StageTest(unittest.TestCase):
         self.assertEqual(stage.main(["meta", "--out", out, "--pr", "7", "--head-sha", "abc", "--base-sha", BASE]), 2)
 
 
+
+class ContractTest(unittest.TestCase):
+    def test_shared_constants_match_report(self):
+        self.assertEqual(stage.OUTPUTS, report.OUTPUTS)
+        self.assertEqual(stage.RESULTS, report.RESULTS)
+        self.assertEqual(stage.STATUSES, report.STATUSES)
+
+
 if __name__ == "__main__":
     unittest.main()

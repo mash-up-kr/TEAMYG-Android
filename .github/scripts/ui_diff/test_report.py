@@ -57,6 +57,11 @@ class SafePathTest(unittest.TestCase):
             "feature/x/build/outputs/other/a.png",
             f"feature/x/{OUT}/a\nb.png",
             f"feature/x/{OUT}/:(glob)*.png",
+            f"feature/x/.git/{OUT}/a.png",
+            f"feature/x/.GIT/{OUT}/a.png",
+            f".github/x/{OUT}/a.png",
+            f"feature/x/{OUT}/.hidden.png",
+            f"feature/x/{OUT}/.png",
         ):
             self.assertFalse(is_safe_path(PurePosixPath(rel)), rel)
 
@@ -80,6 +85,13 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual([r.name for r in rep.changed], ["A"])
         self.assertEqual([r.name for r in rep.added], ["B"])
         self.assertEqual([r.name for r in rep.removed], ["D"])
+
+    def test_rows_without_image_are_kept(self):
+        rep = classify([CaptureResult("feature/x", "A", "changed"), CaptureResult("feature/x", "B", "added")], set(), set())
+        self.assertEqual(rep.total, 2)
+        body = render_comment(rep, validate_meta(meta()), "o/r", "")
+        self.assertEqual(body.count("이미지 없음"), 2)
+        self.assertNotIn("<img", body)
 
     def test_failed_module_rows_excluded(self):
         results = [
@@ -247,8 +259,71 @@ class CliTest(unittest.TestCase):
                 (out_dir / f"{name}_actual.png").write_bytes(content)
             out = run_collect(root, meta(), [])
             entries = json.loads(out["entries"])
-            self.assertEqual([e["name"] for e in entries["added"]], ["Ok"])
+            self.assertEqual([(e["name"], e["image"] is not None) for e in entries["added"]], [("Big", False), ("NotPng", False), ("Ok", True)])
+            self.assertEqual(out["github_output"], "total=3\n")
             self.assertEqual(out["files"], f"{module}/{OUT}/Ok_actual.png".encode() + b"\0")
+
+    def test_collect_keeps_changed_row_when_compare_image_is_oversized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "results"
+            module = "feature/x"
+            out_dir = root / module / OUT
+            res_dir = root / module / "build/test-results/roborazzi/debug/results"
+            out_dir.mkdir(parents=True)
+            res_dir.mkdir(parents=True)
+            runner = "/home/runner/work/x/x/" + module + "/" + OUT
+            entry = {"type": "changed", "golden_file_path": f"{runner}/A.png", "compare_file_path": f"{runner}/A_compare.png"}
+            (res_dir / "A.json").write_text(json.dumps(entry))
+            (out_dir / "A_compare.png").write_bytes(report.PNG_SIGNATURE + b"\0" * report.MAX_IMAGE_BYTES)
+            out = run_collect(root, meta(), [key(module, "A")])
+            entries = json.loads(out["entries"])
+            self.assertEqual([(e["name"], e["image"]) for e in entries["changed"]], [("A", None)])
+            self.assertEqual(out["github_output"], "total=1\n")
+            self.assertEqual(out["files"], b"")
+            body = render_comment(report.report_from_dict(entries), validate_meta(meta()), "o/r", "")
+            self.assertIn("이미지 없음", body)
+
+
+class CapImagesTest(unittest.TestCase):
+    def write_images(self, root, names, size):
+        rows = []
+        for name in names:
+            rel = f"feature/x/{OUT}/{name}_actual.png"
+            path = root / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"\0" * size)
+            rows.append(CaptureResult("feature/x", name, "added", rel))
+        return rows
+
+    def test_count_cap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rows = self.write_images(root, [f"P{i}" for i in range(5)], 10)
+            rep = report.cap_images(classify(rows, set(), set()), root, max_images=3, max_bytes=1 << 20)
+            self.assertEqual(len(rep.images), 3)
+            self.assertEqual(rep.total, 5)
+            self.assertEqual(rep.images_before_cap, 5)
+            body = render_comment(report.report_from_dict(report.report_to_dict(rep)), validate_meta(meta()), "o/r", IMAGE_SHA)
+            self.assertIn("5개 중 3개만 올렸습니다", body)
+            self.assertEqual(body.count("이미지 없음"), 2)
+
+    def test_byte_cap(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rows = self.write_images(root, ["A", "B", "C"], 40)
+            rep = report.cap_images(classify(rows, set(), set()), root, max_images=200, max_bytes=100)
+            self.assertEqual([r.name for r in rep.added if r.image], ["A", "B"])
+            self.assertEqual(rep.images_before_cap, 3)
+
+    def test_under_cap_is_untouched(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rows = self.write_images(root, ["A", "B"], 10)
+            rep = report.cap_images(classify(rows, set(), set()), root)
+            self.assertEqual(len(rep.images), 2)
+            self.assertEqual(rep.images_before_cap, 0)
+            body = render_comment(rep, validate_meta(meta()), "o/r", IMAGE_SHA)
+            self.assertNotIn("올렸습니다", body)
 
 
 def run_collect(root, raw_meta, base_lines):

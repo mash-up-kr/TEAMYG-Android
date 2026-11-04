@@ -71,6 +71,11 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           cp .github/scripts/ui_diff/stage.py "$RUNNER_TEMP/ui-diff/tools/"
 
+      # 리포트 스크립트 자체의 검증이다. 실패하면 비교 결과 대신 잡 실패로 드러낸다
+      - name: Test report scripts
+        if: steps.merge.outputs.sha != ''
+        run: python3 -m unittest discover -s .github/scripts/ui_diff -p 'test_*.py'
+
       - uses: ./.github/actions/setup-android-build
         if: steps.merge.outputs.sha != ''
 
@@ -97,7 +102,7 @@ jobs:
             exit 0
           fi
           cat "$log"
-          if grep -q "not found in" "$log"; then
+          if grep -qF "Task 'recordRoborazziDebug' not found" "$log"; then
             echo "missing=true" >> "$GITHUB_OUTPUT"
           fi
           exit 1
