@@ -320,6 +320,16 @@ def cmd_render(args) -> int:
     return 0
 
 
+def cmd_meta(args) -> int:
+    """검증한 메타 값만 스텝 출력으로 넘긴다. head_sha가 워크플로 런의 head와 다르면 거부한다."""
+    meta = load_meta(args.meta)
+    if meta.head_sha != args.expected_head:
+        raise ValueError("meta head_sha does not match the workflow run")
+    with open(args.github_output, "a", encoding="utf-8") as out:
+        out.write(f"pr={meta.pr}\nhead_sha={meta.head_sha}\nstatus={meta.status}\nfailed_modules={len(meta.failed_modules)}\n")
+    return 0
+
+
 def cmd_check_head(args) -> int:
     return 0 if load_meta(args.meta).head_sha == args.current_head else 3
 
@@ -334,11 +344,14 @@ def main(argv=None) -> int:
     for flag in ("--entries", "--meta", "--repo", "--out"):
         render.add_argument(flag, required=True)
     render.add_argument("--image-sha", default="")
+    meta = sub.add_parser("meta")
+    for flag in ("--meta", "--expected-head", "--github-output"):
+        meta.add_argument(flag, required=True)
     check = sub.add_parser("check-head")
     check.add_argument("--meta", required=True)
     check.add_argument("--current-head", required=True)
     args = parser.parse_args(argv)
-    handler = {"collect": cmd_collect, "render": cmd_render, "check-head": cmd_check_head}[args.command]
+    handler = {"collect": cmd_collect, "render": cmd_render, "meta": cmd_meta, "check-head": cmd_check_head}[args.command]
     try:
         return handler(args)
     except (OSError, ValueError, KeyError, TypeError) as error:
