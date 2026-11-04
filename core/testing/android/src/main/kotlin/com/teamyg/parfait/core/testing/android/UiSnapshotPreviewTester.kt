@@ -8,6 +8,8 @@ import java.util.concurrent.Executor
 
 /**
  * 로티 파싱은 Compose idle 감지 밖의 스레드에서 끝나 빈 화면이 찍히므로, 렌더 전에 호출 스레드에서 바로 돌게 한다.
+ *
+ * build-logic `UiSnapshotConfig` 가 이 FQCN 을 문자열로 참조한다. 옮기거나 이름을 바꾸면 그쪽도 함께 바꾼다.
  */
 class UiSnapshotPreviewTester private constructor(
     private val delegate: AndroidComposePreviewTester,
