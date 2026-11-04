@@ -14,13 +14,13 @@ BASE = "a" * 40
 OUT = "build/outputs/roborazzi"
 RES = "build/test-results/roborazzi/debug/results"
 
-PLAN = """\
-:core:ui:testDebugUnitTest SKIPPED
-:core:ui:recordRoborazziDebug SKIPPED
-:feature:groups:list:impl:testDebugUnitTest SKIPPED
-:feature:groups:list:impl:recordRoborazziDebug SKIPPED
-:core:model:compileKotlin SKIPPED
-"""
+
+
+def plan(task: str, modules=(":core:ui", ":feature:groups:list:impl")) -> str:
+    lines = [":core:model:compileKotlin SKIPPED"]
+    for m in modules:
+        lines += [f"{m}:testDebugUnitTest SKIPPED", f"{m}:finalizeTestRoborazziDebug SKIPPED", f"{m}:{task}RoborazziDebug SKIPPED"]
+    return "\n".join(lines) + "\n"
 
 
 def touch(path: Path, content: str = "x") -> None:
@@ -79,13 +79,15 @@ class StageTest(unittest.TestCase):
         report.validate_meta(raw)
         return raw
 
-    def compare_args(self, base_log: str, head_log: str, with_results: bool = True) -> list:
+    def compare_args(self, base_log: str, head_log: str, with_results: bool = True, base_modules=None, head_modules=None) -> list:
         results = self.tmp / "results"
         if with_results:
             touch(results / "core/ui" / RES / "r.json", "{}")
-        plan = self.write("plan.txt", PLAN)
+        base_plan = plan("record") if base_modules is None else plan("record", base_modules)
+        head_plan = plan("compare") if head_modules is None else plan("compare", head_modules)
         return [
-            "--base-plan", plan, "--head-plan", plan,
+            "--base-plan", self.write("base-plan.txt", base_plan),
+            "--head-plan", self.write("head-plan.txt", head_plan),
             "--base-log", self.write("base.log", base_log),
             "--head-log", self.write("head.log", head_log),
             "--results-root", str(results),
@@ -107,6 +109,19 @@ class StageTest(unittest.TestCase):
         raw = self.meta(*self.compare_args(base_log, head_log))
         self.assertEqual(raw["status"], "failed")
         self.assertEqual(raw["failed_modules"], [":core:ui", ":feature:groups:list:impl"])
+
+    def test_head_only_module_that_never_ran_is_failed(self):
+        # base 에 없던 모듈이 head 에서 컴파일 실패로 테스트를 못 돌았다
+        base_log = "> Task :core:ui:testDebugUnitTest\n"
+        head_log = "> Task :core:ui:testDebugUnitTest\n> Task :feature:new:impl:compileDebugKotlin FAILED\n"
+        raw = self.meta(*self.compare_args(base_log, head_log, base_modules=(":core:ui",), head_modules=(":core:ui", ":feature:new:impl")))
+        self.assertEqual((raw["status"], raw["failed_modules"]), ("ok", [":feature:new:impl"]))
+
+    def test_every_head_module_failing_means_failed(self):
+        base_log = "> Task :core:ui:testDebugUnitTest\n"
+        head_log = "> Task :core:ui:compileDebugKotlin FAILED\n"
+        raw = self.meta(*self.compare_args(base_log, head_log, base_modules=(), head_modules=(":core:ui",)))
+        self.assertEqual((raw["status"], raw["failed_modules"]), ("failed", [":core:ui"]))
 
     def test_partial_failure_stays_ok(self):
         log = "> Task :core:ui:testDebugUnitTest\n> Task :feature:groups:list:impl:testDebugUnitTest FAILED\n"

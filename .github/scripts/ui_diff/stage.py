@@ -18,7 +18,7 @@ SKIP_DIRS = {".git", ".gradle", ".kotlin", ".idea", "node_modules"}
 STATUSES = ("ok", "no-base-setup", "merge-conflict", "failed")
 SHA_RE = re.compile(r"[0-9a-f]{40}")
 TEST_TASK = "testDebugUnitTest"
-SNAPSHOT_TASK_RE = re.compile(r"^(:[A-Za-z0-9_\-:]+):recordRoborazziDebug SKIPPED\s*$")
+SNAPSHOT_TASK_RE = re.compile(r"^(:[A-Za-z0-9_\-:]+):(?:record|compare)RoborazziDebug SKIPPED\s*$")
 TASK_LINE_RE = re.compile(r"^> Task (:[A-Za-z0-9_\-:]+):" + TEST_TASK + r"(?: (\S+))?\s*$")
 
 
@@ -94,7 +94,7 @@ def read_lines(path: str | None) -> list[str]:
 
 
 def snapshot_modules(plan_lines: list[str]) -> set[str]:
-    """`recordRoborazziDebug --dry-run` 출력에서 스냅숏 모듈의 Gradle 경로를 뽑는다."""
+    """`recordRoborazziDebug`·`compareRoborazziDebug`의 `--dry-run` 출력에서 스냅숏 모듈의 Gradle 경로를 뽑는다."""
     return {m.group(1) for line in plan_lines if (m := SNAPSHOT_TASK_RE.match(line))}
 
 

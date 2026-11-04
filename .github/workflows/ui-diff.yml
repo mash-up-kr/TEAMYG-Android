@@ -32,7 +32,14 @@ jobs:
       - name: Resolve merge commit
         id: merge
         run: |
-          merge_sha=$(git ls-remote "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/pull/$PR_NUMBER/merge" | cut -f1)
+          # --exit-code 는 ref 가 없을 때만 2 를 낸다. 네트워크·인증 실패를 충돌로 오보하지 않게 나머지는 잡 실패로 둔다
+          rc=0
+          remote=$(git ls-remote --exit-code "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/pull/$PR_NUMBER/merge") || rc=$?
+          case "$rc" in
+            0) merge_sha=$(printf '%s\n' "$remote" | cut -f1) ;;
+            2) merge_sha= ;;
+            *) echo "git ls-remote failed: rc=$rc" >&2; exit 1 ;;
+          esac
           if [ -n "$merge_sha" ] && ! printf '%s' "$merge_sha" | grep -Eqx '[0-9a-f]{40}'; then
             echo "unexpected merge ref: $merge_sha" >&2
             exit 1
