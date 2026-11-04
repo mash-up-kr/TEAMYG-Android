@@ -59,6 +59,7 @@ import com.teamyg.parfait.feature.groups.list.impl.util.toToppingImage
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
@@ -84,6 +85,7 @@ internal fun GroupListScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
     intro: GroupListEmptyIntroState = rememberGroupListEmptyIntroState(enabled = uiState.isEmptyConfirmed),
+    clock: Clock = Clock.System,
 ) {
     // 미조회(null)와 0건은 그릴 토핑이 없다는 점에서 같다 —
     // 둘을 가르는 일은 isEmptyConfirmed 가 맡는다.
@@ -147,6 +149,7 @@ internal fun GroupListScreen(
                                 onClickTopping = onClickTopping,
                                 reveal = reveal,
                                 emptyIntro = intro.takeIf { uiState.isEmptyConfirmed },
+                                clock = clock,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -180,6 +183,7 @@ internal fun GroupListContent(
     modifier: Modifier = Modifier,
     reveal: RevealState = RevealState.AllRevealed,
     emptyIntro: GroupListEmptyIntroState? = null,
+    clock: Clock = Clock.System,
 ) {
     val borderedImageUrls = remember(groupList) { groupList.borderedImageUrls() }
     val outlines = rememberToppingOutlines(models = borderedImageUrls, retryKey = 0)
@@ -234,7 +238,7 @@ internal fun GroupListContent(
             }
 
             // 한 화면의 카드가 서로 다른 기준 시각으로 재지 않도록 목록마다 한 번만 읽는다
-            val now = remember(groupList) { Clock.System.now() }
+            val now = remember(groupList) { clock.now() }
 
             groupList.fastForEachIndexed { index, group ->
                 // 키가 없으면 목록이 바뀔 때 슬롯이 자리 기준으로 재사용된다. 결말 보고는
@@ -264,9 +268,6 @@ internal fun GroupListContent(
 
 private class GroupListScreenPreviewParameterProvider :
     PreviewParameterProvider<GroupListUiState> {
-    // 화면이 경과 시간을 실제 시계로 재므로, 고정 시각을 두면 렌더한 날마다 문구가 바뀌어 스크린샷이 흔들린다
-    private val previewNow = Clock.System.now()
-
     private val groupList = listOf(
         MyParfaitGroupVO(
             groupId = GroupId(1L),
@@ -274,7 +275,7 @@ private class GroupListScreenPreviewParameterProvider :
             recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1025/200",
             recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = previewNow - 3.minutes,
+            recentImageUploadedAt = PREVIEW_NOW - 3.minutes,
             lastPlacedByNametagChip = NametagChipType.TYPE1,
         ),
         MyParfaitGroupVO(
@@ -283,7 +284,7 @@ private class GroupListScreenPreviewParameterProvider :
             recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1062/200",
             recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = previewNow - 2.hours,
+            recentImageUploadedAt = PREVIEW_NOW - 2.hours,
             lastPlacedByNametagChip = NametagChipType.TYPE9,
         ),
         MyParfaitGroupVO(
@@ -310,6 +311,13 @@ private class GroupListScreenPreviewParameterProvider :
         )
 }
 
+// 업로드 시각과 화면의 기준 시각을 같은 고정값에 묶어야 렌더 시점과 무관하게 경과 문구가 같다
+private val PREVIEW_NOW = Instant.fromEpochMilliseconds(1_767_225_600_000L)
+
+private val PreviewClock = object : Clock {
+    override fun now(): Instant = PREVIEW_NOW
+}
+
 @YGPreview
 @Composable
 private fun GroupListScreenPreview(
@@ -321,6 +329,7 @@ private fun GroupListScreenPreview(
         onClickSideMenu = {},
         onClickTopping = {},
         onRefresh = {},
+        clock = PreviewClock,
     )
 }
 
