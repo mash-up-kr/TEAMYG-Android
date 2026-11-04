@@ -31,7 +31,10 @@ enum class AnalyticsEventType(
     GROUP_LIST_JOINED(eventId = "G-001-02", eventName = "group_list_joined"),
     GROUP_LIST_REFRESHED(eventId = "G-001-03", eventName = "group_list_refreshed"),
     GROUP_LIST_INVITE_CODE_PASTED(eventId = "A-004-01", eventName = "group_list_invite_code_pasted"),
+
+    /** 복사 시절 지표를 이어 보려고 남긴 상수. 초대 코드 버튼이 공유로 바뀐 뒤로는 보내지 않는다 */
     GROUP_MENU_INVITE_CODE_COPIED(eventId = "S-101-01", eventName = "group_menu_invite_code_copied"),
+    GROUP_MENU_INVITE_CODE_SHARE(eventId = "S-101-04", eventName = "group_menu_invite_code_share"),
     GROUP_MENU_LEFT(eventId = "S-101-02", eventName = "group_menu_left"),
     GROUP_MENU_NICKNAME_CHANGED(eventId = "S-101-03", eventName = "group_menu_nickname_changed"),
 }

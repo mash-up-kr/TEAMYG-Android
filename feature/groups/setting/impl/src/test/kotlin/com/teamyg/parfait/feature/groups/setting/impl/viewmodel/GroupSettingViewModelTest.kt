@@ -3,6 +3,8 @@ package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 import app.cash.turbine.test
 import com.teamyg.parfait.core.designsystem.component.ygcolorchip.YGColorChipType
 import com.teamyg.parfait.core.testing.MainDispatcherRule
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
 import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.domain.model.NameValidResult
 import com.teamyg.parfait.domain.model.error.AppError
@@ -34,6 +36,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -338,6 +341,14 @@ class GroupSettingViewModelTest {
 
             // Then 공유 SideEffect가 코드와 함께 나간다
             assertEquals(GroupSettingSideEffect.ShareInviteCode(inviteCode), awaitItem())
+        }
+
+        // And 공유 이벤트만 남고 복사 이벤트는 남지 않는다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_SHARE))
+        }
+        verify(exactly = 0) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED))
         }
     }
 

@@ -110,7 +110,8 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 | `group_list_joined` | — | 그룹 들어가기 완료 |
 | `group_list_invite_code_pasted` | — | 초대코드 붙여넣기 |
 | `group_list_refreshed` | — | 새로고침 |
-| `group_menu_invite_code_copied` | — | 초대코드 복사 |
+| `group_menu_invite_code_copied` | — | 초대코드 복사. ⚠️ 버튼이 공유로 바뀐 뒤로는 보내지 않는다 — 과거 지표용으로 이름만 남긴다 |
+| `group_menu_invite_code_share` | — | 초대코드 공유 버튼 탭(공유 시트를 연 시점, 실제 공유 완료 여부와 무관) |
 | `group_menu_left` | — | 그룹 나가기 완료 |
 | `group_menu_nickname_changed` | — | 그룹 닉네임 변경 완료 (변경 빈도는 사용자별 이벤트 수로 확인) |
 

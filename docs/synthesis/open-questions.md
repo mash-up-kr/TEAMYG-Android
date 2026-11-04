@@ -7894,12 +7894,4 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
-### [2026-11-04] 초대 코드 공유가 복사 이벤트를 그대로 보낸다
-
-- **ID**: OQ-P-460
-- **출처**: `GroupSettingViewModel.kt#handleClickShareInviteCode` × `AnalyticsEventType.kt#GROUP_MENU_INVITE_CODE_COPIED` · [user-events 스펙](../superpowers/specs/2026-10-06-user-events-design.md) 이벤트 표
-- **항목**: S-101 초대 코드 버튼이 클립보드 복사에서 시스템 공유 시트로 바뀌었는데 이벤트는 `S-101-01` `group_menu_invite_code_copied`(초대코드 복사) 그대로다. ① 지표 연속성을 위해 같은 이벤트를 유지할지, ② 공유 이벤트로 이름·정의를 바꿀지(바꾸면 iOS와 대시보드도 같이 맞춰야 한다) 기획·데이터 쪽 결정이 없다. 지금 값은 버튼 탭 시점에 찍혀 실제 공유 완료 여부와 무관하다.
-- **상태**: 미해결 (기획·데이터 확인 필요 — 이벤트는 잠정 유지)
-- **해소 메모**: ①이면 `handleClickShareInviteCode`에 유지 의도를 짧게 남기고 스펙 표의 설명을 "초대코드 공유"로 고친다. ②이면 `AnalyticsEventType`과 스펙 표를 함께 바꾼다.
-
 <!-- oq-next: 461 -->

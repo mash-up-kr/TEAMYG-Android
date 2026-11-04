@@ -282,7 +282,7 @@ constructor(
     private fun handleClickShareInviteCode() {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
+                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_SHARE,
             ),
         )
         postSideEffect(GroupSettingSideEffect.ShareInviteCode(state.value.inviteCode.value))
