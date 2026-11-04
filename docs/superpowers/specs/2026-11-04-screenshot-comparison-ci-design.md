@@ -125,6 +125,8 @@ gradle/wrapper/**
 
 B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 그래서:
 
+- `@YGPreview`는 `phone` 하나만 남긴다(사용자 결정). 원래 6변형(phone·foldable·foldable-fold × light·night)이 사용처 106곳에 붙어
+  PR마다 600장 넘게 두 번 렌더하게 되고, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
 - 모든 프리뷰는 같은 코드를 두 번 렌더하면 픽셀이 같아야 한다. 도입 시 base와 head를 같은 커밋으로
   돌려 diff 0건을 확인한다.
 - 네트워크·비동기 리소스를 쓰는 프리뷰 파일 5개는 고치거나 제외 어노테이션을 단다:

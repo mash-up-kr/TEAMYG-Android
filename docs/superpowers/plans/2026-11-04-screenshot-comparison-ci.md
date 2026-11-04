@@ -81,6 +81,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 - Create: `build-logic/convention/src/main/kotlin/UiSnapshotConventionPlugin.kt`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt`
 - Create: `core/testing/android/build.gradle.kts`, `core/testing/android/src/main/kotlin/com/teamyg/parfait/core/testing/android/UiSnapshotPreviewTester.kt`
 - Create: `core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/UiSnapshotExcluded.kt`
+- Modify: `core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/YGPreview.kt`
 
 **Interfaces:**
 - Produces:
@@ -124,6 +125,12 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
   `UiSnapshotExcluded`: `@Retention(BINARY)` `@Target(FUNCTION, ANNOTATION_CLASS)`, KDoc에 "두 번 렌더해 픽셀이 같지 않은 프리뷰(네트워크·WebView·시간 의존)에만 붙인다".
   `core/designsystem/build.gradle.kts`에 `alias(libs.plugins.parfait.ui.snapshot)`.
 
+- [ ] **Step 3a: `@YGPreview`를 `phone` 하나로 줄인다**
+
+  `name = "phone"`, `device = "spec:width=411dp,height=891dp,navigation=buttons"`, `uiMode = AndroidUiModes.UI_MODE_NIGHT_NO` 하나만 남기고
+  `phone-night` `foldable` `foldable-night` `foldable-fold` `foldable-fold-night`를 지운다. 이유(사용자 결정): 사용처 106곳 × 6변형을 PR마다
+  두 번 렌더하는 시간, 그리고 `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다. IDE 프리뷰에서도 폴더블 변형이 사라진다.
+
 - [ ] **Step 4: 평소 테스트에 생성 테스트가 안 섞이는지 확인**
 
   Run: `./gradlew :core:designsystem:testDebugUnitTest && ls core/designsystem/build/test-results/testDebugUnitTest/ | grep -c RoborazziPreview`
@@ -132,7 +139,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 - [ ] **Step 5: 기록 확인**
 
   Run: `./gradlew :core:designsystem:recordRoborazziDebug && ls core/designsystem/build/outputs/roborazzi/*.png | wc -l`
-  Expected: 성공. PNG 수 ≥ 8. `@YGPreview` 프리뷰는 6변형(`phone` … `foldable-fold-night`)이 각각 찍힌다
+  Expected: 성공. PNG 수 ≥ 8. `@YGPreview` 프리뷰는 `phone` 하나씩만 찍힌다
 
 - [ ] **Step 6: 비교 결과 JSON 위치·스키마 기록**
 
@@ -183,9 +190,9 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
   Run: `./gradlew recordRoborazziDebug --continue && ./gradlew compareRoborazziDebug --continue && find . -path '*/build/outputs/roborazzi/*_compare.png' -not -path './build-logic/*'`
   Expected(수정 전): 흔들리는 프리뷰의 `_compare.png`가 나온다. 목록을 적는다.
 
-- [ ] **Step 2: 고치거나 제외한다** — 기준: Coil 원격 이미지는 `LocalAsyncImagePreviewHandler`로 로컬 드로어블을 주어 고친다. Lottie는 Task 1 tester로 이미 동기다. WebView·시간 의존·네트워크 필수는 `@UiSnapshotExcluded`. 프로덕션 코드 경로는 바꾸지 않는다(프리뷰 함수만).
+- [ ] **Step 2: 고치거나 제외한다** — 기준: Coil 원격 이미지는 `YGCustomTheme`이 이미 `LocalAsyncImagePreviewHandler`를 공급하므로, 그 테마 밖에서 그리는 프리뷰만 테마로 감싼다. Lottie는 Task 1 tester로 이미 동기다. WebView·시간 의존·네트워크 필수는 `@UiSnapshotExcluded`. 프로덕션 코드 경로는 바꾸지 않는다(프리뷰 함수만).
 - [ ] **Step 3: Step 1 재실행** — Expected: `_compare.png` 0건, `testDebugUnitTest FAILED` 0건.
-- [ ] **Step 4: 시간 게이트** — Step 1의 record 소요 시간이 **15분**(로컬)을 넘으면 여기서 멈추고 사용자에게 보고한다. `@YGPreview` 6변형 × 사용처 106곳이 주원인일 수 있고, 변형을 줄이는 것은 사용자 결정이다.
+- [ ] **Step 4: 시간 게이트** — Step 1의 record 소요 시간이 **15분**(로컬)을 넘으면 여기서 멈추고 사용자에게 보고한다. 프리뷰를 더 줄이는 것은 사용자 결정이다.
 - [ ] **Step 5: 커밋** — `fix: 스크린샷 비교에서 흔들리는 프리뷰 고정·제외`
 
 ### Task 4: 리포트 스크립트
