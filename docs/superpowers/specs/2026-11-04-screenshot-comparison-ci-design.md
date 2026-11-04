@@ -146,6 +146,8 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
   PR마다 600장 넘게 두 번 렌더하게 되고, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
 - 모든 프리뷰는 같은 코드를 두 번 렌더하면 픽셀이 같아야 한다. 도입 시 base와 head를 같은 커밋으로
   돌려 diff 0건을 확인한다.
+- 화면이 현재 시각을 읽어 그리면 `clock`은 시각을 실제로 읽는 안쪽 Content 컴포저블만 받는다. 프리뷰는
+  그 Content에 고정 시계를 넘긴다.
 - 네트워크·비동기 리소스를 쓰는 프리뷰 파일 5개는 고치거나 제외 어노테이션을 단다:
   `TermAgreeScreen` `CanvasToppingPlaceScreen` `CanvasImageSaveScreen` `GroupListScreen` `WebViewScreen`.
   Coil은 프리뷰용 이미지 핸들러, Lottie는 커스텀 tester에서 `LottieTask.EXECUTOR`를 동기 executor로 교체,
@@ -181,15 +183,20 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 ### 코멘트
 
 - PR당 하나. 숨은 마커(`<!-- parfait-ui-diff-report -->`)로 찾아 덮어쓴다.
-- 코멘트를 쓰는 조건은 다음 중 하나다: 렌더 건수 > 0, 상태가 `ok`가 아님, 실패한 모듈이 있음, 마커
-  코멘트가 이미 있음. 모두 아니면(바뀐 화면 0건) 코멘트를 **새로 만들지 않고**, 이미 코멘트가 있는 PR만
-  "바뀐 화면 없음"으로 갱신한다. 트리거 범위에 `feature/**`가 있어 UI와 무관한 PR도 대부분 잡이 도는데, 그 모두에 봇
-  코멘트를 붙이지 않기 위해서다. `no-base-setup` · `merge-conflict` · `failed`는 0건이 아니라 "비교
-  못 함"이므로 코멘트를 남긴다.
+- 마커 코멘트가 이미 있으면 결과와 무관하게 갱신한다. 없을 때 새로 만드는 조건은 다음 중 하나다: 렌더
+  건수 > 0, 상태가 `merge-conflict`·`failed`, 실패한 모듈이 있음. 바뀐 화면이 0건이면 코멘트를 **새로
+  만들지 않고**, 이미 코멘트가 있는 PR만 "바뀐 화면 없음"으로 갱신한다. 트리거 범위에 `feature/**`가 있어 UI와 무관한 PR도 대부분 잡이 도는데, 그 모두에 봇
+  코멘트를 붙이지 않기 위해서다. `merge-conflict` · `failed`는 0건이 아니라 "비교 못 함"이므로 코멘트를
+  남긴다. `no-base-setup`은 기존 코멘트 갱신에만 쓴다 — develop에 스크린샷 구성이 없는 동안에는 모든
+  PR이 이 상태라, 새로 달면 UI와 무관한 PR에도 안내 코멘트가 붙는다.
 - 섹션: 변경(Before / Diff / After), 신규(After), 삭제(이름만). 행이 많으면 상한을 두고 나머지는
   이미지 브랜치 링크로 넘긴다(본문 65536자 제한).
+- 이미지 브랜치에 한 번에 올리는 양은 **200장·100 MiB**까지다. 넘으면 변경·신규 순서로 상한까지만
+  올리고, 코멘트에 "N개 중 M개만 올렸다"고 적는다. 상한에 걸렸거나 검증(크기·PNG 시그니처·경로)에서
+  빠진 이미지의 행은 지우지 않고 "이미지 없음"으로 남기며 건수에도 센다 — 바뀐 화면이 이미지 문제로
+  0건처럼 보이지 않게 하려는 것이다.
 - 아티팩트는 PR 코드가 만든 것이므로 신뢰하지 않는다. PR 번호·SHA는 형식 검증, 파일 경로는
-  `build/outputs/roborazzi` 밖·`..`·심볼릭 링크·개행 포함을 거부, `git add`는
+  `build/outputs/roborazzi` 밖·`.`으로 시작하는 조각(`.git` 포함)·심볼릭 링크·개행 포함을 거부, `git add`는
   `--literal-pathspecs` + NUL 구분 목록.
 - 이미지는 orphan 브랜치 `ui-snapshots/pr-<N>`에 force push. develop 히스토리에 들어가지 않는다.
 
@@ -200,6 +207,9 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 - Robolectric 테스트는 Java 21 launcher로 돌린다(Robolectric SDK 36 요구).
 - 스크린샷 convention plugin을 새로 만들어 `@Preview`가 있는 모듈에 적용한다. 스캔 패키지는 모듈
   경로에서 유도, private 프리뷰 포함, 제외 어노테이션 필터.
+- 프리뷰 테스트 생성은 명령줄에 Roborazzi 태스크가 있을 때만 켠다. 이때 일반 단위 테스트는 빠지므로
+  Roborazzi 태스크와 일반 테스트 태스크(`test`·`test*UnitTest`·`check`·`build`)를 한 실행에 섞어 부르면
+  구성 단계에서 실패시킨다. IDE에서 생성 테스트 하나만 돌리는 경로는 지원하지 않는다.
 - 커스텀 tester(Lottie 동기 executor 등)를 둘 **Android** 테스트 지원 모듈이 필요하다. `core:testing`은
   `parfait.kotlin.jvm`이라 쓸 수 없다.
 - `robolectric.pixelCopyRenderMode=hardware`, `isIncludeAndroidResources = true`.

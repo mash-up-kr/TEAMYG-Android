@@ -23,7 +23,11 @@ UI를 바꾼 PR의 Before / After는 작성자가 직접 찍어 붙여야 해서
 작성자 부담을 가른다. 설계는 [스펙](../superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md).
 
 ## 결정
-**한 PR 잡 안에서 `base.sha`를 checkout해 Roborazzi로 렌더하고, PR merge ref를 checkout해 비교한다.**
+**한 PR 잡 안에서 PR merge ref 커밋의 첫 부모(base)를 checkout해 Roborazzi로 렌더하고, merge ref를
+checkout해 비교한다.**
+
+- base는 이벤트의 `base.sha`가 아니라 merge ref의 첫 부모다. develop이 움직이면 이벤트 값이 merge ref보다
+  늦을 수 있는데, base와 head 렌더는 같은 merge에서 나와야 한다.
 
 - 기준과 대상이 같은 잡·같은 머신에서 나와 경합이 없다. stacked PR은 부모 브랜치를 base로 비교한다.
 - 코멘트 쓰기 권한과 이미지 브랜치 push는 `workflow_run` 코멘트 워크플로에만 둔다. PR 코드를 빌드하는
@@ -33,8 +37,9 @@ UI를 바꾼 PR의 Before / After는 작성자가 직접 찍어 붙여야 해서
   URL이 커밋 SHA를 가리키므로 ref가 사라지면 깨진다. 닫히자마자 지우지 않는 것은 머지 직후 그때의 리뷰를
   다시 볼 기간을 남기기 위해서다.
 - 바뀐 화면이 **0건이면 새 코멘트를 달지 않는다**(이미 코멘트가 있는 PR만 갱신). 트리거가 넓어 UI와
-  무관한 PR도 대부분 잡이 도는데 그 모두에 봇 코멘트를 붙이지 않기 위해서다. "비교 못 함"(base에 구성
-  없음, merge 충돌, 렌더 실패)은 0건이 아니므로 코멘트를 남긴다.
+  무관한 PR도 대부분 잡이 도는데 그 모두에 봇 코멘트를 붙이지 않기 위해서다. "비교 못 함" 중 merge
+  충돌·렌더 실패는 0건이 아니므로 코멘트를 남긴다. base에 구성 없음(`no-base-setup`)은 기존 코멘트만
+  갱신한다 — develop에 구성이 없는 동안 모든 PR이 이 상태라 새로 달면 0건 규칙과 같은 소음이 된다.
 - 머지는 막지 않는 리포트다. 필수 체크로 묶지 않는다.
 
 ## 대안
@@ -63,7 +68,8 @@ UI를 바꾼 PR의 Before / After는 작성자가 직접 찍어 붙여야 해서
 **위험·방어**
 
 - 같은 머신에서 두 번 렌더하므로 흔들리는 프리뷰는 그대로 오탐이 된다. 프리뷰는 같은 코드를 두 번
-  렌더해 픽셀이 같아야 한다.
+  렌더해 픽셀이 같아야 한다. 현재 시각을 읽어 그리는 화면은 `clock`을 시각을 읽는 안쪽 Content
+  컴포저블에만 받고, 프리뷰가 거기에 고정 시계를 넘긴다.
 - 오래된 실행이 최신 코멘트를 덮는 것은 PR별 concurrency, 코멘트 직전 head SHA stale 검사, 이미지
   커밋 SHA 고정 URL로 막는다.
 
