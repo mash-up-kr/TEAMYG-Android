@@ -57,7 +57,8 @@ import com.teamyg.parfait.feature.groups.list.impl.util.toGrouptagChipType
 import com.teamyg.parfait.feature.groups.list.impl.util.toStringResource
 import com.teamyg.parfait.feature.groups.list.impl.util.toToppingImage
 import kotlin.time.Clock
-import kotlin.time.Instant
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 private const val SPECIAL_RULE_THRESHOLD = 3
 
@@ -263,6 +264,9 @@ internal fun GroupListContent(
 
 private class GroupListScreenPreviewParameterProvider :
     PreviewParameterProvider<GroupListUiState> {
+    // 화면이 경과 시간을 실제 시계로 재므로, 고정 시각을 두면 렌더한 날마다 문구가 바뀌어 스크린샷이 흔들린다
+    private val previewNow = Clock.System.now()
+
     private val groupList = listOf(
         MyParfaitGroupVO(
             groupId = GroupId(1L),
@@ -270,7 +274,7 @@ private class GroupListScreenPreviewParameterProvider :
             recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1025/200",
             recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = Instant.parse("2026-08-15T09:57:00Z"),
+            recentImageUploadedAt = previewNow - 3.minutes,
             lastPlacedByNametagChip = NametagChipType.TYPE1,
         ),
         MyParfaitGroupVO(
@@ -279,7 +283,7 @@ private class GroupListScreenPreviewParameterProvider :
             recentToppingType = ToppingContentType.IMAGE,
             recentImageUrl = "https://picsum.photos/id/1062/200",
             recentImageBorder = ToppingBorder.None,
-            recentImageUploadedAt = Instant.parse("2026-08-15T08:00:00Z"),
+            recentImageUploadedAt = previewNow - 2.hours,
             lastPlacedByNametagChip = NametagChipType.TYPE9,
         ),
         MyParfaitGroupVO(

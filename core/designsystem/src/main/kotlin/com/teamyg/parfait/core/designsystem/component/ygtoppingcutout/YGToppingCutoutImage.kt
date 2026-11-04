@@ -240,11 +240,26 @@ private fun YGToppingCutoutImagePreview() = PreviewBox {
         }
     }
 
+    val painter = painterResource(R.drawable.ic_plus)
+    val borderWidth = 6.dp
+    val boxSide = 120.dp
+
+    // 띠는 Dispatchers.Default 에서 만들어져 캡처보다 늦을 때가 있다. 그러면 스크린샷이 테두리 유무로
+    // 흔들리므로, 같은 판을 미리 캐시에 넣어 첫 프레임부터 그리게 한다
+    val density = LocalDensity.current
+    remember(previewOutline) {
+        val outsetPx = with(density) { borderWidth.toPx() }
+        val boxPx = with(density) { boxSide.roundToPx() }
+        val aspectRatio = painter.intrinsicSize.width / painter.intrinsicSize.height
+        buildBorderPlate(previewOutline, aspectRatio, outsetPx, IntSize(boxPx, boxPx)) { true }
+            ?.let { plate -> ToppingBorderPlateCache.put(previewOutline, outsetPx, aspectRatio, plate) }
+    }
+
     YGToppingCutoutImage(
-        painter = painterResource(R.drawable.ic_plus),
+        painter = painter,
         borderColor = YGAtomicColors.Cherry.Cherry200,
-        borderWidth = 6.dp,
-        modifier = Modifier.size(120.dp),
+        borderWidth = borderWidth,
+        modifier = Modifier.size(boxSide),
         outline = previewOutline,
     )
 }
