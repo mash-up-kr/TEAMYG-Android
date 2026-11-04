@@ -88,13 +88,18 @@ merge/rebase 혼재는 B에서 영향이 없다. 비교 대상은 GitHub이 만�
 feature/**
 core/designsystem/**
 core/ui/**
+core/testing/android/**        # 프리뷰 테스터가 렌더 방식을 정한다
 gradle/libs.versions.toml      # Compose BOM·Coil 버전이 렌더를 바꾼다
 build-logic/**                 # Compose 컴파일러 설정, 스크린샷 convention plugin
 gradle/wrapper/**
+build.gradle.kts
+settings.gradle.kts
+gradle.properties
 .github/workflows/<비교 워크플로>.yml
+.github/scripts/ui_diff/**     # 비교 잡이 스테이징·메타 판정에 쓴다
 ```
 
-`core/analytics` `navigation` `util` `testing`은 UI 리소스·프리뷰가 없어 뺀다. 애매하면 넣는 쪽으로
+`core/analytics` `navigation` `util`과 `core/testing/android` 밖의 `testing`은 UI 리소스·프리뷰가 없어 뺀다. 애매하면 넣는 쪽으로
 판단한다 — 넓어서 생기는 손해는 잡 시간, 좁아서 생기는 손해는 리뷰어가 못 보는 것이다.
 
 ### 워크플로 구성 (3개)
@@ -225,5 +230,6 @@ B 채택 이유(A·C 기각)는 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-
 ## 주의 / 열린 질문
 
 - PR 잡 시간: 렌더를 2회 하므로 길어진다. 첫 실측 후 timeout을 정한다.
+- GitHub는 merge 충돌이 있는 PR에 `pull_request` 워크플로를 돌리지 않는다. `merge-conflict`는 방어용 상태이고, 충돌 중인 PR에는 마지막 코멘트가 그대로 남는다.
 - fork PR: 구조상 안전하지만(시크릿 없음, 쓰기 분리) 이 레포는 팀 내부 브랜치만 쓰므로 fork 전용
   다듬기는 하지 않는다.

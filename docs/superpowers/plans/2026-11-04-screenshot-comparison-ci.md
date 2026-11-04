@@ -37,7 +37,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
 - 이 계획이 정한 이름(아래 Interfaces)을 바꾸지 않는다.
 - 비교 워크플로에는 시크릿을 넘기지 않는다. 권한은 `contents: read`만.
 - 비교 잡은 diff가 있어도, 일부 모듈 렌더가 실패해도 성공으로 끝난다. 필수 체크로 등록하지 않는다.
-- 트리거 경로: `feature/**` `core/designsystem/**` `core/ui/**` `gradle/libs.versions.toml` `build-logic/**` `gradle/wrapper/**` `.github/workflows/ui-diff.yml`.
+- 트리거 경로: `feature/**` `core/designsystem/**` `core/ui/**` `core/testing/android/**` `gradle/libs.versions.toml` `build-logic/**` `gradle/wrapper/**` `build.gradle.kts` `settings.gradle.kts` `gradle.properties` `.github/workflows/ui-diff.yml` `.github/scripts/ui_diff/**`.
 - 바뀐 화면이 0건이면 코멘트를 새로 만들지 않는다. 이미 있으면 "바뀐 화면 없음"으로 갱신한다. 비교 못 함(`no-base-setup` `merge-conflict` `failed`)은 항상 코멘트를 남긴다.
 - 이미지 브랜치 보존 기간: PR이 닫힌 뒤 **30일**.
 - Kotlin 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다 — 코드가 말하는 것은 쓰지 않는다, `@return`·`@param`은 이름이 못 말할 때만, 다른 컴포넌트의 현재 상태를 단정하지 않는다.
@@ -251,7 +251,7 @@ orphan 브랜치 `ui-snapshots/pr-<N>`에 올려 커밋 SHA URL로 임베드한�
     1. merge ref 존재 확인(`git ls-remote origin refs/pull/<N>/merge`). 없으면 `status=merge-conflict`로 메타만 올리고 끝낸다.
     2. `base.sha` checkout(`persist-credentials: false`).
     3. `local.properties`에 `KAKAO_NATIVE_APP_KEY=dummy`. 실제 시크릿은 쓰지 않는다.
-    4. `./gradlew help --task recordRoborazziDebug`가 실패하면 `status=no-base-setup`.
+    4. `./gradlew help --task recordRoborazziDebug`가 태스크를 못 찾아 실패하면(`not found in`) `status=no-base-setup`, 다른 이유로 실패하면 `status=failed`.
     5. `./gradlew recordRoborazziDebug --continue | tee base.log`.
     6. 기록 PNG를 `$RUNNER_TEMP/base`로 모듈 상대 경로를 유지해 옮긴다. 이름 목록을 `base-list.txt`에 쓴다.
     7. merge ref checkout.
