@@ -1,5 +1,6 @@
 package com.teamyg.parfait.feature.groups.setting.impl.route
 
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,13 +54,8 @@ internal fun GroupSettingRoute(
                 is GroupSettingSideEffect.ShowError ->
                     toastPolicy.showError(errorMessages.getValue(effect.error))
 
-                is GroupSettingSideEffect.ShareInviteCode -> {
-                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, String.format(inviteMessageTemplate, effect.inviteCode))
-                    }
-                    context.startActivity(Intent.createChooser(sendIntent, null))
-                }
+                is GroupSettingSideEffect.ShareInviteCode ->
+                    context.shareText(String.format(inviteMessageTemplate, effect.inviteCode))
 
                 // 뒤로 가기(pop)가 아니라 백스택을 갈아 끼우는 이유: 여기 오기까지 쌓인 화면은
                 // 전부 방금 떠난 그룹의 것이라 돌아가면 403 뿐이다. 목록도 새로 열려 다시 읽는다.
@@ -99,4 +95,12 @@ internal fun GroupSettingRoute(
                 .consumeWindowInsets(innerPadding),
         )
     }
+}
+
+private fun Context.shareText(text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(sendIntent, null))
 }
