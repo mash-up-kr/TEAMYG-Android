@@ -142,8 +142,12 @@ gradle.properties
 
 B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 그래서:
 
-- `@YGPreview`는 `phone` 하나만 남기고 나머지 5변형은 지우지 않고 주석 처리한다(사용자 결정). 원래 6변형(phone·foldable·foldable-fold × light·night)이 사용처 106곳에 붙어
-  PR마다 600장 넘게 두 번 렌더하게 되고, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
+- `@YGPreview`의 6변형(phone·foldable·foldable-fold × light·night)은 IDE 프리뷰용으로 모두 남기고, 스크린샷 비교는
+  `group = UI_SNAPSHOT_PREVIEW_GROUP`을 단 `phone` 변형만 찍는다. 커스텀 tester가 한 프리뷰 함수 안에 이 group이
+  있으면 그 변형만 남긴다(파라미터 프리뷰는 값별 항목이 모두 남는다). 6변형을 다 찍으면 사용처 106곳에서 PR마다
+  600장 넘게 두 번 렌더하게 되고, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
+  선택을 이름이나 선언 순서가 아니라 group 표시로 하는 이유: 스캐너가 넘기는 `previewIndex`는 `@PreviewParameter`
+  값 번호이고, 변형 목록은 이름순으로 정렬돼 선언 순서를 알 수 없다.
 - 모든 프리뷰는 같은 코드를 두 번 렌더하면 픽셀이 같아야 한다. 도입 시 base와 head를 같은 커밋으로
   돌려 diff 0건을 확인한다.
 - 화면이 현재 시각을 읽어 그리면 `clock`은 시각을 실제로 읽는 안쪽 Content 컴포저블만 받는다. 프리뷰는

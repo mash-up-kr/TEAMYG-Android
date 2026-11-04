@@ -10,6 +10,7 @@ android {
 
 dependencies {
     implementation(libs.roborazzi.compose.preview.scanner.support)
+    implementation(libs.composable.preview.scanner.android)
     implementation(libs.robolectric)
     // compileOnly 가 아니다. 테스트 런타임에 LottieTask.EXECUTOR 를 바꿔 끼운다
     implementation(libs.lottie.compose)

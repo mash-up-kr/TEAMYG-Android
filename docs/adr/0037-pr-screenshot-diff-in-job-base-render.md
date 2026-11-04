@@ -41,6 +41,9 @@ checkout해 비교한다.**
   충돌·렌더 실패는 0건이 아니므로 코멘트를 남긴다. base에 구성 없음(`no-base-setup`)은 기존 코멘트만
   갱신한다 — develop에 구성이 없는 동안 모든 PR이 이 상태라 새로 달면 0건 규칙과 같은 소음이 된다.
 - 머지는 막지 않는 리포트다. 필수 체크로 묶지 않는다.
+- 한 프리뷰 함수에 `@Preview`가 여럿이면 `group = UI_SNAPSHOT_PREVIEW_GROUP`을 단 변형만 찍는다. `@YGPreview`는
+  phone 변형에 이 group을 달아 6변형 중 하나만 비교한다 — 전부 찍으면 렌더가 6배가 된다. 이름이나 선언 순서로
+  고르지 않는 것은 스캐너가 선언 순서를 넘기지 않기 때문이다(근거는 [스펙](../superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md) 렌더 결정성).
 
 ## 대안
 - **A. develop 골든 아티팩트** — develop push마다 골든을 렌더해 올리고 PR이 내려받아 비교한다. PR 잡이

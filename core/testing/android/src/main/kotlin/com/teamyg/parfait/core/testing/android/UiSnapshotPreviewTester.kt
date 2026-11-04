@@ -16,10 +16,26 @@ class UiSnapshotPreviewTester private constructor(
 ) : ComposePreviewTester<AndroidPreviewJUnit4TestParameter> by delegate {
     constructor() : this(AndroidComposePreviewTester())
 
+    // 한 함수에 스냅샷 group 표시가 있으면 그 변형만 남기고, 없으면 그대로 둔다. 파라미터 프리뷰의 값별 항목은 함께 남는다
+    override fun testParameters(): List<AndroidPreviewJUnit4TestParameter> = delegate
+        .testParameters()
+        .groupBy { it.preview.declaringClass to it.preview.methodName }
+        .values
+        .flatMap { previews ->
+            val marked = previews.filter { it.preview.previewInfo.group == UI_SNAPSHOT_PREVIEW_GROUP }
+            marked.ifEmpty { previews }
+        }
+
     override fun test(testParameter: AndroidPreviewJUnit4TestParameter) {
         LottieTask.EXECUTOR = ImmediateExecutor
         delegate.test(testParameter)
     }
 }
+
+/**
+ * `core:designsystem` 의 `UI_SNAPSHOT_PREVIEW_GROUP` 과 같은 값이다. 이 모듈이 designsystem 을 의존하지 않아 문자열로 둔다.
+ * 바꾸면 그쪽도 함께 바꾼다.
+ */
+private const val UI_SNAPSHOT_PREVIEW_GROUP = "ui-snapshot"
 
 private val ImmediateExecutor = Executor { command -> command.run() }
