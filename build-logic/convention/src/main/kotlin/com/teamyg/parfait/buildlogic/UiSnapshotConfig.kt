@@ -2,7 +2,6 @@ package com.teamyg.parfait.buildlogic
 
 import com.android.build.api.dsl.LibraryExtension
 import com.github.takahirom.roborazzi.AnnotationFilter
-import com.teamyg.parfait.buildlogic.utils.extensions.debugImplementation
 import com.teamyg.parfait.buildlogic.utils.extensions.libs
 import com.teamyg.parfait.buildlogic.utils.extensions.testImplementation
 import io.github.takahirom.roborazzi.RoborazziExtension
@@ -57,8 +56,6 @@ internal fun Project.setConfigUiSnapshot() {
         // 생성 테스트가 ComposeContentTestRule 을 직접 참조하는데 scanner-support 가 api 로 넘기지 않는다
         testImplementation(platform(libs.androidx.compose.bom))
         testImplementation(libs.androidx.compose.ui.test.junit4)
-        // Robolectric 이 프리뷰를 띄울 ComponentActivity 를 매니페스트에 등록한다
-        debugImplementation(libs.androidx.compose.ui.test.manifest)
     }
 
     // Robolectric 은 SDK 36 샌드박스를 Java 21 이상에서만 띄운다. 컴파일 툴체인(17)은 그대로 두고 실행 JVM 만 올린다
