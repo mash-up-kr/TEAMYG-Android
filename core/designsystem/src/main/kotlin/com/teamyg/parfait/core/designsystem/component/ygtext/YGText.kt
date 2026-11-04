@@ -47,16 +47,7 @@ fun YGText(
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
     style: TextStyle = LocalTextStyle.current,
 ) {
-    val density = LocalDensity.current
-    // lineHeight 비율 변환에 fontSize가 필요해 파라미터를 style에 먼저 합친 뒤 한 번만 변환한다
-    val fixedStyle = remember(style, fontSize, letterSpacing, lineHeight, density) {
-        style
-            .merge(
-                fontSize = fontSize,
-                letterSpacing = letterSpacing,
-                lineHeight = lineHeight,
-            ).toFixedFontScale(density)
-    }
+    val fixedStyle = rememberFixedStyle(style, fontSize, letterSpacing, lineHeight)
 
     Text(
         text = text,
@@ -104,14 +95,7 @@ fun YGText(
 ) {
     val density = LocalDensity.current
     val fixedText = remember(text, density) { text.toFixedFontScale(density) }
-    val fixedStyle = remember(style, fontSize, letterSpacing, lineHeight, density) {
-        style
-            .merge(
-                fontSize = fontSize,
-                letterSpacing = letterSpacing,
-                lineHeight = lineHeight,
-            ).toFixedFontScale(density)
-    }
+    val fixedStyle = rememberFixedStyle(style, fontSize, letterSpacing, lineHeight)
 
     Text(
         text = fixedText,
@@ -131,4 +115,23 @@ fun YGText(
         onTextLayout = onTextLayout,
         style = fixedStyle,
     )
+}
+
+// lineHeight 비율 변환에 fontSize가 필요해 파라미터를 style에 먼저 합친 뒤 한 번만 변환한다
+@Composable
+private fun rememberFixedStyle(
+    style: TextStyle,
+    fontSize: TextUnit,
+    letterSpacing: TextUnit,
+    lineHeight: TextUnit,
+): TextStyle {
+    val density = LocalDensity.current
+    return remember(style, fontSize, letterSpacing, lineHeight, density) {
+        style
+            .merge(
+                fontSize = fontSize,
+                letterSpacing = letterSpacing,
+                lineHeight = lineHeight,
+            ).toFixedFontScale(density)
+    }
 }

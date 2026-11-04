@@ -18,7 +18,8 @@ private val DEFAULT_FONT_SIZE = 14.sp
  * sp 값을 피그마 dp로 보고, 시스템 글자 크기(`fontScale`)를 곱해도 그 dp 크기로 그려지는 sp로 되돌린다.
  * 멱등이 아니므로 이미 변환한 값을 다시 넘기지 않는다. 래퍼에는 원본 스타일을 넘긴다.
  */
-fun TextUnit.toFixedFontScale(density: Density): TextUnit = if (isSp) with(density) { value.dp.toSp() } else this
+internal fun TextUnit.toFixedFontScale(density: Density): TextUnit =
+    if (isSp) with(density) { value.dp.toSp() } else this
 
 /**
  * 렌더러가 sp lineHeight를 글자 크기 대비 비율로 그리므로(비선형 스케일링), lineHeight는 비율을 유지하도록 바꾼다.
