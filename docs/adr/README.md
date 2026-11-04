@@ -82,3 +82,4 @@ grep -rE '\bSomeApi\b' src | wc -l
 
 ## Frontmatter (필수)
 모든 ADR은 YAML frontmatter로 메타를 단다(형식 권위: [`template.md`](template.md)). 필드: `id`(ADR-NNNN) · `title` · `status`(**proposed / accepted / superseded / deprecated**) · `date` · `deciders`(팀/역할, **실명 금지**) · `supersedes` · `superseded_by` · `related_adr` · `related_spec` · `related_architecture` · `platforms`(=android) · `tags`. 대체 시 구 문서 `superseded`+`superseded_by`, 신 문서 `supersedes`.
+| [0037](0037-pr-screenshot-diff-in-job-base-render.md) | PR 스크린샷 비교는 PR 잡 안에서 base를 함께 렌더한다 | proposed | 2026-11-04 | 같은 잡·같은 머신에서 `base.sha`와 merge ref를 Roborazzi로 렌더해 바뀐·신규·삭제 프리뷰를 PR 코멘트로 단다. 골든 아티팩트·골든 커밋은 쓰지 않는다. 이미지 브랜치는 닫힌 지 30일 뒤 정리, 바뀐 화면 0건이면 새 코멘트 없음 |

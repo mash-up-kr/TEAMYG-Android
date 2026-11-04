@@ -1,13 +1,13 @@
 ---
 id: screenshot-comparison-ci
 title: PR 스크린샷 비교 리포트 CI 구현 계획
-status: draft
+status: in-progress
 type: work-order
 created: 2026-11-04
 updated: 2026-11-04
 platforms: android
 owner: android
-related_adr:
+related_adr: ADR-0037
 related_spec: screenshot-comparison-ci
 related_code:
   - build-logic/convention/build.gradle.kts

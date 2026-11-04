@@ -1,15 +1,25 @@
 ---
 id: screenshot-comparison-ci
 title: PR 스크린샷 비교 리포트 CI (Roborazzi screenshot comparison)
-status: draft
+status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-11-04
 related_code:
   - .github/PULL_REQUEST_TEMPLATE.md
   - .github/workflows/test.yml
+  - .github/workflows/ui-diff.yml
+  - .github/workflows/ui-diff-comment.yml
+  - .github/workflows/ui-snapshots-prune.yml
+  - .github/scripts/ui_diff/stage.py#cmd_stage_results
+  - .github/scripts/ui_diff/report.py#render_comment
+  - .github/scripts/ui_diff/prune.py#select_expired
   - build-logic/convention/build.gradle.kts
-related_adr:
+  - build-logic/convention/src/main/kotlin/UiSnapshotConventionPlugin.kt
+  - build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt#setConfigUiSnapshot
+  - core/testing/android/src/main/kotlin/com/teamyg/parfait/core/testing/android/UiSnapshotPreviewTester.kt#UiSnapshotPreviewTester
+  - core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/UiSnapshotExcluded.kt#UiSnapshotExcluded
+related_adr: ADR-0037
 related_spec:
 related_architecture:
 supersedes:
@@ -92,13 +102,15 @@ gradle/wrapper/**
 1. **비교** (`pull_request`) — PR 코드를 빌드한다. 권한은 `contents: read`뿐, 시크릿 없음.
 2. **코멘트** (`workflow_run`, 비교 완료 시) — 빌드하지 않고 산출물만 읽는다. 이미지 브랜치 push와
    코멘트 쓰기 권한을 여기에만 준다. 쓰기 토큰과 PR 코드가 같은 잡에 놓이지 않게 하려는 분리다.
-3. **정리** (`schedule`, 하루 1회) — 닫힌 지 30일이 지난 PR의 `ui-snapshots/pr-<N>` 브랜치를 지운다.
-   PR 코드를 checkout하지 않는다. 닫히자마자 지우지 않는 이유: 코멘트 이미지는 커밋 SHA를 가리키는데
+3. **정리** (`schedule`, 하루 1회) — 닫힌 지 30일이 지난 PR의 `ui-snapshots/pr-<N>` 브랜치만
+   GitHub refs API로 지운다(이 이름 패턴 밖의 ref는 건드리지 않는다). PR 코드를 checkout하지 않는다. 닫히자마자 지우지 않는 이유: 코멘트 이미지는 커밋 SHA를 가리키는데
    ref가 사라지면 GitHub GC 후 깨진다. 머지 직후 "그때 무엇을 리뷰했는지" 다시 볼 기간을 남긴다.
    30일 뒤 머지된 PR의 코멘트 이미지가 깨지는 것은 받아들인다.
 
 ### 비교 잡 흐름
 
+0. base·head SHA는 이벤트 페이로드가 아니라 `refs/pull/N/merge` 커밋의 부모에서 읽는다
+   (`^1` = base, `^2` = head). 잡이 실제로 렌더하는 커밋과 메타데이터가 어긋나지 않게 하려는 것이다.
 1. `base.sha` checkout → 더미 `local.properties` → `recordRoborazziDebug --continue`
    → 렌더 결과를 잡 밖 임시 디렉터리로 옮긴다(다음 checkout이 지우지 않게).
 2. PR merge ref checkout → 1의 결과를 각 모듈 `build/outputs/roborazzi`에 복원
@@ -133,7 +145,7 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
   `TermAgreeScreen` `CanvasToppingPlaceScreen` `CanvasImageSaveScreen` `GroupListScreen` `WebViewScreen`.
   Coil은 프리뷰용 이미지 핸들러, Lottie는 커스텀 tester에서 `LottieTask.EXECUTOR`를 동기 executor로 교체,
   WebView는 제외가 기본 방향이다.
-- 글자 크기 고정은 PR #669(ADR-0036, 미머지)에서 다룬다. Robolectric 기본 `fontScale`이 1.0이라 그 PR과 무관하게 결정성은 유지된다. 이번 작업의 ADR 번호는 작성 시점의 다음 빈 번호를 쓴다.
+- 글자 크기 고정은 PR #669(ADR-0036, 미머지)에서 다룬다. Robolectric 기본 `fontScale`이 1.0이라 그 PR과 무관하게 결정성은 유지된다. 이번 작업의 ADR은 ADR-0037이다.
 
 ### 순서 보장 (짧은 간격의 연속 push)
 
@@ -147,6 +159,9 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 3. **stale 검사**: 코멘트 잡이 쓰기 직전에 API로 PR의 현재 `head.sha`를 읽어 아티팩트의 `head.sha`와
    다르면 아무것도 쓰지 않고 끝낸다. 1·2를 지나 지연 도착한 `workflow_run`도 여기서 걸러진다.
    이미지 push 직전과 코멘트 쓰기 직전 두 번 검사한다.
+4. **PR 귀속 검증**: 코멘트 워크플로는 아티팩트의 `meta.head_sha`가 `workflow_run.head_sha`와 같은지,
+   그 PR의 head repository·branch가 `workflow_run`의 것과 같은지 확인한다. 아티팩트에 다른 PR 번호를
+   적어 그 PR에 코멘트를 쓰는 위조를 막는다.
 
 또한 코멘트의 이미지 URL은 브랜치 이름이 아니라 **이미지 커밋 SHA**로 건다
 (`blob/<commit-sha>/<path>?raw=true`). 이미지 브랜치가 나중에 덮어써져도 각 코멘트는 자기가 만든
@@ -161,8 +176,9 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 ### 코멘트
 
 - PR당 하나. 숨은 마커(`<!-- parfait-ui-diff-report -->`)로 찾아 덮어쓴다.
-- 바뀐 화면이 0건이면 코멘트를 **새로 만들지 않는다**. 이미 코멘트가 있는 PR만 "바뀐 화면 없음"으로
-  갱신한다. 트리거 범위에 `feature/**`가 있어 UI와 무관한 PR도 대부분 잡이 도는데, 그 모두에 봇
+- 코멘트를 쓰는 조건은 다음 중 하나다: 렌더 건수 > 0, 상태가 `ok`가 아님, 실패한 모듈이 있음, 마커
+  코멘트가 이미 있음. 모두 아니면(바뀐 화면 0건) 코멘트를 **새로 만들지 않고**, 이미 코멘트가 있는 PR만
+  "바뀐 화면 없음"으로 갱신한다. 트리거 범위에 `feature/**`가 있어 UI와 무관한 PR도 대부분 잡이 도는데, 그 모두에 봇
   코멘트를 붙이지 않기 위해서다. `no-base-setup` · `merge-conflict` · `failed`는 0건이 아니라 "비교
   못 함"이므로 코멘트를 남긴다.
 - 섹션: 변경(Before / Diff / After), 신규(After), 삭제(이름만). 행이 많으면 상한을 두고 나머지는
@@ -174,7 +190,9 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 
 ### Gradle 구성
 
-- Roborazzi + Robolectric + ComposablePreviewScanner를 version catalog에 추가.
+- Roborazzi + Robolectric + ComposablePreviewScanner를 version catalog에 추가. ComposablePreviewScanner는
+  **0.9.3**에 고정한다. 0.10.0은 Roborazzi 1.77.0과 맞지 않아 `NoSuchMethodError`가 난다.
+- Robolectric 테스트는 Java 21 launcher로 돌린다(Robolectric SDK 36 요구).
 - 스크린샷 convention plugin을 새로 만들어 `@Preview`가 있는 모듈에 적용한다. 스캔 패키지는 모듈
   경로에서 유도, private 프리뷰 포함, 제외 어노테이션 필터.
 - 커스텀 tester(Lottie 동기 executor 등)를 둘 **Android** 테스트 지원 모듈이 필요하다. `core:testing`은
@@ -188,7 +206,7 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
 
 ### 문서
 
-B 채택 이유(A·C 기각)는 ADR로 남긴다. 렌더 결정성 규칙(프리뷰는 두 번 렌더해 같아야 한다, 제외
+B 채택 이유(A·C 기각)는 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-job-base-render.md)에 있다. 렌더 결정성 규칙(프리뷰는 두 번 렌더해 같아야 한다, 제외
 어노테이션을 언제 쓰는가)은 개발자가 프리뷰를 쓸 때 볼 자리에 둔다.
 
 ## 빌더에게 맡기는 것
