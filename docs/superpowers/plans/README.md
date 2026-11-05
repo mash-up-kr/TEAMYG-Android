@@ -6,6 +6,7 @@ Parfait 프로젝트의 작업 계획 문서를 모읍니다.
 
 | 계획 | 내용 |
 |------|------|
+| [2026-11-05-camera-impl-refactor.md](2026-11-05-camera-impl-refactor.md) | **feature:camera:impl 정리**(8 Task). 권한 죽은 상태·이름, `FlashMode`·`LensFacing` model, 사진 확인 MVI, 셔터 연타 가드, ViewPort 기준 크롭(`computeCaptureCropRect`)과 IO 촬영, Compose 관례, 주석·문서. |
 | [2026-11-04-screenshot-comparison-ci.md](2026-11-04-screenshot-comparison-ci.md) | **PR 스크린샷 비교 리포트 CI**(9 Task). 스크린샷 convention plugin·tester 모듈, 프리뷰 결정성 정리, 비교·코멘트·정리 워크플로와 리포트 스크립트, PR 템플릿·ADR-0037. 스펙: [specs](../specs/2026-11-04-screenshot-comparison-ci-design.md) |
 | [2026-10-28-canvas-video-instant-reveal.md](2026-10-28-canvas-video-instant-reveal.md) | **캔버스 영상 토핑 즉시 등장**(2 Task). **Task 1** `toppingPopProgresses` → `visibleToppingCount` 교체와 토핑 레이어의 알파 제거, **Task 2** status·open-questions·log·README 문서 정리. |
 | [2026-09-26-docs-record-structure.md](2026-09-26-docs-record-structure.md) | **docs 기록 구조 개선**(Task 0~7, 문서만 변경). 원본 사본과 추출표로 미결·절차 노하우의 행방을 먼저 정한 뒤 `log.md`·doc-baseline·루트 `CLAUDE.md`를 이관하고, 영역별 코드 대조로 `status.md`를 쓴 다음 index를 라우팅만 남긴다. |
