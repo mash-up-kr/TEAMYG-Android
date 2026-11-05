@@ -36,7 +36,7 @@ import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
 @Composable
 internal fun CameraPermissionRequestComponent(
-    isInit: Boolean,
+    isInitialized: Boolean,
     onClickOpenAppSettings: () -> Unit,
     onClickCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -49,7 +49,7 @@ internal fun CameraPermissionRequestComponent(
             .background(YGAtomicColors.Gray.White)
             .windowInsetsPadding(WindowInsets.systemBars),
     ) {
-        if (isInit) {
+        if (isInitialized) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -111,7 +111,7 @@ internal fun CameraPermissionRequestComponent(
 @Composable
 private fun PreviewCameraPermissionRequestComponent() = PreviewBox {
     CameraPermissionRequestComponent(
-        isInit = true,
+        isInitialized = true,
         onClickOpenAppSettings = {},
         onClickCancel = {},
         modifier = Modifier.fillMaxSize(),

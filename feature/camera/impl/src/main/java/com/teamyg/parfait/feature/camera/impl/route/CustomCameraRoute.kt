@@ -47,7 +47,6 @@ import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
-import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
 import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
@@ -77,10 +76,7 @@ internal fun CustomCameraRoute(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         viewModel.processIntent(
-            CustomCameraIntent.OnPermissionRequestResult(
-                granted = granted,
-                shouldShowRationale = activity?.shouldShowRationale(Manifest.permission.CAMERA) == true,
-            ),
+            CustomCameraIntent.OnPermissionRequestResult(granted = granted),
         )
     }
 
@@ -183,7 +179,7 @@ internal fun CustomCameraRoute(
     LifecycleResumeEffect(Unit) {
         val granted = context.isGrantedPermission(permission = Manifest.permission.CAMERA)
 
-        viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted))
+        viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted))
         onPauseOrDispose { }
     }
 
@@ -198,7 +194,7 @@ internal fun CustomCameraRoute(
     CameraPreviewBindingEffect(
         state = cameraPreviewState,
         lensFacing = state.lensFacing,
-        useUltraWideCamera = state.useUltraWideCamera,
+        shouldUseUltraWideCamera = state.shouldUseUltraWideCamera,
         hasPermission = state.hasPermission,
         onImageCaptureReady = { imageCapture = it },
         onZoomRangeReady = { range, hasUltraWideCamera ->
@@ -218,7 +214,7 @@ internal fun CustomCameraRoute(
         CustomCameraScreen(
             state = state,
             toastPolicy = toastPolicy,
-            onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
+            onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnClickOpenAppSettings) },
             onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
             onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
             onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },

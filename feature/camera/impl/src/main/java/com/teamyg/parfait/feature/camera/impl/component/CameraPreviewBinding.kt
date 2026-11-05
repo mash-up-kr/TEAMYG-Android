@@ -45,7 +45,7 @@ internal fun rememberCameraPreviewState(): CameraPreviewState {
 internal fun CameraPreviewBindingEffect(
     state: CameraPreviewState,
     lensFacing: Int,
-    useUltraWideCamera: Boolean,
+    shouldUseUltraWideCamera: Boolean,
     hasPermission: Boolean,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (range: ClosedFloatingPointRange<Float>, hasUltraWideCamera: Boolean) -> Unit,
@@ -53,7 +53,7 @@ internal fun CameraPreviewBindingEffect(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(state, lensFacing, useUltraWideCamera, hasPermission) {
+    DisposableEffect(state, lensFacing, shouldUseUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
         if (!hasPermission) {
             state.lastFrame = null
@@ -94,14 +94,14 @@ internal fun CameraPreviewBindingEffect(
             } else {
                 null
             }
-            val bindsUltraWide = useUltraWideCamera && ultraWide != null
+            val shouldBindUltraWide = shouldUseUltraWideCamera && ultraWide != null
 
             val lensSelector: CameraSelector = CameraSelector
                 .Builder()
                 .requireLensFacing(lensFacing)
                 .build()
 
-            val ultraWideCamera = if (bindsUltraWide) {
+            val ultraWideCamera = if (shouldBindUltraWide) {
                 cameraProvider.bindUseCases(
                     lifecycleOwner = lifecycleOwner,
                     selector = cameraSelectorOf(cameraId = ultraWide.cameraId),
@@ -111,8 +111,8 @@ internal fun CameraPreviewBindingEffect(
             } else {
                 null
             }
-            val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
-            if (ultraWideFailed) state.failedUltraWideIds += ultraWide.cameraId
+            val isUltraWideFailed = shouldBindUltraWide && ultraWideCamera == null
+            if (isUltraWideFailed) state.failedUltraWideIds += ultraWide.cameraId
             val newCamera = ultraWideCamera ?: cameraProvider.bindUseCases(
                 lifecycleOwner = lifecycleOwner,
                 selector = lensSelector,
@@ -132,7 +132,7 @@ internal fun CameraPreviewBindingEffect(
                 newCamera.cameraInfo.zoomState.value?.let { zoomState ->
                     onZoomRangeReady(
                         zoomState.minZoomRatio..zoomState.maxZoomRatio,
-                        ultraWide != null && !ultraWideFailed,
+                        ultraWide != null && !isUltraWideFailed,
                     )
                 }
             }

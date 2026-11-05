@@ -26,8 +26,8 @@ sealed interface CustomCameraEffect : UiSideEffect {
     /**
      * 촬영을 접고 캔버스로 돌아간다.
      *
-     * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, 예전처럼 `null` 을 결과 버스에
-     * 흘리면 그것을 결과로 아는 화면이 받아 터진다.
+     * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, `null` 을 결과 버스에 흘리면
+     * 그것을 결과로 아는 화면이 받아 터진다.
      */
     data object Cancel : CustomCameraEffect
 
@@ -40,16 +40,15 @@ sealed interface CustomCameraEffect : UiSideEffect {
 }
 
 sealed interface CustomCameraIntent : UiIntent {
-    data class OnPermissionResult(
+    data class OnPermissionChecked(
         val granted: Boolean,
     ) : CustomCameraIntent
 
     data class OnPermissionRequestResult(
         val granted: Boolean,
-        val shouldShowRationale: Boolean,
     ) : CustomCameraIntent
 
-    data object OnOpenAppSettings : CustomCameraIntent
+    data object OnClickOpenAppSettings : CustomCameraIntent
 
     /** 메인 카메라에 바인딩됐을 때만 온다(`CameraPreviewBindingEffect`) */
     data class OnZoomRangeReady(
@@ -75,9 +74,8 @@ sealed interface CustomCameraIntent : UiIntent {
 }
 
 data class CustomCameraState(
-    val isInit: Boolean = false,
+    val isInitialized: Boolean = false,
     val hasPermission: Boolean = false,
-    val permanentlyDenied: Boolean = false,
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
@@ -87,12 +85,12 @@ data class CustomCameraState(
     val isZoomButtonVisible: Boolean
         get() = zoomLevels.size > 1
 
-    val useUltraWideCamera: Boolean
+    val shouldUseUltraWideCamera: Boolean
         get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
 
     /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
     val cameraZoomRatio: Float
-        get() = if (useUltraWideCamera) 1f else zoomLevel.ratio
+        get() = if (shouldUseUltraWideCamera) 1f else zoomLevel.ratio
 }
 
 @HiltViewModel
@@ -112,9 +110,9 @@ constructor(
 
     override fun processIntent(intent: CustomCameraIntent) {
         when (intent) {
-            is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
+            is CustomCameraIntent.OnPermissionChecked -> handleOnPermissionChecked(intent)
             is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
-            is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
+            is CustomCameraIntent.OnClickOpenAppSettings -> handleOnClickOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
@@ -126,12 +124,11 @@ constructor(
         }
     }
 
-    private fun handleOnPermissionResult(intent: CustomCameraIntent.OnPermissionResult) {
+    private fun handleOnPermissionChecked(intent: CustomCameraIntent.OnPermissionChecked) {
         updateState {
             copy(
-                isInit = true,
+                isInitialized = true,
                 hasPermission = intent.granted,
-                permanentlyDenied = if (intent.granted) false else permanentlyDenied,
             )
         }
 
@@ -151,12 +148,11 @@ constructor(
         updateState {
             copy(
                 hasPermission = intent.granted,
-                permanentlyDenied = !intent.granted && !intent.shouldShowRationale,
             )
         }
     }
 
-    private fun handleOnOpenAppSettings() {
+    private fun handleOnClickOpenAppSettings() {
         postSideEffect(CustomCameraEffect.OpenAppSettings)
     }
 

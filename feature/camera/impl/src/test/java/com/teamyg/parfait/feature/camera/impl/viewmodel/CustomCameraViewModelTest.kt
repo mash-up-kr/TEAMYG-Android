@@ -21,7 +21,7 @@ class CustomCameraViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = false))
+            viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted = false))
 
             assertEquals(CustomCameraEffect.RequestPermission, awaitItem())
         }
@@ -32,14 +32,14 @@ class CustomCameraViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = false))
+            viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted = false))
             assertEquals(CustomCameraEffect.RequestPermission, awaitItem())
 
             // 다이얼로그가 닫힐 때마다 재개 확인이 들어오므로, 여기서 또 띄우면 끝없이 돈다
             viewModel.processIntent(
-                CustomCameraIntent.OnPermissionRequestResult(granted = false, shouldShowRationale = false),
+                CustomCameraIntent.OnPermissionRequestResult(granted = false),
             )
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = false))
+            viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted = false))
 
             expectNoEvents()
         }
@@ -50,9 +50,40 @@ class CustomCameraViewModelTest {
         val viewModel = createViewModel()
 
         viewModel.effect.test {
-            viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted = true))
+            viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted = true))
 
             expectNoEvents()
+        }
+    }
+
+    @Test
+    fun permission_whenGrantedAfterRequest_hasPermission() {
+        val viewModel = createViewModel()
+
+        viewModel.processIntent(CustomCameraIntent.OnPermissionRequestResult(granted = true))
+
+        assertTrue(viewModel.state.value.hasPermission)
+    }
+
+    @Test
+    fun flash_toggle_switchesOnAndOff() {
+        val viewModel = createViewModel()
+
+        viewModel.processIntent(CustomCameraIntent.OnClickFlash)
+        assertEquals(FlashMode.ON, viewModel.state.value.flashMode)
+
+        viewModel.processIntent(CustomCameraIntent.OnClickFlash)
+        assertEquals(FlashMode.OFF, viewModel.state.value.flashMode)
+    }
+
+    @Test
+    fun cancel_postsCancel() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnCancel)
+
+            assertEquals(CustomCameraEffect.Cancel, awaitItem())
         }
     }
 
@@ -131,13 +162,13 @@ class CustomCameraViewModelTest {
         viewModel.clickZoom(times = 2)
 
         assertEquals(CameraZoomLevel.HALF, viewModel.state.value.zoomLevel)
-        assertTrue(viewModel.state.value.useUltraWideCamera)
+        assertTrue(viewModel.state.value.shouldUseUltraWideCamera)
         assertEquals(1f, viewModel.state.value.cameraZoomRatio)
 
         viewModel.clickZoom(times = 1)
 
         assertEquals(CameraZoomLevel.ONE, viewModel.state.value.zoomLevel)
-        assertFalse(viewModel.state.value.useUltraWideCamera)
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
     }
 
     @Test
@@ -148,7 +179,7 @@ class CustomCameraViewModelTest {
         viewModel.clickZoom(times = 2)
 
         assertEquals(CameraZoomLevel.HALF, viewModel.state.value.zoomLevel)
-        assertFalse(viewModel.state.value.useUltraWideCamera)
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
         assertEquals(0.5f, viewModel.state.value.cameraZoomRatio)
     }
 
@@ -204,7 +235,7 @@ class CustomCameraViewModelTest {
 
         viewModel.processIntent(CustomCameraIntent.OnClickFlip)
 
-        assertFalse(viewModel.state.value.useUltraWideCamera)
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
     }
 
     private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel> = List(times) {

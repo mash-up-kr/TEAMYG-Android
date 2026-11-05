@@ -73,7 +73,7 @@ internal fun CustomCameraScreen(
         )
 
         false -> CameraPermissionRequestComponent(
-            isInit = state.isInit,
+            isInitialized = state.isInitialized,
             onClickOpenAppSettings = onClickOpenAppSettings,
             onClickCancel = onClickCancel,
             modifier = modifier,
@@ -168,10 +168,10 @@ private fun CameraContent(
 
 private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameterProvider<CustomCameraState>() {
     override val entries = listOf(
-        "permissionDenied" to CustomCameraState(isInit = true, hasPermission = false),
-        "permissionGranted" to CustomCameraState(isInit = true, hasPermission = true),
+        "permissionDenied" to CustomCameraState(isInitialized = true, hasPermission = false),
+        "permissionGranted" to CustomCameraState(isInitialized = true, hasPermission = true),
         "zoomLevels" to CustomCameraState(
-            isInit = true,
+            isInitialized = true,
             hasPermission = true,
             zoomLevels = listOf(CameraZoomLevel.ONE, CameraZoomLevel.TWO, CameraZoomLevel.HALF),
         ),
