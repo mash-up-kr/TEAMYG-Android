@@ -33,7 +33,7 @@ tags: [adr, parfait, designsystem, typography, accessibility]
 
 앱의 모든 Compose 텍스트는 `fontScale`과 무관하게 피그마 수치(dp)로 그린다. 상한(clamp)도 두지 않는다.
 
-- `core:designsystem` `theme/FixedFontScale.kt#ProvideFixedFontScale`이 `LocalDensity`를
+- `core:util:android` `extension/FixedFontScale.kt#ProvideFixedFontScale`이 `LocalDensity`를
   `Density(density, fontScale = 1f)`로 덮어쓴다. `YGCustomTheme`이 content 전체를 이것으로 감싸므로
   `:app`·`:app-preview`·테마를 쓰는 테스트가 모두 같은 값을 받는다.
 - `LocalDensity`를 읽는 컴포지션 안 측정(`rememberTextMeasurer`, `with(density) { sp.toPx() }`로 만든

@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.designsystem.theme
+package com.teamyg.parfait.core.util.android.extension
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider

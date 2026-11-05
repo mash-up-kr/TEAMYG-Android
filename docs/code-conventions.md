@@ -7,7 +7,7 @@
 ## Compose 텍스트 글자 크기
 
 앱 텍스트는 OS 글자 크기(`fontScale`)와 무관하게 피그마 수치로 그린다. `YGCustomTheme`이
-`theme/FixedFontScale.kt#ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다.
+`core:util:android` `extension/FixedFontScale.kt#ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다.
 텍스트 호출부는 원본 `Text`·`BasicText`·`BasicTextField`를 그대로 쓴다.
 
 - ⚠️ `Dialog`·`Popup`은 새 창에서 `LocalDensity`를 기기 설정으로 되돌린다. 그 content를

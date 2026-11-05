@@ -32,7 +32,6 @@ import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.yglistdate.YGListDate
-import com.teamyg.parfait.core.designsystem.theme.ProvideFixedFontScale
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -40,6 +39,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterP
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.groups.canvas.impl.R

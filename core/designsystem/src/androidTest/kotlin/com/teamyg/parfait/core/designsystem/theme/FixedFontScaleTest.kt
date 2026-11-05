@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.window.Dialog
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
