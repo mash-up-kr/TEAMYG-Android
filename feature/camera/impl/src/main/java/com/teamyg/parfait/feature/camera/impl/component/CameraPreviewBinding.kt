@@ -55,6 +55,8 @@ internal fun CameraPreviewBindingEffect(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnImageCaptureReady by rememberUpdatedState(onImageCaptureReady)
+    val currentOnZoomRangeReady by rememberUpdatedState(onZoomRangeReady)
 
     DisposableEffect(state, lensFacing, shouldUseUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
@@ -135,11 +137,11 @@ internal fun CameraPreviewBindingEffect(
             }
 
             state.camera = newCamera
-            onImageCaptureReady(imageCapture)
+            currentOnImageCaptureReady(imageCapture)
             // 범위는 메인 카메라 것만 보고한다. 초광각 범위로 단계 목록을 만들면 2x·0.5x 판정이 틀어진다
             if (ultraWideCamera == null) {
                 newCamera.cameraInfo.zoomState.value?.let { zoomState ->
-                    onZoomRangeReady(
+                    currentOnZoomRangeReady(
                         zoomState.minZoomRatio..zoomState.maxZoomRatio,
                         ultraWide != null && !isUltraWideFailed,
                     )

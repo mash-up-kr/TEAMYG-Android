@@ -11,6 +11,7 @@ import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,7 +23,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -84,7 +86,7 @@ internal fun CustomCameraRoute(
 
     // 촬영 요령을 말하는 토스트라, 권한이 없어 찍을 수 없는 화면에서는 할 말이 아니다.
     // 설정에서 권한을 켜고 돌아오면 그때 처음 뜬다
-    LaunchedEffect(state.hasPermission) {
+    SideEffect(state.hasPermission) {
         if (showGuideToast && state.hasPermission && !hasShownGuideToast) {
             toastPolicy.show(YGToastType.Edit(guideToastMessage))
             hasShownGuideToast = true
@@ -107,29 +109,30 @@ internal fun CustomCameraRoute(
                         viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
                         return@collect
                     }
-                    captureScope.launch {
-                        try {
-                            val saved = runSuspendCatching {
-                                capture.captureViewfinder(
-                                    file = effect.file,
-                                    viewfinderRect = viewfinderRect,
-                                    feedRect = feedRect,
-                                    isFrontFacing = state.lensFacing == LensFacing.FRONT,
-                                    isViewPortApplied = cameraPreviewState.isViewPortApplied,
-                                )
-                            }.isSuccess
-
-                            viewModel.processIntent(
-                                if (saved) {
-                                    CustomCameraIntent.OnCaptureSaved(effect.file)
-                                } else {
-                                    CustomCameraIntent.OnCaptureFailed
-                                },
+                    val captureJob = captureScope.launch {
+                        val saved = runSuspendCatching {
+                            capture.captureViewfinder(
+                                file = effect.file,
+                                viewfinderRect = viewfinderRect,
+                                feedRect = feedRect,
+                                isFrontFacing = state.lensFacing == LensFacing.FRONT,
+                                isViewPortApplied = cameraPreviewState.isViewPortApplied,
                             )
-                        } catch (e: CancellationException) {
-                            // Route 만 사라지고 VM 은 남는 경우(재생성 등) 셔터가 잠긴 채 남지 않게 한다
+                        }.isSuccess
+
+                        viewModel.processIntent(
+                            if (saved) {
+                                CustomCameraIntent.OnCaptureSaved(effect.file)
+                            } else {
+                                CustomCameraIntent.OnCaptureFailed
+                            },
+                        )
+                    }
+                    captureJob.invokeOnCompletion { cause ->
+                        // Route 만 사라지고 VM 은 남는 경우(재생성 등) 셔터가 잠긴 채 남지 않게 한다.
+                        // 본문 시작 전에 취소된 잡도 여기서 잡힌다
+                        if (cause is CancellationException) {
                             viewModel.processIntent(CustomCameraIntent.OnCaptureCancelled)
-                            throw e
                         }
                     }
                 }
@@ -159,14 +162,13 @@ internal fun CustomCameraRoute(
         viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
 
-    LifecycleResumeEffect(Unit) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         val granted = context.isGrantedPermission(permission = Manifest.permission.CAMERA)
 
         viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted))
-        onPauseOrDispose { }
     }
 
-    LaunchedEffect(state.flashMode, imageCapture) {
+    SideEffect(state.flashMode, imageCapture) {
         imageCapture?.flashMode = state.flashMode.imageCaptureFlashMode
     }
 

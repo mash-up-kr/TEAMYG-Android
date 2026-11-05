@@ -1,7 +1,6 @@
 package com.teamyg.parfait.feature.camera.impl.component
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -23,38 +22,29 @@ internal fun CameraControlComponent(
     flashMode: FlashMode,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween,
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Absolute.SpaceBetween,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Absolute.SpaceBetween,
-        ) {
-            YGCircleButton(
-                iconResource = if (flashMode ==
-                    FlashMode.ON
-                ) {
-                    R.drawable.ic_lightning_fill
-                } else {
-                    R.drawable.ic_lightning
-                },
-                type = YGCircleButtonType.Default,
-                contentDescription = null,
-                onClick = onClickFlash,
-            )
+        YGCircleButton(
+            iconResource = if (flashMode == FlashMode.ON) {
+                R.drawable.ic_lightning_fill
+            } else {
+                R.drawable.ic_lightning
+            },
+            type = YGCircleButtonType.Default,
+            contentDescription = null,
+            onClick = onClickFlash,
+        )
 
-            YGCameraShutter(onClick = onClickShutter)
-            YGCircleButton(
-                iconResource = R.drawable.ic_reverse,
-                type = YGCircleButtonType.Default,
-                contentDescription = null,
-                onClick = onClickFlip,
-            )
-        }
+        YGCameraShutter(onClick = onClickShutter)
+        YGCircleButton(
+            iconResource = R.drawable.ic_reverse,
+            type = YGCircleButtonType.Default,
+            contentDescription = null,
+            onClick = onClickFlip,
+        )
     }
 }
 

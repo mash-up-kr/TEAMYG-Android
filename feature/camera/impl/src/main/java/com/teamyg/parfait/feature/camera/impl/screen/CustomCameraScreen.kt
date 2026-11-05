@@ -17,10 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toRect
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.component.ygcamerazoombutton.YGCameraZoomButton
@@ -56,9 +56,12 @@ internal fun CustomCameraScreen(
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
 ) {
-    when (state.hasPermission) {
-        true -> CameraContent(
+    if (state.hasPermission) {
+        CameraContent(
             toastPolicy = toastPolicy,
+            flashMode = state.flashMode,
+            zoomLevel = state.zoomLevel,
+            isZoomButtonVisible = state.isZoomButtonVisible,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
@@ -67,12 +70,9 @@ internal fun CustomCameraScreen(
             onViewfinderRectChange = onViewfinderRectChange,
             modifier = modifier,
             cameraFeed = cameraFeed,
-            flashMode = state.flashMode,
-            zoomLevel = state.zoomLevel,
-            isZoomButtonVisible = state.isZoomButtonVisible,
         )
-
-        false -> CameraPermissionRequestComponent(
+    } else {
+        CameraPermissionRequestComponent(
             isInitialized = state.isInitialized,
             onClickOpenAppSettings = onClickOpenAppSettings,
             onClickCancel = onClickCancel,
@@ -84,6 +84,9 @@ internal fun CustomCameraScreen(
 @Composable
 private fun CameraContent(
     toastPolicy: YGToastPolicy,
+    flashMode: FlashMode,
+    zoomLevel: CameraZoomLevel,
+    isZoomButtonVisible: Boolean,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
@@ -92,9 +95,6 @@ private fun CameraContent(
     onViewfinderRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
     cameraFeed: @Composable () -> Unit,
-    flashMode: FlashMode,
-    zoomLevel: CameraZoomLevel,
-    isZoomButtonVisible: Boolean,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         cameraFeed()
@@ -132,9 +132,8 @@ private fun CameraContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .onGloballyPositioned { coordinates ->
-                        onViewfinderRectChange(coordinates.boundsInRoot())
-                    },
+                    // 뷰파인더 영역을 그리기에도 쓰므로 debounce 없이 바로 통지한다
+                    .onLayoutRectChanged(debounceMillis = 0) { onViewfinderRectChange(it.boundsInRoot.toRect()) },
             ) {
                 YGToastHost(
                     policy = toastPolicy,

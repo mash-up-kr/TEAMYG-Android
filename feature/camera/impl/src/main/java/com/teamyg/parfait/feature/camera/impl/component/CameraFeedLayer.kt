@@ -22,7 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlurEffect
@@ -34,15 +34,16 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toRect
 import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import kotlin.math.PI
 import kotlin.math.sin
 
+private val IS_BLUR_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 private val BLUR_RADIUS = 4.dp
 private val TRANSITION_BLUR_RADIUS = 24.dp
 private const val TRANSITION_FLIP_MILLIS = 300
@@ -67,72 +68,67 @@ internal fun CameraFeedLayer(
     transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
     modifier: Modifier = Modifier,
-    isBlurSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
 ) {
     val contentLayer = rememberGraphicsLayer()
     val blurLayer = rememberGraphicsLayer()
 
     Box(
         modifier = modifier
-            .onGloballyPositioned { coordinates -> onFeedRectChange(coordinates.boundsInRoot()) }
-            .drawWithContent {
-                contentLayer.record { this@drawWithContent.drawContent() }
-
-                if (isBlurSupported) {
-                    val radius = BLUR_RADIUS.toPx()
+            .onLayoutRectChanged(debounceMillis = 0) { onFeedRectChange(it.boundsInRoot.toRect()) }
+            .drawWithCache {
+                val radius = BLUR_RADIUS.toPx()
+                if (IS_BLUR_SUPPORTED) {
                     blurLayer.renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                    blurLayer.record { drawLayer(contentLayer) }
-                    drawLayer(blurLayer)
-                } else {
-                    drawLayer(contentLayer)
                 }
+                val borderStroke = Stroke(width = VIEWFINDER_BORDER_WIDTH.toPx())
+                val cornerLength = VIEWFINDER_CORNER_LENGTH.toPx()
+                val cornerWidth = VIEWFINDER_CORNER_WIDTH.toPx()
+                val framePadding = VIEWFINDER_FRAME_PADDING.toPx()
 
-                drawRect(color = YGAtomicColors.Transparency.Black25)
+                onDrawWithContent {
+                    contentLayer.record { this@onDrawWithContent.drawContent() }
 
-                viewfinderRect()?.let { rect ->
-                    clipRect(
-                        left = rect.left,
-                        top = rect.top,
-                        right = rect.right,
-                        bottom = rect.bottom,
-                    ) {
+                    if (IS_BLUR_SUPPORTED) {
+                        blurLayer.record { drawLayer(contentLayer) }
+                        drawLayer(blurLayer)
+                    } else {
                         drawLayer(contentLayer)
                     }
-                    drawRect(
-                        color = YGAtomicColors.Gray.Gray500,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = Stroke(width = VIEWFINDER_BORDER_WIDTH.toPx()),
-                    )
 
-                    val cornerLength = VIEWFINDER_CORNER_LENGTH.toPx()
-                    val cornerWidth = VIEWFINDER_CORNER_WIDTH.toPx()
-                    val frameRect = rect.deflate(VIEWFINDER_FRAME_PADDING.toPx())
+                    drawRect(color = YGAtomicColors.Transparency.Black25)
 
-                    listOf(
-                        // topLeft
-                        Offset(frameRect.left, frameRect.top) to Offset(frameRect.left + cornerLength, frameRect.top),
-                        Offset(frameRect.left, frameRect.top) to Offset(frameRect.left, frameRect.top + cornerLength),
-                        // topRight
-                        Offset(frameRect.right - cornerLength, frameRect.top) to Offset(frameRect.right, frameRect.top),
-                        Offset(frameRect.right, frameRect.top) to Offset(frameRect.right, frameRect.top + cornerLength),
-                        // bottomLeft
-                        Offset(frameRect.left, frameRect.bottom) to
-                            Offset(frameRect.left + cornerLength, frameRect.bottom),
-                        Offset(frameRect.left, frameRect.bottom - cornerLength) to
-                            Offset(frameRect.left, frameRect.bottom),
-                        // bottomRight
-                        Offset(frameRect.right - cornerLength, frameRect.bottom) to
-                            Offset(frameRect.right, frameRect.bottom),
-                        Offset(frameRect.right, frameRect.bottom - cornerLength) to
-                            Offset(frameRect.right, frameRect.bottom),
-                    ).forEach { (start, end) ->
-                        drawLine(
+                    viewfinderRect()?.let { rect ->
+                        clipRect(
+                            left = rect.left,
+                            top = rect.top,
+                            right = rect.right,
+                            bottom = rect.bottom,
+                        ) {
+                            drawLayer(contentLayer)
+                        }
+                        drawRect(
                             color = YGAtomicColors.Gray.Gray500,
-                            start = start,
-                            end = end,
-                            strokeWidth = cornerWidth,
+                            topLeft = rect.topLeft,
+                            size = rect.size,
+                            style = borderStroke,
                         )
+
+                        val frame = rect.deflate(framePadding)
+                        val color = YGAtomicColors.Gray.Gray500
+                        val topLeft = Offset(frame.left, frame.top)
+                        val topRight = Offset(frame.right, frame.top)
+                        val bottomLeft = Offset(frame.left, frame.bottom)
+                        val bottomRight = Offset(frame.right, frame.bottom)
+                        val right = Offset(cornerLength, 0f)
+                        val down = Offset(0f, cornerLength)
+                        drawLine(color, topLeft, topLeft + right, cornerWidth)
+                        drawLine(color, topLeft, topLeft + down, cornerWidth)
+                        drawLine(color, topRight - right, topRight, cornerWidth)
+                        drawLine(color, topRight, topRight + down, cornerWidth)
+                        drawLine(color, bottomLeft, bottomLeft + right, cornerWidth)
+                        drawLine(color, bottomLeft - down, bottomLeft, cornerWidth)
+                        drawLine(color, bottomRight - right, bottomRight, cornerWidth)
+                        drawLine(color, bottomRight - down, bottomRight, cornerWidth)
                     }
                 }
             }.pointerInput(camera, previewView) {
