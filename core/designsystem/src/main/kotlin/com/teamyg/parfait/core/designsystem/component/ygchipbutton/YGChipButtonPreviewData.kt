@@ -1,7 +1,7 @@
 package com.teamyg.parfait.core.designsystem.component.ygchipbutton
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 
 data class YGChipButtonPreviewData(
     val startIconResource: Int?,
@@ -9,19 +9,19 @@ data class YGChipButtonPreviewData(
     val colors: YGChipButtonColors,
 )
 
-class YGChipButtonPreviewParameterProvider : PreviewParameterProvider<YGChipButtonPreviewData> {
-    override val values = sequenceOf(
-        YGChipButtonPreviewData(
+class YGChipButtonPreviewParameterProvider : NamedPreviewParameterProvider<YGChipButtonPreviewData>() {
+    override val entries = listOf(
+        "cherrySolid" to YGChipButtonPreviewData(
             startIconResource = null,
             endIconResource = null,
             colors = YGChipButtonColorsDefaults.CherrySolid,
         ),
-        YGChipButtonPreviewData(
+        "grayOutlineStartIcon" to YGChipButtonPreviewData(
             startIconResource = R.drawable.ic_plus,
             endIconResource = null,
             colors = YGChipButtonColorsDefaults.GrayOutline,
         ),
-        YGChipButtonPreviewData(
+        "cherrySolidEndIcon" to YGChipButtonPreviewData(
             startIconResource = null,
             endIconResource = R.drawable.ic_plus,
             colors = YGChipButtonColorsDefaults.CherrySolid,

@@ -12,10 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -63,15 +63,14 @@ private data class InviteCodeInputFieldElementParam(
 )
 
 private class InviteCodeInputFieldElementPreviewParameterProvider :
-    PreviewParameterProvider<InviteCodeInputFieldElementParam> {
-    override val values: Sequence<InviteCodeInputFieldElementParam>
-        get() = sequenceOf(
-            InviteCodeInputFieldElementParam("", isFocus = true, isError = false),
-            InviteCodeInputFieldElementParam("h", isFocus = true, isError = false),
-            InviteCodeInputFieldElementParam("h", isFocus = false, isError = false),
-            InviteCodeInputFieldElementParam("h", isFocus = true, isError = true),
-            InviteCodeInputFieldElementParam("h", isFocus = false, isError = true),
-        )
+    NamedPreviewParameterProvider<InviteCodeInputFieldElementParam>() {
+    override val entries = listOf(
+        "emptyFocused" to InviteCodeInputFieldElementParam("", isFocus = true, isError = false),
+        "filledFocused" to InviteCodeInputFieldElementParam("h", isFocus = true, isError = false),
+        "filledUnfocused" to InviteCodeInputFieldElementParam("h", isFocus = false, isError = false),
+        "errorFocused" to InviteCodeInputFieldElementParam("h", isFocus = true, isError = true),
+        "errorUnfocused" to InviteCodeInputFieldElementParam("h", isFocus = false, isError = true),
+    )
 }
 
 @YGPreview

@@ -1,14 +1,14 @@
 package com.teamyg.parfait.core.designsystem.component.yginputnumber
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 
 data class YGInputNumberPreviewData(
     val isSelected: Boolean,
 )
 
-class YGInputNumberPreviewParameterProvider : PreviewParameterProvider<YGInputNumberPreviewData> {
-    override val values = sequenceOf(
-        YGInputNumberPreviewData(false),
-        YGInputNumberPreviewData(true),
+class YGInputNumberPreviewParameterProvider : NamedPreviewParameterProvider<YGInputNumberPreviewData>() {
+    override val entries = listOf(
+        "unselected" to YGInputNumberPreviewData(false),
+        "selected" to YGInputNumberPreviewData(true),
     )
 }

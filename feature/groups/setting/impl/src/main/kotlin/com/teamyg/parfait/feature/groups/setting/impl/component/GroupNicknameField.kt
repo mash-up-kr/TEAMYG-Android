@@ -13,10 +13,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
@@ -66,17 +66,16 @@ private data class GroupNicknameFieldPreviewState(
 )
 
 private class GroupNicknameFieldPreviewParameterProvider :
-    PreviewParameterProvider<GroupNicknameFieldPreviewState> {
-    override val values: Sequence<GroupNicknameFieldPreviewState>
-        get() = sequenceOf(
-            GroupNicknameFieldPreviewState(nickname = "닉네임"),
-            GroupNicknameFieldPreviewState(nickname = ""),
-            GroupNicknameFieldPreviewState(
-                nickname = "닉네임!",
-                nicknameError = NameValidResult.Error.InvalidCharacter,
-            ),
-            GroupNicknameFieldPreviewState(nickname = "열다섯글자를꽉꽉채운닉네임야호"),
-        )
+    NamedPreviewParameterProvider<GroupNicknameFieldPreviewState>() {
+    override val entries = listOf(
+        "default" to GroupNicknameFieldPreviewState(nickname = "닉네임"),
+        "empty" to GroupNicknameFieldPreviewState(nickname = ""),
+        "invalidCharacter" to GroupNicknameFieldPreviewState(
+            nickname = "닉네임!",
+            nicknameError = NameValidResult.Error.InvalidCharacter,
+        ),
+        "longNickname" to GroupNicknameFieldPreviewState(nickname = "열다섯글자를꽉꽉채운닉네임야호"),
+    )
 }
 
 @YGPreview

@@ -25,9 +25,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -100,13 +100,12 @@ private data class InviteCodeInputFieldParam(
 )
 
 private class InviteCodeInputFieldPreviewParameterProvider :
-    PreviewParameterProvider<InviteCodeInputFieldParam> {
-    override val values: Sequence<InviteCodeInputFieldParam>
-        get() = sequenceOf(
-            InviteCodeInputFieldParam(text = "", cursor = 0, maxLength = 3),
-            InviteCodeInputFieldParam(text = "h", cursor = 1, maxLength = 3),
-            InviteCodeInputFieldParam(text = "hello", cursor = 5, maxLength = 5),
-        )
+    NamedPreviewParameterProvider<InviteCodeInputFieldParam>() {
+    override val entries = listOf(
+        "empty" to InviteCodeInputFieldParam(text = "", cursor = 0, maxLength = 3),
+        "partial" to InviteCodeInputFieldParam(text = "h", cursor = 1, maxLength = 3),
+        "full" to InviteCodeInputFieldParam(text = "hello", cursor = 5, maxLength = 5),
+    )
 }
 
 @YGPreview

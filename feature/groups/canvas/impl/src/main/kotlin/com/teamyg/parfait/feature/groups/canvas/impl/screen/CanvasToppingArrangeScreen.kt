@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.lerp
@@ -26,6 +25,7 @@ import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBa
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.rememberToppingOutlines
@@ -258,8 +258,11 @@ internal fun CanvasToppingArrangeScreen(
 private const val PREVIEW_TOPPING_MODEL =
     "android.resource://com.teamyg.parfait.feature.groups.canvas.impl/drawable/nukkiii"
 
-private class CanvasToppingArrangePreviewParameterProvider : PreviewParameterProvider<Boolean> {
-    override val values: Sequence<Boolean> = sequenceOf(false, true)
+private class CanvasToppingArrangePreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
+    override val entries = listOf(
+        "borderPanelClosed" to false,
+        "borderPanelOpen" to true,
+    )
 }
 
 @YGPreview

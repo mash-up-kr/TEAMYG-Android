@@ -24,11 +24,31 @@ class UiSnapshotPreviewTester private constructor(
         .flatMap { previews ->
             val marked = previews.filter { it.preview.previewInfo.group == UI_SNAPSHOT_PREVIEW_GROUP }
             marked.ifEmpty { previews }
-        }
+        }.also(::requireParameterNames)
 
     override fun test(testParameter: AndroidPreviewJUnit4TestParameter) {
         LottieTask.EXECUTOR = ImmediateExecutor
         delegate.test(testParameter)
+    }
+}
+
+/**
+ * 파라미터 프리뷰는 이름이 파일명이 된다. 이름이 없으면 순서 번호로 돌아가 값이 빠질 때 기준 이미지와 어긋난 비교가 나오므로 막는다.
+ * 이름은 `core:designsystem` 의 `NamedPreviewParameterProvider` 로 붙인다.
+ */
+private fun requireParameterNames(parameters: List<AndroidPreviewJUnit4TestParameter>) {
+    val parameterized = parameters.map { it.preview }.filter { it.previewIndex != null }
+    val unnamed = parameterized.filter { it.previewIndexDisplayName.isNullOrBlank() }
+    check(unnamed.isEmpty()) {
+        "Preview parameters need names (NamedPreviewParameterProvider): " +
+            unnamed.map { "${it.declaringClass}.${it.methodName}" }.distinct()
+    }
+    val duplicated = parameterized
+        .groupBy { Triple(it.declaringClass, it.methodName, it.previewInfo) }
+        .filterValues { previews -> previews.map { it.previewIndexDisplayName }.toSet().size != previews.size }
+        .keys
+    check(duplicated.isEmpty()) {
+        "Preview parameter names must be unique per preview: " + duplicated.map { "${it.first}.${it.second}" }
     }
 }
 

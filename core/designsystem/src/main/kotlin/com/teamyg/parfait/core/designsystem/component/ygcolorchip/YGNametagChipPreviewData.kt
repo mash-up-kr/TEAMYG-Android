@@ -1,67 +1,67 @@
 package com.teamyg.parfait.core.designsystem.component.ygcolorchip
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 
 data class YGChipPreviewData(
     val name: String,
     val colorChipType: YGColorChipType,
 )
 
-class YGNametagChipPreviewParameterProvider : PreviewParameterProvider<YGChipPreviewData> {
-    override val values = sequenceOf(
-        YGChipPreviewData(
+class YGNametagChipPreviewParameterProvider : NamedPreviewParameterProvider<YGChipPreviewData>() {
+    override val entries = listOf(
+        "nametagChip1" to YGChipPreviewData(
             name = "NametagChip1",
             colorChipType = YGColorChipType.NametagChip1,
         ),
-        YGChipPreviewData(
+        "nametagChip2" to YGChipPreviewData(
             name = "NametagChip2",
             colorChipType = YGColorChipType.NametagChip2,
         ),
-        YGChipPreviewData(
+        "nametagChip3" to YGChipPreviewData(
             name = "NametagChip3",
             colorChipType = YGColorChipType.NametagChip3,
         ),
-        YGChipPreviewData(
+        "nametagChip4" to YGChipPreviewData(
             name = "NametagChip4",
             colorChipType = YGColorChipType.NametagChip4,
         ),
-        YGChipPreviewData(
+        "nametagChip5" to YGChipPreviewData(
             name = "NametagChip5",
             colorChipType = YGColorChipType.NametagChip5,
         ),
-        YGChipPreviewData(
+        "nametagChip6" to YGChipPreviewData(
             name = "NametagChip6",
             colorChipType = YGColorChipType.NametagChip6,
         ),
-        YGChipPreviewData(
+        "nametagChip7" to YGChipPreviewData(
             name = "NametagChip7",
             colorChipType = YGColorChipType.NametagChip7,
         ),
-        YGChipPreviewData(
+        "nametagChip8" to YGChipPreviewData(
             name = "NametagChip8",
             colorChipType = YGColorChipType.NametagChip8,
         ),
-        YGChipPreviewData(
+        "nametagChip9" to YGChipPreviewData(
             name = "NametagChip9",
             colorChipType = YGColorChipType.NametagChip9,
         ),
-        YGChipPreviewData(
+        "nametagChip10" to YGChipPreviewData(
             name = "NametagChip10",
             colorChipType = YGColorChipType.NametagChip10,
         ),
-        YGChipPreviewData(
+        "nametagChip11" to YGChipPreviewData(
             name = "NametagChip11",
             colorChipType = YGColorChipType.NametagChip11,
         ),
-        YGChipPreviewData(
+        "nametagChip12" to YGChipPreviewData(
             name = "NametagChip12",
             colorChipType = YGColorChipType.NametagChip12,
         ),
-        YGChipPreviewData(
+        "nametagChipPlus" to YGChipPreviewData(
             name = "NametagChipPlus",
             colorChipType = YGColorChipType.NametagChipPlus,
         ),
-        YGChipPreviewData(
+        "default" to YGChipPreviewData(
             name = "Default",
             colorChipType = YGColorChipType.Default,
         ),

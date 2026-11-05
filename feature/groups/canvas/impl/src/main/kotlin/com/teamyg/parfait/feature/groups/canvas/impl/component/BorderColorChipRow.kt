@@ -24,10 +24,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -153,8 +153,11 @@ private fun TransparentBorderColorChip(
     }
 }
 
-private class BorderColorChipRowPreviewParameterProvider : PreviewParameterProvider<Int?> {
-    override val values: Sequence<Int?> = sequenceOf(null, TOPPING_BORDER_COLORS.last().toArgb())
+private class BorderColorChipRowPreviewParameterProvider : NamedPreviewParameterProvider<Int?>() {
+    override val entries: List<Pair<String, Int?>> = listOf(
+        "none" to null,
+        "lastColor" to TOPPING_BORDER_COLORS.last().toArgb(),
+    )
 }
 
 @YGPreview

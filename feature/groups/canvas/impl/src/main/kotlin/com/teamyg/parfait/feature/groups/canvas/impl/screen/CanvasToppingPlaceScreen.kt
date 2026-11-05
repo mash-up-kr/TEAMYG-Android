@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -33,6 +32,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarBackTitleClose
 import com.teamyg.parfait.core.designsystem.component.ygtoppingcutout.YGToppingCutoutImage
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
@@ -265,8 +265,11 @@ internal fun CanvasToppingPlaceScreen(
     }
 }
 
-private class CanvasToppingPlacePreviewParameterProvider : PreviewParameterProvider<Boolean> {
-    override val values: Sequence<Boolean> = sequenceOf(false, true)
+private class CanvasToppingPlacePreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
+    override val entries = listOf(
+        "borderPanelClosed" to false,
+        "borderPanelOpen" to true,
+    )
 }
 
 @YGPreview

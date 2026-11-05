@@ -1,15 +1,14 @@
 package com.teamyg.parfait.feature.gallery.impl.model
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.util.android.permission.GalleryPermissionManager
 
 internal class GalleryAccessLevelPreviewParameterProvider :
-    PreviewParameterProvider<GalleryPermissionManager.GalleryAccessLevel> {
-    override val values: Sequence<GalleryPermissionManager.GalleryAccessLevel>
-        get() = sequenceOf(
-            GalleryPermissionManager.GalleryAccessLevel.DENIED,
-            GalleryPermissionManager.GalleryAccessLevel.PERMANENTLY_DENIED,
-            GalleryPermissionManager.GalleryAccessLevel.PARTIAL,
-            GalleryPermissionManager.GalleryAccessLevel.FULL,
-        )
+    NamedPreviewParameterProvider<GalleryPermissionManager.GalleryAccessLevel>() {
+    override val entries = listOf(
+        "denied" to GalleryPermissionManager.GalleryAccessLevel.DENIED,
+        "permanentlyDenied" to GalleryPermissionManager.GalleryAccessLevel.PERMANENTLY_DENIED,
+        "partial" to GalleryPermissionManager.GalleryAccessLevel.PARTIAL,
+        "full" to GalleryPermissionManager.GalleryAccessLevel.FULL,
+    )
 }
