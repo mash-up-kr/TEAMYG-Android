@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.asImageBitmap
@@ -23,7 +24,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
 import com.teamyg.parfait.feature.camera.impl.model.CameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import com.teamyg.parfait.feature.camera.impl.model.CapturedFrame
@@ -162,26 +162,24 @@ internal fun CameraPreviewBindingEffect(
 
 @Composable
 internal fun CameraZoomEffect(
-    state: CameraPreviewState,
+    camera: Camera?,
     zoomRatio: Float,
 ) {
-    val camera = state.camera
-    val appliedZoom = remember { AppliedZoom() }
-    LaunchedEffect(zoomRatio, camera) {
+    // 카메라가 바뀌면 새 슬롯이 현재 배율로 시작해 애니메이션 없이 바로 걸린다
+    val appliedRatio = remember(camera) { mutableFloatStateOf(zoomRatio) }
+    LaunchedEffect(camera, zoomRatio) {
         val target = camera ?: return@LaunchedEffect
-        if (target !== appliedZoom.camera) {
-            appliedZoom.camera = target
-            appliedZoom.ratio = zoomRatio
+        if (appliedRatio.floatValue == zoomRatio) {
             target.cameraControl.setZoomRatio(zoomRatio)
             return@LaunchedEffect
         }
 
         animate(
-            initialValue = appliedZoom.ratio,
+            initialValue = appliedRatio.floatValue,
             targetValue = zoomRatio,
             animationSpec = tween(durationMillis = ZOOM_ANIMATION_MILLIS),
         ) { value, _ ->
-            appliedZoom.ratio = value
+            appliedRatio.floatValue = value
             target.cameraControl.setZoomRatio(value)
         }
     }

@@ -184,7 +184,7 @@ internal fun CustomCameraRoute(
         },
     )
     CameraZoomEffect(
-        state = cameraPreviewState,
+        camera = cameraPreviewState.camera,
         zoomRatio = state.cameraZoomRatio,
     )
     CameraTransitionEffect(state = cameraPreviewState)
