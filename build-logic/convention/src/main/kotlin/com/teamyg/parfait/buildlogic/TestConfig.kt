@@ -39,8 +39,8 @@ internal fun Project.setConfigTestAndroid() {
         // `:core:testing` 은 붙이지 않는다. 거기 있는 MainDispatcherRule 은 Dispatchers.Main 을
         // 테스트 디스패처로 바꾸는 JVM 유닛 테스트용이고, 계측 테스트에는 실제 Main looper 가
         // 있어 쓸 일이 없다. test-android 번들에 coroutines-test 도 없어서 붙여봐야
-        // TestDispatcher 를 찾지 못한다. 계측용 공유 자산이 생기면 그때 `:core:testing:android`
-        // 를 만든다.
+        // TestDispatcher 를 찾지 못한다. `:core:testing:android` 는 계측이 아니라 Robolectric
+        // 호스트 테스트용이라 여기 붙이지 않는다.
         androidTestImplementation(libs.bundles.test.android)
     }
 

@@ -1,0 +1,38 @@
+name: UI snapshots prune
+
+# 닫힌 지 30일 지난 PR 의 이미지 브랜치(ui-snapshots/pr-N)를 지운다. PR 코드는 받지 않는다.
+on:
+  schedule:
+    - cron: "0 18 * * *" # KST 03:00
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 지우지 않고 대상만 출력
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: ui-snapshots-prune
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Prune
+        run: |
+          args=(--repo "$GITHUB_REPOSITORY")
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          python3 .github/scripts/ui_diff/prune.py "${args[@]}"

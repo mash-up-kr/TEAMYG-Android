@@ -7,6 +7,7 @@ class ModuleFeatureImplConventionPlugin : BaseConventionPlugin({
         apply(libs.plugins.parfait.android.library.get().pluginId)
         apply(libs.plugins.parfait.jetpack.compose.get().pluginId)
         apply(libs.plugins.parfait.dagger.hilt.compose.get().pluginId)
+        apply(libs.plugins.parfait.ui.snapshot.get().pluginId)
     }
 
     dependencies {

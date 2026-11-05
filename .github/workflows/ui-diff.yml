@@ -1,0 +1,227 @@
+name: UI diff
+
+# PR 코드를 그대로 돌리는 잡이라 시크릿을 넘기지 않고 읽기 권한만 준다.
+# 코멘트는 이 런의 아티팩트를 받아 별도 워크플로가 남긴다.
+on:
+  pull_request:
+    paths:
+      - 'feature/**'
+      - 'core/designsystem/**'
+      - 'core/ui/**'
+      - 'core/testing/android/**'
+      - 'gradle/libs.versions.toml'
+      - 'build-logic/**'
+      - 'gradle/wrapper/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/ui-diff.yml'
+      - '.github/scripts/ui_diff/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-diff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      # 이벤트의 base.sha 는 develop 이 움직이면 merge ref 보다 늦을 수 있다.
+      # base·head 렌더가 같은 merge 에서 나오도록 merge 커밋의 부모를 쓴다.
+      - name: Resolve merge commit
+        id: merge
+        run: |
+          # --exit-code 는 ref 가 없을 때만 2 를 낸다. 네트워크·인증 실패를 충돌로 오보하지 않게 나머지는 잡 실패로 둔다
+          rc=0
+          remote=$(git ls-remote --exit-code "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "refs/pull/$PR_NUMBER/merge") || rc=$?
+          case "$rc" in
+            0) merge_sha=$(printf '%s\n' "$remote" | cut -f1) ;;
+            2) merge_sha= ;;
+            *) echo "git ls-remote failed: rc=$rc" >&2; exit 1 ;;
+          esac
+          if [ -n "$merge_sha" ] && ! printf '%s' "$merge_sha" | grep -Eqx '[0-9a-f]{40}'; then
+            echo "unexpected merge ref: $merge_sha" >&2
+            exit 1
+          fi
+          echo "sha=$merge_sha" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/ui-diff/meta" "$RUNNER_TEMP/ui-diff/logs" "$RUNNER_TEMP/ui-diff/tools"
+          : > "$RUNNER_TEMP/ui-diff/meta/base-list.txt"
+
+      - uses: actions/checkout@v4
+        if: steps.merge.outputs.sha != ''
+        with:
+          ref: ${{ steps.merge.outputs.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      # base 체크아웃에는 이 스크립트가 없을 수 있어 merge 쪽 것을 미리 빼 둔다
+      - name: Read merge parents
+        id: parents
+        if: steps.merge.outputs.sha != ''
+        run: |
+          {
+            echo "base_sha=$(git rev-parse HEAD^1)"
+            echo "head_sha=$(git rev-parse HEAD^2)"
+          } >> "$GITHUB_OUTPUT"
+          cp .github/scripts/ui_diff/stage.py "$RUNNER_TEMP/ui-diff/tools/"
+
+      # 리포트 스크립트 자체의 검증이다. 실패하면 비교 결과 대신 잡 실패로 드러낸다
+      - name: Test report scripts
+        if: steps.merge.outputs.sha != ''
+        run: python3 -m unittest discover -s .github/scripts/ui_diff -p 'test_*.py'
+
+      - uses: ./.github/actions/setup-android-build
+        if: steps.merge.outputs.sha != ''
+
+      - uses: actions/checkout@v4
+        if: steps.merge.outputs.sha != ''
+        with:
+          ref: ${{ steps.parents.outputs.base_sha }}
+          persist-credentials: false
+
+      # 서명·google-services 없이 구성만 통과시키는 더미. 실제 시크릿은 쓰지 않는다
+      - name: Write dummy local.properties
+        if: steps.merge.outputs.sha != ''
+        run: printf 'KAKAO_NATIVE_APP_KEY=dummy\n' > local.properties
+
+      # 태스크가 없다는 실패만 no-base-setup 으로 본다. 구성 오류 같은 다른 실패는 failed 로 남긴다
+      - name: Check base setup
+        id: base_setup
+        if: steps.merge.outputs.sha != ''
+        continue-on-error: true
+        run: |
+          log="$RUNNER_TEMP/ui-diff/logs/base-setup.log"
+          if ./gradlew --console=plain help --task recordRoborazziDebug > "$log" 2>&1; then
+            cat "$log"
+            exit 0
+          fi
+          cat "$log"
+          if grep -qF "Task 'recordRoborazziDebug' not found" "$log"; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+          fi
+          exit 1
+
+      # dry-run 목록은 렌더 대상 모듈을 알려 준다. 실패로 아예 돌지 못한 모듈을 가려내는 데 쓴다
+      - name: Render base
+        if: steps.base_setup.outcome == 'success'
+        continue-on-error: true
+        run: |
+          logs="$RUNNER_TEMP/ui-diff/logs"
+          ./gradlew --console=plain recordRoborazziDebug --dry-run > "$logs/base-plan.txt" || true
+          ./gradlew --console=plain recordRoborazziDebug --continue 2>&1 | tee "$logs/base.log"
+
+      # 다음 checkout 이 작업 트리를 비우므로 기준 PNG 를 모듈 상대 경로 그대로 옮겨 둔다
+      - name: Stash base images
+        if: steps.base_setup.outcome == 'success'
+        run: >-
+          python3 "$RUNNER_TEMP/ui-diff/tools/stage.py" stash --root .
+          --dest "$RUNNER_TEMP/ui-diff/base"
+          --list "$RUNNER_TEMP/ui-diff/meta/base-list.txt"
+
+      - uses: actions/checkout@v4
+        if: steps.base_setup.outcome == 'success'
+        with:
+          ref: ${{ steps.merge.outputs.sha }}
+          persist-credentials: false
+
+      - name: Write dummy local.properties
+        if: steps.base_setup.outcome == 'success'
+        run: printf 'KAKAO_NATIVE_APP_KEY=dummy\n' > local.properties
+
+      - name: Restore base images
+        if: steps.base_setup.outcome == 'success'
+        run: python3 "$RUNNER_TEMP/ui-diff/tools/stage.py" restore --src "$RUNNER_TEMP/ui-diff/base" --root .
+
+      # diff 가 있어도 compare 는 0 으로 끝난다. 모듈 실패도 잡을 실패시키지 않는다
+      - name: Render head
+        if: steps.base_setup.outcome == 'success'
+        continue-on-error: true
+        run: |
+          logs="$RUNNER_TEMP/ui-diff/logs"
+          ./gradlew --console=plain compareRoborazziDebug --dry-run > "$logs/head-plan.txt" || true
+          ./gradlew --console=plain compareRoborazziDebug --continue 2>&1 | tee "$logs/head.log"
+
+      # upload-artifact 는 매치된 파일의 공통 조상을 루트로 잡으므로, 레포 구조를 따로 만들어 올린다
+      - name: Stage results
+        if: steps.base_setup.outcome == 'success'
+        run: python3 "$RUNNER_TEMP/ui-diff/tools/stage.py" stage-results --root . --dest "$RUNNER_TEMP/ui-diff/results"
+
+      - name: Write meta
+        if: always()
+        env:
+          MERGE_OUTCOME: ${{ steps.merge.outcome }}
+          MERGE_SHA: ${{ steps.merge.outputs.sha }}
+          PARENTS_OUTCOME: ${{ steps.parents.outcome }}
+          BASE_SETUP_OUTCOME: ${{ steps.base_setup.outcome }}
+          BASE_SETUP_MISSING: ${{ steps.base_setup.outputs.missing }}
+          MERGE_BASE_SHA: ${{ steps.parents.outputs.base_sha }}
+          MERGE_HEAD_SHA: ${{ steps.parents.outputs.head_sha }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          work="$RUNNER_TEMP/ui-diff"
+          if [ "$MERGE_OUTCOME" != success ]; then
+            echo "merge ref unknown; no meta" >&2
+            exit 1
+          fi
+          if [ -z "$MERGE_SHA" ]; then
+            # merge 커밋이 없으니 이벤트 값을 쓴다. 체크아웃도 없어 stage.py 를 쓸 수 없다
+            python3 - "$work/meta/meta.json" <<'EOF'
+          import json, os, sys
+          meta = {
+              "pr": int(os.environ["PR_NUMBER"]),
+              "head_sha": os.environ["EVENT_HEAD_SHA"],
+              "base_sha": os.environ["EVENT_BASE_SHA"],
+              "status": "merge-conflict",
+              "failed_modules": [],
+          }
+          with open(sys.argv[1], "w", encoding="utf-8") as f:
+              json.dump(meta, f, indent=2)
+          EOF
+            exit 0
+          fi
+          if [ "$PARENTS_OUTCOME" != success ]; then
+            echo "merge parents unknown; no meta" >&2
+            exit 1
+          fi
+          set -- python3 "$work/tools/stage.py" meta --out "$work/meta/meta.json" \
+            --pr "$PR_NUMBER" --base-sha "$MERGE_BASE_SHA" --head-sha "$MERGE_HEAD_SHA"
+          case "$BASE_SETUP_OUTCOME" in
+            success)
+              "$@" --results-root "$work/results" \
+                --base-plan "$work/logs/base-plan.txt" --base-log "$work/logs/base.log" \
+                --head-plan "$work/logs/head-plan.txt" --head-log "$work/logs/head.log"
+              ;;
+            failure)
+              if [ "$BASE_SETUP_MISSING" = true ]; then
+                "$@" --status no-base-setup
+              else
+                "$@" --status failed
+              fi
+              ;;
+            *) "$@" --status failed ;;
+          esac
+
+      - name: Upload meta
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-diff-meta
+          path: ${{ runner.temp }}/ui-diff/meta/
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Upload results
+        if: always() && steps.base_setup.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-diff-results
+          path: ${{ runner.temp }}/ui-diff/results/
+          retention-days: 3
+          if-no-files-found: ignore

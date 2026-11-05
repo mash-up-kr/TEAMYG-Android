@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.UiSnapshotExcluded
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.outline.toBorderAlphaBitmap
 import com.teamyg.parfait.core.util.jvm.model.ToppingBorderTarget
@@ -226,6 +227,8 @@ private fun sizeForLongSide(
     IntSize((longSide * aspectRatio).roundToInt(), longSide)
 }
 
+// 테두리 띠를 Dispatchers.Default 에서 만들어 캡처 시점에 따라 테두리 유무가 흔들린다
+@UiSnapshotExcluded
 @YGPreview
 @Composable
 private fun YGToppingCutoutImagePreview() = PreviewBox {
