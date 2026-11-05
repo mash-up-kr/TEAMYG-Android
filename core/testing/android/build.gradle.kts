@@ -2,6 +2,7 @@
 // 프로덕션 코드에서 끌어오면 안 된다.
 plugins {
     alias(libs.plugins.parfait.android.library)
+    alias(libs.plugins.parfait.test.unit)
 }
 
 android {
