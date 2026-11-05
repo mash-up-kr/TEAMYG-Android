@@ -32,6 +32,7 @@ import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.component.yglistdate.YGListDate
+import com.teamyg.parfait.core.designsystem.theme.ProvideFixedFontScale
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -255,12 +256,14 @@ private fun <T> CalendarPeriodSelector(
                 onDismissRequest = onDismiss,
                 properties = PopupProperties(focusable = true),
             ) {
-                CalendarDropdown(
-                    items = items,
-                    selectedItem = selectedItem,
-                    itemLabel = itemLabel,
-                    onSelect = onSelect,
-                )
+                ProvideFixedFontScale {
+                    CalendarDropdown(
+                        items = items,
+                        selectedItem = selectedItem,
+                        itemLabel = itemLabel,
+                        onSelect = onSelect,
+                    )
+                }
             }
         }
     }

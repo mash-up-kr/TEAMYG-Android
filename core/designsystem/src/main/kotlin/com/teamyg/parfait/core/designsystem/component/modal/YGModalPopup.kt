@@ -24,6 +24,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.teamyg.parfait.core.designsystem.R
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
+import com.teamyg.parfait.core.designsystem.theme.ProvideFixedFontScale
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
@@ -49,18 +50,20 @@ fun YGModalPopup(
         onDismissRequest = onDismissRequest,
         properties = properties,
     ) {
-        YGModalPopupContent(
-            title = title,
-            body = body,
-            iconRes = iconRes,
-            secondaryText = secondaryText,
-            onSecondaryClick = onSecondaryClick,
-            primaryText = primaryText,
-            onPrimaryClick = onPrimaryClick,
-            modifier = modifier,
-            isEnabledButton = isEnabledButton,
-            iconTint = iconTint,
-        )
+        ProvideFixedFontScale {
+            YGModalPopupContent(
+                title = title,
+                body = body,
+                iconRes = iconRes,
+                secondaryText = secondaryText,
+                onSecondaryClick = onSecondaryClick,
+                primaryText = primaryText,
+                onPrimaryClick = onPrimaryClick,
+                modifier = modifier,
+                isEnabledButton = isEnabledButton,
+                iconTint = iconTint,
+            )
+        }
     }
 }
 
