@@ -5,7 +5,7 @@ status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-10-20
-related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewBinding.kt, CameraCrop.kt#saveViewfinderCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit, DecodeSize.kt#capped
+related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewBinding.kt, CameraCrop.kt#saveCroppedCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit, DecodeSize.kt#capped
 related_adr: ADR-0012
 related_spec: c103-multi-subject-selection, segmentation-pipeline-hardening, c106-topping-place-api
 related_architecture: data-layer

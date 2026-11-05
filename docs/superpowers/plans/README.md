@@ -6,7 +6,6 @@ Parfait 프로젝트의 작업 계획 문서를 모읍니다.
 
 | 계획 | 내용 |
 |------|------|
-| [2026-11-05-camera-impl-refactor.md](2026-11-05-camera-impl-refactor.md) | **feature:camera:impl 정리**(8 Task). 권한 죽은 상태·이름, `FlashMode`·`LensFacing` model, 사진 확인 MVI, 셔터 연타 가드, ViewPort 기준 크롭(`computeCaptureCropRect`)과 IO 촬영, Compose 관례, 주석·문서. |
 | [2026-11-04-screenshot-comparison-ci.md](2026-11-04-screenshot-comparison-ci.md) | **PR 스크린샷 비교 리포트 CI**(9 Task). 스크린샷 convention plugin·tester 모듈, 프리뷰 결정성 정리, 비교·코멘트·정리 워크플로와 리포트 스크립트, PR 템플릿·ADR-0037. 스펙: [specs](../specs/2026-11-04-screenshot-comparison-ci-design.md) |
 | [2026-10-28-canvas-video-instant-reveal.md](2026-10-28-canvas-video-instant-reveal.md) | **캔버스 영상 토핑 즉시 등장**(2 Task). **Task 1** `toppingPopProgresses` → `visibleToppingCount` 교체와 토핑 레이어의 알파 제거, **Task 2** status·open-questions·log·README 문서 정리. |
 | [2026-09-26-docs-record-structure.md](2026-09-26-docs-record-structure.md) | **docs 기록 구조 개선**(Task 0~7, 문서만 변경). 원본 사본과 추출표로 미결·절차 노하우의 행방을 먼저 정한 뒤 `log.md`·doc-baseline·루트 `CLAUDE.md`를 이관하고, 영역별 코드 대조로 `status.md`를 쓴 다음 index를 라우팅만 남긴다. |
@@ -23,6 +22,7 @@ Parfait 프로젝트의 작업 계획 문서를 모읍니다.
 
 | 계획 | 내용 |
 |------|------|
+| [2026-11-05-camera-impl-refactor.md](archive/2026-11-05-camera-impl-refactor.md) | **✅ 구현 완료(실기기 확인은 미수행)** — **feature:camera:impl 정리**(8 Task). 권한 죽은 상태·이름 정리, `FlashMode`·`LensFacing` model 분리, 사진 확인 MVI, 셔터 연타 가드, ViewPort 기준 크롭(`computeCaptureCropRect`)과 IO 촬영, Compose 관례, 주석·문서. |
 | [2026-11-03-camera-zoom-button.md](archive/2026-11-03-camera-zoom-button.md) | **✅ 구현 완료** — C-101 줌 버튼(9 Task): `CameraZoomLevel`·VM 순환, `YGCameraZoomButton`, 화면 연결과 미사용 줌 컴포넌트 삭제, 초광각 판정·0.5x 경로·바인딩과 줌 재적용, 재바인딩 견고성·부드러운 줌·전환 블러 덮개. |
 | [2026-10-27-text-topping-script-span.md](archive/2026-10-27-text-topping-script-span.md) | **✅ 완료·develop 머지(PR #655 `51d34ac96`, Task 3 Step 9 실기기 확인은 미수행)** — **텍스트 토핑 글꼴·자간 구간 분기**(3 Task). 폰트 cmap 생성 한자 커버리지 테이블 + 해시 동기화 테스트(Task 1) → 구간 분할 `textToppingScriptRuns`(Task 2) → 입력 필드 `OutputTransformation`·캔버스 렌더·크기 맞춤 측정에 같은 구간 적용, `detectTextToppingScript` 삭제(Task 3). 스펙: [text-topping-script-span](../specs/archive/2026-10-27-text-topping-script-span-design.md) |
 | [2026-10-26-text-topping-api.md](archive/2026-10-26-text-topping-api.md) | **✅ 완료·develop 머지(PR #645 `ed88a1547`, Task 7·9의 에뮬레이터 수동 확인은 미수행)** — **텍스트 토핑 서버 연동**(10 Task). Task 1~3 도메인·데이터(`CanvasVO.texts`, `TextToppingRepository`, 일괄 PATCH `textItems`) · Task 4 서버 값 변환과 겹침 순서 · Task 5 공용 렌더러 `TextToppingContent` · Task 6 C-106 쌓기 저장 · Task 7 C-001 렌더·탭 · Task 8 C-305 텍스트 편입 · Task 9 C-305↔C-106 재편집 왕복 · Task 10 문서. 대응 스펙 [text-topping-api](../specs/archive/2026-10-26-text-topping-api.md) |

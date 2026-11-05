@@ -1,10 +1,11 @@
 ---
 id: camera-impl-refactor
 title: feature:camera:impl 정리
-status: draft
+status: done
 type: work-order
 created: 2026-11-05
 updated: 2026-11-05
+archived_reason: 구현 완료 (refactor/camera-impl, 2026-11-05) — 실기기 확인 미수행
 platforms: android
 owner: android
 related_adr:
@@ -40,7 +41,7 @@ tags: [plan, parfait]
 
 ## Global Constraints
 
-- 코드 주석·KDoc: [`docs/code-conventions.md`](../../code-conventions.md). 코드가 말하는 것은 쓰지 않는다.
+- 코드 주석·KDoc: [`docs/code-conventions.md`](../../../code-conventions.md). 코드가 말하는 것은 쓰지 않는다.
 - `.claude/rules/no-local-functions.md` — 함수 안 `fun` 금지.
 - 비UI 타입은 `impl/model/`, 파일당 타입 하나, enum 동작은 멤버.
 - 커밋 메시지: `type: 한국어 설명`, Co-Authored-By 넣지 않는다. 푸시하지 않는다.
