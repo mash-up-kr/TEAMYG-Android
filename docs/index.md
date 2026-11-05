@@ -37,6 +37,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 | 토핑 만들기 흐름 상태(초안 SSOT) | [ADR-0026](adr/0026-topping-draft-datastore-ssot.md) |
 | 화면 방향(세로 고정)·대화면 예외 | [ADR-0027](adr/0027-portrait-orientation-lock.md) |
 | 시스템바 아이콘 색·다크모드 미지원 | [ADR-0028](adr/0028-system-bar-light-fixed.md) |
+| 시스템 글자 크기(fontScale) 무시·`Dialog`/`Popup` 재고정 | [ADR-0036](adr/0036-ignore-system-font-scale.md) + [code-conventions](code-conventions.md#compose-텍스트-글자-크기) |
 | Crashlytics·Analytics·Firebase 설정·푸시(FCM) | [ADR-0013](adr/0013-firebase-fcm-crashlytics.md) + [ADR-0031](adr/0031-analytics-central-screen-mapping.md) |
 | 로깅·Logger 추상화(Kermit) | [ADR-0014](adr/0014-logging-abstraction-kermit.md) |
 | 유효성 결과·에러 문자열 다국어 매핑(domain 의미↔표시 분리) | [ADR-0016](adr/0016-domain-result-presentation-string-mapping.md) + [state-management](architecture/state-management.md) |
@@ -74,6 +75,7 @@ Android 단일 플랫폼, Jetpack Compose + Navigation3. 다중 모듈(core/data
 ## 규율 (상세는 각 문서)
 - **SoT 우선순위**(모순 시): 코드 > wiki > CLAUDE.md
 - **라인번호·변동수치 금지** — 근거·규칙은 [adr/README.md](adr/README.md)
+- **Compose 텍스트 글자 크기** — [code-conventions.md](code-conventions.md#compose-텍스트-글자-크기). `Dialog`·`Popup` content는 `ProvideFixedFontScale`로 다시 감싼다.
 - **코드 주석·KDoc** — [code-conventions.md](code-conventions.md). 코드가 이미 말하는 것은 안 쓰고, 고정 틀을 쓰지 않으며, **다른 곳의 현재 상태는 낡으니 단정하지 않는다**. 아키텍처 결정은 코드가 아니라 `architecture/`·`adr/`에.
 - 새 아키텍처 결정 = 새 ADR([adr/template.md](adr/template.md)), 코드와 같은 커밋. 구조 변경 시 같은 PR에서 wiki 갱신(drift 금지).
 - 새 기능·컴포넌트 = 구현 전 [specs/](superpowers/specs/README.md)에 설계 스펙 확정([specs/template.md](superpowers/specs/template.md)) 후 코드 작성.
