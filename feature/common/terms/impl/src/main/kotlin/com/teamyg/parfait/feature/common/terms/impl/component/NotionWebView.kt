@@ -55,6 +55,8 @@ internal fun NotionWebView(
                     )
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // 기본값은 OS 글자 크기를 따라간다
+                    settings.textZoom = 100
                     webViewClient = object : WebViewClient() {
                         override fun onPageStarted(
                             view: WebView?,
