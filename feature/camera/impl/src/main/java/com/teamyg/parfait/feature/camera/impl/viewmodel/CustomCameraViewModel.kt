@@ -51,7 +51,7 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnOpenAppSettings : CustomCameraIntent
 
-    /** 메인 카메라에 바인딩됐을 때만 온다. 단계 목록은 메인 카메라 범위로만 만든다 */
+    /** 메인 카메라에 바인딩됐을 때만 온다(`CameraPreviewBindingEffect`) */
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
         val hasUltraWideCamera: Boolean,

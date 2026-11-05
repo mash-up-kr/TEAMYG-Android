@@ -159,8 +159,7 @@ internal fun CameraFeedLayer(
 }
 
 /**
- * 카메라를 다시 여는 동안 검정 화면 대신 직전 프레임을 흐리게 덮는다. 전면/후면 전환이면 위아래로 넘긴다.
- * 블러는 API 31 미만에서 빠지고 피드 레이어의 딤만 남는다.
+ * 카메라를 다시 여는 동안 검정 화면 대신 직전 프레임을 흐리게 덮는다. 블러는 API 31 미만에서 빠진다.
  */
 @Composable
 private fun CameraTransitionCover(
@@ -178,7 +177,6 @@ private fun CameraTransitionCover(
         exit = fadeOut(animationSpec = tween(durationMillis = TRANSITION_FADE_MILLIS)),
     ) {
         val cover = shown ?: return@AnimatedVisibility
-        // 앞 절반은 0→90°, 뒤 절반은 -90→0°. 180°까지 돌리면 넘긴 뒤 프레임이 거꾸로 남는다
         val flipProgress = remember(cover) { Animatable(0f) }
         LaunchedEffect(cover) {
             if (cover.isFlip) {
@@ -194,6 +192,7 @@ private fun CameraTransitionCover(
                 .fillMaxSize()
                 .graphicsLayer {
                     val progress = flipProgress.value
+                    // 앞 절반은 0→90°, 뒤 절반은 -90→0°. 180°까지 돌리면 넘긴 뒤 프레임이 거꾸로 남는다
                     rotationX = if (progress < 0.5f) progress * 180f else progress * 180f - 180f
                     val scale = 1f - (1f - TRANSITION_FLIP_MIN_SCALE) * sin(progress * PI.toFloat())
                     scaleX = scale

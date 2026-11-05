@@ -1,8 +1,5 @@
 package com.teamyg.parfait.feature.camera.impl.model
 
-/**
- * 카메라 하나의 화각을 비교하기 위한 광학값.
- */
 internal data class LensOptics(
     val cameraId: String,
     val sensorWidthMm: Float,

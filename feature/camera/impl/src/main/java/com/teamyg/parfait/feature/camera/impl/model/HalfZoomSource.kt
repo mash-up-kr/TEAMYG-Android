@@ -1,8 +1,5 @@
 package com.teamyg.parfait.feature.camera.impl.model
 
-/**
- * 0.5x를 어떻게 내는가.
- */
 enum class HalfZoomSource {
     NONE,
 
