@@ -49,7 +49,8 @@ checkout해 비교한다.**
   고르지 않는 것은 스캐너가 선언 순서를 넘기지 않기 때문이다(근거는 [스펙](../superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md) 렌더 결정성).
 - `@PreviewParameter` 프리뷰는 값마다 이름을 붙인다(`NamedPreviewParameterProvider`). 스냅샷 파일명이 값의
   순서 번호로 붙으면 값 하나를 빼거나 끼울 때 뒤 값들이 다른 값의 기준 이미지와 비교된다. 이름이 없거나
-  한 프리뷰 안에서 겹치면 `UiSnapshotPreviewTester`가 그 모듈의 렌더를 실패시킨다.
+  한 프리뷰 안에서 겹치면 `UiSnapshotPreviewTester`가 그 모듈의 렌더를 실패시킨다. 이름이 곧 파일명이라 이름을
+  바꾸면 그 PR의 코멘트에 해당 프리뷰가 삭제와 신규로 나온다.
 
 ## 대안
 - **A. develop 골든 아티팩트** — develop push마다 골든을 렌더해 올리고 PR이 내려받아 비교한다. PR 잡이

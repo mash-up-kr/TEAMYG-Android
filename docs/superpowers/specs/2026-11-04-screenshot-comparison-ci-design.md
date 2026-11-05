@@ -72,7 +72,7 @@ anti-goal(돌아가도 실패로 보는 것):
 | 안 | 내용 | 판단 |
 |---|---|---|
 | A. develop 골든 아티팩트 | develop push마다 골든을 렌더해 아티팩트로 올리고 PR이 내려받아 비교 | 기각. develop이 움직인 직후 골든 기록이 끝나기 전에 push하면 이전 골든과 비교해 오탐이 난다. base가 develop이 아닌 stacked PR(최근 머지 20건 중 5건)은 골든이 없어 리포트가 안 나온다 |
-| **B. PR 잡 안에서 base도 렌더** | 한 잡에서 `base.sha`를 checkout해 record → PR merge ref를 checkout해 compare | **채택.** 기준과 대상이 같은 잡·같은 머신에서 나와 경합이 원천적으로 없다. stacked PR은 부모 브랜치를 base로 자연스럽게 비교한다. 골든 잡·아티팩트 보관이 필요 없다. 대가는 PR 잡 시간(렌더 2회). public 레포라 비용은 없다 |
+| **B. PR 잡 안에서 base도 렌더** | 한 잡에서 `base.sha`를 checkout해 record → PR merge ref를 checkout해 compare | **채택.** 기준과 대상이 같은 잡에서 같은 merge로 렌더돼 경합이 원천적으로 없다. stacked PR은 부모 브랜치를 base로 자연스럽게 비교한다. 골든 잡·아티팩트 보관이 필요 없다. 대가는 PR 잡 시간(렌더 2회). public 레포라 비용은 없다 |
 | C. 골든 레포 커밋 | Roborazzi `verify` + 골든 커밋 | 기각. 작성자가 매번 재기록·커밋해야 하고, merge/rebase 혼재 환경에서 바이너리 충돌이 난다 |
 
 merge/rebase 혼재는 B에서 영향이 없다. 비교 대상은 GitHub이 만든 `refs/pull/N/merge`(head + base tip)이고
@@ -140,7 +140,7 @@ gradle.properties
 
 ### 렌더 결정성
 
-B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 그래서:
+B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 develop 캐시 시딩에서 와 base와 head가 다른 러너의 렌더일 수 있는 위험은 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-job-base-render.md) 위험·방어에 있다. 그래서:
 
 - `@YGPreview`의 6변형(phone·foldable·foldable-fold × light·night)은 IDE 프리뷰용으로 모두 남기고, 스크린샷 비교는
   `group = UI_SNAPSHOT_PREVIEW_GROUP`을 단 `phone` 변형만 찍는다. 커스텀 tester가 한 프리뷰 함수 안에 이 group이

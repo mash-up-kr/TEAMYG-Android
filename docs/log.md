@@ -438,3 +438,6 @@ conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인
 
 ## [2026-11-04] change | PR 스크린샷 비교 CI 문서
 ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘트 확인으로
+
+## [2026-11-05] change | 스크린샷 비교 렌더 캐시·파라미터 이름
+`gradle-cache-seed.yml`에 record·compare 스텝 추가(ui-diff 렌더를 빌드 캐시로) · `@PreviewParameter`는 `NamedPreviewParameterProvider`로 이름을 붙이고 `UiSnapshotPreviewTester`가 누락·형식·중복을 막음 · 기준 파일명이 순서 번호에서 이름으로 바뀜 · ADR-0037·스펙 반영
