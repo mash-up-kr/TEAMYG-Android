@@ -13,60 +13,58 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.asImageBitmap
-import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
+import com.teamyg.parfait.feature.camera.impl.model.CameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import com.teamyg.parfait.feature.camera.impl.model.CapturedFrame
 import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
 import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
+import kotlinx.coroutines.delay
 
 @Composable
-internal fun CameraPreviewViewComponent(
+internal fun rememberCameraPreviewState(): CameraPreviewState {
+    val context = LocalContext.current
+    return remember {
+        // GraphicsLayer로 피드를 기록하려면 SurfaceView가 아닌 TextureView여야 한다.
+        val previewView = PreviewView(context).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        }
+        CameraPreviewState(previewView = previewView)
+    }
+}
+
+@Composable
+internal fun CameraPreviewBindingEffect(
+    state: CameraPreviewState,
     lensFacing: Int,
     useUltraWideCamera: Boolean,
-    zoomRatio: Float,
     hasPermission: Boolean,
     onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (range: ClosedFloatingPointRange<Float>, hasUltraWideCamera: Boolean) -> Unit,
-): CameraPreviewHandle {
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember {
-        // GraphicsLayer로 피드를 기록하려면 SurfaceView가 아닌 TextureView여야 한다.
-        PreviewView(context).apply {
-            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-        }
-    }
-    val cameraState = remember { mutableStateOf<Camera?>(null) }
-    var camera by cameraState
-    val transitionState = remember { mutableStateOf<CameraTransition?>(null) }
-    // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 쓴다
-    val lastFrame = remember { mutableStateOf<CapturedFrame?>(null) }
-    // 한 번 안 열린 초광각은 다시 쓰지 않는다. 안 막으면 메인 재바인딩에서 0.5x가 되살아난다
-    val failedUltraWideIds = remember { mutableSetOf<String>() }
 
-    DisposableEffect(lensFacing, useUltraWideCamera, hasPermission) {
+    DisposableEffect(state, lensFacing, useUltraWideCamera, hasPermission) {
         // 권한 없이 바인딩하면 CameraX가 열기를 포기하고, 다이얼로그 허용은 lifecycle을 멈추지 않아 다시 열지 않는다
         if (!hasPermission) {
-            lastFrame.value = null
-            transitionState.value = null
+            state.lastFrame = null
+            state.transition = null
             return@DisposableEffect onDispose { }
         }
 
-        transitionState.value = lastFrame.value?.let { captured ->
+        state.transition = state.lastFrame?.let { captured ->
             CameraTransition(frame = captured.bitmap.asImageBitmap(), isFlip = captured.lensFacing != lensFacing)
         }
-        lastFrame.value = null
+        state.lastFrame = null
 
         var boundProvider: ProcessCameraProvider? = null
         // 리스너는 비동기로 돈다. 폐기된 바인딩이 뒤늦게 돌아 새 바인딩을 덮지 않게 한다
@@ -81,7 +79,7 @@ internal fun CameraPreviewViewComponent(
                 .Builder()
                 .build()
                 .apply {
-                    surfaceProvider = previewView.surfaceProvider
+                    surfaceProvider = state.previewView.surfaceProvider
                 }
 
             val imageCapture: ImageCapture = ImageCapture
@@ -92,7 +90,7 @@ internal fun CameraPreviewViewComponent(
                 .build()
 
             val ultraWide = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                cameraProvider.findBackUltraWideCamera()?.takeIf { it.cameraId !in failedUltraWideIds }
+                cameraProvider.findBackUltraWideCamera()?.takeIf { it.cameraId !in state.failedUltraWideIds }
             } else {
                 null
             }
@@ -114,7 +112,7 @@ internal fun CameraPreviewViewComponent(
                 null
             }
             val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
-            if (ultraWideFailed) failedUltraWideIds += ultraWide.cameraId
+            if (ultraWideFailed) state.failedUltraWideIds += ultraWide.cameraId
             val newCamera = ultraWideCamera ?: cameraProvider.bindUseCases(
                 lifecycleOwner = lifecycleOwner,
                 selector = lensSelector,
@@ -123,16 +121,19 @@ internal fun CameraPreviewViewComponent(
             )
             if (newCamera == null) {
                 // 새 스트림이 오지 않으니 덮개를 바로 걷는다
-                transitionState.value = null
+                state.transition = null
                 return@Runnable
             }
 
-            camera = newCamera
+            state.camera = newCamera
             onImageCaptureReady(imageCapture)
             // 범위는 메인 카메라 것만 보고한다. 초광각 범위로 단계 목록을 만들면 2x·0.5x 판정이 틀어진다
             if (ultraWideCamera == null) {
-                newCamera.cameraInfo.zoomState.value?.let { state ->
-                    onZoomRangeReady(state.minZoomRatio..state.maxZoomRatio, ultraWide != null && !ultraWideFailed)
+                newCamera.cameraInfo.zoomState.value?.let { zoomState ->
+                    onZoomRangeReady(
+                        zoomState.minZoomRatio..zoomState.maxZoomRatio,
+                        ultraWide != null && !ultraWideFailed,
+                    )
                 }
             }
         }
@@ -141,12 +142,19 @@ internal fun CameraPreviewViewComponent(
 
         onDispose {
             disposed = true
-            lastFrame.value = previewView.bitmap?.let { CapturedFrame(bitmap = it, lensFacing = lensFacing) }
+            state.lastFrame = state.previewView.bitmap?.let { CapturedFrame(bitmap = it, lensFacing = lensFacing) }
             boundProvider?.unbindAll()
-            camera = null
+            state.camera = null
         }
     }
+}
 
+@Composable
+internal fun CameraZoomEffect(
+    state: CameraPreviewState,
+    zoomRatio: Float,
+) {
+    val camera = state.camera
     val appliedZoom = remember { AppliedZoom() }
     LaunchedEffect(zoomRatio, camera) {
         val target = camera ?: return@LaunchedEffect
@@ -171,8 +179,8 @@ internal fun CameraPreviewViewComponent(
     val currentZoomRatio by rememberUpdatedState(zoomRatio)
     DisposableEffect(camera) {
         val target = camera ?: return@DisposableEffect onDispose { }
-        val observer = Observer<CameraState> { state ->
-            if (state.type == CameraState.Type.OPEN) {
+        val observer = Observer<CameraState> { cameraState ->
+            if (cameraState.type == CameraState.Type.OPEN) {
                 target.cameraControl.setZoomRatio(currentZoomRatio)
             }
         }
@@ -180,38 +188,34 @@ internal fun CameraPreviewViewComponent(
 
         onDispose { target.cameraInfo.cameraState.removeObserver(observer) }
     }
+}
 
+@Composable
+internal fun CameraTransitionEffect(state: CameraPreviewState) {
     // 덮개를 건 직후엔 이전 스트림의 STREAMING이 남아 있을 수 있어 IDLE을 본 뒤의 STREAMING만 센다
-    val hasTransition = transitionState.value != null
-    DisposableEffect(hasTransition) {
+    val hasTransition = state.transition != null
+    DisposableEffect(state, hasTransition) {
         if (!hasTransition) return@DisposableEffect onDispose { }
 
         var sawIdle = false
         val observer = Observer<PreviewView.StreamState> { streamState ->
             when (streamState) {
                 PreviewView.StreamState.IDLE -> sawIdle = true
-                PreviewView.StreamState.STREAMING -> if (sawIdle) transitionState.value = null
-                else -> Unit
+                PreviewView.StreamState.STREAMING -> if (sawIdle) state.transition = null
             }
         }
-        previewView.previewStreamState.observeForever(observer)
+        state.previewView.previewStreamState.observeForever(observer)
 
-        onDispose { previewView.previewStreamState.removeObserver(observer) }
+        onDispose { state.previewView.previewStreamState.removeObserver(observer) }
     }
 
     // IDLE을 건너뛰는 기기에서도 덮개가 남지 않게 한다
-    val transition = transitionState.value
+    val transition = state.transition
     LaunchedEffect(transition) {
         if (transition == null) return@LaunchedEffect
         delay(TRANSITION_TIMEOUT_MILLIS)
-        if (transitionState.value === transition) transitionState.value = null
+        if (state.transition === transition) state.transition = null
     }
-
-    return CameraPreviewHandle(
-        previewView = previewView,
-        camera = cameraState,
-        transition = transitionState,
-    )
 }
 
 private fun ProcessCameraProvider.bindUseCases(
