@@ -148,6 +148,8 @@ B는 같은 머신에서 두 번 렌더하므로 흔들림이 그대로 오탐�
   600장 넘게 두 번 렌더하게 되고, `YGDarkColorScheme`이 `YGLightColorScheme`과 같아 night 변형은 같은 그림이다.
   선택을 이름이나 선언 순서가 아니라 group 표시로 하는 이유: 스캐너가 넘기는 `previewIndex`는 `@PreviewParameter`
   값 번호이고, 변형 목록은 이름순으로 정렬돼 선언 순서를 알 수 없다.
+- `@PreviewParameter` 값은 `NamedPreviewParameterProvider`로 이름을 붙여 파일명이 값 번호 대신 이름으로 남게 한다.
+  번호로 남으면 값 하나를 빼거나 끼울 때 뒤 값들이 다른 값의 기준과 비교된다. 이름이 없거나 겹치면 tester가 실패시킨다.
 - 모든 프리뷰는 같은 코드를 두 번 렌더하면 픽셀이 같아야 한다. 도입 시 base와 head를 같은 커밋으로
   돌려 diff 0건을 확인한다.
 - 화면이 현재 시각을 읽어 그리면 `clock`은 시각을 실제로 읽는 안쪽 Content 컴포저블만 받는다. 프리뷰는
