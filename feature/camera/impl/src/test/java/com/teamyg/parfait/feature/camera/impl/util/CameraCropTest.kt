@@ -54,6 +54,19 @@ class CameraCropTest {
     }
 
     @Test
+    fun crop_frontFacing_rotation270_mirrorsBeforeRotation() {
+        assertEquals(
+            IntRect(800, 500, 1600, 1000),
+            crop(
+                IntRect(0, 0, 2000, 1000),
+                rotation = 270,
+                viewfinderRect = Rect(0f, 400f, 500f, 1200f),
+                front = true,
+            ),
+        )
+    }
+
+    @Test
     fun crop_viewfinderOutsideFeed_clamps() {
         val visible = IntRect(0, 0, 1000, 2000)
 
@@ -84,5 +97,10 @@ class CameraCropTest {
             IntRect(0, 0, 1000, 2000),
             fallbackCropRect(IntSize(1000, 2000), 0, Size(500f, 1000f)),
         )
+    }
+
+    @Test
+    fun fallback_emptyFeed_returnsNull() {
+        assertNull(fallbackCropRect(IntSize(4000, 3000), 90, Size(0f, 0f)))
     }
 }

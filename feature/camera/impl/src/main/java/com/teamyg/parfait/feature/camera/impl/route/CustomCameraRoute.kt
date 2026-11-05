@@ -8,8 +8,6 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,7 +35,7 @@ import com.teamyg.parfait.feature.camera.impl.component.CameraZoomEffect
 import com.teamyg.parfait.feature.camera.impl.component.rememberCameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
-import com.teamyg.parfait.feature.camera.impl.util.saveViewfinderCapture
+import com.teamyg.parfait.feature.camera.impl.util.captureViewfinder
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
@@ -49,9 +46,9 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import kotlinx.coroutines.Dispatchers
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 internal fun CustomCameraRoute(
@@ -70,6 +67,7 @@ internal fun CustomCameraRoute(
     var viewfinderRect by remember { mutableStateOf<Rect?>(null) }
     var feedRect by remember { mutableStateOf<Rect?>(null) }
     val captureScope = rememberCoroutineScope()
+    val cameraPreviewState = rememberCameraPreviewState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -109,45 +107,31 @@ internal fun CustomCameraRoute(
                         viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
                         return@collect
                     }
-                    val file = effect.file
-                    val isFrontFacing = state.lensFacing == LensFacing.FRONT
+                    captureScope.launch {
+                        try {
+                            val saved = runSuspendCatching {
+                                capture.captureViewfinder(
+                                    file = effect.file,
+                                    viewfinderRect = viewfinderRect,
+                                    feedRect = feedRect,
+                                    isFrontFacing = state.lensFacing == LensFacing.FRONT,
+                                    isViewPortApplied = cameraPreviewState.isViewPortApplied,
+                                )
+                            }.isSuccess
 
-                    capture.takePicture(
-                        ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageCapturedCallback() {
-                            override fun onCaptureSuccess(image: ImageProxy) {
-                                val rotation = image.imageInfo.rotationDegrees
-                                val captured = image.use { it.toBitmap() }
-
-                                captureScope.launch {
-                                    val saved = runCatching {
-                                        withContext(Dispatchers.IO) {
-                                            saveViewfinderCapture(
-                                                captured = captured,
-                                                rotationDegrees = rotation,
-                                                viewfinderRect = viewfinderRect,
-                                                feedRect = feedRect,
-                                                isFrontFacing = isFrontFacing,
-                                                file = file,
-                                            )
-                                        }
-                                    }.isSuccess
-
-                                    viewModel.processIntent(
-                                        if (saved) {
-                                            CustomCameraIntent.OnCaptureSaved(file)
-                                        } else {
-                                            CustomCameraIntent.OnCaptureFailed
-                                        },
-                                    )
-                                }
-                            }
-
-                            override fun onError(exception: ImageCaptureException) {
-                                viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
-                            }
-                        },
-                    )
+                            viewModel.processIntent(
+                                if (saved) {
+                                    CustomCameraIntent.OnCaptureSaved(effect.file)
+                                } else {
+                                    CustomCameraIntent.OnCaptureFailed
+                                },
+                            )
+                        } catch (e: CancellationException) {
+                            // Route 만 사라지고 VM 은 남는 경우(재생성 등) 셔터가 잠긴 채 남지 않게 한다
+                            viewModel.processIntent(CustomCameraIntent.OnCaptureCancelled)
+                            throw e
+                        }
+                    }
                 }
 
                 is CustomCameraEffect.Cancel -> navigator.popUpTo<NavKeyCanvasMain>()
@@ -186,7 +170,6 @@ internal fun CustomCameraRoute(
         imageCapture?.flashMode = state.flashMode.imageCaptureFlashMode
     }
 
-    val cameraPreviewState = rememberCameraPreviewState()
     CameraPreviewBindingEffect(
         state = cameraPreviewState,
         lensFacing = state.lensFacing,

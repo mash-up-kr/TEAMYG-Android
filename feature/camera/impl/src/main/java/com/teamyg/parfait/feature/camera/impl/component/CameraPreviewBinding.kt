@@ -5,6 +5,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraState
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.animate
@@ -97,6 +99,9 @@ internal fun CameraPreviewBindingEffect(
             }
             val shouldBindUltraWide = shouldUseUltraWideCamera && ultraWide != null
 
+            // 뷰가 아직 크기·디스플레이를 못 받았으면 null 이다. 그때는 ViewPort 없이 바인딩한다
+            val viewPort: ViewPort? = state.previewView.viewPort
+
             val lensSelector: CameraSelector = CameraSelector
                 .Builder()
                 .requireLensFacing(lensFacing.cameraSelectorLens)
@@ -108,6 +113,7 @@ internal fun CameraPreviewBindingEffect(
                     selector = cameraSelectorOf(cameraId = ultraWide.cameraId),
                     preview = preview,
                     imageCapture = imageCapture,
+                    viewPort = viewPort,
                 )
             } else {
                 null
@@ -119,7 +125,9 @@ internal fun CameraPreviewBindingEffect(
                 selector = lensSelector,
                 preview = preview,
                 imageCapture = imageCapture,
+                viewPort = viewPort,
             )
+            state.isViewPortApplied = newCamera != null && viewPort != null
             if (newCamera == null) {
                 // 새 스트림이 오지 않으니 덮개를 바로 걷는다
                 state.transition = null
@@ -224,15 +232,26 @@ private fun ProcessCameraProvider.bindUseCases(
     selector: CameraSelector,
     preview: Preview,
     imageCapture: ImageCapture,
+    viewPort: ViewPort?,
 ): Camera? {
     unbindAll()
     return runCatching {
-        bindToLifecycle(
-            lifecycleOwner,
-            selector,
-            preview,
-            imageCapture,
-        )
+        if (viewPort != null) {
+            val useCaseGroup = UseCaseGroup
+                .Builder()
+                .setViewPort(viewPort)
+                .addUseCase(preview)
+                .addUseCase(imageCapture)
+                .build()
+            bindToLifecycle(lifecycleOwner, selector, useCaseGroup)
+        } else {
+            bindToLifecycle(
+                lifecycleOwner,
+                selector,
+                preview,
+                imageCapture,
+            )
+        }
     }.getOrNull()
 }
 

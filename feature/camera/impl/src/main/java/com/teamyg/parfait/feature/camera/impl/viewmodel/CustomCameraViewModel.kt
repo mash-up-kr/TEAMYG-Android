@@ -71,6 +71,9 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnCaptureFailed : CustomCameraIntent
 
+    /** 촬영을 기다리던 화면이 사라졌다. 결과를 알릴 화면이 없으니 셔터 잠금만 푼다 */
+    data object OnCaptureCancelled : CustomCameraIntent
+
     data object OnCancel : CustomCameraIntent
 }
 
@@ -121,6 +124,7 @@ constructor(
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
             is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
+            is CustomCameraIntent.OnCaptureCancelled -> handleOnCaptureCancelled()
             is CustomCameraIntent.OnCancel -> handleOnCancel()
             is CustomCameraIntent.OnClickFlash -> handleOnClickFlash()
         }
@@ -212,6 +216,10 @@ constructor(
     private fun handleOnCaptureFailed() {
         updateState { copy(isCapturing = false) }
         postSideEffect(CustomCameraEffect.CaptureFailed)
+    }
+
+    private fun handleOnCaptureCancelled() {
+        updateState { copy(isCapturing = false) }
     }
 
     private fun handleOnCancel() {

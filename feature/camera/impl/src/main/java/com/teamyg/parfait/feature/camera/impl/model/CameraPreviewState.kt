@@ -19,4 +19,7 @@ internal class CameraPreviewState(
 
     // 한 번 안 열린 초광각은 다시 쓰지 않는다. 안 막으면 메인 재바인딩에서 0.5x가 되살아난다
     val failedUltraWideIds: MutableSet<String> = mutableSetOf()
+
+    // 촬영은 이 값으로 크롭 기준을 고른다. false 면 ImageProxy.cropRect 가 피드에 보이는 영역이 아니다
+    var isViewPortApplied: Boolean = false
 }

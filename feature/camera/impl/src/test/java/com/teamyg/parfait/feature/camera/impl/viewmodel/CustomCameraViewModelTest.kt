@@ -314,4 +314,19 @@ class CustomCameraViewModelTest {
             assertFalse(viewModel.state.value.isCapturing)
         }
     }
+
+    @Test
+    fun captureCancelled_clearsCapturing_withoutEffect() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+            assertEquals(CustomCameraEffect.CaptureImage(File("a.jpg")), awaitItem())
+
+            viewModel.processIntent(CustomCameraIntent.OnCaptureCancelled)
+
+            assertFalse(viewModel.state.value.isCapturing)
+            expectNoEvents()
+        }
+    }
 }
