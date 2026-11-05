@@ -36,7 +36,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
-import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
+import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.parfaitToday

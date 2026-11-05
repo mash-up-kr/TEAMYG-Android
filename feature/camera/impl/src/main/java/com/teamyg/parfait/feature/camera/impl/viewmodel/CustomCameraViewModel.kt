@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.camera.impl.viewmodel
 
-import androidx.camera.core.CameraSelector
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -9,7 +8,9 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -76,7 +77,7 @@ sealed interface CustomCameraIntent : UiIntent {
 data class CustomCameraState(
     val isInitialized: Boolean = false,
     val hasPermission: Boolean = false,
-    val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
+    val lensFacing: LensFacing = LensFacing.BACK,
     val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
@@ -181,10 +182,7 @@ constructor(
                 // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
                 zoomLevels = listOf(CameraZoomLevel.ONE),
                 halfZoomSource = HalfZoomSource.NONE,
-                lensFacing = when (lensFacing) {
-                    CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
-                    else -> CameraSelector.LENS_FACING_BACK
-                },
+                lensFacing = lensFacing.flipped(),
             )
         }
     }
@@ -213,12 +211,4 @@ constructor(
     private fun handleOnCancel() {
         postSideEffect(CustomCameraEffect.Cancel)
     }
-}
-
-enum class FlashMode {
-    OFF,
-    ON,
-    ;
-
-    operator fun not(): FlashMode = if (this == ON) OFF else ON
 }

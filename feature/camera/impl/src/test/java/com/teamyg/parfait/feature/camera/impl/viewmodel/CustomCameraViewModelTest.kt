@@ -2,7 +2,9 @@ package com.teamyg.parfait.feature.camera.impl.viewmodel
 
 import app.cash.turbine.test
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -241,5 +243,14 @@ class CustomCameraViewModelTest {
     private fun CustomCameraViewModel.clickZoom(times: Int): List<CameraZoomLevel> = List(times) {
         processIntent(CustomCameraIntent.OnClickZoom)
         state.value.zoomLevel
+    }
+
+    @Test
+    fun flip_togglesLensFacing() {
+        val viewModel = createViewModel()
+
+        viewModel.processIntent(CustomCameraIntent.OnClickFlip)
+
+        assertEquals(LensFacing.FRONT, viewModel.state.value.lensFacing)
     }
 }

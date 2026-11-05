@@ -7,7 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -37,6 +36,7 @@ import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewBindingEffe
 import com.teamyg.parfait.feature.camera.impl.component.CameraTransitionEffect
 import com.teamyg.parfait.feature.camera.impl.component.CameraZoomEffect
 import com.teamyg.parfait.feature.camera.impl.component.rememberCameraPreviewState
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
 import com.teamyg.parfait.feature.camera.impl.util.saveViewfinderCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
@@ -49,7 +49,6 @@ import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
 import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,7 +110,7 @@ internal fun CustomCameraRoute(
                         return@collect
                     }
                     val file = effect.file
-                    val isFrontFacing = state.lensFacing == CameraSelector.LENS_FACING_FRONT
+                    val isFrontFacing = state.lensFacing == LensFacing.FRONT
 
                     capture.takePicture(
                         ContextCompat.getMainExecutor(context),
@@ -184,10 +183,7 @@ internal fun CustomCameraRoute(
     }
 
     LaunchedEffect(state.flashMode, imageCapture) {
-        imageCapture?.flashMode = when (state.flashMode) {
-            FlashMode.OFF -> ImageCapture.FLASH_MODE_OFF
-            FlashMode.ON -> ImageCapture.FLASH_MODE_ON
-        }
+        imageCapture?.flashMode = state.flashMode.imageCaptureFlashMode
     }
 
     val cameraPreviewState = rememberCameraPreviewState()

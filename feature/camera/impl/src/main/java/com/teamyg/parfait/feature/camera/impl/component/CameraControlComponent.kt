@@ -13,7 +13,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleBut
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
+import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 
 @Composable
 internal fun CameraControlComponent(

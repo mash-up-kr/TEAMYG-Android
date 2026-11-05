@@ -25,6 +25,7 @@ import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
 import com.teamyg.parfait.feature.camera.impl.model.CameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import com.teamyg.parfait.feature.camera.impl.model.CapturedFrame
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
 import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
 import kotlinx.coroutines.delay
@@ -44,7 +45,7 @@ internal fun rememberCameraPreviewState(): CameraPreviewState {
 @Composable
 internal fun CameraPreviewBindingEffect(
     state: CameraPreviewState,
-    lensFacing: Int,
+    lensFacing: LensFacing,
     shouldUseUltraWideCamera: Boolean,
     hasPermission: Boolean,
     onImageCaptureReady: (ImageCapture) -> Unit,
@@ -89,7 +90,7 @@ internal fun CameraPreviewBindingEffect(
                 .setJpegQuality(MAX_JPEG_QUALITY)
                 .build()
 
-            val ultraWide = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+            val ultraWide = if (lensFacing == LensFacing.BACK) {
                 cameraProvider.findBackUltraWideCamera()?.takeIf { it.cameraId !in state.failedUltraWideIds }
             } else {
                 null
@@ -98,7 +99,7 @@ internal fun CameraPreviewBindingEffect(
 
             val lensSelector: CameraSelector = CameraSelector
                 .Builder()
-                .requireLensFacing(lensFacing)
+                .requireLensFacing(lensFacing.cameraSelectorLens)
                 .build()
 
             val ultraWideCamera = if (shouldBindUltraWide) {
