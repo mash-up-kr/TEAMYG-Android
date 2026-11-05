@@ -7,12 +7,12 @@ import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
 class CustomCameraViewModelTest {
     private fun createViewModel() = CustomCameraViewModel(

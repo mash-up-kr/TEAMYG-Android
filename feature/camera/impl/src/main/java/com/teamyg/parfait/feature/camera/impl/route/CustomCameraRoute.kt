@@ -30,6 +30,13 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
+import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
+import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewBindingEffect
 import com.teamyg.parfait.feature.camera.impl.component.CameraTransitionEffect
@@ -41,14 +48,7 @@ import com.teamyg.parfait.feature.camera.impl.util.captureViewfinder
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
-import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
-import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
-import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
-import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
-import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -190,7 +190,6 @@ internal fun CustomCameraRoute(
 
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
     // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
-    // Box 안에 YGToastHost 를 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
     YGScaffoldV2 { _ ->
         CustomCameraScreen(
             state = state,

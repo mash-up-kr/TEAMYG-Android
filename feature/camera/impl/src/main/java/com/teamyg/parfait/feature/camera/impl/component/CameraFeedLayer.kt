@@ -28,8 +28,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,7 +57,6 @@ private val VIEWFINDER_FRAME_PADDING = 10.dp
 
 /**
  * 단일 카메라 피드를 한 번 기록해 두 번 그린다.
- * 1. 전체를 블러로 그리고 2. 딤 스크림을 얹은 뒤 3. 뷰파인더 영역만 원본으로 복원한다.
  * 블러가 지원되지 않는 버전에서는 스크림만 적용한다.
  */
 @Composable

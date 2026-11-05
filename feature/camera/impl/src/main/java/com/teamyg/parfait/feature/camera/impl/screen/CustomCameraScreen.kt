@@ -6,12 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -21,25 +21,25 @@ import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toRect
+import com.teamyg.parfait.core.designsystem.R as DesignSystemR
+import com.teamyg.parfait.core.designsystem.component.ygcamerazoombutton.YGCameraZoomButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
-import com.teamyg.parfait.core.designsystem.component.ygcamerazoombutton.YGCameraZoomButton
 import com.teamyg.parfait.core.designsystem.component.ygtext.YGDate
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
-import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
-import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
+import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.model.FlashMode
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
-import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
-import com.teamyg.parfait.domain.model.parfaitToday
+import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
 import kotlinx.datetime.format
 
 @Composable
@@ -126,8 +126,9 @@ private fun CameraContent(
                     onClick = onClickCancel,
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp)) // 10.dp가 없어서 넣었습니다
+            Spacer(modifier = Modifier.height(10.dp)) // 디자인 토큰에 10dp gap 이 없다
             // 뷰파인더 자리는 위치만 통지한다. 선명 영역 렌더링은 cameraFeed가 맡는다.
+            // Box 안에 YGToastHost 를 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
