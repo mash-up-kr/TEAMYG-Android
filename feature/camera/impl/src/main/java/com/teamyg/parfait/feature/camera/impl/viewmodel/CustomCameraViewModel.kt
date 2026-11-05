@@ -82,6 +82,7 @@ data class CustomCameraState(
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
     val flashMode: FlashMode = FlashMode.OFF,
+    val isCapturing: Boolean = false,
 ) : UiState {
     val isZoomButtonVisible: Boolean
         get() = zoomLevels.size > 1
@@ -196,15 +197,20 @@ constructor(
     }
 
     private fun handleOnClickShutter() {
+        if (state.value.isCapturing) return
+
+        updateState { copy(isCapturing = true) }
         postSideEffect(CustomCameraEffect.CaptureImage(file = createCameraCacheFileUseCase()))
     }
 
     private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
+        updateState { copy(isCapturing = false) }
         val uri = createCameraCacheUriUseCase(file = intent.file)
         postSideEffect(CustomCameraEffect.NavigateToConfirm(uri = uri))
     }
 
     private fun handleOnCaptureFailed() {
+        updateState { copy(isCapturing = false) }
         postSideEffect(CustomCameraEffect.CaptureFailed)
     }
 

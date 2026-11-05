@@ -5,8 +5,10 @@ import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,8 +16,12 @@ import kotlin.test.assertTrue
 
 class CustomCameraViewModelTest {
     private fun createViewModel() = CustomCameraViewModel(
-        createCameraCacheFileUseCase = mockk(),
-        createCameraCacheUriUseCase = mockk(),
+        createCameraCacheFileUseCase = mockk {
+            every { this@mockk() } returns File("a.jpg")
+        },
+        createCameraCacheUriUseCase = mockk {
+            every { this@mockk(file = any()) } returns "content://a"
+        },
     )
 
     @Test
@@ -252,5 +258,60 @@ class CustomCameraViewModelTest {
         viewModel.processIntent(CustomCameraIntent.OnClickFlip)
 
         assertEquals(LensFacing.FRONT, viewModel.state.value.lensFacing)
+    }
+
+    @Test
+    fun shutter_postsCaptureImage_andMarksCapturing() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+
+            assertEquals(CustomCameraEffect.CaptureImage(File("a.jpg")), awaitItem())
+            assertTrue(viewModel.state.value.isCapturing)
+        }
+    }
+
+    @Test
+    fun shutter_whileCapturing_ignored() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+
+            assertEquals(CustomCameraEffect.CaptureImage(File("a.jpg")), awaitItem())
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun captureSaved_clearsCapturing_andNavigates() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+            awaitItem()
+
+            viewModel.processIntent(CustomCameraIntent.OnCaptureSaved(File("a.jpg")))
+
+            assertEquals(CustomCameraEffect.NavigateToConfirm("content://a"), awaitItem())
+            assertFalse(viewModel.state.value.isCapturing)
+        }
+    }
+
+    @Test
+    fun captureFailed_clearsCapturing_andPostsFailed() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(CustomCameraIntent.OnClickShutter)
+            awaitItem()
+
+            viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
+
+            assertEquals(CustomCameraEffect.CaptureFailed, awaitItem())
+            assertFalse(viewModel.state.value.isCapturing)
+        }
     }
 }
