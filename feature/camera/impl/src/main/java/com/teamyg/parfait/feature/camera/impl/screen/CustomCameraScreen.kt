@@ -150,8 +150,8 @@ private fun CameraContent(
 
 private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameterProvider<CustomCameraState>() {
     override val entries = listOf(
-        "noPermission" to CustomCameraState(isInit = true, hasPermission = false),
-        "granted" to CustomCameraState(isInit = true, hasPermission = true),
+        "permissionDenied" to CustomCameraState(isInit = true, hasPermission = false),
+        "permissionGranted" to CustomCameraState(isInit = true, hasPermission = true),
     )
 }
 

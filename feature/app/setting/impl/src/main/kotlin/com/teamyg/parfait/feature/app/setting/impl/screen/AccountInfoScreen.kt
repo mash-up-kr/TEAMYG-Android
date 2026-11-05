@@ -154,19 +154,19 @@ private class AccountInfoPreviewParameterProvider :
             nickname = "닉네임바꾸",
             isEditing = true,
         ),
-        "editingEmptyError" to AccountInfoUiState(
+        "emptyError" to AccountInfoUiState(
             savedNickname = "대충지은랜덤닉네임",
             nickname = "",
             nicknameError = NameValidResult.Error.EmptyString,
             isEditing = true,
         ),
-        "editingSpaceError" to AccountInfoUiState(
+        "spaceAtEdgeError" to AccountInfoUiState(
             savedNickname = "대충지은랜덤닉네임",
             nickname = " 가",
             nicknameError = NameValidResult.Error.SpaceAtEdge,
             isEditing = true,
         ),
-        "submitError" to AccountInfoUiState(
+        "invalidNicknameError" to AccountInfoUiState(
             savedNickname = "대충지은랜덤닉네임",
             nickname = "닉네임바꾸",
             submitError = GlobalNicknameError.INVALID,

@@ -70,7 +70,7 @@ private class GroupNicknameFieldPreviewParameterProvider :
     override val entries = listOf(
         "default" to GroupNicknameFieldPreviewState(nickname = "닉네임"),
         "empty" to GroupNicknameFieldPreviewState(nickname = ""),
-        "invalidCharacter" to GroupNicknameFieldPreviewState(
+        "invalidCharacterError" to GroupNicknameFieldPreviewState(
             nickname = "닉네임!",
             nicknameError = NameValidResult.Error.InvalidCharacter,
         ),

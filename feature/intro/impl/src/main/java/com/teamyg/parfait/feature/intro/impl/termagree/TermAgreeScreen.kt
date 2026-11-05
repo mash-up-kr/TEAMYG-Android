@@ -220,8 +220,8 @@ private class TermAgreeScreenPreviewParameterProvider : NamedPreviewParameterPro
     )
 
     override val entries = listOf(
-        "noneAgreed" to TermAgreeState(policies = policies, isLoading = false),
-        "partiallyAgreed" to TermAgreeState(
+        "default" to TermAgreeState(policies = policies, isLoading = false),
+        "partialAgreed" to TermAgreeState(
             policies = policies,
             agreedTermsIds = setOf(TermsId(1L)),
             isLoading = false,

@@ -209,7 +209,7 @@ private class GroupSettingPreviewParameterProvider :
             isEditing = true,
             nicknameInput = "바꾼닉네임",
         ),
-        "editingError" to GroupSettingUiState(
+        "spaceAtEdgeError" to GroupSettingUiState(
             isEditing = true,
             nicknameInput = " 잘못된닉네임",
             nicknameError = NameValidResult.Error.SpaceAtEdge,

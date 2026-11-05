@@ -217,8 +217,8 @@ private fun Modifier.sideAndBottomStroke(
 
 private class ToppingBorderPanelPreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
     override val entries = listOf(
-        "closed" to false,
-        "open" to true,
+        "borderPanelClosed" to false,
+        "borderPanelOpen" to true,
     )
 }
 

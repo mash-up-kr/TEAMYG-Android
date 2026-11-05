@@ -8,7 +8,7 @@ data class YGInputNumberPreviewData(
 
 class YGInputNumberPreviewParameterProvider : NamedPreviewParameterProvider<YGInputNumberPreviewData>() {
     override val entries = listOf(
-        "unselected" to YGInputNumberPreviewData(false),
+        "default" to YGInputNumberPreviewData(false),
         "selected" to YGInputNumberPreviewData(true),
     )
 }

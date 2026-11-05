@@ -130,7 +130,7 @@ private class GroupNickNameScreenPreviewParameterProvider :
         "empty" to GroupNickNameUiState(groupName = GROUP_NAME),
         "partial" to GroupNickNameUiState(groupName = GROUP_NAME, nickName = "he"),
         "full" to GroupNickNameUiState(groupName = GROUP_NAME, nickName = "hello"),
-        "nicknameError" to GroupNickNameUiState(
+        "spaceAtEdgeError" to GroupNickNameUiState(
             groupName = GROUP_NAME,
             nickName = " hello",
             nicknameError = NameValidResult.Error.SpaceAtEdge,

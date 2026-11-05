@@ -170,9 +170,8 @@ private class GroupCreateScreenPreviewParameterProvider :
     NamedPreviewParameterProvider<GroupCreateUiState>() {
     override val entries = listOf(
         "empty" to GroupCreateUiState(""),
-        "emptyAllFields" to GroupCreateUiState("", "", null),
         "filled" to GroupCreateUiState("가나", "하이하이", 3),
-        "nickNameError" to GroupCreateUiState(
+        "spaceAtEdgeError" to GroupCreateUiState(
             "가나",
             " 하이하이",
             3,

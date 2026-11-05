@@ -57,8 +57,8 @@ internal fun InviteCodePasteBar(
 
 private class InviteCodePasteBarPreviewParameterProvider : NamedPreviewParameterProvider<String>() {
     override val entries = listOf(
-        "code" to "E54W1A",
-        "otherCode" to "WDIDCJ",
+        "withDigits" to "E54W1A",
+        "lettersOnly" to "WDIDCJ",
     )
 }
 

@@ -9,25 +9,25 @@ data class YGButtonPreviewData(
 
 class YGButtonPreviewParameterProvider : NamedPreviewParameterProvider<YGButtonPreviewData>() {
     override val entries = listOf(
-        "smallSquare" to YGButtonPreviewData(
+        YGButtonPreviewData(
             name = "SmallSquare",
             buttonType = YGButtonType.SmallSquare,
         ),
-        "mediumPrimary" to YGButtonPreviewData(
+        YGButtonPreviewData(
             name = "Medium Primary",
             buttonType = YGButtonType.Medium.Primary,
         ),
-        "mediumSecondary" to YGButtonPreviewData(
+        YGButtonPreviewData(
             name = "Medium Secondary",
             buttonType = YGButtonType.Medium.Secondary,
         ),
-        "mediumTransparency" to YGButtonPreviewData(
+        YGButtonPreviewData(
             name = "Medium Transparency",
             buttonType = YGButtonType.Medium.Transparency,
         ),
-        "large" to YGButtonPreviewData(
+        YGButtonPreviewData(
             name = "Large",
             buttonType = YGButtonType.Large,
         ),
-    )
+    ).map { it.name to it }
 }
