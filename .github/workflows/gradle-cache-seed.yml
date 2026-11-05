@@ -46,3 +46,11 @@ jobs:
         continue-on-error: true
         run: |
           ./gradlew test ktlintCheck assembleAllDebugAndroidTest --continue
+
+      # ui-diff.yml 용. Roborazzi 태스크는 test 와 한 호출에 섞을 수 없다.
+      # compare 는 record 이미지를 입력으로 받는다.
+      - name: Warm UI diff caches
+        continue-on-error: true
+        run: |
+          ./gradlew recordRoborazziDebug --continue
+          ./gradlew compareRoborazziDebug --continue
