@@ -119,4 +119,19 @@ class PictureConfirmViewModelTest {
             assertEquals(PictureConfirmEffect.QuitToCanvas, awaitItem())
         }
     }
+
+    @Test
+    fun close_thenDismiss_hidesQuitDialogWithoutEffect() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(PictureConfirmIntent.OnClickClose)
+            assertTrue(viewModel.state.value.showQuitDialog)
+
+            viewModel.processIntent(PictureConfirmIntent.OnDismissQuit)
+
+            assertFalse(viewModel.state.value.showQuitDialog)
+            expectNoEvents()
+        }
+    }
 }

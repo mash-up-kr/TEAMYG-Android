@@ -19,7 +19,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  * 크롭 영역을 계산할 수 없으면 피드에 보이던 영역을, 그것도 없으면 전체 프레임을 저장한다.
  *
  * @param isViewPortApplied 촬영한 [ImageCapture]가 ViewPort 와 함께 바인딩됐는지. 그래야 `cropRect`가 피드에 보이는 영역이다.
- * @throws Exception 촬영·디코드·저장 중 하나라도 실패하면 그 예외를 그대로 던진다.
  */
 internal suspend fun ImageCapture.captureViewfinder(
     file: File,
