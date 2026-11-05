@@ -78,6 +78,7 @@ fun YGCustomTheme(
         LocalYGTypography provides YGTypographyDefaults.YGDefaultTypography,
         LocalYGShapes provides YGShapesDefaults.YGDefaultShapes,
         LocalYGLayout provides YGLayoutDefaults.YGDefaultLayout,
-        content = content,
-    )
+    ) {
+        ProvideFixedFontScale(content = content)
+    }
 }
