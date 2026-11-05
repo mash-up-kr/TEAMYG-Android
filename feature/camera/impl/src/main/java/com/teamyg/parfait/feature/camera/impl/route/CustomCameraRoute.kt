@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -204,13 +205,17 @@ internal fun CustomCameraRoute(
             onViewfinderRectChange = { viewfinderRect = it },
             cameraFeed = {
                 CameraFeedLayer(
-                    previewView = cameraPreviewState.previewView,
-                    camera = cameraPreviewState.camera,
                     viewfinderRect = { viewfinderRect },
                     transition = cameraPreviewState.transition,
                     onFeedRectChange = { feedRect = it },
+                    onTapViewfinder = cameraPreviewState::focusAt,
                     modifier = Modifier.fillMaxSize(),
-                )
+                ) {
+                    AndroidView(
+                        factory = { cameraPreviewState.previewView },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             },
         )
     }

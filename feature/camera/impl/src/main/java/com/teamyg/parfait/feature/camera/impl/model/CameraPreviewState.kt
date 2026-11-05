@@ -1,11 +1,13 @@
 package com.teamyg.parfait.feature.camera.impl.model
 
 import androidx.camera.core.Camera
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 
 @Stable
 internal class CameraPreviewState(
@@ -22,4 +24,11 @@ internal class CameraPreviewState(
 
     // 촬영은 이 값으로 크롭 기준을 고른다. false 면 ImageProxy.cropRect 가 피드에 보이는 영역이 아니다
     var isViewPortApplied: Boolean = false
+
+    /** [offset]은 [previewView] 기준 좌표다 */
+    fun focusAt(offset: Offset) {
+        val target = camera ?: return
+        val point = previewView.meteringPointFactory.createPoint(offset.x, offset.y)
+        target.cameraControl.startFocusAndMetering(FocusMeteringAction.Builder(point).build())
+    }
 }

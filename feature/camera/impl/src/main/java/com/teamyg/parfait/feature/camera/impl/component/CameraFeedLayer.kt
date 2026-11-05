@@ -1,23 +1,23 @@
 package com.teamyg.parfait.feature.camera.impl.component
 
 import android.os.Build
-import androidx.camera.core.Camera
-import androidx.camera.core.FocusMeteringAction
-import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -26,19 +26,27 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onLayoutRectChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toRect
-import androidx.compose.ui.viewinterop.AndroidView
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
+import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import kotlin.math.PI
 import kotlin.math.sin
@@ -54,103 +62,114 @@ private val VIEWFINDER_BORDER_WIDTH = 1.dp
 private val VIEWFINDER_CORNER_LENGTH = 18.dp
 private val VIEWFINDER_CORNER_WIDTH = 2.dp
 private val VIEWFINDER_FRAME_PADDING = 10.dp
+private val VIEWFINDER_COLOR = YGAtomicColors.Gray.Gray500
 
 /**
- * 단일 카메라 피드를 한 번 기록해 두 번 그린다.
+ * 카메라 피드를 한 번 기록해 두 번 그린다 — 뷰파인더 밖은 흐리게, 안은 원본으로.
  * 블러가 지원되지 않는 버전에서는 스크림만 적용한다.
  */
 @Composable
 internal fun CameraFeedLayer(
-    previewView: PreviewView,
-    camera: Camera?,
     viewfinderRect: () -> Rect?,
     transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
+    onTapViewfinder: (Offset) -> Unit,
     modifier: Modifier = Modifier,
+    feed: @Composable () -> Unit,
 ) {
     val contentLayer = rememberGraphicsLayer()
     val blurLayer = rememberGraphicsLayer()
+    val currentOnTapViewfinder by rememberUpdatedState(onTapViewfinder)
 
     Box(
         modifier = modifier
             .onLayoutRectChanged(debounceMillis = 0) { onFeedRectChange(it.boundsInRoot.toRect()) }
-            .drawWithCache {
-                val radius = BLUR_RADIUS.toPx()
-                if (IS_BLUR_SUPPORTED) {
-                    blurLayer.renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                }
-                val borderStroke = Stroke(width = VIEWFINDER_BORDER_WIDTH.toPx())
-                val cornerLength = VIEWFINDER_CORNER_LENGTH.toPx()
-                val cornerWidth = VIEWFINDER_CORNER_WIDTH.toPx()
-                val framePadding = VIEWFINDER_FRAME_PADDING.toPx()
-
-                onDrawWithContent {
-                    contentLayer.record { this@onDrawWithContent.drawContent() }
-
-                    if (IS_BLUR_SUPPORTED) {
-                        blurLayer.record { drawLayer(contentLayer) }
-                        drawLayer(blurLayer)
-                    } else {
-                        drawLayer(contentLayer)
-                    }
-
-                    drawRect(color = YGAtomicColors.Transparency.Black25)
-
-                    viewfinderRect()?.let { rect ->
-                        clipRect(
-                            left = rect.left,
-                            top = rect.top,
-                            right = rect.right,
-                            bottom = rect.bottom,
-                        ) {
-                            drawLayer(contentLayer)
-                        }
-                        drawRect(
-                            color = YGAtomicColors.Gray.Gray500,
-                            topLeft = rect.topLeft,
-                            size = rect.size,
-                            style = borderStroke,
-                        )
-
-                        val frame = rect.deflate(framePadding)
-                        val color = YGAtomicColors.Gray.Gray500
-                        val topLeft = Offset(frame.left, frame.top)
-                        val topRight = Offset(frame.right, frame.top)
-                        val bottomLeft = Offset(frame.left, frame.bottom)
-                        val bottomRight = Offset(frame.right, frame.bottom)
-                        val right = Offset(cornerLength, 0f)
-                        val down = Offset(0f, cornerLength)
-                        drawLine(color, topLeft, topLeft + right, cornerWidth)
-                        drawLine(color, topLeft, topLeft + down, cornerWidth)
-                        drawLine(color, topRight - right, topRight, cornerWidth)
-                        drawLine(color, topRight, topRight + down, cornerWidth)
-                        drawLine(color, bottomLeft, bottomLeft + right, cornerWidth)
-                        drawLine(color, bottomLeft - down, bottomLeft, cornerWidth)
-                        drawLine(color, bottomRight - right, bottomRight, cornerWidth)
-                        drawLine(color, bottomRight - down, bottomRight, cornerWidth)
-                    }
-                }
-            }.pointerInput(camera, previewView) {
+            .viewfinderScrim(
+                contentLayer = contentLayer,
+                blurLayer = blurLayer,
+                viewfinderRect = viewfinderRect,
+            ).pointerInput(Unit) {
                 detectTapGestures { offset ->
-                    val focusTarget = camera ?: return@detectTapGestures
-                    if (viewfinderRect()?.contains(offset) != true) return@detectTapGestures
-
-                    val point = previewView.meteringPointFactory.createPoint(offset.x, offset.y)
-                    val action = FocusMeteringAction.Builder(point).build()
-
-                    focusTarget.cameraControl.startFocusAndMetering(action)
+                    if (viewfinderRect()?.contains(offset) == true) currentOnTapViewfinder(offset)
                 }
             },
     ) {
-        AndroidView(
-            factory = { previewView },
-            modifier = Modifier.fillMaxSize(),
-        )
+        feed()
         CameraTransitionCover(
             transition = transition,
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+private fun Modifier.viewfinderScrim(
+    contentLayer: GraphicsLayer,
+    blurLayer: GraphicsLayer,
+    viewfinderRect: () -> Rect?,
+): Modifier = drawWithCache {
+    val radius = BLUR_RADIUS.toPx()
+    if (IS_BLUR_SUPPORTED) {
+        blurLayer.renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
+    }
+    val borderStroke = Stroke(width = VIEWFINDER_BORDER_WIDTH.toPx())
+    val cornerLength = VIEWFINDER_CORNER_LENGTH.toPx()
+    val cornerWidth = VIEWFINDER_CORNER_WIDTH.toPx()
+    val framePadding = VIEWFINDER_FRAME_PADDING.toPx()
+
+    onDrawWithContent {
+        contentLayer.record { this@onDrawWithContent.drawContent() }
+
+        if (IS_BLUR_SUPPORTED) {
+            blurLayer.record { drawLayer(contentLayer) }
+            drawLayer(blurLayer)
+        } else {
+            drawLayer(contentLayer)
+        }
+
+        drawRect(color = YGAtomicColors.Transparency.Black25)
+
+        val rect = viewfinderRect() ?: return@onDrawWithContent
+        clipRect(
+            left = rect.left,
+            top = rect.top,
+            right = rect.right,
+            bottom = rect.bottom,
+        ) {
+            drawLayer(contentLayer)
+        }
+        drawRect(
+            color = VIEWFINDER_COLOR,
+            topLeft = rect.topLeft,
+            size = rect.size,
+            style = borderStroke,
+        )
+        drawViewfinderCorners(
+            frame = rect.deflate(framePadding),
+            cornerLength = cornerLength,
+            cornerWidth = cornerWidth,
+        )
+    }
+}
+
+private fun DrawScope.drawViewfinderCorners(
+    frame: Rect,
+    cornerLength: Float,
+    cornerWidth: Float,
+) {
+    val topLeft = Offset(frame.left, frame.top)
+    val topRight = Offset(frame.right, frame.top)
+    val bottomLeft = Offset(frame.left, frame.bottom)
+    val bottomRight = Offset(frame.right, frame.bottom)
+    val right = Offset(cornerLength, 0f)
+    val down = Offset(0f, cornerLength)
+    drawLine(VIEWFINDER_COLOR, topLeft, topLeft + right, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, topLeft, topLeft + down, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, topRight - right, topRight, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, topRight, topRight + down, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, bottomLeft, bottomLeft + right, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, bottomLeft - down, bottomLeft, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, bottomRight - right, bottomRight, cornerWidth)
+    drawLine(VIEWFINDER_COLOR, bottomRight - down, bottomRight, cornerWidth)
 }
 
 /**
@@ -195,5 +214,49 @@ private fun CameraTransitionCover(
                     cameraDistance = TRANSITION_CAMERA_DISTANCE * density
                 }.blur(radius = TRANSITION_BLUR_RADIUS, edgeTreatment = BlurredEdgeTreatment.Rectangle),
         )
+    }
+}
+
+private class CameraFeedLayerPreviewParameterProvider : PreviewParameterProvider<CameraTransition?> {
+    override val values: Sequence<CameraTransition?>
+        get() = sequenceOf(
+            null,
+            CameraTransition(frame = ImageBitmap(width = 9, height = 16), isFlip = false),
+        )
+}
+
+@YGPreview
+@Composable
+private fun PreviewCameraFeedLayer(
+    @PreviewParameter(CameraFeedLayerPreviewParameterProvider::class) transition: CameraTransition?,
+) = PreviewBox {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val inset = with(LocalDensity.current) { 24.dp.toPx() }
+        val width = constraints.maxWidth.toFloat()
+        val height = constraints.maxHeight.toFloat()
+        val viewfinderRect = Rect(
+            left = inset,
+            top = inset * 4,
+            right = width - inset,
+            bottom = height - inset * 6,
+        )
+
+        CameraFeedLayer(
+            viewfinderRect = { viewfinderRect },
+            transition = transition,
+            onFeedRectChange = {},
+            onTapViewfinder = {},
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(YGAtomicColors.Gray.White, YGAtomicColors.Gray.Gray500),
+                        ),
+                    ),
+            )
+        }
     }
 }
