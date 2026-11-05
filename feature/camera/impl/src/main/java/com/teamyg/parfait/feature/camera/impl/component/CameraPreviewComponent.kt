@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.teamyg.parfait.feature.camera.impl.model.AppliedZoom
@@ -102,22 +103,24 @@ internal fun CameraPreviewViewComponent(
                 .requireLensFacing(lensFacing)
                 .build()
 
-            fun bind(selector: CameraSelector): Camera? {
-                cameraProvider.unbindAll()
-                return runCatching {
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        selector,
-                        preview,
-                        imageCapture,
-                    )
-                }.getOrNull()
+            val ultraWideCamera = if (bindsUltraWide) {
+                cameraProvider.bindUseCases(
+                    lifecycleOwner = lifecycleOwner,
+                    selector = cameraSelectorOf(cameraId = ultraWide.cameraId),
+                    preview = preview,
+                    imageCapture = imageCapture,
+                )
+            } else {
+                null
             }
-
-            val ultraWideCamera = if (bindsUltraWide) bind(cameraSelectorOf(cameraId = ultraWide.cameraId)) else null
             val ultraWideFailed = bindsUltraWide && ultraWideCamera == null
             if (ultraWideFailed) failedUltraWideIds += ultraWide.cameraId
-            val newCamera = ultraWideCamera ?: bind(lensSelector)
+            val newCamera = ultraWideCamera ?: cameraProvider.bindUseCases(
+                lifecycleOwner = lifecycleOwner,
+                selector = lensSelector,
+                preview = preview,
+                imageCapture = imageCapture,
+            )
             if (newCamera == null) {
                 // 새 스트림이 오지 않으니 덮개를 바로 걷는다
                 transitionState.value = null
@@ -209,6 +212,23 @@ internal fun CameraPreviewViewComponent(
         camera = cameraState,
         transition = transitionState,
     )
+}
+
+private fun ProcessCameraProvider.bindUseCases(
+    lifecycleOwner: LifecycleOwner,
+    selector: CameraSelector,
+    preview: Preview,
+    imageCapture: ImageCapture,
+): Camera? {
+    unbindAll()
+    return runCatching {
+        bindToLifecycle(
+            lifecycleOwner,
+            selector,
+            preview,
+            imageCapture,
+        )
+    }.getOrNull()
 }
 
 private const val MAX_JPEG_QUALITY = 100
