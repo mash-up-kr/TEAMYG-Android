@@ -7767,14 +7767,6 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결
 - **해소 메모**: 앱 측 잠정 규칙 — 텍스트 POST는 자동 재시도하지 않고 연타를 막는다. 서버 멱등 키가 생기면 재검토한다.
 
-### [2026-10-25] 앱이 `BACKGROUND`·`TEXT` 푸시 type을 모른다
-
-- **ID**: OQ-P-445
-- **출처**: [notification.md](../api/notification.md) 「이 계약이 앱에 요구하는 것」 · 서버 `NotificationMessageFactory.backgroundChanged`·`textPlaced`
-- **항목**: 서버는 `data.type`을 5종(`TOPPING`·`BACKGROUND`·`TEXT`·`REMIND_AM`·`REMIND_PM`) 보낸다. 앱 `PushNotificationType`에는 `BACKGROUND`·`TEXT`가 없다. 라우팅은 `route=canvas`로 맞게 되지만 `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로 고정해 `APP_PUSH_OPENED` 분석에서 배경·텍스트 알림 탭이 토핑으로 집계된다.
-- **상태**: 미해결
-- **해소 메모**: enum에 두 값을 더하고 `AddTopping`이 받은 type을 들게 할지 정한다.
-
 ### [2026-10-25] `TEXT` 알림이 텍스트 원문 스냅숏을 보낸다
 
 - **ID**: OQ-P-446
