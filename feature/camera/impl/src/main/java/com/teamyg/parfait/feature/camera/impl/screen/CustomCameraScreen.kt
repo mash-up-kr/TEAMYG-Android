@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.camera.impl.screen
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -30,6 +34,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
@@ -62,6 +67,7 @@ internal fun CustomCameraScreen(
             flashMode = state.flashMode,
             zoomLevel = state.zoomLevel,
             isZoomButtonVisible = state.isZoomButtonVisible,
+            isCapturing = state.isCapturing,
             onClickShutter = onClickShutter,
             onClickFlip = onClickFlip,
             onClickFlash = onClickFlash,
@@ -87,6 +93,7 @@ private fun CameraContent(
     flashMode: FlashMode,
     zoomLevel: CameraZoomLevel,
     isZoomButtonVisible: Boolean,
+    isCapturing: Boolean,
     onClickShutter: () -> Unit,
     onClickFlip: () -> Unit,
     onClickFlash: () -> Unit,
@@ -98,6 +105,10 @@ private fun CameraContent(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         cameraFeed()
+        ShutterFlash(
+            isCapturing = isCapturing,
+            modifier = Modifier.fillMaxSize(),
+        )
 
         Column(
             modifier = Modifier
@@ -165,6 +176,31 @@ private fun CameraContent(
         }
     }
 }
+
+/**
+ * 셔터를 누른 순간 화면을 한 번 깜빡여 촬영이 들어갔음을 알린다. 저장이 끝날 때까지 1초 남짓 걸려서다.
+ */
+@Composable
+private fun ShutterFlash(
+    isCapturing: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(isCapturing) {
+        if (!isCapturing) return@LaunchedEffect
+        alpha.snapTo(SHUTTER_FLASH_ALPHA)
+        alpha.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = SHUTTER_FLASH_MILLIS))
+    }
+
+    Box(
+        modifier = modifier.drawBehind {
+            drawRect(color = YGAtomicColors.Gray.Black, alpha = alpha.value)
+        },
+    )
+}
+
+private const val SHUTTER_FLASH_ALPHA = 0.6f
+private const val SHUTTER_FLASH_MILLIS = 200
 
 private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameterProvider<CustomCameraState>() {
     override val entries = listOf(
