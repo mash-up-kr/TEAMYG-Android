@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
             analyticsLogger.logEvent(
                 AnalyticsEvent(
                     type = AnalyticsEventType.APP_PUSH_OPENED,
-                    params = mapOf("type" to type.name),
+                    params = mapOf("type" to type),
                 ),
             )
         }

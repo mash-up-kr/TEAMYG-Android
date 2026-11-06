@@ -16,7 +16,7 @@ class PushDeepLinkIntentTest {
         val result = pushIntent(flags = FLAGS_FRESH_TAP).toPushDeepLinkOrNull()
 
         // Then
-        assertEquals(PushDeepLink.AddTopping(groupId = 86L), result)
+        assertEquals(PushDeepLink.AddTopping(groupId = 86L, type = "TOPPING"), result)
     }
 
     @Test
@@ -34,7 +34,7 @@ class PushDeepLinkIntentTest {
     fun mapToPushDeepLinkOrNull_toppingPayload_readsTheGroupId() {
         val data = mapOf("route" to "canvas", "groupId" to "34", "type" to "TOPPING")
 
-        assertEquals(PushDeepLink.AddTopping(groupId = 34L), data.toPushDeepLinkOrNull())
+        assertEquals(PushDeepLink.AddTopping(groupId = 34L, type = "TOPPING"), data.toPushDeepLinkOrNull())
     }
 
     @Test
