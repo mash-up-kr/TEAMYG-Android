@@ -89,7 +89,6 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 | `app_setting_notification_tapped` | — | `S-001` 설정에서 "알림 설정" 항목 탭 |
 | `app_notification_setting_changed` | `type`: `"canvas"` / `"activity"`, `enabled`: `"true"` / `"false"` | `S-105` 스위치 변경이 저장까지 성공했을 때. `enabled`는 변경 후 값이고, 저장이 실패해 되돌아간 변경은 찍지 않는다 |
 | `app_notification_device_settings_tapped` | — | `S-105` 기기 알림이 꺼져 있을 때 보이는 안내 카드의 "설정으로 이동" 탭 |
-| `app_notification_back_tapped` | — | `S-105` 상단바 뒤로가기 아이콘 또는 시스템 뒤로가기 |
 
 ### canvas
 

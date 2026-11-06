@@ -351,20 +351,6 @@ class NotificationSettingViewModelTest {
     }
 
     @Test
-    fun clickBack_logsBackTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 알림 설정 화면
-        val viewModel = viewModel()
-
-        // When 뒤로가기를 누른다
-        viewModel.processIntent(NotificationSettingIntent.ClickBack)
-
-        // Then 뒤로가기 이벤트가 나간다
-        verify(exactly = 1) {
-            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_BACK_TAPPED))
-        }
-    }
-
-    @Test
     fun refresh_reloadsSettingAndEndsRefreshing() = runTest(mainDispatcherRule.dispatcher) {
         // Given 처음엔 모두 꺼져 있다가 서버에서 캔버스 알림이 켜진 상태
         val viewModel = viewModel()

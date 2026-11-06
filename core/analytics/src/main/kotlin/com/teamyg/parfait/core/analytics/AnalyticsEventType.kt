@@ -19,7 +19,6 @@ enum class AnalyticsEventType(
         eventId = "S-105-02",
         eventName = "app_notification_device_settings_tapped",
     ),
-    APP_NOTIFICATION_BACK_TAPPED(eventId = "S-105-03", eventName = "app_notification_back_tapped"),
 
     CANVAS_CAMERA_RETAKE_TAPPED(eventId = "C-101-01", eventName = "canvas_camera_retake_tapped"),
     CANVAS_CAMERA_PHOTO_SELECTED(eventId = "C-102-01", eventName = "canvas_camera_photo_selected"),
