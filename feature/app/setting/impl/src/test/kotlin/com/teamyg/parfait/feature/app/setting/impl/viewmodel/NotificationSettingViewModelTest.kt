@@ -349,18 +349,4 @@ class NotificationSettingViewModelTest {
             analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED))
         }
     }
-
-    @Test
-    fun clickBack_logsBackTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
-        // Given 알림 설정 화면
-        val viewModel = viewModel()
-
-        // When 뒤로가기를 누른다
-        viewModel.processIntent(NotificationSettingIntent.ClickBack)
-
-        // Then 뒤로가기 이벤트가 나간다
-        verify(exactly = 1) {
-            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_BACK_TAPPED))
-        }
-    }
 }

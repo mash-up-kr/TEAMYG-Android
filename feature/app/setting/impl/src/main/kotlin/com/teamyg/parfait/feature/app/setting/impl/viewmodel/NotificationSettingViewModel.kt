@@ -75,7 +75,7 @@ constructor(
 
     override fun processIntent(intent: NotificationSettingIntent) {
         when (intent) {
-            NotificationSettingIntent.ClickBack -> handleClickBack()
+            NotificationSettingIntent.ClickBack -> postSideEffect(NotificationSettingSideEffect.NavigateBack)
 
             NotificationSettingIntent.ClickOpenDeviceSettings -> handleClickOpenDeviceSettings()
 
@@ -100,11 +100,6 @@ constructor(
                 failureMessage = "활동 알림 설정 변경에 실패했다",
             )
         }
-    }
-
-    private fun handleClickBack() {
-        analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_NOTIFICATION_BACK_TAPPED))
-        postSideEffect(NotificationSettingSideEffect.NavigateBack)
     }
 
     private fun handleClickOpenDeviceSettings() {
