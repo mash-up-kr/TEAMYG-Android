@@ -73,7 +73,7 @@ tags: [adr, parfait]
 > | `onNewToken`이 `TODO("서버에 FCM 토큰 전송")` | `onNewToken`이 로그만 남긴다 — **등록 표면(`NotificationRemoteDataSource`, PR #437)이 이미 있는데 부르지 않는다**(OQ-P-341 ②) |
 >
 > **함께 들어온 것은 딥링크 축**이다(#446). 이것은 철회 전에 없던 새 결정이라 위 표에 짝이 없다 —
-> `:domain`의 `PushDeepLink`(sealed) · `PushNotificationType` · `PushDeepLinkEventBus`와 `:data`의
+> `:domain`의 `PushDeepLink`(sealed) · `PushDeepLinkEventBus`와 `:data`의
 > `PushDeepLinkEventBusImpl`(`Channel(CONFLATED)`), `app`의 `PushDeepLinkParser`·`toPushDeepLinkOrNull`이다.
 > **세션 종료 이동의 구조를 그대로 재사용한다**(도메인 인터페이스 + `:data` 채널 구현 + 앱 루트 단일
 > 수집, [ADR-0021](0021-token-refresh-forced-logout.md)) — 그래서 별도 ADR을 만들지 않고 여기 적는다.

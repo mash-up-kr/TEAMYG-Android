@@ -438,3 +438,6 @@ conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인
 
 ## [2026-11-04] change | PR 스크린샷 비교 CI 문서
 ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘트 확인으로
+
+## [2026-11-06] change | 푸시 type 서버 값 그대로 분석
+`PushNotificationType` enum 제거, `PushDeepLink.type: String?` · `APP_PUSH_OPENED` 가 `data.type` 을 가공 없이 기록 · OQ-P-445 해소

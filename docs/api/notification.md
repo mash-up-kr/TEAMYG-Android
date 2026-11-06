@@ -274,8 +274,7 @@ Outbox 알림과 마찬가지로 `notification` 블록과 `data` 블록이 함�
 `route=group`(그룹 목록)이다. **Outbox 알림 셋의 `route=canvas` + `groupId`·`date`와 키 구성이 다르므로**, 소비 측은
 `groupId`·`date`가 항상 있다고 전제하면 안 된다.
 
-✅ **앱이 이 두 값을 이미 안다.** `PushNotificationType`에 `REMIND_AM`·`REMIND_PM`이,
-`PushNotificationRouteType`에 `GROUP("group")`이 있고 `PushDeepLinkParser`가 `route=group`을
+✅ **앱이 이 두 값을 이미 안다.** `PushNotificationRouteType`에 `GROUP("group")`이 있고 `type` 은 서버 문자열 그대로 `PushDeepLink.type` 에 실리며 `PushDeepLinkParser`가 `route=group`을
 `PushDeepLink.GroupList`로 접는다 — **문자열이 양쪽에서 같다.** 앱이 먼저 구현하고 서버가 나중에 따라온
 드문 자리이고(OQ-P-361), 그 근거로 적힌 "FCM 페이로드 스펙 v1 §3.1"은 서버 `ReminderType` KDoc에도
 그대로 인용돼 있다 — **문서 실물은 여전히 어느 저장소에도 없다.**
@@ -384,7 +383,7 @@ Outbox를 안 쓰는 근거를 커밋 메시지가 적는다 — 묶일 사용�
 |---|---|---|---|
 | 알림 채널 | id `parfait_default` 채널을 앱이 생성 | `FcmNotificationSender`의 `ANDROID_CHANNEL_ID` | ✅ `BaseApplication.createPushNotificationChannel` + `PUSH_NOTIFICATION_CHANNEL_ID` — **같은 문자열이다** |
 | `data` 파싱 | **알림 종류마다 키 구성이 다르다** — Outbox 셋(`TOPPING`·`BACKGROUND`·`TEXT`)은 `type`·`route`·`groupId`·`date` 넷, 리마인드는 `type`·`route` 둘. 값은 전부 문자열 | `NotificationMessageFactory` | ⚠️ **Outbox 셋은 셋만 읽는다** — `PushDeepLinkIntent.kt`의 extras 키가 `type`·`route`·`groupId`이고 `date`는 어디서도 안 읽힌다. 리마인드는 두 키가 그대로 맞는다 |
-| 알림 종류 | `type` 값 **다섯 개** — `TOPPING` · `BACKGROUND` · `TEXT` · `REMIND_AM` · `REMIND_PM` | `NotificationMessageFactory`·`ReminderType` | ⚠️불일치 — `PushNotificationType`에 `BACKGROUND`·`TEXT`가 **없다**. 라우팅은 `route=canvas`만 보므로 이동은 맞게 되지만, `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로 **하드코딩**해 `MainActivity.consumePushDeepLink`의 `APP_PUSH_OPENED` 분석 이벤트가 배경·텍스트 알림도 `type=TOPPING`으로 찍는다. 포그라운드 캔버스 갱신 요청(`toppingGroupIdOrNull`)도 같은 이유로 셋 모두에서 걸린다 → OQ-P-445 |
+| 알림 종류 | `type` 값 **다섯 개** — `TOPPING` · `BACKGROUND` · `TEXT` · `REMIND_AM` · `REMIND_PM` | `NotificationMessageFactory`·`ReminderType` | ✅ 서버 값을 그대로 쓴다 — `PushDeepLink.type` 이 `data.type` 문자열을 가공 없이 들고(`AddTopping` 도 `TOPPING` 으로 고정하지 않는다) `MainActivity.consumePushDeepLink` 의 `APP_PUSH_OPENED` 가 그 값을 찍는다. 서버가 type 을 추가·변경해도 분석이 따라간다. 포그라운드 캔버스 갱신 요청(`toppingGroupIdOrNull`)은 `route=canvas` 인 알림이면 type 과 무관하게 걸린다 |
 | 리마인드 딥링크 | `route=group`(그룹 목록). `groupId`가 **없다** | `NotificationMessageFactory.dailyReminder` | ✅ `PushNotificationRouteType.GROUP("group")` → `PushDeepLink.GroupList`, `groupId` 없이 접는다 |
 | 딥링크 | `route=canvas` + `groupId` + `date`로 캔버스에 도달(Outbox 셋 공통) | 같은 곳 | ⚠️ `groupId`로만 간다 — `PushDeepLink.AddTopping` KDoc이 **"알림이 가리키던 날짜가 아니라 항상 그 그룹의 최신 캔버스"**라고 못 박는다 → OQ-P-359 |
 | 중복 내성 | 같은 알림을 두 번 받아도 부작용이 없어야 함 | at-least-once 보장 | ⚠️ 이동은 견딘다(`Channel(CONFLATED)`) 그러나 **표시는 안 견딘다** — 알림 id가 `message.messageId?.hashCode()`라 재시도로 온 같은 알림이 **알림 두 개**로 쌓인다 → OQ-P-359 |
@@ -462,12 +461,12 @@ Crashlytics·Analytics만 남았다). **철회 근거가 정확히 이 엔드포
 | 채널 id `parfait_default` | `PUSH_NOTIFICATION_CHANNEL_ID` 상수 — 채널은 `BaseApplication.createPushNotificationChannel`이 앱 시작에 만든다(`IMPORTANCE_HIGH`, 표시 이름·설명은 `strings.xml`의 `notification_channel_default_*`) |
 | `notification` 블록이 늘 실린다 | `onMessageReceived`가 `message.notification`이 없으면 **곧장 return** 한다 — `data`-only 페이로드는 처리하지 않는다(KDoc이 그 전제를 적는다) |
 | 백그라운드는 시스템이 표시 | 앱이 직접 만드는 알림도 `data`의 키를 그대로 `Intent` extras에 실어 **두 경로의 extras 모양을 맞춘다** |
-| `data` 키 `type`·`route`·`groupId` | `PushDeepLinkIntent.kt`의 `EXTRA_TYPE`·`EXTRA_ROUTE`·`EXTRA_GROUP_ID` → `PushDeepLinkParser.parse`. **`route`·`type` 문자열은 PR #456으로 `PushNotificationRouteType`·`PushNotificationType` 두 enum의 `key`가 물고**, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다 |
+| `data` 키 `type`·`route`·`groupId` | `PushDeepLinkIntent.kt`의 `EXTRA_TYPE`·`EXTRA_ROUTE`·`EXTRA_GROUP_ID` → `PushDeepLinkParser.parse`. **`route` 문자열은 `PushNotificationRouteType` enum의 `key`가 물고 `type` 은 서버 값 그대로 `PushDeepLink.type` 에 실리며**, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다 |
 | `data` 키 `date` | **읽는 코드가 없다** → OQ-P-359 |
 | `route=canvas` | `PushDeepLink.AddTopping(groupId)` → `NavKeyCanvasMain(groupId)` — **날짜 인자가 없어 최신 캔버스로 간다** |
 | `route=group` | `PushDeepLink.GroupList(type)` → `NavKeyGroupList`. 서버는 리마인드 둘(`REMIND_AM`·`REMIND_PM`)에서 이 값을 보낸다 → OQ-P-361 |
 | 두 `route` 다 로그인 필요 | 이동 전에 `HasActiveSessionUseCase`가 세션을 확인하고 없으면 **딥링크를 버린다** — 로그인을 마쳐도 이어가지 않는다(PR #456) |
-| `type` 값 3종 | ⚠️불일치 — 서버는 5종이다(`BACKGROUND`·`TEXT` 추가, 위 [이 계약이 앱에 요구하는 것](#이-계약이-앱에-요구하는-것) · OQ-P-445). `PushNotificationType`(`TOPPING`·`REMIND_AM`·`REMIND_PM`). **라우팅에 쓰지 않는다** — 목적지는 `route`가 정하고 `type`은 탭 분석 용도로만 실린다. 모르는 값은 `null`이라 파싱이 실패하지 않는다 |
+| `type` 값 | ✅ 서버 문자열을 그대로 들고(`PushDeepLink.type: String?`) enum 으로 좁히지 않는다. **라우팅에 쓰지 않는다** — 목적지는 `route`가 정하고 `type`은 탭 분석 용도로만 실린다. 키가 없으면 `null`이고 파싱은 실패하지 않는다 |
 
 **전달 통로는 세션 종료 이동과 같은 모양이다** — `:domain`의 `PushDeepLinkEventBus`(발행·구독 겸용
 인터페이스)와 `:data`의 `PushDeepLinkEventBusImpl`(`Channel(CONFLATED)` + `receiveAsFlow()`)이고,
@@ -553,8 +552,6 @@ base intent로 남아 되살릴 때 다시 오는 것은 `FLAG_ACTIVITY_LAUNCHED
   → [open-questions](../synthesis/open-questions.md) OQ-P-354
 - TTL 6시간과 최대 6시간짜리 재시도 백오프가 겹쳐, 늦게 재시도된 알림이 만료와 경합한다
   → [open-questions](../synthesis/open-questions.md) OQ-P-353
-- 앱 `PushNotificationType`에 `BACKGROUND`·`TEXT`가 없고 `PushDeepLink.AddTopping`이 `type`을 `TOPPING`으로
-  고정해, 배경·텍스트 알림 탭이 분석 이벤트에서 토핑 알림으로 집계된다 → OQ-P-445
 - `TEXT` 알림이 outbox에 **텍스트 원문 스냅숏**을 담아, 발송 전에 수정·삭제된 텍스트도 원문 그대로 나가고
   원문이 보관 기간(2일) 동안 `notification_outbox`에 남는다 → OQ-P-446
 - `TEXT` 알림만 닉네임을 8자로 자르지 않는다 — 의도인지 누락인지 근거가 없다 → OQ-P-447
