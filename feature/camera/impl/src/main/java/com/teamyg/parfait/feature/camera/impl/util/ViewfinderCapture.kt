@@ -1,5 +1,7 @@
 package com.teamyg.parfait.feature.camera.impl.util
 
+import android.graphics.Bitmap
+import android.graphics.ImageFormat
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -7,6 +9,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import java.io.File
+import java.nio.ByteBuffer
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
@@ -59,17 +62,25 @@ private fun ImageProxy.saveViewfinderRegion(
     isFrontFacing: Boolean,
     isViewPortApplied: Boolean,
 ) {
-    // toBitmap() 은 JPEG 에서 cropRect 를 적용하지 않고 버퍼 전체를 디코드한다. 그래서 cropRect 는 버퍼 좌표로 직접 쓴다
-    val (rotationDegrees, bufferCropRect, captured) = use { image ->
-        Triple(image.imageInfo.rotationDegrees, image.cropRect, image.toBitmap())
+    // JPEG 는 바이트만 복사해 버퍼를 바로 돌려주고, 크롭 영역만 디코드한다. 그 밖의 포맷은 전체를 디코드한다
+    val captured = use { image ->
+        CapturedImage(
+            rotationDegrees = image.imageInfo.rotationDegrees,
+            bufferSize = IntSize(image.width, image.height),
+            bufferCropRect = image.cropRect.let { IntRect(it.left, it.top, it.right, it.bottom) },
+            jpeg = if (image.format == ImageFormat.JPEG) image.planes[0].buffer.toByteArray() else null,
+            bitmap = if (image.format == ImageFormat.JPEG) null else image.toBitmap(),
+        )
     }
+    val rotationDegrees = captured.rotationDegrees
 
+    // ImageProxy.cropRect 는 toBitmap()·디코드 어느 쪽에도 적용되지 않으므로 버퍼 좌표로 직접 쓴다
     val visibleRect = if (isViewPortApplied) {
-        IntRect(bufferCropRect.left, bufferCropRect.top, bufferCropRect.right, bufferCropRect.bottom)
+        captured.bufferCropRect
     } else {
         feedRect?.let {
             fallbackCropRect(
-                bufferSize = IntSize(captured.width, captured.height),
+                bufferSize = captured.bufferSize,
                 rotationDegrees = rotationDegrees,
                 feedSize = it.size,
             )
@@ -87,10 +98,27 @@ private fun ImageProxy.saveViewfinderRegion(
         visibleRect
     }
 
-    saveCroppedCapture(
-        captured = captured,
-        cropRect = cropRect,
-        rotationDegrees = rotationDegrees,
-        file = file,
-    )
+    if (captured.jpeg != null) {
+        saveCroppedJpeg(jpeg = captured.jpeg, cropRect = cropRect, rotationDegrees = rotationDegrees, file = file)
+    } else {
+        saveCroppedCapture(
+            captured = checkNotNull(captured.bitmap),
+            cropRect = cropRect,
+            rotationDegrees = rotationDegrees,
+            file = file,
+        )
+    }
 }
+
+private fun ByteBuffer.toByteArray(): ByteArray {
+    rewind()
+    return ByteArray(remaining()).also { get(it) }
+}
+
+private class CapturedImage(
+    val rotationDegrees: Int,
+    val bufferSize: IntSize,
+    val bufferCropRect: IntRect,
+    val jpeg: ByteArray?,
+    val bitmap: Bitmap?,
+)
