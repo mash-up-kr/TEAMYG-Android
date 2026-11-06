@@ -1,16 +1,9 @@
 package com.teamyg.parfait.feature.camera.impl.util
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.BitmapRegionDecoder
-import android.graphics.Matrix
-import android.graphics.Rect as AndroidRect
-import android.os.Build
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
-import java.io.File
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -98,62 +91,3 @@ private fun displayToBufferFraction(
     270 -> Rect(1f - display.bottom, display.left, 1f - display.top, display.right)
     else -> display
 }
-
-/** 크롭과 회전을 `createBitmap` 한 번으로 처리해 저장한다. `cropRect`가 null 이면 전체를 회전만 한다. */
-internal fun saveCroppedCapture(
-    captured: Bitmap,
-    cropRect: IntRect?,
-    rotationDegrees: Int,
-    file: File,
-) {
-    val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-    val region = cropRect ?: IntRect(0, 0, captured.width, captured.height)
-    val result = Bitmap.createBitmap(captured, region.left, region.top, region.width, region.height, matrix, true)
-
-    result.compressTo(file)
-}
-
-/**
- * JPEG 에서 [cropRect] 영역만 디코드해 회전한 뒤 저장한다. 전체 프레임을 디코드하지 않아 [saveCroppedCapture]보다 빠르다.
- */
-internal fun saveCroppedJpeg(
-    jpeg: ByteArray,
-    cropRect: IntRect?,
-    rotationDegrees: Int,
-    file: File,
-) {
-    val decoded = if (cropRect == null) {
-        BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size)
-    } else {
-        val decoder = newRegionDecoder(jpeg)
-        try {
-            decoder.decodeRegion(AndroidRect(cropRect.left, cropRect.top, cropRect.right, cropRect.bottom), null)
-        } finally {
-            decoder.recycle()
-        }
-    } ?: error("JPEG 디코드에 실패했다")
-
-    val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-    val rotated = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
-    if (rotated !== decoded) decoded.recycle()
-
-    rotated.compressTo(file)
-}
-
-private fun newRegionDecoder(jpeg: ByteArray): BitmapRegionDecoder {
-    val decoder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        BitmapRegionDecoder.newInstance(jpeg, 0, jpeg.size)
-    } else {
-        @Suppress("DEPRECATION")
-        BitmapRegionDecoder.newInstance(jpeg, 0, jpeg.size, false)
-    }
-    return decoder ?: error("JPEG 영역 디코더를 만들지 못했다")
-}
-
-private fun Bitmap.compressTo(file: File) {
-    file.outputStream().use { output ->
-        compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)
-    }
-}
-
-private const val JPEG_QUALITY = 95
