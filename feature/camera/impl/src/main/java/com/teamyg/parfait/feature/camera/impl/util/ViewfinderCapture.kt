@@ -8,6 +8,7 @@ import androidx.camera.core.ImageProxy
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
+import com.teamyg.parfait.feature.camera.impl.model.CameraPreviewState
 import java.io.File
 import java.nio.ByteBuffer
 import kotlin.coroutines.resume
@@ -20,10 +21,27 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  * 촬영해 뷰파인더에 보이던 영역만 [file]에 저장한다. 디코드·크롭·저장은 IO 스레드에서 돈다.
  *
  * 크롭 영역을 계산할 수 없으면 피드에 보이던 영역을, 그것도 없으면 전체 프레임을 저장한다.
- *
+ */
+internal suspend fun CameraPreviewState.captureViewfinder(
+    file: File,
+    viewfinderRect: Rect?,
+    feedRect: Rect?,
+    isFrontFacing: Boolean,
+) {
+    val capture = imageCapture ?: throw IllegalStateException("바인딩된 ImageCapture 가 없다")
+    capture.captureViewfinder(
+        file = file,
+        viewfinderRect = viewfinderRect,
+        feedRect = feedRect,
+        isFrontFacing = isFrontFacing,
+        isViewPortApplied = isViewPortApplied,
+    )
+}
+
+/**
  * @param isViewPortApplied 촬영한 [ImageCapture]가 ViewPort 와 함께 바인딩됐는지. 그래야 `cropRect`가 피드에 보이는 영역이다.
  */
-internal suspend fun ImageCapture.captureViewfinder(
+private suspend fun ImageCapture.captureViewfinder(
     file: File,
     viewfinderRect: Rect?,
     feedRect: Rect?,

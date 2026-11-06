@@ -2,6 +2,7 @@ package com.teamyg.parfait.feature.camera.impl.model
 
 import androidx.camera.core.Camera
 import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageCapture
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -15,6 +16,7 @@ internal class CameraPreviewState(
 ) {
     var camera: Camera? by mutableStateOf(null)
     var transition: CameraTransition? by mutableStateOf(null)
+    var imageCapture: ImageCapture? by mutableStateOf(null)
 
     // 직전 바인딩이 dispose 때 남긴 프레임. 다음 바인딩이 덮개로 쓴다
     var lastFrame: CapturedFrame? = null

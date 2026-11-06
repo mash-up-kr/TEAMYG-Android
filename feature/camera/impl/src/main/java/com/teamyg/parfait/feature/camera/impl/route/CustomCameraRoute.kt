@@ -7,7 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,7 +33,6 @@ import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
 import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
-import com.teamyg.parfait.core.util.jvm.coroutines.runSuspendCatching
 import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
 import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
 import com.teamyg.parfait.feature.camera.impl.R
@@ -43,15 +41,16 @@ import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewBindingEffe
 import com.teamyg.parfait.feature.camera.impl.component.CameraTransitionEffect
 import com.teamyg.parfait.feature.camera.impl.component.CameraZoomEffect
 import com.teamyg.parfait.feature.camera.impl.component.rememberCameraPreviewState
+import com.teamyg.parfait.feature.camera.impl.model.CaptureOutcome
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
 import com.teamyg.parfait.feature.camera.impl.util.captureViewfinder
+import com.teamyg.parfait.feature.camera.impl.util.launchCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 internal fun CustomCameraRoute(
@@ -66,7 +65,6 @@ internal fun CustomCameraRoute(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var viewfinderRect by remember { mutableStateOf<Rect?>(null) }
     var feedRect by remember { mutableStateOf<Rect?>(null) }
     val captureScope = rememberCoroutineScope()
@@ -106,35 +104,17 @@ internal fun CustomCameraRoute(
                 }
 
                 is CustomCameraEffect.CaptureImage -> {
-                    val capture = imageCapture ?: run {
-                        viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
-                        return@collect
-                    }
-                    val captureJob = captureScope.launch {
-                        val saved = runSuspendCatching {
-                            capture.captureViewfinder(
+                    captureScope.launchCapture(
+                        capture = {
+                            cameraPreviewState.captureViewfinder(
                                 file = effect.file,
                                 viewfinderRect = viewfinderRect,
                                 feedRect = feedRect,
                                 isFrontFacing = state.lensFacing == LensFacing.FRONT,
-                                isViewPortApplied = cameraPreviewState.isViewPortApplied,
                             )
-                        }.isSuccess
-
-                        viewModel.processIntent(
-                            if (saved) {
-                                CustomCameraIntent.OnCaptureSaved(effect.file)
-                            } else {
-                                CustomCameraIntent.OnCaptureFailed
-                            },
-                        )
-                    }
-                    captureJob.invokeOnCompletion { cause ->
-                        // Route 만 사라지고 VM 은 남는 경우(재생성 등) 셔터가 잠긴 채 남지 않게 한다.
-                        // 본문 시작 전에 취소된 잡도 여기서 잡힌다
-                        if (cause is CancellationException) {
-                            viewModel.processIntent(CustomCameraIntent.OnCaptureCancelled)
-                        }
+                        },
+                    ) { outcome ->
+                        viewModel.processIntent(outcome.toCaptureIntent(effect.file))
                     }
                 }
 
@@ -169,6 +149,7 @@ internal fun CustomCameraRoute(
         viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted))
     }
 
+    val imageCapture = cameraPreviewState.imageCapture
     SideEffect(state.flashMode, imageCapture) {
         imageCapture?.flashMode = state.flashMode.imageCaptureFlashMode
     }
@@ -178,7 +159,6 @@ internal fun CustomCameraRoute(
         lensFacing = state.lensFacing,
         shouldUseUltraWideCamera = state.shouldUseUltraWideCamera,
         hasPermission = state.hasPermission,
-        onImageCaptureReady = { imageCapture = it },
         onZoomRangeReady = { range, hasUltraWideCamera ->
             viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(range, hasUltraWideCamera))
         },
@@ -219,4 +199,10 @@ internal fun CustomCameraRoute(
             },
         )
     }
+}
+
+private fun CaptureOutcome.toCaptureIntent(file: File): CustomCameraIntent = when (this) {
+    CaptureOutcome.SAVED -> CustomCameraIntent.OnCaptureSaved(file)
+    CaptureOutcome.FAILED -> CustomCameraIntent.OnCaptureFailed
+    CaptureOutcome.CANCELLED -> CustomCameraIntent.OnCaptureCancelled
 }

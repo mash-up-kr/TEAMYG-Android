@@ -43,12 +43,10 @@ internal fun CameraPreviewBindingEffect(
     lensFacing: LensFacing,
     shouldUseUltraWideCamera: Boolean,
     hasPermission: Boolean,
-    onImageCaptureReady: (ImageCapture) -> Unit,
     onZoomRangeReady: (range: ClosedFloatingPointRange<Float>, hasUltraWideCamera: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnImageCaptureReady by rememberUpdatedState(onImageCaptureReady)
     val currentOnZoomRangeReady by rememberUpdatedState(onZoomRangeReady)
 
     DisposableEffect(state, lensFacing, shouldUseUltraWideCamera, hasPermission) {
@@ -56,6 +54,7 @@ internal fun CameraPreviewBindingEffect(
         if (!hasPermission) {
             state.lastFrame = null
             state.transition = null
+            state.imageCapture = null
             return@DisposableEffect onDispose { }
         }
 
@@ -130,7 +129,7 @@ internal fun CameraPreviewBindingEffect(
             }
 
             state.camera = newCamera
-            currentOnImageCaptureReady(imageCapture)
+            state.imageCapture = imageCapture
             // 범위는 메인 카메라 것만 보고한다. 초광각 범위로 단계 목록을 만들면 2x·0.5x 판정이 틀어진다
             if (ultraWideCamera == null) {
                 newCamera.cameraInfo.zoomState.value?.let { zoomState ->
@@ -149,6 +148,7 @@ internal fun CameraPreviewBindingEffect(
             state.lastFrame = state.previewView.bitmap?.let { CapturedFrame(bitmap = it, lensFacing = lensFacing) }
             boundProvider?.unbindAll()
             state.camera = null
+            state.imageCapture = null
         }
     }
 }
