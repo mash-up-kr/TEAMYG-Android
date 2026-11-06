@@ -81,7 +81,7 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 
 | name | parameters | 시점 |
 |------|------------|------|
-| `app_push_opened` | `type`: `"TOPPING"` / `"REMIND_AM"` / `"REMIND_PM"` | 푸시 알림으로 앱 진입 |
+| `app_push_opened` | `type`: FCM `data.type` 서버 값 그대로(`"TOPPING"` / `"BACKGROUND"` / `"TEXT"` / `"REMIND_AM"` / `"REMIND_PM"` …) | 푸시 알림으로 앱 진입. 앱이 값을 가공하지 않아 서버가 추가한 type 도 그대로 찍힌다. `type` 키가 없으면 이벤트를 찍지 않는다 |
 | `AppLink` | `destination`: `"group_invite"` | 외부 링크(App Links, 설치 후 Install Referrer 복원)로 앱 진입. ⚠️ snake_case 규칙의 예외 — iOS 와 같은 로그로 합쳐 보려고 iOS 이름·값을 그대로 쓴다 |
 | `app_account_nickname_changed` | — | 계정정보에서 닉네임 변경 완료 |
 

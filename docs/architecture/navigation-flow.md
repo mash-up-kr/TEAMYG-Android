@@ -211,8 +211,8 @@ TokenAuthenticator(재발급 거절) → SessionEventBusImpl.postForcedLogout()
 - **목적지는 `route` 하나가 정한다.** `type`(`TOPPING`·`REMIND_AM`·`REMIND_PM`)은 라우팅에 안 쓰고
   탭 분석 용도로 `PushDeepLink`에 실려만 간다. 모르는 `route`·잘못된 `groupId`(숫자 아님·0 이하)는
   `null`이라 **평범한 실행과 구분되지 않는다** — 파싱 실패가 화면에 보이지 않는다는 뜻이다.
-  두 문자열 축은 각각 `PushNotificationRouteType`(`canvas`·`group`)과 `PushNotificationType` enum이
-  들고 있고, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다.
+  `route` 축은 `PushNotificationRouteType`(`canvas`·`group`) enum이 들고 있고 `type` 은 서버 문자열 그대로
+  `PushDeepLink.type` 에 실리며, `groupId`를 양수로 읽는 규칙은 `PushDeepLink.AddTopping.parse`에 있다.
 - **이동 수단은 `goTo`다** — 위 세 관용구(`replaceAll`·`goToSingleClearTop`·`popUpTo`)를 쓰지 않으므로
   딥링크로 연 화면 아래에 **그때까지의 백스택이 그대로 남는다.**
 
