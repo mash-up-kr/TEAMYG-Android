@@ -2,27 +2,21 @@ package com.teamyg.parfait.feature.camera.impl.component
 
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.CameraState
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.ViewPort
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.teamyg.parfait.feature.camera.impl.model.CameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
@@ -30,7 +24,6 @@ import com.teamyg.parfait.feature.camera.impl.model.CapturedFrame
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.util.cameraSelectorOf
 import com.teamyg.parfait.feature.camera.impl.util.findBackUltraWideCamera
-import kotlinx.coroutines.delay
 
 @Composable
 internal fun rememberCameraPreviewState(): CameraPreviewState {
@@ -160,73 +153,6 @@ internal fun CameraPreviewBindingEffect(
     }
 }
 
-@Composable
-internal fun CameraZoomEffect(
-    camera: Camera?,
-    zoomRatio: Float,
-) {
-    // 카메라가 바뀌면 새 슬롯이 현재 배율로 시작해 애니메이션 없이 바로 걸린다
-    val appliedRatio = remember(camera) { mutableFloatStateOf(zoomRatio) }
-    LaunchedEffect(camera, zoomRatio) {
-        val target = camera ?: return@LaunchedEffect
-        if (appliedRatio.floatValue == zoomRatio) {
-            target.cameraControl.setZoomRatio(zoomRatio)
-            return@LaunchedEffect
-        }
-
-        animate(
-            initialValue = appliedRatio.floatValue,
-            targetValue = zoomRatio,
-            animationSpec = tween(durationMillis = ZOOM_ANIMATION_MILLIS),
-        ) { value, _ ->
-            appliedRatio.floatValue = value
-            target.cameraControl.setZoomRatio(value)
-        }
-    }
-
-    // CameraX는 카메라가 닫히면(ON_STOP) 줌을 1.0으로 되돌리고, 복귀 때는 위 키가 그대로라 다시 걸지 않는다
-    val currentZoomRatio by rememberUpdatedState(zoomRatio)
-    DisposableEffect(camera) {
-        val target = camera ?: return@DisposableEffect onDispose { }
-        val observer = Observer<CameraState> { cameraState ->
-            if (cameraState.type == CameraState.Type.OPEN) {
-                target.cameraControl.setZoomRatio(currentZoomRatio)
-            }
-        }
-        target.cameraInfo.cameraState.observeForever(observer)
-
-        onDispose { target.cameraInfo.cameraState.removeObserver(observer) }
-    }
-}
-
-@Composable
-internal fun CameraTransitionEffect(state: CameraPreviewState) {
-    // 덮개를 건 직후엔 이전 스트림의 STREAMING이 남아 있을 수 있어 IDLE을 본 뒤의 STREAMING만 센다
-    val hasTransition = state.transition != null
-    DisposableEffect(state, hasTransition) {
-        if (!hasTransition) return@DisposableEffect onDispose { }
-
-        var sawIdle = false
-        val observer = Observer<PreviewView.StreamState> { streamState ->
-            when (streamState) {
-                PreviewView.StreamState.IDLE -> sawIdle = true
-                PreviewView.StreamState.STREAMING -> if (sawIdle) state.transition = null
-            }
-        }
-        state.previewView.previewStreamState.observeForever(observer)
-
-        onDispose { state.previewView.previewStreamState.removeObserver(observer) }
-    }
-
-    // IDLE을 건너뛰는 기기에서도 덮개가 남지 않게 한다
-    val transition = state.transition
-    LaunchedEffect(transition) {
-        if (transition == null) return@LaunchedEffect
-        delay(TRANSITION_TIMEOUT_MILLIS)
-        if (state.transition === transition) state.transition = null
-    }
-}
-
 private fun ProcessCameraProvider.bindUseCases(
     lifecycleOwner: LifecycleOwner,
     selector: CameraSelector,
@@ -256,5 +182,3 @@ private fun ProcessCameraProvider.bindUseCases(
 }
 
 private const val MAX_JPEG_QUALITY = 100
-private const val ZOOM_ANIMATION_MILLIS = 200
-private const val TRANSITION_TIMEOUT_MILLIS = 2_000L
