@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -186,8 +187,12 @@ private fun ShutterFlash(
     modifier: Modifier = Modifier,
 ) {
     val alpha = remember { Animatable(0f) }
+    // 이미 촬영 중인 채로 컴포지션에 들어오면 깜빡이지 않는다. 셔터를 누른 순간(상승 에지)만 알린다
+    val wasCapturing = remember { mutableStateOf(isCapturing) }
     LaunchedEffect(isCapturing) {
-        if (!isCapturing) return@LaunchedEffect
+        val isRisingEdge = isCapturing && !wasCapturing.value
+        wasCapturing.value = isCapturing
+        if (!isRisingEdge) return@LaunchedEffect
         alpha.snapTo(SHUTTER_FLASH_ALPHA)
         alpha.animateTo(targetValue = 0f, animationSpec = tween(durationMillis = SHUTTER_FLASH_MILLIS))
     }

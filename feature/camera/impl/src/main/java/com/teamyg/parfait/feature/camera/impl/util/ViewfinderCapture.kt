@@ -52,7 +52,7 @@ private suspend fun ImageCapture.captureViewfinder(
         Dispatchers.IO.asExecutor(),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                val saved = runCatching {
+                runCatching {
                     image.saveViewfinderRegion(
                         file = file,
                         viewfinderRect = viewfinderRect,
@@ -60,9 +60,7 @@ private suspend fun ImageCapture.captureViewfinder(
                         isFrontFacing = isFrontFacing,
                         isViewPortApplied = isViewPortApplied,
                     )
-                }
-                saved
-                    .onSuccess { continuation.resume(Unit) }
+                }.onSuccess { continuation.resume(Unit) }
                     .onFailure { continuation.resumeWithException(it) }
             }
 
@@ -86,8 +84,11 @@ private fun ImageProxy.saveViewfinderRegion(
             rotationDegrees = image.imageInfo.rotationDegrees,
             bufferSize = IntSize(image.width, image.height),
             bufferCropRect = image.cropRect.let { IntRect(it.left, it.top, it.right, it.bottom) },
-            jpeg = if (image.format == ImageFormat.JPEG) image.planes[0].buffer.toByteArray() else null,
-            bitmap = if (image.format == ImageFormat.JPEG) null else image.toBitmap(),
+            pixels = if (image.format == ImageFormat.JPEG) {
+                CapturedPixels.Jpeg(image.planes[0].buffer.toByteArray())
+            } else {
+                CapturedPixels.Decoded(image.toBitmap())
+            },
         )
     }
     val rotationDegrees = captured.rotationDegrees
@@ -116,11 +117,16 @@ private fun ImageProxy.saveViewfinderRegion(
         visibleRect
     }
 
-    if (captured.jpeg != null) {
-        saveCroppedJpeg(jpeg = captured.jpeg, cropRect = cropRect, rotationDegrees = rotationDegrees, file = file)
-    } else {
-        saveCroppedCapture(
-            captured = checkNotNull(captured.bitmap),
+    when (val pixels = captured.pixels) {
+        is CapturedPixels.Jpeg -> saveCroppedJpeg(
+            jpeg = pixels.bytes,
+            cropRect = cropRect,
+            rotationDegrees = rotationDegrees,
+            file = file,
+        )
+
+        is CapturedPixels.Decoded -> saveCroppedCapture(
+            captured = pixels.bitmap,
             cropRect = cropRect,
             rotationDegrees = rotationDegrees,
             file = file,
@@ -137,6 +143,15 @@ private class CapturedImage(
     val rotationDegrees: Int,
     val bufferSize: IntSize,
     val bufferCropRect: IntRect,
-    val jpeg: ByteArray?,
-    val bitmap: Bitmap?,
+    val pixels: CapturedPixels,
 )
+
+private sealed interface CapturedPixels {
+    class Jpeg(
+        val bytes: ByteArray,
+    ) : CapturedPixels
+
+    class Decoded(
+        val bitmap: Bitmap,
+    ) : CapturedPixels
+}
