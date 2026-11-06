@@ -25,6 +25,15 @@ class PushDeepLinkParserTest {
     }
 
     @Test
+    fun parse_routeCanvasWithMissingType_returnsAddToppingWithNullType() {
+        // Given, When route=canvas 인데 type 키가 없음
+        val result = PushDeepLinkParser.parse(route = "canvas", groupId = "50", type = null)
+
+        // Then 이동은 그대로 되고 type 만 null — 이 경우 app_push_opened 는 찍히지 않는다
+        assertEquals(PushDeepLink.AddTopping(groupId = 50L, type = null), result)
+    }
+
+    @Test
     fun parse_routeCanvasWithZeroGroupId_returnsNull() {
         // Given, When groupId 가 0(경계값)
         val result = PushDeepLinkParser.parse(route = "canvas", groupId = "0", type = "TOPPING")
