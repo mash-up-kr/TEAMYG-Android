@@ -447,3 +447,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-06] change | 푸시 type 서버 값 그대로 분석
 `PushNotificationType` enum 제거, `PushDeepLink.type: String?` · `APP_PUSH_OPENED` 가 `data.type` 을 가공 없이 기록 · OQ-P-445 해소
+
+## [2026-11-08] change | 앱 설정 약관 영역을 YGTextButton 풋터로 교체
+목록(`YGListItem` forEach)을 고정 두 줄(`YGTextButton` 쌍)로 교체 · 이용약관·개인정보처리방침은 타입별 조회 실패 시 줄은 유지하고 클릭만 no-op(표시·클릭 가능 여부 분리) · 오픈소스 라이선스·아동 안전 정책도 같은 줄 형태로 흡수 · status.md S-001 반영(해소된 OQ-P-231 설명 제거 — 그 트레이드오프 자체가 없어짐)
