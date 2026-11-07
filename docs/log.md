@@ -444,3 +444,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-05] change | 시스템 글자 크기 무시
 `YGCustomTheme` `LocalDensity` `fontScale = 1` · `YGModalPopup`·`CustomCalendar` 창 content 재고정 · 약관 웹뷰 `textZoom` · 실기기(SM-A356N) `font_scale` 1.0·2.0 비교로 홈·캔버스·달력 팝업·모달 확인 · ADR-0036
+
+## [2026-11-06] change | 푸시 type 서버 값 그대로 분석
+`PushNotificationType` enum 제거, `PushDeepLink.type: String?` · `APP_PUSH_OPENED` 가 `data.type` 을 가공 없이 기록 · OQ-P-445 해소
