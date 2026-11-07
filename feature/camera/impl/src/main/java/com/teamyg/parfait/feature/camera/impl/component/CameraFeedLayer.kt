@@ -41,10 +41,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toRect
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
@@ -217,12 +217,11 @@ private fun CameraTransitionCover(
     }
 }
 
-private class CameraFeedLayerPreviewParameterProvider : PreviewParameterProvider<CameraTransition?> {
-    override val values: Sequence<CameraTransition?>
-        get() = sequenceOf(
-            null,
-            CameraTransition(frame = ImageBitmap(width = 9, height = 16), isFlip = false),
-        )
+private class CameraFeedLayerPreviewParameterProvider : NamedPreviewParameterProvider<CameraTransition?>() {
+    override val entries = listOf(
+        "idle" to null,
+        "transition" to CameraTransition(frame = ImageBitmap(width = 9, height = 16), isFlip = false),
+    )
 }
 
 @YGPreview
