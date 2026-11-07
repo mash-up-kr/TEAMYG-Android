@@ -9,7 +9,11 @@ internal data class PreviewParameterName(
     val previewId: String,
     val variant: Any?,
     val name: String?,
-)
+) {
+    /** 스캐너가 만들 파일명을 대소문자 구분 없이 비교하는 키. */
+    val fileNameKey: String
+        get() = name.orEmpty().replace(' ', '_').lowercase()
+}
 
 /**
  * 파라미터 프리뷰는 이름이 스냅샷 파일명이 된다. 이름이 없으면 순서 번호로 돌아가 값이 빠질 때 기준 이미지와
@@ -41,6 +45,3 @@ internal fun checkPreviewParameterNames(parameters: List<PreviewParameterName>) 
 }
 
 private val PARAMETER_NAME = Regex("[A-Za-z0-9_ ]+")
-
-private val PreviewParameterName.fileNameKey: String
-    get() = name.orEmpty().replace(' ', '_').lowercase()
