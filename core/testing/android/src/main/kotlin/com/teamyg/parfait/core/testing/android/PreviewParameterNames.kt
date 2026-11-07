@@ -13,6 +13,14 @@ internal data class PreviewParameterName(
     /** 스캐너가 만들 파일명을 대소문자 구분 없이 비교하는 키. */
     val fileNameKey: String
         get() = name.orEmpty().replace(' ', '_').lowercase()
+
+    /** 이름이 파일명에 안전한 문자(영문·숫자·`_`·공백)로만 이뤄졌는지. */
+    val hasWellFormedName: Boolean
+        get() = name.orEmpty().matches(PARAMETER_NAME)
+
+    private companion object {
+        val PARAMETER_NAME = Regex("[A-Za-z0-9_ ]+")
+    }
 }
 
 /**
@@ -28,7 +36,7 @@ internal fun checkPreviewParameterNames(parameters: List<PreviewParameterName>) 
         "Preview parameters need names (NamedPreviewParameterProvider): " + unnamed.map { it.previewId }.distinct()
     }
 
-    val malformed = parameters.filterNot { it.name.orEmpty().matches(PARAMETER_NAME) }
+    val malformed = parameters.filterNot { it.hasWellFormedName }
     check(malformed.isEmpty()) {
         "Preview parameter names allow only letters, digits, '_' and ' ': " +
             malformed.map { "${it.previewId}[${it.name}]" }
@@ -43,5 +51,3 @@ internal fun checkPreviewParameterNames(parameters: List<PreviewParameterName>) 
         "Preview parameter names must be unique per preview (case-insensitive): $duplicated"
     }
 }
-
-private val PARAMETER_NAME = Regex("[A-Za-z0-9_ ]+")
