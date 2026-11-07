@@ -1,14 +1,17 @@
 package com.teamyg.parfait.feature.app.notice.impl.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -58,30 +61,40 @@ internal fun NoticeDetailScreen(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                             .padding(horizontal = YGTheme.layout.padding.padding7),
-                        verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap5),
                     ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(YGAtomicColors.Transparency.White75)
+                                .border(width = 1.dp, color = YGAtomicColors.Cherry.Cherry100)
+                                .padding(YGTheme.layout.padding.padding6),
+                        ) {
                             Text(
                                 text = notice.title,
                                 style = YGTheme.typography.body.b02SB,
                                 color = YGAtomicColors.Gray.Gray900,
                             )
+
+                            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap2))
+
                             Text(
                                 text = notice.date,
                                 style = YGTheme.typography.caption.c01R,
-                                color = YGAtomicColors.Gray.Gray400,
+                                color = YGAtomicColors.Gray.Gray500,
+                            )
+
+                            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
+
+                            HorizontalDivider(color = YGAtomicColors.Gray.Gray100)
+
+                            Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
+
+                            Text(
+                                text = notice.content,
+                                style = YGTheme.typography.body.b02R,
+                                color = YGAtomicColors.Gray.Gray800,
                             )
                         }
-
-                        Text(
-                            text = notice.content,
-                            style = YGTheme.typography.body.b02R,
-                            color = YGAtomicColors.Gray.Gray800,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(width = 1.dp, color = YGAtomicColors.Cherry.Cherry100)
-                                .padding(YGTheme.layout.padding.padding6),
-                        )
                     }
                 }
 
