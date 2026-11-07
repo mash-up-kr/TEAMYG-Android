@@ -1748,8 +1748,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-149
 - **출처**: `feature/camera/impl/route/CustomCameraRoute.kt` — `runCatching { withContext(Dispatchers.IO) { saveViewfinderCapture(...) } }`. `withContext`가 suspend라 촬영 저장 중 화면을 벗어나면 취소가 `Result.failure`가 되고 "저장 실패" 경로로 분기한다. [data-layer](../architecture/data-layer.md) "suspend 를 감싸는 runCatching" 참고.
 - **항목**: `core:util:jvm`의 `runSuspendCatching`으로 교체한다. 같은 부류였던 `TokenLocalDataSourceImpl.read`·`AddRecentImageUseCase`는 **PR #241로 develop에 고쳐져 들어갔고**(2026-08-15) 이 건만 남았다 — 카메라 화면이 그 브랜치 범위 밖이라 미뤘다.
-- **상태**: 미해결 (교체 대상 확정, 라운드만 대기)
-- **해소 메모**: 고칠 때 취소가 실패로 오지 않는 회귀 테스트를 함께 붙인다(`TokenLocalDataSourceImplTest`의 취소 케이스가 본보기다).
+- **상태**: 해소됨 (2026-11-05) — `CustomCameraRoute`가 촬영 저장을 `runSuspendCatching`으로 감싸고 `CancellationException`은 다시 던진다.
 
 ### [2026-08-15] 누끼 캔버스 Safe Margin +20%가 미이행 — 원본 전체 크기가 끝까지 실려 간다
 
@@ -4542,8 +4541,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 ### [2026-08-22] 세로 고정 뒤 카메라 촬영이 기기를 든 방향을 따라가지 않는다
 
 - **ID**: OQ-P-265
-- **출처**: `feature/camera/impl/.../route/CustomCameraRoute.kt`(`ImageProxy#imageInfo.rotationDegrees`를
-  `saveViewfinderCapture`에 넘긴다)와 PR #339의 `screenOrientation="portrait"` — 이 앱은
+- **출처**: `feature/camera/impl/.../util/ViewfinderCapture.kt`(`captureViewfinder`가 `ImageProxy#imageInfo.rotationDegrees`를
+  `saveCroppedCapture`에 넘긴다)와 PR #339의 `screenOrientation="portrait"` — 이 앱은
   `ImageCapture#setTargetRotation`을 부르지 않고 `OrientationEventListener`도 두지 않는다.
   즉 보정 기준이 **표시 방향**인데 그것이 이제 항상 세로로 고정된다. 고정 전에는 액티비티가 돌면서
   기준도 함께 돌았으므로, **가로로 들고 찍었을 때의 결과가 이번 라운드에서 바뀌었다.**

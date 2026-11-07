@@ -4,5 +4,5 @@ import android.graphics.Bitmap
 
 internal data class CapturedFrame(
     val bitmap: Bitmap,
-    val lensFacing: Int,
+    val lensFacing: LensFacing,
 )

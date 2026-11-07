@@ -9,7 +9,7 @@ platforms: android
 owner: android
 related_adr: ADR-0012, ADR-0011, ADR-0014
 related_spec: segmentation-preprocessing, segmentation-mask-postprocessing
-related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, ContentResolver.kt#rotatedToUpright, ExifOrientation.kt#exifOrientationToDegrees, CameraPreviewBinding.kt, CameraCrop.kt#saveViewfinderCapture, RecentImageRepositoryImpl#extensionOf, FileCameraCacheLocalDataSourceImpl#createFile
+related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, ContentResolver.kt#rotatedToUpright, ExifOrientation.kt#exifOrientationToDegrees, CameraPreviewBinding.kt, CroppedImageSave.kt#saveCroppedCapture, CroppedImageSave.kt#saveCroppedJpeg, RecentImageRepositoryImpl#extensionOf, FileCameraCacheLocalDataSourceImpl#createFile
 archived_reason:
 tags: [plan, parfait]
 ---
