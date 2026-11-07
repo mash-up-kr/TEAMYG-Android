@@ -102,7 +102,7 @@ internal fun AppSettingScreen(
                     ListItemMenuSub(
                         title = stringResource(R.string.setting_item_notice),
                         onClick = onClickNotice,
-                        isNew = true,
+                        isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
                         modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                     )
                     YGListItem(

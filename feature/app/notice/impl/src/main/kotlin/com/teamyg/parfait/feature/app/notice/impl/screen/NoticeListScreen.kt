@@ -58,7 +58,6 @@ internal fun NoticeListScreen(
                     .weight(1f)
                     .clipToBounds(),
             ) {
-                // 행과 구분선은 서로 8dp 씩 떨어져 있어 한 간격으로 쌓고, 구분선은 행 사이에만 둔다
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
                     modifier = Modifier.fillMaxSize(),

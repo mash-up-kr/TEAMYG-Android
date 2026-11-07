@@ -20,10 +20,8 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 
-private const val TITLE_MAX_LINES = 2
-
 /**
- * 제목·부가 텍스트(선택)와 오른쪽 caret 으로 이뤄진 메뉴 행. 가로 여백은 두지 않는다 — 놓이는 화면이 정한다.
+ * 가로 여백은 두지 않는다 — 놓이는 화면이 정한다.
  */
 @Composable
 fun ListItemMenuSub(
@@ -55,7 +53,7 @@ fun ListItemMenuSub(
                     text = title,
                     style = YGTheme.typography.body.b02SB,
                     color = YGAtomicColors.Gray.Gray800,
-                    maxLines = TITLE_MAX_LINES,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
