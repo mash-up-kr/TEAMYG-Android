@@ -12,9 +12,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private const val NEW_TEXT = "NEW"
 
-/**
- * 새 항목 표시 칩. 너비·높이를 고정하지 않고 글자를 따른다.
- */
 @Composable
 fun YGChipNew(modifier: Modifier = Modifier) {
     Text(
