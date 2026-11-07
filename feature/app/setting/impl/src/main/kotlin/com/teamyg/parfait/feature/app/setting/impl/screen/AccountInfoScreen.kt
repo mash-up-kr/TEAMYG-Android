@@ -20,7 +20,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormFieldDefaults
@@ -31,6 +30,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.NameFieldType
@@ -146,41 +146,40 @@ internal fun AccountInfoScreen(
 }
 
 private class AccountInfoPreviewParameterProvider :
-    PreviewParameterProvider<AccountInfoUiState> {
-    override val values: Sequence<AccountInfoUiState>
-        get() = sequenceOf(
-            AccountInfoUiState(savedNickname = "대충지은랜덤닉네임", nickname = "대충지은랜덤닉네임"),
-            AccountInfoUiState(
-                savedNickname = "대충지은랜덤닉네임",
-                nickname = "닉네임바꾸",
-                isEditing = true,
-            ),
-            AccountInfoUiState(
-                savedNickname = "대충지은랜덤닉네임",
-                nickname = "",
-                nicknameError = NameValidResult.Error.EmptyString,
-                isEditing = true,
-            ),
-            AccountInfoUiState(
-                savedNickname = "대충지은랜덤닉네임",
-                nickname = " 가",
-                nicknameError = NameValidResult.Error.SpaceAtEdge,
-                isEditing = true,
-            ),
-            AccountInfoUiState(
-                savedNickname = "대충지은랜덤닉네임",
-                nickname = "닉네임바꾸",
-                submitError = GlobalNicknameError.INVALID,
-                isEditing = true,
-            ),
-            AccountInfoUiState(
-                savedNickname = "대충지은랜덤닉네임",
-                nickname = "닉네임바꾸",
-                isEditing = true,
-                isDiscardDialogVisible = true,
-            ),
-            AccountInfoUiState(savedNickname = null, nickname = null),
-        )
+    NamedPreviewParameterProvider<AccountInfoUiState>() {
+    override val entries = listOf(
+        "default" to AccountInfoUiState(savedNickname = "대충지은랜덤닉네임", nickname = "대충지은랜덤닉네임"),
+        "editing" to AccountInfoUiState(
+            savedNickname = "대충지은랜덤닉네임",
+            nickname = "닉네임바꾸",
+            isEditing = true,
+        ),
+        "emptyError" to AccountInfoUiState(
+            savedNickname = "대충지은랜덤닉네임",
+            nickname = "",
+            nicknameError = NameValidResult.Error.EmptyString,
+            isEditing = true,
+        ),
+        "spaceAtEdgeError" to AccountInfoUiState(
+            savedNickname = "대충지은랜덤닉네임",
+            nickname = " 가",
+            nicknameError = NameValidResult.Error.SpaceAtEdge,
+            isEditing = true,
+        ),
+        "invalidNicknameError" to AccountInfoUiState(
+            savedNickname = "대충지은랜덤닉네임",
+            nickname = "닉네임바꾸",
+            submitError = GlobalNicknameError.INVALID,
+            isEditing = true,
+        ),
+        "discardDialog" to AccountInfoUiState(
+            savedNickname = "대충지은랜덤닉네임",
+            nickname = "닉네임바꾸",
+            isEditing = true,
+            isDiscardDialogVisible = true,
+        ),
+        "noNickname" to AccountInfoUiState(savedNickname = null, nickname = null),
+    )
 }
 
 @YGPreview

@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -35,6 +34,7 @@ import com.teamyg.parfait.core.designsystem.component.ygcanvas.CANVAS_AREA_ASPEC
 import com.teamyg.parfait.core.designsystem.component.ygfloatingbar.YGFloatingBarTitle
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
@@ -180,12 +180,11 @@ internal fun CanvasImageSaveScreen(
     }
 }
 
-private class CanvasImageSaveScreenPreviewParameterProvider : PreviewParameterProvider<LocalDate> {
-    override val values: Sequence<LocalDate>
-        get() = sequenceOf(
-            LocalDate(2026, 5, 20),
-            LocalDate(2026, 5, 3),
-        )
+private class CanvasImageSaveScreenPreviewParameterProvider : NamedPreviewParameterProvider<LocalDate>() {
+    override val entries = listOf(
+        "twoDigitDay" to LocalDate(2026, 5, 20),
+        "singleDigitDay" to LocalDate(2026, 5, 3),
+    )
 }
 
 @YGPreview

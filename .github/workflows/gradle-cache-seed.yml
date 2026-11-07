@@ -35,7 +35,7 @@ jobs:
           kakao-native-app-key: ${{ secrets.KAKAO_NATIVE_APP_KEY }}
           google-services-json: ${{ secrets.GOOGLE_SERVICES_JSON }}
 
-      # PR 워크플로(test·ktlint)가 쓰는 태스크 전부를 한 번의 Gradle 호출로 돌린다.
+      # test·ktlint 워크플로가 쓰는 태스크를 한 번의 Gradle 호출로 돌린다.
       # 워크플로마다 push 트리거를 다는 대신 하나로 묶는 이유: job 이 둘이면 같은
       # 캐시 키에 동시에 써서 한쪽 저장이 버려지고, 데몬 기동·의존성 해석도 두 번 친다.
       # --continue: 앞 태스크가 실패해도 나머지 태스크 출력은 캐시에 남긴다.
@@ -46,3 +46,13 @@ jobs:
         continue-on-error: true
         run: |
           ./gradlew test ktlintCheck assembleAllDebugAndroidTest --continue
+
+      # ui-diff.yml 용. 프리뷰 테스트 생성과 테스트 필터가 시작 태스크 이름으로 갈려(UiSnapshotConfig.kt)
+      # test 와 한 호출에 섞을 수 없다. 스텝을 나눠 record 가 실패해도 compare 를 적재한다.
+      - name: Warm UI diff record caches
+        continue-on-error: true
+        run: ./gradlew recordRoborazziDebug --continue
+
+      - name: Warm UI diff compare caches
+        continue-on-error: true
+        run: ./gradlew compareRoborazziDebug --continue

@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.domain.model.canvas.CanvasBackground
@@ -49,6 +48,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarCanvas
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.extension.toColorOrNull
@@ -266,7 +266,7 @@ internal fun CanvasBackground?.toYGCanvasBackground(): YGCanvasBackground? = whe
 }
 
 private class CanvasMainScreenPreviewParameterProvider :
-    PreviewParameterProvider<CanvasMainUiState> {
+    NamedPreviewParameterProvider<CanvasMainUiState>() {
     private val today = LocalDate(2026, 5, 20)
 
     private val memberChips = listOf(
@@ -279,22 +279,21 @@ private class CanvasMainScreenPreviewParameterProvider :
         GroupMemberChip(GroupMemberId(7L), "박서연", YGColorChipType.NametagChip2),
     )
 
-    override val values: Sequence<CanvasMainUiState>
-        get() = sequenceOf(
-            CanvasMainUiState(
-                groupName = "그룹이름은최대열글자",
-                memberChips = memberChips,
-                today = today,
-                selectedDate = today,
-            ),
-            // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
-            CanvasMainUiState(
-                groupName = "그룹이름은최대열글자",
-                memberChips = memberChips,
-                today = today,
-                selectedDate = LocalDate(2026, 5, 3),
-            ),
-        )
+    override val entries = listOf(
+        "todayCanvas" to CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            memberChips = memberChips,
+            today = today,
+            selectedDate = today,
+        ),
+        // 지난 캔버스 — 아래 버튼이 저장·오늘로 가기로 바뀐다
+        "pastCanvas" to CanvasMainUiState(
+            groupName = "그룹이름은최대열글자",
+            memberChips = memberChips,
+            today = today,
+            selectedDate = LocalDate(2026, 5, 3),
+        ),
+    )
 }
 
 @YGPreview

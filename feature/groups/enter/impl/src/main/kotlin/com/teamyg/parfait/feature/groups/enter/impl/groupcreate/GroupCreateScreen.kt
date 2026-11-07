@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.textfield.YGTextFormField
@@ -25,6 +24,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtext.YGLabel
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.VerticalGridLayout
@@ -167,20 +167,18 @@ internal fun GroupCreateScreen(
 }
 
 private class GroupCreateScreenPreviewParameterProvider :
-    PreviewParameterProvider<GroupCreateUiState> {
-    override val values: Sequence<GroupCreateUiState>
-        get() = sequenceOf(
-            GroupCreateUiState(""),
-            GroupCreateUiState("", "", null),
-            GroupCreateUiState("가나", "하이하이", 3),
-            GroupCreateUiState(
-                "가나",
-                " 하이하이",
-                3,
-                nickNameError = NameValidResult.Error.SpaceAtEdge,
-            ),
-            GroupCreateUiState("가나", "하이하이", 3, isConfirmPopupVisible = true),
-        )
+    NamedPreviewParameterProvider<GroupCreateUiState>() {
+    override val entries = listOf(
+        "empty" to GroupCreateUiState(""),
+        "filled" to GroupCreateUiState("가나", "하이하이", 3),
+        "spaceAtEdgeError" to GroupCreateUiState(
+            "가나",
+            " 하이하이",
+            3,
+            nickNameError = NameValidResult.Error.SpaceAtEdge,
+        ),
+        "confirmPopup" to GroupCreateUiState("가나", "하이하이", 3, isConfirmPopupVisible = true),
+    )
 }
 
 @YGPreview

@@ -23,13 +23,13 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButton
 import com.teamyg.parfait.core.designsystem.component.ygbutton.YGButtonType
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -201,7 +201,7 @@ internal fun TermAgreeScreen(
     }
 }
 
-private class TermAgreeScreenPreviewParameterProvider : PreviewParameterProvider<TermAgreeState> {
+private class TermAgreeScreenPreviewParameterProvider : NamedPreviewParameterProvider<TermAgreeState>() {
     private val policies = listOf(
         PolicyVO(
             termsId = TermsId(1L),
@@ -219,21 +219,20 @@ private class TermAgreeScreenPreviewParameterProvider : PreviewParameterProvider
         ),
     )
 
-    override val values: Sequence<TermAgreeState>
-        get() = sequenceOf(
-            TermAgreeState(policies = policies, isLoading = false),
-            TermAgreeState(
-                policies = policies,
-                agreedTermsIds = setOf(TermsId(1L)),
-                isLoading = false,
-            ),
-            TermAgreeState(
-                policies = policies,
-                agreedTermsIds = policies.map(PolicyVO::termsId).toSet(),
-                isLoading = false,
-            ),
-            TermAgreeState(isLoading = false, isLoadFailed = true),
-        )
+    override val entries = listOf(
+        "default" to TermAgreeState(policies = policies, isLoading = false),
+        "partialAgreed" to TermAgreeState(
+            policies = policies,
+            agreedTermsIds = setOf(TermsId(1L)),
+            isLoading = false,
+        ),
+        "allAgreed" to TermAgreeState(
+            policies = policies,
+            agreedTermsIds = policies.map(PolicyVO::termsId).toSet(),
+            isLoading = false,
+        ),
+        "loadFailed" to TermAgreeState(isLoading = false, isLoadFailed = true),
+    )
 }
 
 @YGPreview

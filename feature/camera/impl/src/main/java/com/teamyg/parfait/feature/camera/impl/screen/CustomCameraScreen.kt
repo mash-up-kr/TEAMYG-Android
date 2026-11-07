@@ -20,7 +20,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButton
 import com.teamyg.parfait.core.designsystem.component.ygcirclebutton.YGCircleButtonType
@@ -31,6 +30,7 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.feature.camera.impl.component.CameraControlComponent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraState
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.component.CameraPermissionRequestComponent
@@ -148,12 +148,11 @@ private fun CameraContent(
     }
 }
 
-private class CustomCameraScreenPreviewParameterProvider : PreviewParameterProvider<CustomCameraState> {
-    override val values: Sequence<CustomCameraState>
-        get() = sequenceOf(
-            CustomCameraState(isInit = true, hasPermission = false),
-            CustomCameraState(isInit = true, hasPermission = true),
-        )
+private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameterProvider<CustomCameraState>() {
+    override val entries = listOf(
+        "permissionDenied" to CustomCameraState(isInit = true, hasPermission = false),
+        "permissionGranted" to CustomCameraState(isInit = true, hasPermission = true),
+    )
 }
 
 @YGPreview

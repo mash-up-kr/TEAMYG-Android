@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.common.terms.impl.component.NotionWebView
@@ -34,10 +34,10 @@ internal fun WebViewScreen(
     }
 }
 
-private class WebViewPreviewParameterProvider : PreviewParameterProvider<Pair<String, String>> {
-    override val values = sequenceOf(
-        "서비스 이용약관" to "https://example.com/terms-of-service",
-        "개인정보처리방침" to "https://example.com/privacy-policy",
+private class WebViewPreviewParameterProvider : NamedPreviewParameterProvider<Pair<String, String>>() {
+    override val entries = listOf(
+        "termsOfService" to ("서비스 이용약관" to "https://example.com/terms-of-service"),
+        "privacyPolicy" to ("개인정보처리방침" to "https://example.com/privacy-policy"),
     )
 }
 

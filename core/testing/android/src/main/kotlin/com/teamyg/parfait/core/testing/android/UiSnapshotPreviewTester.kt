@@ -24,13 +24,17 @@ class UiSnapshotPreviewTester private constructor(
         .flatMap { previews ->
             val marked = previews.filter { it.preview.previewInfo.group == UI_SNAPSHOT_PREVIEW_GROUP }
             marked.ifEmpty { previews }
-        }
+        }.also { parameters -> checkPreviewParameterNames(parameters.mapNotNull { it.parameterName() }) }
 
     override fun test(testParameter: AndroidPreviewJUnit4TestParameter) {
         LottieTask.EXECUTOR = ImmediateExecutor
         delegate.test(testParameter)
     }
 }
+
+private fun AndroidPreviewJUnit4TestParameter.parameterName(): PreviewParameterName? = preview
+    .takeIf { it.previewIndex != null }
+    ?.let { PreviewParameterName("${it.declaringClass}.${it.methodName}", it.previewInfo, it.previewIndexDisplayName) }
 
 /**
  * `core:designsystem` 의 `UI_SNAPSHOT_PREVIEW_GROUP` 과 같은 값이다. 이 모듈이 designsystem 을 의존하지 않아 문자열로 둔다.

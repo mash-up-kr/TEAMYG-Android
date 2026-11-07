@@ -11,9 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
@@ -55,12 +55,11 @@ internal fun InviteCodePasteBar(
     }
 }
 
-private class InviteCodePasteBarPreviewParameterProvider : PreviewParameterProvider<String> {
-    override val values: Sequence<String>
-        get() = sequenceOf(
-            "E54W1A",
-            "WDIDCJ",
-        )
+private class InviteCodePasteBarPreviewParameterProvider : NamedPreviewParameterProvider<String>() {
+    override val entries = listOf(
+        "withDigits" to "E54W1A",
+        "lettersOnly" to "WDIDCJ",
+    )
 }
 
 @YGPreview

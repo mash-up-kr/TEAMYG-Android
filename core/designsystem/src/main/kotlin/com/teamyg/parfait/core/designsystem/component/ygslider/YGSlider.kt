@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
@@ -99,8 +99,12 @@ private val SliderState.passedFraction: Float
         return if (span == 0f) 0f else ((value - valueRange.start) / span).coerceIn(0f, 1f)
     }
 
-private class YGSliderPreviewParameterProvider : PreviewParameterProvider<Float> {
-    override val values: Sequence<Float> = sequenceOf(0f, 0.35f, 1f)
+private class YGSliderPreviewParameterProvider : NamedPreviewParameterProvider<Float>() {
+    override val entries = listOf(
+        "empty" to 0f,
+        "partial" to 0.35f,
+        "full" to 1f,
+    )
 }
 
 @YGPreview
