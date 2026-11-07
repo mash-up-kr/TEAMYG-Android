@@ -77,6 +77,21 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickNotice_navigatesToNotice() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 공지사항을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickNotice)
+
+            // Then 공지사항 화면으로 이동한다
+            assertEquals(AppSettingSideEffect.NavigateToNotice, awaitItem())
+        }
+    }
+
+    @Test
     fun clickNotification_logsNotificationTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
         // Given 설정 화면
         val viewModel = viewModel()
