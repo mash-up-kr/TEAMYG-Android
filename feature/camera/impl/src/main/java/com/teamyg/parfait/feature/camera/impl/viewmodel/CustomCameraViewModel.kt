@@ -8,6 +8,8 @@ import com.teamyg.parfait.core.ui.UiState
 import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
+import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -49,9 +51,13 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnOpenAppSettings : CustomCameraIntent
 
+    /** 메인 카메라에 바인딩됐을 때만 온다(`CameraPreviewBindingEffect`) */
     data class OnZoomRangeReady(
         val range: ClosedFloatingPointRange<Float>,
+        val hasUltraWideCamera: Boolean,
     ) : CustomCameraIntent
+
+    data object OnClickZoom : CustomCameraIntent
 
     data object OnClickFlip : CustomCameraIntent
 
@@ -73,10 +79,21 @@ data class CustomCameraState(
     val hasPermission: Boolean = false,
     val permanentlyDenied: Boolean = false,
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
-    val zoomRatio: Float = 1f,
-    val zoomRange: ClosedFloatingPointRange<Float> = 1f..1f,
+    val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
+    val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
+    val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
     val flashMode: FlashMode = FlashMode.OFF,
-) : UiState
+) : UiState {
+    val isZoomButtonVisible: Boolean
+        get() = zoomLevels.size > 1
+
+    val useUltraWideCamera: Boolean
+        get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
+
+    /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
+    val cameraZoomRatio: Float
+        get() = if (useUltraWideCamera) 1f else zoomLevel.ratio
+}
 
 @HiltViewModel
 class CustomCameraViewModel
@@ -99,6 +116,7 @@ constructor(
             is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
             is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
+            is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -143,17 +161,30 @@ constructor(
     }
 
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
+        val halfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
+        val zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource)
+
         updateState {
             copy(
-                zoomRange = intent.range,
-                zoomRatio = zoomRatio.coerceIn(intent.range),
+                halfZoomSource = halfZoomSource,
+                zoomLevels = zoomLevels,
+                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다
+                zoomLevel = zoomLevel.takeIf { it in zoomLevels } ?: CameraZoomLevel.ONE,
             )
         }
+    }
+
+    private fun handleOnClickZoom() {
+        updateState { copy(zoomLevel = zoomLevel.next(zoomLevels)) }
     }
 
     private fun handleOnClickFlip() {
         updateState {
             copy(
+                zoomLevel = CameraZoomLevel.ONE,
+                // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
+                zoomLevels = listOf(CameraZoomLevel.ONE),
+                halfZoomSource = HalfZoomSource.NONE,
                 lensFacing = when (lensFacing) {
                     CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
                     else -> CameraSelector.LENS_FACING_BACK

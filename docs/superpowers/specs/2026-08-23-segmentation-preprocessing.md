@@ -5,7 +5,7 @@ status: in-progress
 category: behavior-spec
 platforms: android
 verified: 2026-10-20
-related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewComponent.kt, CameraCrop.kt#saveViewfinderCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit, DecodeSize.kt#capped
+related_code: ImageSegmentationRepositoryImpl#decodeImage, ContentResolver.kt#decodeUriToBitmap, CameraPreviewBinding.kt, CameraCrop.kt#saveViewfinderCapture, FileCameraCacheLocalDataSourceImpl#createFile, CreateCameraCacheFileUseCase, CreateCameraCacheUriUseCase, RecentImageRepositoryImpl#extensionOf, ExifOrientation.kt#exifOrientationToDegrees, ContentResolver.kt#rotatedToUpright, ImageFileLocalDataSourceImpl, DecodeImageUseCase, SegmentationViewModel, ToppingEditViewModel, ToppingEditMask.kt#buildCutoutBitmap, NavKeyToppingEdit, DecodeSize.kt#capped
 related_adr: ADR-0012
 related_spec: c103-multi-subject-selection, segmentation-pipeline-hardening, c106-topping-place-api
 related_architecture: data-layer
@@ -53,7 +53,7 @@ tags: [spec, parfait]
 | 짧은 변 512 하한 확대 | 문서가 하한을 명시하나 확대로 회복된다고는 말하지 않는다 | 조건부(OQ-P-278) → 전역 미착수(재시도 경로에만 PR #487) |
 | 촬영 저장을 PNG로 | 손실의 두 번째 세대만 없앤다. 첫 세대가 더 크다 | 조건부(아래 경고) → 미착수 |
 
-> ⚠️ **PNG 전환은 처음 생각보다 근거가 약하다.** `CameraPreviewComponent.kt`의
+> ⚠️ **PNG 전환은 처음 생각보다 근거가 약하다.** `CameraPreviewBinding.kt`의
 > `ImageCapture.Builder().build()`가 출력 포맷·품질·capture mode를 아무것도 지정하지 않아
 > **기본값인 JPEG로 촬영된다.** `ImageProxy.toBitmap()`이 디코드하는 것은 이미 압축된 프레임이다.
 > 즉 우리가 저장하며 만드는 손실은 **두 번째 세대**이고, 경계 아티팩트의 큰 몫은 첫 세대에서

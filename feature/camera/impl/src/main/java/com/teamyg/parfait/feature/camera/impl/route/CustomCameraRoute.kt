@@ -33,7 +33,10 @@ import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPol
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
-import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewViewComponent
+import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewBindingEffect
+import com.teamyg.parfait.feature.camera.impl.component.CameraTransitionEffect
+import com.teamyg.parfait.feature.camera.impl.component.CameraZoomEffect
+import com.teamyg.parfait.feature.camera.impl.component.rememberCameraPreviewState
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
 import com.teamyg.parfait.feature.camera.impl.util.saveViewfinderCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
@@ -191,13 +194,22 @@ internal fun CustomCameraRoute(
         }
     }
 
-    val cameraPreviewHandle = CameraPreviewViewComponent(
+    val cameraPreviewState = rememberCameraPreviewState()
+    CameraPreviewBindingEffect(
+        state = cameraPreviewState,
         lensFacing = state.lensFacing,
-        zoomRatio = state.zoomRatio,
+        useUltraWideCamera = state.useUltraWideCamera,
         hasPermission = state.hasPermission,
         onImageCaptureReady = { imageCapture = it },
-        onZoomRangeReady = { viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(it)) },
+        onZoomRangeReady = { range, hasUltraWideCamera ->
+            viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(range, hasUltraWideCamera))
+        },
     )
+    CameraZoomEffect(
+        state = cameraPreviewState,
+        zoomRatio = state.cameraZoomRatio,
+    )
+    CameraTransitionEffect(state = cameraPreviewState)
 
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
     // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
@@ -211,13 +223,15 @@ internal fun CustomCameraRoute(
             onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
             onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
             onClickFlash = { viewModel.processIntent(CustomCameraIntent.OnClickFlash) },
+            onClickZoom = { viewModel.processIntent(CustomCameraIntent.OnClickZoom) },
             modifier = modifier,
             onViewfinderRectChange = { viewfinderRect = it },
             cameraFeed = {
                 CameraFeedLayer(
-                    previewView = cameraPreviewHandle.previewView,
-                    camera = cameraPreviewHandle.camera.value,
+                    previewView = cameraPreviewState.previewView,
+                    camera = cameraPreviewState.camera,
                     viewfinderRect = { viewfinderRect },
+                    transition = cameraPreviewState.transition,
                     onFeedRectChange = { feedRect = it },
                     modifier = Modifier.fillMaxSize(),
                 )

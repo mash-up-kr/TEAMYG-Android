@@ -348,6 +348,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 | `YGEditTabButton` | `component/ygedittabbutton/` | [designsystem-button-missing-components](../superpowers/specs/archive/2026-07-30-designsystem-button-missing-components.md) |
 | `YGEditActionButton` | `component/ygeditactionbutton/` | [designsystem-button-missing-components](../superpowers/specs/archive/2026-07-30-designsystem-button-missing-components.md) |
 | `YGCameraShutter` | `component/ygcamerashutter/` | [designsystem-button-missing-components](../superpowers/specs/archive/2026-07-30-designsystem-button-missing-components.md) |
+| `YGCameraZoomButton` | `component/ygcamerazoombutton/` | [camera-zoom-button](../superpowers/specs/archive/2026-11-03-camera-zoom-button-design.md) |
 | `YGCanvas`(+`YGCanvasBackground`) | `component/ygcanvas/` | [designsystem-canvas-components](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md) |
 | `YGCanvasMenu`(+`YGCanvasMenuAction`·`YGCanvasMenuItem`) | `component/ygcanvasmenu/` | [designsystem-canvas-components](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md) |
 | `YGCanvasDateSelectButton` | `component/ygcanvasdateselect/` | [designsystem-canvas-components](../superpowers/specs/archive/2026-07-31-designsystem-canvas-components.md) |
