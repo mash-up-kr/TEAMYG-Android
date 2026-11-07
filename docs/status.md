@@ -57,6 +57,12 @@
 - ⚠️ 로그아웃 요청 중 항목은 `enabled`만 꺼지고 색이 그대로라 사용자는 눌러도 반응이 없는 이유를 모른다 — 디자인시스템에 비활성 색이 없다 (OQ-P-186)
 - 설계: [app-setting-s001](superpowers/specs/archive/2026-07-19-app-setting-s001.md), [s002-account-info](superpowers/specs/archive/2026-07-22-s002-account-info.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
 
+## 알림 설정 (S-105)
+- 상태: 앱 설정(S-001)의 「알림 설정」에서 들어가 캔버스 알림·활동 알림 두 토글을 켜고 끈다. 진입 시 `GetNotificationSettingUseCase`로 설정을 받아 오고, 받기 전이거나 기기 알림이 꺼져 있는 동안에는 토글을 조작할 수 없다(`isToggleEnabled`). 기기 알림이 꺼져 있으면(`NotificationManagerCompat.areNotificationsEnabled`) 안내 카드와 기기 설정 이동 버튼을 보이고, 설정에서 돌아올 때마다 다시 읽는다. 저장은 낙관적으로 먼저 반영하고 스위치별 `Mutex`로 한 줄로 세우며, 실패하면 대기 중인 요청이 없을 때만 마지막으로 저장에 성공한 값으로 되돌리고 에러 토스트를 띄운다. 조회 실패도 에러 토스트로 알린다.
+- 앵커: `NotificationSettingViewModel`, `NotificationSettingRepositoryImpl`, `NotificationSettingScreen`, `ListItemToggle`, `NotificationSwitch`, `NotificationPermissionManager.areNotificationsEnabled`, `buildAppNotificationSettingsIntent`, `feature/app/setting/impl`
+- ⚠️ `NotificationSettingRepositoryImpl`이 서버 연동 전 임시 구현이라 설정이 메모리에만 있고 앱을 다시 켜면 mock 초기값(캔버스 on·활동 off)으로 돌아간다 — 버그가 아니라 stub이다
+- 설계: [s105-notification-setting](superpowers/specs/2026-11-07-s105-notification-setting-design.md)
+
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
 - 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`
