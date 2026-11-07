@@ -17,6 +17,7 @@ import com.teamyg.parfait.feature.app.setting.impl.model.CSAE_POLICY_URL
 import com.teamyg.parfait.feature.app.setting.impl.model.OSS_LICENSE_URL
 import com.teamyg.parfait.core.navigation.Navigator
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
+import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
 import com.teamyg.parfait.feature.common.terms.api.NavKeyWebView
 import com.teamyg.parfait.feature.login.api.NavKeyLogin
 import com.teamyg.parfait.feature.app.setting.impl.screen.AppSettingScreen
@@ -42,6 +43,10 @@ internal fun AppSettingRoute(
                 AppSettingSideEffect.NavigateBack -> navigator.onBack()
 
                 AppSettingSideEffect.NavigateToAccountInfo -> navigator.goTo(NavKeyAccountInfo)
+
+                AppSettingSideEffect.NavigateToNotificationSetting -> navigator.goTo(
+                    NavKeyNotificationSetting,
+                )
 
                 is AppSettingSideEffect.NavigateToPolicyDetail -> navigator.goTo(
                     NavKeyWebView(title = effect.title, url = effect.url),
@@ -77,6 +82,7 @@ internal fun AppSettingRoute(
             state = state,
             onClickBack = { viewModel.processIntent(AppSettingIntent.ClickBack) },
             onClickAccount = { viewModel.processIntent(AppSettingIntent.ClickAccount) },
+            onClickNotification = { viewModel.processIntent(AppSettingIntent.ClickNotification) },
             onClickPolicy = { termsId ->
                 viewModel.processIntent(AppSettingIntent.ClickPolicy(termsId))
             },

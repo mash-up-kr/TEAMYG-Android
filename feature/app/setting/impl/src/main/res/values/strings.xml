@@ -2,6 +2,17 @@
 <resources>
     <string name="setting_profile_label">내 프로필</string>
     <string name="setting_item_account">계정 정보</string>
+    <string name="setting_item_notification">알림 설정</string>
+    <string name="notification_setting_title">알림 설정</string>
+    <string name="notification_setting_device_off_title">기기 알림이 꺼져 있어요</string>
+    <string name="notification_setting_device_off_body">알림을 받으려면 기기 설정에서 파르페 알림을 허용해 주세요</string>
+    <string name="notification_setting_open_device_settings">설정으로 이동</string>
+    <string name="notification_setting_save_error">설정 저장에 실패했어요, 나중에 다시 시도해 주세요</string>
+    <string name="notification_setting_load_error">설정을 불러오지 못했어요, 나중에 다시 시도해 주세요</string>
+    <string name="notification_setting_canvas_title">캔버스 알림 받기</string>
+    <string name="notification_setting_canvas_sub">아침 10시 오픈, 오후 8시 마감 알림을 보내드려요</string>
+    <string name="notification_setting_activity_title">활동 알림 모아 받기</string>
+    <string name="notification_setting_activity_sub">그룹원 활동이 많아지면 모아서 한번에 보내드려요</string>
     <string name="setting_item_csae_policy">아동 안전 정책</string>
     <string name="setting_item_oss_license">오픈소스 라이선스</string>
     <string name="setting_item_privacy_policy">개인정보처리방침</string>

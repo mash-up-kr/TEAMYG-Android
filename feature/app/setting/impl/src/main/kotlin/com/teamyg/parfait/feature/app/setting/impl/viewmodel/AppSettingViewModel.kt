@@ -49,6 +49,8 @@ sealed interface AppSettingIntent : UiIntent {
 
     data object ClickAccount : AppSettingIntent
 
+    data object ClickNotification : AppSettingIntent
+
     data class ClickPolicy(val termsId: TermsId) : AppSettingIntent
 
     data object ClickCsaePolicy : AppSettingIntent
@@ -68,6 +70,8 @@ sealed interface AppSettingSideEffect : UiSideEffect {
     data object NavigateBack : AppSettingSideEffect
 
     data object NavigateToAccountInfo : AppSettingSideEffect
+
+    data object NavigateToNotificationSetting : AppSettingSideEffect
 
     data class NavigateToPolicyDetail(
         val title: String,
@@ -118,6 +122,7 @@ constructor(
         when (intent) {
             AppSettingIntent.ClickBack -> handleClickBack()
             AppSettingIntent.ClickAccount -> handleClickAccount()
+            AppSettingIntent.ClickNotification -> handleClickNotification()
             is AppSettingIntent.ClickPolicy -> handleClickPolicy(intent.termsId)
             AppSettingIntent.ClickCsaePolicy -> handleClickCsaePolicy()
             AppSettingIntent.ClickOssLicense -> handleClickOssLicense()
@@ -134,6 +139,10 @@ constructor(
 
     private fun handleClickAccount() {
         postSideEffect(AppSettingSideEffect.NavigateToAccountInfo)
+    }
+
+    private fun handleClickNotification() {
+        postSideEffect(AppSettingSideEffect.NavigateToNotificationSetting)
     }
 
     private fun loadPolicies() {
