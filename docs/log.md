@@ -453,3 +453,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-08] change | 알림 설정 화면(S-105)
 `NavKeyNotificationSetting` 진입 · 캔버스·활동 알림 토글(낙관적 반영 + 스위치별 직렬 저장·롤백) · 기기 알림 꺼짐 안내 · Mock `NotificationSettingRepositoryImpl`(서버 API 전)
+
+## [2026-11-08] change | 알림 설정 분석 이벤트
+`app_setting_notification_tapped`(S-001) · `app_notification_setting_changed`(저장 성공 시, `enabled` 차원) · `app_notification_device_settings_tapped`(S-105) 배선 · 설계는 user-events-design
