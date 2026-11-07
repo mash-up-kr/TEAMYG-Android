@@ -39,6 +39,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterP
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 import com.teamyg.parfait.core.util.jvm.extension.toFirstDayOfMonth
 import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.feature.groups.canvas.impl.R
@@ -255,12 +256,14 @@ private fun <T> CalendarPeriodSelector(
                 onDismissRequest = onDismiss,
                 properties = PopupProperties(focusable = true),
             ) {
-                CalendarDropdown(
-                    items = items,
-                    selectedItem = selectedItem,
-                    itemLabel = itemLabel,
-                    onSelect = onSelect,
-                )
+                ProvideFixedFontScale {
+                    CalendarDropdown(
+                        items = items,
+                        selectedItem = selectedItem,
+                        itemLabel = itemLabel,
+                        onSelect = onSelect,
+                    )
+                }
             }
         }
     }

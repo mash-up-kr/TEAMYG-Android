@@ -441,3 +441,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-05] change | 스크린샷 비교 렌더 캐시·파라미터 이름
 `gradle-cache-seed.yml`에 record·compare 스텝 추가(ui-diff 렌더를 빌드 캐시로) · `@PreviewParameter`는 `NamedPreviewParameterProvider`로 이름을 붙이고 `UiSnapshotPreviewTester`가 누락·형식·중복을 막음 · 기준 파일명이 순서 번호에서 이름으로 바뀜 · ADR-0037·스펙 반영
+
+## [2026-11-05] change | 시스템 글자 크기 무시
+`YGCustomTheme` `LocalDensity` `fontScale = 1` · `YGModalPopup`·`CustomCalendar` 창 content 재고정 · 약관 웹뷰 `textZoom` · 실기기(SM-A356N) `font_scale` 1.0·2.0 비교로 홈·캔버스·달력 팝업·모달 확인 · ADR-0036

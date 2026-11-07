@@ -29,6 +29,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.android.extension.ProvideFixedFontScale
 
 @Composable
 fun YGModalPopup(
@@ -49,18 +50,20 @@ fun YGModalPopup(
         onDismissRequest = onDismissRequest,
         properties = properties,
     ) {
-        YGModalPopupContent(
-            title = title,
-            body = body,
-            iconRes = iconRes,
-            secondaryText = secondaryText,
-            onSecondaryClick = onSecondaryClick,
-            primaryText = primaryText,
-            onPrimaryClick = onPrimaryClick,
-            modifier = modifier,
-            isEnabledButton = isEnabledButton,
-            iconTint = iconTint,
-        )
+        ProvideFixedFontScale {
+            YGModalPopupContent(
+                title = title,
+                body = body,
+                iconRes = iconRes,
+                secondaryText = secondaryText,
+                onSecondaryClick = onSecondaryClick,
+                primaryText = primaryText,
+                onPrimaryClick = onPrimaryClick,
+                modifier = modifier,
+                isEnabledButton = isEnabledButton,
+                iconTint = iconTint,
+            )
+        }
     }
 }
 
