@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -68,30 +70,37 @@ internal fun NoticeListScreen(
     }
 }
 
-@YGPreview
-@Composable
-private fun NoticeListScreenPreview() = PreviewBox {
-    val notice = NoticeVO(id = 1L, title = "파르페 v1.5.0 업데이트 안내", date = "2026.11.12", content = "", isNew = false)
+private class NoticeListPreviewParameterProvider : PreviewParameterProvider<NoticeListState> {
+    override val values: Sequence<NoticeListState>
+        get() {
+            val notice = NoticeVO(
+                id = 1L,
+                title = "파르페 v1.5.0 업데이트 안내",
+                date = "2026.11.12",
+                content = "",
+                isNew = false,
+            )
 
-    NoticeListScreen(
-        state = NoticeListState(
-            notices = listOf(
-                notice.copy(id = 1L, isNew = true),
-                notice.copy(id = 2L),
-                notice.copy(id = 3L, title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목"),
-            ),
-        ),
-        toastPolicy = rememberYGToastPolicy(),
-        onClickBack = {},
-        onClickNotice = {},
-    )
+            return sequenceOf(
+                NoticeListState(
+                    notices = listOf(
+                        notice.copy(id = 1L, isNew = true),
+                        notice.copy(id = 2L),
+                        notice.copy(id = 3L, title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목"),
+                    ),
+                ),
+                NoticeListState(),
+            )
+        }
 }
 
 @YGPreview
 @Composable
-private fun NoticeListScreenEmptyPreview() = PreviewBox {
+private fun NoticeListScreenPreview(
+    @PreviewParameter(NoticeListPreviewParameterProvider::class) state: NoticeListState,
+) = PreviewBox {
     NoticeListScreen(
-        state = NoticeListState(),
+        state = state,
         toastPolicy = rememberYGToastPolicy(),
         onClickBack = {},
         onClickNotice = {},
