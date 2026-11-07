@@ -27,7 +27,7 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import com.teamyg.parfait.feature.app.notice.impl.R
-import com.teamyg.parfait.feature.app.notice.impl.component.ListItemMenuSub
+import com.teamyg.parfait.core.ui.component.ListItemMenuSub
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListState
 
 private val ToastTopOffset = 13.dp

@@ -1,4 +1,4 @@
-package com.teamyg.parfait.feature.app.notice.impl.component
+package com.teamyg.parfait.core.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,14 +23,14 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
 private const val TITLE_MAX_LINES = 2
 
 /**
- * 제목·부가 텍스트와 오른쪽 caret 으로 이뤄진 메뉴 행. 가로 여백은 두지 않는다 — 놓이는 화면이 정한다.
+ * 제목·부가 텍스트(선택)와 오른쪽 caret 으로 이뤄진 메뉴 행. 가로 여백은 두지 않는다 — 놓이는 화면이 정한다.
  */
 @Composable
-internal fun ListItemMenuSub(
+fun ListItemMenuSub(
     title: String,
-    subText: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    subText: String? = null,
     isNew: Boolean = false,
 ) {
     Row(
@@ -65,11 +65,13 @@ internal fun ListItemMenuSub(
                 }
             }
 
-            Text(
-                text = subText,
-                style = YGTheme.typography.caption.c01R,
-                color = YGAtomicColors.Gray.Gray400,
-            )
+            if (subText != null) {
+                Text(
+                    text = subText,
+                    style = YGTheme.typography.caption.c01R,
+                    color = YGAtomicColors.Gray.Gray400,
+                )
+            }
         }
 
         YGIconButton(
@@ -89,6 +91,11 @@ private fun ListItemMenuSubPreview() = PreviewBox {
             title = "파르페 v1.5.0 업데이트 안내",
             subText = "2026.11.12",
             onClick = {},
+        )
+        ListItemMenuSub(
+            title = "공지사항",
+            onClick = {},
+            isNew = true,
         )
         ListItemMenuSub(
             title = "이용약관 및 개인정보처리방침 개정 안내",

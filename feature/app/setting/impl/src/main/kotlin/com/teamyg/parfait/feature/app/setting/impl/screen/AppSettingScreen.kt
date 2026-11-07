@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
-import com.teamyg.parfait.core.designsystem.component.ygchipnew.YGChipNew
 import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtextbutton.YGTextButton
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
@@ -31,6 +30,7 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.ui.component.ListItemMenuSub
 import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.member.LoginProvider
@@ -99,11 +99,11 @@ internal fun AppSettingScreen(
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickNotification,
                     )
-                    YGListItem(
-                        text = stringResource(R.string.setting_item_notice),
-                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                        onClickTrailingIcon = onClickNotice,
-                        label = { YGChipNew() },
+                    ListItemMenuSub(
+                        title = stringResource(R.string.setting_item_notice),
+                        onClick = onClickNotice,
+                        isNew = true,
+                        modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),

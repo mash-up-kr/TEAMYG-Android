@@ -461,4 +461,4 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 227파일 +9151/-1597 · 유닛 1655 · 계측 106 · OQ 신설 OQ-P-461 · 해소 없음(OQ-P-231 재개)
 
 ## [2026-11-08] change | 공지사항 목록·상세
-`feature/app/notice` 신규 · `YGChipNew`·`YGListItem` label 슬롯 · Mock `NoticeRepositoryImpl`(서버 API 전)
+`feature/app/notice` 신규 · `YGChipNew`·`ListItemMenuSub`(core:ui) · Mock `NoticeRepositoryImpl`(서버 API 전)
