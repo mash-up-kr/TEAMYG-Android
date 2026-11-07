@@ -1,6 +1,9 @@
 package com.teamyg.parfait.feature.app.setting.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.error.AppError
 import com.teamyg.parfait.domain.model.id.MemberId
@@ -18,6 +21,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,6 +44,7 @@ class AppSettingViewModelTest {
     private val withdraw: WithdrawUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val getPolicies: GetPoliciesUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(
         accountFlow: Flow<MyAccountVO?> = flowOf(null),
@@ -52,6 +57,7 @@ class AppSettingViewModelTest {
             withdraw = withdraw,
             getMyAccountFlow = getMyAccountFlow,
             getPolicies = getPolicies,
+            analyticsLogger = analyticsLogger,
         )
     }
 
@@ -67,6 +73,21 @@ class AppSettingViewModelTest {
 
             // Then 알림 설정 화면으로 이동한다
             assertEquals(AppSettingSideEffect.NavigateToNotificationSetting, awaitItem())
+        }
+    }
+
+    @Test
+    fun clickNotification_logsNotificationTappedEvent() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        // When 알림 설정을 누른다
+        viewModel.processIntent(AppSettingIntent.ClickNotification)
+
+        // Then 알림 설정 진입 이벤트가 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTIFICATION_TAPPED))
         }
     }
 
