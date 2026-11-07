@@ -1,7 +1,7 @@
 ---
 id: notice
 title: 공지사항 (Notice)
-status: draft
+status: in-progress
 category: ui-spec
 platforms: android
 verified: 2026-11-07

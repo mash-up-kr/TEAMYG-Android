@@ -435,3 +435,6 @@ conventions 불일치 행 앱 칸 · DTO·VO KDoc 서버 상태 서술을 포인
 
 ## [2026-10-28] change | 캔버스 영상 토핑 즉시 등장
 팝인(0.6배 확대·easeOutBack·페이드) 제거, `toppingPopProgresses` → `visibleToppingCount`(iOS `toppingVisibilities` 와 같은 경계) · OQ-P-429 옛 ③(팝인 중 띠 잘림) 소멸
+
+## [2026-11-07] change | 공지사항 목록·상세
+`feature/app/notice` 신규 · `YGChipNew`·`YGListItem` label 슬롯 · Mock `NoticeRepositoryImpl`(서버 API 전)
