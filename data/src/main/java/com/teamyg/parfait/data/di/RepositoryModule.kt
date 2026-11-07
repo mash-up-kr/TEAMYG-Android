@@ -10,6 +10,7 @@ import com.teamyg.parfait.data.repository.image.ImageUploadRepositoryImpl
 import com.teamyg.parfait.data.repository.image.RecentImageRepositoryImpl
 import com.teamyg.parfait.data.repository.member.MemberRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationRepositoryImpl
+import com.teamyg.parfait.data.repository.notice.NoticeRepositoryImpl
 import com.teamyg.parfait.data.repository.notification.NotificationSettingRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.ParfaitRepositoryImpl
 import com.teamyg.parfait.data.repository.parfait.PastCanvasAlertRepositoryImpl
@@ -28,6 +29,7 @@ import com.teamyg.parfait.domain.repository.image.ImageUploadRepository
 import com.teamyg.parfait.domain.repository.image.RecentImageRepository
 import com.teamyg.parfait.domain.repository.member.MemberRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationRepository
+import com.teamyg.parfait.domain.repository.notice.NoticeRepository
 import com.teamyg.parfait.domain.repository.notification.NotificationSettingRepository
 import com.teamyg.parfait.domain.repository.parfait.ParfaitRepository
 import com.teamyg.parfait.domain.repository.parfait.PastCanvasAlertRepository
@@ -124,4 +126,8 @@ interface RepositoryModule {
     fun bindNotificationSettingRepository(
         notificationSettingRepositoryImpl: NotificationSettingRepositoryImpl,
     ): NotificationSettingRepository
+
+    @Binds
+    @Singleton
+    fun bindNoticeRepository(noticeRepositoryImpl: NoticeRepositoryImpl): NoticeRepository
 }
