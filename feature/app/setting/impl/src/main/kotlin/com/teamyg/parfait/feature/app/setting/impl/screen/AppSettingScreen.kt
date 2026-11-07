@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
+import com.teamyg.parfait.core.designsystem.component.ygchipnew.YGChipNew
 import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
 import com.teamyg.parfait.core.designsystem.component.ygtextbutton.YGTextButton
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
@@ -49,6 +50,7 @@ internal fun AppSettingScreen(
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
     onClickNotification: () -> Unit,
+    onClickNotice: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
     onClickCsaePolicy: () -> Unit,
     onClickOssLicense: () -> Unit,
@@ -96,6 +98,12 @@ internal fun AppSettingScreen(
                         text = stringResource(R.string.setting_item_notification),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickNotification,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_notice),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickNotice,
+                        label = { YGChipNew() },
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
@@ -231,6 +239,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickBack = {},
         onClickAccount = {},
         onClickNotification = {},
+        onClickNotice = {},
         onClickPolicy = {},
         onClickCsaePolicy = {},
         onClickOssLicense = {},

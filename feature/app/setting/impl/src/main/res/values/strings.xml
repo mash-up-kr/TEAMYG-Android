@@ -3,6 +3,7 @@
     <string name="setting_profile_label">내 프로필</string>
     <string name="setting_item_account">계정 정보</string>
     <string name="setting_item_notification">알림 설정</string>
+    <string name="setting_item_notice">공지사항</string>
     <string name="notification_setting_title">알림 설정</string>
     <string name="notification_setting_device_off_title">기기 알림이 꺼져 있어요</string>
     <string name="notification_setting_device_off_body">알림을 받으려면 기기 설정에서 파르페 알림을 허용해 주세요</string>
