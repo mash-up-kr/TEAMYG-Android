@@ -1,18 +1,23 @@
 package com.teamyg.parfait.feature.app.notice.impl.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -22,10 +27,13 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import com.teamyg.parfait.feature.app.notice.impl.R
-import com.teamyg.parfait.feature.app.notice.impl.component.NoticeListItem
+import com.teamyg.parfait.feature.app.notice.impl.component.ListItemMenuSub
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListState
 
 private val ToastTopOffset = 13.dp
+
+// 디자인 값 그대로 쓴다 — 가까운 레이아웃 토큰이 없다
+private val ContentHorizontalPadding = 19.dp
 
 @Composable
 internal fun NoticeListScreen(
@@ -50,12 +58,30 @@ internal fun NoticeListScreen(
                     .weight(1f)
                     .clipToBounds(),
             ) {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(items = state.notices, key = { it.id }) { notice ->
-                        NoticeListItem(
-                            notice = notice,
-                            onClick = { onClickNotice(notice.id) },
-                        )
+                // 행과 구분선은 서로 8dp 씩 떨어져 있어 한 간격으로 쌓고, 구분선은 행 사이에만 둔다
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    state.notices.forEachIndexed { index, notice ->
+                        if (index > 0) {
+                            item(key = "divider-${notice.id}") {
+                                HorizontalDivider(
+                                    color = YGAtomicColors.Gray.Gray100,
+                                    modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
+                                )
+                            }
+                        }
+
+                        item(key = notice.id) {
+                            ListItemMenuSub(
+                                title = notice.title,
+                                subText = notice.date,
+                                isNew = notice.isNew,
+                                onClick = { onClickNotice(notice.id) },
+                                modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
+                            )
+                        }
                     }
                 }
 
