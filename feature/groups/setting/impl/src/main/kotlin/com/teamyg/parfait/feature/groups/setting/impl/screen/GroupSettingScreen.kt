@@ -49,7 +49,7 @@ internal fun GroupSettingScreen(
     onNicknameChange: (String) -> Unit,
     onNicknameFocusChange: (Boolean) -> Unit,
     onConfirmNickname: () -> Unit,
-    onClickCopyInviteCode: () -> Unit,
+    onClickShareInviteCode: () -> Unit,
     onClickLeaveGroup: () -> Unit,
     onClickReportGroup: () -> Unit,
     onConfirmLeaveGroup: () -> Unit,
@@ -105,10 +105,11 @@ internal fun GroupSettingScreen(
                 YGInviteCard(
                     label = stringResource(R.string.group_setting_invite_label),
                     inviteCode = state.inviteCode.value,
-                    subText = inviteCardSubText(state.remainingCount, state.isCodeCopied),
+                    subText = inviteCardSubText(state.remainingCount),
                     status = inviteCardStatus(state.remainingCount),
-                    copyButtonText = stringResource(R.string.group_setting_copy),
-                    onCopyClick = onClickCopyInviteCode,
+                    actionText = stringResource(R.string.group_setting_share),
+                    onActionClick = onClickShareInviteCode,
+                    endIconResource = null,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -182,13 +183,10 @@ internal fun GroupSettingScreen(
 }
 
 @Composable
-private fun inviteCardSubText(
-    remainingCount: Int,
-    isCodeCopied: Boolean,
-): String = when {
-    remainingCount <= 0 -> stringResource(R.string.group_setting_invite_full)
-    isCodeCopied -> stringResource(R.string.group_setting_invite_copied)
-    else -> stringResource(R.string.group_setting_invite_remaining, remainingCount)
+private fun inviteCardSubText(remainingCount: Int): String = if (remainingCount <= 0) {
+    stringResource(R.string.group_setting_invite_full)
+} else {
+    stringResource(R.string.group_setting_invite_remaining, remainingCount)
 }
 
 private fun inviteCardStatus(remainingCount: Int): YGInviteCardStatus =
@@ -198,7 +196,6 @@ private class GroupSettingPreviewParameterProvider :
     NamedPreviewParameterProvider<GroupSettingUiState>() {
     override val entries = listOf(
         "default" to GroupSettingUiState(),
-        "codeCopied" to GroupSettingUiState(isCodeCopied = true),
         "noRemaining" to GroupSettingUiState(remainingCount = 0),
         "longText" to GroupSettingUiState(
             groupName = GroupName("열글자를꽉채운그룹명"),
@@ -229,7 +226,7 @@ private fun GroupSettingScreenPreview(
         onNicknameChange = {},
         onNicknameFocusChange = {},
         onConfirmNickname = {},
-        onClickCopyInviteCode = {},
+        onClickShareInviteCode = {},
         onClickLeaveGroup = {},
         onClickReportGroup = {},
         onConfirmLeaveGroup = {},

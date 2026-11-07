@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.setting.impl.route
 
-import android.content.ClipData
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -8,8 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,8 +26,6 @@ import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingSide
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.GroupSettingViewModel
 import com.teamyg.parfait.feature.groups.setting.impl.viewmodel.toStringResource
 
-private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
-
 @Composable
 internal fun GroupSettingRoute(
     groupId: Long,
@@ -40,7 +38,7 @@ internal fun GroupSettingRoute(
     ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
     val toastPolicy = rememberYGToastPolicy()
 
@@ -56,14 +54,8 @@ internal fun GroupSettingRoute(
                 is GroupSettingSideEffect.ShowError ->
                     toastPolicy.showError(errorMessages.getValue(effect.error))
 
-                is GroupSettingSideEffect.CopyInviteCode -> clipboard.setClipEntry(
-                    ClipEntry(
-                        ClipData.newPlainText(
-                            CLIP_LABEL_INVITE_MESSAGE,
-                            String.format(inviteMessageTemplate, effect.inviteCode),
-                        ),
-                    ),
-                )
+                is GroupSettingSideEffect.ShareInviteCode ->
+                    context.shareText(String.format(inviteMessageTemplate, effect.inviteCode))
 
                 // 뒤로 가기(pop)가 아니라 백스택을 갈아 끼우는 이유: 여기 오기까지 쌓인 화면은
                 // 전부 방금 떠난 그룹의 것이라 돌아가면 403 뿐이다. 목록도 새로 열려 다시 읽는다.
@@ -85,8 +77,8 @@ internal fun GroupSettingRoute(
                 viewModel.processIntent(GroupSettingIntent.ChangeNicknameFocus(it))
             },
             onConfirmNickname = { viewModel.processIntent(GroupSettingIntent.ConfirmNickname) },
-            onClickCopyInviteCode = {
-                viewModel.processIntent(GroupSettingIntent.ClickCopyInviteCode)
+            onClickShareInviteCode = {
+                viewModel.processIntent(GroupSettingIntent.ClickShareInviteCode)
             },
             onClickLeaveGroup = { viewModel.processIntent(GroupSettingIntent.ClickLeaveGroup) },
             onClickReportGroup = { viewModel.processIntent(GroupSettingIntent.ClickReportGroup) },
@@ -103,4 +95,12 @@ internal fun GroupSettingRoute(
                 .consumeWindowInsets(innerPadding),
         )
     }
+}
+
+private fun Context.shareText(text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(sendIntent, null))
 }

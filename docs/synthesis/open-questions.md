@@ -7894,4 +7894,4 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
-<!-- oq-next: 460 -->
+<!-- oq-next: 461 -->

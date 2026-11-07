@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.groups.setting.impl.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -32,11 +31,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
 
 /** 그룹 설정 화면이 한 번에 하나만 띄울 수 있는 확인 팝업. */
 enum class GroupSettingDialog {
@@ -54,7 +49,6 @@ data class GroupSettingUiState(
     val members: List<GroupMemberUiModel> = emptyList(),
     val inviteCode: InviteCode = InviteCode(""),
     val remainingCount: Int = 0,
-    val isCodeCopied: Boolean = false,
     val visibleDialog: GroupSettingDialog? = null,
     /** 닉네임 변경이 서버에 오가는 중. 확인 버튼을 다시 누르지 못하게 막는다 */
     val isSubmittingNickname: Boolean = false,
@@ -88,7 +82,7 @@ sealed interface GroupSettingIntent : UiIntent {
 
     data object ConfirmNickname : GroupSettingIntent
 
-    data object ClickCopyInviteCode : GroupSettingIntent
+    data object ClickShareInviteCode : GroupSettingIntent
 
     data object ClickLeaveGroup : GroupSettingIntent
 
@@ -104,7 +98,7 @@ sealed interface GroupSettingIntent : UiIntent {
 sealed interface GroupSettingSideEffect : UiSideEffect {
     data object NavigateBack : GroupSettingSideEffect
 
-    data class CopyInviteCode(val inviteCode: String) : GroupSettingSideEffect
+    data class ShareInviteCode(val inviteCode: String) : GroupSettingSideEffect
 
     /**
      * 서버가 되돌린 사유. 입력 형식 오류는 고칠 곳이 눈앞에 있어 입력칸 아래 남지만, 서버 실패는
@@ -133,8 +127,6 @@ constructor(
     initialState = GroupSettingUiState(),
 ) {
     private val groupId = GroupId(groupIdValue)
-
-    private var copyResetJob: Job? = null
 
     init {
         viewModelLogger.i { "GroupSettingViewModel::init" }
@@ -168,7 +160,6 @@ constructor(
                     postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                 }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isLoadingDetail = false) }
             }
         }
@@ -210,7 +201,7 @@ constructor(
             is GroupSettingIntent.InputNickname -> handleInputNickname(intent.nickname)
             is GroupSettingIntent.ChangeNicknameFocus -> handleChangeNicknameFocus(intent.isFocused)
             GroupSettingIntent.ConfirmNickname -> handleConfirmNickname()
-            GroupSettingIntent.ClickCopyInviteCode -> handleClickCopyInviteCode()
+            GroupSettingIntent.ClickShareInviteCode -> handleClickShareInviteCode()
             GroupSettingIntent.ClickLeaveGroup -> handleClickLeaveGroup()
             GroupSettingIntent.ClickReportGroup -> handleClickReportGroup()
             GroupSettingIntent.ConfirmLeaveGroup -> handleConfirmLeaveGroup()
@@ -272,13 +263,11 @@ constructor(
                         postSideEffect(GroupSettingSideEffect.ShowError(throwable.toGroupSettingError()))
                     }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 버튼이 영구 비활성으로 남지 않게 한다
                 updateState { copy(isSubmittingNickname = false) }
             }
         }
     }
 
-    /** 실패 갈래를 전부 열거해 둔다 */
     private fun Throwable.toGroupSettingError(): GroupSettingError = when (this) {
         is AppError.Network -> GroupSettingError.NETWORK
 
@@ -290,20 +279,13 @@ constructor(
         else -> GroupSettingError.UNKNOWN
     }
 
-    private fun handleClickCopyInviteCode() {
-        updateState { copy(isCodeCopied = true) }
+    private fun handleClickShareInviteCode() {
         analyticsLogger.logEvent(
             AnalyticsEvent(
-                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_COPIED,
+                type = AnalyticsEventType.GROUP_MENU_INVITE_CODE_SHARE,
             ),
         )
-        postSideEffect(GroupSettingSideEffect.CopyInviteCode(state.value.inviteCode.value))
-
-        copyResetJob?.cancel()
-        copyResetJob = viewModelScope.launch {
-            delay(COPY_CODE_RESET_DELAY_MS.milliseconds)
-            updateState { copy(isCodeCopied = false) }
-        }
+        postSideEffect(GroupSettingSideEffect.ShareInviteCode(state.value.inviteCode.value))
     }
 
     private fun handleClickLeaveGroup() {
@@ -367,7 +349,6 @@ constructor(
                         postSideEffect(GroupSettingSideEffect.NavigateToGroupList)
                     }.onFailure { onDialogActionFailed(it, action) }
             } finally {
-                // 예외·취소 어느 경로로 빠져나가도 로딩이 걸린 채 남지 않게 한다
                 updateState { copy(isSubmittingDialogAction = false) }
             }
         }
@@ -410,9 +391,6 @@ constructor(
         }
     }
 }
-
-// 초대 코드 복사 후 "복사됨" 문구가 원래 문구로 되돌아가기까지의 지연(ms)
-private const val COPY_CODE_RESET_DELAY_MS = 2000L
 
 // TODO: 사유를 고르는 UI 가 아직 없다. 서버는 사유를 필수로 받으므로(빈 값이면
 //  400 INVALID_GROUP_REPORT_REASON) 화면이 대신 채운다 — 사유 선택이 생기면 이 상수는 사라진다.
