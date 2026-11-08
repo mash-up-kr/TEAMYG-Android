@@ -577,7 +577,7 @@ class CanvasToppingArrangeViewModelTest {
                 ),
             )
 
-            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            assertEquals(CanvasToppingArrangeEffect.TriggerSnapHaptic, awaitItem())
             expectNoEvents()
         }
 
@@ -604,7 +604,7 @@ class CanvasToppingArrangeViewModelTest {
             )
 
             // 두 축이 같은 프레임에 동시 진입해도 햅틱은 한 번만 — OR 로 합쳐 한 postSideEffect 호출뿐이다
-            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            assertEquals(CanvasToppingArrangeEffect.TriggerSnapHaptic, awaitItem())
             expectNoEvents()
         }
 
@@ -613,6 +613,66 @@ class CanvasToppingArrangeViewModelTest {
         assertEquals(0.5f, moved.positionY)
         assertTrue(viewModel.state.value.isCenterGuideXVisible)
         assertTrue(viewModel.state.value.isCenterGuideYVisible)
+    }
+
+    // 각도 가이드·스냅
+
+    @Test
+    fun transform_rotatingIntoNinety_showsAngleGuideAndTriggersHapticOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        // 90도 밖(85도)까지 회전 — 아직 각도 가이드가 안 뜬다. panX/Y=0 이라 위치 스냅·햅틱은 없다
+        viewModel.processIntent(
+            CanvasToppingArrangeIntent.OnToppingTransform(
+                panX = 0f,
+                panY = 0f,
+                zoom = 1f,
+                rotationDelta = 85f,
+                thresholdRatioX = 0.01f,
+                thresholdRatioY = 0.01f,
+            ),
+        )
+        assertFalse(viewModel.state.value.isAngleGuideVisible)
+
+        viewModel.effect.test {
+            // 3도 더 돌려 88도로 들어온다
+            viewModel.processIntent(
+                CanvasToppingArrangeIntent.OnToppingTransform(
+                    panX = 0f,
+                    panY = 0f,
+                    zoom = 1f,
+                    rotationDelta = 3f,
+                    thresholdRatioX = 0.01f,
+                    thresholdRatioY = 0.01f,
+                ),
+            )
+
+            assertEquals(CanvasToppingArrangeEffect.TriggerSnapHaptic, awaitItem())
+            expectNoEvents()
+        }
+
+        assertEquals(90f, viewModel.topping(FIRST_ID).rotationDegrees)
+        assertTrue(viewModel.state.value.isAngleGuideVisible)
+        assertFalse(viewModel.state.value.isAngleGuideHorizontal)
+    }
+
+    @Test
+    fun transform_draggingWithoutRotation_keepsAngleGuideHidden() = runTest(mainDispatcherRule.dispatcher) {
+        // 0도 토핑을 회전 없이 드래그만 하면 각도 가이드는 뜨지 않는다(회전했을 때만 노출)
+        val viewModel = viewModel()
+
+        viewModel.processIntent(
+            CanvasToppingArrangeIntent.OnToppingTransform(
+                panX = 0.05f,
+                panY = 0.05f,
+                zoom = 1f,
+                rotationDelta = 0f,
+                thresholdRatioX = 0.01f,
+                thresholdRatioY = 0.01f,
+            ),
+        )
+
+        assertFalse(viewModel.state.value.isAngleGuideVisible)
     }
 
     @Test
@@ -630,7 +690,7 @@ class CanvasToppingArrangeViewModelTest {
                     thresholdRatioY = 0.01f,
                 ),
             )
-            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            assertEquals(CanvasToppingArrangeEffect.TriggerSnapHaptic, awaitItem())
             assertTrue(viewModel.state.value.isCenterGuideXVisible)
 
             // 손가락은(raw) 0.499 에서 0.1 더 움직였다 — 임계값 밖으로 확실히 나간다. 해제는 햅틱이 없다

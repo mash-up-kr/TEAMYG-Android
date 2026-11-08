@@ -542,6 +542,99 @@ class CanvasTextInputViewModelTest {
     }
 
     @Test
+    fun onToppingTransform_beforeMeasure_keepsRawInSyncWithOffset() {
+        // 실측 전 제스처는 스냅 판정을 못 하지만, 이후 첫 스냅에서 위치·각도가 튀지 않도록
+        // offset 과 함께 raw 값도 올려 둬야 한다
+        val viewModel = viewModel()
+
+        viewModel.processIntent(
+            CanvasTextInputIntent.OnToppingTransform(pan = DpOffset(30.dp, 40.dp), zoom = 1f, rotationDelta = 10f),
+        )
+
+        val state = viewModel.state.value
+        assertEquals(30.dp, state.offsetX)
+        assertEquals(30.dp, state.rawOffsetX)
+        assertEquals(40.dp, state.offsetY)
+        assertEquals(40.dp, state.rawOffsetY)
+        assertEquals(10f, state.rotationDegrees)
+        assertEquals(10f, state.rawRotationDegrees)
+        assertTrue(state.hasRotatedThisGesture)
+    }
+
+    @Test
+    fun onToppingTransform_enteringCenterGuideZone_snapsAndTriggersHapticOnce() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 실측으로 캔버스 정중앙(offsetX=100, 중심 150)에 자동 배치된 뒤 X를 50dp 밖으로 뺀 상태
+            val viewModel = viewModel()
+            viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(300.dp, 500.dp)))
+            viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(100.dp, 40.dp)))
+            viewModel.processIntent(
+                CanvasTextInputIntent.OnToppingTransform(pan = DpOffset(50.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+            )
+            assertFalse(viewModel.state.value.isCenterGuideXVisible)
+
+            // When 다시 중앙 6dp 안으로 끌어온다
+            viewModel.effect.test {
+                viewModel.processIntent(
+                    CanvasTextInputIntent.OnToppingTransform(
+                        pan = DpOffset((-48).dp, 0.dp),
+                        zoom = 1f,
+                        rotationDelta = 0f,
+                    ),
+                )
+
+                // Then 정중앙으로 스냅되고 햅틱이 한 번 울린다
+                assertEquals(CanvasTextInputEffect.TriggerSnapHaptic, awaitItem())
+                expectNoEvents()
+            }
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+            assertEquals(100.dp, viewModel.state.value.offsetX)
+        }
+
+    @Test
+    fun onToppingTransform_rotatingIntoNinety_showsAngleGuideAndTriggersHapticOnce() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 실측 뒤 90도 밖(85도)까지 회전해 아직 각도 가이드가 안 뜬 상태
+            val viewModel = viewModel()
+            viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(300.dp, 500.dp)))
+            viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(100.dp, 40.dp)))
+            viewModel.processIntent(
+                CanvasTextInputIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1f, rotationDelta = 85f),
+            )
+            assertFalse(viewModel.state.value.isAngleGuideVisible)
+
+            // When 3도 더 돌려 88도로 들어온다
+            viewModel.effect.test {
+                viewModel.processIntent(
+                    CanvasTextInputIntent.OnToppingTransform(pan = DpOffset.Zero, zoom = 1f, rotationDelta = 3f),
+                )
+
+                // Then 90도 세로선으로 스냅되고 햅틱이 한 번 울린다
+                assertEquals(CanvasTextInputEffect.TriggerSnapHaptic, awaitItem())
+                expectNoEvents()
+            }
+            val state = viewModel.state.value
+            assertTrue(state.isAngleGuideVisible)
+            assertFalse(state.isAngleGuideHorizontal)
+            assertEquals(90f, state.rotationDegrees)
+        }
+
+    @Test
+    fun onToppingTransform_draggingWithoutRotation_keepsAngleGuideHidden() = runTest(mainDispatcherRule.dispatcher) {
+        // 0도 토핑을 회전 없이 드래그만 하면 각도 가이드는 뜨지 않는다(회전했을 때만 노출)
+        val viewModel = viewModel()
+        viewModel.processIntent(CanvasTextInputIntent.OnCanvasMeasured(DpSize(300.dp, 500.dp)))
+        viewModel.processIntent(CanvasTextInputIntent.OnTextBoxMeasured(DpSize(100.dp, 40.dp)))
+
+        viewModel.processIntent(
+            CanvasTextInputIntent.OnToppingTransform(pan = DpOffset(5.dp, 5.dp), zoom = 1f, rotationDelta = 0f),
+        )
+
+        assertFalse(viewModel.state.value.isAngleGuideVisible)
+        assertFalse(viewModel.state.value.hasRotatedThisGesture)
+    }
+
+    @Test
     fun init_readsGroupIdFromDraft_toObserveCanvas() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = viewModel()
         // launchWhileSubscribed 는 state 구독자 수로 캔버스 구독 수명을 잰다 — 라우트의
