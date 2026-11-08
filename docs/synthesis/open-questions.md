@@ -7876,4 +7876,18 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
-<!-- oq-next: 461 -->
+### [2026-11-08] 스크린샷 비교의 러너 간 렌더 동일성이 확인되지 않았다
+
+- **ID**: OQ-P-461
+- **출처**: `.github/workflows/gradle-cache-seed.yml` × `.github/workflows/ui-diff.yml` ×
+  `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt` ×
+  [ADR-0037](../adr/0037-pr-screenshot-diff-in-job-base-render.md) — 렌더가 develop 캐시 시딩의 빌드 캐시를
+  쓰면 base와 head가 다른 러너에서 렌더된 결과일 수 있다.
+- **항목**: ① 러너 간 픽셀 차이가 실제로 0인지 확인한 기록이 없다. 스펙의 "도입 시 base·head를 같은
+  커밋으로 돌려 diff 0건 확인"도 develop에 증거가 없다. ② UI와 무관해 보이는 변경이 코멘트에 뜰 때
+  오탐인지 가를 기준이 없다(예: PR #694 코멘트에 `:feature:camera:impl` `PreviewCustomCameraScreen` 변경 6건이 떴는데, 정당한 변경인지 판정하지 않았다).
+- **상태**: 미해결
+- **해소 메모**: 같은 커밋을 base·head로 비교하는 실행을 한 번 남기고, 오탐이 확인되면 캐시 시딩에서
+  스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 결과 절에 적는다.
+
+<!-- oq-next: 462 -->

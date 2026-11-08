@@ -182,7 +182,7 @@
 
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.
-- 앵커: `TokenAuthenticator`, `WithdrawUseCase`, `YGFontFamily`, `ProvideFixedFontScale`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/AndroidConfig.kt`, `.github/workflows/test.yml`, `app/src/main/AndroidManifest.xml`
+- 앵커: `TokenAuthenticator`, `WithdrawUseCase`, `YGFontFamily`, `ProvideFixedFontScale`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/AndroidConfig.kt`, `.github/workflows/test.yml`, `.github/workflows/ui-diff.yml`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt`, `app/src/main/AndroidManifest.xml`
 - ⚠️ 릴리즈 빌드는 minify와 리소스 축소를 켜지만 축소된 산출물을 설치·실행한 기록이 없고 `keep.xml`도 없다. R8 산출물에서 `@NoAuth` keep 규칙이 살아 화이트리스트 요청이 인증 헤더 없이 나가는지도 확인되지 않았다 (OQ-P-308, OQ-P-074)
 - 시스템 글자 크기(`fontScale`)는 앱 텍스트에 반영되지 않는다 — `YGCustomTheme`이 `ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다. 상한이 아니라 완전 무시이고 접근성 대가는 확정이다. ⚠️ `Dialog`·`Popup` content는 새 창이 기기 값으로 되돌려 따로 감싼다(`YGModalPopup`, `CustomCalendar`). 약관 웹뷰는 `textZoom = 100`으로 따로 고정한다. 자동 강제(린트)는 없다 ([ADR-0036](adr/0036-ignore-system-font-scale.md), [code-conventions](code-conventions.md#compose-텍스트-글자-크기))
 - ⚠️ 경량 태그 `1.0.0`에는 develop에 없는 커밋(`feature/debug-mode` 포함)이 들어 있고, 릴리즈 계보를 develop 하나로 둔다는 규칙은 글로 없다. 태그 `1.1.3`은 버전 코드 11만 가리켜 같은 이름의 코드 10 산출물과 이름으로 구별되지 않는다 (OQ-P-311, OQ-P-310)
@@ -190,6 +190,8 @@
 - ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실린다. 고지는 S-001이 여는 외부 페이지가 맡고, 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
 - ⚠️ 앱에는 다크 모드가 없지만 `app/src/main/res/values-night/themes.xml`이 있다 — targetSdk 33+ 웹뷰가 테마의 `isLightTheme`로 `prefers-color-scheme`을 정해서, 시스템 다크 모드에서는 공용 웹뷰 페이지만 다크로 그려지게 둔 것이다. 창 배경은 라이트 값으로 고정했다(스플래시·전환 배경)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
+- UI 관련 경로를 바꾼 PR은 `ui-diff.yml`이 base(merge ref 첫 부모)와 merge ref의 프리뷰를 Roborazzi로 렌더해 바뀐·신규·삭제 화면을 봇 코멘트로 단다. 머지는 막지 않는다. 이미지는 `ui-snapshots/pr-<N>` 브랜치에 올리고 닫힌 지 30일 뒤 `ui-snapshots-prune.yml`이 지운다 ([ADR-0037](adr/0037-pr-screenshot-diff-in-job-base-render.md))
+- ⚠️ 렌더가 develop 캐시 시딩(`gradle-cache-seed.yml`) 빌드 캐시를 쓰면 base와 head가 다른 러너의 렌더일 수 있는데, 러너 간 픽셀 동일성을 확인한 기록이 없다. UI와 무관한 변경이 코멘트에 잡히면 이 경로부터 의심한다 (OQ-P-461)
 - ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)
 - ⚠️ 서버 실패를 화면이 표현하는 방식이 하나로 모이지 않았고, 실패 문구가 화면마다 복제돼 있다 (OQ-P-167)

@@ -20,7 +20,7 @@ tags: [adr, parfait, ci, screenshot]
 ## 맥락
 UI를 바꾼 PR의 Before / After는 작성자가 직접 찍어 붙여야 해서 잘 지켜지지 않았다. CI가 `@Preview`
 렌더를 base와 비교해 PR 코멘트로 달아야 하는데, 비교 기준(base 렌더)을 어디서 얻는지가 정확도와
-작성자 부담을 가른다. 설계는 [스펙](../superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md).
+작성자 부담을 가른다. 설계는 [스펙](../superpowers/specs/archive/2026-11-04-screenshot-comparison-ci-design.md).
 
 ## 결정
 **한 PR 잡 안에서 PR merge ref 커밋의 첫 부모(base)를 checkout해 Roborazzi로 렌더하고, merge ref를
@@ -46,7 +46,7 @@ checkout해 비교한다.**
 - 머지는 막지 않는 리포트다. 필수 체크로 묶지 않는다.
 - 한 프리뷰 함수에 `@Preview`가 여럿이면 `group = UI_SNAPSHOT_PREVIEW_GROUP`을 단 변형만 찍는다. `@YGPreview`는
   phone 변형에 이 group을 달아 6변형 중 하나만 비교한다 — 전부 찍으면 렌더가 6배가 된다. 이름이나 선언 순서로
-  고르지 않는 것은 스캐너가 선언 순서를 넘기지 않기 때문이다(근거는 [스펙](../superpowers/specs/2026-11-04-screenshot-comparison-ci-design.md) 렌더 결정성).
+  고르지 않는 것은 스캐너가 선언 순서를 넘기지 않기 때문이다(근거는 [스펙](../superpowers/specs/archive/2026-11-04-screenshot-comparison-ci-design.md) 렌더 결정성).
 - `@PreviewParameter` 프리뷰는 값마다 이름을 붙인다(`NamedPreviewParameterProvider`). 스냅샷 파일명이 값의
   순서 번호로 붙으면 값 하나를 빼거나 끼울 때 뒤 값들이 다른 값의 기준 이미지와 비교된다. 이름이 없거나
   한 프리뷰 안에서 겹치면 `UiSnapshotPreviewTester`가 그 모듈의 렌더를 실패시킨다. 이름이 곧 파일명이라 이름을
