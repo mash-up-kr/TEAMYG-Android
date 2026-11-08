@@ -3541,10 +3541,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-225
 - **출처**: `GroupSettingUiState.remainingCount`(기본값 `0`) × `GroupSettingScreen`의 `<= 0` 분기 ×
-  `YGInviteCard`(`status != Active`면 복사 버튼 비활성) — 서버 delta 반영 라운드에서 정원이 실데이터가
+  `YGInviteCard`(`status != Active`면 액션 버튼 비활성 — S-101은 공유) — 서버 delta 반영 라운드에서 정원이 실데이터가
   되면서 mock 상수 `1`이 사라졌고 기본값이 `0`이 됐다. `loadGroupDetail`의 `finally`가 실패 경로에서도
   `isLoadingDetail`을 내리므로, **캐시가 빈 채로 상세 조회가 실패하면** 로딩 덮개가 걷히고 화면이
-  "정원이 찼어요" + 죽은 초대코드 복사 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
+  "정원이 찼어요" + 죽은 초대코드 공유 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
   화면 나머지도 비어 있어 노출은 작지만, **비어 있는 것과 "가득 찼다"고 말하는 것은 다르다.**
 - **항목**: ① `remainingCount`를 널 허용으로 바꿔 "모른다"를 표현할지, 아니면 상세가 도착하기 전까지
   초대 카드를 아예 안 그릴지. ② 상세 조회 실패가 지금 토스트 하나로 끝나는데(화면은 그대로 서 있다)
