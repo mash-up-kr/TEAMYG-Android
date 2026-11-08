@@ -162,7 +162,7 @@ B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 
   `TermAgreeScreen` `CanvasToppingPlaceScreen` `CanvasImageSaveScreen` `GroupListScreen` `WebViewScreen`.
   Coil은 프리뷰용 이미지 핸들러, Lottie는 커스텀 tester에서 `LottieTask.EXECUTOR`를 동기 executor로 교체,
   WebView는 제외가 기본 방향이다.
-  as-built: `GroupListContent`가 `clock`을 받고 프리뷰는 `PREVIEW_NOW`를 넘긴다. `VerticalGridLayout`은
+  as-built: `GroupListContent`가 `clock`을 받고 프리뷰는 고정 시계 `PreviewClock`을 넘긴다. `VerticalGridLayout`은
   `Random(seed = 0)`으로 시드를 고정했다. 제외는 목록 밖의 `YGToppingCutoutImage` 프리뷰 하나다(테두리 띠를
   `Dispatchers.Default`에서 만든다). 목록의 WebView·약관·토핑 배치·이미지 저장 화면은 제외하지 않았다.
 - 글자 크기는 `YGCustomTheme`이 `ProvideFixedFontScale`로 1에 고정한다([ADR-0036](../../../adr/0036-ignore-system-font-scale.md)). Robolectric 기본 `fontScale`도 1.0이라 결정성에 영향이 없다. 이번 작업의 ADR은 ADR-0037이다.

@@ -14,7 +14,7 @@ related_code:
   - build-logic/convention/src/main/kotlin/ModuleFeatureImplConventionPlugin.kt
   - core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/YGPreview.kt
   - .github/PULL_REQUEST_TEMPLATE.md
-archived_reason: 구현 완료(PR #684, 프리뷰 이름 붙이기는 #686). 미체크 4개 — Task 1 Step 3a는 스펙의 `UI_SNAPSHOT_PREVIEW_GROUP`(`phone` 변형만 찍기)이 대체해 6변형을 유지했다. Task 3 Step 4 시간 게이트는 조건부이고 발화하지 않았다. Task 9 Step 2 검증 PR은 따로 열지 않고 실제 PR의 신규·변경 섹션 코멘트로 같은 경로를 확인했다. Task 9 Step 3 prune `workflow_dispatch` dry-run 기록은 없고 schedule 실행만 있다. File Structure 표 밖에 `stage.py`·`UiSnapshotPreviewGroup.kt`·`NamedPreviewParameterProvider.kt`·`PreviewParameterNames.kt`·`gradle-cache-seed.yml` 시딩 스텝이 더 생겼다.
+archived_reason: 구현 완료(PR #684, 프리뷰 이름 붙이기와 캐시 시딩 스텝은 #686). 미체크 4개 — Task 1 Step 3a는 스펙의 `UI_SNAPSHOT_PREVIEW_GROUP`(`phone` 변형만 찍기)이 대체해 6변형을 유지했다. Task 3 Step 4 시간 게이트는 조건부이고 발화하지 않았다. Task 9 Step 2 검증 PR은 따로 열지 않고 실제 PR의 신규·변경 섹션 코멘트로 같은 경로를 확인했다. Task 9 Step 3 prune `workflow_dispatch` dry-run 기록은 없고 schedule 실행만 있다. Task 3 Step 2는 기준(프리뷰 함수만 고침)과 달리 프로덕션 코드 `GroupListContent`(`clock` 인자)·`VerticalGridLayout`(`Random(seed = 0)`)을 고쳤고, 제외는 `YGToppingCutoutImage` 프리뷰 하나다(WebView는 제외하지 않았다). File Structure 표 밖에 `stage.py`·`UiSnapshotPreviewGroup.kt`·`NamedPreviewParameterProvider.kt`·`PreviewParameterNames.kt`·`gradle-cache-seed.yml` 시딩 스텝이 더 생겼다.
 ---
 
 # PR 스크린샷 비교 리포트 CI Implementation Plan

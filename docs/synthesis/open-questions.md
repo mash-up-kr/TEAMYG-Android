@@ -3718,7 +3718,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   (화면을 나갔다 다시 들어가야 `AppSettingViewModel`이 새로 만들어지며 재조회된다) — 이건 새 증상이
   아니라 명시적으로 채택한 트레이드오프라 별도 OQ로 남기지 않는다)
 - **해소 메모**: [api/policy.md](../api/policy.md) "앱 동작 메모"와 [status.md](../status.md) S-001
-  항목에 반영 완료.
+  항목에 반영 완료. (2026-11-08 재개로 무효 — 아래 메모)
   > ⚠️ **2026-11-08 재개** — #682가 약관 영역을 `state.policies` 순회에서 `YGTextButton` 고정 풋터
   > (`AppSettingScreen`의 `PolicyLinkRow`)로 바꾸면서 원래 증상이 되살아났다. 줄은 항상 보이고, 그 타입의
   > 정책을 `firstOrNull`로 못 찾으면 `termsId?.let`에서 끊겨 누를 때 아무 일도 없다. 이번에는
@@ -6185,8 +6185,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > ⚠️ **③이 더 급해졌다.** 리마인드는 하루 두 번 **전 이용자**에게 나가고, 대상 조회
   > (`ReminderTargetQueryPort`)가 **토큰 보유 여부만 본다** — 끄겠다는 의사를 담을 자리가 서버 스키마에
   > 없다. 게다가 그 KDoc이 전제하는 "권한 거부 이용자는 토큰이 없다"가 앱 동작과 어긋난다 → OQ-P-384.
-  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `PushNotificationType`이
-  > `TOPPING`·**`REMIND_AM`·`REMIND_PM`** 셋이고 `route=group`이 그룹 목록으로 떨어진다. 즉 앱은
+  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `route=group`이 그룹 목록으로
+  > 떨어진다(`type`은 #689부터 앱이 값을 가르지 않는 서버 원문 문자열 `PushDeepLink.type`이다). 즉 앱은
   > **P-01/P-02/P-03 세 알림을 전제로 서 있는데 서버가 보내는 것은 하나뿐**이다. 근거로 코드가
   > 가리키는 것은 "FCM 페이로드 스펙 v1"인데 **그 문서가 어느 저장소에도 없다** → **OQ-P-361 신설**.
   > ⚠️ **④는 더 나빠졌다** — 서버가 안 손댄 것은 그대로이고, 앱은 **권한을 묻는 코드 없이** 수신부만
@@ -6620,8 +6620,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `NotificationRepository.registerCurrentDeviceToken()`을 붙였고, 권한 요청도 `NotificationPermissionGate`가
   > `GroupCreateRoute`·`GroupNickNameRoute` 두 자리에서 한다. **같은 문구가 OQ-P-351·OQ-P-352·
   > OQ-P-359의 상태에도 남아 있었고 2026-09-06 감사가 셋 다 걷었다.**
-  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`,
-  > `type`은 `PushNotificationType`이 각자 `key`로 물고, `groupId`를 양수로 읽는 규칙은
+  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`이
+  > `key`로 물고(`type`은 #689부터 enum 없이 서버 원문을 `PushDeepLink.type`이 그대로 든다 — 분석 전용), `groupId`를 양수로 읽는 규칙은
   > `PushDeepLink.AddTopping.parse`가 든다. **문자열 복제면이 줄어든 것이지 사라진 것은 아니다**
   > (서버 값이 바뀌면 여전히 조용히 `null`이 된다 — OQ-P-351 ③).
 - **해소 메모**: 검증은 콜드/웜 × 로그인/비로그인 네 시나리오의 실기기 수동 확인이다. 자동 테스트는
@@ -6636,7 +6636,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `notification` 블록을 항상 함께 보낸다") · `PushDeepLink.type`(서버 문자열 원문 — `REMIND_AM`·`REMIND_PM`은
   서버 `ReminderType`이 정본) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
   [api/notification.md](../api/notification.md) — **그 스펙 문서가 parfait에도 위키에도 서버 저장소에도
-  없다.** 앱은 `route=group`과 리마인드 2종을 파싱·라우팅까지 갖췄는데 **서버에는 그것을 보내는 코드가
+  없다.** 앱은 `route=group` 라우팅을 갖췄는데 **서버에는 그것을 보내는 코드가
   없다**(OQ-P-343 ①의 "나머지 둘").
   > 📌 **2026-09-08 — 서버가 따라붙었다**(`4789557`). `ReminderType(MORNING→"REMIND_AM",
   > EVENING→"REMIND_PM")`과 `dailyReminder`의 `data = mapOf("type" to type.dataType, "route" to "group")`이
@@ -7894,11 +7894,12 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt` ×
   [ADR-0037](../adr/0037-pr-screenshot-diff-in-job-base-render.md) — 렌더가 develop 캐시 시딩의 빌드 캐시를
   쓰면 base와 head가 다른 러너에서 렌더된 결과일 수 있다.
-- **항목**: ① 러너 간 픽셀 차이가 실제로 0인지 확인한 기록이 없다. 스펙의 "도입 시 base·head를 같은
-  커밋으로 돌려 diff 0건 확인"도 develop에 증거가 없다. ② UI와 무관해 보이는 변경이 코멘트에 뜰 때
-  오탐인지 가를 기준이 없다(예: PR #694 코멘트에 `:feature:camera:impl` `PreviewCustomCameraScreen` 변경 6건이 떴는데, 정당한 변경인지 판정하지 않았다).
+- **항목**: ① 같은 머신에서 같은 커밋을 두 번 렌더해 diff 0건인 것은 확인했지만(계획 Task 3), CI 러너 간·캐시
+  경유 렌더를 같은 커밋으로 비교한 기록은 없다. ② UI와 무관해 보이는 변경이 코멘트에 뜰 때
+  오탐인지 가를 기준이 없다(예: base `9d4178d` → head `8462e00` 비교에서, 그 PR이 건드리지 않은 `:feature:camera:impl`의
+  `PreviewCustomCameraScreen` 2건이 변경으로 떴다. 오탐인지 판정하지 않았다).
 - **상태**: 미해결
 - **해소 메모**: 같은 커밋을 base·head로 비교하는 실행을 한 번 남기고, 오탐이 확인되면 캐시 시딩에서
-  스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 결과 절에 적는다.
+  스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 「영향」 절의 위험·방어에 적는다.
 
 <!-- oq-next: 462 -->

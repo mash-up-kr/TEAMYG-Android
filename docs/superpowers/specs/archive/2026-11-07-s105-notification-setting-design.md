@@ -19,6 +19,8 @@ related_code:
   - NotificationPermissionManager.kt#areNotificationsEnabled
   - Context.kt#buildAppNotificationSettingsIntent
   - ListItemToggle.kt#ListItemToggle
+  - NotificationSwitch.kt#NotificationSwitch
+  - NotificationInfoCard.kt#NotificationInfoCard
   - AppSettingScreen.kt#AppSettingScreen
   - AppSettingViewModel.kt#handleClickNotification
 related_adr:

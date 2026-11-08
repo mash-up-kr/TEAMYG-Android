@@ -61,7 +61,7 @@
 - 상태: 앱 설정(S-001)의 「알림 설정」에서 들어가 캔버스 알림·활동 알림 두 토글을 켜고 끈다. 진입 시 `GetNotificationSettingUseCase`로 설정을 받아 오고, 받기 전이거나 기기 알림이 꺼져 있는 동안에는 토글을 조작할 수 없다(`isToggleEnabled`). 기기 알림이 꺼져 있으면(`NotificationManagerCompat.areNotificationsEnabled`) 안내 카드와 기기 설정 이동 버튼을 보이고, 설정에서 돌아올 때마다 다시 읽는다. 저장은 낙관적으로 먼저 반영하고 스위치별 `Mutex`로 한 줄로 세우며, 실패하면 대기 중인 요청이 없을 때만 마지막으로 저장에 성공한 값으로 되돌리고 에러 토스트를 띄운다. 조회 실패도 에러 토스트로 알린다. 당겨서 새로고침으로 기기 알림과 설정을 함께 다시 읽는다(저장 대기 중인 토글이 있으면 받아 온 값을 반영하지 않는다).
 - 앵커: `NotificationSettingViewModel`, `NotificationSettingRepositoryImpl`, `NotificationSettingScreen`, `ListItemToggle`, `NotificationSwitch`, `NotificationInfoCard`, `NotificationPermissionManager.areNotificationsEnabled`, `buildAppNotificationSettingsIntent`, `feature/app/setting/impl`
 - ⚠️ `NotificationSettingRepositoryImpl`이 서버 연동 전 임시 구현이라 설정이 메모리에만 있고 앱을 다시 켜면 mock 초기값(캔버스 on·활동 off)으로 돌아간다 — 버그가 아니라 stub이다
-- ⚠️ 토글 값을 푸시 수신·표시 경로 어디에서도 읽지 않는다(`NotificationSettingRepository` 소비처는 `NotificationSettingViewModel`뿐) — 꺼도 알림은 그대로 온다 (OQ-P-343)
+- ⚠️ 토글 값을 푸시 수신·표시 경로 어디에서도 읽지 않는다(`NotificationSettingRepository`는 S-105 UseCase 셋으로만 닿고 그 호출처는 `NotificationSettingViewModel`뿐) — 꺼도 알림은 그대로 온다 (OQ-P-343)
 - 설계: [s105-notification-setting](superpowers/specs/archive/2026-11-07-s105-notification-setting-design.md)
 
 ## 캔버스 메인 (C-001)
