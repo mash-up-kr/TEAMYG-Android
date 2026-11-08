@@ -3,7 +3,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.model
 import androidx.compose.ui.unit.dp
 
 /** 그래핌 클러스터 기준(`String#graphemeClusterCount`) 글자 수 상한 */
-internal const val TEXT_TOPPING_MAX_LENGTH = 100
+internal const val TEXT_TOPPING_MAX_LENGTH = 500
 
 /** 자동 크기의 최댓값(디자인 단위) */
 internal const val TEXT_TOPPING_FONT_SIZE_SP = 24f
