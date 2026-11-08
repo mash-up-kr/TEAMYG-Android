@@ -7,13 +7,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,36 +21,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastType
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
+import com.teamyg.parfait.core.navigation.Navigator
+import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
+import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
+import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
+import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
+import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.camera.impl.component.CameraFeedLayer
 import com.teamyg.parfait.feature.camera.impl.component.CameraPreviewBindingEffect
 import com.teamyg.parfait.feature.camera.impl.component.CameraTransitionEffect
 import com.teamyg.parfait.feature.camera.impl.component.CameraZoomEffect
 import com.teamyg.parfait.feature.camera.impl.component.rememberCameraPreviewState
+import com.teamyg.parfait.feature.camera.impl.model.CaptureOutcome
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import com.teamyg.parfait.feature.camera.impl.screen.CustomCameraScreen
-import com.teamyg.parfait.feature.camera.impl.util.saveViewfinderCapture
+import com.teamyg.parfait.feature.camera.impl.util.captureViewfinder
+import com.teamyg.parfait.feature.camera.impl.util.launchCapture
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraEffect
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraIntent
 import com.teamyg.parfait.feature.camera.impl.viewmodel.CustomCameraViewModel
-import com.teamyg.parfait.core.navigation.Navigator
-import com.teamyg.parfait.feature.camera.api.NavKeyPictureConfirm
-import com.teamyg.parfait.feature.camera.api.PictureConfirmSource
-import com.teamyg.parfait.core.util.android.extension.buildAppSettingsIntent
-import com.teamyg.parfait.core.util.android.extension.isGrantedPermission
-import com.teamyg.parfait.core.util.android.extension.shouldShowRationale
-import com.teamyg.parfait.feature.camera.impl.R
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasMain
-import com.teamyg.parfait.feature.camera.impl.viewmodel.FlashMode
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.io.File
 
 @Composable
 internal fun CustomCameraRoute(
@@ -68,19 +65,16 @@ internal fun CustomCameraRoute(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var viewfinderRect by remember { mutableStateOf<Rect?>(null) }
     var feedRect by remember { mutableStateOf<Rect?>(null) }
     val captureScope = rememberCoroutineScope()
+    val cameraPreviewState = rememberCameraPreviewState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         viewModel.processIntent(
-            CustomCameraIntent.OnPermissionRequestResult(
-                granted = granted,
-                shouldShowRationale = activity?.shouldShowRationale(Manifest.permission.CAMERA) == true,
-            ),
+            CustomCameraIntent.OnPermissionRequestResult(granted = granted),
         )
     }
 
@@ -91,7 +85,7 @@ internal fun CustomCameraRoute(
 
     // 촬영 요령을 말하는 토스트라, 권한이 없어 찍을 수 없는 화면에서는 할 말이 아니다.
     // 설정에서 권한을 켜고 돌아오면 그때 처음 뜬다
-    LaunchedEffect(state.hasPermission) {
+    SideEffect(state.hasPermission) {
         if (showGuideToast && state.hasPermission && !hasShownGuideToast) {
             toastPolicy.show(YGToastType.Edit(guideToastMessage))
             hasShownGuideToast = true
@@ -110,49 +104,18 @@ internal fun CustomCameraRoute(
                 }
 
                 is CustomCameraEffect.CaptureImage -> {
-                    val capture = imageCapture ?: run {
-                        viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
-                        return@collect
-                    }
-                    val file = effect.file
-                    val isFrontFacing = state.lensFacing == CameraSelector.LENS_FACING_FRONT
-
-                    capture.takePicture(
-                        ContextCompat.getMainExecutor(context),
-                        object : ImageCapture.OnImageCapturedCallback() {
-                            override fun onCaptureSuccess(image: ImageProxy) {
-                                val rotation = image.imageInfo.rotationDegrees
-                                val captured = image.use { it.toBitmap() }
-
-                                captureScope.launch {
-                                    val saved = runCatching {
-                                        withContext(Dispatchers.IO) {
-                                            saveViewfinderCapture(
-                                                captured = captured,
-                                                rotationDegrees = rotation,
-                                                viewfinderRect = viewfinderRect,
-                                                feedRect = feedRect,
-                                                isFrontFacing = isFrontFacing,
-                                                file = file,
-                                            )
-                                        }
-                                    }.isSuccess
-
-                                    viewModel.processIntent(
-                                        if (saved) {
-                                            CustomCameraIntent.OnCaptureSaved(file)
-                                        } else {
-                                            CustomCameraIntent.OnCaptureFailed
-                                        },
-                                    )
-                                }
-                            }
-
-                            override fun onError(exception: ImageCaptureException) {
-                                viewModel.processIntent(CustomCameraIntent.OnCaptureFailed)
-                            }
+                    captureScope.launchCapture(
+                        capture = {
+                            cameraPreviewState.captureViewfinder(
+                                file = effect.file,
+                                viewfinderRect = viewfinderRect,
+                                feedRect = feedRect,
+                                isFrontFacing = state.lensFacing == LensFacing.FRONT,
+                            )
                         },
-                    )
+                    ) { outcome ->
+                        viewModel.processIntent(outcome.toCaptureIntent(effect.file))
+                    }
                 }
 
                 is CustomCameraEffect.Cancel -> navigator.popUpTo<NavKeyCanvasMain>()
@@ -180,45 +143,39 @@ internal fun CustomCameraRoute(
         viewModel.processIntent(CustomCameraIntent.OnCancel)
     }
 
-    LifecycleResumeEffect(Unit) {
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         val granted = context.isGrantedPermission(permission = Manifest.permission.CAMERA)
 
-        viewModel.processIntent(CustomCameraIntent.OnPermissionResult(granted))
-        onPauseOrDispose { }
+        viewModel.processIntent(CustomCameraIntent.OnPermissionChecked(granted))
     }
 
-    LaunchedEffect(state.flashMode, imageCapture) {
-        imageCapture?.flashMode = when (state.flashMode) {
-            FlashMode.OFF -> ImageCapture.FLASH_MODE_OFF
-            FlashMode.ON -> ImageCapture.FLASH_MODE_ON
-        }
+    val imageCapture = cameraPreviewState.imageCapture
+    SideEffect(state.flashMode, imageCapture) {
+        imageCapture?.flashMode = state.flashMode.imageCaptureFlashMode
     }
 
-    val cameraPreviewState = rememberCameraPreviewState()
     CameraPreviewBindingEffect(
         state = cameraPreviewState,
         lensFacing = state.lensFacing,
-        useUltraWideCamera = state.useUltraWideCamera,
+        shouldUseUltraWideCamera = state.shouldUseUltraWideCamera,
         hasPermission = state.hasPermission,
-        onImageCaptureReady = { imageCapture = it },
         onZoomRangeReady = { range, hasUltraWideCamera ->
             viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(range, hasUltraWideCamera))
         },
     )
     CameraZoomEffect(
-        state = cameraPreviewState,
+        camera = cameraPreviewState.camera,
         zoomRatio = state.cameraZoomRatio,
     )
     CameraTransitionEffect(state = cameraPreviewState)
 
     // 카메라 피드는 시스템 바 아래까지 덮어야 하므로 innerPadding을 화면에 먹이지 않는다.
     // 인셋은 CustomCameraScreen의 컨트롤 영역이 직접 처리한다.
-    // Box 안에 YGToastHost 를 얹어서, 위치 계산 없이 항상 프레임 윗변에 뜨게 한다
     YGScaffoldV2 { _ ->
         CustomCameraScreen(
             state = state,
             toastPolicy = toastPolicy,
-            onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnOpenAppSettings) },
+            onClickOpenAppSettings = { viewModel.processIntent(CustomCameraIntent.OnClickOpenAppSettings) },
             onClickShutter = { viewModel.processIntent(CustomCameraIntent.OnClickShutter) },
             onClickFlip = { viewModel.processIntent(CustomCameraIntent.OnClickFlip) },
             onClickCancel = { viewModel.processIntent(CustomCameraIntent.OnCancel) },
@@ -228,14 +185,24 @@ internal fun CustomCameraRoute(
             onViewfinderRectChange = { viewfinderRect = it },
             cameraFeed = {
                 CameraFeedLayer(
-                    previewView = cameraPreviewState.previewView,
-                    camera = cameraPreviewState.camera,
                     viewfinderRect = { viewfinderRect },
                     transition = cameraPreviewState.transition,
                     onFeedRectChange = { feedRect = it },
+                    onTapViewfinder = cameraPreviewState::focusAt,
                     modifier = Modifier.fillMaxSize(),
-                )
+                ) {
+                    AndroidView(
+                        factory = { cameraPreviewState.previewView },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             },
         )
     }
+}
+
+private fun CaptureOutcome.toCaptureIntent(file: File): CustomCameraIntent = when (this) {
+    CaptureOutcome.SAVED -> CustomCameraIntent.OnCaptureSaved(file)
+    CaptureOutcome.FAILED -> CustomCameraIntent.OnCaptureFailed
+    CaptureOutcome.CANCELLED -> CustomCameraIntent.OnCaptureCancelled
 }

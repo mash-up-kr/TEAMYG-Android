@@ -1,6 +1,5 @@
 package com.teamyg.parfait.feature.camera.impl.viewmodel
 
-import androidx.camera.core.CameraSelector
 import com.teamyg.parfait.core.ui.BaseViewModel
 import com.teamyg.parfait.core.ui.UiIntent
 import com.teamyg.parfait.core.ui.UiSideEffect
@@ -9,7 +8,9 @@ import com.teamyg.parfait.core.ui.viewModelLogger
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheFileUseCase
 import com.teamyg.parfait.domain.usecase.camera.CreateCameraCacheUriUseCase
 import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
+import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
+import com.teamyg.parfait.feature.camera.impl.model.LensFacing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -26,8 +27,8 @@ sealed interface CustomCameraEffect : UiSideEffect {
     /**
      * 촬영을 접고 캔버스로 돌아간다.
      *
-     * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, 예전처럼 `null` 을 결과 버스에
-     * 흘리면 그것을 결과로 아는 화면이 받아 터진다.
+     * 결과를 실어 보내지 않는다 — 취소는 값이 없는 사건이고, `null` 을 결과 버스에 흘리면
+     * 그것을 결과로 아는 화면이 받아 터진다.
      */
     data object Cancel : CustomCameraEffect
 
@@ -40,16 +41,15 @@ sealed interface CustomCameraEffect : UiSideEffect {
 }
 
 sealed interface CustomCameraIntent : UiIntent {
-    data class OnPermissionResult(
+    data class OnPermissionChecked(
         val granted: Boolean,
     ) : CustomCameraIntent
 
     data class OnPermissionRequestResult(
         val granted: Boolean,
-        val shouldShowRationale: Boolean,
     ) : CustomCameraIntent
 
-    data object OnOpenAppSettings : CustomCameraIntent
+    data object OnClickOpenAppSettings : CustomCameraIntent
 
     /** 메인 카메라에 바인딩됐을 때만 온다(`CameraPreviewBindingEffect`) */
     data class OnZoomRangeReady(
@@ -71,28 +71,31 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnCaptureFailed : CustomCameraIntent
 
+    /** 촬영을 기다리던 화면이 사라졌다. 결과를 알릴 화면이 없으니 셔터 잠금만 푼다 */
+    data object OnCaptureCancelled : CustomCameraIntent
+
     data object OnCancel : CustomCameraIntent
 }
 
 data class CustomCameraState(
-    val isInit: Boolean = false,
+    val isInitialized: Boolean = false,
     val hasPermission: Boolean = false,
-    val permanentlyDenied: Boolean = false,
-    val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
+    val lensFacing: LensFacing = LensFacing.BACK,
     val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
     val flashMode: FlashMode = FlashMode.OFF,
+    val isCapturing: Boolean = false,
 ) : UiState {
     val isZoomButtonVisible: Boolean
         get() = zoomLevels.size > 1
 
-    val useUltraWideCamera: Boolean
+    val shouldUseUltraWideCamera: Boolean
         get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
 
     /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
     val cameraZoomRatio: Float
-        get() = if (useUltraWideCamera) 1f else zoomLevel.ratio
+        get() = if (shouldUseUltraWideCamera) 1f else zoomLevel.ratio
 }
 
 @HiltViewModel
@@ -112,26 +115,26 @@ constructor(
 
     override fun processIntent(intent: CustomCameraIntent) {
         when (intent) {
-            is CustomCameraIntent.OnPermissionResult -> handleOnPermissionResult(intent)
+            is CustomCameraIntent.OnPermissionChecked -> handleOnPermissionChecked(intent)
             is CustomCameraIntent.OnPermissionRequestResult -> handleOnPermissionRequestResult(intent)
-            is CustomCameraIntent.OnOpenAppSettings -> handleOnOpenAppSettings()
+            is CustomCameraIntent.OnClickOpenAppSettings -> handleOnClickOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
             is CustomCameraIntent.OnCaptureFailed -> handleOnCaptureFailed()
+            is CustomCameraIntent.OnCaptureCancelled -> handleOnCaptureCancelled()
             is CustomCameraIntent.OnCancel -> handleOnCancel()
             is CustomCameraIntent.OnClickFlash -> handleOnClickFlash()
         }
     }
 
-    private fun handleOnPermissionResult(intent: CustomCameraIntent.OnPermissionResult) {
+    private fun handleOnPermissionChecked(intent: CustomCameraIntent.OnPermissionChecked) {
         updateState {
             copy(
-                isInit = true,
+                isInitialized = true,
                 hasPermission = intent.granted,
-                permanentlyDenied = if (intent.granted) false else permanentlyDenied,
             )
         }
 
@@ -151,12 +154,11 @@ constructor(
         updateState {
             copy(
                 hasPermission = intent.granted,
-                permanentlyDenied = !intent.granted && !intent.shouldShowRationale,
             )
         }
     }
 
-    private fun handleOnOpenAppSettings() {
+    private fun handleOnClickOpenAppSettings() {
         postSideEffect(CustomCameraEffect.OpenAppSettings)
     }
 
@@ -185,10 +187,7 @@ constructor(
                 // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
                 zoomLevels = listOf(CameraZoomLevel.ONE),
                 halfZoomSource = HalfZoomSource.NONE,
-                lensFacing = when (lensFacing) {
-                    CameraSelector.LENS_FACING_BACK -> CameraSelector.LENS_FACING_FRONT
-                    else -> CameraSelector.LENS_FACING_BACK
-                },
+                lensFacing = lensFacing.flipped(),
             )
         }
     }
@@ -202,27 +201,28 @@ constructor(
     }
 
     private fun handleOnClickShutter() {
+        if (state.value.isCapturing) return
+
+        updateState { copy(isCapturing = true) }
         postSideEffect(CustomCameraEffect.CaptureImage(file = createCameraCacheFileUseCase()))
     }
 
     private fun handleOnCaptureSaved(intent: CustomCameraIntent.OnCaptureSaved) {
+        updateState { copy(isCapturing = false) }
         val uri = createCameraCacheUriUseCase(file = intent.file)
         postSideEffect(CustomCameraEffect.NavigateToConfirm(uri = uri))
     }
 
     private fun handleOnCaptureFailed() {
+        updateState { copy(isCapturing = false) }
         postSideEffect(CustomCameraEffect.CaptureFailed)
+    }
+
+    private fun handleOnCaptureCancelled() {
+        updateState { copy(isCapturing = false) }
     }
 
     private fun handleOnCancel() {
         postSideEffect(CustomCameraEffect.Cancel)
     }
-}
-
-enum class FlashMode {
-    OFF,
-    ON,
-    ;
-
-    operator fun not(): FlashMode = if (this == ON) OFF else ON
 }
