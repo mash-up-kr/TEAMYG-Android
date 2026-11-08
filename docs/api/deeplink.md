@@ -2,8 +2,8 @@
 id: deeplink
 title: 딥링크 웹 표면(App Links 검증 파일·초대 링크 폴백·루트 랜딩·오픈소스 라이선스)
 server_module: http/api/deeplink, http/api/page/root, core/deeplink
-server_commit: 1a1abee
-verified: 2026-10-28
+server_commit: 1a36480
+verified: 2026-11-08
 android_status: done
 related_spec:
 related_adr:
@@ -39,6 +39,7 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 
 [^assetlinks]: 앱 매니페스트의 `intent-filter android:autoVerify="true"`가 이 파일로 검증된다.
     `package_name`이 앱 `applicationId`(`com.teamyg.parfait`)와 같다.
+[^creds]: 앱은 Credential Manager·비밀번호 자격 증명을 쓰지 않는다(로그인은 카카오·애플 SDK). 앱이 읽거나 맞출 것이 없다.
 [^ios]: iOS Universal Links 전용이다. Android는 읽지 않는다.
 [^link]: 앱이 이 페이지를 부르지는 않는다. 앱이 설치돼 있으면 OS가 이 URL을 앱으로 넘기고
     (`Intent.toAppLinkDeepLinkOrNull`), 미설치면 이 페이지가 Play 스토어로 보내며 실은 referrer를 첫 실행 때
@@ -57,10 +58,10 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 
 | JSON 경로 | 값 | 비고 |
 |---|---|---|
-| `[0].relation` | `["delegate_permission/common.handle_all_urls"]` | 고정 |
+| `[0].relation` | `["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"]` | 고정. 뒤 원소는 Credential Manager가 앱과 이 도메인을 같은 자격 증명 출처로 묶게 한다[^creds] |
 | `[0].target.namespace` | `"android_app"` | 고정 |
 | `[0].target.package_name` | 설정 `deeplink.android.package-name` | 현재 `com.teamyg.parfait` |
-| `[0].target.sha256_cert_fingerprints` | 설정 `deeplink.android.sha256-cert-fingerprints`를 쉼표로 나눈 배열 | 현재 2개 — 설정 주석상 debug 키스토어 지문과 Play 앱 서명 키 지문 |
+| `[0].target.sha256_cert_fingerprints` | 설정 `deeplink.android.sha256-cert-fingerprints`를 쉼표로 나눈 배열 | 현재 5개. 설정 주석은 "설치되는 빌드의 서명 키가 하나라도 빠지면 그 빌드는 검증되지 않는다"고만 적고, 어느 지문이 어느 키인지는 적지 않는다 |
 
   키가 snake_case여야 해서 `DeepLinkWellKnownController`가 data class 대신 `Map`을 그대로 돌려준다.
   ⚠️ **지문이 비어 있어도 200이다.** 설정이 빈 문자열이면 빈 배열이 나가고 검증만 조용히 실패한다.
@@ -151,5 +152,5 @@ Caddy가 직접 404를 준다(`deploy/caddy/Caddyfile`의 `@public` 매처).
 
 ## 미결
 
-- `sha256_cert_fingerprints`에 등록된 두 지문이 실제 Play 앱 서명 키·팀 debug 키스토어와 같은지 서버 코드로는
-  확인할 수 없다. 지문이 틀려도 응답은 200이다 → [open-questions](../synthesis/open-questions.md) OQ-P-449
+- `sha256_cert_fingerprints`에 등록된 다섯 지문이 각각 어느 키(Play 앱 서명 키·업로드 키·debug 키스토어)인지 서버
+  코드로는 확인할 수 없다. 지문이 틀려도 응답은 200이다 → [open-questions](../synthesis/open-questions.md) OQ-P-449
