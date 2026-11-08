@@ -33,8 +33,8 @@ internal fun ListItemToggle(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = YGTheme.typography.body.b02SB,
-                color = YGAtomicColors.Gray.Gray800,
+                style = if (enabled) YGTheme.typography.body.b02SB else YGTheme.typography.body.b02R,
+                color = if (enabled) YGAtomicColors.Gray.Gray800 else YGAtomicColors.Gray.Gray400,
             )
             Text(
                 text = subText,
