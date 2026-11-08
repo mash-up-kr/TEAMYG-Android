@@ -17,12 +17,14 @@ import javax.inject.Inject
  * @property isSettingLoaded 서버 설정을 한 번이라도 받아왔는지. 받기 전의 두 스위치 값(꺼짐)은 실제 설정이
  *   아니라서 이때는 스위치를 조작할 수 없다
  * @property isDeviceNotificationEnabled 기기에서 앱 알림이 켜져 있는지. `null` 은 아직 읽기 전이다
+ * @property isRefreshing 당겨서 새로고침으로 서버 설정을 다시 받는 중인지
  */
 data class NotificationSettingState(
     val isCanvasNotificationChecked: Boolean = false,
     val isActivityNotificationChecked: Boolean = false,
     val isSettingLoaded: Boolean = false,
     val isDeviceNotificationEnabled: Boolean? = null,
+    val isRefreshing: Boolean = false,
 ) : UiState {
     val isDeviceNotificationOff: Boolean get() = isDeviceNotificationEnabled == false
 
@@ -33,6 +35,8 @@ sealed interface NotificationSettingIntent : UiIntent {
     data object ClickBack : NotificationSettingIntent
 
     data object ClickOpenDeviceSettings : NotificationSettingIntent
+
+    data object Refresh : NotificationSettingIntent
 
     data class UpdateDeviceNotificationEnabled(val enabled: Boolean) : NotificationSettingIntent
 
@@ -76,6 +80,8 @@ constructor(
             NotificationSettingIntent.ClickOpenDeviceSettings ->
                 postSideEffect(NotificationSettingSideEffect.OpenDeviceNotificationSettings)
 
+            NotificationSettingIntent.Refresh -> loadNotificationSetting(isRefresh = true)
+
             is NotificationSettingIntent.UpdateDeviceNotificationEnabled ->
                 updateState { copy(isDeviceNotificationEnabled = intent.enabled) }
 
@@ -97,23 +103,31 @@ constructor(
         }
     }
 
-    private fun loadNotificationSetting() {
+    private fun loadNotificationSetting(isRefresh: Boolean = false) {
         launch(key = KEY_LOAD) {
-            getNotificationSetting()
-                .onSuccess { setting ->
-                    canvasSync.confirmed = setting.isCanvasNotificationEnabled
-                    activitySync.confirmed = setting.isActivityNotificationEnabled
-                    updateState {
-                        copy(
-                            isCanvasNotificationChecked = setting.isCanvasNotificationEnabled,
-                            isActivityNotificationChecked = setting.isActivityNotificationEnabled,
-                            isSettingLoaded = true,
-                        )
+            if (isRefresh) updateState { copy(isRefreshing = true) }
+            try {
+                getNotificationSetting()
+                    .onSuccess { setting ->
+                        // 새로고침 중에 누른 스위치의 저장이 아직 끝나지 않았다면 그 결과가 최종 값이라 덮어쓰지 않는다
+                        if (sync.none { it.pending > 0 }) {
+                            canvasSync.confirmed = setting.isCanvasNotificationEnabled
+                            activitySync.confirmed = setting.isActivityNotificationEnabled
+                            updateState {
+                                copy(
+                                    isCanvasNotificationChecked = setting.isCanvasNotificationEnabled,
+                                    isActivityNotificationChecked = setting.isActivityNotificationEnabled,
+                                    isSettingLoaded = true,
+                                )
+                            }
+                        }
+                    }.onFailure {
+                        viewModelLogger.e(it) { "알림 설정 조회에 실패했다" }
+                        postSideEffect(NotificationSettingSideEffect.ShowLoadError)
                     }
-                }.onFailure {
-                    viewModelLogger.e(it) { "알림 설정 조회에 실패했다" }
-                    postSideEffect(NotificationSettingSideEffect.ShowLoadError)
-                }
+            } finally {
+                if (isRefresh) updateState { copy(isRefreshing = false) }
+            }
         }
     }
 
@@ -162,6 +176,7 @@ constructor(
 
     private val canvasSync = ToggleSync()
     private val activitySync = ToggleSync()
+    private val sync = listOf(canvasSync, activitySync)
 
     private companion object {
         const val KEY_LOAD = "loadNotificationSetting"

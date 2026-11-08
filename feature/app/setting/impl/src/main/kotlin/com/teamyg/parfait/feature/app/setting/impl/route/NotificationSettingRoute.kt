@@ -72,6 +72,15 @@ internal fun NotificationSettingRoute(
             onClickOpenDeviceSettings = {
                 viewModel.processIntent(NotificationSettingIntent.ClickOpenDeviceSettings)
             },
+            onRefresh = {
+                // 기기 알림 허용 여부도 같이 다시 읽어 서버 설정과 한 번에 최신으로 맞춘다
+                viewModel.processIntent(
+                    NotificationSettingIntent.UpdateDeviceNotificationEnabled(
+                        enabled = NotificationPermissionManager.areNotificationsEnabled(context),
+                    ),
+                )
+                viewModel.processIntent(NotificationSettingIntent.Refresh)
+            },
             onChangeCanvasNotification = {
                 viewModel.processIntent(NotificationSettingIntent.ChangeCanvasNotification(it))
             },

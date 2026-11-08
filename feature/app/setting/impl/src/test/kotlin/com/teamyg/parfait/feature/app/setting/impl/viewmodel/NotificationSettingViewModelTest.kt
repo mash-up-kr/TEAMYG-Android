@@ -268,4 +268,40 @@ class NotificationSettingViewModelTest {
                 expectNoEvents()
             }
         }
+
+    @Test
+    fun refresh_reloadsSettingAndEndsRefreshing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 처음엔 모두 꺼져 있다가 서버에서 캔버스 알림이 켜진 상태
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        coEvery { getNotificationSetting() } returns Result.success(
+            NotificationSettingVO(isCanvasNotificationEnabled = true, isActivityNotificationEnabled = false),
+        )
+
+        // When 당겨서 새로고침한다
+        viewModel.processIntent(NotificationSettingIntent.Refresh)
+        advanceUntilIdle()
+
+        // Then 최신 값이 반영되고 새로고침 표시는 끝난다
+        assertTrue(viewModel.state.value.isCanvasNotificationChecked)
+        assertFalse(viewModel.state.value.isRefreshing)
+    }
+
+    @Test
+    fun refresh_loadFails_showsErrorAndEndsRefreshing() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 처음 조회는 성공했지만 다시 조회하면 실패한다
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        coEvery { getNotificationSetting() } returns Result.failure(IllegalStateException())
+
+        viewModel.effect.test {
+            // When 당겨서 새로고침한다
+            viewModel.processIntent(NotificationSettingIntent.Refresh)
+            advanceUntilIdle()
+
+            // Then 에러를 알리고 새로고침 표시는 끝난다
+            assertEquals(NotificationSettingSideEffect.ShowLoadError, awaitItem())
+            assertFalse(viewModel.state.value.isRefreshing)
+        }
+    }
 }
