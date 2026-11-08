@@ -323,6 +323,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 |---|---|---|
 | `YGButton` | `component/ygbutton/` | (레퍼런스, 스펙 이전) |
 | `YGTextField` / `YGTextFormField` | `component/textfield/` | [ygtextfield](../superpowers/specs/archive/2026-07-10-ygtextfield.md) · [ygtextformfield](../superpowers/specs/archive/2026-07-10-ygtextformfield.md) |
+| `YGTextButton` | `component/ygtextbutton/` | (스펙 없음 — S-001 약관 풋터 `PolicyLinkRow`) |
 | `YGHorizontalDivider` / `YGHorizontalDashedDivider` / `YGListItem` | `component/etc/` | [yghorizontaldivider](../superpowers/specs/archive/2026-07-12-yghorizontaldivider.md) · [ygdangerzone-dashed](../superpowers/specs/archive/2026-07-19-ygdangerzone-dashed.md)(점선 구분선) · [yglistitem](../superpowers/specs/archive/2026-07-12-yglistitem.md) |
 | `dashedBorder()` Modifier | `border/` | [ygdangerzone-dashed](../superpowers/specs/archive/2026-07-19-ygdangerzone-dashed.md) |
 | `YGIconButton`(+`YGIconButtonSize`) | `component/ygiconbutton/` | [ygiconbutton](../superpowers/specs/archive/2026-07-12-ygiconbutton.md) |
