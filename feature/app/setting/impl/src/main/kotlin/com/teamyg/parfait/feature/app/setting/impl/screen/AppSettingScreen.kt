@@ -30,7 +30,6 @@ import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
-import com.teamyg.parfait.core.ui.component.ListItemMenuSub
 import com.teamyg.parfait.core.ui.text.toStringResource
 import com.teamyg.parfait.domain.model.id.TermsId
 import com.teamyg.parfait.domain.model.member.LoginProvider
@@ -99,11 +98,11 @@ internal fun AppSettingScreen(
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickNotification,
                     )
-                    ListItemMenuSub(
-                        title = stringResource(R.string.setting_item_notice),
-                        onClick = onClickNotice,
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_notice),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickNotice,
                         isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
-                        modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
