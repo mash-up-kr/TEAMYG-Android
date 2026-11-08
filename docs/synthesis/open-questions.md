@@ -7796,7 +7796,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **출처**: [deeplink.md](../api/deeplink.md) `GET /.well-known/assetlinks.json` · 서버 설정 `deeplink.android.sha256-cert-fingerprints`(debug + Play 앱 서명 키)
 - **항목**: 서버는 설정 문자열을 그대로 내보내고 지문이 틀리거나 비어도 200을 준다. release 지문이 Play Console 앱 서명 키와 같은지, debug 지문이 어느 키스토어 것인지 코드로 확인할 수 없다. 틀리면 `autoVerify`가 조용히 실패해 초대 링크가 브라우저로 떨어진다. 개발자마다 debug 키스토어가 다르면 그 기기의 debug 빌드는 검증되지 않는다.
 - **상태**: 미해결
-- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다.
+- **해소 메모**: release 빌드 실기기에서 `adb shell pm get-app-links com.teamyg.parfait`가 `parfait-app.store: verified`인지 본다. 팀 debug 키스토어 공유 여부를 정한다. 2026-11-08 서버 `69d56b0`이 지문을 2개에서 5개로 늘리고 debug·release 구분 주석을 지웠다. 새 지문 3개가 어느 키인지 서버 쪽에 확인한다.
 
 ### [2026-10-25] 텍스트 토핑 [캔버스에 쌓기]가 저장하지 않는 스텁이다
 
