@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.teamyg.parfait.core.util.android.extension.triggerCenterGuideSnap
+import com.teamyg.parfait.core.util.android.extension.triggerSnapHaptic
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.showError
 import com.teamyg.parfait.core.designsystem.screen.YGScaffoldV2
@@ -69,7 +69,7 @@ internal fun CanvasToppingPlaceRoute(
                     toastPolicy.showError(toppingImageNotReadyMessage)
                 }
 
-                CanvasToppingPlaceEffect.TriggerCenterGuideHaptic -> context.triggerCenterGuideSnap()
+                CanvasToppingPlaceEffect.TriggerSnapHaptic -> context.triggerSnapHaptic()
             }
         }
     }

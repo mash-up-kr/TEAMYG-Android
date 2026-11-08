@@ -38,11 +38,11 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
-import com.teamyg.parfait.feature.groups.canvas.impl.util.AngleGuideResult
+import com.teamyg.parfait.feature.groups.canvas.impl.util.AngleGuideStep
 import com.teamyg.parfait.feature.groups.canvas.impl.util.CenterGuideAxisResult
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveAngleGuide
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisRatio
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toEditableTopping
@@ -72,6 +72,8 @@ data class CanvasToppingArrangeUiState(
     val isCenterGuideYVisible: Boolean = false,
     /** 각도 가이드 스냅 전, 손가락이 실제로 누적시킨 원값(도). [rawFocusedPositionX]/[Y] 와 같은 이유로 따로 둔다 */
     val rawFocusedRotationDegrees: Float? = null,
+    /** 실제 회전이 있었을 때만 각도 가이드·스냅을 켠다. */
+    val hasFocusedRotated: Boolean = false,
     val isAngleGuideVisible: Boolean = false,
     /** true 면 0/180도(가로선), false 면 90/270도(세로선) */
     val isAngleGuideHorizontal: Boolean = false,
@@ -180,8 +182,8 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
         val error: CanvasToppingArrangeError,
     ) : CanvasToppingArrangeEffect
 
-    /** 토핑이 캔버스 중앙 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
-    data object TriggerCenterGuideHaptic : CanvasToppingArrangeEffect
+    /** 토핑이 캔버스 중앙·각도 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
+    data object TriggerSnapHaptic : CanvasToppingArrangeEffect
 }
 
 /** [CanvasToppingArrangeViewModel.handleOnToppingTransform] 한 프레임의 중앙·각도 가이드 판정 결과. */
@@ -190,8 +192,7 @@ private class CenterGuideStep(
     val rawY: Float,
     val guideX: CenterGuideAxisResult,
     val guideY: CenterGuideAxisResult,
-    val rawRotationDegrees: Float,
-    val angleGuide: AngleGuideResult,
+    val angle: AngleGuideStep,
     val justSnapped: Boolean,
 )
 
@@ -373,7 +374,12 @@ constructor(
             is CanvasToppingArrangeIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
             CanvasToppingArrangeIntent.OnToppingTransformGestureEnd -> updateState {
-                copy(isCenterGuideXVisible = false, isCenterGuideYVisible = false, isAngleGuideVisible = false)
+                copy(
+                    isCenterGuideXVisible = false,
+                    isCenterGuideYVisible = false,
+                    isAngleGuideVisible = false,
+                    hasFocusedRotated = false,
+                )
             }
 
             CanvasToppingArrangeIntent.OnClickDeleteToppingButton -> handleOnClickDeleteToppingButton()
@@ -417,6 +423,7 @@ constructor(
                     isCenterGuideXVisible = false,
                     isCenterGuideYVisible = false,
                     rawFocusedRotationDegrees = null,
+                    hasFocusedRotated = false,
                     isAngleGuideVisible = false,
                 )
             }
@@ -443,6 +450,7 @@ constructor(
                     isCenterGuideXVisible = false,
                     isCenterGuideYVisible = false,
                     rawFocusedRotationDegrees = null,
+                    hasFocusedRotated = false,
                     isAngleGuideVisible = false,
                 )
             }
@@ -597,11 +605,11 @@ constructor(
                             positionX = step.guideX.effectiveValue,
                             positionY = step.guideY.effectiveValue,
                             scale = (t.scale * intent.zoom).coerceAtLeast(TOPPING_MIN_SCALE),
-                            rotationDegrees = step.angleGuide.effectiveValue,
+                            rotationDegrees = step.angle.effectiveDegrees,
                         )
                     }.withCenterGuideStep(step)
                 }
-                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerCenterGuideHaptic)
+                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
             }
 
             is CanvasToppingKey.Text -> {
@@ -618,14 +626,14 @@ constructor(
                                     positionX = step.guideX.effectiveValue,
                                     positionY = step.guideY.effectiveValue,
                                     scale = (t.scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                                    rotationDegrees = step.angleGuide.effectiveValue,
+                                    rotationDegrees = step.angle.effectiveDegrees,
                                 )
                             }
                         },
                         dirtyTextIds = dirtyTextIds + focused.id,
                     ).withCenterGuideStep(step)
                 }
-                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerCenterGuideHaptic)
+                if (step.justSnapped) postSideEffect(effect = CanvasToppingArrangeEffect.TriggerSnapHaptic)
             }
         }
     }
@@ -646,18 +654,20 @@ constructor(
 
         val wasSnappedX = resolveCenterGuideAxisRatio(oldRawX, intent.thresholdRatioX).isSnapped
         val wasSnappedY = resolveCenterGuideAxisRatio(oldRawY, intent.thresholdRatioY).isSnapped
-        val wasAngleSnapped = resolveAngleGuide(oldRawRotation).isSnapped
 
         val rawX = oldRawX + intent.panX
         val rawY = oldRawY + intent.panY
-        val rawRotation = oldRawRotation + intent.rotationDelta
         val guideX = resolveCenterGuideAxisRatio(rawX, intent.thresholdRatioX)
         val guideY = resolveCenterGuideAxisRatio(rawY, intent.thresholdRatioY)
-        val angleGuide = resolveAngleGuide(rawRotation)
+        val angle = stepAngleGuide(
+            oldRawDegrees = oldRawRotation,
+            oldHasRotated = hasFocusedRotated,
+            rotationDelta = intent.rotationDelta,
+        )
         val justSnapped = (guideX.isSnapped && !wasSnappedX) ||
             (guideY.isSnapped && !wasSnappedY) ||
-            (angleGuide.isSnapped && !wasAngleSnapped)
-        return CenterGuideStep(rawX, rawY, guideX, guideY, rawRotation, angleGuide, justSnapped)
+            angle.justSnapped
+        return CenterGuideStep(rawX, rawY, guideX, guideY, angle, justSnapped)
     }
 
     private fun CanvasToppingArrangeUiState.withCenterGuideStep(step: CenterGuideStep): CanvasToppingArrangeUiState =
@@ -666,9 +676,10 @@ constructor(
             rawFocusedPositionY = step.rawY,
             isCenterGuideXVisible = step.guideX.isSnapped,
             isCenterGuideYVisible = step.guideY.isSnapped,
-            rawFocusedRotationDegrees = step.rawRotationDegrees,
-            isAngleGuideVisible = step.angleGuide.isSnapped,
-            isAngleGuideHorizontal = step.angleGuide.isHorizontal,
+            rawFocusedRotationDegrees = step.angle.rawDegrees,
+            hasFocusedRotated = step.angle.hasRotated,
+            isAngleGuideVisible = step.angle.isVisible,
+            isAngleGuideHorizontal = step.angle.isHorizontal,
         )
 
     /**

@@ -39,8 +39,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingColor
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_DEFAULT_ALIGN
 import com.teamyg.parfait.feature.groups.canvas.impl.model.nextTextToppingAlign
-import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveAngleGuide
-import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
+import com.teamyg.parfait.feature.groups.canvas.impl.util.stepCenterGuideDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.textToppingStyleOf
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toTextToppingTransform
@@ -76,6 +76,8 @@ data class CanvasTextInputUiState(
     val isAngleGuideVisible: Boolean = false,
     /** true 면 0/180도(가로선), false 면 90/270도(세로선) */
     val isAngleGuideHorizontal: Boolean = false,
+    /** 이번 이동 제스처에서 회전이 있었는가. 실제 회전이 있었을 때만 각도 가이드·스냅을 켠다. 제스처가 끝나면 false. */
+    val hasRotatedThisGesture: Boolean = false,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
     val textBoxSize: DpSize? = null,
@@ -153,8 +155,8 @@ sealed interface CanvasTextInputEffect : UiSideEffect {
         val failure: PlaceFailure,
     ) : CanvasTextInputEffect
 
-    /** 토핑이 캔버스 중앙 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
-    data object TriggerCenterGuideHaptic : CanvasTextInputEffect
+    /** 토핑이 캔버스 중앙·각도 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
+    data object TriggerSnapHaptic : CanvasTextInputEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -252,7 +254,12 @@ constructor(
             is CanvasTextInputIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
             CanvasTextInputIntent.OnToppingTransformGestureEnd -> updateState {
-                copy(isCenterGuideXVisible = false, isCenterGuideYVisible = false, isAngleGuideVisible = false)
+                copy(
+                    isCenterGuideXVisible = false,
+                    isCenterGuideYVisible = false,
+                    isAngleGuideVisible = false,
+                    hasRotatedThisGesture = false,
+                )
             }
 
             is CanvasTextInputIntent.OnDragPlacementSeed -> updateState {
@@ -296,62 +303,53 @@ constructor(
                 copy(
                     offsetX = offsetX + intent.pan.x,
                     offsetY = offsetY + intent.pan.y,
+                    rawOffsetX = rawOffsetX + intent.pan.x,
+                    rawOffsetY = rawOffsetY + intent.pan.y,
                     scale = (scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
                     rotationDegrees = rotationDegrees + intent.rotationDelta,
+                    rawRotationDegrees = rawRotationDegrees + intent.rotationDelta,
+                    hasRotatedThisGesture = hasRotatedThisGesture || intent.rotationDelta != 0f,
                     hasUserAdjustedPlacement = true,
                 )
             }
             return
         }
 
-        val canvasCenterXDp = (canvas.width / 2).value
-        val canvasCenterYDp = (canvas.height / 2).value
-
-        // "방금 스냅됐는가"는 저장된 가시성 플래그가 아니라 이번 호출 전/후의 raw 위치로 가린다
-        val wasSnappedX = resolveCenterGuideAxisDp(
-            rawCenterDp = (current.rawOffsetX + box.width / 2).value,
-            canvasCenterDp = canvasCenterXDp,
-        ).isSnapped
-        val wasSnappedY = resolveCenterGuideAxisDp(
-            rawCenterDp = (current.rawOffsetY + box.height / 2).value,
-            canvasCenterDp = canvasCenterYDp,
-        ).isSnapped
-        val wasAngleSnapped = resolveAngleGuide(current.rawRotationDegrees).isSnapped
-
-        val rawOffsetX = current.rawOffsetX + intent.pan.x
-        val rawOffsetY = current.rawOffsetY + intent.pan.y
-        val rawRotationDegrees = current.rawRotationDegrees + intent.rotationDelta
-
-        val guideX = resolveCenterGuideAxisDp(
-            rawCenterDp = (rawOffsetX + box.width / 2).value,
-            canvasCenterDp = canvasCenterXDp,
+        val posStep = stepCenterGuideDp(
+            oldRawOffsetX = current.rawOffsetX,
+            oldRawOffsetY = current.rawOffsetY,
+            panX = intent.pan.x,
+            panY = intent.pan.y,
+            halfWidth = box.width / 2,
+            halfHeight = box.height / 2,
+            canvasCenterXDp = (canvas.width / 2).value,
+            canvasCenterYDp = (canvas.height / 2).value,
         )
-        val guideY = resolveCenterGuideAxisDp(
-            rawCenterDp = (rawOffsetY + box.height / 2).value,
-            canvasCenterDp = canvasCenterYDp,
+        val angleStep = stepAngleGuide(
+            oldRawDegrees = current.rawRotationDegrees,
+            oldHasRotated = current.hasRotatedThisGesture,
+            rotationDelta = intent.rotationDelta,
         )
-        val angleGuide = resolveAngleGuide(rawRotationDegrees)
-        val justSnapped = (guideX.isSnapped && !wasSnappedX) ||
-            (guideY.isSnapped && !wasSnappedY) ||
-            (angleGuide.isSnapped && !wasAngleSnapped)
+        val justSnapped = posStep.justSnapped || angleStep.justSnapped
 
         updateState {
             copy(
-                offsetX = guideX.effectiveValue.dp - box.width / 2,
-                offsetY = guideY.effectiveValue.dp - box.height / 2,
-                rawOffsetX = rawOffsetX,
-                rawOffsetY = rawOffsetY,
-                isCenterGuideXVisible = guideX.isSnapped,
-                isCenterGuideYVisible = guideY.isSnapped,
+                offsetX = posStep.guideX.effectiveValue.dp - box.width / 2,
+                offsetY = posStep.guideY.effectiveValue.dp - box.height / 2,
+                rawOffsetX = posStep.rawOffsetX,
+                rawOffsetY = posStep.rawOffsetY,
+                isCenterGuideXVisible = posStep.guideX.isSnapped,
+                isCenterGuideYVisible = posStep.guideY.isSnapped,
                 scale = (scale * intent.zoom).coerceAtLeast(TEXT_TOPPING_MIN_SCALE),
-                rotationDegrees = angleGuide.effectiveValue,
-                rawRotationDegrees = rawRotationDegrees,
-                isAngleGuideVisible = angleGuide.isSnapped,
-                isAngleGuideHorizontal = angleGuide.isHorizontal,
+                rotationDegrees = angleStep.effectiveDegrees,
+                rawRotationDegrees = angleStep.rawDegrees,
+                isAngleGuideVisible = angleStep.isVisible,
+                isAngleGuideHorizontal = angleStep.isHorizontal,
+                hasRotatedThisGesture = angleStep.hasRotated,
                 hasUserAdjustedPlacement = true,
             )
         }
-        if (justSnapped) postSideEffect(CanvasTextInputEffect.TriggerCenterGuideHaptic)
+        if (justSnapped) postSideEffect(CanvasTextInputEffect.TriggerSnapHaptic)
     }
 
     /**
