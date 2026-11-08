@@ -7708,8 +7708,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-437
 - **출처**: [사용자 이벤트 설계](../superpowers/specs/2026-10-06-user-events-design.md)(정본) × `CanvasMainViewModel#handleSaveRecordedVideo`·`#handleSaveCapturedCanvas`
 - **항목**: 정본은 `canvas_save_gallery_saved`의 `format`을 `"image"`/`"video"` 둘로 정하지만, 이미지 저장 경로(`handleSaveCapturedCanvas`)만 성공 시 `format=image`로 찍고 영상 저장 경로(`handleSaveRecordedVideo`)에는 로깅이 없다. 영상 저장은 집계에 잡히지 않는다.
-- **상태**: 미해결
-- **해소 메모**: 영상 저장 성공 시 `format=video`로 찍고, 두 경로의 로깅을 `CanvasMainViewModel` 테스트로 고정한다.
+- **상태**: 해소됨 (2026-10-29) — `handleSaveRecordedVideo`가 성공 시 `format=video`로 찍는다. 두 경로(이미지·영상) 모두 `CanvasMainViewModelTest`에서 로깅 여부를 고정했다(영상 실패 시엔 안 찍는 것도 함께 고정).
 
 ### [2026-10-20] C-103 「직접 선택」 얼럿이 편집 화면에서 돌아오면 다시 뜬다
 
