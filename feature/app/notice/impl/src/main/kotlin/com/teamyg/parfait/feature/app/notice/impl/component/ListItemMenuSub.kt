@@ -1,4 +1,4 @@
-package com.teamyg.parfait.core.ui.component
+package com.teamyg.parfait.feature.app.notice.impl.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,7 +24,7 @@ import com.teamyg.parfait.core.util.android.clickable.clickableYGNoRipple
  * 가로 여백은 두지 않는다 — 놓이는 화면이 정한다.
  */
 @Composable
-fun ListItemMenuSub(
+internal fun ListItemMenuSub(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
