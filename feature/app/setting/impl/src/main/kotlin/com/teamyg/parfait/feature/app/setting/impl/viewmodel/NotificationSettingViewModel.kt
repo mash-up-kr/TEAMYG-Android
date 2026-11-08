@@ -67,6 +67,10 @@ constructor(
     NotificationSettingIntent,
     NotificationSettingSideEffect,
     >(initialState = NotificationSettingState()) {
+    private val canvasSync = ToggleSync()
+    private val activitySync = ToggleSync()
+    private val sync = listOf(canvasSync, activitySync)
+
     init {
         viewModelLogger.i { "NotificationSettingViewModel::init" }
 
@@ -173,10 +177,6 @@ constructor(
         var confirmed = false
         var pending = 0
     }
-
-    private val canvasSync = ToggleSync()
-    private val activitySync = ToggleSync()
-    private val sync = listOf(canvasSync, activitySync)
 
     private companion object {
         const val KEY_LOAD = "loadNotificationSetting"
