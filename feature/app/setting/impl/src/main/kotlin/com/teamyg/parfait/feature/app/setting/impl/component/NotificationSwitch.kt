@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,9 +24,9 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 
 private val TrackWidth = 60.dp
-private val TrackHeight = 32.dp
 private val ThumbSize = 24.dp
-private val ThumbInset = 4.dp
+private val ThumbVerticalInset = 4.dp
+private val ThumbHorizontalInset = 5.dp
 private val BorderWidth = 1.dp
 
 @Composable
@@ -36,14 +37,14 @@ internal fun NotificationSwitch(
     enabled: Boolean = true,
 ) {
     val thumbOffset by animateDpAsState(
-        targetValue = if (checked) TrackWidth - ThumbSize - ThumbInset * 2 - BorderWidth * 2 else 0.dp,
+        targetValue = if (checked) TrackWidth - ThumbSize - ThumbHorizontalInset * 2 else 0.dp,
         label = "NotificationSwitchThumbOffset",
     )
 
     Box(
         contentAlignment = Alignment.CenterStart,
         modifier = modifier
-            .size(width = TrackWidth, height = TrackHeight)
+            .width(width = TrackWidth)
             .background(
                 color = if (enabled) YGAtomicColors.Gray.White else YGAtomicColors.Gray.Gray50,
             ).border(
@@ -56,7 +57,10 @@ internal fun NotificationSwitch(
                 interactionSource = null,
                 indication = null,
                 onValueChange = onCheckedChange,
-            ).padding(ThumbInset),
+            ).padding(
+                vertical = ThumbVerticalInset,
+                horizontal = ThumbHorizontalInset,
+            ),
     ) {
         Box(
             modifier = Modifier
