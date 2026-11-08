@@ -30,11 +30,13 @@ internal fun Modifier.textEditDragInput(
     canStartSingleFingerDrag: (x: Float, y: Float) -> Boolean,
     onDragStart: () -> Unit,
     onDrag: (pan: Offset, zoom: Float, rotationDelta: Float) -> Unit,
+    onGestureActiveChange: (Boolean) -> Unit = {},
 ): Modifier {
     val latestEnabled by rememberUpdatedState(enabled)
     val latestCanStartSingleFingerDrag by rememberUpdatedState(canStartSingleFingerDrag)
     val latestOnDragStart by rememberUpdatedState(onDragStart)
     val latestOnDrag by rememberUpdatedState(onDrag)
+    val latestOnGestureActiveChange by rememberUpdatedState(onGestureActiveChange)
 
     val handler = remember {
         PointerInputEventHandler {
@@ -74,84 +76,89 @@ internal fun Modifier.textEditDragInput(
 
                 latestOnDragStart()
 
-                var pairIds: Pair<PointerId, PointerId>? = null
-                var referenceSpan = 0f
-                var referenceAngle = 0f
-                var pairWasClose = false
+                latestOnGestureActiveChange(true)
+                try {
+                    var pairIds: Pair<PointerId, PointerId>? = null
+                    var referenceSpan = 0f
+                    var referenceAngle = 0f
+                    var pairWasClose = false
 
-                while (true) {
-                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                    if (event.changes.none { it.pressed }) break
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.changes.none { it.pressed }) break
 
-                    val wasClose = pairWasClose
-                    val pressed = event.changes.filter { it.pressed }.sortedBy { it.id.value }
-                    if (pressed.size >= 2) {
-                        pairWasClose = (pressed[1].position - pressed[0].position).getDistance() < minSpan
-                    }
+                        val wasClose = pairWasClose
+                        val pressed = event.changes.filter { it.pressed }.sortedBy { it.id.value }
+                        if (pressed.size >= 2) {
+                            pairWasClose = (pressed[1].position - pressed[0].position).getDistance() < minSpan
+                        }
 
-                    val tracked = event.changes
-                        .filter { it.pressed && it.previousPressed }
-                        .sortedBy { it.id.value }
-                        .take(2)
-                    if (tracked.any { (it.position - it.previousPosition).getDistance() > maxJump }) {
-                        pairIds = null
-                        continue
-                    }
-
-                    val emitted = when (tracked.size) {
-                        1 -> {
+                        val tracked = event.changes
+                            .filter { it.pressed && it.previousPressed }
+                            .sortedBy { it.id.value }
+                            .take(2)
+                        if (tracked.any { (it.position - it.previousPosition).getDistance() > maxJump }) {
                             pairIds = null
-                            val change = tracked[0]
-                            if (pairWasClose) {
-                                false
-                            } else {
-                                val delta = change.positionChange()
-                                if (delta != Offset.Zero) {
-                                    latestOnDrag(delta, 1f, 0f)
-                                    true
-                                } else {
+                            continue
+                        }
+
+                        val emitted = when (tracked.size) {
+                            1 -> {
+                                pairIds = null
+                                val change = tracked[0]
+                                if (pairWasClose) {
                                     false
+                                } else {
+                                    val delta = change.positionChange()
+                                    if (delta != Offset.Zero) {
+                                        latestOnDrag(delta, 1f, 0f)
+                                        true
+                                    } else {
+                                        false
+                                    }
                                 }
                             }
-                        }
 
-                        2 -> {
-                            val (first, second) = tracked
-                            val pan = (first.position + second.position) / 2f -
-                                (first.previousPosition + second.previousPosition) / 2f
-                            val vector = second.position - first.position
-                            val span = vector.getDistance()
-                            val angle = vector.angleDegrees()
-                            val ids = first.id to second.id
+                            2 -> {
+                                val (first, second) = tracked
+                                val pan = (first.position + second.position) / 2f -
+                                    (first.previousPosition + second.previousPosition) / 2f
+                                val vector = second.position - first.position
+                                val span = vector.getDistance()
+                                val angle = vector.angleDegrees()
+                                val ids = first.id to second.id
 
-                            // 기준은 최소 폭 아래에서 갱신하지 않는다. 오므렸다 벌려도 배율이 누적 오차 없이 맞는다
-                            if (ids != pairIds) {
-                                pairIds = ids
-                                val previous = second.previousPosition - first.previousPosition
-                                referenceSpan = previous.getDistance()
-                                referenceAngle = previous.angleDegrees()
+                                // 기준은 최소 폭 아래에서 갱신하지 않는다. 오므렸다 벌려도 배율이 누적 오차 없이 맞는다
+                                if (ids != pairIds) {
+                                    pairIds = ids
+                                    val previous = second.previousPosition - first.previousPosition
+                                    referenceSpan = previous.getDistance()
+                                    referenceAngle = previous.angleDegrees()
+                                }
+                                if (span < minSpan) {
+                                    false
+                                } else if (referenceSpan < minSpan) {
+                                    referenceSpan = span
+                                    referenceAngle = angle
+                                    latestOnDrag(pan, 1f, 0f)
+                                    true
+                                } else {
+                                    val zoom = span / referenceSpan
+                                    // 붙어 있는 동안 굴린 각도는 버린다
+                                    val rotation = if (wasClose) 0f else normalizeDegrees(angle - referenceAngle)
+                                    referenceSpan = span
+                                    referenceAngle = angle
+                                    latestOnDrag(pan, zoom, rotation)
+                                    true
+                                }
                             }
-                            if (span < minSpan) {
-                                false
-                            } else if (referenceSpan < minSpan) {
-                                referenceSpan = span
-                                referenceAngle = angle
-                                latestOnDrag(pan, 1f, 0f)
-                                true
-                            } else {
-                                val zoom = span / referenceSpan
-                                // 붙어 있는 동안 굴린 각도는 버린다
-                                val rotation = if (wasClose) 0f else normalizeDegrees(angle - referenceAngle)
-                                referenceSpan = span
-                                referenceAngle = angle
-                                latestOnDrag(pan, zoom, rotation)
-                                true
-                            }
-                        }
 
-                        else -> false
+                            else -> false
+                        }
+                        if (emitted) event.changes.forEach { it.consume() }
                     }
-                    if (emitted) event.changes.forEach { it.consume() }
+                } finally {
+                    latestOnGestureActiveChange(false)
                 }
             }
         }

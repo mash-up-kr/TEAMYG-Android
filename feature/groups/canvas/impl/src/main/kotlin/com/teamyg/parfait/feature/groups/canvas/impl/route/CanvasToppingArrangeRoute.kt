@@ -7,7 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.teamyg.parfait.core.util.android.extension.triggerCenterGuideSnap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teamyg.parfait.core.ui.component.modal.YGModalQuitEdit
@@ -46,6 +48,7 @@ internal fun CanvasToppingArrangeRoute(
 ) {
     val uiState by viewModel.state.collectAsStateWithLifecycle()
     val toastPolicy = rememberYGToastPolicy()
+    val context = LocalContext.current
 
     // 이펙트 수집은 컴포지션이 아니라 코루틴이라 그 안에서 `stringResource` 를 부를 수 없다.
     // 문구를 여기서 미리 뽑아 두고 이펙트는 고르기만 한다
@@ -65,6 +68,8 @@ internal fun CanvasToppingArrangeRoute(
 
                 is CanvasToppingArrangeEffect.ShowError ->
                     toastPolicy.showError(errorMessages.getValue(effect.error))
+
+                CanvasToppingArrangeEffect.TriggerCenterGuideHaptic -> context.triggerCenterGuideSnap()
             }
         }
     }
@@ -94,15 +99,20 @@ internal fun CanvasToppingArrangeRoute(
             onChangeBorderWidth = { widthDp ->
                 viewModel.processIntent(CanvasToppingArrangeIntent.OnChangeBorderWidth(widthDp))
             },
-            onToppingTransform = { panX, panY, zoom, rotationDelta ->
+            onToppingTransform = { panX, panY, zoom, rotationDelta, thresholdRatioX, thresholdRatioY ->
                 viewModel.processIntent(
                     CanvasToppingArrangeIntent.OnToppingTransform(
                         panX = panX,
                         panY = panY,
                         zoom = zoom,
                         rotationDelta = rotationDelta,
+                        thresholdRatioX = thresholdRatioX,
+                        thresholdRatioY = thresholdRatioY,
                     ),
                 )
+            },
+            onToppingTransformGestureEnd = {
+                viewModel.processIntent(CanvasToppingArrangeIntent.OnToppingTransformGestureEnd)
             },
             onClickDeleteTopping = {
                 viewModel.processIntent(CanvasToppingArrangeIntent.OnClickDeleteToppingButton)

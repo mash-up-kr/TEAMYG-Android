@@ -260,6 +260,64 @@ class CanvasToppingPlaceViewModelTest {
         assertUntouched(viewModel.state.value)
     }
 
+    @Test
+    fun onToppingTransform_enteringCenterGuideZone_snapsAndTriggersHapticOnce() =
+        runTest(mainDispatcherRule.dispatcher) {
+            // Given 캔버스 정중앙에서 50dp 밖으로 끌어 둔 상태(가이드 임계값 6dp 밖)
+            val viewModel = readyViewModel()
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(50.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+            )
+            assertFalse(viewModel.state.value.isCenterGuideXVisible)
+
+            // When 다시 중앙 6dp 안으로 끌어온다
+            viewModel.effect.test {
+                viewModel.processIntent(
+                    CanvasToppingPlaceIntent.OnToppingTransform(
+                        pan = DpOffset((-46).dp, 0.dp),
+                        zoom = 1f,
+                        rotationDelta = 0f,
+                    ),
+                )
+
+                // Then 정중앙으로 스냅되고 햅틱이 한 번 울린다
+                assertEquals(CanvasToppingPlaceEffect.TriggerCenterGuideHaptic, awaitItem())
+                expectNoEvents()
+            }
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+            assertEquals(130.dp, viewModel.state.value.offsetX)
+        }
+
+    @Test
+    fun onToppingTransform_leavingCenterGuideZone_hidesGuideWithoutHaptic() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 중앙 가이드에 스냅된 상태
+        val viewModel = readyViewModel()
+        viewModel.processIntent(
+            CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(50.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+        )
+        viewModel.effect.test {
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(
+                    pan = DpOffset((-46).dp, 0.dp),
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                ),
+            )
+            assertEquals(CanvasToppingPlaceEffect.TriggerCenterGuideHaptic, awaitItem())
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+
+            // When 다시 임계값 밖으로 끌어낸다
+            viewModel.processIntent(
+                CanvasToppingPlaceIntent.OnToppingTransform(pan = DpOffset(20.dp, 0.dp), zoom = 1f, rotationDelta = 0f),
+            )
+
+            // Then 가이드만 꺼지고 해제는 햅틱이 없다
+            expectNoEvents()
+        }
+        assertFalse(viewModel.state.value.isCenterGuideXVisible)
+        assertEquals(154.dp, viewModel.state.value.offsetX)
+    }
+
     private fun assertUntouched(state: CanvasToppingPlaceUiState) {
         assertEquals(0.dp, state.offsetX)
         assertEquals(0.dp, state.offsetY)

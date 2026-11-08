@@ -131,8 +131,16 @@ class CanvasToppingArrangeViewModelTest {
     private fun CanvasToppingArrangeViewModel.click(id: Long) =
         processIntent(CanvasToppingArrangeIntent.OnClickTopping(topping(id)))
 
+    /** 음수 임계값이면 어떤 위치에서도(정확히 0.5여도) 중앙 가이드 스냅이 걸리지 않는다 */
     private fun CanvasToppingArrangeViewModel.drag(panX: Float = 0.1f) = processIntent(
-        CanvasToppingArrangeIntent.OnToppingTransform(panX = panX, panY = 0f, zoom = 1f, rotationDelta = 0f),
+        CanvasToppingArrangeIntent.OnToppingTransform(
+            panX = panX,
+            panY = 0f,
+            zoom = 1f,
+            rotationDelta = 0f,
+            thresholdRatioX = -1f,
+            thresholdRatioY = -1f,
+        ),
     )
 
     private fun stubDelete(
@@ -500,7 +508,14 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
 
         viewModel.processIntent(
-            CanvasToppingArrangeIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 30f),
+            CanvasToppingArrangeIntent.OnToppingTransform(
+                panX = 0.1f,
+                panY = 0.05f,
+                zoom = 2f,
+                rotationDelta = 30f,
+                thresholdRatioX = -1f,
+                thresholdRatioY = -1f,
+            ),
         )
 
         val moved = viewModel.topping(FIRST_ID)
@@ -530,10 +545,110 @@ class CanvasToppingArrangeViewModelTest {
         val viewModel = viewModel()
 
         viewModel.processIntent(
-            CanvasToppingArrangeIntent.OnToppingTransform(panX = 0f, panY = 0f, zoom = 0f, rotationDelta = 0f),
+            CanvasToppingArrangeIntent.OnToppingTransform(
+                panX = 0f,
+                panY = 0f,
+                zoom = 0f,
+                rotationDelta = 0f,
+                thresholdRatioX = -1f,
+                thresholdRatioY = -1f,
+            ),
         )
 
         assertEquals(TOPPING_MIN_SCALE, viewModel.topping(FIRST_ID).scale)
+    }
+
+    // 중앙 가이드·스냅
+
+    @Test
+    fun transform_enteringCenterGuideZone_snapsAndTriggersHapticOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(
+                CanvasToppingArrangeIntent.OnToppingTransform(
+                    // positionX 0.25 + 0.249 = 0.499, 임계값(0.01) 안
+                    panX = 0.249f,
+                    panY = 0f,
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                    thresholdRatioX = 0.01f,
+                    thresholdRatioY = 0.01f,
+                ),
+            )
+
+            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            expectNoEvents()
+        }
+
+        assertEquals(0.5f, viewModel.topping(FIRST_ID).positionX)
+        assertTrue(viewModel.state.value.isCenterGuideXVisible)
+        assertFalse(viewModel.state.value.isCenterGuideYVisible)
+    }
+
+    @Test
+    fun transform_bothAxesEnterSameFrame_triggersHapticOnlyOnce() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(
+                CanvasToppingArrangeIntent.OnToppingTransform(
+                    // positionX 0.25+0.249=0.499, positionY 0.75-0.249=0.501 — 둘 다 임계값 안
+                    panX = 0.249f,
+                    panY = -0.249f,
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                    thresholdRatioX = 0.01f,
+                    thresholdRatioY = 0.01f,
+                ),
+            )
+
+            // 두 축이 같은 프레임에 동시 진입해도 햅틱은 한 번만 — OR 로 합쳐 한 postSideEffect 호출뿐이다
+            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            expectNoEvents()
+        }
+
+        val moved = viewModel.topping(FIRST_ID)
+        assertEquals(0.5f, moved.positionX)
+        assertEquals(0.5f, moved.positionY)
+        assertTrue(viewModel.state.value.isCenterGuideXVisible)
+        assertTrue(viewModel.state.value.isCenterGuideYVisible)
+    }
+
+    @Test
+    fun transform_leavingCenterGuideZone_hidesGuideWithoutHaptic() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.effect.test {
+            viewModel.processIntent(
+                CanvasToppingArrangeIntent.OnToppingTransform(
+                    panX = 0.249f,
+                    panY = 0f,
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                    thresholdRatioX = 0.01f,
+                    thresholdRatioY = 0.01f,
+                ),
+            )
+            assertEquals(CanvasToppingArrangeEffect.TriggerCenterGuideHaptic, awaitItem())
+            assertTrue(viewModel.state.value.isCenterGuideXVisible)
+
+            // 손가락은(raw) 0.499 에서 0.1 더 움직였다 — 임계값 밖으로 확실히 나간다. 해제는 햅틱이 없다
+            viewModel.processIntent(
+                CanvasToppingArrangeIntent.OnToppingTransform(
+                    panX = 0.1f,
+                    panY = 0f,
+                    zoom = 1f,
+                    rotationDelta = 0f,
+                    thresholdRatioX = 0.01f,
+                    thresholdRatioY = 0.01f,
+                ),
+            )
+            expectNoEvents()
+        }
+
+        assertFalse(viewModel.state.value.isCenterGuideXVisible)
+        assertEquals(0.599f, viewModel.topping(FIRST_ID).positionX, 1e-6f)
     }
 
     // 닫기
@@ -1318,7 +1433,14 @@ class CanvasToppingArrangeViewModelTest {
         val imageBefore = viewModel.topping(SHARED_ID)
 
         viewModel.processIntent(
-            CanvasToppingArrangeIntent.OnToppingTransform(panX = 0.1f, panY = 0.05f, zoom = 2f, rotationDelta = 10f),
+            CanvasToppingArrangeIntent.OnToppingTransform(
+                panX = 0.1f,
+                panY = 0.05f,
+                zoom = 2f,
+                rotationDelta = 10f,
+                thresholdRatioX = -1f,
+                thresholdRatioY = -1f,
+            ),
         )
 
         val text = viewModel.text(SHARED_ID)

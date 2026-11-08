@@ -223,6 +223,10 @@ internal fun editableLayerOrder(
     )
 }
 
+/**
+ * @param centerOverride 스냅 모션 중 그릴 자리. null 이면 저장된 배치대로 그린다
+ * @param rotationOverride 스냅 모션 중 그릴 각도. null 이면 저장된 각도로 그린다
+ */
 @Composable
 internal fun EditableTextTopping(
     entry: EditableTextEntry,
@@ -230,6 +234,8 @@ internal fun EditableTextTopping(
     onBoxSizeChange: (IntSize) -> Unit,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    centerOverride: DpOffset? = null,
+    rotationOverride: Float? = null,
 ) {
     val text = entry.text
 
@@ -239,9 +245,9 @@ internal fun EditableTextTopping(
         type = text.type,
         align = text.align,
         designFontSize = text.designFontSize,
-        center = entry.center,
+        center = centerOverride ?: entry.center,
         scale = text.scale,
-        rotationDegrees = text.rotationDegrees,
+        rotationDegrees = rotationOverride ?: text.rotationDegrees,
         canvasWidth = canvasWidth,
         onBoxSizeChange = onBoxSizeChange,
         onClick = onClick,
@@ -263,6 +269,7 @@ internal fun EditableTextTopping(
  * @param onClick null 이면 접근성 클릭도 붙지 않는다 — 실제로 누를 수 없는 화면에서 버튼으로
  *   읽히면 안 된다.
  * @param centerOverride 패널이 열린 동안 그릴 자리. null 이면 저장된 배치대로 그린다
+ * @param rotationOverride 스냅 모션 중 그릴 각도. null 이면 저장된 각도로 그린다
  */
 @Composable
 internal fun EditableToppingImage(
@@ -272,6 +279,7 @@ internal fun EditableToppingImage(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     centerOverride: DpOffset? = null,
+    rotationOverride: Float? = null,
 ) {
     val painterState by entry.painter.state.collectAsState()
     val border = entry.topping.border
@@ -284,7 +292,7 @@ internal fun EditableToppingImage(
             .centeredAt(centerOverride ?: entry.center)
             .requiredSize(entry.size + DpSize(outlineInset * 2, outlineInset * 2))
             .graphicsLayer(
-                rotationZ = entry.topping.rotationDegrees,
+                rotationZ = rotationOverride ?: entry.topping.rotationDegrees,
                 alpha = alpha,
             ).let { base ->
                 if (onClick == null) {
@@ -323,6 +331,8 @@ internal fun EditableToppingImage(
  * @param center 선택 박스를 두는 자리. 이미지를 그린 자리와 같아야 한다
  * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
  *   버튼을 빼야 두 번째 손가락을 버튼이 가로채지 않는다.
+ * @param rotationOverride 스냅 모션 중 그릴 각도. null 이면 [target]의 각도로 그린다 — 이미지·텍스트와
+ *   같은 값을 받아야 선택 박스가 어긋나지 않는다
  */
 @Composable
 internal fun ToppingFocusDecoration(
@@ -331,22 +341,24 @@ internal fun ToppingFocusDecoration(
     onClickDelete: () -> Unit,
     showActionButtons: Boolean,
     modifier: Modifier = Modifier,
+    rotationOverride: Float? = null,
 ) {
     val density = LocalDensity.current
+    val rotationDegrees = rotationOverride ?: target.rotationDegrees
     val sizeAfterScale = with(density) {
         DpSize(target.imageWidthPx.toDp(), target.imageHeightPx.toDp())
     }
     val buttonPoints = computeToppingButtonPoints(
         center = center,
         sizeAfterScale = sizeAfterScale,
-        rotationDegrees = target.rotationDegrees,
+        rotationDegrees = rotationDegrees,
     )
 
     Box(modifier = modifier) {
         ToppingSelectionStroke(
             center = center,
             sizeAfterScale = sizeAfterScale,
-            rotationDegrees = target.rotationDegrees,
+            rotationDegrees = rotationDegrees,
         )
         if (showActionButtons) {
             YGCircleButton(

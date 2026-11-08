@@ -40,6 +40,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthD
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
 import com.teamyg.parfait.feature.groups.canvas.impl.util.isPermanentPlaceFailure
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveAngleGuide
+import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolvePanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingBorder
 import com.teamyg.parfait.feature.groups.canvas.impl.util.toToppingTransform
@@ -82,8 +84,19 @@ data class CanvasToppingPlaceUiState(
     val existingTexts: List<CanvasTextToppingVO> = emptyList(),
     val offsetX: Dp = 0.dp,
     val offsetY: Dp = 0.dp,
+    /** 중앙 가이드 스냅 전, 손가락이 실제로 가리키는 중심 좌표. 해제 판정은 이 값(스냅으로
+     *  고정되지 않은 원값) 기준이라 [offsetX]/[offsetY] 와 따로 둔다. */
+    val rawOffsetX: Dp = 0.dp,
+    val rawOffsetY: Dp = 0.dp,
+    val isCenterGuideXVisible: Boolean = false,
+    val isCenterGuideYVisible: Boolean = false,
     val scale: Float = 1f,
     val rotationDegrees: Float = 0f,
+    /** 각도 가이드 스냅 전, 손가락이 실제로 누적시킨 원값. [rawOffsetX]/[rawOffsetY] 와 같은 이유로 따로 둔다 */
+    val rawRotationDegrees: Float = 0f,
+    val isAngleGuideVisible: Boolean = false,
+    /** true 면 0/180도(가로선), false 면 90/270도(세로선) */
+    val isAngleGuideHorizontal: Boolean = false,
     val canvasSize: DpSize? = null,
     val toppingBaseSize: DpSize? = null,
     /** C-106: 사용자가 아직 손대지 않은 동안에만 정중앙·기준 크기로 자동 배치한다 */
@@ -126,6 +139,9 @@ sealed interface CanvasToppingPlaceIntent : UiIntent {
         val rotationDelta: Float,
     ) : CanvasToppingPlaceIntent
 
+    /** 이동 제스처(드래그·핀치)가 끝났다. 중앙 가이드를 끈다 */
+    data object OnToppingTransformGestureEnd : CanvasToppingPlaceIntent
+
     /** 화면이 Canvas-Area 를 실측해 알려준다. C-106 초기 배치를 계산하는 데 쓴다 */
     data class OnCanvasMeasured(
         val canvasSize: DpSize,
@@ -162,6 +178,9 @@ sealed interface CanvasToppingPlaceEffect : UiSideEffect {
 
     /** painter 가 아직 그림을 못 들었는데 확인을 눌렀다. 초안 결손과 달리 다시 시도해 볼 수 있다 */
     data object ToppingImageNotReady : CanvasToppingPlaceEffect
+
+    /** 토핑이 캔버스 중앙 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
+    data object TriggerCenterGuideHaptic : CanvasToppingPlaceEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -297,6 +316,10 @@ class CanvasToppingPlaceViewModel
 
             is CanvasToppingPlaceIntent.OnToppingTransform -> handleOnToppingTransform(intent)
 
+            CanvasToppingPlaceIntent.OnToppingTransformGestureEnd -> updateState {
+                copy(isCenterGuideXVisible = false, isCenterGuideYVisible = false, isAngleGuideVisible = false)
+            }
+
             is CanvasToppingPlaceIntent.OnCanvasMeasured -> {
                 updateState { copy(canvasSize = intent.canvasSize).applyInitialPlacementIfNeeded() }
             }
@@ -322,21 +345,59 @@ class CanvasToppingPlaceViewModel
     }
 
     private fun handleOnToppingTransform(intent: CanvasToppingPlaceIntent.OnToppingTransform) {
+        val current = state.value
+        if (ignoresToppingTransform(current.isBorderPanelOpen)) return
+
+        // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
+        val canvasSize = current.canvasSize ?: return
+        val baseSize = current.toppingBaseSize ?: return
+
+        val canvasCenterXDp = (canvasSize.width / 2).value
+        val canvasCenterYDp = (canvasSize.height / 2).value
+        val wasSnappedX = resolveCenterGuideAxisDp(
+            rawCenterDp = (current.rawOffsetX + baseSize.width / 2).value,
+            canvasCenterDp = canvasCenterXDp,
+        ).isSnapped
+        val wasSnappedY = resolveCenterGuideAxisDp(
+            rawCenterDp = (current.rawOffsetY + baseSize.height / 2).value,
+            canvasCenterDp = canvasCenterYDp,
+        ).isSnapped
+        val wasAngleSnapped = resolveAngleGuide(current.rawRotationDegrees).isSnapped
+
+        val rawOffsetX = current.rawOffsetX + intent.pan.x
+        val rawOffsetY = current.rawOffsetY + intent.pan.y
+        val rawRotationDegrees = current.rawRotationDegrees + intent.rotationDelta
+
+        val guideX = resolveCenterGuideAxisDp(
+            rawCenterDp = (rawOffsetX + baseSize.width / 2).value,
+            canvasCenterDp = canvasCenterXDp,
+        )
+        val guideY = resolveCenterGuideAxisDp(
+            rawCenterDp = (rawOffsetY + baseSize.height / 2).value,
+            canvasCenterDp = canvasCenterYDp,
+        )
+        val angleGuide = resolveAngleGuide(rawRotationDegrees)
+        val justSnapped = (guideX.isSnapped && !wasSnappedX) ||
+            (guideY.isSnapped && !wasSnappedY) ||
+            (angleGuide.isSnapped && !wasAngleSnapped)
+
         updateState {
-            if (ignoresToppingTransform(isBorderPanelOpen)) return@updateState this
-
-            // 실측 전에 hasUserAdjustedPlacement 가 굳으면 초기 배치가 영영 안 걸린다
-            val canvasSize = canvasSize ?: return@updateState this
-            val baseSize = toppingBaseSize ?: return@updateState this
-
             copy(
-                offsetX = offsetX + intent.pan.x,
-                offsetY = offsetY + intent.pan.y,
+                offsetX = guideX.effectiveValue.dp - baseSize.width / 2,
+                offsetY = guideY.effectiveValue.dp - baseSize.height / 2,
+                rawOffsetX = rawOffsetX,
+                rawOffsetY = rawOffsetY,
+                isCenterGuideXVisible = guideX.isSnapped,
+                isCenterGuideYVisible = guideY.isSnapped,
                 scale = (scale * intent.zoom).coerceAtLeast(minScale(canvasSize, baseSize)),
-                rotationDegrees = rotationDegrees + intent.rotationDelta,
+                rotationDegrees = angleGuide.effectiveValue,
+                rawRotationDegrees = rawRotationDegrees,
+                isAngleGuideVisible = angleGuide.isSnapped,
+                isAngleGuideHorizontal = angleGuide.isHorizontal,
                 hasUserAdjustedPlacement = true,
             )
         }
+        if (justSnapped) postSideEffect(effect = CanvasToppingPlaceEffect.TriggerCenterGuideHaptic)
     }
 
     /**
@@ -359,10 +420,15 @@ class CanvasToppingPlaceViewModel
         val minTouchScale = MIN_TOPPING_SHORT_SIDE / shorterBaseSide
         val newScale = maxOf(longSideScale, minTouchScale)
 
+        val centeredOffsetX = (canvasSize.width - baseSize.width) / 2
+        val centeredOffsetY = (canvasSize.height - baseSize.height) / 2
+
         return copy(
             scale = newScale,
-            offsetX = (canvasSize.width - baseSize.width) / 2,
-            offsetY = (canvasSize.height - baseSize.height) / 2,
+            offsetX = centeredOffsetX,
+            offsetY = centeredOffsetY,
+            rawOffsetX = centeredOffsetX,
+            rawOffsetY = centeredOffsetY,
         )
     }
 

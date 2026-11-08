@@ -39,6 +39,8 @@ import com.teamyg.parfait.core.ui.outline.ToppingOutlineCache
 import com.teamyg.parfait.core.util.android.extension.centeredAt
 import com.teamyg.parfait.feature.groups.canvas.impl.R
 import com.teamyg.parfait.feature.groups.canvas.impl.component.CanvasToppingLayer
+import com.teamyg.parfait.feature.groups.canvas.impl.component.AngleGuideLines
+import com.teamyg.parfait.feature.groups.canvas.impl.component.CenterGuideLines
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasDim
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeCanvasSurface
 import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingArrangeLayout
@@ -49,6 +51,8 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingPanelInput
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleDp
+import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleRotation
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelFocusCenter
 import com.teamyg.parfait.feature.groups.canvas.impl.viewmodel.CanvasToppingPlaceUiState
 import java.io.File
@@ -74,6 +78,7 @@ internal fun CanvasToppingPlaceScreen(
     onSelectBorderColor: (Int?) -> Unit,
     onChangeBorderWidth: (Float) -> Unit,
     onToppingTransform: (pan: DpOffset, zoom: Float, rotationDelta: Float) -> Unit,
+    onToppingTransformGestureEnd: () -> Unit,
     onCanvasMeasured: (DpSize) -> Unit,
     onToppingBaseSizeMeasured: (DpSize) -> Unit,
     onToppingImageReadyChanged: (Boolean) -> Unit,
@@ -118,10 +123,15 @@ internal fun CanvasToppingPlaceScreen(
         if (isToppingImageLoaded) onToppingBaseSizeMeasured(baseSize)
     }
 
+    val animatedOffsetX by animateToppingSnapSettleDp(uiState.offsetX, uiState.isCenterGuideXVisible)
+    val animatedOffsetY by animateToppingSnapSettleDp(uiState.offsetY, uiState.isCenterGuideYVisible)
+    val animatedRotationDegrees by
+        animateToppingSnapSettleRotation(uiState.rotationDegrees, uiState.isAngleGuideVisible)
+
     // 저장된 자리. 터치 판정은 이것으로 한다
     val center = DpOffset(
-        x = uiState.offsetX + baseSize.width / 2,
-        y = uiState.offsetY + baseSize.height / 2,
+        x = animatedOffsetX + baseSize.width / 2,
+        y = animatedOffsetY + baseSize.height / 2,
     )
     val sizeAfterScale = DpSize(baseSize.width * uiState.scale, baseSize.height * uiState.scale)
 
@@ -132,6 +142,14 @@ internal fun CanvasToppingPlaceScreen(
         ?: center
 
     val border = uiState.border
+
+    // 떨어지는 경계(true→false)에서만 끝 콜백을 부른다
+    var isToppingGestureActive by remember { mutableStateOf(false) }
+    var wasToppingGestureActive by remember { mutableStateOf(false) }
+    LaunchedEffect(isToppingGestureActive) {
+        if (wasToppingGestureActive && !isToppingGestureActive) onToppingTransformGestureEnd()
+        wasToppingGestureActive = isToppingGestureActive
+    }
 
     // 그림이 뜨기 전 크기는 폴백이라, 그때 제스처를 받으면 초기 배치가 영영 안 걸린다.
     // 지역 함수로 두고 `::hitTarget` 으로 넘기지 않는다 — 그 참조는 첫 컴포지션의 값을 붙잡은 채
@@ -146,7 +164,7 @@ internal fun CanvasToppingPlaceScreen(
                     centerYPx = center.y.toPx(),
                     imageWidthPx = sizeAfterScale.width.toPx(),
                     imageHeightPx = sizeAfterScale.height.toPx(),
-                    rotationDegrees = uiState.rotationDegrees,
+                    rotationDegrees = animatedRotationDegrees,
                     // 테두리를 안 그리면 판정도 넓히지 않는다
                     borderWidthPx = border?.widthDp?.dp?.toPx() ?: 0f,
                     outline = outline,
@@ -209,13 +227,26 @@ internal fun CanvasToppingPlaceScreen(
             // 배경과 기존 토핑까지 어둡게 하고, 배치 중인 토핑은 그 위에 그린다
             ToppingArrangeCanvasDim()
 
+            CenterGuideLines(
+                showVertical = uiState.isCenterGuideXVisible,
+                showHorizontal = uiState.isCenterGuideYVisible,
+                modifier = Modifier.matchParentSize(),
+            )
+
+            AngleGuideLines(
+                isVisible = uiState.isAngleGuideVisible,
+                isHorizontal = uiState.isAngleGuideHorizontal,
+                centerOffset = if (uiState.isAngleGuideHorizontal) center.y else center.x,
+                modifier = Modifier.matchParentSize(),
+            )
+
             // Image()를 그냥 두면 painter.intrinsicSize로 스스로 크기를 맞춰(sizeToIntrinsics)
             // 스트로크 계산과 갈린다. 크기는 이 바깥 Box가 잡고 Image는 채우기만 한다
             Box(
                 modifier = Modifier
                     .centeredAt(drawnCenter)
                     .requiredSize(sizeAfterScale)
-                    .graphicsLayer(rotationZ = uiState.rotationDegrees),
+                    .graphicsLayer(rotationZ = animatedRotationDegrees),
             ) {
                 YGToppingCutoutImage(
                     painter = painter,
@@ -235,7 +266,7 @@ internal fun CanvasToppingPlaceScreen(
             ToppingSelectionStroke(
                 center = drawnCenter,
                 sizeAfterScale = sizeAfterScale,
-                rotationDegrees = uiState.rotationDegrees,
+                rotationDegrees = animatedRotationDegrees,
             )
         }
 
@@ -260,6 +291,7 @@ internal fun CanvasToppingPlaceScreen(
                             rotationDelta,
                         )
                     },
+                    onGestureActiveChange = { isToppingGestureActive = it },
                 ),
         )
     }
@@ -288,6 +320,7 @@ private fun PreviewCanvasToppingPlaceScreen(
         onSelectBorderColor = {},
         onChangeBorderWidth = {},
         onToppingTransform = { _, _, _ -> },
+        onToppingTransformGestureEnd = {},
         onCanvasMeasured = {},
         onToppingBaseSizeMeasured = {},
         onToppingImageReadyChanged = {},
