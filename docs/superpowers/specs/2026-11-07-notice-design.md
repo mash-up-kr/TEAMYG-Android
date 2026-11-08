@@ -36,7 +36,7 @@ tags: [spec, parfait, setting, notice]
 ### 디자인 시스템
 
 - `YGChipNew`(`core/designsystem`) — `Text("NEW")` 하나. 배경 `YGAtomicColors.Cherry.Cherry100`, 패딩 세로 `padding1`·가로 `padding2`, 글자 `c01M`·`Cherry700`. 너비·높이는 고정하지 않고 글자를 따른다.
-- `ListItemMenuSub`(`core:ui`) — 제목(최대 2줄·말줄임)·선택 부가 텍스트·`isNew`일 때 제목 오른쪽 4dp 뒤의 `YGChipNew`·caret(`YGIconButton` 44dp) 행. 가로 여백은 두지 않아 놓이는 화면이 정한다. 설정 화면과 공지 목록이 함께 쓰며 `YGListItem`은 건드리지 않는다.
+- `ListItemMenuSub`(`feature/app/notice/impl` `component/`) — 제목(최대 2줄·말줄임)·선택 부가 텍스트·`isNew`일 때 제목 오른쪽 4dp 뒤의 `YGChipNew`·caret(`YGIconButton` 44dp) 행. 가로 여백은 두지 않아 놓이는 화면이 정한다. 공지 목록만 쓴다.
 
 ### domain
 
@@ -58,7 +58,7 @@ tags: [spec, parfait, setting, notice]
 
 ### feature/app/setting
 
-- `AppSettingScreen`: '알림 설정' 아래 `ListItemMenuSub(title = 공지사항, isNew = true)`. 설정 화면의 NEW는 일단 항상 표시한다.
+- `AppSettingScreen`: '알림 설정' 아래 `YGListItem(text = 공지사항, trailingIcon, isNew = true)` — `YGListItem`의 제목 오른쪽 4dp 뒤에 `YGChipNew`가 붙는다. 설정 화면의 NEW는 일단 항상 표시한다.
 - `AppSettingViewModel`: `ClickNotice` intent → `NavigateToNotice` effect → `navigator.goTo(NavKeyNoticeList)`. 알림 설정과 같은 구조.
 - `setting:impl`이 `feature.app.notice.api`에 의존한다.
 
