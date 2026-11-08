@@ -3541,10 +3541,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-225
 - **출처**: `GroupSettingUiState.remainingCount`(기본값 `0`) × `GroupSettingScreen`의 `<= 0` 분기 ×
-  `YGInviteCard`(`status != Active`면 복사 버튼 비활성) — 서버 delta 반영 라운드에서 정원이 실데이터가
+  `YGInviteCard`(`status != Active`면 액션 버튼 비활성 — S-101은 공유) — 서버 delta 반영 라운드에서 정원이 실데이터가
   되면서 mock 상수 `1`이 사라졌고 기본값이 `0`이 됐다. `loadGroupDetail`의 `finally`가 실패 경로에서도
   `isLoadingDetail`을 내리므로, **캐시가 빈 채로 상세 조회가 실패하면** 로딩 덮개가 걷히고 화면이
-  "정원이 찼어요" + 죽은 초대코드 복사 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
+  "정원이 찼어요" + 죽은 초대코드 공유 버튼을 띄운다. 전에는 mock `1` 덕에 우연히 Active로 보였다.
   화면 나머지도 비어 있어 노출은 작지만, **비어 있는 것과 "가득 찼다"고 말하는 것은 다르다.**
 - **항목**: ① `remainingCount`를 널 허용으로 바꿔 "모른다"를 표현할지, 아니면 상세가 도착하기 전까지
   초대 카드를 아예 안 그릴지. ② 상세 조회 실패가 지금 토스트 하나로 끝나는데(화면은 그대로 서 있다)
@@ -3711,14 +3711,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 실패·누락 시 토스트를 띄울지(호스트는 이미 있다). ② 아니면 조회가 실패한 동안 두 줄을
   비활성으로 보일지 — 문구가 고정이라 "누를 수 있어 보이는데 안 눌린다"가 현재 상태다.
   ③ 같은 API 실패 표현을 두 화면에서 맞출지(OQ-P-167 실패 표현 갈래와 같은 축).
-- **상태**: 해소됨 (**PR #550 develop 머지, 2026-09-28** — 약관 두 줄이 더 이상 `strings.xml` 고정
+- **상태**: 미해결 (2026-11-08 #682로 재발 — 아래 재개 메모). 이전 판정: 해소됨 (**PR #550 develop 머지, 2026-09-28** — 약관 두 줄이 더 이상 `strings.xml` 고정
   문구가 아니라 `state.policies`를 순회해 그린다. 표시 여부와 클릭 가능 여부가 항상 같아져서(그
   항목이 목록에 있으면 보이고 눌리며, 없으면 아예 안 보인다) "보이는데 눌러도 반응 없음"이던 원래
   증상은 없다. 대신 조회가 실패하면 그 화면 방문 동안 두 줄이 통째로 안 보이고 재시도 UI도 없다
   (화면을 나갔다 다시 들어가야 `AppSettingViewModel`이 새로 만들어지며 재조회된다) — 이건 새 증상이
   아니라 명시적으로 채택한 트레이드오프라 별도 OQ로 남기지 않는다)
 - **해소 메모**: [api/policy.md](../api/policy.md) "앱 동작 메모"와 [status.md](../status.md) S-001
-  항목에 반영 완료.
+  항목에 반영 완료. (2026-11-08 재개로 무효 — 아래 메모)
+  > ⚠️ **2026-11-08 재개** — #682가 약관 영역을 `state.policies` 순회에서 `YGTextButton` 고정 풋터
+  > (`AppSettingScreen`의 `PolicyLinkRow`)로 바꾸면서 원래 증상이 되살아났다. 줄은 항상 보이고, 그 타입의
+  > 정책을 `firstOrNull`로 못 찾으면 `termsId?.let`에서 끊겨 누를 때 아무 일도 없다. 이번에는
+  > `handleClickPolicy`까지 가지 않아 로그도 안 남는다. 당시 항목 대조: ① 토스트 없음 ② 비활성 표시 없음
+  > ③ 온보딩과 실패 표현이 갈리는 것 그대로 — 셋 다 다시 열렸다.
 
 ### [2026-08-18] 웹뷰 목적지가 임의 `title`·`url`을 받는 범용 화면이 됐는데 출처 검증이 없다
 
@@ -6180,12 +6185,17 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > ⚠️ **③이 더 급해졌다.** 리마인드는 하루 두 번 **전 이용자**에게 나가고, 대상 조회
   > (`ReminderTargetQueryPort`)가 **토큰 보유 여부만 본다** — 끄겠다는 의사를 담을 자리가 서버 스키마에
   > 없다. 게다가 그 KDoc이 전제하는 "권한 거부 이용자는 토큰이 없다"가 앱 동작과 어긋난다 → OQ-P-384.
-  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `PushNotificationType`이
-  > `TOPPING`·**`REMIND_AM`·`REMIND_PM`** 셋이고 `route=group`이 그룹 목록으로 떨어진다. 즉 앱은
+  > 📌 **앱이 ①의 나머지 둘을 먼저 구현했다(2026-09-05, PR #446)** — `route=group`이 그룹 목록으로
+  > 떨어진다(`type`은 #689부터 앱이 값을 가르지 않는 서버 원문 문자열 `PushDeepLink.type`이다). 즉 앱은
   > **P-01/P-02/P-03 세 알림을 전제로 서 있는데 서버가 보내는 것은 하나뿐**이다. 근거로 코드가
   > 가리키는 것은 "FCM 페이로드 스펙 v1"인데 **그 문서가 어느 저장소에도 없다** → **OQ-P-361 신설**.
   > ⚠️ **④는 더 나빠졌다** — 서버가 안 손댄 것은 그대로이고, 앱은 **권한을 묻는 코드 없이** 수신부만
   > 붙였다(OQ-P-358). ③(수신 설정)도 그대로라 끄는 방법은 여전히 OS 설정뿐이다.
+  > 📌 **2026-11-08 — 앱이 ③의 UI를 먼저 만들었다(#682, S-105)**. `NotificationSettingViewModel`에
+  > 캔버스·활동 토글이 있지만 `NotificationSettingRepositoryImpl`이 메모리 stub이고, 서버 수신 설정 필드는
+  > 여전히 없다. 토글과 서버 `data.type`의 대응도 정해지지 않았다 — 문구상 캔버스는 10시/20시 알림
+  > (REMIND 계열로 보임), 활동은 "모아 받기"인데 서버에 묶음 발송이 없다. 푸시 표시 경로는 토글을 읽지
+  > 않아 꺼도 알림이 온다.
 - **해소 메모**: ①②③은 **정책 소관이라 위키 [[open-questions]]와 갈리는 자리**다 — 여기는 앱이
   무엇을 구현해야 하는지만 추적한다. 정해지면 스펙을 `specs/`에 세우고
   [api/notification.md](../api/notification.md) 미결 절을 지운다.
@@ -6391,9 +6401,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > "알림이 가리키던 날짜가 아니라 항상 그 그룹의 최신 캔버스"라고 못 박으므로 **오늘/지난 캔버스의
   > 갈림은 "항상 오늘"로 닫혔다.** ⚠️ 그런데 그 선택의 근거도 코드 한 줄이고, 계약 표는 여전히
   > `date`로 도달할 것을 요구한다 → **OQ-P-359 신설**.
-  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `canvas`·`group`,
-  > `TOPPING`·`REMIND_AM`·`REMIND_PM` 값이 이제 **앱 프로덕션 코드에도 문자열 상수로** 있다
-  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). 서버가 값을 바꾸면 조용히 `null`이 되어
+  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `route` 값 `canvas`·`group`
+  > (`PushNotificationRouteType`)이 **앱 프로덕션 코드에도 문자열 상수로** 있다
+  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). `type` 값 상수는 #689로 앱에서 사라졌다(`PushDeepLink.type`이
+  > 서버 원문 문자열). 서버가 `route` 값을 바꾸면 조용히 `null`이 되어
   > **딥링크가 평범한 실행과 구분되지 않는다**(OQ-P-354와 같은 축이고 복제면이 넷째로 늘었다).
   > ①(문구 승인 여부)은 그대로다 — 앱은 서버 문구를 그대로 표시하므로 승인 없이 사용자에게 닿는다.
 - **해소 메모**: ①은 정책 소관이라 위키 [[open-questions]]와 갈리는 자리다. ②③이 정해지면
@@ -6609,8 +6620,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > `NotificationRepository.registerCurrentDeviceToken()`을 붙였고, 권한 요청도 `NotificationPermissionGate`가
   > `GroupCreateRoute`·`GroupNickNameRoute` 두 자리에서 한다. **같은 문구가 OQ-P-351·OQ-P-352·
   > OQ-P-359의 상태에도 남아 있었고 2026-09-06 감사가 셋 다 걷었다.**
-  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`,
-  > `type`은 `PushNotificationType`이 각자 `key`로 물고, `groupId`를 양수로 읽는 규칙은
+  > 📌 **같은 PR이 딥링크 파싱 축을 enum으로 옮겼다** — `route`는 `PushNotificationRouteType`이
+  > `key`로 물고(`type`은 #689부터 enum 없이 서버 원문을 `PushDeepLink.type`이 그대로 든다 — 분석 전용), `groupId`를 양수로 읽는 규칙은
   > `PushDeepLink.AddTopping.parse`가 든다. **문자열 복제면이 줄어든 것이지 사라진 것은 아니다**
   > (서버 값이 바뀌면 여전히 조용히 `null`이 된다 — OQ-P-351 ③).
 - **해소 메모**: 검증은 콜드/웜 × 로그인/비로그인 네 시나리오의 실기기 수동 확인이다. 자동 테스트는
@@ -6622,10 +6633,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-361
 - **출처**: `push/PushDeepLinkParser` KDoc("FCM 페이로드 스펙 v1 §3") ·
   `ParfaitFirebaseMessagingService` KDoc("FCM 페이로드 스펙 v1은 세 알림(P-01/P-02/P-03) 모두
-  `notification` 블록을 항상 함께 보낸다") · `domain.model.push.PushNotificationType`
-  (`TOPPING`·`REMIND_AM`·`REMIND_PM`) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
+  `notification` 블록을 항상 함께 보낸다") · `PushDeepLink.type`(서버 문자열 원문 — `REMIND_AM`·`REMIND_PM`은
+  서버 `ReminderType`이 정본) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
   [api/notification.md](../api/notification.md) — **그 스펙 문서가 parfait에도 위키에도 서버 저장소에도
-  없다.** 앱은 `route=group`과 리마인드 2종을 파싱·라우팅까지 갖췄는데 **서버에는 그것을 보내는 코드가
+  없다.** 앱은 `route=group` 라우팅을 갖췄는데 **서버에는 그것을 보내는 코드가
   없다**(OQ-P-343 ①의 "나머지 둘").
   > 📌 **2026-09-08 — 서버가 따라붙었다**(`4789557`). `ReminderType(MORNING→"REMIND_AM",
   > EVENING→"REMIND_PM")`과 `dailyReminder`의 `data = mapOf("type" to type.dataType, "route" to "group")`이
@@ -7015,7 +7026,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **항목**: ① 그러므로 **권한을 거부한 기기의 토큰도 대상에 든다** — 서버 주석의 전제가 앱 동작과
   어긋난다. ② 발송은 성공으로 집계되고 사용자에게는 아무것도 보이지 않으므로 **틀렸다는 신호가
   어디에도 안 남는다.** ③ 더 근본적으로 **"알림을 끄겠다"는 의사를 담는 자리가 서버·앱 어디에도 없다**
-  (OQ-P-343 의 남은 갈래와 같은 자리다). ④ 하루 두 번 전원 발송이라 규모가 곧바로 붙는다.
+  (OQ-P-343 의 남은 갈래와 같은 자리다. 2026-11-08 앱에 S-105 토글 UI가 생겼으나 stub이라 이 물음은 그대로다 → OQ-P-343 ③). ④ 하루 두 번 전원 발송이라 규모가 곧바로 붙는다.
 - **상태**: 미해결
 - **해소 메모**: 갈래는 둘이다 — 앱이 권한 없을 때 토큰을 지우거나(등록 축을 되돌리는 셈이라 PR #450
   의 근거와 충돌한다), 서버에 수신 설정 필드를 두고 대상 조회가 그것을 보게 한다. 후자가 수신 설정
@@ -7876,4 +7887,19 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **상태**: 미해결 (기획 확인 필요 — 구현은 잠정)
 - **해소 메모**: 기획이 ①~④를 정하면 `toToppingImage`·`YGToppingImage.followsCardRotation`을 맞추고 위키에 텍스트 토핑 정책을 남긴다. ④가 텍스트를 빼기로 정해지면 서버 계약도 바뀌어야 한다.
 
-<!-- oq-next: 461 -->
+### [2026-11-08] 스크린샷 비교의 러너 간 렌더 동일성이 확인되지 않았다
+
+- **ID**: OQ-P-461
+- **출처**: `.github/workflows/gradle-cache-seed.yml` × `.github/workflows/ui-diff.yml` ×
+  `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt` ×
+  [ADR-0037](../adr/0037-pr-screenshot-diff-in-job-base-render.md) — 렌더가 develop 캐시 시딩의 빌드 캐시를
+  쓰면 base와 head가 다른 러너에서 렌더된 결과일 수 있다.
+- **항목**: ① 같은 머신에서 같은 커밋을 두 번 렌더해 diff 0건인 것은 확인했지만(계획 Task 3), CI 러너 간·캐시
+  경유 렌더를 같은 커밋으로 비교한 기록은 없다. ② UI와 무관해 보이는 변경이 코멘트에 뜰 때
+  오탐인지 가를 기준이 없다(예: base `9d4178d` → head `8462e00` 비교에서, 그 PR이 건드리지 않은 `:feature:camera:impl`의
+  `PreviewCustomCameraScreen` 2건이 변경으로 떴다. 오탐인지 판정하지 않았다).
+- **상태**: 미해결
+- **해소 메모**: 같은 커밋을 base·head로 비교하는 실행을 한 번 남기고, 오탐이 확인되면 캐시 시딩에서
+  스크린샷 렌더 태스크를 빼거나 렌더를 같은 러너로 묶는다. 결과는 ADR-0037 「영향」 절의 위험·방어에 적는다.
+
+<!-- oq-next: 462 -->

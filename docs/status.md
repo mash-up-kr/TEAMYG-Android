@@ -50,7 +50,7 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 영역은 서버 정책 목록을 그대로 순회하는 목록 대신 `YGTextButton` 두 줄(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)로 고정됐다. 이용약관·개인정보처리방침은 `state.policies`에서 `PolicyType.TERMS_OF_SERVICE`·`PRIVACY_POLICY`를 `firstOrNull`로 찾아 있으면 그 `termsId`로 공용 웹뷰를 연다 — **그 타입을 못 찾아도(조회 실패 포함) 줄은 항상 보이고, 누르면 그냥 아무 일도 안 일어난다**(표시 여부와 클릭 가능 여부가 더 이상 같지 않다, 목록 방식 때와 반대). 오픈소스 라이선스·아동 안전 정책은 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`·`CSAE_POLICY_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 영역은 서버 정책 목록을 그대로 순회하는 목록 대신 `YGTextButton` 두 줄(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)로 고정됐다. 이용약관·개인정보처리방침은 `state.policies`에서 `PolicyType.TERMS_OF_SERVICE`·`PRIVACY_POLICY`를 `firstOrNull`로 찾아 있으면 그 `termsId`로 공용 웹뷰를 연다 — **그 타입을 못 찾아도(조회 실패 포함) 줄은 항상 보이고, 누르면 그냥 아무 일도 안 일어난다**(표시 여부와 클릭 가능 여부가 더 이상 같지 않다, 목록 방식 때와 반대 — OQ-P-231). 오픈소스 라이선스·아동 안전 정책은 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`·`CSAE_POLICY_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
 - 앵커: `AppSettingViewModel`, `YGTextButton`, `PolicyLinkRow`, `OSS_LICENSE_URL`, `CSAE_POLICY_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
@@ -58,10 +58,11 @@
 - 설계: [app-setting-s001](superpowers/specs/archive/2026-07-19-app-setting-s001.md), [s002-account-info](superpowers/specs/archive/2026-07-22-s002-account-info.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
 
 ## 알림 설정 (S-105)
-- 상태: 앱 설정(S-001)의 「알림 설정」에서 들어가 캔버스 알림·활동 알림 두 토글을 켜고 끈다. 진입 시 `GetNotificationSettingUseCase`로 설정을 받아 오고, 받기 전이거나 기기 알림이 꺼져 있는 동안에는 토글을 조작할 수 없다(`isToggleEnabled`). 기기 알림이 꺼져 있으면(`NotificationManagerCompat.areNotificationsEnabled`) 안내 카드와 기기 설정 이동 버튼을 보이고, 설정에서 돌아올 때마다 다시 읽는다. 저장은 낙관적으로 먼저 반영하고 스위치별 `Mutex`로 한 줄로 세우며, 실패하면 대기 중인 요청이 없을 때만 마지막으로 저장에 성공한 값으로 되돌리고 에러 토스트를 띄운다. 조회 실패도 에러 토스트로 알린다.
-- 앵커: `NotificationSettingViewModel`, `NotificationSettingRepositoryImpl`, `NotificationSettingScreen`, `ListItemToggle`, `NotificationSwitch`, `NotificationPermissionManager.areNotificationsEnabled`, `buildAppNotificationSettingsIntent`, `feature/app/setting/impl`
+- 상태: 앱 설정(S-001)의 「알림 설정」에서 들어가 캔버스 알림·활동 알림 두 토글을 켜고 끈다. 진입 시 `GetNotificationSettingUseCase`로 설정을 받아 오고, 받기 전이거나 기기 알림이 꺼져 있는 동안에는 토글을 조작할 수 없다(`isToggleEnabled`). 기기 알림이 꺼져 있으면(`NotificationManagerCompat.areNotificationsEnabled`) 안내 카드와 기기 설정 이동 버튼을 보이고, 설정에서 돌아올 때마다 다시 읽는다. 저장은 낙관적으로 먼저 반영하고 스위치별 `Mutex`로 한 줄로 세우며, 실패하면 대기 중인 요청이 없을 때만 마지막으로 저장에 성공한 값으로 되돌리고 에러 토스트를 띄운다. 조회 실패도 에러 토스트로 알린다. 당겨서 새로고침으로 기기 알림과 설정을 함께 다시 읽는다(저장 대기 중인 토글이 있으면 받아 온 값을 반영하지 않는다).
+- 앵커: `NotificationSettingViewModel`, `NotificationSettingRepositoryImpl`, `NotificationSettingScreen`, `ListItemToggle`, `NotificationSwitch`, `NotificationInfoCard`, `NotificationPermissionManager.areNotificationsEnabled`, `buildAppNotificationSettingsIntent`, `feature/app/setting/impl`
 - ⚠️ `NotificationSettingRepositoryImpl`이 서버 연동 전 임시 구현이라 설정이 메모리에만 있고 앱을 다시 켜면 mock 초기값(캔버스 on·활동 off)으로 돌아간다 — 버그가 아니라 stub이다
-- 설계: [s105-notification-setting](superpowers/specs/2026-11-07-s105-notification-setting-design.md)
+- ⚠️ 토글 값을 푸시 수신·표시 경로 어디에서도 읽지 않는다(`NotificationSettingRepository`는 S-105 UseCase 셋으로만 닿고 그 호출처는 `NotificationSettingViewModel`뿐) — 꺼도 알림은 그대로 온다 (OQ-P-343)
+- 설계: [s105-notification-setting](superpowers/specs/archive/2026-11-07-s105-notification-setting-design.md)
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
@@ -182,7 +183,7 @@
 
 ## 공통 기반
 - 상태: 교차 관심사의 구조는 `architecture/`와 ADR이 정본이고 여기는 gotcha만 둔다. 세션은 `TokenAuthenticator`가 401마다 재발급하고 실패하면 강제 로그아웃으로 접히며, 릴리즈는 minify·리소스 축소를 켠 빌드를 develop 위의 경량 태그로 낸다.
-- 앵커: `TokenAuthenticator`, `WithdrawUseCase`, `YGFontFamily`, `ProvideFixedFontScale`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/AndroidConfig.kt`, `.github/workflows/test.yml`, `app/src/main/AndroidManifest.xml`
+- 앵커: `TokenAuthenticator`, `WithdrawUseCase`, `YGFontFamily`, `ProvideFixedFontScale`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/AndroidConfig.kt`, `.github/workflows/test.yml`, `.github/workflows/ui-diff.yml`, `build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt`, `app/src/main/AndroidManifest.xml`
 - ⚠️ 릴리즈 빌드는 minify와 리소스 축소를 켜지만 축소된 산출물을 설치·실행한 기록이 없고 `keep.xml`도 없다. R8 산출물에서 `@NoAuth` keep 규칙이 살아 화이트리스트 요청이 인증 헤더 없이 나가는지도 확인되지 않았다 (OQ-P-308, OQ-P-074)
 - 시스템 글자 크기(`fontScale`)는 앱 텍스트에 반영되지 않는다 — `YGCustomTheme`이 `ProvideFixedFontScale`로 `LocalDensity`의 `fontScale`을 1로 덮어쓴다. 상한이 아니라 완전 무시이고 접근성 대가는 확정이다. ⚠️ `Dialog`·`Popup` content는 새 창이 기기 값으로 되돌려 따로 감싼다(`YGModalPopup`, `CustomCalendar`). 약관 웹뷰는 `textZoom = 100`으로 따로 고정한다. 자동 강제(린트)는 없다 ([ADR-0036](adr/0036-ignore-system-font-scale.md), [code-conventions](code-conventions.md#compose-텍스트-글자-크기))
 - ⚠️ 경량 태그 `1.0.0`에는 develop에 없는 커밋(`feature/debug-mode` 포함)이 들어 있고, 릴리즈 계보를 develop 하나로 둔다는 규칙은 글로 없다. 태그 `1.1.3`은 버전 코드 11만 가리켜 같은 이름의 코드 10 산출물과 이름으로 구별되지 않는다 (OQ-P-311, OQ-P-310)
@@ -190,6 +191,8 @@
 - ⚠️ 번들 SUIT 폰트가 수정본이라 OFL 1.1 사본 고지가 필요한데 `core/designsystem/OFL.txt`는 APK에 안 실린다. 고지는 S-001이 여는 외부 페이지가 맡고, 그 페이지가 폰트 고지를 담는지는 저장소에서 확인할 수 없다. 파일명·버전·아웃라인이 원본과 같아 원본으로 되돌아가도 아무 검사도 실패하지 않는다 (OQ-P-306, OQ-P-307)
 - ⚠️ 앱에는 다크 모드가 없지만 `app/src/main/res/values-night/themes.xml`이 있다 — targetSdk 33+ 웹뷰가 테마의 `isLightTheme`로 `prefers-color-scheme`을 정해서, 시스템 다크 모드에서는 공용 웹뷰 페이지만 다크로 그려지게 둔 것이다. 창 배경은 라이트 값으로 고정했다(스플래시·전환 배경)
 - ⚠️ 대화면 세로 고정이 매니페스트 opt-out 속성에 기대는데 그 속성은 `targetSdk 37`부터 무력화되고 대화면 방침이 없다. `compileSdk`는 이미 37이다 (OQ-P-264)
+- UI 관련 경로를 바꾼 PR은 `ui-diff.yml`이 base(merge ref 첫 부모)와 merge ref의 프리뷰를 Roborazzi로 렌더해 바뀐·신규·삭제 화면을 봇 코멘트로 단다. 머지는 막지 않는다. 이미지는 `ui-snapshots/pr-<N>` 브랜치에 올리고 닫힌 지 30일 뒤 `ui-snapshots-prune.yml`이 지운다 ([ADR-0037](adr/0037-pr-screenshot-diff-in-job-base-render.md))
+- ⚠️ 렌더가 develop 캐시 시딩(`gradle-cache-seed.yml`) 빌드 캐시를 쓰면 base와 head가 다른 러너의 렌더일 수 있는데, 러너 간 픽셀 동일성을 확인한 기록이 없다. UI와 무관한 변경이 코멘트에 잡히면 이 경로부터 의심한다 (OQ-P-461)
 - ⚠️ CI는 계측 테스트를 컴파일만 하고 실행하지 않는다. 대상은 `parfait.test.android`를 적용한 모듈 전부이고 루트 `build.gradle.kts`의 `assembleAllDebugAndroidTest`가 모은다 (OQ-P-102)
 - ⚠️ 원격 이미지 다운로드가 응답 본문을 상한 없이 통째로 힙에 올린다. 서버 토핑 이미지의 실물 크기를 잰 적이 없다 (OQ-P-327)
 - ⚠️ 서버 실패를 화면이 표현하는 방식이 하나로 모이지 않았고, 실패 문구가 화면마다 복제돼 있다 (OQ-P-167)

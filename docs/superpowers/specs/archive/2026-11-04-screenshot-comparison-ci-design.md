@@ -1,10 +1,10 @@
 ---
 id: screenshot-comparison-ci
 title: PR 스크린샷 비교 리포트 CI (Roborazzi screenshot comparison)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-11-04
+verified: 2026-11-08
 related_code:
   - .github/PULL_REQUEST_TEMPLATE.md
   - .github/workflows/test.yml
@@ -19,6 +19,10 @@ related_code:
   - build-logic/convention/src/main/kotlin/com/teamyg/parfait/buildlogic/UiSnapshotConfig.kt#setConfigUiSnapshot
   - core/testing/android/src/main/kotlin/com/teamyg/parfait/core/testing/android/UiSnapshotPreviewTester.kt#UiSnapshotPreviewTester
   - core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/UiSnapshotExcluded.kt#UiSnapshotExcluded
+  - core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/NamedPreviewParameterProvider.kt#NamedPreviewParameterProvider
+  - core/designsystem/src/main/kotlin/com/teamyg/parfait/core/designsystem/utils/preview/UiSnapshotPreviewGroup.kt#UI_SNAPSHOT_PREVIEW_GROUP
+  - core/testing/android/src/main/kotlin/com/teamyg/parfait/core/testing/android/PreviewParameterNames.kt#checkPreviewParameterNames
+  - .github/workflows/gradle-cache-seed.yml
 related_adr: ADR-0037
 related_spec:
 related_architecture:
@@ -95,7 +99,7 @@ gradle/wrapper/**
 build.gradle.kts
 settings.gradle.kts
 gradle.properties
-.github/workflows/<비교 워크플로>.yml
+.github/workflows/ui-diff.yml
 .github/scripts/ui_diff/**     # 비교 잡이 스테이징·메타 판정에 쓴다
 ```
 
@@ -140,7 +144,7 @@ gradle.properties
 
 ### 렌더 결정성
 
-B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 develop 캐시 시딩에서 와 base와 head가 다른 러너의 렌더일 수 있는 위험은 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-job-base-render.md) 위험·방어에 있다. 그래서:
+B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 develop 캐시 시딩에서 와 base와 head가 다른 러너의 렌더일 수 있는 위험은 [ADR-0037](../../../adr/0037-pr-screenshot-diff-in-job-base-render.md) 위험·방어에 있다. 그래서:
 
 - `@YGPreview`의 6변형(phone·foldable·foldable-fold × light·night)은 IDE 프리뷰용으로 모두 남기고, 스크린샷 비교는
   `group = UI_SNAPSHOT_PREVIEW_GROUP`을 단 `phone` 변형만 찍는다. 커스텀 tester가 한 프리뷰 함수 안에 이 group이
@@ -158,7 +162,10 @@ B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 
   `TermAgreeScreen` `CanvasToppingPlaceScreen` `CanvasImageSaveScreen` `GroupListScreen` `WebViewScreen`.
   Coil은 프리뷰용 이미지 핸들러, Lottie는 커스텀 tester에서 `LottieTask.EXECUTOR`를 동기 executor로 교체,
   WebView는 제외가 기본 방향이다.
-- 글자 크기 고정은 PR #669(ADR-0036, 미머지)에서 다룬다. Robolectric 기본 `fontScale`이 1.0이라 그 PR과 무관하게 결정성은 유지된다. 이번 작업의 ADR은 ADR-0037이다.
+  as-built: `GroupListContent`가 `clock`을 받고 프리뷰는 고정 시계 `PreviewClock`을 넘긴다. `VerticalGridLayout`은
+  `Random(seed = 0)`으로 시드를 고정했다. 제외는 목록 밖의 `YGToppingCutoutImage` 프리뷰 하나다(테두리 띠를
+  `Dispatchers.Default`에서 만든다). 목록의 WebView·약관·토핑 배치·이미지 저장 화면은 제외하지 않았다.
+- 글자 크기는 `YGCustomTheme`이 `ProvideFixedFontScale`로 1에 고정한다([ADR-0036](../../../adr/0036-ignore-system-font-scale.md)). Robolectric 기본 `fontScale`도 1.0이라 결정성에 영향이 없다. 이번 작업의 ADR은 ADR-0037이다.
 
 ### 순서 보장 (짧은 간격의 연속 push)
 
@@ -227,7 +234,7 @@ B는 두 번 렌더하므로 흔들림이 그대로 오탐이 된다. 렌더가 
 
 ### 문서
 
-B 채택 이유(A·C 기각)는 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-job-base-render.md)에 있다. 렌더 결정성 규칙(프리뷰는 두 번 렌더해 같아야 한다, 제외
+B 채택 이유(A·C 기각)는 [ADR-0037](../../../adr/0037-pr-screenshot-diff-in-job-base-render.md)에 있다. 렌더 결정성 규칙(프리뷰는 두 번 렌더해 같아야 한다, 제외
 어노테이션을 언제 쓰는가)은 개발자가 프리뷰를 쓸 때 볼 자리에 둔다.
 
 ## 빌더에게 맡기는 것
@@ -245,7 +252,7 @@ B 채택 이유(A·C 기각)는 [ADR-0037](../../adr/0037-pr-screenshot-diff-in-
 
 ## 주의 / 열린 질문
 
-- PR 잡 시간: 렌더를 2회 하므로 길어진다. 첫 실측 후 timeout을 정한다.
+- PR 잡 시간: 렌더를 2회 하므로 길어진다. `ui-diff.yml` `timeout-minutes: 30`으로 정했다.
 - GitHub는 merge 충돌이 있는 PR에 `pull_request` 워크플로를 돌리지 않는다. `merge-conflict`는 방어용 상태이고, 충돌 중인 PR에는 마지막 코멘트가 그대로 남는다.
 - fork PR: 구조상 안전하지만(시크릿 없음, 쓰기 분리) 이 레포는 팀 내부 브랜치만 쓰므로 fork 전용
   다듬기는 하지 않는다.

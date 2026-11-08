@@ -109,12 +109,9 @@ NavKey 통합의 근거이기도 하다 → [navigation-flow](../architecture/na
 - **정렬은 서버 순서 그대로** 화면 순서다(앱이 재정렬하지 않는다 — 위 "정렬은 서버가 고정한다"에 의존).
 - **빈 배열을 실패로 보지 않는다** — 화면은 조회 성공으로 처리하고 목록이 비면 확인 버튼이 비활성이라
   signup까지 가지 않는다. 다만 **조회 실패와 화면 표현이 다르다**(실패는 재시도 문구, 빈 배열은 그냥 빈 목록).
-- **설정 화면은 표시 여부와 클릭 가능 여부가 항상 같다**(#550) — `title`·`url`이 둘 다 빈 항목이나
-  조회 실패로 목록에 아예 없는 항목은 그 줄 자체를 그리지 않는다. 화면에 보이는 줄은 항상 눌러서
-  열리므로, 예전의 "줄은 보이는데 눌러도 아무 일이 없다"는 없다. 대신 **조회가 실패하면 그 화면
-  방문 동안 두 줄이 통째로 안 보이고 재시도 UI가 없다** — 화면을 나갔다 다시 들어가야
-  `AppSettingViewModel`이 새로 만들어지며 재조회된다. 이건 명시적으로 채택한 트레이드오프다
-  ([해소된 OQ-P-231](../synthesis/open-questions.md)).
+- **설정 화면의 약관 두 줄은 `YGTextButton` 풋터(`PolicyLinkRow`)로 고정이라 항상 보인다** — 누르면
+  `PolicyType.TERMS_OF_SERVICE`·`PRIVACY_POLICY`를 `firstOrNull`로 찾아 그 `termsId`로 연다. 못 찾으면
+  (조회 실패 포함) 아무 일도 없고 로그도 남지 않는다 → [OQ-P-231](../synthesis/open-questions.md).
 - **미동의 약관도 함께 보낸다** — `SignUpUseCase`가 화면에 노출한 목록 전체를 `agreed` 플래그와 묶는다.
 - 실패는 Repository 경계에서 `AppError`로 바뀌어 올라온다(`mapErrorToAppError`).
 

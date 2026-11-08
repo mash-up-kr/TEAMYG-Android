@@ -120,6 +120,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
   - `YGButtonPreviewData.kt` — 프리뷰용 데이터.
 - **토큰 참조**: 변형 내부에서 `YGTheme.layout.padding.*`, `YGTheme.shapes.radius.*`, `YGTheme.typography.body.*`, `SizeTokens.*.getDp()`로 읽는다.
 - **프리뷰**: `YGCustomTheme { }`로 감싼다(Local 미초기화 크래시 방지). Coil 프리뷰는 `YGCustomTheme`이 `LocalAsyncImagePreviewHandler`를 이미 심음.
+- **스크린샷 비교용 프리뷰 규약**([ADR-0037](../adr/0037-pr-screenshot-diff-in-job-base-render.md)): `@PreviewParameter` provider는 `NamedPreviewParameterProvider`를 상속해 값마다 이름을 붙인다. 이름이 없거나, 영문·숫자·`_`·공백 밖의 글자가 들었거나, 한 프리뷰 안에서 겹치면 `checkPreviewParameterNames`가 그 모듈의 스크린샷 렌더를 실패시킨다. 이름이 곧 스냅샷 파일명이라 바꾸면 PR 코멘트에 삭제+신규로 뜬다. 비교는 `@YGPreview`의 `phone` 변형(`UI_SNAPSHOT_PREVIEW_GROUP`)만 찍고, 두 번 렌더해 픽셀이 같지 않은 프리뷰에만 `@UiSnapshotExcluded`를 단다.
 
 > **Assumption / 과도기** — `YGButtonType`의 각 변형 `colors`가 시맨틱(`YGTheme.colorScheme`) 대신 `YGAtomicColors`를 직접 참조하고, 값이 잠정(mock)이다. 코드 주석("Design Token 규칙이 조금 이상… 컴포넌트 완성 시점에 문의 예정")대로 **확정 전 상태**. 이 원자 직접 참조는 `YGButton`에 국한되지 않고 이후 대부분 컴포넌트(`YGActionItem`·`YGIconButton`·`YGInputNumber`·`YGChipButton`·`YGModalPopup`·`YGInviteCard`·`YGNametagChip`·`YGTopBar`·`YGDateButton`·`YGDate`·`YGLabel`·`YGDangerZone`·`YGAlert`·`YGToast`, #183 신설 버튼 5종·#185 캔버스 5종·#186 칩/토핑 2종, 대체로 `YGAtomicColors.Gray.*`·`Cherry.*`·`Melon.*`·`Pudding.*`·`Transparency.*`)로 확산됨. 확정 시 시맨틱으로 정리 권장. → [open-questions](../synthesis/open-questions.md) 후보.
 
@@ -322,6 +323,7 @@ res/drawable*/            ← ic_* 아이콘 + 밀도별 PNG 세트(#218로 A-00
 |---|---|---|
 | `YGButton` | `component/ygbutton/` | (레퍼런스, 스펙 이전) |
 | `YGTextField` / `YGTextFormField` | `component/textfield/` | [ygtextfield](../superpowers/specs/archive/2026-07-10-ygtextfield.md) · [ygtextformfield](../superpowers/specs/archive/2026-07-10-ygtextformfield.md) |
+| `YGTextButton` | `component/ygtextbutton/` | (스펙 없음 — S-001 약관 풋터 `PolicyLinkRow`) |
 | `YGHorizontalDivider` / `YGHorizontalDashedDivider` / `YGListItem` | `component/etc/` | [yghorizontaldivider](../superpowers/specs/archive/2026-07-12-yghorizontaldivider.md) · [ygdangerzone-dashed](../superpowers/specs/archive/2026-07-19-ygdangerzone-dashed.md)(점선 구분선) · [yglistitem](../superpowers/specs/archive/2026-07-12-yglistitem.md) |
 | `dashedBorder()` Modifier | `border/` | [ygdangerzone-dashed](../superpowers/specs/archive/2026-07-19-ygdangerzone-dashed.md) |
 | `YGIconButton`(+`YGIconButtonSize`) | `component/ygiconbutton/` | [ygiconbutton](../superpowers/specs/archive/2026-07-12-ygiconbutton.md) |

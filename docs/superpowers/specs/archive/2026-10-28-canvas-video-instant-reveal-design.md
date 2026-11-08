@@ -1,5 +1,8 @@
 ---
-status: in-progress
+id: canvas-video-instant-reveal
+title: 캔버스 타임랩스 영상 — 토핑 즉시 등장
+status: implemented
+verified: 2026-11-08
 related_code:
   - feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/util/ToppingVideoTimeline.kt
   - feature/groups/canvas/impl/src/main/kotlin/com/teamyg/parfait/feature/groups/canvas/impl/model/VideoTimelineOptions.kt
@@ -44,7 +47,7 @@ related_code:
   토핑 `order` 는 `order * 등장구간프레임 <= frameIndex * toppingCount` 일 때 보인다(등장 구간 1.5초 × 30fps
   = 45프레임). **정수 비교**라 float 경계 오차가 없고, 시작 프레임에 바로 보인다 — 스파이크의 1프레임
   지연이 사라진다.
-- 경로의 `toppingPopProgresses: List<Float>?` / `popProgress: Float` 를 녹화 프레임 `videoFrameIndex: Int?` /
+- 경로의 `toppingPopProgresses: List<Float>?` / `popProgress: Float` 를 녹화 프레임 번호(`CanvasVideoRecordLayer#frameIndex: Int` → `CanvasToppingLayer#videoFrameIndex: Int?`) /
   `visible: Boolean` 으로 바꾼다. `null` 이면 전부 보인다(녹화가 아닌 모든 자리).
 - 숨김은 `graphicsLayer` 의 `alpha = 0f` 로 한다. 컴포지션은 유지한다(반목표 참고).
 - **마지막 프레임 전부 보임**: `CanvasToppingLayer` 가 프레임을 받아 개수를 자기 레이어 목록 길이로

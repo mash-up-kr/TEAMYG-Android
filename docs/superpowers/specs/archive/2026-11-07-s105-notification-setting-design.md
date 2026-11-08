@@ -1,10 +1,10 @@
 ---
 id: s105-notification-setting
 title: S-105 알림 설정 화면 (Notification Setting)
-status: in-progress
+status: implemented
 category: behavior-spec
 platforms: android
-verified: 2026-11-07
+verified: 2026-11-08
 related_code:
   - NotificationSettingVO.kt#NotificationSettingVO
   - NotificationSettingRepository.kt#NotificationSettingRepository
@@ -19,6 +19,8 @@ related_code:
   - NotificationPermissionManager.kt#areNotificationsEnabled
   - Context.kt#buildAppNotificationSettingsIntent
   - ListItemToggle.kt#ListItemToggle
+  - NotificationSwitch.kt#NotificationSwitch
+  - NotificationInfoCard.kt#NotificationInfoCard
   - AppSettingScreen.kt#AppSettingScreen
   - AppSettingViewModel.kt#handleClickNotification
 related_adr:
@@ -34,9 +36,7 @@ tags: [spec, parfait, app-setting, notification]
 > 상태·날짜·대상·관련은 위 frontmatter가 단일 출처(source of truth). 본문은 설계 내용에 집중.
 
 > 이 문서는 **구현을 먼저 끝낸 뒤 사후 작성한 as-built 스펙**이다 — 브레인스토밍의 탐색·대안
-> 비교 단계 없이, 이미 커밋된 결정을 기록만 한다. 작성 시점에 `develop`에는 아직 머지되지
-> 않았고 미머지 브랜치(알림 설정 화면 본체, 그 뒤에 스택된 분석 로그 추가분) 둘에 걸쳐
-> 구현돼 있다.
+> 비교 단계 없이, 이미 커밋된 결정을 기록만 한다.
 
 ## 목표
 
@@ -49,7 +49,7 @@ tags: [spec, parfait, app-setting, notification]
   S-001에서의 진입 항목, 관련 분석 이벤트 배선.
 - 제외: 서버 연동(아래 「주의 / 열린 질문」 참조) — 지금은 토글 값을 서버가 아니라
   메모리에만 둔다. 알림 권한(`POST_NOTIFICATIONS`) 요청 자체는 범위 밖(그룹
-  생성·참여 직후 `NotificationPermissionGate`가 이미 담당 — [push-notification-permission-and-device-token](archive/2026-09-05-push-notification-permission-and-device-token.md)).
+  생성·참여 직후 `NotificationPermissionGate`가 이미 담당 — [push-notification-permission-and-device-token](2026-09-05-push-notification-permission-and-device-token.md)).
 
 ## API / 인터페이스
 
@@ -80,13 +80,17 @@ interface NotificationSettingRepository {
 | `isCanvasNotificationChecked` / `isActivityNotificationChecked` | 토글 체크 상태 |
 | `isSettingLoaded` | 서버(현재는 mock) 설정을 한 번이라도 받아왔는지 |
 | `isDeviceNotificationEnabled` | 기기 알림 on/off. `null`은 아직 안 읽음 |
+| `isRefreshing` | 당겨서 새로고침(`Refresh` 인텐트)으로 설정을 다시 받는 중인지 |
 | `isDeviceNotificationOff` (계산) | `isDeviceNotificationEnabled == false` |
 | `isToggleEnabled` (계산) | `isSettingLoaded && isDeviceNotificationEnabled == true` — 설정을 못 받았거나 기기 알림이 꺼져 있으면 토글 자체를 조작할 수 없다 |
 
 기기 알림 on/off는 `NotificationPermissionManager.areNotificationsEnabled(context)`로
-읽는다. 이 화면에서 상태가 바뀌는 유일한 경로가 기기 설정 왕복이라, 화면이 복귀할
-때마다(`LifecycleResumeEffect`) 다시 읽어 `UpdateDeviceNotificationEnabled` 인텐트로
-반영한다.
+읽는다. 화면이 복귀할 때마다(`LifecycleResumeEffect`) 다시 읽어 `UpdateDeviceNotificationEnabled`
+인텐트로 반영하고, 당겨서 새로고침 때도 다시 읽는다.
+
+당겨서 새로고침(`PullToRefreshBox`, 디자인 미정이라 Material3 기본 인디케이터 — TODO)은 기기 알림
+값과 서버 설정을 함께 다시 읽는다. 저장 대기 중인 스위치가 하나라도 있으면 받아 온 값을 반영하지
+않는다. 조회 실패는 `ShowLoadError` 토스트다.
 
 토글 저장은 **optimistic update**다 — 누르면 화면에 바로 반영하고, 저장 요청은
 스위치별로 `ToggleSync`(mutex + pending 카운터)로 직렬화한다. 실패하면 **뒤에 대기
@@ -115,12 +119,12 @@ interface NotificationSettingRepository {
 - `core/util/android/extension/Context.kt#buildAppNotificationSettingsIntent`
 - `feature/app/setting/api/NavKeyNotificationSetting.kt`
 - `feature/app/setting/impl/viewmodel/NotificationSettingViewModel.kt`
-- `feature/app/setting/impl/screen/NotificationSettingScreen.kt` + `component/ListItemToggle.kt`
+- `feature/app/setting/impl/screen/NotificationSettingScreen.kt` + `component/{ListItemToggle,NotificationSwitch,NotificationInfoCard}.kt`
 - `feature/app/setting/impl/route/NotificationSettingRoute.kt`
 - `feature/app/setting/impl/navigation/EntryBuilder.kt`에 `entry<NavKeyNotificationSetting>` 등록
 
 분석 이벤트(`app_setting_notification_tapped` · `app_notification_setting_changed` ·
-`app_notification_device_settings_tapped`)는 [user-events-design](2026-10-06-user-events-design.md)이
+`app_notification_device_settings_tapped`)는 [user-events-design](../2026-10-06-user-events-design.md)이
 정본이라 이 문서에서 값을 반복하지 않는다.
 
 ## 주의 / 열린 질문
@@ -128,9 +132,8 @@ interface NotificationSettingRepository {
 - **서버 계약이 없다.** `NotificationSettingRepositoryImpl`이 KDoc으로 스스로 "서버
   연동 전 임시 구현, 서버 API가 정해지면 원격 데이터소스 호출로 교체"라고 밝히는
   stub이다 — 설정이 앱 재시작마다 mock 초기값(캔버스 on·활동 off)으로 돌아간다.
-  서버 쪽 계약이 생기면 [api/notification.md](../../api/notification.md)에 이 화면의
+  서버 쪽 계약이 생기면 [api/notification.md](../../../api/notification.md)에 이 화면의
   설정 저장 절을 추가하고 이 리포지토리를 실제 호출로 교체해야 한다.
-- 계측 테스트 없음 — `NotificationSettingViewModelTest`(유닛 17개)만 있고
-  androidTest는 없다.
-- 머지되지 않은 상태에서 쓴 문서라 `docs/doc-baseline.md` 절차상 `develop` 머지
-  회차에 `status.md`·미머지 추적 항목을 다시 훑어야 한다.
+- 화면·ViewModel 계측 테스트는 없다 — ViewModel은 `NotificationSettingViewModelTest`·
+  `NotificationSettingViewModelInitTest` 유닛, 인텐트 빌더만 `ContextExtensionTest` androidTest다.
+- 서버 계약·토글과 푸시 종류의 대응은 OQ-P-343 ③이 추적한다.

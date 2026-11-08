@@ -456,3 +456,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-08] change | 알림 설정 분석 이벤트
 `app_setting_notification_tapped`(S-001) · `app_notification_setting_changed`(저장 성공 시, `enabled` 차원) · `app_notification_device_settings_tapped`(S-105) 배선 · 설계는 user-events-design
+
+## [2026-11-08] audit | b508c3b32 — #659 그룹 목록 v2 · #661 영상 토핑 즉시 등장 · #663 CSAE · #668 초대 코드 공유 · #670 카메라 줌 · #684·#686 스크린샷 비교 CI · #685 글자 크기 고정 · #687 카메라 정리 · #689 푸시 type 원문 · #682 S-105·약관 풋터 · #695
+227파일 +9151/-1597 · 유닛 1655 · 계측 106 · OQ 신설 OQ-P-461 · 해소 없음(OQ-P-231 재개)
