@@ -1,16 +1,16 @@
 ---
 id: canvas-video-instant-reveal
 title: 캔버스 타임랩스 영상 — 토핑 즉시 등장
-status: in-progress
+status: done
 type: work-order
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-08
 platforms: android
 owner: Parfait 팀
 related_adr: 0035
 related_spec: canvas-video-instant-reveal-design
 related_code: ToppingVideoTimeline.kt#visibleToppingCount, VideoTimelineOptions, CanvasImageSaveRoute, CanvasVideoRecordLayer, CanvasToppingLayer, PlacedTextTopping
-archived_reason:
+archived_reason: 구현 완료(PR #661). 실제 구현은 스펙 최종안(Route가 프레임 번호를 내리고 `CanvasToppingLayer`가 `layers.size`로 개수를 센다)을 따른다 — 본문 Architecture·Task 1 Step 3의 `visibleToppingCount` 인자 전달 서술은 초안이다. Task 1 Step 6(기기 회귀 확인)은 미수행 — OQ-P-429 ①.
 tags: [plan, parfait, canvas, video]
 ---
 
@@ -24,7 +24,7 @@ tags: [plan, parfait, canvas, video]
 
 **Tech Stack:** Kotlin, Jetpack Compose, JUnit4(`org.junit.Assert`).
 
-**Spec:** [`docs/superpowers/specs/2026-10-28-canvas-video-instant-reveal-design.md`](../specs/2026-10-28-canvas-video-instant-reveal-design.md)
+**Spec:** [`docs/superpowers/specs/2026-10-28-canvas-video-instant-reveal-design.md`](../../specs/archive/2026-10-28-canvas-video-instant-reveal-design.md)
 
 ## Global Constraints
 
@@ -33,7 +33,7 @@ tags: [plan, parfait, canvas, video]
 - 토핑 `order`(0부터)는 `order * 45 <= frameIndex * toppingCount` 일 때 보인다 — 정수 비교. iOS(`CanvasImageExporter.toppingVisibilities`, `time >= 1.5 * order / count`)와 모든 프레임에서 같은 결과여야 한다.
 - 아직 안 보이는 토핑은 **컴포지션에서 빼지 않는다** — `graphicsLayer` 의 `alpha = 0f` 로만 숨긴다. 빼면 이미지 로드 상태 집계와 텍스트 박스 측정이 끊긴다.
 - 이미지 저장, 캔버스 메인의 `revealTogether` 연출은 건드리지 않는다.
-- 주석·KDoc은 [`docs/code-conventions.md`](../../code-conventions.md)를 따른다: 코드가 이미 말하는 것은 쓰지 않는다 · `@return`·`@param`은 타입·이름이 말하지 못할 때만 · 다른 컴포넌트의 현재 상태를 단정하지 않는다.
+- 주석·KDoc은 [`docs/code-conventions.md`](../../../code-conventions.md)를 따른다: 코드가 이미 말하는 것은 쓰지 않는다 · `@return`·`@param`은 타입·이름이 말하지 못할 때만 · 다른 컴포넌트의 현재 상태를 단정하지 않는다.
 - 커밋 메시지는 `type: 한국어 설명`, `Co-Authored-By` 줄을 넣지 않는다. 원격 push 금지.
 
 ## Review Focus
