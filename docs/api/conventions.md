@@ -177,6 +177,10 @@ refresh token과 **같은 세션 식별자**를 담고, `validateAccessToken`의
 `HealthController`가 매핑한 `GET /health`(`http/global/health`)는 화이트리스트에 있어 **인증 없이 열린다**.
 `/actuator/health`와는 별개 경로다.
 
+**2026-11-08 actuator 노출이 `health,metrics`로 늘었다.** `/actuator/metrics`는 화이트리스트에 없어 앱 서버
+안에서는 인증 대상이고, API 호스트 앞단 Caddy가 `/actuator/health`·`/actuator/health/*` 외의 `/actuator/*`를
+직접 404로 막는다(`deploy/caddy/Caddyfile`의 `@actuatorInternal`). 앱이 부르는 경로는 없다.
+
 ## URL 규약
 
 현재 3형태가 공존한다.
