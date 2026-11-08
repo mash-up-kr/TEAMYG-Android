@@ -32,9 +32,10 @@
 | [parfait-image.md](parfait-image.md) | `http/parfaitimage` | 5 (토핑 배치 확정 · 위치/크기/각도 수정 · **일괄 수정** · **테두리 수정** · **삭제**) | 구현됨(**네 갈래 결선됨 그대로** — 배치 확정·삭제·**일괄 수정**·테두리 수정 / **위치/크기/각도 단건 수정은 표면 없음**(2026-08-31 걷어냄), **불일치 1건** — 앱이 읽는 쪽에서 `borderWidth` 를 2~30dp 로 가둔다) |
 | [notification.md](notification.md) | `http/notification` | 1 (**기기 FCM 토큰 등록**) + **HTTP 밖 푸시 발송 5종**(토핑 등록 · **배경 변경** · **텍스트 등록** · 오전 리마인드 · 저녁 리마인드) | **구현됨·결선됨**(PR #450 — 등록을 **세션 축 넷**에서 부른다. 수신·채널·딥링크는 PR #446·#447. ✅ 리마인드 2종은 앱이 먼저 만들어 둔 `REMIND_AM`·`REMIND_PM`·`route=group`과 **문자열이 맞는다**. ⚠️ 푸시 `data`의 `date` 미사용·중복 알림 두 건은 잔존. ✅ `data.type`을 서버 값 그대로 분석에 싣는다) |
 | [parfait-text.md](parfait-text.md) | `http/parfaittext` | 3 (텍스트 배치 확정 · 수정 · 삭제) | 구현됨(표면만, 소비처 0) |
+| [stats.md](stats.md) | `http/api/stats` | 1 (운영용 가입자 통계 — `/admin/stats`, `X-Stats-Token` 정적 토큰) | 해당 없음(운영 전용) |
 | [deeplink.md](deeplink.md) | `http/api/deeplink` · `http/api/page/root` | 웹 표면 5 (`/.well-known/assetlinks.json` · `/.well-known/apple-app-site-association` · `/link` 폴백 · `/` 랜딩 · **`/oss` 오픈소스 라이선스**) — `/api` 밖, envelope 없음 | assetlinks·`/link`·`/oss`(설정 웹뷰) 구현됨, 나머지 해당 없음 |
 
-**총 API 35 엔드포인트 + 웹 표면 5 + 테스트 전용 1**(2026-10-28, 서버 `1a1abee`). 웹 표면은 `/api` 밖 HTML·정적 JSON이라
+**총 API 36 엔드포인트 + 웹 표면 5 + 테스트 전용 1**(2026-11-08, 서버 `1a36480`). API 36 중 `/admin/stats` 1건은 운영 전용이라 앱이 부르지 않는다. 웹 표면은 `/api` 밖 HTML·정적 JSON이라
 API 총계와 따로 센다.
 
 ⚠️ **2026-10-25 현재 앱이 못 따라간 서버 계약** — ① **텍스트 토핑**: 새 도메인 3 엔드포인트·캔버스 응답 `texts`·일괄 수정 `textItems`는
