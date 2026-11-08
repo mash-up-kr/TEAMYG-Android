@@ -6396,9 +6396,10 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
   > "알림이 가리키던 날짜가 아니라 항상 그 그룹의 최신 캔버스"라고 못 박으므로 **오늘/지난 캔버스의
   > 갈림은 "항상 오늘"로 닫혔다.** ⚠️ 그런데 그 선택의 근거도 코드 한 줄이고, 계약 표는 여전히
   > `date`로 도달할 것을 요구한다 → **OQ-P-359 신설**.
-  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `canvas`·`group`,
-  > `TOPPING`·`REMIND_AM`·`REMIND_PM` 값이 이제 **앱 프로덕션 코드에도 문자열 상수로** 있다
-  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). 서버가 값을 바꾸면 조용히 `null`이 되어
+  > 📌 **③의 대가가 코드로 옮겨왔다** — `type`·`route`·`groupId` 세 키 이름과 `route` 값 `canvas`·`group`
+  > (`PushNotificationRouteType`)이 **앱 프로덕션 코드에도 문자열 상수로** 있다
+  > (`PushDeepLinkIntent.kt`·`PushDeepLinkParser`). `type` 값 상수는 #689로 앱에서 사라졌다(`PushDeepLink.type`이
+  > 서버 원문 문자열). 서버가 `route` 값을 바꾸면 조용히 `null`이 되어
   > **딥링크가 평범한 실행과 구분되지 않는다**(OQ-P-354와 같은 축이고 복제면이 넷째로 늘었다).
   > ①(문구 승인 여부)은 그대로다 — 앱은 서버 문구를 그대로 표시하므로 승인 없이 사용자에게 닿는다.
 - **해소 메모**: ①은 정책 소관이라 위키 [[open-questions]]와 갈리는 자리다. ②③이 정해지면
@@ -6627,8 +6628,8 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 - **ID**: OQ-P-361
 - **출처**: `push/PushDeepLinkParser` KDoc("FCM 페이로드 스펙 v1 §3") ·
   `ParfaitFirebaseMessagingService` KDoc("FCM 페이로드 스펙 v1은 세 알림(P-01/P-02/P-03) 모두
-  `notification` 블록을 항상 함께 보낸다") · `domain.model.push.PushNotificationType`
-  (`TOPPING`·`REMIND_AM`·`REMIND_PM`) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
+  `notification` 블록을 항상 함께 보낸다") · `PushDeepLink.type`(서버 문자열 원문 — `REMIND_AM`·`REMIND_PM`은
+  서버 `ReminderType`이 정본) × 서버 `NotificationMessageFactory`(문구 조립 함수 1개) ×
   [api/notification.md](../api/notification.md) — **그 스펙 문서가 parfait에도 위키에도 서버 저장소에도
   없다.** 앱은 `route=group`과 리마인드 2종을 파싱·라우팅까지 갖췄는데 **서버에는 그것을 보내는 코드가
   없다**(OQ-P-343 ①의 "나머지 둘").
