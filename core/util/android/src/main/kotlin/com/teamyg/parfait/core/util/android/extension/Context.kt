@@ -16,5 +16,10 @@ fun Context.buildAppSettingsIntent(): Intent {
     }
 }
 
+fun Context.buildAppNotificationSettingsIntent(): Intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+}
+
 fun Context.isGrantedPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

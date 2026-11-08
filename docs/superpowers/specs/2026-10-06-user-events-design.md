@@ -47,6 +47,8 @@ tags: [spec, parfait, analytics]
 |------|------|------|
 | `app` | `push` | 푸시 알림 |
 | `app` | `account` | 앱 사이드메뉴 > 계정정보 |
+| `app` | `setting` | 앱 사이드메뉴 > 설정(`S-001`) — 항목 진입 |
+| `app` | `notification` | 앱 사이드메뉴 > 알림 설정(`S-105`) |
 | `canvas` | `camera` | 촬영·사진 선택·대상 감지 (C101 · C102 · C104) |
 | `canvas` | `main` | 캔버스 메인(`C-001`) — 토핑 추가 메뉴 등 화면 자체의 조작 |
 | `canvas` | `edit` | 캔버스 편집 — `C-106`(최초 배치, 사진 토핑) / `C-305`(재편집)[^oq430] |
@@ -84,6 +86,9 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 | `app_push_opened` | `type`: FCM `data.type` 서버 값 그대로(`"TOPPING"` / `"BACKGROUND"` / `"TEXT"` / `"REMIND_AM"` / `"REMIND_PM"` …) | 푸시 알림으로 앱 진입. 앱이 값을 가공하지 않아 서버가 추가한 type 도 그대로 찍힌다. `type` 키가 없으면 이벤트를 찍지 않는다 |
 | `AppLink` | `destination`: `"group_invite"` | 외부 링크(App Links, 설치 후 Install Referrer 복원)로 앱 진입. ⚠️ snake_case 규칙의 예외 — iOS 와 같은 로그로 합쳐 보려고 iOS 이름·값을 그대로 쓴다 |
 | `app_account_nickname_changed` | — | 계정정보에서 닉네임 변경 완료 |
+| `app_setting_notification_tapped` | — | `S-001` 설정에서 "알림 설정" 항목 탭 |
+| `app_notification_setting_changed` | `type`: `"canvas"` / `"activity"`, `enabled`: `"true"` / `"false"` | `S-105` 스위치 변경이 저장까지 성공했을 때. `enabled`는 변경 후 값이고, 저장이 실패해 되돌아간 변경은 찍지 않는다 |
+| `app_notification_device_settings_tapped` | — | `S-105` 기기 알림이 꺼져 있을 때 보이는 안내 카드의 "설정으로 이동" 탭 |
 
 ### canvas
 
@@ -119,6 +124,6 @@ Firebase 이벤트는 `name` + `parameters` 로 구성된다.
 
 리포트에서 값별로 나눠 보려면 Firebase 콘솔에서 **이벤트 범위 맞춤 측정기준**으로 등록한다. 배포 전에 등록해야 첫날 데이터부터 보인다.
 
-`type` · `destination` · `source` · `success` · `group_id` · `is_border_on` · `action` · `is_mine` · `format`
+`type` · `destination` · `source` · `success` · `group_id` · `is_border_on` · `action` · `is_mine` · `format` · `enabled`
 
 [^oq430]: 정본 문서의 "C105"가 재편집(`C-305`)까지 포함할 의도였는지 확인이 남았다 — [OQ-P-430](../../synthesis/open-questions.md#2026-10-07-canvas_edit_-화면-분류가-정본-문서와-코드에서-다르다) ①.

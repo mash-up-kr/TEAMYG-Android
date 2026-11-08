@@ -1,23 +1,33 @@
 package com.teamyg.parfait.feature.app.setting.impl.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.etc.YGListItem
 import com.teamyg.parfait.core.designsystem.component.modal.YGModalPopup
 import com.teamyg.parfait.core.designsystem.component.ygactionitem.YGActionItem
 import com.teamyg.parfait.core.designsystem.component.ygdangerzone.YGDangerZone
+import com.teamyg.parfait.core.designsystem.component.ygtextbutton.YGTextButton
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarBack
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
+import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.theme.size.SizeTokens
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.core.ui.text.toStringResource
@@ -30,11 +40,15 @@ import com.teamyg.parfait.feature.app.setting.impl.component.ProfileCard
 import com.teamyg.parfait.feature.app.setting.impl.viewmodel.AppSettingState
 import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 
+/** 피그마 고정값 — 토큰 체계에 없는 화면 전용 여백이라 상수로 뺀다 */
+private val FOOTER_LINK_HORIZONTAL_PADDING = 64.dp
+
 @Composable
 internal fun AppSettingScreen(
     state: AppSettingState,
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
+    onClickNotification: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
     onClickCsaePolicy: () -> Unit,
     onClickOssLicense: () -> Unit,
@@ -52,7 +66,6 @@ internal fun AppSettingScreen(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap8),
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
@@ -68,6 +81,8 @@ internal fun AppSettingScreen(
                     modifier = Modifier.padding(horizontal = YGTheme.layout.padding.padding7),
                 )
 
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap5))
+
                 Column(
                     verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
                     modifier = Modifier.fillMaxWidth(),
@@ -77,27 +92,18 @@ internal fun AppSettingScreen(
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickAccount,
                     )
-                    state.policies.forEach { policy ->
-                        PolicyListItem(
-                            policy = policy,
-                            onClick = { onClickPolicy(policy.termsId) },
-                        )
-                    }
                     YGListItem(
-                        text = stringResource(R.string.setting_item_csae_policy),
+                        text = stringResource(R.string.setting_item_notification),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                        onClickTrailingIcon = onClickCsaePolicy,
-                    )
-                    YGListItem(
-                        text = stringResource(R.string.setting_item_oss_license),
-                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                        onClickTrailingIcon = onClickOssLicense,
+                        onClickTrailingIcon = onClickNotification,
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
 
                 YGDangerZone(
                     topZone = {
@@ -121,6 +127,40 @@ internal fun AppSettingScreen(
                         .fillMaxWidth()
                         .padding(horizontal = YGTheme.layout.padding.padding7),
                 )
+
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap7))
+
+                // 목록과 달리 서버가 값을 안 내려줘도 줄 자체는 그대로 보여준다 — 다만
+                // 그 타입의 정책을 못 찾으면 눌러도 아무 일이 없다(termsId 가 없어 열 수 없다)
+                val termsOfServicePolicy = state.policies.firstOrNull { it.type == PolicyType.TERMS_OF_SERVICE }
+                val privacyPolicy = state.policies.firstOrNull { it.type == PolicyType.PRIVACY_POLICY }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = FOOTER_LINK_HORIZONTAL_PADDING,
+                            end = FOOTER_LINK_HORIZONTAL_PADDING,
+                            top = YGTheme.layout.padding.padding6,
+                        ),
+                ) {
+                    PolicyLinkRow(
+                        firstText = stringResource(R.string.setting_item_terms_of_service),
+                        secondText = stringResource(R.string.setting_item_privacy_policy),
+                        onClickFirst = { termsOfServicePolicy?.termsId?.let(onClickPolicy) },
+                        onClickSecond = { privacyPolicy?.termsId?.let(onClickPolicy) },
+                    )
+                    PolicyLinkRow(
+                        firstText = stringResource(R.string.setting_item_oss_license),
+                        secondText = stringResource(R.string.setting_item_csae_policy),
+                        onClickFirst = onClickOssLicense,
+                        onClickSecond = onClickCsaePolicy,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap9))
             }
         }
 
@@ -141,21 +181,26 @@ internal fun AppSettingScreen(
     }
 }
 
-/**
- * 약관 목록 한 줄. title·url 이 둘 다 비어 있으면 줄을 그리지 않는다.
- * title 만 비어 있으면 서버가 일부러 빈 문자열을 내려준 것으로 보고 빈 텍스트로 그대로 보여준다.
- */
+/** 약관 footer 한 줄 — 텍스트 버튼 둘을 구분선으로 가른다 */
 @Composable
-private fun PolicyListItem(
-    policy: PolicyVO,
-    onClick: () -> Unit,
+private fun PolicyLinkRow(
+    firstText: String,
+    secondText: String,
+    onClickFirst: () -> Unit,
+    onClickSecond: () -> Unit,
 ) {
-    if (policy.title.isNotBlank() || policy.url.isNotBlank()) {
-        YGListItem(
-            text = policy.title,
-            trailingIcon = DesignSystemR.drawable.ic_caret_right,
-            onClickTrailingIcon = onClick,
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        YGTextButton(text = firstText, onClick = onClickFirst)
+        Spacer(
+            modifier = Modifier
+                .width(SizeTokens.Size1.getDp())
+                .height(YGTheme.layout.gap.gap3)
+                .background(color = YGAtomicColors.Gray.Gray200),
         )
+        YGTextButton(text = secondText, onClick = onClickSecond)
     }
 }
 
@@ -185,6 +230,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         ),
         onClickBack = {},
         onClickAccount = {},
+        onClickNotification = {},
         onClickPolicy = {},
         onClickCsaePolicy = {},
         onClickOssLicense = {},

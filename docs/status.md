@@ -50,13 +50,18 @@
 - 설계: [s101-group-setting-api](superpowers/specs/archive/2026-08-17-s101-group-setting-api.md), [group-ssot](superpowers/specs/archive/2026-08-17-group-ssot.md), [s101-group-side-menu](superpowers/specs/archive/2026-08-07-s101-group-side-menu.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [ADR-0023](adr/0023-group-in-memory-ssot.md)
 
 ## 앱 설정 (S-001) — 로그아웃·회원 탈퇴
-- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 목록은 `state.policies`를 그대로 순회해 그린다 — 줄 텍스트도 API `title`이고, 특정 타입을 골라 쓰지 않아 서버가 정책을 추가해도 코드 변경이 필요 없다. `title`·`url`이 둘 다 빈 항목(조회 실패로 목록에 아예 없는 경우 포함)은 그 줄을 그리지 않아 표시 여부와 클릭 가능 여부가 항상 같다. 누르면 그 항목의 `title`·`url`을 실어 공용 웹뷰로 연다(식별은 `PolicyType`이 아니라 항목 고유의 `termsId`). 약관 아래 「오픈소스 라이선스」는 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
-- 앵커: `AppSettingViewModel`, `OSS_LICENSE_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
+- 상태: 앱 설정은 계정 SSoT를 구독만 해 프로필(닉네임·로그인 수단)을 그리고, 약관 영역은 서버 정책 목록을 그대로 순회하는 목록 대신 `YGTextButton` 두 줄(이용약관·개인정보처리방침 / 오픈소스 라이선스·아동 안전 정책)로 고정됐다. 이용약관·개인정보처리방침은 `state.policies`에서 `PolicyType.TERMS_OF_SERVICE`·`PRIVACY_POLICY`를 `firstOrNull`로 찾아 있으면 그 `termsId`로 공용 웹뷰를 연다 — **그 타입을 못 찾아도(조회 실패 포함) 줄은 항상 보이고, 누르면 그냥 아무 일도 안 일어난다**(표시 여부와 클릭 가능 여부가 더 이상 같지 않다, 목록 방식 때와 반대). 오픈소스 라이선스·아동 안전 정책은 서버 목록과 무관하게 항상 있고 앱 상수 주소(`OSS_LICENSE_URL`·`CSAE_POLICY_URL`)를 같은 웹뷰로 연다. 로그아웃은 `LogoutUseCase`가 서버 실패와 무관하게 토큰·그룹 캐시·오늘 캔버스·계정 정보를 지운 뒤 로그인으로 `replaceAll`하고, 탈퇴는 `WithdrawUseCase`가 서버 승인 뒤에만 같은 정리를 불러 로딩 오버레이 + 실패 토스트 형태로 로그인으로 보낸다.
+- 앵커: `AppSettingViewModel`, `YGTextButton`, `PolicyLinkRow`, `OSS_LICENSE_URL`, `CSAE_POLICY_URL`, `LogoutUseCase`, `WithdrawUseCase`, `AccountInfoViewModel`, `feature/app/setting/impl`
 - ⚠️ 탈퇴 뒤 정리를 맡은 `LogoutUseCase`가 지워진 계정으로 서버 로그아웃을 부르고, 그 401이 재발급·`ForcedLogout`까지 깨워 로그인 이동을 두 곳이 일으킨다(실기기·실서버 확인 없음) (OQ-P-242)
-- ⚠️ 약관 목록 조회가 실패하면 그 화면 방문 동안 약관 두 줄이 통째로 안 보이고 재시도 UI가 없다 — 화면을 나갔다 다시 들어가야 재조회된다. 명시적으로 채택한 트레이드오프다(해소된 OQ-P-231 참고)
 - ⚠️ 로그아웃·탈퇴가 그룹별 지난 캔버스 알럿 확인 기록을 지우지 않아, 계정을 바꿔 같은 그룹에 들어가면 알럿을 놓친다 (OQ-P-397)
 - ⚠️ 로그아웃 요청 중 항목은 `enabled`만 꺼지고 색이 그대로라 사용자는 눌러도 반응이 없는 이유를 모른다 — 디자인시스템에 비활성 색이 없다 (OQ-P-186)
 - 설계: [app-setting-s001](superpowers/specs/archive/2026-07-19-app-setting-s001.md), [s002-account-info](superpowers/specs/archive/2026-07-22-s002-account-info.md), [setting-danger-zone-popups](superpowers/specs/archive/2026-08-09-setting-danger-zone-popups.md), [session-token-refresh-infra](superpowers/specs/archive/2026-08-15-session-token-refresh-infra.md), [ADR-0021](adr/0021-token-refresh-forced-logout.md), [ADR-0022](adr/0022-user-info-local-ssot.md)
+
+## 알림 설정 (S-105)
+- 상태: 앱 설정(S-001)의 「알림 설정」에서 들어가 캔버스 알림·활동 알림 두 토글을 켜고 끈다. 진입 시 `GetNotificationSettingUseCase`로 설정을 받아 오고, 받기 전이거나 기기 알림이 꺼져 있는 동안에는 토글을 조작할 수 없다(`isToggleEnabled`). 기기 알림이 꺼져 있으면(`NotificationManagerCompat.areNotificationsEnabled`) 안내 카드와 기기 설정 이동 버튼을 보이고, 설정에서 돌아올 때마다 다시 읽는다. 저장은 낙관적으로 먼저 반영하고 스위치별 `Mutex`로 한 줄로 세우며, 실패하면 대기 중인 요청이 없을 때만 마지막으로 저장에 성공한 값으로 되돌리고 에러 토스트를 띄운다. 조회 실패도 에러 토스트로 알린다.
+- 앵커: `NotificationSettingViewModel`, `NotificationSettingRepositoryImpl`, `NotificationSettingScreen`, `ListItemToggle`, `NotificationSwitch`, `NotificationPermissionManager.areNotificationsEnabled`, `buildAppNotificationSettingsIntent`, `feature/app/setting/impl`
+- ⚠️ `NotificationSettingRepositoryImpl`이 서버 연동 전 임시 구현이라 설정이 메모리에만 있고 앱을 다시 켜면 mock 초기값(캔버스 on·활동 off)으로 돌아간다 — 버그가 아니라 stub이다
+- 설계: [s105-notification-setting](superpowers/specs/2026-11-07-s105-notification-setting-design.md)
 
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.

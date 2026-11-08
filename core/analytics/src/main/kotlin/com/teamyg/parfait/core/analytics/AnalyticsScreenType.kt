@@ -36,6 +36,7 @@ enum class AnalyticsScreenType(
     CANVAS_IMAGE_SAVE(screenId = "C-001-image-save", screenClass = "NavKeyCanvasImageSave"),
     APP_SETTING(screenId = "S-001", screenClass = "NavKeyAppSetting"),
     ACCOUNT_INFO(screenId = "S-002", screenClass = "NavKeyAccountInfo"),
+    NOTIFICATION_SETTING(screenId = "S-105", screenClass = "NavKeyNotificationSetting"),
     GROUP_SETTING(screenId = "S-101", screenClass = "NavKeyGroupSetting"),
     WEB_VIEW(screenId = "S-004", screenClass = "NavKeyWebView"),
 }
