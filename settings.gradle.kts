@@ -60,6 +60,8 @@ include(
 )
 
 include(
+    ":feature:app:notice:api",
+    ":feature:app:notice:impl",
     ":feature:app:setting:api",
     ":feature:app:setting:impl",
 )

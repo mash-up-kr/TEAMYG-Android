@@ -64,6 +64,10 @@
 - ⚠️ 토글 값을 푸시 수신·표시 경로 어디에서도 읽지 않는다(`NotificationSettingRepository`는 S-105 UseCase 셋으로만 닿고 그 호출처는 `NotificationSettingViewModel`뿐) — 꺼도 알림은 그대로 온다 (OQ-P-343)
 - 설계: [s105-notification-setting](superpowers/specs/archive/2026-11-07-s105-notification-setting-design.md)
 
+## 공지사항 — 목록·상세
+- 상태: 설정 화면 「알림 설정」 아래 「공지사항」(제목 옆 `YGChipNew`, 항상 표시)에서 `NavKeyNoticeList`로 들어가 목록을, 행을 누르면 `NavKeyNoticeDetail(noticeId)` 상세를 연다. 목록 행의 NEW 칩은 `NoticeVO.isNew`를 따른다. 두 화면은 `GetNoticesUseCase`·`GetNoticeUseCase` 결과를 그리고 조회 실패는 에러 토스트로 알린다.
+- ⚠️ 서버 API가 없어 `NoticeRepositoryImpl`이 고정된 5건을 메모리에서 내려주는 **임시 구현**이다(서버 연동 전 stub이지 버그가 아니다). NEW 판정 규칙(서버 필드·앱 읽음 기록)은 API가 정해질 때 정한다. 화면 ID와 분석 이벤트는 아직 없다.
+
 ## 캔버스 메인 (C-001)
 - 상태: `CanvasMainViewModel`은 저장소의 오늘 캔버스 흐름을 화면이 보이는 동안만 구독하고(갱신은 폴러 몫, 지난 날을 보는 동안은 구독을 끊는다) 첫 조회 전에만 덮개를 띄우며 첫 조회 실패만 토스트로 알린다. 상단 그룹명은 그룹 목록 캐시가 정본이고 캔버스 응답의 이름은 캐시가 빌 때만 쓰며, 남의 토핑 탭은 Spotlight와 작성자 토스트로, 본인 토핑 탭은 오늘 캔버스에서만 배치 수정 화면(`NavKeyCanvasToppingArrange`)으로 이어지고, 배경·토핑 이미지 결말은 `canvasLoadState`로 접혀 첫 페인트 전까지만 로딩·재시도 덮개가 된다.
 - 앵커: `CanvasMainViewModel`, `CanvasMainUiState`, `CanvasMainRoute`, `canvasLoadState`, `pickToppingHit`, `GetTodayParfaitFlowUseCase`, `CanvasPoller`, `TodayCanvasFetchEntity`

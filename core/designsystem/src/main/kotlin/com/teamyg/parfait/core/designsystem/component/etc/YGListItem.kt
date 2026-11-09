@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.R
+import com.teamyg.parfait.core.designsystem.component.ygchipnew.YGChipNew
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButton
 import com.teamyg.parfait.core.designsystem.component.ygiconbutton.YGIconButtonSize
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
@@ -28,9 +29,11 @@ fun YGListItem(
     onClickTrailingIcon: () -> Unit,
     modifier: Modifier = Modifier,
     textColor: Color = YGAtomicColors.Gray.Gray800,
+    isNew: Boolean = false,
 ) = YGListItemImpl(
     text = text,
     textColor = textColor,
+    isNew = isNew,
     modifier = modifier,
 ) {
     YGIconButton(
@@ -65,6 +68,7 @@ private fun YGListItemImpl(
     text: String,
     textColor: Color,
     modifier: Modifier = Modifier,
+    isNew: Boolean = false,
     trailing: @Composable () -> Unit,
 ) {
     val verticalPadding = YGTheme.layout.padding.padding2
@@ -83,12 +87,20 @@ private fun YGListItemImpl(
         horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = text,
-            style = YGTheme.typography.body.b02R,
-            color = textColor,
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f),
-        )
+        ) {
+            Text(
+                text = text,
+                style = YGTheme.typography.body.b02R,
+                color = textColor,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+
+            if (isNew) YGChipNew()
+        }
 
         trailing()
     }
@@ -107,6 +119,15 @@ private fun YGListItemPreview() = PreviewBox {
             text = "서비스 이용약관",
             trailingIcon = R.drawable.ic_caret_right,
             onClickTrailingIcon = {},
+        )
+
+        Text("trailingIcon + new")
+
+        YGListItem(
+            text = "공지사항",
+            trailingIcon = R.drawable.ic_caret_right,
+            onClickTrailingIcon = {},
+            isNew = true,
         )
 
         Text("sub")

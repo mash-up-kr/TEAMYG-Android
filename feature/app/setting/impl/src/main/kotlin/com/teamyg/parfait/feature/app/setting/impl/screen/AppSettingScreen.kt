@@ -49,6 +49,7 @@ internal fun AppSettingScreen(
     onClickBack: () -> Unit,
     onClickAccount: () -> Unit,
     onClickNotification: () -> Unit,
+    onClickNotice: () -> Unit,
     onClickPolicy: (TermsId) -> Unit,
     onClickCsaePolicy: () -> Unit,
     onClickOssLicense: () -> Unit,
@@ -96,6 +97,12 @@ internal fun AppSettingScreen(
                         text = stringResource(R.string.setting_item_notification),
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickNotification,
+                    )
+                    YGListItem(
+                        text = stringResource(R.string.setting_item_notice),
+                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+                        onClickTrailingIcon = onClickNotice,
+                        isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
                     )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
@@ -231,6 +238,7 @@ private fun AppSettingScreenPreview() = PreviewBox {
         onClickBack = {},
         onClickAccount = {},
         onClickNotification = {},
+        onClickNotice = {},
         onClickPolicy = {},
         onClickCsaePolicy = {},
         onClickOssLicense = {},
