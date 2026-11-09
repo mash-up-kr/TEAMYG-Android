@@ -465,3 +465,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-09] change | 공지사항 분석 이벤트
 `screen_view` S-106(`NavKeyNoticeList`)·S-106-detail(`NavKeyNoticeDetail`) · `app_setting_notice_tapped`(S-001) · `app_notice_item_tapped`(`notice_id`·`is_new`, NEW 칩 여부는 탭 시점 목록 상태 기준) · 맞춤 측정기준 `notice_id`·`is_new` 등록 필요
+
+## [2026-11-10] change | 앱 설정 약관 풋터(#680) 되돌림 · 알림 설정·공지사항 진입 임시 숨김
+`YGTextButton` 풋터와 `YGTextButton` 컴포넌트를 되돌려 약관 영역이 다시 `state.policies` 를 순회하는 `YGListItem` 목록이 됨 · status.md S-001 복원(OQ-P-231 트레이드오프 설명 되살림) · 설정 화면의 알림 설정·공지사항 행을 주석 처리해 알림 설정·공지 목록·공지 상세에 들어갈 수 없음(진입 경로가 그 두 행뿐). 이 PR 을 되돌리면 풋터와 두 행이 함께 돌아온다
