@@ -42,6 +42,7 @@ fun YGCircleButton(
     contentDescription: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isPressed: Boolean by interactionSource.collectIsPressedAsState()
@@ -62,6 +63,7 @@ fun YGCircleButton(
             .clip(shape)
             .clickableYGNoRipple(
                 onClick = onClick,
+                enabled = enabled,
                 interactionSource = interactionSource,
             ).semantics { role = Role.Button }
             .then(if (type.paintsOuterCircle) fill else Modifier)

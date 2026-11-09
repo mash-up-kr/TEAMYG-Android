@@ -329,8 +329,6 @@ internal fun EditableToppingImage(
  * 선택된 토핑의 점선 선택 박스와 좌상단 삭제 버튼. 이미지·텍스트 모두 판정 박스([target])를 감싼다.
  *
  * @param center 선택 박스를 두는 자리. 이미지를 그린 자리와 같아야 한다
- * @param showActionButtons 제스처 중에는 `false`. 포인터 대상은 down 시점에 정해지므로 첫 down부터
- *   버튼을 빼야 두 번째 손가락을 버튼이 가로채지 않는다.
  * @param rotationOverride 스냅 모션 중 그릴 각도. null 이면 [target]의 각도로 그린다 — 이미지·텍스트와
  *   같은 값을 받아야 선택 박스가 어긋나지 않는다
  */
@@ -339,7 +337,7 @@ internal fun ToppingFocusDecoration(
     target: ToppingHitTarget,
     center: DpOffset,
     onClickDelete: () -> Unit,
-    showActionButtons: Boolean,
+    actionButtonsEnabled: Boolean,
     modifier: Modifier = Modifier,
     rotationOverride: Float? = null,
 ) {
@@ -360,15 +358,14 @@ internal fun ToppingFocusDecoration(
             sizeAfterScale = sizeAfterScale,
             rotationDegrees = rotationDegrees,
         )
-        if (showActionButtons) {
-            YGCircleButton(
-                iconResource = DesignSystemR.drawable.ic_close,
-                type = YGCircleButtonType.Small,
-                contentDescription = stringResource(R.string.canvas_bg_edit_topping_delete),
-                onClick = onClickDelete,
-                modifier = Modifier.centeredAt(buttonPoints.topLeft),
-            )
-        }
+        YGCircleButton(
+            iconResource = DesignSystemR.drawable.ic_close,
+            type = YGCircleButtonType.Small,
+            contentDescription = stringResource(R.string.canvas_bg_edit_topping_delete),
+            onClick = onClickDelete,
+            enabled = actionButtonsEnabled,
+            modifier = Modifier.centeredAt(buttonPoints.topLeft),
+        )
     }
 }
 

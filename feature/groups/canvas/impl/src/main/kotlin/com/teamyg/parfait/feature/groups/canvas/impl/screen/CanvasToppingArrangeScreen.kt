@@ -316,7 +316,7 @@ internal fun CanvasToppingArrangeScreen(
                     target = focusedTarget,
                     center = focusedDrawnCenter,
                     onClickDelete = onClickDeleteTopping,
-                    showActionButtons = !isToppingGestureActive,
+                    actionButtonsEnabled = !isToppingGestureActive,
                     rotationOverride = animatedFocusedRotationDegrees,
                 )
             }
