@@ -95,17 +95,18 @@ internal fun AppSettingScreen(
                         trailingIcon = DesignSystemR.drawable.ic_caret_right,
                         onClickTrailingIcon = onClickOssLicense,
                     )
-                    YGListItem(
-                        text = stringResource(R.string.setting_item_notification),
-                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                        onClickTrailingIcon = onClickNotification,
-                    )
-                    YGListItem(
-                        text = stringResource(R.string.setting_item_notice),
-                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
-                        onClickTrailingIcon = onClickNotice,
-                        isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
-                    )
+                    // TODO: 알림 설정·공지사항 진입을 임시로 숨긴다. 공개 준비가 끝나면 주석을 푼다
+//                    YGListItem(
+//                        text = stringResource(R.string.setting_item_notification),
+//                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+//                        onClickTrailingIcon = onClickNotification,
+//                    )
+//                    YGListItem(
+//                        text = stringResource(R.string.setting_item_notice),
+//                        trailingIcon = DesignSystemR.drawable.ic_caret_right,
+//                        onClickTrailingIcon = onClickNotice,
+//                        isNew = true, // TODO: 추후 서버에서 받아서 처리 예정
+//                    )
                     YGListItem(
                         text = stringResource(R.string.setting_item_version),
                         subText = stringResource(R.string.setting_item_version_value, state.version),
