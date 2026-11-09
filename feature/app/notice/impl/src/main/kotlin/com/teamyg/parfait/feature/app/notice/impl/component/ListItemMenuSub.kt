@@ -32,7 +32,6 @@ internal fun ListItemMenuSub(
     isNew: Boolean = false,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(YGTheme.layout.gap.gap2),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
