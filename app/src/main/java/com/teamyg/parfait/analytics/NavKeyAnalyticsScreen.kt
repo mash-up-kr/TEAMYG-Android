@@ -3,6 +3,8 @@ package com.teamyg.parfait.analytics
 import androidx.navigation3.runtime.NavKey
 import com.teamyg.parfait.core.analytics.AnalyticsScreen
 import com.teamyg.parfait.core.analytics.AnalyticsScreenType
+import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeDetail
+import com.teamyg.parfait.feature.app.notice.api.NavKeyNoticeList
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAccountInfo
 import com.teamyg.parfait.feature.app.setting.api.NavKeyAppSetting
 import com.teamyg.parfait.feature.app.setting.api.NavKeyNotificationSetting
@@ -104,6 +106,10 @@ fun NavKey.toAnalyticsScreenOrNull(): AnalyticsScreen? = when (this) {
     is NavKeyAccountInfo -> AnalyticsScreen(AnalyticsScreenType.ACCOUNT_INFO)
 
     is NavKeyNotificationSetting -> AnalyticsScreen(AnalyticsScreenType.NOTIFICATION_SETTING)
+
+    is NavKeyNoticeList -> AnalyticsScreen(AnalyticsScreenType.NOTICE_LIST)
+
+    is NavKeyNoticeDetail -> AnalyticsScreen(AnalyticsScreenType.NOTICE_DETAIL)
 
     is NavKeyGroupSetting -> AnalyticsScreen(AnalyticsScreenType.GROUP_SETTING)
 

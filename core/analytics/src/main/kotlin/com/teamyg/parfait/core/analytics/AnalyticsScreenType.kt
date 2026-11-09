@@ -37,6 +37,8 @@ enum class AnalyticsScreenType(
     APP_SETTING(screenId = "S-001", screenClass = "NavKeyAppSetting"),
     ACCOUNT_INFO(screenId = "S-002", screenClass = "NavKeyAccountInfo"),
     NOTIFICATION_SETTING(screenId = "S-105", screenClass = "NavKeyNotificationSetting"),
+    NOTICE_LIST(screenId = "S-106", screenClass = "NavKeyNoticeList"),
+    NOTICE_DETAIL(screenId = "S-106-detail", screenClass = "NavKeyNoticeDetail"),
     GROUP_SETTING(screenId = "S-101", screenClass = "NavKeyGroupSetting"),
     WEB_VIEW(screenId = "S-004", screenClass = "NavKeyWebView"),
 }
