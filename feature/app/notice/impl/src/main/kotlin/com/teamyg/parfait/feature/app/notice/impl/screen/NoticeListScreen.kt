@@ -7,9 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
+import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.theme.YGTheme
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,8 +64,7 @@ internal fun NoticeListScreen(
                     state.notices.forEachIndexed { index, notice ->
                         if (index > 0) {
                             item(key = "divider-${notice.id}") {
-                                HorizontalDivider(
-                                    color = YGAtomicColors.Gray.Gray100,
+                                YGHorizontalDivider(
                                     modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
                                 )
                             }

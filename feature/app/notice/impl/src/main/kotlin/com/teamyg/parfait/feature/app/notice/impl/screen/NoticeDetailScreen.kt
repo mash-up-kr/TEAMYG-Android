@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.teamyg.parfait.core.designsystem.component.etc.YGHorizontalDivider
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
@@ -85,7 +85,7 @@ internal fun NoticeDetailScreen(
 
                             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
-                            HorizontalDivider(color = YGAtomicColors.Gray.Gray100)
+                            YGHorizontalDivider()
 
                             Spacer(modifier = Modifier.height(YGTheme.layout.gap.gap4))
 
