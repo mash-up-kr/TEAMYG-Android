@@ -1,11 +1,15 @@
 package com.teamyg.parfait.feature.app.notice.impl.viewmodel
 
 import app.cash.turbine.test
+import com.teamyg.parfait.core.analytics.AnalyticsEvent
+import com.teamyg.parfait.core.analytics.AnalyticsEventType
+import com.teamyg.parfait.core.analytics.AnalyticsLogger
 import com.teamyg.parfait.core.testing.MainDispatcherRule
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import com.teamyg.parfait.domain.usecase.notice.GetNoticesUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -18,6 +22,7 @@ class NoticeListViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val getNotices: GetNoticesUseCase = mockk()
+    private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private val notice = NoticeVO(
         id = 1L,
@@ -29,7 +34,7 @@ class NoticeListViewModelTest {
 
     private fun viewModel(result: Result<List<NoticeVO>>): NoticeListViewModel {
         coEvery { getNotices() } returns result
-        return NoticeListViewModel(getNotices = getNotices)
+        return NoticeListViewModel(getNotices = getNotices, analyticsLogger = analyticsLogger)
     }
 
     @Test
@@ -85,6 +90,62 @@ class NoticeListViewModelTest {
             // Then 그 id 의 상세로 이동한다
             assertEquals(NoticeListSideEffect.NavigateToDetail(id = 7L), awaitItem())
         }
+    }
+
+    @Test
+    fun clickNotice_newNotice_logsItemTappedWithIsNewTrue() = runTest(mainDispatcherRule.dispatcher) {
+        // Given NEW 칩이 붙은 공지가 떠 있다
+        val viewModel = viewModel(Result.success(listOf(notice)))
+        advanceUntilIdle()
+
+        // When 그 공지를 누른다
+        viewModel.processIntent(NoticeListIntent.ClickNotice(id = 1L))
+
+        // Then 공지 id 와 is_new=true 로 이벤트가 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.APP_NOTICE_ITEM_TAPPED,
+                    params = mapOf("notice_id" to "1", "is_new" to "true"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun clickNotice_readNotice_logsItemTappedWithIsNewFalse() = runTest(mainDispatcherRule.dispatcher) {
+        // Given NEW 칩이 없는 공지가 떠 있다
+        val viewModel = viewModel(Result.success(listOf(notice.copy(id = 2L, isNew = false))))
+        advanceUntilIdle()
+
+        // When 그 공지를 누른다
+        viewModel.processIntent(NoticeListIntent.ClickNotice(id = 2L))
+
+        // Then is_new=false 로 이벤트가 나간다
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(
+                AnalyticsEvent(
+                    type = AnalyticsEventType.APP_NOTICE_ITEM_TAPPED,
+                    params = mapOf("notice_id" to "2", "is_new" to "false"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun clickNotice_unknownId_navigatesWithoutLogging() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 목록에 없는 id
+        val viewModel = viewModel(Result.success(listOf(notice)))
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 그 id 를 누른다
+            viewModel.processIntent(NoticeListIntent.ClickNotice(id = 99L))
+
+            // Then 이동은 하고 이벤트는 나가지 않는다
+            assertEquals(NoticeListSideEffect.NavigateToDetail(id = 99L), awaitItem())
+        }
+        verify(exactly = 0) { analyticsLogger.logEvent(any()) }
     }
 
     @Test
