@@ -1764,7 +1764,7 @@ TEAMYG-Android 구현에서 발견된 미결 결정·계약 공백·코드/문�
 
 - **ID**: OQ-P-151
 - **출처**: `feature/segmentation/impl` `viewmodel/ToppingEditViewModel.kt`(`MIN_BRUSH_WIDTH_DP`·`MAX_BRUSH_WIDTH_DP`·`MIN_BORDER_WIDTH_DP`·`MAX_BORDER_WIDTH_DP`)(PR #221 develop 머지) — 위키 [[누끼-편집]]은 브러시·테두리 모두 **2~50px**인데 코드는 **2~50dp**다. 값은 같고 단위만 다르다. 코드 주석이 근거를 남겼다 — "사진 해상도나 기기 밀도가 달라도 체감 굵기가 같도록". 원본 좌표 환산은 `originPxPerDp`(미리보기 배율의 역수)로 저장 시점에 한다.
-- **항목**: ① 정책의 "px"가 화면 px인지 원본 이미지 px인지 확정 — 원본 px이면 같은 굵기가 사진 해상도에 따라 전혀 다르게 보인다, ② 코드 판단(dp)을 정책으로 승격할지, ③ 상한 3배 확대(`MAX_ZOOM`)처럼 정책 문서에 없는 값이 함께 확정된 것도 같이 적을지.
+- **항목**: ① 정책의 "px"가 화면 px인지 원본 이미지 px인지 확정 — 원본 px이면 같은 굵기가 사진 해상도에 따라 전혀 다르게 보인다, ② 코드 판단(dp)을 정책으로 승격할지, ③ 상한 12배 확대(`MAX_ZOOM`, iOS와 같은 값)처럼 정책 문서에 없는 값이 함께 확정된 것도 같이 적을지.
 - **상태**: 미해결 (코드가 근거를 적고 먼저 확정한 사례 — 정책 추인 대기)
 - **해소 메모**: 정하면 위키 [[누끼-편집]] "브러시 / 테두리 크기" 절과 [c103 스펙](../superpowers/specs/archive/2026-08-15-c103-segmentation-topping-edit.md) 정책 대조 표를 맞춘다.
 
