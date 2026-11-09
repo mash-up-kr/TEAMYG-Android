@@ -15,12 +15,12 @@ private const val SNAP_HAPTIC_AMPLITUDE = 130
  */
 fun Context.triggerSnapHaptic() {
     val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
     } else {
         @Suppress("DEPRECATION")
-        getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
     }
-    vibrator.vibrate(
+    vibrator?.vibrate(
         VibrationEffect.createOneShot(SNAP_HAPTIC_DURATION_MS, SNAP_HAPTIC_AMPLITUDE),
     )
 }
