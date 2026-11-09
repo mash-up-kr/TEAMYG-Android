@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.theme.colors.YGAtomicColors
 
 private val GUIDE_LINE_WIDTH = 1.dp
+private val GUIDE_SHADOW_BLUR_RADIUS = 4.dp
+private val GUIDE_SHADOW_COLOR = YGAtomicColors.Transparency.Black5
 
 /**
  * 토핑을 캔버스 정중앙으로 끌어왔을 때 뜨는 위치 가이드선(옐로우 실선)
@@ -39,7 +43,7 @@ internal fun CenterGuideLines(
                 .fillMaxHeight()
                 .width(lineWidth),
         ) {
-            Box(modifier = Modifier.fillMaxSize().background(color))
+            ShadowedGuideLine(color = color)
         }
 
         AnimatedVisibility(
@@ -51,7 +55,20 @@ internal fun CenterGuideLines(
                 .fillMaxWidth()
                 .height(lineWidth),
         ) {
-            Box(modifier = Modifier.fillMaxSize().background(color))
+            ShadowedGuideLine(color = color)
         }
+    }
+}
+
+@Composable
+private fun ShadowedGuideLine(color: Color) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radius = GUIDE_SHADOW_BLUR_RADIUS, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+                .background(GUIDE_SHADOW_COLOR),
+        )
+        Box(modifier = Modifier.fillMaxSize().background(color))
     }
 }

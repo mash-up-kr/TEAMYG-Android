@@ -2,7 +2,7 @@ package com.teamyg.parfait.feature.groups.canvas.impl.component
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,8 +14,6 @@ import androidx.compose.animation.fadeOut
 private const val GUIDE_FADE_IN_MS = 100
 private const val GUIDE_FADE_OUT_MS = 150
 
-internal fun guideLineFadeIn(): EnterTransition =
-    fadeIn(tween(durationMillis = GUIDE_FADE_IN_MS, easing = LinearOutSlowInEasing))
+internal fun guideLineFadeIn(): EnterTransition = fadeIn(tween(durationMillis = GUIDE_FADE_IN_MS, easing = EaseOut))
 
-internal fun guideLineFadeOut(): ExitTransition =
-    fadeOut(tween(durationMillis = GUIDE_FADE_OUT_MS, easing = LinearOutSlowInEasing))
+internal fun guideLineFadeOut(): ExitTransition = fadeOut(tween(durationMillis = GUIDE_FADE_OUT_MS, easing = EaseOut))
