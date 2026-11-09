@@ -54,7 +54,7 @@ tags: [spec, parfait, setting, notice]
 - impl: 목록 Route·Screen·ViewModel, 상세 Route·Screen·ViewModel, `EntryBuilder`, `NavigationModule`. `settings.gradle.kts`와 `app/build.gradle.kts`에 등록.
 - 목록: `YGTopBarDetail`("공지사항") + 행 목록. 행은 제목·날짜 두 줄과 caret이고 `isNew`면 제목 옆에 `YGChipNew`. 행 탭은 `navigator.goTo(NavKeyNoticeDetail(id))`.
 - 상세: 제목·날짜·본문. 본문은 테두리 있는 박스. 상세는 `noticeId`로 `GetNoticeUseCase`를 불러온다.
-- 두 ViewModel 모두 `BaseViewModel<State, Intent, SideEffect>` MVI. 로딩 실패는 `YGToastPolicy.showError`(문구는 임시 "공지사항을 불러오지 못했어요, 나중에 다시 시도해 주세요").
+- 두 ViewModel 모두 `BaseViewModel<State, Intent, SideEffect>` MVI. 로딩 실패는 `YGToastPolicy.showError`(문구는 임시 "공지를 불러오지 못했어요, 나중에 다시 시도해 주세요").
 
 ### feature/app/setting
 
