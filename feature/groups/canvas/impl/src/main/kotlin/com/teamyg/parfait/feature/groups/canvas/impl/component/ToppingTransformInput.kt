@@ -13,7 +13,7 @@ import androidx.compose.ui.input.pointer.PointerInputEventHandler
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.dp
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 import kotlin.math.atan2
 
 /** 두 손가락이 이보다 붙으면 거리비가 흔들리고 터치 패널이 두 손가락을 합쳐 좌표가 튄다 */

@@ -49,7 +49,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.component.ToppingSelectionS
 import com.teamyg.parfait.feature.groups.canvas.impl.component.rememberToppingBaseSize
 import com.teamyg.parfait.feature.groups.canvas.impl.component.toppingPanelInputs
 import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_BORDER_WIDTH_RANGE_DP
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleRotation

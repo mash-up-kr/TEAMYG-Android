@@ -29,6 +29,7 @@ import com.teamyg.parfait.domain.usecase.topping.DeleteToppingUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingBorderUseCase
 import com.teamyg.parfait.domain.usecase.topping.UpdateToppingsUseCase
 import com.teamyg.parfait.feature.groups.canvas.impl.model.CanvasToppingKey
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CenterGuideStep
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableText
 import com.teamyg.parfait.feature.groups.canvas.impl.model.EditableTopping
 import com.teamyg.parfait.feature.groups.canvas.impl.model.TEXT_TOPPING_MIN_SCALE
@@ -38,8 +39,6 @@ import com.teamyg.parfait.feature.groups.canvas.impl.util.TOPPING_MIN_SCALE
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingPanelBackAction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.clampPanelBorderWidthDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.ignoresToppingTransform
-import com.teamyg.parfait.feature.groups.canvas.impl.util.AngleGuideStep
-import com.teamyg.parfait.feature.groups.canvas.impl.util.CenterGuideAxisResult
 import com.teamyg.parfait.feature.groups.canvas.impl.util.panelBorderForColor
 import com.teamyg.parfait.feature.groups.canvas.impl.util.resolveCenterGuideAxisRatio
 import com.teamyg.parfait.feature.groups.canvas.impl.util.stepAngleGuide
@@ -185,16 +184,6 @@ sealed interface CanvasToppingArrangeEffect : UiSideEffect {
     /** 토핑이 캔버스 중앙·각도 가이드에 막 스냅됐다. 햅틱을 한 번 울린다 */
     data object TriggerSnapHaptic : CanvasToppingArrangeEffect
 }
-
-/** [CanvasToppingArrangeViewModel.handleOnToppingTransform] 한 프레임의 중앙·각도 가이드 판정 결과. */
-private class CenterGuideStep(
-    val rawX: Float,
-    val rawY: Float,
-    val guideX: CenterGuideAxisResult,
-    val guideY: CenterGuideAxisResult,
-    val angle: AngleGuideStep,
-    val justSnapped: Boolean,
-)
 
 @HiltViewModel(assistedFactory = CanvasToppingArrangeViewModel.Factory::class)
 class CanvasToppingArrangeViewModel

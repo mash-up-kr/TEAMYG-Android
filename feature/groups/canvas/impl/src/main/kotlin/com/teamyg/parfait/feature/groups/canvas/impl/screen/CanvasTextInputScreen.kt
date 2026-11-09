@@ -89,7 +89,7 @@ import com.teamyg.parfait.feature.groups.canvas.impl.model.TextToppingType
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditBudget
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditModeState
 import com.teamyg.parfait.feature.groups.canvas.impl.model.rememberTextEditVerticalAnchor
-import com.teamyg.parfait.feature.groups.canvas.impl.util.ToppingHitTarget
+import com.teamyg.parfait.feature.groups.canvas.impl.model.ToppingHitTarget
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animatePanelFocusFraction
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleDp
 import com.teamyg.parfait.feature.groups.canvas.impl.util.animateToppingSnapSettleRotation

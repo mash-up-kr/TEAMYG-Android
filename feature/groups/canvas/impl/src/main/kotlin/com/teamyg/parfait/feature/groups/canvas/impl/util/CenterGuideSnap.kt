@@ -1,14 +1,10 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.util
 
+import com.teamyg.parfait.feature.groups.canvas.impl.model.CenterGuideAxisResult
 import kotlin.math.abs
 
 /** 가이드·스냅이 켜지는 중심 거리 임계값 */
 internal const val CENTER_GUIDE_THRESHOLD_DP = 6f
-
-internal data class CenterGuideAxisResult(
-    val isSnapped: Boolean,
-    val effectiveValue: Float,
-)
 
 internal fun resolveCenterGuideAxisDp(
     rawCenterDp: Float,
