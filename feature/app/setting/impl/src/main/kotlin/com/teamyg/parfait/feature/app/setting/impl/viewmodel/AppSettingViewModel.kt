@@ -15,6 +15,8 @@ import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.member.WithdrawUseCase
+import com.teamyg.parfait.domain.usecase.notice.HasNewNoticeUseCase
+import com.teamyg.parfait.domain.usecase.notice.RefreshNoticesUseCase
 import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -32,6 +34,8 @@ import javax.inject.Inject
  *   이 목록의 값을 그대로 쓴다 — 로컬 고정 문자열 폴백은 없다. title·url이 둘 다 비어 있는
  *   항목은 그리지 않는다(`AppSettingScreen` 참고). title만 비어 있으면 빈 텍스트로 줄은
  *   그대로 보여준다
+ * @property hasNewNotice 게시 14일 미만이면서 이 앱에서 상세를 연 적 없는 공지가 하나라도 있는지.
+ *   공지사항 행의 NEW 칩이 이 값을 따른다
  * @property isWithdrawDialogVisible 서비스 탈퇴 확인 팝업 노출 여부
  * @property isLoggingOut 로그아웃 요청이 진행 중인지. 진행 중이면 로그아웃 버튼을 비활성한다
  */
@@ -40,6 +44,7 @@ data class AppSettingState(
     val loginProvider: LoginProvider? = null,
     val version: String = APP_VERSION_NAME,
     val policies: List<PolicyVO> = emptyList(),
+    val hasNewNotice: Boolean = false,
     val isWithdrawDialogVisible: Boolean = false,
     val isLoggingOut: Boolean = false,
     val isWithdrawing: Boolean = false,
@@ -103,6 +108,8 @@ constructor(
     private val withdraw: WithdrawUseCase,
     private val getMyAccountFlow: GetMyAccountFlowUseCase,
     private val getPolicies: GetPoliciesUseCase,
+    private val refreshNotices: RefreshNoticesUseCase,
+    private val hasNewNotice: HasNewNoticeUseCase,
     private val analyticsLogger: AnalyticsLogger,
 ) : BaseViewModel<AppSettingState, AppSettingIntent, AppSettingSideEffect>(
     initialState = AppSettingState(),
@@ -124,6 +131,7 @@ constructor(
         }
 
         loadPolicies()
+        loadNotices()
     }
 
     override fun processIntent(intent: AppSettingIntent) {
@@ -158,6 +166,17 @@ constructor(
     private fun handleClickNotice() {
         analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTICE_TAPPED))
         postSideEffect(AppSettingSideEffect.NavigateToNotice)
+    }
+
+    // 목록·상세는 이 갱신 결과를 이어 쓴다. 실패해도 사용자에게 알리지 않는다 — 칩이 안 뜰 뿐이다
+    private fun loadNotices() {
+        launch(key = KEY_REFRESH_NOTICES) {
+            refreshNotices().onFailure { viewModelLogger.e(it) { "공지사항 갱신에 실패했다" } }
+        }
+
+        launch(key = KEY_OBSERVE_NEW_NOTICE) {
+            hasNewNotice().collect { hasNew -> updateState { copy(hasNewNotice = hasNew) } }
+        }
     }
 
     private fun loadPolicies() {
@@ -250,6 +269,12 @@ constructor(
 
         /** [launch] 중복 실행 가드 키 — 약관 조회 job 하나를 가리킨다 */
         const val KEY_LOAD_POLICIES = "loadPolicies"
+
+        /** [launch] 중복 실행 가드 키 — 공지 갱신 job 하나를 가리킨다 */
+        const val KEY_REFRESH_NOTICES = "refreshNotices"
+
+        /** [launch] 중복 실행 가드 키 — 새 공지 구독 job 하나를 가리킨다 */
+        const val KEY_OBSERVE_NEW_NOTICE = "observeNewNotice"
 
         /** [launch] 중복 실행 가드 키 — 탈퇴 job 하나를 가리킨다 */
         const val KEY_WITHDRAW = "withdraw"

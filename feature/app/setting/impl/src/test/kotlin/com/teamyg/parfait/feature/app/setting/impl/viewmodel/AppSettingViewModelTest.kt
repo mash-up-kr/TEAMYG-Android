@@ -16,6 +16,8 @@ import com.teamyg.parfait.domain.model.policy.PolicyVO
 import com.teamyg.parfait.domain.usecase.auth.LogoutUseCase
 import com.teamyg.parfait.domain.usecase.member.GetMyAccountFlowUseCase
 import com.teamyg.parfait.domain.usecase.member.WithdrawUseCase
+import com.teamyg.parfait.domain.usecase.notice.HasNewNoticeUseCase
+import com.teamyg.parfait.domain.usecase.notice.RefreshNoticesUseCase
 import com.teamyg.parfait.domain.usecase.policy.GetPoliciesUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,21 +46,73 @@ class AppSettingViewModelTest {
     private val withdraw: WithdrawUseCase = mockk()
     private val getMyAccountFlow: GetMyAccountFlowUseCase = mockk()
     private val getPolicies: GetPoliciesUseCase = mockk()
+    private val refreshNotices: RefreshNoticesUseCase = mockk()
+    private val hasNewNotice: HasNewNoticeUseCase = mockk()
     private val analyticsLogger: AnalyticsLogger = mockk(relaxed = true)
 
     private fun viewModel(
         accountFlow: Flow<MyAccountVO?> = flowOf(null),
         policies: Result<List<PolicyVO>> = Result.success(listOf(SERVICE_TERMS, PRIVACY_POLICY)),
+        refresh: Result<Unit> = Result.success(Unit),
+        hasNew: Flow<Boolean> = flowOf(false),
     ): AppSettingViewModel {
         every { getMyAccountFlow() } returns accountFlow
         coEvery { getPolicies() } returns policies
+        coEvery { refreshNotices() } returns refresh
+        every { hasNewNotice() } returns hasNew
         return AppSettingViewModel(
             logout = logout,
             withdraw = withdraw,
             getMyAccountFlow = getMyAccountFlow,
             getPolicies = getPolicies,
+            refreshNotices = refreshNotices,
+            hasNewNotice = hasNewNotice,
             analyticsLogger = analyticsLogger,
         )
+    }
+
+    @Test
+    fun init_refreshesNoticesOnce() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 설정 화면에 진입한다
+        viewModel()
+        advanceUntilIdle()
+
+        // Then 공지 목록 갱신을 한 번 부른다
+        coVerify(exactly = 1) { refreshNotices() }
+    }
+
+    @Test
+    fun init_refreshFails_keepsChipOffAndDoesNotCrash() = runTest(mainDispatcherRule.dispatcher) {
+        // Given, When 공지 갱신이 실패한다
+        val viewModel = viewModel(refresh = Result.failure(IllegalStateException("fail")))
+        advanceUntilIdle()
+
+        // Then 사용자에게 알리지 않고 칩만 꺼진 채로 남는다
+        assertFalse(viewModel.state.value.hasNewNotice)
+    }
+
+    @Test
+    fun hasNewNotice_followsUseCaseFlow() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 새 공지 여부가 false → true → false 로 바뀐다
+        val hasNew = MutableSharedFlow<Boolean>(replay = 1)
+        hasNew.tryEmit(false)
+        val viewModel = viewModel(hasNew = hasNew)
+        advanceUntilIdle()
+        assertFalse(viewModel.state.value.hasNewNotice)
+
+        // When 안 읽은 새 공지가 생긴다
+        hasNew.emit(true)
+        advanceUntilIdle()
+
+        // Then 칩이 켜진다
+        assertTrue(viewModel.state.value.hasNewNotice)
+
+        // When 모두 읽는다
+        hasNew.emit(false)
+        advanceUntilIdle()
+
+        // Then 칩이 꺼진다
+        assertFalse(viewModel.state.value.hasNewNotice)
     }
 
     @Test
