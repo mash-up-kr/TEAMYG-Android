@@ -16,6 +16,15 @@ object DateTextFormat {
         day(padding = Padding.NONE)
     }
 
+    /** `2026.11.17` — 월·일은 두 자리로 채운다 */
+    val dottedDateFormat = LocalDate.Format {
+        year()
+        chars(".")
+        monthNumber(padding = Padding.ZERO)
+        chars(".")
+        day(padding = Padding.ZERO)
+    }
+
     val monthFormat = LocalDate.Format {
         monthName(MonthNames.ENGLISH_ABBREVIATED)
     }
