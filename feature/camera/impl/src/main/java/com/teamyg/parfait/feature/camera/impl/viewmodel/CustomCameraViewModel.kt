@@ -11,9 +11,13 @@ import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
+import com.teamyg.parfait.feature.camera.impl.model.LensSwitchTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 sealed interface CustomCameraEffect : UiSideEffect {
     data object RequestPermission : CustomCameraEffect
@@ -59,6 +63,15 @@ sealed interface CustomCameraIntent : UiIntent {
 
     data object OnClickZoom : CustomCameraIntent
 
+    /** 직전 이벤트 대비 두 손가락 간격 비율. 1보다 크면 확대 */
+    data class OnPinchZoom(
+        val scale: Float,
+    ) : CustomCameraIntent
+
+    data object OnPinchZoomStart : CustomCameraIntent
+
+    data object OnPinchZoomEnd : CustomCameraIntent
+
     data object OnClickFlip : CustomCameraIntent
 
     data object OnClickShutter : CustomCameraIntent
@@ -81,21 +94,31 @@ data class CustomCameraState(
     val isInitialized: Boolean = false,
     val hasPermission: Boolean = false,
     val lensFacing: LensFacing = LensFacing.BACK,
-    val zoomLevel: CameraZoomLevel = CameraZoomLevel.ONE,
+    /** 메인 카메라 기준 배율. 초광각에 붙었으면 0.5다 */
+    val zoomRatio: Float = CameraZoomLevel.ONE.ratio,
+    /** 메인 카메라 범위를 2x에서 자른 핀치 범위 */
+    val pinchZoomRange: ClosedFloatingPointRange<Float> = FIXED_ZOOM_RANGE,
     val zoomLevels: List<CameraZoomLevel> = listOf(CameraZoomLevel.ONE),
     val halfZoomSource: HalfZoomSource = HalfZoomSource.NONE,
+    val isZoomAnimated: Boolean = true,
     val flashMode: FlashMode = FlashMode.OFF,
     val isCapturing: Boolean = false,
 ) : UiState {
+    val zoomLevel: CameraZoomLevel?
+        get() = CameraZoomLevel.matching(zoomRatio, zoomLevels)
+
+    val zoomLabel: String
+        get() = CameraZoomLevel.labelOf(zoomRatio)
+
     val isZoomButtonVisible: Boolean
-        get() = zoomLevels.size > 1
+        get() = zoomLevels.size > 1 || pinchZoomRange.start < pinchZoomRange.endInclusive
 
     val shouldUseUltraWideCamera: Boolean
-        get() = zoomLevel == CameraZoomLevel.HALF && halfZoomSource == HalfZoomSource.ULTRA_WIDE
+        get() = zoomRatio == CameraZoomLevel.HALF.ratio && halfZoomSource == HalfZoomSource.ULTRA_WIDE
 
     /** 바인딩된 카메라에 걸 배율. 초광각에 붙었으면 그 카메라의 1x가 곧 0.5x다 */
     val cameraZoomRatio: Float
-        get() = if (shouldUseUltraWideCamera) 1f else zoomLevel.ratio
+        get() = if (shouldUseUltraWideCamera) 1f else zoomRatio
 }
 
 @HiltViewModel
@@ -109,6 +132,10 @@ constructor(
 ) {
     private var hasRequestedPermission = false
 
+    private val lensSwitchTracker = LensSwitchTracker()
+
+    private var lensSwitchJob: Job? = null
+
     init {
         viewModelLogger.i { "CustomCameraViewModel::init" }
     }
@@ -120,6 +147,9 @@ constructor(
             is CustomCameraIntent.OnClickOpenAppSettings -> handleOnClickOpenAppSettings()
             is CustomCameraIntent.OnZoomRangeReady -> handleOnZoomRangeReady(intent)
             is CustomCameraIntent.OnClickZoom -> handleOnClickZoom()
+            is CustomCameraIntent.OnPinchZoom -> handleOnPinchZoom(intent)
+            is CustomCameraIntent.OnPinchZoomStart -> resetLensSwitch()
+            is CustomCameraIntent.OnPinchZoomEnd -> resetLensSwitch()
             is CustomCameraIntent.OnClickFlip -> handleOnClickFlip()
             is CustomCameraIntent.OnClickShutter -> handleOnClickShutter()
             is CustomCameraIntent.OnCaptureSaved -> handleOnCaptureSaved(intent)
@@ -163,27 +193,93 @@ constructor(
     }
 
     private fun handleOnZoomRangeReady(intent: CustomCameraIntent.OnZoomRangeReady) {
-        val halfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
-        val zoomLevels = CameraZoomLevel.available(intent.range, halfZoomSource)
+        val newHalfZoomSource = HalfZoomSource.of(intent.range, intent.hasUltraWideCamera)
+        val newZoomLevels = CameraZoomLevel.available(intent.range, newHalfZoomSource)
+        val isUltraWideKept = state.value.shouldUseUltraWideCamera && newHalfZoomSource == HalfZoomSource.ULTRA_WIDE
+        val pinchRange = intent.range.start..minOf(intent.range.endInclusive, MAX_PINCH_ZOOM_RATIO)
 
         updateState {
             copy(
-                halfZoomSource = halfZoomSource,
-                zoomLevels = zoomLevels,
-                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 단계를 지킨다
-                zoomLevel = zoomLevel.takeIf { it in zoomLevels } ?: CameraZoomLevel.ONE,
+                halfZoomSource = newHalfZoomSource,
+                zoomLevels = newZoomLevels,
+                pinchZoomRange = pinchRange,
+                // 다시 찍기 등으로 같은 카메라가 다시 바인딩될 때는 배율을 지킨다
+                zoomRatio = zoomRatio.takeIf { isUltraWideKept || it in pinchRange } ?: CameraZoomLevel.ONE.ratio,
+                isZoomAnimated = true,
             )
         }
     }
 
     private fun handleOnClickZoom() {
-        updateState { copy(zoomLevel = zoomLevel.next(zoomLevels)) }
+        // 핀치로 문턱을 넘긴 채 다른 손가락으로 누르면, 대기 중인 렌즈 전환이 버튼 배율을 덮어쓴다
+        cancelLensSwitch()
+        updateState {
+            val target = zoomLevel?.next(zoomLevels) ?: CameraZoomLevel.ONE
+            copy(zoomRatio = target.ratio, isZoomAnimated = true)
+        }
+    }
+
+    private fun handleOnPinchZoom(intent: CustomCameraIntent.OnPinchZoom) {
+        if (lensSwitchTracker.hasSwitched) return
+
+        if (state.value.shouldUseUltraWideCamera) {
+            updateLensSwitch(lensSwitchTracker.onUltraWidePinch(intent.scale))
+        } else {
+            handleMainPinch(intent.scale)
+        }
+    }
+
+    private fun handleMainPinch(scale: Float) {
+        val current = state.value
+        val rawRatio = current.zoomRatio * scale
+        updateLensSwitch(
+            lensSwitchTracker.onMainPinch(
+                rawRatio = rawRatio,
+                minRatio = current.pinchZoomRange.start,
+                hasUltraWideCamera = current.halfZoomSource == HalfZoomSource.ULTRA_WIDE,
+            ),
+        )
+
+        updateState {
+            copy(
+                zoomRatio = rawRatio.coerceIn(pinchZoomRange),
+                isZoomAnimated = false,
+            )
+        }
+    }
+
+    private fun updateLensSwitch(target: CameraZoomLevel?) {
+        if (target != null) scheduleLensSwitch(target) else cancelLensSwitch()
+    }
+
+    // 문턱을 스치듯 지난 빠른 핀치로 렌즈가 바뀌지 않게, 문턱을 넘은 채 LENS_SWITCH_HOLD 만큼 머물러야 넘긴다
+    private fun scheduleLensSwitch(target: CameraZoomLevel) {
+        if (lensSwitchJob?.isActive == true) return
+
+        lensSwitchJob = launch {
+            delay(LENS_SWITCH_HOLD)
+            lensSwitchTracker.onSwitched()
+            updateState { copy(zoomRatio = target.ratio, isZoomAnimated = true) }
+        }
+    }
+
+    private fun cancelLensSwitch() {
+        lensSwitchJob?.cancel()
+        lensSwitchJob = null
+    }
+
+    private fun resetLensSwitch() {
+        cancelLensSwitch()
+        lensSwitchTracker.reset()
     }
 
     private fun handleOnClickFlip() {
+        resetLensSwitch()
         updateState {
             copy(
-                zoomLevel = CameraZoomLevel.ONE,
+                zoomRatio = CameraZoomLevel.ONE.ratio,
+                pinchZoomRange = FIXED_ZOOM_RANGE,
+                isZoomAnimated = true,
                 // 새 렌즈 범위가 올 때까지 버튼을 숨긴다. 두면 이전 렌즈 단계로 순환한다
                 zoomLevels = listOf(CameraZoomLevel.ONE),
                 halfZoomSource = HalfZoomSource.NONE,
@@ -226,3 +322,7 @@ constructor(
         postSideEffect(CustomCameraEffect.Cancel)
     }
 }
+
+private val FIXED_ZOOM_RANGE = CameraZoomLevel.ONE.ratio..CameraZoomLevel.ONE.ratio
+private val MAX_PINCH_ZOOM_RATIO = CameraZoomLevel.TWO.ratio
+private val LENS_SWITCH_HOLD = 250.milliseconds

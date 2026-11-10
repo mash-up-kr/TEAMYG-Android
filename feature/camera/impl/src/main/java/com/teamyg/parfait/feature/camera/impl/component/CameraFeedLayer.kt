@@ -74,12 +74,18 @@ internal fun CameraFeedLayer(
     transition: CameraTransition?,
     onFeedRectChange: (Rect) -> Unit,
     onTapViewfinder: (Offset) -> Unit,
+    onPinchZoomStart: () -> Unit,
+    onPinchZoom: (scale: Float) -> Unit,
+    onPinchZoomEnd: () -> Unit,
     modifier: Modifier = Modifier,
     feed: @Composable () -> Unit,
 ) {
     val contentLayer = rememberGraphicsLayer()
     val blurLayer = rememberGraphicsLayer()
     val currentOnTapViewfinder by rememberUpdatedState(onTapViewfinder)
+    val currentOnPinchZoomStart by rememberUpdatedState(onPinchZoomStart)
+    val currentOnPinchZoom by rememberUpdatedState(onPinchZoom)
+    val currentOnPinchZoomEnd by rememberUpdatedState(onPinchZoomEnd)
 
     Box(
         modifier = modifier
@@ -92,6 +98,12 @@ internal fun CameraFeedLayer(
                 detectTapGestures { offset ->
                     if (viewfinderRect()?.contains(offset) == true) currentOnTapViewfinder(offset)
                 }
+            }.pointerInput(Unit) {
+                detectPinchZoom(
+                    onPinchZoomStart = { currentOnPinchZoomStart() },
+                    onPinchZoom = { scale -> currentOnPinchZoom(scale) },
+                    onPinchZoomEnd = { currentOnPinchZoomEnd() },
+                )
             },
     ) {
         feed()
@@ -217,18 +229,22 @@ private fun CameraTransitionCover(
     }
 }
 
-private class CameraFeedLayerPreviewParameterProvider : NamedPreviewParameterProvider<CameraTransition?>() {
+// 스냅샷 수집은 Robolectric 밖에서 이름을 먼저 읽어 provider를 만든다. 그때 ImageBitmap을 만들면 죽어서 여부만 넘긴다
+private class CameraFeedLayerPreviewParameterProvider : NamedPreviewParameterProvider<Boolean>() {
     override val entries = listOf(
-        "idle" to null,
-        "transition" to CameraTransition(frame = ImageBitmap(width = 9, height = 16), isFlip = false),
+        "idle" to false,
+        "transition" to true,
     )
 }
 
 @YGPreview
 @Composable
 private fun PreviewCameraFeedLayer(
-    @PreviewParameter(CameraFeedLayerPreviewParameterProvider::class) transition: CameraTransition?,
+    @PreviewParameter(CameraFeedLayerPreviewParameterProvider::class) isTransitioning: Boolean,
 ) = PreviewBox {
+    val transition = remember(isTransitioning) {
+        if (isTransitioning) CameraTransition(frame = ImageBitmap(width = 9, height = 16), isFlip = false) else null
+    }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val inset = with(LocalDensity.current) { 24.dp.toPx() }
         val width = constraints.maxWidth.toFloat()
@@ -245,6 +261,9 @@ private fun PreviewCameraFeedLayer(
             transition = transition,
             onFeedRectChange = {},
             onTapViewfinder = {},
+            onPinchZoomStart = {},
+            onPinchZoom = {},
+            onPinchZoomEnd = {},
             modifier = Modifier.fillMaxSize(),
         ) {
             Box(
