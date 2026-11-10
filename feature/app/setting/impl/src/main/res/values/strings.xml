@@ -16,8 +16,6 @@
     <string name="notification_setting_activity_sub">그룹원 활동이 많아지면 모아서 한번에 보내드려요</string>
     <string name="setting_item_csae_policy">아동 안전 정책</string>
     <string name="setting_item_oss_license">오픈소스 라이선스</string>
-    <string name="setting_item_privacy_policy">개인정보처리방침</string>
-    <string name="setting_item_terms_of_service">이용약관</string>
     <string name="setting_item_version">버전 정보</string>
     <string name="setting_item_version_value">v%1$s</string>
     <string name="setting_logout">로그아웃</string>
