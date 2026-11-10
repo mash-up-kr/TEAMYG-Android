@@ -11,6 +11,7 @@ import com.teamyg.parfait.feature.camera.impl.model.CameraZoomLevel
 import com.teamyg.parfait.feature.camera.impl.model.FlashMode
 import com.teamyg.parfait.feature.camera.impl.model.HalfZoomSource
 import com.teamyg.parfait.feature.camera.impl.model.LensFacing
+import com.teamyg.parfait.feature.camera.impl.model.LensSwitchTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -131,11 +132,7 @@ constructor(
 ) {
     private var hasRequestedPermission = false
 
-    /** 렌즈 경계(초광각 0.5x·메인 최소 배율)를 넘어선 핀치 누적 */
-    private var lensSwitchScale = 1f
-
-    // 경계 떨림으로 재바인딩이 반복되지 않게 핀치 구간(두 손가락이 닿아 있는 동안)당 한 번만 전환한다
-    private var hasSwitchedLensInPinch = false
+    private val lensSwitchTracker = LensSwitchTracker()
 
     private var lensSwitchJob: Job? = null
 
@@ -221,38 +218,25 @@ constructor(
     }
 
     private fun handleOnPinchZoom(intent: CustomCameraIntent.OnPinchZoom) {
-        // 전환 뒤 남은 손가락 이동이 새 카메라 배율로 이어지면 1x로 넘어가자마자 1.4x처럼 밀린다
-        if (hasSwitchedLensInPinch) return
+        if (lensSwitchTracker.hasSwitched) return
 
         if (state.value.shouldUseUltraWideCamera) {
-            handleUltraWidePinch(intent.scale)
+            updateLensSwitch(lensSwitchTracker.onUltraWidePinch(intent.scale))
         } else {
             handleMainPinch(intent.scale)
         }
     }
 
-    // 초광각은 메인 카메라와 배율 축이 달라 그 안에서 줌하지 않는다. 확대 누적만 본다
-    private fun handleUltraWidePinch(scale: Float) {
-        lensSwitchScale = (lensSwitchScale * scale).coerceAtLeast(1f)
-        if (lensSwitchScale >= LENS_SWITCH_ZOOM_IN_SCALE) {
-            scheduleLensSwitch(CameraZoomLevel.ONE)
-        } else {
-            cancelLensSwitch()
-        }
-    }
-
-    // 최소 배율 아래로 내려간 축소만 누적한다
     private fun handleMainPinch(scale: Float) {
         val current = state.value
         val rawRatio = current.zoomRatio * scale
-        val minRatio = current.pinchZoomRange.start
-        lensSwitchScale = if (rawRatio < minRatio) lensSwitchScale * rawRatio / minRatio else 1f
-        val canSwitchLens = current.halfZoomSource == HalfZoomSource.ULTRA_WIDE
-        if (canSwitchLens && lensSwitchScale <= LENS_SWITCH_ZOOM_OUT_SCALE) {
-            scheduleLensSwitch(CameraZoomLevel.HALF)
-        } else {
-            cancelLensSwitch()
-        }
+        updateLensSwitch(
+            lensSwitchTracker.onMainPinch(
+                rawRatio = rawRatio,
+                minRatio = current.pinchZoomRange.start,
+                hasUltraWideCamera = current.halfZoomSource == HalfZoomSource.ULTRA_WIDE,
+            ),
+        )
 
         updateState {
             copy(
@@ -262,14 +246,17 @@ constructor(
         }
     }
 
+    private fun updateLensSwitch(target: CameraZoomLevel?) {
+        if (target != null) scheduleLensSwitch(target) else cancelLensSwitch()
+    }
+
     // 문턱을 스치듯 지난 빠른 핀치로 렌즈가 바뀌지 않게, 문턱을 넘은 채 LENS_SWITCH_HOLD 만큼 머물러야 넘긴다
     private fun scheduleLensSwitch(target: CameraZoomLevel) {
         if (lensSwitchJob?.isActive == true) return
 
         lensSwitchJob = launch {
             delay(LENS_SWITCH_HOLD)
-            lensSwitchScale = 1f
-            hasSwitchedLensInPinch = true
+            lensSwitchTracker.onSwitched()
             updateState { copy(zoomRatio = target.ratio, isZoomAnimated = true) }
         }
     }
@@ -279,11 +266,9 @@ constructor(
         lensSwitchJob = null
     }
 
-    // 누적이 다음 핀치로 이어지면 전환 문턱이 그만큼 낮아진다
     private fun resetLensSwitch() {
         cancelLensSwitch()
-        lensSwitchScale = 1f
-        hasSwitchedLensInPinch = false
+        lensSwitchTracker.reset()
     }
 
     private fun handleOnClickFlip() {
@@ -338,6 +323,4 @@ constructor(
 
 private val FIXED_ZOOM_RANGE = CameraZoomLevel.ONE.ratio..CameraZoomLevel.ONE.ratio
 private val MAX_PINCH_ZOOM_RATIO = CameraZoomLevel.TWO.ratio
-private const val LENS_SWITCH_ZOOM_IN_SCALE = 1.25f
-private const val LENS_SWITCH_ZOOM_OUT_SCALE = 1f / LENS_SWITCH_ZOOM_IN_SCALE
 private val LENS_SWITCH_HOLD = 250.milliseconds
