@@ -457,6 +457,20 @@ class CustomCameraViewModelTest {
     }
 
     @Test
+    fun clickZoom_whileLensSwitchPending_cancelsSwitch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 0.7f))
+
+        viewModel.processIntent(CustomCameraIntent.OnClickZoom)
+        advanceUntilIdle()
+
+        assertEquals(CameraZoomLevel.TWO, viewModel.state.value.zoomLevel)
+        assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
     fun pinch_zoomOutPastMinWithoutUltraWide_clampsAtMin() {
         val viewModel = createViewModel()
         viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = false))

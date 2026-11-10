@@ -211,6 +211,8 @@ constructor(
     }
 
     private fun handleOnClickZoom() {
+        // 핀치로 문턱을 넘긴 채 다른 손가락으로 누르면, 대기 중인 렌즈 전환이 버튼 배율을 덮어쓴다
+        cancelLensSwitch()
         updateState {
             val target = zoomLevel?.next(zoomLevels) ?: CameraZoomLevel.ONE
             copy(zoomRatio = target.ratio, isZoomAnimated = true)
