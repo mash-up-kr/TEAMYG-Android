@@ -77,7 +77,11 @@ class NoticeListViewModelTest {
 
         // Then 서버를 부르지 않고 캐시를 그대로 보여준다
         coVerify(exactly = 0) { refreshNotices() }
-        assertEquals(listOf(1L, 2L), viewModel.state.value.notices.map { it.notice.id })
+        assertEquals(
+            listOf(1L, 2L),
+            viewModel.state.value.notices
+                .map { it.notice.id },
+        )
     }
 
     @Test
@@ -99,7 +103,10 @@ class NoticeListViewModelTest {
         advanceUntilIdle()
 
         // Then 빈 목록이고 서버 호출도 에러 effect 도 없다
-        assertTrue(viewModel.state.value.notices.isEmpty())
+        assertTrue(
+            viewModel.state.value.notices
+                .isEmpty(),
+        )
         coVerify(exactly = 0) { refreshNotices() }
         viewModel.effect.test { expectNoEvents() }
     }

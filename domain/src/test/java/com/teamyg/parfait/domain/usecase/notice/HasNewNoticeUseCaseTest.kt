@@ -14,7 +14,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HasNewNoticeUseCaseTest {
-    private fun item(id: Long, isNew: Boolean) = NoticeItemVO(
+    private fun item(
+        id: Long,
+        isNew: Boolean,
+    ) = NoticeItemVO(
         notice = NoticeVO(id = id, title = "공지", publishedDate = LocalDate(2026, 11, 17), content = "본문"),
         isNew = isNew,
     )
