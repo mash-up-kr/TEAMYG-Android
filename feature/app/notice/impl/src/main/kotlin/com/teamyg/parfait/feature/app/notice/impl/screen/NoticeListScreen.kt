@@ -24,13 +24,14 @@ import com.teamyg.parfait.core.designsystem.screen.YGScreen
 import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
+import com.teamyg.parfait.core.util.jvm.model.DateTextFormat
 import com.teamyg.parfait.domain.model.notice.NoticeItemVO
 import com.teamyg.parfait.domain.model.notice.NoticeVO
 import com.teamyg.parfait.feature.app.notice.impl.R
 import com.teamyg.parfait.feature.app.notice.impl.component.ListItemMenuSub
-import com.teamyg.parfait.feature.app.notice.impl.util.toNoticeDateText
 import com.teamyg.parfait.feature.app.notice.impl.viewmodel.NoticeListState
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.format
 
 private val ToastTopOffset = 13.dp
 
@@ -76,7 +77,7 @@ internal fun NoticeListScreen(
                         item(key = item.notice.id) {
                             ListItemMenuSub(
                                 title = item.notice.title,
-                                subText = item.notice.publishedDate.toNoticeDateText(),
+                                subText = item.notice.publishedDate.format(DateTextFormat.dottedDateFormat),
                                 isNew = item.isNew,
                                 onClick = { onClickNotice(item.notice.id) },
                                 modifier = Modifier.padding(horizontal = ContentHorizontalPadding),
