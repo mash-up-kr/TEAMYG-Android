@@ -35,6 +35,7 @@ internal fun NoticeListRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 NoticeListSideEffect.NavigateBack -> navigator.onBack()
+
                 is NoticeListSideEffect.NavigateToDetail -> navigator.goTo(
                     NavKeyNoticeDetail(
                         noticeId = effect.notice.id,
@@ -43,6 +44,7 @@ internal fun NoticeListRoute(
                         content = effect.notice.content,
                     ),
                 )
+
                 NoticeListSideEffect.ShowLoadError -> toastPolicy.showError(loadErrorMessage)
             }
         }

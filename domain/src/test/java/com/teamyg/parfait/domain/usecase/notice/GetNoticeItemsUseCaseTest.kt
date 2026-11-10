@@ -24,7 +24,10 @@ class GetNoticeItemsUseCaseTest {
         override fun now(): Instant = Instant.parse("2026-11-17T03:00:00Z")
     }
 
-    private fun notice(id: Long, publishedDate: String) = NoticeVO(
+    private fun notice(
+        id: Long,
+        publishedDate: String,
+    ) = NoticeVO(
         id = id,
         title = "공지 $id",
         publishedDate = LocalDate.parse(publishedDate),
