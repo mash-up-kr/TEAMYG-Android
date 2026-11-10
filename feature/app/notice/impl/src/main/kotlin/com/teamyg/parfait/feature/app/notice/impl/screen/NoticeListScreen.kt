@@ -15,13 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastHost
 import com.teamyg.parfait.core.designsystem.component.ygtoast.YGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtoast.rememberYGToastPolicy
 import com.teamyg.parfait.core.designsystem.component.ygtopbar.YGTopBarDetail
 import com.teamyg.parfait.core.designsystem.screen.YGScreen
+import com.teamyg.parfait.core.designsystem.utils.preview.NamedPreviewParameterProvider
 import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.domain.model.notice.NoticeVO
@@ -96,28 +96,25 @@ internal fun NoticeListScreen(
     }
 }
 
-private class NoticeListPreviewParameterProvider : PreviewParameterProvider<NoticeListState> {
-    override val values: Sequence<NoticeListState>
-        get() {
-            val notice = NoticeVO(
-                id = 1L,
-                title = "파르페 v1.5.0 업데이트 안내",
-                date = "2026.11.12",
-                content = "",
-                isNew = false,
-            )
+private val PREVIEW_NOTICE = NoticeVO(
+    id = 1L,
+    title = "파르페 v1.5.0 업데이트 안내",
+    date = "2026.11.12",
+    content = "",
+    isNew = false,
+)
 
-            return sequenceOf(
-                NoticeListState(
-                    notices = listOf(
-                        notice.copy(id = 1L, isNew = true),
-                        notice.copy(id = 2L),
-                        notice.copy(id = 3L, title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목"),
-                    ),
-                ),
-                NoticeListState(),
-            )
-        }
+private class NoticeListPreviewParameterProvider : NamedPreviewParameterProvider<NoticeListState>() {
+    override val entries = listOf(
+        "notices" to NoticeListState(
+            notices = listOf(
+                PREVIEW_NOTICE.copy(id = 1L, isNew = true),
+                PREVIEW_NOTICE.copy(id = 2L),
+                PREVIEW_NOTICE.copy(id = 3L, title = "아주 긴 제목의 공지사항이 한 줄을 넘어가는 경우를 확인하기 위한 예시 제목"),
+            ),
+        ),
+        "empty" to NoticeListState(),
+    )
 }
 
 @YGPreview
