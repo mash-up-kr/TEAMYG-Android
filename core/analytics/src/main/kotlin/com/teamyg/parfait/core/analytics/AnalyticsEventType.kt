@@ -14,6 +14,8 @@ enum class AnalyticsEventType(
     APP_LINK_OPENED(eventId = "AppLink", eventName = "AppLink"),
     APP_ACCOUNT_NICKNAME_CHANGED(eventId = "S-002-01", eventName = "app_account_nickname_changed"),
     APP_SETTING_NOTIFICATION_TAPPED(eventId = "S-001-01", eventName = "app_setting_notification_tapped"),
+    APP_SETTING_NOTICE_TAPPED(eventId = "S-001-02", eventName = "app_setting_notice_tapped"),
+    APP_NOTICE_ITEM_TAPPED(eventId = "S-106-01", eventName = "app_notice_item_tapped"),
     APP_NOTIFICATION_SETTING_CHANGED(eventId = "S-105-01", eventName = "app_notification_setting_changed"),
     APP_NOTIFICATION_DEVICE_SETTINGS_TAPPED(
         eventId = "S-105-02",

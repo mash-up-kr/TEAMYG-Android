@@ -462,3 +462,6 @@ ADR-0037 · 스펙·계획 `in-progress` · PR 템플릿 안내를 비교 코멘
 
 ## [2026-11-08] change | 공지사항 목록·상세
 `feature/app/notice` 신규 · `YGChipNew`·`ListItemMenuSub`(notice impl)·`YGListItem` `isNew` · Mock `NoticeRepositoryImpl`(서버 API 전)
+
+## [2026-11-09] change | 공지사항 분석 이벤트
+`screen_view` S-106(`NavKeyNoticeList`)·S-106-detail(`NavKeyNoticeDetail`) · `app_setting_notice_tapped`(S-001) · `app_notice_item_tapped`(`notice_id`·`is_new`, NEW 칩 여부는 탭 시점 목록 상태 기준) · 맞춤 측정기준 `notice_id`·`is_new` 등록 필요

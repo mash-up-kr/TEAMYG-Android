@@ -107,6 +107,24 @@ class AppSettingViewModelTest {
     }
 
     @Test
+    fun clickNotice_logsNoticeTappedEventAndNavigates() = runTest(mainDispatcherRule.dispatcher) {
+        // Given 설정 화면
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.effect.test {
+            // When 공지사항을 누른다
+            viewModel.processIntent(AppSettingIntent.ClickNotice)
+
+            // Then 이동하고 공지사항 진입 이벤트가 나간다
+            assertEquals(AppSettingSideEffect.NavigateToNotice, awaitItem())
+        }
+        verify(exactly = 1) {
+            analyticsLogger.logEvent(AnalyticsEvent(type = AnalyticsEventType.APP_SETTING_NOTICE_TAPPED))
+        }
+    }
+
+    @Test
     fun clickPolicy_navigatesToThatPolicyDetail() = runTest(mainDispatcherRule.dispatcher) {
         // Given 약관 목록을 이미 받아 둔 화면
         val viewModel = viewModel()
