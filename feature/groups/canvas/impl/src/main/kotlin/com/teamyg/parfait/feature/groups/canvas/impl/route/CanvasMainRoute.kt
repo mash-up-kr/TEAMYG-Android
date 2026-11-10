@@ -1,6 +1,7 @@
 package com.teamyg.parfait.feature.groups.canvas.impl.route
 
-import android.content.ClipData
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.platform.ClipEntry
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -63,14 +62,11 @@ import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasBGEdit
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasTextInput
 import com.teamyg.parfait.feature.groups.canvas.api.NavKeyCanvasToppingArrange
 import com.teamyg.parfait.feature.groups.setting.api.NavKeyGroupSetting
-import com.teamyg.parfait.core.designsystem.R as DesignSystemR
 import com.teamyg.parfait.core.ui.R as CoreUiR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.number
-
-private const val CLIP_LABEL_INVITE_MESSAGE = "invite_message"
 
 /** 작성자 정보는 지금 강조된 토핑의 것 하나만 보여야 한다. */
 private const val SPOTLIGHT_TOAST_TAG = "spotlight"
@@ -92,7 +88,6 @@ internal fun CanvasMainRoute(
 ) {
     val canvasState by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
 
@@ -117,8 +112,7 @@ internal fun CanvasMainRoute(
     val welcomeJoinedSub = stringResource(R.string.canvas_welcome_joined_sub)
     val welcomeCreatedTitleFormat = stringResource(R.string.canvas_welcome_created_title)
     val welcomeCreatedSubFormat = stringResource(R.string.canvas_welcome_created_sub)
-    val welcomeInviteCopyText = stringResource(R.string.canvas_welcome_invite_copy)
-    val welcomeInviteCopiedText = stringResource(R.string.canvas_welcome_invite_copied)
+    val welcomeInviteShareText = stringResource(R.string.canvas_welcome_invite_share)
     val inviteMessageTemplate = stringResource(CoreUiR.string.group_invite_message)
 
     var pendingSaveType by remember { mutableStateOf(CanvasSaveType.IMAGE) }
@@ -283,25 +277,10 @@ internal fun CanvasMainRoute(
                     is CanvasWelcome.Created -> alertPolicy.show(
                         title = welcomeCreatedTitleFormat.format(welcome.groupName),
                         sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
-                        buttonText = welcomeInviteCopyText,
-                        buttonIconResource = DesignSystemR.drawable.ic_copy,
+                        buttonText = welcomeInviteShareText,
+                        buttonIconResource = null,
                         onButtonClick = {
-                            scope.launch {
-                                clipboard.setClipEntry(
-                                    ClipEntry(
-                                        ClipData.newPlainText(
-                                            CLIP_LABEL_INVITE_MESSAGE,
-                                            inviteMessageTemplate.format(welcome.inviteCode),
-                                        ),
-                                    ),
-                                )
-                            }
-                            alertPolicy.show(
-                                title = welcomeCreatedTitleFormat.format(welcome.groupName),
-                                sub = welcomeCreatedSubFormat.format(welcome.inviteCode),
-                                buttonText = welcomeInviteCopiedText,
-                                buttonIconResource = DesignSystemR.drawable.ic_copy,
-                            )
+                            context.shareText(inviteMessageTemplate.format(welcome.inviteCode))
                         },
                     )
                 }
@@ -414,4 +393,12 @@ internal fun CanvasMainRoute(
 private fun PendingGallerySave.toSaveIntent(): CanvasMainIntent = when (this) {
     is PendingGallerySave.Image -> CanvasMainIntent.SaveCapturedCanvas(bitmap)
     is PendingGallerySave.Video -> CanvasMainIntent.SaveRecordedVideo(filePath)
+}
+
+private fun Context.shareText(text: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    startActivity(Intent.createChooser(sendIntent, null))
 }
