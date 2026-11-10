@@ -166,7 +166,7 @@ internal fun CustomCameraRoute(
     CameraZoomEffect(
         camera = cameraPreviewState.camera,
         zoomRatio = state.cameraZoomRatio,
-        isAnimated = !state.isZoomByGesture,
+        isAnimated = state.isZoomAnimated,
     )
     CameraTransitionEffect(state = cameraPreviewState)
 

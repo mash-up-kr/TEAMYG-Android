@@ -220,7 +220,7 @@ private class CustomCameraScreenPreviewParameterProvider : NamedPreviewParameter
             isInitialized = true,
             hasPermission = true,
             zoomRatio = 1.4f,
-            zoomRange = 1f..8f,
+            pinchZoomRange = 1f..2f,
             zoomLevels = listOf(CameraZoomLevel.ONE, CameraZoomLevel.TWO),
         ),
     )

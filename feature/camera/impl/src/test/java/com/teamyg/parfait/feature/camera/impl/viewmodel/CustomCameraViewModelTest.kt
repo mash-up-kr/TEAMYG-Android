@@ -292,13 +292,13 @@ class CustomCameraViewModelTest {
 
         viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.4f))
         assertEquals("1.4x", viewModel.state.value.zoomLabel)
-        assertTrue(viewModel.state.value.isZoomByGesture)
+        assertFalse(viewModel.state.value.isZoomAnimated)
 
         viewModel.processIntent(CustomCameraIntent.OnClickZoom)
 
         assertEquals(CameraZoomLevel.ONE, viewModel.state.value.zoomLevel)
         assertEquals(1f, viewModel.state.value.zoomRatio)
-        assertFalse(viewModel.state.value.isZoomByGesture)
+        assertTrue(viewModel.state.value.isZoomAnimated)
     }
 
     @Test
@@ -439,6 +439,21 @@ class CustomCameraViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.state.value.shouldUseUltraWideCamera)
+    }
+
+    @Test
+    fun pinch_rangeReadyAfterSwitch_stillIgnoresRestOfPinch() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.clickZoom(times = 2)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoomStart)
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.3f))
+        advanceUntilIdle()
+
+        viewModel.processIntent(CustomCameraIntent.OnZoomRangeReady(1f..8f, hasUltraWideCamera = true))
+        viewModel.processIntent(CustomCameraIntent.OnPinchZoom(scale = 1.5f))
+
+        assertEquals(1f, viewModel.state.value.zoomRatio)
     }
 
     @Test

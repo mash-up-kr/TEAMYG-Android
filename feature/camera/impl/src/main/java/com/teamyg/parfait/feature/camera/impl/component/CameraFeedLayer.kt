@@ -8,10 +8,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateCentroidSize
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,8 +36,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onLayoutRectChanged
@@ -55,7 +49,6 @@ import com.teamyg.parfait.core.designsystem.utils.preview.PreviewBox
 import com.teamyg.parfait.core.designsystem.utils.preview.YGPreview
 import com.teamyg.parfait.feature.camera.impl.model.CameraTransition
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.sin
 
 private val IS_BLUR_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -70,7 +63,6 @@ private val VIEWFINDER_CORNER_LENGTH = 18.dp
 private val VIEWFINDER_CORNER_WIDTH = 2.dp
 private val VIEWFINDER_FRAME_PADDING = 10.dp
 private val VIEWFINDER_COLOR = YGAtomicColors.Gray.Gray500
-private const val PINCH_POINTER_COUNT = 2
 
 /**
  * 카메라 피드를 한 번 기록해 두 번 그린다 — 뷰파인더 밖은 흐리게, 안은 원본으로.
@@ -121,57 +113,6 @@ internal fun CameraFeedLayer(
         )
     }
 }
-
-/**
- * 두 손가락일 때만 배율 변화를 넘긴다. `detectTransformGestures`는 한 손가락 이동도 소비해 탭 초점과 겹친다.
- * 손가락 사이 거리가 터치 슬롭만큼 벌어지기 전의 떨림은 줌으로 치지 않는다.
- */
-private suspend fun PointerInputScope.detectPinchZoom(
-    onPinchZoomStart: () -> Unit,
-    onPinchZoom: (scale: Float) -> Unit,
-    onPinchZoomEnd: () -> Unit,
-) {
-    awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        var isPinching = false
-        var slopZoom = 1f
-        var isPastSlop = false
-        try {
-            do {
-                val event = awaitPointerEvent()
-                val isPinchEvent = event.changes.count { it.pressed } >= PINCH_POINTER_COUNT
-                if (isPinchEvent && !isPinching) {
-                    onPinchZoomStart()
-                    slopZoom = 1f
-                    isPastSlop = false
-                }
-                if (!isPinchEvent && isPinching) onPinchZoomEnd()
-                isPinching = isPinchEvent
-                if (!isPinchEvent) continue
-
-                val zoom = event.calculateZoom()
-                if (isPastSlop) {
-                    if (zoom != 1f) onPinchZoom(zoom)
-                } else {
-                    slopZoom *= zoom
-                    if (!event.isPastTouchSlop(slopZoom, viewConfiguration.touchSlop)) continue
-                    isPastSlop = true
-                    // 슬롭 안에서 쌓인 배율을 버리면 손가락보다 줌이 뒤처진다
-                    onPinchZoom(slopZoom)
-                }
-                event.changes.forEach { it.consume() }
-            } while (event.changes.any { it.pressed })
-        } finally {
-            // 취소된 제스처도 끝을 알려야 대기 중인 렌즈 전환이 손을 뗀 뒤에 터지지 않는다
-            if (isPinching) onPinchZoomEnd()
-        }
-    }
-}
-
-private fun PointerEvent.isPastTouchSlop(
-    zoom: Float,
-    touchSlop: Float,
-): Boolean = abs(1f - zoom) * calculateCentroidSize(useCurrent = false) > touchSlop
 
 private fun Modifier.viewfinderScrim(
     contentLayer: GraphicsLayer,
