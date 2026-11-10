@@ -7,8 +7,13 @@ import com.teamyg.parfait.core.ui.screenLogger
 import com.teamyg.parfait.feature.groups.canvas.impl.BuildConfig
 import java.io.File
 
-private const val INSTAGRAM_PACKAGE = "com.instagram.android"
-private const val ADD_TO_STORY_ACTION = "com.instagram.share.ADD_TO_STORY"
+private object InstagramStoryShareContract {
+    const val PACKAGE = "com.instagram.android"
+    const val ACTION_ADD_TO_STORY = "com.instagram.share.ADD_TO_STORY"
+
+    /** 스토리 귀속([BuildConfig.FACEBOOK_APP_ID])을 싣는 extra 키 */
+    const val EXTRA_SOURCE_APPLICATION = "source_application"
+}
 
 /**
  * 저장 전 캐시에 있는 미디어를 인스타그램 스토리 편집기의 **배경**으로 띄운다.
@@ -31,11 +36,11 @@ internal fun shareCanvasToInstagramStory(
         return false
     }
 
-    val intent = Intent(ADD_TO_STORY_ACTION).apply {
-        setPackage(INSTAGRAM_PACKAGE)
+    val intent = Intent(InstagramStoryShareContract.ACTION_ADD_TO_STORY).apply {
+        setPackage(InstagramStoryShareContract.PACKAGE)
         setDataAndType(uri, mimeType)
         if (BuildConfig.FACEBOOK_APP_ID.isNotEmpty()) {
-            putExtra("source_application", BuildConfig.FACEBOOK_APP_ID)
+            putExtra(InstagramStoryShareContract.EXTRA_SOURCE_APPLICATION, BuildConfig.FACEBOOK_APP_ID)
         }
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
