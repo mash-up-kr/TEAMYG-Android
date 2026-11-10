@@ -47,7 +47,7 @@ app / app-preview
 | data | `data` | Repository 구현, DataSource, DI 모듈 + **`event/`**(`SessionEventBusImpl`·`PushDeepLinkEventBusImpl`·`AppLinkDeepLinkEventBusImpl`) + **`installer/deeplink/`**(`PlayInstallReferrerGateway` — Play Install Referrer를 읽는 `AppLinkReferrerGateway` 구현 · `ReferrerLookup` — 그 조회 결과) + **`poller/`**(`CanvasPoller`·`CanvasPollInterval` — 리포지토리도 데이터 소스도 아닌 주기 갱신기) | `ModuleData` |
 | feature | `feature/{login,segmentation,camera,gallery,intro}/{api,impl}` | 화면·VM(impl) / NavKey 계약(api) | `ModuleFeatureApi` / `ModuleFeatureImpl`(+ `parfait.ui.snapshot`) |
 | feature | `feature/groups/{canvas,enter,list,setting}/{api,impl}` | 그룹 관련 화면 묶음 | 동일 |
-| feature | `feature/app/notice/{api,impl}` | 공지사항 목록·상세(`NavKeyNoticeList`, `NavKeyNoticeDetail`, `NoticeListRoute`/`NoticeDetailRoute`) — 서버 API 전이라 Mock Repository | 동일 |
+| feature | `feature/app/notice/{api,impl}` | 공지사항 목록·상세(`NavKeyNoticeList`, `NavKeyNoticeDetail`, `NoticeListRoute`/`NoticeDetailRoute`) — 서버 `/api/v1/notices` 연동 | 동일 |
 | feature | `feature/app/setting/{api,impl}` | 앱 설정 화면(`NavKeyAppSetting`, `AppSettingRoute`) | 동일 |
 | feature | `feature/common/terms/{api,impl}` | 웹뷰 화면(`NavKeyWebView(title, url)`, `WebViewRoute`/`WebViewScreen`, `NotionWebView`) — 여러 feature 공유([[0015-feature-common-shared-layer]]). **#296에서 약관 종류별 NavKey·Route·ViewModel 2벌이 하나로 합쳐졌다**(무엇을 여는지는 부르는 쪽이 인자로 정한다) | 동일 |
 
