@@ -106,6 +106,7 @@ internal fun CanvasMainRoute(
     val alertPolicy = rememberYGAlertPolicy()
     val gallerySaveSuccessFormat = stringResource(R.string.canvas_main_gallery_save_success)
     val gallerySaveFailureMessage = stringResource(R.string.canvas_main_gallery_save_failure)
+    val shareFailedMessage = stringResource(R.string.canvas_share_failed)
     val captureFailureMessage = stringResource(R.string.canvas_main_capture_failure)
     val closedCanvasAlertTitleFormat = stringResource(R.string.canvas_main_closed_canvas_alert_title)
     val closedCanvasAlertSubFormat = stringResource(R.string.canvas_main_closed_canvas_alert_sub)
@@ -173,6 +174,9 @@ internal fun CanvasMainRoute(
             is CanvasSaveResult.Video -> saveWithPermission(PendingGallerySave.Video(result.videoPath))
 
             is CanvasSaveResult.VideoFailed -> toastPolicy.showError(gallerySaveFailureMessage)
+
+            // 미리보기가 인스타그램을 띄우지 못했다(미설치·실행 실패·영상 못 만듦)
+            is CanvasSaveResult.ShareFailed -> toastPolicy.showError(shareFailedMessage)
         }
     }
 

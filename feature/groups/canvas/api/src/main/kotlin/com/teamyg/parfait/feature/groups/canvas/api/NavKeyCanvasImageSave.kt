@@ -44,6 +44,9 @@ sealed interface CanvasSaveResult {
 
     /** 미리보기가 영상을 만들지 못했다. 저장할 파일이 없고 실패만 알리면 된다 */
     data object VideoFailed : CanvasSaveResult
+
+    /** 인스타그램 스토리 공유를 띄우지 못했다 — 미설치·실행 실패·영상을 못 만듦. 실패만 알리면 된다 */
+    data object ShareFailed : CanvasSaveResult
 }
 
 /** [CanvasSaveResult] 를 주고받는 결과 키. [NavKeyCanvasImageSave] 로 들어온 쪽이 이 키로 받는다 */

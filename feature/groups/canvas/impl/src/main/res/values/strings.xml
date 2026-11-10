@@ -67,6 +67,7 @@
     <string name="canvas_image_save_confirm">사진으로 저장</string>
     <string name="canvas_video_save_confirm">영상으로 저장</string>
     <string name="canvas_save_share_instagram">인스타그램 스토리 공유</string>
+    <string name="canvas_share_failed">스토리 공유에 실패했어요, 나중에 다시 시도해 주세요</string>
 
     <!-- 캔버스 메인 저장 메뉴 (다운로드 아이콘) -->
     <string name="canvas_main_save_as_image">사진으로 저장</string>
